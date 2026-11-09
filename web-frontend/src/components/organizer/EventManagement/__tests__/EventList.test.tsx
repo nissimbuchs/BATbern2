@@ -19,43 +19,6 @@ import { BrowserRouter } from 'react-router-dom';
 import { EventList } from '../EventList';
 import type { Event } from '@/types/event.types';
 
-// Mock react-i18next
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string, params?: Record<string, unknown>) => {
-      const translations: Record<string, string> = {
-        'dashboard.noEventsFound': 'No events found',
-        'dashboard.tryAdjustingFilters': 'Try adjusting your filters',
-        'status.active': 'status.active',
-        'status.published': 'status.published',
-        'dashboard.eventType.full_day': 'Full Day',
-        'dashboard.eventType.afternoon': 'Afternoon',
-        'dashboard.workflowProgress': 'Workflow Progress',
-        'workflow.states.created': 'Created',
-        'workflow.states.topic_selection': 'Topic Selection',
-        'workflow.states.speaker_brainstorming': 'Speaker Brainstorming',
-        'accessibility.eventList': 'Event list',
-        'accessibility.noEventsFound': 'No events found',
-      };
-
-      // Handle pluralization for eventCount
-      if (key === 'dashboard.eventCount' && params) {
-        return params.count === 1 ? `${params.count} event` : `${params.count} events`;
-      }
-
-      // Handle parameterized translations like workflowStep
-      if (key === 'dashboard.workflowStep' && params) {
-        return `Step ${params.current}/${params.total}`;
-      }
-
-      return translations[key] || key;
-    },
-    i18n: {
-      language: 'en',
-    },
-  }),
-}));
-
 describe('EventList Component', () => {
   const mockEvents: Event[] = [
     {
@@ -132,11 +95,10 @@ describe('EventList Component', () => {
     it('should_displayEventsInCards_when_gridLayout', () => {
       render(<EventList events={mockEvents} />, { wrapper: createWrapper() });
 
-      // Both Box wrapper and EventCard have same testid, so each event has 2 matches
-      const bat56Elements = screen.getAllByTestId('event-card-BATbern56');
-      const bat57Elements = screen.getAllByTestId('event-card-BATbern57');
-      expect(bat56Elements.length).toBeGreaterThan(0);
-      expect(bat57Elements.length).toBeGreaterThan(0);
+      // One card per event; the grid item around it has its own test id.
+      const card56 = screen.getByTestId('event-card-BATbern56');
+      expect(screen.getByTestId('event-card-BATbern57')).toBeInTheDocument();
+      expect(screen.getByTestId('event-list-item-BATbern56')).toContainElement(card56);
     });
 
     it('should_haveResponsiveColumns_when_rendered', () => {
@@ -146,11 +108,9 @@ describe('EventList Component', () => {
       const container = screen.getByTestId('event-list-container');
       expect(container).toHaveClass('MuiGrid-container');
 
-      // Verify both event cards are rendered (Box wrapper + EventCard both have same testid)
-      const bat56Elements = screen.getAllByTestId('event-card-BATbern56');
-      const bat57Elements = screen.getAllByTestId('event-card-BATbern57');
-      expect(bat56Elements.length).toBeGreaterThan(0);
-      expect(bat57Elements.length).toBeGreaterThan(0);
+      // Verify both event cards are rendered, once each
+      expect(screen.getByTestId('event-card-BATbern56')).toBeInTheDocument();
+      expect(screen.getByTestId('event-card-BATbern57')).toBeInTheDocument();
     });
   });
 

@@ -422,7 +422,6 @@ fe-mock-i18n	web-frontend/src/components/organizer/Admin/TaskTemplatesTab.test.t
 fe-mock-i18n	web-frontend/src/components/organizer/Analytics/ChartCard.test.tsx	1
 fe-mock-i18n	web-frontend/src/components/organizer/Analytics/EmptyChartState.test.tsx	1
 fe-mock-i18n	web-frontend/src/components/organizer/EventManagement/__tests__/EventCard.test.tsx	1
-fe-mock-i18n	web-frontend/src/components/organizer/EventManagement/__tests__/EventList.test.tsx	1
 fe-mock-i18n	web-frontend/src/components/organizer/EventManagement/__tests__/SessionEditModal.test.tsx	1
 fe-mock-i18n	web-frontend/src/components/organizer/EventManagement/__tests__/SessionSpeakersTab.test.tsx	1
 fe-mock-i18n	web-frontend/src/components/organizer/EventManagement/__tests__/TeamActivityFeed.test.tsx	1
