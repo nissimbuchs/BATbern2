@@ -4,7 +4,7 @@
  */
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import type { User, UserPreferences, UserSettings } from '@/types/userAccount.types';
+import type { User, UserPreferencesView, UserSettingsView } from '@/types/userAccount.types';
 import * as userAccountApi from '@/services/api/userAccountApi';
 
 // Query keys
@@ -80,7 +80,7 @@ export const useUpdateUserPreferences = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (preferences: Partial<UserPreferences>) =>
+    mutationFn: (preferences: Partial<UserPreferencesView>) =>
       userAccountApi.updateUserPreferences(preferences),
     onSuccess: () => {
       // Invalidate and refetch preferences
@@ -96,7 +96,8 @@ export const useUpdateUserSettings = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (settings: Partial<UserSettings>) => userAccountApi.updateUserSettings(settings),
+    mutationFn: (settings: Partial<UserSettingsView>) =>
+      userAccountApi.updateUserSettings(settings),
     onSuccess: () => {
       // Invalidate and refetch settings
       queryClient.invalidateQueries({ queryKey: ['user-settings'] });

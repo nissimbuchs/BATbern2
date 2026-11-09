@@ -7,16 +7,11 @@
  */
 
 import apiClient from '@/services/api/apiClient';
+import type { components } from '@/types/generated/partner-api.types';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
-export interface AttendanceSummaryRecord {
-  eventCode: string;
-  eventTitle: string;
-  eventDate: string; // ISO-8601 date-time
-  totalAttendees: number;
-  companyAttendees: number;
-}
+export type AttendanceSummaryRecord = components['schemas']['AttendanceSummaryRecord'];
 
 export interface PartnerDashboardData {
   attendanceSummary: AttendanceSummaryRecord[];

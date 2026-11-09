@@ -105,7 +105,21 @@ export const PartnerAttendanceDashboard: React.FC<Props> = ({ companyName }) => 
 
   // ─── Data preparation ──────────────────────────────────────────────────────
 
-  const summaries = data?.attendanceSummary ?? [];
+  // Every field of the wire record is optional; a row without event code or date cannot be
+  // charted, missing counts are zero.
+  const summaries: SummaryRow[] = (data?.attendanceSummary ?? []).flatMap((s) =>
+    s.eventCode && s.eventDate
+      ? [
+          {
+            eventCode: s.eventCode,
+            eventTitle: s.eventTitle ?? '',
+            eventDate: s.eventDate,
+            companyAttendees: s.companyAttendees ?? 0,
+            totalAttendees: s.totalAttendees ?? 0,
+          },
+        ]
+      : []
+  );
 
   const totalCompanyAttendees = summaries.reduce((sum, s) => sum + s.companyAttendees, 0);
   const totalAttendees = summaries.reduce((sum, s) => sum + s.totalAttendees, 0);

@@ -3,24 +3,14 @@
  * Story W2.1: Pairing Code Backend & Web Frontend
  */
 
-export interface PairingCodeResponse {
-  pairingCode: string;
-  expiresAt: string; // ISO 8601
-  hoursUntilExpiry: number;
-}
+import type { components } from '@/types/generated/user-api.types';
 
-export interface PairingStatusResponse {
-  pairedWatches: PairedWatch[];
-  pendingCode: PendingPairingCode | null;
-}
+/** `expiresAt` ISO 8601 with zone. */
+export type PairingCodeResponse = components['schemas']['PairingCodeResponse'];
 
-export interface PairedWatch {
-  id: string; // UUID — stable identifier for unpair (deviceName is nullable)
-  deviceName: string | null;
-  pairedAt: string; // ISO 8601
-}
+export type PairingStatusResponse = components['schemas']['PairingStatusResponse'];
 
-export interface PendingPairingCode {
-  code: string;
-  expiresAt: string; // ISO 8601
-}
+/** `id` is the stable identifier for unpair (`deviceName` is nullable). */
+export type PairedWatch = components['schemas']['PairedWatch'];
+
+export type PendingPairingCode = components['schemas']['PendingPairingCode'];

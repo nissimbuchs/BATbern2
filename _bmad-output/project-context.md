@@ -53,7 +53,10 @@ Focus on unobvious details that agents otherwise miss._
 - **NEVER** make direct `fetch` or `axios` calls in components — always use the service layer
   (`import { companyService } from '@/services/companyService'`)
 - **NEVER** duplicate type definitions — use generated types from `src/types/generated/`
-  (`import type { components } from '@/types/generated/events-api.types'`)
+  (`import type { components } from '@/types/generated/events-core-api.types'`;
+  `export type X = components['schemas']['X']`). Gate: `npm run check:api-type-copies`
+  (Story 17.3c, CI `build-frontend`) fails a hand-written interface or object type named like a
+  schema; a frontend model that is not the wire shape gets its own name
 - After any OpenAPI spec change, run `npm run generate:api-types` and commit the result
 - Frontend generated types live in `src/types/generated/` and ARE committed to Git
 - Path alias `@/` maps to `src/` — always use this for imports, never relative `../../`

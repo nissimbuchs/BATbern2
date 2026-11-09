@@ -48,7 +48,7 @@ export const ConflictDetectionAlert: React.FC<ConflictDetectionAlertProps> = ({
   // The agenda-full 409 of the slot endpoint is EMS's generic error body: a message, no list.
   const conflicts = conflict.conflicts ?? [];
   const firstConflict = conflicts[0];
-  const conflictTypeLabels = {
+  const conflictTypeLabels: Record<string, string> = {
     room_overlap: t('slotAssignment.conflicts.types.room_overlap'),
     speaker_double_booked: t('slotAssignment.conflicts.types.speaker_double_booked'),
     speaker_unavailable: t('slotAssignment.conflicts.types.speaker_unavailable'),
@@ -94,7 +94,7 @@ export const ConflictDetectionAlert: React.FC<ConflictDetectionAlertProps> = ({
               <Box sx={{ mb: 2 }}>
                 <Chip
                   data-testid="conflict-type-badge"
-                  label={conflictTypeLabels[conf.type]}
+                  label={conf.type ? conflictTypeLabels[conf.type] : undefined}
                   color={conflictSeverity === 'error' ? 'error' : 'warning'}
                   size="small"
                   sx={{ mb: 1 }}

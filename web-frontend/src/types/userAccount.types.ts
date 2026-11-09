@@ -3,6 +3,8 @@
  * Story 2.6: User Account Management Frontend
  */
 
+import type { components } from '@/types/generated/user-api.types';
+
 export interface User {
   id: string;
   username: string;
@@ -36,20 +38,18 @@ export interface User {
 }
 
 /**
- * Story 10.32 — one additional email registered on a user profile.
+ * Story 10.32 — one additional email registered on a user profile. `receiveEventMail` (#1244):
+ * this address gets a copy of event mails (only while confirmed).
  */
-export interface AdditionalEmail {
-  email: string;
-  label: string | null;
-  createdAt: string;
-  verifiedAt: string | null;
-  /** #1244: this address gets a copy of event mails (only while confirmed). */
-  receiveEventMail?: boolean;
-}
+export type AdditionalEmail = components['schemas']['AdditionalEmail'];
 
 export type UserRole = 'ORGANIZER' | 'SPEAKER' | 'PARTNER' | 'ATTENDEE';
 
-export interface UserPreferences {
+/**
+ * The UI's view of the wire `UserPreferences` (user-api): upper-case enums, nested channels.
+ * `userAccountApi` maps between the two. Story 17.10 merges the user profile paths.
+ */
+export interface UserPreferencesView {
   theme: 'LIGHT' | 'DARK' | 'AUTO';
   timezone: string;
   notificationChannels: {
@@ -66,7 +66,8 @@ export interface UserPreferences {
   qnaNotificationFrequency: 'LIVE' | 'DAILY' | 'OFF';
 }
 
-export interface UserSettings {
+/** The UI's view of the wire `UserSettings` (user-api), mapped in `userAccountApi`. */
+export interface UserSettingsView {
   profileVisibility: 'PUBLIC' | 'MEMBERS_ONLY' | 'PRIVATE';
   showEmail: boolean;
   showCompany: boolean;
@@ -83,18 +84,13 @@ export interface UserActivity {
 
 export interface UserProfileData {
   user: User;
-  preferences: UserPreferences;
-  settings: UserSettings;
+  preferences: UserPreferencesView;
+  settings: UserSettingsView;
   activity: UserActivity[];
 }
 
-// Logo upload types (ADR-002)
-export interface LogoUploadRequest {
-  fileName: string;
-  fileSize: number;
-  mimeType: string;
-}
-
+// Profile picture upload types (ADR-002); the request body is the generated
+// ProfilePictureUploadRequest (user-api).
 export interface LogoUploadResponse {
   uploadId: string;
   presignedUrl: string;

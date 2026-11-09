@@ -1,0 +1,18 @@
+# Owners of the generated-API-type-copy baseline (api-type-copies-baseline.txt). Hand-maintained,
+# reviewed like code. Checked by `npm run check:api-type-copies` (also right after `--update`):
+# every baseline line matches exactly one group (else UNOWNED / AMBIGUOUS), and every group
+# matches at least one line (else STALE OWNER: the owning story removed the copy, remove the group).
+# Policy: docs/architecture/coding-standards.md, section "Frontend: generated API type copies".
+#
+# Format, TAB separated: <group id> <owner> <file regex> <name regex>
+#   owner  a story id (17.10, 16.8c) that removes the lines, an issue (#1070), or
+#          "exception: <reason>" accepted by the owner (no exception without a reason)
+#   file   regex searched in the path relative to web-frontend (anchor with ^ / $ where needed)
+#   name   regex matched against the whole type name
+# Exception groups list the exact names they own, so a new copy never falls into one silently.
+
+# --- Stories that remove the lines ---
+# 16.8c (Mail Center composer clean-up) folds the newsletter send into the shared composer and
+# deletes this send chain. Not aliased now: the copies differ from the wire (request without
+# maxRecipients, response with testMode the server does not send and without isReminder/locale).
+N1	16.8c	^src/services/newsletterService\.ts$	NewsletterSend(Request|Response)

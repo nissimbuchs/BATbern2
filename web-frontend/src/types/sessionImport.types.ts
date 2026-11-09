@@ -7,6 +7,8 @@
  * Used by SessionBatchImportModal and useSessionBatchImport hook.
  */
 
+import type { components } from '@/types/generated/event-sessions-api.types';
+
 /**
  * Source session format from legacy sessions.json
  *
@@ -36,39 +38,13 @@ export interface LegacySession {
 /**
  * Speaker data from legacy sessions.json
  */
-export interface LegacySpeaker {
-  /** Speaker full name */
-  name: string;
-  /** Speaker bio */
-  bio?: string;
-  /** Company identifier */
-  company?: string;
-  /** Portrait filename */
-  portrait?: string;
-  /** Speaker ID - maps to username in user_profiles */
-  speakerId?: string;
-}
+export type LegacySpeaker = components['schemas']['LegacySpeaker'];
 
 /**
  * Request payload for batch import API
  * Matches BatchImportSessionRequest.java DTO
  */
-export interface BatchImportSessionRequest {
-  /** Session title */
-  title: string;
-  /** Session description (using "abstract" to match backend @JsonProperty) */
-  abstract: string;
-  /** PDF filename for reference (deprecated - use materialUrl) */
-  pdf?: string;
-  /** Material URL (CDN URL for PDF/PPTX files) - Story 5.9 */
-  materialUrl?: string;
-  /** Event number (bat field) */
-  bat: number;
-  /** List of speakers */
-  referenten?: LegacySpeaker[];
-  /** Moderator names */
-  authoren?: string;
-}
+export type BatchImportSessionRequest = components['schemas']['BatchImportSessionRequest'];
 
 /**
  * Import status for each session during batch import
@@ -117,16 +93,7 @@ export interface SessionBatchImportResult {
  * Detail for a single session import result
  * Matches SessionImportDetail.java DTO
  */
-export interface SessionImportDetail {
-  /** Session title */
-  title: string;
-  /** Import status */
-  status: 'success' | 'updated' | 'skipped' | 'failed';
-  /** Status message */
-  message: string;
-  /** Generated session slug (null if failed) */
-  sessionSlug?: string;
-}
+export type SessionImportDetail = components['schemas']['SessionImportDetail'];
 
 /**
  * Props for the session batch import modal component

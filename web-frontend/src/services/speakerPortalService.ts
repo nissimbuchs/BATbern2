@@ -14,6 +14,7 @@
 
 import apiClient from '@/services/api/apiClient';
 import { AxiosError } from 'axios';
+import type { components } from '@/types/generated/event-speakers-api.types';
 
 // API base path for speaker portal endpoints
 const SPEAKER_PORTAL_API_PATH = '/speaker-portal';
@@ -23,43 +24,23 @@ const SPEAKER_PORTAL_API_PATH = '/speaker-portal';
  * Story 11.B.1 + 11.E.3 (Q#6): TENTATIVE was removed from the shared-kernel enum and the
  * backend; the frontend type is cleaned up here to match.
  */
-export type SpeakerResponseType = 'ACCEPT' | 'DECLINE';
+export type SpeakerResponseType = components['schemas']['SpeakerResponseType'];
 
 /**
  * Speaker preferences submitted with ACCEPT response.
  */
-export interface SpeakerResponsePreferences {
-  timeSlot?: 'morning' | 'afternoon' | 'no_preference';
-  travelRequirements?: 'local' | 'accommodation' | 'virtual';
-  technicalRequirements?: string | string[];
-  initialTitle?: string;
-  comments?: string;
-}
+export type SpeakerResponsePreferences = components['schemas']['SpeakerResponsePreferences'];
 
 /**
  * Request body for {@code POST /speaker-portal/events/{eventCode}/respond}.
  * Story 11.E.3: the magic-link `token` field is gone; the `eventCode` is in the URL path.
  */
-export interface SpeakerResponseRequest {
-  response: SpeakerResponseType;
-  reason?: string;
-  preferences?: SpeakerResponsePreferences;
-}
+export type SpeakerResponseRequest = components['schemas']['SpeakerResponseRequest'];
 
 /**
  * Result of a successful response submission.
  */
-export interface SpeakerResponseResult {
-  success: boolean;
-  speakerName: string;
-  eventName: string;
-  eventDate?: string;
-  sessionTitle?: string;
-  nextSteps: string[];
-  contentDeadline?: string;
-  dashboardUrl?: string;
-  message?: string;
-}
+export type SpeakerResponseResult = components['schemas']['SpeakerResponseResult'];
 
 /**
  * Error response structure for speaker portal.
@@ -120,55 +101,17 @@ export interface SpeakerDashboard {
 // Content Submission Types — Story 6.3 / 11.E.3
 // ============================================================================
 
-export interface SpeakerContentInfo {
-  speakerName: string;
-  eventCode: string;
-  eventTitle: string;
-  hasSessionAssigned: boolean;
-  sessionTitle: string | null;
-  canSubmitContent: boolean;
-  // 2026-05-20 (Q#E) — `contentStatus` field dropped. The page reads
-  // `needsRevision` + `reviewerFeedback` directly; the raw enum has no other
-  // consumer. The speaker_pool workflow status is the canonical "where am I"
-  // signal everywhere.
-  hasDraft: boolean;
-  draftTitle: string | null;
-  draftAbstract: string | null;
-  draftVersion: number | null;
-  lastSavedAt: string | null;
-  needsRevision: boolean;
-  reviewerFeedback: string | null;
-  reviewedAt: string | null;
-  reviewedBy: string | null;
-  hasMaterial: boolean;
-  materialUrl: string | null;
-  materialFileName: string | null;
-}
+// 2026-05-20 (Q#E): no `contentStatus`. The page reads `needsRevision` + `reviewerFeedback`
+// directly; the speaker_pool workflow status is the canonical "where am I" signal everywhere.
+export type SpeakerContentInfo = components['schemas']['SpeakerContentInfo'];
 
 // Story 11.E.8 §2.9: backend draft endpoint removed — drafts live in localStorage
 // (see ContentSubmissionPage.tsx auto-save). The single backend write path for
 // title/abstract is submitContent below.
 
-export interface ContentSubmitRequest {
-  title: string;
-  contentAbstract: string;
-  bio?: string;
-  profilePictureUrl?: string;
-  presentationUploadId?: string;
-}
-
-export interface ContentSubmitResponse {
-  submissionId: string;
-  version: number;
-  status: string;
-  sessionTitle: string;
-}
-
-export interface MaterialUploadRequest {
-  fileName: string;
-  fileSize: number;
-  mimeType: string;
-}
+export type ContentSubmitRequest = components['schemas']['ContentSubmitRequest'];
+export type ContentSubmitResponse = components['schemas']['ContentSubmitResponse'];
+export type SpeakerMaterialUploadRequest = components['schemas']['SpeakerMaterialUploadRequest'];
 
 export interface MaterialUploadResponse {
   uploadUrl: string;
@@ -290,7 +233,7 @@ class SpeakerPortalService {
 
   async getMaterialPresignedUrl(
     eventCode: string,
-    request: MaterialUploadRequest
+    request: SpeakerMaterialUploadRequest
   ): Promise<MaterialUploadResponse> {
     try {
       const response = await apiClient.post<MaterialUploadResponse>(

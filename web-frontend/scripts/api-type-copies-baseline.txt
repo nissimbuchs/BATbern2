@@ -1,0 +1,8 @@
+# Hand-written copies of generated API types (frontend). Generated, do not edit by hand:
+#   cd web-frontend && npm run check:api-type-copies -- --update
+# Policy: docs/architecture/coding-standards.md, section "Frontend: generated API type copies".
+# Existing copies only. Every line has exactly one owner group in web-frontend/scripts/api-type-copies-owners.txt:
+# the story or issue that removes it, or an accepted exception with its reason.
+# Format: <file> TAB <type name>, sorted.
+src/services/newsletterService.ts	NewsletterSendRequest
+src/services/newsletterService.ts	NewsletterSendResponse

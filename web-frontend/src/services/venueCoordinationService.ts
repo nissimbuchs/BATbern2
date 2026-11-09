@@ -1,32 +1,14 @@
 import apiClient from './api/apiClient';
+import type { components } from '@/types/generated/events-core-api.types';
 
-export type VenueRecipientRole = 'VENUE' | 'CATERING';
+export type VenueRecipientRole = components['schemas']['VenueRole'];
 
-export interface VenueCoordinationPreviewRequest {
-  templateKey: string;
-  recipients: VenueRecipientRole[];
-  locale: 'de' | 'en';
-  notes?: string;
-}
-
-export interface VenueCoordinationPreviewResponse {
-  subject: string;
-  htmlBody: string;
-  toEmail: string;
-  ccEmails: string[];
-  replyToEmail: string;
-}
-
-export interface VenueCoordinationSendRequest {
-  templateKey: string;
-  locale: 'de' | 'en';
-  notes?: string;
-  recipients: VenueRecipientRole[];
-}
-
-export interface VenueCoordinationSendResponse {
-  sentTo: VenueRecipientRole[];
-}
+export type VenueCoordinationPreviewRequest =
+  components['schemas']['VenueCoordinationPreviewRequest'];
+export type VenueCoordinationPreviewResponse =
+  components['schemas']['VenueCoordinationPreviewResponse'];
+export type VenueCoordinationSendRequest = components['schemas']['VenueCoordinationSendRequest'];
+export type VenueCoordinationSendResponse = components['schemas']['VenueCoordinationSendResponse'];
 
 export const previewVenueCoordinationEmail = async (
   eventCode: string,

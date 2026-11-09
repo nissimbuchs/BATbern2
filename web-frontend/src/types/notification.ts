@@ -3,6 +3,8 @@
  * Based on Story BAT-7 (Notification System)
  */
 
+import type { components } from '@/types/generated/event-notifications-api.types';
+
 export type NotificationType =
   // Event notifications
   | 'EVENT_PUBLISHED'
@@ -59,7 +61,12 @@ export interface Notification {
   timestamp?: string; // Alias for createdAt (for UI components)
 }
 
-export interface NotificationsResponse {
+/**
+ * A page of notifications as the UI holds it: the wire `NotificationPage` with each item
+ * enhanced by `notificationApiClient` (computed `isRead`, `actionUrl` and UI aliases). Not the
+ * wire shape, hence its own name.
+ */
+export interface NotificationPage {
   data: Notification[];
   pagination: {
     page: number;
@@ -67,26 +74,18 @@ export interface NotificationsResponse {
     totalItems: number;
     totalPages: number;
   };
-  unreadCount?: number; // Total unread notifications (for in-app notifications)
+  /** Total unread notifications; not part of the list response, set by whoever has the count. */
+  unreadCount?: number;
 }
 
-export interface NotificationCountResponse {
-  count: number;
-}
+export type NotificationCountResponse = components['schemas']['NotificationCountResponse'];
 
 export interface MarkAsReadRequest {
   notificationIds?: string[];
 }
 
-export interface MarkAsReadResponse {
-  success: boolean;
-  markedCount: number;
-  updatedAt: string;
-}
-
-export interface DeleteNotificationResponse {
-  success: boolean;
-}
+export type MarkAsReadResponse = components['schemas']['MarkAsReadResponse'];
+export type DeleteNotificationResponse = components['schemas']['DeleteNotificationResponse'];
 
 export interface NotificationFilters {
   username: string;

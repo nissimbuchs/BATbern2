@@ -53,3 +53,7 @@ scripts/__fixtures__/api-lint
 
 # Epic 17 i18n key gate: fixture sources for scripts/check-i18n-keys.test.ts, read as text.
 scripts/__fixtures__/i18n-keys
+
+# Story 17.3c: fixture sources for scripts/check-api-type-copies.test.ts, read as text. Their
+# layout (the generator's indentation, comments around declarations) is part of what they check.
+scripts/__fixtures__/api-type-copies

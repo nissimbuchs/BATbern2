@@ -30,32 +30,15 @@ export type SpeakerPoolEntry = components['schemas']['SpeakerPoolResponse'];
 // Request/Response DTOs
 // ============================================================================
 
-export interface AddSpeakerToPoolRequest {
-  speakerName: string;
-  company?: string;
-  expertise?: string;
-  assignedOrganizerId?: string;
-  notes?: string;
-}
-
-export interface PatchSpeakerPoolRequest {
-  speakerName?: string;
-  company?: string;
-  expertise?: string;
-  assignedOrganizerId?: string;
-  notes?: string;
-}
+export type AddSpeakerToPoolRequest = components['schemas']['AddSpeakerToPoolRequest'];
+export type PatchSpeakerPoolRequest = components['schemas']['PatchSpeakerPoolRequest'];
 
 // Story 11.D.1: POST /speakers/{speakerId}/promote — drives CONTACTED → READY transition
 // and provisions the User + SPEAKER role server-side.
 // Story 11.E.4 AC4: firstName + lastName tightened from optional to REQUIRED (PM decision
 // 2026-05-18). They populate the Cognito user's given_name / family_name attributes; the
 // fallback path with literal placeholders ("Speaker" / "Unknown") on the backend is removed.
-export interface PromoteSpeakerRequest {
-  email: string;
-  firstName: string;
-  lastName: string;
-}
+export type PromoteSpeakerRequest = components['schemas']['PromoteSpeakerRequest'];
 
 export type SpeakerPoolResponse = SpeakerPoolEntry;
 
@@ -77,55 +60,27 @@ export interface SpeakerPoolFilters {
 // ============================================================================
 
 /**
- * Request body for sending speaker invitation
+ * Request body for sending speaker invitation: `responseDeadline` required and in the future,
+ * `contentDeadline` after it, `locale` defaults to German, `email` for speakers without one.
  */
-export interface SendInvitationRequest {
-  /** Response deadline (ISO date, required, must be in the future) */
-  responseDeadline: string;
-  /** Content deadline (ISO date, optional, must be after responseDeadline) */
-  contentDeadline?: string;
-  /** Preferred language for the email (optional, defaults to German) */
-  locale?: string;
-  /** Email address (for speakers without email in database) */
-  email?: string;
-}
+export type SendInvitationRequest = components['schemas']['SendInvitationRequest'];
 
 /**
  * Response from send invitation endpoint
  */
-export interface SendInvitationResponse {
-  /** Magic link token (for testing/debugging) */
-  token: string;
-  /** New workflow state (should be INVITED) */
-  workflowState: string;
-  /** Timestamp when invitation was sent */
-  invitedAt: string;
-  /** Email address invitation was sent to */
-  email: string;
-}
+export type SendInvitationResponse = components['schemas']['SendInvitationResponse'];
 
 // ============================================================================
 // Send Reminder Types (Story 6.5)
 // ============================================================================
 
 /**
- * Request body for sending speaker reminder
+ * Request body for sending speaker reminder: `reminderType` RESPONSE (invited speakers) or
+ * CONTENT (accepted speakers); `tier` (TIER_1..TIER_3) is auto-detected if omitted.
  */
-export interface SendReminderRequest {
-  /** Type of reminder: RESPONSE (for invited speakers) or CONTENT (for accepted speakers) */
-  reminderType: 'RESPONSE' | 'CONTENT';
-  /** Optional tier override (TIER_1, TIER_2, TIER_3) - auto-detected if omitted */
-  tier?: string;
-}
+export type SendReminderRequest = components['schemas']['SendReminderRequest'];
 
 /**
  * Response from send reminder endpoint
  */
-export interface SendReminderResponse {
-  /** Success message */
-  message: string;
-  /** Tier used for the reminder */
-  tier: string;
-  /** Email address reminder was sent to */
-  emailAddress: string;
-}
+export type SendReminderResponse = components['schemas']['SendReminderResponse'];

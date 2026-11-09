@@ -83,7 +83,8 @@ const WatchPairingSection: React.FC<WatchPairingSectionProps> = ({ username }) =
     }
   };
 
-  const canGenerateCode = status !== null && !status.pendingCode && status.pairedWatches.length < 2;
+  const canGenerateCode =
+    status !== null && !status.pendingCode && (status.pairedWatches?.length ?? 0) < 2;
 
   if (isLoading) {
     return (

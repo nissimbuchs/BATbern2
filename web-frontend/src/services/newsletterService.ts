@@ -5,32 +5,21 @@
  */
 
 import apiClient from '@/services/api/apiClient';
+import type { components } from '@/types/generated/event-newsletter-api.types';
 
-export interface NewsletterSubscribeRequest {
-  email: string;
-  firstName?: string;
-  language?: 'de' | 'en';
-}
+type Schemas = components['schemas'];
 
-export interface NewsletterUnsubscribeRequest {
-  token: string;
-}
-
-export interface NewsletterSubscriptionStatusResponse {
-  subscribed: boolean;
-  email?: string;
-}
-
+/**
+ * `language` has a spec default (`de`), so the generated type makes it required (openapi-typescript
+ * reads a default as always present); on a request it may be omitted and the server applies it.
+ */
+export type NewsletterSubscribeRequest = Omit<Schemas['NewsletterSubscribeRequest'], 'language'> &
+  Partial<Pick<Schemas['NewsletterSubscribeRequest'], 'language'>>;
+export type NewsletterUnsubscribeRequest = Schemas['NewsletterUnsubscribeRequest'];
+export type NewsletterSubscriptionStatusResponse = Schemas['NewsletterSubscriptionStatusResponse'];
 /** #1244: newsletter state of one of the authenticated user's addresses. */
-export interface NewsletterAddressSubscription {
-  email: string;
-  primary: boolean;
-  subscribed: boolean;
-}
-
-export interface MyNewsletterSubscriptionsResponse {
-  addresses: NewsletterAddressSubscription[];
-}
+export type NewsletterAddressSubscription = Schemas['NewsletterAddressSubscription'];
+export type MyNewsletterSubscriptionsResponse = Schemas['MyNewsletterSubscriptionsResponse'];
 
 export interface NewsletterSendRequest {
   isReminder: boolean;
@@ -52,23 +41,8 @@ export interface NewsletterSendResponse {
   testMode?: boolean;
 }
 
-export interface NewsletterSendStatusResponse {
-  id: string;
-  /** PENDING | IN_PROGRESS | COMPLETED | PARTIAL | FAILED */
-  status: string;
-  sentCount: number;
-  failedCount: number;
-  totalCount: number;
-  percentComplete: number;
-  startedAt?: string;
-  completedAt?: string;
-}
-
-export interface NewsletterPreviewResponse {
-  subject: string;
-  htmlPreview: string;
-  recipientCount: number;
-}
+export type NewsletterSendStatusResponse = Schemas['NewsletterSendStatusResponse'];
+export type NewsletterPreviewResponse = Schemas['NewsletterPreviewResponse'];
 
 export interface NewsletterSendHistoryItem {
   id: string;
@@ -83,9 +57,7 @@ export interface NewsletterSendHistoryItem {
   testMode?: boolean;
 }
 
-export interface SubscriberCountResponse {
-  totalActive: number;
-}
+export type SubscriberCountResponse = Schemas['SubscriberCountResponse'];
 
 /** Subscribe an email to the newsletter (no auth required). Returns 409 if already subscribed.
  *  @param turnstileToken Optional Cloudflare Turnstile token (AC8, Story 10.31). Passed via

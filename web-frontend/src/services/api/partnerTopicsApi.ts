@@ -7,38 +7,15 @@
  */
 
 import apiClient from '@/services/api/apiClient';
+import type { components } from '@/types/generated/partner-api.types';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
-export interface TopicDTO {
-  id: string;
-  title: string;
-  description?: string | null;
-  /** Null for COMMUNITY (attendee) suggestions — Story 7.1. */
-  suggestedByCompany?: string | null;
-  voteCount: number;
-  currentPartnerHasVoted: boolean;
-  status: 'PROPOSED' | 'SELECTED' | 'DECLINED';
-  plannedEvent?: string | null;
-  createdAt: string;
-  /**
-   * PARTNER (Story 8.2) or COMMUNITY/attendee (Story 7.1). Backend always sends it;
-   * optional here so pre-7.1 fixtures/callers still type-check (treated as PARTNER when absent).
-   */
-  source?: 'PARTNER' | 'COMMUNITY';
-}
-
-export interface TopicSuggestionRequest {
-  title: string;
-  description?: string | null;
-  /** Organizer-only: submit on behalf of a specific partner company. */
-  companyName?: string | null;
-}
-
-export interface TopicStatusUpdateRequest {
-  status: 'SELECTED' | 'DECLINED';
-  plannedEvent?: string | null;
-}
+/** `suggestedByCompany` is null for COMMUNITY (attendee) suggestions, Story 7.1. */
+export type TopicDTO = components['schemas']['TopicDTO'];
+/** `companyName` is organizer-only: submit on behalf of a specific partner company. */
+export type TopicSuggestionRequest = components['schemas']['TopicSuggestionRequest'];
+export type TopicStatusUpdateRequest = components['schemas']['TopicStatusUpdateRequest'];
 
 // ─── API functions ────────────────────────────────────────────────────────────
 

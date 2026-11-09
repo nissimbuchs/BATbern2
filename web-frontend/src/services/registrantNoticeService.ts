@@ -7,17 +7,12 @@
  */
 
 import apiClient from '@/services/api/apiClient';
+import type { components } from '@/types/generated/event-newsletter-api.types';
 
-export interface RegistrantNoticePreviewRequest {
-  templateKey: string;
-  locale: 'de' | 'en';
-}
-
-export interface RegistrantNoticePreviewResponse {
-  subject: string;
-  htmlPreview: string;
-  recipientCount: number;
-}
+export type RegistrantNoticePreviewRequest =
+  components['schemas']['RegistrantNoticePreviewRequest'];
+export type RegistrantNoticePreviewResponse =
+  components['schemas']['RegistrantNoticePreviewResponse'];
 
 export interface RegistrantNoticeSendResponse {
   sendId: string;

@@ -279,8 +279,8 @@ export interface TeamAssignments {
   contentReviewer?: string; // username
 }
 
-// Topic Management (UI state - not in OpenAPI)
-export interface Topic {
+// Topic Management (UI state - not in OpenAPI; the wire topic is topics-api `Topic`)
+export interface TopicListItem {
   id: string;
   title: string;
   description: string;
@@ -342,87 +342,14 @@ export interface EventListResponse {
 // ============================================================================
 
 /**
- * Request to assign timing to a session during slot assignment
+ * Slot assignment wire types (event-sessions-api): timing for one session, bulk timing, the
+ * 409 conflict body and the conflict analysis.
  */
-export interface SessionTimingRequest {
-  startTime: string; // ISO 8601 date-time
-  endTime: string; // ISO 8601 date-time
-  room?: string;
-  sessionType?:
-    | 'keynote'
-    | 'presentation'
-    | 'workshop'
-    | 'panel_discussion'
-    | 'networking'
-    | 'break'
-    | 'lunch'
-    | 'moderation';
-  changeReason?:
-    | 'initial_assignment'
-    | 'drag_drop_reassignment'
-    | 'conflict_resolution'
-    | 'preference_matching'
-    | 'manual_adjustment';
-  notes?: string;
-}
-
-/**
- * Bulk timing assignment request
- */
-export interface BulkTimingRequest {
-  assignments: Array<{
-    sessionSlug: string;
-    startTime: string;
-    endTime: string;
-    room?: string;
-    sessionType?: string;
-  }>;
-  changeReason?: 'preference_matching' | 'manual_adjustment';
-}
-
-/**
- * Bulk timing assignment response
- */
-export interface BulkTimingResponse {
-  assignedCount: number;
-  sessions: Session[];
-}
-
-/**
- * Timing conflict error response
- */
-export interface TimingConflictError {
-  error: string;
-  message: string;
-  conflicts: Array<{
-    type: 'room_overlap' | 'speaker_double_booked' | 'speaker_unavailable';
-    conflictingSessionSlug?: string | null;
-    conflictingTimeRange: {
-      start: string;
-      end: string;
-    };
-    details: string;
-  }>;
-}
-
-/**
- * Conflict analysis response
- */
-export interface ConflictAnalysisResponse {
-  hasConflicts: boolean;
-  conflictCount: number;
-  conflicts: Array<{
-    sessionSlug: string;
-    conflictType: 'room_overlap' | 'speaker_double_booked' | 'speaker_unavailable';
-    severity: 'error' | 'warning';
-    affectedSessions: string[];
-    timeRange: {
-      start: string;
-      end: string;
-    };
-    resolution: string;
-  }>;
-}
+export type SessionTimingRequest = sessionsComponents['schemas']['SessionTimingRequest'];
+export type BulkTimingRequest = sessionsComponents['schemas']['BulkTimingRequest'];
+export type BulkTimingResponse = sessionsComponents['schemas']['BulkTimingResponse'];
+export type TimingConflictError = sessionsComponents['schemas']['TimingConflictError'];
+export type ConflictAnalysisResponse = sessionsComponents['schemas']['ConflictAnalysisResponse'];
 
 // ============================================================================
 // Progressive Publishing Types (Story 5.7 - Task 5b)

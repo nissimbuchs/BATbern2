@@ -72,7 +72,7 @@ function sortTopics(topics: TopicDTO[], key: SortKey, dir: SortDir): TopicDTO[] 
       key === 'voteCount'
         ? a.voteCount - b.voteCount
         : key === 'createdAt'
-          ? a.createdAt.localeCompare(b.createdAt) // ISO strings sort lexicographically
+          ? (a.createdAt ?? '').localeCompare(b.createdAt ?? '') // ISO strings sort lexicographically
           : (a[key] ?? '').localeCompare(b[key] ?? '');
     return dir === 'asc' ? cmp : -cmp;
   });
@@ -358,7 +358,7 @@ const TopicStatusPanel: React.FC = () => {
 
                     {/* Created date (parity with table Date column) */}
                     <Typography variant="caption" color="text.secondary">
-                      {format(parseISO(topic.createdAt), 'd MMM yyyy')}
+                      {topic.createdAt ? format(parseISO(topic.createdAt), 'd MMM yyyy') : '–'}
                     </Typography>
 
                     {/* Status select */}
@@ -458,7 +458,7 @@ const TopicStatusPanel: React.FC = () => {
                     {/* Date column */}
                     <TableCell>
                       <Typography variant="body2" color="text.secondary" noWrap>
-                        {format(parseISO(topic.createdAt), 'd MMM yyyy')}
+                        {topic.createdAt ? format(parseISO(topic.createdAt), 'd MMM yyyy') : '–'}
                       </Typography>
                     </TableCell>
 

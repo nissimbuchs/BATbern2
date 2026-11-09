@@ -560,6 +560,18 @@ jobs:
         working-directory: ./web-frontend
         run: npm run check:api-paths
 
+      # Story 17.3c (ADR-006): no hand-written `export interface` / object `export type` in src/
+      # named like a schema in src/types/generated/ (use the generated type). The copies left are
+      # frozen in web-frontend/scripts/api-type-copies-baseline.txt, each with an owner; the
+      # baseline may only shrink. Needs Node 22 (type stripping).
+      - name: Generated type copy check tests
+        working-directory: ./web-frontend
+        run: npx vitest run scripts/check-api-type-copies.test.ts
+
+      - name: Generated type copy check
+        working-directory: ./web-frontend
+        run: npm run check:api-type-copies
+
       # Epic 17: every t('key') in src/ must name a key in public/locales/en (fallbackLng is de, so
       # a key missing in en shows English visitors German text). The keys missing today are frozen
       # in web-frontend/scripts/i18n-keys-baseline.txt; a file may only lose missing keys.

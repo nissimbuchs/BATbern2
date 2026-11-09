@@ -15,7 +15,7 @@
 import apiClient from '@/services/api/apiClient';
 import { AxiosError } from 'axios';
 import type {
-  NotificationsResponse,
+  NotificationPage,
   NotificationCountResponse,
   NotificationFilters,
   MarkAsReadResponse,
@@ -37,7 +37,7 @@ class NotificationApiClient {
   async getNotifications(
     filters: NotificationFilters,
     pagination: { page?: number; limit?: number } = {}
-  ): Promise<NotificationsResponse> {
+  ): Promise<NotificationPage> {
     try {
       const params = new URLSearchParams();
       params.append('username', filters.username);
@@ -51,7 +51,7 @@ class NotificationApiClient {
         params.append('eventCode', filters.eventCode);
       }
 
-      const response = await apiClient.get<NotificationsResponse>(
+      const response = await apiClient.get<NotificationPage>(
         `${NOTIFICATION_API_PATH}?${params.toString()}`
       );
 
@@ -90,7 +90,7 @@ class NotificationApiClient {
         `${NOTIFICATION_API_PATH}/count?${params.toString()}`
       );
 
-      return response.data.count;
+      return response.data.count ?? 0;
     } catch (error) {
       throw this.transformError(error);
     }

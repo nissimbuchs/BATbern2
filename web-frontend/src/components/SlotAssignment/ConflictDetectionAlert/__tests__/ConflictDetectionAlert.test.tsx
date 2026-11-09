@@ -102,10 +102,10 @@ describe('ConflictDetectionAlert Component (Story 5.7 - Task 4a RED Phase)', () 
       // Given: the agenda-full 409 of the slot endpoint. EMS answers it with its generic error
       // body (AgendaFullException), which has a message but no `conflicts` list; the hook passes
       // that body on as the conflict.
-      const agendaFull = {
+      const agendaFull: TimingConflictError = {
         error: 'ERR_CONFLICT',
         message: "Agenda is full for event 'BATbern99'",
-      } as unknown as TimingConflictError;
+      };
 
       renderWithProviders(
         <ConflictDetectionAlert

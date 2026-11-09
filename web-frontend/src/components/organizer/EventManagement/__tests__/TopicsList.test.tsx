@@ -25,10 +25,10 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { I18nextProvider } from 'react-i18next';
 import { BrowserRouter } from 'react-router-dom';
 import i18n from '@/i18n/config';
-import type { Topic } from '@/types/event.types';
+import type { TopicListItem } from '@/types/event.types';
 
 // Mock data - Based on wireframe lines 68-81
-const mockTopics: Topic[] = [
+const mockTopics: TopicListItem[] = [
   {
     id: 'topic-1',
     title: 'Microservices Architecture Patterns',

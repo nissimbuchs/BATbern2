@@ -221,7 +221,7 @@ export const PartnerTopicsTab: React.FC<Props> = ({ companyName }) => {
                   </TableCell>
                   <TableCell>
                     <Typography variant="body2" color="text.secondary" noWrap>
-                      {format(parseISO(topic.createdAt), 'd MMM yyyy')}
+                      {topic.createdAt ? format(parseISO(topic.createdAt), 'd MMM yyyy') : '–'}
                     </Typography>
                   </TableCell>
                   <TableCell align="right">

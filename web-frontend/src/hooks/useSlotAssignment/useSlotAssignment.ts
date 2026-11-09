@@ -143,9 +143,7 @@ export const useSlotAssignment = (eventCode: string): UseSlotAssignmentReturn =>
         setUnassignedSessions(rollbackSessions);
         if (err instanceof AxiosError && err.response?.status === 409) {
           const body = err.response.data as TimingConflictError | undefined;
-          setConflict(
-            body && body.message ? body : ({ message: 'Agenda is full' } as TimingConflictError)
-          );
+          setConflict(body && body.message ? body : { message: 'Agenda is full' });
         } else {
           const errorMessage = err instanceof Error ? err.message : 'Failed to assign slot';
           setError(errorMessage);

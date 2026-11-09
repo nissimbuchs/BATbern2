@@ -5,16 +5,18 @@
 
 import apiClient from './apiClient';
 import type {
+  AdditionalEmail,
   User,
-  UserPreferences,
-  UserSettings,
+  UserPreferencesView,
+  UserSettingsView,
   UserActivity,
-  LogoUploadRequest,
   LogoUploadResponse,
   LogoConfirmRequest,
   LogoConfirmResponse,
 } from '@/types/userAccount.types';
 import type { components } from '@/types/generated/user-api.types';
+
+type ProfilePictureUploadRequest = components['schemas']['ProfilePictureUploadRequest'];
 
 const USER_API_PATH = '/users';
 
@@ -26,8 +28,8 @@ export const getUserProfile = async (
   include: string[] = ['company', 'roles', 'preferences', 'settings', 'activity']
 ): Promise<{
   user: User;
-  preferences?: UserPreferences;
-  settings?: UserSettings;
+  preferences?: UserPreferencesView;
+  settings?: UserSettingsView;
   activity?: UserActivity[];
 }> => {
   const includeParam = include.join(',');
@@ -157,8 +159,8 @@ export const updateUserProfile = async (
  * Converts frontend enums (uppercase) to backend format (lowercase)
  */
 export const updateUserPreferences = async (
-  preferences: Partial<UserPreferences>
-): Promise<UserPreferences> => {
+  preferences: Partial<UserPreferencesView>
+): Promise<UserPreferencesView> => {
   // Transform frontend preferences to backend format (lowercase enums)
   const backendPreferences = {
     theme: preferences.theme?.toLowerCase(),
@@ -191,8 +193,8 @@ export const updateUserPreferences = async (
  * Converts frontend enums (uppercase) to backend format (lowercase)
  */
 export const updateUserSettings = async (
-  settings: Partial<UserSettings>
-): Promise<UserSettings> => {
+  settings: Partial<UserSettingsView>
+): Promise<UserSettingsView> => {
   // Transform frontend settings to backend format (lowercase enums, snake_case)
   const backendSettings = {
     profileVisibility: settings.profileVisibility?.toLowerCase().replace('_', '_'),
@@ -227,7 +229,7 @@ export const removeProfilePicture = async (): Promise<void> => {
  * Phase 1: Request presigned URL for S3 upload (profile picture)
  */
 export const requestPresignedUrl = async (
-  request: LogoUploadRequest
+  request: ProfilePictureUploadRequest
 ): Promise<LogoUploadResponse> => {
   // For profile pictures, use /users/me/picture/presigned-url
   const response = await apiClient.post(`${USER_API_PATH}/me/picture/presigned-url`, request);
@@ -342,14 +344,7 @@ export const uploadProfilePicture = async (
 // Story 10.32 — Additional emails per user profile
 // =====================================================================
 
-export interface AdditionalEmail {
-  email: string;
-  label: string | null;
-  createdAt: string;
-  verifiedAt: string | null;
-  /** #1244: this address gets a copy of event mails (only while confirmed). */
-  receiveEventMail?: boolean;
-}
+export type { AdditionalEmail };
 
 export interface AddAdditionalEmailPayload {
   email: string;
@@ -543,7 +538,7 @@ export const getMyOpenCompanyLogoRequest = async (): Promise<CompanyLogoRequestV
  */
 export const requestPresignedUrlForUser = async (
   username: string,
-  request: LogoUploadRequest
+  request: ProfilePictureUploadRequest
 ): Promise<LogoUploadResponse> => {
   const response = await apiClient.post(
     `${USER_API_PATH}/${username}/picture/presigned-url`,

@@ -22,7 +22,7 @@ import {
 } from '@tanstack/react-query';
 import { notificationApiClient } from '@/services/notificationApiClient';
 import type {
-  NotificationsResponse,
+  NotificationPage,
   NotificationFilters,
   MarkAsReadResponse,
   DeleteNotificationResponse,
@@ -44,7 +44,7 @@ export const useNotifications = (
   filters: NotificationFilters,
   pagination: { page?: number; limit?: number } = {},
   options?: { enabled?: boolean }
-): UseQueryResult<NotificationsResponse, Error> => {
+): UseQueryResult<NotificationPage, Error> => {
   return useQuery({
     queryKey: ['notifications', filters, pagination],
     queryFn: () => notificationApiClient.getNotifications(filters, pagination),

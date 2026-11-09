@@ -571,7 +571,7 @@ describe('AuthService', () => {
       // preferences NOT read from the token claim — extraction returns the COMPLETE
       // default object (language 'en', theme 'light'), NOT the token's 'fr'/'dark'.
       // Asserting the default value (rather than undefined) proves the token claim was
-      // not sourced AND that the UserPreferences type contract holds before hydration.
+      // not sourced AND that the UserContextPreferences type contract holds before hydration.
       expect(user?.preferences?.language).toBe('en');
       expect(user?.preferences?.theme).toBe('light');
       // identity + authorization preserved

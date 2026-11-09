@@ -7,7 +7,7 @@
 
 import type { CreateUserFormData } from '@/types/user.types';
 import type {
-  LegacySpeaker,
+  LegacySpeakerRecord,
   SpeakerImportCandidate,
   ExistingUserData,
 } from '@/types/speakerImport.types';
@@ -63,7 +63,7 @@ export function generateSyntheticEmail(speakerId: string): string {
  * - Otherwise, passes through the source companyId directly (assumes IDs match)
  */
 export function transformSpeakerForApi(
-  source: LegacySpeaker,
+  source: LegacySpeakerRecord,
   companyIdMap?: Map<string, string>
 ): CreateUserFormData {
   const { firstName, lastName } = parseFullName(source.name);
@@ -95,7 +95,7 @@ export function transformSpeakerForApi(
  *
  * @throws Error if JSON is invalid or doesn't contain speaker array
  */
-export function parseSpeakersJson(jsonContent: string): LegacySpeaker[] {
+export function parseSpeakersJson(jsonContent: string): LegacySpeakerRecord[] {
   let parsed: unknown;
 
   try {
@@ -111,7 +111,7 @@ export function parseSpeakersJson(jsonContent: string): LegacySpeaker[] {
   }
 
   // Validate each item has required fields
-  const speakers: LegacySpeaker[] = [];
+  const speakers: LegacySpeakerRecord[] = [];
   for (let i = 0; i < parsed.length; i++) {
     const item = parsed[i];
     if (typeof item !== 'object' || item === null) {
@@ -126,8 +126,8 @@ export function parseSpeakersJson(jsonContent: string): LegacySpeaker[] {
       throw new Error(`Item at index ${i} is missing required 'name' field`);
     }
 
-    // Cast to LegacySpeaker - we've validated the minimum required fields
-    speakers.push(item as LegacySpeaker);
+    // Cast to LegacySpeakerRecord - we've validated the minimum required fields
+    speakers.push(item as LegacySpeakerRecord);
   }
 
   return speakers;
@@ -136,7 +136,7 @@ export function parseSpeakersJson(jsonContent: string): LegacySpeaker[] {
 /**
  * Creates import candidates from source speakers
  */
-export function createImportCandidates(sources: LegacySpeaker[]): SpeakerImportCandidate[] {
+export function createImportCandidates(sources: LegacySpeakerRecord[]): SpeakerImportCandidate[] {
   return sources.map((source) => ({
     source,
     apiPayload: transformSpeakerForApi(source),

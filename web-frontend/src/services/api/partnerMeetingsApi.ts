@@ -19,24 +19,9 @@ export type SendInviteResponse = components['schemas']['SendInviteResponse'];
 
 // ─── Story 10.27: RSVP types ─────────────────────────────────────────────────
 
-export interface RsvpDTO {
-  attendeeEmail: string;
-  status: 'ACCEPTED' | 'DECLINED' | 'TENTATIVE';
-  respondedAt: string;
-}
-
-export interface RsvpSummary {
-  accepted: number;
-  declined: number;
-  tentative: number;
-}
-
-export interface MeetingRsvpListResponse {
-  meetingId: string;
-  inviteSentAt: string | null;
-  rsvps: RsvpDTO[];
-  summary: RsvpSummary;
-}
+export type RsvpDTO = components['schemas']['RsvpDTO'];
+export type RsvpSummary = components['schemas']['RsvpSummary'];
+export type MeetingRsvpListResponse = components['schemas']['MeetingRsvpListResponse'];
 
 // ─── API functions ────────────────────────────────────────────────────────────
 

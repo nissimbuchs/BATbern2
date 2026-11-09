@@ -96,7 +96,7 @@ export const AuthContext = createContext<UseAuthReturn | undefined>(undefined);
  * Silently no-ops on any failure, preserving the token-derived user as-is.
  */
 /**
- * Coerce a backend locale to the frontend `UserPreferences.language` union. The backend
+ * Coerce a backend locale to the frontend `UserContextPreferences.language` union. The backend
  * `UserPreferences` enum carries more locales (rm/es/fi/nl/ja/…) than the frontend
  * 4-locale union, so a blind cast would put an out-of-union value into a typed field.
  * Values outside the union fall back to the prior value, then 'en'.
@@ -145,7 +145,7 @@ async function hydrateUserFromDb(user: UserContext): Promise<UserContext> {
     hydrated = { ...hydrated, termsAcceptedAt: raw.termsAcceptedAt ?? null };
 
     // Story 12.1: preferences sourced from the DB (was custom:preferences). Map the
-    // canonical backend shape onto the frontend UserPreferences contract; `language` is
+    // canonical backend shape onto the frontend UserContextPreferences contract; `language` is
     // the regression-critical field for locale selection.
     if (raw.preferences) {
       const p = raw.preferences;

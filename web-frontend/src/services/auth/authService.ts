@@ -15,7 +15,7 @@ import {
   AuthError,
   TokenRefreshResponse,
   MfaChallenge,
-  UserPreferences,
+  UserContextPreferences,
   CognitoTokenClaims,
   UserRole,
 } from '@/types/auth';
@@ -544,12 +544,12 @@ class AuthService {
     // + `preferences` from GET /users/me. The token carries only identity (sub, email) +
     // authorization (custom:role, custom:username).
     //
-    // Default to a COMPLETE UserPreferences object (not `{}`): the type requires all
+    // Default to a COMPLETE UserContextPreferences object (not `{}`): the type requires all
     // fields and downstream consumers read `preferences.language`/`.theme` directly, so
     // the contract must hold even when DB hydration is skipped (no `/users/me`
     // preferences row) or fails transiently. Hydration overrides these with the DB
     // values when available.
-    const preferences: UserPreferences = {
+    const preferences: UserContextPreferences = {
       language: 'en',
       theme: 'light',
       notifications: { email: true, sms: false, push: true },

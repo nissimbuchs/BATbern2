@@ -12,9 +12,10 @@ import type { CreateUserFormData } from '@/types/user.types';
 /**
  * Source speaker format from legacy speakers.json
  *
- * File location: apps/BATspa-old/src/api/speakers.json
+ * File location: apps/BATspa-old/src/api/speakers.json. The file's shape, not the wire
+ * `LegacySpeaker` of the session import (event-sessions-api).
  */
-export interface LegacySpeaker {
+export interface LegacySpeakerRecord {
   /** Speaker ID (e.g., "adrian.gschwend", "thomas.goetz") */
   id: string;
   /** Full name (e.g., "Adrian Gschwend", "Dr. Thomas Goetz") */
@@ -51,7 +52,7 @@ export interface ExistingUserData {
  */
 export interface SpeakerImportCandidate {
   /** Original source data from speakers.json */
-  source: LegacySpeaker;
+  source: LegacySpeakerRecord;
   /** Transformed payload for CreateUserRequest API */
   apiPayload: CreateUserFormData;
   /** Current import status */

@@ -711,6 +711,39 @@ fails until the gain is locked in (STALE): `cd web-frontend && npm run check:i18
 commit the baseline in the same PR. Filling the frozen keys is touch-rule work: a story that
 changes a screen fills that screen's keys.
 
+#### Frontend: generated API type copies
+
+The wire types come from `web-frontend/src/types/generated/` (generated from `docs/api/`, ADR-006).
+A hand-written copy drifts silently: when the spec changes (e.g. a field becomes optional or
+`| null`), the copy still compiles and the UI reads a field the server no longer sends. Alias the
+generated type and keep the export name, so imports stay unchanged:
+
+```ts
+import type { components } from '@/types/generated/event-speakers-api.types';
+export type SendReminderRequest = components['schemas']['SendReminderRequest'];
+```
+
+When the alias widens a field (optional, `| null`), fix each caller properly: a real default, a
+guard, or a visible empty state, never `!` or `as`. A frontend model that is not the wire shape
+(mapped, enriched or a file format) gets its own name (`UserPreferencesView`, `NotificationPage`,
+`LegacySpeakerRecord`), not the schema's.
+
+`web-frontend/scripts/check-api-type-copies.ts` (CI step "Generated type copy check" in
+`frontend-static`, part of `build-frontend`; locally `make check-api-type-copies`) reads the schema
+names of every `src/types/generated/*.types.ts` (the members of `components.schemas`) and fails an
+`export interface X` or object-literal `export type X = { ... }` (also generic) in `src/` whose
+name is one of them. An alias, union, intersection or `Omit<...>` passes (anything after `=` that
+does not start with `{`), and so do other names, non-exported declarations and commented code;
+tests, mocks, fixtures and the generated dir are not scanned. The gate is name-based on purpose: a
+copy under another name is a review matter.
+
+The copies left are frozen in `web-frontend/scripts/api-type-copies-baseline.txt` (file + type
+name, never a line number), and each line has exactly one owner group in
+`scripts/api-type-copies-owners.txt` (the story or issue that removes it, or
+`exception: <reason>`). A new copy fails NEW; a removed one fails STALE until the gain is locked
+in: `cd web-frontend && npm run check:api-type-copies -- --update`, commit the baseline in the same
+PR. UNOWNED, AMBIGUOUS, STALE OWNER and BAD OWNER work as in the API conventions lint.
+
 ### Lambda Handler Testing (Infrastructure)
 
 Lambda handlers are **deployed artifacts**, not just code. CDK unit tests (`Template.fromStack`) verify that a Lambda is *declared* in CloudFormation — they do **not** test that the handler module can load and run. These are two completely different things, and only one of them catches production failures.
