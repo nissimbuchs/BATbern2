@@ -1,11 +1,10 @@
 package ch.batbern.events.forwarding;
 
-import ch.batbern.events.client.UserApiClient;
+import ch.batbern.events.config.CumsContractHarness;
 import ch.batbern.events.config.TestAwsConfig;
 import ch.batbern.events.config.TestSecurityConfig;
 import ch.batbern.events.domain.EmailForwardingLog;
 import ch.batbern.events.domain.EmailForwardingOutcome;
-import ch.batbern.events.dto.generated.users.UserResponse;
 import ch.batbern.events.forwarding.EmailForwardingService.Result;
 import ch.batbern.events.repository.EmailForwardingLogRepository;
 import ch.batbern.shared.test.AbstractIntegrationTest;
@@ -19,18 +18,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
-
-import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.when;
 
 /**
  * Story 16.0 AC3/AC4 (#1160) against real PostgreSQL: an unrecognized {@code replies@} mail is
  * forwarded to the organizers and logged; an out-of-office reply is logged as dropped (V131).
  * Fixtures are synthetic ({@code src/test/resources/mail/*.eml}, SES simulator addresses). SES is
- * the {@link SesRecorder} and CUMS is mocked: nothing is sent.
+ * the {@link SesRecorder} and CUMS the {@link CumsContractHarness} behind the real
+ * {@code UserApiClientImpl} (17.0 deferred work): nothing is sent.
  */
 @Import({TestSecurityConfig.class, TestAwsConfig.class})
 @DisplayName("Unrecognized replies@ mail (PostgreSQL)")
@@ -38,6 +34,7 @@ class EmailForwardingRepliesIntegrationTest extends AbstractIntegrationTest {
 
     private static final String KEY_PREFIX = "emails/it-replies-";
     private static final String ORGANIZER = "success+organizer@simulator.amazonses.com";
+    private static final String ORGANIZER_USERNAME = "replies.organizer";
 
     @Autowired
     private EmailForwardingService service;
@@ -45,21 +42,21 @@ class EmailForwardingRepliesIntegrationTest extends AbstractIntegrationTest {
     private EmailForwardingLogRepository repository;
     @Autowired
     private JdbcTemplate jdbcTemplate;
-    @MockitoBean
-    private UserApiClient userApiClient;
+    @Autowired
+    private CumsContractHarness cums;
     @Autowired
     private SesRecorder sesRecorder;
 
     @BeforeEach
     void organizers() {
         sesRecorder.reset();
-        when(userApiClient.getOrganizerUsernames()).thenReturn(List.of("organizer"));
-        when(userApiClient.getUserByUsername("organizer"))
-                .thenReturn(new UserResponse().id("organizer").email(ORGANIZER));
+        cums.usersWithRole("ORGANIZER", ORGANIZER_USERNAME);
+        cums.user(ORGANIZER_USERNAME, "Replies", "Organizer", ORGANIZER);
     }
 
     @AfterEach
     void cleanUp() {
+        cums.reset();
         jdbcTemplate.update("DELETE FROM email_forwarding_log WHERE s3_key LIKE 'emails/it-replies-%'");
     }
 
