@@ -897,7 +897,9 @@
     "slotDurationMinimum": "Paikan keston on oltava vähintään 15 minuuttia",
     "minSlotsLessThanMax": "Vähimmäispaikkamäärän on oltava pienempi tai yhtä suuri kuin enimmäismäärä",
     "defaultCapacityPositive": "Oletuskapasiteetin on oltava positiivinen luku",
-    "typicalStartTimeRequired": "Alkamisaika on pakollinen."
+    "typicalStartTimeRequired": "Alkamisaika on pakollinen.",
+    "registrationDeadlineRequired": "Ilmoittautumisen määräaika on pakollinen",
+    "eventTypeRequired": "Tapahtuman tyyppi on pakollinen"
   },
   "errors": {
     "loadFailed": "Tapahtumien lataaminen epäonnistui",

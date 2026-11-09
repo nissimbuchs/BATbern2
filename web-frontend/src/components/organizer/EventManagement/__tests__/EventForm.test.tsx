@@ -266,6 +266,39 @@ describe('EventForm Component', () => {
     });
   });
 
+  describe('Form Validation - Fields the server requires (CreateEventRequest)', () => {
+    it('should_showDeadlineRequiredError_when_registrationDeadlineEmpty', async () => {
+      const { eventApiClient } = await import('@/services/eventApiClient');
+      render(<EventForm mode="create" open={true} onClose={vi.fn()} />, {
+        wrapper: createWrapper(),
+      });
+
+      await userEvent.click(screen.getByRole('button', { name: /save.*create/i }));
+
+      await waitFor(() => {
+        expect(screen.getByText('Registration deadline is required')).toBeInTheDocument();
+      });
+      expect(eventApiClient.createEvent).not.toHaveBeenCalled();
+    });
+
+    it('should_validateServerFields_when_savingDraft', async () => {
+      // A draft is an event in state CREATED: the server stores it only with the eight
+      // required fields, so the draft button checks them instead of sending a sure 400.
+      const { eventApiClient } = await import('@/services/eventApiClient');
+      render(<EventForm mode="create" open={true} onClose={vi.fn()} />, {
+        wrapper: createWrapper(),
+      });
+
+      await userEvent.click(screen.getByRole('button', { name: /save.*draft/i }));
+
+      await waitFor(() => {
+        expect(screen.getByText('Registration deadline is required')).toBeInTheDocument();
+      });
+      expect(screen.getByText('Venue name is required')).toBeInTheDocument();
+      expect(eventApiClient.createEvent).not.toHaveBeenCalled();
+    });
+  });
+
   describe('Form Validation - Date Rules (AC3)', () => {
     it.skip('should_showDateError_when_eventDateTooSoon - 30-day rule not yet implemented', async () => {
       render(<EventForm mode="create" open={true} onClose={vi.fn()} />, {
@@ -427,58 +460,6 @@ describe('EventForm Component', () => {
 
       // Validation error should not appear for positive capacity
       expect(screen.queryByText(/capacity.*positive/i)).not.toBeInTheDocument();
-    });
-  });
-
-  describe('Save Draft Functionality (AC3)', () => {
-    it.skip('should_allowSaveDraft_when_incompleteData - Save draft implementation issue', async () => {
-      // SKIPPED: Test shows "Failed to save event" error instead of calling API
-      // Requires investigation of form submission logic for draft mode
-      const { eventApiClient } = await import('@/services/eventApiClient');
-      (eventApiClient.createEvent as ReturnType<typeof vi.fn>).mockResolvedValue({
-        eventCode: 'BATbern99',
-        status: 'draft',
-      });
-
-      render(<EventForm mode="create" open={true} onClose={vi.fn()} />, {
-        wrapper: createWrapper(),
-      });
-
-      const titleInput = screen.getByLabelText(/title/i);
-      await userEvent.type(titleInput, 'Incomplete Event');
-
-      const saveDraftButton = screen.getByRole('button', { name: /save.*draft/i });
-      await userEvent.click(saveDraftButton);
-
-      await waitFor(() => {
-        expect(eventApiClient.createEvent).toHaveBeenCalledWith(
-          expect.objectContaining({
-            title: 'Incomplete Event',
-            status: 'draft',
-          })
-        );
-      });
-    });
-
-    it('should_notValidateRequiredFields_when_savingDraft', async () => {
-      const { eventApiClient } = await import('@/services/eventApiClient');
-      (eventApiClient.createEvent as ReturnType<typeof vi.fn>).mockResolvedValue({
-        eventCode: 'BATbern99',
-        status: 'draft',
-      });
-
-      render(<EventForm mode="create" open={true} onClose={vi.fn()} />, {
-        wrapper: createWrapper(),
-      });
-
-      const saveDraftButton = screen.getByRole('button', { name: /save.*draft/i });
-      await userEvent.click(saveDraftButton);
-
-      // Should not show validation errors
-      await waitFor(() => {
-        expect(screen.queryByText(/title.*required/i)).not.toBeInTheDocument();
-        expect(screen.queryByText(/description.*required/i)).not.toBeInTheDocument();
-      });
     });
   });
 

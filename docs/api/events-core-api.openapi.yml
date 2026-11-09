@@ -3062,10 +3062,19 @@ components:
           type: integer
     CreateEventRequest:
       type: object
+      description: 'The eight required fields are the ones the event row cannot be stored without
+        (owner decision 2026-11-09); a create without one answers 400 naming the field.
+
+        '
       required:
       - title
       - date
       - eventType
+      - venueName
+      - venueAddress
+      - venueCapacity
+      - registrationDeadline
+      - organizerUsername
       properties:
         title:
           type: string

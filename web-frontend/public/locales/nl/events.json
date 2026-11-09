@@ -897,7 +897,9 @@
     "slotDurationMinimum": "Slotduur moet minimaal 15 minuten zijn",
     "minSlotsLessThanMax": "Minimum slots moet kleiner of gelijk zijn aan maximum slots",
     "defaultCapacityPositive": "Standaardcapaciteit moet een positief getal zijn",
-    "typicalStartTimeRequired": "Begintijd is verplicht."
+    "typicalStartTimeRequired": "Begintijd is verplicht.",
+    "registrationDeadlineRequired": "Inschrijvingsdeadline is verplicht",
+    "eventTypeRequired": "Evenementtype is verplicht"
   },
   "errors": {
     "loadFailed": "Laden van evenementen mislukt",

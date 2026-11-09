@@ -1209,16 +1209,17 @@ export interface components {
       address?: string;
       capacity?: number;
     };
+    /** @description The eight required fields are the ones the event row cannot be stored without (owner decision 2026-11-09); a create without one answers 400 naming the field. */
     CreateEventRequest: {
       title: string;
       eventNumber?: number;
       /** Format: date-time */
       date: string;
       /** Format: date-time */
-      registrationDeadline?: string;
-      venueName?: string;
-      venueAddress?: string;
-      venueCapacity?: number;
+      registrationDeadline: string;
+      venueName: string;
+      venueAddress: string;
+      venueCapacity: number;
       /** @description Story 10.11 — Optional registration limit. Null = unlimited. */
       registrationCapacity?: number | null;
       workflowState?: components['schemas']['EventWorkflowState'];
@@ -1227,7 +1228,7 @@ export interface components {
        *     Story 1.16.2: Public API uses meaningful IDs (usernames), not UUIDs.
        * @example john.doe
        */
-      organizerUsername?: string;
+      organizerUsername: string;
       /** @default 0 */
       currentAttendeeCount: number;
       /** Format: date-time */

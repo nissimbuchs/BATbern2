@@ -29,6 +29,20 @@ export function normalizeEventType(
   return typeMap[eventType] || 'FULL_DAY';
 }
 
+/**
+ * The fields of CreateEventRequest the server requires (events-core-api); organizerUsername
+ * comes from the signed-in user, not from the form. A draft is checked for these.
+ */
+export const SERVER_REQUIRED_FIELDS = [
+  'title',
+  'date',
+  'eventType',
+  'venueName',
+  'venueAddress',
+  'venueCapacity',
+  'registrationDeadline',
+] as const;
+
 /** Validation schema factory (needs `t` for translated messages). */
 export const createEventSchema = (t: (key: string) => string) =>
   z
@@ -42,7 +56,7 @@ export const createEventSchema = (t: (key: string) => string) =>
         .min(10, t('validation.titleMinLength')),
       description: z.string().min(1, t('validation.descriptionRequired')),
       date: z.string().min(1, t('validation.eventDateRequired')),
-      registrationDeadline: z.string().optional().or(z.literal('')),
+      registrationDeadline: z.string().min(1, t('validation.registrationDeadlineRequired')),
       venueName: z.string().min(1, t('validation.venueNameRequired')),
       venueAddress: z.string().min(1, t('validation.venueAddressRequired')),
       venueCapacity: z.coerce
@@ -58,7 +72,9 @@ export const createEventSchema = (t: (key: string) => string) =>
         'EVENT_COMPLETED',
         'ARCHIVED',
       ]),
-      eventType: z.enum(['FULL_DAY', 'AFTERNOON', 'EVENING']).optional(),
+      eventType: z.enum(['FULL_DAY', 'AFTERNOON', 'EVENING'], {
+        message: t('validation.eventTypeRequired'),
+      }),
     })
     .refine(
       (data) => {
@@ -82,9 +98,9 @@ export interface EventFormData {
   venueName: string;
   venueAddress: string;
   venueCapacity: number;
-  registrationDeadline?: string;
+  registrationDeadline: string;
   workflowState?: components['schemas']['EventWorkflowState'];
-  eventType?: components['schemas']['EventType'];
+  eventType: components['schemas']['EventType'];
 }
 
 /** Partial form data (all fields optional) — used for PATCH. */

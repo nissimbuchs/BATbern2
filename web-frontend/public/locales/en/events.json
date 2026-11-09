@@ -911,7 +911,9 @@
     "slotDurationMinimum": "Slot duration must be at least 15 minutes",
     "minSlotsLessThanMax": "Minimum slots must be less than or equal to maximum slots",
     "defaultCapacityPositive": "Default capacity must be a positive number",
-    "typicalStartTimeRequired": "Start time is required."
+    "typicalStartTimeRequired": "Start time is required.",
+    "registrationDeadlineRequired": "Registration deadline is required",
+    "eventTypeRequired": "Event type is required"
   },
   "errors": {
     "loadFailed": "Failed to load events",

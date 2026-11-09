@@ -897,7 +897,9 @@
     "slotDurationMinimum": "スロット時間は最低15分でなければなりません",
     "minSlotsLessThanMax": "最小スロット数は最大スロット数以下でなければなりません",
     "defaultCapacityPositive": "デフォルト定員は正の数でなければなりません",
-    "typicalStartTimeRequired": "開始時刻は必須です。"
+    "typicalStartTimeRequired": "開始時刻は必須です。",
+    "registrationDeadlineRequired": "登録締切は必須です",
+    "eventTypeRequired": "イベントの種類は必須です"
   },
   "errors": {
     "loadFailed": "イベントの読み込みに失敗しました",

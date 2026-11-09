@@ -28,6 +28,7 @@
  */
 import { test, expect, request as playwrightRequest } from '@playwright/test';
 import { API_URL } from '../../playwright.config';
+import { organizerUsername } from '../helpers/event-fixture';
 
 const ORGANIZER_BEARER = process.env.E2E_TEST_TOKEN ?? process.env.AUTH_TOKEN ?? '';
 const SPEAKER_BEARER = process.env.SPEAKER_AUTH_TOKEN ?? '';
@@ -120,10 +121,14 @@ test.describe('Cross-auth byte-identity — organizer on-behalf vs. speaker self
       // Reserved test range (>=10000), swept by ems/events_by_number (event-fixture leak fix).
       const eventNumber = 10000 + Math.floor(Math.random() * 90000);
       const eventTitle = `E2E 11D4 Byte-Identity ${Date.now()}`;
+      // CreateEventRequest requires eight fields (events-core-api, 2026-11-09).
       const eventCreate = await organizerCtx.post(`/api/v1/events`, {
         data: {
           title: eventTitle,
           eventNumber,
+          date: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString(),
+          registrationDeadline: new Date(Date.now() + 53 * 24 * 60 * 60 * 1000).toISOString(),
+          organizerUsername: organizerUsername(ORGANIZER_BEARER),
           venueName: 'Test Venue',
           venueAddress: 'Test Address, Bern',
           venueCapacity: 100,

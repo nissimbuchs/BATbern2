@@ -73,9 +73,8 @@ export function readOrganizerToken(): string {
 }
 
 /**
- * Decode the organizer username from the idToken's claims. The Event entity enforces a
- * non-blank `organizer_username` at persist time (stricter than CreateEventRequest's DTO
- * validation), so the fixture must supply it. Prefers the app's `custom:username` claim,
+ * Decode the organizer username from the idToken's claims. CreateEventRequest requires
+ * `organizerUsername`, so the fixture must supply it. Prefers the app's `custom:username` claim,
  * falling back to `cognito:username` / `email`. Pure JWT base64url decode — no signature
  * check (the server already validated the token; we only read it).
  */
@@ -110,9 +109,8 @@ export async function createRegistrationEvent(token: string): Promise<Registrati
   const date = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString();
   const registrationDeadline = new Date(Date.now() + 53 * 24 * 60 * 60 * 1000).toISOString();
 
-  // The Event entity enforces (NotNull/NotBlank) more than CreateEventRequest's DTO does:
-  // registrationDeadline, venueName/Address, venueCapacity, and organizerUsername are all
-  // required at persist time — supply them all or the save throws ConstraintViolation (500).
+  // CreateEventRequest requires title, date, eventType, registrationDeadline, venueName/Address,
+  // venueCapacity and organizerUsername (events-core-api); a missing one answers 400.
   const res = await fetch(`${API_BASE_URL}/api/v1/events`, {
     method: 'POST',
     headers: {

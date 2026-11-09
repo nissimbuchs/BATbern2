@@ -25,6 +25,7 @@ import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.RegistrationRepository;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -877,6 +878,35 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(invalidEvent))
                 .andExpect(status().isBadRequest());
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @ValueSource(strings = {"title", "date", "eventType", "venueName", "venueAddress", "venueCapacity",
+        "registrationDeadline", "organizerUsername"})
+    @DisplayName("should_return400NamingTheField_when_requiredCreateFieldMissing")
+    @WithMockUser(username = "test.organizer", roles = "ORGANIZER")
+    void should_return400NamingTheField_when_requiredCreateFieldMissing(String field) throws Exception {
+        // events-core-api CreateEventRequest.required lists the eight fields the Event row needs
+        // (owner decision 2026-11-09); a create without one answers 400 and names it.
+        ObjectNode body = (ObjectNode) objectMapper.readTree("""
+                {
+                    "title": "BATbern Required Fields",
+                    "date": "2027-08-15T09:00:00Z",
+                    "registrationDeadline": "2027-08-01T09:00:00Z",
+                    "venueName": "Kornhausforum",
+                    "venueAddress": "Kornhausplatz 18, 3011 Bern",
+                    "venueCapacity": 200,
+                    "organizerUsername": "test.organizer",
+                    "eventType": "EVENING"
+                }
+                """);
+        body.remove(field);
+
+        mockMvc.perform(post("/api/v1/events")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body.toString()))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.details." + field).exists());
     }
 
     // ============================================================================
@@ -1999,6 +2029,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
                     "title": "Duplicate Event",
                     "eventNumber": 1000,
                     "date": "2025-09-15T09:00:00Z",
+                    "registrationDeadline": "2025-09-01T09:00:00Z",
                     "venueName": "Test Venue",
                     "venueAddress": "Test Address",
                     "venueCapacity": 100,
