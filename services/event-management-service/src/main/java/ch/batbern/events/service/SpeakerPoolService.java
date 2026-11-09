@@ -430,28 +430,6 @@ public class SpeakerPoolService {
     }
 
     /**
-     * Assign a speaker pool entry to a specific organizer for outreach.
-     *
-     * @param speakerPoolId the speaker pool entry ID
-     * @param organizerId the organizer username
-     * @return the updated speaker pool entry
-     */
-    @Transactional
-    public SpeakerPoolResponse assignSpeakerToOrganizer(String speakerPoolId, String organizerId) {
-        SpeakerPool speakerPool = speakerPoolRepository.findById(java.util.UUID.fromString(speakerPoolId))
-                .orElseThrow(() -> new IllegalArgumentException("Speaker pool entry not found: " + speakerPoolId));
-
-        speakerPool.setAssignedOrganizerId(organizerId);
-        SpeakerPool updated = speakerPoolRepository.save(speakerPool);
-
-        // Story 11.E.9: apply overlay so PATCH responses carry live username/email
-        // when a session_users primary speaker exists.
-        SpeakerPoolResponse response = speakerPoolMapper.toResponse(updated);
-        primarySpeakerResolver.applyOverlay(response, updated);
-        return response;
-    }
-
-    /**
      * Partial update of a speaker pool entry. Only non-null fields are applied.
      *
      * @param eventCode the event code (validates ownership)
@@ -493,7 +471,9 @@ public class SpeakerPoolService {
             speakerPool.setNotes(request.getNotes());
         }
 
-        SpeakerPool updated = speakerPoolRepository.save(speakerPool);
+        // Flush so that @PreUpdate has set updatedAt before the response is built in this transaction
+        // (event-speakers-api requires it; without the flush the response kept the previous value).
+        SpeakerPool updated = speakerPoolRepository.saveAndFlush(speakerPool);
         // Story 11.E.9: apply overlay so PATCH responses carry live username/email
         // when a session_users primary speaker exists.
         SpeakerPoolResponse response = speakerPoolMapper.toResponse(updated);

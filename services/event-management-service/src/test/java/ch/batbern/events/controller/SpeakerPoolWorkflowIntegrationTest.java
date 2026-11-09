@@ -3,7 +3,9 @@ package ch.batbern.events.controller;
 import ch.batbern.shared.test.AbstractIntegrationTest;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.repository.EventRepository;
+import ch.batbern.events.repository.SpeakerPoolRepository;
 import ch.batbern.shared.types.EventWorkflowState;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -14,9 +16,12 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.time.OffsetDateTime;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -49,6 +54,9 @@ class SpeakerPoolWorkflowIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
     private EventRepository eventRepository;
+
+    @Autowired
+    private SpeakerPoolRepository speakerPoolRepository;
 
     @BeforeEach
     void setUp() {
@@ -163,6 +171,38 @@ class SpeakerPoolWorkflowIntegrationTest extends AbstractIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(patch)))
                 .andExpect(status().isBadRequest());
+    }
+
+    /**
+     * event-speakers-api: {@code SpeakerPoolResponse.updatedAt} is required. It is set by the
+     * entity's {@code @PreUpdate}, which Hibernate runs at flush; the PATCH response must carry
+     * the value of this change, not the one from the insert.
+     */
+    @Test
+    @WithMockUser(username = "john.doe", roles = {"ORGANIZER"})
+    void should_returnNewUpdatedAt_when_speakerPoolEntryPatched() throws Exception {
+        Event event = createTestEvent("BATbern56", EventWorkflowState.TOPIC_SELECTION);
+        String createdJson = mockMvc.perform(
+                        post("/api/v1/events/{eventCode}/speakers/pool", event.getEventCode())
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(Map.of("speakerName", "Hông Ân"))))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        JsonNode created = objectMapper.readTree(createdJson);
+        Instant insertedAt = OffsetDateTime.parse(created.get("updatedAt").asText()).toInstant();
+
+        String patchedJson = mockMvc.perform(patch("/api/v1/events/{eventCode}/speakers/pool/{speakerId}",
+                        event.getEventCode(), created.get("id").asText())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("notes", "follow up"))))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+
+        Instant updatedAt = OffsetDateTime.parse(objectMapper.readTree(patchedJson).get("updatedAt").asText())
+                .toInstant();
+        assertThat(updatedAt).as("updatedAt reflects the patch, not the insert").isAfter(insertedAt);
+        assertThat(updatedAt).isEqualTo(speakerPoolRepository
+                .findById(UUID.fromString(created.get("id").asText())).orElseThrow().getUpdatedAt());
     }
 
     // ==================== AC10 Tests: Speaker Notes ====================
