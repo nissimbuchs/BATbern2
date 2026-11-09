@@ -12,7 +12,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.security.SecureRandom;
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -64,7 +66,7 @@ public class WatchPairingService {
         watchPairingRepository.save(pairing);
         log.info("Generated pairing code for user: {}", username);
 
-        return new PairingCodeResponse(code, expiresAt, CODE_TTL_HOURS);
+        return new PairingCodeResponse(code, toInstant(expiresAt), CODE_TTL_HOURS);
     }
 
     /**
@@ -76,14 +78,16 @@ public class WatchPairingService {
 
         List<PairingStatusResponse.PairedWatch> pairedWatches = all.stream()
                 .filter(WatchPairing::isPaired)
-                .map(p -> new PairingStatusResponse.PairedWatch(p.getId(), p.getDeviceName(), p.getPairedAt()))
+                .map(p -> new PairingStatusResponse.PairedWatch(
+                        p.getId(), p.getDeviceName(), toInstant(p.getPairedAt())))
                 .toList();
 
         // Only return pending code if it exists and is not expired
         PairingStatusResponse.PendingPairingCode pendingCode = all.stream()
                 .filter(p -> p.getPairingCode() != null && !p.isCodeExpired())
                 .findFirst()
-                .map(p -> new PairingStatusResponse.PendingPairingCode(p.getPairingCode(), p.getPairingCodeExpiresAt()))
+                .map(p -> new PairingStatusResponse.PendingPairingCode(
+                        p.getPairingCode(), toInstant(p.getPairingCodeExpiresAt())))
                 .orElse(null);
 
         return new PairingStatusResponse(pairedWatches, pendingCode);
@@ -143,6 +147,14 @@ public class WatchPairingService {
     }
 
     // --- Private helpers ---
+
+    /**
+     * The entity keeps zone-less times written with {@code LocalDateTime.now()}, i.e. in the JVM
+     * zone; the API sends them as instants (with {@code Z}) per users-api {@code format: date-time}.
+     */
+    private static Instant toInstant(LocalDateTime time) {
+        return time == null ? null : time.atZone(ZoneId.systemDefault()).toInstant();
+    }
 
     /**
      * H2: SecureRandom replaces ThreadLocalRandom — pairing codes are security-sensitive.
