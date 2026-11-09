@@ -14,6 +14,7 @@ export type SpeakerReminderType = NonNullable<MailComposeRequest['speakerReminde
 export type VenueRole = NonNullable<MailComposeRequest['venueRecipients']>[number];
 export type ContentSource = MailComposeRequest['contentSource'];
 export type SpeakerStatus = NonNullable<MailComposeRequest['speakerStatuses']>[number];
+export type RegistrantStatus = NonNullable<MailComposeRequest['registrantStatuses']>[number];
 
 /** Story 16.5: the speaker statuses own text can go to, in the order they are shown. */
 export const SPEAKER_STATUSES: SpeakerStatus[] = [
@@ -21,6 +22,21 @@ export const SPEAKER_STATUSES: SpeakerStatus[] = [
   'ACCEPTED',
   'CONTENT_SUBMITTED',
   'QUALITY_REVIEWED',
+];
+
+/** The registration statuses own text to registrants can go to, in the order they are shown. */
+export const REGISTRANT_STATUSES: RegistrantStatus[] = [
+  'REGISTERED',
+  'CONFIRMED',
+  'ATTENDED',
+  'NO_SHOW',
+];
+
+/** Who gets registrant own text unless the organizer chooses: everyone but the no-shows. */
+export const DEFAULT_REGISTRANT_STATUSES: RegistrantStatus[] = [
+  'REGISTERED',
+  'CONFIRMED',
+  'ATTENDED',
 ];
 
 /** Everything the organizer has chosen so far. One shape for all audiences. */
@@ -41,6 +57,8 @@ export interface ComposerState {
   ownBodyHtml: string;
   /** SPEAKERS with OWN_TEXT only, at least one. */
   speakerStatuses: SpeakerStatus[];
+  /** REGISTRANTS with OWN_TEXT only, at least one. */
+  registrantStatuses: RegistrantStatus[];
 }
 
 export interface ExtraFieldsProps {
@@ -102,6 +120,7 @@ export const INITIAL_STATE: ComposerState = {
   ownSubject: '',
   ownBodyHtml: '',
   speakerStatuses: [...SPEAKER_STATUSES],
+  registrantStatuses: [...DEFAULT_REGISTRANT_STATUSES],
 };
 
 export const isOwnText = (state: ComposerState): boolean => state.contentSource === 'OWN_TEXT';

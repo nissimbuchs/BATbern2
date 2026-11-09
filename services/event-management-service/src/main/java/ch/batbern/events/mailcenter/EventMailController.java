@@ -230,6 +230,8 @@ public class EventMailController implements EventMailApi {
                 request.getOwnBodyHtml(),
                 request.getSpeakerStatuses() == null ? List.of()
                         : request.getSpeakerStatuses().stream().map(st -> st.getValue()).toList(),
+                request.getRegistrantStatuses() == null ? List.of()
+                        : request.getRegistrantStatuses().stream().map(st -> st.getValue()).toList(),
                 Boolean.TRUE.equals(request.getConfirmResend()));
     }
 
@@ -256,6 +258,9 @@ public class EventMailController implements EventMailApi {
                 .speakerStatuses(send.getSpeakerStatuses() == null ? null
                         : send.getSpeakerStatuses().stream()
                                 .map(st -> MailComposeRequest.SpeakerStatusesEnum.fromValue(st.getValue())).toList())
+                .registrantStatuses(send.getRegistrantStatuses() == null ? null
+                        : send.getRegistrantStatuses().stream()
+                                .map(st -> MailComposeRequest.RegistrantStatusesEnum.fromValue(st.getValue())).toList())
                 .confirmResend(send.getConfirmResend());
     }
 

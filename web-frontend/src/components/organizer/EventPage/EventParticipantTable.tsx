@@ -138,6 +138,7 @@ const EventParticipantTable: React.FC<EventParticipantTableProps> = ({
       CONFIRMED: 'confirmed',
       REGISTERED: 'registered',
       ATTENDED: 'attended',
+      NO_SHOW: 'noShow',
       CANCELLED: 'cancelled',
       WAITLIST: 'waitlisted',
     };
@@ -154,6 +155,8 @@ const EventParticipantTable: React.FC<EventParticipantTableProps> = ({
         return 'primary';
       case 'ATTENDED':
         return 'info';
+      case 'NO_SHOW':
+        return 'error';
       case 'CANCELLED':
         // Story 10.12 (AC11): Cancelled registrations shown with grey chip (soft-cancel, not delete)
         return 'default';

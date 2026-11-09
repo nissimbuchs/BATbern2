@@ -202,7 +202,8 @@
     "attended": "Osallistuit tähän tapahtumaan. Kiitos, että olit mukana!",
     "manageLink": "Hallinnoi ilmoittautumista",
     "registerAgain": "Ilmoittaudu uudelleen",
-    "waitlistWithPosition": "Olet jonotuslistalla sijalla {{position}}. Ilmoitamme sinulle, jos paikka vapautuu."
+    "waitlistWithPosition": "Olet jonotuslistalla sijalla {{position}}. Ilmoitamme sinulle, jos paikka vapautuu.",
+    "no_show": "Et osallistunut tähän tapahtumaan."
   },
   "registrationStatusGuard": {
     "alreadyRegistered": "Olet jo ilmoittautunut tähän tapahtumaan",

@@ -11,6 +11,11 @@
     "tabs": {
       "ariaLabel": "User detail tabs",
       "mail": "Mail"
+    },
+    "eventsTable": {
+      "statusValues": {
+        "NO_SHOW": "Nid cho"
+      }
     }
   },
   "table": {

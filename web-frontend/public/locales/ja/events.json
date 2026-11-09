@@ -165,7 +165,8 @@
         "registered": "登録済み",
         "attended": "出席",
         "cancelled": "キャンセル済み",
-        "waitlisted": "キャンセル待ち"
+        "waitlisted": "キャンセル待ち",
+        "noShow": "欠席"
       },
       "clearAll": "フィルターをクリア"
     },
@@ -579,6 +580,16 @@
           "notes": "メモ",
           "organizerSignature": "主催者の署名",
           "companyName": "会社"
+        },
+        "registrants": {
+          "which": "どの登録者に送りますか？",
+          "statusRequired": "ステータスを1つ以上選択してください。",
+          "status": {
+            "REGISTERED": "登録済み",
+            "CONFIRMED": "確認済み",
+            "ATTENDED": "出席",
+            "NO_SHOW": "欠席"
+          }
         }
       },
       "rsvpSummary": "出欠: 参加 {{accepted}} · 不参加 {{declined}} · 未定 {{tentative}} · 未回答 {{noAnswer}}",
@@ -1345,7 +1356,8 @@
       "registered": "登録済み",
       "waitlist": "キャンセル待ち",
       "cancelled": "キャンセル済み",
-      "attended": "参加済み"
+      "attended": "参加済み",
+      "no_show": "欠席"
     }
   },
   "capacity": {
@@ -1440,7 +1452,8 @@
         "registered": "登録済み",
         "confirmed": "確定",
         "waitlist": "キャンセル待ち",
-        "attended": "参加済み"
+        "attended": "参加済み",
+        "no_show": "欠席"
       }
     }
   },

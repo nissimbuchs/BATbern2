@@ -17,7 +17,8 @@ import { buildCdnImageUrl, buildCdnImageSrcSet } from '@/utils/cdnImage';
 import { canOfferSelfNomination } from '@/utils/eventPublication';
 import type { EventDetailUI, SessionUI } from '@/types/event.types';
 
-type RegistrationStatus = 'REGISTERED' | 'CONFIRMED' | 'WAITLIST' | 'CANCELLED' | 'ATTENDED';
+type RegistrationStatus =
+  'REGISTERED' | 'CONFIRMED' | 'WAITLIST' | 'CANCELLED' | 'ATTENDED' | 'NO_SHOW';
 
 interface EventCardProps {
   event: EventDetailUI;
@@ -39,6 +40,7 @@ const STATUS_CHIP_STYLES: Record<RegistrationStatus, string> = {
   WAITLIST: 'bg-blue-400/20 text-blue-400 border-blue-400/30',
   CANCELLED: 'bg-zinc-600/20 text-zinc-400 border-zinc-600/30',
   ATTENDED: 'bg-purple-400/20 text-purple-400 border-purple-400/30',
+  NO_SHOW: 'bg-zinc-600/20 text-zinc-400 border-zinc-600/30',
 };
 
 export function EventCard({

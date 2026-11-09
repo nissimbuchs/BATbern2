@@ -170,7 +170,8 @@
         "registered": "Amäldet",
         "attended": "Teilgnoh",
         "cancelled": "Storniert",
-        "waitlisted": "Wartelischte"
+        "waitlisted": "Wartelischte",
+        "noShow": "Nid cho"
       },
       "clearAll": "Filter lösche"
     },
@@ -585,6 +586,16 @@
           "notes": "Notize",
           "organizerSignature": "Signatur Organisator",
           "companyName": "Firma"
+        },
+        "registrants": {
+          "which": "Weli Agmäldete?",
+          "statusRequired": "Mindeschtens ei Status wähle.",
+          "status": {
+            "REGISTERED": "Agmäldet",
+            "CONFIRMED": "Bestätiget",
+            "ATTENDED": "Derbi gsi",
+            "NO_SHOW": "Nid cho"
+          }
         }
       },
       "rsvpSummary": "Rückmäldige: {{accepted}} zuegseit · {{declined}} abgseit · {{tentative}} viilech · {{noAnswer}} ohni Antwort",
@@ -1348,7 +1359,8 @@
       "registered": "Aagmäudet",
       "waitlist": "Warteliste",
       "cancelled": "Storniert",
-      "attended": "Debi gsi"
+      "attended": "Debi gsi",
+      "no_show": "Nid cho"
     }
   },
   "capacity": {
@@ -1443,7 +1455,8 @@
         "registered": "Aagmäldet",
         "confirmed": "Bestätigt",
         "waitlist": "Wartlischte",
-        "attended": "Debi gsi"
+        "attended": "Debi gsi",
+        "no_show": "Nid cho"
       }
     }
   },

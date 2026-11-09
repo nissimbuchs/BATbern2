@@ -651,7 +651,7 @@ sequenceDiagram
   notifications, session_qna_post, session_content_history, newsletter_subscribers. Audit columns
   that record who acted (`created_by`, `changed_by_username`, ...) do not move.
 - **Registration rank** when both have one for the same event: attended, confirmed, registered,
-  waitlist, cancelled; the target's wins a tie.
+  waitlist, then no_show and cancelled (equal); the target's wins a tie.
 - `user_merge_log` (EMS V144) holds what is needed to undo a merge by hand: `moved`,
   `removed_rows`, `source_profile`, `trigger` (`ORGANIZER` or `SELF_CLAIM`).
 

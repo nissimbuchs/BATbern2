@@ -193,6 +193,19 @@ describe('EventParticipantTable Component', () => {
     });
   });
 
+  describe('No-show', () => {
+    it('should render the no-show chip label for a NO_SHOW registration', () => {
+      renderWithProviders(
+        <EventParticipantTable
+          participants={[{ ...mockParticipants[0], status: 'NO_SHOW' }]}
+          isLoading={false}
+        />
+      );
+
+      expect(screen.getByText('eventPage.participantFilters.status.noShow')).toBeInTheDocument();
+    });
+  });
+
   describe('Sorting', () => {
     it('should sort by name when name header clicked', async () => {
       const user = userEvent.setup();

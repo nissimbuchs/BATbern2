@@ -673,7 +673,7 @@ paths:
         #1183 C. Moves the source's registrations, speaker slots, history, roles and addresses to
         `{username}`, adds the source's address as a verified additional address, and deletes the
         source profile. Where both hold a registration for the same event, the better one stays
-        (attended, confirmed, registered, waitlist, cancelled). Every moved and removed row is
+        (attended, confirmed, registered, waitlist, no_show, cancelled). Every moved and removed row is
         logged in `user_merge_log` (event-management) so a merge can be undone by hand.
 
         Refused with 409 `MERGE_NOT_ALLOWED` when the preview's `canMerge` is false.

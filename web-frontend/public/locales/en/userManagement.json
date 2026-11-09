@@ -303,7 +303,8 @@
         "CONFIRMED": "Confirmed",
         "ATTENDED": "Attended",
         "CANCELLED": "Cancelled",
-        "WAITLISTED": "Waitlisted"
+        "WAITLISTED": "Waitlisted",
+        "NO_SHOW": "No-show"
       }
     }
   },

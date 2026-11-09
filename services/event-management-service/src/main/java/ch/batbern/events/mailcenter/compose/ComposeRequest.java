@@ -19,6 +19,8 @@ import java.util.List;
  * @param ownSubject          own text only: the subject, one line (Story 16.5)
  * @param ownBodyHtml         own text only: the body HTML, the layout is added
  * @param speakerStatuses     speakers with own text only: which speakers get it
+ * @param registrantStatuses  registrants with own text only: which registration statuses get it
+ *                            (API values, e.g. {@code NO_SHOW}); empty = the default audience
  * @param confirmResend       registrants with own text only: send although this subject went out
  */
 public record ComposeRequest(
@@ -34,6 +36,7 @@ public record ComposeRequest(
         String ownSubject,
         String ownBodyHtml,
         List<String> speakerStatuses,
+        List<String> registrantStatuses,
         boolean confirmResend) {
 
     public ComposeRequest {
@@ -42,6 +45,7 @@ public record ComposeRequest(
         venueRecipients = venueRecipients == null ? List.of() : List.copyOf(venueRecipients);
         templateKey = templateKey == null || templateKey.isBlank() ? null : templateKey;
         speakerStatuses = speakerStatuses == null ? List.of() : List.copyOf(speakerStatuses);
+        registrantStatuses = registrantStatuses == null ? List.of() : List.copyOf(registrantStatuses);
     }
 
     /** A template request (Story 16.8 shape). */
@@ -49,7 +53,7 @@ public record ComposeRequest(
             String locale, int recipientIndex, boolean newsletterReminder, String speakerReminderType,
             List<String> venueRecipients, String venueNotes) {
         this(audience, contentSource, templateKey, locale, recipientIndex, newsletterReminder, speakerReminderType,
-                venueRecipients, venueNotes, null, null, List.of(), false);
+                venueRecipients, venueNotes, null, null, List.of(), List.of(), false);
     }
 
     public boolean ownText() {

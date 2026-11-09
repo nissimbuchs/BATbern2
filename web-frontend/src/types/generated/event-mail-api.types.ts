@@ -582,6 +582,8 @@ export interface components {
       ownBodyHtml?: string | null;
       /** @description SPEAKERS with OWN_TEXT only, at least one. Which speakers get the mail. */
       speakerStatuses?: ('INVITED' | 'ACCEPTED' | 'CONTENT_SUBMITTED' | 'QUALITY_REVIEWED')[];
+      /** @description REGISTRANTS with OWN_TEXT only. Which registrants get the mail, e.g. only the no-shows of a past event. Absent or empty = REGISTERED, CONFIRMED and ATTENDED. */
+      registrantStatuses?: ('REGISTERED' | 'CONFIRMED' | 'ATTENDED' | 'NO_SHOW')[];
       /**
        * @description REGISTRANTS with OWN_TEXT only. Send although a mail with the same subject already went to this event's registrants (409 ALREADY_SENT otherwise).
        * @default false

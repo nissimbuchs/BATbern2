@@ -202,7 +202,8 @@
     "cancelled": "Ihre Anmeldung wurde storniert.",
     "attended": "Sie haben an dieser Veranstaltung teilgenommen. Danke, dass Sie dabei waren!",
     "manageLink": "Anmeldung verwalten",
-    "registerAgain": "Erneut anmelden"
+    "registerAgain": "Erneut anmelden",
+    "no_show": "Sie waren an dieser Veranstaltung nicht dabei."
   },
   "registrationStatusGuard": {
     "alreadyRegistered": "Sie sind bereits für diese Veranstaltung angemeldet",

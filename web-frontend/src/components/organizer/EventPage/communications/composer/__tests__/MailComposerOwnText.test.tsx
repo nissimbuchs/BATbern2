@@ -675,3 +675,38 @@ describe('MailComposer own text: speaker statuses (AC11)', () => {
     expect(screen.queryByTestId('composer-speakers-status-INVITED')).not.toBeInTheDocument();
   });
 });
+
+// ── registrant statuses ──────────────────────────────────────────────────────
+
+describe('MailComposer own text: registrant statuses', () => {
+  it('defaults to registered, confirmed, attended; can go to the no-shows only; none chosen means no send', async () => {
+    renderComposer('REGISTRANTS');
+    await waitForPreview();
+    await writeOwnText('Sorry we missed you', '<p>Dear {{recipientName}}</p>');
+    expect(lastPreview()).toMatchObject({
+      audience: 'REGISTRANTS',
+      registrantStatuses: ['REGISTERED', 'CONFIRMED', 'ATTENDED'],
+    });
+
+    fireEvent.click(screen.getByTestId('composer-registrants-status-NO_SHOW'));
+    fireEvent.click(screen.getByTestId('composer-registrants-status-REGISTERED'));
+    fireEvent.click(screen.getByTestId('composer-registrants-status-CONFIRMED'));
+    fireEvent.click(screen.getByTestId('composer-registrants-status-ATTENDED'));
+    await waitFor(() => expect(lastPreview().registrantStatuses).toEqual(['NO_SHOW']));
+    expect(screen.getByTestId('composer-registrants-status-NO_SHOW')).toHaveAttribute(
+      'aria-pressed',
+      'true'
+    );
+
+    fireEvent.click(screen.getByTestId('composer-registrants-status-NO_SHOW'));
+    expect(screen.getByTestId('composer-registrants-status-required')).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByTestId('composer-send-button')).toBeDisabled());
+  });
+
+  it('template mode offers no status choice and sends none', async () => {
+    renderComposer('REGISTRANTS');
+    await waitForPreview();
+    expect(screen.queryByTestId('composer-registrants-status-NO_SHOW')).not.toBeInTheDocument();
+    expect(lastPreview().registrantStatuses).toBeUndefined();
+  });
+});

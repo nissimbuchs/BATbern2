@@ -193,7 +193,8 @@
         "CONFIRMED": "Vahvistettu",
         "ATTENDED": "Osallistunut",
         "CANCELLED": "Peruutettu",
-        "WAITLISTED": "Jonossa"
+        "WAITLISTED": "Jonossa",
+        "NO_SHOW": "Ei saapunut"
       }
     }
   },

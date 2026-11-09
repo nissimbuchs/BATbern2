@@ -165,7 +165,8 @@
         "registered": "Registrado",
         "attended": "Asistió",
         "cancelled": "Cancelado",
-        "waitlisted": "En lista de espera"
+        "waitlisted": "En lista de espera",
+        "noShow": "No asistió"
       },
       "clearAll": "Borrar filtros"
     },
@@ -579,6 +580,16 @@
           "notes": "Notas",
           "organizerSignature": "Firma del organizador",
           "companyName": "Empresa"
+        },
+        "registrants": {
+          "which": "¿Qué inscritos?",
+          "statusRequired": "Elige al menos un estado.",
+          "status": {
+            "REGISTERED": "Inscrito",
+            "CONFIRMED": "Confirmado",
+            "ATTENDED": "Asistió",
+            "NO_SHOW": "No asistió"
+          }
         }
       },
       "rsvpSummary": "Respuestas: {{accepted}} aceptadas · {{declined}} rechazadas · {{tentative}} provisionales · {{noAnswer}} sin respuesta",
@@ -1345,7 +1356,8 @@
       "registered": "Inscrito",
       "waitlist": "Lista de espera",
       "cancelled": "Cancelada",
-      "attended": "Participaste"
+      "attended": "Participaste",
+      "no_show": "No asistió"
     }
   },
   "capacity": {
@@ -1440,7 +1452,8 @@
         "registered": "Registrado",
         "confirmed": "Confirmado",
         "waitlist": "Lista de espera",
-        "attended": "Asistió"
+        "attended": "Asistió",
+        "no_show": "No asistió"
       }
     }
   },

@@ -68,11 +68,19 @@ public class RegistrantAudienceAdapter implements AudienceAdapter {
         if (!request.ownText() && request.templateKey() == null) {
             throw new IllegalArgumentException("templateKey is required for registrants");
         }
+        // A template send is one-shot per event, so it always goes to the whole default audience.
+        if (!request.ownText() && !request.registrantStatuses().isEmpty()) {
+            throw new IllegalArgumentException("registrantStatuses is for own text only");
+        }
+        if (!SlidesOnlineEmailService.CHOOSABLE_REGISTRANT_STATUSES.containsAll(request.registrantStatuses())) {
+            throw new IllegalArgumentException("registrantStatuses may contain "
+                    + SlidesOnlineEmailService.CHOOSABLE_REGISTRANT_STATUSES + " only");
+        }
     }
 
     @Override
     public Recipients resolveRecipients(ComposeContext context) {
-        RegistrantAudience audience = notices.resolveRecipients(context.event());
+        RegistrantAudience audience = notices.resolveRecipients(context.event(), statuses(context.request()));
         return new Recipients(
                 audience.recipients().stream()
                         .map(r -> new ComposeRecipient(r.displayName(), r.email(), List.of(), r.registration()))
@@ -101,6 +109,10 @@ public class RegistrantAudienceAdapter implements AudienceAdapter {
         return notices.variables(context.event(), locale(context, registration), registration, test);
     }
 
+    private static List<String> statuses(ComposeRequest request) {
+        return SlidesOnlineEmailService.registrantStatuses(request.registrantStatuses());
+    }
+
     /** Own text is in the organizer's language for everyone (Story 16.5); a template in each registrant's. */
     private String locale(ComposeContext context, Registration registration) {
         return context.request().ownText() ? context.request().locale() : notices.recipientLocale(registration);
@@ -111,8 +123,13 @@ public class RegistrantAudienceAdapter implements AudienceAdapter {
     public List<DeliveredMail> deliver(ComposeContext context, Recipients recipients, MailTrigger trigger) {
         ComposeRequest request = context.request();
         if (request.ownText()) {
+            Optional<Instant> sentAt = notices.ownTextAlreadySent(context.event(), request.ownSubject());
+            if (sentAt.isPresent() && !request.confirmResend()) {
+                throw new AlreadySentException(request.ownSubject(), sentAt.get());
+            }
             UUID sendId = notices.sendRegistrantOwnText(context.event(), request.ownSubject(), request.ownBodyHtml(),
-                    request.locale(), context.organizerUsername(), request.confirmResend()).getSendId();
+                    request.locale(), context.organizerUsername(), statuses(request))
+                    .getSendId();
             MailContext mailContext = MailContext.ownText(MailTrigger.forSend(sendId, context.organizerUsername()),
                     context.event().getEventCode(), MailContext.Audience.REGISTRANTS).forNewsletterSend(sendId, false);
             return List.of(new DeliveredMail(mailContext, render(context, recipients.recipients().get(0), false)));

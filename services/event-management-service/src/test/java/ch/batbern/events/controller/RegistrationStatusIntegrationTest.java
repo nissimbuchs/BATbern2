@@ -13,6 +13,7 @@ import ch.batbern.events.domain.Registration;
 import ch.batbern.events.core.dto.generated.EventType;
 import ch.batbern.events.dto.generated.users.GetOrCreateUserResponse;
 import ch.batbern.events.dto.generated.users.UserResponse;
+import ch.batbern.events.repository.AnalyticsRepository;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.RegistrationRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -70,6 +71,9 @@ class RegistrationStatusIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
     private RegistrationRepository registrationRepository;
+
+    @Autowired
+    private AnalyticsRepository analyticsRepository;
 
     @MockitoBean
     private UserApiClient userApiClient;
@@ -176,6 +180,29 @@ class RegistrationStatusIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.registered", is(true)))
                 .andExpect(jsonPath("$.eventCode", is(EVENT_CODE)))
                 .andExpect(jsonPath("$.status", is("ATTENDED")));
+    }
+
+    @Test
+    @DisplayName("should return 200 with NO_SHOW status when the registrant did not come")
+    @WithMockUser(username = USERNAME)
+    void should_return200_with_noShowStatus() throws Exception {
+        saveRegistration(testEvent, USERNAME, "no_show");
+        registrationRepository.flush();
+
+        mockMvc.perform(get("/api/v1/events/{eventCode}/my-registration", EVENT_CODE))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.registered", is(true)))
+                .andExpect(jsonPath("$.status", is("NO_SHOW")));
+    }
+
+    @Test
+    @DisplayName("should not count a no-show as attendee when one who came is counted")
+    void should_notCountNoShow_when_countingAttendees() {
+        saveRegistration(testEvent, USERNAME, "attended");
+        saveRegistration(testEvent, OTHER_USERNAME, "no_show");
+        registrationRepository.flush();
+
+        assertThat(analyticsRepository.countTotalAttendees()).isEqualTo(1);
     }
 
     // ── T5.5: 200 CANCELLED ───────────────────────────────────────────────────

@@ -193,7 +193,8 @@
         "CONFIRMED": "Bevestigd",
         "ATTENDED": "Bijgewoond",
         "CANCELLED": "Geannuleerd",
-        "WAITLISTED": "Op wachtlijst"
+        "WAITLISTED": "Op wachtlijst",
+        "NO_SHOW": "Niet verschenen"
       }
     }
   },

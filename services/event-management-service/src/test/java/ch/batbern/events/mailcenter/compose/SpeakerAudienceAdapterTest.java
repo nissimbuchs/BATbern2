@@ -208,7 +208,7 @@ class SpeakerAudienceAdapterTest {
     private ComposeRequest ownText(List<String> statuses) {
         return new ComposeRequest(MailContext.Audience.SPEAKERS, MailContext.ContentSource.OWN_TEXT, null, "en", 0,
                 false, null, List.of(), null, "Room change", "<p>Hi {{speakerName}}, {{sessionTitle}}</p>",
-                statuses, false);
+                statuses, List.of(), false);
     }
 
     @Test

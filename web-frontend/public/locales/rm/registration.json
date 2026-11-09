@@ -202,7 +202,8 @@
     "attended": "Vus avais participà a quest eveniment. Grazia fitg ch’eras qua!",
     "manageLink": "Administrar l'annunzia",
     "registerAgain": "S'annunziar danovamain",
-    "waitlistWithPosition": "Vus essas nr. {{position}} sin la glista da spetga. Nus As infurmain, sch'i dat in plaz liber."
+    "waitlistWithPosition": "Vus essas nr. {{position}} sin la glista da spetga. Nus As infurmain, sch'i dat in plaz liber.",
+    "no_show": "Vus n'essas betg stà preschent a quest eveniment."
   },
   "registrationStatusGuard": {
     "alreadyRegistered": "Vus essas gia annunzià per questa occurrenza",

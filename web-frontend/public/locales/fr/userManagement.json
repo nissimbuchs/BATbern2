@@ -193,7 +193,8 @@
         "CONFIRMED": "Confirmé",
         "ATTENDED": "Présent",
         "CANCELLED": "Annulé",
-        "WAITLISTED": "Sur liste d'attente"
+        "WAITLISTED": "Sur liste d'attente",
+        "NO_SHOW": "Absent"
       }
     }
   },

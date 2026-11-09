@@ -1681,7 +1681,7 @@ export interface components {
       eventLocation?: string | null;
       /** @description The event's UPPER_CASE workflow state (e.g. EVENT_COMPLETED, ARCHIVED). */
       workflowState?: string | null;
-      /** @description The attendee's registration status (registered|confirmed|waitlist|attended). */
+      /** @description The attendee's registration status (registered|confirmed|waitlist|attended|no_show). */
       registrationStatus?: string | null;
     };
     /**

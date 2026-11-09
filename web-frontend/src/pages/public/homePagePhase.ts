@@ -279,7 +279,7 @@ export interface RegistrationView {
   /** Hero call to action for someone without an active registration */
   registerCta: 'REGISTER' | 'WAITLIST' | null;
   /** The visitor's own status, shown once, in the hero */
-  ownStatus: Exclude<MyRegistrationStatus, 'ATTENDED'> | null;
+  ownStatus: Exclude<MyRegistrationStatus, 'ATTENDED' | 'NO_SHOW'> | null;
   /** "Erneut anmelden" next to a cancelled registration (S1/S2 only) */
   registerAgain: boolean;
   /** "Abmelden" in the hero for a logged-in visitor with an active registration (until the day before) */

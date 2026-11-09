@@ -97,6 +97,13 @@ public class NewsletterSend {
     @Column(name = "own_body_html", columnDefinition = "TEXT")
     private String ownBodyHtml;
 
+    /**
+     * Registrant own text: the registration statuses that get it, comma-separated, lowercase as
+     * stored on {@code registrations}. Null = the default audience.
+     */
+    @Column(name = "registrant_statuses", length = 100)
+    private String registrantStatuses;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 

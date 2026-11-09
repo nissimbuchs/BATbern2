@@ -16,7 +16,8 @@
     "attended": "Du bisch a dere Veranstaltig debi gsi. Merci, dass d debi gsi bisch!",
     "manageLink": "Aamäudig verwaute",
     "registerAgain": "Nomau aamäude",
-    "waitlistWithPosition": "Du bisch uf Platz {{position}} vo dr Warteliste. Mir mäude üs, wenn e Platz frei wird."
+    "waitlistWithPosition": "Du bisch uf Platz {{position}} vo dr Warteliste. Mir mäude üs, wenn e Platz frei wird.",
+    "no_show": "Dir sit a däm Alass nid derbi gsi."
   },
   "registrationStatusGuard": {
     "alreadyRegistered": "Du bisch scho für dä Aalass aagmäudet",

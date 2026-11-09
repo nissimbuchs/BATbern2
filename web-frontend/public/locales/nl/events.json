@@ -165,7 +165,8 @@
         "registered": "Geregistreerd",
         "attended": "Aanwezig geweest",
         "cancelled": "Geannuleerd",
-        "waitlisted": "Wachtlijst"
+        "waitlisted": "Wachtlijst",
+        "noShow": "Niet verschenen"
       },
       "clearAll": "Filters wissen"
     },
@@ -579,6 +580,16 @@
           "notes": "Notities",
           "organizerSignature": "Handtekening organisator",
           "companyName": "Bedrijf"
+        },
+        "registrants": {
+          "which": "Welke aanmeldingen?",
+          "statusRequired": "Kies ten minste één status.",
+          "status": {
+            "REGISTERED": "Aangemeld",
+            "CONFIRMED": "Bevestigd",
+            "ATTENDED": "Aanwezig",
+            "NO_SHOW": "Niet verschenen"
+          }
         }
       },
       "rsvpSummary": "Reacties: {{accepted}} geaccepteerd · {{declined}} afgewezen · {{tentative}} voorlopig · {{noAnswer}} geen antwoord",
@@ -1345,7 +1356,8 @@
       "registered": "Aangemeld",
       "waitlist": "Wachtlijst",
       "cancelled": "Geannuleerd",
-      "attended": "Bijgewoond"
+      "attended": "Bijgewoond",
+      "no_show": "Niet verschenen"
     }
   },
   "capacity": {
@@ -1440,7 +1452,8 @@
         "registered": "Geregistreerd",
         "confirmed": "Bevestigd",
         "waitlist": "Wachtlijst",
-        "attended": "Aanwezig geweest"
+        "attended": "Aanwezig geweest",
+        "no_show": "Niet verschenen"
       }
     }
   },
