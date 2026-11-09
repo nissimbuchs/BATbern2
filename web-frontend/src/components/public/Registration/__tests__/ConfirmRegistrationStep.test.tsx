@@ -12,7 +12,6 @@ import type { CreateRegistrationRequest } from '@/types/event.types';
 
 describe('ConfirmRegistrationStep Component', () => {
   const mockFormData: CreateRegistrationRequest = {
-    eventId: 'BAT-2024-002',
     firstName: 'Hans',
     lastName: 'Müller',
     email: 'hans.mueller@example.ch',

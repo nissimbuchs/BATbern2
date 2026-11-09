@@ -48,9 +48,11 @@ vi.mock('../../../services/api/apiClient', () => ({
 
 const mockUser: UserContext = {
   userId: 'user-123',
+  username: 'test.user',
   email: 'john.doe@batbern.ch',
   emailVerified: true,
   role: 'organizer',
+  roles: ['organizer'],
   companyId: 'company-123',
   preferences: {
     language: 'de',
@@ -501,7 +503,7 @@ describe('UserMenuDropdown', () => {
     });
 
     it('should_notShowAdministrationItem_when_userIsSpeaker', () => {
-      const speakerUser = { ...mockUser, role: 'speaker' as const };
+      const speakerUser = { ...mockUser, role: 'speaker' as const, roles: ['speaker' as const] };
       renderWithRouter(
         <UserMenuDropdown
           user={speakerUser}

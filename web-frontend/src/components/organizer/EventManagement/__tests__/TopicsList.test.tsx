@@ -127,7 +127,7 @@ describe('TopicsList Component (AC7: Topic Management)', () => {
 
       // Check "Last used" information (text split across elements)
       // Use getAllByText with function matcher since "Last used" appears multiple times
-      const lastUsedElements = screen.getAllByText((content, element) => {
+      const lastUsedElements = screen.getAllByText((_content, element) => {
         return element?.textContent?.includes('Last used') || false;
       });
       expect(lastUsedElements.length).toBeGreaterThanOrEqual(1);
@@ -163,7 +163,7 @@ describe('TopicsList Component (AC7: Topic Management)', () => {
 
       // Check partner votes for all topics (text split across elements)
       // Use function matcher to find text across nested elements
-      const partnerVotesElements = screen.getAllByText((content, element) => {
+      const partnerVotesElements = screen.getAllByText((_content, element) => {
         return element?.textContent?.includes('Partner votes') || false;
       });
       expect(partnerVotesElements.length).toBeGreaterThanOrEqual(1);

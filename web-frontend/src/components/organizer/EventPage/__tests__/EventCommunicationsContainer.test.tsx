@@ -6,7 +6,6 @@
  * (AC15), inline at the top (desktop) or full screen (mobile). Composers and the list have their
  * own tests, so they are stubbed here; the stubs expose `onSent` to drive the after-send path.
  */
-import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';

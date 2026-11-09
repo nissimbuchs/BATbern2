@@ -6,8 +6,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import * as userAccountApi from '@/services/api/userAccountApi';
+import type { UserPreferencesView, UserSettingsView } from '@/types/userAccount.types';
 import {
   useUserProfile,
   useUserPreferences,
@@ -32,27 +33,36 @@ describe('User Account Hooks', () => {
     );
   };
 
-  const mockUserProfile = {
-    id: 'user-123',
-    username: 'anna.mueller',
-    email: 'anna.mueller@techcorp.ch',
-    firstName: 'Anna',
-    lastName: 'Müller',
-    bio: 'Test bio',
-    profilePictureUrl: 'https://cdn.example.com/profile.jpg',
-    emailVerified: true,
-    roles: ['ORGANIZER'],
-    memberSince: '2020-01-15T00:00:00Z',
+  // What getUserProfile hands to the hooks: { user, preferences, settings }.
+  const mockUserProfile: Awaited<ReturnType<typeof userAccountApi.getUserProfile>> & {
+    preferences: UserPreferencesView;
+    settings: UserSettingsView;
+  } = {
+    user: {
+      id: 'user-123',
+      username: 'anna.mueller',
+      email: 'anna.mueller@techcorp.ch',
+      firstName: 'Anna',
+      lastName: 'Müller',
+      bio: 'Test bio',
+      profilePictureUrl: 'https://cdn.example.com/profile.jpg',
+      emailVerified: true,
+      roles: ['ORGANIZER'],
+      memberSince: '2020-01-15T00:00:00Z',
+    },
     preferences: {
-      language: 'en',
+      theme: 'LIGHT',
       timezone: 'Europe/Zurich',
-      emailNotifications: true,
-      eventReminders: true,
+      notificationChannels: { email: true, inApp: true, push: false },
+      notificationFrequency: 'IMMEDIATE',
+      qnaNotificationFrequency: 'LIVE',
     },
     settings: {
-      theme: 'light' as const,
-      compactView: false,
-      showProfileInDirectory: true,
+      profileVisibility: 'MEMBERS_ONLY',
+      showEmail: false,
+      showCompany: true,
+      showActivity: true,
+      allowMessaging: true,
     },
   };
 
@@ -152,7 +162,7 @@ describe('User Account Hooks', () => {
 
   describe('useUpdateUserProfile', () => {
     it('should_updateProfile_when_mutationCalled', async () => {
-      const updatedProfile = { ...mockUserProfile, bio: 'Updated bio' };
+      const updatedProfile = { ...mockUserProfile.user, bio: 'Updated bio' };
       vi.mocked(userAccountApi.updateUserProfile).mockResolvedValueOnce(updatedProfile);
 
       const { result } = renderHook(() => useUpdateUserProfile(), {
@@ -169,7 +179,7 @@ describe('User Account Hooks', () => {
     });
 
     it('should_invalidateQueries_when_updateSucceeds', async () => {
-      const updatedProfile = { ...mockUserProfile, bio: 'Updated bio' };
+      const updatedProfile = { ...mockUserProfile.user, bio: 'Updated bio' };
       vi.mocked(userAccountApi.updateUserProfile).mockResolvedValueOnce(updatedProfile);
 
       const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
@@ -199,13 +209,15 @@ describe('User Account Hooks', () => {
         wrapper: createWrapper(),
       });
 
-      result.current.mutate({ language: 'de' });
+      result.current.mutate({ timezone: 'Europe/Berlin' });
 
       await waitFor(() => {
         expect(result.current.isSuccess).toBe(true);
       });
 
-      expect(userAccountApi.updateUserPreferences).toHaveBeenCalledWith({ language: 'de' });
+      expect(userAccountApi.updateUserPreferences).toHaveBeenCalledWith({
+        timezone: 'Europe/Berlin',
+      });
     });
 
     it('should_invalidateQueries_when_updateSucceeds', async () => {
@@ -219,7 +231,7 @@ describe('User Account Hooks', () => {
         wrapper: createWrapper(),
       });
 
-      result.current.mutate({ language: 'de' });
+      result.current.mutate({ timezone: 'Europe/Berlin' });
 
       await waitFor(() => {
         expect(result.current.isSuccess).toBe(true);
@@ -237,13 +249,13 @@ describe('User Account Hooks', () => {
         wrapper: createWrapper(),
       });
 
-      result.current.mutate({ theme: 'dark' as const });
+      result.current.mutate({ showEmail: true });
 
       await waitFor(() => {
         expect(result.current.isSuccess).toBe(true);
       });
 
-      expect(userAccountApi.updateUserSettings).toHaveBeenCalledWith({ theme: 'dark' });
+      expect(userAccountApi.updateUserSettings).toHaveBeenCalledWith({ showEmail: true });
     });
 
     it('should_invalidateQueries_when_updateSucceeds', async () => {
@@ -255,7 +267,7 @@ describe('User Account Hooks', () => {
         wrapper: createWrapper(),
       });
 
-      result.current.mutate({ theme: 'dark' as const });
+      result.current.mutate({ showEmail: true });
 
       await waitFor(() => {
         expect(result.current.isSuccess).toBe(true);

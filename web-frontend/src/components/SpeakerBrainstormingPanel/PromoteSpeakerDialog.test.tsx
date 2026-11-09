@@ -5,7 +5,6 @@
  * Backend now rejects blank firstName/lastName with 400 (@NotBlank on the DTO); the dialog
  * surfaces this at the form layer so the submit button is disabled until both populated.
  */
-import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';

@@ -33,12 +33,15 @@ function makeSpeaker(
   status: SpeakerWorkflowState,
   overrides: Partial<SpeakerPoolEntry> = {}
 ): SpeakerPoolEntry {
+  // updatedAt is always sent; a record not touched since creation has updatedAt == createdAt.
+  const createdAt = overrides.createdAt ?? NOW.toISOString();
   return {
     id: `speaker-${status.toLowerCase()}`,
     eventId: 'event-1',
     speakerName: `${status} Speaker`,
     status,
-    createdAt: NOW.toISOString(),
+    createdAt,
+    updatedAt: createdAt,
     ...overrides,
   };
 }

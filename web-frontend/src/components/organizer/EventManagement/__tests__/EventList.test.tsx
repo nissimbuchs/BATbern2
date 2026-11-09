@@ -13,48 +13,39 @@
  */
 
 import React from 'react';
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import { EventList } from '../EventList';
 import type { Event } from '@/types/event.types';
+import { anEvent } from '@/test/fixtures';
 
 describe('EventList Component', () => {
   const mockEvents: Event[] = [
-    {
+    anEvent({
       eventCode: 'BATbern56',
       eventNumber: 56,
       title: 'Cloud Computing 2025',
       description: 'Annual cloud computing event',
-      eventDate: '2025-03-15T18:00:00Z',
-      eventType: 'full_day',
-      status: 'active',
-      workflowState: 'speaker_research',
+      date: '2025-03-15T18:00:00Z',
       registrationDeadline: '2025-03-08T23:59:59Z',
-      capacity: 200,
+      eventType: 'FULL_DAY',
+      workflowState: 'SPEAKER_IDENTIFICATION',
+      venueCapacity: 200,
       currentAttendeeCount: 0,
-      createdAt: '2025-01-01T10:00:00Z',
-      updatedAt: '2025-01-10T15:00:00Z',
-      createdBy: 'john.doe',
-      version: 1,
-    },
-    {
+    }),
+    anEvent({
       eventCode: 'BATbern57',
       eventNumber: 57,
       title: 'DevOps Mastery',
       description: 'DevOps best practices',
-      eventDate: '2025-04-20T18:00:00Z',
-      eventType: 'afternoon',
-      status: 'published',
-      workflowState: 'topic_selection',
+      date: '2025-04-20T18:00:00Z',
       registrationDeadline: '2025-04-13T23:59:59Z',
-      capacity: 150,
+      eventType: 'AFTERNOON',
+      workflowState: 'TOPIC_SELECTION',
+      venueCapacity: 150,
       currentAttendeeCount: 25,
-      createdAt: '2025-01-15T10:00:00Z',
-      updatedAt: '2025-01-20T15:00:00Z',
-      createdBy: 'jane.smith',
-      version: 1,
-    },
+    }),
   ];
 
   const createWrapper = () => {

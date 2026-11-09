@@ -599,8 +599,8 @@ fe-mock-services	web-frontend/src/hooks/useEmailVerification/useEmailVerificatio
 fe-mock-services	web-frontend/src/hooks/useEventManagement/useEventRegistrations.test.ts	1
 fe-mock-services	web-frontend/src/hooks/useEventPhotos.test.ts	1
 fe-mock-services	web-frontend/src/hooks/useEventTypes.test.ts	1
+fe-mock-services	web-frontend/src/hooks/useEvents.hooks.test.tsx	1
 fe-mock-services	web-frontend/src/hooks/useEvents.test.ts	1
-fe-mock-services	web-frontend/src/hooks/useEvents.test.tsx	1
 fe-mock-services	web-frontend/src/hooks/useInfiniteEvents.test.ts	1
 fe-mock-services	web-frontend/src/hooks/useLiveSessionControl/useLiveSessionControl.test.ts	1
 fe-mock-services	web-frontend/src/hooks/useMyRegistration.test.ts	1
@@ -623,8 +623,8 @@ fe-mock-services	web-frontend/src/hooks/useSessionSpeakers.test.ts	1
 fe-mock-services	web-frontend/src/hooks/useSpeakerOutreach.test.tsx	1
 fe-mock-services	web-frontend/src/hooks/useSpeakerPoolHooks.test.ts	2
 fe-mock-services	web-frontend/src/hooks/useTimetable/useTimetable.test.ts	1
+fe-mock-services	web-frontend/src/hooks/useUserAccount/useUserAccount.hooks.test.tsx	1
 fe-mock-services	web-frontend/src/hooks/useUserAccount/useUserAccount.test.ts	1
-fe-mock-services	web-frontend/src/hooks/useUserAccount/useUserAccount.test.tsx	1
 fe-mock-services	web-frontend/src/hooks/useUserManagement/__tests__/useCreateUser.test.tsx	1
 fe-mock-services	web-frontend/src/hooks/useUserManagement/__tests__/useDeleteUser.test.tsx	1
 fe-mock-services	web-frontend/src/hooks/useUserManagement/__tests__/useUpdateUser.test.tsx	1

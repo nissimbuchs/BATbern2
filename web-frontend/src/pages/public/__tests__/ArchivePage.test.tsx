@@ -15,6 +15,7 @@ import ArchivePage from '../ArchivePage';
 import { eventApiClient } from '@/services/eventApiClient';
 import { topicService } from '@/services/topicService';
 import type { EventListResponse } from '@/types/event.types';
+import { pastEvent } from '@/test/fixtures';
 
 // Mock eventApiClient
 vi.mock('@/services/eventApiClient', () => ({
@@ -111,6 +112,7 @@ describe('ArchivePage Component', () => {
       description: '',
       category: 'technical',
       usageCount: 23,
+      active: true,
     },
     {
       topicCode: 'devops',
@@ -118,6 +120,7 @@ describe('ArchivePage Component', () => {
       description: '',
       category: 'technical',
       usageCount: 18,
+      active: true,
     },
     {
       topicCode: 'security',
@@ -125,60 +128,109 @@ describe('ArchivePage Component', () => {
       description: '',
       category: 'technical',
       usageCount: 15,
+      active: true,
     },
   ];
 
   const mockEventsPage1: EventListResponse = {
     data: [
-      {
-        eventId: '1',
+      pastEvent(0, {
         eventCode: 'BAT2024',
+        eventNumber: 2024,
         title: 'BATbern 2024',
         date: '2024-12-15T00:00:00Z',
-        topic: 'Cloud Architecture',
-        workflowState: 'COMPLETED',
+        registrationDeadline: '2024-12-15T00:00:00Z',
         venueName: 'Kornhausforum',
+        workflowState: 'EVENT_COMPLETED',
+        topic: { code: 'cloud-architecture', name: 'Cloud Architecture' },
         themeImageUrl: 'https://cdn.batbern.ch/2024/theme.jpg',
         sessions: [
           {
-            sessionId: 's1',
+            sessionSlug: 's1',
+            eventCode: 'BAT2024',
             title: 'Serverless at Scale',
-            speakers: [{ speakerId: 'sp1', fullName: 'John Doe', companyName: 'TechCorp' }],
+            language: 'de',
+            speakers: [
+              {
+                username: 'john.doe',
+                firstName: 'John',
+                lastName: 'Doe',
+                company: 'TechCorp',
+                speakerRole: 'PRIMARY_SPEAKER',
+                isConfirmed: true,
+              },
+            ],
           },
           {
-            sessionId: 's2',
+            sessionSlug: 's2',
+            eventCode: 'BAT2024',
             title: 'Container Orchestration',
-            speakers: [{ speakerId: 'sp2', fullName: 'Jane Smith', companyName: 'CloudInc' }],
+            language: 'de',
+            speakers: [
+              {
+                username: 'jane.smith',
+                firstName: 'Jane',
+                lastName: 'Smith',
+                company: 'CloudInc',
+                speakerRole: 'PRIMARY_SPEAKER',
+                isConfirmed: true,
+              },
+            ],
           },
           {
-            sessionId: 's3',
+            sessionSlug: 's3',
+            eventCode: 'BAT2024',
             title: 'Microservices Patterns',
-            speakers: [{ speakerId: 'sp3', fullName: 'Bob Wilson', companyName: 'StartupXYZ' }],
+            language: 'de',
+            speakers: [
+              {
+                username: 'bob.wilson',
+                firstName: 'Bob',
+                lastName: 'Wilson',
+                company: 'StartupXYZ',
+                speakerRole: 'PRIMARY_SPEAKER',
+                isConfirmed: true,
+              },
+            ],
           },
         ],
-      },
-      {
-        eventId: '2',
+      }),
+      pastEvent(0, {
         eventCode: 'BAT2023',
+        eventNumber: 2023,
         title: 'BATbern 2023',
         date: '2023-11-20T00:00:00Z',
-        topic: 'DevOps',
-        workflowState: 'ARCHIVED',
+        registrationDeadline: '2023-11-20T00:00:00Z',
         venueName: 'Bern Congress',
+        workflowState: 'ARCHIVED',
+        topic: { code: 'devops', name: 'DevOps' },
         sessions: [
           {
-            sessionId: 's4',
+            sessionSlug: 's4',
+            eventCode: 'BAT2023',
             title: 'CI/CD Pipelines',
-            speakers: [{ speakerId: 'sp4', fullName: 'Alice Johnson', companyName: 'DevCo' }],
+            language: 'de',
+            speakers: [
+              {
+                username: 'alice.johnson',
+                firstName: 'Alice',
+                lastName: 'Johnson',
+                company: 'DevCo',
+                speakerRole: 'PRIMARY_SPEAKER',
+                isConfirmed: true,
+              },
+            ],
           },
         ],
-      },
+      }),
     ],
     pagination: {
       page: 1,
-      pages: 3,
       limit: 20,
+      totalPages: 3,
       totalItems: 54,
+      hasNext: true,
+      hasPrev: false,
     },
   };
 
@@ -216,7 +268,14 @@ describe('ArchivePage Component', () => {
     // Set up topicService mock AFTER clearAllMocks
     vi.mocked(topicService.getTopics).mockResolvedValue({
       data: mockTopics,
-      pagination: { page: 1, pages: 1, limit: 100, totalItems: 3 },
+      pagination: {
+        page: 1,
+        limit: 100,
+        totalPages: 1,
+        totalItems: 3,
+        hasNext: false,
+        hasPrev: false,
+      },
     });
   });
 
@@ -345,22 +404,25 @@ describe('ArchivePage Component', () => {
     test('should_loadMore_when_scrolledToBottom', async () => {
       const mockEventsPage2: EventListResponse = {
         data: [
-          {
-            eventId: '3',
+          pastEvent(0, {
             eventCode: 'BAT2022',
+            eventNumber: 2022,
             title: 'BATbern 2022',
             date: '2022-10-10T00:00:00Z',
-            topic: 'Security',
-            workflowState: 'ARCHIVED',
+            registrationDeadline: '2022-10-10T00:00:00Z',
             venueName: 'Bern Tech Hub',
+            workflowState: 'ARCHIVED',
+            topic: { code: 'security', name: 'Security' },
             sessions: [],
-          },
+          }),
         ],
         pagination: {
           page: 2,
-          pages: 3,
           limit: 20,
+          totalPages: 3,
           totalItems: 54,
+          hasNext: true,
+          hasPrev: true,
         },
       };
 
@@ -626,7 +688,14 @@ describe('ArchivePage Component', () => {
     test('should_displayNoResults_when_noEventsMatch', async () => {
       vi.mocked(eventApiClient.getPublicEvents).mockResolvedValue({
         data: [],
-        pagination: { page: 1, pages: 0, limit: 20, totalItems: 0 },
+        pagination: {
+          page: 1,
+          limit: 20,
+          totalPages: 0,
+          totalItems: 0,
+          hasNext: false,
+          hasPrev: false,
+        },
       });
 
       renderWithProviders();

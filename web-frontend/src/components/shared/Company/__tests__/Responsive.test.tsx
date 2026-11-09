@@ -70,41 +70,37 @@ vi.mock('@/hooks/useCompanyMutations/useCompanyMutations', () => ({
     isLoading: false,
     error: null,
   })),
-  useCompanyMutations: vi.fn(() => ({
-    createCompany: vi.fn(),
-    updateCompany: vi.fn(),
-    deleteCompany: vi.fn(),
-  })),
 }));
 
 import { useCompanies } from '@/hooks/useCompanies/useCompanies';
-import {
-  useCompanyMutations,
-  useCreateCompany,
-} from '@/hooks/useCompanyMutations/useCompanyMutations';
+type CompanyListResponse = NonNullable<ReturnType<typeof useCompanies>['data']>;
 
 const mockUseCompanies = vi.mocked(useCompanies);
-const mockUseCompanyMutations = vi.mocked(useCompanyMutations);
 
 // Mock company data
-const mockCompanies = [
-  {
-    id: '1',
-    companyName: 'TestCo AG',
-    legalName: 'TestCo AG',
-    industry: 'Technology',
-    website: 'https://testco.ch',
-    location: 'Zurich',
-  },
-  {
-    id: '2',
-    companyName: 'SecondCo GmbH',
-    legalName: 'SecondCo GmbH',
-    industry: 'Finance',
-    website: 'https://secondco.ch',
-    location: 'Bern',
-  },
-];
+const mockCompanies: CompanyListResponse = {
+  data: [
+    {
+      name: 'TestCoAG',
+      displayName: 'TestCo AG',
+      industry: 'Technology',
+      website: 'https://testco.ch',
+      isVerified: true,
+      createdAt: '2025-01-01T00:00:00Z',
+      updatedAt: '2025-01-01T00:00:00Z',
+    },
+    {
+      name: 'SecondCo',
+      displayName: 'SecondCo GmbH',
+      industry: 'Finance',
+      website: 'https://secondco.ch',
+      isVerified: false,
+      createdAt: '2025-01-01T00:00:00Z',
+      updatedAt: '2025-01-01T00:00:00Z',
+    },
+  ],
+  pagination: { page: 1, limit: 20, totalItems: 2, totalPages: 1, hasNext: false, hasPrev: false },
+};
 
 const createTestQueryClient = () =>
   new QueryClient({
@@ -163,13 +159,7 @@ describe('Responsive Design Tests (AC 11)', () => {
       isLoading: false,
       isError: false,
       error: null,
-    });
-
-    mockUseCompanyMutations.mockReturnValue({
-      createCompany: vi.fn(),
-      updateCompany: vi.fn(),
-      deleteCompany: vi.fn(),
-    });
+    } as unknown as ReturnType<typeof useCompanies>);
 
     // Mock window.location for route checks
     Object.defineProperty(window, 'location', {

@@ -24,6 +24,7 @@ function makeSpeaker(status: SpeakerPoolEntry['status']): SpeakerPoolEntry {
     speakerName: 'Test Speaker',
     status,
     createdAt: '2026-01-01T00:00:00Z',
+    updatedAt: '2026-01-01T00:00:00Z',
   };
 }
 

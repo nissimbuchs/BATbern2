@@ -25,7 +25,7 @@ vi.mock('react-i18next', () => ({
 
 describe('EventLogistics', () => {
   const mockEvent: EventDetail = {
-    id: 'BAT-025',
+    eventCode: 'BATbern25',
     eventNumber: 25,
     title: 'Test Event',
     description: 'Test Description',
@@ -38,8 +38,6 @@ describe('EventLogistics', () => {
     currentAttendeeCount: 87,
     confirmedCount: 87,
     waitlistCount: 0,
-    status: 'PUBLISHED',
-    organizerId: 'org-1',
     typicalStartTime: '16:00',
     typicalEndTime: '19:00',
   };
@@ -82,7 +80,7 @@ describe('EventLogistics', () => {
   });
 
   it('should not render location section when venueName is missing', () => {
-    const eventWithoutVenue = { ...mockEvent, venueName: undefined };
+    const eventWithoutVenue = { ...mockEvent, venueName: '' };
     render(<EventLogistics event={eventWithoutVenue} />);
     expect(screen.queryByText('Location')).not.toBeInTheDocument();
   });

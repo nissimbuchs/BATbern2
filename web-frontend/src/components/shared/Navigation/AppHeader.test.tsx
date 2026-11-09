@@ -9,6 +9,7 @@ import { BrowserRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import AppHeader from './AppHeader';
 import { useUIStore } from '@/stores/uiStore';
+import { anAuthState, anAuthUser } from '@/test/auth';
 
 const mockNavigate = vi.fn();
 vi.mock('react-router-dom', async () => {
@@ -99,37 +100,19 @@ describe('AppHeader Component', () => {
 
     // Mock useAuth hook
     const { useAuth } = await import('@/hooks/useAuth');
-    vi.mocked(useAuth).mockReturnValue({
-      user: {
-        userId: 'user-123',
-        email: 'test@batbern.ch',
-        emailVerified: true,
-        role: 'organizer',
-        companyId: 'company-123',
-        preferences: {
-          language: 'de',
-          theme: 'light',
-          notifications: { email: true, sms: false, push: true },
-          privacy: { showProfile: true, allowMessages: true },
-        },
-        issuedAt: 0,
-        expiresAt: 0,
-        tokenId: '',
-      },
-      isAuthenticated: true,
-      isLoading: false,
-      error: null,
-      signIn: vi.fn(),
-      signUp: vi.fn(),
-      signOut: mockSignOut,
-      confirmSignUp: vi.fn(),
-      resendConfirmationCode: vi.fn(),
-      forgotPassword: vi.fn(),
-      confirmForgotPassword: vi.fn(),
-      changePassword: vi.fn(),
-      updateUserAttributes: vi.fn(),
-      refreshSession: vi.fn(),
-    });
+    vi.mocked(useAuth).mockReturnValue(
+      anAuthState(
+        anAuthUser({
+          userId: 'user-123',
+          username: 'test.user',
+          email: 'test@batbern.ch',
+          role: 'organizer',
+          roles: ['organizer'],
+          companyId: 'company-123',
+        }),
+        { signOut: mockSignOut }
+      )
+    );
 
     vi.mocked(useUIStore).mockReturnValue({
       locale: 'de',
@@ -228,6 +211,7 @@ describe('AppHeader Component', () => {
         user: {
           ...vi.mocked(useAuth)().user!,
           role: 'partner',
+          roles: ['partner'],
         },
       });
 
@@ -269,7 +253,15 @@ describe('AppHeader Component', () => {
     });
 
     test('should_showUnreadBadge_when_unreadNotificationsExist', () => {
-      renderWithProviders(<AppHeader notifications={{ notifications: [], unreadCount: 3 }} />);
+      renderWithProviders(
+        <AppHeader
+          notifications={{
+            data: [],
+            pagination: { page: 1, limit: 20, totalItems: 0, totalPages: 0 },
+            unreadCount: 3,
+          }}
+        />
+      );
 
       // Should show badge with unread count
       const badge = screen.getByText('3');

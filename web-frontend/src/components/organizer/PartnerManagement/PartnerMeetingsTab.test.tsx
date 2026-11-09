@@ -28,7 +28,6 @@ const makeMeeting = (overrides: Partial<PartnerMeetingDTO> = {}): PartnerMeeting
   endTime: '14:00:00',
   location: 'Bern Office',
   agenda: 'Q1 Partnership Review',
-  notes: null,
   inviteSentAt: null,
   createdBy: 'organizer',
   createdAt: '2025-01-01T10:00:00Z',

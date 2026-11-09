@@ -24,6 +24,7 @@ import { I18nextProvider } from 'react-i18next';
 import i18n from '@/i18n/config';
 import { EventForm } from '../EventForm';
 import type { Event } from '@/types/event.types';
+import { anEvent } from '@/test/fixtures';
 
 // Mock API client
 vi.mock('@/services/eventApiClient', () => ({
@@ -47,25 +48,21 @@ vi.mock('@/hooks/useAuth', () => ({
 describe('EventForm Component', () => {
   let queryClient: QueryClient;
 
-  const mockEvent: Event = {
+  const mockEvent: Event = anEvent({
     eventCode: 'BATbern56',
     eventNumber: 56,
     title: 'Cloud Computing 2025',
     description: 'Annual cloud computing event',
-    eventDate: '2025-04-15T18:00:00Z',
-    eventType: 'full_day',
-    status: 'draft',
+    date: '2025-04-15T18:00:00Z',
+    eventType: 'FULL_DAY',
     workflowState: 'CREATED',
     registrationDeadline: '2025-04-08T23:59:59Z',
-    capacity: 200,
-    theme: 'Cloud & DevOps',
-    venueCode: 'kornhaus-bern',
+    venueCapacity: 200,
     currentAttendeeCount: 0,
     createdAt: '2025-01-01T10:00:00Z',
     updatedAt: '2025-01-10T15:00:00Z',
     createdBy: 'john.doe',
-    version: 1,
-  };
+  });
 
   const createWrapper = () => {
     queryClient = new QueryClient({

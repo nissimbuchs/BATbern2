@@ -33,7 +33,6 @@ vi.mock('react-router-dom', async () => {
 
 // Mock event data
 const mockEvent: Event = {
-  eventId: '123e4567-e89b-12d3-a456-426614174000',
   eventCode: 'BAT54',
   eventNumber: 54,
   title: 'Spring Conference 2025',
@@ -43,8 +42,7 @@ const mockEvent: Event = {
   venueName: 'Kursaal Bern',
   venueAddress: 'Kornhausstrasse 3, 3013 Bern',
   venueCapacity: 200,
-  status: 'published',
-  workflowState: 'SPEAKER_CONFIRMATION',
+  workflowState: 'SPEAKER_IDENTIFICATION',
   organizerUsername: 'john.doe',
   currentAttendeeCount: 0,
   realAttendeeCount: 0,

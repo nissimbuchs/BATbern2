@@ -3,7 +3,7 @@
  * Tests for user-friendly error messages, loading states, and offline support
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
@@ -173,9 +173,7 @@ describe('Error Handling & Loading States (AC 13)', () => {
         {
           name: 'google',
           displayName: 'Google LLC',
-          logoUrl: 'https://example.com/logo.png',
-          sector: 'Private',
-          location: { city: 'Zurich', canton: 'ZH', country: 'Switzerland' },
+          isVerified: true,
           createdAt: '2025-01-01T00:00:00Z',
           updatedAt: '2025-01-01T00:00:00Z',
         },
@@ -186,7 +184,6 @@ describe('Error Handling & Loading States (AC 13)', () => {
           companies={mockCompanies}
           isLoading={false}
           viewMode="grid"
-          onViewModeToggle={() => {}}
           onCompanyClick={() => {}}
         />
       );
@@ -280,13 +277,7 @@ describe('Error Handling & Loading States (AC 13)', () => {
   describe('AC13.5: Loading States', () => {
     it('should_showSkeletonLoader_when_dataFetching', () => {
       const { container } = renderWithProviders(
-        <CompanyList
-          companies={[]}
-          isLoading={true}
-          viewMode="grid"
-          onViewModeToggle={() => {}}
-          onCompanyClick={() => {}}
-        />
+        <CompanyList companies={[]} isLoading={true} viewMode="grid" onCompanyClick={() => {}} />
       );
 
       // When loading, the component should indicate loading state
@@ -296,7 +287,7 @@ describe('Error Handling & Loading States (AC 13)', () => {
 
     it('should_showSpinner_when_formSubmitting', async () => {
       const user = userEvent.setup();
-      const slowSubmit = () => new Promise((resolve) => setTimeout(resolve, 100));
+      const slowSubmit = () => new Promise<void>((resolve) => setTimeout(resolve, 100));
 
       renderWithProviders(
         <CompanyForm
@@ -324,7 +315,6 @@ describe('Error Handling & Loading States (AC 13)', () => {
         <CompanyDetailView
           company={null}
           isLoading={true}
-          error={null}
           canEdit={false}
           onEdit={() => {}}
           onBack={() => {}}

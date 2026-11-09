@@ -6,7 +6,7 @@
  */
 
 import { describe, test, expect, vi } from 'vitest';
-import { screen, within } from '@testing-library/react';
+import { screen } from '@testing-library/react';
 import { render } from '@/test/test-utils';
 import { EventCard } from '../EventCard';
 import type { EventDetail } from '@/types/event.types';
@@ -36,22 +36,28 @@ vi.mock('react-i18next', () => ({
 
 describe('EventCard Component', () => {
   const mockEvent: EventDetail = {
-    eventId: '1',
     eventCode: 'BAT2024',
+    eventNumber: 2024,
     title: 'BATbern 2024: Cloud Architecture',
     date: '2024-12-15T00:00:00Z',
+    registrationDeadline: '2024-12-08T00:00:00Z',
+    venueAddress: 'Kornhausplatz 18, 3011 Bern',
+    venueCapacity: 200,
+    currentAttendeeCount: 0,
     topic: {
       code: 'cloud',
       name: 'Cloud Architecture',
       description: 'Cloud computing patterns',
       category: 'technical',
     },
-    workflowState: 'COMPLETED',
+    workflowState: 'EVENT_COMPLETED',
     venueName: 'Kornhausforum',
     themeImageUrl: 'https://cdn.batbern.ch/2024/theme.jpg',
     sessions: [
       {
-        sessionId: 's1',
+        sessionSlug: 's1',
+        eventCode: 'BAT2024',
+        language: 'de',
         title: 'Serverless at Scale',
         speakers: [
           {
@@ -61,11 +67,14 @@ describe('EventCard Component', () => {
             company: 'TechCorp',
             profilePictureUrl: 'https://cdn.batbern.ch/speakers/john.jpg',
             speakerRole: 'PRIMARY_SPEAKER' as const,
+            isConfirmed: true,
           },
         ],
       },
       {
-        sessionId: 's2',
+        sessionSlug: 's2',
+        eventCode: 'BAT2024',
+        language: 'de',
         title: 'Container Orchestration Patterns',
         speakers: [
           {
@@ -75,11 +84,14 @@ describe('EventCard Component', () => {
             company: 'CloudInc',
             profilePictureUrl: 'https://cdn.batbern.ch/speakers/jane.jpg',
             speakerRole: 'PRIMARY_SPEAKER' as const,
+            isConfirmed: true,
           },
         ],
       },
       {
-        sessionId: 's3',
+        sessionSlug: 's3',
+        eventCode: 'BAT2024',
+        language: 'de',
         title: 'Microservices Design',
         speakers: [
           {
@@ -88,11 +100,14 @@ describe('EventCard Component', () => {
             lastName: 'Wilson',
             company: 'StartupXYZ',
             speakerRole: 'PRIMARY_SPEAKER' as const,
+            isConfirmed: true,
           },
         ],
       },
       {
-        sessionId: 's4',
+        sessionSlug: 's4',
+        eventCode: 'BAT2024',
+        language: 'de',
         title: 'API Gateway Architecture',
         speakers: [
           {
@@ -101,6 +116,7 @@ describe('EventCard Component', () => {
             lastName: 'Johnson',
             company: 'DevCo',
             speakerRole: 'PRIMARY_SPEAKER' as const,
+            isConfirmed: true,
           },
         ],
       },
@@ -208,8 +224,10 @@ describe('EventCard Component', () => {
         ...mockEvent,
         sessions: [
           {
-            sessionId: 's1',
+            sessionSlug: 's1',
+            eventCode: mockEvent.eventCode,
             title: 'Session Without Speakers',
+            language: 'de',
             speakers: [],
           },
         ],
@@ -309,7 +327,9 @@ describe('EventCard Component', () => {
         ...mockEvent,
         sessions: [
           {
-            sessionId: 's1',
+            sessionSlug: 's1',
+            eventCode: 'BAT2024',
+            language: 'de',
             title: 'Panel Discussion',
             speakers: [
               {
@@ -318,6 +338,7 @@ describe('EventCard Component', () => {
                 lastName: 'Doe',
                 company: 'TechCorp',
                 speakerRole: 'PRIMARY_SPEAKER' as const,
+                isConfirmed: true,
               },
               {
                 username: 'jane.smith',
@@ -325,6 +346,7 @@ describe('EventCard Component', () => {
                 lastName: 'Smith',
                 company: 'CloudInc',
                 speakerRole: 'CO_SPEAKER' as const,
+                isConfirmed: true,
               },
               {
                 username: 'bob.wilson',
@@ -332,6 +354,7 @@ describe('EventCard Component', () => {
                 lastName: 'Wilson',
                 company: 'StartupXYZ',
                 speakerRole: 'PANELIST' as const,
+                isConfirmed: true,
               },
             ],
           },

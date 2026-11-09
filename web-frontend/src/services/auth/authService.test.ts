@@ -397,7 +397,10 @@ describe('AuthService', () => {
       mockAuth.signUp.mockResolvedValue({
         isSignUpComplete: false,
         userId: 'withcompany-id',
-        nextStep: { signUpStep: 'CONFIRM_SIGN_UP' },
+        nextStep: {
+          signUpStep: 'CONFIRM_SIGN_UP',
+          codeDeliveryDetails: { deliveryMedium: 'EMAIL', destination: 'w***@c***.com' },
+        },
       });
 
       await authService.signUp(signUpData);
@@ -738,7 +741,7 @@ describe('AuthService', () => {
     it('should_returnError_when_noTokenAvailable', async () => {
       // Test line 288: no token case
       const mockSession = {
-        tokens: null,
+        tokens: undefined,
       };
 
       mockAuth.fetchAuthSession.mockResolvedValue(mockSession);
