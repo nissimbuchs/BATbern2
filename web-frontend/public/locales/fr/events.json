@@ -284,7 +284,8 @@
       "typeNewsletter": "Newsletter",
       "typeReminder": "Rappel",
       "previewTitle": "Aperçu de l'e-mail",
-      "retryHint": "L'envoi du {{date}} n'a pas atteint {{count}} destinataire(s)."
+      "retryHint": "L'envoi du {{date}} n'a pas atteint {{count}} destinataire(s).",
+      "previewPlaceholder": "L'aperçu s'affichera ici"
     },
     "venue": {
       "vegetarianCount": "{{count}} Vegetarian",
@@ -314,7 +315,8 @@
       "confirmBody": "Un e-mail réel sera envoyé à {{recipients}}. L'adresse de réponse est celle du coordinateur du lieu configuré.",
       "confirmSend": "Oui, envoyer",
       "sentSuccess": "Envoyé à {{count}} destinataire(s).",
-      "sentFailed": "Échec de l'envoi : {{message}}"
+      "sentFailed": "Échec de l'envoi : {{message}}",
+      "previewPlaceholder": "L'aperçu s'affichera ici"
     },
     "registrantNotices": {
       "title": "Infos participants",
@@ -939,7 +941,12 @@
       "event_live": "Événement en direct",
       "event_completed": "Événement terminé",
       "archived": "Archivé"
-    }
+    },
+    "loading": "Chargement du statut du workflow...",
+    "error": "Impossible de charger le statut du workflow",
+    "noData": "Aucun statut de workflow disponible",
+    "currentState": "État actuel",
+    "blockedTransitions": "Bloqué :"
   },
   "autoSave": {
     "saving": "Enregistrement...",
@@ -1010,7 +1017,10 @@
       "revertPhase": "Annuler la publication {{phase}}",
       "revertConfirmTitle": "Annuler la publication {{phase}} ?",
       "revertConfirmText": "Le site public revient à la phase précédente. Ce que {{phase}} affichait n'est plus visible pour les visiteurs.",
-      "revertConfirmButton": "Annuler la publication"
+      "revertConfirmButton": "Annuler la publication",
+      "topicNotReady": "Le sujet n'est pas prêt à être publié",
+      "speakersNotReady": "Les intervenants ne sont pas prêts à être publiés",
+      "agendaNotReady": "{{assigned}} créneaux attribués sur {{total}}. Attribuez tous les créneaux avant de publier le programme"
     },
     "validation": {
       "readyToPublish": "Prêt à publier",
@@ -1190,8 +1200,16 @@
       "titleRequired": "Le titre est requis",
       "abstractTooLong": "Le résumé doit comporter {{max}} caractères ou moins",
       "invalidDuration": "La durée doit être comprise entre 1 et 480 minutes",
-      "saveFailed": "Échec de la sauvegarde de la session"
-    }
+      "saveFailed": "Échec de la sauvegarde de la session",
+      "endTimeBeforeStart": "L'heure de fin doit être postérieure à l'heure de début",
+      "durationTooShort": "La session doit durer au moins {{min}} minutes",
+      "durationTooLong": "La session doit durer au plus {{max}} minutes",
+      "speakerConflict": "L'intervenant {{speaker}} est déjà prévu pour « {{session}} » à {{time}}",
+      "roomConflict": "La salle {{room}} est déjà réservée pour « {{session}} » à {{time}}",
+      "timingConflict": "Conflit horaire détecté"
+    },
+    "startTimeLabel": "Heure de début",
+    "endTimeLabel": "Heure de fin"
   },
   "slotAssignment": {
     "title": "Attribution des créneaux",
@@ -1382,7 +1400,8 @@
     "emptyState": "Aucune photo pour l'instant. Téléchargez la première !",
     "uploading": "Téléchargement...",
     "uploadError": "Échec du téléchargement. Veuillez réessayer.",
-    "uploadErrorPartial": "{{failed}} sur {{total}} téléchargements ont échoué. Veuillez réessayer."
+    "uploadErrorPartial": "{{failed}} sur {{total}} téléchargements ont échoué. Veuillez réessayer.",
+    "uploadingProgress": "Téléversement {{done}}/{{total}}..."
   },
   "teaserImage": {
     "title": "Images teaser",
@@ -1495,5 +1514,19 @@
       "limits": "Chaque mail que nous leur avons envoyé et chaque mail reçu d’eux, tous événements confondus. Non listés : newsletters, mails antérieurs à l’enregistrement par le Mail Center et mails à une adresse qu’ils n’ont plus.",
       "empty": "Aucun mail vers ou de cette personne pour l’instant."
     }
+  },
+  "venue": {
+    "errors": {
+      "nameRequired": "Le nom du lieu est obligatoire",
+      "addressRequired": "L'adresse du lieu est obligatoire",
+      "capacityPositive": "La capacité doit être un nombre positif",
+      "capacityMax": "La capacité ne peut pas dépasser 5000",
+      "updateFailed": "Impossible de mettre à jour le lieu"
+    },
+    "sectionTitle": "Lieu et logistique",
+    "title": "Lieu & logistique",
+    "nameLabel": "Nom du lieu",
+    "capacityLabel": "Capacité du lieu",
+    "addressLabel": "Adresse du lieu"
   }
 }

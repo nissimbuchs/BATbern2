@@ -1,7 +1,8 @@
 {
   "navigation": {
     "partners": "パートナー",
-    "topicManagement": "トピック管理"
+    "topicManagement": "トピック管理",
+    "blobSelector": "ブロブセレクター"
   },
   "topicBacklog": {
     "pageTitle": "トピック管理",
@@ -79,7 +80,8 @@
         "safestFirst": "最も安全なものから（陳腐化 ↓）",
         "recentFirst": "最新のものから（陳腐化 ↑）",
         "titleAZ": "タイトル（A-Z）",
-        "mostUsed": "最も使用されたもの"
+        "mostUsed": "最も使用されたもの",
+        "newestFirst": "新しい順(最近追加)"
       }
     },
     "details": {
@@ -132,7 +134,10 @@
         "previous": "前の年",
         "next": "次の年",
         "atCurrent": "現在の年"
-      }
+      },
+      "low": "使用頻度:低",
+      "medium": "使用頻度:中",
+      "high": "使用頻度:高"
     },
     "dialogs": {
       "similar": {
@@ -518,7 +523,9 @@
     "lessonsLearned": "Enthält Lessons Learned aus der Praxis",
     "shortenedAbstract": "Gekürzter Abstract",
     "words": "Wörter",
-    "copyShortened": "Gekürzten Abstract kopieren"
+    "copyShortened": "Gekürzten Abstract kopieren",
+    "copied": "コピーしました!",
+    "copy": "クリップボードにコピー"
   },
   "speakerCard": {
     "primaryAction": {

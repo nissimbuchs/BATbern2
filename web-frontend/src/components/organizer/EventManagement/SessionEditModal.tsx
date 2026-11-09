@@ -542,7 +542,7 @@ export const SessionEditModal: React.FC<SessionEditModalProps> = ({
               />
               <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5 }}>
                 {abstract.length} / {MAX_ABSTRACT_LENGTH}{' '}
-                {t('qualityReview.characters', 'characters')}
+                {t('organizer:qualityReview.characters', 'characters')}
               </Typography>
             </Box>
 

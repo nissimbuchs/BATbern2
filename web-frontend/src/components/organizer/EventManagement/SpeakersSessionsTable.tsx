@@ -256,7 +256,7 @@ export const SpeakersSessionsTable: React.FC<SpeakersSessionsTableProps> = ({
         <Alert severity="error" sx={{ mb: 2 }}>
           {error}
           <Button size="small" onClick={() => window.location.reload()}>
-            {t('common.retry', 'Retry')}
+            {t('common:actions.retry', 'Retry')}
           </Button>
         </Alert>
       </Box>
@@ -410,7 +410,7 @@ export const SpeakersSessionsTable: React.FC<SpeakersSessionsTableProps> = ({
               <TableCell>{t('common:role.speaker')}</TableCell>
               <TableCell>{t('speakers.sessionTitle')}</TableCell>
               <TableCell>{t('speakers.materials')}</TableCell>
-              <TableCell align="right">{t('common.actions', 'Actions')}</TableCell>
+              <TableCell align="right">{t('common:labels.actions', 'Actions')}</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>

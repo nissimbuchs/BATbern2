@@ -1,7 +1,8 @@
 {
   "navigation": {
     "partners": "Partner",
-    "topicManagement": "Gestione argomenti"
+    "topicManagement": "Gestione argomenti",
+    "blobSelector": "Selettore blob"
   },
   "topicBacklog": {
     "pageTitle": "Gestione argomenti",
@@ -79,7 +80,8 @@
         "safestFirst": "Più sicuro prima (obsolescenza ↓)",
         "recentFirst": "Più recente prima (obsolescenza ↑)",
         "titleAZ": "Titolo (A-Z)",
-        "mostUsed": "Più utilizzato"
+        "mostUsed": "Più utilizzato",
+        "newestFirst": "Più recenti prima (aggiunti di recente)"
       }
     },
     "details": {
@@ -132,7 +134,10 @@
         "previous": "Anni precedenti",
         "next": "Anni successivi",
         "atCurrent": "All'anno corrente"
-      }
+      },
+      "low": "Utilizzo basso",
+      "medium": "Utilizzo medio",
+      "high": "Utilizzo alto"
     },
     "dialogs": {
       "similar": {
@@ -518,7 +523,9 @@
     "lessonsLearned": "Enthält Lessons Learned aus der Praxis",
     "shortenedAbstract": "Gekürzter Abstract",
     "words": "Wörter",
-    "copyShortened": "Gekürzten Abstract kopieren"
+    "copyShortened": "Gekürzten Abstract kopieren",
+    "copied": "Copiato!",
+    "copy": "Copia negli appunti"
   },
   "speakerCard": {
     "primaryAction": {

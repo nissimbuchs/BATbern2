@@ -105,22 +105,22 @@ export const VenueLogistics: React.FC<VenueLogisticsProps> = ({ event, onUpdate 
     const errors: ValidationErrors = {};
 
     if (!data.venueName.trim()) {
-      errors.venueName = t('events.venue.errors.nameRequired', 'Venue name is required');
+      errors.venueName = t('venue.errors.nameRequired', 'Venue name is required');
     }
 
     if (!data.venueAddress.trim()) {
-      errors.venueAddress = t('events.venue.errors.addressRequired', 'Venue address is required');
+      errors.venueAddress = t('venue.errors.addressRequired', 'Venue address is required');
     }
 
     if (data.venueCapacity < 1) {
       errors.venueCapacity = t(
-        'events.venue.errors.capacityPositive',
+        'venue.errors.capacityPositive',
         'Capacity must be a positive number'
       );
     }
 
     if (data.venueCapacity > 5000) {
-      errors.venueCapacity = t('events.venue.errors.capacityMax', 'Capacity cannot exceed 5000');
+      errors.venueCapacity = t('venue.errors.capacityMax', 'Capacity cannot exceed 5000');
     }
 
     return errors;
@@ -142,7 +142,7 @@ export const VenueLogistics: React.FC<VenueLogisticsProps> = ({ event, onUpdate 
       setOriginalValues(data);
     } catch (error) {
       console.error('Failed to update venue:', error);
-      setUpdateError(t('events.venue.errors.updateFailed', 'Failed to update venue'));
+      setUpdateError(t('venue.errors.updateFailed', 'Failed to update venue'));
 
       // Revert to original values
       setFormData(originalValues);
@@ -160,7 +160,7 @@ export const VenueLogistics: React.FC<VenueLogisticsProps> = ({ event, onUpdate 
     if (!newValue.trim()) {
       setErrors((prev) => ({
         ...prev,
-        venueName: t('events.venue.errors.nameRequired', 'Venue name is required'),
+        venueName: t('venue.errors.nameRequired', 'Venue name is required'),
       }));
     } else {
       setErrors((prev) => ({ ...prev, venueName: undefined }));
@@ -175,7 +175,7 @@ export const VenueLogistics: React.FC<VenueLogisticsProps> = ({ event, onUpdate 
     if (!newValue.trim()) {
       setErrors((prev) => ({
         ...prev,
-        venueAddress: t('events.venue.errors.addressRequired', 'Venue address is required'),
+        venueAddress: t('venue.errors.addressRequired', 'Venue address is required'),
       }));
     } else {
       setErrors((prev) => ({ ...prev, venueAddress: undefined }));
@@ -190,15 +190,12 @@ export const VenueLogistics: React.FC<VenueLogisticsProps> = ({ event, onUpdate 
     if (value < 1) {
       setErrors((prev) => ({
         ...prev,
-        venueCapacity: t(
-          'events.venue.errors.capacityPositive',
-          'Capacity must be a positive number'
-        ),
+        venueCapacity: t('venue.errors.capacityPositive', 'Capacity must be a positive number'),
       }));
     } else if (value > 5000) {
       setErrors((prev) => ({
         ...prev,
-        venueCapacity: t('events.venue.errors.capacityMax', 'Capacity cannot exceed 5000'),
+        venueCapacity: t('venue.errors.capacityMax', 'Capacity cannot exceed 5000'),
       }));
     } else {
       setErrors((prev) => ({ ...prev, venueCapacity: undefined }));
@@ -209,7 +206,7 @@ export const VenueLogistics: React.FC<VenueLogisticsProps> = ({ event, onUpdate 
     <Box
       component="section"
       role="region"
-      aria-label={t('events.venue.sectionTitle', 'Venue and Logistics')}
+      aria-label={t('venue.sectionTitle', 'Venue and Logistics')}
       sx={{
         display: 'flex',
         flexDirection: { xs: 'column', md: 'row' },
@@ -227,7 +224,7 @@ export const VenueLogistics: React.FC<VenueLogisticsProps> = ({ event, onUpdate 
       >
         {/* Section Title */}
         <Typography variant="h6" gutterBottom>
-          {t('events.venue.title', 'Venue & Logistics')}
+          {t('venue.title', 'Venue & Logistics')}
         </Typography>
 
         {/* Update Error */}
@@ -256,14 +253,14 @@ export const VenueLogistics: React.FC<VenueLogisticsProps> = ({ event, onUpdate 
           <Grid size={{ xs: 12, md: 6 }}>
             <TextField
               fullWidth
-              label={t('events.venue.nameLabel', 'Venue Name')}
+              label={t('venue.nameLabel', 'Venue Name')}
               value={formData.venueName}
               onChange={handleVenueNameChange}
               disabled={isUpdating}
               error={!!errors.venueName}
               helperText={errors.venueName}
               inputProps={{
-                'aria-label': t('events.venue.nameLabel', 'Venue Name'),
+                'aria-label': t('venue.nameLabel', 'Venue Name'),
               }}
               FormHelperTextProps={{
                 role: errors.venueName ? 'alert' : undefined,
@@ -276,14 +273,14 @@ export const VenueLogistics: React.FC<VenueLogisticsProps> = ({ event, onUpdate 
             <TextField
               fullWidth
               type="number"
-              label={t('events.venue.capacityLabel', 'Venue Capacity')}
+              label={t('venue.capacityLabel', 'Venue Capacity')}
               value={formData.venueCapacity}
               onChange={handleVenueCapacityChange}
               disabled={isUpdating}
               error={!!errors.venueCapacity}
               helperText={errors.venueCapacity}
               inputProps={{
-                'aria-label': t('events.venue.capacityLabel', 'Venue Capacity'),
+                'aria-label': t('venue.capacityLabel', 'Venue Capacity'),
                 min: 1,
                 max: 5000,
               }}
@@ -299,14 +296,14 @@ export const VenueLogistics: React.FC<VenueLogisticsProps> = ({ event, onUpdate 
               fullWidth
               multiline
               rows={3}
-              label={t('events.venue.addressLabel', 'Venue Address')}
+              label={t('venue.addressLabel', 'Venue Address')}
               value={formData.venueAddress}
               onChange={handleVenueAddressChange}
               disabled={isUpdating}
               error={!!errors.venueAddress}
               helperText={errors.venueAddress}
               inputProps={{
-                'aria-label': t('events.venue.addressLabel', 'Venue Address'),
+                'aria-label': t('venue.addressLabel', 'Venue Address'),
               }}
               FormHelperTextProps={{
                 role: errors.venueAddress ? 'alert' : undefined,

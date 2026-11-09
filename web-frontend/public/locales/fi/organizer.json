@@ -1,7 +1,8 @@
 {
   "navigation": {
     "partners": "Kumppanit",
-    "topicManagement": "Aiheiden hallinta"
+    "topicManagement": "Aiheiden hallinta",
+    "blobSelector": "Blob-valitsin"
   },
   "topicBacklog": {
     "pageTitle": "Aiheiden hallinta",
@@ -79,7 +80,8 @@
         "safestFirst": "Turvallisin ensin (vanheneminen ↓)",
         "recentFirst": "Tuorein ensin (vanheneminen ↑)",
         "titleAZ": "Otsikko (A-Ö)",
-        "mostUsed": "Eniten käytetty"
+        "mostUsed": "Eniten käytetty",
+        "newestFirst": "Uusimmat ensin (äskettäin lisätyt)"
       }
     },
     "details": {
@@ -132,7 +134,10 @@
         "previous": "Edelliset vuodet",
         "next": "Seuraavat vuodet",
         "atCurrent": "Kuluva vuosi"
-      }
+      },
+      "low": "Vähäinen käyttö",
+      "medium": "Kohtalainen käyttö",
+      "high": "Runsas käyttö"
     },
     "dialogs": {
       "similar": {
@@ -518,7 +523,9 @@
     "lessonsLearned": "Enthält Lessons Learned aus der Praxis",
     "shortenedAbstract": "Gekürzter Abstract",
     "words": "Wörter",
-    "copyShortened": "Gekürzten Abstract kopieren"
+    "copyShortened": "Gekürzten Abstract kopieren",
+    "copied": "Kopioitu!",
+    "copy": "Kopioi leikepöydälle"
   },
   "speakerCard": {
     "primaryAction": {

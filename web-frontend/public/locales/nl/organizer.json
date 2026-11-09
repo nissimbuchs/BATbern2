@@ -1,7 +1,8 @@
 {
   "navigation": {
     "partners": "Partners",
-    "topicManagement": "Onderwerpbeheer"
+    "topicManagement": "Onderwerpbeheer",
+    "blobSelector": "Blob-selector"
   },
   "topicBacklog": {
     "pageTitle": "Onderwerpbeheer",
@@ -79,7 +80,8 @@
         "safestFirst": "Veiligste eerst (veroudering ↓)",
         "recentFirst": "Meest recent eerst (veroudering ↑)",
         "titleAZ": "Titel (A-Z)",
-        "mostUsed": "Meest gebruikt"
+        "mostUsed": "Meest gebruikt",
+        "newestFirst": "Nieuwste eerst (recent toegevoegd)"
       }
     },
     "details": {
@@ -132,7 +134,10 @@
         "previous": "Vorige jaren",
         "next": "Volgende jaren",
         "atCurrent": "Huidig jaar"
-      }
+      },
+      "low": "Weinig gebruikt",
+      "medium": "Gemiddeld gebruikt",
+      "high": "Veel gebruikt"
     },
     "dialogs": {
       "similar": {
@@ -518,7 +523,9 @@
     "lessonsLearned": "Enthält Lessons Learned aus der Praxis",
     "shortenedAbstract": "Gekürzter Abstract",
     "words": "Wörter",
-    "copyShortened": "Gekürzten Abstract kopieren"
+    "copyShortened": "Gekürzten Abstract kopieren",
+    "copied": "Gekopieerd!",
+    "copy": "Kopiëren naar klembord"
   },
   "speakerCard": {
     "primaryAction": {

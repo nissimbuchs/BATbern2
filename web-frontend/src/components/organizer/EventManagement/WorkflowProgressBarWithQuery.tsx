@@ -69,7 +69,7 @@ export const WorkflowProgressBarWithQuery: React.FC<WorkflowProgressBarWithQuery
         severity="error"
         action={
           <Button size="small" startIcon={<RefreshIcon />} onClick={() => refetch()}>
-            {t('common.retry')}
+            {t('common:actions.retry')}
           </Button>
         }
       >

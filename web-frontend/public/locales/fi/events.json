@@ -284,7 +284,8 @@
       "typeNewsletter": "Uutiskirje",
       "typeReminder": "Muistutus",
       "previewTitle": "Sähköpostin esikatselu",
-      "retryHint": "Lähetys {{date}} ei tavoittanut {{count}} vastaanottajaa."
+      "retryHint": "Lähetys {{date}} ei tavoittanut {{count}} vastaanottajaa.",
+      "previewPlaceholder": "Esikatselu näkyy tässä"
     },
     "venue": {
       "vegetarianCount": "{{count}} Vegetarian",
@@ -314,7 +315,8 @@
       "confirmBody": "Lähetetään oikea sähköposti osoitteeseen {{recipients}}. Vastausosoite on määritetyn tilan koordinaattorin osoite.",
       "confirmSend": "Kyllä, lähetä",
       "sentSuccess": "Lähetetty {{count}} vastaanottajalle.",
-      "sentFailed": "Lähetys epäonnistui: {{message}}"
+      "sentFailed": "Lähetys epäonnistui: {{message}}",
+      "previewPlaceholder": "Esikatselu näkyy tässä"
     },
     "registrantNotices": {
       "title": "Ilmoittautuneiden tiedotteet",
@@ -939,7 +941,12 @@
       "event_live": "Tapahtuma live",
       "event_completed": "Tapahtuma suoritettu",
       "archived": "Arkistoitu"
-    }
+    },
+    "loading": "Ladataan työnkulun tilaa...",
+    "error": "Työnkulun tilan lataus epäonnistui",
+    "noData": "Työnkulun tilaa ei ole saatavilla",
+    "currentState": "Nykyinen tila",
+    "blockedTransitions": "Estetty:"
   },
   "autoSave": {
     "saving": "Tallennetaan...",
@@ -1010,7 +1017,10 @@
       "revertPhase": "Peru julkaisu: {{phase}}",
       "revertConfirmTitle": "Perutaanko julkaisu: {{phase}}?",
       "revertConfirmText": "Julkinen verkkosivusto palaa edelliseen vaiheeseen. Vaiheen {{phase}} sisältö ei enää näy vierailijoille.",
-      "revertConfirmButton": "Peru julkaisu"
+      "revertConfirmButton": "Peru julkaisu",
+      "topicNotReady": "Aihe ei ole valmis julkaistavaksi",
+      "speakersNotReady": "Puhujat eivät ole valmiita julkaistavaksi",
+      "agendaNotReady": "{{assigned}}/{{total}} paikkaa määritetty. Määritä kaikki paikat ennen ohjelman julkaisua"
     },
     "validation": {
       "readyToPublish": "Valmis julkaistavaksi",
@@ -1190,8 +1200,16 @@
       "titleRequired": "Otsikko on pakollinen",
       "abstractTooLong": "Tiivistelmän on oltava enintään {{max}} merkkiä",
       "invalidDuration": "Keston on oltava 1-480 minuutin välillä",
-      "saveFailed": "Istunnon tallentaminen epäonnistui"
-    }
+      "saveFailed": "Istunnon tallentaminen epäonnistui",
+      "endTimeBeforeStart": "Päättymisajan on oltava alkamisajan jälkeen",
+      "durationTooShort": "Istunnon on kestettävä vähintään {{min}} minuuttia",
+      "durationTooLong": "Istunto saa kestää enintään {{max}} minuuttia",
+      "speakerConflict": "Puhuja {{speaker}} on jo aikataulutettu istuntoon \"{{session}}\" klo {{time}}",
+      "roomConflict": "Tila {{room}} on jo varattu istunnolle \"{{session}}\" klo {{time}}",
+      "timingConflict": "Aikatauluristiriita havaittu"
+    },
+    "startTimeLabel": "Alkamisaika",
+    "endTimeLabel": "Päättymisaika"
   },
   "slotAssignment": {
     "title": "Paikkamäärittely",
@@ -1382,7 +1400,8 @@
     "emptyState": "Ei kuvia vielä. Lataa ensimmäinen!",
     "uploading": "Ladataan...",
     "uploadError": "Lataus epäonnistui. Yritä uudelleen.",
-    "uploadErrorPartial": "{{failed}}/{{total}} latauksesta epäonnistui. Yritä uudelleen."
+    "uploadErrorPartial": "{{failed}}/{{total}} latauksesta epäonnistui. Yritä uudelleen.",
+    "uploadingProgress": "Ladataan {{done}}/{{total}}..."
   },
   "teaserImage": {
     "title": "Teaserikuvat",
@@ -1495,5 +1514,19 @@
       "limits": "Jokainen heille lähettämämme ja heiltä saamamme viesti kaikista tapahtumista. Ei näytetä: uutiskirjeitä, viestejä ajalta ennen Mail Centerin tallennusta eikä viestejä osoitteeseen, jota heillä ei enää ole.",
       "empty": "Ei vielä viestejä tälle henkilölle tai häneltä."
     }
+  },
+  "venue": {
+    "errors": {
+      "nameRequired": "Tapahtumapaikan nimi on pakollinen",
+      "addressRequired": "Tapahtumapaikan osoite on pakollinen",
+      "capacityPositive": "Kapasiteetin on oltava positiivinen luku",
+      "capacityMax": "Kapasiteetti ei voi ylittää 5000",
+      "updateFailed": "Tapahtumapaikan päivitys epäonnistui"
+    },
+    "sectionTitle": "Tapahtumapaikka ja logistiikka",
+    "title": "Tapahtumapaikka & logistiikka",
+    "nameLabel": "Tapahtumapaikan nimi",
+    "capacityLabel": "Tapahtumapaikan kapasiteetti",
+    "addressLabel": "Tapahtumapaikan osoite"
   }
 }

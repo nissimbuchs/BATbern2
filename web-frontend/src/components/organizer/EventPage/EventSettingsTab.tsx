@@ -100,7 +100,7 @@ export const EventSettingsTab: React.FC<EventSettingsTabProps> = ({ event, event
     setCapacityError(null);
     const parsed = capacityValue.trim() === '' ? null : parseInt(capacityValue, 10);
     if (parsed !== null && (isNaN(parsed) || parsed <= 0)) {
-      setCapacityError(t('create.form.capacityPositive', 'Capacity must be a positive number'));
+      setCapacityError(t('validation.capacityPositive', 'Capacity must be a positive number'));
       return;
     }
     try {
@@ -772,7 +772,7 @@ export const EventSettingsTab: React.FC<EventSettingsTabProps> = ({ event, event
             disabled={deleteEventMutation.isPending}
           >
             {deleteEventMutation.isPending
-              ? t('common.deleting', 'Deleting...')
+              ? t('common:actions.deleting', 'Deleting...')
               : t('eventPage.settings.confirmDeleteBtn', 'Yes, Delete Event')}
           </Button>
         </DialogActions>

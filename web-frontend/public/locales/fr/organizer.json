@@ -1,7 +1,8 @@
 {
   "navigation": {
     "partners": "Partenaires",
-    "topicManagement": "Gestion des sujets"
+    "topicManagement": "Gestion des sujets",
+    "blobSelector": "Sélecteur de blobs"
   },
   "topicBacklog": {
     "pageTitle": "Gestion des sujets",
@@ -79,7 +80,8 @@
         "safestFirst": "Plus sûr en premier (obsolescence ↓)",
         "recentFirst": "Plus récent en premier (obsolescence ↑)",
         "titleAZ": "Titre (A-Z)",
-        "mostUsed": "Plus utilisé"
+        "mostUsed": "Plus utilisé",
+        "newestFirst": "Plus récents d'abord (ajoutés récemment)"
       }
     },
     "details": {
@@ -132,7 +134,10 @@
         "previous": "Années précédentes",
         "next": "Années suivantes",
         "atCurrent": "À l'année actuelle"
-      }
+      },
+      "low": "Utilisation faible",
+      "medium": "Utilisation moyenne",
+      "high": "Utilisation élevée"
     },
     "dialogs": {
       "similar": {
@@ -518,7 +523,9 @@
     "lessonsLearned": "Enthält Lessons Learned aus der Praxis",
     "shortenedAbstract": "Gekürzter Abstract",
     "words": "Wörter",
-    "copyShortened": "Gekürzten Abstract kopieren"
+    "copyShortened": "Gekürzten Abstract kopieren",
+    "copied": "Copié !",
+    "copy": "Copier dans le presse-papiers"
   },
   "speakerCard": {
     "primaryAction": {

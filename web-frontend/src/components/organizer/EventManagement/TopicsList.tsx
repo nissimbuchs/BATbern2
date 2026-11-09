@@ -118,7 +118,7 @@ export const TopicsList: React.FC<TopicsListProps> = ({
         <Alert severity="error" sx={{ mb: 2 }}>
           {error.message || t('topics.loadError', 'Failed to load topics')}
           <Button size="small" sx={{ ml: 2 }} onClick={() => window.location.reload()}>
-            {t('common.retry', 'Retry')}
+            {t('common:actions.retry', 'Retry')}
           </Button>
         </Alert>
       </Box>

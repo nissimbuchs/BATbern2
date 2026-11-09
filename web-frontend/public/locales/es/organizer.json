@@ -1,7 +1,8 @@
 {
   "navigation": {
     "partners": "Socios",
-    "topicManagement": "Gestión de temas"
+    "topicManagement": "Gestión de temas",
+    "blobSelector": "Selector de blobs"
   },
   "topicBacklog": {
     "pageTitle": "Gestión de temas",
@@ -79,7 +80,8 @@
         "safestFirst": "Más seguro primero (obsolescencia ↓)",
         "recentFirst": "Más reciente primero (obsolescencia ↑)",
         "titleAZ": "Título (A-Z)",
-        "mostUsed": "Más utilizado"
+        "mostUsed": "Más utilizado",
+        "newestFirst": "Más recientes primero (añadidos recientemente)"
       }
     },
     "details": {
@@ -132,7 +134,10 @@
         "previous": "Años anteriores",
         "next": "Años siguientes",
         "atCurrent": "En el año actual"
-      }
+      },
+      "low": "Uso bajo",
+      "medium": "Uso medio",
+      "high": "Uso alto"
     },
     "dialogs": {
       "similar": {
@@ -518,7 +523,9 @@
     "lessonsLearned": "Enthält Lessons Learned aus der Praxis",
     "shortenedAbstract": "Gekürzter Abstract",
     "words": "Wörter",
-    "copyShortened": "Gekürzten Abstract kopieren"
+    "copyShortened": "Gekürzten Abstract kopieren",
+    "copied": "¡Copiado!",
+    "copy": "Copiar al portapapeles"
   },
   "speakerCard": {
     "primaryAction": {

@@ -284,7 +284,8 @@
       "typeNewsletter": "ニュースレター",
       "typeReminder": "リマインダー",
       "previewTitle": "メールプレビュー",
-      "retryHint": "{{date}} の送信で {{count}} 名に届きませんでした。"
+      "retryHint": "{{date}} の送信で {{count}} 名に届きませんでした。",
+      "previewPlaceholder": "ここにプレビューが表示されます"
     },
     "venue": {
       "vegetarianCount": "{{count}} Vegetarian",
@@ -314,7 +315,8 @@
       "confirmBody": "{{recipients}} に実際のメールが送信されます。返信先は設定された会場コーディネーターです。",
       "confirmSend": "はい、送信",
       "sentSuccess": "{{count}} 名の受信者に送信しました。",
-      "sentFailed": "送信に失敗しました：{{message}}"
+      "sentFailed": "送信に失敗しました：{{message}}",
+      "previewPlaceholder": "ここにプレビューが表示されます"
     },
     "registrantNotices": {
       "title": "参加者へのお知らせ",
@@ -939,7 +941,12 @@
       "event_live": "イベント開催中",
       "event_completed": "イベント完了",
       "archived": "アーカイブ済み"
-    }
+    },
+    "loading": "ワークフローの状態を読み込み中...",
+    "error": "ワークフローの状態を読み込めませんでした",
+    "noData": "ワークフローの状態はありません",
+    "currentState": "現在の状態",
+    "blockedTransitions": "ブロック中:"
   },
   "autoSave": {
     "saving": "保存中...",
@@ -1010,7 +1017,10 @@
       "revertPhase": "{{phase}}の公開を取り消す",
       "revertConfirmTitle": "{{phase}}の公開を取り消しますか？",
       "revertConfirmText": "公開ウェブサイトは前のフェーズに戻ります。{{phase}}で表示されていた内容は訪問者に表示されなくなります。",
-      "revertConfirmButton": "取り消す"
+      "revertConfirmButton": "取り消す",
+      "topicNotReady": "トピックはまだ公開できる状態ではありません",
+      "speakersNotReady": "登壇者はまだ公開できる状態ではありません",
+      "agendaNotReady": "{{total}} 枠中 {{assigned}} 枠が割り当て済みです。プログラムを公開する前にすべての枠を割り当ててください"
     },
     "validation": {
       "readyToPublish": "公開準備完了",
@@ -1190,8 +1200,16 @@
       "titleRequired": "タイトルは必須です",
       "abstractTooLong": "概要は{{max}}文字以下でなければなりません",
       "invalidDuration": "時間は1分から480分の間でなければなりません",
-      "saveFailed": "セッションの保存に失敗しました"
-    }
+      "saveFailed": "セッションの保存に失敗しました",
+      "endTimeBeforeStart": "終了時刻は開始時刻より後にしてください",
+      "durationTooShort": "セッションは{{min}}分以上にしてください",
+      "durationTooLong": "セッションは{{max}}分以内にしてください",
+      "speakerConflict": "登壇者 {{speaker}} は {{time}} に「{{session}}」で既に予定されています",
+      "roomConflict": "会場 {{room}} は {{time}} に「{{session}}」で既に予約されています",
+      "timingConflict": "時間の重複が検出されました"
+    },
+    "startTimeLabel": "開始時刻",
+    "endTimeLabel": "終了時刻"
   },
   "slotAssignment": {
     "title": "スロット割り当て",
@@ -1382,7 +1400,8 @@
     "emptyState": "まだ写真がありません。最初の1枚をアップロードしましょう！",
     "uploading": "アップロード中...",
     "uploadError": "アップロードに失敗しました。再試行してください。",
-    "uploadErrorPartial": "{{total}}件中{{failed}}件のアップロードが失敗しました。再試行してください。"
+    "uploadErrorPartial": "{{total}}件中{{failed}}件のアップロードが失敗しました。再試行してください。",
+    "uploadingProgress": "アップロード中 {{done}}/{{total}}..."
   },
   "teaserImage": {
     "title": "ティーザー画像",
@@ -1495,5 +1514,19 @@
       "limits": "全イベントで、この方に送ったメールとこの方から受け取ったメール。表示されないもの：ニュースレター、メールセンターが記録を始める前のメール、現在は登録されていないアドレス宛のメール。",
       "empty": "この方とのメールはまだありません。"
     }
+  },
+  "venue": {
+    "errors": {
+      "nameRequired": "会場名は必須です",
+      "addressRequired": "会場の住所は必須です",
+      "capacityPositive": "定員は正の数にしてください",
+      "capacityMax": "定員は5000を超えることはできません",
+      "updateFailed": "会場を更新できませんでした"
+    },
+    "sectionTitle": "会場とロジスティクス",
+    "title": "会場とロジスティクス",
+    "nameLabel": "会場名",
+    "capacityLabel": "会場の定員",
+    "addressLabel": "会場の住所"
   }
 }

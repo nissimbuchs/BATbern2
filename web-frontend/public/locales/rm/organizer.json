@@ -1,7 +1,8 @@
 {
   "navigation": {
     "partners": "Partners",
-    "topicManagement": "Gestiun da temas"
+    "topicManagement": "Gestiun da temas",
+    "blobSelector": "Tscherna da blobs"
   },
   "topicBacklog": {
     "pageTitle": "Gestiun da temas",
@@ -79,7 +80,8 @@
         "safestFirst": "Il pli segir il emprim (obsolescenza ↓)",
         "recentFirst": "Il pli recent il emprim (obsolescenza ↑)",
         "titleAZ": "Titel (A-Z)",
-        "mostUsed": "Il pli utilisà"
+        "mostUsed": "Il pli utilisà",
+        "newestFirst": "Ils pli novs l'emprim (agiuntads da curt)"
       }
     },
     "details": {
@@ -132,7 +134,10 @@
         "previous": "Onns precedents",
         "next": "Onns suandants",
         "atCurrent": "A l'onn actual"
-      }
+      },
+      "low": "Pauca utilisaziun",
+      "medium": "Utilisaziun mesauna",
+      "high": "Gronda utilisaziun"
     },
     "dialogs": {
       "similar": {
@@ -518,7 +523,9 @@
     "lessonsLearned": "Enthält Lessons Learned aus der Praxis",
     "shortenedAbstract": "Gekürzter Abstract",
     "words": "Wörter",
-    "copyShortened": "Gekürzten Abstract kopieren"
+    "copyShortened": "Gekürzten Abstract kopieren",
+    "copied": "Copià!",
+    "copy": "Copiar en la memoria intermediara"
   },
   "speakerCard": {
     "primaryAction": {

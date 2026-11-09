@@ -284,7 +284,8 @@
       "typeNewsletter": "Newsletter",
       "typeReminder": "Recordatorio",
       "previewTitle": "Vista previa del correo",
-      "retryHint": "El envío del {{date}} no llegó a {{count}} destinatario(s)."
+      "retryHint": "El envío del {{date}} no llegó a {{count}} destinatario(s).",
+      "previewPlaceholder": "La vista previa aparecerá aquí"
     },
     "venue": {
       "vegetarianCount": "{{count}} Vegetarian",
@@ -314,7 +315,8 @@
       "confirmBody": "Se enviará un correo real a {{recipients}}. La dirección de respuesta es la del coordinador del lugar configurado.",
       "confirmSend": "Sí, enviar",
       "sentSuccess": "Enviado a {{count}} destinatario(s).",
-      "sentFailed": "Error de envío: {{message}}"
+      "sentFailed": "Error de envío: {{message}}",
+      "previewPlaceholder": "La vista previa aparecerá aquí"
     },
     "registrantNotices": {
       "title": "Avisos a inscritos",
@@ -939,7 +941,12 @@
       "event_live": "Evento en vivo",
       "event_completed": "Evento completado",
       "archived": "Archivado"
-    }
+    },
+    "loading": "Cargando el estado del flujo de trabajo...",
+    "error": "No se pudo cargar el estado del flujo de trabajo",
+    "noData": "No hay estado del flujo de trabajo disponible",
+    "currentState": "Estado actual",
+    "blockedTransitions": "Bloqueado:"
   },
   "autoSave": {
     "saving": "Guardando...",
@@ -1010,7 +1017,10 @@
       "revertPhase": "Revertir publicación de {{phase}}",
       "revertConfirmTitle": "¿Revertir la publicación de {{phase}}?",
       "revertConfirmText": "El sitio web público vuelve a la fase anterior. Lo que mostraba {{phase}} deja de ser visible para los visitantes.",
-      "revertConfirmButton": "Revertir"
+      "revertConfirmButton": "Revertir",
+      "topicNotReady": "El tema no está listo para publicarse",
+      "speakersNotReady": "Los ponentes no están listos para publicarse",
+      "agendaNotReady": "{{assigned}} de {{total}} espacios asignados. Asigne todos los espacios antes de publicar el programa"
     },
     "validation": {
       "readyToPublish": "Listo para publicar",
@@ -1190,8 +1200,16 @@
       "titleRequired": "El título es obligatorio",
       "abstractTooLong": "El resumen debe tener {{max}} caracteres o menos",
       "invalidDuration": "La duración debe estar entre 1 y 480 minutos",
-      "saveFailed": "Error al guardar la sesión"
-    }
+      "saveFailed": "Error al guardar la sesión",
+      "endTimeBeforeStart": "La hora de fin debe ser posterior a la hora de inicio",
+      "durationTooShort": "La sesión debe durar al menos {{min}} minutos",
+      "durationTooLong": "La sesión puede durar como máximo {{max}} minutos",
+      "speakerConflict": "El ponente {{speaker}} ya está programado para «{{session}}» a las {{time}}",
+      "roomConflict": "La sala {{room}} ya está reservada para «{{session}}» a las {{time}}",
+      "timingConflict": "Conflicto de horario detectado"
+    },
+    "startTimeLabel": "Hora de inicio",
+    "endTimeLabel": "Hora de fin"
   },
   "slotAssignment": {
     "title": "Asignación de espacios",
@@ -1382,7 +1400,8 @@
     "emptyState": "No hay fotos todavía. ¡Sube la primera!",
     "uploading": "Subiendo...",
     "uploadError": "Error al subir. Por favor, inténtelo de nuevo.",
-    "uploadErrorPartial": "{{failed}} de {{total}} cargas fallaron. Por favor, inténtelo de nuevo."
+    "uploadErrorPartial": "{{failed}} de {{total}} cargas fallaron. Por favor, inténtelo de nuevo.",
+    "uploadingProgress": "Subiendo {{done}}/{{total}}..."
   },
   "teaserImage": {
     "title": "Imágenes teaser",
@@ -1495,5 +1514,19 @@
       "limits": "Cada correo que les enviamos y cada correo que nos enviaron, en todos los eventos. No se muestran: boletines, correos anteriores al registro del Mail Center ni correos a una dirección que ya no tienen.",
       "empty": "Todavía no hay correos de ni para esta persona."
     }
+  },
+  "venue": {
+    "errors": {
+      "nameRequired": "El nombre del lugar es obligatorio",
+      "addressRequired": "La dirección del lugar es obligatoria",
+      "capacityPositive": "La capacidad debe ser un número positivo",
+      "capacityMax": "La capacidad no puede superar 5000",
+      "updateFailed": "No se pudo actualizar el lugar"
+    },
+    "sectionTitle": "Lugar y logística",
+    "title": "Lugar y logística",
+    "nameLabel": "Nombre del lugar",
+    "capacityLabel": "Capacidad del lugar",
+    "addressLabel": "Dirección del lugar"
   }
 }

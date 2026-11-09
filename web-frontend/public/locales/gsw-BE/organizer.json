@@ -62,7 +62,9 @@
     "lessonsLearned": "Enthält Lessons Learned aus der Praxis",
     "shortenedAbstract": "Gekürzter Abstract",
     "words": "Wörter",
-    "copyShortened": "Gekürzten Abstract kopieren"
+    "copyShortened": "Gekürzten Abstract kopieren",
+    "copied": "Kopiert!",
+    "copy": "I d Zwüscheablag kopiere"
   },
   "speakers": {
     "tabs": {
@@ -186,5 +188,20 @@
   },
   "tasks": {
     "completionNotesPlaceholder": "Notize zur Erledigung vo dr Ufgab hinzuefüege..."
+  },
+  "navigation": {
+    "blobSelector": "Blob-Uswau"
+  },
+  "topicBacklog": {
+    "filters": {
+      "sortOptions": {
+        "newestFirst": "Nöischti zersch (zletscht drzuecho)"
+      }
+    },
+    "heatMap": {
+      "low": "Weni bruucht",
+      "medium": "Mittu bruucht",
+      "high": "Viu bruucht"
+    }
   }
 }

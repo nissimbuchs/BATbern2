@@ -284,7 +284,8 @@
       "typeNewsletter": "Newsletter",
       "typeReminder": "Promemoria",
       "previewTitle": "Anteprima e-mail",
-      "retryHint": "L'invio del {{date}} non ha raggiunto {{count}} destinatari."
+      "retryHint": "L'invio del {{date}} non ha raggiunto {{count}} destinatari.",
+      "previewPlaceholder": "L'anteprima apparirà qui"
     },
     "venue": {
       "vegetarianCount": "{{count}} Vegetarian",
@@ -314,7 +315,8 @@
       "confirmBody": "Verrà inviata un'e-mail reale a {{recipients}}. L'indirizzo di risposta è quello del coordinatore della sede configurato.",
       "confirmSend": "Sì, invia",
       "sentSuccess": "Inviato a {{count}} destinatario/i.",
-      "sentFailed": "Invio fallito: {{message}}"
+      "sentFailed": "Invio fallito: {{message}}",
+      "previewPlaceholder": "L'anteprima apparirà qui"
     },
     "registrantNotices": {
       "title": "Avvisi iscritti",
@@ -939,7 +941,12 @@
       "event_live": "Evento in diretta",
       "event_completed": "Evento completato",
       "archived": "Archiviato"
-    }
+    },
+    "loading": "Caricamento dello stato del workflow...",
+    "error": "Impossibile caricare lo stato del workflow",
+    "noData": "Nessuno stato del workflow disponibile",
+    "currentState": "Stato attuale",
+    "blockedTransitions": "Bloccato:"
   },
   "autoSave": {
     "saving": "Salvataggio...",
@@ -1010,7 +1017,10 @@
       "revertPhase": "Annulla pubblicazione {{phase}}",
       "revertConfirmTitle": "Annullare la pubblicazione {{phase}}?",
       "revertConfirmText": "Il sito pubblico torna alla fase precedente. Ciò che {{phase}} mostrava non è più visibile ai visitatori.",
-      "revertConfirmButton": "Annulla pubblicazione"
+      "revertConfirmButton": "Annulla pubblicazione",
+      "topicNotReady": "L'argomento non è pronto per la pubblicazione",
+      "speakersNotReady": "I relatori non sono pronti per la pubblicazione",
+      "agendaNotReady": "{{assigned}} slot assegnati su {{total}}. Assegna tutti gli slot prima di pubblicare il programma"
     },
     "validation": {
       "readyToPublish": "Pronto per la pubblicazione",
@@ -1190,8 +1200,16 @@
       "titleRequired": "Il titolo è obbligatorio",
       "abstractTooLong": "L'abstract deve contenere {{max}} caratteri o meno",
       "invalidDuration": "La durata deve essere compresa tra 1 e 480 minuti",
-      "saveFailed": "Salvataggio sessione fallito"
-    }
+      "saveFailed": "Salvataggio sessione fallito",
+      "endTimeBeforeStart": "L'ora di fine deve essere successiva all'ora di inizio",
+      "durationTooShort": "La sessione deve durare almeno {{min}} minuti",
+      "durationTooLong": "La sessione può durare al massimo {{max}} minuti",
+      "speakerConflict": "Il relatore {{speaker}} è già previsto per «{{session}}» alle {{time}}",
+      "roomConflict": "La sala {{room}} è già prenotata per «{{session}}» alle {{time}}",
+      "timingConflict": "Conflitto di orario rilevato"
+    },
+    "startTimeLabel": "Ora di inizio",
+    "endTimeLabel": "Ora di fine"
   },
   "slotAssignment": {
     "title": "Assegnazione slot",
@@ -1382,7 +1400,8 @@
     "emptyState": "Nessuna foto ancora. Carica la prima!",
     "uploading": "Caricamento...",
     "uploadError": "Caricamento fallito. Riprova.",
-    "uploadErrorPartial": "{{failed}} di {{total}} caricamenti falliti. Riprova."
+    "uploadErrorPartial": "{{failed}} di {{total}} caricamenti falliti. Riprova.",
+    "uploadingProgress": "Caricamento {{done}}/{{total}}..."
   },
   "teaserImage": {
     "title": "Immagini teaser",
@@ -1495,5 +1514,19 @@
       "limits": "Ogni mail che abbiamo inviato e ogni mail ricevuta, su tutti gli eventi. Non elencate: newsletter, mail precedenti alla registrazione nel Mail Center e mail a un indirizzo che non hanno più.",
       "empty": "Ancora nessuna mail verso o da questa persona."
     }
+  },
+  "venue": {
+    "errors": {
+      "nameRequired": "Il nome della sede è obbligatorio",
+      "addressRequired": "L'indirizzo della sede è obbligatorio",
+      "capacityPositive": "La capienza deve essere un numero positivo",
+      "capacityMax": "La capienza non può superare 5000",
+      "updateFailed": "Impossibile aggiornare la sede"
+    },
+    "sectionTitle": "Sede e logistica",
+    "title": "Sede & logistica",
+    "nameLabel": "Nome della sede",
+    "capacityLabel": "Capienza della sede",
+    "addressLabel": "Indirizzo della sede"
   }
 }
