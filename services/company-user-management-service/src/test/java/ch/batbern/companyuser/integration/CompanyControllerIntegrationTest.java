@@ -71,7 +71,7 @@ class CompanyControllerIntegrationTest extends AbstractIntegrationTest {
                 .isVerified(false)
                 .createdAt(Instant.now())
                 .updatedAt(Instant.now())
-                .createdBy("test-user")
+                .createdBy("test.user")
                 .build();
         testCompany = companyRepository.save(testCompany);
     }
@@ -80,7 +80,7 @@ class CompanyControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     @DisplayName("POST /companies - should create company when authenticated with valid role")
-    @WithMockUser(roles = {"ORGANIZER"})
+    @WithMockUser(username = "test.user", roles = {"ORGANIZER"})
     void shouldCreateCompany_whenAuthenticatedWithValidRole() throws Exception {
         // Given
         CreateCompanyRequest request = CreateCompanyRequest.builder()
@@ -114,7 +114,7 @@ class CompanyControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     @DisplayName("POST /companies:get-or-create - creates company for any authenticated role (incl. ATTENDEE)")
-    @WithMockUser(roles = {"ATTENDEE"})
+    @WithMockUser(username = "test.user", roles = {"ATTENDEE"})
     void shouldGetOrCreateCompany_whenAuthenticatedAttendee() throws Exception {
         GetOrCreateCompanyRequest request = GetOrCreateCompanyRequest.builder()
                 .displayName("Infowell GmbH")
@@ -133,7 +133,7 @@ class CompanyControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     @DisplayName("POST /companies:get-or-create - is idempotent (no duplicate on repeat)")
-    @WithMockUser(roles = {"SPEAKER"})
+    @WithMockUser(username = "test.user", roles = {"SPEAKER"})
     void shouldBeIdempotent_whenSameDisplayNameRepeated() throws Exception {
         long before = companyRepository.count();
         GetOrCreateCompanyRequest request = GetOrCreateCompanyRequest.builder()
@@ -154,7 +154,7 @@ class CompanyControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     @DisplayName("POST /companies:get-or-create - resolves existing company by generated slug (no duplicate)")
-    @WithMockUser(roles = {"PARTNER"})
+    @WithMockUser(username = "test.user", roles = {"PARTNER"})
     void shouldResolveExisting_whenSlugMatches() throws Exception {
         // Seed a properly-slugged company: slug("Slugged Co") == "sluggedco".
         Company existing = Company.builder()
@@ -163,7 +163,7 @@ class CompanyControllerIntegrationTest extends AbstractIntegrationTest {
                 .isVerified(false)
                 .createdAt(Instant.now())
                 .updatedAt(Instant.now())
-                .createdBy("test-user")
+                .createdBy("test.user")
                 .build();
         companyRepository.save(existing);
         long before = companyRepository.count();
@@ -197,7 +197,7 @@ class CompanyControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     @DisplayName("POST /companies:get-or-create - returns 400 when displayName blank")
-    @WithMockUser(roles = {"ATTENDEE"})
+    @WithMockUser(username = "test.user", roles = {"ATTENDEE"})
     void shouldReturn400_whenGetOrCreateDisplayNameBlank() throws Exception {
         GetOrCreateCompanyRequest request = GetOrCreateCompanyRequest.builder()
                 .displayName("")
@@ -226,7 +226,7 @@ class CompanyControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     @DisplayName("POST /companies - should return 403 when authenticated with insufficient role")
-    @WithMockUser(roles = {"ATTENDEE"})
+    @WithMockUser(username = "test.user", roles = {"ATTENDEE"})
     void shouldReturn403_whenInsufficientRole() throws Exception {
         // Given
         CreateCompanyRequest request = CreateCompanyRequest.builder()
@@ -242,7 +242,7 @@ class CompanyControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     @DisplayName("POST /companies - should return 400 when required field is missing")
-    @WithMockUser(roles = {"ORGANIZER"})
+    @WithMockUser(username = "test.user", roles = {"ORGANIZER"})
     void shouldReturn400_whenRequiredFieldMissing() throws Exception {
         // Given - Missing required 'name' field
         CreateCompanyRequest request = CreateCompanyRequest.builder()
@@ -258,7 +258,7 @@ class CompanyControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     @DisplayName("POST /companies - should return 409 when a company with that name already exists")
-    @WithMockUser(roles = {"ORGANIZER"})
+    @WithMockUser(username = "test.user", roles = {"ORGANIZER"})
     void shouldReturn409_whenCompanyNameAlreadyExists() throws Exception {
         // Given - the existing company's name as a person types it (any case)
         CreateCompanyRequest request = CreateCompanyRequest.builder()
@@ -274,7 +274,7 @@ class CompanyControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     @DisplayName("POST /companies - stores the slug as key and the typed name as display name")
-    @WithMockUser(roles = {"ORGANIZER"})
+    @WithMockUser(username = "test.user", roles = {"ORGANIZER"})
     void shouldStoreSlugKeyAndTypedDisplayName_whenNameHasSpaces() throws Exception {
         CreateCompanyRequest request = CreateCompanyRequest.builder()
                 .name("Gamma Innovations 1769018790753")
@@ -290,7 +290,7 @@ class CompanyControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     @DisplayName("POST /companies - appends a digit within 12 characters when another company has the slug")
-    @WithMockUser(roles = {"ORGANIZER"})
+    @WithMockUser(username = "test.user", roles = {"ORGANIZER"})
     void shouldAppendDigit_whenSlugBelongsToAnotherCompany() throws Exception {
         // "testcompany" is taken by "Test Co"; this is another company whose name slugs alike
         CreateCompanyRequest request = CreateCompanyRequest.builder()
@@ -308,7 +308,7 @@ class CompanyControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     @DisplayName("POST /companies - should return 400 when the name has no letter or digit")
-    @WithMockUser(roles = {"ORGANIZER"})
+    @WithMockUser(username = "test.user", roles = {"ORGANIZER"})
     void shouldReturn400_whenNameHasNoLetterOrDigit() throws Exception {
         CreateCompanyRequest request = CreateCompanyRequest.builder()
                 .name("&&")
@@ -322,7 +322,7 @@ class CompanyControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     @DisplayName("PATCH /companies/{name} - should return 400 when the new key leaves the slug rule")
-    @WithMockUser(roles = {"ORGANIZER"})
+    @WithMockUser(username = "test.user", roles = {"ORGANIZER"})
     void shouldReturn400_whenUpdatedKeyIsNotASlug() throws Exception {
         UpdateCompanyRequest request = UpdateCompanyRequest.builder()
                 .name("Test Company AG")
@@ -340,7 +340,7 @@ class CompanyControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     @DisplayName("GET /companies/{name} - should return company when authenticated")
-    @WithMockUser
+    @WithMockUser(username = "test.user")
     void shouldReturnCompany_whenAuthenticated() throws Exception {
         // When & Then
         // Story 1.16.2: use company name instead of UUID
@@ -362,7 +362,7 @@ class CompanyControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     @DisplayName("GET /companies/{name} - should return 404 when company not found")
-    @WithMockUser
+    @WithMockUser(username = "test.user")
     void shouldReturn404_whenCompanyNotFound() throws Exception {
         // Given
         // Story 1.16.2: use company name instead of UUID
@@ -377,7 +377,7 @@ class CompanyControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     @DisplayName("GET /companies - should return all companies when authenticated")
-    @WithMockUser
+    @WithMockUser(username = "test.user")
     void shouldReturnAllCompanies_whenAuthenticated() throws Exception {
         // Given - Create additional company
         Company company2 = Company.builder()
@@ -386,7 +386,7 @@ class CompanyControllerIntegrationTest extends AbstractIntegrationTest {
                 .isVerified(true)
                 .createdAt(Instant.now())
                 .updatedAt(Instant.now())
-                .createdBy("test-user")
+                .createdBy("test.user")
                 .build();
         companyRepository.save(company2);
 
@@ -410,7 +410,7 @@ class CompanyControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     @DisplayName("GET /companies/search - should return search results when authenticated")
-    @WithMockUser
+    @WithMockUser(username = "test.user")
     void shouldReturnSearchResults_whenAuthenticated() throws Exception {
         // When & Then
         mockMvc.perform(get("/api/v1/companies/search")
@@ -427,7 +427,7 @@ class CompanyControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     @DisplayName("PUT /companies/{name} - should update company when authenticated with ORGANIZER role")
-    @WithMockUser(roles = {"ORGANIZER"})
+    @WithMockUser(username = "test.user", roles = {"ORGANIZER"})
     void shouldUpdateCompany_whenAuthenticatedWithOrganizerRole() throws Exception {
         // Given
         UpdateCompanyRequest request = UpdateCompanyRequest.builder()
@@ -472,7 +472,7 @@ class CompanyControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     @DisplayName("PUT /companies/{name} - should return 403 when authenticated without ORGANIZER role")
-    @WithMockUser(roles = {"SPEAKER"})
+    @WithMockUser(username = "test.user", roles = {"SPEAKER"})
     void shouldReturn403_whenNotOrganizerForUpdate() throws Exception {
         // Given
         UpdateCompanyRequest request = UpdateCompanyRequest.builder()
@@ -492,7 +492,7 @@ class CompanyControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     @DisplayName("PUT /companies/{name} - should return 404 when company not found")
-    @WithMockUser(roles = {"ORGANIZER"})
+    @WithMockUser(username = "test.user", roles = {"ORGANIZER"})
     void shouldReturn404_whenCompanyNotFoundForUpdate() throws Exception {
         // Given
         // Story 1.16.2: use company name instead of UUID
@@ -512,7 +512,7 @@ class CompanyControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     @DisplayName("DELETE /companies/{name} - should delete company when authenticated with ORGANIZER role")
-    @WithMockUser(roles = {"ORGANIZER"})
+    @WithMockUser(username = "test.user", roles = {"ORGANIZER"})
     void shouldDeleteCompany_whenAuthenticatedWithOrganizerRole() throws Exception {
         // When & Then
         // Story 1.16.2: use company name instead of UUID
@@ -534,7 +534,7 @@ class CompanyControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     @DisplayName("DELETE /companies/{name} - should return 403 when authenticated without ORGANIZER role")
-    @WithMockUser(roles = {"SPEAKER"})
+    @WithMockUser(username = "test.user", roles = {"SPEAKER"})
     void shouldReturn403_whenNotOrganizerForDelete() throws Exception {
         // When & Then
         // Story 1.16.2: use company name instead of UUID
@@ -547,7 +547,7 @@ class CompanyControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     @DisplayName("DELETE /companies/{name} - should return 404 when company not found")
-    @WithMockUser(roles = {"ORGANIZER"})
+    @WithMockUser(username = "test.user", roles = {"ORGANIZER"})
     void shouldReturn404_whenCompanyNotFoundForDelete() throws Exception {
         // Given
         // Story 1.16.2: use company name instead of UUID
@@ -562,7 +562,7 @@ class CompanyControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     @DisplayName("POST /companies - should return 400 when name is too short")
-    @WithMockUser(roles = {"ORGANIZER"})
+    @WithMockUser(username = "test.user", roles = {"ORGANIZER"})
     void shouldReturn400_whenNameTooShort() throws Exception {
         // Given
         CreateCompanyRequest request = CreateCompanyRequest.builder()
@@ -578,7 +578,7 @@ class CompanyControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     @DisplayName("POST /companies - should return 400 when name is too long")
-    @WithMockUser(roles = {"ORGANIZER"})
+    @WithMockUser(username = "test.user", roles = {"ORGANIZER"})
     void shouldReturn400_whenNameTooLong() throws Exception {
         // Given
         String longName = "A".repeat(256); // Too long (max 255 characters)
@@ -597,7 +597,7 @@ class CompanyControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     @DisplayName("POST /companies - should allow SPEAKER role to create company")
-    @WithMockUser(roles = {"SPEAKER"})
+    @WithMockUser(username = "test.user", roles = {"SPEAKER"})
     void shouldAllowSpeakerToCreateCompany() throws Exception {
         // Given
         CreateCompanyRequest request = CreateCompanyRequest.builder()
@@ -613,7 +613,7 @@ class CompanyControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     @DisplayName("POST /companies - should allow PARTNER role to create company")
-    @WithMockUser(roles = {"PARTNER"})
+    @WithMockUser(username = "test.user", roles = {"PARTNER"})
     void shouldAllowPartnerToCreateCompany() throws Exception {
         // Given
         CreateCompanyRequest request = CreateCompanyRequest.builder()
@@ -629,7 +629,7 @@ class CompanyControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     @DisplayName("GET /companies/search - should return 400 when limit param is not an integer")
-    @WithMockUser(roles = {"ORGANIZER"})
+    @WithMockUser(username = "test.user", roles = {"ORGANIZER"})
     void shouldReturn400WhenLimitParamIsNotAnInteger() throws Exception {
         // ZAP finding: ?limit=c:/Windows/system.ini caused 500 — must return 400
         mockMvc.perform(get("/api/v1/companies/search")
@@ -645,7 +645,7 @@ class CompanyControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     @DisplayName("POST /companies/{name}/verify - marks company verified for ORGANIZER")
-    @WithMockUser(roles = {"ORGANIZER"})
+    @WithMockUser(username = "test.user", roles = {"ORGANIZER"})
     void shouldVerifyCompany_whenOrganizer() throws Exception {
         mockMvc.perform(post("/api/v1/companies/{name}/verify", testCompany.getName()))
                 .andExpect(status().isOk())
@@ -658,7 +658,7 @@ class CompanyControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     @DisplayName("POST /companies/{name}/verify - returns 403 for non-ORGANIZER")
-    @WithMockUser(roles = {"SPEAKER"})
+    @WithMockUser(username = "test.user", roles = {"SPEAKER"})
     void shouldReturn403_whenVerifyNotOrganizer() throws Exception {
         mockMvc.perform(post("/api/v1/companies/{name}/verify", testCompany.getName()))
                 .andExpect(status().isForbidden());
@@ -679,7 +679,7 @@ class CompanyControllerIntegrationTest extends AbstractIntegrationTest {
                 .isVerified(false)
                 .createdAt(Instant.now())
                 .updatedAt(Instant.now())
-                .createdBy("test-user")
+                .createdBy("test.user")
                 .build());
         var cache = cacheManager.getCache("companySearch");
         if (cache != null) {
@@ -688,7 +688,7 @@ class CompanyControllerIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @WithMockUser(roles = {"ORGANIZER"})
+    @WithMockUser(username = "test.user", roles = {"ORGANIZER"})
     @DisplayName("Exact company 'Bundes' is first in the 10-row public picker among 14 matches")
     void should_rankExactCompanyFirst_when_moreMatchesThanTheLimit() throws Exception {
         for (char c = 'A'; c <= 'M'; c++) {
@@ -707,7 +707,7 @@ class CompanyControllerIntegrationTest extends AbstractIntegrationTest {
 
     @ParameterizedTest
     @ValueSource(strings = {"Müller", "Mueller", "muller"})
-    @WithMockUser(roles = {"ORGANIZER"})
+    @WithMockUser(username = "test.user", roles = {"ORGANIZER"})
     @DisplayName("Every umlaut spelling finds all three, in the list and the picker")
     void should_findAllUmlautSpellings(String input) throws Exception {
         saveCompany("mullerag", "Müller AG");
@@ -722,7 +722,7 @@ class CompanyControllerIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @WithMockUser(roles = {"ORGANIZER"})
+    @WithMockUser(username = "test.user", roles = {"ORGANIZER"})
     @DisplayName("The list search pages in SQL; totalItems counts every match")
     void should_pageSearchResults_when_moreThanOnePageMatches() throws Exception {
         for (int i = 10; i < 35; i++) {
@@ -740,7 +740,7 @@ class CompanyControllerIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @WithMockUser(roles = {"ORGANIZER"})
+    @WithMockUser(username = "test.user", roles = {"ORGANIZER"})
     @DisplayName("The slug and the display name are both searched; filter still applies")
     void should_searchSlugAndDisplayName_andCombineWithFilter() throws Exception {
         saveCompany("infowellgmbh", "Infowell GmbH");
@@ -756,7 +756,7 @@ class CompanyControllerIntegrationTest extends AbstractIntegrationTest {
 
     @ParameterizedTest
     @ValueSource(strings = {"(test", "a  b", "100%", "'", "C++", "_"})
-    @WithMockUser(roles = {"ORGANIZER"})
+    @WithMockUser(username = "test.user", roles = {"ORGANIZER"})
     @DisplayName("Hostile input answers 2xx and % is literal")
     void should_answer2xx_when_inputIsHostile(String input) throws Exception {
         saveCompany("hundertx", "100x AG");
@@ -771,7 +771,7 @@ class CompanyControllerIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @WithMockUser(roles = {"ORGANIZER"})
+    @WithMockUser(username = "test.user", roles = {"ORGANIZER"})
     @DisplayName("A blank search is no search")
     void should_notFilter_when_searchIsBlank() throws Exception {
         saveCompany("mullerag", "Müller AG");
@@ -782,7 +782,7 @@ class CompanyControllerIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @WithMockUser(roles = {"ORGANIZER"})
+    @WithMockUser(username = "test.user", roles = {"ORGANIZER"})
     @DisplayName("GET /internal/companies returns the matching slugs, every slug when blank")
     void should_returnMatchingSlugs_fromInternalCompanies() throws Exception {
         saveCompany("mullerag", "Müller AG");

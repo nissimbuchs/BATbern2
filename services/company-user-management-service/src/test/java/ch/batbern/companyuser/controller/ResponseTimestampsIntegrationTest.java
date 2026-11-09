@@ -104,7 +104,7 @@ class ResponseTimestampsIntegrationTest extends AbstractIntegrationTest {
                 .name(COMPANY)
                 .displayName("Brünnimann AG")
                 .isVerified(false)
-                .createdBy("test-user")
+                .createdBy("test.user")
                 .build()).getUpdatedAt();
     }
 
@@ -128,7 +128,7 @@ class ResponseTimestampsIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @WithMockUser(username = "organizer", roles = {"ORGANIZER"})
+    @WithMockUser(username = "test.organizer", roles = {"ORGANIZER"})
     void should_returnStoredUpdatedAt_when_organizerUpdatesUser() throws Exception {
         JsonNode body = call(put("/api/v1/users/{username}", USERNAME), "{\"firstName\": \"Hông Thị\"}");
 
@@ -136,7 +136,7 @@ class ResponseTimestampsIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @WithMockUser(username = "organizer", roles = {"ORGANIZER"})
+    @WithMockUser(username = "test.organizer", roles = {"ORGANIZER"})
     void should_returnStoredUpdatedAt_when_userProfilePatched() throws Exception {
         JsonNode body = call(patch("/api/v1/users/{username}/profile", USERNAME), "{\"bio\": \"Neue Bio\"}");
 
@@ -154,7 +154,7 @@ class ResponseTimestampsIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @WithMockUser(username = "organizer", roles = {"ORGANIZER"})
+    @WithMockUser(username = "test.organizer", roles = {"ORGANIZER"})
     void should_returnStoredUpdatedAt_when_companyPatched() throws Exception {
         JsonNode body = call(patch("/api/v1/companies/{name}", COMPANY), "{\"industry\": \"Architektur\"}");
 
@@ -162,7 +162,7 @@ class ResponseTimestampsIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @WithMockUser(username = "organizer", roles = {"ORGANIZER"})
+    @WithMockUser(username = "test.organizer", roles = {"ORGANIZER"})
     void should_returnStoredTimestamps_when_companyCreatedWithLogo() throws Exception {
         // The logo is set on the new row in a second save, an update before the insert is flushed:
         // @PreUpdate then moves updatedAt after the response was built.
@@ -185,7 +185,7 @@ class ResponseTimestampsIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @WithMockUser(username = "organizer", roles = {"ORGANIZER"})
+    @WithMockUser(username = "test.organizer", roles = {"ORGANIZER"})
     void should_returnStoredUpdatedAt_when_companyVerified() throws Exception {
         JsonNode body = call(post("/api/v1/companies/{name}/verify", COMPANY), null);
 

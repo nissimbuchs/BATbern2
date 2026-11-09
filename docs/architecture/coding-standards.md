@@ -497,6 +497,31 @@ CUMS_INTERNAL)`) and expect the CUMS calls there; `close()` in `@AfterEach` rest
 coverage, access-control probe, `lint:api`) does not read `docs/api/internal/`; it is linted by
 `npm run lint:api-internal` with its own reduced ruleset (`docs/api/internal/.spectral.yaml`).
 
+#### Response conformance gate (backend)
+
+Owner decision 2026-11-09. Every 2xx JSON response an integration test receives through `MockMvc`
+must be valid against the response schema of its operation in the service's own specs (CUMS:
+companies, users, cums-internal; EMS: events-core, `event-*`, topics, ems-internal; PCS: partners,
+partner-meetings, pcs-internal). `AbstractIntegrationTest` imports `ResponseConformanceSetup`,
+which registers `ResponseConformance` (shared-kernel test fixtures, `ch.batbern.shared.test.contract`)
+as an `alwaysDo` handler on the auto-configured `MockMvc`; the validator is the S2S harness's
+(`OpenApiContract` with `GeneratedCodeSemantics`), there is no second one. A request of a path no
+own spec has (actuator, dev endpoints), a non-2xx answer, an empty body and non-JSON bodies (CSV,
+ICS, XLSX) are not checked. Where several specs match, the most specific template wins
+(`/events/attendance-summary` over `/events/{eventCode}`).
+
+A violation fails the request that produced it, inside its test, with the validator's message and
+the body: fix the response (production code), the spec, or the test data that the spec rejects. A
+violation that needs an owner decision may go into the service's committed baseline
+`src/test/resources/response-conformance-baseline.txt`, one line per `operationId pointer kind`
+with array indices as `*` (`listCompanies /data/*/createdBy pattern`,
+`getCompany / required:updatedAt`). Adding a line is review matter; the file only shrinks.
+`gradle/response-conformance.gradle` (applied by each service's `build.gradle`, which lists the
+specs) passes the configuration to the test JVM and, after a full run (no `--tests`, no
+`-PskipIntegration`), fails on a STALE line that no response produces any more. Remove it, or rewrite
+the file from a full run: `./gradlew :services:<svc>:test -PupdateResponseConformanceBaseline`
+(refused on a partial run). Outside Gradle (no system properties) the gate is off.
+
 #### Frontend: the MSW harness (17.0c1)
 
 Every Vitest test runs against one MSW server (`web-frontend/src/test/msw/`, started in

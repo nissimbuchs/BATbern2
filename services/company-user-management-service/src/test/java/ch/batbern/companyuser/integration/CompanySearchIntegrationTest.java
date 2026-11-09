@@ -68,7 +68,7 @@ class CompanySearchIntegrationTest extends AbstractIntegrationTest {
                 .isVerified(true)
                 .createdAt(Instant.now())
                 .updatedAt(Instant.now())
-                .createdBy("test-user")
+                .createdBy("test.user")
                 .build();
 
         testCompany2 = Company.builder()
@@ -77,7 +77,7 @@ class CompanySearchIntegrationTest extends AbstractIntegrationTest {
                 .isVerified(true)
                 .createdAt(Instant.now())
                 .updatedAt(Instant.now())
-                .createdBy("test-user")
+                .createdBy("test.user")
                 .build();
 
         companyRepository.save(testCompany1);
@@ -172,7 +172,7 @@ class CompanySearchIntegrationTest extends AbstractIntegrationTest {
                 .isVerified(false)
                 .createdAt(Instant.now())
                 .updatedAt(Instant.now())
-                .createdBy("test-user")
+                .createdBy("test.user")
                 .build();
         companyRepository.save(newCompany);
 

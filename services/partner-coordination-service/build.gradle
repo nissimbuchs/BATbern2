@@ -240,3 +240,12 @@ clean {
     delete "$buildDir/generated-client-company"
     delete "$buildDir/generated-client-user"
 }
+
+// Response conformance gate: every 2xx JSON response of an IT matches the spec of the operation
+// (the specs this service serves). Baseline: src/test/resources/response-conformance-baseline.txt.
+ext.responseConformanceSpecs = [
+    'docs/api/partners-api.openapi.yml',
+    'docs/api/partner-meetings-api.openapi.yml',
+    'docs/api/internal/pcs-internal.openapi.yml'
+]
+apply from: "${rootProject.projectDir}/gradle/response-conformance.gradle"

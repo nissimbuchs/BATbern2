@@ -1,0 +1,98 @@
+// Response conformance gate (Epic 17.0 follow-up, owner decision 2026-11-09).
+//
+// Every 2xx JSON response an integration test gets through MockMvc from an operation of this
+// service's specs must match the operation's response schema. The check runs inside the test JVM
+// (ch.batbern.shared.test.contract.ResponseConformance, registered for every IT by
+// AbstractIntegrationTest) and fails the test whose response has a violation that the committed
+// baseline does not list. This script configures it and, after a FULL test run, fails on STALE
+// baseline lines (no response produces them any more).
+//
+// Usage, in a service build.gradle:
+//   ext.responseConformanceSpecs = ['docs/api/companies-api.openapi.yml', ...]
+//   apply from: "${rootProject.projectDir}/gradle/response-conformance.gradle"
+//
+// Baseline: src/test/resources/response-conformance-baseline.txt, one line per
+// "operationId pointer kind". Rewrite it from a full run with
+//   ./gradlew :services:<svc>:test -PupdateResponseConformanceBaseline
+// Adding a line is review matter: fix the response, the spec or the test data instead whenever
+// the fix does not need an owner decision.
+// Docs: docs/architecture/coding-standards.md, "Test fidelity rules".
+
+def conformanceSpecs = project.ext.responseConformanceSpecs as List<String>
+def baselineFile = project.file('src/test/resources/response-conformance-baseline.txt')
+def recordDir = project.layout.buildDirectory.dir('response-conformance').get().asFile
+def updateBaseline = project.hasProperty('updateResponseConformanceBaseline')
+
+tasks.named('test', Test) { Test t ->
+    systemProperty 'batbern.responseConformance.specs', conformanceSpecs.join(',')
+    systemProperty 'batbern.responseConformance.baseline', baselineFile.absolutePath
+    systemProperty 'batbern.responseConformance.recordDir', recordDir.absolutePath
+    systemProperty 'batbern.responseConformance.update', String.valueOf(updateBaseline)
+    // A changed spec or baseline re-runs the suite (not up to date).
+    conformanceSpecs.each { inputs.file(rootProject.file(it)).withPropertyName("conformanceSpec:$it") }
+    inputs.files(baselineFile).withPropertyName('conformanceBaseline')
+    if (updateBaseline) {
+        outputs.upToDateWhen { false }
+    }
+
+    doFirst {
+        project.delete(recordDir)
+    }
+
+    doLast {
+        boolean full = t.filter.commandLineIncludePatterns.isEmpty() && t.filter.includePatterns.isEmpty() &&
+                !project.hasProperty('skipIntegration')
+        def hits = new TreeSet<String>()
+        if (recordDir.isDirectory()) {
+            recordDir.listFiles().findAll { it.name.startsWith('hits-') }.each { f ->
+                f.readLines('UTF-8').findAll { it.trim() }.each { hits.add(it.trim()) }
+            }
+        }
+        int checked = 0
+        if (recordDir.isDirectory()) {
+            recordDir.listFiles().findAll { it.name.startsWith('checked-') }.each { f ->
+                checked += (f.text.trim() ?: '0') as int
+            }
+        }
+        logger.lifecycle("Response conformance: ${checked} response(s) checked against ${conformanceSpecs.size()} spec(s)")
+        def header = []
+        def baseline = new TreeSet<String>()
+        if (baselineFile.isFile()) {
+            baselineFile.readLines('UTF-8').each { line ->
+                def l = line.trim()
+                if (l.startsWith('#')) {
+                    header << line
+                } else if (l) {
+                    baseline << l
+                }
+            }
+        }
+        if (updateBaseline) {
+            if (!full) {
+                throw new GradleException("-PupdateResponseConformanceBaseline needs the full suite " +
+                        "(no --tests filter, no -PskipIntegration): a partial run would drop the lines of the " +
+                        "tests it did not run.")
+            }
+            if (header.isEmpty()) {
+                header = ['# Response conformance baseline: known spec violations of IT responses, one per line',
+                          '# "operationId pointer kind". Shrinks only; see docs/architecture/coding-standards.md',
+                          '# "Test fidelity rules". Rewrite: ./gradlew <module>:test -PupdateResponseConformanceBaseline']
+            }
+            baselineFile.parentFile.mkdirs()
+            baselineFile.write((header + hits.toList()).join('\n') + '\n', 'UTF-8')
+            logger.lifecycle("Response conformance baseline written: ${hits.size()} line(s) in ${baselineFile}")
+            return
+        }
+        if (!full) {
+            return // a partial run cannot tell a stale line from a test it did not run
+        }
+        def stale = baseline - hits
+        if (!stale.isEmpty()) {
+            throw new GradleException("Response conformance baseline has ${stale.size()} STALE line(s) " +
+                    "(no response produces them any more):\n  " + stale.join('\n  ') +
+                    "\nRemove them from ${project.relativePath(baselineFile)}, or rewrite it from this full run: " +
+                    "./gradlew ${project.path}:test -PupdateResponseConformanceBaseline")
+        }
+        logger.lifecycle("Response conformance: ${baseline.size()} baseline line(s), all still produced")
+    }
+}

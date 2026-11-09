@@ -95,7 +95,7 @@ class ProductionChainIntegrationTest extends AbstractIntegrationTest {
         return jwt()
                 .jwt(token -> token.subject("chain-test-" + role.toLowerCase())
                         .claim("custom:role", role)
-                        .claim("custom:username", "chain.test." + role.toLowerCase()))
+                        .claim("custom:username", "chain." + role.toLowerCase()))
                 .authorities(realConversion);
     }
 }
