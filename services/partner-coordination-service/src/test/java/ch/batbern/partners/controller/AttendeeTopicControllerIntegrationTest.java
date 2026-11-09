@@ -3,10 +3,12 @@ package ch.batbern.partners.controller;
 import ch.batbern.partners.config.CumsInternalUsers;
 import ch.batbern.partners.config.TestAwsConfig;
 import ch.batbern.partners.config.TestSecurityConfig;
+import ch.batbern.partners.domain.TopicSuggestion;
 import ch.batbern.partners.repository.TopicRepository;
 import ch.batbern.partners.repository.TopicVoteRepository;
 import ch.batbern.shared.test.AbstractIntegrationTest;
 import ch.batbern.shared.test.contract.ContractServer;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -19,11 +21,15 @@ import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.OffsetDateTime;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
@@ -89,6 +95,22 @@ class AttendeeTopicControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.source", is("COMMUNITY")))
                 // Community suggestions have no partner company.
                 .andExpect(jsonPath("$.suggestedByCompany", is(nullValue())));
+    }
+
+    @Test
+    @WithMockUser(username = "carol", roles = {"ATTENDEE"})
+    void should_returnStoredCreatedAt_when_communityTopicSuggested() throws Exception {
+        // partners-api: TopicDTO.createdAt is required; it is a @CreationTimestamp set at insert.
+        MvcResult result = mockMvc.perform(post(ATTENDEE_BASE)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("title", "Observability Beyond Dashboards"))))
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        JsonNode body = objectMapper.readTree(result.getResponse().getContentAsString());
+        assertThat(body.hasNonNull("createdAt")).as("createdAt in %s", body).isTrue();
+        TopicSuggestion stored = topicRepository.findById(UUID.fromString(body.get("id").asText())).orElseThrow();
+        assertThat(OffsetDateTime.parse(body.get("createdAt").asText()).toInstant()).isEqualTo(stored.getCreatedAt());
     }
 
     @Test
