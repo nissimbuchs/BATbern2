@@ -122,6 +122,26 @@ class SpringDomainEventPublisherTest {
     }
 
     @Test
+    @DisplayName("should_startErrorLineWithAlarmMarker_when_listenerThrows")
+    void should_startErrorLineWithAlarmMarker_when_listenerThrows() {
+        // The CloudWatch metric filter behind the {Service}-Event-Listener-Failures alarm
+        // (infrastructure/lib/constructs/ecs-service-alarms.ts) matches this literal term.
+        DomainEventPublisher publisher = publisherWith(ThrowingListener.class);
+        EventCreatedEvent event = sampleEvent();
+
+        publisher.publish(event);
+
+        assertThat(SpringDomainEventPublisher.LOG_MARKER).isEqualTo("DOMAIN_EVENT_LISTENER_FAILED");
+        assertThat(logAppender.list)
+            .filteredOn(e -> e.getLevel() == Level.ERROR)
+            .singleElement()
+            .satisfies(e -> assertThat(e.getFormattedMessage())
+                .startsWith("DOMAIN_EVENT_LISTENER_FAILED ")
+                .contains("listener=ThrowingListener.on")
+                .contains("event_type=" + event.getEventType()));
+    }
+
+    @Test
     @DisplayName("should_logNoError_when_listenerSucceeds")
     void should_logNoError_when_listenerSucceeds() {
         DomainEventPublisher publisher = publisherWith(RecordingListener.class);

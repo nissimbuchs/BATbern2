@@ -73,7 +73,7 @@ export interface DomainServiceConstructProps {
 export function createDomainService(
   scope: Construct,
   props: DomainServiceConstructProps
-): { service: ecs.FargateService } {
+): { service: ecs.FargateService; logGroup: logs.ILogGroup } {
   const envName = props.config.envName;
   const isProd = props.config.isProduction ?? envName === 'production';
   const { serviceName, componentTag, additionalEnvironment } = props.serviceConfig;
@@ -350,5 +350,5 @@ export function createDomainService(
   cdk.Tags.of(scope).add('Component', componentTag);
   cdk.Tags.of(scope).add('Project', 'BATbern');
 
-  return { service };
+  return { service, logGroup };
 }
