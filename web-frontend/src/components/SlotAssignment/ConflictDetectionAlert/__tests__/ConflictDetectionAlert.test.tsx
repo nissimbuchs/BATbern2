@@ -113,6 +113,29 @@ describe('ConflictDetectionAlert Component (Story 5.7 - Task 4a RED Phase)', () 
       // Then: Modal is not visible
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     });
+
+    it('should_showMessage_when_409BodyHasNoConflictList', () => {
+      // Given: the agenda-full 409 of the slot endpoint. EMS answers it with its generic error
+      // body (AgendaFullException), which has a message but no `conflicts` list; the hook passes
+      // that body on as the conflict.
+      const agendaFull = {
+        error: 'ERR_CONFLICT',
+        message: "Agenda is full for event 'BATbern99'",
+      } as unknown as TimingConflictError;
+
+      renderWithProviders(
+        <ConflictDetectionAlert
+          conflict={agendaFull}
+          isOpen={true}
+          onClose={() => {}}
+          onResolve={() => {}}
+        />
+      );
+
+      // Then: the dialog shows the server's message instead of crashing the page
+      expect(screen.getByText(/agenda is full/i)).toBeInTheDocument();
+      expect(screen.queryByTestId('conflict-type-badge')).not.toBeInTheDocument();
+    });
   });
 
   describe('Conflict Type Display', () => {
