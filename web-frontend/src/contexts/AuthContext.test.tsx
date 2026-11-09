@@ -26,22 +26,56 @@ const TEST_CONFIG: AppConfig = {
   features: { notifications: true, analytics: false, pwa: false, turnstile: false, sso: false },
 };
 
-// Mock authService
-vi.mock('@services/auth/authService', () => ({
-  authService: {
-    getCurrentUser: vi.fn().mockResolvedValue(null),
-    refreshToken: vi.fn().mockResolvedValue({ success: false }),
-    signIn: vi.fn(),
-    signOut: vi.fn(),
-    isTokenExpired: vi.fn(() => false),
-    // Story 12.8 F7: completeFederatedSignIn awaits the bounded exchange-settle wait.
-    waitForFederatedSession: vi.fn().mockResolvedValue(true),
+// Cognito at the boundary (Story 4.9 moved this off the authService mock): the real authService
+// runs and reads the session from Amplify, which `src/test/setup.ts` mocks globally
+// (`aws-amplify/auth`). `cognitoSession` puts a signed-in Cognito session there; the ID token
+// claims are what production reads (custom:role, custom:username). The Hub events of the
+// federated callback come from `aws-amplify/utils`, mocked here.
+const hub = vi.hoisted(() => ({ nextEvent: null as string | null }));
+vi.mock('aws-amplify/utils', () => ({
+  Hub: {
+    listen: (_channel: string, callback: (e: { payload: { event: string } }) => void) => {
+      const event = hub.nextEvent;
+      if (event) setTimeout(() => callback({ payload: { event } }), 0);
+      return () => undefined;
+    },
   },
 }));
 
-// Import the mocked module
-import { authService } from '@services/auth/authService';
-const mockAuthService = vi.mocked(authService);
+import { fetchAuthSession, getCurrentUser as amplifyGetCurrentUser } from 'aws-amplify/auth';
+const amplify = {
+  fetchAuthSession: vi.mocked(fetchAuthSession),
+  getCurrentUser: vi.mocked(amplifyGetCurrentUser),
+};
+
+/** A signed-in Cognito session with these ID token claims. */
+function cognitoSession(claims: { sub: string; email: string; role: string; username: string }) {
+  const now = Math.floor(Date.now() / 1000);
+  amplify.getCurrentUser.mockResolvedValue({ username: claims.sub, userId: claims.sub } as never);
+  amplify.fetchAuthSession.mockResolvedValue({
+    tokens: {
+      idToken: {
+        payload: {
+          sub: claims.sub,
+          email: claims.email,
+          email_verified: true,
+          'custom:role': claims.role,
+          'custom:username': claims.username,
+          iat: now,
+          exp: now + 3600,
+        },
+        toString: () => 'id-token',
+      },
+      accessToken: { payload: { exp: now + 3600 }, toString: () => 'test-access-token' },
+    },
+  } as never);
+}
+
+/** No Cognito session: Amplify has no signed-in user and no tokens. */
+function noCognitoSession() {
+  amplify.getCurrentUser.mockRejectedValue(new Error('UserUnAuthenticatedException'));
+  amplify.fetchAuthSession.mockResolvedValue({ tokens: undefined } as never);
+}
 
 // Story 12.1: AuthContext hydrates company + preferences from GET /users/me (include=settings,
 // Story 4.9) on every
@@ -57,31 +91,12 @@ const wrapper = ({ children }: { children: React.ReactNode }) => (
 );
 
 function mockMultiRoleUser(roles: readonly UserRole[]) {
-  const primaryRole: UserRole = roles[0] || 'attendee';
-  const mockUser = {
-    userId: 'test-user',
-    username: 'test.user',
+  cognitoSession({
+    sub: 'test-user',
     email: 'test@batbern.ch',
-    emailVerified: true,
-    role: primaryRole,
-    roles: [...roles],
-    companyId: 'company-123',
-    preferences: {
-      language: 'en' as const,
-      theme: 'light' as const,
-      notifications: { email: true, sms: false, push: true },
-      privacy: { showProfile: true, allowMessages: true },
-    },
-    issuedAt: Math.floor(Date.now() / 1000),
-    expiresAt: Math.floor(Date.now() / 1000) + 3600,
-    tokenId: 'test-token',
-  };
-
-  mockAuthService.getCurrentUser.mockResolvedValue(mockUser);
-  mockAuthService.refreshToken.mockResolvedValue({
-    success: true,
-    accessToken: 'test-access-token',
-  } as any);
+    role: roles.map((r) => r.toUpperCase()).join(','),
+    username: 'test.user',
+  });
 }
 
 describe('AuthContext — Multi-Role Support (Story 9.5)', () => {
@@ -94,8 +109,8 @@ describe('AuthContext — Multi-Role Support (Story 9.5)', () => {
     localStorage.clear();
     sessionStorage.clear();
     localStorage.setItem('CognitoIdentityServiceProvider.client.user.idToken', 'stub');
-    mockAuthService.getCurrentUser.mockResolvedValue(null);
-    mockAuthService.isTokenExpired.mockReturnValue(false);
+    hub.nextEvent = null;
+    noCognitoSession();
     // Default: /users/me hydration is a no-op (JWT already carries roles in staging).
     usersMeReplies({ roles: [] });
   });
@@ -117,7 +132,7 @@ describe('AuthContext — Multi-Role Support (Story 9.5)', () => {
 
       await waitFor(() => expect(result.current.isLoading).toBe(false));
 
-      expect(mockAuthService.getCurrentUser).not.toHaveBeenCalled();
+      expect(amplify.getCurrentUser).not.toHaveBeenCalled();
       expect(result.current.isAuthenticated).toBe(false);
       expect(result.current.user).toBeNull();
     });
@@ -147,7 +162,7 @@ describe('AuthContext — Multi-Role Support (Story 9.5)', () => {
 
       // Restore must be deferred: still loading, Amplify-backed getCurrentUser not yet called,
       // and crucially NOT settled to not-authenticated (which would redirect to /login).
-      await waitFor(() => expect(mockAuthService.getCurrentUser).not.toHaveBeenCalled());
+      await waitFor(() => expect(amplify.getCurrentUser).not.toHaveBeenCalled());
       expect(result.current.isLoading).toBe(true);
       expect(result.current.isAuthenticated).toBe(false);
 
@@ -156,7 +171,7 @@ describe('AuthContext — Multi-Role Support (Story 9.5)', () => {
       rerender();
 
       await waitFor(() => expect(result.current.isAuthenticated).toBe(true));
-      expect(mockAuthService.getCurrentUser).toHaveBeenCalledTimes(1);
+      expect(amplify.getCurrentUser).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -248,27 +263,9 @@ describe('AuthContext — Multi-Role Support (Story 9.5)', () => {
 
   describe('Story 12.1 — hydrate company + preferences from /users/me', () => {
     function mockTokenUserWithoutCompanyOrPrefs(roles: readonly UserRole[]) {
-      const primaryRole: UserRole = roles[0] || 'attendee';
-      // Simulates the post-Story-12.1 extractUserContextFromToken output: identity +
-      // authorization only, companyId undefined and preferences empty (no language).
-      const mockUser = {
-        userId: 'test-user',
-        username: 'test.user',
-        email: 'test@batbern.ch',
-        emailVerified: true,
-        role: primaryRole,
-        roles: [...roles],
-        companyId: undefined,
-        preferences: {} as never,
-        issuedAt: Math.floor(Date.now() / 1000),
-        expiresAt: Math.floor(Date.now() / 1000) + 3600,
-        tokenId: 'test-token',
-      };
-      mockAuthService.getCurrentUser.mockResolvedValue(mockUser as never);
-      mockAuthService.refreshToken.mockResolvedValue({
-        success: true,
-        accessToken: 'test-access-token',
-      } as never);
+      // Story 12.1: the token carries identity + authorization only; company and preferences
+      // (language) come from /users/me.
+      mockMultiRoleUser(roles);
     }
 
     test('should populate companyId + preferences.language from /users/me', async () => {
@@ -445,35 +442,18 @@ describe('AuthContext — Multi-Role Support (Story 9.5)', () => {
   // signIn success branch — hydrates from /users/me (so preferences.language is present,
   // the Story 12.1 regression guard) and flips isAuthenticated BEFORE the caller navigates.
   describe('Story 12.7 — completeFederatedSignIn', () => {
-    const fedUser = {
-      userId: 'fed-user',
-      username: 'fed.user',
-      email: 'fed@batbern.ch',
-      emailVerified: true,
-      role: 'attendee',
-      roles: ['attendee'],
-      companyId: undefined,
-      preferences: {
-        language: 'en' as const,
-        theme: 'light' as const,
-        notifications: { email: true, sms: false, push: true },
-        privacy: { showProfile: true, allowMessages: true },
-      },
-      issuedAt: Math.floor(Date.now() / 1000),
-      expiresAt: Math.floor(Date.now() / 1000) + 3600,
-      tokenId: 'fed-token',
-    };
-
     test('hydrates user and flips isAuthenticated, returning success', async () => {
       // No stored Cognito session → bootstrap restore is skipped; getCurrentUser is
       // therefore only invoked by completeFederatedSignIn (clean isolation).
       localStorage.clear();
       sessionStorage.clear();
-      mockAuthService.getCurrentUser.mockResolvedValue(fedUser as never);
-      mockAuthService.refreshToken.mockResolvedValue({
-        success: true,
-        accessToken: 'fed-access-token',
-      } as never);
+      cognitoSession({
+        sub: 'fed-user',
+        email: 'fed@batbern.ch',
+        role: 'ATTENDEE',
+        username: 'fed.user',
+      });
+      hub.nextEvent = 'signInWithRedirect';
       // /users/me carries the regression-critical language ('de' here).
       usersMeReplies({
         roles: ['attendee'],
@@ -500,7 +480,8 @@ describe('AuthContext — Multi-Role Support (Story 9.5)', () => {
     test('returns failed and stays unauthenticated when no session resolves', async () => {
       localStorage.clear();
       sessionStorage.clear();
-      mockAuthService.getCurrentUser.mockResolvedValue(null);
+      noCognitoSession();
+      hub.nextEvent = 'signInWithRedirect_failure';
 
       const { result } = renderHook(() => useAuth(), { wrapper });
       await waitFor(() => expect(result.current.isLoading).toBe(false));

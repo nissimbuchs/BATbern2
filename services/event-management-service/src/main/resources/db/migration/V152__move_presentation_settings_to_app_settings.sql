@@ -2,10 +2,11 @@
 -- (table presentation_settings, single row id = 1, CUMS V14) into the EMS app_settings store,
 -- key 'presentation', as JSON {"aboutText": ..., "partnerCount": ...}.
 --
--- A one-off move in the shared database, not a runtime read of another service's table
--- (ADR-016 unchanged): copy and drop happen in this one statement, so the copy cannot be lost
--- to the order in which CUMS and EMS deploy. Where the table does not exist (EMS test
--- containers, a fresh database) this is a no-op. The pre-deploy RDS snapshot covers it.
+-- A one-off copy in the shared database, not a runtime read of another service's table
+-- (ADR-016 unchanged). Copy only: the table stays, unread, so that an old CUMS image (which
+-- still maps the entity under ddl-auto validate) can start during the deploy or after an
+-- automatic ECS rollback. A follow-up migration drops it one release later. Where the table does
+-- not exist (EMS test containers, a fresh database) this is a no-op; an existing key is kept.
 DO $$
 BEGIN
     IF to_regclass('presentation_settings') IS NOT NULL THEN
@@ -16,7 +17,5 @@ BEGIN
         FROM presentation_settings
         WHERE id = 1
         ON CONFLICT (setting_key) DO NOTHING;
-
-        DROP TABLE presentation_settings;
     END IF;
 END $$;

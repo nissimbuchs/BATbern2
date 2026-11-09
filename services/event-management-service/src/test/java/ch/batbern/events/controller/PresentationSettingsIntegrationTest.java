@@ -147,11 +147,12 @@ class PresentationSettingsIntegrationTest extends AbstractIntegrationTest {
 
     /**
      * The one-off move (V152): when the former CUMS table exists, its row is copied into the key
-     * {@code presentation} and the table is dropped in the same statement. Runs the migration's
-     * own SQL in a transaction that is rolled back, DDL included.
+     * {@code presentation}; the table stays (an old CUMS image still maps it, rollback safety) and
+     * a follow-up migration drops it one release later. A key already stored is kept. Runs the
+     * migration's own SQL in a transaction that is rolled back, DDL included.
      */
     @Test
-    void should_copyTheCumsRowAndDropTheTable_when_migrationRunsWithTheFormerTablePresent() throws Exception {
+    void should_copyTheCumsRowAndKeepTheTable_when_migrationRunsWithTheFormerTablePresent() throws Exception {
         String sql = migrationSql();
         transactionTemplate.executeWithoutResult(tx -> {
             jdbcTemplate.execute("CREATE TABLE presentation_settings (id SERIAL PRIMARY KEY, "
@@ -163,11 +164,18 @@ class PresentationSettingsIntegrationTest extends AbstractIntegrationTest {
             jdbcTemplate.execute(sql);
 
             assertThat(jdbcTemplate.queryForObject(
-                    "SELECT to_regclass('presentation_settings') IS NULL", Boolean.class)).isTrue();
+                    "SELECT to_regclass('presentation_settings') IS NOT NULL", Boolean.class)).isTrue();
             String stored = jdbcTemplate.queryForObject(
                     "SELECT setting_value FROM app_settings WHERE setting_key = 'presentation'", String.class);
             assertThat(PresentationSettings.parse(objectMapper, stored))
                     .isEqualTo(new PresentationSettings("Seit 2005 \"unabhängig\"\nzweite Zeile", 11));
+
+            // a second run keeps the stored key (ON CONFLICT DO NOTHING)
+            jdbcTemplate.update("UPDATE presentation_settings SET partner_count = 99 WHERE id = 1");
+            jdbcTemplate.execute(sql);
+            assertThat(PresentationSettings.parse(objectMapper, jdbcTemplate.queryForObject(
+                    "SELECT setting_value FROM app_settings WHERE setting_key = 'presentation'", String.class))
+                    .partnerCount()).isEqualTo(11);
             tx.setRollbackOnly();
         });
         assertThat(appSettingRepository.findBySettingKey("presentation")).isEmpty();

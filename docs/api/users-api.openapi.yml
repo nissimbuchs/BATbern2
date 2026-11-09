@@ -2081,7 +2081,8 @@ paths:
       summary: Change some of the caller's settings
       description: |
         Partial update (ADR-013): only the fields in the body change, every other setting stays as
-        it is. Returns the whole settings object. An unknown enum value, a malformed quiet hour or
+        it is; `quietHoursStart` / `quietHoursEnd` set to an empty string clear them. Returns the
+        whole settings object. An unknown enum value, a malformed quiet hour or
         a timezone that is not an IANA zone id answers 400.
       operationId: updateUserSettings
       requestBody:
@@ -2106,6 +2107,11 @@ paths:
                   notificationFrequency: daily_digest
                   quietHoursStart: '22:00'
                   quietHoursEnd: '07:00'
+              clearQuietHours:
+                summary: No quiet hours any more
+                value:
+                  quietHoursStart: ''
+                  quietHoursEnd: ''
       responses:
         '200':
           description: Settings updated successfully
@@ -3997,6 +4003,8 @@ components:
       description: |
         Partial update of the caller's settings: every field is optional and only the fields
         present change. No defaults on purpose, so an absent field never overwrites a stored value.
+        null keeps a value; an empty string clears the quiet hours (as an empty assignee unassigns
+        a task).
       properties:
         theme:
           type: string
@@ -4023,10 +4031,12 @@ components:
           enum: ["live", "daily", "off"]
         quietHoursStart:
           type: string
-          pattern: '^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$'
+          description: HH:mm; an empty string clears it (no quiet hours)
+          pattern: '^(([0-1]?[0-9]|2[0-3]):[0-5][0-9])?$'
         quietHoursEnd:
           type: string
-          pattern: '^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$'
+          description: HH:mm; an empty string clears it (no quiet hours)
+          pattern: '^(([0-1]?[0-9]|2[0-3]):[0-5][0-9])?$'
         profileVisibility:
           type: string
           enum: [public, members_only, private]

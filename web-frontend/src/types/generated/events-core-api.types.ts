@@ -760,7 +760,7 @@ export interface paths {
     get: operations['getAdminSetting'];
     /**
      * Set an admin setting by key
-     * @description The one store for application settings (app_settings). ORGANIZER role. Structured settings carry JSON in `value` and are validated before they are stored: `presentation` (moderator presentation page, Story 4.9) must be an object with a non-blank `aboutText` and an integer `partnerCount` >= 0, otherwise 400; it is read anonymously through `GET /public/settings/presentation` (event-app-settings-api).
+     * @description The one store for application settings (app_settings). ORGANIZER role. Structured settings carry JSON in `value` and are validated before they are stored, otherwise 400: `presentation` (moderator presentation page, Story 4.9) must be an object with a non-blank `aboutText` and an integer `partnerCount` >= 0, read anonymously through `GET /public/settings/presentation` (event-app-settings-api); `venue.coordination.config` must be a venue coordination config object (blank clears it).
      */
     put: operations['setAdminSetting'];
     post?: never;

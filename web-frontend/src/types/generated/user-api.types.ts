@@ -785,7 +785,8 @@ export interface paths {
     /**
      * Change some of the caller's settings
      * @description Partial update (ADR-013): only the fields in the body change, every other setting stays as
-     *     it is. Returns the whole settings object. An unknown enum value, a malformed quiet hour or
+     *     it is; `quietHoursStart` / `quietHoursEnd` set to an empty string clear them. Returns the
+     *     whole settings object. An unknown enum value, a malformed quiet hour or
      *     a timezone that is not an IANA zone id answers 400.
      */
     patch: operations['updateUserSettings'];
@@ -1792,6 +1793,8 @@ export interface components {
     /**
      * @description Partial update of the caller's settings: every field is optional and only the fields
      *     present change. No defaults on purpose, so an absent field never overwrites a stored value.
+     *     null keeps a value; an empty string clears the quiet hours (as an empty assignee unassigns
+     *     a task).
      */
     UpdateUserSettingsRequest: {
       /** @enum {string} */
@@ -1807,7 +1810,9 @@ export interface components {
       notificationFrequency?: 'immediate' | 'daily_digest' | 'weekly_digest';
       /** @enum {string} */
       qnaNotificationFrequency?: 'live' | 'daily' | 'off';
+      /** @description HH:mm; an empty string clears it (no quiet hours) */
       quietHoursStart?: string;
+      /** @description HH:mm; an empty string clears it (no quiet hours) */
       quietHoursEnd?: string;
       /** @enum {string} */
       profileVisibility?: 'public' | 'members_only' | 'private';

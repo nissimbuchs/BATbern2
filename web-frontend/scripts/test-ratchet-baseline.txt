@@ -104,7 +104,6 @@ be-transactional-it	services/company-user-management-service/src/test/java/ch/ba
 be-transactional-it	services/company-user-management-service/src/test/java/ch/batbern/companyuser/controller/PublicUserControllerIntegrationTest.java	1
 be-transactional-it	services/company-user-management-service/src/test/java/ch/batbern/companyuser/controller/UserAdditionalEmailsIntegrationTest.java	1
 be-transactional-it	services/company-user-management-service/src/test/java/ch/batbern/companyuser/controller/UserMergeIntegrationTest.java	1
-be-transactional-it	services/company-user-management-service/src/test/java/ch/batbern/companyuser/controller/UserSettingsControllerIntegrationTest.java	1
 be-transactional-it	services/company-user-management-service/src/test/java/ch/batbern/companyuser/integration/AdditionalEndpointsIntegrationTest.java	1
 be-transactional-it	services/company-user-management-service/src/test/java/ch/batbern/companyuser/integration/AuthenticationIntegrationTest.java	1
 be-transactional-it	services/company-user-management-service/src/test/java/ch/batbern/companyuser/integration/CompanyControllerIntegrationTest.java	1
@@ -132,7 +131,6 @@ be-transactional-it	services/event-management-service/src/test/java/ch/batbern/e
 be-transactional-it	services/event-management-service/src/test/java/ch/batbern/events/controller/EmailTemplateControllerIntegrationTest.java	1
 be-transactional-it	services/event-management-service/src/test/java/ch/batbern/events/controller/EventAttendanceSummaryIntegrationTest.java	1
 be-transactional-it	services/event-management-service/src/test/java/ch/batbern/events/controller/EventControllerIntegrationTest.java	1
-be-transactional-it	services/event-management-service/src/test/java/ch/batbern/events/controller/EventTaskControllerIntegrationTest.java	1
 be-transactional-it	services/event-management-service/src/test/java/ch/batbern/events/controller/EventTeaserImageControllerIntegrationTest.java	1
 be-transactional-it	services/event-management-service/src/test/java/ch/batbern/events/controller/EventTypeControllerIntegrationTest.java	1
 be-transactional-it	services/event-management-service/src/test/java/ch/batbern/events/controller/EventWorkflowControllerIntegrationTest.java	1
@@ -565,7 +563,6 @@ fe-mock-services	web-frontend/src/components/speaker-portal/__tests__/ProfilePho
 fe-mock-services	web-frontend/src/components/user/EarlierProfilesSection/EarlierProfilesSection.test.tsx	1
 fe-mock-services	web-frontend/src/components/user/ProfileEmailAddresses/__tests__/ProfileEmailAddresses.test.tsx	2
 fe-mock-services	web-frontend/src/components/user/ProfileEmailAddresses/__tests__/ProfileNewsletterAddresses.test.tsx	1
-fe-mock-services	web-frontend/src/contexts/AuthContext.test.tsx	1
 fe-mock-services	web-frontend/src/features/profile/WatchPairingSection.test.tsx	1
 fe-mock-services	web-frontend/src/hooks/__tests__/useCurrentEvent.test.tsx	1
 fe-mock-services	web-frontend/src/hooks/__tests__/useInfiniteEvents.test.tsx	1

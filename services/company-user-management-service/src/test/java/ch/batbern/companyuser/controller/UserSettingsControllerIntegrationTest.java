@@ -7,17 +7,19 @@ import ch.batbern.companyuser.domain.UserSettings;
 import ch.batbern.companyuser.repository.UserRepository;
 import ch.batbern.shared.test.AbstractIntegrationTest;
 import ch.batbern.shared.types.Role;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.CacheManager;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalTime;
 import java.util.HashSet;
@@ -34,8 +36,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * The caller's settings as one resource (Story 4.9): {@code GET} and {@code PATCH
  * /users/me/settings} carry display, notification and privacy settings together. The former
  * {@code /users/me/preferences} is gone; the storage stays the two embeddables on user_profiles.
+ *
+ * <p>Every test commits, as production does (no class-level {@code @Transactional}): what a test
+ * reads back is the committed state. {@code @BeforeEach} and {@code @AfterEach} remove the users
+ * and clear the caches, so nothing leaks into the next class in the shared container.
  */
-@Transactional
 @Import(TestAwsConfig.class)
 @DisplayName("User settings, one resource")
 class UserSettingsControllerIntegrationTest extends AbstractIntegrationTest {
@@ -46,10 +51,26 @@ class UserSettingsControllerIntegrationTest extends AbstractIntegrationTest {
     private MockMvc mockMvc;
     @Autowired
     private UserRepository userRepository;
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+    @Autowired
+    private CacheManager cacheManager;
+
+    @AfterEach
+    void tearDown() {
+        cleanUpUsers();
+    }
+
+    /** Users and their child rows (role assignments, addresses, history cascade with the user). */
+    private void cleanUpUsers() {
+        jdbcTemplate.update("DELETE FROM watch_pairings");
+        jdbcTemplate.update("DELETE FROM user_profiles");
+        cacheManager.getCacheNames().forEach(name -> cacheManager.getCache(name).clear());
+    }
 
     @BeforeEach
     void setUp() {
-        userRepository.deleteAll();
+        cleanUpUsers();
         userRepository.save(User.builder()
                 .username("max.muster")
                 .email("max.muster@example.com")
@@ -174,6 +195,33 @@ class UserSettingsControllerIntegrationTest extends AbstractIntegrationTest {
         assertThat(s.isAllowMessaging()).isFalse();
         assertThat(s.isAllowCalendarSync()).isTrue();
         assertThat(s.isTwoFactorEnabled()).isTrue();
+    }
+
+    @Test
+    @WithMockUser(username = "max.muster")
+    void should_setAndThenClearQuietHours_when_patchedWithAnEmptyString() throws Exception {
+        mockMvc.perform(patch(URL).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"quietHoursStart\": \"23:00\", \"quietHoursEnd\": \"6:30\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.quietHoursStart").value("23:00"))
+                .andExpect(jsonPath("$.quietHoursEnd").value("06:30"));
+        assertThat(userRepository.findByUsername("max.muster").orElseThrow().getPreferences()
+                .getQuietHoursStart()).isEqualTo(LocalTime.of(23, 0));
+
+        // null keeps them
+        mockMvc.perform(patch(URL).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"theme\": \"dark\", \"quietHoursStart\": null}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.quietHoursStart").value("23:00"));
+
+        mockMvc.perform(patch(URL).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"quietHoursStart\": \"\", \"quietHoursEnd\": \"\"}"))
+                .andExpect(status().isOk());
+
+        UserPreferences stored = userRepository.findByUsername("max.muster").orElseThrow().getPreferences();
+        assertThat(stored.getQuietHoursStart()).isNull();
+        assertThat(stored.getQuietHoursEnd()).isNull();
+        assertThat(stored.getTheme()).isEqualTo("dark");
     }
 
     @ParameterizedTest

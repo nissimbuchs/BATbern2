@@ -288,6 +288,35 @@ class AiAssistControllerIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
+    @WithMockUser(roles = "ORGANIZER")
+    void analyzeAbstract_whenOpenAiReturnsNoCompletion_returns503() throws Exception {
+        SpeakerPool speaker = saveSpeakerWithSession(event, "Matthias Keller", "Talk", "Empty answer abstract.");
+        openAi.expect(requestTo(CHAT_URL))
+                .andRespond(withSuccess("{\"choices\": []}", MediaType.APPLICATION_JSON));
+
+        mockMvc.perform(post(analysisPath(event, speaker.getId())))
+                .andExpect(status().isServiceUnavailable());
+        openAi.verify();
+    }
+
+    /**
+     * A completion body that is not JSON at all fails to bind and answers 503. (Malformed JSON
+     * inside a well-formed completion's content is a different case: it falls back to the
+     * neutral scores by Story 15.9 design, see BatbernAiSecurityTest.)
+     */
+    @Test
+    @WithMockUser(roles = "ORGANIZER")
+    void analyzeAbstract_whenOpenAiCompletionIsUnparseable_returns503() throws Exception {
+        SpeakerPool speaker = saveSpeakerWithSession(event, "Matthias Keller", "Talk", "Garbled answer abstract.");
+        openAi.expect(requestTo(CHAT_URL))
+                .andRespond(withSuccess("<html>upstream proxy error</html>", MediaType.APPLICATION_JSON));
+
+        mockMvc.perform(post(analysisPath(event, speaker.getId())))
+                .andExpect(status().isServiceUnavailable());
+        openAi.verify();
+    }
+
+    @Test
     @WithMockUser(roles = "SPEAKER")
     void analyzeAbstract_asSpeaker_returns403() throws Exception {
         SpeakerPool speaker = saveSpeakerWithSession(event, "Speaker", "Talk", "Abstract.");

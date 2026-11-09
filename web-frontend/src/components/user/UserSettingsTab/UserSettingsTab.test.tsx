@@ -198,6 +198,26 @@ describe('UserSettingsTab — one settings resource (Story 4.9)', () => {
       en('settings.saveFailed')
     );
   });
+  test('should show a failed save only under the panel that saved', async () => {
+    api.on('updateUserSettings', () => HttpResponse.json({}, { status: 400 }));
+    vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    renderTab([]);
+
+    fireEvent.click(screen.getByTestId('save-account-settings-button'));
+    expect(await screen.findByTestId('save-account-settings-button-error')).toBeInTheDocument();
+
+    // the notifications panel shares the mutation, but its save did not fail
+    fireEvent.click(screen.getByRole('tab', { name: en('settings.tabs.notifications') }));
+    expect(await screen.findByTestId('save-notification-settings-button')).toBeInTheDocument();
+    expect(screen.queryByTestId('save-notification-settings-button-error')).toBeNull();
+
+    // its own failed save shows there, and the account error is gone
+    fireEvent.click(screen.getByTestId('save-notification-settings-button'));
+    expect(
+      await screen.findByTestId('save-notification-settings-button-error')
+    ).toBeInTheDocument();
+    expect(screen.queryByTestId('save-account-settings-button-error')).toBeNull();
+  });
 });
 
 describe('UserSettingsTab — Story 15.7 Q&A notification frequency', () => {

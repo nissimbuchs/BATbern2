@@ -25,6 +25,7 @@ import {
   useUploadProfilePicture,
   useRemoveProfilePicture,
 } from './useUserAccount';
+import { useUserProfile as useUserProfileQuery } from '@/hooks/useUserProfile/useUserProfile';
 
 const settings = (over: Partial<UserSettingsResponse> = {}): UserSettingsResponse => ({
   theme: 'dark',
@@ -141,6 +142,27 @@ describe('saving settings', () => {
     expect(api.calls('updateUserSettings')[0].body).toEqual({ showEmail: true });
     expect(invalidate).toHaveBeenCalledWith({ queryKey: ['user-preferences'] });
     expect(invalidate).toHaveBeenCalledWith({ queryKey: ['user-settings'] });
+  });
+
+  it('refetches the useUserProfile query (include=roles,settings) after a save', async () => {
+    let language: 'de' | 'en' = 'de';
+    api.on('getCurrentUser', () => ({ ...user, settings: settings({ language }) }));
+    api.on('updateUserSettings', ({ body }) => {
+      language = 'en';
+      return settings({ ...body });
+    });
+    const profile = renderHook(() => useUserProfileQuery(), { wrapper });
+    await waitFor(() => expect(profile.result.current.userProfile?.settings?.language).toBe('de'));
+    const { result } = renderHook(() => useUpdateUserPreferences(), { wrapper });
+
+    await act(async () => {
+      await result.current.mutateAsync({ theme: 'DARK' });
+    });
+
+    await waitFor(() => expect(profile.result.current.userProfile?.settings?.language).toBe('en'));
+    expect(
+      api.calls('getCurrentUser').filter((c) => c.query.get('include') === 'roles,settings')
+    ).toHaveLength(2);
   });
 
   it('reports a 400 from CUMS as an error', async () => {

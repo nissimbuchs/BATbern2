@@ -1,7 +1,9 @@
 package ch.batbern.events.service;
 
+import ch.batbern.events.dto.venuecoordination.VenueCoordinationConfig;
 import ch.batbern.events.entity.AppSettingEntity;
 import ch.batbern.events.repository.AppSettingRepository;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -13,7 +15,8 @@ import java.util.Optional;
 /**
  * The one store for application settings (app_settings, {@code /admin/settings/{key}}).
  * Structured settings are JSON and validated before they are stored: {@link PresentationSettings}
- * under {@code presentation} (Story 4.9).
+ * under {@code presentation} and {@link VenueCoordinationConfig} under
+ * {@code venue.coordination.config} (Story 4.9).
  */
 @Slf4j
 @Service
@@ -39,6 +42,9 @@ public class AdminSettingsService {
         if (PresentationSettings.KEY.equals(key)) {
             PresentationSettings.parse(objectMapper, value);
         }
+        if (VenueCoordinationConfig.SETTING_KEY.equals(key)) {
+            requireVenueCoordinationConfig(value);
+        }
         AppSettingEntity entity = appSettingRepository.findBySettingKey(key)
                 .orElseGet(() -> AppSettingEntity.builder()
                         .settingKey(key)
@@ -49,6 +55,22 @@ public class AdminSettingsService {
         appSettingRepository.save(entity);
 
         return value;
+    }
+
+    /**
+     * The same parse {@code VenueCoordinationService} applies on read; a blank value means "not
+     * configured", as there.
+     */
+    private void requireVenueCoordinationConfig(String value) {
+        if (value == null || value.isBlank()) {
+            return;
+        }
+        try {
+            objectMapper.readValue(value, VenueCoordinationConfig.class);
+        } catch (JsonProcessingException e) {
+            throw new IllegalArgumentException("Invalid value for setting '"
+                    + VenueCoordinationConfig.SETTING_KEY + "': not a venue coordination config");
+        }
     }
 
     /**

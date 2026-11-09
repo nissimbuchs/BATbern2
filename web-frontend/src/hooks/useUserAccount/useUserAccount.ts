@@ -14,11 +14,15 @@ export const userAccountKeys = {
   settings: (userId: string) => ['user-settings', userId] as const,
 };
 
-/** Both views and the profile come from the one settings resource (Story 4.9). */
+/**
+ * Both views and both profile queries read the one settings resource (Story 4.9): the account
+ * profile (`['user-profile', …]`) and `useUserProfile` (`['userProfile']`, include=roles,settings).
+ */
 const invalidateSettings = (queryClient: QueryClient) => {
   queryClient.invalidateQueries({ queryKey: ['user-preferences'] });
   queryClient.invalidateQueries({ queryKey: ['user-settings'] });
   queryClient.invalidateQueries({ queryKey: ['user-profile'] });
+  queryClient.invalidateQueries({ queryKey: ['userProfile'] });
 };
 
 /**

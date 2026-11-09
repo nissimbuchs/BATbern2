@@ -7,17 +7,19 @@ import ch.batbern.events.core.dto.generated.EventType;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.EventTaskRepository;
 import ch.batbern.shared.types.EventWorkflowState;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
 
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.everyItem;
@@ -42,8 +44,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * - POST /api/v1/events/{eventCode}/tasks - Create ad-hoc task
  * - GET  /api/v1/tasks/my-tasks - Get tasks assigned to current organizer
  * - PATCH /api/v1/tasks/{taskId} - Complete, reopen, move, reassign or edit a task
+ *
+ * <p>Every test commits, as production does (no class-level {@code @Transactional}); what a
+ * test reads back from the repository is the committed state. {@code @AfterEach} removes the
+ * test's event and tasks.
  */
-@Transactional
 class EventTaskControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
@@ -55,17 +60,20 @@ class EventTaskControllerIntegrationTest extends AbstractIntegrationTest {
     @Autowired
     private EventRepository eventRepository;
 
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+
     private Event testEvent;
 
     @BeforeEach
     void setUp() {
-        eventTaskRepository.deleteAll();
-        eventRepository.deleteAll();
+        // The my-tasks assertions count every task of these organizers: start without any
+        deleteTasksOfTestOrganizers();
 
         // Create test event
         testEvent = new Event();
-        testEvent.setEventCode("TEST-001");
-        testEvent.setEventNumber(1);
+        testEvent.setEventCode("TASKIT" + UUID.randomUUID().toString().substring(0, 8));
+        testEvent.setEventNumber(ThreadLocalRandom.current().nextInt(600_000, 699_999));
         testEvent.setDate(Instant.now().plus(90, ChronoUnit.DAYS));
         testEvent.setTitle("Test Event");
         testEvent.setRegistrationDeadline(Instant.now().plus(60, ChronoUnit.DAYS));
@@ -318,6 +326,19 @@ class EventTaskControllerIntegrationTest extends AbstractIntegrationTest {
                         .content(requestBody))
                 // Then: Returns 400 Bad Request
                 .andExpect(status().isBadRequest());
+    }
+
+    /** Every test commits; remove what it wrote (its event and that event's tasks). */
+    @AfterEach
+    void tearDown() {
+        jdbcTemplate.update("DELETE FROM event_tasks WHERE event_id = ?", testEvent.getId());
+        deleteTasksOfTestOrganizers();
+        eventRepository.deleteById(testEvent.getId());
+    }
+
+    private void deleteTasksOfTestOrganizers() {
+        jdbcTemplate.update("DELETE FROM event_tasks WHERE assigned_organizer_username IN (?, ?)",
+                "alice.organizer", "bob.organizer");
     }
 
     // === Helper Methods ===

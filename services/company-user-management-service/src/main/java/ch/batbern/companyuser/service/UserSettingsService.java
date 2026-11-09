@@ -95,10 +95,10 @@ public class UserSettingsService {
             prefs.setQnaNotificationFrequency(request.getQnaNotificationFrequency().getValue());
         }
         if (request.getQuietHoursStart() != null) {
-            prefs.setQuietHoursStart(LocalTime.parse(zeroPadded(request.getQuietHoursStart())));
+            prefs.setQuietHoursStart(quietHour(request.getQuietHoursStart()));
         }
         if (request.getQuietHoursEnd() != null) {
-            prefs.setQuietHoursEnd(LocalTime.parse(zeroPadded(request.getQuietHoursEnd())));
+            prefs.setQuietHoursEnd(quietHour(request.getQuietHoursEnd()));
         }
         if (request.getTimezone() != null) {
             settings.setTimezone(request.getTimezone());
@@ -178,8 +178,14 @@ public class UserSettingsService {
         }
     }
 
-    /** {@code 7:30} → {@code 07:30}: the spec pattern allows a one-digit hour, LocalTime does not. */
-    private static String zeroPadded(String time) {
-        return time.length() == 4 ? "0" + time : time;
+    /**
+     * A quiet hour from the request: an empty string clears it (null keeps it, handled by the
+     * caller); {@code 7:30} becomes {@code 07:30}, as the spec allows a one-digit hour.
+     */
+    private static LocalTime quietHour(String time) {
+        if (time.isEmpty()) {
+            return null;
+        }
+        return LocalTime.parse(time.length() == 4 ? "0" + time : time);
     }
 }
