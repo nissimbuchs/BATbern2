@@ -128,6 +128,10 @@ A `GET /collection` list endpoint uses the **JSON:API-style** vocabulary only:
 /collection/search?query=` is permitted **only** for full-text search distinct from
 structured filtering — it must not duplicate filters already expressible via `filter`.
 
+The vocabulary names what a list may offer, not what it must: a list offers `fields` (a sparse
+fieldset) only when a caller needs it, and then its response schema describes the partial items
+(owner decision 2026-11-09; `GET /companies` and `GET /users` dropped an unused `fields`).
+
 ### 4. Read variants
 
 `/{collection}/me` (self), `/{collection}/{id}` (authenticated/admin), and

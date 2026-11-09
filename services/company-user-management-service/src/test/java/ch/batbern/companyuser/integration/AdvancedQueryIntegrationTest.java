@@ -276,27 +276,23 @@ class AdvancedQueryIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isBadRequest());
     }
 
-    // ========== AC14: Field Selection Tests ==========
+    // ========== 4.9b: no field selection ==========
 
     @Test
     @WithMockUser(roles = "ORGANIZER")
-    void should_returnOnlySelectedFields_when_fieldsParameterProvided() throws Exception {
-        // Story 1.16.2: use company name instead of UUID - removed id field
+    void should_returnWholeCompanies_when_removedFieldsParameterIsSent() throws Exception {
+        // `fields` was removed from the spec (no caller used it; ADR-013 §3). The server ignores
+        // an unknown query parameter, so the items keep every property the schema requires.
         MvcResult result = mockMvc.perform(get("/api/v1/companies")
                         .param("fields", "name,industry"))
                 .andExpect(status().isOk())
                 .andReturn();
 
-        JsonNode response = objectMapper.readTree(result.getResponse().getContentAsString());
-        JsonNode data = response.get("data");
-
-        assertThat(data).isNotNull();
-        assertThat(data.size()).isEqualTo(5);
-
-        JsonNode firstCompany = data.get(0);
+        JsonNode firstCompany = objectMapper.readTree(result.getResponse().getContentAsString()).get("data").get(0);
         assertThat(firstCompany.has("name")).isTrue();
-        assertThat(firstCompany.has("industry")).isTrue();
-        assertThat(firstCompany.has("website")).isFalse(); // Not selected
+        assertThat(firstCompany.has("createdAt")).isTrue();
+        assertThat(firstCompany.has("updatedAt")).isTrue();
+        assertThat(firstCompany.has("isVerified")).isTrue();
     }
 
     @Test

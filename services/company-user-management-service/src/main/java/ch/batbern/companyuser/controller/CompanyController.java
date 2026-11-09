@@ -68,17 +68,17 @@ public class CompanyController implements CompaniesApi, CompanySearchApi, Compan
     }
 
     /**
-     * List companies with advanced query support (filter/search/sort/pagination/fields/include).
+     * List companies with advanced query support (filter/search/sort/pagination/include).
      * AC14/AC15. Requires authentication.
      */
     @Override
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<PaginatedCompanyResponse> listCompanies(
-            String filter, String search, String sort, Integer page, Integer limit, String fields, String include) {
-        log.debug("Querying companies with filter: {}, search: {}, sort: {}, page: {}, limit: {}, fields: {},"
-                + " include: {}", filter, search, sort, page, limit, fields, include);
+            String filter, String search, String sort, Integer page, Integer limit, String include) {
+        log.debug("Querying companies with filter: {}, search: {}, sort: {}, page: {}, limit: {}, include: {}",
+                filter, search, sort, page, limit, include);
         PaginatedCompanyResponse response =
-                queryService.queryCompanies(filter, search, sort, page, limit, fields, include);
+                queryService.queryCompanies(filter, search, sort, page, limit, include);
         return ResponseEntity.ok(response);
     }
 

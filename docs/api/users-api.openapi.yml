@@ -8,7 +8,6 @@ info:
     This API provides comprehensive user management capabilities with:
     - **Resource Expansion**: `?include=` parameter for company, roles, settings, activity
     - **Advanced Filtering**: MongoDB-style JSON filter syntax for complex queries
-    - **Field Selection**: Sparse fieldsets to reduce payload size
     - **Pagination**: Standard page/limit parameters
     - **Caching**: Caffeine in-memory cache (10min TTL)
     - **Role Management**: Business rules enforcement (minimum 2 organizers)
@@ -389,10 +388,6 @@ paths:
         - Descending: -createdAt
         - Multiple fields: lastName,-createdAt
 
-        **Field Selection**:
-        - Specific fields: ?fields=id,email,firstName,lastName,roles
-        - All fields: omit fields parameter
-
         **Resource Expansion**:
         - ?include=company: Expands company details
         - ?include=roles: Includes full role information
@@ -435,13 +430,6 @@ paths:
             minimum: 1
             maximum: 100
             default: 20
-        - name: fields
-          in: query
-          description: Comma-separated field names for sparse fieldsets
-          required: false
-          schema:
-            type: string
-            example: 'id,email,firstName,lastName,roles'
         - name: include
           in: query
           description: Comma-separated list of resources to include

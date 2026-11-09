@@ -143,10 +143,6 @@ export interface paths {
      *     - Descending: -createdAt
      *     - Multiple fields: lastName,-createdAt
      *
-     *     **Field Selection**:
-     *     - Specific fields: ?fields=id,email,firstName,lastName,roles
-     *     - All fields: omit fields parameter
-     *
      *     **Resource Expansion**:
      *     - ?include=company: Expands company details
      *     - ?include=roles: Includes full role information
@@ -2562,8 +2558,6 @@ export interface operations {
         page?: number;
         /** @description Items per page (max 100) */
         limit?: number;
-        /** @description Comma-separated field names for sparse fieldsets */
-        fields?: string;
         /** @description Comma-separated list of resources to include */
         include?: string;
         /**

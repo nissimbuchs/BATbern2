@@ -152,10 +152,6 @@ export interface paths {
      *     - Descending: `-name`
      *     - Multiple fields: `industry,-createdAt`
      *
-     *     **Field Selection**:
-     *     - Specific fields: `?fields=id,name,industry`
-     *     - All fields: omit `fields` parameter
-     *
      *     **Resource Expansion**:
      *     - Logo: `?include=logo` (url, s3Key, fileId)
      *
@@ -865,8 +861,6 @@ export interface operations {
         page?: number;
         /** @description Items per page (max 100) */
         limit?: number;
-        /** @description Comma-separated field names for sparse fieldsets */
-        fields?: string;
         /** @description Comma-separated list of resources to include */
         include?: string;
       };
