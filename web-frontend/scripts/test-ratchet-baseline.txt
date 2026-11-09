@@ -614,7 +614,7 @@ fe-mock-services	web-frontend/src/hooks/usePartnerMutations/__tests__/usePartner
 fe-mock-services	web-frontend/src/hooks/usePartnerMutations/usePartnerMutations.test.ts	1
 fe-mock-services	web-frontend/src/hooks/usePartnerNotes.test.ts	1
 fe-mock-services	web-frontend/src/hooks/usePartners.test.ts	1
-fe-mock-services	web-frontend/src/hooks/usePartners.test.tsx	1
+fe-mock-services	web-frontend/src/hooks/usePartners.hooks.test.tsx	1
 fe-mock-services	web-frontend/src/hooks/usePresentationData.test.ts	2
 fe-mock-services	web-frontend/src/hooks/usePublicDataHooks.test.ts	3
 fe-mock-services	web-frontend/src/hooks/useRecentEventPhotos.test.ts	1
