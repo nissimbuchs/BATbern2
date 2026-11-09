@@ -724,6 +724,7 @@ components:
           type: string
           description: Partner company name
         logoUrl:
+          nullable: true
           type: string
           description: Company logo URL (may be null when not available)
         topics:
@@ -803,6 +804,7 @@ components:
           description: Topic title
           example: 'Cloud Native Security Patterns'
         description:
+          nullable: true
           type: string
           description: Detailed topic description
           example: 'Best practices for securing cloud-native applications'
@@ -811,6 +813,7 @@ components:
           description: Topic category
           example: 'Security'
         createdDate:
+          nullable: true
           type: string
           format: date-time
           description: When the topic was created
@@ -824,16 +827,22 @@ components:
           description: Number of times topic has been used
           example: 3
         stalenessScore:
+          nullable: true
           type: integer
           minimum: 0
           maximum: 100
           description: Staleness score (0-100, higher = safer to reuse)
           example: 75
         colorZone:
-          $ref: '#/components/schemas/TopicColorZone'
+          nullable: true
+          allOf:
+          - $ref: '#/components/schemas/TopicColorZone'
         status:
-          $ref: '#/components/schemas/TopicStatus'
+          nullable: true
+          allOf:
+          - $ref: '#/components/schemas/TopicStatus'
         similarityScores:
+          nullable: true
           type: array
           description: Similarity scores to other topics
           items:
@@ -843,12 +852,15 @@ components:
           description: Whether the topic is active
           default: true
         createdAt:
+          nullable: true
           type: string
           format: date-time
         updatedAt:
+          nullable: true
           type: string
           format: date-time
         usageHistory:
+          nullable: true
           type: array
           description: Usage history (populated when include=history)
           items:

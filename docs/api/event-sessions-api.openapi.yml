@@ -2345,6 +2345,7 @@ components:
           type: string
           maxLength: 255
         description:
+          nullable: true
           type: string
         sessionType:
           allOf:
@@ -2363,13 +2364,16 @@ components:
           nullable: true
           description: Session end time - null for placeholder sessions, assigned during slot assignment
         room:
+          nullable: true
           type: string
           maxLength: 100
           example: Main Hall
         capacity:
+          nullable: true
           type: integer
           example: 200
         language:
+          nullable: true
           type: string
           maxLength: 10
           example: de
@@ -2381,6 +2385,7 @@ components:
           type: string
           format: date-time
         speakers:
+          nullable: true
           type: array
           description: 'Story 1.15a.1b: Session speakers with enriched User data
 
@@ -2390,7 +2395,9 @@ components:
           items:
             $ref: '#/components/schemas/SessionSpeaker'
         materialsStatus:
-          $ref: '#/components/schemas/MaterialsStatus'
+          nullable: true
+          allOf:
+          - $ref: '#/components/schemas/MaterialsStatus'
     SessionSpeaker:
       type: object
       description: 'Story 1.15a.1b: Session speaker with enriched User data
@@ -2422,11 +2429,13 @@ components:
           example: Doe
           maxLength: 100
         company:
+          nullable: true
           type: string
           description: Speaker's company identifier/slug (from User.companyId). Stable key used for logo lookup — NOT for display.
           example: GoogleZH
           maxLength: 12
         companyDisplayName:
+          nullable: true
           type: string
           description: 'Human-readable company name (companies.display_name, falling back to
 
@@ -2438,11 +2447,13 @@ components:
           example: Google Zürich
           maxLength: 255
         profilePictureUrl:
+          nullable: true
           type: string
           format: uri
           description: Speaker's profile picture URL (from User entity)
           example: https://cdn.batbern.ch/logos/2025/users/john.doe/profile.jpg
         companyLogoUrl:
+          nullable: true
           type: string
           format: uri
           description: 'Company logo CloudFront URL (cross-service DB join: logos table).
@@ -2452,6 +2463,7 @@ components:
             '
           example: https://cdn.batbern.ch/logos/2025/companies/sbb/logo.jpeg
         bio:
+          nullable: true
           type: string
           description: Speaker's biography (from User entity)
           maxLength: 5000
@@ -2476,6 +2488,7 @@ components:
             '
           example: PRIMARY_SPEAKER
         presentationTitle:
+          nullable: true
           type: string
           description: Optional speaker-specific presentation title (if different from session title)
           maxLength: 255
@@ -2495,6 +2508,7 @@ components:
       - type: object
         properties:
           materials:
+            nullable: true
             type: array
             description: 'Story 5.9: Uploaded session materials (populated by the service layer)'
             items:

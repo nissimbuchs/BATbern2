@@ -75,9 +75,9 @@ export interface SessionUI extends Session {
   speaker?: {
     speakerSlug: string;
     name: string;
-    company?: string; // Speaker's company name
+    company?: string | null; // Speaker's company name
     email?: string;
-    profilePictureUrl?: string; // Speaker's profile picture
+    profilePictureUrl?: string | null; // Speaker's profile picture
   };
   // Archive browsing presentation fields (Story 4.2)
   presentationUrl?: string; // URL to download presentation PDF

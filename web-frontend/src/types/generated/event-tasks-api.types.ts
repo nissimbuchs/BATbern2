@@ -242,7 +242,7 @@ export interface components {
       /** @description Due date type: immediate, relative_to_event, or absolute */
       dueDateType: string;
       /** @description Offset days for relative due dates (negative = before event, positive = after) */
-      dueDateOffsetDays?: number;
+      dueDateOffsetDays?: number | null;
       /**
        * @description A pending task activates at whichever comes first: its trigger, or this many days before its due date. Null = trigger only (post-event templates).
        * @example 14
@@ -251,7 +251,7 @@ export interface components {
       /** @description Whether this is a default (non-editable) template */
       isDefault: boolean;
       /** @description Canonical username of the organizer who created the template (null for defaults) */
-      createdByUsername?: string;
+      createdByUsername?: string | null;
       /** Format: date-time */
       createdAt: string;
       /** Format: date-time */
@@ -303,18 +303,18 @@ export interface components {
        * Format: uuid
        * @description Source template ID (null for ad-hoc tasks)
        */
-      templateId?: string;
+      templateId?: string | null;
       taskName: string;
       triggerState: string;
       /** Format: date-time */
-      dueDate?: string;
-      assignedOrganizerUsername?: string;
+      dueDate?: string | null;
+      assignedOrganizerUsername?: string | null;
       /** @description Task status: pending (trigger not reached yet), todo, in_progress, completed, or cancelled (event archived, or the newsletter was superseded by a later one) */
       status: string;
-      notes?: string;
+      notes?: string | null;
       /** Format: date-time */
-      completedDate?: string;
-      completedByUsername?: string;
+      completedDate?: string | null;
+      completedByUsername?: string | null;
       /** Format: date-time */
       createdAt: string;
       /** Format: date-time */

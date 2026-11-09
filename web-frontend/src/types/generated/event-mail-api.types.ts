@@ -428,7 +428,7 @@ export interface components {
       /** @description Story 16.2a. The conversation an inbound mail belongs to. */
       conversationKey?: string | null;
       /** @description Story 16.7. Inbound mail flagged spam by SES; shown only in the Spam list. */
-      spam?: boolean;
+      spam?: boolean | null;
       /**
        * @description Story 16.10. In the participant view: the delivery status of the participant's own address
        *     (the worst when several). Absent for received mail.
@@ -439,7 +439,7 @@ export interface components {
        * @description Story 16.2a. Attachments of an inbound mail. Story 16.6: files up to 25 MB are kept (`kept`),
        *     larger ones by name only.
        */
-      attachments?: components['schemas']['MailAttachment'][];
+      attachments?: components['schemas']['MailAttachment'][] | null;
     };
     MailAttachment: {
       name: string;

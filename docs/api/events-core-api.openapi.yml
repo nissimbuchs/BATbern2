@@ -2526,6 +2526,7 @@ components:
         scheduled:
           type: boolean
         phase2Enabled:
+          nullable: true
           type: boolean
         phase2DaysBeforeEvent:
           type: integer
@@ -2533,6 +2534,7 @@ components:
           type: string
           format: date-time
         phase3Enabled:
+          nullable: true
           type: boolean
         phase3DaysBeforeEvent:
           type: integer
@@ -2954,6 +2956,7 @@ components:
               type: string
               example: Cloud Native Security
             description:
+              nullable: true
               type: string
               example: Security patterns for cloud-native applications
             category:

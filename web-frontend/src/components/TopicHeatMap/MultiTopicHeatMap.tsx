@@ -29,7 +29,7 @@ import type { Topic, TopicUsageHistory } from '@/types/topic.types';
 import { knownSum } from './usageTotals';
 
 export interface TopicWithHistory extends Topic {
-  usageHistory?: TopicUsageHistory[];
+  usageHistory?: TopicUsageHistory[] | null;
 }
 
 export interface MultiTopicHeatMapProps {
@@ -215,8 +215,7 @@ export const MultiTopicHeatMap: React.FC<MultiTopicHeatMapProps> = ({
       }
 
       // Determine if stale (not used in last 4 events = ~16 months)
-      const isStale =
-        topic.stalenessScore !== undefined ? topic.stalenessScore < 30 : totalUsage === 0;
+      const isStale = topic.stalenessScore != null ? topic.stalenessScore < 30 : totalUsage === 0;
 
       // Determine if trending (used in last 2 events)
       const recentPeriods = eventPeriods.slice(-2);

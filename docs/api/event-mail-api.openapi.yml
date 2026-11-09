@@ -1306,6 +1306,7 @@ components:
           nullable: true
           description: Story 16.2a. The conversation an inbound mail belongs to.
         spam:
+          nullable: true
           type: boolean
           description: Story 16.7. Inbound mail flagged spam by SES; shown only in the Spam list.
         participantStatus:
@@ -1319,6 +1320,7 @@ components:
             Story 16.10. In the participant view: the delivery status of the participant's own address
             (the worst when several). Absent for received mail.
         attachments:
+          nullable: true
           type: array
           description: |
             Story 16.2a. Attachments of an inbound mail. Story 16.6: files up to 25 MB are kept (`kept`),

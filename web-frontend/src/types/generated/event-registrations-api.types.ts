@@ -531,24 +531,25 @@ export interface components {
        * @description Unique registration code (public identifier). Present when registered=true.
        * @example BATbern142-reg-ABC123
        */
-      registrationCode?: string;
+      registrationCode?: string | null;
       /**
        * @description Event code this registration belongs to. Present when registered=true.
        * @example BATbern142
        */
-      eventCode?: string;
+      eventCode?: string | null;
       /**
        * @description Registration status (uppercase). Present when registered=true.
        * @example CONFIRMED
-       * @enum {string}
+       * @enum {string|null}
        */
-      status?: 'REGISTERED' | 'CONFIRMED' | 'WAITLIST' | 'CANCELLED' | 'ATTENDED' | 'NO_SHOW';
+      status?:
+        'REGISTERED' | 'CONFIRMED' | 'WAITLIST' | 'CANCELLED' | 'ATTENDED' | 'NO_SHOW' | null;
       /**
        * Format: date-time
        * @description ISO-8601 timestamp when registration was created. Present when registered=true.
        * @example 2025-11-01T10:30:00Z
        */
-      registrationDate?: string;
+      registrationDate?: string | null;
       /**
        * @description Story 10.11 (AC13): Position on the waitlist (1-based). Null when status is not WAITLIST.
        *     Backward-compatible addition — null for non-waitlist registrations.

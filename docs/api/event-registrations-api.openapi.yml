@@ -1350,15 +1350,18 @@ components:
           description: Whether the authenticated user has a registration record for this event.
           example: true
         registrationCode:
+          nullable: true
           type: string
           description: Unique registration code (public identifier). Present when registered=true.
           example: BATbern142-reg-ABC123
         eventCode:
+          nullable: true
           type: string
           description: Event code this registration belongs to. Present when registered=true.
           pattern: ^BATbern[0-9]+$
           example: BATbern142
         status:
+          nullable: true
           type: string
           description: Registration status (uppercase). Present when registered=true.
           enum:
@@ -1370,6 +1373,7 @@ components:
           - NO_SHOW
           example: CONFIRMED
         registrationDate:
+          nullable: true
           type: string
           format: date-time
           description: ISO-8601 timestamp when registration was created. Present when registered=true.

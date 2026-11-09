@@ -868,11 +868,11 @@ export interface components {
     };
     AutoPublishScheduleResponse: {
       scheduled?: boolean;
-      phase2Enabled?: boolean;
+      phase2Enabled?: boolean | null;
       phase2DaysBeforeEvent?: number;
       /** Format: date-time */
       phase2TriggerDate?: string;
-      phase3Enabled?: boolean;
+      phase3Enabled?: boolean | null;
       phase3DaysBeforeEvent?: number;
       /** Format: date-time */
       phase3TriggerDate?: string;
@@ -1151,7 +1151,7 @@ export interface components {
         /** @example Cloud Native Security */
         name?: string;
         /** @example Security patterns for cloud-native applications */
-        description?: string;
+        description?: string | null;
         /**
          * @example technical
          * @enum {string}
@@ -1745,32 +1745,32 @@ export interface components {
        * @description Speaker's company identifier/slug (from User.companyId). Stable key used for logo lookup — NOT for display.
        * @example GoogleZH
        */
-      company?: string;
+      company?: string | null;
       /**
        * @description Human-readable company name (companies.display_name, falling back to
        *     companies.name, then the company slug). Prefer this over `company` for
        *     display. Null when the speaker has no associated company.
        * @example Google Zürich
        */
-      companyDisplayName?: string;
+      companyDisplayName?: string | null;
       /**
        * Format: uri
        * @description Speaker's profile picture URL (from User entity)
        * @example https://cdn.batbern.ch/logos/2025/users/john.doe/profile.jpg
        */
-      profilePictureUrl?: string;
+      profilePictureUrl?: string | null;
       /**
        * Format: uri
        * @description Company logo CloudFront URL (cross-service DB join: logos table).
        *     Populated on archive list responses to avoid a separate useCompany API call.
        * @example https://cdn.batbern.ch/logos/2025/companies/sbb/logo.jpeg
        */
-      companyLogoUrl?: string;
+      companyLogoUrl?: string | null;
       /**
        * @description Speaker's biography (from User entity)
        * @example Software engineer passionate about cloud architecture and security
        */
-      bio?: string;
+      bio?: string | null;
       /**
        * @description Speaker's role in the session:
        *     - PRIMARY_SPEAKER: Main presenter
@@ -1785,7 +1785,7 @@ export interface components {
        * @description Optional speaker-specific presentation title (if different from session title)
        * @example Security Auditing Tools Deep Dive
        */
-      presentationTitle?: string;
+      presentationTitle?: string | null;
       /**
        * @description Whether speaker has confirmed participation
        * @example true
@@ -1818,7 +1818,7 @@ export interface components {
        */
       eventCode: string;
       title: string;
-      description?: string;
+      description?: string | null;
       /**
        * @description Session type — null for placeholder sessions, assigned during agenda planning.
        * @example keynote
@@ -1835,14 +1835,14 @@ export interface components {
        */
       endTime?: string | null;
       /** @example Main Hall */
-      room?: string;
+      room?: string | null;
       /** @example 200 */
-      capacity?: number;
+      capacity?: number | null;
       /**
        * @default de
        * @example de
        */
-      language: string;
+      language: string | null;
       /** Format: date-time */
       createdAt?: string;
       /** Format: date-time */
@@ -1851,8 +1851,8 @@ export interface components {
        * @description Story 1.15a.1b: Session speakers with enriched User data
        *     List of speakers assigned to this session with their roles
        */
-      speakers?: components['schemas']['SessionSpeaker'][];
-      materialsStatus?: components['schemas']['MaterialsStatus'];
+      speakers?: components['schemas']['SessionSpeaker'][] | null;
+      materialsStatus?: components['schemas']['MaterialsStatus'] | null;
     };
     /**
      * @description Page-based pagination metadata returned with every paginated list response.
@@ -2018,7 +2018,7 @@ export interface components {
      */
     SessionResponse: components['schemas']['Session'] & {
       /** @description Story 5.9: Uploaded session materials (populated by the service layer) */
-      materials?: components['schemas']['SessionMaterialResponse'][];
+      materials?: components['schemas']['SessionMaterialResponse'][] | null;
       /**
        * @description Story 5.9: Number of uploaded materials (for overview displays)
        * @example 3

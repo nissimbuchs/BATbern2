@@ -276,7 +276,7 @@ export interface components {
       /** @description Partner company name */
       companyName: string;
       /** @description Company logo URL (may be null when not available) */
-      logoUrl?: string;
+      logoUrl?: string | null;
       topics: components['schemas']['TopicEntry'][];
     };
     /** @description A single partner topic suggestion enriched with cluster, votes, and date */
@@ -322,7 +322,7 @@ export interface components {
        * @description Detailed topic description
        * @example Best practices for securing cloud-native applications
        */
-      description?: string;
+      description?: string | null;
       /**
        * @description Topic category
        * @example Security
@@ -332,7 +332,7 @@ export interface components {
        * Format: date-time
        * @description When the topic was created
        */
-      createdDate?: string;
+      createdDate?: string | null;
       /**
        * Format: date-time
        * @description When the topic was last used in an event
@@ -347,22 +347,22 @@ export interface components {
        * @description Staleness score (0-100, higher = safer to reuse)
        * @example 75
        */
-      stalenessScore?: number;
-      colorZone?: components['schemas']['TopicColorZone'];
-      status?: components['schemas']['TopicStatus'];
+      stalenessScore?: number | null;
+      colorZone?: components['schemas']['TopicColorZone'] | null;
+      status?: components['schemas']['TopicStatus'] | null;
       /** @description Similarity scores to other topics */
-      similarityScores?: components['schemas']['SimilarityScore'][];
+      similarityScores?: components['schemas']['SimilarityScore'][] | null;
       /**
        * @description Whether the topic is active
        * @default true
        */
       active: boolean;
       /** Format: date-time */
-      createdAt?: string;
+      createdAt?: string | null;
       /** Format: date-time */
-      updatedAt?: string;
+      updatedAt?: string | null;
       /** @description Usage history (populated when include=history) */
-      usageHistory?: components['schemas']['TopicUsageHistory'][];
+      usageHistory?: components['schemas']['TopicUsageHistory'][] | null;
     };
     /**
      * @description Color coding for topic freshness visualization

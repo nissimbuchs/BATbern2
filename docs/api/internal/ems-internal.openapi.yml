@@ -473,6 +473,7 @@ components:
           type: string
           enum: [ORGANIZER, SELF_CLAIM]
         sourceProfile:
+          nullable: true
           type: object
           description: Snapshot of the source profile, kept in the merge log.
           additionalProperties: true
@@ -504,6 +505,7 @@ components:
           minLength: 1
           maxLength: 256
         eventCode:
+          nullable: true
           type: string
           maxLength: 50
         audience:
@@ -511,18 +513,23 @@ components:
           description: Only `PARTNERS` is accepted (400 otherwise).
           minLength: 1
         templateKey:
+          nullable: true
           type: string
           maxLength: 100
         contentSource:
+          nullable: true
           type: string
           description: A `MailContext.ContentSource`; absent means `TEMPLATE`.
           enum: [TEMPLATE, OWN_TEXT]
         senderUsername:
+          nullable: true
           type: string
           maxLength: 100
         test:
+          nullable: true
           type: boolean
         reference:
+          nullable: true
           type: string
           maxLength: 100
         to:
@@ -530,21 +537,26 @@ components:
           description: The To line, comma-separated addresses.
           maxLength: 64000
         cc:
+          nullable: true
           type: array
           maxItems: 500
           items:
             type: string
             maxLength: 320
         subject:
+          nullable: true
           type: string
           maxLength: 1000
         htmlBody:
+          nullable: true
           type: string
           maxLength: 2097152
         sesMessageId:
+          nullable: true
           type: string
           maxLength: 255
         failureReason:
+          nullable: true
           type: string
           maxLength: 500
 
@@ -556,6 +568,7 @@ components:
           type: string
           format: uuid
         requesterName:
+          nullable: true
           type: string
           maxLength: 255
         requesterEmail:
@@ -568,6 +581,7 @@ components:
           minLength: 1
           maxLength: 500
         note:
+          nullable: true
           type: string
           maxLength: 500
 
