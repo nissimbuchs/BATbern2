@@ -624,6 +624,25 @@ export interface components {
       updatedAt?: string | null;
     };
     /**
+     * @description **Story 4.1.5c**: Minimal response with no sensitive data.
+     *     Confirmation token sent via email (not in response).
+     *     User must click email link to confirm registration.
+     */
+    CreateRegistrationResponse: {
+      /** @example Registration successful. Please check your email to confirm. */
+      message: string;
+      /**
+       * Format: email
+       * @example john.doe@example.com
+       */
+      email: string;
+      /**
+       * @description True when the attendee was an existing user and the company they entered differed from the one on file, so their profile company was refreshed. The UI shows a notice when true.
+       * @example false
+       */
+      companyUpdated?: boolean;
+    };
+    /**
      * @description Story 4.1.5a: Event registration request (ADR-006)
      *     Public endpoint - no authentication required.
      *     Creates user_profile with cognito_user_id = NULL for anonymous users.
@@ -1057,26 +1076,25 @@ export interface operations {
       };
     };
     responses: {
+      /**
+       * @description The attendee is already on the waitlist (Story 10.11): nothing is created, the waitlist
+       *     confirmation mail is sent again.
+       */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CreateRegistrationResponse'];
+        };
+      };
       /** @description Registration created successfully - confirmation email sent */
       201: {
         headers: {
           [name: string]: unknown;
         };
         content: {
-          'application/json': {
-            /** @example Registration successful. Please check your email to confirm. */
-            message: string;
-            /**
-             * Format: email
-             * @example john.doe@example.com
-             */
-            email: string;
-            /**
-             * @description True when the attendee was an existing user and the company they entered differed from the one on file, so their profile company was refreshed. The UI shows a notice when true.
-             * @example false
-             */
-            companyUpdated?: boolean;
-          };
+          'application/json': components['schemas']['CreateRegistrationResponse'];
         };
       };
       /** @description Invalid request (validation errors) */

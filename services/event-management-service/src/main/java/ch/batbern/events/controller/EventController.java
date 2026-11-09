@@ -2093,6 +2093,7 @@ public class EventController implements EventsApi, EventActionsApi, EventReporti
                         .message("You are already on the waitlist for this event."
                                 + " A new confirmation email has been sent.")
                         .email(request.getEmail())
+                        .companyUpdated(registration.getCompanyUpdated())
                         .build();
                 return ResponseEntity.ok(response);
             }

@@ -215,8 +215,18 @@ public class RegistrationCapacityIntegrationTest extends AbstractIntegrationTest
         // 3rd user registers → waitlist
         postRegistration(EVENT_CODE, "user3@test.com");
 
-        // Same user registers again → must NOT create duplicate
-        postRegistration(EVENT_CODE, "user3@test.com");
+        // Same user registers again → must NOT create duplicate; 200 with the full answer
+        // (companyUpdated was null on this path, so a refreshed company showed no notice)
+        mockMvc.perform(post("/api/v1/events/{eventCode}/registrations", EVENT_CODE)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of(
+                                "firstName", "Test",
+                                "lastName", "User",
+                                "email", "user3@test.com",
+                                "termsAccepted", true))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.email", is("user3@test.com")))
+                .andExpect(jsonPath("$.companyUpdated", is(false)));
 
         Event event = eventByCode(EVENT_CODE);
         List<Registration> allForEvent = registrationRepository.findByEventId(event.getId());
@@ -484,7 +494,7 @@ public class RegistrationCapacityIntegrationTest extends AbstractIntegrationTest
 
     private Registration createActive(Event event, String username, String status) {
         return registrationRepository.save(Registration.builder()
-                .registrationCode(event.getEventCode() + "-reg-" + username)
+                .registrationCode(event.getEventCode() + "-reg-" + username.replace(".", ""))
                 .eventId(event.getId())
                 .attendeeUsername(username)
                 .status(status)

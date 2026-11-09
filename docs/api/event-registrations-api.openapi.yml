@@ -208,38 +208,26 @@ paths:
             schema:
               $ref: '#/components/schemas/CreateRegistrationRequest'
       responses:
+        '200':
+          description: |
+            The attendee is already on the waitlist (Story 10.11): nothing is created, the waitlist
+            confirmation mail is sent again.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateRegistrationResponse'
+              examples:
+                default:
+                  summary: already on the waitlist
+                  value:
+                    message: You are already on the waitlist for this event. A new confirmation email has been sent.
+                    email: anna.vorlage@example.com
         '201':
           description: Registration created successfully - confirmation email sent
           content:
             application/json:
               schema:
-                type: object
-                required:
-                - message
-                - email
-                properties:
-                  message:
-                    type: string
-                    example: Registration successful. Please check your email to confirm.
-                  email:
-                    type: string
-                    format: email
-                    # One email rule everywhere (#1102): ASCII local part (SES has no SMTPUTF8), any domain.
-                    # Source of truth: shared-kernel EmailAddresses.OPENAPI_PATTERN.
-                    pattern: '^[A-Za-z0-9!#$%&''*+/=?^_`{|}~-]+(\.[A-Za-z0-9!#$%&''*+/=?^_`{|}~-]+)*@[^\s@.]+(\.[^\s@.]+)+$'
-                    maxLength: 254
-                    example: john.doe@example.com
-                  companyUpdated:
-                    type: boolean
-                    description: True when the attendee was an existing user and the company they entered differed from the one on file, so their profile company was refreshed. The UI shows a notice when true.
-                    example: false
-                description: '**Story 4.1.5c**: Minimal response with no sensitive data.
-
-                  Confirmation token sent via email (not in response).
-
-                  User must click email link to confirm registration.
-
-                  '
+                $ref: '#/components/schemas/CreateRegistrationResponse'
               examples:
                 default:
                   summary: generated from the schema and captured sub-values
@@ -1502,6 +1490,35 @@ components:
           type: string
           format: date-time
           nullable: true
+    CreateRegistrationResponse:
+      type: object
+      required:
+      - message
+      - email
+      properties:
+        message:
+          type: string
+          example: Registration successful. Please check your email to confirm.
+        email:
+          type: string
+          format: email
+          # One email rule everywhere (#1102): ASCII local part (SES has no SMTPUTF8), any domain.
+          # Source of truth: shared-kernel EmailAddresses.OPENAPI_PATTERN.
+          pattern: '^[A-Za-z0-9!#$%&''*+/=?^_`{|}~-]+(\.[A-Za-z0-9!#$%&''*+/=?^_`{|}~-]+)*@[^\s@.]+(\.[^\s@.]+)+$'
+          maxLength: 254
+          example: john.doe@example.com
+        companyUpdated:
+          type: boolean
+          description: True when the attendee was an existing user and the company they entered differed from the one on file, so their profile company was refreshed. The UI shows a notice when true.
+          example: false
+      description: '**Story 4.1.5c**: Minimal response with no sensitive data.
+
+        Confirmation token sent via email (not in response).
+
+        User must click email link to confirm registration.
+
+        '
+
     CreateRegistrationRequest:
       type: object
       description: 'Story 4.1.5a: Event registration request (ADR-006)
