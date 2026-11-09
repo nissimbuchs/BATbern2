@@ -41,9 +41,9 @@ export interface ExistingUserData {
   username: string;
   firstName: string;
   lastName: string;
-  bio?: string;
-  companyId?: string;
-  profilePictureUrl?: string;
+  bio?: string | null;
+  companyId?: string | null;
+  profilePictureUrl?: string | null;
 }
 
 /**

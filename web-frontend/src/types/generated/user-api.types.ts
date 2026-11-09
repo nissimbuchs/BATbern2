@@ -1375,9 +1375,9 @@ export interface components {
       id?: string;
       firstName?: string;
       lastName?: string;
-      bio?: string;
-      profilePictureUrl?: string;
-      companyId?: string;
+      bio?: string | null;
+      profilePictureUrl?: string | null;
+      companyId?: string | null;
     };
     /** @description Cognito↔DB sync status snapshot (Story 1.2.5) */
     UserSyncStatus: {
@@ -1464,18 +1464,18 @@ export interface components {
       /** @example Doe */
       lastName: string;
       /** @example Software engineer passionate about cloud architecture */
-      bio?: string;
+      bio?: string | null;
       /**
        * @description Company name (unique identifier) - Story 1.16.2
        * @example Swiss IT Solutions AG
        */
-      companyId?: string;
+      companyId?: string | null;
       roles: ('ORGANIZER' | 'SPEAKER' | 'PARTNER' | 'ATTENDEE')[];
       /**
        * Format: uri
        * @example https://cdn.batbern.ch/profile-pictures/550e8400.jpg
        */
-      profilePictureUrl?: string;
+      profilePictureUrl?: string | null;
       /** @example true */
       active?: boolean;
       /**
@@ -1492,7 +1492,7 @@ export interface components {
        * Format: date-time
        * @example 2025-01-20T14:30:00Z
        */
-      lastLoginAt?: string;
+      lastLoginAt?: string | null;
       /**
        * Format: date-time
        * @description Story 12.11: moment the user accepted the Terms of Service + Privacy Policy.
@@ -1503,9 +1503,9 @@ export interface components {
        * @example 2026-06-04T16:00:00Z
        */
       termsAcceptedAt?: string | null;
-      company?: components['schemas']['Company'];
-      preferences?: components['schemas']['UserPreferences'];
-      settings?: components['schemas']['UserSettings'];
+      company?: components['schemas']['Company'] | null;
+      preferences?: components['schemas']['UserPreferences'] | null;
+      settings?: components['schemas']['UserSettings'] | null;
       /**
        * @description Story 10.32: additional email addresses registered on this profile.
        *     Receive forwarded copies of mail addressed to the user (ok@/partner@/batbern{N}@
@@ -1795,9 +1795,9 @@ export interface components {
        */
       qnaNotificationFrequency: 'live' | 'daily' | 'off';
       /** @example 22:00 */
-      quietHoursStart?: string;
+      quietHoursStart?: string | null;
       /** @example 07:00 */
-      quietHoursEnd?: string;
+      quietHoursEnd?: string | null;
     };
     UserSettings: {
       /**
@@ -1816,7 +1816,7 @@ export interface components {
       /** @default false */
       allowCalendarSync: boolean;
       /** @example Europe/Zurich */
-      timezone?: string;
+      timezone?: string | null;
       /** @default false */
       twoFactorEnabled: boolean;
     };
@@ -1859,10 +1859,10 @@ export interface components {
        * @description Company name (unique identifier) - Story 1.16.2
        * @example Swiss IT Solutions AG
        */
-      companyId?: string;
+      companyId?: string | null;
       roles?: string[];
       /** Format: uri */
-      profilePictureUrl?: string;
+      profilePictureUrl?: string | null;
     };
     /** @description Request body for creating a new user (Story 2.5.2 AC4) */
     CreateUserRequest: {
@@ -1916,13 +1916,13 @@ export interface components {
        *     (e.g., `jane.smith@x.com` → firstName=`Jane`, lastName=`Smith`).
        * @example Jane
        */
-      firstName?: string;
+      firstName?: string | null;
       /**
        * @description Optional. If absent, defaults are derived from the email local-part.
        *     See `firstName`.
        * @example Smith
        */
-      lastName?: string;
+      lastName?: string | null;
       /**
        * @description Role to grant. **Non-ADMIN callers may only grant SPEAKER via this endpoint.**
        *     ADMIN callers may grant any role. Server returns 400 if a non-ADMIN caller
@@ -1986,7 +1986,7 @@ export interface components {
        * @description Updated user biography. Overwrites the global value per ADR-009 §6.7.
        * @example Experienced security architect with 15 years in the industry.
        */
-      bio?: string;
+      bio?: string | null;
       /**
        * @description Updated profile picture URL (typically a CloudFront URL produced by an earlier
        *     presigned-upload flow). Modelled as a plain string (not `format: uri`) so the
@@ -1994,7 +1994,7 @@ export interface components {
        *     OpenAPI generator applies cleanly.
        * @example https://cdn.batbern.ch/users/jane.smith.jpg
        */
-      profilePictureUrl?: string;
+      profilePictureUrl?: string | null;
     };
     /** @description Request to get an existing user or create a new one. Supports both authenticated (Cognito) and anonymous users (ADR-005). */
     GetOrCreateUserRequest: {
@@ -2044,7 +2044,7 @@ export interface components {
       /** @description True if the caller supplied a companyId that differed from the existing user's stored company and the profile was updated as a result. Always false for newly-created users. Lets a registration flow tell the attendee their company on file was refreshed. */
       companyUpdated?: boolean;
       /** @description Cognito user ID (only if created) */
-      cognitoUserId?: string;
+      cognitoUserId?: string | null;
       user: components['schemas']['UserResponse'];
     };
     /**
@@ -2062,10 +2062,10 @@ export interface components {
        * @example Swiss IT Solutions AG
        */
       name?: string;
-      displayName?: string;
-      industry?: string;
+      displayName?: string | null;
+      industry?: string | null;
       /** Format: uri */
-      website?: string;
+      website?: string | null;
     };
     PaginatedUserResponse: {
       data: components['schemas']['UserResponse'][];

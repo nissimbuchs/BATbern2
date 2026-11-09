@@ -21,9 +21,9 @@ interface UserAvatarProps {
   firstName?: string;
   lastName?: string;
   /** Company name (optional) */
-  company?: string;
+  company?: string | null;
   /** Profile picture URL (optional) */
-  profilePictureUrl?: string;
+  profilePictureUrl?: string | null;
   /** Avatar size in pixels (default: 40) */
   size?: number;
   /** Show company below name (default: true if company provided) */
@@ -85,7 +85,7 @@ export const UserAvatar: React.FC<UserAvatarProps> = ({
 
   const avatarElement = (
     <Avatar
-      src={profilePictureUrl}
+      src={profilePictureUrl ?? undefined}
       alt={fullName}
       sx={{
         bgcolor: avatarBgColor,
