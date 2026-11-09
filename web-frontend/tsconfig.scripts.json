@@ -17,6 +17,7 @@
     "scripts/test-ratchet*.ts",
     "scripts/api-lint*.ts",
     "scripts/api-similarity*.ts",
+    "scripts/check-i18n-keys*.ts",
     "scripts/lib/*.ts",
     "src/test/contract/*.ts",
     "src/test/msw/openapi.ts",

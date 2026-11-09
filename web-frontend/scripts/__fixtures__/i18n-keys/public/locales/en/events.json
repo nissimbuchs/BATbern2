@@ -1,0 +1,4 @@
+{
+  "title": "Events",
+  "form": { "name": { "label": "Name", "help": "The event name" } }
+}

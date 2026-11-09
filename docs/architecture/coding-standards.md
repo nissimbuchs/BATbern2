@@ -680,6 +680,28 @@ skips comments only).
 
 Locally: `make check-test-ratchet`.
 
+#### Frontend: i18n keys
+
+The tests run on the real `en` bundles, and the app falls back to `de` (`fallbackLng`), so a
+`t('key')` whose key is missing in `en` shows an English visitor German text or the inline default,
+and no test notices. `web-frontend/scripts/check-i18n-keys.ts` (CI step "Frontend i18n key check" in
+`build-frontend`, locally `make check-i18n-keys`) reads every `t()` call in `web-frontend/src`
+(tests and `src/test/` excluded) and looks its key up in `public/locales/en/<namespace>.json`:
+
+- the namespace comes from the binding (`useTranslation('ns')`, an array: each in order, none:
+  `common`; `{ t: tX }` renames, `{ keyPrefix }`), from a `ns:key` prefix or a `{ ns: 'x' }`
+  option; `i18n.t` / `i18next.t` use `common`; a `t` passed in as a parameter counts as found when
+  any `en` namespace has the key;
+- plural and context forms count (`items` is found as `items_one` / `items_other`);
+- a key built at run time (variable, template with `${}`, concatenation) is skipped.
+
+The keys missing when the gate came in (166 calls in 51 files) are frozen per file in
+`web-frontend/scripts/i18n-keys-baseline.txt`. A file that gains a missing key fails (RAISED, with
+file, line, key and namespace); add the key to `en` and the other 9 locales. A file that loses one
+fails until the gain is locked in (STALE): `cd web-frontend && npm run check:i18n-keys -- --update`,
+commit the baseline in the same PR. Filling the frozen keys is touch-rule work: a story that
+changes a screen fills that screen's keys.
+
 ### Lambda Handler Testing (Infrastructure)
 
 Lambda handlers are **deployed artifacts**, not just code. CDK unit tests (`Template.fromStack`) verify that a Lambda is *declared* in CloudFormation — they do **not** test that the handler module can load and run. These are two completely different things, and only one of them catches production failures.

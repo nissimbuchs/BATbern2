@@ -560,6 +560,17 @@ jobs:
         working-directory: ./web-frontend
         run: npm run check:api-paths
 
+      # Epic 17: every t('key') in src/ must name a key in public/locales/en (fallbackLng is de, so
+      # a key missing in en shows English visitors German text). The keys missing today are frozen
+      # in web-frontend/scripts/i18n-keys-baseline.txt; a file may only lose missing keys.
+      - name: Frontend i18n key check tests
+        working-directory: ./web-frontend
+        run: npx vitest run scripts/check-i18n-keys.test.ts
+
+      - name: Frontend i18n key check
+        working-directory: ./web-frontend
+        run: npm run check:i18n-keys
+
       # Story 17.4: Spectral with the convention ruleset docs/api/.spectral.yaml over the public
       # specs, against web-frontend/scripts/api-lint-baseline.txt. A NEW violation fails, and so
       # does a fixed one still in the baseline (STALE), and a baseline line without exactly one

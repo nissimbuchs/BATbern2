@@ -11,7 +11,7 @@
 # Run 'make help' to see all available targets
 
 .DEFAULT_GOAL := help
-.PHONY: help install build test lint clean docker-up docker-down docker-build verify ci-build ci-test check-outdated update-deps audit-security all build-watch test-watch clean-watch watch-generate-types setup-test-users reports reports-deploy check-frontend-api-paths check-test-ratchet lint-api
+.PHONY: help install build test lint clean docker-up docker-down docker-build verify ci-build ci-test check-outdated update-deps audit-security all build-watch test-watch clean-watch watch-generate-types setup-test-users reports reports-deploy check-frontend-api-paths check-test-ratchet check-i18n-keys lint-api
 
 # ═══════════════════════════════════════════════════════════
 # HELP & DOCUMENTATION
@@ -508,6 +508,9 @@ check-frontend-api-paths: ## Check every frontend HTTP call against docs/api/ (S
 
 check-test-ratchet: ## Test fidelity ratchet: own-code mock counts may only fall (Story 17.0a, same as CI)
 	@cd web-frontend && npm run --silent check:test-ratchet
+
+check-i18n-keys: ## Every t('key') in web-frontend/src exists in the en bundles; missing ones may only fall (Epic 17, same as CI)
+	@cd web-frontend && npm run --silent check:i18n-keys
 
 lint-api: ## OpenAPI convention lint against its baseline (Story 17.4) + internal specs (17.0b2), same as CI
 	@cd web-frontend && npm run --silent lint:api && npm run --silent lint:api-internal
