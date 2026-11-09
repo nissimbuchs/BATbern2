@@ -1133,7 +1133,8 @@ public class UserService {
                         .id(company.getName())
                         .name(company.getName())
                         .displayName(company.getDisplayName())
-                        .industry(company.getIndustry()))
+                        .industry(company.getIndustry())
+                        .website(company.getWebsite()))
                 .orElseGet(() -> {
                     log.warn("Could not resolve company '{}' for profile expansion", companyId);
                     return new ch.batbern.companyuser.dto.generated.Company()

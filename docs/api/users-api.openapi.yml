@@ -4400,8 +4400,10 @@ components:
           type: string
         website:
           nullable: true
+          # A plain string, as CompanyResponse.website in companies-api: the same stored value,
+          # which that API never checked as a URI.
           type: string
-          format: uri
+          maxLength: 500
 
     PaginatedUserResponse:
       type: object

@@ -2064,7 +2064,6 @@ export interface components {
       name?: string;
       displayName?: string | null;
       industry?: string | null;
-      /** Format: uri */
       website?: string | null;
     };
     PaginatedUserResponse: {

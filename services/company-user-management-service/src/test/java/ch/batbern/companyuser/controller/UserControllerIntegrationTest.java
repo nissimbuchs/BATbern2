@@ -3,8 +3,10 @@ package ch.batbern.companyuser.controller;
 import org.springframework.cache.CacheManager;
 import ch.batbern.companyuser.config.TestAwsConfig;
 import ch.batbern.shared.types.Role;
+import ch.batbern.companyuser.domain.Company;
 import ch.batbern.companyuser.domain.User;
 import ch.batbern.companyuser.domain.UserAdditionalEmail;
+import ch.batbern.companyuser.repository.CompanyRepository;
 import ch.batbern.companyuser.repository.UserRepository;
 import ch.batbern.shared.test.AbstractIntegrationTest;
 import ch.batbern.shared.test.fixtures.ProductionShapedPeople;
@@ -79,6 +81,9 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private CompanyRepository companyRepository;
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
@@ -169,6 +174,32 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.id").value("john.doe"))
                 .andExpect(jsonPath("$.company").exists())
                 .andExpect(jsonPath("$.company.id").value("GoogleZH"));
+    }
+
+    /**
+     * The expanded company carries every field the users-api {@code Company} declares that the
+     * company has: {@code website} was never filled on this path (17.0 follow-up, 2026-11-09).
+     */
+    @Test
+    @WithMockUser(username = "john.doe")
+    @DisplayName("should_includeCompanyWebsite_when_includeCompanyProvided")
+    void should_includeCompanyWebsite_when_includeCompanyProvided() throws Exception {
+        companyRepository.save(Company.builder()
+                .name("GoogleZH")
+                .displayName("Google Zürich")
+                .website("https://www.google.ch")
+                .industry("Technology")
+                .createdBy("john.doe")
+                .build());
+
+        mockMvc.perform(get("/api/v1/users/me")
+                        .param("include", "company")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.company.id").value("GoogleZH"))
+                .andExpect(jsonPath("$.company.displayName").value("Google Zürich"))
+                .andExpect(jsonPath("$.company.industry").value("Technology"))
+                .andExpect(jsonPath("$.company.website").value("https://www.google.ch"));
     }
 
     /**
