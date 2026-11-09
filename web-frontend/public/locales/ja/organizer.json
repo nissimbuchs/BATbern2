@@ -406,7 +406,8 @@
     "assignedTo": "担当者",
     "completedOn": "完了日",
     "completedBy": "完了者",
-    "noTasks": "タスクなし"
+    "noTasks": "タスクなし",
+    "completionNotesPlaceholder": "タスク完了についてのメモを追加..."
   },
   "analytics": {
     "title": "分析",

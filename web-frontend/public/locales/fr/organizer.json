@@ -406,7 +406,8 @@
     "assignedTo": "Assigné à",
     "completedOn": "Terminé le",
     "completedBy": "Terminé par",
-    "noTasks": "Aucune tâche"
+    "noTasks": "Aucune tâche",
+    "completionNotesPlaceholder": "Ajoutez des remarques sur la réalisation de la tâche..."
   },
   "analytics": {
     "title": "Analytique",

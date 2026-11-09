@@ -468,7 +468,8 @@
     "assignedTo": "Assigned to",
     "completedOn": "Completed on",
     "completedBy": "Completed by",
-    "noTasks": "No tasks"
+    "noTasks": "No tasks",
+    "completionNotesPlaceholder": "Add any notes about task completion..."
   },
   "analytics": {
     "title": "Analytics",

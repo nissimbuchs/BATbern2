@@ -406,7 +406,8 @@
     "assignedTo": "Toegewezen aan",
     "completedOn": "Voltooid op",
     "completedBy": "Voltooid door",
-    "noTasks": "Geen taken"
+    "noTasks": "Geen taken",
+    "completionNotesPlaceholder": "Voeg notities toe over het afronden van de taak..."
   },
   "analytics": {
     "title": "Analyse",

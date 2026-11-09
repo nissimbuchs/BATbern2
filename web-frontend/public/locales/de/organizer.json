@@ -468,7 +468,8 @@
     "assignedTo": "Zugewiesen an",
     "completedOn": "Abgeschlossen am",
     "completedBy": "Abgeschlossen von",
-    "noTasks": "Keine Aufgaben"
+    "noTasks": "Keine Aufgaben",
+    "completionNotesPlaceholder": "Notizen zur Erledigung der Aufgabe hinzufügen..."
   },
   "analytics": {
     "title": "Analysen",

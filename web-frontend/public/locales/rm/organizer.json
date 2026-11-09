@@ -406,7 +406,8 @@
     "assignedTo": "Assignà a",
     "completedOn": "Terminà ils",
     "completedBy": "Terminà da",
-    "noTasks": "Naginas activitads"
+    "noTasks": "Naginas activitads",
+    "completionNotesPlaceholder": "Agiuntai notizias davart l'adempliment da la lavur..."
   },
   "analytics": {
     "title": "Analisas",
