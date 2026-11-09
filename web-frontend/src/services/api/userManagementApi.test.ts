@@ -389,22 +389,14 @@ describe('UserManagementApi', () => {
       const userId = 'john.doe';
       const newRoles: Role[] = ['ORGANIZER', 'SPEAKER'];
 
-      const mockResponse = {
-        id: userId,
-        email: 'john.doe@example.com',
-        firstName: 'John',
-        lastName: 'Doe',
-        roles: newRoles,
-        isActive: true,
-        createdAt: '2025-01-15T10:00:00Z',
-        updatedAt: '2025-01-20T10:00:00Z',
-      };
+      // The endpoint answers UserRolesResponse, not a User.
+      const mockResponse = { username: userId, roles: newRoles };
 
       mock.onPut(`/users/${userId}/roles`, { roles: newRoles }).reply(200, mockResponse);
 
       const result = await updateUserRoles(userId, newRoles);
 
-      expect(result.roles).toEqual(newRoles);
+      expect(result).toEqual({ username: userId, roles: newRoles });
     });
 
     it('should_throwError_when_minimumOrganizersViolated', async () => {

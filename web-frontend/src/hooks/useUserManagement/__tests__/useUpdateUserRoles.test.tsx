@@ -7,12 +7,12 @@
  * settles itself, so no answer arrives after the test has ended.
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { renderHook, waitFor } from '@testing-library/react';
+import { describe, it, expect, expectTypeOf, vi, beforeEach, afterEach } from 'vitest';
+import { act, renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
 import { HttpResponse } from 'msw';
-import { api } from '@/test/msw/api';
+import { api, type ResponseBody } from '@/test/msw/api';
 import { aUser, shapes } from '@/test/fixtures';
 import { useUpdateUserRoles } from '../useUpdateUserRoles';
 import type { Role } from '@/types/user.types';
@@ -56,6 +56,24 @@ describe('useUpdateUserRoles', () => {
     const [call] = api.calls('updateUserRoles');
     expect(call.params.username).toBe(anna.id);
     expect(call.body).toEqual({ roles: ['ATTENDEE', 'ORGANIZER'] });
+  });
+
+  it('should_resolveWithTheRolesAnswer_when_updateSucceeds', async () => {
+    api.on('updateUserRoles', ({ params, body }) => ({
+      username: params.username,
+      roles: body?.roles ?? [],
+    }));
+    const { result } = renderHook(() => useUpdateUserRoles(), { wrapper });
+
+    let answer: Awaited<ReturnType<typeof result.current.mutateAsync>> | undefined;
+    await act(async () => {
+      answer = await result.current.mutateAsync({ id: anna.id, roles: NEW_ROLES });
+    });
+
+    // PUT /users/{username}/roles answers { username, roles }, not a User. The type is pinned by
+    // `npm run type-check` (this file is in tsconfig.test-harness.json), the value here.
+    expectTypeOf(answer).toEqualTypeOf<ResponseBody<'updateUserRoles', 200> | undefined>();
+    expect(answer).toEqual({ username: anna.id, roles: NEW_ROLES });
   });
 
   it('should_invalidateQueries_when_updateSucceeds', async () => {
