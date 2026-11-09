@@ -1062,8 +1062,9 @@ components:
       properties:
         name:
           type: string
-          description: Company name (unique identifier, alphanumeric only) - Story 1.16.2
-          pattern: '^[A-Za-z0-9]+$'
+          # No `^[A-Za-z0-9]+$` pattern: POST /companies accepts any 2-255 characters (see
+          # CreateCompanyRequest), so stored names can contain spaces; get-or-create stores a slug.
+          description: Company name (unique identifier; a slug, or as given to POST /companies) - Story 1.16.2
           maxLength: 255
           example: SwissITSolutionsAG
         displayName:
@@ -1099,9 +1100,12 @@ components:
           example: 2025-01-15T10:00:00Z
         createdBy:
           type: string
-          description: Username of the user who created this company (Story 1.16.2)
+          description: |
+            Who created this company (Story 1.16.2): the creator's username; `anonymous` for a
+            company named during an anonymous event registration; the Cognito subject (UUID) when
+            the creator's token carried no `custom:username` claim.
           example: john.doe
-          pattern: '^[a-z]+\.[a-z]+(\.[0-9]+)?$'
+          pattern: '^([a-z]+\.[a-z]+(\.[0-9]+)?|anonymous|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$'
         logo:
           $ref: '#/components/schemas/CompanyLogo'
 
@@ -1137,8 +1141,9 @@ components:
       properties:
         name:
           type: string
-          description: Company name (unique identifier, alphanumeric only) - Story 1.16.2
-          pattern: '^[A-Za-z0-9]+$'
+          # No `^[A-Za-z0-9]+$` pattern: POST /companies accepts any 2-255 characters (see
+          # CreateCompanyRequest), so stored names can contain spaces; get-or-create stores a slug.
+          description: Company name (unique identifier; a slug, or as given to POST /companies) - Story 1.16.2
           example: SwissITSolutionsAG
         displayName:
           type: string

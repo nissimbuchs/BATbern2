@@ -34,7 +34,7 @@ export interface paths {
      *     **Anonymous Registration**:
      *     - No authentication required
      *     - Email serves as identifier
-     *     - Registration code generated ({eventCode}-reg-{suffix})
+     *     - Registration code generated ({eventCode}-reg-{6 of A-Z0-9})
      *     - Confirmation email sent automatically
      *
      *     **Authenticated Registration**:
@@ -581,8 +581,9 @@ export interface components {
      */
     Registration: {
       /**
-       * @description Unique registration code ({eventCode}-reg-{suffix}), acts as access token
-       * @example BATbern60-reg-R9UKZY
+       * @description Unique registration code, acts as access token: `{eventCode}-reg-{6 of A-Z0-9}`;
+       *     older stored codes `{eventCode}-reg-{8 hex}` and `BAT{n}-EXIST|NEW-{n}`.
+       * @example BATbern142-reg-A3X9K2
        */
       registrationCode: string;
       /**
@@ -1153,7 +1154,7 @@ export interface operations {
         };
         content: {
           'application/json': {
-            /** @example BATbern57-A1B2C3 */
+            /** @example BATbern57-reg-A1B2C3 */
             registrationCode?: string;
             /** @example confirmed */
             status?: string;
@@ -1347,7 +1348,11 @@ export interface operations {
       path: {
         /** @description Event code in format BATbernXXX */
         eventCode: string;
-        /** @description Registration code, {eventCode}-reg-{suffix} (e.g. BATbern60-reg-R9UKZY) */
+        /**
+         * @description Registration code: `{eventCode}-reg-{6 of A-Z0-9}` for every code EMS creates
+         *     (e.g. `BATbern142-reg-A3X9K2`). Older stored codes: `{eventCode}-reg-{8 hex}` (V4
+         *     backfill) and `BAT{n}-EXIST-{n}` / `BAT{n}-NEW-{n}` (2026-03 data load).
+         */
         registrationCode: string;
       };
       cookie?: never;
@@ -1380,7 +1385,11 @@ export interface operations {
       path: {
         /** @description Event code in format BATbernXXX */
         eventCode: string;
-        /** @description Registration code, {eventCode}-reg-{suffix} (e.g. BATbern60-reg-R9UKZY) */
+        /**
+         * @description Registration code: `{eventCode}-reg-{6 of A-Z0-9}` for every code EMS creates
+         *     (e.g. `BATbern142-reg-A3X9K2`). Older stored codes: `{eventCode}-reg-{8 hex}` (V4
+         *     backfill) and `BAT{n}-EXIST-{n}` / `BAT{n}-NEW-{n}` (2026-03 data load).
+         */
         registrationCode: string;
       };
       cookie?: never;
@@ -1407,7 +1416,11 @@ export interface operations {
       path: {
         /** @description Event code in format BATbernXXX */
         eventCode: string;
-        /** @description Registration code, {eventCode}-reg-{suffix} (e.g. BATbern60-reg-R9UKZY) */
+        /**
+         * @description Registration code: `{eventCode}-reg-{6 of A-Z0-9}` for every code EMS creates
+         *     (e.g. `BATbern142-reg-A3X9K2`). Older stored codes: `{eventCode}-reg-{8 hex}` (V4
+         *     backfill) and `BAT{n}-EXIST-{n}` / `BAT{n}-NEW-{n}` (2026-03 data load).
+         */
         registrationCode: string;
       };
       cookie?: never;
@@ -1791,7 +1804,7 @@ export interface operations {
           /**
            * @example [
            *       {
-           *         "registrationCode": "BAT-2023-000341",
+           *         "registrationCode": "BATbern142-reg-K7M2Q9",
            *         "eventCode": "BATbern34",
            *         "attendeeUsername": "anna.muster",
            *         "eventTitle": "Cloud Native Architecture",
@@ -1800,7 +1813,7 @@ export interface operations {
            *         "registrationDate": "2023-02-01T10:30:00Z"
            *       },
            *       {
-           *         "registrationCode": "BAT-2023-000362",
+           *         "registrationCode": "BATbern142-reg-P4T8W1",
            *         "eventCode": "BATbern36",
            *         "attendeeUsername": "anna.muster",
            *         "eventTitle": "Microservices Patterns",

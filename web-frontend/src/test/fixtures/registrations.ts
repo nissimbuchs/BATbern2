@@ -30,7 +30,7 @@ export function aRegistration(
   overrides: Partial<Registration> = {}
 ): Registration {
   return {
-    registrationCode: 'BAT-2026-000101',
+    registrationCode: 'BATbern61-reg-A3X9K1',
     eventCode: 'BATbern61',
     attendeeUsername: attendee.id,
     attendeeFirstName: attendee.firstName,
@@ -58,7 +58,7 @@ export function registrations(eventCode = 'BATbern61'): Registration[] {
   return REGISTRATION_STATUSES.map((status, i) =>
     aRegistration(attendees[status], {
       eventCode,
-      registrationCode: `BAT-2026-${String(101 + i).padStart(6, '0')}`,
+      registrationCode: `${eventCode}-reg-A3X9K${i + 1}`,
       status,
       waitlistPosition: status === 'WAITLIST' ? 1 : null,
     })
@@ -66,7 +66,7 @@ export function registrations(eventCode = 'BATbern61'): Registration[] {
     // The namesake of the waitlisted attendee is confirmed: same name, different person.
     aRegistration(shapes.identicalNames[1], {
       eventCode,
-      registrationCode: `BAT-2026-${String(101 + REGISTRATION_STATUSES.length).padStart(6, '0')}`,
+      registrationCode: `${eventCode}-reg-A3X9K${REGISTRATION_STATUSES.length + 1}`,
       status: 'CONFIRMED',
     })
   );

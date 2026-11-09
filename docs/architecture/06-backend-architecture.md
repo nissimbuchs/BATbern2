@@ -487,6 +487,21 @@ is recorded once, with the To: addresses comma-joined. The partner meeting invit
 synchronously and sets `invite_sent_at` only after SES accepted the mail; a failure answers 502 and
 rolls back. Never mark something as sent before the send has returned.
 
+#### Spec patterns describe what the services produce
+
+A `pattern:` in `docs/api/` must accept every value the producing code writes and every value still
+stored, or a consumer validating against the spec (the S2S and MSW contract harnesses) rejects real
+data. `SpecPatternsAcceptProducedValuesIntegrationTest` (EMS, CUMS) runs produced and stored values
+through the real controllers and checks the responses against the spec:
+
+- `registrationCode`: produced only by `RegistrationCodes.newUnique`, `{eventCode}-reg-{6 of A-Z0-9}`;
+  still stored are `{eventCode}-reg-{8 hex}` (V4 backfill) and `BAT{n}-EXIST-{n}` / `BAT{n}-NEW-{n}`
+  (a 2026-03 data load). The spec said `BAT-YYYY-NNNNNN`, which no code ever had.
+- `CompanyResponse.createdBy`: a username, `anonymous` (company named in an anonymous registration),
+  or the Cognito subject when the token has no `custom:username`.
+- `CompanyResponse.name`: no pattern, because `POST /companies` accepts any 2 to 255 characters.
+- `Event.organizerUsername` (response only): historical events carry imported names with an umlaut.
+
 #### Conflict Detection Severities
 
 The `ConflictDetectionService` distinguishes between hard errors and soft warnings:

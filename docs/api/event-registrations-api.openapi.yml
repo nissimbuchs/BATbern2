@@ -122,7 +122,7 @@ paths:
                   summary: generated from the schema and captured sub-values
                   value:
                     data:
-                      - registrationCode: BAT-2025-000123
+                      - registrationCode: BATbern142-reg-A3X9K2
                         eventCode: BATbern25
                         eventTitle: Sample title
                         eventDate: "2026-05-14T16:00:00Z"
@@ -169,7 +169,7 @@ paths:
 
         - Email serves as identifier
 
-        - Registration code generated ({eventCode}-reg-{suffix})
+        - Registration code generated ({eventCode}-reg-{6 of A-Z0-9})
 
         - Confirmation email sent automatically
 
@@ -344,7 +344,7 @@ paths:
                 properties:
                   registrationCode:
                     type: string
-                    example: BATbern57-A1B2C3
+                    example: BATbern57-reg-A1B2C3
                   status:
                     type: string
                     example: confirmed
@@ -355,7 +355,7 @@ paths:
                 default:
                   summary: generated from the schema and captured sub-values
                   value:
-                    registrationCode: BATbern57-A1B2C3
+                    registrationCode: BATbern57-reg-A1B2C3
                     status: confirmed
                     attendeeUsername: jane.doe
         '400':
@@ -633,11 +633,15 @@ paths:
           example: BATbern25
       - name: registrationCode
         in: path
-        description: Registration code, {eventCode}-reg-{suffix} (e.g. BATbern60-reg-R9UKZY)
+        description: |
+          Registration code: `{eventCode}-reg-{6 of A-Z0-9}` for every code EMS creates
+          (e.g. `BATbern142-reg-A3X9K2`). Older stored codes: `{eventCode}-reg-{8 hex}` (V4
+          backfill) and `BAT{n}-EXIST-{n}` / `BAT{n}-NEW-{n}` (2026-03 data load).
         required: true
         schema:
           type: string
-          example: BATbern60-reg-R9UKZY
+          pattern: '^(BATbern[0-9]+-reg-[A-Za-z0-9]+|BAT[0-9]+-(EXIST|NEW)-[0-9]+)$'
+          example: BATbern142-reg-A3X9K2
       responses:
         '200':
           description: Registration found
@@ -649,7 +653,7 @@ paths:
                 default:
                   summary: generated from the schema and captured sub-values
                   value:
-                    registrationCode: BAT-2025-000123
+                    registrationCode: BATbern142-reg-A3X9K2
                     eventCode: BATbern25
                     eventTitle: Sample title
                     eventDate: "2026-05-14T16:00:00Z"
@@ -692,11 +696,15 @@ paths:
           example: BATbern25
       - name: registrationCode
         in: path
-        description: Registration code, {eventCode}-reg-{suffix} (e.g. BATbern60-reg-R9UKZY)
+        description: |
+          Registration code: `{eventCode}-reg-{6 of A-Z0-9}` for every code EMS creates
+          (e.g. `BATbern142-reg-A3X9K2`). Older stored codes: `{eventCode}-reg-{8 hex}` (V4
+          backfill) and `BAT{n}-EXIST-{n}` / `BAT{n}-NEW-{n}` (2026-03 data load).
         required: true
         schema:
           type: string
-          example: BATbern60-reg-R9UKZY
+          pattern: '^(BATbern[0-9]+-reg-[A-Za-z0-9]+|BAT[0-9]+-(EXIST|NEW)-[0-9]+)$'
+          example: BATbern142-reg-A3X9K2
       requestBody:
         required: true
         content:
@@ -714,7 +722,7 @@ paths:
                 default:
                   summary: generated from the schema and captured sub-values
                   value:
-                    registrationCode: BAT-2025-000123
+                    registrationCode: BATbern142-reg-A3X9K2
                     eventCode: BATbern25
                     eventTitle: Sample title
                     eventDate: "2026-05-14T16:00:00Z"
@@ -762,11 +770,15 @@ paths:
           example: BATbern25
       - name: registrationCode
         in: path
-        description: Registration code, {eventCode}-reg-{suffix} (e.g. BATbern60-reg-R9UKZY)
+        description: |
+          Registration code: `{eventCode}-reg-{6 of A-Z0-9}` for every code EMS creates
+          (e.g. `BATbern142-reg-A3X9K2`). Older stored codes: `{eventCode}-reg-{8 hex}` (V4
+          backfill) and `BAT{n}-EXIST-{n}` / `BAT{n}-NEW-{n}` (2026-03 data load).
         required: true
         schema:
           type: string
-          example: BATbern60-reg-R9UKZY
+          pattern: '^(BATbern[0-9]+-reg-[A-Za-z0-9]+|BAT[0-9]+-(EXIST|NEW)-[0-9]+)$'
+          example: BATbern142-reg-A3X9K2
       responses:
         '204':
           description: Registration deleted successfully
@@ -1344,14 +1356,14 @@ paths:
                 items:
                   $ref: '#/components/schemas/Registration'
               example:
-              - registrationCode: BAT-2023-000341
+              - registrationCode: BATbern142-reg-K7M2Q9
                 eventCode: BATbern34
                 attendeeUsername: anna.muster
                 eventTitle: Cloud Native Architecture
                 eventDate: '2023-03-15T18:00:00Z'
                 status: ATTENDED
                 registrationDate: '2023-02-01T10:30:00Z'
-              - registrationCode: BAT-2023-000362
+              - registrationCode: BATbern142-reg-P4T8W1
                 eventCode: BATbern36
                 attendeeUsername: anna.muster
                 eventTitle: Microservices Patterns
@@ -1479,8 +1491,11 @@ components:
       properties:
         registrationCode:
           type: string
-          description: Unique registration code ({eventCode}-reg-{suffix}), acts as access token
-          example: BATbern60-reg-R9UKZY
+          description: |
+            Unique registration code, acts as access token: `{eventCode}-reg-{6 of A-Z0-9}`;
+            older stored codes `{eventCode}-reg-{8 hex}` and `BAT{n}-EXIST|NEW-{n}`.
+          pattern: '^(BATbern[0-9]+-reg-[A-Za-z0-9]+|BAT[0-9]+-(EXIST|NEW)-[0-9]+)$'
+          example: BATbern142-reg-A3X9K2
         eventCode:
           type: string
           description: Event code this registration belongs to

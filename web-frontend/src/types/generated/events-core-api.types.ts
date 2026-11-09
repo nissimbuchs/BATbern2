@@ -1067,7 +1067,7 @@ export interface components {
        */
       realAttendeeCount?: number;
       /**
-       * @description Organizers only (omitted for other callers, GHSA-qhqv). Username of the event organizer in format "firstname.lastname" or "firstname.lastname.2" for collisions.
+       * @description Organizers only (omitted for other callers, GHSA-qhqv). Username of the event organizer in format "firstname.lastname" or "firstname.lastname.2" for collisions; historical events may carry an imported name outside that format (e.g. with an umlaut).
        *     Story 1.16.2: Public API uses meaningful IDs (usernames), not UUIDs.
        * @example john.doe
        */

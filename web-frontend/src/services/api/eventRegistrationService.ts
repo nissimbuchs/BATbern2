@@ -93,7 +93,7 @@ export const getEventRegistrations = async (
  * Update registration status
  *
  * @param eventCode - Event code
- * @param registrationCode - Registration code (e.g., BAT-2025-000123)
+ * @param registrationCode - Registration code (e.g., BATbern142-reg-A3X9K2)
  * @param status - New registration status
  * @returns Updated registration
  */
@@ -117,7 +117,7 @@ export const updateRegistrationStatus = async (
  * Cancel registration (set status to CANCELLED)
  *
  * @param eventCode - Event code
- * @param registrationCode - Registration code (e.g., BAT-2025-000123)
+ * @param registrationCode - Registration code (e.g., BATbern142-reg-A3X9K2)
  * @returns Updated registration with CANCELLED status
  */
 export const cancelRegistration = async (
@@ -131,7 +131,7 @@ export const cancelRegistration = async (
  * Delete registration (permanent removal)
  *
  * @param eventCode - Event code
- * @param registrationCode - Registration code (e.g., BAT-2025-000123)
+ * @param registrationCode - Registration code (e.g., BATbern142-reg-A3X9K2)
  */
 export const deleteRegistration = async (
   eventCode: string,

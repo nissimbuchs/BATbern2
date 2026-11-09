@@ -13,7 +13,6 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.security.SecureRandom;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
@@ -73,10 +72,6 @@ public class SpeakerAutoRegistrationService {
      */
     public static final String TRIGGER_SESSION_CO_SPEAKER = "SESSION_CO_SPEAKER";
 
-    private static final String REGISTRATION_CODE_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-    private static final int REGISTRATION_CODE_SUFFIX_LENGTH = 6;
-    private static final int MAX_COLLISION_RETRIES = 5;
-    private static final SecureRandom RANDOM = new SecureRandom();
 
     private final RegistrationRepository registrationRepository;
     private final EventRepository eventRepository;
@@ -186,22 +181,6 @@ public class SpeakerAutoRegistrationService {
     }
 
     private String generateUniqueRegistrationCode(String eventCode) {
-        for (int attempt = 0; attempt < MAX_COLLISION_RETRIES; attempt++) {
-            String code = eventCode + "-reg-" + generateRandomSuffix();
-            if (!registrationRepository.existsByRegistrationCode(code)) {
-                return code;
-            }
-            log.warn("Registration code collision on attempt {}: {}", attempt + 1, code);
-        }
-        throw new IllegalStateException(
-                "Failed to generate unique registration code after " + MAX_COLLISION_RETRIES + " attempts");
-    }
-
-    private String generateRandomSuffix() {
-        StringBuilder sb = new StringBuilder(REGISTRATION_CODE_SUFFIX_LENGTH);
-        for (int i = 0; i < REGISTRATION_CODE_SUFFIX_LENGTH; i++) {
-            sb.append(REGISTRATION_CODE_CHARS.charAt(RANDOM.nextInt(REGISTRATION_CODE_CHARS.length())));
-        }
-        return sb.toString();
+        return RegistrationCodes.newUnique(eventCode, registrationRepository::existsByRegistrationCode);
     }
 }

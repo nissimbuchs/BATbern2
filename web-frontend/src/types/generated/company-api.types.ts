@@ -494,7 +494,7 @@ export interface components {
      */
     CompanyResponse: {
       /**
-       * @description Company name (unique identifier, alphanumeric only) - Story 1.16.2
+       * @description Company name (unique identifier; a slug, or as given to POST /companies) - Story 1.16.2
        * @example SwissITSolutionsAG
        */
       name: string;
@@ -519,7 +519,9 @@ export interface components {
        */
       updatedAt: string;
       /**
-       * @description Username of the user who created this company (Story 1.16.2)
+       * @description Who created this company (Story 1.16.2): the creator's username; `anonymous` for a
+       *     company named during an anonymous event registration; the Cognito subject (UUID) when
+       *     the creator's token carried no `custom:username` claim.
        * @example john.doe
        */
       createdBy?: string;
@@ -550,7 +552,7 @@ export interface components {
      */
     CompanySearchResponse: {
       /**
-       * @description Company name (unique identifier, alphanumeric only) - Story 1.16.2
+       * @description Company name (unique identifier; a slug, or as given to POST /companies) - Story 1.16.2
        * @example SwissITSolutionsAG
        */
       name: string;
