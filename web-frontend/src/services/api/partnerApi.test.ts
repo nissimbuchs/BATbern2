@@ -14,11 +14,22 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { HttpResponse } from 'msw';
 import { fetchAuthSession } from 'aws-amplify/auth';
 import { api } from '@/test/msw/api';
+import { shapes } from '@/test/fixtures';
+import type { UserResponse } from '@/test/fixtures';
 import type { ResponseBody } from '@/test/msw/api';
 import * as partnerApi from './partnerApi';
 import type { PartnerFilters, PartnerResponse } from './partnerApi';
 
 type PartnerList = ResponseBody<'listPartners', 200>;
+type PartnerContact = ResponseBody<'getPartnerContacts', 200>[number];
+
+/** A partner contact as PCS enriches it from the user (ADR-004). */
+const asContact = (user: UserResponse): PartnerContact => ({
+  username: user.id,
+  firstName: user.firstName,
+  lastName: user.lastName,
+  email: user.email,
+});
 
 const gold: PartnerResponse = {
   companyName: 'mobiliar',
@@ -284,20 +295,8 @@ describe('Partner API Client - Story 2.8.3 (Partner Create/Edit)', () => {
 
   describe('getPartnerContacts', () => {
     it('should_fetchContacts_when_companyNameProvided', async () => {
-      const contacts = [
-        {
-          username: 'hong.an',
-          firstName: 'Hông',
-          lastName: 'Ân',
-          email: 'hong.an@example.com',
-        },
-        {
-          username: 'matthias.keller',
-          firstName: 'Matthias',
-          lastName: 'Keller',
-          email: 'Matthias.Keller@example.com',
-        },
-      ];
+      // A Vietnamese name, a mixed-case address and an IDN domain, as CUMS stores them.
+      const contacts = [shapes.vietnamese, shapes.mixedCaseEmail, shapes.idnEmail].map(asContact);
       api.on('getPartnerContacts', () => contacts);
 
       const result = await partnerApi.getPartnerContacts('mobiliar');
@@ -329,15 +328,22 @@ describe('Partner API Client - Story 2.8.3 (Partner Create/Edit)', () => {
 
 describe('Partner API Client (moved calls)', () => {
   // A signed-in browser: a Cognito key in storage, and Amplify (the boundary) hands out a token.
+  const signedIn = shapes.mixedCaseEmail; // anna.keller
+  // fetchAuthSession is the global mock from src/test/setup.ts: this file changes its
+  // implementation for these tests only and puts back what was there, instead of mockReset,
+  // which would also wipe an implementation setup.ts gives it.
+  let previous: typeof fetchAuthSession | undefined;
   beforeEach(() => {
-    localStorage.setItem('CognitoIdentityServiceProvider.test.LastAuthUser', 'anna.keller');
+    previous = vi.mocked(fetchAuthSession).getMockImplementation();
+    localStorage.setItem('CognitoIdentityServiceProvider.test.LastAuthUser', signedIn.id);
     vi.mocked(fetchAuthSession).mockResolvedValue({
-      tokens: { idToken: { toString: () => 'id-token-of-anna' } },
+      tokens: { idToken: { toString: () => `id-token-of-${signedIn.id}` } },
     } as never);
   });
   afterEach(() => {
     localStorage.clear();
-    vi.mocked(fetchAuthSession).mockReset();
+    vi.mocked(fetchAuthSession).mockClear();
+    vi.mocked(fetchAuthSession).mockImplementation(previous ?? (() => undefined as never));
   });
 
   it('should_listActivePartnersWithoutAuth_when_listPublicPartners', async () => {
@@ -363,7 +369,7 @@ describe('Partner API Client (moved calls)', () => {
     await expect(partnerApi.getMyPartnerCompany()).resolves.toEqual({ companyName: 'mobiliar' });
     // Positive control for the test above: a normal call carries the token.
     expect(api.calls('getMyPartnerCompany')[0].request.headers.get('Authorization')).toBe(
-      'Bearer id-token-of-anna'
+      `Bearer id-token-of-${signedIn.id}`
     );
   });
 

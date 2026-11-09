@@ -129,10 +129,10 @@ The only `vi.mock` left in the 11 files: `@stomp/stompjs` and `sockjs-client` in
 | 1 | Confirmation page shows `attendeeCompany`, which is the company key | medium | patch | Checked: EMS `RegistrationService.java:278` sets it from `userProfile.getCompanyId()`. Before 0c2 the page read `registration.company`, which was never sent, so no company was shown. Patch: the company line was removed, the changelog no longer claims the company, and a test checks that the key is not shown. |
 | 2 | `expectAccessDenied` asserts no calls synchronously, so it cannot fail | medium | patch | Checked: calls are recorded inside the MSW resolver, after the async auth interceptor. Patch: the helper is async and waits 100 ms inside `act` before asserting. |
 | 3 | `Registration` schema description names only the organizer endpoints | low | patch | Checked: the public `getRegistration` returns the same schema with the e-mail masked. Patch: the description now covers both endpoints. |
-| 4a | Plan golden pattern uses `anAuthUser`/`user:`, which the helper does not have | low | rejected | The fix would edit this build's plan. The helper's own docblock shows the correct use. |
+| 4a | Plan golden pattern uses `anAuthUser`/`user:`, which the helper does not have | low | rejected, then patched | Rejected in the build (it would edit this build's plan). Patched in the 17.0 deferred work, 2026-11-09: the golden pattern uses `renderWithAuth(..., { auth: signedInAs('organizer') })`, as `src/test/auth.tsx` defines it. |
 | 4b | `anAuthState` overrides of `user` keep the rules bound to the old user | low | patch | Checked: the rules close over the `user` argument. Patch: the rules, the token and `isAuthenticated` now follow an overridden `user`. |
-| 5a | `partnerApi.test` calls `mockReset` on the global Amplify mock | low | rejected | The global mock has no default implementation, so reset and clear behave the same. No test is affected. |
-| 5b | `partnerApi.test` contacts are hand-written, not from the fixtures | low | rejected | Cosmetic: the names are synthetic and the test is correct either way. |
+| 5a | `partnerApi.test` calls `mockReset` on the global Amplify mock | low | rejected, then patched | Rejected in the build (no default implementation today). Patched in the 17.0 deferred work, 2026-11-09: the file saves the global mock's implementation, and after each test clears the calls and puts it back, so a default added to `setup.ts` later survives. |
+| 5b | `partnerApi.test` contacts are hand-written, not from the fixtures | low | rejected, then patched | Patched in the 17.0 deferred work, 2026-11-09: contacts and the signed-in user come from the 17.0d fixtures (`shapes.vietnamese`, `shapes.mixedCaseEmail`, `shapes.idnEmail`). |
 
 ## Design Notes
 
@@ -142,7 +142,7 @@ Golden pattern for a component (real tree, harness, auth helper):
 
 ```tsx
 api.on('listPartners', () => ({ data: [gold], metadata }));
-renderWithAuth(<PartnerDirectoryScreen />, { user: anAuthUser({ role: 'organizer' }) });
+renderWithAuth(<PartnerDirectoryScreen />, { auth: signedInAs('organizer') }); // or anAuthState(user)
 expect(await screen.findByText(gold.company!.displayName)).toBeInTheDocument();
 act(() => usePartnerStore.setState({ filters: { tier: 'GOLD', status: 'all' } }));
 await waitFor(() => expect(api.calls('listPartners').at(-1)!.query.get('filter')).toContain('partnershipLevel:GOLD'));
