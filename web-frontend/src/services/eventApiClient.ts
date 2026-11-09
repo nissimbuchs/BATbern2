@@ -19,7 +19,6 @@ import type {
   UpdateEventRequest,
   PatchEventRequest,
   CreateRegistrationRequest,
-  Registration,
 } from '@/types/event.types';
 // events-api split into per-domain specs (API consolidation Phase 6).
 import type { components as mediaComponents } from '@/types/generated/event-media-api.types';
@@ -332,27 +331,6 @@ class EventApiClient {
             'Skip-Auth': 'true',
           },
         }
-      );
-      return response.data;
-    } catch (error) {
-      throw this.transformError(error);
-    }
-  }
-
-  /**
-   * Get registration by confirmation code (PUBLIC ACCESS - Story 4.1.5)
-   *
-   * Retrieves registration details using confirmation code.
-   * Anyone with the confirmation code can view the registration.
-   *
-   * @param eventCode Event code identifier
-   * @param confirmationCode Registration confirmation code
-   * @returns Registration details
-   */
-  async getRegistration(eventCode: string, confirmationCode: string): Promise<Registration> {
-    try {
-      const response = await apiClient.get<Registration>(
-        `${EVENT_API_PATH}/${eventCode}/registrations/${confirmationCode}`
       );
       return response.data;
     } catch (error) {

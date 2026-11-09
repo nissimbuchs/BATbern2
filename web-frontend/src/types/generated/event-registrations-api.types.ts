@@ -238,14 +238,7 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
-    /**
-     * Get registration by confirmation code
-     * @description Retrieve registration details by confirmation code.
-     *
-     *     **Story**: 4.1.6 - Registration Confirmation
-     *     **Security**: Public endpoint - confirmation code acts as access token
-     */
-    get: operations['getRegistration'];
+    get?: never;
     put?: never;
     post?: never;
     /**
@@ -576,7 +569,7 @@ export interface components {
       emails: string[];
     };
     /**
-     * @description A registration as EMS returns it (`RegistrationResponse`): the registration, its event, and the attendee from user_profiles (ADR-004, ADR-006). The organizer endpoints return it in full; the public lookup (`getRegistration`) returns it with `attendeeEmail` masked, which is why that field has no e-mail format.
+     * @description A registration as EMS returns it (`RegistrationResponse`): the registration, its event, and the attendee from user_profiles (ADR-004, ADR-006). No endpoint returns it to an anonymous caller (the public lookup by code was removed 2026-11-09).
      *     Anonymous users are in user_profiles too (cognito_user_id = NULL).
      */
     Registration: {
@@ -591,11 +584,11 @@ export interface components {
        * @example BATbern25
        */
       eventCode: string;
-      /** @description Event title. Set by the single lookup (`getRegistration`); null in lists. */
+      /** @description Event title. Set by `listUserRegistrations`; null elsewhere. */
       eventTitle?: string | null;
       /**
        * Format: date-time
-       * @description Event date. Set by the single lookup (`getRegistration`); null in lists.
+       * @description Event date. Set by `listUserRegistrations`; null elsewhere.
        */
       eventDate?: string | null;
       /**
@@ -1337,43 +1330,6 @@ export interface operations {
         content: {
           'application/json': components['schemas']['ErrorResponse'];
         };
-      };
-      500: components['responses']['InternalServerError'];
-    };
-  };
-  getRegistration: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Event code in format BATbernXXX */
-        eventCode: string;
-        /**
-         * @description Registration code: `{eventCode}-reg-{6 of A-Z0-9}` for every code EMS creates
-         *     (e.g. `BATbern142-reg-A3X9K2`). Older stored codes: `{eventCode}-reg-{8 hex}` (V4
-         *     backfill) and `BAT{n}-EXIST-{n}` / `BAT{n}-NEW-{n}` (2026-03 data load).
-         */
-        registrationCode: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Registration found */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['Registration'];
-        };
-      };
-      /** @description Registration not found (invalid confirmation code) */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
       };
       500: components['responses']['InternalServerError'];
     };

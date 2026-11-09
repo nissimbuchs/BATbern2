@@ -34,20 +34,6 @@
       }
     }
   },
-  "confirmationPage": {
-    "loading": "Bevestiging laden...",
-    "notFound": {
-      "title": "Registratie niet gevonden",
-      "message": "Controleer uw bevestigingscode en probeer opnieuw."
-    },
-    "copyCode": "Bevestigingscode kopiëren",
-    "qrCodeAlt": "Registratie QR-code",
-    "qrCodeTitle": "Uw check-in QR-code",
-    "detailsTitle": "Registratiedetails",
-    "shareLabel": "Delen met uw netwerk:",
-    "registerAnother": "Nog iemand registreren",
-    "viewEventDetails": "Evenementdetails bekijken"
-  },
   "successPage": {
     "pendingTitle": "Registratie in afwachting",
     "pendingMessage": "Als u een registratie heeft ingediend, controleer dan uw e-mail voor de bevestigingslink.",

@@ -34,20 +34,6 @@
       }
     }
   },
-  "confirmationPage": {
-    "loading": "Cargando confirmación...",
-    "notFound": {
-      "title": "Registro no encontrado",
-      "message": "Verifica tu código de confirmación e inténtalo de nuevo."
-    },
-    "copyCode": "Copiar código de confirmación",
-    "qrCodeAlt": "Código QR de registro",
-    "qrCodeTitle": "Tu código QR de check-in",
-    "detailsTitle": "Detalles del registro",
-    "shareLabel": "Compartir con tu red:",
-    "registerAnother": "Registrar otra persona",
-    "viewEventDetails": "Ver detalles del evento"
-  },
   "successPage": {
     "pendingTitle": "Registro pendiente",
     "pendingMessage": "Si enviaste un registro, revisa tu correo para el enlace de confirmación.",

@@ -81,6 +81,8 @@ class ProductionSecurityFilterChainTest {
     @ParameterizedTest
     @ValueSource(strings = {
         "/api/v1/events/BATbern60/registrations",
+        // The public lookup by registration code was removed 2026-11-09 (no client used it).
+        "/api/v1/events/BATbern60/registrations/BATbern60-reg-ABC123",
         "/api/v1/events/BATbern60/distribution-list/speakers",
         "/api/v1/events/BATbern60/distribution-list/moderator",
         "/api/v1/events/BATbern60/distribution-list/participants",

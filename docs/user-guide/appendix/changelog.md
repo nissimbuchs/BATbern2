@@ -68,10 +68,9 @@ Only items that are not live yet. Everything else is listed under its release be
 - ✅ In the company pickers the exact company is always at the top (it could be missing among many similar names). The company list shows real page numbers when searching.
 - ✅ Characters like `(`, `%` or `'` no longer cause an error in the event search.
 
-**Bug Fixes — Registration confirmation page and waitlist order (Story 17.0c2)**:
+**Bug Fixes — Registration pages and waitlist order (Story 17.0c2)**:
 - ✅ The page a participant sees after registering showed an empty name and e-mail under "Details". It now shows the name, the masked address the confirmation went to, and the name of the participant's company.
-- ✅ The confirmation page (`/registration-confirmation/<code>`) finds the registration from its code for every event. It used to look in one fixed event (BATbern25) for every code, so it showed "Registration not found" for all others.
-- ✅ The confirmation page shows the event's title and date, and its calendar button exports the event's date. The lookup never sent either, so the event line was empty and the calendar entry was created for the moment of the click.
+- ✅ The old confirmation page (`/registration-confirmation/<code>`) is gone, and with it the public lookup of a registration by its code (`GET /events/{eventCode}/registrations/{registrationCode}`). No page, link or mail pointed to it; registering and confirming run through `/registration-success` and the confirmation link in the mail (owner decision 2026-11-09).
 - ✅ The organizer's waitlist view numbers and orders people by their place on the waitlist. The position was never sent to the page, so the list was ordered by name and numbered by row.
 
 **Bug Fix — Requesting a revision of a talk without an abstract (Story 17.0b3)**:

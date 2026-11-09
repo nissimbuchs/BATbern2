@@ -2304,66 +2304,6 @@ public class EventController implements EventsApi, EventActionsApi, EventReporti
     }
 
     /**
-     * Get Registration Detail - Story 2.2a
-     *
-     * GET /api/v1/events/{eventCode}/registrations/{registrationCode}
-     *
-     * @param eventCode Event code
-     * @param registrationCode Registration code (e.g., BATbern142-reg-A3X9K2)
-     * @return Registration detail enriched with user data
-     */
-    @GetMapping("/events/{eventCode}/registrations/{registrationCode}")
-    @Operation(
-            summary = "Get Registration Detail",
-            description = "Retrieve a specific registration by registration code with enriched user data"
-    )
-    public ResponseEntity<RegistrationResponse> getRegistration(
-            @PathVariable String eventCode,
-            @PathVariable String registrationCode) {
-        log.debug("GET /api/v1/events/{}/registrations/{}", eventCode, registrationCode);
-
-        // Find registration by code
-        Registration registration = registrationRepository.findByRegistrationCode(registrationCode)
-                .orElseThrow(() -> new NoSuchElementException("Registration not found: " + registrationCode));
-
-        // Verify registration belongs to this event
-        Event event = eventRepository.findByEventCode(eventCode)
-                .orElseThrow(() -> new EventNotFoundException("Event not found with code: " + eventCode));
-
-        if (!registration.getEventId().equals(event.getId())) {
-            throw new NoSuchElementException("Registration " + registrationCode
-                + " does not belong to event " + eventCode);
-        }
-
-        // Set transient field and enrich
-        registration.setEventCode(eventCode);
-        RegistrationResponse response = registrationService.enrichRegistrationWithUserData(registration);
-        // The confirmation page shows the event and exports it to the calendar; the lookup
-        // already holds the event, so it answers with its title and date (the spec's fields).
-        response.setEventTitle(event.getTitle());
-        response.setEventDate(event.getDate() != null ? event.getDate().toString() : null);
-
-        // GHSA-qhqv: anonymous callers hold only the registration code, so they see the address
-        // masked. The confirmation page needs to show which mailbox to check, not the address.
-        if (!publicSessionVisibilityService.callerIsOrganizer()) {
-            response.setAttendeeEmail(maskEmail(response.getAttendeeEmail()));
-        }
-        return ResponseEntity.ok(response);
-    }
-
-    /** {@code john.doe@example.com} becomes {@code j***@example.com}; null and malformed stay masked. */
-    static String maskEmail(String email) {
-        if (email == null) {
-            return null;
-        }
-        int at = email.indexOf('@');
-        if (at < 1) {
-            return "***";
-        }
-        return email.charAt(0) + "***" + email.substring(at);
-    }
-
-    /**
      * Confirm Event Registration - Email Confirmation Flow
      *
      * POST /api/v1/events/{eventCode}/registrations/confirm?token={JWT}

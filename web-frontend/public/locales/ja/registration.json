@@ -34,20 +34,6 @@
       }
     }
   },
-  "confirmationPage": {
-    "loading": "確認を読み込み中...",
-    "notFound": {
-      "title": "登録が見つかりません",
-      "message": "確認コードを確認して、もう一度お試しください。"
-    },
-    "copyCode": "確認コードをコピー",
-    "qrCodeAlt": "登録QRコード",
-    "qrCodeTitle": "チェックインQRコード",
-    "detailsTitle": "登録詳細",
-    "shareLabel": "ネットワークで共有：",
-    "registerAnother": "別の人を登録",
-    "viewEventDetails": "イベント詳細を見る"
-  },
   "successPage": {
     "pendingTitle": "登録保留中",
     "pendingMessage": "登録を送信した場合は、確認リンクのメールをご確認ください。",
