@@ -6,7 +6,7 @@ info:
     Consolidated Users API for BATbern Event Management Platform.
 
     This API provides comprehensive user management capabilities with:
-    - **Resource Expansion**: `?include=` parameter for company, roles, preferences, settings, activity
+    - **Resource Expansion**: `?include=` parameter for company, roles, settings, activity
     - **Advanced Filtering**: MongoDB-style JSON filter syntax for complex queries
     - **Field Selection**: Sparse fieldsets to reduce payload size
     - **Pagination**: Standard page/limit parameters
@@ -48,10 +48,8 @@ tags:
     description: User profile CRUD and management operations
   - name: User Search
     description: User search and autocomplete with caching
-  - name: User Preferences
-    description: User preference management
   - name: User Settings
-    description: User account settings management
+    description: The caller's settings, one resource (display, notifications, privacy; Story 4.9 merged the former preferences into it)
   - name: Role Management
     description: User role management with business rules
   - name: Profile Picture
@@ -249,8 +247,7 @@ paths:
 
         **Resource Expansion**:
         - company: Expands company details
-        - preferences: Includes user preferences
-        - settings: Includes account settings
+        - settings: Includes the user's settings (display, notifications, privacy)
         - roles: Includes full role information
         - activity: Includes recent activity history
 
@@ -264,7 +261,7 @@ paths:
           required: false
           schema:
             type: string
-            example: 'company,preferences,settings'
+            example: 'company,settings'
       responses:
         '200':
           description: User profile retrieved successfully
@@ -300,11 +297,10 @@ paths:
                       id: Swiss IT Solutions AG
                       name: Swiss IT Solutions AG
                       industry: Technology
-                    preferences:
+                    settings:
                       theme: dark
                       language: de
                       emailNotifications: true
-                    settings:
                       profileVisibility: members_only
                       showEmail: false
         '401':
@@ -400,7 +396,7 @@ paths:
         **Resource Expansion**:
         - ?include=company: Expands company details
         - ?include=roles: Includes full role information
-        - ?include=preferences: Includes user preferences
+        - ?include=settings: Includes the user's settings
 
         **Performance**:
         - Basic query: <100ms (P95)
@@ -452,7 +448,7 @@ paths:
           required: false
           schema:
             type: string
-            example: 'company,roles,preferences'
+            example: 'company,roles,settings'
         - name: search
           in: query
           description: |
@@ -2034,111 +2030,15 @@ paths:
       security:
         - BearerAuth: []
 
-  /users/me/preferences:
-    get:
-      tags:
-        - User Preferences
-      summary: Get current user preferences
-      description: |
-        Retrieve preferences for the currently authenticated user.
-
-        **Acceptance Criteria**: AC6
-
-        Includes: theme, language, notification settings, quiet hours
-
-      operationId: getUserPreferences
-      responses:
-        '200':
-          description: Preferences retrieved successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UserPreferences'
-              examples:
-                default:
-                  summary: captured from the local anonymized database
-                  value:
-                    theme: auto
-                    language: de
-                    emailNotifications: true
-                    inAppNotifications: true
-                    pushNotifications: false
-                    notificationFrequency: immediate
-                    qnaNotificationFrequency: live
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-      security:
-        - BearerAuth: []
-
-    put:
-      tags:
-        - User Preferences
-      summary: Update current user preferences
-      description: |
-        Update preferences for the currently authenticated user.
-
-        **Acceptance Criteria**: AC6
-
-        **Validation**: All preference values validated against allowed enums/formats
-
-      operationId: updateUserPreferences
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UserPreferences'
-            examples:
-              preferenceUpdate:
-                summary: Update preferences
-                value:
-                  theme: dark
-                  language: de
-                  emailNotifications: true
-                  notificationFrequency: daily_digest
-                  quietHoursStart: '22:00'
-                  quietHoursEnd: '07:00'
-      responses:
-        '200':
-          description: Preferences updated successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UserPreferences'
-              examples:
-                default:
-                  summary: captured from the local anonymized database (same schema as a GET)
-                  value:
-                    theme: auto
-                    language: de
-                    emailNotifications: true
-                    inAppNotifications: true
-                    pushNotifications: false
-                    notificationFrequency: immediate
-                    qnaNotificationFrequency: live
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-      security:
-        - BearerAuth: []
-
   /users/me/settings:
     get:
       tags:
         - User Settings
-      summary: Get current user settings
+      summary: Get the caller's settings
       description: |
-        Retrieve account settings for the currently authenticated user.
-
-        **Acceptance Criteria**: AC7
-
-        Includes: privacy controls, account preferences, security settings
-
+        The caller's settings as one object: display (theme, language, timezone), notifications
+        (channels, frequency, Q&A digest, quiet hours) and privacy. Story 4.9 merged the former
+        `/users/me/preferences` into this resource; the storage is unchanged.
       operationId: getUserSettings
       responses:
         '200':
@@ -2151,13 +2051,22 @@ paths:
                 default:
                   summary: captured from the local anonymized database
                   value:
+                    theme: auto
+                    language: de
+                    timezone: Europe/Zurich
+                    emailNotifications: true
+                    inAppNotifications: true
+                    pushNotifications: false
+                    notificationFrequency: immediate
+                    qnaNotificationFrequency: live
+                    quietHoursStart: null
+                    quietHoursEnd: null
                     profileVisibility: public
                     showEmail: false
                     showCompany: true
                     showActivityHistory: true
                     allowMessaging: true
                     allowCalendarSync: false
-                    timezone: Europe/Zurich
                     twoFactorEnabled: false
         '401':
           $ref: '#/components/responses/Unauthorized'
@@ -2166,25 +2075,37 @@ paths:
       security:
         - BearerAuth: []
 
-    put:
+    patch:
       tags:
         - User Settings
-      summary: Update current user settings
+      summary: Change some of the caller's settings
       description: |
-        Update account settings for the currently authenticated user.
-
-        **Acceptance Criteria**: AC7
-
-        **Privacy Controls**: Profile visibility, contact information display
-        **Security Settings**: Two-factor authentication enablement
-
+        Partial update (ADR-013): only the fields in the body change, every other setting stays as
+        it is. Returns the whole settings object. An unknown enum value, a malformed quiet hour or
+        a timezone that is not an IANA zone id answers 400.
       operationId: updateUserSettings
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UserSettings'
+              $ref: '#/components/schemas/UpdateUserSettingsRequest'
+            examples:
+              displayAndTimezone:
+                summary: Theme and timezone, nothing else changes
+                value:
+                  theme: dark
+                  timezone: Europe/Zurich
+              language:
+                summary: Switch the language
+                value:
+                  language: en
+              notifications:
+                summary: Daily digest with quiet hours
+                value:
+                  notificationFrequency: daily_digest
+                  quietHoursStart: '22:00'
+                  quietHoursEnd: '07:00'
       responses:
         '200':
           description: Settings updated successfully
@@ -2194,15 +2115,24 @@ paths:
                 $ref: '#/components/schemas/UserSettings'
               examples:
                 default:
-                  summary: captured from the local anonymized database (same schema as a GET)
+                  summary: the whole object after a change of theme and timezone
                   value:
+                    theme: dark
+                    language: de
+                    timezone: Europe/Zurich
+                    emailNotifications: true
+                    inAppNotifications: true
+                    pushNotifications: false
+                    notificationFrequency: immediate
+                    qnaNotificationFrequency: live
+                    quietHoursStart: null
+                    quietHoursEnd: null
                     profileVisibility: public
                     showEmail: false
                     showCompany: true
                     showActivityHistory: true
                     allowMessaging: true
                     allowCalendarSync: false
-                    timezone: Europe/Zurich
                     twoFactorEnabled: false
         '400':
           $ref: '#/components/responses/BadRequest'
@@ -3521,11 +3451,8 @@ components:
           oneOf:
             - $ref: '#/components/schemas/Company'
             - type: 'null'
-        preferences:
-          oneOf:
-            - $ref: '#/components/schemas/UserPreferences'
-            - type: 'null'
         settings:
+          description: The user's settings, only with `?include=settings`.
           oneOf:
             - $ref: '#/components/schemas/UserSettings'
             - type: 'null'
@@ -3989,8 +3916,12 @@ components:
             re-confirm); false when this call set verified_at.
           example: false
 
-    UserPreferences:
+    UserSettings:
       type: object
+      description: |
+        The user's settings, one object (Story 4.9 merged the former UserPreferences into it).
+        Display: theme, language, timezone. Notifications: channels, frequency, Q&A digest, quiet
+        hours. Privacy: visibility and contact options.
       properties:
         theme:
           type: string
@@ -4000,6 +3931,12 @@ components:
           type: string
           enum: [de, en, fr, it, rm, es, fi, nl, ja]
           default: de
+        timezone:
+          nullable: true
+          type: string
+          description: IANA zone id
+          default: Europe/Zurich
+          example: Europe/Zurich
         emailNotifications:
           type: boolean
           default: true
@@ -4032,14 +3969,10 @@ components:
           type: string
           pattern: '^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$'
           example: '07:00'
-
-    UserSettings:
-      type: object
-      properties:
         profileVisibility:
           type: string
           enum: [public, members_only, private]
-          default: members_only
+          default: public
         showEmail:
           type: boolean
           default: false
@@ -4048,20 +3981,67 @@ components:
           default: true
         showActivityHistory:
           type: boolean
-          default: false
+          default: true
         allowMessaging:
           type: boolean
           default: true
         allowCalendarSync:
           type: boolean
           default: false
-        timezone:
-          nullable: true
-          type: string
-          example: Europe/Zurich
         twoFactorEnabled:
           type: boolean
           default: false
+
+    UpdateUserSettingsRequest:
+      type: object
+      description: |
+        Partial update of the caller's settings: every field is optional and only the fields
+        present change. No defaults on purpose, so an absent field never overwrites a stored value.
+      properties:
+        theme:
+          type: string
+          enum: [light, dark, auto]
+        language:
+          type: string
+          enum: [de, en, fr, it, rm, es, fi, nl, ja]
+        timezone:
+          type: string
+          description: IANA zone id, e.g. Europe/Zurich
+          minLength: 1
+          maxLength: 64
+        emailNotifications:
+          type: boolean
+        inAppNotifications:
+          type: boolean
+        pushNotifications:
+          type: boolean
+        notificationFrequency:
+          type: string
+          enum: [immediate, daily_digest, weekly_digest]
+        qnaNotificationFrequency:
+          type: string
+          enum: ["live", "daily", "off"]
+        quietHoursStart:
+          type: string
+          pattern: '^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$'
+        quietHoursEnd:
+          type: string
+          pattern: '^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$'
+        profileVisibility:
+          type: string
+          enum: [public, members_only, private]
+        showEmail:
+          type: boolean
+        showCompany:
+          type: boolean
+        showActivityHistory:
+          type: boolean
+        allowMessaging:
+          type: boolean
+        allowCalendarSync:
+          type: boolean
+        twoFactorEnabled:
+          type: boolean
 
     UpdateUserRequest:
       type: object

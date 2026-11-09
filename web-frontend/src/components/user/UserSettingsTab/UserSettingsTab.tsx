@@ -624,6 +624,11 @@ const UserSettingsTab: React.FC<UserSettingsTabProps> = ({
           >
             {t('settings.account.save')}
           </Button>
+          {updatePreferencesMutation.isError && (
+            <Alert severity="error" sx={{ mt: 2 }} data-testid="save-account-settings-button-error">
+              {t('settings.saveFailed')}
+            </Alert>
+          )}
 
           <Divider sx={{ my: 3 }} />
 
@@ -779,6 +784,15 @@ const UserSettingsTab: React.FC<UserSettingsTabProps> = ({
           >
             {t('settings.notifications.save')}
           </Button>
+          {updatePreferencesMutation.isError && (
+            <Alert
+              severity="error"
+              sx={{ mt: 2 }}
+              data-testid="save-notification-settings-button-error"
+            >
+              {t('settings.saveFailed')}
+            </Alert>
+          )}
 
           <Divider sx={{ my: 3 }} />
 
@@ -901,6 +915,11 @@ const UserSettingsTab: React.FC<UserSettingsTabProps> = ({
           >
             {t('settings.privacy.save')}
           </Button>
+          {updateSettingsMutation.isError && (
+            <Alert severity="error" sx={{ mt: 2 }} data-testid="save-privacy-settings-button-error">
+              {t('settings.saveFailed')}
+            </Alert>
+          )}
         </Paper>
       </TabPanel>
     </Box>

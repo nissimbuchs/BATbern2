@@ -1,68 +1,56 @@
 package ch.batbern.companyuser.controller;
 
 import ch.batbern.companyuser.config.TestAwsConfig;
-import ch.batbern.shared.types.Role;
 import ch.batbern.companyuser.domain.User;
+import ch.batbern.companyuser.domain.UserPreferences;
 import ch.batbern.companyuser.domain.UserSettings;
 import ch.batbern.companyuser.repository.UserRepository;
 import ch.batbern.shared.test.AbstractIntegrationTest;
+import ch.batbern.shared.types.Role;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalTime;
 import java.util.HashSet;
 import java.util.Set;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * Integration tests for UserSettingsController
- * Story 2.6: User Account Management Frontend
- * Tests settings endpoints (GET/PUT /api/v1/users/me/settings)
+ * The caller's settings as one resource (Story 4.9): {@code GET} and {@code PATCH
+ * /users/me/settings} carry display, notification and privacy settings together. The former
+ * {@code /users/me/preferences} is gone; the storage stays the two embeddables on user_profiles.
  */
-@SpringBootTest
-@AutoConfigureMockMvc
 @Transactional
 @Import(TestAwsConfig.class)
-@DisplayName("UserSettingsController Integration Tests")
+@DisplayName("User settings, one resource")
 class UserSettingsControllerIntegrationTest extends AbstractIntegrationTest {
+
+    private static final String URL = "/api/v1/users/me/settings";
 
     @Autowired
     private MockMvc mockMvc;
-
     @Autowired
     private UserRepository userRepository;
-
-    private User testUser;
 
     @BeforeEach
     void setUp() {
         userRepository.deleteAll();
-
-        UserSettings settings = UserSettings.builder()
-                .profileVisibility("public")
-                .showEmail(false)
-                .showCompany(true)
-                .showActivityHistory(true)
-                .allowMessaging(true)
-                .allowCalendarSync(false)
-                .timezone("Europe/Zurich")
-                .twoFactorEnabled(false)
-                .build();
-
-        testUser = User.builder()
+        userRepository.save(User.builder()
                 .username("max.muster")
                 .email("max.muster@example.com")
                 .firstName("Max")
@@ -70,179 +58,166 @@ class UserSettingsControllerIntegrationTest extends AbstractIntegrationTest {
                 .cognitoUserId("max.muster")
                 .companyId("SwissCorpZH")
                 .roles(new HashSet<>(Set.of(Role.PARTNER)))
-                .settings(settings)
-                .build();
-
-        testUser = userRepository.save(testUser);
+                .preferences(UserPreferences.builder()
+                        .theme("light")
+                        .language("de")
+                        .notificationFrequency("immediate")
+                        .qnaNotificationFrequency("daily")
+                        .quietHoursStart(LocalTime.of(22, 0))
+                        .quietHoursEnd(LocalTime.of(7, 0))
+                        .build())
+                .settings(UserSettings.builder()
+                        .profileVisibility("public")
+                        .showActivityHistory(true)
+                        .timezone("Europe/Zurich")
+                        .build())
+                .build());
     }
-
-    // Story 2.6 AC34: GET /api/v1/users/me/settings
 
     @Test
     @WithMockUser(username = "max.muster")
-    @DisplayName("should_returnUserSettings_when_authenticated")
-    void should_returnUserSettings_when_authenticated() throws Exception {
-        mockMvc.perform(get("/api/v1/users/me/settings")
-                        .contentType(MediaType.APPLICATION_JSON))
+    void should_returnBothGroupsInOneObject_when_get() throws Exception {
+        mockMvc.perform(get(URL))
                 .andExpect(status().isOk())
+                .andExpect(jsonPath("$.theme").value("light"))
+                .andExpect(jsonPath("$.language").value("de"))
+                .andExpect(jsonPath("$.notificationFrequency").value("immediate"))
+                .andExpect(jsonPath("$.qnaNotificationFrequency").value("daily"))
+                .andExpect(jsonPath("$.quietHoursStart").value("22:00"))
+                .andExpect(jsonPath("$.quietHoursEnd").value("07:00"))
                 .andExpect(jsonPath("$.profileVisibility").value("public"))
-                .andExpect(jsonPath("$.showEmail").value(false))
-                .andExpect(jsonPath("$.showCompany").value(true))
                 .andExpect(jsonPath("$.showActivityHistory").value(true))
-                .andExpect(jsonPath("$.allowMessaging").value(true))
-                .andExpect(jsonPath("$.allowCalendarSync").value(false))
-                .andExpect(jsonPath("$.timezone").value("Europe/Zurich"))
-                .andExpect(jsonPath("$.twoFactorEnabled").value(false));
-    }
-
-    @Test
-    @WithMockUser(username = "max.muster")
-    @DisplayName("should_initializeDefaultSettings_when_settingsNull")
-    void should_initializeDefaultSettings_when_settingsNull() throws Exception {
-        // Create user without settings
-        testUser.setSettings(null);
-        userRepository.save(testUser);
-
-        mockMvc.perform(get("/api/v1/users/me/settings")
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.profileVisibility").value("public"))
-                .andExpect(jsonPath("$.showEmail").value(false))
-                .andExpect(jsonPath("$.showCompany").value(true))
                 .andExpect(jsonPath("$.timezone").value("Europe/Zurich"));
     }
 
-    // Story 2.6 AC34: PUT /api/v1/users/me/settings - Privacy Settings
-
     @Test
     @WithMockUser(username = "max.muster")
-    @DisplayName("should_updatePrivacySettings_when_validSettingsProvided")
-    void should_updatePrivacySettings_when_validSettingsProvided() throws Exception {
-        String requestBody = """
-                {
-                    "profileVisibility": "members_only",
-                    "showEmail": false,
-                    "showCompany": true,
-                    "showActivityHistory": false,
-                    "allowMessaging": false,
-                    "allowCalendarSync": true,
-                    "timezone": "Europe/Zurich",
-                    "twoFactorEnabled": true
-                }
-                """;
+    void should_returnDefaults_when_nothingStored() throws Exception {
+        User user = userRepository.findByUsername("max.muster").orElseThrow();
+        user.setPreferences(null);
+        user.setSettings(null);
+        userRepository.saveAndFlush(user);
 
-        mockMvc.perform(put("/api/v1/users/me/settings")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(requestBody))
+        mockMvc.perform(get(URL))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.profileVisibility").value("members_only"))
-                .andExpect(jsonPath("$.showEmail").value(false))
-                .andExpect(jsonPath("$.showActivityHistory").value(false))
-                .andExpect(jsonPath("$.allowMessaging").value(false));
+                .andExpect(jsonPath("$.theme").value("auto"))
+                .andExpect(jsonPath("$.language").value("de"))
+                .andExpect(jsonPath("$.qnaNotificationFrequency").value("live"))
+                .andExpect(jsonPath("$.profileVisibility").value("public"))
+                .andExpect(jsonPath("$.timezone").value("Europe/Zurich"));
+    }
+
+    /** The I/O matrix case: theme and timezone stored together, GET returns the merged object. */
+    @Test
+    @WithMockUser(username = "max.muster")
+    void should_storeThemeAndTimezoneAndKeepEverythingElse_when_patched() throws Exception {
+        mockMvc.perform(patch(URL)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"theme": "dark", "timezone": "America/New_York"}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.theme").value("dark"))
+                .andExpect(jsonPath("$.timezone").value("America/New_York"))
+                .andExpect(jsonPath("$.qnaNotificationFrequency").value("daily"))
+                .andExpect(jsonPath("$.quietHoursStart").value("22:00"))
+                .andExpect(jsonPath("$.profileVisibility").value("public"));
+
+        mockMvc.perform(get(URL))
+                .andExpect(jsonPath("$.theme").value("dark"))
+                .andExpect(jsonPath("$.timezone").value("America/New_York"))
+                .andExpect(jsonPath("$.language").value("de"))
+                .andExpect(jsonPath("$.notificationFrequency").value("immediate"))
+                .andExpect(jsonPath("$.qnaNotificationFrequency").value("daily"))
+                .andExpect(jsonPath("$.showActivityHistory").value(true));
+
+        User stored = userRepository.findByUsername("max.muster").orElseThrow();
+        assertThat(stored.getPreferences().getTheme()).isEqualTo("dark");
+        assertThat(stored.getSettings().getTimezone()).isEqualTo("America/New_York");
+        assertThat(stored.getPreferences().getQnaNotificationFrequency()).isEqualTo("daily");
     }
 
     @Test
     @WithMockUser(username = "max.muster")
-    @DisplayName("should_updateProfileVisibility_when_privateSelected")
-    void should_updateProfileVisibility_when_privateSelected() throws Exception {
-        String requestBody = """
-                {
-                    "profileVisibility": "private",
-                    "showEmail": false,
-                    "showCompany": false,
-                    "showActivityHistory": false,
-                    "allowMessaging": false,
-                    "allowCalendarSync": false,
-                    "timezone": "Europe/Zurich",
-                    "twoFactorEnabled": false
-                }
-                """;
-
-        mockMvc.perform(put("/api/v1/users/me/settings")
+    void should_storeEveryField_when_patchedWithAll() throws Exception {
+        mockMvc.perform(patch(URL)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(requestBody))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.profileVisibility").value("private"))
-                .andExpect(jsonPath("$.showEmail").value(false))
-                .andExpect(jsonPath("$.showCompany").value(false))
-                .andExpect(jsonPath("$.showActivityHistory").value(false));
-    }
-
-    @Test
-    @WithMockUser(username = "max.muster")
-    @DisplayName("should_updateTwoFactorAuth_when_enabled")
-    void should_updateTwoFactorAuth_when_enabled() throws Exception {
-        String requestBody = """
-                {
-                    "profileVisibility": "public",
-                    "showEmail": false,
-                    "showCompany": true,
-                    "showActivityHistory": true,
-                    "allowMessaging": true,
-                    "allowCalendarSync": false,
-                    "timezone": "Europe/Zurich",
-                    "twoFactorEnabled": true
-                }
-                """;
-
-        mockMvc.perform(put("/api/v1/users/me/settings")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(requestBody))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.twoFactorEnabled").value(true));
-    }
-
-    @Test
-    @WithMockUser(username = "max.muster")
-    @DisplayName("should_persistSettingsChanges_when_updated")
-    void should_persistSettingsChanges_when_updated() throws Exception {
-        String requestBody = """
-                {
-                    "profileVisibility": "members_only",
-                    "showEmail": true,
-                    "showCompany": false,
-                    "showActivityHistory": false,
-                    "allowMessaging": false,
-                    "allowCalendarSync": true,
-                    "timezone": "America/New_York",
-                    "twoFactorEnabled": true
-                }
-                """;
-
-        // Update settings
-        mockMvc.perform(put("/api/v1/users/me/settings")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(requestBody))
+                        .content("""
+                                {"theme": "auto", "language": "en", "timezone": "Asia/Tokyo",
+                                 "emailNotifications": false, "inAppNotifications": false,
+                                 "pushNotifications": true, "notificationFrequency": "weekly_digest",
+                                 "qnaNotificationFrequency": "off",
+                                 "quietHoursStart": "23:30", "quietHoursEnd": "06:15",
+                                 "profileVisibility": "private", "showEmail": true, "showCompany": false,
+                                 "showActivityHistory": false, "allowMessaging": false,
+                                 "allowCalendarSync": true, "twoFactorEnabled": true}
+                                """))
                 .andExpect(status().isOk());
 
-        // Verify persistence by fetching again
-        mockMvc.perform(get("/api/v1/users/me/settings")
-                        .contentType(MediaType.APPLICATION_JSON))
+        User stored = userRepository.findByUsername("max.muster").orElseThrow();
+        UserPreferences p = stored.getPreferences();
+        UserSettings s = stored.getSettings();
+        assertThat(p.getTheme()).isEqualTo("auto");
+        assertThat(p.getLanguage()).isEqualTo("en");
+        assertThat(p.isEmailNotifications()).isFalse();
+        assertThat(p.isInAppNotifications()).isFalse();
+        assertThat(p.isPushNotifications()).isTrue();
+        assertThat(p.getNotificationFrequency()).isEqualTo("weekly_digest");
+        assertThat(p.getQnaNotificationFrequency()).isEqualTo("off");
+        assertThat(p.getQuietHoursStart()).isEqualTo(LocalTime.of(23, 30));
+        assertThat(p.getQuietHoursEnd()).isEqualTo(LocalTime.of(6, 15));
+        assertThat(s.getTimezone()).isEqualTo("Asia/Tokyo");
+        assertThat(s.getProfileVisibility()).isEqualTo("private");
+        assertThat(s.isShowEmail()).isTrue();
+        assertThat(s.isShowCompany()).isFalse();
+        assertThat(s.isShowActivityHistory()).isFalse();
+        assertThat(s.isAllowMessaging()).isFalse();
+        assertThat(s.isAllowCalendarSync()).isTrue();
+        assertThat(s.isTwoFactorEnabled()).isTrue();
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+        "{\"theme\": \"neon\"}",
+        "{\"language\": \"xx\"}",
+        "{\"qnaNotificationFrequency\": \"hourly\"}",
+        "{\"quietHoursStart\": \"25:00\"}",
+        "{\"timezone\": \"Mars/Olympus\"}"
+    })
+    @WithMockUser(username = "max.muster")
+    void should_return400AndStoreNothing_when_valueIsInvalid(String body) throws Exception {
+        mockMvc.perform(patch(URL).contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isBadRequest());
+
+        User stored = userRepository.findByUsername("max.muster").orElseThrow();
+        assertThat(stored.getPreferences().getTheme()).isEqualTo("light");
+        assertThat(stored.getSettings().getTimezone()).isEqualTo("Europe/Zurich");
+    }
+
+    @Test
+    @WithMockUser(username = "max.muster")
+    void should_notServeTheFormerPreferencesOrPut() throws Exception {
+        mockMvc.perform(get(URL)).andExpect(status().isOk());
+        mockMvc.perform(get("/api/v1/users/me/preferences"))
+                .andExpect(result -> assertThat(result.getResponse().getStatus()).isIn(404, 405));
+        mockMvc.perform(put(URL).contentType(MediaType.APPLICATION_JSON).content("{\"theme\": \"dark\"}"))
+                .andExpect(result -> assertThat(result.getResponse().getStatus()).isIn(404, 405));
+    }
+
+    @Test
+    @WithMockUser(username = "max.muster")
+    void should_mergeSettingsIntoTheUser_when_includeSettings() throws Exception {
+        mockMvc.perform(get("/api/v1/users/me").param("include", "settings"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.profileVisibility").value("members_only"))
-                .andExpect(jsonPath("$.showEmail").value(true))
-                .andExpect(jsonPath("$.showCompany").value(false))
-                .andExpect(jsonPath("$.timezone").value("America/New_York"))
-                .andExpect(jsonPath("$.twoFactorEnabled").value(true));
+                .andExpect(jsonPath("$.settings.theme").value("light"))
+                .andExpect(jsonPath("$.settings.timezone").value("Europe/Zurich"))
+                .andExpect(jsonPath("$.preferences").doesNotExist());
     }
 
     @Test
-    @DisplayName("should_return401_when_notAuthenticated")
     void should_return401_when_notAuthenticated() throws Exception {
-        mockMvc.perform(get("/api/v1/users/me/settings")
-                        .contentType(MediaType.APPLICATION_JSON))
+        mockMvc.perform(get(URL)).andExpect(status().isUnauthorized());
+        mockMvc.perform(patch(URL).contentType(MediaType.APPLICATION_JSON).content("{\"theme\": \"dark\"}"))
                 .andExpect(status().isUnauthorized());
-    }
-
-    @Disabled("Flaky test - passes individually but fails in full suite due to test pollution")
-
-
-    @Test
-    @WithMockUser(username = "unknown.user")
-    @DisplayName("should_return404_when_userNotFound")
-    void should_return404_when_userNotFound() throws Exception {
-        mockMvc.perform(get("/api/v1/users/me/settings")
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isNotFound());
     }
 }

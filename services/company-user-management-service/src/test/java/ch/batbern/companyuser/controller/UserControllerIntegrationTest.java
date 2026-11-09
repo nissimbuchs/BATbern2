@@ -211,7 +211,7 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
     @DisplayName("should_return200_when_companyIdDoesNotResolve")
     void should_return200_when_companyIdDoesNotResolve() throws Exception {
         mockMvc.perform(get("/api/v1/users/me")
-                        .param("include", "roles,company,preferences")
+                        .param("include", "roles,company,settings")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.company.id").value("GoogleZH"))
@@ -220,16 +220,17 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     @WithMockUser(username = "john.doe")
-    @DisplayName("should_expandPreferences_when_includePreferencesProvided")
-    void should_expandPreferences_when_includePreferencesProvided() throws Exception {
+    @DisplayName("should_expandSettings_when_includeSettingsProvided")
+    void should_expandSettings_when_includeSettingsProvided() throws Exception {
         mockMvc.perform(get("/api/v1/users/me")
-                        .param("include", "preferences")
+                        .param("include", "settings")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value("john.doe"))
-                .andExpect(jsonPath("$.preferences").exists())
-                .andExpect(jsonPath("$.preferences.theme").exists())
-                .andExpect(jsonPath("$.preferences.language").exists());
+                .andExpect(jsonPath("$.settings.theme").exists())
+                .andExpect(jsonPath("$.settings.language").exists())
+                .andExpect(jsonPath("$.settings.profileVisibility").exists())
+                .andExpect(jsonPath("$.preferences").doesNotExist());
     }
 
     // AC2: PUT /api/v1/users/me updates current user with validation

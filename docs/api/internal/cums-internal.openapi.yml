@@ -26,7 +26,7 @@ paths:
       summary: One user by username
       description: |
         Same `UserResponse` as the public users-api. `include` adds the related objects
-        (`company`, `roles`, `preferences`, comma-separated). The username is a path segment and
+        (`company`, `roles`, `settings`, comma-separated; Story 4.9 merged the former `preferences` into `settings`). The username is a path segment and
         must be percent-encoded by the caller.
       parameters:
         - name: username
@@ -38,10 +38,10 @@ paths:
         - name: include
           in: query
           required: false
-          description: Comma-separated related objects, e.g. `preferences` or `company,roles,preferences`.
+          description: Comma-separated related objects, e.g. `settings` or `company,roles,settings`.
           schema:
             type: string
-          example: preferences
+          example: settings
       responses:
         '200':
           description: The user
@@ -64,7 +64,7 @@ paths:
                     createdAt: '2025-01-15T10:00:00Z'
                     updatedAt: '2025-01-15T10:00:00Z'
                     additionalEmails: []
-                withPreferences:
+                withSettings:
                   value:
                     id: anna.meier
                     email: anna.meier@example.com
@@ -75,13 +75,24 @@ paths:
                     createdAt: '2025-01-15T10:00:00Z'
                     updatedAt: '2025-01-15T10:00:00Z'
                     additionalEmails: []
-                    preferences:
+                    settings:
+                      theme: auto
                       language: en
                       emailNotifications: true
                       inAppNotifications: true
                       pushNotifications: false
                       notificationFrequency: immediate
                       qnaNotificationFrequency: daily
+                      quietHoursStart: null
+                      quietHoursEnd: null
+                      profileVisibility: members_only
+                      showEmail: false
+                      showCompany: true
+                      showActivityHistory: false
+                      allowMessaging: true
+                      allowCalendarSync: false
+                      timezone: Europe/Zurich
+                      twoFactorEnabled: false
         '404':
           description: No user with this username
           content:

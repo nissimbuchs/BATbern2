@@ -78,11 +78,14 @@ class InternalUserControllerIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @DisplayName("should_expandPreferences_when_includeRequested")
-    void should_expandPreferences_when_includeRequested() throws Exception {
-        mockMvc.perform(get("/internal/users/{username}", "paul.partner").param("include", "preferences"))
+    @DisplayName("should_expandSettings_when_includeRequested")
+    void should_expandSettings_when_includeRequested() throws Exception {
+        // Story 4.9: language and the Q&A frequency EMS reads are part of the one settings object
+        mockMvc.perform(get("/internal/users/{username}", "paul.partner").param("include", "settings"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.preferences").exists());
+                .andExpect(jsonPath("$.settings.language").exists())
+                .andExpect(jsonPath("$.settings.qnaNotificationFrequency").exists())
+                .andExpect(jsonPath("$.preferences").doesNotExist());
     }
 
     @Test

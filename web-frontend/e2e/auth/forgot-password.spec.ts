@@ -32,7 +32,7 @@ import { BASE_URL } from '../../playwright.config';
 import { forceUserProfileLanguage } from '../helpers/mock-user-profile';
 
 // The project's authenticated storageState makes the app shell mount LanguageSync, which
-// reads /users/me `preferences.language` and overrides the UI language on every load. Pin it
+// reads /users/me `settings.language` and overrides the UI language on every load. Pin it
 // to English by default for the whole file so the (English) accessibility / validation specs
 // are deterministic; the i18n specs override per-test to the language under test.
 test.beforeEach(async ({ page }) => {

@@ -35,11 +35,11 @@ export const LanguageSync: React.FC = () => {
 
     const syncLanguage = async () => {
       try {
-        // Fetch user profile with preferences
-        const profile = await getUserProfile(['preferences']);
+        // Fetch the user's settings (Story 4.9: language is part of the one settings object)
+        const profile = await getUserProfile(['settings']);
 
         // Extract language preference
-        const userLanguage = profile.preferences?.language;
+        const userLanguage = profile.settings?.language;
 
         if (!userLanguage || userLanguage === i18n.language) {
           return; // No preference saved or already in sync

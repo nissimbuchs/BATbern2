@@ -286,7 +286,8 @@
       "allowMessaging": "Consenti messaggi diretti da altri utenti",
       "viewPolicy": "Visualizza privacy policy",
       "save": "Salva impostazioni privacy"
-    }
+    },
+    "saveFailed": "Salvataggio non riuscito. Controlla i dati inseriti e riprova."
   },
   "profile": {
     "personalInfo": "Informazioni personali",

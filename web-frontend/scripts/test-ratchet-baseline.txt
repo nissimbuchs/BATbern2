@@ -104,7 +104,6 @@ be-transactional-it	services/company-user-management-service/src/test/java/ch/ba
 be-transactional-it	services/company-user-management-service/src/test/java/ch/batbern/companyuser/controller/PublicUserControllerIntegrationTest.java	1
 be-transactional-it	services/company-user-management-service/src/test/java/ch/batbern/companyuser/controller/UserAdditionalEmailsIntegrationTest.java	1
 be-transactional-it	services/company-user-management-service/src/test/java/ch/batbern/companyuser/controller/UserMergeIntegrationTest.java	1
-be-transactional-it	services/company-user-management-service/src/test/java/ch/batbern/companyuser/controller/UserPreferencesControllerIntegrationTest.java	1
 be-transactional-it	services/company-user-management-service/src/test/java/ch/batbern/companyuser/controller/UserSettingsControllerIntegrationTest.java	1
 be-transactional-it	services/company-user-management-service/src/test/java/ch/batbern/companyuser/integration/AdditionalEndpointsIntegrationTest.java	1
 be-transactional-it	services/company-user-management-service/src/test/java/ch/batbern/companyuser/integration/AuthenticationIntegrationTest.java	1
@@ -373,13 +372,11 @@ fe-mock-hooks	web-frontend/src/components/shared/Company/__tests__/Performance.t
 fe-mock-hooks	web-frontend/src/components/shared/Company/__tests__/Responsive.test.tsx	4
 fe-mock-hooks	web-frontend/src/components/shared/ErrorDisplay/ErrorToast.test.tsx	1
 fe-mock-hooks	web-frontend/src/components/shared/FileUpload/FileUpload.test.tsx	1
-fe-mock-hooks	web-frontend/src/components/shared/LanguageSwitcher/LanguageSwitcher.test.tsx	1
 fe-mock-hooks	web-frontend/src/components/shared/Layout/Accessibility.test.tsx	3
 fe-mock-hooks	web-frontend/src/components/shared/Layout/BaseLayout.test.tsx	3
 fe-mock-hooks	web-frontend/src/components/shared/Layout/ResponsiveLayout.test.tsx	3
 fe-mock-hooks	web-frontend/src/components/shared/Navigation/AppHeader.test.tsx	3
 fe-mock-hooks	web-frontend/src/components/user/CompanyLogoRequest/__tests__/CompanyLogoSection.test.tsx	1
-fe-mock-hooks	web-frontend/src/components/user/UserSettingsTab/UserSettingsTab.test.tsx	2
 fe-mock-hooks	web-frontend/src/hooks/useMyRegistration.test.ts	1
 fe-mock-hooks	web-frontend/src/hooks/useTurnstile/useTurnstile.test.ts	1
 fe-mock-hooks	web-frontend/src/pages/PartnerCompanyPage.test.tsx	1
@@ -488,11 +485,9 @@ fe-mock-i18n	web-frontend/src/components/shared/Layout/BaseLayout.test.tsx	1
 fe-mock-i18n	web-frontend/src/components/shared/Layout/ResponsiveLayout.test.tsx	1
 fe-mock-i18n	web-frontend/src/components/shared/Navigation/AppHeader.test.tsx	1
 fe-mock-i18n	web-frontend/src/components/shared/Navigation/NavigationMenu.test.tsx	1
-fe-mock-i18n	web-frontend/src/components/shared/Navigation/UserMenuDropdown.test.tsx	1
 fe-mock-i18n	web-frontend/src/components/user/CompanyLogoRequest/__tests__/CompanyLogoSection.test.tsx	1
 fe-mock-i18n	web-frontend/src/components/user/ProfileEmailAddresses/__tests__/ProfileEmailAddresses.test.tsx	1
 fe-mock-i18n	web-frontend/src/components/user/ProfileEmailAddresses/__tests__/ProfileNewsletterAddresses.test.tsx	1
-fe-mock-i18n	web-frontend/src/components/user/UserSettingsTab/UserSettingsTab.test.tsx	1
 fe-mock-i18n	web-frontend/src/hooks/useRegistration/useRegistration.test.ts	1
 fe-mock-i18n	web-frontend/src/pages/PartnerCompanyPage.test.tsx	1
 fe-mock-i18n	web-frontend/src/pages/attendee/__tests__/AttendeeDashboardPage.test.tsx	1
@@ -565,7 +560,6 @@ fe-mock-services	web-frontend/src/components/shared/Company/CompanyBatchImportMo
 fe-mock-services	web-frontend/src/components/shared/Company/__tests__/CompanySearch.test.tsx	1
 fe-mock-services	web-frontend/src/components/shared/Navigation/MobileDrawer.test.tsx	1
 fe-mock-services	web-frontend/src/components/shared/Navigation/NavigationMenu.test.tsx	1
-fe-mock-services	web-frontend/src/components/shared/Navigation/UserMenuDropdown.test.tsx	1
 fe-mock-services	web-frontend/src/components/speaker-portal/__tests__/PresentationUpload.test.tsx	1
 fe-mock-services	web-frontend/src/components/speaker-portal/__tests__/ProfilePhotoUpload.test.tsx	1
 fe-mock-services	web-frontend/src/components/user/EarlierProfilesSection/EarlierProfilesSection.test.tsx	1
@@ -618,8 +612,6 @@ fe-mock-services	web-frontend/src/hooks/useSessionSpeakers.test.ts	1
 fe-mock-services	web-frontend/src/hooks/useSpeakerOutreach.test.tsx	1
 fe-mock-services	web-frontend/src/hooks/useSpeakerPoolHooks.test.ts	2
 fe-mock-services	web-frontend/src/hooks/useTimetable/useTimetable.test.ts	1
-fe-mock-services	web-frontend/src/hooks/useUserAccount/useUserAccount.hooks.test.tsx	1
-fe-mock-services	web-frontend/src/hooks/useUserAccount/useUserAccount.test.ts	1
 fe-mock-services	web-frontend/src/hooks/useUserManagement/__tests__/useCreateUser.test.tsx	1
 fe-mock-services	web-frontend/src/hooks/useUserManagement/__tests__/useDeleteUser.test.tsx	1
 fe-mock-services	web-frontend/src/hooks/useUserManagement/__tests__/useUpdateUser.test.tsx	1
@@ -652,7 +644,6 @@ fe-mock-services	web-frontend/src/services/api/partnerMeetingsApi.test.ts	3
 fe-mock-services	web-frontend/src/services/api/partnerNotesApi.test.ts	1
 fe-mock-services	web-frontend/src/services/api/partnerTopicsApi.test.ts	4
 fe-mock-services	web-frontend/src/services/api/sessionApiClient.test.ts	1
-fe-mock-services	web-frontend/src/services/api/userAccountApi.test.ts	1
 fe-mock-services	web-frontend/src/services/api/watchPairingApi.test.ts	1
 fe-mock-services	web-frontend/src/services/blobTopicService.test.ts	1
 fe-mock-services	web-frontend/src/services/deregistrationService.test.ts	1

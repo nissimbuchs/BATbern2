@@ -286,7 +286,8 @@
       "allowMessaging": "Salli suorat viestit muilta käyttäjiltä",
       "viewPolicy": "Katso tietosuojakäytäntö",
       "save": "Tallenna tietosuoja-asetukset"
-    }
+    },
+    "saveFailed": "Tallennus epäonnistui. Tarkista tiedot ja yritä uudelleen."
   },
   "profile": {
     "personalInfo": "Henkilökohtaiset tiedot",

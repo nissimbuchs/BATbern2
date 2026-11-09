@@ -1,31 +1,15 @@
 /**
- * userAccountApi Tests
+ * userAccountApi against the MSW harness (Story 2.6; Story 4.9 moved it off the apiClient mock
+ * and onto the one settings resource).
  *
- * Coverage for:
- * - getUserProfile: GET /users/me, data transformation (username, memberSince, company, preferences, settings)
- * - updateUserProfile: PUT /users/me with field filtering
- * - updateUserPreferences: PUT /users/me/preferences (uppercase→lowercase enum conversion)
- * - updateUserSettings: PUT /users/me/settings (uppercase→lowercase, showActivity→showActivityHistory)
- * - removeProfilePicture: DELETE /users/me/picture
- * - requestPresignedUrl: POST presigned URL (fileId→uploadId, uploadUrl→presignedUrl mapping)
- * - confirmUpload: POST confirm (uploadId→fileId, profilePictureUrl→cloudFrontUrl)
- * - requestPresignedUrlForUser / confirmUploadForUser: admin endpoints
- * - mapTheme / mapNotificationFrequency / mapProfileVisibility helpers (via API responses)
+ * The real apiClient sends each call; the harness checks it against users-api and answers with
+ * the spec example or a typed override. The account page shows the wire `settings` object as two
+ * views (display and notifications, privacy); both are saved with `PATCH /users/me/settings`,
+ * which changes only the fields sent.
  */
-
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-
-vi.mock('./apiClient', () => ({
-  default: {
-    get: vi.fn(),
-    put: vi.fn(),
-    post: vi.fn(),
-    delete: vi.fn(),
-    patch: vi.fn(),
-  },
-}));
-
-import apiClient from './apiClient';
+import { describe, it, expect, vi, afterEach } from 'vitest';
+import { api } from '@/test/msw/api';
+import type { UserSettingsResponse } from './userApi';
 import {
   getUserProfile,
   updateUserProfile,
@@ -38,386 +22,206 @@ import {
   confirmUploadForUser,
 } from './userAccountApi';
 
-const mockGet = vi.mocked(apiClient.get);
-const mockPut = vi.mocked(apiClient.put);
-const mockPatch = vi.mocked(apiClient.patch);
-const mockPost = vi.mocked(apiClient.post);
-const mockDelete = vi.mocked(apiClient.delete);
-
-beforeEach(() => {
-  vi.clearAllMocks();
+const settings = (over: Partial<UserSettingsResponse> = {}): UserSettingsResponse => ({
+  theme: 'auto',
+  language: 'de',
+  timezone: 'Europe/Zurich',
+  emailNotifications: true,
+  inAppNotifications: true,
+  pushNotifications: false,
+  notificationFrequency: 'immediate',
+  qnaNotificationFrequency: 'live',
+  quietHoursStart: null,
+  quietHoursEnd: null,
+  profileVisibility: 'public',
+  showEmail: false,
+  showCompany: true,
+  showActivityHistory: true,
+  allowMessaging: true,
+  allowCalendarSync: false,
+  twoFactorEnabled: false,
+  ...over,
 });
 
-// ── getUserProfile ────────────────────────────────────────────────────────────
+const user = {
+  id: 'hong.an',
+  email: 'hong.an@example.com',
+  firstName: 'Hông',
+  lastName: 'Ân',
+  roles: ['SPEAKER' as const],
+  active: true,
+  createdAt: '2023-06-15T10:00:00Z',
+  updatedAt: '2025-01-15T10:00:00Z',
+  additionalEmails: [],
+};
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
 
 describe('getUserProfile', () => {
-  it('should GET /users/me with default include params', async () => {
-    mockGet.mockResolvedValue({
-      data: {
-        id: 'user-1',
-        firstName: 'Alice',
-        lastName: 'Smith',
-        email: 'alice@example.com',
-        createdAt: '2024-01-01',
-      },
-    });
-
+  it('asks for company, roles, settings and activity by default', async () => {
     await getUserProfile();
 
-    expect(mockGet).toHaveBeenCalledWith(
-      '/users/me?include=company,roles,preferences,settings,activity'
+    expect(api.calls('getCurrentUser')[0].query.get('include')).toBe(
+      'company,roles,settings,activity'
     );
   });
 
-  it('should map id to username and createdAt to memberSince', async () => {
-    mockGet.mockResolvedValue({
-      data: {
-        id: 'user-42',
-        firstName: 'Bob',
-        createdAt: '2023-06-15',
-      },
-    });
+  it('maps id to username and createdAt to memberSince, and the company', async () => {
+    api.on('getCurrentUser', () => ({
+      ...user,
+      companyId: 'AcmeAG',
+      company: { id: 'AcmeAG', name: 'AcmeAG', displayName: 'Acme AG' },
+    }));
 
-    const result = await getUserProfile();
+    const result = await getUserProfile(['company']);
 
-    expect(result.user.username).toBe('user-42');
-    expect(result.user.memberSince).toBe('2023-06-15');
+    expect(result.user.username).toBe('hong.an');
+    expect(result.user.memberSince).toBe('2023-06-15T10:00:00Z');
+    expect(result.user.company).toMatchObject({ id: 'AcmeAG', name: 'AcmeAG' });
+    expect(api.calls('getCurrentUser')[0].query.get('include')).toBe('company');
   });
 
-  it('should map nested company fields', async () => {
-    mockGet.mockResolvedValue({
-      data: {
-        id: 'user-1',
-        createdAt: '2024-01-01',
-        company: { id: 'comp-1', name: 'Acme', uid: 'CHE-123' },
-        companyId: 'comp-1',
-      },
-    });
-
-    const result = await getUserProfile();
-
-    expect(result.user.company).toEqual({ id: 'comp-1', name: 'Acme', uid: 'CHE-123' });
-  });
-
-  it('should leave company undefined when not present', async () => {
-    mockGet.mockResolvedValue({ data: { id: 'u1', createdAt: '2024-01-01' } });
-
-    const result = await getUserProfile();
-
-    expect(result.user.company).toBeUndefined();
-  });
-
-  it('should transform preferences with mapTheme and mapNotificationFrequency', async () => {
-    mockGet.mockResolvedValue({
-      data: {
-        id: 'u1',
-        createdAt: '2024-01-01',
-        preferences: {
-          theme: 'dark',
-          timezone: 'UTC',
-          emailNotifications: false,
-          inAppNotifications: true,
-          pushNotifications: true,
-          notificationFrequency: 'daily_digest',
-        },
-      },
-    });
-
-    const result = await getUserProfile();
-
-    expect(result.preferences?.theme).toBe('DARK');
-    expect(result.preferences?.notificationFrequency).toBe('DAILY_DIGEST');
-    expect(result.preferences?.notificationChannels).toEqual({
-      email: false,
-      inApp: true,
-      push: true,
-    });
-    expect(result.preferences?.timezone).toBe('UTC');
-  });
-
-  it('should default theme to LIGHT when preferences.theme is absent', async () => {
-    mockGet.mockResolvedValue({
-      data: {
-        id: 'u1',
-        createdAt: '2024-01-01',
-        preferences: { timezone: 'UTC' },
-      },
-    });
-
-    const result = await getUserProfile();
-
-    expect(result.preferences?.theme).toBe('LIGHT');
-  });
-
-  it('should default notificationFrequency to IMMEDIATE when absent', async () => {
-    mockGet.mockResolvedValue({
-      data: {
-        id: 'u1',
-        createdAt: '2024-01-01',
-        preferences: {},
-      },
-    });
-
-    const result = await getUserProfile();
-
-    expect(result.preferences?.notificationFrequency).toBe('IMMEDIATE');
-  });
-
-  it('should transform settings with mapProfileVisibility', async () => {
-    mockGet.mockResolvedValue({
-      data: {
-        id: 'u1',
-        createdAt: '2024-01-01',
-        settings: {
-          profileVisibility: 'public',
-          showEmail: true,
-          showCompany: false,
-          showActivityHistory: false,
-          allowMessaging: false,
-        },
-      },
-    });
-
-    const result = await getUserProfile();
-
-    expect(result.settings?.profileVisibility).toBe('PUBLIC');
-    expect(result.settings?.showEmail).toBe(true);
-    expect(result.settings?.showCompany).toBe(false);
-    expect(result.settings?.showActivity).toBe(false);
-    expect(result.settings?.allowMessaging).toBe(false);
-  });
-
-  it('should default profileVisibility to MEMBERS_ONLY when settings.profileVisibility is absent', async () => {
-    mockGet.mockResolvedValue({
-      data: {
-        id: 'u1',
-        createdAt: '2024-01-01',
-        settings: {},
-      },
-    });
-
-    const result = await getUserProfile();
-
-    expect(result.settings?.profileVisibility).toBe('MEMBERS_ONLY');
-  });
-
-  it('should return activity array from response', async () => {
-    const activity = [{ type: 'LOGIN', timestamp: '2024-01-01' }];
-    mockGet.mockResolvedValue({
-      data: { id: 'u1', createdAt: '2024-01-01', activity },
-    });
-
-    const result = await getUserProfile();
-
-    expect(result.activity).toEqual(activity);
-  });
-
-  it('should return empty activity array when activity is absent', async () => {
-    mockGet.mockResolvedValue({ data: { id: 'u1', createdAt: '2024-01-01' } });
-
-    const result = await getUserProfile();
-
-    expect(result.activity).toEqual([]);
-  });
-
-  it('should accept custom include list', async () => {
-    mockGet.mockResolvedValue({ data: { id: 'u1', createdAt: '2024-01-01' } });
-
-    await getUserProfile(['company', 'roles']);
-
-    expect(mockGet).toHaveBeenCalledWith('/users/me?include=company,roles');
-  });
-});
-
-// ── updateUserProfile ─────────────────────────────────────────────────────────
-
-describe('updateUserProfile', () => {
-  it('should PATCH /users/me with only allowed fields', async () => {
-    mockPatch.mockResolvedValue({
-      data: { id: 'u1', createdAt: '2024-01-01', firstName: 'Alice' },
-    });
-
-    await updateUserProfile({
-      firstName: 'Alice',
-      lastName: 'Smith',
-      email: 'alice@example.com',
-      bio: 'Dev',
-      companyId: 'comp-1',
-    });
-
-    expect(mockPatch).toHaveBeenCalledWith('/users/me', {
-      firstName: 'Alice',
-      lastName: 'Smith',
-      email: 'alice@example.com',
-      bio: 'Dev',
-      companyId: 'comp-1',
-    });
-  });
-
-  it('should strip disallowed fields from update payload', async () => {
-    mockPatch.mockResolvedValue({
-      data: { id: 'u1', createdAt: '2024-01-01', firstName: 'Alice' },
-    });
-
-    await updateUserProfile({
-      firstName: 'Alice',
-      username: 'should-be-stripped' as never,
-      memberSince: 'should-be-stripped' as never,
-    } as never);
-
-    const calledWith = mockPatch.mock.calls[0][1] as Record<string, unknown>;
-    expect(calledWith).not.toHaveProperty('username');
-    expect(calledWith).not.toHaveProperty('memberSince');
-  });
-
-  it('should transform response: map id→username, createdAt→memberSince', async () => {
-    mockPatch.mockResolvedValue({
-      data: { id: 'user-99', createdAt: '2025-01-01', firstName: 'Bob' },
-    });
-
-    const result = await updateUserProfile({ firstName: 'Bob' });
-
-    expect(result.username).toBe('user-99');
-    expect(result.memberSince).toBe('2025-01-01');
-  });
-
-  it('should only send fields that are defined', async () => {
-    mockPatch.mockResolvedValue({ data: { id: 'u1', createdAt: '2024-01-01' } });
-
-    await updateUserProfile({ firstName: 'Alice' });
-
-    const calledWith = mockPatch.mock.calls[0][1] as Record<string, unknown>;
-    expect(Object.keys(calledWith)).toEqual(['firstName']);
-  });
-});
-
-// ── updateUserPreferences ─────────────────────────────────────────────────────
-
-describe('updateUserPreferences', () => {
-  it('should PUT /users/me/preferences with lowercase-converted enums', async () => {
-    mockPut.mockResolvedValue({
-      data: {
+  it('splits the one settings object into the two views of the account page', async () => {
+    api.on('getCurrentUser', () => ({
+      ...user,
+      settings: settings({
         theme: 'dark',
-        timezone: 'UTC',
-        emailNotifications: true,
-        inAppNotifications: true,
-        pushNotifications: false,
+        timezone: 'America/New_York',
         notificationFrequency: 'daily_digest',
-      },
-    });
-
-    await updateUserPreferences({
-      theme: 'DARK',
-      notificationFrequency: 'DAILY_DIGEST',
-      timezone: 'UTC',
-      notificationChannels: { email: true, inApp: true, push: false },
-    });
-
-    const payload = mockPut.mock.calls[0][1] as Record<string, unknown>;
-    expect(mockPut).toHaveBeenCalledWith('/users/me/preferences', expect.any(Object));
-    expect(payload.theme).toBe('dark');
-    expect(payload.notificationFrequency).toBe('daily_digest');
-    expect(payload.timezone).toBe('UTC');
-    expect(payload.emailNotifications).toBe(true);
-    expect(payload.inAppNotifications).toBe(true);
-    expect(payload.pushNotifications).toBe(false);
-  });
-
-  it('should transform response back to uppercase enums', async () => {
-    mockPut.mockResolvedValue({
-      data: {
-        theme: 'auto',
-        timezone: 'Europe/Zurich',
-        emailNotifications: true,
-        inAppNotifications: true,
-        pushNotifications: false,
-        notificationFrequency: 'weekly_digest',
-      },
-    });
-
-    const result = await updateUserPreferences({ theme: 'AUTO' });
-
-    expect(result.theme).toBe('AUTO');
-    expect(result.notificationFrequency).toBe('WEEKLY_DIGEST');
-  });
-});
-
-// ── updateUserSettings ────────────────────────────────────────────────────────
-
-describe('updateUserSettings', () => {
-  it('should PUT /users/me/settings mapping showActivity→showActivityHistory', async () => {
-    mockPut.mockResolvedValue({
-      data: {
+        qnaNotificationFrequency: 'off',
+        emailNotifications: false,
         profileVisibility: 'members_only',
-        showEmail: false,
-        showCompany: true,
-        showActivityHistory: true,
-        allowMessaging: true,
-      },
-    });
+        showActivityHistory: false,
+      }),
+    }));
 
-    await updateUserSettings({
+    const result = await getUserProfile();
+
+    expect(result.preferences).toEqual({
+      theme: 'DARK',
+      timezone: 'America/New_York',
+      notificationChannels: { email: false, inApp: true, push: false },
+      notificationFrequency: 'DAILY_DIGEST',
+      qnaNotificationFrequency: 'OFF',
+    });
+    expect(result.settings).toEqual({
       profileVisibility: 'MEMBERS_ONLY',
       showEmail: false,
       showCompany: true,
-      showActivity: true,
+      showActivity: false,
       allowMessaging: true,
     });
-
-    const payload = mockPut.mock.calls[0][1] as Record<string, unknown>;
-    expect(mockPut).toHaveBeenCalledWith('/users/me/settings', expect.any(Object));
-    expect(payload.showActivityHistory).toBe(true);
-    expect(payload.profileVisibility).toBe('members_only');
   });
 
-  it('should transform response: showActivityHistory→showActivity, uppercase visibility', async () => {
-    mockPut.mockResolvedValue({
-      data: {
-        profileVisibility: 'private',
-        showEmail: true,
-        showCompany: false,
-        showActivityHistory: false,
-        allowMessaging: false,
-      },
-    });
+  it('leaves both views undefined without settings', async () => {
+    api.on('getCurrentUser', () => ({ ...user }));
 
-    const result = await updateUserSettings({ profileVisibility: 'PRIVATE' });
+    const result = await getUserProfile(['company']);
 
-    expect(result.profileVisibility).toBe('PRIVATE');
-    expect(result.showActivity).toBe(false);
-    expect(result.showEmail).toBe(true);
-    expect(result.showCompany).toBe(false);
-    expect(result.allowMessaging).toBe(false);
+    expect(result.preferences).toBeUndefined();
+    expect(result.settings).toBeUndefined();
+    expect(result.activity).toEqual([]);
   });
 });
 
-// ── removeProfilePicture ──────────────────────────────────────────────────────
+describe('updateUserProfile', () => {
+  it('PATCHes /users/me with only the allowed, defined fields', async () => {
+    api.on('patchCurrentUser', ({ body }) => ({ ...user, ...body }));
 
-describe('removeProfilePicture', () => {
-  it('should DELETE /users/me/picture', async () => {
-    mockDelete.mockResolvedValue({});
+    const result = await updateUserProfile({
+      firstName: 'Hông',
+      bio: 'Architektin',
+      username: 'ignored' as never,
+      termsAccepted: true,
+    });
 
+    expect(api.calls('patchCurrentUser')[0].body).toEqual({
+      firstName: 'Hông',
+      bio: 'Architektin',
+      termsAccepted: true,
+    });
+    expect(result.username).toBe('hong.an');
+  });
+});
+
+describe('updateUserPreferences (PATCH /users/me/settings)', () => {
+  it('sends theme and timezone with lower-case enums, so the timezone is stored', async () => {
+    api.on('updateUserSettings', ({ body }) => settings({ ...body }));
+
+    const result = await updateUserPreferences({ theme: 'DARK', timezone: 'Europe/Berlin' });
+
+    const [call] = api.calls('updateUserSettings');
+    expect(call.method).toBe('PATCH');
+    expect(call.body).toEqual({ theme: 'dark', timezone: 'Europe/Berlin' });
+    expect(result.theme).toBe('DARK');
+    expect(result.timezone).toBe('Europe/Berlin');
+  });
+
+  it('sends the notification channels and frequencies', async () => {
+    api.on('updateUserSettings', ({ body }) => settings({ ...body }));
+
+    const result = await updateUserPreferences({
+      notificationChannels: { email: false, inApp: true, push: true },
+      notificationFrequency: 'WEEKLY_DIGEST',
+      qnaNotificationFrequency: 'DAILY',
+    });
+
+    expect(api.calls('updateUserSettings')[0].body).toEqual({
+      emailNotifications: false,
+      inAppNotifications: true,
+      pushNotifications: true,
+      notificationFrequency: 'weekly_digest',
+      qnaNotificationFrequency: 'daily',
+    });
+    expect(result.notificationFrequency).toBe('WEEKLY_DIGEST');
+    expect(result.qnaNotificationFrequency).toBe('DAILY');
+  });
+});
+
+describe('updateUserSettings (privacy, PATCH /users/me/settings)', () => {
+  it('maps showActivity to showActivityHistory and back', async () => {
+    api.on('updateUserSettings', ({ body }) => settings({ ...body }));
+
+    const result = await updateUserSettings({
+      profileVisibility: 'PRIVATE',
+      showActivity: false,
+      allowMessaging: false,
+    });
+
+    expect(api.calls('updateUserSettings')[0].body).toEqual({
+      profileVisibility: 'private',
+      showActivityHistory: false,
+      allowMessaging: false,
+    });
+    expect(result).toMatchObject({
+      profileVisibility: 'PRIVATE',
+      showActivity: false,
+      allowMessaging: false,
+    });
+  });
+});
+
+describe('profile picture', () => {
+  const upload = {
+    uploadUrl: 'https://s3.example.com/upload',
+    fileId: 'file-abc',
+    s3Key: 'users/hong.an/picture.jpg',
+    fileExtension: 'jpg',
+    expiresInMinutes: 15,
+  };
+
+  it('removes the own picture', async () => {
     await removeProfilePicture();
 
-    expect(mockDelete).toHaveBeenCalledWith('/users/me/picture');
+    expect(api.calls('removeOwnProfilePicture')).toHaveLength(1);
   });
-});
 
-// ── requestPresignedUrl ───────────────────────────────────────────────────────
-
-describe('requestPresignedUrl', () => {
-  it('should POST /users/me/picture/presigned-url and map fields', async () => {
+  it('requests a presigned URL and maps fileId and uploadUrl', async () => {
     const now = Date.now();
     vi.spyOn(Date, 'now').mockReturnValue(now);
-
-    mockPost.mockResolvedValue({
-      data: {
-        fileId: 'file-abc',
-        uploadUrl: 'https://s3.example.com/upload',
-        s3Key: 'users/u1/picture.jpg',
-        expiresInMinutes: 15,
-      },
-    });
+    api.on('requestProfilePictureUploadUrl', () => upload);
 
     const result = await requestPresignedUrl({
       fileName: 'photo.jpg',
@@ -425,104 +229,63 @@ describe('requestPresignedUrl', () => {
       mimeType: 'image/jpeg',
     });
 
-    expect(mockPost).toHaveBeenCalledWith('/users/me/picture/presigned-url', {
+    expect(api.calls('requestProfilePictureUploadUrl')[0].body).toEqual({
       fileName: 'photo.jpg',
       fileSize: 1024,
       mimeType: 'image/jpeg',
     });
-    expect(result.uploadId).toBe('file-abc');
-    expect(result.presignedUrl).toBe('https://s3.example.com/upload');
-    expect(result.s3Key).toBe('users/u1/picture.jpg');
-    expect(result.expiresAt).toBe(new Date(now + 15 * 60 * 1000).toISOString());
+    expect(result).toEqual({
+      uploadId: 'file-abc',
+      presignedUrl: 'https://s3.example.com/upload',
+      s3Key: 'users/hong.an/picture.jpg',
+      expiresAt: new Date(now + 15 * 60 * 1000).toISOString(),
+    });
   });
 
-  it('should default expiresInMinutes to 15 when absent in response', async () => {
-    const now = Date.now();
-    vi.spyOn(Date, 'now').mockReturnValue(now);
-
-    mockPost.mockResolvedValue({
-      data: { fileId: 'f1', uploadUrl: 'https://s3.x.com', s3Key: 'k' },
-    });
-
-    const result = await requestPresignedUrl({
-      fileName: 'x.jpg',
-      fileSize: 1,
-      mimeType: 'image/jpeg',
-    });
-
-    expect(result.expiresAt).toBe(new Date(now + 15 * 60 * 1000).toISOString());
-  });
-});
-
-// ── confirmUpload ─────────────────────────────────────────────────────────────
-
-describe('confirmUpload', () => {
-  it('should POST /users/me/picture/confirm and map profilePictureUrl→cloudFrontUrl', async () => {
-    mockPost.mockResolvedValue({
-      data: { profilePictureUrl: 'https://cdn.example.com/photo.jpg' },
-    });
+  it('confirms the upload and maps profilePictureUrl to cloudFrontUrl', async () => {
+    api.on('confirmProfilePictureUpload', () => ({
+      profilePictureUrl: 'https://cdn.example.com/photo.jpg',
+    }));
 
     const result = await confirmUpload('upload-1', { fileExtension: 'jpg', checksum: '' });
 
-    expect(mockPost).toHaveBeenCalledWith('/users/me/picture/confirm', {
+    expect(api.calls('confirmProfilePictureUpload')[0].body).toEqual({
       fileId: 'upload-1',
       fileExtension: 'jpg',
       checksum: '',
     });
-    expect(result.cloudFrontUrl).toBe('https://cdn.example.com/photo.jpg');
-    expect(result.uploadId).toBe('upload-1');
-    expect(result.status).toBe('CONFIRMED');
-  });
-});
-
-// ── requestPresignedUrlForUser (admin) ────────────────────────────────────────
-
-describe('requestPresignedUrlForUser', () => {
-  it('should POST /users/{username}/picture/presigned-url', async () => {
-    mockPost.mockResolvedValue({
-      data: {
-        fileId: 'f2',
-        uploadUrl: 'https://s3.x.com/url',
-        s3Key: 'users/admin-user/pic.jpg',
-        expiresInMinutes: 10,
-      },
+    expect(result).toEqual({
+      uploadId: 'upload-1',
+      status: 'CONFIRMED',
+      cloudFrontUrl: 'https://cdn.example.com/photo.jpg',
     });
+  });
 
-    const result = await requestPresignedUrlForUser('admin-user', {
-      fileName: 'pic.jpg',
+  it('requests and confirms a picture for another user (admin)', async () => {
+    api.on('requestProfilePictureUploadUrlForUser', () => upload);
+    api.on('confirmProfilePictureUploadForUser', () => ({
+      profilePictureUrl: 'https://cdn.example.com/pic.jpg',
+    }));
+
+    const requested = await requestPresignedUrlForUser('matthias.keller', {
+      fileName: 'pic.png',
       fileSize: 2048,
       mimeType: 'image/png',
     });
-
-    expect(mockPost).toHaveBeenCalledWith('/users/admin-user/picture/presigned-url', {
-      fileName: 'pic.jpg',
-      fileSize: 2048,
-      mimeType: 'image/png',
-    });
-    expect(result.uploadId).toBe('f2');
-    expect(result.presignedUrl).toBe('https://s3.x.com/url');
-  });
-});
-
-// ── confirmUploadForUser (admin) ──────────────────────────────────────────────
-
-describe('confirmUploadForUser', () => {
-  it('should POST /users/{username}/picture/confirm', async () => {
-    mockPost.mockResolvedValue({
-      data: { profilePictureUrl: 'https://cdn.x.com/pic.jpg' },
-    });
-
-    const result = await confirmUploadForUser('target-user', 'upload-99', {
+    const confirmed = await confirmUploadForUser('matthias.keller', 'upload-99', {
       fileExtension: 'png',
       checksum: 'abc123',
     });
 
-    expect(mockPost).toHaveBeenCalledWith('/users/target-user/picture/confirm', {
+    expect(api.calls('requestProfilePictureUploadUrlForUser')[0].params).toEqual({
+      username: 'matthias.keller',
+    });
+    expect(requested.uploadId).toBe('file-abc');
+    expect(api.calls('confirmProfilePictureUploadForUser')[0].body).toEqual({
       fileId: 'upload-99',
       fileExtension: 'png',
       checksum: 'abc123',
     });
-    expect(result.cloudFrontUrl).toBe('https://cdn.x.com/pic.jpg');
-    expect(result.status).toBe('CONFIRMED');
+    expect(confirmed.cloudFrontUrl).toBe('https://cdn.example.com/pic.jpg');
   });
 });

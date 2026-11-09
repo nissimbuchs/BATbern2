@@ -6,7 +6,7 @@
 
 export type UserRole = 'organizer' | 'speaker' | 'partner' | 'attendee';
 
-/** Preferences held in the auth context (not the wire `UserPreferences` of user-api). */
+/** Preferences held in the auth context (not the wire `UserSettings` of user-api). */
 export interface UserContextPreferences {
   language: 'en' | 'de' | 'fr' | 'it';
   theme: 'light' | 'dark';

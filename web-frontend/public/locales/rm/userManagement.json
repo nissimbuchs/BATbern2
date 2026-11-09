@@ -286,7 +286,8 @@
       "allowMessaging": "Permetter messadis directs d'auters utilisaders",
       "viewPolicy": "Vesair la politica da protecziun dals datas",
       "save": "Memorisar ils parameters da protecziun dals datas"
-    }
+    },
+    "saveFailed": "Memorisar n’è betg reussì. Controllescha las endataziuns ed emprova anc ina giada."
   },
   "profile": {
     "personalInfo": "Infurmaziuns persunalas",

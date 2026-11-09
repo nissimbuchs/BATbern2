@@ -6,6 +6,8 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.mock.http.MockHttpInputMessage;
 import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MissingRequestHeaderException;
@@ -44,6 +46,23 @@ class ClientErrorClassifierTest {
                 new MissingRequestHeaderException("X-Attendee-Username", parameter));
 
         assertThat(result).map(ClientErrorClassifier.ClientError::status).contains(HttpStatus.BAD_REQUEST);
+    }
+
+    /**
+     * Story 4.9: an unknown enum value or malformed JSON in a request body answered 500 in CUMS and
+     * PCS, which have no own handler for it (EMS has one). It is the client's mistake: 400, with a
+     * fixed message that does not echo Jackson's internals (class names).
+     */
+    @Test
+    void should_return400WithoutParserDetails_when_requestBodyNotReadable() {
+        Optional<ClientErrorClassifier.ClientError> result = ClientErrorClassifier.classify(
+                new HttpMessageNotReadableException(
+                        "JSON parse error: Cannot construct instance of `x.y.ThemeEnum`",
+                        new MockHttpInputMessage(new byte[0])));
+
+        assertThat(result).isPresent();
+        assertThat(result.get().status()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(result.get().message()).isEqualTo("Malformed request body").doesNotContain("ThemeEnum");
     }
 
     @Test

@@ -1665,14 +1665,14 @@ sequenceDiagram
     LD-->>I: language, fallback de for missing keys
     Note over B: prerendered public pages paint in German first, then switch on mount
     opt user is signed in, once per login
-        LS->>API: GET /users/me?include=preferences
-        API-->>LS: preferences.language
+        LS->>API: GET /users/me?include=settings
+        API-->>LS: settings.language
         LS->>I: changeLanguage
     end
     opt user picks a language
         SW->>I: changeLanguage, set html lang
         I->>B: languageChanged handler writes localStorage
-        SW->>API: PUT /users/me/preferences language, signed-in users only
+        SW->>API: PATCH /users/me/settings language, signed-in users only
     end
     Note over API: every API request carries Accept-Language = i18n.language
 ```
@@ -1823,7 +1823,7 @@ const LanguageSwitcher: React.FC = () => {
     document.documentElement.lang = newLang;
     localStorage.setItem('batbern-language', newLang);
     if (isAuthenticated) {
-      await updateUserPreferences({ language: newLang }); // PUT /users/me/preferences, errors only logged
+      await updateUserSettings({ language: newLang }); // PATCH /users/me/settings, errors only logged
     }
   };
   // renders a native <select>
@@ -1844,11 +1844,11 @@ account settings (not verified 2026-11-04).
 `uiStore` has a `locale` field with `setLocale`, which only writes `batbern-ui-locale` to
 localStorage. It does **not** call `i18n.changeLanguage`, and no component reads it to drive the
 UI language (checked by grep, 2026-11-04). The language source of truth is i18next plus
-`batbern-language` in localStorage, and `preferences.language` in CUMS for signed-in users.
+`batbern-language` in localStorage, and `settings.language` in CUMS for signed-in users.
 
 **Persistence**:
 - LocalStorage: `batbern-language` (written by the `languageChanged` handler and the switcher)
-- Database: `user_profiles.pref_language` in CUMS, written through `PUT /users/me/preferences`
+- Database: `user_profiles.pref_language` in CUMS, written through `PATCH /users/me/settings` (Story 4.9)
 
 ### Date & Time Formatting
 

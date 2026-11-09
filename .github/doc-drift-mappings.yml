@@ -23,6 +23,23 @@ mappings:
       - "docs/security/owasp-llm-agentic-checklist.md"
       - "docs/architecture/08-operations-security.md"
 
+  # ── Settings stores (Story 4.9) ─────────────────────────────────────────────
+  - source_pattern: "services/event-management-service/src/main/java/ch/batbern/events/service/AdminSettingsService.java"
+    docs:
+      - "docs/architecture/06-backend-architecture.md"
+      - "docs/architecture/03-data-architecture.md"
+  - source_pattern: "services/event-management-service/src/main/java/ch/batbern/events/service/PresentationSettings.java"
+    docs:
+      - "docs/architecture/06-backend-architecture.md"
+      - "docs/architecture/03-data-architecture.md"
+  - source_pattern: "services/company-user-management-service/src/main/java/ch/batbern/companyuser/service/UserSettingsService.java"
+    docs:
+      - "docs/architecture/04-api-user-management.md"
+      - "docs/architecture/06-backend-architecture.md"
+  - source_pattern: "services/event-management-service/src/main/java/ch/batbern/events/service/EventTaskService.java"
+    docs:
+      - "docs/architecture/06a-workflow-state-machines.md"
+
   # ── Company / User Management Service ──────────────────────────────────────
   - source_pattern: "services/company-user-management-service/"
     docs:

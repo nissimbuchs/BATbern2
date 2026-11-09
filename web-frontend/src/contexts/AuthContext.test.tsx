@@ -43,7 +43,8 @@ vi.mock('@services/auth/authService', () => ({
 import { authService } from '@services/auth/authService';
 const mockAuthService = vi.mocked(authService);
 
-// Story 12.1: AuthContext hydrates company + preferences from GET /users/me on every
+// Story 12.1: AuthContext hydrates company + preferences from GET /users/me (include=settings,
+// Story 4.9) on every
 // login/init (hydrateUserFromDb). Stubbed at the HTTP boundary, the real userApi
 // and partnerApi run. Re-registering the same route replaces the previous reply.
 let http: MockAdapter;
@@ -275,7 +276,7 @@ describe('AuthContext — Multi-Role Support (Story 9.5)', () => {
       usersMeReplies({
         roles: ['ORGANIZER'],
         companyId: 'Swiss IT Solutions AG',
-        preferences: {
+        settings: {
           language: 'fr',
           theme: 'dark',
           emailNotifications: false,
@@ -296,7 +297,7 @@ describe('AuthContext — Multi-Role Support (Story 9.5)', () => {
       usersMeReplies({
         roles: ['SPEAKER'],
         companyId: 'Acme AG',
-        preferences: { language: 'de', theme: 'light' },
+        settings: { language: 'de', theme: 'light' },
       });
 
       const { result } = renderHook(() => useAuth(), { wrapper });
@@ -313,7 +314,7 @@ describe('AuthContext — Multi-Role Support (Story 9.5)', () => {
       usersMeReplies({
         roles: ['ATTENDEE'],
         companyId: 'Acme AG',
-        preferences: { language: 'en' },
+        settings: { language: 'en' },
       });
 
       const { result } = renderHook(() => useAuth(), { wrapper });
@@ -477,7 +478,7 @@ describe('AuthContext — Multi-Role Support (Story 9.5)', () => {
       usersMeReplies({
         roles: ['attendee'],
         companyId: undefined,
-        preferences: { language: 'de' },
+        settings: { language: 'de' },
       });
 
       const { result } = renderHook(() => useAuth(), { wrapper });

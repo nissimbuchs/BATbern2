@@ -46,8 +46,9 @@ export type AdditionalEmail = components['schemas']['AdditionalEmail'];
 export type UserRole = 'ORGANIZER' | 'SPEAKER' | 'PARTNER' | 'ATTENDEE';
 
 /**
- * The UI's view of the wire `UserPreferences` (user-api): upper-case enums, nested channels.
- * `userAccountApi` maps between the two. Story 17.10 merges the user profile paths.
+ * The UI's view of the display and notification part of the wire `UserSettings` (user-api):
+ * upper-case enums, nested channels. `userAccountApi` maps between the two. Story 4.9 merged
+ * the former preferences into the one settings resource; the account page keeps two views.
  */
 export interface UserPreferencesView {
   theme: 'LIGHT' | 'DARK' | 'AUTO';
@@ -66,7 +67,7 @@ export interface UserPreferencesView {
   qnaNotificationFrequency: 'LIVE' | 'DAILY' | 'OFF';
 }
 
-/** The UI's view of the wire `UserSettings` (user-api), mapped in `userAccountApi`. */
+/** The UI's view of the privacy part of the wire `UserSettings` (user-api), mapped in `userAccountApi`. */
 export interface UserSettingsView {
   profileVisibility: 'PUBLIC' | 'MEMBERS_ONLY' | 'PRIVATE';
   showEmail: boolean;

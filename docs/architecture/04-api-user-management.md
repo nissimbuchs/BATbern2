@@ -41,8 +41,7 @@ description: |
 
   **Resource Expansion**:
   - ?include=company: Expands company details
-  - ?include=preferences: Includes user preferences
-  - ?include=settings: Includes account settings
+  - ?include=settings: Includes the user's settings (display, notifications, privacy; Story 4.9)
   - ?include=roles: Includes role information
   - ?include=activity: Includes recent activity history
 
@@ -148,7 +147,7 @@ description: |
   **Resource Expansion**:
   - ?include=company: Expands company details
   - ?include=roles: Includes full role information
-  - ?include=preferences: Includes user preferences
+  - ?include=settings: Includes the user's settings
 
   **Performance**:
   - Basic query: <100ms (P95)
@@ -360,110 +359,43 @@ responses:
     description: Internal server error
 ```
 
-### Preferences and Settings
+### Settings (one resource since Story 4.9)
 
-#### Get User Preferences
-
-```yaml
-GET /api/v1/users/me/preferences
-tags: [User Preferences]
-summary: Get current user preferences
-operationId: getUserPreferences
-description: |
-  Retrieve preferences for the currently authenticated user.
-
-  Includes: theme, language, notification settings, quiet hours
-
-security:
-  - BearerAuth: []
-responses:
-  '200':
-    description: Preferences retrieved successfully
-    content:
-      application/json:
-        schema:
-          $ref: '#/components/schemas/UserPreferences'
-  '401':
-    description: Unauthorized
-  '500':
-    description: Internal server error
-```
-
-#### Update User Preferences
-
-```yaml
-PUT /api/v1/users/me/preferences
-tags: [User Preferences]
-summary: Update current user preferences
-operationId: updateUserPreferences
-description: |
-  Update preferences for the currently authenticated user.
-
-  **Validation**: All preference values validated against allowed enums/formats
-
-security:
-  - BearerAuth: []
-requestBody:
-  required: true
-  content:
-    application/json:
-      schema:
-        $ref: '#/components/schemas/UserPreferences'
-responses:
-  '200':
-    description: Preferences updated successfully
-    content:
-      application/json:
-        schema:
-          $ref: '#/components/schemas/UserPreferences'
-  '400':
-    description: Bad request - validation error
-  '401':
-    description: Unauthorized
-  '500':
-    description: Internal server error
-```
+Display (theme, language, timezone), notifications (channels, frequency, Q&A digest, quiet
+hours) and privacy are one resource. Story 4.9 merged the former `/users/me/preferences` into it
+and replaced the full-replace PUT with a partial PATCH (ADR-013). The storage is unchanged: the
+`UserPreferences` and `UserSettings` embeddables on `user_profiles`. The timezone is stored with
+the other settings; before, the frontend sent it to `/users/me/preferences`, which dropped it.
+Other services read the settings with `?include=settings` on `/internal/users/{username}`.
 
 #### Get User Settings
 
 ```yaml
 GET /api/v1/users/me/settings
 tags: [User Settings]
-summary: Get current user settings
 operationId: getUserSettings
-description: |
-  Retrieve account settings for the currently authenticated user.
-
-  Includes: privacy controls, account preferences, security settings
-
 security:
   - BearerAuth: []
 responses:
   '200':
-    description: Settings retrieved successfully
     content:
       application/json:
         schema:
-          $ref: '#/components/schemas/UserSettings'
+          $ref: '#/components/schemas/UserSettings'   # all fields of both groups
   '401':
     description: Unauthorized
-  '500':
-    description: Internal server error
 ```
 
-#### Update User Settings
+#### Change User Settings
 
 ```yaml
-PUT /api/v1/users/me/settings
+PATCH /api/v1/users/me/settings
 tags: [User Settings]
-summary: Update current user settings
 operationId: updateUserSettings
 description: |
-  Update account settings for the currently authenticated user.
-
-  **Privacy Controls**: Profile visibility, contact information display
-  **Security Settings**: Two-factor authentication enablement
-
+  Partial update: only the fields in the body change. Returns the whole settings object.
+  An unknown enum value, a malformed quiet hour or a timezone that is not an IANA zone id
+  answers 400.
 security:
   - BearerAuth: []
 requestBody:
@@ -471,10 +403,9 @@ requestBody:
   content:
     application/json:
       schema:
-        $ref: '#/components/schemas/UserSettings'
+        $ref: '#/components/schemas/UpdateUserSettingsRequest'   # all optional, no defaults
 responses:
   '200':
-    description: Settings updated successfully
     content:
       application/json:
         schema:
@@ -483,8 +414,6 @@ responses:
     description: Bad request - validation error
   '401':
     description: Unauthorized
-  '500':
-    description: Internal server error
 ```
 
 ### Role Management
@@ -1339,10 +1268,9 @@ other service consumes them and there is no message bus (Story 17.2 part B, 2026
 **Resource Expansion**:
 - `?include=company`: Expands company details
 - `?include=roles`: Includes full role information
-- `?include=preferences`: Includes user preferences
-- `?include=settings`: Includes account settings
+- `?include=settings`: Includes the user's settings (display, notifications, privacy)
 - `?include=activity`: Includes recent activity history
-- Multiple expansions: `?include=company,roles,preferences`
+- Multiple expansions: `?include=company,roles,settings`
 - Performance target: <150ms (P95) with all expansions
 
 ### Security & Authorization

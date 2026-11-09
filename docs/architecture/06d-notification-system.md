@@ -211,7 +211,7 @@ sequenceDiagram
     SCH->>SRS: processReminders
     SRS->>SRS: send TIER_3 reminder to the speaker, 3 days before the deadline
     SRS->>NS: createAndSendEmailNotification SPEAKER_ESCALATION, HIGH
-    NS->>CUMS: GET /internal/users/organizer?include=preferences
+    NS->>CUMS: GET /internal/users/organizer?include=settings
     alt email notifications off, or now inside quiet hours
         NS-->>SRS: skipped, no row
     else send
@@ -287,7 +287,7 @@ so that nobody looks for it:
 `pref_in_app_notifications`, `pref_push_notifications`, `pref_notification_frequency`,
 `pref_quiet_hours_start`, `pref_quiet_hours_end`, `pref_qna_notification_frequency`, plus
 `pref_language` and `pref_theme`). There is no `user_preferences` JSONB column. Users edit them
-through `PUT /api/v1/users/me/preferences`.
+through `PATCH /api/v1/users/me/settings` (one settings resource since Story 4.9).
 
 **Fields** (API names):
 - `emailNotifications` (boolean)
@@ -363,8 +363,8 @@ public UserResponse getUserByUsername(String username) {
 }
 
 public UserPreferences getPreferences(String username) {
-    // GET {cums}/internal/users/{username}?include=preferences  (not cached)
-    // #1146: CUMS has no /api/v1/users/{username}/preferences
+    // GET {cums}/internal/users/{username}?include=settings  (not cached)
+    // #1146; Story 4.9 merged the former preferences into the settings include
 }
 
 public List<String> getOrganizerUsernames() {

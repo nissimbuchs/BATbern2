@@ -399,7 +399,7 @@ flowchart TB
 flowchart TB
     subgraph api["Controllers"]
         A1["CompanyController, LogoController"]
-        A2["UserController, UserSettingsController,<br/>UserPreferencesController, PublicUserController,<br/>PublicOrganizerController"]
+        A2["UserController, UserSettingsController,<br/>PublicUserController,<br/>PublicOrganizerController"]
         A3["UserMergeController"]
         A4["WatchPairingController, WatchAuthController"]
         A5["PresentationSettingsController"]

@@ -1,224 +1,164 @@
 /**
- * User API Tests
- * Story 1.17: Tests for type-safe user API wrappers
+ * userApi against the MSW harness (Story 1.17; Story 4.9 moved it off axios-mock-adapter and
+ * onto the one settings resource).
+ *
+ * The real apiClient sends each call; the harness checks it against users-api and answers with
+ * the spec example or a typed override. Settings are one resource: `PATCH /users/me/settings`
+ * with only the fields that change; `/users/me/preferences` no longer exists.
  */
-
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import MockAdapter from 'axios-mock-adapter';
+import { describe, it, expect } from 'vitest';
+import { HttpResponse } from 'msw';
+import { api } from '@/test/msw/api';
 import apiClient from './apiClient';
 import {
   getPublicUser,
   getUserProfile,
-  updateUserPreferences,
+  updateUserSettings,
   uploadProfilePictureFromUrl,
+  type UserSettingsResponse,
 } from './userApi';
-import { UserProfileResponse, UpdatePreferencesResponse } from '@/types/user';
 
-describe('User API', () => {
-  let mockAxios: MockAdapter;
+const settings = (over: Partial<UserSettingsResponse> = {}): UserSettingsResponse => ({
+  theme: 'auto',
+  language: 'de',
+  timezone: 'Europe/Zurich',
+  emailNotifications: true,
+  inAppNotifications: true,
+  pushNotifications: false,
+  notificationFrequency: 'immediate',
+  qnaNotificationFrequency: 'live',
+  quietHoursStart: null,
+  quietHoursEnd: null,
+  profileVisibility: 'public',
+  showEmail: false,
+  showCompany: true,
+  showActivityHistory: true,
+  allowMessaging: true,
+  allowCalendarSync: false,
+  twoFactorEnabled: false,
+  ...over,
+});
 
-  beforeEach(() => {
-    mockAxios = new MockAdapter(apiClient);
-  });
-
-  afterEach(() => {
-    mockAxios.restore();
-  });
-
+describe('userApi', () => {
   describe('getUserProfile', () => {
-    it('should_fetchUserProfile_when_noIncludesProvided', async () => {
-      const mockResponse: UserProfileResponse = {
-        userId: 'user-123',
-        email: 'john.doe@example.com',
-        firstName: 'John',
-        lastName: 'Doe',
-        currentRole: 'organizer',
-        availableRoles: ['organizer', 'speaker'],
-        companyId: 'company-456',
-        profilePhotoUrl: 'https://cdn.example.com/photo.jpg',
-        preferences: {
-          language: 'de',
-          notifications: {
-            emailEnabled: true,
-            inAppEnabled: true,
-          },
-          theme: 'light',
-        },
-      };
+    it('reads /users/me without an include by default', async () => {
+      const user = await getUserProfile();
 
-      mockAxios.onGet('/users/me').reply(200, mockResponse);
-
-      const result = await getUserProfile();
-
-      expect(result).toEqual(mockResponse);
+      const [call] = api.calls('getCurrentUser');
+      expect(call.query.has('include')).toBe(false);
+      expect(user.id).toBeTruthy();
     });
 
-    it('should_fetchUserProfileWithIncludes_when_includesProvided', async () => {
-      const mockResponse: UserProfileResponse = {
-        userId: 'user-123',
-        email: 'john.doe@example.com',
-        firstName: 'John',
-        lastName: 'Doe',
-        currentRole: 'organizer',
-        availableRoles: ['organizer', 'speaker'],
-        companyId: 'company-456',
-        preferences: {
-          language: 'de',
-          notifications: {
-            emailEnabled: true,
-            inAppEnabled: true,
-          },
-          theme: 'light',
-        },
-      };
+    it('asks for roles and the merged settings with include', async () => {
+      api.on('getCurrentUser', () => ({
+        id: 'anna.meier',
+        email: 'anna.meier@example.com',
+        firstName: 'Anna',
+        lastName: 'Meier',
+        roles: ['SPEAKER' as const],
+        active: true,
+        createdAt: '2025-01-15T10:00:00Z',
+        updatedAt: '2025-01-15T10:00:00Z',
+        additionalEmails: [],
+        settings: settings({ language: 'fr' }),
+      }));
 
-      mockAxios.onGet('/users/me', { params: { include: 'roles,preferences' } }).reply((config) => {
-        expect(config.params?.include).toBe('roles,preferences');
-        return [200, mockResponse];
-      });
+      const user = await getUserProfile(['roles', 'settings']);
 
-      const result = await getUserProfile(['roles', 'preferences']);
-
-      expect(result).toEqual(mockResponse);
+      expect(api.calls('getCurrentUser')[0].query.get('include')).toBe('roles,settings');
+      expect(user.settings?.language).toBe('fr');
     });
 
-    it('should_throwError_when_userNotFound', async () => {
-      mockAxios.onGet('/users/me').reply(404, { message: 'User not found' });
+    it('rejects a 401', async () => {
+      api.on('getCurrentUser', () =>
+        HttpResponse.json({ message: 'Unauthorized' }, { status: 401 })
+      );
 
-      await expect(getUserProfile()).rejects.toThrow();
-    });
-
-    it('should_throwError_when_unauthorized', async () => {
-      mockAxios.onGet('/users/me').reply(401, { message: 'Unauthorized' });
-
-      await expect(getUserProfile()).rejects.toThrow();
+      await expect(getUserProfile()).rejects.toMatchObject({ response: { status: 401 } });
     });
   });
 
-  describe('updateUserPreferences', () => {
-    it('should_updateLanguagePreference_when_validRequestProvided', async () => {
-      const mockResponse: UpdatePreferencesResponse = {
-        success: true,
-        preferences: {
-          language: 'en',
-          notifications: {
-            emailEnabled: true,
-            inAppEnabled: true,
-          },
-          theme: 'light',
-        },
-      };
+  describe('updateUserSettings (PATCH /users/me/settings)', () => {
+    it('sends only the fields that change and returns the whole object', async () => {
+      api.on('updateUserSettings', ({ body }) => settings({ ...body }));
 
-      mockAxios.onPut('/users/me/preferences', { language: 'en' }).reply((config) => {
-        expect(JSON.parse(config.data)).toEqual({ language: 'en' });
-        return [200, mockResponse];
+      const result = await updateUserSettings({ language: 'en' });
+
+      const [call] = api.calls('updateUserSettings');
+      expect(call.method).toBe('PATCH');
+      expect(call.body).toEqual({ language: 'en' });
+      expect(result.language).toBe('en');
+      expect(result.timezone).toBe('Europe/Zurich');
+    });
+
+    it('stores theme and timezone in one call', async () => {
+      api.on('updateUserSettings', ({ body }) => settings({ ...body }));
+
+      const result = await updateUserSettings({ theme: 'dark', timezone: 'America/New_York' });
+
+      expect(api.calls('updateUserSettings')[0].body).toEqual({
+        theme: 'dark',
+        timezone: 'America/New_York',
       });
-
-      const result = await updateUserPreferences({ language: 'en' });
-
-      expect(result).toEqual(mockResponse);
-      expect(result.preferences.language).toBe('en');
+      expect(result).toMatchObject({ theme: 'dark', timezone: 'America/New_York' });
     });
 
-    it('should_updateNotificationPreferences_when_validRequestProvided', async () => {
-      const request = {
-        notifications: {
-          emailEnabled: false,
-          inAppEnabled: true,
-        },
-      };
+    it('rejects with the 400 CUMS answers for an invalid value', async () => {
+      api.on('updateUserSettings', () =>
+        HttpResponse.json({ message: 'Not an IANA time zone id' }, { status: 400 })
+      );
 
-      const mockResponse: UpdatePreferencesResponse = {
-        success: true,
-        preferences: {
-          language: 'de',
-          notifications: {
-            emailEnabled: false,
-            inAppEnabled: true,
-          },
-          theme: 'light',
-        },
-      };
-
-      mockAxios.onPut('/users/me/preferences', request).reply(200, mockResponse);
-
-      const result = await updateUserPreferences(request);
-
-      expect(result).toEqual(mockResponse);
-      expect(result.preferences.notifications.emailEnabled).toBe(false);
-    });
-
-    it('should_updateThemePreference_when_validRequestProvided', async () => {
-      const mockResponse: UpdatePreferencesResponse = {
-        success: true,
-        preferences: {
-          language: 'de',
-          notifications: {
-            emailEnabled: true,
-            inAppEnabled: true,
-          },
-          theme: 'dark',
-        },
-      };
-
-      mockAxios.onPut('/users/me/preferences', { theme: 'dark' }).reply(200, mockResponse);
-
-      const result = await updateUserPreferences({ theme: 'dark' });
-
-      expect(result).toEqual(mockResponse);
-      expect(result.preferences.theme).toBe('dark');
-    });
-
-    it('should_throwError_when_invalidLanguageProvided', async () => {
-      mockAxios.onPut('/users/me/preferences').reply(400, {
-        message: 'Invalid language code',
+      await expect(updateUserSettings({ timezone: 'Mars/Olympus' })).rejects.toMatchObject({
+        response: { status: 400 },
       });
-
-      await expect(updateUserPreferences({ language: 'en' })).rejects.toThrow();
     });
   });
 
   describe('getPublicUser', () => {
-    it('should_getPublicProjectionWithoutAuth_when_called', async () => {
-      // The request interceptor strips the Skip-Auth marker before the adapter sees it, so
-      // record it with an interceptor that runs first (the last-added runs first).
+    it('reads the public projection of a user without the login token', async () => {
+      // The request interceptor strips the Skip-Auth marker before sending, so record it with an
+      // interceptor that runs first (the last-added runs first).
       const skipAuth: string[] = [];
       const id = apiClient.interceptors.request.use((config) => {
         if (config.headers?.['Skip-Auth'] === 'true') skipAuth.push(config.url ?? '');
         return config;
       });
-      const user = { username: 'alice', firstName: 'Alice', profilePictureUrl: null };
-      mockAxios.onGet('/public/users/alice').reply(200, user);
+      api.on('getPublicUserByUsername', ({ params }) => ({
+        username: params.username,
+        firstName: 'Alice',
+        lastName: 'Brünnimann',
+      }));
 
       try {
-        await expect(getPublicUser('alice')).resolves.toEqual(user);
-        expect(skipAuth).toEqual(['/public/users/alice']);
+        await expect(getPublicUser('alice.bruennimann')).resolves.toMatchObject({
+          username: 'alice.bruennimann',
+        });
+        expect(skipAuth).toEqual(['/public/users/alice.bruennimann']);
       } finally {
         apiClient.interceptors.request.eject(id);
       }
     });
 
-    it('should_passErrorThrough_when_userUnknown', async () => {
-      mockAxios.onGet('/public/users/ghost').reply(404);
+    it('passes a 404 through', async () => {
+      api.on('getPublicUserByUsername', () => HttpResponse.json({}, { status: 404 }));
 
-      await expect(getPublicUser('ghost')).rejects.toMatchObject({ response: { status: 404 } });
+      await expect(getPublicUser('ghost.user')).rejects.toMatchObject({
+        response: { status: 404 },
+      });
     });
   });
 
   describe('uploadProfilePictureFromUrl', () => {
-    it('should_postUrlAndFilename_when_called', async () => {
-      mockAxios
-        .onPost('/users/jane%40example.com/profile-picture/upload-from-url')
-        .reply(200, { profilePictureUrl: 'https://cdn.example.com/p.jpg' });
+    it('posts the URL and filename for the user', async () => {
+      await uploadProfilePictureFromUrl(
+        'jane.doe',
+        'https://img.example.com/p.jpg',
+        'Jane-portrait'
+      );
 
-      await expect(
-        uploadProfilePictureFromUrl(
-          'jane@example.com',
-          'https://img.example.com/p.jpg',
-          'Jane-portrait'
-        )
-      ).resolves.toEqual({ profilePictureUrl: 'https://cdn.example.com/p.jpg' });
-      expect(JSON.parse(mockAxios.history.post[0].data)).toEqual({
+      const [call] = api.calls('uploadProfilePictureFromUrl');
+      expect(call.params).toEqual({ username: 'jane.doe' });
+      expect(call.body).toEqual({
         url: 'https://img.example.com/p.jpg',
         filename: 'Jane-portrait',
       });

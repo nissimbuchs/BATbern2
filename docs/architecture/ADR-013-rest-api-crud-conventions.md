@@ -26,6 +26,24 @@ The staged cleanup in `docs/plans/api-consolidation-plan.md` is essentially comp
 
 See the plan for the per-controller record.
 
+**Story 4.9 (2026-11, API conventions I, breaking, no aliases)** applied §1 to three resources
+that still had more than one endpoint to extend:
+
+- **Tasks:** the verbs `PUT /tasks/{taskId}/complete`, `/reassign` and `/status` fold into the
+  existing `PATCH /tasks/{taskId}` (`status`, `notes`, `dueDate`, `assignedOrganizerUsername`).
+  A status change is a field change here, not a side-effecting transition, so PATCH, not an
+  action POST.
+- **Settings:** application settings have one store, EMS `AdminSettingsService`
+  (`/admin/settings/{key}`); a structured setting is a validated JSON value under its key
+  (`presentation`, moved from CUMS). Its anonymous read is `/public/settings/presentation`, an
+  allowed read variant (§4, auth scope). A user's settings are one resource, `GET` and
+  `PATCH /users/me/settings` (partial); `/users/me/preferences` and the full-replace PUT are gone.
+  Derived configuration (`/public/settings/features`, the gateway `/config`) is not stored and
+  stays where it is.
+- **Nested child:** the abstract analysis moved under its parent,
+  `POST /events/{eventCode}/speakers/{speakerId}/abstract-analysis`, loaded with
+  `findByIdAndEventId` (§5); the noun avoids a verb segment.
+
 ## Context
 
 BATbern has ~13 OpenAPI specs across five services. An audit during the

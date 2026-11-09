@@ -5,7 +5,7 @@ meta {
 }
 
 get {
-  url: {{baseUrl}}/users/me?include=company,preferences,settings
+  url: {{baseUrl}}/users/me?include=company,settings
   body: none
   auth: bearer
 }
@@ -37,15 +37,12 @@ tests {
     }
   });
 
-  test("should include preferences when requested (AC14)", function() {
-    const body = res.getBody();
-    expect(body.preferences).to.exist;
-    // Check for preference fields if they exist
-  });
-
-  test("should include settings when requested (AC14)", function() {
+  test("should include the one settings object when requested (AC14, Story 4.9)", function() {
     const body = res.getBody();
     expect(body.settings).to.exist;
+    expect(body.settings.language).to.be.a('string');
+    expect(body.settings.profileVisibility).to.be.a('string');
+    expect(body.preferences).to.be.undefined;
   });
 
   test("should return in reasonable time with expansions", function() {

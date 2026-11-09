@@ -3,10 +3,10 @@
  * docs/plans/playwright-staging-hardening.md
  *
  * ── Why this exists ─────────────────────────────────────────────────────────────────────
- * `LanguageSync` reads `GET /api/v1/users/me` `preferences.language` and flips the whole UI
+ * `LanguageSync` reads `GET /api/v1/users/me?include=settings` `settings.language` and flips the whole UI
  * to that locale on load. Several test users carry a German preference, which breaks specs
  * that assert English copy. We pin the UI to English by intercepting `/users/me` and forcing
- * `preferences.language = 'en'`.
+ * `settings.language = 'en'` (Story 4.9 merged the former `preferences` into `settings`).
  *
  * ── Why a PASS-THROUGH (not a hand-rolled stub) ─────────────────────────────────────────
  * The original specs returned a *hardcoded minimal* body (`{id,email,preferences}`) with no
@@ -16,7 +16,7 @@
  * A stub that omits those fields lands every organizer/partner spec on the onboarding page
  * instead of the target screen — the exact divergence between local dev (real profile, works)
  * and the mocked test run (stub, redirects). Fetching the REAL response and overriding only
- * `preferences.language` keeps the mock correct against whatever shape `/users/me` evolves to
+ * `settings.language` keeps the mock correct against whatever shape `/users/me` evolves to
  * (role, roles, termsAcceptedAt, emailVerified, avatar, …) — "rewrite-to-reality".
  */
 
@@ -38,7 +38,7 @@ export async function forceUserProfileLanguage(
     try {
       const response = await route.fetch();
       const body = await response.json();
-      body.preferences = { ...(body.preferences ?? {}), language };
+      body.settings = { ...(body.settings ?? {}), language };
       await route.fulfill({ response, json: body });
     } catch {
       // Fail-open: if the real call can't be replayed, let it through unmodified rather

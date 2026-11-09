@@ -91,8 +91,7 @@ export interface paths {
      *
      *     **Resource Expansion**:
      *     - company: Expands company details
-     *     - preferences: Includes user preferences
-     *     - settings: Includes account settings
+     *     - settings: Includes the user's settings (display, notifications, privacy)
      *     - roles: Includes full role information
      *     - activity: Includes recent activity history
      *
@@ -151,7 +150,7 @@ export interface paths {
      *     **Resource Expansion**:
      *     - ?include=company: Expands company details
      *     - ?include=roles: Includes full role information
-     *     - ?include=preferences: Includes user preferences
+     *     - ?include=settings: Includes the user's settings
      *
      *     **Performance**:
      *     - Basic query: <100ms (P95)
@@ -764,38 +763,6 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/users/me/preferences': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Get current user preferences
-     * @description Retrieve preferences for the currently authenticated user.
-     *
-     *     **Acceptance Criteria**: AC6
-     *
-     *     Includes: theme, language, notification settings, quiet hours
-     */
-    get: operations['getUserPreferences'];
-    /**
-     * Update current user preferences
-     * @description Update preferences for the currently authenticated user.
-     *
-     *     **Acceptance Criteria**: AC6
-     *
-     *     **Validation**: All preference values validated against allowed enums/formats
-     */
-    put: operations['updateUserPreferences'];
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
   '/users/me/settings': {
     parameters: {
       query?: never;
@@ -804,29 +771,24 @@ export interface paths {
       cookie?: never;
     };
     /**
-     * Get current user settings
-     * @description Retrieve account settings for the currently authenticated user.
-     *
-     *     **Acceptance Criteria**: AC7
-     *
-     *     Includes: privacy controls, account preferences, security settings
+     * Get the caller's settings
+     * @description The caller's settings as one object: display (theme, language, timezone), notifications
+     *     (channels, frequency, Q&A digest, quiet hours) and privacy. Story 4.9 merged the former
+     *     `/users/me/preferences` into this resource; the storage is unchanged.
      */
     get: operations['getUserSettings'];
-    /**
-     * Update current user settings
-     * @description Update account settings for the currently authenticated user.
-     *
-     *     **Acceptance Criteria**: AC7
-     *
-     *     **Privacy Controls**: Profile visibility, contact information display
-     *     **Security Settings**: Two-factor authentication enablement
-     */
-    put: operations['updateUserSettings'];
+    put?: never;
     post?: never;
     delete?: never;
     options?: never;
     head?: never;
-    patch?: never;
+    /**
+     * Change some of the caller's settings
+     * @description Partial update (ADR-013): only the fields in the body change, every other setting stays as
+     *     it is. Returns the whole settings object. An unknown enum value, a malformed quiet hour or
+     *     a timezone that is not an IANA zone id answers 400.
+     */
+    patch: operations['updateUserSettings'];
     trace?: never;
   };
   '/users/me/additional-emails': {
@@ -1504,7 +1466,7 @@ export interface components {
        */
       termsAcceptedAt?: string | null;
       company?: components['schemas']['Company'] | null;
-      preferences?: components['schemas']['UserPreferences'] | null;
+      /** @description The user's settings, only with `?include=settings`. */
       settings?: components['schemas']['UserSettings'] | null;
       /**
        * @description Story 10.32: additional email addresses registered on this profile.
@@ -1763,7 +1725,12 @@ export interface components {
        */
       alreadyVerified: boolean;
     };
-    UserPreferences: {
+    /**
+     * @description The user's settings, one object (Story 4.9 merged the former UserPreferences into it).
+     *     Display: theme, language, timezone. Notifications: channels, frequency, Q&A digest, quiet
+     *     hours. Privacy: visibility and contact options.
+     */
+    UserSettings: {
       /**
        * @default auto
        * @enum {string}
@@ -1774,6 +1741,12 @@ export interface components {
        * @enum {string}
        */
       language: 'de' | 'en' | 'fr' | 'it' | 'rm' | 'es' | 'fi' | 'nl' | 'ja';
+      /**
+       * @description IANA zone id
+       * @default Europe/Zurich
+       * @example Europe/Zurich
+       */
+      timezone: string | null;
       /** @default true */
       emailNotifications: boolean;
       /** @default true */
@@ -1798,10 +1771,8 @@ export interface components {
       quietHoursStart?: string | null;
       /** @example 07:00 */
       quietHoursEnd?: string | null;
-    };
-    UserSettings: {
       /**
-       * @default members_only
+       * @default public
        * @enum {string}
        */
       profileVisibility: 'public' | 'members_only' | 'private';
@@ -1809,16 +1780,43 @@ export interface components {
       showEmail: boolean;
       /** @default true */
       showCompany: boolean;
-      /** @default false */
+      /** @default true */
       showActivityHistory: boolean;
       /** @default true */
       allowMessaging: boolean;
       /** @default false */
       allowCalendarSync: boolean;
-      /** @example Europe/Zurich */
-      timezone?: string | null;
       /** @default false */
       twoFactorEnabled: boolean;
+    };
+    /**
+     * @description Partial update of the caller's settings: every field is optional and only the fields
+     *     present change. No defaults on purpose, so an absent field never overwrites a stored value.
+     */
+    UpdateUserSettingsRequest: {
+      /** @enum {string} */
+      theme?: 'light' | 'dark' | 'auto';
+      /** @enum {string} */
+      language?: 'de' | 'en' | 'fr' | 'it' | 'rm' | 'es' | 'fi' | 'nl' | 'ja';
+      /** @description IANA zone id, e.g. Europe/Zurich */
+      timezone?: string;
+      emailNotifications?: boolean;
+      inAppNotifications?: boolean;
+      pushNotifications?: boolean;
+      /** @enum {string} */
+      notificationFrequency?: 'immediate' | 'daily_digest' | 'weekly_digest';
+      /** @enum {string} */
+      qnaNotificationFrequency?: 'live' | 'daily' | 'off';
+      quietHoursStart?: string;
+      quietHoursEnd?: string;
+      /** @enum {string} */
+      profileVisibility?: 'public' | 'members_only' | 'private';
+      showEmail?: boolean;
+      showCompany?: boolean;
+      showActivityHistory?: boolean;
+      allowMessaging?: boolean;
+      allowCalendarSync?: boolean;
+      twoFactorEnabled?: boolean;
     };
     UpdateUserRequest: {
       firstName?: string;
@@ -3359,55 +3357,6 @@ export interface operations {
       500: components['responses']['InternalServerError'];
     };
   };
-  getUserPreferences: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Preferences retrieved successfully */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['UserPreferences'];
-        };
-      };
-      401: components['responses']['Unauthorized'];
-      500: components['responses']['InternalServerError'];
-    };
-  };
-  updateUserPreferences: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['UserPreferences'];
-      };
-    };
-    responses: {
-      /** @description Preferences updated successfully */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['UserPreferences'];
-        };
-      };
-      400: components['responses']['BadRequest'];
-      401: components['responses']['Unauthorized'];
-      500: components['responses']['InternalServerError'];
-    };
-  };
   getUserSettings: {
     parameters: {
       query?: never;
@@ -3439,7 +3388,7 @@ export interface operations {
     };
     requestBody: {
       content: {
-        'application/json': components['schemas']['UserSettings'];
+        'application/json': components['schemas']['UpdateUserSettingsRequest'];
       };
     };
     responses: {

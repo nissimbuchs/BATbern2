@@ -395,6 +395,12 @@ been 400s:
   CRITICAL. Validating in `SortParser` fixes this for every service that uses it and keeps
   punctuation — the injection vector Spring Data's guard exists to stop — out of sort expressions
   entirely. (Issue #903.)
+- **A body that does not bind** (malformed JSON, an unknown enum value) raises
+  `HttpMessageNotReadableException`. EMS maps it itself; CUMS and PCS had no handler and answered
+  500. The shared `ClientErrorClassifier`, which every catch-all asks first, now maps it to 400
+  with the fixed message "Malformed request body" (the parser's message names our classes and is
+  not passed on). Found by Story 4.9, when `PATCH /users/me/settings` with `theme: "neon"`
+  answered 500.
 
 ### Circuit Breaker, Bulkhead and Retry
 
@@ -1244,6 +1250,24 @@ Every template-based mail in event-management renders the same way:
   `SpeakerOwnTextMailService` (by status, outreach note, no reminder log). Recorded as `OWN_TEXT`.
 - Not yet on the pipeline: HTML built in Java (`NotificationService`, `QualityReviewService`, Story
   16.12), the partner invite in partner-coordination.
+
+## Settings: one store per kind (Story 4.9)
+
+- **Application settings** live in EMS `app_settings`, read and written only through
+  `AdminSettingsService` (`GET`/`PUT /admin/settings/{key}`, ORGANIZER). A structured setting is
+  a JSON value under its key and validated before it is stored: `venue.coordination.config` and
+  `presentation` (`PresentationSettings`: non-blank `aboutText`, integer `partnerCount` >= 0,
+  no other fields; anything else is a 400). The presenter screen reads it anonymously at
+  `GET /public/settings/presentation` (`PublicSettingsController`, next to
+  `/public/settings/features`); without a stored value it answers the former CUMS defaults. The
+  value moved from the CUMS table `presentation_settings` with EMS V152, which copies the row and
+  drops the table in one statement (a no-op where the table does not exist).
+- **A user's settings** are one CUMS resource, `GET`/`PATCH /users/me/settings`
+  (`UserSettingsService`): display, notifications and privacy in one object, partial update.
+  Storage stays the two embeddables on `user_profiles`. EMS reads language, Q&A frequency and
+  notification settings with `/internal/users/{username}?include=settings`.
+- **Derived configuration** that is not stored (feature flags, the gateway `/config`) is not a
+  setting and stays where it is.
 
 ## Auto-Enrollment on Event Creation
 
