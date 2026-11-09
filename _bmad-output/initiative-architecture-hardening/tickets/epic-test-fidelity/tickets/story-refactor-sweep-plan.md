@@ -3,14 +3,14 @@ title: 'Refactor sweep (epic test fidelity)'
 type: 'refactor'
 ticket: 'sweep'
 created: '2026-11-09'
-status: 'done'
+status: 'built'
 baseline_revision: 'c1a0241740b849442eec50fd567245a568f18cc2'
 route: 'full'
 route_source: 'auto'
 risk: 'medium'
-review: ''
-review_source: ''
-lenses_ran: []
+review: 'quick'
+review_source: 'pinned'
+lenses_ran: ['quick']
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -140,6 +140,18 @@ auto-save block (deferred-work); `useSpeakerPoolHooks.test.ts` still mocks `spea
 ## Plan Change Log
 
 ## Review Triage Log
+
+Review run by the orchestrator: the build-auto agent died after its implementer, before step 4.
+
+| # | Finding | Verdict | Route | Evidence |
+|---|---------|---------|-------|----------|
+| 1 | i18n gate accepts a bare key when any `key_*` sibling exists, with no `count`/`context` check | medium | patch | `hasKey` ignores the call options, and the test pins `['items', true]`. The gate misses real gaps. |
+| 2 | i18n gate accepts an object-valued key | medium | patch | `key in node` is true for an object; i18next then renders "returned an object". |
+| 3 | A `t` received as a parameter is resolved by text position, not by scope | medium | patch | Contradicts the documented rule; gives false RAISED results or wrong baseline counts. |
+| 4 | InMemoryCognito keeps `email_verified` on an e-mail change | medium | patch | Real Cognito resets it, so the assertion in PrimaryEmail IT cannot fail. |
+| 5 | EventForm timer fix lives inside `describe.skip` | medium | patch | AC4 holds only because the test does not run. 17.0 goal: find the cause of the hang and unskip. |
+| 6 | `updateUserRoles` return-type fix has no red test | low | patch | Plan Always rule; a direct test is cheap. |
+| 7 | 06b doc says only the existing-user branch linked the sub | low | patch | The removed `issueInvitationCredentials` self-heal also linked it, as commit 1dd56547 says. |
 
 ## Design Notes
 
