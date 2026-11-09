@@ -178,6 +178,7 @@ vi.mock('aws-amplify/auth', () => ({
   fetchAuthSession: vi.fn(),
   resetPassword: vi.fn(),
   confirmResetPassword: vi.fn(),
+  resendSignUpCode: vi.fn(),
 }));
 
 vi.mock('@aws-amplify/ui-react', () => ({

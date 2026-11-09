@@ -7,7 +7,8 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { looksLikeEmail } from '@/utils/validation/email';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
+import type { Control } from 'react-hook-form';
 import { Box, TextField, Button, Typography, Link, Alert, CircularProgress } from '@mui/material';
 import { ArrowBack, Refresh } from '@mui/icons-material';
 import { useForgotPassword, ForgotPasswordError } from '@hooks/useForgotPassword';
@@ -17,6 +18,19 @@ import { ResendConfirmationAction } from '../ResendConfirmationAction';
 interface ForgotPasswordFormData {
   email: string;
 }
+
+/**
+ * The resend action for an unconfirmed account, fed the address as the user types.
+ * `useWatch` here, not `watch()` in the form: a form-level `watch` re-rendered the whole form
+ * on every keystroke, and 50+ fast keystrokes chained those renders past React's nested-update
+ * limit ("Maximum update depth exceeded"; seen in jsdom, not reproduced in Chromium).
+ */
+const UnconfirmedAccountAction: React.FC<{ control: Control<ForgotPasswordFormData> }> = ({
+  control,
+}) => {
+  const email = useWatch({ control, name: 'email' }) ?? '';
+  return <ResendConfirmationAction email={email} />;
+};
 
 export const ForgotPasswordForm: React.FC = () => {
   const { t } = useTranslation(['auth', 'common']);
@@ -31,7 +45,7 @@ export const ForgotPasswordForm: React.FC = () => {
     handleSubmit,
     formState: { errors, isValid },
     getValues,
-    watch,
+    control,
   } = useForm<ForgotPasswordFormData>({
     mode: 'onBlur',
   });
@@ -83,7 +97,6 @@ export const ForgotPasswordForm: React.FC = () => {
   // no verified email, i.e. it was registered but never confirmed (UserNotFoundException stays
   // suppressed in the hook for anti-enumeration). Offer a fresh confirmation link instead.
   const isUnconfirmedAccount = errorType === 'invalidParameter';
-  const watchedEmail = watch('email') ?? '';
 
   return (
     <Box sx={{ maxWidth: 400, mx: 'auto', mt: 8 }}>
@@ -136,7 +149,7 @@ export const ForgotPasswordForm: React.FC = () => {
           ) : (
             <Typography variant="body2">{t(`auth:forgot.errors.${errorType}`)}</Typography>
           )}
-          {isUnconfirmedAccount && <ResendConfirmationAction email={watchedEmail} />}
+          {isUnconfirmedAccount && <UnconfirmedAccountAction control={control} />}
         </Alert>
       )}
 

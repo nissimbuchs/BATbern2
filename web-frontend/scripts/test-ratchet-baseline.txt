@@ -305,7 +305,6 @@ fe-mock-hooks	web-frontend/src/components/attendee/__tests__/SpeakerSelfNominate
 fe-mock-hooks	web-frontend/src/components/auth/AuthCallbackPage/AuthCallbackPage.test.tsx	2
 fe-mock-hooks	web-frontend/src/components/auth/EmailVerification/EmailVerification.test.tsx	1
 fe-mock-hooks	web-frontend/src/components/auth/ForgotPasswordConfirmation/ForgotPasswordConfirmation.test.tsx	1
-fe-mock-hooks	web-frontend/src/components/auth/ForgotPasswordForm/ForgotPasswordForm.test.tsx	1
 fe-mock-hooks	web-frontend/src/components/auth/LoginForm/LoginForm.test.tsx	1
 fe-mock-hooks	web-frontend/src/components/auth/LogoutPage/LogoutPage.test.tsx	1
 fe-mock-hooks	web-frontend/src/components/auth/RegistrationWizard/RegistrationWizard.test.tsx	1
@@ -525,7 +524,6 @@ fe-mock-services	web-frontend/src/components/TopicBacklogManager/TopicDetailsPan
 fe-mock-services	web-frontend/src/components/attendee/__tests__/CommunityTopicSuggestPanel.test.tsx	1
 fe-mock-services	web-frontend/src/components/attendee/__tests__/SpeakerSelfNominatePanel.test.tsx	1
 fe-mock-services	web-frontend/src/components/auth/AuthCallbackPage/AuthCallbackPage.test.tsx	1
-fe-mock-services	web-frontend/src/components/auth/ForgotPasswordForm/ForgotPasswordForm.test.tsx	1
 fe-mock-services	web-frontend/src/components/auth/LoginForm/LoginForm.test.tsx	2
 fe-mock-services	web-frontend/src/components/auth/RegistrationStep2/RegistrationStep2.test.tsx	1
 fe-mock-services	web-frontend/src/components/auth/ResendConfirmationAction/ResendConfirmationAction.test.tsx	1
