@@ -1165,10 +1165,10 @@ export interface components {
        */
       venue?: components['schemas']['Venue'];
       /**
-       * @description Expanded session list with speakers (only included when ?include=sessions or ?include=speakers).
+       * @description Expanded session list with speakers (only included when ?include=sessions or ?include=speakers). Absent otherwise, never null: the class carries JsonInclude NON_NULL.
        *     Story BAT-109: Archive browsing with session expansion
        */
-      sessions?: components['schemas']['Session'][] | null;
+      sessions?: components['schemas']['Session'][];
       /** @description Public read model only (GET /public/events/*): the speakers the website may show for the published phase. SPEAKERS phase: accepted-or-later speakers without talk title; AGENDA and later: with talk title. Never set by the organizer endpoints. */
       speakers?: components['schemas']['PublicSpeaker'][] | null;
       /** @description Organizer's free-text note on topic selection (Story 5.2). */

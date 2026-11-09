@@ -2975,8 +2975,8 @@ components:
             '
         sessions:
           type: array
-          nullable: true
           description: 'Expanded session list with speakers (only included when ?include=sessions or ?include=speakers).
+            Absent otherwise, never null: the class carries JsonInclude NON_NULL.
 
             Story BAT-109: Archive browsing with session expansion
 
