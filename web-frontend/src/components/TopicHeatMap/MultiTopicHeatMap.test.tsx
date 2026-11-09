@@ -3,7 +3,7 @@
  * work: `attendance` is null until the event has taken place; the tooltip read "null attendees").
  */
 import { describe, expect, it, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { MultiTopicHeatMap, type TopicWithHistory } from './MultiTopicHeatMap';
@@ -57,5 +57,23 @@ describe('MultiTopicHeatMap attendance in the tooltip', () => {
     await user.hover(screen.getByText('72'));
     const tooltip = await screen.findByRole('tooltip', { name: /72/ });
     expect(tooltip).not.toHaveTextContent(/null|NaN|attendees/);
+  });
+});
+
+describe('MultiTopicHeatMap staleness', () => {
+  it('does not call a used topic stale when its staleness score is null', () => {
+    // The anonymous topic projection sends stalenessScore: null; null is no score, not 0.
+    renderMap([
+      {
+        ...topic('Used', [
+          { eventNumber: 70, usedDate: `${year}-02-10T18:00:00Z`, attendance: 40 },
+        ]),
+        stalenessScore: null,
+      },
+    ]);
+
+    // The row's title and its stale marker share one box (the legend has its own icon).
+    const row = screen.getByText('Used').parentElement!;
+    expect(within(row).queryByTestId('WarningIcon')).not.toBeInTheDocument();
   });
 });
