@@ -17,6 +17,7 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { HttpResponse, delay } from 'msw';
 import { Routes, Route } from 'react-router-dom';
+import i18n from '@/i18n/config';
 import { api } from '@/test/msw/api';
 import type { ResponseBody } from '@/test/msw/api';
 import { renderWithAuth, signedInAs } from '@/test/auth';
@@ -120,8 +121,9 @@ describe('EventPage — lifecycle tab shell (Epic 14)', () => {
     api.on('getPublishingStatus', () => nothingPublishable);
   });
 
-  afterEach(() => {
+  afterEach(async () => {
     window.matchMedia = originalMatchMedia;
+    await i18n.changeLanguage('en');
   });
 
   describe('Header', () => {
@@ -365,6 +367,22 @@ describe('EventPage — lifecycle tab shell (Epic 14)', () => {
       await user.click(screen.getByRole('button', { name: 'Back' }));
 
       expect(await screen.findByTestId('events-list-route')).toBeInTheDocument();
+    });
+
+    it('shows the not-found alert, translated, when the event does not exist (404)', async () => {
+      await i18n.changeLanguage('de');
+      api.on('getEvent', () =>
+        HttpResponse.json(
+          { error: 'NOT_FOUND', message: 'Event not found: BATbern999', status: 404 },
+          { status: 404 }
+        )
+      );
+      renderPage();
+
+      expect(await screen.findByText('Veranstaltung nicht gefunden')).toBeInTheDocument();
+      // The client's English error text is not what the organizer sees.
+      expect(screen.queryByText(/requested event was not found/i)).not.toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Zurück' })).toBeInTheDocument();
     });
 
     it('shows the not-found alert when there is no event code to load', async () => {
