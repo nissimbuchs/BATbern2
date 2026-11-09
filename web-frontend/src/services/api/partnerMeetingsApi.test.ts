@@ -185,8 +185,8 @@ describe('Partner Meetings API Client - Story 8.3', () => {
       const result = await getRsvps('meeting-1');
 
       expect(result.rsvps).toHaveLength(2);
-      expect(result.summary.accepted).toBe(1);
-      expect(result.summary.declined).toBe(1);
+      expect(result.summary?.accepted).toBe(1);
+      expect(result.summary?.declined).toBe(1);
     });
 
     it('should_propagateError_when_getRsvpsFails', async () => {

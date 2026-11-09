@@ -47,21 +47,39 @@ describe('SlotAssignmentService (Story 5.7 - Task 4a RED Phase)', () => {
         {
           sessionSlug: 'session-1',
           eventCode: mockEventCode,
+          language: 'de',
           title: 'John Doe - Acme Corp',
           startTime: null,
           endTime: null,
           room: null,
-          speakers: [{ username: 'john.doe', displayName: 'John Doe', companyName: 'Acme Corp' }],
+          speakers: [
+            {
+              username: 'john.doe',
+              firstName: 'John',
+              lastName: 'Doe',
+              company: 'Acme Corp',
+              speakerRole: 'PRIMARY_SPEAKER',
+              isConfirmed: true,
+            },
+          ],
         },
         {
           sessionSlug: 'session-2',
           eventCode: mockEventCode,
+          language: 'de',
           title: 'Jane Smith - Tech Inc',
           startTime: null,
           endTime: null,
           room: null,
           speakers: [
-            { username: 'jane.smith', displayName: 'Jane Smith', companyName: 'Tech Inc' },
+            {
+              username: 'jane.smith',
+              firstName: 'Jane',
+              lastName: 'Smith',
+              company: 'Tech Inc',
+              speakerRole: 'PRIMARY_SPEAKER',
+              isConfirmed: true,
+            },
           ],
         },
       ];
@@ -116,12 +134,22 @@ describe('SlotAssignmentService (Story 5.7 - Task 4a RED Phase)', () => {
       const mockUpdatedSession: Session = {
         sessionSlug: mockSessionSlug,
         eventCode: mockEventCode,
+        language: 'de',
         title: 'John Doe - Acme Corp',
         startTime: timingRequest.startTime,
         endTime: timingRequest.endTime,
         room: timingRequest.room,
         sessionType: timingRequest.sessionType,
-        speakers: [{ username: 'john.doe', displayName: 'John Doe', companyName: 'Acme Corp' }],
+        speakers: [
+          {
+            username: 'john.doe',
+            firstName: 'John',
+            lastName: 'Doe',
+            company: 'Acme Corp',
+            speakerRole: 'PRIMARY_SPEAKER',
+            isConfirmed: true,
+          },
+        ],
       };
 
       vi.mocked(apiClient.patch).mockResolvedValueOnce({ data: mockUpdatedSession } as any);
@@ -161,11 +189,6 @@ describe('SlotAssignmentService (Story 5.7 - Task 4a RED Phase)', () => {
           {
             type: 'room_overlap',
             conflictingSessionSlug: 'existing-session-1',
-            conflictingTimeRange: {
-              start: '2025-05-15T09:00:00Z',
-              end: '2025-05-15T10:00:00Z',
-            },
-            details: 'Main Hall is already booked during this time',
           },
         ],
       };
@@ -213,11 +236,6 @@ describe('SlotAssignmentService (Story 5.7 - Task 4a RED Phase)', () => {
           {
             type: 'speaker_double_booked',
             conflictingSessionSlug: 'john-doe-other-session',
-            conflictingTimeRange: {
-              start: '2025-05-15T09:00:00Z',
-              end: '2025-05-15T10:00:00Z',
-            },
-            details: 'Speaker john.doe is already scheduled in another session',
           },
         ],
       };
@@ -326,7 +344,7 @@ describe('SlotAssignmentService (Story 5.7 - Task 4a RED Phase)', () => {
       // Then: Returns assigned count and updated sessions
       expect(result.assignedCount).toBe(3);
       expect(result.sessions).toHaveLength(3);
-      expect(result.sessions[0].startTime).toBe(bulkRequest.assignments[0].startTime);
+      expect(result.sessions?.[0]?.startTime).toBe(bulkRequest.assignments[0].startTime);
       expect(apiClient.post).toHaveBeenCalledWith(
         `/events/${mockEventCode}/sessions/bulk-timing`,
         bulkRequest
@@ -426,8 +444,8 @@ describe('SlotAssignmentService (Story 5.7 - Task 4a RED Phase)', () => {
       expect(result.hasConflicts).toBe(true);
       expect(result.conflictCount).toBe(2);
       expect(result.conflicts).toHaveLength(2);
-      expect(result.conflicts[0].conflictType).toBe('room_overlap');
-      expect(result.conflicts[1].conflictType).toBe('speaker_double_booked');
+      expect(result.conflicts?.[0]?.conflictType).toBe('room_overlap');
+      expect(result.conflicts?.[1]?.conflictType).toBe('speaker_double_booked');
       expect(apiClient.get).toHaveBeenCalledWith(`/events/${mockEventCode}/sessions/conflicts`);
     });
 
@@ -533,6 +551,7 @@ describe('SlotAssignmentService (Story 5.7 - Task 4a RED Phase)', () => {
         {
           sessionSlug: 'moderation-opening',
           eventCode: mockEventCode,
+          language: 'de',
           title: 'Opening Moderation',
           startTime: '2025-05-15T08:30:00Z',
           endTime: '2025-05-15T09:00:00Z',
@@ -543,6 +562,7 @@ describe('SlotAssignmentService (Story 5.7 - Task 4a RED Phase)', () => {
         {
           sessionSlug: 'break-morning',
           eventCode: mockEventCode,
+          language: 'de',
           title: 'Morning Break',
           startTime: '2025-05-15T10:00:00Z',
           endTime: '2025-05-15T10:30:00Z',
@@ -573,6 +593,7 @@ describe('SlotAssignmentService (Story 5.7 - Task 4a RED Phase)', () => {
         {
           sessionSlug: 'moderation-opening',
           eventCode: mockEventCode,
+          language: 'de',
           title: 'Opening Moderation',
           startTime: '2025-05-15T08:30:00Z',
           endTime: '2025-05-15T09:00:00Z',

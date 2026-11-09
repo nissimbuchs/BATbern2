@@ -11,7 +11,7 @@ import { renderHook, waitFor, act } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useSendInvitation } from '../useSpeakerPool';
 import { speakerPoolService } from '@/services/speakerPoolService';
-import type { SendInvitationResponse } from '@/types/speakerPool.types';
+import type { SendInvitationRequest, SendInvitationResponse } from '@/types/speakerPool.types';
 
 // Mock the speakerPoolService
 vi.mock('@/services/speakerPoolService', () => ({
@@ -29,10 +29,12 @@ describe('useSendInvitation Hook', () => {
   const username = 'speaker-uuid-123';
 
   const mockSuccessResponse: SendInvitationResponse = {
-    token: 'magic-link-token-abc123',
-    workflowState: 'INVITED',
-    invitedAt: '2026-01-25T12:00:00Z',
+    speakerPoolId: 'pool-entry-uuid-123',
+    username: 'speaker-uuid-123',
     email: 'speaker@example.com',
+    status: 'INVITED',
+    invitedAt: '2026-01-25T12:00:00Z',
+    responseDeadline: '2026-02-08T12:00:00Z',
   };
 
   beforeEach(() => {
@@ -87,9 +89,10 @@ describe('useSendInvitation Hook', () => {
 
   test('should_passOptions_when_provided', async () => {
     vi.mocked(speakerPoolService.sendInvitation).mockResolvedValue(mockSuccessResponse);
-    const options = {
+    const options: SendInvitationRequest = {
       responseDeadline: '2026-02-25T12:00:00Z',
-      personalMessage: 'We would love to have you speak!',
+      contentDeadline: '2026-03-25T12:00:00Z',
+      locale: 'en',
     };
 
     const { result } = renderHook(() => useSendInvitation(eventCode), { wrapper });

@@ -174,7 +174,7 @@ export function useDeleteSpeakerFromPool() {
  * const sendInvitation = useSendInvitation('BATbern56');
  * sendInvitation.mutate({
  *   username: 'speaker-uuid',
- *   options: { personalMessage: 'Looking forward to your talk!' }
+ *   options: { responseDeadline: '2026-02-01T00:00:00Z', locale: 'en' }
  * });
  */
 export function useSendInvitation(eventCode: string) {

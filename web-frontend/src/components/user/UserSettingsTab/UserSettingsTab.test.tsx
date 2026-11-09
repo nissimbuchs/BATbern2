@@ -85,6 +85,7 @@ describe('UserSettingsTab — Story 10.32 additional emails section', () => {
         label: 'Hostpoint shared',
         createdAt: '2026-05-22T10:00:00Z',
         verifiedAt: null,
+        receiveEventMail: true,
       },
     ]);
     expect(screen.getByTestId('additional-email-row-info@batbern.ch')).toBeInTheDocument();
@@ -98,6 +99,7 @@ describe('UserSettingsTab — Story 10.32 additional emails section', () => {
       label: null,
       createdAt: '2026-05-22T10:00:00Z',
       verifiedAt: null,
+      receiveEventMail: true,
     });
 
     renderWithProviders([]);
@@ -160,6 +162,7 @@ describe('UserSettingsTab — Story 10.32 additional emails section', () => {
         label: null,
         createdAt: '2026-05-22T10:00:00Z',
         verifiedAt: null,
+        receiveEventMail: true,
       },
     ]);
 
@@ -180,6 +183,7 @@ describe('UserSettingsTab — Story 10.32 additional emails section', () => {
         label: null,
         createdAt: '2026-05-22T10:00:00Z',
         verifiedAt: null,
+        receiveEventMail: true,
       },
     ]);
 
@@ -194,6 +198,7 @@ describe('UserSettingsTab — Story 10.32 additional emails section', () => {
       label: null,
       createdAt: '2026-05-22T10:00:00Z',
       verifiedAt: null,
+      receiveEventMail: true,
     }));
     renderWithProviders(five);
 
@@ -303,6 +308,7 @@ describe('UserSettingsTab — responsive sub-tabs (organizer mobile)', () => {
         label: null,
         createdAt: '2026-06-06T10:00:00Z',
         verifiedAt: '2026-06-06T11:00:00Z',
+        receiveEventMail: true,
       },
     ]);
     expect(screen.getByTestId('additional-email-verified-box@example.com')).toBeInTheDocument();
@@ -319,6 +325,7 @@ describe('UserSettingsTab — responsive sub-tabs (organizer mobile)', () => {
         label: null,
         createdAt: '2026-06-06T10:00:00Z',
         verifiedAt: null,
+        receiveEventMail: true,
       },
     ]);
     expect(screen.getByTestId('additional-email-unverified-box@example.com')).toBeInTheDocument();
@@ -333,6 +340,7 @@ describe('UserSettingsTab — responsive sub-tabs (organizer mobile)', () => {
         label: null,
         createdAt: '2026-06-06T10:00:00Z',
         verifiedAt: null,
+        receiveEventMail: true,
       },
     ]);
 
@@ -361,6 +369,7 @@ describe('UserSettingsTab — responsive sub-tabs (organizer mobile)', () => {
         label: null,
         createdAt: '2026-06-06T10:00:00Z',
         verifiedAt: null,
+        receiveEventMail: true,
       },
     ]);
 

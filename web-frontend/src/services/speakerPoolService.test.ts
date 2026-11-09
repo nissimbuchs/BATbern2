@@ -60,7 +60,7 @@ describe('speakerPoolService', () => {
         company: 'TechCorp Solutions AG',
         expertise: 'Cloud Architecture, DevOps, Kubernetes',
         assignedOrganizerId: 'org-john-doe',
-        status: 'identified',
+        status: 'IDENTIFIED',
         notes: 'Excellent speaker, presented at last 3 events',
         createdAt: '2025-12-13T10:00:00Z',
         updatedAt: '2025-12-13T10:00:00Z',
@@ -72,7 +72,7 @@ describe('speakerPoolService', () => {
 
       expect(apiClient.post).toHaveBeenCalledWith('/events/BATbern56/speakers/pool', request);
       expect(result).toEqual(mockResponse);
-      expect(result.status).toBe('identified');
+      expect(result.status).toBe('IDENTIFIED');
     });
 
     it('should add speaker with minimal required fields', async () => {
@@ -84,7 +84,7 @@ describe('speakerPoolService', () => {
         id: 'pool-124',
         eventId: 'event-456',
         speakerName: 'John Doe',
-        status: 'identified',
+        status: 'IDENTIFIED',
         createdAt: '2025-12-13T10:00:00Z',
         updatedAt: '2025-12-13T10:00:00Z',
       };
@@ -162,7 +162,7 @@ describe('speakerPoolService', () => {
           company: 'TechCorp Solutions AG',
           expertise: 'Cloud Architecture, DevOps',
           assignedOrganizerId: 'org-john-doe',
-          status: 'identified',
+          status: 'IDENTIFIED',
           notes: 'Excellent speaker',
           createdAt: '2025-12-13T10:00:00Z',
           updatedAt: '2025-12-13T10:00:00Z',
@@ -174,7 +174,7 @@ describe('speakerPoolService', () => {
           company: 'University of Bern',
           expertise: 'AI/ML, Data Science',
           assignedOrganizerId: 'org-jane-doe',
-          status: 'contacted',
+          status: 'CONTACTED',
           notes: 'Follow up next week',
           createdAt: '2025-12-13T11:00:00Z',
           updatedAt: '2025-12-13T12:00:00Z',
@@ -188,8 +188,8 @@ describe('speakerPoolService', () => {
       expect(apiClient.get).toHaveBeenCalledWith('/events/BATbern56/speakers/pool');
       expect(result).toEqual(mockSpeakerPool);
       expect(result).toHaveLength(2);
-      expect(result[0].status).toBe('identified');
-      expect(result[1].status).toBe('contacted');
+      expect(result[0].status).toBe('IDENTIFIED');
+      expect(result[1].status).toBe('CONTACTED');
     });
 
     it('should return empty array when no speakers in pool', async () => {
@@ -266,9 +266,11 @@ describe('speakerPoolService', () => {
   describe('patchSpeakerPool', () => {
     it('should patch speaker pool entry with all fields', async () => {
       const request: PatchSpeakerPoolRequest = {
+        speakerName: 'Dr. Jane Smith',
+        company: 'TechCorp Solutions AG',
+        expertise: 'Cloud Architecture',
         assignedOrganizerId: 'org-new-assignee',
         notes: 'Updated notes',
-        email: 'speaker@example.com',
       };
 
       const mockResponse: SpeakerPoolResponse = {
@@ -276,7 +278,7 @@ describe('speakerPoolService', () => {
         eventId: 'event-456',
         speakerName: 'Dr. Jane Smith',
         assignedOrganizerId: 'org-new-assignee',
-        status: 'identified',
+        status: 'IDENTIFIED',
         notes: 'Updated notes',
         createdAt: '2025-12-13T10:00:00Z',
         updatedAt: '2025-12-13T14:00:00Z',
@@ -307,7 +309,7 @@ describe('speakerPoolService', () => {
         id: 'pool-123',
         eventId: 'event-456',
         speakerName: 'Dr. Jane Smith',
-        status: 'identified',
+        status: 'IDENTIFIED',
         notes: 'Only updating notes',
         createdAt: '2025-12-13T10:00:00Z',
         updatedAt: '2025-12-13T14:00:00Z',
@@ -344,10 +346,13 @@ describe('speakerPoolService', () => {
       };
 
       const mockResponse: SendInvitationResponse = {
-        token: 'magic-link-token-abc',
-        workflowState: 'INVITED',
-        invitedAt: '2025-12-15T10:00:00Z',
+        speakerPoolId: 'pool-entry-uuid-123',
+        username: 'speaker-username',
         email: 'speaker@example.com',
+        status: 'INVITED',
+        invitedAt: '2025-12-15T10:00:00Z',
+        responseDeadline: '2026-02-01T00:00:00Z',
+        contentDeadline: '2026-03-01T00:00:00Z',
       };
 
       vi.mocked(apiClient.post).mockResolvedValue({ data: mockResponse });
@@ -363,15 +368,17 @@ describe('speakerPoolService', () => {
         options
       );
       expect(result).toEqual(mockResponse);
-      expect(result.workflowState).toBe('INVITED');
+      expect(result.status).toBe('INVITED');
     });
 
     it('should send invitation without options (empty body)', async () => {
       const mockResponse: SendInvitationResponse = {
-        token: 'magic-link-token-def',
-        workflowState: 'INVITED',
-        invitedAt: '2025-12-15T10:00:00Z',
+        speakerPoolId: 'pool-entry-uuid-456',
+        username: 'speaker-username',
         email: 'speaker@example.com',
+        status: 'INVITED',
+        invitedAt: '2025-12-15T10:00:00Z',
+        responseDeadline: '2025-12-29T00:00:00Z',
       };
 
       vi.mocked(apiClient.post).mockResolvedValue({ data: mockResponse });
@@ -480,7 +487,7 @@ describe('speakerPoolService', () => {
         id: 'pool-125',
         eventId: 'event-456',
         speakerName: 'Test Speaker',
-        status: 'identified',
+        status: 'IDENTIFIED',
         createdAt: '2025-12-13T10:00:00Z',
         updatedAt: '2025-12-13T10:00:00Z',
       };

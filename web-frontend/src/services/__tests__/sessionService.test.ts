@@ -6,7 +6,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { AxiosError } from 'axios';
-import type { AxiosResponse, InternalAxiosRequestConfig } from 'axios';
+import type { InternalAxiosRequestConfig } from 'axios';
 import { SessionApiClient } from '../sessionService';
 import type {
   BatchImportSessionRequest,
@@ -51,6 +51,7 @@ describe('SessionApiClient', () => {
     const mockResult: SessionBatchImportResult = {
       totalProcessed: 2,
       successfullyCreated: 2,
+      updated: 0,
       skipped: 0,
       failed: 0,
       details: [
@@ -95,6 +96,7 @@ describe('SessionApiClient', () => {
       const emptyResult: SessionBatchImportResult = {
         totalProcessed: 0,
         successfullyCreated: 0,
+        updated: 0,
         skipped: 0,
         failed: 0,
         details: [],

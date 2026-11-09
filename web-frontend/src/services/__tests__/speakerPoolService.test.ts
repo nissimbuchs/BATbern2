@@ -34,10 +34,12 @@ describe('SpeakerPoolService', () => {
     const username = 'speaker-uuid-123';
 
     const mockSuccessResponse: SendInvitationResponse = {
-      token: 'magic-link-token-abc123',
-      workflowState: 'INVITED',
-      invitedAt: '2026-01-25T12:00:00Z',
+      speakerPoolId: 'pool-entry-uuid-123',
+      username: 'speaker-uuid-123',
       email: 'speaker@example.com',
+      status: 'INVITED',
+      invitedAt: '2026-01-25T12:00:00Z',
+      responseDeadline: '2026-02-08T12:00:00Z',
     };
 
     // Test 5.1: should_callSendInvitationEndpoint_when_sendInvitationCalled
@@ -52,15 +54,15 @@ describe('SpeakerPoolService', () => {
       );
     });
 
-    // Test 5.2: should_returnToken_when_invitationSuccessful
-    it('should_returnToken_when_invitationSuccessful', async () => {
+    // Test 5.2: should_returnInvitation_when_invitationSuccessful
+    it('should_returnInvitation_when_invitationSuccessful', async () => {
       mockPost.mockResolvedValueOnce({ data: mockSuccessResponse });
 
       const result = await speakerPoolService.sendInvitation(eventCode, username);
 
       expect(result).toEqual(mockSuccessResponse);
-      expect(result.token).toBe('magic-link-token-abc123');
-      expect(result.workflowState).toBe('INVITED');
+      expect(result.speakerPoolId).toBe('pool-entry-uuid-123');
+      expect(result.status).toBe('INVITED');
       expect(result.email).toBe('speaker@example.com');
     });
 
@@ -84,7 +86,8 @@ describe('SpeakerPoolService', () => {
       mockPost.mockResolvedValueOnce({ data: mockSuccessResponse });
       const options: SendInvitationRequest = {
         responseDeadline: '2026-02-25T12:00:00Z',
-        personalMessage: 'We would love to have you speak at our event!',
+        contentDeadline: '2026-03-25T12:00:00Z',
+        locale: 'en',
       };
 
       await speakerPoolService.sendInvitation(eventCode, username, options);

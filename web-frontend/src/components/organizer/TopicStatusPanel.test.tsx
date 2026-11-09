@@ -51,6 +51,7 @@ const mockTopics: TopicDTO[] = [
     status: 'PROPOSED',
     plannedEvent: null,
     createdAt: '2026-01-15T10:00:00Z',
+    source: 'PARTNER',
   },
   {
     id: 'topic-2',
@@ -62,6 +63,7 @@ const mockTopics: TopicDTO[] = [
     status: 'SELECTED',
     plannedEvent: 'BATbern99',
     createdAt: '2026-02-01T09:00:00Z',
+    source: 'PARTNER',
   },
 ];
 

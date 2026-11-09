@@ -79,7 +79,7 @@ describe('useNewsletterSubscribe', () => {
     const { result } = renderHook(() => useNewsletterSubscribe(), { wrapper: wrapper(qc) });
 
     await act(async () => {
-      await result.current.mutateAsync({ email: 'alice@batbern.ch', language: 'de' });
+      await result.current.mutateAsync({ request: { email: 'alice@batbern.ch', language: 'de' } });
     });
 
     expect(mockSubscribe).toHaveBeenCalled();
@@ -92,7 +92,7 @@ describe('useNewsletterSubscribe', () => {
     const { result } = renderHook(() => useNewsletterSubscribe(), { wrapper: wrapper(qc) });
 
     await act(async () => {
-      await result.current.mutateAsync({ email: 'dup@x.ch' }).catch(() => {});
+      await result.current.mutateAsync({ request: { email: 'dup@x.ch' } }).catch(() => {});
     });
 
     await waitFor(() => expect(result.current.isError).toBe(true));
