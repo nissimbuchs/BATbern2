@@ -1,5 +1,6 @@
 package ch.batbern.events.config;
 
+import ch.batbern.shared.test.async.AsyncTaskTracker;
 import ch.batbern.shared.test.mail.SesRecorder;
 import org.mockito.Mockito;
 import org.springframework.boot.test.context.TestConfiguration;
@@ -98,8 +99,17 @@ public class TestAwsConfig {
      * {@code @BeforeEach} and assert on what SES received, never on {@code EmailService} calls.
      */
     @Bean
-    public SesRecorder sesRecorder() {
-        return new SesRecorder();
+    public SesRecorder sesRecorder(AsyncTaskTracker asyncTasks) {
+        return new SesRecorder(asyncTasks::awaitIdle);
+    }
+
+    /**
+     * Tracks the {@code @Async} executor, so {@link SesRecorder#reset()} first waits for the sends
+     * still running from the previous test (17.0 deferred work). Static: a bean post-processor.
+     */
+    @Bean
+    public static AsyncTaskTracker asyncTaskTracker() {
+        return new AsyncTaskTracker();
     }
 
     /** The context's only SES client: the recorder's. */

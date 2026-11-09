@@ -566,7 +566,12 @@ a test does not opt in.
   service's `TestAwsConfig`: it sends nothing and records what SES received, parsed (To, Cc,
   Reply-To, From, subject, HTML, text, attachment names, MIME headers, tags). Autowire it,
   `reset()` it in `@BeforeEach`, assert on `mails()` / `mailsTo(address)` / `single()`; simulate a
-  refusal with `failWith(...)` or `failFor(address, ...)` and `SesRecorder.sesError(...)`. Never
+  refusal with `failWith(...)` or `failFor(address, ...)` and `SesRecorder.sesError(...)`.
+  `EmailService` sends on the `@Async` executor: `reset()` first waits until that executor has no
+  task left (`AsyncTaskTracker`, `ch.batbern.shared.test.async`, registered by `TestAwsConfig` in
+  EMS and PCS), so a late send of the previous test cannot reach the next one. A test that asserts
+  a mail sent on the async path, or its absence, calls `sesRecorder.awaitAsyncSends()` first
+  instead of polling or sleeping. Never
   `@MockitoBean`, `@MockitoSpyBean` or `mock(EmailService.class)`, never `verify(emailService)`.
   Because SES is "live" to the `EmailService`, every wall runs: address validation (one address
   per To:/Cc entry, checked before the SES branch since #1176), reserved domains and the

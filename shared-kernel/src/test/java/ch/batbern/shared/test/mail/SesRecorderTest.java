@@ -121,4 +121,31 @@ class SesRecorderTest {
     void should_failSingle_when_noMail() {
         assertThatThrownBy(recorder::single).isInstanceOf(AssertionError.class).hasMessageContaining("got 0");
     }
+
+    @Test
+    @DisplayName("reset first drains the async sends, so a late mail of one test cannot reach the next")
+    void should_drainAsyncSendsBeforeForgetting_when_reset() {
+        List<String> order = new java.util.ArrayList<>();
+        SesRecorder draining = new SesRecorder(() -> {
+            order.add("drain");
+            emailService.sendHtmlEmailSync(ANNA, "late", "<p>late</p>");
+        });
+        ReflectionTestUtils.setField(emailService, "sesClient", draining.client());
+
+        draining.reset();
+
+        assertThat(order).containsExactly("drain");
+        assertThat(draining.mails()).as("the late mail was drained, then forgotten").isEmpty();
+    }
+
+    @Test
+    @DisplayName("awaitAsyncSends drains without forgetting, for a test that asserts an async send")
+    void should_keepMails_when_awaitAsyncSends() {
+        SesRecorder draining = new SesRecorder(() -> emailService.sendHtmlEmailSync(ANNA, "async", "<p>a</p>"));
+        ReflectionTestUtils.setField(emailService, "sesClient", draining.client());
+
+        draining.awaitAsyncSends();
+
+        assertThat(draining.single().subject()).isEqualTo("async");
+    }
 }

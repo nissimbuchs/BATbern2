@@ -56,6 +56,12 @@ import java.util.stream.Collectors;
  * <p>To simulate an SES refusal, {@link #failWith(Supplier)} makes every following send throw, and
  * {@link #failFor(String, Supplier)} every send to one address, until {@link #reset()}; use
  * {@link #sesError(String, String)} for the exception.
+ *
+ * <p>{@code EmailService} sends on the {@code @Async} executor. A recorder built with a drain
+ * ({@code new SesRecorder(asyncTasks::awaitIdle)}, see {@code AsyncTaskTracker}) runs it at the start
+ * of every {@link #reset()}, so a late send of the previous test is finished, then forgotten, and
+ * never reaches the next test's assertions. A test that asserts a mail sent on the async path calls
+ * {@link #awaitAsyncSends()} first.
  */
 public final class SesRecorder {
 
@@ -65,8 +71,19 @@ public final class SesRecorder {
     private volatile Supplier<? extends RuntimeException> failure;
     private final Map<String, Supplier<? extends RuntimeException>> failureByAddress = new ConcurrentHashMap<>();
     private volatile Consumer<RecordedMail> onEachSend = mail -> { };
+    private final Runnable drain;
 
+    /** A recorder without an async drain (unit tests that send synchronously). */
     public SesRecorder() {
+        this(() -> { });
+    }
+
+    /**
+     * @param drain blocks until the context's {@code @Async} work is done; run by {@link #reset()} and
+     *              {@link #awaitAsyncSends()}
+     */
+    public SesRecorder(Runnable drain) {
+        this.drain = drain;
         Mockito.when(client.sendEmail(Mockito.any(SendEmailRequest.class))).thenAnswer(invocation -> {
             SendEmailRequest request = invocation.getArgument(0);
             String id = nextMessageId();
@@ -139,8 +156,17 @@ public final class SesRecorder {
         this.onEachSend = callback;
     }
 
-    /** Forget the recorded mails, every {@link #failWith} / {@link #failFor} failure and the callback. */
+    /** Waits for the sends still running on the {@code @Async} executor; keeps what was recorded. */
+    public void awaitAsyncSends() {
+        drain.run();
+    }
+
+    /**
+     * Waits for the async sends still running (they belong to the previous test), then forgets the
+     * recorded mails, every {@link #failWith} / {@link #failFor} failure and the callback.
+     */
     public void reset() {
+        drain.run();
         mails.clear();
         failure = null;
         failureByAddress.clear();
