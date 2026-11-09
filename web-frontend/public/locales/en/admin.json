@@ -64,5 +64,32 @@
       },
       "alwaysForwarded": "Always forwarded: what organizers send to the -speaker@, -participants@, batbern{N}@ and partner@ lists, mail to ok@, and automatic mail such as out-of-office replies and bounces."
     }
+  },
+  "importData": {
+    "events": {
+      "title": "Events",
+      "description": "Import historical event data from CSV or JSON.",
+      "button": "Import Events"
+    },
+    "sessions": {
+      "title": "Sessions",
+      "description": "Import session data for existing events.",
+      "button": "Import Sessions"
+    },
+    "companies": {
+      "title": "Companies",
+      "description": "Import company / partner data.",
+      "button": "Import Companies"
+    },
+    "speakers": {
+      "title": "Speakers",
+      "description": "Import speaker profiles from legacy data.",
+      "button": "Import Speakers"
+    },
+    "participants": {
+      "title": "Participants",
+      "description": "Import attendee / participant records.",
+      "button": "Import Participants"
+    }
   }
 }

@@ -64,5 +64,32 @@
       },
       "alwaysForwarded": "Immer wytergleitet: was Organisatore a d Liste -speaker@, -participants@, batbern{N}@ und partner@ schicke, Mails a ok@ und automatischi Mails wie Abwäseheitsnotize und Unzuestellbarkeitsmäldige."
     }
+  },
+  "importData": {
+    "events": {
+      "title": "Veraastautige",
+      "description": "Historischi Veraastautigsdate us CSV oder JSON importiere.",
+      "button": "Veraastautige importiere"
+    },
+    "sessions": {
+      "title": "Sessions",
+      "description": "Sessions zu bestehende Veraastautige importiere.",
+      "button": "Sessions importiere"
+    },
+    "companies": {
+      "title": "Unternäme",
+      "description": "Unternäme- und Partnerdate importiere.",
+      "button": "Unternäme importiere"
+    },
+    "speakers": {
+      "title": "Referänte",
+      "description": "Referänteprofil us de Autdate importiere.",
+      "button": "Referänte importiere"
+    },
+    "participants": {
+      "title": "Teilnähmendi",
+      "description": "Teilnähmendi und iri Aamäudige importiere.",
+      "button": "Teilnähmendi importiere"
+    }
   }
 }

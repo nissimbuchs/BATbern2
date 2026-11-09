@@ -64,5 +64,32 @@
       },
       "alwaysForwarded": "Adina renviads: quai che organisaturs tramettan a las glistas -speaker@, -participants@, batbern{N}@ e partner@, mails ad ok@ e mails automatics sco respostas d'absenza e mails betg consegnads."
     }
+  },
+  "importData": {
+    "events": {
+      "title": "Occurrenzas",
+      "description": "Importar datas istoricas d’occurrenzas da CSV u JSON.",
+      "button": "Importar occurrenzas"
+    },
+    "sessions": {
+      "title": "Sessiuns",
+      "description": "Importar sessiuns per occurrenzas existentas.",
+      "button": "Importar sessiuns"
+    },
+    "companies": {
+      "title": "Interpresas",
+      "description": "Importar datas d’interpresas e partenaris.",
+      "button": "Importar interpresas"
+    },
+    "speakers": {
+      "title": "Referents",
+      "description": "Importar profils da referents da las datas veglias.",
+      "button": "Importar referents"
+    },
+    "participants": {
+      "title": "Participants",
+      "description": "Importar participants e lur annunzias.",
+      "button": "Importar participants"
+    }
   }
 }

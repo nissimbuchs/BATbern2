@@ -64,5 +64,32 @@
       },
       "alwaysForwarded": "常に転送されるもの: 主催者が -speaker@、-participants@、batbern{N}@、partner@ の各リストに送るメール、ok@ 宛てのメール、不在通知や配信エラーなどの自動メール。"
     }
+  },
+  "importData": {
+    "events": {
+      "title": "イベント",
+      "description": "過去のイベントデータを CSV または JSON からインポートします。",
+      "button": "イベントをインポート"
+    },
+    "sessions": {
+      "title": "セッション",
+      "description": "既存のイベントのセッションをインポートします。",
+      "button": "セッションをインポート"
+    },
+    "companies": {
+      "title": "企業",
+      "description": "企業・パートナーのデータをインポートします。",
+      "button": "企業をインポート"
+    },
+    "speakers": {
+      "title": "講演者",
+      "description": "旧データから講演者プロフィールをインポートします。",
+      "button": "講演者をインポート"
+    },
+    "participants": {
+      "title": "参加者",
+      "description": "参加者と登録をインポートします。",
+      "button": "参加者をインポート"
+    }
   }
 }

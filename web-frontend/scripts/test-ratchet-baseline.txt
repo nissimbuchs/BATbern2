@@ -230,7 +230,6 @@ fe-mock-components	web-frontend/src/components/auth/EmailVerification/EmailVerif
 fe-mock-components	web-frontend/src/components/auth/LogoutPage/LogoutPage.test.tsx	1
 fe-mock-components	web-frontend/src/components/organizer/Admin/EmailTemplatesTab.test.tsx	3
 fe-mock-components	web-frontend/src/components/organizer/Admin/EventTypesTab.test.tsx	3
-fe-mock-components	web-frontend/src/components/organizer/Admin/ImportDataTab.test.tsx	5
 fe-mock-components	web-frontend/src/components/organizer/Admin/TaskTemplatesTab.test.tsx	3
 fe-mock-components	web-frontend/src/components/organizer/Analytics/ChartCard.test.tsx	2
 fe-mock-components	web-frontend/src/components/organizer/EventManagement/__tests__/SessionEditModal.test.tsx	1
@@ -417,7 +416,6 @@ fe-mock-i18n	web-frontend/src/components/organizer/Admin/EmailTemplateEditModal.
 fe-mock-i18n	web-frontend/src/components/organizer/Admin/EmailTemplatePreviewModal.test.tsx	1
 fe-mock-i18n	web-frontend/src/components/organizer/Admin/EmailTemplatesTab.test.tsx	1
 fe-mock-i18n	web-frontend/src/components/organizer/Admin/EventTypesTab.test.tsx	1
-fe-mock-i18n	web-frontend/src/components/organizer/Admin/ImportDataTab.test.tsx	1
 fe-mock-i18n	web-frontend/src/components/organizer/Admin/MailCenterSwitchSettings.test.tsx	1
 fe-mock-i18n	web-frontend/src/components/organizer/Admin/TaskTemplateEditModal.test.tsx	1
 fe-mock-i18n	web-frontend/src/components/organizer/Admin/TaskTemplatesTab.test.tsx	1
