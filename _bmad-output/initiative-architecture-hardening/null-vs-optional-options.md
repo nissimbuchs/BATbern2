@@ -38,7 +38,8 @@ Cognito). Earlier evidence: the 17.0b1 CUMS provider contract test saw `"bio": n
   written as `null`. Its Javadoc says so, and that `spring.jackson2.*` has no effect.
 - CUMS `application.yml` sets `spring.jackson2.default-property-inclusion: non_null`. That line is
   dead configuration (the measured `bio: null` and `profilePictureUrl: null` confirm it). It reads
-  as if CUMS omitted nulls; it does not.
+  as if CUMS omitted nulls; it does not. (Removed 2026-11-09 on owner instruction, behaviour
+  unchanged; the decision below is still open.)
 - Classes that omit nulls do so by their own `@JsonInclude(NON_NULL)`. Generated DTOs with it:
   EMS 6 of 340, PCS 1 of 27, CUMS 15 of 74 (the company DTOs, via
   `additionalModelTypeAnnotations`); plus some hand-written DTOs (`EventResponse`,
@@ -84,8 +85,8 @@ The spec tells the truth about the wire; generated types gain `| null`.
 
 ### (B) The services omit nulls (`NON_NULL` / `NON_ABSENT`)
 
-One switch: `SharedObjectMapperConfig` sets `NON_NULL` (and the dead CUMS `spring.jackson2` block
-goes). The wire then matches the current types.
+One switch: `SharedObjectMapperConfig` sets `NON_NULL` (the dead CUMS `spring.jackson2` block
+is already gone). The wire then matches the current types.
 
 - Work: small in code, but an API behaviour change for every consumer: the web frontend, the
   Watch app, Bruno tests, the S2S clients, anything external.
