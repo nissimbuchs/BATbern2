@@ -277,17 +277,23 @@ class BatbernAiSecurityTest {
         }
 
         @Test
-        @DisplayName("malformed / empty / non-JSON abstract responses fall back to safe defaults")
-        void should_fallBackToSafeDefaults_when_abstractJsonInvalid() {
-            for (String bad : List.of("not json at all", "", "{\"noPromotionScore\":", "[]", "12345")) {
-                BatbernAiService.AbstractAnalysisResult r = service.parseAbstractAnalysis(bad);
-                assertThat(r.noPromotionScore()).isEqualTo(5);
-                assertThat(r.lessonsLearnedScore()).isEqualTo(5);
-                assertThat(r.noPromotionFeedback()).isEmpty();
-                assertThat(r.lessonsLearnedFeedback()).isEmpty();
-                assertThat(r.wordCount()).isZero();
-                assertThat(r.shortenedAbstract()).isNull();
+        @DisplayName("malformed / empty / non-JSON abstract responses or missing scores yield no result")
+        void should_yieldNoResult_when_abstractJsonInvalid() {
+            // A made-up neutral score would look like a real review (fallback indistinguishable
+            // from success): an unusable answer is no result, which the API answers with 503.
+            for (String bad : List.of("not json at all", "", "{\"noPromotionScore\":", "[]", "12345",
+                    "{}", "{\"noPromotionScore\":7}", "{\"noPromotionScore\":\"high\",\"lessonsLearnedScore\":4}")) {
+                assertThat(service.parseAbstractAnalysis(bad)).as(bad).isEmpty();
             }
+        }
+
+        @Test
+        @DisplayName("a complete abstract response is returned as data")
+        void should_returnResult_when_abstractJsonComplete() {
+            assertThat(service.parseAbstractAnalysis(
+                    "{\"noPromotionScore\":8,\"noPromotionFeedback\":\"ok\",\"lessonsLearnedScore\":3,"
+                            + "\"lessonsLearnedFeedback\":\"more\",\"wordCount\":120,\"shortenedAbstract\":null}"))
+                    .contains(new BatbernAiService.AbstractAnalysisResult(8, "ok", 3, "more", 120, null));
         }
 
         @Test

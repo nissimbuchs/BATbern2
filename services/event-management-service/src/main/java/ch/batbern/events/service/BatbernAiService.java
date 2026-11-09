@@ -241,7 +241,11 @@ public class BatbernAiService {
                 return Optional.empty();
             }
 
-            AbstractAnalysisResult result = parseAbstractAnalysis(content);
+            Optional<AbstractAnalysisResult> parsed = parseAbstractAnalysis(content);
+            if (parsed.isEmpty()) {
+                return Optional.empty();
+            }
+            AbstractAnalysisResult result = parsed.get();
             resultCache.put(cacheKey, result);
             logGeneration(null, "abstract_analysis", cacheKey, null);
             return Optional.of(result);
@@ -402,23 +406,30 @@ public class BatbernAiService {
         }
     }
 
-    AbstractAnalysisResult parseAbstractAnalysis(String json) {
+    /**
+     * Reads the model's analysis. Both scores must be integers; anything else is no result
+     * (answered with 503), never a made-up neutral score an organizer would take for a review.
+     */
+    Optional<AbstractAnalysisResult> parseAbstractAnalysis(String json) {
         try {
             var node = objectMapper.readTree(json);
-            int noPromotionScore = node.path("noPromotionScore").asInt(5);
-            String noPromotionFeedback = node.path("noPromotionFeedback").asText("");
-            int lessonsLearnedScore = node.path("lessonsLearnedScore").asInt(5);
-            String lessonsLearnedFeedback = node.path("lessonsLearnedFeedback").asText("");
-            int wordCount = node.path("wordCount").asInt(0);
+            if (node == null || !node.isObject()
+                    || !node.path("noPromotionScore").isInt() || !node.path("lessonsLearnedScore").isInt()) {
+                log.warn("AI abstract analysis answer lacks its scores");
+                return Optional.empty();
+            }
             String shortenedAbstract = node.path("shortenedAbstract").isNull()
                 ? null : node.path("shortenedAbstract").asText(null);
-            return new AbstractAnalysisResult(
-                noPromotionScore, noPromotionFeedback,
-                lessonsLearnedScore, lessonsLearnedFeedback,
-                wordCount, shortenedAbstract);
+            return Optional.of(new AbstractAnalysisResult(
+                node.path("noPromotionScore").asInt(),
+                node.path("noPromotionFeedback").asText(""),
+                node.path("lessonsLearnedScore").asInt(),
+                node.path("lessonsLearnedFeedback").asText(""),
+                node.path("wordCount").asInt(0),
+                shortenedAbstract));
         } catch (Exception e) {
             log.warn("Failed to parse abstract analysis JSON: {}", e.getMessage());
-            return new AbstractAnalysisResult(5, "", 5, "", 0, null);
+            return Optional.empty();
         }
     }
 

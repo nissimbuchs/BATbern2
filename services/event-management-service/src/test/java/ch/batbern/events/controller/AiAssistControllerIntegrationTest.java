@@ -254,7 +254,7 @@ class AiAssistControllerIntegrationTest extends AbstractIntegrationTest {
         SpeakerPool foreign = saveSpeakerWithSession(otherEvent, "Brünnimann",
                 "Other talk", "An abstract of another event.");
         // positive control: the same entry is found under its own event
-        openAi.expect(requestTo(CHAT_URL)).andRespond(withSuccess(chat("{\"wordCount\": 6}"),
+        openAi.expect(requestTo(CHAT_URL)).andRespond(withSuccess(chat("{\"noPromotionScore\": 7, \"lessonsLearnedScore\": 6, \"wordCount\": 6}"),
                 MediaType.APPLICATION_JSON));
         mockMvc.perform(post(analysisPath(otherEvent, foreign.getId())))
                 .andExpect(status().isOk());
