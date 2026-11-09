@@ -1418,7 +1418,7 @@ export interface components {
        */
       hasCognitoAccount?: boolean;
       /**
-       * Format: email
+       * Format: idn-email
        * @example john.doe@example.com
        */
       email: string;
@@ -1625,7 +1625,7 @@ export interface components {
     };
     AccountMergeRequest: {
       /**
-       * Format: email
+       * Format: idn-email
        * @description Primary address of the other account
        */
       email: string;
@@ -1644,7 +1644,7 @@ export interface components {
     /** @description Story 10.32 — one additional email address registered on a user profile. */
     AdditionalEmail: {
       /**
-       * Format: email
+       * Format: idn-email
        * @example info@batbern.ch
        */
       email: string;
@@ -1679,7 +1679,7 @@ export interface components {
     };
     AddAdditionalEmailRequest: {
       /**
-       * Format: email
+       * Format: idn-email
        * @example info@batbern.ch
        */
       email: string;
@@ -1826,7 +1826,7 @@ export interface components {
     UpdateUserRequest: {
       firstName?: string;
       lastName?: string;
-      /** Format: email */
+      /** Format: idn-email */
       email?: string;
       bio?: string;
       /**
@@ -1870,7 +1870,7 @@ export interface components {
     /** @description Request body for creating a new user (Story 2.5.2 AC4) */
     CreateUserRequest: {
       /**
-       * Format: email
+       * Format: idn-email
        * @description User email address (must be unique)
        * @example anna.mueller@example.com
        */
@@ -1909,7 +1909,7 @@ export interface components {
      */
     ProvisionUserRequest: {
       /**
-       * Format: email
+       * Format: idn-email
        * @description Required. Lookup key for the existing-user path (case-insensitive).
        * @example jane.smith@example.com
        */
@@ -2002,7 +2002,7 @@ export interface components {
     /** @description Request to get an existing user or create a new one. Supports both authenticated (Cognito) and anonymous users (ADR-005). */
     GetOrCreateUserRequest: {
       /**
-       * Format: email
+       * Format: idn-email
        * @description User email address. Used as unique identifier for anonymous users and for account linking.
        * @example john.doe@example.com
        */

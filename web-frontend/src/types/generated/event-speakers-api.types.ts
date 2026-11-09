@@ -730,7 +730,7 @@ export interface components {
      */
     PromoteSpeakerRequest: {
       /**
-       * Format: email
+       * Format: idn-email
        * @description Required. Speaker email — becomes the User lookup key (case-insensitive) in
        *     CUMS and the Cognito username on first provisioning. Post Story 11.E.9 (V103)
        *     the email is not duplicated on `speaker_pool`; it lives only in CUMS and is
@@ -1215,7 +1215,7 @@ export interface components {
      */
     InviteSpeakerRequest: {
       /**
-       * Format: email
+       * Format: idn-email
        * @description Speaker's email address
        * @example jane.smith@example.com
        */
@@ -1264,7 +1264,7 @@ export interface components {
        */
       username?: string | null;
       /**
-       * Format: email
+       * Format: idn-email
        * @description Speaker's email address
        * @example jane.smith@example.com
        */
@@ -1333,7 +1333,7 @@ export interface components {
        */
       locale?: string | null;
       /**
-       * Format: email
+       * Format: idn-email
        * @description Override email address (for speakers without email in database)
        * @example jane.smith@example.com
        */
@@ -1356,7 +1356,7 @@ export interface components {
        */
       username?: string | null;
       /**
-       * Format: email
+       * Format: idn-email
        * @description Speaker's email address
        * @example jane.smith@example.com
        */

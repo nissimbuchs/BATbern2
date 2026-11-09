@@ -2000,7 +2000,7 @@ components:
       properties:
         email:
           type: string
-          format: email
+          format: idn-email
           # One email rule everywhere (#1102): ASCII local part (SES has no SMTPUTF8), any domain.
           # Source of truth: shared-kernel EmailAddresses.OPENAPI_PATTERN.
           pattern: '^[A-Za-z0-9!#$%&''*+/=?^_`{|}~-]+(\.[A-Za-z0-9!#$%&''*+/=?^_`{|}~-]+)*@[^\s@.]+(\.[^\s@.]+)+$'
@@ -2632,7 +2632,7 @@ components:
       properties:
         email:
           type: string
-          format: email
+          format: idn-email
           # One email rule everywhere (#1102): ASCII local part (SES has no SMTPUTF8), any domain.
           # Source of truth: shared-kernel EmailAddresses.OPENAPI_PATTERN.
           pattern: '^[A-Za-z0-9!#$%&''*+/=?^_`{|}~-]+(\.[A-Za-z0-9!#$%&''*+/=?^_`{|}~-]+)*@[^\s@.]+(\.[^\s@.]+)+$'
@@ -2692,7 +2692,7 @@ components:
           example: jane.smith
         email:
           type: string
-          format: email
+          format: idn-email
           description: Speaker's email address
           example: jane.smith@example.com
         speakerName:
@@ -2752,7 +2752,7 @@ components:
           example: de
         email:
           type: string
-          format: email
+          format: idn-email
           # One email rule everywhere (#1102): ASCII local part (SES has no SMTPUTF8), any domain.
           # Source of truth: shared-kernel EmailAddresses.OPENAPI_PATTERN.
           pattern: '^[A-Za-z0-9!#$%&''*+/=?^_`{|}~-]+(\.[A-Za-z0-9!#$%&''*+/=?^_`{|}~-]+)*@[^\s@.]+(\.[^\s@.]+)+$'
@@ -2785,7 +2785,7 @@ components:
           example: jane.smith
         email:
           type: string
-          format: email
+          format: idn-email
           description: Speaker's email address
           example: jane.smith@example.com
         status:

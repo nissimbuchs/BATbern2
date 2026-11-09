@@ -478,4 +478,22 @@ class ContractServerTest {
         assertThat(events.validateResponse("GET", "/api/v1/events/BATbern1", 200, event.formatted("6pm")))
                 .singleElement().asString().contains("/typicalStartTime");
     }
+
+    @Test
+    @DisplayName("format: idn-email checks the mailbox shape and accepts the reserved .example TLD (4.9b)")
+    void should_acceptIdnAddressUnderReservedTld_andRejectNonAddress() {
+        OpenApiContract users = OpenApiContract.load(USERS);
+        String additional = "{\"email\": \"%s\", \"createdAt\": \"2026-05-22T10:00:00Z\"}";
+
+        // The 17.0d IDN person: Apache Commons' TLD list alone rejected it (no .example TLD)
+        assertThat(users.validateResponse("POST", "/api/v1/users/me/additional-emails", 201,
+                additional.formatted("juerg.brunner@bücherstube.example"))).isEmpty();
+        assertThat(users.validateResponse("POST", "/api/v1/users/me/additional-emails", 201,
+                additional.formatted("x@müller.ch"))).isEmpty();
+        // positive control: the shape still rejects what is no address
+        for (String bad : new String[] {"not an address", "no-at-sign.example", "x@nodot", "a@b@c.example"}) {
+            assertThat(users.validateResponse("POST", "/api/v1/users/me/additional-emails", 201,
+                    additional.formatted(bad))).as(bad).singleElement().asString().contains("/email");
+        }
+    }
 }

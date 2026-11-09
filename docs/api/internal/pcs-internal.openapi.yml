@@ -73,7 +73,7 @@ components:
           format: uuid
         attendeeEmail:
           type: string
-          format: email
+          format: idn-email
           minLength: 1
         partStat:
           type: string

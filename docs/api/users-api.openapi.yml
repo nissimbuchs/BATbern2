@@ -3399,7 +3399,7 @@ components:
           example: true
         email:
           type: string
-          format: email
+          format: idn-email
           example: john.doe@example.com
         firstName:
           type: string
@@ -3773,7 +3773,10 @@ components:
       properties:
         email:
           type: string
-          format: email
+          format: idn-email
+          # One email rule everywhere (#1102): ASCII local part (SES has no SMTPUTF8), any domain.
+          # Source of truth: shared-kernel EmailAddresses.OPENAPI_PATTERN.
+          pattern: '^[A-Za-z0-9!#$%&''*+/=?^_`{|}~-]+(\.[A-Za-z0-9!#$%&''*+/=?^_`{|}~-]+)*@[^\s@.]+(\.[^\s@.]+)+$'
           maxLength: 255
           description: Primary address of the other account
     ProfileClaimRequest:
@@ -3810,7 +3813,7 @@ components:
       properties:
         email:
           type: string
-          format: email
+          format: idn-email
           example: info@batbern.ch
         label:
           type: string
@@ -3853,7 +3856,7 @@ components:
       properties:
         email:
           type: string
-          format: email
+          format: idn-email
           # One email rule everywhere (#1102): ASCII local part (SES has no SMTPUTF8), any domain.
           # Source of truth: shared-kernel EmailAddresses.OPENAPI_PATTERN.
           pattern: '^[A-Za-z0-9!#$%&''*+/=?^_`{|}~-]+(\.[A-Za-z0-9!#$%&''*+/=?^_`{|}~-]+)*@[^\s@.]+(\.[^\s@.]+)+$'
@@ -4066,7 +4069,7 @@ components:
           maxLength: 100
         email:
           type: string
-          format: email
+          format: idn-email
           # One email rule everywhere (#1102): ASCII local part (SES has no SMTPUTF8), any domain.
           # Source of truth: shared-kernel EmailAddresses.OPENAPI_PATTERN.
           pattern: '^[A-Za-z0-9!#$%&''*+/=?^_`{|}~-]+(\.[A-Za-z0-9!#$%&''*+/=?^_`{|}~-]+)*@[^\s@.]+(\.[^\s@.]+)+$'
@@ -4137,7 +4140,7 @@ components:
       properties:
         email:
           type: string
-          format: email
+          format: idn-email
           # One email rule everywhere (#1102): ASCII local part (SES has no SMTPUTF8), any domain.
           # Source of truth: shared-kernel EmailAddresses.OPENAPI_PATTERN.
           pattern: '^[A-Za-z0-9!#$%&''*+/=?^_`{|}~-]+(\.[A-Za-z0-9!#$%&''*+/=?^_`{|}~-]+)*@[^\s@.]+(\.[^\s@.]+)+$'
@@ -4185,7 +4188,7 @@ components:
       properties:
         email:
           type: string
-          format: email
+          format: idn-email
           # One email rule everywhere (#1102): ASCII local part (SES has no SMTPUTF8), any domain.
           # Source of truth: shared-kernel EmailAddresses.OPENAPI_PATTERN.
           pattern: '^[A-Za-z0-9!#$%&''*+/=?^_`{|}~-]+(\.[A-Za-z0-9!#$%&''*+/=?^_`{|}~-]+)*@[^\s@.]+(\.[^\s@.]+)+$'
@@ -4305,7 +4308,7 @@ components:
       properties:
         email:
           type: string
-          format: email
+          format: idn-email
           # One email rule everywhere (#1102): ASCII local part (SES has no SMTPUTF8), any domain.
           # Source of truth: shared-kernel EmailAddresses.OPENAPI_PATTERN.
           pattern: '^[A-Za-z0-9!#$%&''*+/=?^_`{|}~-]+(\.[A-Za-z0-9!#$%&''*+/=?^_`{|}~-]+)*@[^\s@.]+(\.[^\s@.]+)+$'

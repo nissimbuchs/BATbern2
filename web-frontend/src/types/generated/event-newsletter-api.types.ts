@@ -415,7 +415,7 @@ export interface components {
       totalActive: number;
     };
     NewsletterSubscribeRequest: {
-      /** Format: email */
+      /** Format: idn-email */
       email: string;
       firstName?: string;
       /**
@@ -644,7 +644,7 @@ export interface components {
       subscribed: boolean;
     };
     PutMyNewsletterSubscriptionRequest: {
-      /** Format: email */
+      /** Format: idn-email */
       email: string;
       subscribed: boolean;
       /**

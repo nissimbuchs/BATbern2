@@ -155,6 +155,21 @@ describe('fixture-backed default bodies', () => {
     ]);
   });
 
+  it('the validator checks format idn-email: an IDN domain passes, a non-address fails', () => {
+    const op = [...harness().byId.values()].find((o) => o.key === 'listUsers')!;
+    const body = structuredClone(fixtureDefault('listUsers', new URLSearchParams(), {})!.body) as {
+      data: Array<Record<string, unknown>>;
+    };
+    const schema = op.success[0].media.schema;
+
+    body.data[0].email = 'juerg.brunner@bücherstube.example';
+    expect(validateAgainstSchema(files, op.file, schema, body)).toEqual([]);
+    body.data[0].email = 'not an address';
+    expect(validateAgainstSchema(files, op.file, schema, body)).toEqual([
+      '$.data[0].email: not a valid idn-email',
+    ]);
+  });
+
   it('the validator rejects a broken fixture body (positive control)', () => {
     const op = [...harness().byId.values()].find((o) => o.key === 'listUsers')!;
     // A copy: the body holds the shared fixture objects.

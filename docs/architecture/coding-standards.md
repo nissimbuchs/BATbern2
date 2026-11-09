@@ -472,8 +472,12 @@ calls `close()` in `@AfterEach` (the bean is shared by the cached context);
 to forward. Each provider proves its side in `S2sProviderContractIntegrationTest` (CUMS, EMS, PCS):
 every consumed operation runs through the real controller and `ProviderContract` checks the
 response, and the examples, against the same spec. A spec without a usable example for a consumed
-operation gets one. How the harness reads `null` and `format: time` (as the generated code does) is
-documented in `GeneratedCodeSemantics`. `null` is valid only where the spec says `nullable`
+operation gets one. How the harness reads `null`, `format: time` and the e-mail formats (as the
+generated code does) is documented in `GeneratedCodeSemantics`. An e-mail property that can hold a
+stored address is `format: idn-email` (CUMS stores IDN domains, `x@müller.ch`); a request property
+also carries the #1102 `pattern` (`EmailAddresses.OPENAPI_PATTERN`), which the generator turns into
+`@Pattern` (it emits no `@Email` for `idn-email`). The harness checks both e-mail formats as a
+mailbox shape, because the validator's IANA TLD list rejects the reserved `.example` test domains. `null` is valid only where the spec says `nullable`
 (owner decision 2026-11-09): the services write an unset field as `null`, so a response property
 they can leave unset is marked `nullable: true` (3.1: a nullable reference is
 `oneOf: [$ref, {type: 'null'}]`), and a `null` the spec does not allow fails the test, in the S2S

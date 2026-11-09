@@ -129,6 +129,6 @@ class EmailAddressesTest {
                 found++;
             }
         }
-        assertThat(found).as("request email fields carrying the rule").isEqualTo(14);
+        assertThat(found).as("request email fields carrying the rule").isEqualTo(16);
     }
 }

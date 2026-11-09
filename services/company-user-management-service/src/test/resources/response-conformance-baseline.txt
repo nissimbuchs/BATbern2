@@ -3,12 +3,8 @@
 # "Test fidelity rules". Rewrite: ./gradlew <module>:test -PupdateResponseConformanceBaseline
 #
 # Open, owner decision (deferred-work.md, 2026-11-09):
-# - getOrCreateInternalUser /user/email: CUMS stores IDN addresses (juerg.brunner@bücherstube.example,
-#   a 17.0d production shape); the specs say format: email (ASCII, RFC 5321). idn-email would drop the
-#   generated @Email request validation.
 # - listCompanies /data/* required: ?fields= returns only the selected fields, the schema marks
 #   createdAt, updatedAt and isVerified as required.
-getOrCreateInternalUser /user/email format.email
 listCompanies /data/* required:createdAt
 listCompanies /data/* required:isVerified
 listCompanies /data/* required:updatedAt

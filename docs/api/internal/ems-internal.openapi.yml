@@ -573,7 +573,7 @@ components:
           maxLength: 255
         requesterEmail:
           type: string
-          format: email
+          format: idn-email
           minLength: 1
           maxLength: 320
         subject:

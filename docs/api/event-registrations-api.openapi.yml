@@ -530,7 +530,7 @@ paths:
                     example: Registration confirmed.
                   email:
                     type: string
-                    format: email
+                    format: idn-email
                     # One email rule everywhere (#1102): ASCII local part (SES has no SMTPUTF8), any domain.
                     # Source of truth: shared-kernel EmailAddresses.OPENAPI_PATTERN.
                     pattern: '^[A-Za-z0-9!#$%&''*+/=?^_`{|}~-]+(\.[A-Za-z0-9!#$%&''*+/=?^_`{|}~-]+)*@[^\s@.]+(\.[^\s@.]+)+$'
@@ -1501,7 +1501,7 @@ components:
           example: Registration successful. Please check your email to confirm.
         email:
           type: string
-          format: email
+          format: idn-email
           # One email rule everywhere (#1102): ASCII local part (SES has no SMTPUTF8), any domain.
           # Source of truth: shared-kernel EmailAddresses.OPENAPI_PATTERN.
           pattern: '^[A-Za-z0-9!#$%&''*+/=?^_`{|}~-]+(\.[A-Za-z0-9!#$%&''*+/=?^_`{|}~-]+)*@[^\s@.]+(\.[^\s@.]+)+$'
@@ -1536,7 +1536,7 @@ components:
       properties:
         email:
           type: string
-          format: email
+          format: idn-email
           # One email rule everywhere (#1102): ASCII local part (SES has no SMTPUTF8), any domain.
           # Source of truth: shared-kernel EmailAddresses.OPENAPI_PATTERN.
           pattern: '^[A-Za-z0-9!#$%&''*+/=?^_`{|}~-]+(\.[A-Za-z0-9!#$%&''*+/=?^_`{|}~-]+)*@[^\s@.]+(\.[^\s@.]+)+$'
@@ -1651,7 +1651,7 @@ components:
       properties:
         participantEmail:
           type: string
-          format: email
+          format: idn-email
           # One email rule everywhere (#1102): ASCII local part (SES has no SMTPUTF8), any domain.
           # Source of truth: shared-kernel EmailAddresses.OPENAPI_PATTERN.
           pattern: '^[A-Za-z0-9!#$%&''*+/=?^_`{|}~-]+(\.[A-Za-z0-9!#$%&''*+/=?^_`{|}~-]+)*@[^\s@.]+(\.[^\s@.]+)+$'
@@ -1799,7 +1799,7 @@ components:
       properties:
         email:
           type: string
-          format: email
+          format: idn-email
           # One email rule everywhere (#1102): ASCII local part (SES has no SMTPUTF8), any domain.
           # Source of truth: shared-kernel EmailAddresses.OPENAPI_PATTERN.
           pattern: '^[A-Za-z0-9!#$%&''*+/=?^_`{|}~-]+(\.[A-Za-z0-9!#$%&''*+/=?^_`{|}~-]+)*@[^\s@.]+(\.[^\s@.]+)+$'

@@ -632,7 +632,7 @@ export interface components {
       /** @example Registration successful. Please check your email to confirm. */
       message: string;
       /**
-       * Format: email
+       * Format: idn-email
        * @example john.doe@example.com
        */
       email: string;
@@ -649,7 +649,7 @@ export interface components {
      */
     CreateRegistrationRequest: {
       /**
-       * Format: email
+       * Format: idn-email
        * @description Email address for registration and confirmation
        * @example john.doe@example.com
        */
@@ -740,7 +740,7 @@ export interface components {
      */
     BatchRegistrationRequest: {
       /**
-       * Format: email
+       * Format: idn-email
        * @description Participant email (used for user lookup/creation)
        * @example adrian.buerki@centrisag.ch
        */
@@ -853,7 +853,7 @@ export interface components {
     /** @description Story 10.12 (AC3): Body for POST /registrations/deregister/by-email. */
     DeregistrationByEmailRequest: {
       /**
-       * Format: email
+       * Format: idn-email
        * @description Email address of the registrant
        * @example max.muster@example.com
        */
@@ -1292,7 +1292,7 @@ export interface operations {
             /** @example Registration confirmed. */
             message: string;
             /**
-             * Format: email
+             * Format: idn-email
              * @example john.doe@example.com
              */
             email: string;

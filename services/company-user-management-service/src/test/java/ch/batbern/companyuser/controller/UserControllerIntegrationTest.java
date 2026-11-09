@@ -781,6 +781,44 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.message").value(containsString("email")));
     }
 
+    /**
+     * 4.9b: the specs say {@code format: idn-email}, so the generated request DTO has no
+     * {@code @Email} any more. The #1102 {@code @Pattern} still decides: an IDN domain with an
+     * ASCII local part is created (and the response, which carries it, conforms), a Unicode local
+     * part is refused.
+     */
+    @Test
+    @WithMockUser(username = "admin", roles = {"ORGANIZER"})
+    void should_createUser_when_emailHasIdnDomain() throws Exception {
+        ProductionShapedPeople.Person person = ProductionShapedPeople.IDN_EMAIL;
+        String body = JSON.writeValueAsString(Map.of(
+                "email", person.email(), "firstName", person.firstName(), "lastName", person.lastName()));
+
+        mockMvc.perform(post("/api/v1/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.id").value(person.username()))
+                .andExpect(jsonPath("$.email").value(person.email()));
+
+        assertThat(userRepository.findByUsername(person.username())).isPresent();
+    }
+
+    @Test
+    @WithMockUser(username = "admin", roles = {"ORGANIZER"})
+    void should_return400_when_createUserEmailLocalPartIsNotAscii() throws Exception {
+        String body = JSON.writeValueAsString(Map.of(
+                "email", "jürg@bücherstube.example", "firstName", "Jürg", "lastName", "Brunner"));
+
+        mockMvc.perform(post("/api/v1/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value(containsString("email")));
+
+        assertThat(userRepository.findByEmailIgnoreCase("jürg@bücherstube.example")).isEmpty();
+    }
+
     @Test
     @WithMockUser(username = "attendee", roles = {"ATTENDEE"})
     @DisplayName("should_return403_when_nonOrganizerCreatesUser")

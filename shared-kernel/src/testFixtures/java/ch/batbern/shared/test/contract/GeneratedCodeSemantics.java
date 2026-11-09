@@ -16,7 +16,7 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Reads a spec the way our generated code and services do, before validation. Three rules:
+ * Reads a spec the way our generated code and services do, before validation. Four rules:
  *
  * <ol>
  *   <li><b>{@code nullable: true} in a 3.1 spec.</b> 3.1 dropped the keyword in favour of
@@ -34,6 +34,15 @@ import java.util.Set;
  *       openapi-generator maps it to a plain {@code String}. JSON Schema's {@code time} is RFC 3339
  *       ({@code 18:00:00Z}), which nothing here produces or parses; the rule checks
  *       {@code HH:mm[:ss]} instead.</li>
+ *   <li><b>{@code format: email} / {@code idn-email} is a mailbox shape, not a TLD lookup.</b>
+ *       The validator checks both formats with Apache Commons' {@code EmailValidator}, which also
+ *       requires a top-level domain from its copy of the IANA list. That rejects the reserved
+ *       {@code .example} (RFC 2606) that test data must use ({@code juerg.brunner@bücherstube.example},
+ *       a 17.0d production shape), although RFC 5321/6531 ask for no registry. The rule checks the
+ *       shape instead: {@code email} an ASCII local part and domain, {@code idn-email} any
+ *       characters (RFC 6531), each with a dotted domain. Where the spec also has a pattern (the
+ *       #1102 rule, {@code EmailAddresses.OPENAPI_PATTERN}), that pattern decides, as in the
+ *       generated {@code @Pattern}. Found by 4.9b, 2026-11-09.</li>
  * </ol>
  *
  * <p>{@code null} is valid only where the spec says {@code nullable} (owner decision 2026-11-09,
@@ -46,6 +55,10 @@ import java.util.Set;
 final class GeneratedCodeSemantics {
 
     private static final String LOCAL_TIME = "^([01][0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?$";
+    /** {@code format: email}: printable ASCII without {@code @} and space, dotted ASCII domain. */
+    static final String EMAIL_SHAPE = "^[!-?A-~]+@[A-Za-z0-9-]+(\\.[A-Za-z0-9-]+)+$";
+    /** {@code format: idn-email}: any characters but {@code @} and white space, dotted domain. */
+    static final String IDN_EMAIL_SHAPE = "^[^\\s@]+@[^\\s@.]+(\\.[^\\s@.]+)+$";
 
     private GeneratedCodeSemantics() {
     }
@@ -151,6 +164,13 @@ final class GeneratedCodeSemantics {
                 schema.setFormat(null);
                 if (schema.getPattern() == null) {
                     schema.setPattern(LOCAL_TIME);
+                }
+            }
+            if ("email".equals(schema.getFormat()) || "idn-email".equals(schema.getFormat())) {
+                String shape = "email".equals(schema.getFormat()) ? EMAIL_SHAPE : IDN_EMAIL_SHAPE;
+                schema.setFormat(null);
+                if (schema.getPattern() == null) {
+                    schema.setPattern(shape);
                 }
             }
             if (openapi31 && schema.getExtensions() != null
