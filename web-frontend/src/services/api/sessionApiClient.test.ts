@@ -8,10 +8,11 @@
  * naming one, and the correlation id when the response carries one.
  */
 
-import { describe, it, expect } from 'vitest';
+import { afterEach, describe, it, expect } from 'vitest';
 import { HttpResponse } from 'msw';
 import { isAxiosError } from 'axios';
 import { api } from '@/test/msw/api';
+import apiClient from './apiClient';
 import { sessionApiClient } from './sessionApiClient';
 import type { AssignSpeakerRequest } from './sessionApiClient';
 
@@ -46,6 +47,23 @@ const authPassingMethods = [
   ['assignSpeakerToSession', () => sessionApiClient.assignSpeaker(EVENT, 'session-1', alice)],
   ['removeSpeakerFromSession', () => sessionApiClient.removeSpeaker(EVENT, 'session-1', 'hong.an')],
 ] as const;
+
+/**
+ * Makes the next requests fail before they leave the process with `value`, a non-axios error (an
+ * auth token lookup that throws, say). A request interceptor on the real apiClient: it runs first
+ * and its rejection reaches the service unchanged.
+ */
+let ejectFailure: (() => void) | null = null;
+const failBeforeSending = (value: unknown) => {
+  const id = apiClient.interceptors.request.use(() => {
+    throw value;
+  });
+  ejectFailure = () => apiClient.interceptors.request.eject(id);
+};
+afterEach(() => {
+  ejectFailure?.();
+  ejectFailure = null;
+});
 
 describe('sessionApiClient', () => {
   describe('requests', () => {
@@ -127,13 +145,17 @@ describe('sessionApiClient', () => {
   });
 
   describe('auth errors pass through', () => {
-    it.each(authPassingMethods)('%s re-throws a 403 as the AxiosError', async (op, call) => {
-      api.on(op, () => problem(403, { error: 'Forbidden', message: 'Organizer role required' }));
+    const cases = authPassingMethods.flatMap(([op, call]) =>
+      ([401, 403] as const).map((status) => [op, status, call] as const)
+    );
+
+    it.each(cases)('%s re-throws a %i as the AxiosError', async (op, status, call) => {
+      api.on(op, () => problem(status, { error: 'Unauthorized', message: 'Not allowed' }));
 
       const error = await rejectionOf(call());
 
       expect(isAxiosError(error)).toBe(true);
-      expect(isAxiosError(error) && error.response?.status).toBe(403);
+      expect(isAxiosError(error) && error.response?.status).toBe(status);
     });
   });
 
@@ -185,6 +207,22 @@ describe('sessionApiClient', () => {
 
       await expect(sessionApiClient.removeSpeaker(EVENT, 'session-1', 'hong.an')).rejects.toEqual(
         new Error('Network Error')
+      );
+    });
+  });
+  describe('errors that are not from axios', () => {
+    it('should_passPlainErrorThrough_when_deleteSessionThrowsBeforeSending', async () => {
+      const thrown = new Error('Token lookup failed');
+      failBeforeSending(thrown);
+
+      await expect(sessionApiClient.deleteSession(EVENT, 'session-1')).rejects.toBe(thrown);
+    });
+
+    it('should_wrapNonError_when_deleteSessionThrowsBeforeSending', async () => {
+      failBeforeSending('raw string error');
+
+      await expect(sessionApiClient.deleteSession(EVENT, 'session-1')).rejects.toEqual(
+        new Error('An unexpected error occurred')
       );
     });
   });

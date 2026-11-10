@@ -11,10 +11,11 @@
  * sessions, auto-assignment, slot assignment (15.3), error mapping.
  */
 
-import { describe, it, expect } from 'vitest';
+import { afterEach, describe, it, expect } from 'vitest';
 import { HttpResponse } from 'msw';
 import { isAxiosError } from 'axios';
 import { api } from '@/test/msw/api';
+import apiClient from '@/services/api/apiClient';
 import { slotAssignmentService } from './slotAssignmentService';
 import type { BulkTimingRequest, SessionTimingRequest } from '@/types/event.types';
 import { aSessionResponse, aSessionSpeaker } from '@/test/fixtures';
@@ -89,6 +90,23 @@ const conflictMethods = [
   'bulkAssignTiming',
   'generateStructuralSessions',
 ] as const;
+
+/**
+ * Makes the next requests fail before they leave the process with `value`, a non-axios error (an
+ * auth token lookup that throws, say). A request interceptor on the real apiClient: it runs first
+ * and its rejection reaches the service unchanged.
+ */
+let ejectFailure: (() => void) | null = null;
+const failBeforeSending = (value: unknown) => {
+  const id = apiClient.interceptors.request.use(() => {
+    throw value;
+  });
+  ejectFailure = () => apiClient.interceptors.request.eject(id);
+};
+afterEach(() => {
+  ejectFailure?.();
+  ejectFailure = null;
+});
 
 describe('slotAssignmentService', () => {
   describe('requests', () => {
@@ -203,13 +221,17 @@ describe('slotAssignmentService', () => {
   });
 
   describe('auth errors pass through', () => {
-    it.each(methods)('%s re-throws a 403 as the AxiosError', async (op, call) => {
-      api.on(op, () => problem(403, { error: 'Forbidden', message: 'Organizer role required' }));
+    const cases = methods.flatMap(([op, call]) =>
+      ([401, 403] as const).map((status) => [op, status, call] as const)
+    );
+
+    it.each(cases)('%s re-throws a %i as the AxiosError', async (op, status, call) => {
+      api.on(op, () => problem(status, { error: 'Unauthorized', message: 'Not allowed' }));
 
       const error = await rejectionOf(call());
 
       expect(isAxiosError(error)).toBe(true);
-      expect(isAxiosError(error) && error.response?.status).toBe(403);
+      expect(isAxiosError(error) && error.response?.status).toBe(status);
     });
   });
 
@@ -283,6 +305,22 @@ describe('slotAssignmentService', () => {
 
       await expect(slotAssignmentService.unassignSessionTiming(EVENT, 'session-1')).rejects.toEqual(
         new Error('No such slot')
+      );
+    });
+  });
+  describe('errors that are not from axios', () => {
+    it('should_passPlainErrorThrough_when_detectConflictsThrowsBeforeSending', async () => {
+      const thrown = new Error('Token lookup failed');
+      failBeforeSending(thrown);
+
+      await expect(slotAssignmentService.detectConflicts(EVENT)).rejects.toBe(thrown);
+    });
+
+    it('should_wrapNonError_when_detectConflictsThrowsBeforeSending', async () => {
+      failBeforeSending('raw string error');
+
+      await expect(slotAssignmentService.detectConflicts(EVENT)).rejects.toEqual(
+        new Error('An unexpected error occurred')
       );
     });
   });

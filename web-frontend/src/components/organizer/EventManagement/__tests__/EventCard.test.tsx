@@ -205,6 +205,14 @@ describe('EventCard Component', () => {
       expect(screen.getByText(/25%.*full/i)).toBeInTheDocument();
     });
 
+    it('should_showZeroAttendees_when_countAbsent', () => {
+      // The count is optional on the wire; absent means the server default 0.
+      const { currentAttendeeCount: _absent, ...withoutCount } = mockEvent;
+      render(<EventCard event={withoutCount} />, { wrapper: createWrapper() });
+
+      expect(screen.getByText('0/200 (0% full)')).toBeInTheDocument();
+    });
+
     it('should_highlightFullEvent_when_capacityReached', () => {
       const fullEvent = { ...mockEvent, currentAttendeeCount: 200 };
       render(<EventCard event={fullEvent} />, { wrapper: createWrapper() });

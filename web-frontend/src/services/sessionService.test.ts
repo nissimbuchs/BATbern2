@@ -7,9 +7,10 @@
  * else axios' own) and the correlation id when the response carries one.
  */
 
-import { describe, it, expect } from 'vitest';
+import { afterEach, describe, it, expect } from 'vitest';
 import { HttpResponse } from 'msw';
 import { api } from '@/test/msw/api';
+import apiClient from '@/services/api/apiClient';
 import { sessionApiClient } from './sessionService';
 import type {
   BatchImportSessionRequest,
@@ -58,6 +59,23 @@ const problem = (status: number, body: Record<string, unknown>, correlationId?: 
     { status, headers: correlationId ? { 'x-correlation-id': correlationId } : {} }
   );
 
+/**
+ * Makes the next requests fail before they leave the process with `value`, a non-axios error (an
+ * auth token lookup that throws, say). A request interceptor on the real apiClient: it runs first
+ * and its rejection reaches the service unchanged.
+ */
+let ejectFailure: (() => void) | null = null;
+const failBeforeSending = (value: unknown) => {
+  const id = apiClient.interceptors.request.use(() => {
+    throw value;
+  });
+  ejectFailure = () => apiClient.interceptors.request.eject(id);
+};
+afterEach(() => {
+  ejectFailure?.();
+  ejectFailure = null;
+});
+
 describe('sessionApiClient.batchImportSessions', () => {
   it('should_postSessions_when_batchImportRequested', async () => {
     api.on('batchImportSessions', () => result);
@@ -68,6 +86,37 @@ describe('sessionApiClient.batchImportSessions', () => {
     const [call] = api.calls('batchImportSessions');
     expect(call.params).toEqual({ eventCode: EVENT });
     expect(call.body).toEqual(sessions);
+  });
+
+  it('should_allowTwoMinutes_when_batchImportRequested', async () => {
+    // Large PDFs are fetched from the CDN during the import: the request gets a 120 s timeout.
+    let timeout: number | undefined;
+    const id = apiClient.interceptors.request.use((config) => {
+      timeout = config.timeout;
+      return config;
+    });
+    try {
+      await sessionApiClient.batchImportSessions(EVENT, sessions);
+    } finally {
+      apiClient.interceptors.request.eject(id);
+    }
+
+    expect(timeout).toBe(120000);
+  });
+
+  it('should_passPlainErrorThrough_when_batchImportThrowsBeforeSending', async () => {
+    const thrown = new Error('Token lookup failed');
+    failBeforeSending(thrown);
+
+    await expect(sessionApiClient.batchImportSessions(EVENT, sessions)).rejects.toBe(thrown);
+  });
+
+  it('should_wrapNonError_when_batchImportThrowsBeforeSending', async () => {
+    failBeforeSending('raw string error');
+
+    await expect(sessionApiClient.batchImportSessions(EVENT, sessions)).rejects.toEqual(
+      new Error('An unexpected error occurred')
+    );
   });
 
   it('should_postEmptyList_when_noSessions', async () => {
