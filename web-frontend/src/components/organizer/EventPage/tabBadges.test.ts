@@ -39,6 +39,12 @@ const status = (over: Partial<PublishingStatusResponse>): PublishingStatusRespon
     totalCount: 0,
     unassignedSessions: [],
   },
+  phase2Enabled: true,
+  phase2DaysBeforeEvent: 30,
+  phase2TriggerDate: '2027-02-12T08:00:00Z',
+  phase3Enabled: true,
+  phase3DaysBeforeEvent: 14,
+  phase3TriggerDate: '2027-02-28T08:00:00Z',
   ...over,
 });
 

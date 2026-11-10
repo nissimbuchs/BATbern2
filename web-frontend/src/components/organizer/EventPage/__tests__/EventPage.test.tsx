@@ -6,7 +6,7 @@
  * count-driven attention badges, recomposed tab slots.
  *
  * The real tree runs against the MSW harness (17.0c2): `useEvent` → `GET /events/{eventCode}`,
- * `useTabBadges` → `GET /events/{eventCode}/tasks` + `GET /events/{eventCode}/publish/status`,
+ * `useTabBadges` → `GET /events/{eventCode}/tasks` + `GET /events/{eventCode}/publishing`,
  * every tab (Cockpit, Speakers & Agenda, Registrations, Communications, Publishing, Wrap-up,
  * Details), the breadcrumbs, the router and en i18n. Navigation is asserted with a route sentinel;
  * the mobile layout comes from a `window.matchMedia` stub (jsdom has none).
@@ -25,7 +25,7 @@ import { aSessionResponse, anEvent, anEventTask, daysFromNow } from '@/test/fixt
 import { EventPage } from '../EventPage';
 
 type EventDetail = ResponseBody<'getEvent', 200>;
-type PublishingStatus = ResponseBody<'getPublishingStatus', 200>;
+type PublishingStatus = ResponseBody<'getPublishing', 200>;
 type EventTask = ResponseBody<'listEventTasks', 200>[number];
 
 const EVENT_CODE = 'BATbern54';
@@ -61,6 +61,12 @@ const nothingPublishable: PublishingStatus = {
     totalCount: 0,
     unassignedSessions: [],
   },
+  phase2Enabled: true,
+  phase2DaysBeforeEvent: 30,
+  phase2TriggerDate: '2027-02-12T08:00:00Z',
+  phase3Enabled: true,
+  phase3DaysBeforeEvent: 14,
+  phase3TriggerDate: '2027-02-28T08:00:00Z',
 };
 
 const aTask = (overrides: Partial<EventTask> = {}): EventTask => ({
@@ -119,7 +125,7 @@ describe('EventPage — lifecycle tab shell (Epic 14)', () => {
     viewport(1280);
     serveEvent();
     api.on('listEventTasks', () => []);
-    api.on('getPublishingStatus', () => nothingPublishable);
+    api.on('getPublishing', () => nothingPublishable);
   });
 
   afterEach(async () => {
@@ -320,13 +326,13 @@ describe('EventPage — lifecycle tab shell (Epic 14)', () => {
     });
 
     it('shows the Publishing ready dot', async () => {
-      api.on('getPublishingStatus', () => ({
+      api.on('getPublishing', () => ({
         ...nothingPublishable,
         topic: { isValid: true, errors: [] },
       }));
       await renderLoaded();
       expect(await screen.findByTestId('event-tab-badge-publishing')).toBeInTheDocument();
-      expect(api.calls('getPublishingStatus')[0].params.eventCode).toBe(EVENT_CODE);
+      expect(api.calls('getPublishing')[0].params.eventCode).toBe(EVENT_CODE);
     });
 
     it('shows the Communications overdue dot', async () => {
@@ -342,7 +348,7 @@ describe('EventPage — lifecycle tab shell (Epic 14)', () => {
       await renderLoaded();
       await waitFor(() => {
         expect(api.calls('listEventTasks')).toHaveLength(1);
-        expect(api.calls('getPublishingStatus')).toHaveLength(1);
+        expect(api.calls('getPublishing')).toHaveLength(1);
       });
       expect(screen.getByRole('tab', { name: 'Speakers & Agenda' })).toBeInTheDocument();
       expect(screen.queryByTestId('event-tab-badge-speakers')).not.toBeInTheDocument();

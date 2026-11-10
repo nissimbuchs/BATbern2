@@ -1,11 +1,11 @@
 meta {
-  name: Publish Event
+  name: Publish the agenda phase (folded publish event)
   type: http
   seq: 16
 }
 
 post {
-  url: {{baseUrl}}/events/{{createdEventCode}}/publish
+  url: {{baseUrl}}/events/{{createdEventCode}}/phases/agenda/publish
   body: none
   auth: bearer
 }
@@ -15,32 +15,24 @@ auth:bearer {
 }
 
 assert {
-  res.status: in [200, 422]
+  res.status: eq 200
 }
 
 tests {
-  test("should return success or validation error", function() {
-    const status = res.getStatus();
-    expect([200, 422]).to.include(status);
+  test("the agenda phase is published", function() {
+    const body = res.getBody();
+    expect(body.phase).to.equal("agenda");
+    expect(body.published).to.equal(true);
+    expect(body.publishedAt).to.be.a("string");
+    expect(body.cdnInvalidated).to.be.a("boolean");
   });
+}
 
-  test("if successful, event should be published", function() {
-    if (res.getStatus() === 200) {
-      const event = res.getBody();
-      expect(event.status).to.be.oneOf(['PUBLISHED', 'REGISTRATION_OPEN']);
-      expect(event.publishedAt).to.be.a('string');
-    }
-  });
-
-  test("if failed, should return validation error", function() {
-    if (res.getStatus() === 422) {
-      const error = res.getBody();
-      // Error response should have a message
-      expect(error.message).to.be.a('string');
-      // May also have error field describing the error type
-      if (error.error) {
-        expect(error.error).to.be.a('string');
-      }
-    }
-  });
+docs {
+  Story 4.9b: POST /events/{eventCode}/publish folded into the agenda phase
+  publish (POST /events/{eventCode}/phases/{phase}/publish, the phase is the
+  addressed instance). The 00b fixture is CREATED, dated in the future and has
+  no untimed session, so the agenda is ready: the publish moves the event into
+  AGENDA_PUBLISHED and sets publishedAt (checked by 16a). Run against local
+  dev only: a publish acts on the public website.
 }

@@ -23,7 +23,7 @@
  *     SLOT_ASSIGNMENT → AGENDA_PUBLISHED → EVENT_LIVE → EVENT_COMPLETED → ARCHIVED. Most
  *     transitions are AUTOMATIC (event listeners + cron at 00:01/23:59 Bern), so a pure-UI walk
  *     stalls on cron and adds flake.
- *   • `PUT /events/{code}/workflow/transition` with `overrideValidation:true` is the test-only
+ *   • `POST /events/{code}/transition` with `overrideValidation:true` is the test-only
  *     override the organizer UI itself exposes (the "override workflow validation" checkbox).
  *     `transitionToState` honours it by SKIPPING ALL validation — so the gate can force-advance
  *     to ANY state, including the cron-only EVENT_LIVE/EVENT_COMPLETED, deterministically.

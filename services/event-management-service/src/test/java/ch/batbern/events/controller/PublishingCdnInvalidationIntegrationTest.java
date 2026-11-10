@@ -3,6 +3,7 @@ package ch.batbern.events.controller;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.shared.test.AbstractIntegrationTest;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -13,7 +14,6 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.transaction.annotation.Transactional;
 import software.amazon.awssdk.services.cloudfront.CloudFrontClient;
 import software.amazon.awssdk.services.cloudfront.model.CreateInvalidationRequest;
 import software.amazon.awssdk.services.cloudfront.model.CreateInvalidationResponse;
@@ -37,15 +37,18 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * Story 4.9b). CloudFront is the process boundary: the real {@code CdnInvalidationService} runs with
  * the CDN enabled, and the test reads the invalidation request CloudFront received. In the other
  * tests the CDN is disabled, so {@code cdnInvalidated} there says nothing about the paths.
+ * No class-level {@code @Transactional} (test fidelity rules): the requests commit, the event is
+ * removed after each test.
  */
 @SpringBootTest
 @AutoConfigureMockMvc
-@Transactional
 @TestPropertySource(properties = {
     "aws.cloudfront.enabled=true",
     "aws.cloudfront.distribution-id=E2TESTDISTRIBUTION"
 })
 class PublishingCdnInvalidationIntegrationTest extends AbstractIntegrationTest {
+
+    private static final String EVENT_CODE = "BATbern2031";
 
     @MockitoBean
     private CloudFrontClient cloudFrontClient;
@@ -58,8 +61,14 @@ class PublishingCdnInvalidationIntegrationTest extends AbstractIntegrationTest {
 
     private String eventCode;
 
+    @AfterEach
+    void tearDown() {
+        eventRepository.findByEventCode(EVENT_CODE).ifPresent(eventRepository::delete);
+    }
+
     @BeforeEach
     void setUp() {
+        tearDown();
         reset(cloudFrontClient);
         when(cloudFrontClient.createInvalidation(any(CreateInvalidationRequest.class)))
                 .thenReturn(CreateInvalidationResponse.builder()
@@ -67,7 +76,7 @@ class PublishingCdnInvalidationIntegrationTest extends AbstractIntegrationTest {
                         .build());
         Instant date = Instant.now().plus(60, ChronoUnit.DAYS);
         Event event = eventRepository.save(Event.builder()
-                .eventCode("BATbern2031")
+                .eventCode(EVENT_CODE)
                 .title("Brünnimann-Abend 2031")
                 .eventNumber(2031)
                 .date(date)

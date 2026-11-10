@@ -34,6 +34,21 @@ AGENDA_PUBLISHED → EVENT_LIVE → EVENT_COMPLETED → ARCHIVED
 
 > **Historical note:** An `AGENDA_FINALIZED` state was removed during implementation (see inline test comment: "Direct scheduler transition (AGENDA_FINALIZED removed)"). The transition now goes directly from `AGENDA_PUBLISHED` to `EVENT_LIVE`. The 14-day-before-event guard that was attached to `AGENDA_FINALIZED` is no longer part of the workflow.
 
+### How the state changes (Story 4.9b)
+
+One idiom, the ADR-013 section 1 action sub-resource, breaking since 2026-11, no aliases:
+
+- `POST /events/{eventCode}/transition` `{targetState, overrideValidation, overrideReason}`: the only
+  API that sets a state (ORGANIZER). Without override the transition validator and the business
+  rules of the target run (422 on failure); an unknown `targetState` is 400.
+- `POST /events/{eventCode}/phases/agenda/publish`: moves an event before AGENDA_PUBLISHED into
+  AGENDA_PUBLISHED (override, its own gate is title, date, a future date and timed sessions), sets
+  `publishedAt`, fires `EventPublishedEvent`. It never moves an event backwards. The former
+  `POST /events/{eventCode}/publish` folded into it.
+- The listeners and schedulers below call `EventWorkflowStateMachine.transitionToState` directly.
+- PUT and PATCH of the event carry no `workflowState`; sending one answers 400 (unknown property).
+  Before 4.9b they applied it with override.
+
 ### State Definitions
 
 | State | Description | Entry Condition | Exit Condition |

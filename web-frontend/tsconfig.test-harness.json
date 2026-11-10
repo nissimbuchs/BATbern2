@@ -6,7 +6,6 @@
   "include": ["src"],
   "exclude": [
     "src/App.routing.test.tsx",
-    "src/components/Publishing/PublishingControls/PublishingControls.test.tsx",
     "src/components/Publishing/ValidationDashboard/ValidationDashboard.test.tsx",
     "src/components/TopicBacklogManager/TopicFilterPanel.test.tsx",
     "src/components/TopicBacklogManager/TopicList.test.tsx",
@@ -106,7 +105,6 @@
     "src/services/speakerOutreachService.test.ts",
     "src/services/speakerStatusService.test.ts",
     "src/services/topicService.test.ts",
-    "src/services/workflowService.test.ts",
     "src/stores/companyStore.test.ts",
     "src/stores/partnerModalStore.test.ts",
     "src/stores/partnerStore.test.ts",

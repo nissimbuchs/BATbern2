@@ -1,0 +1,31 @@
+meta {
+  name: Publishing resource — GET returns the stored schedule
+  type: http
+  seq: 16.3
+}
+
+get {
+  url: {{baseUrl}}/events/{{createdEventCode}}/publishing
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("the schedule PATCHed by 16b persisted", function() {
+    const body = res.getBody();
+    expect(body.phase2Enabled).to.equal(false);
+    expect(body.phase3DaysBeforeEvent).to.equal(10);
+  });
+}
+
+docs {
+  Story 4.9b: read-back of 16b.
+}

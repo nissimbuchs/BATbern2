@@ -1,284 +1,245 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+/**
+ * PublishingControls with its real usePublishing hook, publishingService and apiClient against the
+ * MSW harness, and the real i18next `en` bundle (Epic 17 test fidelity, touch rule of Story 4.9b).
+ * The assertions read what went over the wire: `POST /events/{code}/phases/{phase}/publish` and
+ * `…/unpublish`.
+ */
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { HttpResponse, delay } from 'msw';
+import { api } from '@/test/msw/api';
+import type { PublishingStatusResponse } from '@/types/event.types';
 import { PublishingControls } from './PublishingControls';
-import * as usePublishingHook from '@/hooks/usePublishing/usePublishing';
 
-// Mock react-i18next with proper translations
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string, params?: Record<string, unknown>) => {
-      const translations: Record<string, string> = {
-        'publishing.controls.publishPhases': 'Publish Phases',
-        'publishing.controls.publishPhase': params?.phase ? `Publish ${params.phase}` : 'Publish',
-        'publishing.controls.published': params?.phase ? `${params.phase} Published` : 'Published',
-        'publishing.controls.publishing': 'Publishing',
-        'publishing.controls.validationErrors': 'Validation Errors',
-        'publishing.controls.accessibility.publishingPhase': `Publishing ${params?.phase || 'phase'}`,
-        'publishing.controls.phase.topic': 'Topic',
-        'publishing.controls.phase.speakers': 'Speakers',
-        'publishing.controls.phase.agenda': 'Agenda',
-      };
-      return translations[key] || key;
-    },
-    i18n: {
-      language: 'en',
-      changeLanguage: vi.fn(),
-    },
-  }),
-}));
+const EVENT = 'BATbern142';
 
-// Mock usePublishing hook
-vi.mock('@/hooks/usePublishing/usePublishing');
+const status = (overrides: Partial<PublishingStatusResponse> = {}): PublishingStatusResponse => ({
+  currentPhase: null,
+  publishedPhases: [],
+  topic: { isValid: true, errors: [] },
+  speakers: { isValid: true, errors: [] },
+  sessions: { isValid: true, errors: [], assignedCount: 6, totalCount: 6, unassignedSessions: [] },
+  phase2Enabled: true,
+  phase2DaysBeforeEvent: 30,
+  phase2TriggerDate: '2027-02-12T08:00:00Z',
+  phase3Enabled: true,
+  phase3DaysBeforeEvent: 14,
+  phase3TriggerDate: '2027-02-28T08:00:00Z',
+  ...overrides,
+});
 
-const mockUsePublishing = {
-  publishPhase: vi.fn(),
-  unpublishPhase: vi.fn(),
-  isPublishing: false,
-  isUnpublishing: false,
-  publishError: null,
-  validationErrors: [],
-  preview: null,
-  publishingStatus: {
-    currentPhase: null,
-    publishedPhases: [],
-    topic: { isValid: true, errors: [] },
-    speakers: { isValid: true, errors: [] },
-    sessions: {
-      isValid: true,
-      errors: [],
-      assignedCount: 0,
-      totalCount: 0,
-      unassignedSessions: [],
-    },
-  },
-};
+const published = (phase: string) => ({
+  phase,
+  published: true,
+  publishedAt: '2026-11-10T10:00:00Z',
+  cdnInvalidated: true,
+});
 
 describe('PublishingControls', () => {
+  let queryClient: QueryClient;
+
+  const renderControls = async () => {
+    render(
+      <QueryClientProvider client={queryClient}>
+        <PublishingControls eventCode={EVENT} currentPhase="topic" />
+      </QueryClientProvider>
+    );
+    await waitFor(() => expect(api.calls('getPublishing')).toHaveLength(1));
+    // the buttons render enabled or disabled only once the status is there
+    await waitFor(() => expect(screen.getByTestId('publish-topic-button')).toBeEnabled());
+  };
+
   beforeEach(() => {
-    vi.clearAllMocks();
-    vi.mocked(usePublishingHook.usePublishing).mockReturnValue(mockUsePublishing);
+    queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false, gcTime: 0 }, mutations: { retry: false } },
+    });
+    api.on('getPublishing', () => status());
   });
 
-  describe('Publish Button', () => {
-    it('should render publish button for topic phase', () => {
-      render(<PublishingControls eventCode="BATbern142" currentPhase="topic" />);
+  afterEach(() => {
+    queryClient.clear();
+  });
 
-      expect(screen.getByTestId('publish-topic-button')).toBeInTheDocument();
-    });
+  describe('Publish buttons', () => {
+    it('renders one button per phase', async () => {
+      await renderControls();
 
-    it('should render publish button for speakers phase', () => {
-      render(<PublishingControls eventCode="BATbern142" currentPhase="speakers" />);
-
+      expect(screen.getByTestId('publish-topic-button')).toHaveTextContent('Publish Topic');
       expect(screen.getByTestId('publish-speakers-button')).toBeInTheDocument();
-    });
-
-    it('should render publish button for agenda phase', () => {
-      render(<PublishingControls eventCode="BATbern142" currentPhase="agenda" />);
-
       expect(screen.getByTestId('publish-agenda-button')).toBeInTheDocument();
     });
 
-    it('should call publishPhase when publish button clicked', async () => {
-      render(<PublishingControls eventCode="BATbern142" currentPhase="topic" />);
+    it('publishes the phase through POST …/phases/{phase}/publish', async () => {
+      const user = userEvent.setup();
+      api.on('publishPhase', ({ params }) => published(params.phase));
+      await renderControls();
 
-      const publishButton = screen.getByTestId('publish-topic-button');
-      fireEvent.click(publishButton);
+      await user.click(screen.getByTestId('publish-topic-button'));
 
-      await waitFor(() => {
-        expect(mockUsePublishing.publishPhase).toHaveBeenCalledWith('topic');
-      });
+      await waitFor(() => expect(api.calls('publishPhase')).toHaveLength(1));
+      expect(api.calls('publishPhase')[0].params).toEqual({ eventCode: EVENT, phase: 'topic' });
+      expect(api.calls('publishPhase')[0].url.pathname).toContain(
+        `/events/${EVENT}/phases/topic/publish`
+      );
     });
 
-    it('should disable publish button when publishing in progress', () => {
-      vi.mocked(usePublishingHook.usePublishing).mockReturnValue({
-        ...mockUsePublishing,
-        isPublishing: true,
+    it('disables the buttons while a publish is in flight', async () => {
+      const user = userEvent.setup();
+      api.on('publishPhase', async ({ params }) => {
+        await delay(200);
+        return published(params.phase);
       });
+      await renderControls();
 
-      render(<PublishingControls eventCode="BATbern142" currentPhase="topic" />);
+      await user.click(screen.getByTestId('publish-topic-button'));
 
-      const publishButton = screen.getByTestId('publish-topic-button');
-      expect(publishButton).toBeDisabled();
+      await waitFor(() => expect(screen.getByTestId('publish-topic-button')).toBeDisabled());
+      expect(screen.getByTestId('publish-topic-button')).toHaveTextContent('Publishing...');
     });
 
-    it('should disable publish button when validation errors exist', () => {
-      const validationErrors = [
-        {
-          field: 'sessions.timing',
-          message: 'Not all sessions have timing assigned',
-          requirement: 'All sessions must have startTime and endTime for agenda phase',
-        },
-      ];
-
+    it('disables a phase whose content is not ready', async () => {
+      api.on('getPublishing', () =>
+        status({ topic: { isValid: false, errors: ['Event topic must be defined'] } })
+      );
       render(
-        <PublishingControls
-          eventCode="BATbern142"
-          currentPhase="agenda"
-          validationErrors={validationErrors}
-        />
+        <QueryClientProvider client={queryClient}>
+          <PublishingControls eventCode={EVENT} currentPhase="topic" />
+        </QueryClientProvider>
       );
 
-      const publishButton = screen.getByTestId('publish-agenda-button');
-      expect(publishButton).toBeDisabled();
-    });
-
-    it('should show loading state when publishing', () => {
-      vi.mocked(usePublishingHook.usePublishing).mockReturnValue({
-        ...mockUsePublishing,
-        isPublishing: true,
-      });
-
-      render(<PublishingControls eventCode="BATbern142" currentPhase="topic" />);
-
-      // Check that the publish button has a loading spinner
-      const publishButton = screen.getByTestId('publish-topic-button');
-      expect(publishButton).toBeInTheDocument();
+      await waitFor(() => expect(api.calls('getPublishing')).toHaveLength(1));
+      expect(screen.getByTestId('publish-topic-button')).toBeDisabled();
     });
   });
 
-  describe('Revert Phase', () => {
-    const withPublished = (publishedPhases: string[]) =>
-      vi.mocked(usePublishingHook.usePublishing).mockReturnValue({
-        ...mockUsePublishing,
-        publishingStatus: { ...mockUsePublishing.publishingStatus, publishedPhases },
-      });
+  describe('Progressive phase ordering', () => {
+    it('keeps speakers disabled until the topic is published', async () => {
+      await renderControls();
 
-    it('should not offer a revert when nothing is published', () => {
-      withPublished([]);
-      render(<PublishingControls eventCode="BATbern60" currentPhase="topic" />);
-
-      expect(screen.queryByTestId('revert-phase-button')).not.toBeInTheDocument();
+      expect(screen.getByTestId('publish-speakers-button')).toBeDisabled();
     });
 
-    it('should offer to revert the most recently published phase', () => {
-      withPublished(['topic', 'speakers']);
-      render(<PublishingControls eventCode="BATbern60" currentPhase="speakers" />);
-
-      expect(screen.getByTestId('revert-phase-button')).toHaveTextContent(
-        'publishing.controls.revertPhase'
+    it('enables speakers once the topic is published, and keeps agenda disabled', async () => {
+      api.on('getPublishing', () => status({ currentPhase: 'topic', publishedPhases: ['topic'] }));
+      render(
+        <QueryClientProvider client={queryClient}>
+          <PublishingControls eventCode={EVENT} currentPhase="topic" />
+        </QueryClientProvider>
       );
-    });
 
-    it('should unpublish the latest phase only after the organizer confirms', async () => {
-      withPublished(['topic', 'speakers']);
-      render(<PublishingControls eventCode="BATbern60" currentPhase="speakers" />);
-
-      fireEvent.click(screen.getByTestId('revert-phase-button'));
-      expect(mockUsePublishing.unpublishPhase).not.toHaveBeenCalled();
-
-      fireEvent.click(await screen.findByTestId('confirm-revert-phase-button'));
-      expect(mockUsePublishing.unpublishPhase).toHaveBeenCalledWith('speakers');
-    });
-
-    it('should not unpublish when the organizer cancels the confirmation', async () => {
-      withPublished(['topic', 'speakers', 'agenda']);
-      render(<PublishingControls eventCode="BATbern60" currentPhase="agenda" />);
-
-      fireEvent.click(screen.getByTestId('revert-phase-button'));
-      fireEvent.click(await screen.findByTestId('cancel-revert-phase-button'));
-
-      expect(mockUsePublishing.unpublishPhase).not.toHaveBeenCalled();
+      await waitFor(() => expect(screen.getByTestId('publish-speakers-button')).toBeEnabled());
+      expect(screen.getByTestId('publish-topic-button')).toHaveTextContent('Topic Published');
+      expect(screen.getByTestId('publish-agenda-button')).toBeDisabled();
     });
   });
 
-  describe('Progressive Phase Ordering', () => {
-    it('should disable speakers publish when topic not yet published', () => {
-      render(<PublishingControls eventCode="BATbern142" currentPhase="speakers" />);
-
-      const speakersButton = screen.getByTestId('publish-speakers-button');
-      expect(speakersButton).toBeDisabled();
-    });
-
-    it('should enable speakers publish when topic is published', () => {
-      vi.mocked(usePublishingHook.usePublishing).mockReturnValue({
-        ...mockUsePublishing,
-        publishingStatus: {
-          ...mockUsePublishing.publishingStatus,
-          publishedPhases: ['topic'],
-        },
-      });
-
-      render(<PublishingControls eventCode="BATbern142" currentPhase="speakers" />);
-
-      const speakersButton = screen.getByTestId('publish-speakers-button');
-      expect(speakersButton).not.toBeDisabled();
-    });
-
-    it('should disable agenda publish when speakers not yet published', () => {
-      vi.mocked(usePublishingHook.usePublishing).mockReturnValue({
-        ...mockUsePublishing,
-        publishingStatus: {
-          ...mockUsePublishing.publishingStatus,
-          publishedPhases: ['topic'],
-        },
-      });
-
-      render(<PublishingControls eventCode="BATbern142" currentPhase="agenda" />);
-
-      const agendaButton = screen.getByTestId('publish-agenda-button');
-      expect(agendaButton).toBeDisabled();
-    });
-  });
-
-  describe('Validation Error Display', () => {
-    it('should display validation errors when provided', () => {
-      const validationErrors = [
-        {
-          field: 'sessions.timing',
-          message: 'Not all sessions have timing assigned',
-          requirement: 'All sessions must have startTime and endTime for agenda phase',
-        },
-        {
-          field: 'speakers.count',
-          message: 'No speakers accepted',
-          requirement: 'At least one speaker must be accepted for speakers phase',
-        },
-      ];
-
-      render(
-        <PublishingControls
-          eventCode="BATbern142"
-          currentPhase="agenda"
-          validationErrors={validationErrors}
-        />
+  describe('Validation errors', () => {
+    it('lists every reason of the 422 its own publish received', async () => {
+      const user = userEvent.setup();
+      api.on('getPublishing', () =>
+        status({ currentPhase: 'speakers', publishedPhases: ['topic', 'speakers'] })
       );
-
-      expect(screen.getByText(/not all sessions have timing assigned/i)).toBeInTheDocument();
-      expect(screen.getByText(/no speakers accepted/i)).toBeInTheDocument();
-    });
-
-    it('should show error icon when validation fails', () => {
-      const validationErrors = [
-        {
-          field: 'sessions.timing',
-          message: 'Not all sessions have timing assigned',
-          requirement: 'All sessions must have startTime and endTime for agenda phase',
-        },
-      ];
-
-      render(
-        <PublishingControls
-          eventCode="BATbern142"
-          currentPhase="agenda"
-          validationErrors={validationErrors}
-        />
+      api.on('publishPhase', () =>
+        HttpResponse.json(
+          {
+            error: 'VALIDATION_ERROR',
+            message: 'Event date must be in the future; All sessions must have timing assigned',
+            validationErrors: [
+              { sessionSlug: null, field: 'date', message: 'Event date must be in the future' },
+              {
+                sessionSlug: 'keynote-bruennimann',
+                field: 'timing',
+                message: 'Session has no timing assigned',
+              },
+            ],
+          },
+          { status: 422 }
+        )
       );
+      render(
+        <QueryClientProvider client={queryClient}>
+          <PublishingControls eventCode={EVENT} currentPhase="speakers" />
+        </QueryClientProvider>
+      );
+      await waitFor(() => expect(screen.getByTestId('publish-agenda-button')).toBeEnabled());
 
+      await user.click(screen.getByTestId('publish-agenda-button'));
+
+      expect(await screen.findByText('Validation Errors:')).toBeInTheDocument();
+      expect(screen.getByText('• Event date must be in the future')).toBeInTheDocument();
+      expect(screen.getByText('• Session has no timing assigned')).toBeInTheDocument();
       expect(screen.getByTestId('validation-error-icon')).toBeInTheDocument();
     });
   });
 
-  describe('Accessibility', () => {
-    it('should announce publish success to screen readers', async () => {
-      render(<PublishingControls eventCode="BATbern142" currentPhase="topic" />);
+  describe('Revert phase', () => {
+    it('offers no revert when nothing is published', async () => {
+      await renderControls();
 
-      const publishButton = screen.getByTestId('publish-topic-button');
-      fireEvent.click(publishButton);
+      expect(screen.queryByTestId('revert-phase-button')).not.toBeInTheDocument();
+    });
 
-      await waitFor(() => {
-        const announcement = screen.getByRole('status', { hidden: true });
-        expect(announcement).toBeInTheDocument();
+    it('unpublishes the latest phase only after the organizer confirms', async () => {
+      const user = userEvent.setup();
+      api.on('getPublishing', () =>
+        status({ currentPhase: 'speakers', publishedPhases: ['topic', 'speakers'] })
+      );
+      api.on('unpublishPhase', ({ params }) => ({
+        phase: params.phase,
+        published: false,
+        unpublishedAt: '2026-11-10T11:00:00Z',
+        cdnInvalidated: true,
+      }));
+      render(
+        <QueryClientProvider client={queryClient}>
+          <PublishingControls eventCode={EVENT} currentPhase="speakers" />
+        </QueryClientProvider>
+      );
+
+      const revert = await screen.findByTestId('revert-phase-button');
+      expect(revert).toHaveTextContent('Revert Speakers publication');
+      await user.click(revert);
+      expect(api.calls('unpublishPhase')).toHaveLength(0);
+
+      await user.click(screen.getByTestId('confirm-revert-phase-button'));
+
+      await waitFor(() => expect(api.calls('unpublishPhase')).toHaveLength(1));
+      expect(api.calls('unpublishPhase')[0].params).toEqual({
+        eventCode: EVENT,
+        phase: 'speakers',
       });
+    });
+
+    it('does not unpublish when the organizer cancels', async () => {
+      const user = userEvent.setup();
+      api.on('getPublishing', () => status({ currentPhase: 'topic', publishedPhases: ['topic'] }));
+      render(
+        <QueryClientProvider client={queryClient}>
+          <PublishingControls eventCode={EVENT} currentPhase="topic" />
+        </QueryClientProvider>
+      );
+
+      await user.click(await screen.findByTestId('revert-phase-button'));
+      await user.click(screen.getByTestId('cancel-revert-phase-button'));
+
+      expect(api.calls('unpublishPhase')).toHaveLength(0);
+    });
+  });
+
+  describe('Accessibility', () => {
+    it('announces the publish to screen readers', async () => {
+      const user = userEvent.setup();
+      api.on('publishPhase', async ({ params }) => {
+        await delay(100);
+        return published(params.phase);
+      });
+      await renderControls();
+
+      await user.click(screen.getByTestId('publish-topic-button'));
+
+      expect(await screen.findByRole('status')).toHaveTextContent('Publishing topic');
     });
   });
 });

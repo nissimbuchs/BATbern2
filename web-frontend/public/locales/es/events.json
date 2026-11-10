@@ -992,7 +992,19 @@
     "sections": {
       "validation": "Validación",
       "phases": "Fase de publicación",
-      "publishNext": "Publicar la siguiente fase"
+      "publishNext": "Publicar la siguiente fase",
+      "schedule": "Publicación automática"
+    },
+    "schedule": {
+      "description": "La tarea diaria publica estas fases en el sitio web el día indicado antes del evento. Solo las fases no publicadas.",
+      "speakers": "Publicar los ponentes automáticamente",
+      "agenda": "Publicar el programa automáticamente",
+      "daysBefore": "Días antes del evento",
+      "invalidDays": "De 1 a 365 días",
+      "triggerDate": "El {{date}}",
+      "save": "Guardar la programación",
+      "saved": "Programación guardada.",
+      "error": "No se pudo guardar la programación."
     }
   },
   "notifications": {

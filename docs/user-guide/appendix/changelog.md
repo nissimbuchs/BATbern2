@@ -42,6 +42,12 @@ Only items that are not live yet. Everything else is listed under its release be
 
 ### Unreleased — after BATbern60
 
+**Improvement — Auto-publish schedule per event, one way to change the event state (4.9b)**:
+- ✅ The Publishing tab has an **Auto-publish schedule**: speakers and agenda can each be switched off for one event, and the number of days before the event changed (1 to 365). The daily job follows it. Before, the job always published 30 and 14 days before, whatever was set.
+- ✅ The phase timeline shows the scheduled auto-publish date of each phase from that schedule.
+- ✅ Publishing the agenda lists every reason it is not ready (no date, a date in the past, sessions without a time) instead of the first one only. Before, the reasons of a refused publish were not shown at all.
+- ⚠️ API, breaking for scripts: the event state changes only through `POST /api/v1/events/{eventCode}/transition`; phases are `POST …/phases/{phase}/publish` and `…/unpublish`; status and schedule are `GET`/`PATCH …/publishing`. The former `…/publish`, `…/publish/{phase}`, `…/unpublish/{phase}`, `…/publish/schedule`, `…/publish/status` and `…/workflow/transition` answer 404, and a `workflowState` in an event PUT or PATCH answers 400.
+
 **Improvement — One way to send mail to an audience (16.8c)**:
 - ✅ Newsletter, registrant notices (for example "the slides are online"), speaker reminders and venue and catering mail go out only from **+ New mail** on the event's Communications tab. The old Newsletter, Registrant notices and Venue sections and the reminder button per speaker were already hidden since 16.8b; their code and server endpoints are now removed. A newsletter's progress and **Retry** are on its row in the Mail Center.
 - ✅ The venue and catering contacts in Administration now say that their mails are sent from the Communications tab.

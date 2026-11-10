@@ -1,0 +1,30 @@
+meta {
+  name: Unpublish kept AGENDA_PUBLISHED, phase back to speakers
+  type: http
+  seq: 16.5
+}
+
+get {
+  url: {{baseUrl}}/events/{{createdEventCode}}/publishing
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("published phase is speakers again", function() {
+    expect(res.getBody().currentPhase).to.equal("speakers");
+  });
+}
+
+docs {
+  Story 4.9b: read-back of 16d. The workflow state is checked by the event
+  read in 16f.
+}

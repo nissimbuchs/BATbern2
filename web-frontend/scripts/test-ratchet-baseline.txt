@@ -223,7 +223,6 @@ fe-mock-components	web-frontend/src/components/organizer/EventPage/__tests__/Add
 fe-mock-components	web-frontend/src/components/organizer/EventPage/__tests__/EventCommunicationsContainer.test.tsx	4
 fe-mock-components	web-frontend/src/components/organizer/EventPage/__tests__/EventDetailsContainer.test.tsx	3
 fe-mock-components	web-frontend/src/components/organizer/EventPage/__tests__/EventInfoTab.test.tsx	3
-fe-mock-components	web-frontend/src/components/organizer/EventPage/__tests__/EventPublishingTab.test.tsx	4
 fe-mock-components	web-frontend/src/components/organizer/EventPage/__tests__/EventTasksLiveTab.test.tsx	2
 fe-mock-components	web-frontend/src/components/organizer/EventPage/__tests__/EventWrapupContainer.test.tsx	2
 fe-mock-components	web-frontend/src/components/organizer/EventPage/cockpit/__tests__/AttentionCard.test.tsx	1
@@ -273,7 +272,6 @@ fe-mock-components	web-frontend/src/pages/public/__tests__/UnsubscribePage.test.
 fe-mock-components	web-frontend/src/pages/public/__tests__/VerifyAdditionalEmailPage.test.tsx	1
 fe-mock-hooks	web-frontend/src/App.routing.test.tsx	1
 fe-mock-hooks	web-frontend/src/components/Publishing/LivePreview/LivePreview.test.tsx	1
-fe-mock-hooks	web-frontend/src/components/Publishing/PublishingControls/PublishingControls.test.tsx	1
 fe-mock-hooks	web-frontend/src/components/SlotAssignment/DragDropSlotAssignment/__tests__/DragDropSlotAssignment.test.tsx	4
 fe-mock-hooks	web-frontend/src/components/SpeakerBrainstormingPanel/PromoteSpeakerDialog.test.tsx	1
 fe-mock-hooks	web-frontend/src/components/SpeakerBrainstormingPanel/SpeakerBrainstormingPanel.test.tsx	1
@@ -300,7 +298,6 @@ fe-mock-hooks	web-frontend/src/components/organizer/EventPage/EventSettingsTab.t
 fe-mock-hooks	web-frontend/src/components/organizer/EventPage/__tests__/EventAppreciationTab.test.tsx	1
 fe-mock-hooks	web-frontend/src/components/organizer/EventPage/__tests__/EventCommunicationsContainer.test.tsx	1
 fe-mock-hooks	web-frontend/src/components/organizer/EventPage/__tests__/EventInfoTab.test.tsx	3
-fe-mock-hooks	web-frontend/src/components/organizer/EventPage/__tests__/EventPublishingTab.test.tsx	2
 fe-mock-hooks	web-frontend/src/components/organizer/EventPage/__tests__/RegistrationActionsMenu.test.tsx	1
 fe-mock-hooks	web-frontend/src/components/organizer/EventPage/cockpit/__tests__/CockpitTab.test.tsx	3
 fe-mock-hooks	web-frontend/src/components/organizer/EventPage/cockpit/__tests__/useCockpitCards.test.ts	4
@@ -377,7 +374,6 @@ fe-mock-hooks	web-frontend/src/pages/public/__tests__/UnsubscribePage.test.tsx	1
 fe-mock-hooks	web-frontend/src/pages/public/__tests__/VerifyAdditionalEmailPage.test.tsx	1
 fe-mock-hooks	web-frontend/src/pages/speaker-portal/__tests__/ContentSubmissionPage.test.tsx	1
 fe-mock-hooks	web-frontend/src/pages/speaker-portal/__tests__/InvitationResponsePage.test.tsx	1
-fe-mock-i18n	web-frontend/src/components/Publishing/PublishingControls/PublishingControls.test.tsx	1
 fe-mock-i18n	web-frontend/src/components/SpeakerBrainstormingPanel/PromoteSpeakerDialog.test.tsx	1
 fe-mock-i18n	web-frontend/src/components/SpeakerBrainstormingPanel/SpeakerBrainstormingPanel.test.tsx	1
 fe-mock-i18n	web-frontend/src/components/TopicBacklogManager/CreateTopicModal.test.tsx	1
@@ -406,7 +402,6 @@ fe-mock-i18n	web-frontend/src/components/organizer/EventPage/EventParticipantLis
 fe-mock-i18n	web-frontend/src/components/organizer/EventPage/EventParticipantTable.test.tsx	1
 fe-mock-i18n	web-frontend/src/components/organizer/EventPage/EventParticipantsTab.test.tsx	1
 fe-mock-i18n	web-frontend/src/components/organizer/EventPage/EventSettingsTab.test.tsx	1
-fe-mock-i18n	web-frontend/src/components/organizer/EventPage/EventWorkflowStateSection.test.tsx	1
 fe-mock-i18n	web-frontend/src/components/organizer/EventPage/__tests__/EventAppreciationTab.test.tsx	1
 fe-mock-i18n	web-frontend/src/components/organizer/EventPage/__tests__/EventCommunicationsContainer.test.tsx	1
 fe-mock-i18n	web-frontend/src/components/organizer/EventPage/__tests__/EventDetailsContainer.test.tsx	1
@@ -498,7 +493,6 @@ fe-mock-services	web-frontend/src/components/organizer/EventManagement/__tests__
 fe-mock-services	web-frontend/src/components/organizer/EventManagement/__tests__/WorkflowProgressBar.5.1a.test.tsx	1
 fe-mock-services	web-frontend/src/components/organizer/EventPage/EventParticipantList.test.tsx	1
 fe-mock-services	web-frontend/src/components/organizer/EventPage/EventParticipantsTab.test.tsx	2
-fe-mock-services	web-frontend/src/components/organizer/EventPage/EventWorkflowStateSection.test.tsx	1
 fe-mock-services	web-frontend/src/components/organizer/EventPage/__tests__/AddParticipantDialog.test.tsx	1
 fe-mock-services	web-frontend/src/components/organizer/EventPage/__tests__/EventCommunicationsContainer.test.tsx	1
 fe-mock-services	web-frontend/src/components/organizer/EventPage/__tests__/EventInfoTab.test.tsx	1
@@ -640,5 +634,4 @@ fe-mock-services	web-frontend/src/services/speakerPortalService.test.ts	1
 fe-mock-services	web-frontend/src/services/speakerStatusService.test.ts	1
 fe-mock-services	web-frontend/src/services/timetableService/__tests__/timetableService.test.ts	1
 fe-mock-services	web-frontend/src/services/topicService.test.ts	1
-fe-mock-services	web-frontend/src/services/workflowService.test.ts	1
 fe-mock-services	web-frontend/src/utils/topicLookup.test.ts	1

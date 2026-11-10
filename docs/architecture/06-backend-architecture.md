@@ -550,8 +550,8 @@ sequenceDiagram
     Org->>ST: assign session timing
     ST->>EWS: SessionTimingAssignedEvent
     Note over EWS: SLOT_ASSIGNMENT to AGENDA_PUBLISHED when every session has timing and the published phase is speakers or agenda
-    Org->>PUB: publish agenda, or auto-publish job at 01:00
-    PUB->>EWS: transition to AGENDA_PUBLISHED, gate: every accepted speaker publishable
+    Org->>PUB: publish agenda phase, or auto-publish job at 01:00 on the scheduled day
+    PUB->>EWS: transition to AGENDA_PUBLISHED with override, gate: title, date, timed sessions
     SCH->>EWS: 00:01 on event day to EVENT_LIVE
     SCH->>EWS: 23:59 to EVENT_COMPLETED, also catches events stuck in AGENDA_PUBLISHED
     SCH->>EWS: 02:00 to ARCHIVED after more than 14 days
@@ -564,8 +564,21 @@ sequenceDiagram
   `EventWorkflowTransitionEvent`, which activates tasks (below) and opens or freezes Q&A windows
   (`SessionQnaWindowListener`). The Watch completes an event directly when all sessions are done
   (`WatchSessionService`, override).
-- Crons are the defaults in `EventWorkflowScheduledService` and `PublishingScheduledService`
-  (speakers phase 30 days before, agenda 14 days before the event, when auto-publish is enabled).
+- Crons are the defaults in `EventWorkflowScheduledService` and `PublishingScheduledService`.
+  `PublishingScheduledService.runDailyAutoPublish` (01:00, ShedLock) reads each event's
+  `publishing_config` row through `PublishingService.scheduleOf` (defaults when there is none:
+  speakers 30 days, agenda 14 days before, both enabled) and publishes a phase on exactly that day.
+  Until Story 4.9b it used fixed 30 and 14 days.
+- **One transition idiom (Story 4.9b, ADR-013 section 1):** the workflow state changes only through
+  `POST /events/{eventCode}/transition` (`EventWorkflowController`, the state machine; override with
+  reason) and as a side effect of `POST /events/{eventCode}/phases/agenda/publish`
+  (`PublishingService`: validates title, date, a future date when the publish moves the workflow,
+  and timed sessions, 422 `PublishValidationError` with every reason; moves an event before
+  AGENDA_PUBLISHED there with override, sets `publishedAt`, fires `EventPublishedEvent`; never moves
+  it backwards). PUT and PATCH of the event carry no `workflowState` (an unknown property, 400).
+  Phases are `POST …/phases/{phase}/publish|unpublish` (`topic`, `speakers`, `agenda`; unknown: 400),
+  each evicting the event and archive caches and invalidating the CDN paths of the phase; status
+  and auto-publish schedule are one resource, `GET`/`PATCH /events/{eventCode}/publishing`.
   No `zone` is set on these crons, so they run in the JVM time zone (not verified 2026-11-04 which
   zone the containers use).
 - Not implemented: overflow management and voting (removed by ADR-009, replaced by the slot-capacity

@@ -4,7 +4,7 @@
  * State management hook for progressive publishing functionality
  * Features:
  * - Publish/unpublish phases (topic → speakers → agenda)
- * - Auto-publish scheduling
+ * - Auto-publish schedule, part of the publishing resource (Story 4.9b)
  * - Real-time updates via React Query
  */
 
@@ -13,7 +13,7 @@ import { publishingService } from '@/services/publishingService/publishingServic
 import type {
   PublishingPhase,
   PublishingStatusResponse,
-  AutoPublishScheduleRequest,
+  PatchPublishingRequest,
   PublishValidationDetail,
   PublishValidationError,
 } from '@/types/event.types';
@@ -31,9 +31,10 @@ export interface UsePublishingReturn {
   publishError: Error | null;
   validationErrors: PublishValidationDetail[];
 
-  // Auto-publish scheduling (one schedule per event: the phase 2 and phase 3 triggers)
-  scheduleAutoPublish: (request: AutoPublishScheduleRequest) => void;
+  // Auto-publish schedule (one per event: the phase 2 and phase 3 triggers), partial update
+  updateSchedule: (request: PatchPublishingRequest) => Promise<PublishingStatusResponse>;
   isScheduling: boolean;
+  scheduleError: Error | null;
 }
 
 /**
@@ -51,16 +52,19 @@ export const usePublishing = (eventCode: string): UsePublishingReturn => {
   // Publishing status query (auto-fetched)
   const { data: publishingStatus, isLoading: isLoadingStatus } = useQuery({
     queryKey: statusKey,
-    queryFn: () => publishingService.getPublishingStatus(eventCode),
+    queryFn: () => publishingService.getPublishing(eventCode),
     staleTime: 10000, // 10 seconds - validation can change frequently
   });
 
   // Publish phase mutation
   const publishPhaseMutation = useMutation({
     mutationFn: (phase: PublishingPhase) => publishingService.publishPhase(eventCode, phase),
-    onSuccess: () => {
-      // Invalidate status, version history and change log to refetch
+    onSuccess: (_response, phase) => {
       queryClient.invalidateQueries({ queryKey: statusKey });
+      // Publishing the agenda can move the event into AGENDA_PUBLISHED (Story 4.9b)
+      if (phase === 'agenda') {
+        queryClient.invalidateQueries({ queryKey: ['event', eventCode] });
+      }
     },
   });
 
@@ -72,10 +76,13 @@ export const usePublishing = (eventCode: string): UsePublishingReturn => {
     },
   });
 
-  // Schedule auto-publish mutation
-  const scheduleAutoPublishMutation = useMutation({
-    mutationFn: (request: AutoPublishScheduleRequest) =>
-      publishingService.scheduleAutoPublish(eventCode, request),
+  // Auto-publish schedule: PATCH answers the whole resource, which replaces the cached status
+  const scheduleMutation = useMutation({
+    mutationFn: (request: PatchPublishingRequest) =>
+      publishingService.patchPublishing(eventCode, request),
+    onSuccess: (publishing) => {
+      queryClient.setQueryData(statusKey, publishing);
+    },
   });
 
   // Extract validation errors from publish error (422 response)
@@ -104,8 +111,9 @@ export const usePublishing = (eventCode: string): UsePublishingReturn => {
     publishError: publishPhaseMutation.error,
     validationErrors,
 
-    // Auto-publish scheduling
-    scheduleAutoPublish: (request) => scheduleAutoPublishMutation.mutate(request),
-    isScheduling: scheduleAutoPublishMutation.isPending,
+    // Auto-publish schedule
+    updateSchedule: (request) => scheduleMutation.mutateAsync(request),
+    isScheduling: scheduleMutation.isPending,
+    scheduleError: scheduleMutation.error,
   };
 };

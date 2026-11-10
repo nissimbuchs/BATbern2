@@ -1,324 +1,132 @@
 /**
- * Workflow Service Tests (RED Phase - TDD)
+ * workflowService against the MSW harness (Epic 17 test fidelity, touch rule of Story 4.9b): the
+ * real apiClient sends each call, the harness checks it against events-core-api and answers with
+ * the spec example or a typed override.
  *
- * Story 5.1a - Task 8 (Frontend Component Tests)
- * AC: 15-17 (Frontend Integration)
- *
- * Tests for workflow status API calls:
- * - GET /api/v1/events/{code}/workflow/status
- * - PUT /api/v1/events/{code}/workflow/transition
+ * - GET  /events/{code}/workflow/status
+ * - POST /events/{code}/transition (Story 4.9b: the one way to change the state). It answers a
+ *   WorkflowTransitionResponse, not an Event.
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
+import { HttpResponse } from 'msw';
+import { setNavigationCallback } from '@/services/api/apiClient';
+import { api } from '@/test/msw/api';
 import { workflowService } from './workflowService';
-import apiClient from '@/services/api/apiClient';
-import type { AxiosResponse } from 'axios';
 
-// Mock apiClient
-vi.mock('@/services/api/apiClient', () => ({
-  default: {
-    get: vi.fn(),
-    post: vi.fn(),
-  },
-}));
+const navigate = vi.fn();
+beforeAll(() => setNavigationCallback(navigate));
+afterAll(() => setNavigationCallback(() => undefined));
+
+const problem = (status: number, error: string, message: string) =>
+  HttpResponse.json(
+    {
+      timestamp: '2026-11-10T08:00:00Z',
+      path: '/api/v1/events/BATbern56/transition',
+      status,
+      error,
+      message,
+    },
+    { status }
+  );
 
 describe('workflowService', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
   describe('getWorkflowStatus', () => {
-    it('should_returnWorkflowStatus_when_validEventCodeProvided', async () => {
-      // Given: Mock API response
-      const mockResponse: AxiosResponse = {
-        data: {
-          currentState: 'SPEAKER_OUTREACH',
-          blockedTransitions: [],
-          nextAvailableStates: ['SPEAKER_CONFIRMATION'],
-          validationMessages: [],
-        },
-        status: 200,
-        statusText: 'OK',
-        headers: {},
-        config: {} as any,
-      };
+    it('reads the status of the event', async () => {
+      api.on('getWorkflowStatus', () => ({
+        currentState: 'SPEAKER_IDENTIFICATION',
+        nextAvailableStates: ['SLOT_ASSIGNMENT'],
+        blockedTransitions: ['SLOT_ASSIGNMENT'],
+        validationMessages: ['Cannot transition to SLOT_ASSIGNMENT: no accepted speaker'],
+      }));
 
-      vi.mocked(apiClient.get).mockResolvedValue(mockResponse);
-
-      // When: Fetching workflow status
       const result = await workflowService.getWorkflowStatus('BATbern56');
 
-      // Then: Should call correct endpoint and return status
-      expect(apiClient.get).toHaveBeenCalledWith('/events/BATbern56/workflow/status');
-      expect(result.currentState).toBe('SPEAKER_OUTREACH');
-      expect(result.nextAvailableStates).toEqual(['SPEAKER_CONFIRMATION']);
+      expect(api.calls('getWorkflowStatus')[0].params.eventCode).toBe('BATbern56');
+      expect(result.currentState).toBe('SPEAKER_IDENTIFICATION');
+      expect(result.blockedTransitions).toEqual(['SLOT_ASSIGNMENT']);
+      expect(result.validationMessages).toHaveLength(1);
     });
 
-    it('should_returnEmptyArrays_when_noBlockersOrNextStates', async () => {
-      // Given: Mock API response with no blockers
-      const mockResponse: AxiosResponse = {
-        data: {
-          currentState: 'CREATED',
-          blockedTransitions: [],
-          nextAvailableStates: [],
-          validationMessages: [],
-        },
-        status: 200,
-        statusText: 'OK',
-        headers: {},
-        config: {} as any,
-      };
-
-      vi.mocked(apiClient.get).mockResolvedValue(mockResponse);
-
-      // When: Fetching workflow status
+    it('answers the spec example by default', async () => {
       const result = await workflowService.getWorkflowStatus('BATbern56');
 
-      // Then: Should return empty arrays
-      expect(result.blockedTransitions).toEqual([]);
-      expect(result.nextAvailableStates).toEqual([]);
-      expect(result.validationMessages).toEqual([]);
+      expect(result.currentState).toBe('CREATED');
+      expect(result.nextAvailableStates).toEqual(['TOPIC_SELECTION']);
     });
 
-    it('should_returnValidationMessages_when_transitionBlocked', async () => {
-      // Given: Mock API response with validation messages
-      const mockResponse: AxiosResponse = {
-        data: {
-          currentState: 'TOPIC_SELECTION',
-          blockedTransitions: ['SPEAKER_OUTREACH'],
-          nextAvailableStates: ['SPEAKER_BRAINSTORMING'],
-          validationMessages: ['Need 6 speakers, have 3', 'Venue not confirmed'],
-        },
-        status: 200,
-        statusText: 'OK',
-        headers: {},
-        config: {} as any,
-      };
+    it('rejects with 404 when the event does not exist', async () => {
+      api.on('getWorkflowStatus', () => problem(404, 'Not Found', 'Event not found: BATbern56'));
 
-      vi.mocked(apiClient.get).mockResolvedValue(mockResponse);
-
-      // When: Fetching workflow status
-      const result = await workflowService.getWorkflowStatus('BATbern56');
-
-      // Then: Should return validation messages
-      expect(result.validationMessages).toEqual(['Need 6 speakers, have 3', 'Venue not confirmed']);
-      expect(result.blockedTransitions).toEqual(['SPEAKER_OUTREACH']);
+      await expect(workflowService.getWorkflowStatus('BATbern56')).rejects.toMatchObject({
+        response: { status: 404 },
+      });
     });
 
-    it('should_throwError_when_eventNotFound', async () => {
-      // Given: Mock API 404 error
-      const mockError = {
-        response: {
-          status: 404,
-          data: {
-            message: 'Event not found',
-            code: 'EVENT_NOT_FOUND',
-          },
-        },
-        isAxiosError: true,
-      };
+    it('rejects on a network failure', async () => {
+      api.on('getWorkflowStatus', () => HttpResponse.error());
 
-      vi.mocked(apiClient.get).mockRejectedValue(mockError);
-
-      // When/Then: Should throw error
-      await expect(workflowService.getWorkflowStatus('INVALID_CODE')).rejects.toThrow();
-    });
-
-    it('should_throwError_when_networkFailure', async () => {
-      // Given: Mock network error
-      const mockError = {
-        message: 'Network Error',
-        isAxiosError: true,
-      };
-
-      vi.mocked(apiClient.get).mockRejectedValue(mockError);
-
-      // When/Then: Should throw error
-      await expect(workflowService.getWorkflowStatus('BATbern56')).rejects.toThrow();
+      await expect(workflowService.getWorkflowStatus('BATbern56')).rejects.toMatchObject({
+        code: 'ERR_NETWORK',
+      });
     });
   });
 
   describe('transitionWorkflowState', () => {
-    it('should_transitionSuccessfully_when_validTransitionRequested', async () => {
-      // Given: Mock successful transition
-      const mockResponse: AxiosResponse = {
-        data: {
-          eventCode: 'BATbern56',
-          title: 'BATbern 56',
-          workflowState: 'TOPIC_SELECTION',
-          status: 'planning',
-        },
-        status: 200,
-        statusText: 'OK',
-        headers: {},
-        config: {} as any,
-      };
+    it('posts the target state to /events/{code}/transition and returns the transition result', async () => {
+      api.on('transitionEventWorkflowState', ({ params, body }) => ({
+        eventCode: params.eventCode,
+        workflowState: body?.targetState ?? 'CREATED',
+        updatedAt: '2026-11-10T08:00:00Z',
+      }));
 
-      vi.mocked(apiClient.post).mockResolvedValue(mockResponse);
-
-      // When: Transitioning to new state
       const result = await workflowService.transitionWorkflowState('BATbern56', 'TOPIC_SELECTION');
 
-      // Then: Should call correct endpoint with request body
-      expect(apiClient.post).toHaveBeenCalledWith('/events/BATbern56/workflow/transition', {
-        targetState: 'TOPIC_SELECTION',
-        overrideValidation: false,
+      const [call] = api.calls('transitionEventWorkflowState');
+      expect(call.method).toBe('POST');
+      expect(call.url.pathname).toContain('/events/BATbern56/transition');
+      expect(call.body).toEqual({ targetState: 'TOPIC_SELECTION', overrideValidation: false });
+      expect(result).toEqual({
+        eventCode: 'BATbern56',
+        workflowState: 'TOPIC_SELECTION',
+        updatedAt: '2026-11-10T08:00:00Z',
       });
-      expect(result.workflowState).toBe('TOPIC_SELECTION');
     });
 
-    it('should_throwError_when_invalidStateTransition', async () => {
-      // Given: Mock 400 error for invalid transition
-      const mockError = {
-        response: {
-          status: 400,
-          data: {
-            message: 'Invalid state transition from CREATED to ARCHIVED',
-            code: 'INVALID_STATE_TRANSITION',
-          },
-        },
-        isAxiosError: true,
-      };
+    it('sends the override flag and its reason', async () => {
+      await workflowService.transitionWorkflowState(
+        'BATbern56',
+        'ARCHIVED',
+        true,
+        'Historisches Event, nachträglich archiviert'
+      );
 
-      vi.mocked(apiClient.post).mockRejectedValue(mockError);
+      expect(api.calls('transitionEventWorkflowState')[0].body).toEqual({
+        targetState: 'ARCHIVED',
+        overrideValidation: true,
+        overrideReason: 'Historisches Event, nachträglich archiviert',
+      });
+    });
 
-      // When/Then: Should throw error
+    it('sends no reason when none is given', async () => {
+      await workflowService.transitionWorkflowState('BATbern56', 'ARCHIVED', true);
+
+      expect(api.calls('transitionEventWorkflowState')[0].body).toEqual({
+        targetState: 'ARCHIVED',
+        overrideValidation: true,
+      });
+    });
+
+    it.each([
+      [400, 'Bad Request', 'No enum constant PUBLISHED'],
+      [403, 'Forbidden', 'Access denied'],
+      [422, 'Unprocessable Entity', 'Invalid transition from CREATED to ARCHIVED'],
+    ])('rejects with the status EMS answers (%i)', async (status, error, message) => {
+      api.on('transitionEventWorkflowState', () => problem(status, error, message));
+
       await expect(
         workflowService.transitionWorkflowState('BATbern56', 'ARCHIVED')
-      ).rejects.toThrow();
-    });
-
-    it('should_throwError_when_validationFails', async () => {
-      // Given: Mock 422 error for validation failure
-      const mockError = {
-        response: {
-          status: 422,
-          data: {
-            message: 'Insufficient speakers identified',
-            code: 'WORKFLOW_VALIDATION_FAILED',
-            details: {
-              required: 6,
-              identified: 3,
-            },
-          },
-        },
-        isAxiosError: true,
-      };
-
-      vi.mocked(apiClient.post).mockRejectedValue(mockError);
-
-      // When/Then: Should throw error with details
-      await expect(
-        workflowService.transitionWorkflowState('BATbern56', 'SPEAKER_OUTREACH')
-      ).rejects.toThrow();
-    });
-
-    it('should_throwError_when_unauthorized', async () => {
-      // Given: Mock 401 error
-      const mockError = {
-        response: {
-          status: 401,
-          data: {
-            message: 'Unauthorized',
-            code: 'UNAUTHORIZED',
-          },
-        },
-        isAxiosError: true,
-      };
-
-      vi.mocked(apiClient.post).mockRejectedValue(mockError);
-
-      // When/Then: Should throw error
-      await expect(
-        workflowService.transitionWorkflowState('BATbern56', 'TOPIC_SELECTION')
-      ).rejects.toThrow();
-    });
-
-    it('should_throwError_when_forbidden', async () => {
-      // Given: Mock 403 error (non-ORGANIZER role)
-      const mockError = {
-        response: {
-          status: 403,
-          data: {
-            message: 'Forbidden - ORGANIZER role required',
-            code: 'FORBIDDEN',
-          },
-        },
-        isAxiosError: true,
-      };
-
-      vi.mocked(apiClient.post).mockRejectedValue(mockError);
-
-      // When/Then: Should throw error
-      await expect(
-        workflowService.transitionWorkflowState('BATbern56', 'TOPIC_SELECTION')
-      ).rejects.toThrow();
-    });
-
-    it('should_includeOverrideValidation_when_overrideIsTrue', async () => {
-      // Given: Mock successful transition with override
-      const mockResponse: AxiosResponse = {
-        data: {
-          eventCode: 'BATbern56',
-          title: 'BATbern 56',
-          workflowState: 'SPEAKER_OUTREACH',
-          status: 'planning',
-        },
-        status: 200,
-        statusText: 'OK',
-        headers: {},
-        config: {} as any,
-      };
-
-      vi.mocked(apiClient.post).mockResolvedValue(mockResponse);
-
-      // When: Transitioning with override (no reason)
-      const result = await workflowService.transitionWorkflowState(
-        'BATbern56',
-        'SPEAKER_OUTREACH',
-        true
-      );
-
-      // Then: Should include overrideValidation field
-      expect(apiClient.post).toHaveBeenCalledWith('/events/BATbern56/workflow/transition', {
-        targetState: 'SPEAKER_OUTREACH',
-        overrideValidation: true,
-      });
-      expect(result.workflowState).toBe('SPEAKER_OUTREACH');
-    });
-
-    it('should_includeOverrideReason_when_overrideWithReason', async () => {
-      // Given: Mock successful transition with override and reason
-      const mockResponse: AxiosResponse = {
-        data: {
-          eventCode: 'BATbern56',
-          title: 'BATbern 56',
-          workflowState: 'SPEAKER_OUTREACH',
-          status: 'planning',
-        },
-        status: 200,
-        statusText: 'OK',
-        headers: {},
-        config: {} as any,
-      };
-
-      vi.mocked(apiClient.post).mockResolvedValue(mockResponse);
-
-      // When: Transitioning with override and reason
-      const result = await workflowService.transitionWorkflowState(
-        'BATbern56',
-        'SPEAKER_OUTREACH',
-        true,
-        'Emergency speaker confirmation needed'
-      );
-
-      // Then: Should include both overrideValidation and overrideReason
-      expect(apiClient.post).toHaveBeenCalledWith('/events/BATbern56/workflow/transition', {
-        targetState: 'SPEAKER_OUTREACH',
-        overrideValidation: true,
-        overrideReason: 'Emergency speaker confirmation needed',
-      });
-      expect(result.workflowState).toBe('SPEAKER_OUTREACH');
+      ).rejects.toMatchObject({ response: { status, data: { message } } });
     });
   });
 });

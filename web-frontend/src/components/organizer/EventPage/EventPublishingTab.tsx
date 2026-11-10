@@ -13,6 +13,7 @@ import { ValidationDashboard } from '@/components/Publishing/ValidationDashboard
 import { PublishingControls } from '@/components/Publishing/PublishingControls/PublishingControls';
 import { LivePreview } from '@/components/Publishing/LivePreview/LivePreview';
 import { PublishingTimeline } from '@/components/Publishing/PublishingTimeline/PublishingTimeline';
+import { AutoPublishScheduleForm } from '@/components/Publishing/AutoPublishScheduleForm/AutoPublishScheduleForm';
 import { usePublishing } from '@/hooks/usePublishing/usePublishing';
 import { useSlotAssignment } from '@/hooks/useSlotAssignment/useSlotAssignment';
 
@@ -23,7 +24,7 @@ interface EventPublishingTabProps {
 
 export const EventPublishingTab: React.FC<EventPublishingTabProps> = ({ event, eventCode }) => {
   const { t } = useTranslation('events');
-  const { publishingStatus, isLoadingStatus, validationErrors } = usePublishing(eventCode);
+  const { publishingStatus, isLoadingStatus } = usePublishing(eventCode);
   const { unassignedSessions } = useSlotAssignment(eventCode);
 
   // Loading state
@@ -45,6 +46,17 @@ export const EventPublishingTab: React.FC<EventPublishingTabProps> = ({ event, e
   const publishedPhases: PublishingPhase[] =
     publishingStatus?.publishedPhases?.map((p) => p.toLowerCase() as PublishingPhase) || [];
   const eventDate = event.date || new Date().toISOString();
+  // The stored auto-publish schedule (Story 4.9b): what the daily job will publish, and when
+  const autoPublishSchedule = publishingStatus
+    ? [
+        ...(publishingStatus.phase2Enabled && !publishedPhases.includes('speakers')
+          ? [{ phase: 'speakers' as const, scheduledDate: publishingStatus.phase2TriggerDate }]
+          : []),
+        ...(publishingStatus.phase3Enabled && !publishedPhases.includes('agenda')
+          ? [{ phase: 'agenda' as const, scheduledDate: publishingStatus.phase3TriggerDate }]
+          : []),
+      ]
+    : [];
 
   // Build validation data from status response and slot assignment
   const mappedUnassignedSessions =
@@ -128,6 +140,7 @@ export const EventPublishingTab: React.FC<EventPublishingTabProps> = ({ event, e
               currentPhase={currentPhase}
               publishedPhases={publishedPhases}
               eventDate={eventDate}
+              autoPublishSchedule={autoPublishSchedule}
             />
           </Paper>
         </Box>
@@ -141,13 +154,19 @@ export const EventPublishingTab: React.FC<EventPublishingTabProps> = ({ event, e
             {t('publishing.sections.publishNext', 'Publish next phase')}
           </Typography>
           <Paper sx={{ p: 2, flexGrow: 1 }}>
-            <PublishingControls
-              eventCode={eventCode}
-              currentPhase={currentPhase}
-              validationErrors={validationErrors}
-            />
+            <PublishingControls eventCode={eventCode} currentPhase={currentPhase} />
           </Paper>
         </Box>
+      </Box>
+
+      {/* Auto-publish schedule - the stored schedule of the daily job (Story 4.9b) */}
+      <Box data-testid="auto-publish-schedule-container">
+        <Typography variant="subtitle2" gutterBottom>
+          {t('publishing.sections.schedule', 'Auto-publish schedule')}
+        </Typography>
+        <Paper sx={{ p: 2 }}>
+          <AutoPublishScheduleForm eventCode={eventCode} />
+        </Paper>
       </Box>
 
       {/* Live Preview - full width below the three columns */}

@@ -166,11 +166,16 @@ class EventApiClient {
    * Update existing event (full update)
    * Story 1.16.2: Uses eventCode as identifier instead of UUID
    */
-  async updateEvent(eventCode: string, data: UpdateEventRequest): Promise<Event> {
+  async updateEvent(
+    eventCode: string,
+    data: UpdateEventRequest,
+    currentWorkflowState?: string
+  ): Promise<Event> {
     try {
-      // Client-side validation if dates are being updated
+      // Client-side validation if dates are being updated. The body carries no workflow state
+      // (Story 4.9b): the caller names the event's current one, ARCHIVED allows a past date.
       if (data.date) {
-        this.validateEventDate(data.date, data.workflowState);
+        this.validateEventDate(data.date, currentWorkflowState);
       }
       if (data.date && data.registrationDeadline) {
         this.validateRegistrationDeadline(data.date, data.registrationDeadline);
@@ -187,11 +192,15 @@ class EventApiClient {
    * Partial update of event (PATCH)
    * Only sends changed fields
    */
-  async patchEvent(eventCode: string, data: PatchEventRequest): Promise<Event> {
+  async patchEvent(
+    eventCode: string,
+    data: PatchEventRequest,
+    currentWorkflowState?: string
+  ): Promise<Event> {
     try {
-      // Validate dates if they're being updated
+      // Validate dates if they're being updated (ARCHIVED, named by the caller, allows a past date)
       if (data.date) {
-        this.validateEventDate(data.date, data.workflowState);
+        this.validateEventDate(data.date, currentWorkflowState);
       }
 
       const response = await apiClient.patch<Event>(`${EVENT_API_PATH}/${eventCode}`, data);

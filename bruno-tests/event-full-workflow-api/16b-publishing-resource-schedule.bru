@@ -1,0 +1,49 @@
+meta {
+  name: Publishing resource — PATCH the auto-publish schedule
+  type: http
+  seq: 16.2
+}
+
+patch {
+  url: {{baseUrl}}/events/{{createdEventCode}}/publishing
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+body:json {
+  {
+    "phase2Enabled": false,
+    "phase3DaysBeforeEvent": 10
+  }
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("only the sent fields changed, the rest keeps its default", function() {
+    const body = res.getBody();
+    expect(body.phase2Enabled).to.equal(false);
+    expect(body.phase2DaysBeforeEvent).to.equal(30);
+    expect(body.phase3Enabled).to.equal(true);
+    expect(body.phase3DaysBeforeEvent).to.equal(10);
+    expect(body.phase3TriggerDate).to.be.a("string");
+  });
+
+  test("the status is part of the same resource", function() {
+    const body = res.getBody();
+    expect(body.publishedPhases).to.include("agenda");
+    expect(body.currentPhase).to.equal("agenda");
+  });
+}
+
+docs {
+  Story 4.9b: status and schedule are one resource,
+  GET/PATCH /events/{eventCode}/publishing (replaces POST/GET
+  /publish/schedule and GET /publish/status). 16c reads it back.
+}

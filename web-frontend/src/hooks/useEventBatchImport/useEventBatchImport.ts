@@ -114,8 +114,13 @@ export function useEventBatchImport(
           // Step 1: Upsert logic - try update first, create if not exists
           try {
             // Try to update existing event
-            const partialPayload = buildPartialPayload(candidate, fieldSelection);
-            await eventApiClient.patchEvent(eventCode, partialPayload);
+            // PATCH carries no workflowState (Story 4.9b: unknown property, 400); ARCHIVED only
+            // lifts the client-side future-date check of a historical event.
+            const { workflowState, ...patchPayload } = buildPartialPayload(
+              candidate,
+              fieldSelection
+            );
+            await eventApiClient.patchEvent(eventCode, patchPayload, workflowState);
           } catch (updateError) {
             // If 404, event doesn't exist - create it with selected fields only
             const errorMessage =

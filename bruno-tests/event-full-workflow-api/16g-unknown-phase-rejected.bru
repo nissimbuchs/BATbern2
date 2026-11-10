@@ -1,0 +1,24 @@
+meta {
+  name: Unknown phase is a bad request
+  type: http
+  seq: 16.7
+}
+
+post {
+  url: {{baseUrl}}/events/{{createdEventCode}}/phases/foo/publish
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+assert {
+  res.status: eq 400
+}
+
+docs {
+  Story 4.9b: the phase is an enum (topic, speakers, agenda); any other value
+  answers 400 and changes nothing.
+}

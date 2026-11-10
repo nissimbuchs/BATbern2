@@ -24,7 +24,7 @@ export function useTabBadges(
   // duplicate request when the Publishing tab is also mounted).
   const { data: publishingStatus } = useQuery({
     queryKey: ['publishing', 'status', eventCode],
-    queryFn: () => publishingService.getPublishingStatus(eventCode!),
+    queryFn: () => publishingService.getPublishing(eventCode!),
     enabled: !!eventCode,
     staleTime: 10000,
   });

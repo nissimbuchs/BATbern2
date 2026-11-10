@@ -492,61 +492,61 @@ test.describe.skip(
   'Events API Consolidation - Event Actions (AC7-8)',
   { tag: '@quarantine' },
   () => {
-    test('should_publishEvent_when_validationPasses', async ({ page }) => {
-      // AC7: Publish event
+    // Story 4.9b: one transition idiom. POST /events/{code}/publish folded into the agenda phase
+    // publish, the workflow moves through POST /events/{code}/transition only. Still quarantined:
+    // a publish acts on the public website, so it must never run against staging (= production).
+    test('should_publishAgenda_when_validationPasses', async ({ page }) => {
+      // AC7: publishing the agenda moves the event into AGENDA_PUBLISHED
       const event = await createTestEvent(page, 'Event to Publish');
-
-      const response = await apiRequest(page, `/api/v1/events/${event.eventCode}/publish`, {
-        method: 'POST',
-      });
-
-      expect(response.status).toBe(200);
-      const data = await response.json();
-      expect(data.workflowState).toBe('PUBLISHED');
-    });
-
-    test('should_return422_when_validationFails', async ({ page }) => {
-      // AC7: Publish validation failure
-      const event = await createTestEvent(page, 'Incomplete Event');
-      // Event missing required fields for publishing
-
-      const response = await apiRequest(page, `/api/v1/events/${event.eventCode}/publish`, {
-        method: 'POST',
-      });
-
-      expect(response.status).toBe(422);
-    });
-
-    test('should_advanceWorkflow_when_transitionValid', async ({ page }) => {
-      // AC8: Advance workflow to next state
-      const event = await createTestEvent(page, 'Workflow Event');
 
       const response = await apiRequest(
         page,
-        `/api/v1/events/${event.eventCode}/workflow/advance`,
+        `/api/v1/events/${event.eventCode}/phases/agenda/publish`,
+        { method: 'POST' }
+      );
+
+      expect(response.status).toBe(200);
+      const published = await (await apiRequest(page, `/api/v1/events/${event.eventCode}`)).json();
+      expect(published.workflowState).toBe('AGENDA_PUBLISHED');
+      expect(published.publishedAt).toBeDefined();
+    });
+
+    test('should_return400_when_phaseUnknown', async ({ page }) => {
+      const event = await createTestEvent(page, 'Unknown Phase Event');
+
+      const response = await apiRequest(
+        page,
+        `/api/v1/events/${event.eventCode}/phases/foo/publish`,
         {
           method: 'POST',
         }
       );
 
+      expect(response.status).toBe(400);
+    });
+
+    test('should_transition_when_transitionValid', async ({ page }) => {
+      // AC8: move the workflow to the next state
+      const event = await createTestEvent(page, 'Workflow Event');
+
+      const response = await apiRequest(page, `/api/v1/events/${event.eventCode}/transition`, {
+        method: 'POST',
+        body: JSON.stringify({ targetState: 'TOPIC_SELECTION' }),
+      });
+
       expect(response.status).toBe(200);
       const data = await response.json();
-      expect(data.workflow).toBeDefined();
-      expect(data.workflow.currentStep).toBeGreaterThan(1);
+      expect(data.workflowState).toBe('TOPIC_SELECTION');
     });
 
     test('should_return422_when_transitionInvalid', async ({ page }) => {
-      // AC8: Invalid workflow transition
+      // AC8: skipping states without override is refused
       const event = await createTestEvent(page, 'Invalid Workflow Event');
-      // Try to advance workflow when prerequisites not met
 
-      const response = await apiRequest(
-        page,
-        `/api/v1/events/${event.eventCode}/workflow/advance`,
-        {
-          method: 'POST',
-        }
-      );
+      const response = await apiRequest(page, `/api/v1/events/${event.eventCode}/transition`, {
+        method: 'POST',
+        body: JSON.stringify({ targetState: 'ARCHIVED' }),
+      });
 
       expect(response.status).toBe(422);
     });

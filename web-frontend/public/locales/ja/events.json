@@ -992,7 +992,19 @@
     "sections": {
       "validation": "検証",
       "phases": "公開フェーズ",
-      "publishNext": "次のフェーズを公開"
+      "publishNext": "次のフェーズを公開",
+      "schedule": "自動公開スケジュール"
+    },
+    "schedule": {
+      "description": "毎日のジョブが、イベントの指定日数前にこれらのフェーズをウェブサイトに公開します。未公開のフェーズのみ。",
+      "speakers": "スピーカーを自動公開する",
+      "agenda": "プログラムを自動公開する",
+      "daysBefore": "イベントの何日前",
+      "invalidDays": "1〜365日",
+      "triggerDate": "{{date}}",
+      "save": "スケジュールを保存",
+      "saved": "スケジュールを保存しました。",
+      "error": "スケジュールを保存できませんでした。"
     }
   },
   "notifications": {

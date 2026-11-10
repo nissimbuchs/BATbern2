@@ -1,0 +1,29 @@
+meta {
+  name: Unpublish left the workflow state alone
+  type: http
+  seq: 16.6
+}
+
+get {
+  url: {{baseUrl}}/events/{{createdEventCode}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("workflow state is still AGENDA_PUBLISHED", function() {
+    expect(res.getBody().workflowState).to.equal("AGENDA_PUBLISHED");
+  });
+}
+
+docs {
+  Story 4.9b: unpublishing a phase never changes the workflow state.
+}
