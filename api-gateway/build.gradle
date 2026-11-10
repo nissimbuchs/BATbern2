@@ -35,7 +35,7 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
 
     // AWS SDK for Cognito (the gateway sends no mail; its unused SesClient bean was removed in 17.0b3)
-    implementation platform('software.amazon.awssdk:bom:2.57.6')
+    implementation platform('software.amazon.awssdk:bom:2.57.11')
     implementation 'software.amazon.awssdk:cognitoidentityprovider'
     implementation 'software.amazon.awssdk:auth'
 
