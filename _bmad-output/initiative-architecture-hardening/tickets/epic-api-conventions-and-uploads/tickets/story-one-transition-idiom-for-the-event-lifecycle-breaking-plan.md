@@ -3,7 +3,7 @@ title: 'One transition idiom for the event lifecycle (breaking)'
 type: 'refactor'
 ticket: '9b'
 created: '2026-11-10'
-status: 'in-progress'
+status: 'review'
 baseline_revision: '1bc1e7abb9fb62408b25224fb92b56da667dac31'
 route: 'full'
 route_source: 'auto'
@@ -106,23 +106,23 @@ The auto-publish schedule is set with a verb (`POST …/publish/schedule`), and 
 ## Tasks & Acceptance
 
 **Execution:**
-- [ ] Set `baseline_revision`, then record the counts.
-- [ ] RED tests:
+- [x] Set `baseline_revision`, then record the counts.
+- [x] RED tests:
   - one IT per new operation (phase publish/unpublish with CDN invalidation at the S3/CloudFront boundary as the existing tests do, unknown phase 400, agenda validation 422, transition, publishing GET/PATCH);
   - a 404/405 IT for every old path;
   - a `PublishingScheduledService` IT that a disabled or different-days schedule is honoured.
-- [ ] Spec: new operations with examples, old ones removed, `workflowState` removed from the event write bodies. Regenerate types and the EMS build.
-- [ ] EMS:
+- [x] Spec: new operations with examples, old ones removed, `workflowState` removed from the event write bodies. Regenerate types and the EMS build.
+- [x] EMS:
   - fold `publishEvent` into agenda publish (merged validation, `publishedAt`, `EventPublishedEvent`);
   - move transition to `POST /events/{c}/transition`;
   - publishing resource GET/PATCH;
   - scheduler reads `publishing_config` per event (enabled flag and days, defaults when no row);
   - remove `applyWorkflowStateChange` and its path.
   - Check every caller of the removed `publishEvent` and of PATCH `workflowState` (Bruno event-types, fixtures).
-- [ ] Frontend: services, hooks and callers; `workflowService` return type fixed; tests on the MSW harness.
-- [ ] Bruno 16/17*/18*, Playwright helper and specs.
-- [ ] Lint baseline and owners, `.spectral.yaml` comments, ADR-013 §1, doc-drift mapped docs (06-backend publishing section, workflow docs, user guide if it names the operations).
-- [ ] Full EMS suite, frontend suite and gates, then local dev Bruno `event-full-workflow-api` and the Playwright lifecycle/publishing specs.
+- [x] Frontend: services, hooks and callers; `workflowService` return type fixed; tests on the MSW harness.
+- [x] Bruno 16/17*/18*, Playwright helper and specs.
+- [x] Lint baseline and owners, `.spectral.yaml` comments, ADR-013 §1, doc-drift mapped docs (06-backend publishing section, workflow docs, user guide if it names the operations).
+- [x] Full EMS suite, frontend suite and gates, then local dev Bruno `event-full-workflow-api` and the Playwright lifecycle/publishing specs.
 
 **Acceptance Criteria:**
 - Given the specs, when `npm run lint:api` runs, then the four baseline lines and group T1 are gone, there is no new line, and nothing is UNOWNED or STALE.
@@ -131,7 +131,49 @@ The auto-publish schedule is set with a verb (`POST …/publish/schedule`), and 
 
 ## Implementation Notes
 
+Counts (baseline 1bc1e7ab → after):
+- Spectral `lint:api`: 109 → 105 findings, `no-verb-segment` 43 → 39; the four baseline lines and
+  owner group T1 removed; no new line, nothing UNOWNED or STALE.
+- Test ratchet: fe-mock-components −4, fe-mock-hooks −3, fe-mock-services −2, fe-mock-i18n −2
+  (EventPublishingTab, PublishingControls, workflowService, EventWorkflowStateSection on the MSW
+  harness); be-transactional-it unchanged (the new CDN IT has no class-level `@Transactional`).
+- Operations in the public specs: 303 → 300 (the specMatcher/examples positive controls now say
+  "more than 290").
+- EMS suite: 2695 tests, 0 failures, response conformance baseline 0 lines, all still produced.
+- Vitest: 460 files, 5876 passed.
+
+Verified on local dev: Bruno `event-full-workflow-api` 32/32 requests, 59/59 tests, 0 skipped
+files; `events-crud-api` 17/17; Playwright `event-lifecycle-e2e` and `speaker-pool-golden-path`
+13/13; old paths 404 through the gateway; a throwaway UI walk (not committed) published topic,
+speakers and agenda from the Publishing tab, saw the public event at each phase (AGENDA after the
+agenda publish, SPEAKERS after the revert), set and reloaded the schedule, and moved the workflow
+from Details → Settings.
+
 ## Plan Change Log
+
+- `workflowState` in PATCH/PUT answers 400 (unknown property: Jackson rejects unknown fields in
+  EMS), the matrix's first option; the state is unchanged.
+- The future-date rule of the folded `publishEvent` applies when the agenda publish moves the
+  workflow into AGENDA_PUBLISHED. Re-publishing the agenda of a published, live or archived event
+  does not need it (organizers correct the agenda on the event day; `TaskActivationIntegrationTest`
+  republishes for a live event). Title and date are always checked, timing as before.
+- The title rule is unreachable through the API (the entity refuses a blank title); kept as the
+  intent asks, not tested by an IT.
+- The acceptance criterion "sets the schedule from the UI" had no UI: `AutoPublishScheduleForm`
+  added to the Publishing tab (i18n in 10 locales), the timeline reads the stored schedule.
+- Defect found: `PublishingControls` showed the 422 reasons of the tab's own `usePublishing`
+  instance, whose mutation never runs, so a refused publish showed no reason. It now shows those of
+  its own publish (the prop is gone).
+- Defect found: the auto-publish job ran without ShedLock; one `runDailyAutoPublish` job under the
+  lock calls the two (still public) jobs. The former `GET …/publish/schedule` answered 500 without a
+  stored row; `GET …/publishing` returns the defaults.
+- `specMatcher.test.ts` L76/90 use the matcher's own fixture specs, not `docs/api/`: left as they
+  are.
+- The historical batch import (`useEventBatchImport`) PATCHed `workflowState: ARCHIVED`; it now
+  strips it from the PATCH (it only lifted the client-side future-date check) and keeps it for the
+  create. An existing event that the import updates no longer has its state forced to ARCHIVED.
+- `EventMapper.applyUpdateRequest/applyPatchRequest` are used by tests only (the controller has its
+  own); only their `workflowState` lines were removed.
 
 ## Review Triage Log
 
