@@ -3,7 +3,7 @@ title: '4.9 owner additions: idn-email, no fields projection, always-set propert
 type: 'refactor'
 ticket: ''
 created: '2026-11-09'
-status: 'in-review'
+status: 'built'
 baseline_revision: '6156367789162f7f927093bae625e935d6e68e3b'
 route: 'full'
 route_source: 'auto'
@@ -318,3 +318,8 @@ Decisions by the agent under the owner's blanket go (2026-11-09):
 - `set -o pipefail; ./gradlew :services:company-user-management-service:test --max-workers=4 2>&1 | tee ~/.cache/batbern-test-logs/49b-cums.log`: expected BUILD SUCCESSFUL with no stale baseline line. Then EMS, then PCS, one at a time.
 - `./gradlew :shared-kernel:test --tests '*EmailAddressesTest*'`: expected green.
 - `cd web-frontend && npm run generate:api-types && npm run type-check && npx vitest run --maxWorkers=4`: expected green.
+
+Final verification (2026-11-10, all three plans together on one tree):
+- Full suites green: shared-kernel, EMS, CUMS, PCS. Frontend type-check, vitest, lint:api, lint:api-internal, lint:ci, check:api-types, ratchet, i18n, type-copies and api-paths are green too (`~/.cache/batbern-test-logs/vfinal/`).
+- The gateway suite found two contract-test bodies without the new required properties; fixed in c9c2c64c, suite green.
+- Local dev, run against the shared dev database (V152 only copies, so other worktrees are unaffected): Bruno, all 15 collections green. Playwright: settings, admin tabs, additional e-mails, tasks, task templates and mail composer, 37/37 green. The presentation settings read from EMS returns the copied CUMS text.
