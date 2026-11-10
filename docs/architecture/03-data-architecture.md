@@ -550,8 +550,8 @@ erDiagram
 - `role_assignments` has a composite key (user, role); `granted_by` points to the organizer who
   granted it.
 - `presentation_settings` (CUMS V14) held the presenter screen settings until Story 4.9: EMS V152
-  copied its row into `app_settings` (key `presentation`). The table stays, unread, for one
-  release so an old CUMS image can still start (rollback safety); a follow-up migration drops it.
+  copied its row into `app_settings` (key `presentation`). It stayed, unread, for one release so an
+  old CUMS image could still start (rollback safety); CUMS V29 dropped it (#1280).
 - `shedlock` (scheduler locks) is declared by both CUMS (V12) and EMS (V31) with
   `CREATE TABLE IF NOT EXISTS`; `logos` likewise by CUMS (V10) and EMS (V5).
 
@@ -1319,14 +1319,12 @@ V80, `ai_prompts` V82, `app_settings` V88, `session_proposals` V109, `organizer_
 V139, `user_merge_log` V144.
 
 Dropped: `publishing_versions` (V28 to V89), `speakers` (V37 to V94), `speaker_invitation_tokens`
-(V43 to V104).
+(V43 to V104); in CUMS `presentation_settings` (V14 to V29), copied into `app_settings` by EMS V152
+(Story 4.9) and dropped one release later (rollback safety).
 
-Unread, to drop: the CUMS table `presentation_settings` (CUMS V14), copied into `app_settings` by
-EMS V152 (Story 4.9) and dropped by a follow-up migration one release later (rollback safety).
-
-**CUMS** (9 tables): `companies` V3, `user_profiles` V4, `role_assignments` V5,
+**CUMS** (8 tables): `companies` V3, `user_profiles` V4, `role_assignments` V5,
 `activity_history` V6, `logos` V10, `shedlock` V12, `watch_pairings` V13,
-`presentation_settings` V14 (unread since Story 4.9, see above), `user_additional_emails` V16, `company_key_changes` V28 (shared: CUMS
+`user_additional_emails` V16, `company_key_changes` V28 (shared: CUMS
 V28, EMS V150 and PCS V11 create it with the same canonical block, see below).
 
 **Company keys** (owner decision 2026-11-09): `companies.name`, the company's meaningful ID, is

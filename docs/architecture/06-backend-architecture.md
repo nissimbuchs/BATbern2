@@ -1285,9 +1285,8 @@ Every template-based mail in event-management renders the same way:
   `GET /public/settings/presentation` (`PublicSettingsController`, next to
   `/public/settings/features`); without a stored value it answers the former CUMS defaults. The
   value moved from the CUMS table `presentation_settings` with EMS V152, which copies the row (a
-  no-op where the table does not exist, an existing key is kept). The table stays, unread, so an
-  old CUMS image can start mid-deploy or after a rollback; a follow-up migration drops it one
-  release later.
+  no-op where the table does not exist, an existing key is kept). The table stayed, unread, for one
+  release so an old CUMS image could start mid-deploy or after a rollback; CUMS V29 dropped it.
 - **A user's settings** are one CUMS resource, `GET`/`PATCH /users/me/settings`
   (`UserSettingsService`): display, notifications and privacy in one object, partial update.
   Storage stays the two embeddables on `user_profiles`. EMS reads language, Q&A frequency and
