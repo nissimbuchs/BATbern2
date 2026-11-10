@@ -1,0 +1,82 @@
+# Epic 3 stories in build order. Ids keep the Epic 17 story number; a lettered id is the second half of that
+# PRD story (6b of 17.6, 7b of 17.7, 8b of 17.8). Public S2S call sites measured 2026-11-10: 10 (epic Notes).
+
+[[entry]]
+id = 6
+type = "story"
+title = "EMS calls CUMS over /internal with one token helper"
+description = "17.6 part A, tracer bullet: a shared-kernel S2S header helper (forward the user's JWT when present, none otherwise) used by every client that survives this epic (EMS UserApiClientImpl here, the PCS clients in 6b, every new feed or holder client in 7, 7b and 8b; the CUMS clients, PartnerApiClientImpl and PartnerMeetingRsvpClientImpl are deleted by 7, 7b, 8 and 8b and stay as they are); EMS UserApiClientImpl moves POST /users/provision, PATCH /users/{username}/profile and POST /users/{username}/issue-invitation-credentials to /internal and GET /companies/{name} to a new GET /internal/companies/{name}, which 6b reuses for PCS; the dead getAllCompanies (GET /companies paged) is deleted; the 3 machine-only operations leave users-api and enter cums-internal.openapi.yml with provider and consumer contract tests; CUMS internal controllers authorize by operation, not role; epic 4 entry 10 relies on PATCH /users/{username}/profile having left the public spec here; a guard over the client packages of all three services fails on an /api/v1 URL, with the PCS and PartnerApiClientImpl call sites as its only baseline lines, owned by 6b and 8."
+verify = "On local dev an organizer invites a new speaker and a speaker submits content with a bio: the speaker is provisioned, gets credentials (/dev/mails) and the bio lands on the profile, all over /internal; the 3 operations answer 404 on the public API in production; Spectral line G02 is gone (before and after recorded); the client-package guard fails a fixture /api/v1 URL; an integration test per moved call passes with and without a user JWT, and ProductionSecurityFilterChainTest still denies /internal/**."
+covers = ["R1", "R2", "R3"]
+after = ["1.3c", "1.4", "2.0a", "2.0b1", "2.0b2", "2.0b3"]
+hitl = false
+risk = "high"
+references = ["docs/architecture/ADR-016-service-directions-and-service-to-service-calls.md", "docs/api/internal/cums-internal.openapi.yml"]
+
+[[entry]]
+id = 7
+type = "story"
+title = "EMS pulls Mail Center requests and primary-email changes from CUMS"
+description = "17.7 part A: CUMS exposes an /internal feed (?since=<cursor>) of merge requests, company logo requests (open and decided) and primary-email changes; an EMS ShedLock job pulls it through a client on the 6 helper and opens or closes the request conversations (RequestConversations) and moves upcoming registrations to a new primary e-mail (UserMergeService.primaryEmailChanged); /internal/mail-center/{merge,logo}-requests[/{id}/done], /internal/users/primary-email and CUMS EventManagementMailCenterClient with its Http implementation are gone, and primaryEmailChanged leaves EventManagementUserMergeClient; the feed is in cums-internal.openapi.yml and contract-tested both sides; module-map.md drops the CUMS→EMS exceptions it lists for 17.7 and its CUMS store count. Hands on: epic 4 entry 11 relies on the logo-request push being gone (CompanyLogoRequestService no longer calls EMS); 7b relies on primaryEmailChanged having left EventManagementUserMergeClient; 8b reuses this feed's cursor contract."
+verify = "On local dev a profile-merge request and a logo request appear in the Mail Center within one poll interval and close when decided, and a primary-email change moves an upcoming registration to the new address; an EMS integration test against a stubbed feed covers open, close and cursor resume; the CUMS ArchUnit store loses the 2 mail-center client lines and the EMS module scripts are re-run (before and after recorded); the removed /internal endpoints are gone from ems-internal.openapi.yml."
+covers = ["R5", "R6"]
+after = [6, "1.5"]
+hitl = false
+risk = "high"
+references = ["docs/architecture/ADR-016-service-directions-and-service-to-service-calls.md#decision"]
+
+[[entry]]
+id = "6b"
+type = "story"
+title = "PCS calls CUMS and EMS over /internal"
+description = "17.6 part B: PCS EventManagementClientImpl moves GET /events/attendance-summary to /internal (the operation leaves event-analytics-api and enters ems-internal.openapi.yml); CompanyServiceClientImpl reads 6's GET /internal/companies/{name}; UserServiceClientImpl replaces GET /users/me with GET /internal/users/{username} for the authenticated user; all PCS clients and HttpOutboundMailRecorder use the 6 helper and drop their own createHeadersWithJwtToken; contract tests both sides; the client-package guard loses its PCS baseline lines."
+verify = "The partner attendance dashboard and its XLSX export and partner contact self-service work on local dev; GET /events/attendance-summary answers 404 on the public API in production; Spectral line G01 is gone (before and after recorded); an integration test per moved call passes with and without a user JWT; the client-package guard's baseline loses its 3 PCS lines."
+covers = ["R1", "R2"]
+after = [6]
+hitl = false
+risk = "medium"
+
+[[entry]]
+id = "7b"
+type = "story"
+title = "CUMS owns the user-reference merge contract, EMS and PCS implement it"
+description = "17.7 part B: /internal/user-references/preview and /merge specified in cums-internal.openapi.yml as CUMS's contract; holders listed in CUMS configuration and called through one CUMS client on the 6 helper that names no service; EMS implements it in usermerge in place of /internal/users/merge-preview and /merge; PCS implements it for topic_suggestions.suggested_by, partner notes author_username, partner meetings created_by and partner_contacts.username; EventManagementUserMergeClient and its Http implementation are gone (7 has already taken primaryEmailChanged out of it); module-map.md names /internal/user-references/* as the one upstream→downstream call and drops the CUMS store count. Before PCS joins, the owner runs or approves a read-only production query counting PCS rows that reference a former merge source (user_merge_log); the result is recorded in the plan."
+verify = "A merge preview on local dev shows EMS and PCS counts and a merge rewrites the PCS usernames; a CUMS integration test with two configured holders, one refusing, blocks the merge; a holder integration test each in EMS and PCS passes against the contract; the CUMS ArchUnit store is empty; the production query result is recorded."
+covers = ["R4", "R6"]
+after = [7]
+hitl = true
+risk = "high"
+references = ["docs/architecture/ADR-016-service-directions-and-service-to-service-calls.md#decision"]
+
+[[entry]]
+id = 8
+type = "story"
+title = "Topic canvas loads partner topics itself"
+description = "17.8 part A: the frontend topic canvas (blobTopicService) loads partner topics and company logos from PCS (partnerTopicsApi, GET /partners?include=company) through the service layer and gets the clusters from one new EMS batch classify operation (nearest existing: the topic-session-data clustering in BatbernTopicClusterService); TopicSessionDataService drops its PCS call and the partnerTopics field; PartnerApiClient and its implementation are deleted with their tests; spec, generated types, Bruno and Playwright in the same PR."
+verify = "On local dev the topic canvas shows partner topics with clusters and logos as before (Vitest for the hook, Playwright on the canvas); the EMS ArchUnit store loses the 2 PartnerApiClient lines and the client-package guard baseline loses PartnerApiClientImpl's 2 lines; the EMS module scripts are re-run (before and after recorded); npm run lint:api and the 17.3 contract check pass."
+covers = ["R7", "R1"]
+after = [6, "1.3", "1.4", "1.5", "2.0c1", "2.0d"]
+hitl = false
+risk = "medium"
+
+[[entry]]
+id = "8b"
+type = "story"
+title = "PCS pulls calendar RSVPs from an EMS feed"
+description = "17.8 part B: InboundEmailRouter stores iMIP RSVP replies in a new EMS table (new migration) and EMS exposes them as GET /internal/partner-meetings/rsvps?since=<cursor> in ems-internal.openapi.yml; PCS adds ShedLock and a job that pulls the feed through a client on the 6 helper, using the cursor contract 7 builds, and applies each RSVP to its meeting; PartnerMeetingRsvpClient with its implementation and PCS POST /internal/partner-meetings/rsvps (pcs-internal.openapi.yml) are gone."
+verify = "On local dev a sample iMIP accept and decline reach the PCS meeting within one poll interval; a PCS integration test against a stubbed feed and an EMS feed integration test pass; the EMS ServiceDirectionTest store is empty and the EMS module scripts are re-run (before and after recorded)."
+covers = ["R8"]
+after = ["6b", 7, 8]
+hitl = false
+risk = "medium"
+
+[[entry]]
+id = "sweep"
+type = "story"
+title = "Refactor sweep"
+description = "Clean-up only, scoped at its start from the plans and review findings this epic deferred."
+verify = "The deferred items listed at its start are closed or moved to a new story, and CI on develop is green."
+covers = []
+after = [6, 7, "6b", "7b", 8, "8b"]
+hitl = false
+risk = "low"

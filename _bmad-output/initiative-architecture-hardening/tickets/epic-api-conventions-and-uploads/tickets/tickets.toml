@@ -36,11 +36,11 @@ title = "API conventions II (breaking)"
 description = "17.10: one endpoint set with an ownership rule replaces the me/{username} twins for pictures and profile; one speaker path key across the specs, chosen per the ADR-003 amendment; batch_registrations and enroll-stakeholders folded into participants; newsletter my-subscription folded into my-subscriptions."
 verify = "No /users/me/* and /users/{username}/* twin remains for pictures and profile (integration test: own allowed, other 403, organizer allowed where it was); a Spectral rule holds the one speaker path key; batch_registrations, enroll-stakeholders and my-subscription answer 404 in production and their remaining baseline lines are gone; npm run lint:api and the 17.3 contract check pass; registration, enrolment and newsletter self-service pass Bruno and Playwright."
 covers = ["R15"]
-after = ["9b", "1.3b", "epic-one-service-direction"]
+after = ["9b", "1.3b", "3.6"]
 hitl = false
 risk = "high"
 references = ["docs/prd/epic-17-architecture-hardening.md#story-1710--api-conventions-ii-breaking"]
-notes = ["epic-one-service-direction stands for 17.6 (the /internal move of PATCH /users/{u}/profile); repoint to 3.6 when epic 3 is planned."]
+notes = ["3.6 is the /internal move of PATCH /users/{u}/profile (epic 3 entry 6, part A of 17.6); repointed from epic-one-service-direction 2026-11-10 when epic 3 was planned."]
 
 [[entry]]
 id = "10b"
@@ -62,11 +62,11 @@ title = "One upload contract, first purpose company-logo"
 description = "17.11: shared-kernel upload component (key layout, presign, size and type rules, PENDING to CONFIRMED to ASSOCIATED, expiry cleanup), an uploads table per service, POST /api/v1/uploads/{purpose}, /{uploadId}/confirm and /import; company-logo in CUMS including the logo request flow (#1246); EMS stops using logos; one frontend upload hook; old /logos upload operations deleted."
 verify = "Company logo upload (create form and existing company) and the logo request work through /uploads/company-logo in production (CUMS integration tests per path, Playwright on company create); the old /logos upload operations answer 404 and their baseline lines are gone; npm run lint:api and the 17.3 contract check pass; a test or ArchUnit rule shows no EMS repository maps logos; the shared-kernel state machine and expiry cleanup have unit tests."
 covers = ["R16"]
-after = ["1.3", "1.4", "1.3b", "2.0c1", "2.0d", "epic-one-service-direction"]
+after = ["1.3", "1.4", "1.3b", "2.0c1", "2.0d", "3.7"]
 hitl = false
 risk = "high"
 references = ["docs/prd/epic-17-architecture-hardening.md#story-1711--one-upload-contract-first-purpose-company-logo", "docs/architecture/ADR-002-generic-file-upload-service.md"]
-notes = ["epic-one-service-direction stands for 17.7 (removal of the logo-request push); repoint to 3.7 when epic 3 is planned."]
+notes = ["3.7 is the removal of the logo-request push (epic 3 entry 7, part A of 17.7: EMS pulls logo requests from a CUMS feed; CUMS CompanyLogoRequestService no longer calls EMS); repointed from epic-one-service-direction 2026-11-10 when epic 3 was planned."]
 
 [[entry]]
 id = "11a"
