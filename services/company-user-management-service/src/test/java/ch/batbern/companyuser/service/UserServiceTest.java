@@ -6,7 +6,6 @@ import ch.batbern.companyuser.dto.generated.CompanyResponse;
 import ch.batbern.companyuser.dto.generated.CreateUserRequest;
 import ch.batbern.companyuser.dto.generated.GetOrCreateUserRequest;
 import ch.batbern.companyuser.dto.generated.GetOrCreateUserResponse;
-import ch.batbern.companyuser.dto.generated.UpdateUserRequest;
 import ch.batbern.companyuser.dto.generated.UserResponse;
 import ch.batbern.companyuser.events.UserCreatedEvent;
 import ch.batbern.companyuser.events.UserDeletedEvent;
@@ -97,6 +96,7 @@ class UserServiceTest {
             eventPublisher,
             searchService,
             securityContext,
+            null, // UserOwnership: the profile update runs in UserProfileOwnershipIntegrationTest
             slugService,
             responseMapper,
             companyService,
@@ -107,75 +107,8 @@ class UserServiceTest {
         );
     }
 
-    // Test 2.1: should_updateUserProfile_when_validDataProvided (Story 1.16.2: cognito-based)
-    @Test
-    void should_updateUserProfile_when_validDataProvided() {
-        // Given
-        String username = "john.doe";
-        when(securityContext.getCurrentUsername()).thenReturn(username);  // Story 2.6: Returns username from JWT
-
-        User existingUser = User.builder()
-                .username(username)
-                .email("john.doe@example.com")
-                .firstName("John")
-                .lastName("Doe")
-                .cognitoUserId("cognito-123")
-                .build();
-
-        when(userRepository.findByUsername(username)).thenReturn(Optional.of(existingUser));
-        when(userRepository.saveAndFlush(any(User.class))).thenReturn(existingUser);
-
-        UserResponse mockResponse = new UserResponse();
-        mockResponse.setId(username);
-        mockResponse.setFirstName("Johnny");
-        mockResponse.setBio("Updated bio");
-        when(responseMapper.mapToResponse(any(User.class))).thenReturn(mockResponse);
-
-        UpdateUserRequest request = new UpdateUserRequest();
-        request.setFirstName("Johnny");
-        request.setBio("Updated bio");
-
-        // When
-        UserResponse response = userService.updateCurrentUser(request);
-
-        // Then
-        assertThat(response).isNotNull();
-        assertThat(response.getId()).isEqualTo(username);  // Story 1.16.2: username as id
-        assertThat(response.getFirstName()).isEqualTo("Johnny");
-        assertThat(response.getBio()).isEqualTo("Updated bio");
-
-        verify(userRepository).saveAndFlush(any(User.class));
-        verifyNoInteractions(cognitoService);  // DB is source of truth, Cognito is not synced
-        verify(searchService).invalidateCache();
-    }
-
-    // Test 2.2: NO-OP Cognito sync - DB is source of truth
-    @Test
-    void should_syncCognito_when_userUpdated() {
-        // Given
-        String username = "john.doe";
-        when(securityContext.getCurrentUsername()).thenReturn(username);  // Story 2.6: Returns username from JWT
-
-        User user = User.builder()
-                .username(username)
-                .email("john@example.com")
-                .firstName("John")
-                .lastName("Doe")
-                .cognitoUserId("cognito-123")
-                .build();
-
-        when(userRepository.findByUsername(username)).thenReturn(Optional.of(user));
-        when(userRepository.saveAndFlush(any(User.class))).thenReturn(user);
-
-        UpdateUserRequest request = new UpdateUserRequest();
-        request.setFirstName("Johnny");
-
-        // When
-        userService.updateCurrentUser(request);
-
-        // Then - DB is source of truth, Cognito not synced
-        verifyNoInteractions(cognitoService);
-    }
+    // The profile update (PATCH /users/{username}) is tested end to end in
+    // UserProfileOwnershipIntegrationTest (Story 4.10, off own-code mocks).
 
     // Test 5.3: should_return404_when_userNotFound
     @Disabled("Flaky test - passes individually but fails in full suite due to test pollution")
@@ -586,127 +519,6 @@ class UserServiceTest {
         assertThat(event.getUsername()).isEqualTo(username);
         assertThat(event.getEmail()).isEqualTo("john@example.com");
         assertThat(event.getReason()).isEqualTo("GDPR compliance");
-    }
-
-    // Test: should_updateUserByUsername_when_adminUpdatesUser
-    @Test
-    void should_updateUserByUsername_when_adminUpdatesUser() {
-        // Given
-        String username = "john.doe";
-        String adminUsername = "admin.user";
-
-        User existingUser = User.builder()
-                .id(UUID.randomUUID())
-                .username(username)
-                .email("john.doe@example.com")
-                .firstName("John")
-                .lastName("Doe")
-                .bio("Old bio")
-                .companyId("OldCompany")
-                .build();
-
-        when(userRepository.findByUsername(username)).thenReturn(Optional.of(existingUser));
-        when(userRepository.saveAndFlush(any(User.class))).thenReturn(existingUser);
-        when(securityContext.getCurrentUserId()).thenReturn(adminUsername);
-
-        UserResponse mockResponse = new UserResponse();
-        mockResponse.setId(username);
-        mockResponse.setFirstName("Johnny");
-        mockResponse.setLastName("Smith");
-        mockResponse.setEmail("johnny.smith@example.com");
-        mockResponse.setBio("New bio");
-        mockResponse.setCompanyId("NewCompany");
-        when(responseMapper.mapToResponse(any(User.class))).thenReturn(mockResponse);
-
-        UpdateUserRequest request = new UpdateUserRequest();
-        request.setFirstName("Johnny");
-        request.setLastName("Smith");
-        request.setEmail("johnny.smith@example.com");
-        request.setBio("New bio");
-        request.setCompanyId("NewCompany");
-
-        // When
-        UserResponse response = userService.updateUserByUsername(username, request);
-
-        // Then
-        assertThat(response).isNotNull();
-        assertThat(response.getId()).isEqualTo(username);
-        assertThat(response.getFirstName()).isEqualTo("Johnny");
-        assertThat(response.getLastName()).isEqualTo("Smith");
-        assertThat(response.getEmail()).isEqualTo("johnny.smith@example.com");
-        assertThat(response.getBio()).isEqualTo("New bio");
-        assertThat(response.getCompanyId()).isEqualTo("NewCompany");
-
-        verify(userRepository).saveAndFlush(any(User.class));
-        verify(searchService).invalidateCache();
-
-        ArgumentCaptor<UserUpdatedEvent> eventCaptor = ArgumentCaptor.forClass(UserUpdatedEvent.class);
-        verify(eventPublisher).publish(eventCaptor.capture());
-
-        UserUpdatedEvent event = eventCaptor.getValue();
-        assertThat(event.getAggregateId()).isEqualTo(username);
-        assertThat(event.getUpdatedFields()).containsKeys("firstName", "lastName", "email", "bio", "companyId");
-        assertThat(event.getUserId()).isEqualTo(adminUsername);
-    }
-
-    // Test: should_updatePartialFields_when_someFieldsProvided
-    @Test
-    void should_updatePartialFields_when_someFieldsProvided() {
-        // Given
-        String username = "john.doe";
-
-        User existingUser = User.builder()
-                .id(UUID.randomUUID())
-                .username(username)
-                .email("john.doe@example.com")
-                .firstName("John")
-                .lastName("Doe")
-                .bio("Old bio")
-                .companyId("OldCompany")
-                .build();
-
-        when(userRepository.findByUsername(username)).thenReturn(Optional.of(existingUser));
-        when(userRepository.saveAndFlush(any(User.class))).thenReturn(existingUser);
-        when(securityContext.getCurrentUserId()).thenReturn("admin.user");
-
-        UserResponse mockResponse = new UserResponse();
-        when(responseMapper.mapToResponse(any(User.class))).thenReturn(mockResponse);
-
-        UpdateUserRequest request = new UpdateUserRequest();
-        request.setFirstName("Johnny");  // Only update first name
-        request.setBio("New bio");       // and bio
-
-        // When
-        userService.updateUserByUsername(username, request);
-
-        // Then
-        ArgumentCaptor<UserUpdatedEvent> eventCaptor = ArgumentCaptor.forClass(UserUpdatedEvent.class);
-        verify(eventPublisher).publish(eventCaptor.capture());
-
-        UserUpdatedEvent event = eventCaptor.getValue();
-        assertThat(event.getUpdatedFields()).containsKeys("firstName", "bio");
-        assertThat(event.getUpdatedFields()).doesNotContainKeys("lastName", "email", "companyId");
-    }
-
-    // Test: should_throwUserNotFoundException_when_userDoesNotExist
-    @Disabled("Flaky test - passes individually but fails in full suite due to test pollution")
-
-    @Test
-    void should_throwUserNotFoundException_when_updatingNonexistentUser() {
-        // Given
-        String username = "nonexistent.user";
-        when(userRepository.findByUsername(username)).thenReturn(Optional.empty());
-
-        UpdateUserRequest request = new UpdateUserRequest();
-        request.setFirstName("John");
-
-        // When / Then
-        assertThatThrownBy(() -> userService.updateUserByUsername(username, request))
-                .isInstanceOf(UserNotFoundException.class)
-                .hasMessageContaining("User with ID 'nonexistent.user' not found");
-
-        verify(userRepository, never()).saveAndFlush(any());
-        verify(eventPublisher, never()).publish(any());
     }
 
     // Test: should_createUser_when_validDataProvided

@@ -49,7 +49,6 @@ no-verb-segment	users-api.openapi.yml	GET /users/additional-emails/verify
 no-verb-segment	users-api.openapi.yml	GET /users/{username}/merge-preview
 no-verb-segment	users-api.openapi.yml	POST /users/additional-emails/verify
 no-verb-segment	users-api.openapi.yml	POST /users/admin/reconcile
-no-verb-segment	users-api.openapi.yml	POST /users/me/picture/confirm
 no-verb-segment	users-api.openapi.yml	POST /users/me/profile-claims/confirm
 no-verb-segment	users-api.openapi.yml	POST /users/{username}/picture/confirm
 no-verb-segment	users-api.openapi.yml	POST /users/{username}/profile-picture/upload-from-url

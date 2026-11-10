@@ -1,0 +1,48 @@
+meta {
+  name: Partner cannot edit another user's profile — PATCH /users/{username} (403)
+  type: http
+  seq: 3
+}
+
+patch {
+  url: {{baseUrl}}/users/{{currentUsername}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{partnerAuthToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "bio": "Must never be stored: a partner editing the organizer's profile"
+  }
+}
+
+tests {
+  test("another user's profile is not editable — 403", function() {
+    // 401 is tolerated when no partner token is loaded in the env (CI fallback).
+    // Never 200: the ownership rule (@userOwnership) and the role rule both refuse.
+    expect([401, 403]).to.include(res.getStatus());
+  });
+
+  test("response carries no user record", function() {
+    const body = res.getBody() || {};
+    expect(body.id).to.be.undefined;
+    expect(body.bio).to.be.undefined;
+  });
+}
+
+docs {
+  Story 4.10: PATCH /users/{username} is one endpoint for the user themself and for
+  ORGANIZER/ADMIN. The target is the organizer from 01 ({{currentUsername}}); the caller is the
+  partner test user, who is neither that user nor an organizer, so CUMS answers 403 and the
+  profile stays as it is. A refused write, so it is safe on staging (= production).
+}

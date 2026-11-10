@@ -103,15 +103,7 @@ export interface paths {
     delete?: never;
     options?: never;
     head?: never;
-    /**
-     * Partially update current user profile
-     * @description Partially update the profile of the currently authenticated user.
-     *
-     *     **Acceptance Criteria**: AC2
-     *
-     *     Similar to PUT but allows partial updates.
-     */
-    patch: operations['patchCurrentUser'];
+    patch?: never;
     trace?: never;
   };
   '/users': {
@@ -677,13 +669,7 @@ export interface paths {
      *     their own record via `GET /users/me`.
      */
     get: operations['getUserByUsername'];
-    /**
-     * Update a user's profile by username (Organizer/Admin)
-     * @description Full update of any user's profile by an organizer/admin.
-     *
-     *     **Authorization**: ORGANIZER or ADMIN role required
-     */
-    put: operations['updateUserByUsername'];
+    put?: never;
     post?: never;
     /**
      * Delete user and all associated data
@@ -706,7 +692,21 @@ export interface paths {
     delete: operations['deleteUser'];
     options?: never;
     head?: never;
-    patch?: never;
+    /**
+     * Partially update a user's profile
+     * @description Partial update of a user's profile; only the fields present change (ADR-013 §1).
+     *     One endpoint for self-service and for organizers (Story 4.10, replaces
+     *     `PATCH /users/me` and `PUT /users/{username}`).
+     *
+     *     **Authorization**: the user themself (`username` is the caller's own), or ORGANIZER /
+     *     ADMIN for any user; anyone else gets 403.
+     *
+     *     **Consent**: `termsAccepted` is the user's own consent (Story 12.11, write-once). It is
+     *     accepted only on the caller's own profile; sending it for another user is 403.
+     *
+     *     **Audit**: the `UserUpdatedEvent` records the caller's username as the actor.
+     */
+    patch: operations['patchUser'];
     trace?: never;
   };
   '/users/search': {
@@ -965,87 +965,6 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/users/me/picture': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    post?: never;
-    /**
-     * Remove own profile picture
-     * @description Remove the authenticated user's own profile picture.
-     *
-     *     **Acceptance Criteria**: AC13
-     *
-     *     Self-service counterpart to `DELETE /users/{username}/picture` (admin). Resolves the
-     *     caller from the bearer token; idempotent in effect (clears the picture references).
-     */
-    delete: operations['removeOwnProfilePicture'];
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/users/me/picture/presigned-url': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Request presigned URL for profile picture upload
-     * @description Generate presigned S3 upload URL for current user's profile picture.
-     *
-     *     **Acceptance Criteria**: AC10
-     *
-     *     **File Constraints**:
-     *     - Max size: 5 MB
-     *     - Allowed formats: PNG, JPG, JPEG, SVG
-     *     - Recommended dimensions: 400x400 to 1000x1000 pixels
-     *
-     *     **Upload Process**:
-     *     1. Client calls this endpoint to get presigned URL
-     *     2. Client uploads directly to S3 using presigned URL
-     *     3. Client calls /users/me/picture/confirm with file ID and extension
-     */
-    post: operations['requestProfilePictureUploadUrl'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/users/me/picture/confirm': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Confirm profile picture upload completion
-     * @description Confirm that profile picture has been uploaded to S3 and associate with user.
-     *
-     *     **Acceptance Criteria**: AC10
-     *
-     *     Must be called after successful upload to presigned URL.
-     */
-    post: operations['confirmProfilePictureUpload'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
   '/users/{username}/picture/presigned-url': {
     parameters: {
       query?: never;
@@ -1056,19 +975,20 @@ export interface paths {
     get?: never;
     put?: never;
     /**
-     * Request presigned URL for user profile picture upload (Admin)
-     * @description Admin endpoint to generate presigned S3 upload URL for a specific user's profile picture.
+     * Request presigned URL for a profile picture upload
+     * @description Generate a presigned S3 upload URL for a user's profile picture. One endpoint for
+     *     self-service and for organizers (Story 4.10, replaces `/users/me/picture/presigned-url`).
      *
-     *     **Authorization**: ORGANIZER role required
+     *     **Authorization**: the user themself, or ORGANIZER for any user; anyone else gets 403.
      *
      *     **File Constraints**:
      *     - Max size: 5 MB
      *     - Allowed formats: PNG, JPG, JPEG, SVG
      *
      *     **Upload Process**:
-     *     1. Admin calls this endpoint to get presigned URL
-     *     2. Admin uploads directly to S3 using presigned URL
-     *     3. Admin calls /users/{username}/picture/confirm with file ID and extension
+     *     1. Client calls this endpoint to get presigned URL
+     *     2. Client uploads directly to S3 using presigned URL
+     *     3. Client calls /users/{username}/picture/confirm with file ID and extension
      */
     post: operations['requestProfilePictureUploadUrlForUser'];
     delete?: never;
@@ -1087,10 +1007,11 @@ export interface paths {
     get?: never;
     put?: never;
     /**
-     * Confirm user profile picture upload completion (Admin)
-     * @description Admin endpoint to confirm that profile picture has been uploaded to S3 for a specific user.
+     * Confirm a profile picture upload
+     * @description Confirm that a profile picture has been uploaded to S3 and associate it with the user
+     *     (Story 4.10, replaces `/users/me/picture/confirm`).
      *
-     *     **Authorization**: ORGANIZER role required
+     *     **Authorization**: the user themself, or ORGANIZER for any user; anyone else gets 403.
      *
      *     Must be called after successful upload to presigned URL.
      */
@@ -1112,10 +1033,10 @@ export interface paths {
     put?: never;
     post?: never;
     /**
-     * Remove user profile picture (Admin)
-     * @description Admin endpoint to remove profile picture for a specific user.
+     * Remove a profile picture
+     * @description Remove a user's profile picture (Story 4.10, replaces `DELETE /users/me/picture`).
      *
-     *     **Authorization**: ORGANIZER role required
+     *     **Authorization**: the user themself, or ORGANIZER for any user; anyone else gets 403.
      *
      *     Clears profile picture URL and S3 key from user entity.
      */
@@ -2400,34 +2321,6 @@ export interface operations {
       500: components['responses']['InternalServerError'];
     };
   };
-  patchCurrentUser: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['UpdateUserRequest'];
-      };
-    };
-    responses: {
-      /** @description User updated successfully */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['UserResponse'];
-        };
-      };
-      400: components['responses']['BadRequest'];
-      401: components['responses']['Unauthorized'];
-      409: components['responses']['Conflict'];
-      500: components['responses']['InternalServerError'];
-    };
-  };
   listUsers: {
     parameters: {
       query?: {
@@ -3147,7 +3040,32 @@ export interface operations {
       500: components['responses']['InternalServerError'];
     };
   };
-  updateUserByUsername: {
+  deleteUser: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Username (unique identifier) */
+        username: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description User deleted successfully */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+      404: components['responses']['NotFound'];
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  patchUser: {
     parameters: {
       query?: never;
       header?: never;
@@ -3173,31 +3091,6 @@ export interface operations {
         };
       };
       400: components['responses']['BadRequest'];
-      401: components['responses']['Unauthorized'];
-      403: components['responses']['Forbidden'];
-      404: components['responses']['NotFound'];
-      500: components['responses']['InternalServerError'];
-    };
-  };
-  deleteUser: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Username (unique identifier) */
-        username: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description User deleted successfully */
-      204: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
       401: components['responses']['Unauthorized'];
       403: components['responses']['Forbidden'];
       404: components['responses']['NotFound'];
@@ -3640,82 +3533,6 @@ export interface operations {
       403: components['responses']['Forbidden'];
       404: components['responses']['NotFound'];
       409: components['responses']['Conflict'];
-      500: components['responses']['InternalServerError'];
-    };
-  };
-  removeOwnProfilePicture: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Profile picture removed successfully */
-      204: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      401: components['responses']['Unauthorized'];
-      404: components['responses']['NotFound'];
-      500: components['responses']['InternalServerError'];
-    };
-  };
-  requestProfilePictureUploadUrl: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['ProfilePictureUploadRequest'];
-      };
-    };
-    responses: {
-      /** @description Presigned upload URL generated successfully */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['PresignedUploadUrl'];
-        };
-      };
-      400: components['responses']['BadRequest'];
-      401: components['responses']['Unauthorized'];
-      500: components['responses']['InternalServerError'];
-    };
-  };
-  confirmProfilePictureUpload: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['ProfilePictureUploadConfirmRequest'];
-      };
-    };
-    responses: {
-      /** @description Upload confirmed successfully */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['ProfilePictureUploadConfirmResponse'];
-        };
-      };
-      400: components['responses']['BadRequest'];
-      401: components['responses']['Unauthorized'];
-      404: components['responses']['NotFound'];
       500: components['responses']['InternalServerError'];
     };
   };

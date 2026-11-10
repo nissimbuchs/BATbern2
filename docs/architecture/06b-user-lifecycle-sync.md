@@ -1006,9 +1006,12 @@ lives exclusively in the EMS `newsletter_subscribers` table (Story 10.7) via
   `Google_` username prefix (fallback, case-insensitive) — `isFederatedSignIn()` in
   `post-confirmation.ts`. Leaves `terms_accepted_at` NULL: Google sign-in is NOT consent.
   JIT provisioning (Pattern 1b) likewise leaves it NULL.
-- **Explicit acceptance**: `PUT /api/v1/users/me { "termsAccepted": true }` — WRITE-ONCE,
-  server clock (`UserService.updateCurrentUser`); `false`/absent never changes recorded
-  consent; consent can never be revoked through the API.
+- **Explicit acceptance**: `PATCH /api/v1/users/{own username} { "termsAccepted": true }`
+  (Story 4.10; the username comes from `GET /users/me`) — WRITE-ONCE, server clock
+  (`UserService.updateUser`); `false`/absent never changes recorded consent; consent can never
+  be revoked through the API, and only the user themself may give it (for another user, even
+  an organizer, 403). A first token without `custom:username` still owns the profile: the
+  ownership rule falls back to the user whose `cognito_user_id` is the token subject.
 - **Backfill (V17)**: rows with a Cognito account created before the SSO go-live cutoff
   `2026-06-04 16:00:00+00` got `terms_accepted_at = created_at`. The cutoff is the
   discriminator because `cognito_user_id` stores the **sub UUID for ALL users** (federated

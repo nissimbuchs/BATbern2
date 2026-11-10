@@ -242,7 +242,7 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.preferences").doesNotExist());
     }
 
-    // AC2: PUT /api/v1/users/me updates current user with validation
+    // AC2, Story 4.10: PATCH /api/v1/users/{username} on the own profile, with validation
 
     @Test
     @WithMockUser(username = "john.doe")
@@ -256,7 +256,7 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
                 }
                 """;
 
-        mockMvc.perform(patch("/api/v1/users/me")
+        mockMvc.perform(patch("/api/v1/users/john.doe")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(updateRequest))
                 .andExpect(status().isOk())
@@ -276,7 +276,7 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
                 }
                 """;
 
-        mockMvc.perform(patch("/api/v1/users/me")
+        mockMvc.perform(patch("/api/v1/users/john.doe")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(invalidEmailRequest))
                 .andExpect(status().isBadRequest())
@@ -293,7 +293,7 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
                 }
                 """;
 
-        mockMvc.perform(patch("/api/v1/users/me")
+        mockMvc.perform(patch("/api/v1/users/john.doe")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(invalidRequest))
                 .andExpect(status().isBadRequest());
@@ -627,7 +627,7 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
             }
             """;
 
-        mockMvc.perform(post("/api/v1/users/me/picture/presigned-url")
+        mockMvc.perform(post("/api/v1/users/john.doe/picture/presigned-url")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestBody))
                 .andExpect(status().isOk())
@@ -653,7 +653,7 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
             }
             """;
 
-        mockMvc.perform(post("/api/v1/users/me/picture/presigned-url")
+        mockMvc.perform(post("/api/v1/users/john.doe/picture/presigned-url")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestBody))
                 .andExpect(status().isBadRequest())
@@ -672,7 +672,7 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
             }
             """;
 
-        mockMvc.perform(post("/api/v1/users/me/picture/presigned-url")
+        mockMvc.perform(post("/api/v1/users/john.doe/picture/presigned-url")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestBody))
                 .andExpect(status().isBadRequest())
@@ -691,7 +691,7 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
             }
             """, fileId);
 
-        mockMvc.perform(post("/api/v1/users/me/picture/confirm")
+        mockMvc.perform(post("/api/v1/users/john.doe/picture/confirm")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestBody))
                 .andExpect(status().isOk())
@@ -720,7 +720,7 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
             }
             """;
 
-        mockMvc.perform(post("/api/v1/users/me/picture/presigned-url")
+        mockMvc.perform(post("/api/v1/users/john.doe/picture/presigned-url")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestBody))
                 .andExpect(status().isUnauthorized());
@@ -736,7 +736,7 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
             }
             """;
 
-        mockMvc.perform(post("/api/v1/users/me/picture/confirm")
+        mockMvc.perform(post("/api/v1/users/john.doe/picture/confirm")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestBody))
                 .andExpect(status().isUnauthorized());
@@ -847,7 +847,7 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isForbidden());
     }
 
-    // PUT /api/v1/users/{username} updates user by username (Organizer/Admin only)
+    // PATCH /api/v1/users/{username} by an organizer (Story 4.10; the PUT twin is gone)
 
     @Test
     @WithMockUser(username = "admin", roles = {"ORGANIZER"})
@@ -861,7 +861,7 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
                 }
                 """;
 
-        mockMvc.perform(put("/api/v1/users/{username}", "john.doe")
+        mockMvc.perform(patch("/api/v1/users/{username}", "john.doe")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(updateRequest))
                 .andExpect(status().isOk())
@@ -885,7 +885,7 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
                 }
                 """;
 
-        mockMvc.perform(put("/api/v1/users/{username}", "nonexistent.user")
+        mockMvc.perform(patch("/api/v1/users/{username}", "nonexistent.user")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(updateRequest))
                 .andExpect(status().isNotFound())
@@ -903,7 +903,7 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
                 }
                 """;
 
-        mockMvc.perform(put("/api/v1/users/{username}", "john.doe")
+        mockMvc.perform(patch("/api/v1/users/{username}", "john.doe")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(updateRequest))
                 .andExpect(status().isForbidden());
@@ -1564,24 +1564,22 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     @WithMockUser(username = "john.doe")
-    @DisplayName("should_removeOwnProfilePicture_when_deleteMePicture")
-    void should_removeOwnProfilePicture_when_deleteMePicture() throws Exception {
-        // Regression: DELETE /users/me/picture must hit the self-service handler, NOT fall
-        // through to /{username}/picture with literal username="me" (which 404s and left the
-        // self-service "Remove Photo" button broken for every user). Found in slice 1 of the
-        // Playwright staging-hardening audit (docs/plans/playwright-staging-hardening.md).
+    @DisplayName("should_removeOwnProfilePicture_when_deleteOwnPicture")
+    void should_removeOwnProfilePicture_when_deleteOwnPicture() throws Exception {
+        // Story 4.10: the self-service "Remove Photo" uses DELETE /users/{own username}/picture
+        // (the /users/me/picture twin is gone).
         testUser.setProfilePictureUrl("https://cdn.batbern.ch/profile-pictures/john.doe/test-file.png");
         testUser.setProfilePictureS3Key("profile-pictures/john.doe/test-file.png");
         userRepository.save(testUser);
 
         mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete(
-                        "/api/v1/users/me/picture")
+                        "/api/v1/users/{username}/picture", "john.doe")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNoContent());
 
         User updatedUser = userRepository.findByUsername("john.doe").orElseThrow();
-        assert updatedUser.getProfilePictureUrl() == null;
-        assert updatedUser.getProfilePictureS3Key() == null;
+        assertThat(updatedUser.getProfilePictureUrl()).isNull();
+        assertThat(updatedUser.getProfilePictureS3Key()).isNull();
     }
 
     @Disabled("Flaky test - passes individually but fails in full suite due to test pollution")

@@ -8,10 +8,24 @@
  *   • /profile renders BOTH tabs, with the consent tab showing the read-only
  *     "accepted on" line instead of the consent checkbox.
  *
- * Read-only — no mutations, no cleanup owed. testid-only locators.
+ * The tabs tests are read-only. Story 4.10 adds one mutating test: saving the own bio sends
+ * `PATCH /users/{own username}` (the /users/me PATCH twin is gone); it captures the bio first
+ * and restores it in a finally, so the shared organizer account is left as it was.
  */
 
 import { test, expect } from '@playwright/test';
+import { readOrganizerToken } from '../helpers/event-fixture';
+
+const API_URL = process.env.E2E_API_URL || 'http://localhost:8000';
+
+async function ownProfile(token: string): Promise<{ username: string; bio: string }> {
+  const res = await fetch(`${API_URL}/api/v1/users/me`, {
+    headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
+  });
+  expect(res.status, 'GET /users/me').toBe(200);
+  const body = (await res.json()) as { id: string; bio?: string | null };
+  return { username: body.id, bio: body.bio ?? '' };
+}
 
 test.describe('Profile page · Story 12.11', { tag: '@gate' }, () => {
   test('should_notGateConsentedOrganizer_when_dashboardOpened', async ({ page }) => {
@@ -43,5 +57,36 @@ test.describe('Profile page · Story 12.11', { tag: '@gate' }, () => {
     await page.goto('/speaker-portal/profile');
     await expect(page.getByTestId('profile-tab')).toBeVisible({ timeout: 20_000 });
     expect(page.url()).toContain('/profile');
+  });
+
+  test('should_patchOwnUsernameAndPersist_when_bioSaved', async ({ page }) => {
+    const token = readOrganizerToken();
+    const before = await ownProfile(token);
+    const marker = `Bio saved by the Story 4.10 e2e test ${Date.now()}`;
+    try {
+      await page.goto('/profile');
+      const bio = page.locator('#bio');
+      await expect(bio).toBeVisible({ timeout: 20_000 });
+      await bio.fill(marker);
+
+      const patch = page.waitForRequest(
+        (req) => req.method() === 'PATCH' && /\/api\/v1\/users\/[^/?]+$/.test(req.url())
+      );
+      await page.getByRole('button', { name: 'Save Changes' }).click();
+      const request = await patch;
+      expect(new URL(request.url()).pathname).toBe(
+        `/api/v1/users/${encodeURIComponent(before.username)}`
+      );
+
+      await page.reload();
+      await expect(page.locator('#bio')).toHaveValue(marker, { timeout: 20_000 });
+    } finally {
+      const res = await fetch(`${API_URL}/api/v1/users/${encodeURIComponent(before.username)}`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bio: before.bio }),
+      });
+      expect(res.status, 'restore the bio').toBe(200);
+    }
   });
 });

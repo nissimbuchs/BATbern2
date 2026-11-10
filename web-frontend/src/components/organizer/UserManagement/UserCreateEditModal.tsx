@@ -38,10 +38,7 @@ import { useTranslation } from 'react-i18next';
 import { emailProblem } from '@/utils/validation/email';
 import { useCreateUser, useUpdateUser } from '../../../hooks/useUserManagement';
 import { CompanyAutocomplete } from '../PartnerManagement/CompanyAutocomplete';
-import {
-  removeProfilePictureForUser,
-  uploadProfilePictureForUser,
-} from '@/services/api/userAccountApi';
+import { removeProfilePicture, uploadProfilePicture } from '@/services/api/userAccountApi';
 import { formatErrorForDisplay } from '@/utils/errorHandling/errorMessages';
 import type { Role, User } from '../../../types/user.types';
 import type { components } from '@/types/generated/company-api.types';
@@ -214,8 +211,8 @@ const UserCreateEditModal: React.FC<UserCreateEditModalProps> = ({
 
     setIsUploadingPhoto(true);
     try {
-      // Use admin endpoint to upload for the specific user (user.id is the username)
-      const newUrl = await uploadProfilePictureForUser(user.id, file);
+      // Story 4.10: /users/{username}/picture* (user.id is the username)
+      const newUrl = await uploadProfilePicture(user.id, file);
       setProfilePictureUrl(newUrl);
     } catch (error) {
       console.error('Photo upload failed:', error);
@@ -229,8 +226,7 @@ const UserCreateEditModal: React.FC<UserCreateEditModalProps> = ({
 
     setIsUploadingPhoto(true);
     try {
-      // Use admin endpoint to remove for the specific user
-      await removeProfilePictureForUser(user.id);
+      await removeProfilePicture(user.id);
       setProfilePictureUrl(undefined);
     } catch (error) {
       console.error('Photo removal failed:', error);

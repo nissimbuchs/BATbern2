@@ -56,6 +56,18 @@ import { CompanyLogoSection } from '@/components/user/CompanyLogoRequest/Company
 
 type PageState = 'loading' | 'form' | 'error';
 
+/**
+ * Story 4.10: the profile is written at `PATCH /users/{username}`; the username is the hydrated
+ * user's (`GET /users/me`), never taken from the token, which may lack `custom:username` on the
+ * first login. The form only renders once the profile is loaded.
+ */
+const requireUsername = (user: User | undefined): string => {
+  if (!user?.username) {
+    throw new Error('The profile is not loaded yet');
+  }
+  return user.username;
+};
+
 const ProfilePage = () => {
   const { t, i18n } = useTranslation();
   const queryClient = useQueryClient();
@@ -102,9 +114,9 @@ const ProfilePage = () => {
 
   const updateMutation = useMutation({
     mutationFn: (updates: Partial<User> & { termsAccepted?: boolean }) =>
-      updateUserProfile(updates),
+      updateUserProfile(requireUsername(user), updates),
     onSuccess: (updatedUser) => {
-      // PUT /me returns `companyId` but does NOT expand the nested `company`
+      // PATCH /users/{username} returns `companyId` but does NOT expand the nested `company`
       // object (only GET ?include=company does). Writing the bare response into
       // the cache would drop the resolved display name, so the post-save re-sync
       // falls back to the slug in the company chip (#811). Preserve the display
@@ -127,7 +139,7 @@ const ProfilePage = () => {
   // Separate mutation instance for the consent save so its pending/error state
   // doesn't entangle with the profile form.
   const consentMutation = useMutation({
-    mutationFn: () => updateUserProfile({ termsAccepted: true }),
+    mutationFn: () => updateUserProfile(requireUsername(user), { termsAccepted: true }),
     onSuccess: async (updatedUser) => {
       queryClient.setQueryData(['user-profile-me'], { ...profileData, user: updatedUser });
       // AC6: refresh the auth user so ProtectedRoute sees termsAcceptedAt and lifts
@@ -374,6 +386,7 @@ const ProfilePage = () => {
                   <div className="space-y-4">
                     <div className="flex justify-center mb-6">
                       <ProfilePhotoUpload
+                        username={user.username}
                         currentPhotoUrl={user.profilePictureUrl}
                         onPhotoUploaded={handlePhotoUploaded}
                         onError={handlePhotoError}

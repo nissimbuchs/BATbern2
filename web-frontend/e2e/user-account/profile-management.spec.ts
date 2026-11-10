@@ -23,21 +23,32 @@ import { readOrganizerToken } from '../helpers/user-fixture';
 
 const API_URL = process.env.E2E_API_URL || 'http://localhost:8000';
 
-async function getOwnBio(token: string): Promise<string> {
+/** The own username and bio, read where the app reads them: GET /users/me. */
+async function getOwnProfile(token: string): Promise<{ username: string; bio: string }> {
   const res = await fetch(`${API_URL}/api/v1/users/me`, {
     headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
   });
-  if (res.status !== 200) return '';
-  const data = (await res.json()) as { bio?: string };
-  return data.bio ?? '';
+  if (res.status !== 200) {
+    throw new Error(`GET /users/me answered ${res.status}; cannot capture the bio to restore`);
+  }
+  const data = (await res.json()) as { id: string; bio?: string | null };
+  return { username: data.id, bio: data.bio ?? '' };
 }
 
-async function setOwnBio(token: string, bio: string): Promise<void> {
-  await fetch(`${API_URL}/api/v1/users/me`, {
-    method: 'PUT',
+/**
+ * Story 4.10: the own profile is written at PATCH /users/{username} (the /users/me twin is gone).
+ * Until then this restore sent PUT /users/me, which never existed, and swallowed the error: the
+ * bio was never put back. It now fails loudly when the restore does not take.
+ */
+async function setOwnBio(token: string, username: string, bio: string): Promise<void> {
+  const res = await fetch(`${API_URL}/api/v1/users/${encodeURIComponent(username)}`, {
+    method: 'PATCH',
     headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({ bio }),
-  }).catch(() => undefined);
+  });
+  if (res.status !== 200) {
+    throw new Error(`PATCH /users/${username} answered ${res.status}; the bio was not restored`);
+  }
 }
 
 test.describe('Profile Management', { tag: '@gate' }, () => {
@@ -46,16 +57,17 @@ test.describe('Profile Management', { tag: '@gate' }, () => {
   test.describe.configure({ mode: 'serial' });
 
   let token: string;
+  let ownUsername: string;
   let originalBio: string;
 
   test.beforeAll(async () => {
     token = readOrganizerToken();
-    originalBio = await getOwnBio(token);
+    ({ username: ownUsername, bio: originalBio } = await getOwnProfile(token));
   });
 
   test.afterAll(async () => {
     // Restore the account's bio to exactly what it was before this spec ran.
-    await setOwnBio(token, originalBio);
+    await setOwnBio(token, ownUsername, originalBio);
   });
 
   test.beforeEach(async ({ page }) => {

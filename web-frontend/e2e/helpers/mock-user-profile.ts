@@ -27,7 +27,7 @@ export async function forceUserProfileLanguage(
   language: 'en' | 'de' | 'fr' | 'it' = 'en'
 ): Promise<void> {
   // Match the bare profile endpoint with or without a query string, but NOT its
-  // sub-resources (`/users/me/additional-emails`, `/users/me/picture`, …): `me` must be
+  // sub-resources (`/users/me/additional-emails`, `/users/me/settings`, …): `me` must be
   // followed by end-of-URL or a `?`. Playwright runs the most-recently-registered matching
   // route first, so a per-test override registered after a beforeEach default wins.
   await page.route(/\/api\/v1\/users\/me(\?|$)/, async (route) => {

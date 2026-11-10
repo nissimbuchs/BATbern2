@@ -336,64 +336,6 @@ paths:
       security:
         - BearerAuth: []
 
-    patch:
-      tags:
-        - User Management
-      summary: Partially update current user profile
-      description: |
-        Partially update the profile of the currently authenticated user.
-
-        **Acceptance Criteria**: AC2
-
-        Similar to PUT but allows partial updates.
-
-      operationId: patchCurrentUser
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UpdateUserRequest'
-      responses:
-        '200':
-          description: User updated successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UserResponse'
-              examples:
-                default:
-                  summary: captured from the local anonymized database (same schema as a GET)
-                  value:
-                    id: hugo.muster
-                    hasCognitoAccount: true
-                    email: hugo.muster@example.com
-                    firstName: Hugo
-                    lastName: Muster
-                    bio: Software architect with a focus on APIs.
-                    roles:
-                      - ORGANIZER
-                    active: true
-                    createdAt: "2026-02-22T12:54:23.442285Z"
-                    updatedAt: "2026-11-08T14:43:13.089114Z"
-                    termsAcceptedAt: "2026-02-22T12:54:23.442285Z"
-                    additionalEmails: []
-                    company: null
-                    companyId: null
-                    lastLoginAt: null
-                    profilePictureUrl: null
-                    settings: null
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '409':
-          $ref: '#/components/responses/Conflict'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-      security:
-        - BearerAuth: []
-
   /users:
     get:
       tags:
@@ -1871,15 +1813,23 @@ paths:
       security:
         - BearerAuth: []
 
-    put:
+    patch:
       tags:
         - User Management
-      summary: Update a user's profile by username (Organizer/Admin)
+      summary: Partially update a user's profile
       description: |
-        Full update of any user's profile by an organizer/admin.
+        Partial update of a user's profile; only the fields present change (ADR-013 §1).
+        One endpoint for self-service and for organizers (Story 4.10, replaces
+        `PATCH /users/me` and `PUT /users/{username}`).
 
-        **Authorization**: ORGANIZER or ADMIN role required
-      operationId: updateUserByUsername
+        **Authorization**: the user themself (`username` is the caller's own), or ORGANIZER /
+        ADMIN for any user; anyone else gets 403.
+
+        **Consent**: `termsAccepted` is the user's own consent (Story 12.11, write-once). It is
+        accepted only on the caller's own profile; sending it for another user is 403.
+
+        **Audit**: the `UserUpdatedEvent` records the caller's username as the actor.
+      operationId: patchUser
       parameters:
         - name: username
           in: path
@@ -2643,145 +2593,25 @@ paths:
       security:
         - BearerAuth: []
 
-  /users/me/picture:
-    delete:
-      tags:
-        - Profile Picture
-      summary: Remove own profile picture
-      description: |
-        Remove the authenticated user's own profile picture.
-
-        **Acceptance Criteria**: AC13
-
-        Self-service counterpart to `DELETE /users/{username}/picture` (admin). Resolves the
-        caller from the bearer token; idempotent in effect (clears the picture references).
-      operationId: removeOwnProfilePicture
-      responses:
-        '204':
-          description: Profile picture removed successfully
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-      security:
-        - BearerAuth: []
-
-  /users/me/picture/presigned-url:
-    post:
-      tags:
-        - Profile Picture
-      summary: Request presigned URL for profile picture upload
-      description: |
-        Generate presigned S3 upload URL for current user's profile picture.
-
-        **Acceptance Criteria**: AC10
-
-        **File Constraints**:
-        - Max size: 5 MB
-        - Allowed formats: PNG, JPG, JPEG, SVG
-        - Recommended dimensions: 400x400 to 1000x1000 pixels
-
-        **Upload Process**:
-        1. Client calls this endpoint to get presigned URL
-        2. Client uploads directly to S3 using presigned URL
-        3. Client calls /users/me/picture/confirm with file ID and extension
-
-      operationId: requestProfilePictureUploadUrl
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ProfilePictureUploadRequest'
-      responses:
-        '200':
-          description: Presigned upload URL generated successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PresignedUploadUrl'
-              examples:
-                default:
-                  summary: generated from the schema and captured sub-values
-                  value:
-                    uploadUrl: https://s3.eu-central-1.amazonaws.com/bucket/...
-                    fileId: f3e8d1a4-5b2c-4d6e-8a9b-1c2d3e4f5a6b
-                    s3Key: profile-pictures/2025/john.doe/profile-f3e8d1a4.jpg
-                    fileExtension: jpg
-                    expiresInMinutes: 15
-                    requiredHeaders:
-                      Content-Type: image/jpeg
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-      security:
-        - BearerAuth: []
-
-  /users/me/picture/confirm:
-    post:
-      tags:
-        - Profile Picture
-      summary: Confirm profile picture upload completion
-      description: |
-        Confirm that profile picture has been uploaded to S3 and associate with user.
-
-        **Acceptance Criteria**: AC10
-
-        Must be called after successful upload to presigned URL.
-
-      operationId: confirmProfilePictureUpload
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ProfilePictureUploadConfirmRequest'
-      responses:
-        '200':
-          description: Upload confirmed successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProfilePictureUploadConfirmResponse'
-              examples:
-                default:
-                  summary: generated from the schema and captured sub-values
-                  value:
-                    profilePictureUrl: https://cdn.batbern.ch/profile-pictures/2025/john.doe/profile-f3e8d1a4.jpg
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-      security:
-        - BearerAuth: []
-
   /users/{username}/picture/presigned-url:
     post:
       tags:
         - Profile Picture
-      summary: Request presigned URL for user profile picture upload (Admin)
+      summary: Request presigned URL for a profile picture upload
       description: |
-        Admin endpoint to generate presigned S3 upload URL for a specific user's profile picture.
+        Generate a presigned S3 upload URL for a user's profile picture. One endpoint for
+        self-service and for organizers (Story 4.10, replaces `/users/me/picture/presigned-url`).
 
-        **Authorization**: ORGANIZER role required
+        **Authorization**: the user themself, or ORGANIZER for any user; anyone else gets 403.
 
         **File Constraints**:
         - Max size: 5 MB
         - Allowed formats: PNG, JPG, JPEG, SVG
 
         **Upload Process**:
-        1. Admin calls this endpoint to get presigned URL
-        2. Admin uploads directly to S3 using presigned URL
-        3. Admin calls /users/{username}/picture/confirm with file ID and extension
+        1. Client calls this endpoint to get presigned URL
+        2. Client uploads directly to S3 using presigned URL
+        3. Client calls /users/{username}/picture/confirm with file ID and extension
 
       operationId: requestProfilePictureUploadUrlForUser
       parameters:
@@ -2834,11 +2664,12 @@ paths:
     post:
       tags:
         - Profile Picture
-      summary: Confirm user profile picture upload completion (Admin)
+      summary: Confirm a profile picture upload
       description: |
-        Admin endpoint to confirm that profile picture has been uploaded to S3 for a specific user.
+        Confirm that a profile picture has been uploaded to S3 and associate it with the user
+        (Story 4.10, replaces `/users/me/picture/confirm`).
 
-        **Authorization**: ORGANIZER role required
+        **Authorization**: the user themself, or ORGANIZER for any user; anyone else gets 403.
 
         Must be called after successful upload to presigned URL.
 
@@ -2887,11 +2718,11 @@ paths:
     delete:
       tags:
         - Profile Picture
-      summary: Remove user profile picture (Admin)
+      summary: Remove a profile picture
       description: |
-        Admin endpoint to remove profile picture for a specific user.
+        Remove a user's profile picture (Story 4.10, replaces `DELETE /users/me/picture`).
 
-        **Authorization**: ORGANIZER role required
+        **Authorization**: the user themself, or ORGANIZER for any user; anyone else gets 403.
 
         Clears profile picture URL and S3 key from user entity.
 

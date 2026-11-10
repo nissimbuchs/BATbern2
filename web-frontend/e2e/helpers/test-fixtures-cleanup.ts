@@ -166,18 +166,26 @@ export async function cleanupByCode(token: string, eventCode: string): Promise<v
 }
 
 /**
- * Explicit DELETE of the CALLER's own profile picture (`DELETE /users/me/picture`) —
- * the only teardown path for the uploads slice. Profile pictures have NO prefix-sweep
- * entityType (the EMS `uploads` enum the §A4 prose imagined was never built), so the
- * photo-upload `@smoke` must restore its own account to photo-less by explicit delete in
- * afterAll. The token's own identity is the target (no id needed). Accepts 204/404 (404 =
- * the account already has no picture, the common case). Never throws — cleanup must not
- * fail an otherwise-green test.
+ * Explicit DELETE of the CALLER's own profile picture (`DELETE /users/{own username}/picture`,
+ * Story 4.10; the username is read from `GET /users/me`) — the only teardown path for the
+ * uploads slice. Profile pictures have NO prefix-sweep entityType (the EMS `uploads` enum the
+ * §A4 prose imagined was never built), so the photo-upload `@smoke` must restore its own
+ * account to photo-less by explicit delete in afterAll. Accepts 204/404 (404 = the account
+ * already has no picture, the common case). Never throws — cleanup must not fail an
+ * otherwise-green test.
  */
 export async function cleanupOwnProfilePicture(token: string): Promise<void> {
   if (!token) return;
   try {
-    const res = await authedFetch('/api/v1/users/me/picture', token, { method: 'DELETE' });
+    const me = await authedFetch('/api/v1/users/me', token, { method: 'GET' });
+    if (me.status !== 200) {
+      console.warn(`[cleanup] ⚠️  own profile picture: GET /users/me → ${me.status}`);
+      return;
+    }
+    const { id: username } = (await me.json()) as { id: string };
+    const res = await authedFetch(`/api/v1/users/${encodeURIComponent(username)}/picture`, token, {
+      method: 'DELETE',
+    });
     if ([200, 204, 404].includes(res.status)) {
       console.log(`[cleanup] ✓ own profile picture → ${res.status}`);
     } else {

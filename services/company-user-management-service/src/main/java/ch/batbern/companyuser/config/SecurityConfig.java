@@ -143,10 +143,11 @@ public class SecurityConfig {
                 // to be unambiguous and immune to future matcher reordering).
                 .requestMatchers(HttpMethod.GET, "/api/v1/users/additional-emails/verify").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/v1/users/additional-emails/verify").permitAll()
-                // Current user endpoint always requires authentication (even from VPC)
+                // Current user endpoint (GET, the self read) always requires authentication (even from VPC)
                 .requestMatchers("/api/v1/users/me").authenticated()
-                // In-VPC calls without JWT or authenticated requests via the gateway. The role check
-                // is per method (@PreAuthorize); services read users via /internal/users.
+                // In-VPC calls without JWT or authenticated requests via the gateway. The role and
+                // ownership check is per method (@PreAuthorize: PATCH /users/{username} admits the
+                // user themself via @userOwnership, Story 4.10); services read users via /internal/users.
                 .requestMatchers("/api/v1/users/*")
                     .access(new VpcInternalAuthorizationManager(vpcCidr))
                 // User list: same rule as /api/v1/users/* above; ORGANIZER/ADMIN via @PreAuthorize.

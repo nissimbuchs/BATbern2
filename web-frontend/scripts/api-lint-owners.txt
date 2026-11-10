@@ -22,7 +22,6 @@ G06	17.10	(no-literal-under-events|path-kebab-case)	POST /events/batch_registrat
 G08	17.10	uuid-path-param	/events/\{eventCode\}/(speakers/pool/\{speakerId\}|speakers/\{speakerId\}/|speaker-pool/\{speakerPoolId\}/reminders)
 G09	17.10	no-verb-segment	POST /events/\{eventCode\}/speakers/(invite|self-nominate)$
 G10	17.10	no-verb-segment	POST /newsletter/subscribe$
-G11	17.10	no-verb-segment	POST /users/me/picture/confirm$
 N5	17.10b	no-verb-segment	(/notifications/(batch-delete|batch-read|\{id\}/read)$|/sessions/batch-import$)
 N6	17.10b	(no-literal-under-events|path-kebab-case)	(/events/types|/events/recent-photos$|GET /events/registrations$|/companies:get-or-create$)
 N8	17.10b	no-personal-data-path-param	/users/me/additional-emails/\{email\}

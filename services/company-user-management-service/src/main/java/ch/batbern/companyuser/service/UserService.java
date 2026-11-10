@@ -37,6 +37,7 @@ import ch.batbern.companyuser.repository.UserAdditionalEmailRepository;
 import ch.batbern.companyuser.repository.UserRepository;
 import ch.batbern.companyuser.specification.UserSpecification;
 import ch.batbern.companyuser.security.SecurityContextHelper;
+import ch.batbern.companyuser.security.UserOwnership;
 import ch.batbern.shared.api.DeterministicPaging;
 import ch.batbern.shared.events.DomainEventPublisher;
 import ch.batbern.shared.service.SlugGenerationService;
@@ -54,6 +55,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -83,6 +85,7 @@ public class UserService {
     private final DomainEventPublisher eventPublisher;
     private final UserSearchService searchService;
     private final SecurityContextHelper securityContext;
+    private final UserOwnership userOwnership;
     private final SlugGenerationService slugService;
     private final UserResponseMapper responseMapper;
     private final CompanyService companyService;
@@ -133,19 +136,28 @@ public class UserService {
     }
 
     /**
-     * Update current authenticated user
-     * Story 1.16.2: Uses username from SecurityContext for lookup
-     * ADR-003: Use username for user identification, not UUID
-     * AC2: Cognito sync on update
+     * Partially update a user's profile: {@code PATCH /users/{username}} (Story 4.10, one endpoint
+     * for self-service and organizers; the controller's {@code @PreAuthorize} admits the user
+     * themself or ORGANIZER/ADMIN). Only the fields present change.
+     *
+     * <p>{@code termsAccepted} is the user's own consent (Story 12.11, write-once): accepted only on
+     * the caller's own profile, for anyone else it is 403. The {@link UserUpdatedEvent} records the
+     * caller's username as the actor (it used to be the Cognito subject for organizer edits).
+     *
+     * @param username username of the user to update (ADR-003)
+     * @param request  the fields to change
+     * @return the updated profile
      */
-    public UserResponse updateCurrentUser(UpdateUserRequest request) {
-        log.info("Updating current user profile");
-        String username = securityContext.getCurrentUsername();  // Returns username (custom:username claim from JWT)
+    public UserResponse updateUser(String username, UpdateUserRequest request) {
+        boolean self = userOwnership.isCurrentUser(username);
+        if (request.getTermsAccepted() != null && !self) {
+            throw new AccessDeniedException("Consent can only be given by the user themself");
+        }
+        log.info("Updating user {} ({})", username, self ? "self" : "organizer/admin");
 
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new UserNotFoundException(username));
 
-        // Update fields
         if (request.getFirstName() != null) {
             user.setFirstName(request.getFirstName());
         }
@@ -171,13 +183,9 @@ public class UserService {
         // Flush so that @PreUpdate has set updatedAt before the response is built in this transaction.
         User updatedUser = userRepository.saveAndFlush(user);
 
-        // NOTE: Cognito sync removed - DB is source of truth for user data
-        // Cognito is only used for authentication (JWT tokens)
-
-        // Invalidate search cache
+        // DB is the source of truth for user data; Cognito is only used for authentication.
         searchService.invalidateCache();
 
-        // Publish domain event (Story 1.16.2: String IDs)
         java.util.Map<String, Object> updatedFields = new java.util.HashMap<>();
         if (request.getFirstName() != null) {
             updatedFields.put("firstName", request.getFirstName());
@@ -195,81 +203,14 @@ public class UserService {
             updatedFields.put("companyId", request.getCompanyId());
         }
 
-        UserUpdatedEvent event = new UserUpdatedEvent(
-            updatedUser.getUsername(),  // aggregateId = username
-            updatedFields,
-            null,  // previousValues: not tracked
-            updatedUser.getUsername()  // userId = username (who performed the update)
-        );
-        eventPublisher.publish(event);
-
-        log.info("User updated successfully: {}", updatedUser.getUsername());
-        return responseMapper.mapToResponse(updatedUser);
-    }
-
-    /**
-     * Update user profile by username (for organizer/admin)
-     * Allows admins/organizers to update any user's profile
-     *
-     * @param username Username of user to update
-     * @param request Update request with validation
-     * @return Updated user profile
-     */
-    public UserResponse updateUserByUsername(String username, UpdateUserRequest request) {
-        log.info("Updating user {} by admin/organizer", username);
-
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new UserNotFoundException(username));
-
-        // Update fields
-        if (request.getFirstName() != null) {
-            user.setFirstName(request.getFirstName());
-        }
-        if (request.getLastName() != null) {
-            user.setLastName(request.getLastName());
-        }
-        if (request.getEmail() != null) {
-            user.setEmail(request.getEmail());
-        }
-        if (request.getBio() != null) {
-            user.setBio(request.getBio());
-        }
-        if (request.getCompanyId() != null) {
-            user.setCompanyId(request.getCompanyId());
-        }
-
-        // Flush so that @PreUpdate has set updatedAt before the response is built in this transaction.
-        User updatedUser = userRepository.saveAndFlush(user);
-
-        // Invalidate search cache
-        searchService.invalidateCache();
-
-        // Publish domain event
-        java.util.Map<String, Object> updatedFields = new java.util.HashMap<>();
-        if (request.getFirstName() != null) {
-            updatedFields.put("firstName", request.getFirstName());
-        }
-        if (request.getLastName() != null) {
-            updatedFields.put("lastName", request.getLastName());
-        }
-        if (request.getEmail() != null) {
-            updatedFields.put("email", request.getEmail());
-        }
-        if (request.getBio() != null) {
-            updatedFields.put("bio", request.getBio());
-        }
-        if (request.getCompanyId() != null) {
-            updatedFields.put("companyId", request.getCompanyId());
-        }
-
-        // Get current user performing the update
-        String updatedBy = securityContext.getCurrentUserId();
+        // The actor is a username (ADR-003): the user themself, or the organizer/admin who edited.
+        String updatedBy = self ? updatedUser.getUsername() : securityContext.getCurrentUsername();
 
         UserUpdatedEvent event = new UserUpdatedEvent(
             updatedUser.getUsername(),  // aggregateId = username
             updatedFields,
             null,  // previousValues: not tracked
-            updatedBy  // userId = admin/organizer who performed the update
+            updatedBy
         );
         eventPublisher.publish(event);
 

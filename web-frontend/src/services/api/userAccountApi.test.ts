@@ -8,6 +8,7 @@
  * which changes only the fields sent.
  */
 import { describe, it, expect, vi, afterEach } from 'vitest';
+import { HttpResponse } from 'msw';
 import { api } from '@/test/msw/api';
 import type { UserSettingsResponse } from './userApi';
 import {
@@ -18,8 +19,6 @@ import {
   removeProfilePicture,
   requestPresignedUrl,
   confirmUpload,
-  requestPresignedUrlForUser,
-  confirmUploadForUser,
 } from './userAccountApi';
 import { aUser } from '@/test/fixtures';
 
@@ -134,20 +133,23 @@ describe('getUserProfile', () => {
 });
 
 describe('updateUserProfile', () => {
-  it('PATCHes /users/me with only the allowed, defined fields', async () => {
-    api.on('patchCurrentUser', ({ body }) => ({
+  it('PATCHes /users/{username} with only the allowed, defined fields', async () => {
+    api.on('patchUser', ({ body }) => ({
       ...user,
       firstName: body?.firstName ?? user.firstName,
     }));
 
-    const result = await updateUserProfile({
+    const result = await updateUserProfile('hong.an', {
       firstName: 'Hông',
       bio: 'Architektin',
       username: 'ignored' as never,
       termsAccepted: true,
     });
 
-    expect(api.calls('patchCurrentUser')[0].body).toEqual({
+    const [call] = api.calls('patchUser');
+    expect(call.method).toBe('PATCH');
+    expect(call.params).toEqual({ username: 'hong.an' });
+    expect(call.body).toEqual({
       firstName: 'Hông',
       bio: 'Architektin',
       termsAccepted: true,
@@ -223,24 +225,37 @@ describe('profile picture', () => {
     requiredHeaders: { 'Content-Type': 'image/png' },
   };
 
-  it('removes the own picture', async () => {
-    await removeProfilePicture();
+  it('removes the picture of the given user', async () => {
+    await removeProfilePicture('hong.an');
 
-    expect(api.calls('removeOwnProfilePicture')).toHaveLength(1);
+    expect(api.calls('removeProfilePictureForUser')[0].params).toEqual({ username: 'hong.an' });
+  });
+
+  it('passes a refusal through (another user, not an organizer)', async () => {
+    api.on('removeProfilePictureForUser', () =>
+      HttpResponse.json({ status: 403 }, { status: 403 })
+    );
+
+    await expect(removeProfilePicture('matthias.keller')).rejects.toMatchObject({
+      response: { status: 403 },
+    });
   });
 
   it('requests a presigned URL and maps fileId and uploadUrl', async () => {
     const now = Date.now();
     vi.spyOn(Date, 'now').mockReturnValue(now);
-    api.on('requestProfilePictureUploadUrl', () => upload);
+    api.on('requestProfilePictureUploadUrlForUser', () => upload);
 
-    const result = await requestPresignedUrl({
+    const result = await requestPresignedUrl('hong.an', {
       fileName: 'photo.jpg',
       fileSize: 1024,
       mimeType: 'image/jpeg',
     });
 
-    expect(api.calls('requestProfilePictureUploadUrl')[0].body).toEqual({
+    expect(api.calls('requestProfilePictureUploadUrlForUser')[0].params).toEqual({
+      username: 'hong.an',
+    });
+    expect(api.calls('requestProfilePictureUploadUrlForUser')[0].body).toEqual({
       fileName: 'photo.jpg',
       fileSize: 1024,
       mimeType: 'image/jpeg',
@@ -254,13 +269,19 @@ describe('profile picture', () => {
   });
 
   it('confirms the upload and maps profilePictureUrl to cloudFrontUrl', async () => {
-    api.on('confirmProfilePictureUpload', () => ({
+    api.on('confirmProfilePictureUploadForUser', () => ({
       profilePictureUrl: 'https://cdn.example.com/photo.jpg',
     }));
 
-    const result = await confirmUpload('upload-1', { fileExtension: 'jpg', checksum: '' });
+    const result = await confirmUpload('hong.an', 'upload-1', {
+      fileExtension: 'jpg',
+      checksum: '',
+    });
 
-    expect(api.calls('confirmProfilePictureUpload')[0].body).toEqual({
+    expect(api.calls('confirmProfilePictureUploadForUser')[0].params).toEqual({
+      username: 'hong.an',
+    });
+    expect(api.calls('confirmProfilePictureUploadForUser')[0].body).toEqual({
       fileId: 'upload-1',
       fileExtension: 'jpg',
       checksum: '',
@@ -272,18 +293,18 @@ describe('profile picture', () => {
     });
   });
 
-  it('requests and confirms a picture for another user (admin)', async () => {
+  it('requests and confirms a picture for another user (organizer)', async () => {
     api.on('requestProfilePictureUploadUrlForUser', () => upload);
     api.on('confirmProfilePictureUploadForUser', () => ({
       profilePictureUrl: 'https://cdn.example.com/pic.jpg',
     }));
 
-    const requested = await requestPresignedUrlForUser('matthias.keller', {
+    const requested = await requestPresignedUrl('matthias.keller', {
       fileName: 'pic.png',
       fileSize: 2048,
       mimeType: 'image/png',
     });
-    const confirmed = await confirmUploadForUser('matthias.keller', 'upload-99', {
+    const confirmed = await confirmUpload('matthias.keller', 'upload-99', {
       fileExtension: 'png',
       checksum: 'abc123',
     });

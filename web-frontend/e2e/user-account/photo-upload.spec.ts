@@ -10,8 +10,8 @@
  *     camera IconButton — there is NO crop dialog and NO client-side progress UI. The four
  *     prior `test.skip`s asserted a crop interface / a phase-by-phase progress UI / a
  *     standalone size-validation screen that were NEVER built → DELETED (logged below).
- *   • Upload is the ADR-002 3-phase flow: POST /users/me/picture/presigned-url → PUT to S3 →
- *     POST /users/me/picture/confirm (confirm associates the picture). The happy-path
+ *   • Upload is the ADR-002 3-phase flow: POST /users/{username}/picture/presigned-url → PUT to
+ *     S3 → POST /users/{username}/picture/confirm (confirm associates the picture). The happy-path
  *     `@smoke` exercises all three phases end-to-end; a per-phase UI test is therefore
  *     redundant and was deleted.
  *   • Upload failure surfaces only via `console.error` — there is NO inline error UI, so the
@@ -22,7 +22,7 @@
  *
  * Prod-safety (plan risk #1): the `@smoke` mutates the authenticated organizer test
  * account's OWN profile photo — the lowest-blast-radius mutation available. Uploads have no
- * prefix-sweep path, so teardown is an explicit `DELETE /users/me/picture` (cleanupOwn-
+ * prefix-sweep path, so teardown is an explicit `DELETE /users/{own username}/picture` (cleanupOwn-
  * ProfilePicture) in afterAll, leaving the account residue-free (photo-less) even if the
  * test crashes mid-flow. The chromium project is authenticated (the upload NEEDS the JWT),
  * so — unlike the registration @smoke — we do NOT force an anonymous storageState.
@@ -42,7 +42,7 @@ test.describe('Profile Photo Upload', { tag: '@gate' }, () => {
   let token: string;
 
   test.beforeAll(() => {
-    // Organizer idToken — required for the afterAll API teardown (DELETE /users/me/picture).
+    // Organizer idToken — required for the afterAll API teardown (DELETE /users/{own username}/picture).
     token = readOrganizerToken();
   });
 
