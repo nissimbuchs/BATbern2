@@ -334,7 +334,7 @@ interface ErrorResponse {
   errorCode?: string;       // ErrorCode name where the exception carries one
   message: string;
   correlationId: string;
-  severity: string;         // EMS uses LOW, MEDIUM, HIGH, CRITICAL (one handler writes WARNING)
+  severity: string;         // LOW, MEDIUM, HIGH or CRITICAL in every service (ErrorResponseSeverityValuesTest)
   details?: Record<string, unknown>;
   stackTrace?: string;      // dev and staging profiles only
 }

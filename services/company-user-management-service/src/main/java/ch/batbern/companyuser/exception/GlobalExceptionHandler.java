@@ -44,7 +44,7 @@ public class GlobalExceptionHandler {
                 .error("Not Found")
                 .message(ex.getMessage())
                 .correlationId(CorrelationIdGenerator.current())
-                .severity("WARNING")
+                .severity("LOW")
                 .build();
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
     }
@@ -308,7 +308,7 @@ public class GlobalExceptionHandler {
                 .error("Internal Server Error")
                 .message("A data integrity error occurred")
                 .correlationId(CorrelationIdGenerator.current())
-                .severity("ERROR")
+                .severity("HIGH")
                 .build();
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
     }
@@ -361,7 +361,7 @@ public class GlobalExceptionHandler {
                 .error("Conflict")
                 .message(ex.getMessage())
                 .correlationId(CorrelationIdGenerator.current())
-                .severity("WARNING")
+                .severity("MEDIUM")
                 .build();
         return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
     }
@@ -429,7 +429,7 @@ public class GlobalExceptionHandler {
                 .error("Validation Failed")
                 .message(messageBuilder.toString())
                 .correlationId(CorrelationIdGenerator.current())
-                .severity("WARNING")
+                .severity("MEDIUM")
                 .details(validationErrors)
                 .build();
 
@@ -452,7 +452,7 @@ public class GlobalExceptionHandler {
                 .error("Bad Request")
                 .message(ex.getMessage())
                 .correlationId(CorrelationIdGenerator.current())
-                .severity("WARNING")
+                .severity("MEDIUM")
                 .build();
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
     }
@@ -478,7 +478,7 @@ public class GlobalExceptionHandler {
                 .error("Bad Request")
                 .message(ex.getMessage())
                 .correlationId(CorrelationIdGenerator.current())
-                .severity("WARNING")
+                .severity("MEDIUM")
                 .build();
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
     }
@@ -510,7 +510,7 @@ public class GlobalExceptionHandler {
                     .error("Unauthorized")
                     .message("Authentication required")
                     .correlationId(CorrelationIdGenerator.current())
-                    .severity("WARNING")
+                    .severity("MEDIUM")
                     .build();
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
         } else {
@@ -522,7 +522,7 @@ public class GlobalExceptionHandler {
                     .error("Forbidden")
                     .message("Access denied")
                     .correlationId(CorrelationIdGenerator.current())
-                    .severity("WARNING")
+                    .severity("MEDIUM")
                     .build();
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
         }
@@ -544,7 +544,7 @@ public class GlobalExceptionHandler {
                 .error("Forbidden")
                 .message("Access denied")
                 .correlationId(CorrelationIdGenerator.current())
-                .severity("WARNING")
+                .severity("MEDIUM")
                 .build();
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
     }
@@ -625,7 +625,7 @@ public class GlobalExceptionHandler {
                 .error("Bad Request")
                 .message(ex.getMessage())
                 .correlationId(CorrelationIdGenerator.current())
-                .severity("WARNING")
+                .severity("MEDIUM")
                 .build();
         return ResponseEntity.badRequest().body(error);
     }
@@ -670,7 +670,7 @@ public class GlobalExceptionHandler {
                 .error("Bad Gateway")
                 .message("Identity provider unavailable; please retry shortly")
                 .correlationId(CorrelationIdGenerator.current())
-                .severity("ERROR")
+                .severity("HIGH")
                 .build();
         return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(error);
     }
@@ -716,7 +716,7 @@ public class GlobalExceptionHandler {
                 .error(HttpStatus.valueOf(ex.getStatusCode().value()).getReasonPhrase())
                 .message(ex.getReason() != null ? ex.getReason() : "Request rejected")
                 .correlationId(CorrelationIdGenerator.current())
-                .severity("WARNING")
+                .severity("LOW")
                 .build();
         return ResponseEntity.status(ex.getStatusCode()).body(error);
     }
@@ -773,7 +773,7 @@ public class GlobalExceptionHandler {
                 .error("Internal Server Error")
                 .message("An unexpected error occurred")
                 .correlationId(correlationId)
-                .severity("ERROR")
+                .severity("CRITICAL")
                 .build();
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
     }
