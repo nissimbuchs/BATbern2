@@ -3,14 +3,14 @@ title: 'EMS calls CUMS over /internal with one token helper'
 type: 'refactor'
 ticket: '6'
 created: '2026-11-10'
-status: 'done'
+status: 'built'
 baseline_revision: '23e6150f42634a669f02bcae495d9d0e56e533bc'
 route: 'full'
 route_source: 'auto'
 risk: 'high'
-review: ''
-review_source: ''
-lenses_ran: []
+review: 'quick'
+review_source: 'pinned'
+lenses_ran: ['quick']
 review_loop_iteration: 0
 context:
   - '{project-root}/docs/architecture/ADR-016-service-directions-and-service-to-service-calls.md'
@@ -153,6 +153,16 @@ Built 2026-11-10 (owner blanket go), local commits on `feature/17-overnight-2026
 
 ## Review Triage Log
 
+Pass 1 (quick lens), 2026-11-10: 1 high, 2 medium, 2 low, 0 false.
+
+| # | Finding | Verdict | Route | Evidence / action |
+|---|---------|---------|-------|-------------------|
+| 1 | Forwarding an expired JWT on the formerly token-free internal reads gets 401 from CUMS (bulk `@Async` sends past token lifetime: fallback language, `UserServiceException`) | high | patch | Verified: CUMS has one `SecurityFilterChain` with `oauth2ResourceServer` over every path, `/internal/**` is only `permitAll` at authorization, so the bearer filter rejects an expired token first; EMS `AsyncConfig.ContextCopyingDecorator` copies the context into async tasks. Fix in the helper: forward only a JWT that is still valid for a safety margin, else no header (ADR-016: never require it). |
+| 2 | `getOrCreateUser` records `anonymous` via `getAuditUsername()`, while the internal spec promises user or `system:<job>` | medium | patch | Only the 3 moved writes use `actorOr`. Use it in get-or-create too, with a named system actor in the spec. |
+| 3 | S2S guard: duplicate literal in one file → `--update` writes duplicate lines that `parseBaseline` rejects; growth of an already-baselined URL in the same file is not RAISED | medium | patch | `compare` works on sets. Count call sites per (file, url). |
+| 4 | New code uses fully qualified names where imports belong | low | patch | Owner rule "Use imports, not FQN"; direct correction. |
+| 5 | `coding-standards.md` still says the CUMS harness needs `.ignoringMissingAuthorization()` | low | patch | This diff removed that call; the sentence now only holds for the PCS bindings. |
+
 ## Design Notes
 
 **Architecture note.** Modules: shared-kernel security, EMS L0 clients, CUMS controllers and `UserService`, API specs, web-frontend scripts. New dependency: EMS and later PCS on `S2sHeaders`; no new cross-service edge. New endpoints: 3 writes moved from `users-api` into `InternalUserController` (nearest: `/internal/users/get-or-create`; the public ones cannot stay, ADR-016 decision 2), and `GET /internal/companies/{name}` (nearest: `GET /internal/companies`, which returns only slugs; public `GET /companies/{name}` may not be widened). Reused: `ContractServer`, `ProviderContract`, `CumsContractHarness`, `companyService.getCompanyByName`, the test-ratchet script pattern. Deviation: the internal paths keep their verbs (`provision`, `issue-invitation-credentials`), as `get-or-create` and `merge-preview` do. The internal ruleset has no naming rules (owner, 2026-11-08).
@@ -173,3 +183,5 @@ Built 2026-11-10 (owner blanket go), local commits on `feature/17-overnight-2026
 
 **Manual checks:**
 - Local dev: `make dev-native-restart-service SERVICE=company-user-management` and `SERVICE=event-management`. As organizer, invite a new speaker and move them to INVITED. `/dev/mails` holds the invitation with credentials, and `/tmp/batbern-1-company-user-management.log` shows the `/internal` paths. As that speaker, submit content with a bio; `GET /api/v1/users/{username}` shows the bio.
+
+Final verification 2026-11-10 after the review patches (7635e812): shared-kernel, CUMS, EMS, PCS and gateway suites green; lint:api, lint:api-internal, check:api-types, type-check, check:s2s-client-urls, test ratchet and API paths green. The local-dev walk ran before the patches (they change only when a token is forwarded). Open after deploy: production 404/405 check of the 3 old paths and the access-control DAST.
