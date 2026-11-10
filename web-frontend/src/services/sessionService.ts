@@ -9,7 +9,7 @@
  */
 
 import apiClient from '@/services/api/apiClient';
-import { AxiosError } from 'axios';
+import { isAxiosError } from 'axios';
 import type {
   BatchImportSessionRequest,
   SessionBatchImportResult,
@@ -82,7 +82,7 @@ class SessionApiClient {
    * Transform Axios errors into user-friendly error messages
    */
   private transformError(error: unknown): Error {
-    if (error instanceof AxiosError) {
+    if (isAxiosError(error)) {
       // Extract error message from response
       const message =
         error.response?.data?.message ||

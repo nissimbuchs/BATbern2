@@ -7,7 +7,7 @@
  */
 
 import apiClient from '@/services/api/apiClient';
-import { AxiosError } from 'axios';
+import { isAxiosError } from 'axios';
 import type { components } from '@/types/generated/company-api.types';
 import type { CompanyFilters, PaginationParams } from '@/types/company.types';
 import type { FileUploadPresignedUrl, FileUploadTarget } from '@/types/fileUpload.types';
@@ -237,7 +237,7 @@ class CompanyApiClient {
    * @private
    */
   private transformError(error: unknown): Error {
-    if (error instanceof AxiosError) {
+    if (isAxiosError(error)) {
       const correlationId =
         error.config?.headers?.['X-Correlation-ID'] ||
         error.response?.headers?.['x-correlation-id'] ||

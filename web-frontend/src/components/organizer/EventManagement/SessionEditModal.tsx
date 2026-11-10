@@ -44,7 +44,7 @@ import {
   Slideshow as PresentationIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
-import { AxiosError } from 'axios';
+import { isAxiosError } from 'axios';
 import type { SessionUI, SessionMaterial } from '@/types/event.types';
 import { FileUpload, type UploadedFile } from '@/components/shared/FileUpload/FileUpload';
 import { materialUploadTarget, sessionApiClient } from '@/services/api/sessionApiClient';
@@ -335,7 +335,7 @@ export const SessionEditModal: React.FC<SessionEditModalProps> = ({
       onClose();
     } catch (error) {
       // Handle 409 conflict errors (speaker/room conflicts)
-      if (error instanceof AxiosError && error.response?.status === 409) {
+      if (isAxiosError(error) && error.response?.status === 409) {
         const conflictData = error.response.data;
         const conflictMessages: string[] = [];
 

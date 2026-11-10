@@ -917,7 +917,9 @@ describe('SessionEditModal - Delete Material', () => {
   });
 
   it('should_showError_when_deleteFails', async () => {
-    http.onDelete(MATERIAL_URL).networkError();
+    http
+      .onDelete(MATERIAL_URL)
+      .reply(500, { status: 500, error: 'Internal Server Error', message: 'Material is locked' });
     const user = userEvent.setup();
     render(
       <SessionEditModal
@@ -936,7 +938,7 @@ describe('SessionEditModal - Delete Material', () => {
     await user.click(deleteButton);
 
     await waitFor(() => {
-      expect(screen.getByText('Network Error')).toBeInTheDocument();
+      expect(screen.getByText('Material is locked')).toBeInTheDocument();
     });
 
     // Material should still be in list

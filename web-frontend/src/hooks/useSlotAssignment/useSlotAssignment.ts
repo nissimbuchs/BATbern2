@@ -11,7 +11,7 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { AxiosError } from 'axios';
+import { isAxiosError } from 'axios';
 import {
   slotAssignmentService,
   type SlotAssignmentRequestBody,
@@ -112,7 +112,7 @@ export const useSlotAssignment = (eventCode: string): UseSlotAssignmentReturn =>
         setUnassignedSessions(rollbackSessions);
 
         // Handle conflict errors (409)
-        if (err instanceof AxiosError && err.response?.status === 409) {
+        if (isAxiosError(err) && err.response?.status === 409) {
           setConflict(err.response.data as TimingConflictError);
         } else {
           const errorMessage = err instanceof Error ? err.message : 'Failed to assign timing';
@@ -141,7 +141,7 @@ export const useSlotAssignment = (eventCode: string): UseSlotAssignmentReturn =>
         await slotAssignmentService.assignSessionToSlot(eventCode, sessionSlug, request);
       } catch (err) {
         setUnassignedSessions(rollbackSessions);
-        if (err instanceof AxiosError && err.response?.status === 409) {
+        if (isAxiosError(err) && err.response?.status === 409) {
           const body = err.response.data as TimingConflictError | undefined;
           setConflict(body && body.message ? body : { message: 'Agenda is full' });
         } else {
@@ -194,7 +194,7 @@ export const useSlotAssignment = (eventCode: string): UseSlotAssignmentReturn =>
         setUnassignedSessions(originalSessions);
 
         // Handle conflict errors (409)
-        if (err instanceof AxiosError && err.response?.status === 409) {
+        if (isAxiosError(err) && err.response?.status === 409) {
           // For bulk conflicts, set error instead of conflict
           const errorMessage = err.response.data?.message || 'Bulk assignment conflicts detected';
           setError(errorMessage);

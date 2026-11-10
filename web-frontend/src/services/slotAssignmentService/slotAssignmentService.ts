@@ -10,7 +10,7 @@
  */
 
 import apiClient from '@/services/api/apiClient';
-import { AxiosError } from 'axios';
+import { isAxiosError } from 'axios';
 import type {
   Session,
   SessionTimingRequest,
@@ -55,7 +55,7 @@ class SlotAssignmentService {
     } catch (error) {
       // Re-throw AxiosError to preserve 401/403 auth errors
       if (
-        error instanceof AxiosError &&
+        isAxiosError(error) &&
         (error.response?.status === 401 || error.response?.status === 403)
       ) {
         throw error;
@@ -88,7 +88,7 @@ class SlotAssignmentService {
     } catch (error) {
       // Re-throw AxiosError to preserve 401/403 auth errors and 409 conflict response data
       if (
-        error instanceof AxiosError &&
+        isAxiosError(error) &&
         (error.response?.status === 401 ||
           error.response?.status === 403 ||
           error.response?.status === 409)
@@ -123,7 +123,7 @@ class SlotAssignmentService {
     } catch (error) {
       // Preserve auth errors and the 409 (agenda-full / conflict) response body.
       if (
-        error instanceof AxiosError &&
+        isAxiosError(error) &&
         (error.response?.status === 401 ||
           error.response?.status === 403 ||
           error.response?.status === 409)
@@ -151,7 +151,7 @@ class SlotAssignmentService {
       return response.data;
     } catch (error) {
       if (
-        error instanceof AxiosError &&
+        isAxiosError(error) &&
         (error.response?.status === 401 || error.response?.status === 403)
       ) {
         throw error;
@@ -182,7 +182,7 @@ class SlotAssignmentService {
     } catch (error) {
       // Re-throw AxiosError to preserve 401/403 auth errors and 409 conflict response data
       if (
-        error instanceof AxiosError &&
+        isAxiosError(error) &&
         (error.response?.status === 401 ||
           error.response?.status === 403 ||
           error.response?.status === 409)
@@ -210,7 +210,7 @@ class SlotAssignmentService {
     } catch (error) {
       // Re-throw AxiosError to preserve 401/403 auth errors
       if (
-        error instanceof AxiosError &&
+        isAxiosError(error) &&
         (error.response?.status === 401 || error.response?.status === 403)
       ) {
         throw error;
@@ -236,7 +236,7 @@ class SlotAssignmentService {
     } catch (error) {
       // Re-throw AxiosError to preserve 401/403 auth errors
       if (
-        error instanceof AxiosError &&
+        isAxiosError(error) &&
         (error.response?.status === 401 || error.response?.status === 403)
       ) {
         throw error;
@@ -264,7 +264,7 @@ class SlotAssignmentService {
       return response.data;
     } catch (error) {
       if (
-        error instanceof AxiosError &&
+        isAxiosError(error) &&
         (error.response?.status === 401 ||
           error.response?.status === 403 ||
           error.response?.status === 409)
@@ -292,7 +292,7 @@ class SlotAssignmentService {
     } catch (error) {
       // Re-throw AxiosError to preserve 401/403 auth errors
       if (
-        error instanceof AxiosError &&
+        isAxiosError(error) &&
         (error.response?.status === 401 || error.response?.status === 403)
       ) {
         throw error;
@@ -305,7 +305,7 @@ class SlotAssignmentService {
    * Transform Axios errors into user-friendly error messages
    */
   private transformError(error: unknown): Error {
-    if (error instanceof AxiosError) {
+    if (isAxiosError(error)) {
       // Extract error message from response
       const message =
         error.response?.data?.message ||

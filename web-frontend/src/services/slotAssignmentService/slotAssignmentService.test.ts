@@ -1,1069 +1,288 @@
 /**
- * Slot Assignment Service Tests (Story 5.7 - Task 4a RED Phase)
+ * Slot Assignment Service Tests (Story 5.7, Story 15.3)
  *
- * Tests for slot assignment API client service
- * Following TDD: These tests MUST fail until implementation (Task 4b)
+ * The service runs with the real apiClient against the MSW harness (Epic 17 test fidelity): every
+ * request is checked against event-sessions-api, a test answers with a typed override or an error
+ * `Response` and reads what went over the wire. Each method either re-throws the AxiosError (401,
+ * 403 and, where the caller reads the conflict body, 409) or maps the error to an `Error` with the
+ * server's message. The guard is `isAxiosError`, so the errors real axios raises are recognised.
  *
- * Coverage:
- * - AC5: Get unassigned sessions
- * - AC5: Assign timing to session (drag-drop)
- * - AC9: Detect timing conflicts
- * - AC13: Bulk auto-assignment
+ * Coverage: AC5 unassigned sessions and timing, AC9 conflicts, AC13 bulk assignment, structural
+ * sessions, auto-assignment, slot assignment (15.3), error mapping.
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
+import { HttpResponse } from 'msw';
+import { isAxiosError } from 'axios';
+import { api } from '@/test/msw/api';
 import { slotAssignmentService } from './slotAssignmentService';
-import apiClient from '@/services/api/apiClient';
-import { AxiosError } from 'axios';
-import type {
-  Session,
-  SessionTimingRequest,
-  BulkTimingRequest,
-  ConflictAnalysisResponse,
-  TimingConflictError,
-} from '@/types/event.types';
-import { aSession, aSessionSpeaker } from '@/test/fixtures';
+import type { BulkTimingRequest, SessionTimingRequest } from '@/types/event.types';
+import { aSessionResponse, aSessionSpeaker } from '@/test/fixtures';
 
-describe('SlotAssignmentService (Story 5.7 - Task 4a RED Phase)', () => {
-  const mockEventCode = 'BATbern142';
-  const mockSessionSlug = 'john-doe-acme-corp';
+const EVENT = 'BATbern142';
 
-  beforeEach(() => {
-    // Mock apiClient methods to prevent real network calls
-    vi.spyOn(apiClient, 'get').mockRejectedValue(new AxiosError('Network Error', 'ERR_NETWORK'));
-    vi.spyOn(apiClient, 'post').mockRejectedValue(new AxiosError('Network Error', 'ERR_NETWORK'));
-    vi.spyOn(apiClient, 'patch').mockRejectedValue(new AxiosError('Network Error', 'ERR_NETWORK'));
-    vi.spyOn(apiClient, 'delete').mockRejectedValue(new AxiosError('Network Error', 'ERR_NETWORK'));
-  });
+const timing: SessionTimingRequest = {
+  startTime: '2025-05-15T09:00:00Z',
+  endTime: '2025-05-15T09:45:00Z',
+  room: 'Main Hall',
+  changeReason: 'drag_drop_reassignment',
+};
 
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
+const bulk: BulkTimingRequest = {
+  assignments: [
+    {
+      sessionSlug: 'session-1',
+      startTime: '2025-05-15T09:00:00Z',
+      endTime: '2025-05-15T09:45:00Z',
+      room: 'Main Hall',
+    },
+    {
+      sessionSlug: 'session-2',
+      startTime: '2025-05-15T10:00:00Z',
+      endTime: '2025-05-15T10:45:00Z',
+      room: 'Conference Room A',
+    },
+  ],
+  changeReason: 'preference_matching',
+};
 
-  describe('getUnassignedSessions', () => {
-    it('should_fetchUnassignedSessions_when_eventCodeProvided', async () => {
-      // AC5: Get sessions without timing (placeholder sessions)
-      // Given: Event has 3 unassigned sessions (placeholder sessions with null timing)
-      const mockUnassignedSessions: Session[] = [
-        {
-          ...aSession(),
-          sessionSlug: 'session-1',
-          eventCode: mockEventCode,
-          language: 'de',
-          title: 'John Doe - Acme Corp',
-          startTime: null,
-          endTime: null,
-          room: null,
-          speakers: [
-            {
-              ...aSessionSpeaker(),
-              username: 'john.doe',
-              firstName: 'John',
-              lastName: 'Doe',
-              company: 'Acme Corp',
-              speakerRole: 'PRIMARY_SPEAKER',
-              isConfirmed: true,
-            },
-          ],
-        },
-        {
-          ...aSession(),
+/** An error answer in the services' error shape, optionally with a correlation id header. */
+const problem = (status: number, body: Record<string, unknown>, correlationId?: string) =>
+  HttpResponse.json(
+    { timestamp: '2026-11-10T08:00:00Z', status, ...body },
+    { status, headers: correlationId ? { 'x-correlation-id': correlationId } : {} }
+  );
+
+/** Resolves to what `promise` rejected with; fails the test when it resolves. */
+const rejectionOf = async (promise: Promise<unknown>): Promise<unknown> =>
+  promise.then(
+    () => {
+      throw new Error('expected a rejection');
+    },
+    (e: unknown) => e
+  );
+
+/** Every method of the service, with the operation it calls. */
+const methods = [
+  ['getUnassignedSessions', () => slotAssignmentService.getUnassignedSessions(EVENT)],
+  ['assignTiming', () => slotAssignmentService.assignSessionTiming(EVENT, 'session-1', timing)],
+  [
+    'assignSessionToSlot',
+    () =>
+      slotAssignmentService.assignSessionToSlot(EVENT, 'session-1', {
+        targetSlotKey: 'SPEAKER_1',
+        mode: 'ASSIGN',
+      }),
+  ],
+  ['unassignTiming', () => slotAssignmentService.unassignSessionTiming(EVENT, 'session-1')],
+  ['bulkAssignTiming', () => slotAssignmentService.bulkAssignTiming(EVENT, bulk)],
+  ['analyzeConflicts', () => slotAssignmentService.detectConflicts(EVENT)],
+  ['clearAllTimings', () => slotAssignmentService.clearAllTimings(EVENT)],
+  ['generateStructuralSessions', () => slotAssignmentService.generateStructuralSessions(EVENT)],
+  ['autoAssignTimings', () => slotAssignmentService.autoAssignTimings(EVENT)],
+] as const;
+
+/** The methods whose callers read the 409 conflict body, so the service passes the 409 on. */
+const conflictMethods = [
+  'assignTiming',
+  'assignSessionToSlot',
+  'bulkAssignTiming',
+  'generateStructuralSessions',
+] as const;
+
+describe('slotAssignmentService', () => {
+  describe('requests', () => {
+    it('should_getUnassignedSessions_when_eventCodeGiven', async () => {
+      const pool = [
+        aSessionResponse({ sessionSlug: 'session-1', eventCode: EVENT, title: 'Hông Ân - Acme' }),
+        aSessionResponse({
           sessionSlug: 'session-2',
-          eventCode: mockEventCode,
-          language: 'de',
-          title: 'Jane Smith - Tech Inc',
-          startTime: null,
-          endTime: null,
-          room: null,
-          speakers: [
-            {
-              ...aSessionSpeaker(),
-              username: 'jane.smith',
-              firstName: 'Jane',
-              lastName: 'Smith',
-              company: 'Tech Inc',
-              speakerRole: 'PRIMARY_SPEAKER',
-              isConfirmed: true,
-            },
-          ],
-        },
+          eventCode: EVENT,
+          title: 'O’Neill - Tech',
+          speakers: [aSessionSpeaker({ lastName: 'O’Neill' })],
+        }),
       ];
+      api.on('getUnassignedSessions', () => pool);
 
-      vi.mocked(apiClient.get).mockResolvedValueOnce({ data: mockUnassignedSessions } as any);
+      const result = await slotAssignmentService.getUnassignedSessions(EVENT);
 
-      // When: Service fetches unassigned sessions
-      const result = await slotAssignmentService.getUnassignedSessions(mockEventCode);
-
-      // Then: Returns array of sessions without timing
-      expect(result).toEqual(mockUnassignedSessions);
-      expect(result).toHaveLength(2);
-      expect(result[0].startTime).toBeNull();
-      expect(result[0].endTime).toBeNull();
-      expect(result[0].room).toBeNull();
-      expect(apiClient.get).toHaveBeenCalledWith(`/events/${mockEventCode}/sessions/unassigned`);
+      expect(result).toEqual(pool);
+      expect(api.calls('getUnassignedSessions')[0].params).toEqual({ eventCode: EVENT });
     });
 
-    it('should_return404Error_when_eventNotFound', async () => {
-      // Given: Event does not exist
-      const nonExistentEventCode = 'BATbern999';
-      const error = new AxiosError('Event not found');
-      error.response = {
-        status: 404,
-        data: { message: 'Event not found' },
-        statusText: 'Not Found',
-        headers: {},
-        config: {} as any,
-      };
+    it('should_patchTiming_when_sessionAssigned', async () => {
+      const updated = aSessionResponse({ sessionSlug: 'session-1', eventCode: EVENT, ...timing });
+      api.on('assignTiming', () => updated);
 
-      vi.mocked(apiClient.get).mockRejectedValueOnce(error);
+      const result = await slotAssignmentService.assignSessionTiming(EVENT, 'session-1', timing);
 
-      // When/Then: Service throws 404 error
-      await expect(
-        slotAssignmentService.getUnassignedSessions(nonExistentEventCode)
-      ).rejects.toThrow('Event not found');
+      expect(result).toEqual(updated);
+      const [call] = api.calls('assignTiming');
+      expect(call.params).toEqual({ eventCode: EVENT, sessionSlug: 'session-1' });
+      expect(call.body).toEqual(timing);
+    });
+
+    it('should_postSlotKeyAndMode_when_sessionAssignedToSlot', async () => {
+      await slotAssignmentService.assignSessionToSlot(EVENT, 'session-1', {
+        targetSlotKey: 'SPEAKER_2',
+        mode: 'SWAP',
+      });
+
+      const [call] = api.calls('assignSessionToSlot');
+      expect(call.params).toEqual({ eventCode: EVENT, sessionSlug: 'session-1' });
+      expect(call.body).toEqual({ targetSlotKey: 'SPEAKER_2', mode: 'SWAP' });
+    });
+
+    it('should_deleteTiming_when_sessionUnassigned', async () => {
+      const cleared = aSessionResponse({ sessionSlug: 'session-1', eventCode: EVENT });
+      api.on('unassignTiming', () => cleared);
+
+      const result = await slotAssignmentService.unassignSessionTiming(EVENT, 'session-1');
+
+      expect(result).toEqual(cleared);
+      expect(api.calls('unassignTiming')[0].params).toEqual({
+        eventCode: EVENT,
+        sessionSlug: 'session-1',
+      });
+    });
+
+    it('should_postAssignments_when_bulkAssigned', async () => {
+      const sessions = bulk.assignments.map((a) =>
+        aSessionResponse({ eventCode: EVENT, ...a, room: a.room ?? null })
+      );
+      api.on('bulkAssignTiming', () => ({ assignedCount: 2, sessions }));
+
+      const result = await slotAssignmentService.bulkAssignTiming(EVENT, bulk);
+
+      expect(result).toEqual({ assignedCount: 2, sessions });
+      expect(api.calls('bulkAssignTiming')[0].body).toEqual(bulk);
+    });
+
+    it('should_getConflictAnalysis_when_conflictsDetected', async () => {
+      api.on('analyzeConflicts', () => ({ hasConflicts: false, conflictCount: 0, conflicts: [] }));
+
+      const result = await slotAssignmentService.detectConflicts(EVENT);
+
+      expect(result).toMatchObject({ conflictCount: 0, conflicts: [] });
+      expect(api.calls('analyzeConflicts')).toHaveLength(1);
+    });
+
+    it('should_deleteAllTimings_when_cleared', async () => {
+      api.on('clearAllTimings', () => ({ message: 'Cleared', clearedCount: 4 }));
+
+      const result = await slotAssignmentService.clearAllTimings(EVENT);
+
+      expect(result).toEqual({ message: 'Cleared', clearedCount: 4 });
+    });
+
+    it.each([
+      [undefined, 'false'],
+      [true, 'true'],
+    ] as const)(
+      'should_sendOverwrite_when_structuralSessionsGenerated (overwrite %s)',
+      async (overwrite, sent) => {
+        const created = [
+          aSessionResponse({ sessionSlug: 'moderation-opening', sessionType: 'moderation' }),
+        ];
+        api.on('generateStructuralSessions', () => created);
+
+        const result = await slotAssignmentService.generateStructuralSessions(EVENT, overwrite);
+
+        expect(result).toEqual(created);
+        expect(api.calls('generateStructuralSessions')[0].query.get('overwrite')).toBe(sent);
+      }
+    );
+
+    it('should_postAutoAssign_when_autoAssigned', async () => {
+      api.on('autoAssignTimings', () => ({ message: 'Assigned', assignedCount: 3 }));
+
+      const result = await slotAssignmentService.autoAssignTimings(EVENT);
+
+      expect(result).toEqual({ message: 'Assigned', assignedCount: 3 });
     });
   });
 
-  describe('assignSessionTiming', () => {
-    it('should_assignTiming_when_validTimingProvided', async () => {
-      // AC5: Drag-and-drop UI to assign speaker to time slot
-      // Given: Valid timing request for placeholder session
-      const timingRequest: SessionTimingRequest = {
-        startTime: '2025-05-15T09:00:00Z',
-        endTime: '2025-05-15T09:45:00Z',
-        room: 'Main Hall',
-        sessionType: 'presentation',
-        changeReason: 'drag_drop_reassignment',
-      };
+  describe('auth errors pass through', () => {
+    it.each(methods)('%s re-throws a 403 as the AxiosError', async (op, call) => {
+      api.on(op, () => problem(403, { error: 'Forbidden', message: 'Organizer role required' }));
 
-      const mockUpdatedSession: Session = {
-        ...aSession(),
-        sessionSlug: mockSessionSlug,
-        eventCode: mockEventCode,
-        language: 'de',
-        title: 'John Doe - Acme Corp',
-        startTime: timingRequest.startTime,
-        endTime: timingRequest.endTime,
-        room: 'Main Hall',
-        sessionType: 'presentation',
-        speakers: [
-          {
-            ...aSessionSpeaker(),
-            username: 'john.doe',
-            firstName: 'John',
-            lastName: 'Doe',
-            company: 'Acme Corp',
-            speakerRole: 'PRIMARY_SPEAKER',
-            isConfirmed: true,
-          },
-        ],
-      };
+      const error = await rejectionOf(call());
 
-      vi.mocked(apiClient.patch).mockResolvedValueOnce({ data: mockUpdatedSession } as any);
-
-      // When: Service assigns timing to session
-      const result = await slotAssignmentService.assignSessionTiming(
-        mockEventCode,
-        mockSessionSlug,
-        timingRequest
-      );
-
-      // Then: Returns session with assigned timing
-      expect(result).toEqual(mockUpdatedSession);
-      expect(result.startTime).toBe(timingRequest.startTime);
-      expect(result.endTime).toBe(timingRequest.endTime);
-      expect(result.room).toBe(timingRequest.room);
-      expect(apiClient.patch).toHaveBeenCalledWith(
-        `/events/${mockEventCode}/sessions/${mockSessionSlug}/timing`,
-        timingRequest
-      );
+      expect(isAxiosError(error)).toBe(true);
+      expect(isAxiosError(error) && error.response?.status).toBe(403);
     });
+  });
 
-    it('should_return409Conflict_when_roomOverlapDetected', async () => {
-      // AC9: Warn if room has overlapping sessions
-      // Given: Timing overlaps with existing session in same room
-      const conflictingTimingRequest: SessionTimingRequest = {
-        startTime: '2025-05-15T09:00:00Z',
-        endTime: '2025-05-15T09:45:00Z',
-        room: 'Main Hall',
-        changeReason: 'drag_drop_reassignment',
-      };
-
-      const mockConflictError: TimingConflictError = {
+  describe('conflicts pass through with their body', () => {
+    it.each(conflictMethods)('%s re-throws a 409 as the AxiosError', async (op) => {
+      const conflict = {
         error: 'TIMING_CONFLICT',
         message: 'Session timing conflicts with existing schedule',
-        conflicts: [
-          {
-            type: 'room_overlap',
-            conflictingSessionSlug: 'existing-session-1',
-          },
-        ],
+        conflicts: [{ type: 'room_overlap', conflictingSessionSlug: 'existing-session-1' }],
       };
+      api.on(op, () => HttpResponse.json(conflict, { status: 409 }));
+      const call = Object.fromEntries(methods)[op];
 
-      const error = new AxiosError('Conflict');
-      error.response = {
-        status: 409,
-        data: mockConflictError,
-        statusText: 'Conflict',
-        headers: {},
-        config: {} as any,
-      };
+      const error = await rejectionOf(call());
 
-      vi.mocked(apiClient.patch).mockRejectedValueOnce(error);
-
-      // When/Then: Service throws 409 conflict error
-      await expect(
-        slotAssignmentService.assignSessionTiming(
-          mockEventCode,
-          mockSessionSlug,
-          conflictingTimingRequest
-        )
-      ).rejects.toMatchObject({
-        response: {
-          status: 409,
-          data: mockConflictError,
-        },
-      });
-    });
-
-    it('should_return409Conflict_when_speakerDoubleBookingDetected', async () => {
-      // AC9: Warn if speaker has conflicting commitment at same time
-      // Given: Timing overlaps with another session for same speaker
-      const conflictingTimingRequest: SessionTimingRequest = {
-        startTime: '2025-05-15T09:00:00Z',
-        endTime: '2025-05-15T09:45:00Z',
-        room: 'Conference Room A',
-        changeReason: 'drag_drop_reassignment',
-      };
-
-      const mockConflictError: TimingConflictError = {
-        error: 'TIMING_CONFLICT',
-        message: 'Speaker already scheduled at this time',
-        conflicts: [
-          {
-            type: 'speaker_double_booked',
-            conflictingSessionSlug: 'john-doe-other-session',
-          },
-        ],
-      };
-
-      const error = new AxiosError('Conflict');
-      error.response = {
-        status: 409,
-        data: mockConflictError,
-        statusText: 'Conflict',
-        headers: {},
-        config: {} as any,
-      };
-
-      vi.mocked(apiClient.patch).mockRejectedValueOnce(error);
-
-      // When/Then: Service throws 409 conflict error
-      await expect(
-        slotAssignmentService.assignSessionTiming(
-          mockEventCode,
-          mockSessionSlug,
-          conflictingTimingRequest
-        )
-      ).rejects.toMatchObject({
-        response: {
-          status: 409,
-          data: mockConflictError,
-        },
-      });
-    });
-
-    it('should_return404Error_when_sessionNotFound', async () => {
-      // Given: Session does not exist
-      const nonExistentSessionSlug = 'non-existent-session';
-      const timingRequest: SessionTimingRequest = {
-        startTime: '2025-05-15T09:00:00Z',
-        endTime: '2025-05-15T09:45:00Z',
-        room: 'Main Hall',
-      };
-
-      const error = new AxiosError('Session not found');
-      error.response = {
-        status: 404,
-        data: { message: 'Session not found' },
-        statusText: 'Not Found',
-        headers: {},
-        config: {} as any,
-      };
-
-      vi.mocked(apiClient.patch).mockRejectedValueOnce(error);
-
-      // When/Then: Service throws 404 error
-      await expect(
-        slotAssignmentService.assignSessionTiming(
-          mockEventCode,
-          nonExistentSessionSlug,
-          timingRequest
-        )
-      ).rejects.toThrow('Session not found');
+      expect(isAxiosError(error)).toBe(true);
+      expect(isAxiosError(error) && error.response?.data).toEqual(conflict);
     });
   });
 
-  describe('bulkAssignTiming', () => {
-    it('should_assignMultipleSessions_when_validBulkRequest', async () => {
-      // AC13: Provide bulk auto-assignment based on preferences
-      // Given: Valid bulk timing request for 3 sessions
-      const bulkRequest: BulkTimingRequest = {
-        assignments: [
-          {
-            sessionSlug: 'session-1',
-            startTime: '2025-05-15T09:00:00Z',
-            endTime: '2025-05-15T09:45:00Z',
-            room: 'Main Hall',
-          },
-          {
-            sessionSlug: 'session-2',
-            startTime: '2025-05-15T10:00:00Z',
-            endTime: '2025-05-15T10:45:00Z',
-            room: 'Main Hall',
-          },
-          {
-            sessionSlug: 'session-3',
-            startTime: '2025-05-15T11:00:00Z',
-            endTime: '2025-05-15T11:45:00Z',
-            room: 'Conference Room A',
-          },
-        ],
-        changeReason: 'preference_matching',
-      };
+  describe('other errors are mapped to the server message', () => {
+    it.each(methods)('%s maps a 500 to its message and correlation id', async (op, call) => {
+      api.on(op, () =>
+        problem(500, { error: 'Internal Server Error', message: 'DB unavailable' }, 'corr-142')
+      );
 
-      const mockResponse = {
-        assignedCount: 3,
-        sessions: bulkRequest.assignments.map((a) => ({
-          sessionSlug: a.sessionSlug,
-          eventCode: mockEventCode,
-          startTime: a.startTime,
-          endTime: a.endTime,
-          room: a.room,
-        })),
-      };
+      const error = await rejectionOf(call());
 
-      vi.mocked(apiClient.post).mockResolvedValueOnce({ data: mockResponse } as any);
+      expect(isAxiosError(error)).toBe(false);
+      expect(error).toEqual(new Error('DB unavailable (Correlation ID: corr-142)'));
+    });
 
-      // When: Service performs bulk assignment
-      const result = await slotAssignmentService.bulkAssignTiming(mockEventCode, bulkRequest);
+    it('should_useErrorField_when_noMessage', async () => {
+      api.on('analyzeConflicts', () => problem(400, { error: 'Invalid event code' }));
 
-      // Then: Returns assigned count and updated sessions
-      expect(result.assignedCount).toBe(3);
-      expect(result.sessions).toHaveLength(3);
-      expect(result.sessions?.[0]?.startTime).toBe(bulkRequest.assignments[0].startTime);
-      expect(apiClient.post).toHaveBeenCalledWith(
-        `/events/${mockEventCode}/sessions/bulk-timing`,
-        bulkRequest
+      await expect(slotAssignmentService.detectConflicts(EVENT)).rejects.toEqual(
+        new Error('Invalid event code')
       );
     });
 
-    it('should_return409Conflict_when_bulkConflictsDetected', async () => {
-      // Given: Bulk request with conflicts (atomic operation - all or nothing)
-      const conflictingBulkRequest: BulkTimingRequest = {
-        assignments: [
-          {
-            sessionSlug: 'session-1',
-            startTime: '2025-05-15T09:00:00Z',
-            endTime: '2025-05-15T09:45:00Z',
-            room: 'Main Hall',
-          },
-          {
-            sessionSlug: 'session-2',
-            startTime: '2025-05-15T09:30:00Z', // Overlaps with session-1
-            endTime: '2025-05-15T10:15:00Z',
-            room: 'Main Hall',
-          },
-        ],
-        changeReason: 'preference_matching',
-      };
+    it('should_useAxiosMessage_when_networkFails', async () => {
+      api.on('clearAllTimings', () => HttpResponse.error());
 
-      const error = new AxiosError('Bulk conflicts');
-      error.response = {
-        status: 409,
-        data: {
-          error: 'BULK_TIMING_CONFLICTS',
-          message: 'Multiple conflicts detected - no changes applied',
-          conflictCount: 1,
-        },
-        statusText: 'Conflict',
-        headers: {},
-        config: {} as any,
-      };
-
-      vi.mocked(apiClient.post).mockRejectedValueOnce(error);
-
-      // When/Then: Service throws 409 conflict error, no changes applied
-      await expect(
-        slotAssignmentService.bulkAssignTiming(mockEventCode, conflictingBulkRequest)
-      ).rejects.toMatchObject({
-        response: {
-          status: 409,
-          data: {
-            error: 'BULK_TIMING_CONFLICTS',
-            message: 'Multiple conflicts detected - no changes applied',
-            conflictCount: 1,
-          },
-        },
-      });
-    });
-  });
-
-  describe('detectConflicts', () => {
-    it('should_returnConflicts_when_schedulingConflictsExist', async () => {
-      // AC9: Detect all types of conflicts in event schedule
-      // Given: Event has 2 scheduling conflicts
-      const mockConflictAnalysis: ConflictAnalysisResponse = {
-        hasConflicts: true,
-        conflictCount: 2,
-        conflicts: [
-          {
-            sessionSlug: 'session-1',
-            conflictType: 'room_overlap',
-            severity: 'error',
-            affectedSessions: ['session-2'],
-            timeRange: {
-              start: '2025-05-15T09:00:00Z',
-              end: '2025-05-15T09:45:00Z',
-            },
-            resolution: 'Assign session-2 to different room or time slot',
-          },
-          {
-            sessionSlug: 'session-3',
-            conflictType: 'speaker_double_booked',
-            severity: 'error',
-            affectedSessions: ['session-4'],
-            timeRange: {
-              start: '2025-05-15T10:00:00Z',
-              end: '2025-05-15T10:45:00Z',
-            },
-            resolution: 'Reschedule one of the sessions to avoid speaker overlap',
-          },
-        ],
-      };
-
-      vi.mocked(apiClient.get).mockResolvedValueOnce({ data: mockConflictAnalysis } as any);
-
-      // When: Service analyzes conflicts
-      const result = await slotAssignmentService.detectConflicts(mockEventCode);
-
-      // Then: Returns conflict analysis with resolution suggestions
-      expect(result.hasConflicts).toBe(true);
-      expect(result.conflictCount).toBe(2);
-      expect(result.conflicts).toHaveLength(2);
-      expect(result.conflicts?.[0]?.conflictType).toBe('room_overlap');
-      expect(result.conflicts?.[1]?.conflictType).toBe('speaker_double_booked');
-      expect(apiClient.get).toHaveBeenCalledWith(`/events/${mockEventCode}/sessions/conflicts`);
-    });
-
-    it('should_returnNoConflicts_when_scheduleValid', async () => {
-      // Given: Event has no scheduling conflicts
-      const mockConflictAnalysis: ConflictAnalysisResponse = {
-        hasConflicts: false,
-        conflictCount: 0,
-        conflicts: [],
-      };
-
-      vi.mocked(apiClient.get).mockResolvedValueOnce({ data: mockConflictAnalysis } as any);
-
-      // When: Service analyzes conflicts
-      const result = await slotAssignmentService.detectConflicts(mockEventCode);
-
-      // Then: Returns no conflicts
-      expect(result.hasConflicts).toBe(false);
-      expect(result.conflictCount).toBe(0);
-      expect(result.conflicts).toHaveLength(0);
-    });
-  });
-
-  describe('clearAllTimings', () => {
-    it('should_clearAllTimings_when_eventCodeProvided', async () => {
-      // Given: Event has sessions with timing that should be cleared
-      const mockResponse = { message: 'All timings cleared', clearedCount: 5 };
-
-      vi.mocked(apiClient.delete).mockResolvedValueOnce({ data: mockResponse } as any);
-
-      // When: Service clears all timings
-      const result = await slotAssignmentService.clearAllTimings(mockEventCode);
-
-      // Then: Returns cleared count
-      expect(result).toEqual(mockResponse);
-      expect(result.clearedCount).toBe(5);
-      expect(result.message).toBe('All timings cleared');
-      expect(apiClient.delete).toHaveBeenCalledWith(`/events/${mockEventCode}/sessions/timing`);
-    });
-
-    it('should_return401Error_when_notAuthenticatedOnClear', async () => {
-      // Given: User is not authenticated
-      const error = new AxiosError('Unauthorized');
-      error.response = {
-        status: 401,
-        data: { message: 'Unauthorized' },
-        statusText: 'Unauthorized',
-        headers: {},
-        config: {} as any,
-      };
-
-      vi.mocked(apiClient.delete).mockRejectedValueOnce(error);
-
-      // When/Then: Service re-throws 401 AxiosError
-      await expect(slotAssignmentService.clearAllTimings(mockEventCode)).rejects.toMatchObject({
-        response: { status: 401 },
-      });
-    });
-
-    it('should_return403Error_when_insufficientPermissionsOnClear', async () => {
-      // Given: User lacks organizer permissions
-      const error = new AxiosError('Forbidden');
-      error.response = {
-        status: 403,
-        data: { message: 'Forbidden' },
-        statusText: 'Forbidden',
-        headers: {},
-        config: {} as any,
-      };
-
-      vi.mocked(apiClient.delete).mockRejectedValueOnce(error);
-
-      // When/Then: Service re-throws 403 AxiosError
-      await expect(slotAssignmentService.clearAllTimings(mockEventCode)).rejects.toMatchObject({
-        response: { status: 403 },
-      });
-    });
-
-    it('should_transformError_when_nonAuthErrorOnClear', async () => {
-      // Given: Server returns 500 error
-      const error = new AxiosError('Internal Server Error');
-      error.response = {
-        status: 500,
-        data: { message: 'Database connection failed' },
-        statusText: 'Internal Server Error',
-        headers: {},
-        config: {} as any,
-      };
-
-      vi.mocked(apiClient.delete).mockRejectedValueOnce(error);
-
-      // When/Then: Service transforms the error
-      await expect(slotAssignmentService.clearAllTimings(mockEventCode)).rejects.toThrow(
-        'Database connection failed'
-      );
-    });
-  });
-
-  describe('generateStructuralSessions', () => {
-    it('should_generateStructuralSessions_when_eventCodeProvided', async () => {
-      // Given: Event needs structural sessions (moderation, break, lunch)
-      const mockSessions: Session[] = [
-        {
-          ...aSession(),
-          sessionSlug: 'moderation-opening',
-          eventCode: mockEventCode,
-          language: 'de',
-          title: 'Opening Moderation',
-          startTime: '2025-05-15T08:30:00Z',
-          endTime: '2025-05-15T09:00:00Z',
-          room: 'Main Hall',
-          sessionType: 'moderation',
-          speakers: [],
-        },
-        {
-          ...aSession(),
-          sessionSlug: 'break-morning',
-          eventCode: mockEventCode,
-          language: 'de',
-          title: 'Morning Break',
-          startTime: '2025-05-15T10:00:00Z',
-          endTime: '2025-05-15T10:30:00Z',
-          room: null,
-          sessionType: 'break',
-          speakers: [],
-        },
-      ];
-
-      vi.mocked(apiClient.post).mockResolvedValueOnce({ data: mockSessions } as any);
-
-      // When: Service generates structural sessions (default overwrite=false)
-      const result = await slotAssignmentService.generateStructuralSessions(mockEventCode);
-
-      // Then: Returns created structural sessions
-      expect(result).toEqual(mockSessions);
-      expect(result).toHaveLength(2);
-      expect(apiClient.post).toHaveBeenCalledWith(
-        `/events/${mockEventCode}/sessions/structural`,
-        null,
-        { params: { overwrite: false } }
+      await expect(slotAssignmentService.clearAllTimings(EVENT)).rejects.toEqual(
+        new Error('Network Error')
       );
     });
 
-    it('should_generateStructuralSessions_when_overwriteEnabled', async () => {
-      // Given: Overwrite existing structural sessions
-      const mockSessions: Session[] = [
-        {
-          ...aSession(),
-          sessionSlug: 'moderation-opening',
-          eventCode: mockEventCode,
-          language: 'de',
-          title: 'Opening Moderation',
-          startTime: '2025-05-15T08:30:00Z',
-          endTime: '2025-05-15T09:00:00Z',
-          room: 'Main Hall',
-          sessionType: 'moderation',
-          speakers: [],
-        },
-      ];
+    it('should_sayEventNotFound_when_404NamesTheEvent', async () => {
+      api.on('getUnassignedSessions', () =>
+        problem(404, { error: 'Not Found', message: 'Event not found: BATbern142' })
+      );
 
-      vi.mocked(apiClient.post).mockResolvedValueOnce({ data: mockSessions } as any);
-
-      // When: Service generates structural sessions with overwrite=true
-      const result = await slotAssignmentService.generateStructuralSessions(mockEventCode, true);
-
-      // Then: Passes overwrite=true as query param
-      expect(result).toEqual(mockSessions);
-      expect(apiClient.post).toHaveBeenCalledWith(
-        `/events/${mockEventCode}/sessions/structural`,
-        null,
-        { params: { overwrite: true } }
+      await expect(slotAssignmentService.getUnassignedSessions(EVENT)).rejects.toEqual(
+        new Error('Event not found')
       );
     });
 
-    it('should_return401Error_when_notAuthenticatedOnGenerate', async () => {
-      const error = new AxiosError('Unauthorized');
-      error.response = {
-        status: 401,
-        data: { message: 'Unauthorized' },
-        statusText: 'Unauthorized',
-        headers: {},
-        config: {} as any,
-      };
-
-      vi.mocked(apiClient.post).mockRejectedValueOnce(error);
+    it('should_saySessionNotFound_when_404NamesTheSession', async () => {
+      api.on('assignTiming', () =>
+        problem(404, { error: 'Not Found', message: 'Session not found: session-9' })
+      );
 
       await expect(
-        slotAssignmentService.generateStructuralSessions(mockEventCode)
-      ).rejects.toMatchObject({
-        response: { status: 401 },
-      });
+        slotAssignmentService.assignSessionTiming(EVENT, 'session-9', timing)
+      ).rejects.toEqual(new Error('Session not found'));
     });
 
-    it('should_return403Error_when_insufficientPermissionsOnGenerate', async () => {
-      const error = new AxiosError('Forbidden');
-      error.response = {
-        status: 403,
-        data: { message: 'Forbidden' },
-        statusText: 'Forbidden',
-        headers: {},
-        config: {} as any,
-      };
-
-      vi.mocked(apiClient.post).mockRejectedValueOnce(error);
-
-      await expect(
-        slotAssignmentService.generateStructuralSessions(mockEventCode)
-      ).rejects.toMatchObject({
-        response: { status: 403 },
-      });
-    });
-
-    it('should_return409Conflict_when_structuralSessionsExistAndNoOverwrite', async () => {
-      const error = new AxiosError('Conflict');
-      error.response = {
-        status: 409,
-        data: { message: 'Structural sessions already exist. Use overwrite=true to replace.' },
-        statusText: 'Conflict',
-        headers: {},
-        config: {} as any,
-      };
-
-      vi.mocked(apiClient.post).mockRejectedValueOnce(error);
-
-      await expect(
-        slotAssignmentService.generateStructuralSessions(mockEventCode)
-      ).rejects.toMatchObject({
-        response: { status: 409 },
-      });
-    });
-
-    it('should_transformError_when_nonAuthErrorOnGenerate', async () => {
-      const error = new AxiosError('Internal Server Error');
-      error.response = {
-        status: 500,
-        data: { error: 'Failed to generate sessions' },
-        statusText: 'Internal Server Error',
-        headers: {},
-        config: {} as any,
-      };
-
-      vi.mocked(apiClient.post).mockRejectedValueOnce(error);
-
-      await expect(slotAssignmentService.generateStructuralSessions(mockEventCode)).rejects.toThrow(
-        'Failed to generate sessions'
-      );
-    });
-  });
-
-  describe('autoAssignTimings', () => {
-    it('should_autoAssign_when_eventCodeProvided', async () => {
-      // Given: Event has unassigned sessions
-      const mockResponse = { message: 'Auto-assignment complete', assignedCount: 4 };
-
-      vi.mocked(apiClient.post).mockResolvedValueOnce({ data: mockResponse } as any);
-
-      // When: Service auto-assigns timings
-      const result = await slotAssignmentService.autoAssignTimings(mockEventCode);
-
-      // Then: Returns assigned count
-      expect(result).toEqual(mockResponse);
-      expect(result.assignedCount).toBe(4);
-      expect(result.message).toBe('Auto-assignment complete');
-      expect(apiClient.post).toHaveBeenCalledWith(`/events/${mockEventCode}/sessions/auto-assign`);
-    });
-
-    it('should_return401Error_when_notAuthenticatedOnAutoAssign', async () => {
-      const error = new AxiosError('Unauthorized');
-      error.response = {
-        status: 401,
-        data: { message: 'Unauthorized' },
-        statusText: 'Unauthorized',
-        headers: {},
-        config: {} as any,
-      };
-
-      vi.mocked(apiClient.post).mockRejectedValueOnce(error);
-
-      await expect(slotAssignmentService.autoAssignTimings(mockEventCode)).rejects.toMatchObject({
-        response: { status: 401 },
-      });
-    });
-
-    it('should_return403Error_when_insufficientPermissionsOnAutoAssign', async () => {
-      const error = new AxiosError('Forbidden');
-      error.response = {
-        status: 403,
-        data: { message: 'Forbidden' },
-        statusText: 'Forbidden',
-        headers: {},
-        config: {} as any,
-      };
-
-      vi.mocked(apiClient.post).mockRejectedValueOnce(error);
-
-      await expect(slotAssignmentService.autoAssignTimings(mockEventCode)).rejects.toMatchObject({
-        response: { status: 403 },
-      });
-    });
-
-    it('should_transformError_when_nonAuthErrorOnAutoAssign', async () => {
-      const error = new AxiosError('Internal Server Error');
-      error.response = {
-        status: 500,
-        data: { message: 'Auto-assignment failed' },
-        statusText: 'Internal Server Error',
-        headers: {},
-        config: {} as any,
-      };
-
-      vi.mocked(apiClient.post).mockRejectedValueOnce(error);
-
-      await expect(slotAssignmentService.autoAssignTimings(mockEventCode)).rejects.toThrow(
-        'Auto-assignment failed'
-      );
-    });
-  });
-
-  describe('Error Handling', () => {
-    it('should_return401Error_when_notAuthenticated', async () => {
-      // Given: User is not authenticated
-      const error = new AxiosError('Unauthorized');
-      error.response = {
-        status: 401,
-        data: { message: 'Unauthorized' },
-        statusText: 'Unauthorized',
-        headers: {},
-        config: {} as any,
-      };
-
-      vi.mocked(apiClient.get).mockRejectedValueOnce(error);
-
-      // When/Then: Service throws 401 error
-      await expect(
-        slotAssignmentService.getUnassignedSessions(mockEventCode)
-      ).rejects.toMatchObject({
-        response: { status: 401 },
-      });
-    });
-
-    it('should_return403Error_when_insufficientPermissions', async () => {
-      // Given: User lacks organizer permissions
-      const error = new AxiosError('Forbidden');
-      error.response = {
-        status: 403,
-        data: { message: 'Forbidden' },
-        statusText: 'Forbidden',
-        headers: {},
-        config: {} as any,
-      };
-
-      vi.mocked(apiClient.get).mockRejectedValueOnce(error);
-
-      // When/Then: Service throws 403 error
-      await expect(
-        slotAssignmentService.getUnassignedSessions(mockEventCode)
-      ).rejects.toMatchObject({
-        response: { status: 403 },
-      });
-    });
-  });
-
-  describe('transformError (private)', () => {
-    it('should_includeCorrelationId_when_headerPresent', async () => {
-      // Given: Server error response includes correlation ID header
-      const error = new AxiosError('Server Error');
-      error.response = {
-        status: 500,
-        data: { message: 'Internal failure' },
-        statusText: 'Internal Server Error',
-        headers: { 'x-correlation-id': 'abc-123-def' },
-        config: {} as any,
-      };
-
-      vi.mocked(apiClient.get).mockRejectedValueOnce(error);
-
-      // When/Then: Error message includes correlation ID
-      await expect(slotAssignmentService.getUnassignedSessions(mockEventCode)).rejects.toThrow(
-        'Internal failure (Correlation ID: abc-123-def)'
-      );
-    });
-
-    it('should_fallbackToErrorField_when_noMessageField', async () => {
-      // Given: Response has "error" field instead of "message"
-      const error = new AxiosError('Server Error');
-      error.response = {
-        status: 500,
-        data: { error: 'Something went wrong' },
-        statusText: 'Internal Server Error',
-        headers: {},
-        config: {} as any,
-      };
-
-      vi.mocked(apiClient.get).mockRejectedValueOnce(error);
-
-      // When/Then: Uses error field as message
-      await expect(slotAssignmentService.getUnassignedSessions(mockEventCode)).rejects.toThrow(
-        'Something went wrong'
-      );
-    });
-
-    it('should_fallbackToAxiosMessage_when_noResponseData', async () => {
-      // Given: Network error with no response body
-      const error = new AxiosError('Network Error', 'ERR_NETWORK');
-
-      vi.mocked(apiClient.get).mockRejectedValueOnce(error);
-
-      // When/Then: Uses axios error message
-      await expect(slotAssignmentService.getUnassignedSessions(mockEventCode)).rejects.toThrow(
-        'Network Error'
-      );
-    });
-
-    it('should_returnEventNotFound_when_404WithEventMessage', async () => {
-      // Given: 404 response mentioning Event
-      const error = new AxiosError('Not Found');
-      error.response = {
-        status: 404,
-        data: { message: 'Event BATbern999 not found' },
-        statusText: 'Not Found',
-        headers: {},
-        config: {} as any,
-      };
-
-      vi.mocked(apiClient.get).mockRejectedValueOnce(error);
-
-      // When/Then: Returns "Event not found"
-      await expect(slotAssignmentService.detectConflicts('BATbern999')).rejects.toThrow(
-        'Event not found'
-      );
-    });
-
-    it('should_returnSessionNotFound_when_404WithSessionMessage', async () => {
-      // Given: 404 response mentioning Session
-      const error = new AxiosError('Not Found');
-      error.response = {
-        status: 404,
-        data: { message: 'Session xyz not found' },
-        statusText: 'Not Found',
-        headers: {},
-        config: {} as any,
-      };
-
-      vi.mocked(apiClient.patch).mockRejectedValueOnce(error);
-
-      const timingRequest: SessionTimingRequest = {
-        startTime: '2025-05-15T09:00:00Z',
-        endTime: '2025-05-15T09:45:00Z',
-        room: 'Main Hall',
-      };
-
-      // When/Then: Returns "Session not found"
-      await expect(
-        slotAssignmentService.assignSessionTiming(mockEventCode, 'xyz', timingRequest)
-      ).rejects.toThrow('Session not found');
-    });
-
-    it('should_handleNonErrorObjects_when_unknownThrown', async () => {
-      // Given: Something unexpected is thrown (not an Error or AxiosError)
-      vi.mocked(apiClient.get).mockRejectedValueOnce('unexpected string error');
-
-      // When/Then: Returns generic error
-      await expect(slotAssignmentService.getUnassignedSessions(mockEventCode)).rejects.toThrow(
-        'An unexpected error occurred'
-      );
-    });
-
-    it('should_preserveErrorInstance_when_nonAxiosErrorThrown', async () => {
-      // Given: A regular Error is thrown (not AxiosError)
-      const regularError = new Error('Some regular error');
-      vi.mocked(apiClient.get).mockRejectedValueOnce(regularError);
-
-      // When/Then: The error is returned as-is
-      await expect(slotAssignmentService.getUnassignedSessions(mockEventCode)).rejects.toThrow(
-        'Some regular error'
-      );
-    });
-
-    it('should_return401Error_when_notAuthenticatedOnAssignTiming', async () => {
-      // Given: 401 on assignSessionTiming
-      const error = new AxiosError('Unauthorized');
-      error.response = {
-        status: 401,
-        data: { message: 'Unauthorized' },
-        statusText: 'Unauthorized',
-        headers: {},
-        config: {} as any,
-      };
-
-      vi.mocked(apiClient.patch).mockRejectedValueOnce(error);
-
-      const timingRequest: SessionTimingRequest = {
-        startTime: '2025-05-15T09:00:00Z',
-        endTime: '2025-05-15T09:45:00Z',
-        room: 'Main Hall',
-      };
-
-      await expect(
-        slotAssignmentService.assignSessionTiming(mockEventCode, mockSessionSlug, timingRequest)
-      ).rejects.toMatchObject({
-        response: { status: 401 },
-      });
-    });
-
-    it('should_return401Error_when_notAuthenticatedOnBulkAssign', async () => {
-      // Given: 401 on bulkAssignTiming
-      const error = new AxiosError('Unauthorized');
-      error.response = {
-        status: 401,
-        data: { message: 'Unauthorized' },
-        statusText: 'Unauthorized',
-        headers: {},
-        config: {} as any,
-      };
-
-      vi.mocked(apiClient.post).mockRejectedValueOnce(error);
-
-      const bulkRequest: BulkTimingRequest = {
-        assignments: [],
-        changeReason: 'test',
-      };
-
-      await expect(
-        slotAssignmentService.bulkAssignTiming(mockEventCode, bulkRequest)
-      ).rejects.toMatchObject({
-        response: { status: 401 },
-      });
-    });
-
-    it('should_transformError_when_nonAuthErrorOnBulkAssign', async () => {
-      // Given: 500 on bulkAssignTiming
-      const error = new AxiosError('Internal Server Error');
-      error.response = {
-        status: 500,
-        data: { message: 'Bulk assignment failed' },
-        statusText: 'Internal Server Error',
-        headers: {},
-        config: {} as any,
-      };
-
-      vi.mocked(apiClient.post).mockRejectedValueOnce(error);
-
-      const bulkRequest: BulkTimingRequest = {
-        assignments: [],
-        changeReason: 'test',
-      };
-
-      await expect(
-        slotAssignmentService.bulkAssignTiming(mockEventCode, bulkRequest)
-      ).rejects.toThrow('Bulk assignment failed');
-    });
-
-    it('should_return403Error_when_insufficientPermissionsOnBulkAssign', async () => {
-      // Given: 403 on bulkAssignTiming
-      const error = new AxiosError('Forbidden');
-      error.response = {
-        status: 403,
-        data: { message: 'Forbidden' },
-        statusText: 'Forbidden',
-        headers: {},
-        config: {} as any,
-      };
-
-      vi.mocked(apiClient.post).mockRejectedValueOnce(error);
-
-      const bulkRequest: BulkTimingRequest = {
-        assignments: [],
-        changeReason: 'test',
-      };
-
-      await expect(
-        slotAssignmentService.bulkAssignTiming(mockEventCode, bulkRequest)
-      ).rejects.toMatchObject({
-        response: { status: 403 },
-      });
-    });
-
-    it('should_return401Error_when_notAuthenticatedOnDetectConflicts', async () => {
-      // Given: 401 on detectConflicts
-      const error = new AxiosError('Unauthorized');
-      error.response = {
-        status: 401,
-        data: { message: 'Unauthorized' },
-        statusText: 'Unauthorized',
-        headers: {},
-        config: {} as any,
-      };
-
-      vi.mocked(apiClient.get).mockRejectedValueOnce(error);
-
-      await expect(slotAssignmentService.detectConflicts(mockEventCode)).rejects.toMatchObject({
-        response: { status: 401 },
-      });
-    });
-
-    it('should_fallbackToGenericMessage_when_noDataFieldsPresent', async () => {
-      // Given: Response data has neither message nor error field
-      const error = new AxiosError('Bad Request');
-      error.response = {
-        status: 400,
-        data: {},
-        statusText: 'Bad Request',
-        headers: {},
-        config: {} as any,
-      };
-
-      vi.mocked(apiClient.get).mockRejectedValueOnce(error);
-
-      // When/Then: Falls back to axios error.message
-      await expect(slotAssignmentService.getUnassignedSessions(mockEventCode)).rejects.toThrow(
-        'Bad Request'
+    it('should_keepMessage_when_404NamesNeither', async () => {
+      api.on('unassignTiming', () => problem(404, { error: 'Not Found', message: 'No such slot' }));
+
+      await expect(slotAssignmentService.unassignSessionTiming(EVENT, 'session-1')).rejects.toEqual(
+        new Error('No such slot')
       );
     });
   });

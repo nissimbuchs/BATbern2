@@ -31,7 +31,7 @@ import RestaurantIcon from '@mui/icons-material/Restaurant';
 import MicIcon from '@mui/icons-material/Mic';
 import LocalBarIcon from '@mui/icons-material/LocalBar';
 import CloseIcon from '@mui/icons-material/Close';
-import { AxiosError } from 'axios';
+import { isAxiosError } from 'axios';
 import { useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { useBreakpoints } from '@/hooks/useBreakpoints';
@@ -310,7 +310,7 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({
         exact: true,
       });
     } catch (err) {
-      if (err instanceof AxiosError && err.response?.status === 409) {
+      if (isAxiosError(err) && err.response?.status === 409) {
         setStructuralAlreadyExist(true);
       } else {
         const msg = err instanceof Error ? err.message : 'Failed to generate structural sessions';

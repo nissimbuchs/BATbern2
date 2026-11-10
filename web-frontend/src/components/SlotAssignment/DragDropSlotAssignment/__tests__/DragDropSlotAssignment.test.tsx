@@ -23,6 +23,8 @@ import { DragDropSlotAssignment } from '../DragDropSlotAssignment';
 import { useSlotAssignment } from '@/hooks/useSlotAssignment/useSlotAssignment';
 import type { Session } from '@/types/event.types';
 import { aSession, aSessionSpeaker } from '@/test/fixtures';
+import { HttpResponse } from 'msw';
+import { api } from '@/test/msw/api';
 
 // Mock useSlotAssignment hook
 vi.mock('@/hooks/useSlotAssignment/useSlotAssignment', () => ({
@@ -731,6 +733,43 @@ describe('DragDropSlotAssignment Component', () => {
 
       expect(screen.getByRole('dialog')).toBeInTheDocument();
       expect(screen.getByText(/are you sure/i)).toBeInTheDocument();
+    });
+
+    it('should_offerOverwrite_when_structuralSessionsAlreadyExist', async () => {
+      // The real slotAssignmentService answers on the MSW harness: its 409 reaches the component
+      // as the AxiosError, which switches the dialog to the overwrite question.
+      api.on('generateStructuralSessions', () =>
+        HttpResponse.json(
+          { status: 409, error: 'Conflict', message: 'Structural sessions already exist' },
+          { status: 409 }
+        )
+      );
+      renderWithProviders(<DragDropSlotAssignment eventCode={mockEventCode} />);
+
+      fireEvent.click(screen.getByTestId('generate-structural-button'));
+      fireEvent.click(screen.getByTestId('generate-structural-confirm'));
+
+      expect(
+        await screen.findByText(/Moderation, break and lunch blocks already exist/)
+      ).toBeInTheDocument();
+      expect(screen.getByTestId('generate-structural-overwrite-confirm')).toBeInTheDocument();
+      expect(api.calls('generateStructuralSessions')[0].query.get('overwrite')).toBe('false');
+    });
+
+    it('should_showServerMessage_when_structuralGenerationFails', async () => {
+      api.on('generateStructuralSessions', () =>
+        HttpResponse.json(
+          { status: 500, error: 'Internal Server Error', message: 'Event type not configured' },
+          { status: 500 }
+        )
+      );
+      renderWithProviders(<DragDropSlotAssignment eventCode={mockEventCode} />);
+
+      fireEvent.click(screen.getByTestId('generate-structural-button'));
+      fireEvent.click(screen.getByTestId('generate-structural-confirm'));
+
+      expect(await screen.findByText('Event type not configured')).toBeInTheDocument();
+      expect(screen.queryByTestId('generate-structural-overwrite-confirm')).not.toBeInTheDocument();
     });
 
     it('should_labelActionBarForScreenReaders_when_rendered', () => {

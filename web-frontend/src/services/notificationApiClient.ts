@@ -13,7 +13,7 @@
  */
 
 import apiClient from '@/services/api/apiClient';
-import { AxiosError } from 'axios';
+import { isAxiosError } from 'axios';
 import type {
   NotificationPage,
   NotificationCountResponse,
@@ -162,7 +162,7 @@ class NotificationApiClient {
    * Transform API errors into user-friendly messages
    */
   private transformError(error: unknown): Error {
-    if (error instanceof AxiosError) {
+    if (isAxiosError(error)) {
       const message = error.response?.data?.message || error.message;
       const correlationId = error.response?.headers?.['x-correlation-id'];
 

@@ -12,7 +12,7 @@ import { useState, useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { batchRegisterParticipant } from '../../services/api/eventApi';
 import { constructUsername } from '../../utils/participantImportUtils';
-import { AxiosError } from 'axios';
+import { isAxiosError } from 'axios';
 import type {
   ParticipantImportCandidate,
   ParticipantBatchImportResult,
@@ -115,7 +115,7 @@ export function useParticipantBatchImport() {
           } catch (error) {
             let errorMessage = 'Unknown error';
 
-            if (error instanceof AxiosError) {
+            if (isAxiosError(error)) {
               if (error.response) {
                 errorMessage = error.response.data?.message || error.response.statusText;
               } else if (error.request) {

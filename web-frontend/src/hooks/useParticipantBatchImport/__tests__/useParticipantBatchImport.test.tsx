@@ -3,21 +3,21 @@
  *
  * The hook imports in parallel batches of 10 with a 100 ms pause between batches. Replaces a suite
  * written for the earlier one-by-one importer, which had been entirely skipped since the switch.
+ * It runs with the real eventApi and apiClient against the MSW harness (Epic 17 test fidelity), so
+ * a failed request reaches the hook as the AxiosError real axios raises.
  */
 
 import { ReactNode } from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { AxiosError, AxiosHeaders } from 'axios';
+import { HttpResponse } from 'msw';
+import { api } from '@/test/msw/api';
 import { useParticipantBatchImport } from '../useParticipantBatchImport';
-import * as eventApi from '../../../services/api/eventApi';
 import type {
   BatchRegistrationRequest,
   BatchRegistrationResponse,
 } from '../../../types/participantImport.types';
-
-vi.mock('../../../services/api/eventApi');
 
 const request = (n: number, email = `p${n}@example.com`): BatchRegistrationRequest => ({
   participantEmail: email,
@@ -43,32 +43,32 @@ describe('useParticipantBatchImport', () => {
 
   beforeEach(() => {
     queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
-    vi.mocked(eventApi.batchRegisterParticipant).mockReset();
   });
 
   afterEach(() => {
     queryClient.clear();
-    vi.useRealTimers();
   });
 
   it('should_reportProgressPerBatch_when_moreThanTenCandidates', async () => {
-    vi.useFakeTimers();
-    vi.mocked(eventApi.batchRegisterParticipant).mockResolvedValue(fullSuccess);
+    api.on('createBatchRegistrations', () => fullSuccess);
     const requests = Array.from({ length: 12 }, (_, i) => request(i));
     const progress: Array<[number, number]> = [];
     const { result } = renderHook(() => useParticipantBatchImport(), { wrapper });
 
     let outcome: Awaited<ReturnType<typeof result.current.importCandidates>> | undefined;
     await act(async () => {
-      const pending = result.current.importCandidates(requests, (current, total) =>
+      // First batch of 10 settles, then the 100 ms pause before the second batch of 2.
+      outcome = await result.current.importCandidates(requests, (current, total) =>
         progress.push([current, total])
       );
-      // First batch of 10 settles, then the 100 ms pause before the second batch of 2.
-      await vi.advanceTimersByTimeAsync(100);
-      outcome = await pending;
     });
 
-    expect(eventApi.batchRegisterParticipant).toHaveBeenCalledTimes(12);
+    expect(
+      api
+        .calls('createBatchRegistrations')
+        .map((c) => c.body?.participantEmail)
+        .sort()
+    ).toEqual(requests.map((r) => r.participantEmail).sort());
     expect(progress).toEqual([
       [10, 12],
       [12, 12],
@@ -78,18 +78,17 @@ describe('useParticipantBatchImport', () => {
   });
 
   it('should_continueAndRecordMessages_when_requestsFail', async () => {
-    const serverError = new AxiosError('Request failed', 'ERR_BAD_RESPONSE', undefined, undefined, {
-      status: 409,
-      statusText: 'Conflict',
-      data: { message: 'Participant already registered' },
-      headers: {},
-      config: { headers: new AxiosHeaders() },
+    // One answer per participant: a 409 with the server's message, a network error, a success.
+    api.on('createBatchRegistrations', ({ body }) => {
+      if (body?.participantEmail === 'p1@example.com') {
+        return HttpResponse.json(
+          { status: 409, error: 'Conflict', message: 'Participant already registered' },
+          { status: 409 }
+        );
+      }
+      if (body?.participantEmail === 'p2@example.com') return HttpResponse.error();
+      return fullSuccess;
     });
-    const networkError = new AxiosError('Network Error', 'ERR_NETWORK', undefined, {});
-    vi.mocked(eventApi.batchRegisterParticipant)
-      .mockRejectedValueOnce(serverError)
-      .mockRejectedValueOnce(networkError)
-      .mockResolvedValueOnce(fullSuccess);
     const { result } = renderHook(() => useParticipantBatchImport(), { wrapper });
 
     let outcome: Awaited<ReturnType<typeof result.current.importCandidates>> | undefined;
@@ -105,13 +104,29 @@ describe('useParticipantBatchImport', () => {
     ]);
   });
 
+  it('should_useStatusText_when_errorBodyHasNoMessage', async () => {
+    api.on('createBatchRegistrations', () =>
+      HttpResponse.json({ status: 400 }, { status: 400, statusText: 'Bad Request' })
+    );
+    const { result } = renderHook(() => useParticipantBatchImport(), { wrapper });
+
+    await act(async () => {
+      await result.current.importCandidates([request(1)]);
+    });
+
+    expect(result.current.candidates[0]).toMatchObject({
+      importStatus: 'error',
+      errorMessage: 'Bad Request',
+    });
+  });
+
   it('should_markSuccessWithCount_when_someRegistrationsFail', async () => {
-    vi.mocked(eventApi.batchRegisterParticipant).mockResolvedValue({
+    api.on('createBatchRegistrations', () => ({
       ...fullSuccess,
       totalRegistrations: 3,
       successfulRegistrations: 2,
-      failedRegistrations: ['BATbern2'],
-    } as BatchRegistrationResponse);
+      failedRegistrations: [{ eventCode: 'BATbern2', reason: 'Event not found' }],
+    }));
     const { result } = renderHook(() => useParticipantBatchImport(), { wrapper });
 
     await act(async () => {
@@ -125,7 +140,7 @@ describe('useParticipantBatchImport', () => {
   });
 
   it('should_flagSyntheticEmail_when_emailIsOnBatbernDomain', async () => {
-    vi.mocked(eventApi.batchRegisterParticipant).mockResolvedValue(fullSuccess);
+    api.on('createBatchRegistrations', () => fullSuccess);
     const { result } = renderHook(() => useParticipantBatchImport(), { wrapper });
 
     await act(async () => {
@@ -139,7 +154,7 @@ describe('useParticipantBatchImport', () => {
   });
 
   it('should_invalidateUserAndRegistrationCaches_when_importCompletes', async () => {
-    vi.mocked(eventApi.batchRegisterParticipant).mockResolvedValue(fullSuccess);
+    api.on('createBatchRegistrations', () => fullSuccess);
     const invalidate = vi.spyOn(queryClient, 'invalidateQueries');
     const { result } = renderHook(() => useParticipantBatchImport(), { wrapper });
 

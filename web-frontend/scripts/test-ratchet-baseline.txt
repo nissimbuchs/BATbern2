@@ -571,7 +571,6 @@ fe-mock-services	web-frontend/src/hooks/useMyRegistration.test.ts	1
 fe-mock-services	web-frontend/src/hooks/useNewsletterSubscribers/useNewsletterSubscriberMutations.test.ts	1
 fe-mock-services	web-frontend/src/hooks/useNewsletterSubscribers/useNewsletterSubscribers.test.ts	1
 fe-mock-services	web-frontend/src/hooks/useNotifications.test.ts	1
-fe-mock-services	web-frontend/src/hooks/useParticipantBatchImport/__tests__/useParticipantBatchImport.test.tsx	1
 fe-mock-services	web-frontend/src/hooks/usePartnerMeetings.test.ts	1
 fe-mock-services	web-frontend/src/hooks/usePartnerMutations/__tests__/usePartnerMutations.test.tsx	1
 fe-mock-services	web-frontend/src/hooks/usePartnerMutations/usePartnerMutations.test.ts	1
@@ -603,7 +602,6 @@ fe-mock-services	web-frontend/src/pages/public/__tests__/RegistrationPage.test.t
 fe-mock-services	web-frontend/src/pages/speaker-portal/__tests__/ContentSubmissionPage.test.tsx	1
 fe-mock-services	web-frontend/src/pages/speaker-portal/__tests__/InvitationResponsePage.test.tsx	1
 fe-mock-services	web-frontend/src/services/__tests__/publicOrganizerService.test.ts	1
-fe-mock-services	web-frontend/src/services/__tests__/sessionService.test.ts	1
 fe-mock-services	web-frontend/src/services/__tests__/speakerPoolService.test.ts	1
 fe-mock-services	web-frontend/src/services/aiPromptService.test.ts	1
 fe-mock-services	web-frontend/src/services/analyticsService.test.ts	1
@@ -616,7 +614,6 @@ fe-mock-services	web-frontend/src/services/api/partnerAnalyticsApi.test.ts	1
 fe-mock-services	web-frontend/src/services/api/partnerMeetingsApi.test.ts	3
 fe-mock-services	web-frontend/src/services/api/partnerNotesApi.test.ts	1
 fe-mock-services	web-frontend/src/services/api/partnerTopicsApi.test.ts	4
-fe-mock-services	web-frontend/src/services/api/sessionApiClient.test.ts	1
 fe-mock-services	web-frontend/src/services/api/watchPairingApi.test.ts	1
 fe-mock-services	web-frontend/src/services/blobTopicService.test.ts	1
 fe-mock-services	web-frontend/src/services/deregistrationService.test.ts	1
@@ -626,8 +623,6 @@ fe-mock-services	web-frontend/src/services/eventTypeService.test.ts	1
 fe-mock-services	web-frontend/src/services/notificationApiClient.test.ts	1
 fe-mock-services	web-frontend/src/services/publicOrganizerService.test.ts	1
 fe-mock-services	web-frontend/src/services/registrationService.test.ts	1
-fe-mock-services	web-frontend/src/services/sessionService.test.ts	1
-fe-mock-services	web-frontend/src/services/slotAssignmentService/slotAssignmentService.test.ts	4
 fe-mock-services	web-frontend/src/services/speakerContentService.test.ts	1
 fe-mock-services	web-frontend/src/services/speakerOutreachService.test.ts	1
 fe-mock-services	web-frontend/src/services/speakerPortalService.test.ts	1

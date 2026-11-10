@@ -1,164 +1,155 @@
 /**
- * sessionService Tests
+ * Session API Client tests (`sessionService.ts`: batch import, session update)
  *
- * Coverage for Session API Client:
- * - batchImportSessions: POST with extended timeout, error handling
- * - updateSession: PATCH, error handling
- * - transformError: AxiosError paths (with/without correlation ID, non-Axios errors)
+ * The client runs with the real apiClient against the MSW harness (Epic 17 test fidelity): every
+ * request is checked against event-sessions-api and each test reads what went over the wire. An
+ * HTTP error reaches the caller as an `Error` with the server's message (`message`, else `error`,
+ * else axios' own) and the correlation id when the response carries one.
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { AxiosError } from 'axios';
+import { describe, it, expect } from 'vitest';
+import { HttpResponse } from 'msw';
+import { api } from '@/test/msw/api';
 import { sessionApiClient } from './sessionService';
+import type {
+  BatchImportSessionRequest,
+  SessionBatchImportResult,
+} from '@/types/sessionImport.types';
 
-vi.mock('@/services/api/apiClient', () => ({
-  default: {
-    post: vi.fn(),
-    patch: vi.fn(),
+const EVENT = 'BATbern142';
+
+const sessions: BatchImportSessionRequest[] = [
+  { title: 'Cloud-native Architektur', abstract: 'Über Plattformen', bat: 142 },
+  {
+    title: 'Hông Ân über Resilienz',
+    abstract: 'Ausfallsicherheit',
+    pdf: 'resilienz.pdf',
+    bat: 142,
+    referenten: [{ name: 'Hông Ân', bio: '', company: 'Brünnimann AG', portrait: '' }],
   },
-}));
+];
 
-import apiClient from '@/services/api/apiClient';
-
-const mockPost = vi.mocked(apiClient.post);
-const mockPatch = vi.mocked(apiClient.patch);
-
-const MOCK_RESULT = { imported: 5, skipped: 1, failed: 0, errors: [] };
-
-const makeAxiosError = (
-  message: string,
-  status = 400,
-  responseData: Record<string, unknown> = {},
-  correlationId?: string
-): AxiosError => {
-  const err = new AxiosError(message);
-  err.response = {
-    data: responseData,
-    status,
-    statusText: 'Error',
-    headers: correlationId ? { 'x-correlation-id': correlationId } : {},
-    config: {} as never,
-  };
-  return err;
+const result: SessionBatchImportResult = {
+  totalProcessed: 2,
+  successfullyCreated: 2,
+  updated: 0,
+  skipped: 0,
+  failed: 0,
+  details: [
+    {
+      title: 'Cloud-native Architektur',
+      status: 'success',
+      message: 'Created',
+      sessionSlug: 'cloud-native-architektur',
+    },
+    {
+      title: 'Hông Ân über Resilienz',
+      status: 'success',
+      message: 'Created',
+      sessionSlug: 'hong-an-uber-resilienz',
+    },
+  ],
 };
 
+/** An error answer in the services' error shape, optionally with a correlation id header. */
+const problem = (status: number, body: Record<string, unknown>, correlationId?: string) =>
+  HttpResponse.json(
+    { timestamp: '2026-11-10T08:00:00Z', status, ...body },
+    { status, headers: correlationId ? { 'x-correlation-id': correlationId } : {} }
+  );
+
 describe('sessionApiClient.batchImportSessions', () => {
-  beforeEach(() => vi.clearAllMocks());
+  it('should_postSessions_when_batchImportRequested', async () => {
+    api.on('batchImportSessions', () => result);
 
-  it('should POST to the correct endpoint with sessions', async () => {
-    mockPost.mockResolvedValue({ data: MOCK_RESULT });
+    const imported = await sessionApiClient.batchImportSessions(EVENT, sessions);
 
-    const sessions = [{ title: 'Cloud Talk', speakerName: 'Alice' }] as never[];
-    const result = await sessionApiClient.batchImportSessions('BAT142', sessions);
-
-    expect(mockPost).toHaveBeenCalledWith(
-      '/events/BAT142/sessions/batch-import',
-      sessions,
-      expect.objectContaining({ timeout: 120000 })
-    );
-    expect(result).toEqual(MOCK_RESULT);
+    expect(imported).toEqual(result);
+    const [call] = api.calls('batchImportSessions');
+    expect(call.params).toEqual({ eventCode: EVENT });
+    expect(call.body).toEqual(sessions);
   });
 
-  it('should throw transformed error on AxiosError with response message', async () => {
-    mockPost.mockRejectedValue(
-      makeAxiosError('Validation failed', 422, { message: 'Invalid session data' })
-    );
+  it('should_postEmptyList_when_noSessions', async () => {
+    const empty = { ...result, totalProcessed: 0, successfullyCreated: 0, details: [] };
+    api.on('batchImportSessions', () => empty);
 
-    await expect(sessionApiClient.batchImportSessions('BAT142', [])).rejects.toThrow(
-      'Invalid session data'
-    );
+    await expect(sessionApiClient.batchImportSessions(EVENT, [])).resolves.toEqual(empty);
+    expect(api.calls('batchImportSessions')[0].body).toEqual([]);
   });
 
-  it('should include correlation ID in error when present', async () => {
-    mockPost.mockRejectedValue(
-      makeAxiosError('Server error', 500, { error: 'Internal error' }, 'abc-123')
+  it('should_throwServerMessage_when_responseHasMessage', async () => {
+    api.on('batchImportSessions', () =>
+      problem(400, { error: 'Bad Request', message: 'Sessions already exist' })
     );
 
-    await expect(sessionApiClient.batchImportSessions('BAT142', [])).rejects.toThrow(
-      'Internal error (Correlation ID: abc-123)'
+    await expect(sessionApiClient.batchImportSessions(EVENT, sessions)).rejects.toEqual(
+      new Error('Sessions already exist')
     );
   });
 
-  it('should use response error field when message is absent', async () => {
-    mockPost.mockRejectedValue(
-      makeAxiosError('Request failed', 400, { error: 'Bad request format' })
-    );
+  it('should_throwErrorField_when_noMessage', async () => {
+    api.on('batchImportSessions', () => problem(400, { error: 'Invalid event code' }));
 
-    await expect(sessionApiClient.batchImportSessions('BAT142', [])).rejects.toThrow(
-      'Bad request format'
+    await expect(sessionApiClient.batchImportSessions(EVENT, sessions)).rejects.toEqual(
+      new Error('Invalid event code')
     );
   });
 
-  it('should fall back to AxiosError message when no response data', async () => {
-    const err = new AxiosError('Network Error');
-    mockPost.mockRejectedValue(err);
+  it('should_appendCorrelationId_when_headerPresent', async () => {
+    api.on('batchImportSessions', () =>
+      problem(500, { error: 'Internal Server Error', message: 'Server error' }, 'abc-123')
+    );
 
-    await expect(sessionApiClient.batchImportSessions('BAT142', [])).rejects.toThrow(
-      'Network Error'
+    await expect(sessionApiClient.batchImportSessions(EVENT, sessions)).rejects.toEqual(
+      new Error('Server error (Correlation ID: abc-123)')
     );
   });
 
-  it('should re-throw plain Error instances unchanged', async () => {
-    mockPost.mockRejectedValue(new Error('Something broke'));
+  it('should_throwAxiosMessage_when_networkFails', async () => {
+    api.on('batchImportSessions', () => HttpResponse.error());
 
-    await expect(sessionApiClient.batchImportSessions('BAT142', [])).rejects.toThrow(
-      'Something broke'
-    );
-  });
-
-  it('should wrap unknown thrown values as generic Error', async () => {
-    mockPost.mockRejectedValue('raw string error');
-
-    await expect(sessionApiClient.batchImportSessions('BAT142', [])).rejects.toThrow(
-      'An unexpected error occurred'
+    await expect(sessionApiClient.batchImportSessions(EVENT, sessions)).rejects.toEqual(
+      new Error('Network Error')
     );
   });
 });
 
 describe('sessionApiClient.updateSession', () => {
-  beforeEach(() => vi.clearAllMocks());
-
-  it('should PATCH the correct session endpoint with updates', async () => {
-    mockPatch.mockResolvedValue({ data: {} });
-
-    await sessionApiClient.updateSession('BAT142', 'cloud-talk', {
+  it('should_patchSession_when_updated', async () => {
+    await sessionApiClient.updateSession(EVENT, 'cloud-talk', {
       title: 'Cloud Security',
       durationMinutes: 45,
     });
 
-    expect(mockPatch).toHaveBeenCalledWith('/events/BAT142/sessions/cloud-talk', {
-      title: 'Cloud Security',
-      durationMinutes: 45,
-    });
+    const [call] = api.calls('patchSession');
+    expect(call.params).toEqual({ eventCode: EVENT, sessionSlug: 'cloud-talk' });
+    expect(call.body).toEqual({ title: 'Cloud Security', durationMinutes: 45 });
   });
 
-  it('should accept partial updates (description only)', async () => {
-    mockPatch.mockResolvedValue({ data: {} });
+  it('should_sendOnlyGivenFields_when_partialUpdate', async () => {
+    await sessionApiClient.updateSession(EVENT, 'cloud-talk', { description: 'Neu: Ausblick' });
 
-    await sessionApiClient.updateSession('BAT142', 'cloud-talk', {
-      description: 'Updated description',
-    });
-
-    expect(mockPatch).toHaveBeenCalledWith('/events/BAT142/sessions/cloud-talk', {
-      description: 'Updated description',
-    });
+    expect(api.calls('patchSession')[0].body).toEqual({ description: 'Neu: Ausblick' });
   });
 
-  it('should throw transformed error on failure', async () => {
-    mockPatch.mockRejectedValue(makeAxiosError('Not found', 404, { message: 'Session not found' }));
-
-    await expect(
-      sessionApiClient.updateSession('BAT142', 'nonexistent', { title: 'x' })
-    ).rejects.toThrow('Session not found');
-  });
-
-  it('should include correlation ID in error on PATCH failure', async () => {
-    mockPatch.mockRejectedValue(
-      makeAxiosError('Server error', 500, { message: 'DB error' }, 'corr-456')
+  it('should_throwServerMessage_when_notFound', async () => {
+    api.on('patchSession', () =>
+      problem(404, { error: 'Not Found', message: 'Session not found: nonexistent' })
     );
 
-    await expect(sessionApiClient.updateSession('BAT142', 'cloud-talk', {})).rejects.toThrow(
-      'DB error (Correlation ID: corr-456)'
+    await expect(
+      sessionApiClient.updateSession(EVENT, 'nonexistent', { title: 'x' })
+    ).rejects.toEqual(new Error('Session not found: nonexistent'));
+  });
+
+  it('should_appendCorrelationId_when_patchFails', async () => {
+    api.on('patchSession', () =>
+      problem(500, { error: 'Internal Server Error', message: 'DB error' }, 'corr-456')
+    );
+
+    await expect(sessionApiClient.updateSession(EVENT, 'cloud-talk', {})).rejects.toEqual(
+      new Error('DB error (Correlation ID: corr-456)')
     );
   });
 });
