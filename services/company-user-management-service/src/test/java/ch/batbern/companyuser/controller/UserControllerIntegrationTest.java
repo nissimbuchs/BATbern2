@@ -1,6 +1,7 @@
 package ch.batbern.companyuser.controller;
 
 import org.springframework.cache.CacheManager;
+import ch.batbern.companyuser.events.UserCreatedEvent;
 import ch.batbern.companyuser.config.TestAwsConfig;
 import ch.batbern.shared.types.Role;
 import ch.batbern.companyuser.domain.Company;
@@ -29,6 +30,8 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.context.event.ApplicationEvents;
+import org.springframework.test.context.event.RecordApplicationEvents;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -42,6 +45,7 @@ import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.tuple;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
@@ -50,6 +54,7 @@ import static org.hamcrest.Matchers.everyItem;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.startsWith;
 import static org.hamcrest.Matchers.is;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -73,11 +78,15 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 @Import(TestAwsConfig.class)
+@RecordApplicationEvents
 @DisplayName("UserController Integration Tests")
 class UserControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
     private MockMvc mockMvc;
+
+    @Autowired
+    private ApplicationEvents applicationEvents;
 
     @Autowired
     private UserRepository userRepository;
@@ -936,6 +945,30 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.created").value(false))
                 .andExpect(jsonPath("$.user.id").value("john.doe"))
                 .andExpect(jsonPath("$.user.email").value("john.doe@example.com"));
+    }
+
+    @Test
+    @DisplayName("get-or-create records the forwarded user as creator, else system:ems-get-or-create")
+    void should_recordActor_when_getOrCreateCreatesUser() throws Exception {
+        mockMvc.perform(post("/internal/users/get-or-create").contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"email": "actor.forwarded@example.com", "firstName": "Actor", "lastName": "Forwarded"}
+                                """)
+                        .with(jwt().jwt(j -> j.subject("organizer-sub").claim("custom:username", "organizer.alice"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.created").value(true));
+        mockMvc.perform(post("/internal/users/get-or-create").contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"email": "actor.system@example.com", "firstName": "Actor", "lastName": "System"}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.created").value(true));
+
+        assertThat(applicationEvents.stream(UserCreatedEvent.class))
+                .extracting(UserCreatedEvent::getEmail, UserCreatedEvent::getUserId)
+                .containsExactly(
+                        tuple("actor.forwarded@example.com", "organizer.alice"),
+                        tuple("actor.system@example.com", "system:ems-get-or-create"));
     }
 
     /**

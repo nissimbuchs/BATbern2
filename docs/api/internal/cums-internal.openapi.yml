@@ -275,6 +275,9 @@ paths:
         Used by event-management for anonymous event registration and speaker provisioning. A
         verified additional email resolves to its owner; an unverified one answers 409
         `EMAIL_LINKED_TO_ACCOUNT`.
+
+        Actor of a new user (`createdBy` of the `UserCreatedEvent`): the forwarded user's
+        `custom:username`, else `system:ems-get-or-create` (anonymous registration has no user).
       requestBody:
         required: true
         content:

@@ -23,6 +23,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -77,7 +79,7 @@ class SpeakerInvitationControllerIntegrationTest extends AbstractIntegrationTest
 
     /** CUMS's get-or-create answer for {@link #testUsername}. */
     private Reply getOrCreateAnswer(boolean created) throws Exception {
-        java.util.Map<String, Object> body = new java.util.LinkedHashMap<>();
+        Map<String, Object> body = new LinkedHashMap<>();
         body.put("username", testUsername);
         body.put("created", created);
         body.put("companyUpdated", false);

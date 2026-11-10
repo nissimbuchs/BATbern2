@@ -466,11 +466,14 @@ server.verify();
 
 Client contract tests live next to the client (`UserApiClientImplInternalContractTest`,
 `CompanyServiceClientContractTest`, ...); each call runs once with a signed-in JWT user (the header
-is forwarded) and once without (no `Authorization`), per ADR-016 decision 3 and `S2sHeaders`. An IT whose code calls a peer service binds the harness to
+is forwarded) and once without (no `Authorization`), per ADR-016 decision 3 and `S2sHeaders`
+(which forwards a token only while it stays valid for `S2sHeaders.EXPIRY_MARGIN`, 60 s, so a test
+JWT needs an `expiresAt`). An IT whose code calls a peer service binds the harness to
 the context's `RestTemplate` bean in `@BeforeEach` instead of a `@MockitoBean` of the client, and
 calls `close()` in `@AfterEach` (the bean is shared by the cached context);
 `.ignoringMissingAuthorization()` is allowed there only because a `@WithMockUser` caller has no JWT
-to forward. Each provider proves its side in `S2sProviderContractIntegrationTest` (CUMS, EMS, PCS):
+to forward; it applies only to the PCS `ContractServer` bindings, whose public specs require a JWT
+(the EMS `CumsContractHarness` binds only the internal spec, which requires none). Each provider proves its side in `S2sProviderContractIntegrationTest` (CUMS, EMS, PCS):
 every consumed operation runs through the real controller and `ProviderContract` checks the
 response, and the examples, against the same spec. A spec without a usable example for a consumed
 operation gets one. How the harness reads `null`, `format: time` and the e-mail formats (as the

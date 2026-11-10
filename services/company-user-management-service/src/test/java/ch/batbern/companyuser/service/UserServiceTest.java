@@ -225,7 +225,7 @@ class UserServiceTest {
                 .build();
 
         when(userRepository.save(any(User.class))).thenReturn(createdUser);
-        when(securityContext.getCurrentUsername()).thenReturn("admin.user");  // Story 2.6: Returns username from JWT custom:username claim
+        when(securityContext.actorOr(UserService.GET_OR_CREATE_JOB)).thenReturn("admin.user");
 
         UserResponse userResponse = new UserResponse();
         userResponse.setId("new.user");
@@ -301,7 +301,7 @@ class UserServiceTest {
                 .roles(Set.of(Role.ATTENDEE))
                 .build();
         when(userRepository.save(any(User.class))).thenReturn(newDaniel);
-        when(securityContext.getCurrentUsername()).thenReturn("anonymous");
+        when(securityContext.actorOr(UserService.GET_OR_CREATE_JOB)).thenReturn("system:ems-get-or-create");
 
         UserResponse newDanielResponse = new UserResponse();
         newDanielResponse.setId("daniel.berger.2");
@@ -539,7 +539,7 @@ class UserServiceTest {
                 .build();
 
         when(userRepository.save(any(User.class))).thenReturn(createdUser);
-        when(securityContext.getCurrentUsername()).thenReturn("admin.user");  // Story 2.6: Returns username from JWT custom:username claim
+        when(securityContext.actorOr(UserService.GET_OR_CREATE_JOB)).thenReturn("admin.user");
 
         // When
         userService.getOrCreateUser(request);

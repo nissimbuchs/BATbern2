@@ -71,7 +71,9 @@ measured how they call each other on develop `e7f76baf`:
   2026-11-10). Its baseline only shrinks.
 - One header helper for decision 3: shared-kernel `S2sHeaders.forCurrentUser()` forwards the
   user's JWT when there is one and sends none otherwise; CUMS records the forwarded
-  `custom:username`, else `system:<job>` (Epic 17 entry 6).
+  `custom:username`, else `system:<job>` (Epic 17 entry 6). A token that expires within 60 s
+  (`EXPIRY_MARGIN`) is not forwarded: the receiver would answer 401 even on `/internal`, and an
+  `@Async` task may outlive the token; the call then goes out as a system call.
 - `docs/architecture/module-map.md` carries these rules into every agent workflow.
 
 ## Related

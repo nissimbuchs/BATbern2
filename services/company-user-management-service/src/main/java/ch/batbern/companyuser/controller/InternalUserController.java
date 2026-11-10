@@ -1,6 +1,7 @@
 package ch.batbern.companyuser.controller;
 
 import java.util.List;
+import java.util.Map;
 import ch.batbern.companyuser.dto.generated.GetOrCreateUserRequest;
 import ch.batbern.companyuser.dto.generated.GetOrCreateUserResponse;
 import ch.batbern.companyuser.dto.generated.InvitationCredentialsResponse;
@@ -158,7 +159,7 @@ public class InternalUserController {
         return ResponseEntity.ok(response);
     }
 
-    private static void rejectUnknownFields(String schema, java.util.Map<String, Object> unknown) {
+    private static void rejectUnknownFields(String schema, Map<String, Object> unknown) {
         if (unknown != null && !unknown.isEmpty()) {
             throw new UserValidationException("request",
                     "Unknown fields not allowed on " + schema + ": " + unknown.keySet());

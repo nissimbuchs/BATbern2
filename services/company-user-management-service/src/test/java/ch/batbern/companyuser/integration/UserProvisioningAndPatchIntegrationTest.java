@@ -12,6 +12,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
@@ -20,11 +22,15 @@ import org.springframework.test.context.event.RecordApplicationEvents;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.transaction.annotation.Transactional;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.UserStatusType;
 
+import java.util.HashSet;
 import java.util.Set;
 
 import static org.hamcrest.Matchers.is;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -116,8 +122,8 @@ class UserProvisioningAndPatchIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.temporaryPassword").doesNotExist());
 
         User created = userRepository.findByEmailIgnoreCase("newspeaker@example.com").orElseThrow();
-        org.assertj.core.api.Assertions.assertThat(created.getRoles()).contains(Role.SPEAKER);
-        org.assertj.core.api.Assertions.assertThat(applicationEvents.stream(UserCreatedEvent.class))
+        assertThat(created.getRoles()).contains(Role.SPEAKER);
+        assertThat(applicationEvents.stream(UserCreatedEvent.class))
                 .extracting(UserCreatedEvent::getUserId).containsExactly("organizer.alice");
     }
 
@@ -130,8 +136,8 @@ class UserProvisioningAndPatchIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.created", is(true)));
 
         User created = userRepository.findByEmailIgnoreCase("no.jwt@example.com").orElseThrow();
-        org.assertj.core.api.Assertions.assertThat(created.getRoles()).contains(Role.SPEAKER);
-        org.assertj.core.api.Assertions.assertThat(applicationEvents.stream(UserCreatedEvent.class))
+        assertThat(created.getRoles()).contains(Role.SPEAKER);
+        assertThat(applicationEvents.stream(UserCreatedEvent.class))
                 .extracting(UserCreatedEvent::getUserId).containsExactly("system:ems-speaker-workflow");
     }
 
@@ -170,7 +176,7 @@ class UserProvisioningAndPatchIntegrationTest extends AbstractIntegrationTest {
 
         // User row still exists exactly once; role granted exactly once (Set semantics).
         User user = userRepository.findByEmailIgnoreCase("idempotent@example.com").orElseThrow();
-        org.assertj.core.api.Assertions.assertThat(user.getRoles()).contains(Role.SPEAKER);
+        assertThat(user.getRoles()).contains(Role.SPEAKER);
     }
 
     @Test
@@ -181,7 +187,7 @@ class UserProvisioningAndPatchIntegrationTest extends AbstractIntegrationTest {
                 .email("jane@example.com")
                 .firstName("Jane")
                 .lastName("Smith")
-                .roles(new java.util.HashSet<>(Set.of(Role.ATTENDEE)))
+                .roles(new HashSet<>(Set.of(Role.ATTENDEE)))
                 .build());
 
         String body = """
@@ -201,7 +207,7 @@ class UserProvisioningAndPatchIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.created", is(false)));
 
         User reloaded = userRepository.findByEmailIgnoreCase("jane@example.com").orElseThrow();
-        org.assertj.core.api.Assertions.assertThat(reloaded.getRoles()).contains(Role.SPEAKER, Role.ATTENDEE);
+        assertThat(reloaded.getRoles()).contains(Role.SPEAKER, Role.ATTENDEE);
     }
 
     // ============================================================
@@ -216,7 +222,7 @@ class UserProvisioningAndPatchIntegrationTest extends AbstractIntegrationTest {
                 .email("target@example.com")
                 .firstName("Tar")
                 .lastName("Get")
-                .roles(new java.util.HashSet<>(Set.of(Role.SPEAKER)))
+                .roles(new HashSet<>(Set.of(Role.SPEAKER)))
                 .build());
 
         String body = """
@@ -232,8 +238,8 @@ class UserProvisioningAndPatchIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.bio", is("New bio for the next event.")));
 
         User reloaded = userRepository.findByUsername(target.getUsername()).orElseThrow();
-        org.assertj.core.api.Assertions.assertThat(reloaded.getBio()).isEqualTo("New bio for the next event.");
-        org.assertj.core.api.Assertions.assertThat(applicationEvents.stream(UserUpdatedEvent.class))
+        assertThat(reloaded.getBio()).isEqualTo("New bio for the next event.");
+        assertThat(applicationEvents.stream(UserUpdatedEvent.class))
                 .extracting(UserUpdatedEvent::getUserId).containsExactly("organizer.alice");
     }
 
@@ -245,7 +251,7 @@ class UserProvisioningAndPatchIntegrationTest extends AbstractIntegrationTest {
                 .email("self@example.com")
                 .firstName("Self")
                 .lastName("Speaker")
-                .roles(new java.util.HashSet<>(Set.of(Role.SPEAKER)))
+                .roles(new HashSet<>(Set.of(Role.SPEAKER)))
                 .build());
 
         String body = """
@@ -260,7 +266,7 @@ class UserProvisioningAndPatchIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.bio", is("My own bio.")));
 
-        org.assertj.core.api.Assertions.assertThat(applicationEvents.stream(UserUpdatedEvent.class))
+        assertThat(applicationEvents.stream(UserUpdatedEvent.class))
                 .extracting(UserUpdatedEvent::getUserId).containsExactly("system:ems-content-submission");
     }
 
@@ -272,7 +278,7 @@ class UserProvisioningAndPatchIntegrationTest extends AbstractIntegrationTest {
                 .email("self@example.com")
                 .firstName("Self")
                 .lastName("Speaker")
-                .roles(new java.util.HashSet<>(Set.of(Role.SPEAKER)))
+                .roles(new HashSet<>(Set.of(Role.SPEAKER)))
                 .build());
 
         mockMvc.perform(json(patch(PROFILE, "speaker.self"), "{\"bio\": \"Bio\", \"department\": \"Engineering\"}"))
@@ -287,7 +293,7 @@ class UserProvisioningAndPatchIntegrationTest extends AbstractIntegrationTest {
                 .email("empty@example.com")
                 .firstName("Em")
                 .lastName("Pty")
-                .roles(new java.util.HashSet<>(Set.of(Role.SPEAKER)))
+                .roles(new HashSet<>(Set.of(Role.SPEAKER)))
                 .build());
 
         String body = "{}";
@@ -353,11 +359,11 @@ class UserProvisioningAndPatchIntegrationTest extends AbstractIntegrationTest {
 
         // Exactly one row should exist, with the canonical lowercase email.
         long countLower = userRepository.findByEmailIgnoreCase("jane.mixed@example.com").stream().count();
-        org.assertj.core.api.Assertions.assertThat(countLower).isEqualTo(1L);
+        assertThat(countLower).isEqualTo(1L);
     }
 
-    @org.junit.jupiter.params.ParameterizedTest(name = "{0}, admin JWT: {1}")
-    @org.junit.jupiter.params.provider.CsvSource({
+    @ParameterizedTest(name = "{0}, admin JWT: {1}")
+    @CsvSource({
         "ORGANIZER, false", "PARTNER, false", "ATTENDEE, false", "ORGANIZER, true", "PARTNER, true"})
     @DisplayName("provision grants SPEAKER only — any other role is 400, whoever calls (no ADMIN branch)")
     void should_return400_when_roleIsNotSpeaker(String role, boolean adminJwt) throws Exception {
@@ -371,7 +377,7 @@ class UserProvisioningAndPatchIntegrationTest extends AbstractIntegrationTest {
                         {"email": "should.fail@example.com", "role": "%s"}""".formatted(role)))
                 .andExpect(status().isBadRequest());
 
-        org.assertj.core.api.Assertions.assertThat(userRepository.findByEmailIgnoreCase("should.fail@example.com"))
+        assertThat(userRepository.findByEmailIgnoreCase("should.fail@example.com"))
                 .isEmpty();
     }
 
@@ -385,7 +391,7 @@ class UserProvisioningAndPatchIntegrationTest extends AbstractIntegrationTest {
                 .email(email)
                 .firstName("Cred")
                 .lastName("Speaker")
-                .roles(new java.util.HashSet<>(Set.of(Role.SPEAKER)))
+                .roles(new HashSet<>(Set.of(Role.SPEAKER)))
                 .build());
     }
 
@@ -394,7 +400,7 @@ class UserProvisioningAndPatchIntegrationTest extends AbstractIntegrationTest {
     void should_issueFreshPassword_when_calledWithJwt() throws Exception {
         seedSpeaker("cred.speaker", "cred.speaker@example.com");
         cognito.givenLogin("cred.speaker@example.com",
-                software.amazon.awssdk.services.cognitoidentityprovider.model.UserStatusType.FORCE_CHANGE_PASSWORD);
+                UserStatusType.FORCE_CHANGE_PASSWORD);
 
         String body = mockMvc.perform(asOrganizer(post(CREDENTIALS, "cred.speaker")))
                 .andExpect(status().isOk())
@@ -403,7 +409,7 @@ class UserProvisioningAndPatchIntegrationTest extends AbstractIntegrationTest {
                 .andReturn().getResponse().getContentAsString();
 
         // The password the speaker will receive is the one the pool now holds.
-        org.assertj.core.api.Assertions.assertThat(cognito.login("cred.speaker@example.com").orElseThrow().password())
+        assertThat(cognito.login("cred.speaker@example.com").orElseThrow().password())
                 .isEqualTo(objectMapper.readTree(body).get("temporaryPassword").asText());
     }
 
@@ -412,12 +418,12 @@ class UserProvisioningAndPatchIntegrationTest extends AbstractIntegrationTest {
     void should_keepExistingPassword_when_calledWithoutJwt() throws Exception {
         seedSpeaker("cred.confirmed", "cred.confirmed@example.com");
         cognito.givenLogin("cred.confirmed@example.com",
-                software.amazon.awssdk.services.cognitoidentityprovider.model.UserStatusType.CONFIRMED);
+                UserStatusType.CONFIRMED);
 
         mockMvc.perform(post(CREDENTIALS, "cred.confirmed"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.action", is("USE_EXISTING_PASSWORD")))
-                .andExpect(jsonPath("$.temporaryPassword").value(org.hamcrest.Matchers.nullValue()));
+                .andExpect(jsonPath("$.temporaryPassword").value(nullValue()));
     }
 
     @Test
@@ -444,8 +450,8 @@ class UserProvisioningAndPatchIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.created", is(true)));
 
         User created = userRepository.findByEmailIgnoreCase("kim.lee@example.com").orElseThrow();
-        org.assertj.core.api.Assertions.assertThat(created.getFirstName()).isEqualTo("Kim");
-        org.assertj.core.api.Assertions.assertThat(created.getLastName()).isEqualTo("Lee");
+        assertThat(created.getFirstName()).isEqualTo("Kim");
+        assertThat(created.getLastName()).isEqualTo("Lee");
     }
 
     @Test
@@ -478,7 +484,7 @@ class UserProvisioningAndPatchIntegrationTest extends AbstractIntegrationTest {
                 .firstName("Self")
                 .lastName("User")
                 .bio("Original bio")
-                .roles(new java.util.HashSet<>(Set.of(Role.SPEAKER)))
+                .roles(new HashSet<>(Set.of(Role.SPEAKER)))
                 .build());
 
         String body = """
@@ -493,7 +499,7 @@ class UserProvisioningAndPatchIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isBadRequest());
 
         User after = userRepository.findByUsername("speaker.self").orElseThrow();
-        org.assertj.core.api.Assertions.assertThat(after.getBio()).isEqualTo("Original bio");
+        assertThat(after.getBio()).isEqualTo("Original bio");
     }
 
     // ============================================================
@@ -525,20 +531,20 @@ class UserProvisioningAndPatchIntegrationTest extends AbstractIntegrationTest {
         // username, so a regression that passes the wrong identifier (e.g. the email) is caught.
         User created = userRepository.findByEmailIgnoreCase("cognito.new@example.com").orElseThrow();
         InMemoryCognito.Login login = cognito.login("cognito.new@example.com").orElseThrow();
-        org.assertj.core.api.Assertions.assertThat(login.attribute("preferred_username"))
+        assertThat(login.attribute("preferred_username"))
                 .isEqualTo(created.getUsername());
-        org.assertj.core.api.Assertions.assertThat(login.attribute("email_verified")).isEqualTo("true");
-        org.assertj.core.api.Assertions.assertThat(login.attribute("custom:role")).isEqualTo("UNUSED");
+        assertThat(login.attribute("email_verified")).isEqualTo("true");
+        assertThat(login.attribute("custom:role")).isEqualTo("UNUSED");
         // A throwaway temporary password the pool accepted (its policy runs in the fake).
-        org.assertj.core.api.Assertions.assertThat(login.status())
-                .isEqualTo(software.amazon.awssdk.services.cognitoidentityprovider.model.UserStatusType
+        assertThat(login.status())
+                .isEqualTo(UserStatusType
                         .FORCE_CHANGE_PASSWORD);
-        org.assertj.core.api.Assertions.assertThat(login.password()).isNotNull().hasSizeGreaterThanOrEqualTo(8);
-        org.assertj.core.api.Assertions.assertThat(cognito.logins()).hasSize(1);
+        assertThat(login.password()).isNotNull().hasSizeGreaterThanOrEqualTo(8);
+        assertThat(cognito.logins()).hasSize(1);
         // The profile is linked to the new login's sub, as the existing-user branch and the
         // issue-credentials self-heal already do, so the PreTokenGeneration Lambda finds it by its
         // primary key on the first sign-in instead of relying on the e-mail fallback.
-        org.assertj.core.api.Assertions.assertThat(created.getCognitoUserId()).isEqualTo(login.sub());
+        assertThat(created.getCognitoUserId()).isEqualTo(login.sub());
     }
 
     @Test
@@ -550,7 +556,7 @@ class UserProvisioningAndPatchIntegrationTest extends AbstractIntegrationTest {
                 .email("existing.alice@example.com")
                 .firstName("Existing")
                 .lastName("Alice")
-                .roles(new java.util.HashSet<>(Set.of(Role.ATTENDEE)))
+                .roles(new HashSet<>(Set.of(Role.ATTENDEE)))
                 .build());
 
         String body = """
@@ -570,19 +576,19 @@ class UserProvisioningAndPatchIntegrationTest extends AbstractIntegrationTest {
 
         // Role granted...
         User reloaded = userRepository.findByEmailIgnoreCase("existing.alice@example.com").orElseThrow();
-        org.assertj.core.api.Assertions.assertThat(reloaded.getRoles()).contains(Role.SPEAKER);
+        assertThat(reloaded.getRoles()).contains(Role.SPEAKER);
 
         // ... and the existing-user branch self-heals the Cognito shell via the idempotent
         // `adminCreateUserSilently` (Epic 11.E.7 fix 13a753e5): the pool had no login for the
         // address, so it has one now, linked to the profile. The User table still has exactly one
         // row for this email (no duplicate row created).
         InMemoryCognito.Login login = cognito.login("existing.alice@example.com").orElseThrow();
-        org.assertj.core.api.Assertions.assertThat(login.attribute("preferred_username")).isEqualTo("existing.alice");
-        org.assertj.core.api.Assertions.assertThat(reloaded.getCognitoUserId()).isEqualTo(login.sub());
+        assertThat(login.attribute("preferred_username")).isEqualTo("existing.alice");
+        assertThat(reloaded.getCognitoUserId()).isEqualTo(login.sub());
         long matchingRows = userRepository.findAll().stream()
                 .filter(u -> "existing.alice@example.com".equalsIgnoreCase(u.getEmail()))
                 .count();
-        org.assertj.core.api.Assertions.assertThat(matchingRows).isEqualTo(1);
+        assertThat(matchingRows).isEqualTo(1);
     }
 
     @Test
@@ -593,7 +599,7 @@ class UserProvisioningAndPatchIntegrationTest extends AbstractIntegrationTest {
         // in-memory pool, so its UsernameExistsException swallow runs too: no new login, the
         // existing one untouched, and the User + role rows persist.
         InMemoryCognito.Login existing = cognito.givenLogin("race.bob@example.com",
-                software.amazon.awssdk.services.cognitoidentityprovider.model.UserStatusType.CONFIRMED);
+                UserStatusType.CONFIRMED);
 
         String body = """
                 {
@@ -611,9 +617,9 @@ class UserProvisioningAndPatchIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.created", is(true)));
 
         User created = userRepository.findByEmailIgnoreCase("race.bob@example.com").orElseThrow();
-        org.assertj.core.api.Assertions.assertThat(created.getRoles()).contains(Role.SPEAKER);
-        org.assertj.core.api.Assertions.assertThat(cognito.logins()).hasSize(1);
-        org.assertj.core.api.Assertions.assertThat(cognito.login("race.bob@example.com").orElseThrow().status())
+        assertThat(created.getRoles()).contains(Role.SPEAKER);
+        assertThat(cognito.logins()).hasSize(1);
+        assertThat(cognito.login("race.bob@example.com").orElseThrow().status())
                 .isEqualTo(existing.status());
     }
 }

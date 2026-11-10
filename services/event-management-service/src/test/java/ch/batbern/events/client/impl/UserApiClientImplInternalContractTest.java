@@ -37,8 +37,10 @@ import org.springframework.test.web.client.ExpectedCount;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestTemplate;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Consumer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -100,7 +102,8 @@ class UserApiClientImplInternalContractTest {
     /** A user signed in with a JWT (as on a request thread), or nobody (scheduler, SQS, anonymous). */
     private static void signedIn(boolean user) {
         if (user) {
-            Jwt jwt = Jwt.withTokenValue(TOKEN).header("alg", "none").claim("sub", "organizer").build();
+            Jwt jwt = Jwt.withTokenValue(TOKEN).header("alg", "none").claim("sub", "organizer")
+                    .issuedAt(Instant.now()).expiresAt(Instant.now().plusSeconds(3600)).build();
             SecurityContextHolder.getContext().setAuthentication(new JwtAuthenticationToken(jwt));
         } else {
             SecurityContextHolder.clearContext();
@@ -108,7 +111,7 @@ class UserApiClientImplInternalContractTest {
     }
 
     /** The JWT is forwarded when a user is signed in, and no {@code Authorization} is sent otherwise. */
-    private static java.util.function.Consumer<ClientHttpRequest> jwtForwardedIff(boolean user) {
+    private static Consumer<ClientHttpRequest> jwtForwardedIff(boolean user) {
         return request -> {
             if (user) {
                 assertThat(request.getHeaders().getFirst(HttpHeaders.AUTHORIZATION)).isEqualTo("Bearer " + TOKEN);

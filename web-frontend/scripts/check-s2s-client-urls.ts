@@ -13,10 +13,11 @@
  * source scan, not ArchUnit: ArchUnit cannot see string literals.
  *
  * Findings are compared with the committed baseline `scripts/s2s-client-urls-baseline.txt`, keyed
- * by file + URL literal (never by line). Any difference fails (exit 1):
- *   RAISED   a call site the baseline does not list: call the provider's `/internal` operation
- *            (docs/api/internal/<provider>-internal.openapi.yml) instead
- *   STALE    a baselined call site that is gone (good): run `--update` and commit
+ * by file + URL literal (never by line), one line per occurrence: a file with the same literal twice
+ * has two identical lines, and the counts are compared. Any difference fails (exit 1):
+ *   RAISED   a call site the baseline does not list (or one more occurrence than it lists): call
+ *            the provider's `/internal` operation (docs/api/internal/<provider>-internal.openapi.yml)
+ *   STALE    a baselined call site that is gone, or fewer occurrences (good): `--update`, commit
  * so the baseline only ever shrinks. `--update` refuses (exit 1, baseline untouched) to write a
  * call site the committed baseline does not list, unless `--allow-growth` is given, which is for
  * an owner-accepted exception only.
@@ -161,7 +162,7 @@ const BASELINE_HEADER = [
   `# Policy: ${POLICY_POINTER}.`,
   `# Existing call sites only. Every line has exactly one owner group in ${OWNERS_FILE}:`,
   '# the story that moves or deletes the call, or an accepted exception with its reason.',
-  '# Format: <file> TAB <URL literal>, sorted.',
+  '# Format: <file> TAB <URL literal>, sorted, one line per occurrence.',
 ];
 
 export function formatBaseline(entries: BaselineEntry[]): string {
@@ -171,7 +172,6 @@ export function formatBaseline(entries: BaselineEntry[]): string {
 export function parseBaseline(text: string): { entries: BaselineEntry[]; errors: string[] } {
   const entries: BaselineEntry[] = [];
   const errors: string[] = [];
-  const seen = new Set<string>();
   text.split('\n').forEach((raw, idx) => {
     const line = raw.trim();
     if (!line || line.startsWith('#')) return;
@@ -180,13 +180,7 @@ export function parseBaseline(text: string): { entries: BaselineEntry[]; errors:
       errors.push(`BAD LINE     baseline line ${idx + 1}: ${line}  (want <file>\\t<URL literal>)`);
       return;
     }
-    const entry = { file: parts[0], url: parts[1] };
-    if (seen.has(siteKey(entry))) {
-      errors.push(`BAD LINE     baseline line ${idx + 1}: duplicate ${line}`);
-      return;
-    }
-    seen.add(siteKey(entry));
-    entries.push(entry);
+    entries.push({ file: parts[0], url: parts[1] });
   });
   return { entries, errors };
 }
@@ -204,15 +198,39 @@ export interface CompareResult {
 const raisedLine = (c: CallSite) =>
   `RAISED       ${c.file}:${c.line}  "${c.url}"  a client calls another service's public API`;
 
+/** Occurrences per file + URL literal. */
+function countByKey(items: BaselineEntry[]): Map<string, number> {
+  const counts = new Map<string, number>();
+  for (const i of items) counts.set(siteKey(i), (counts.get(siteKey(i)) ?? 0) + 1);
+  return counts;
+}
+
+/** The sites beyond what `baseline` allows for their key (the later occurrences of a key first). */
+export function sitesAbove(sites: CallSite[], baseline: BaselineEntry[]): CallSite[] {
+  const allowed = countByKey(baseline);
+  const added: CallSite[] = [];
+  for (const c of sites) {
+    const left = allowed.get(siteKey(c)) ?? 0;
+    if (left > 0) allowed.set(siteKey(c), left - 1);
+    else added.push(c);
+  }
+  return added;
+}
+
 export function compare(sites: CallSite[], baselineText: string): CompareResult {
   const baseline = parseBaseline(baselineText);
   const problems = [...baseline.errors];
-  const base = new Set(baseline.entries.map(siteKey));
-  const now = new Set(sites.map(siteKey));
-  const added = sites.filter((c) => !base.has(siteKey(c)));
-  const gone = baseline.entries.filter((e) => !now.has(siteKey(e)));
+  const added = sitesAbove(sites, baseline.entries);
+  const now = countByKey(sites);
+  const gone: BaselineEntry[] = [];
+  for (const e of baseline.entries) {
+    const left = now.get(siteKey(e)) ?? 0;
+    if (left > 0) now.set(siteKey(e), left - 1);
+    else gone.push(e);
+  }
   for (const c of added) problems.push(raisedLine(c));
-  for (const e of gone) problems.push(`STALE        ${e.file}  "${e.url}"  no longer called`);
+  for (const e of gone)
+    problems.push(`STALE        ${e.file}  "${e.url}"  occurrence no longer found`);
   if (added.length) {
     problems.push(
       `${added.length} new call site(s) of ${PUBLIC_API} in a client. Call the provider's /internal operation (docs/api/internal/) instead (${POLICY_POINTER}).`
@@ -338,8 +356,7 @@ export function run(argv: string[], paths: RunPaths): number {
   const readText = (path: string) => (existsSync(path) ? readFileSync(path, 'utf8') : '');
   const ownersText = readText(paths.ownersPath);
   if (argv.includes('--update')) {
-    const committed = new Set(parseBaseline(readText(paths.baselinePath)).entries.map(siteKey));
-    const added = sites.filter((c) => !committed.has(siteKey(c)));
+    const added = sitesAbove(sites, parseBaseline(readText(paths.baselinePath)).entries);
     if (added.length && !argv.includes(ALLOW_GROWTH_FLAG)) {
       for (const c of added) console.log(raisedLine(c));
       console.log(

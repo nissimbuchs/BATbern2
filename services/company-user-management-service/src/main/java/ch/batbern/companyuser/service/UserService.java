@@ -71,6 +71,12 @@ import java.util.Set;
 @Slf4j
 public class UserService {
 
+    /**
+     * The system actor of {@code POST /internal/users/get-or-create} without a forwarded JWT (EMS
+     * anonymous registration, speaker invitation from a job): {@code system:ems-get-or-create}.
+     */
+    public static final String GET_OR_CREATE_JOB = "ems-get-or-create";
+
     private final UserRepository userRepository;
     private final UserAdditionalEmailRepository additionalEmailRepository;
     private final CognitoIntegrationService cognitoService;
@@ -498,7 +504,7 @@ public class UserService {
                 throw new EmailLinkedToAccountException(request.getEmail());
             }
             log.info("Creating new user: {}", LoggingUtils.maskEmail(request.getEmail()));
-            User newUser = createNewUser(request, getAuditUsername());
+            User newUser = createNewUser(request, securityContext.actorOr(GET_OR_CREATE_JOB));
             return new GetOrCreateUserResponse()
                     .username(newUser.getUsername())
                     .created(true)

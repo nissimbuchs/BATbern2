@@ -27,13 +27,19 @@ const repo = join(
   'repo'
 );
 const CLIENT = 'services/demo-service/src/main/java/ch/demo/client/impl/DemoClientImpl.java';
+const DUP = 'services/demo-service/src/main/java/ch/demo/client/impl/DupClientImpl.java';
 
 const BASELINE_ALL = formatBaseline([
   { file: CLIENT, url: '/api/v1/x' },
   { file: CLIENT, url: '/api/v1/partners?include=company&size=200' },
   { file: CLIENT, url: 'GET /api/v1/in-text-block' },
   { file: CLIENT, url: '/api/v1/after-char' },
+  { file: DUP, url: '/api/v1/dup' },
+  { file: DUP, url: '/api/v1/dup' },
 ]);
+
+/** BASELINE_ALL with one of the two identical /api/v1/dup lines removed. */
+const BASELINE_ONE_DUP = BASELINE_ALL.replace(`${DUP}\t/api/v1/dup\n`, '');
 
 const OWNERS_ALL = `# comment\nD1\t6b\tdemo-service/.*/client/\t/api/v1/\n`;
 
@@ -48,7 +54,7 @@ function tempPaths(baseline: string, owners: string) {
 
 describe('listClientFiles', () => {
   it('reads main Java sources under a client directory only, not services or tests', () => {
-    expect(listClientFiles(repo)).toEqual([CLIENT]);
+    expect(listClientFiles(repo)).toEqual([CLIENT, DUP]);
   });
 });
 
@@ -96,7 +102,7 @@ describe('compare', () => {
     const result = compare(sites, baseline);
     expect(result.exitCode).toBe(1);
     expect(result.problems[0]).toBe(
-      `STALE        ${CLIENT}  "/api/v1/moved-away"  no longer called`
+      `STALE        ${CLIENT}  "/api/v1/moved-away"  occurrence no longer found`
     );
   });
 
@@ -117,7 +123,7 @@ describe('owners', () => {
     const owners = `A\t6b\tdemo-service\t/api/v1/x\nB\t8\tdemo-service\t/api/v1/(x|partners)\nC\t17.6\tnowhere\t/api/v1/\n`;
     const problems = checkOwners(entries, owners);
     expect(problems.filter((p) => p.startsWith('AMBIGUOUS'))).toHaveLength(1);
-    expect(problems.filter((p) => p.startsWith('UNOWNED'))).toHaveLength(2);
+    expect(problems.filter((p) => p.startsWith('UNOWNED'))).toHaveLength(4);
     expect(problems).toContain(
       'STALE OWNER  group C (17.6) matches no baseline line: remove it from web-frontend/scripts/s2s-client-urls-owners.txt'
     );
@@ -156,5 +162,50 @@ describe('run', () => {
     expect(readFileSync(grow.baselinePath, 'utf8')).toBe(before);
     expect(run(['--update', '--allow-growth'], grow)).toBe(0);
     expect(readFileSync(grow.baselinePath, 'utf8')).toBe(BASELINE_ALL);
+  });
+});
+
+describe('a literal that occurs twice in one file', () => {
+  const { sites } = scanTree(repo);
+
+  it('is two sites, the baseline holds a line per occurrence and parses cleanly', () => {
+    expect(sites.filter((c) => c.file === DUP).map((c) => [c.url, c.line])).toEqual([
+      ['/api/v1/dup', 7],
+      ['/api/v1/dup', 11],
+    ]);
+    expect(parseBaseline(BASELINE_ALL).errors).toEqual([]);
+    expect(compare(sites, BASELINE_ALL)).toEqual({ exitCode: 0, problems: [] });
+  });
+
+  it('a second occurrence of a baselined literal is RAISED', () => {
+    const result = compare(sites, BASELINE_ONE_DUP);
+    expect(result.exitCode).toBe(1);
+    expect(result.problems[0]).toBe(
+      `RAISED       ${DUP}:11  "/api/v1/dup"  a client calls another service's public API`
+    );
+  });
+
+  it('one occurrence fewer than baselined is STALE', () => {
+    const result = compare(
+      sites.filter((c) => !(c.file === DUP && c.line === 11)),
+      BASELINE_ALL
+    );
+    expect(result.exitCode).toBe(1);
+    expect(result.problems[0]).toBe(
+      `STALE        ${DUP}  "/api/v1/dup"  occurrence no longer found`
+    );
+  });
+
+  it('--update writes both lines, the result parses and passes, and growth is refused', () => {
+    const paths = tempPaths(BASELINE_ALL, OWNERS_ALL);
+    expect(run(['--update'], paths)).toBe(0);
+    const written = readFileSync(paths.baselinePath, 'utf8');
+    expect(written).toBe(BASELINE_ALL);
+    expect(parseBaseline(written).errors).toEqual([]);
+    expect(run([], paths)).toBe(0);
+
+    const grow = tempPaths(BASELINE_ONE_DUP, OWNERS_ALL);
+    expect(run(['--update'], grow)).toBe(1);
+    expect(readFileSync(grow.baselinePath, 'utf8')).toBe(BASELINE_ONE_DUP);
   });
 });
