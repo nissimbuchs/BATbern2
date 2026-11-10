@@ -3,14 +3,14 @@ title: 'Mail Center composer clean-up (16.8c)'
 type: 'refactor'
 ticket: '168c'
 created: '2026-11-09'
-status: 'in-progress'
+status: 'in-review'
 baseline_revision: 'b13922c2fa7a7fe78b174d893999a393f56fb65f'
 route: 'full'
 route_source: 'auto'
 risk: 'medium'
-review: ''
-review_source: ''
-lenses_ran: []
+review: 'quick'
+review_source: 'pinned'
+lenses_ran: ['quick']
 review_loop_iteration: 0
 context:
   - '{project-root}/docs/architecture/module-map.md'
@@ -127,16 +127,31 @@ Verification (run, results in `~/.cache/batbern-test-logs/168c-*.log`):
 - Local dev (BATbern60): the ten retired paths sampled (newsletter send, history, venue preview) answer 404. Composer sends: venue (one mail, To venue, Cc catering, captured), newsletter (1057 queued, 4 non-reserved addresses captured, the rest refused by the reserved-domain wall as designed), registrants slides-online and deregistration call (captured for the non-reserved address), speakers own text (all 4 local speaker addresses are reserved, so none captured; the organizer test send of the same mail was captured). No speaker in BATbern59–66 is in a reminder state locally, so the reminder template path was verified by the ITs only. Newsletter queued 37 ms after a registrant own-text send: 202 (before the fix: 409).
 - Bruno: the two new `mails-preview-speakers-*` files and `mails-preview-invalid.bru` run against local dev: pass, no "Skipping invalid file".
 
-Seen, not changed:
-- The venue send answers 500 when the stored venue contacts hold a reserved-domain address (`ReservedEmailRecipientException` reaches the catch-all). Only the anonymized local snapshot has such addresses; production holds real ones. For the local check the local setting was set to simulator addresses and restored afterwards.
-- `GET /newsletter/subscribers/count` has no frontend caller any more (see change log).
+Review pass 1 fixes (2026-11-10, see the Review Triage Log), each test-first where it is a bug:
+- The newsletter guard covers PENDING and IN_PROGRESS (IT: a queued PENDING newsletter makes a second send answer 409).
+- A reserved-domain venue contact: the mail center advice answers 422 (`details.code = RESERVED_DOMAIN`, the domain, not the address); saving `venue.coordination.config` refuses such a contact with 400. ITs for both.
+- `GET /newsletter/subscribers/count`, `SubscriberCountResponse`, the controller method and its tests are removed.
+- Touch rule, backend: `NewsletterSendIntegrationTest` and `ManualSpeakerReminderIntegrationTest` (real repositories, SesRecorder, CumsContractHarness) replace the mock-verify unit tests of the changed methods; `SlidesOnlineEmailServiceTest` is deleted, its per-registrant cancel link case moved to `SlidesOnlineIntegrationTest`, which now scopes its assertions and cleanup to its own event and addresses.
+- Touch rule, frontend: `useNewsletter`, `useSpeakerPoolHooks`, `newsletterService`, `speakerPoolService` tests run on the MSW harness.
+- Spec info text of `event-newsletter-api` and the 06-backend Retry bullet rewritten.
+- Ratchet after the pass: 796 (from 802).
 
 ## Plan Change Log
 
 - `VenueRecipientRole` not moved to `useVenueCoordinationConfig.ts`: `VenueRecipientFields` uses the composer's existing `VenueRole` (same type), so there is one name, not two.
-- Frontend `useSubscriberCount`/`getSubscriberCount` deleted too: only the removed newsletter tab used them. The backend `GET /newsletter/subscribers/count` stays (not in the owner's list); it has no frontend caller now.
+- `GET /newsletter/subscribers/count` removed too (frontend hook and service, backend operation): only the removed newsletter tab used it (review pass 1).
 
 ## Review Triage Log
+
+Pass 1 (quick lens, 2026-11-10): high 1, medium 5, low 3, false 0. All patches, under the owner's no-defer rule (2026-11-09).
+- high, patch: the newsletter duplicate-send guard only checks IN_PROGRESS. A second send while the first is PENDING (queued, before `markInProgress`) mails every subscriber twice. Fix: the guard covers PENDING and IN_PROGRESS, with an IT.
+- medium, patch: the venue send answers 500 when the stored contact is on a reserved domain (`ReservedEmailRecipientException` reaches the catch-all). Fix: a mail-center 4xx mapping with a clear message, plus validation of the venue config on write against reserved domains, with ITs.
+- medium, patch: the dead `GET /newsletter/subscribers/count` (only the deleted tab used it). Fix: remove the operation, schema, controller method and tests; the baselines shrink.
+- medium, patch, touch rule: the backend unit tests of changed methods (`SpeakerReminderServiceTest` ManualReminders, `NewsletterEmailServiceTest`, `SlidesOnlineEmailServiceTest`) assert via verify on own-code mocks. Fix: move the behaviour to ITs (SesRecorder, real repositories, CumsContractHarness) and delete the mock-verify tests they replace.
+- medium, patch, touch rule: the frontend tests `useNewsletter`, `useSpeakerPoolHooks`, `newsletterService`, `speakerPoolService` still `vi.mock` own services. Fix: move them to the MSW harness; the ratchet shrinks.
+- medium, patch: `SlidesOnlineIntegrationTest` asserts on the whole `newsletter_sends` table and deletes every simulator subscriber. Fix: scope it to the class's event and class-scoped addresses.
+- low, patch: stale newsletter spec wording at L5 and L506.
+- low, patch: the garbled Retry sentence at 06-backend L722.
 
 ## Design Notes
 
