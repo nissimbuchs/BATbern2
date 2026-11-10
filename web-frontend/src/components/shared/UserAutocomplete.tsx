@@ -154,7 +154,7 @@ export const UserAutocomplete: React.FC<UserAutocompleteProps> = ({
                   {option.email}
                 </Typography>
               )}
-              {option.roles && option.roles.length > 0 && (
+              {option.roles.length > 0 && (
                 <Typography variant="caption" color="text.secondary">
                   Role: {option.roles.join(', ')}
                 </Typography>

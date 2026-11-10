@@ -29,10 +29,12 @@ import { I18nextProvider } from 'react-i18next';
 import { BrowserRouter } from 'react-router-dom';
 import i18n from '@/i18n/config';
 import type { SessionUI } from '@/types/event.types';
+import { aSession } from '@/test/fixtures';
 
 // Mock data - Based on wireframe lines 83-101
 const mockSessions: SessionUI[] = [
   {
+    ...aSession(),
     id: 'session-1',
     sessionSlug: 'session-1',
     eventCode: 'BAT54',
@@ -53,6 +55,7 @@ const mockSessions: SessionUI[] = [
     hasPresentation: true, // Story 5.9: Complete (✓)
   },
   {
+    ...aSession(),
     id: 'session-2',
     sessionSlug: 'session-2',
     eventCode: 'BAT54',
@@ -73,6 +76,7 @@ const mockSessions: SessionUI[] = [
     hasPresentation: false,
   },
   {
+    ...aSession(),
     id: 'session-3',
     sessionSlug: 'session-3',
     eventCode: 'BAT54',
@@ -94,6 +98,7 @@ const mockSessions: SessionUI[] = [
   },
   // Slots 4-12 for full 12-slot display
   {
+    ...aSession(),
     id: 'session-4',
     sessionSlug: 'session-4',
     eventCode: 'BAT54',
@@ -106,6 +111,7 @@ const mockSessions: SessionUI[] = [
     materialsStatus: 'NONE',
   },
   {
+    ...aSession(),
     id: 'session-5',
     sessionSlug: 'session-5',
     eventCode: 'BAT54',
@@ -118,6 +124,7 @@ const mockSessions: SessionUI[] = [
     materialsStatus: 'NONE',
   },
   {
+    ...aSession(),
     id: 'session-6',
     sessionSlug: 'session-6',
     eventCode: 'BAT54',
@@ -130,6 +137,7 @@ const mockSessions: SessionUI[] = [
     materialsStatus: 'NONE',
   },
   {
+    ...aSession(),
     id: 'session-7',
     sessionSlug: 'session-7',
     eventCode: 'BAT54',
@@ -142,6 +150,7 @@ const mockSessions: SessionUI[] = [
     materialsStatus: 'NONE',
   },
   {
+    ...aSession(),
     id: 'session-8',
     sessionSlug: 'session-8',
     eventCode: 'BAT54',
@@ -154,6 +163,7 @@ const mockSessions: SessionUI[] = [
     materialsStatus: 'NONE',
   },
   {
+    ...aSession(),
     id: 'session-9',
     sessionSlug: 'session-9',
     eventCode: 'BAT54',
@@ -166,6 +176,7 @@ const mockSessions: SessionUI[] = [
     materialsStatus: 'NONE',
   },
   {
+    ...aSession(),
     id: 'session-10',
     sessionSlug: 'session-10',
     eventCode: 'BAT54',
@@ -178,6 +189,7 @@ const mockSessions: SessionUI[] = [
     materialsStatus: 'NONE',
   },
   {
+    ...aSession(),
     id: 'session-11',
     sessionSlug: 'session-11',
     eventCode: 'BAT54',
@@ -190,6 +202,7 @@ const mockSessions: SessionUI[] = [
     materialsStatus: 'NONE',
   },
   {
+    ...aSession(),
     id: 'session-12',
     sessionSlug: 'session-12',
     eventCode: 'BAT54',
@@ -698,6 +711,7 @@ describe('SpeakersSessionsTable - Materials Status (Story 5.9 - AC2)', () => {
 
   it('should_showMissingIcon_when_noMaterialsUploaded', () => {
     const sessionWithNoMaterials: SessionUI = {
+      ...aSession(),
       sessionSlug: 'test-session',
       eventCode: 'BAT54',
       language: 'de',
@@ -724,6 +738,7 @@ describe('SpeakersSessionsTable - Materials Status (Story 5.9 - AC2)', () => {
 
   it('should_showCompleteIcon_when_presentationExists', () => {
     const sessionWithPresentation: SessionUI = {
+      ...aSession(),
       sessionSlug: 'test-session',
       eventCode: 'BAT54',
       language: 'de',
@@ -752,6 +767,7 @@ describe('SpeakersSessionsTable - Materials Status (Story 5.9 - AC2)', () => {
   it('should_openMaterialsTab_when_materialsButtonClicked', async () => {
     const user = userEvent.setup();
     const testSession: SessionUI = {
+      ...aSession(),
       sessionSlug: 'test-session',
       eventCode: 'BAT54',
       language: 'de',

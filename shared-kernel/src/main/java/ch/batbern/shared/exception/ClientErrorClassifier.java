@@ -4,6 +4,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.ErrorResponse;
 
 import java.sql.SQLException;
@@ -22,6 +23,8 @@ import java.util.Optional;
  * <ul>
  *   <li>Spring MVC exceptions implementing {@link ErrorResponse} carry their own status. A 4xx
  *       there (missing parameter/header, 404 no resource, 405, 406, 415) is kept.</li>
+ *   <li>{@link HttpMessageNotReadableException}: a body that is not JSON or does not bind (an
+ *       unknown enum value) is a 400 with a fixed message (Story 4.9).</li>
  *   <li>SQLState {@code 22021} ({@code character_not_in_repertoire}): PostgreSQL rejects a NUL
  *       byte in text input. Only a client can put one there.</li>
  * </ul>
@@ -59,6 +62,11 @@ public final class ClientErrorClassifier {
         if (ex instanceof ErrorResponse errorResponse
                 && errorResponse.getStatusCode().is4xxClientError()) {
             return Optional.of(new ClientError(errorResponse.getStatusCode(), detailOf(errorResponse)));
+        }
+        if (ex instanceof HttpMessageNotReadableException) {
+            // Malformed JSON or a value Jackson cannot bind (an unknown enum constant). The
+            // parser's message names our classes, so it is not passed on (Story 4.9).
+            return Optional.of(new ClientError(HttpStatus.BAD_REQUEST, "Malformed request body"));
         }
         if (hasSqlState(ex, SQLSTATE_INVALID_CHARACTER)) {
             return Optional.of(new ClientError(HttpStatus.BAD_REQUEST, "Request contains invalid characters"));

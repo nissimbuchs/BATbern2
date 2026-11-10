@@ -132,10 +132,12 @@ public class AiAssistController implements AiAssistApi {
 
     @Override
     @PreAuthorize("hasRole('ORGANIZER')")
-    public ResponseEntity<AbstractAnalysisResponse> analyzeAbstract(UUID speakerId) {
-        SpeakerPool pool = speakerPoolRepository.findById(speakerId)
+    public ResponseEntity<AbstractAnalysisResponse> analyzeAbstract(String eventCode, UUID speakerId) {
+        Event event = eventRepository.findByEventCode(eventCode)
+                .orElseThrow(() -> new EventNotFoundException("Event not found: " + eventCode));
+        SpeakerPool pool = speakerPoolRepository.findByIdAndEventId(speakerId, event.getId())
                 .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND, "Speaker pool entry not found: " + speakerId));
+                        HttpStatus.NOT_FOUND, "Speaker pool entry not found in " + eventCode + ": " + speakerId));
 
         String sessionTitle = "";
         String abstractText = "";

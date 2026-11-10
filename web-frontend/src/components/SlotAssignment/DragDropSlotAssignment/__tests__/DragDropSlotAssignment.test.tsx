@@ -22,6 +22,7 @@ import i18n from '@/i18n/config';
 import { DragDropSlotAssignment } from '../DragDropSlotAssignment';
 import { useSlotAssignment } from '@/hooks/useSlotAssignment/useSlotAssignment';
 import type { Session } from '@/types/event.types';
+import { aSession, aSessionSpeaker } from '@/test/fixtures';
 
 // Mock useSlotAssignment hook
 vi.mock('@/hooks/useSlotAssignment/useSlotAssignment', () => ({
@@ -85,6 +86,7 @@ vi.mock('@dnd-kit/core', () => ({
 
 const mockUnassignedSessions: Session[] = [
   {
+    ...aSession(),
     sessionSlug: 'session-1',
     eventCode: 'BATbern142',
     language: 'de',
@@ -94,6 +96,7 @@ const mockUnassignedSessions: Session[] = [
     room: null,
     speakers: [
       {
+        ...aSessionSpeaker(),
         username: 'john.doe',
         firstName: 'John',
         lastName: 'Doe',
@@ -104,6 +107,7 @@ const mockUnassignedSessions: Session[] = [
     ],
   },
   {
+    ...aSession(),
     sessionSlug: 'session-2',
     eventCode: 'BATbern142',
     language: 'de',
@@ -113,6 +117,7 @@ const mockUnassignedSessions: Session[] = [
     room: null,
     speakers: [
       {
+        ...aSessionSpeaker(),
         username: 'jane.smith',
         firstName: 'Jane',
         lastName: 'Smith',
@@ -478,6 +483,7 @@ describe('DragDropSlotAssignment Component', () => {
       // AC1: dragging a pool speaker onto an occupied slot INSERTs (push + reflow)
       const { useEvent } = await import('@/hooks/useEvents');
       const occupant: Session = {
+        ...aSession(),
         sessionSlug: 'occupant-session',
         eventCode: mockEventCode,
         language: 'de',
@@ -530,6 +536,7 @@ describe('DragDropSlotAssignment Component', () => {
       // target, occupant marked moved) + an "insert" hint — before committing.
       const { useEvent } = await import('@/hooks/useEvents');
       const occupant: Session = {
+        ...aSession(),
         sessionSlug: 'occupant-session',
         eventCode: mockEventCode,
         language: 'de',
@@ -582,6 +589,7 @@ describe('DragDropSlotAssignment Component', () => {
       // 15.3: each assigned slot has a ✕ that returns the session to the pool
       const { useEvent } = await import('@/hooks/useEvents');
       const occupant: Session = {
+        ...aSession(),
         sessionSlug: 'occupant-session',
         eventCode: mockEventCode,
         language: 'de',
@@ -628,6 +636,7 @@ describe('DragDropSlotAssignment Component', () => {
       // AC2: dragging an already-assigned speaker onto another occupied slot SWAPs
       const { useEvent } = await import('@/hooks/useEvents');
       const a: Session = {
+        ...aSession(),
         sessionSlug: 'sess-a',
         eventCode: mockEventCode,
         language: 'de',
@@ -638,6 +647,7 @@ describe('DragDropSlotAssignment Component', () => {
         speakers: [],
       };
       const b: Session = {
+        ...aSession(),
         sessionSlug: 'sess-b',
         eventCode: mockEventCode,
         language: 'de',
@@ -792,6 +802,7 @@ describe('DragDropSlotAssignment Component', () => {
       // Provide an event session assigned to the 09:00 Main Hall slot so the
       // session-title Typography actually renders in a timeline cell.
       const assignedSession: Session = {
+        ...aSession(),
         sessionSlug: 'assigned-session',
         eventCode: mockEventCode,
         language: 'de',
@@ -801,6 +812,7 @@ describe('DragDropSlotAssignment Component', () => {
         room: 'Main Hall',
         speakers: [
           {
+            ...aSessionSpeaker(),
             username: 'john.doe',
             firstName: 'John',
             lastName: 'Doe',

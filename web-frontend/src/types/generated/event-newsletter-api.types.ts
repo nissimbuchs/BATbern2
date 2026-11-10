@@ -166,26 +166,6 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/newsletter/subscribers/count': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Active subscriber count (ORGANIZER)
-     * @description Cheap COUNT query used by the newsletter tab to display subscriber totals.
-     */
-    get: operations['getSubscriberCount'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
   '/newsletter/subscribers': {
     parameters: {
       query?: never;
@@ -271,151 +251,12 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/events/{eventCode}/registrant-notices/preview': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Preview a registrant-notice mail in a chosen language (ORGANIZER)
-     * @description Story 7.3 hardening — renders a REGISTRANT_NOTICE-category template (e.g. slides-online)
-     *     in the chosen preview language and reports how many active registrants would receive it.
-     *     The actual send still resolves each registrant's own language; this locale is preview-only.
-     *     Rejects (400) a template that is not REGISTRANT_NOTICE.
-     */
-    post: operations['previewRegistrantNotice'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/events/{eventCode}/registrant-notices/send': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Send a registrant-notice mail to the event's active registrants (ORGANIZER)
-     * @description Story 7.3 hardening — sends a REGISTRANT_NOTICE-category template (e.g. slides-online) to the
-     *     event's ACTIVE REGISTRANTS (registered/confirmed), NOT the newsletter-subscriber pool. Honours
-     *     the global newsletter opt-out, resolves the language per recipient (de*\/en/else→German), guards
-     *     against double-send (409), and runs asynchronously. Rejects (400) a non-REGISTRANT_NOTICE template.
-     */
-    post: operations['sendRegistrantNotice'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/events/{eventCode}/newsletter/send': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** Send newsletter to all active subscribers (ORGANIZER) */
-    post: operations['sendEventNewsletter'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/events/{eventCode}/newsletter/preview': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** Preview newsletter email (ORGANIZER, no send) */
-    post: operations['previewEventNewsletter'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/events/{eventCode}/newsletter/history': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Get newsletter send history for an event (ORGANIZER) */
-    get: operations['getNewsletterHistory'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/events/{eventCode}/newsletter/sends/{sendId}/status': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Poll send-job progress for a newsletter send (ORGANIZER) */
-    get: operations['getNewsletterSendStatus'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/events/{eventCode}/newsletter/sends/{sendId}/retry': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** Retry failed recipients for a PARTIAL or FAILED send (ORGANIZER) */
-    post: operations['retryNewsletterSend'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
   schemas: {
-    SubscriberCountResponse: {
-      /**
-       * Format: int64
-       * @description Number of currently active newsletter subscribers
-       * @example 1234
-       */
-      totalActive: number;
-    };
     NewsletterSubscribeRequest: {
-      /** Format: email */
+      /** Format: idn-email */
       email: string;
       firstName?: string;
       /**
@@ -429,124 +270,31 @@ export interface components {
     };
     NewsletterSubscriptionStatusResponse: {
       subscribed: boolean;
-      email?: string | null;
-    };
-    NewsletterSendRequest: {
-      isReminder: boolean;
-      /** @enum {string} */
-      locale: 'de' | 'en';
-      /** @description Optional template key override. If omitted, uses default 'newsletter-event'. Must be a NEWSLETTER category template key present in DB. */
-      templateKey?: string | null;
-      /** @description Story 10.29 AC7: Maximum number of recipients for canary send mode. If omitted, sends to all active subscribers. */
-      maxRecipients?: number | null;
-      /**
-       * @description When true, the send/preview targets only organizers (test send), not real subscribers. Gates whether real recipient emails go out.
-       * @default false
-       */
-      testMode: boolean | null;
-    };
-    NewsletterSendResponse: {
-      /** Format: uuid */
-      id: string;
-      /** Format: date-time */
-      sentAt: string;
-      isReminder: boolean;
-      locale: string;
-      recipientCount: number;
-      sentByUsername?: string;
-      /**
-       * @description Send-job status
-       * @enum {string}
-       */
-      status: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'PARTIAL' | 'FAILED';
-      sentCount?: number;
-      failedCount?: number;
-      /** Format: date-time */
-      startedAt?: string | null;
-      /** Format: date-time */
-      completedAt?: string | null;
-    };
-    /** @description Story 7.3 — response for a dedicated "slides are online" send (runs async). */
-    SlidesOnlineSendResponse: {
-      /**
-       * Format: uuid
-       * @description Id of the underlying newsletter_sends audit row (template_key='slides-online').
-       */
-      sendId: string;
-      /**
-       * @description Send-job status at return time (PENDING).
-       * @enum {string}
-       */
-      status: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'PARTIAL' | 'FAILED';
-      /** @description Number of active registrants resolved as the recipient base. */
-      recipientCount: number;
-    };
-    /** @description Story 7.3 hardening — request to preview a registrant-notice mail. */
-    RegistrantNoticePreviewRequest: {
-      /** @description A REGISTRANT_NOTICE-category template key (e.g. slides-online). */
-      templateKey: string;
-      /**
-       * @description Preview language; defaults to German when omitted/unknown.
-       * @enum {string}
-       */
-      locale?: 'de' | 'en';
-    };
-    /** @description Story 7.3 hardening — request to send a registrant-notice mail to registrants. */
-    RegistrantNoticeSendRequest: {
-      /** @description A REGISTRANT_NOTICE-category template key (e.g. slides-online). */
-      templateKey: string;
-    };
-    /** @description Story 7.3 hardening — rendered preview + active-registrant recipient count. */
-    RegistrantNoticePreviewResponse: {
-      /** @description Rendered, variable-substituted subject line. */
-      subject: string;
-      /** @description Rendered, layout-merged HTML body for the preview iframe. */
-      htmlPreview: string;
-      /** @description Number of active registrants (registered/confirmed) who would receive the mail. */
-      recipientCount: number;
-    };
-    NewsletterSendStatusResponse: {
-      /** Format: uuid */
-      id: string;
-      /** @enum {string} */
-      status: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'PARTIAL' | 'FAILED';
-      sentCount: number;
-      failedCount: number;
-      totalCount: number;
-      percentComplete: number;
-      /** Format: date-time */
-      startedAt?: string | null;
-      /** Format: date-time */
-      completedAt?: string | null;
-    };
-    NewsletterPreviewResponse: {
-      subject: string;
-      htmlPreview: string;
-      recipientCount: number;
+      email: string | null;
     };
     SubscriberResponse: {
       /** Format: uuid */
       id: string;
       email: string;
-      firstName?: string | null;
-      language?: string;
-      source?: string;
-      username?: string | null;
+      firstName: string | null;
+      language: string;
+      source: string;
+      username: string | null;
       /** Format: date-time */
       subscribedAt: string;
       /** Format: date-time */
-      unsubscribedAt?: string | null;
+      unsubscribedAt: string | null;
       /** @description Bounce type: 'hard', 'soft', 'complaint', or null */
-      bounceType?: string | null;
+      bounceType: string | null;
       /** @description Number of bounces recorded */
-      bounceCount?: number | null;
+      bounceCount: number | null;
       /** Format: date-time */
-      lastBouncedAt?: string | null;
+      lastBouncedAt: string | null;
       /**
        * Format: date-time
        * @description Non-null means subscriber is excluded from sends
        */
-      suppressedAt?: string | null;
+      suppressedAt: string | null;
     };
     /** @description Email template with full content and metadata */
     EmailTemplateResponse: {
@@ -569,17 +317,17 @@ export interface components {
         | 'PARTNER'
         | 'MAIL_CENTER';
       /** @description Email subject line (null for layout templates) */
-      subject?: string | null;
+      subject: string | null;
       /** @description HTML body content */
       htmlBody: string;
       /** @description Available template variables (JSONB) */
-      variables?: {
+      variables: {
         [key: string]: unknown;
       } | null;
       /** @description True if this is a layout (shell) template */
       isLayout: boolean;
       /** @description Key of the layout template to use (null for standalone or layout templates) */
-      layoutKey?: string | null;
+      layoutKey: string | null;
       /** @description True if this is a built-in system template (cannot be deleted) */
       isSystemTemplate: boolean;
       /**
@@ -644,7 +392,7 @@ export interface components {
       subscribed: boolean;
     };
     PutMyNewsletterSubscriptionRequest: {
-      /** Format: email */
+      /** Format: idn-email */
       email: string;
       subscribed: boolean;
       /**
@@ -1027,7 +775,7 @@ export interface operations {
         };
         content: {
           'application/json': {
-            email?: string;
+            email: string;
           };
         };
       };
@@ -1162,28 +910,6 @@ export interface operations {
       403: components['responses']['Forbidden'];
     };
   };
-  getSubscriberCount: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Active subscriber count */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['SubscriberCountResponse'];
-        };
-      };
-      401: components['responses']['Unauthorized'];
-      403: components['responses']['Forbidden'];
-    };
-  };
   listNewsletterSubscribers: {
     parameters: {
       query?: {
@@ -1211,8 +937,8 @@ export interface operations {
         };
         content: {
           'application/json': {
-            data?: components['schemas']['SubscriberResponse'][];
-            pagination?: components['schemas']['PaginationMetadata'];
+            data: components['schemas']['SubscriberResponse'][];
+            pagination: components['schemas']['PaginationMetadata'];
           };
         };
       };
@@ -1374,269 +1100,6 @@ export interface operations {
         content: {
           'application/json': components['schemas']['ErrorResponse'];
         };
-      };
-    };
-  };
-  previewRegistrantNotice: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        eventCode: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['RegistrantNoticePreviewRequest'];
-      };
-    };
-    responses: {
-      /** @description Rendered preview + recipient count */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['RegistrantNoticePreviewResponse'];
-        };
-      };
-      /** @description Template is not a registrant-notice template */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      401: components['responses']['Unauthorized'];
-      403: components['responses']['Forbidden'];
-      /** @description Event not found */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  sendRegistrantNotice: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        eventCode: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['RegistrantNoticeSendRequest'];
-      };
-    };
-    responses: {
-      /** @description Registrant-notice send queued */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['SlidesOnlineSendResponse'];
-        };
-      };
-      /** @description Template is not a registrant-notice template */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      401: components['responses']['Unauthorized'];
-      403: components['responses']['Forbidden'];
-      /** @description Event not found */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description A send of this template is already in progress or has already been sent */
-      409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  sendEventNewsletter: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        eventCode: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['NewsletterSendRequest'];
-      };
-    };
-    responses: {
-      /** @description Newsletter sent */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['NewsletterSendResponse'];
-        };
-      };
-      401: components['responses']['Unauthorized'];
-      403: components['responses']['Forbidden'];
-      /** @description Event not found */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  previewEventNewsletter: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        eventCode: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['NewsletterSendRequest'];
-      };
-    };
-    responses: {
-      /** @description Preview content */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['NewsletterPreviewResponse'];
-        };
-      };
-      401: components['responses']['Unauthorized'];
-      403: components['responses']['Forbidden'];
-      /** @description Event not found */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  getNewsletterHistory: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        eventCode: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Send history list */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['NewsletterSendResponse'][];
-        };
-      };
-      401: components['responses']['Unauthorized'];
-      403: components['responses']['Forbidden'];
-      /** @description Event not found */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  getNewsletterSendStatus: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        eventCode: string;
-        sendId: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Current send-job status and progress counts */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['NewsletterSendStatusResponse'];
-        };
-      };
-      401: components['responses']['Unauthorized'];
-      403: components['responses']['Forbidden'];
-      /** @description Event or send record not found */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  retryNewsletterSend: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        eventCode: string;
-        sendId: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Retry job accepted; returns updated send response with PENDING status */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['NewsletterSendResponse'];
-        };
-      };
-      401: components['responses']['Unauthorized'];
-      403: components['responses']['Forbidden'];
-      /** @description Event or send record not found */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Send is already COMPLETED or IN_PROGRESS — retry not allowed */
-      409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
       };
     };
   };

@@ -22,6 +22,7 @@ import type {
   ConflictAnalysisResponse,
   TimingConflictError,
 } from '@/types/event.types';
+import { aSession, aSessionSpeaker } from '@/test/fixtures';
 
 describe('SlotAssignmentService (Story 5.7 - Task 4a RED Phase)', () => {
   const mockEventCode = 'BATbern142';
@@ -45,6 +46,7 @@ describe('SlotAssignmentService (Story 5.7 - Task 4a RED Phase)', () => {
       // Given: Event has 3 unassigned sessions (placeholder sessions with null timing)
       const mockUnassignedSessions: Session[] = [
         {
+          ...aSession(),
           sessionSlug: 'session-1',
           eventCode: mockEventCode,
           language: 'de',
@@ -54,6 +56,7 @@ describe('SlotAssignmentService (Story 5.7 - Task 4a RED Phase)', () => {
           room: null,
           speakers: [
             {
+              ...aSessionSpeaker(),
               username: 'john.doe',
               firstName: 'John',
               lastName: 'Doe',
@@ -64,6 +67,7 @@ describe('SlotAssignmentService (Story 5.7 - Task 4a RED Phase)', () => {
           ],
         },
         {
+          ...aSession(),
           sessionSlug: 'session-2',
           eventCode: mockEventCode,
           language: 'de',
@@ -73,6 +77,7 @@ describe('SlotAssignmentService (Story 5.7 - Task 4a RED Phase)', () => {
           room: null,
           speakers: [
             {
+              ...aSessionSpeaker(),
               username: 'jane.smith',
               firstName: 'Jane',
               lastName: 'Smith',
@@ -132,16 +137,18 @@ describe('SlotAssignmentService (Story 5.7 - Task 4a RED Phase)', () => {
       };
 
       const mockUpdatedSession: Session = {
+        ...aSession(),
         sessionSlug: mockSessionSlug,
         eventCode: mockEventCode,
         language: 'de',
         title: 'John Doe - Acme Corp',
         startTime: timingRequest.startTime,
         endTime: timingRequest.endTime,
-        room: timingRequest.room,
-        sessionType: timingRequest.sessionType,
+        room: 'Main Hall',
+        sessionType: 'presentation',
         speakers: [
           {
+            ...aSessionSpeaker(),
             username: 'john.doe',
             firstName: 'John',
             lastName: 'Doe',
@@ -549,6 +556,7 @@ describe('SlotAssignmentService (Story 5.7 - Task 4a RED Phase)', () => {
       // Given: Event needs structural sessions (moderation, break, lunch)
       const mockSessions: Session[] = [
         {
+          ...aSession(),
           sessionSlug: 'moderation-opening',
           eventCode: mockEventCode,
           language: 'de',
@@ -560,6 +568,7 @@ describe('SlotAssignmentService (Story 5.7 - Task 4a RED Phase)', () => {
           speakers: [],
         },
         {
+          ...aSession(),
           sessionSlug: 'break-morning',
           eventCode: mockEventCode,
           language: 'de',
@@ -591,6 +600,7 @@ describe('SlotAssignmentService (Story 5.7 - Task 4a RED Phase)', () => {
       // Given: Overwrite existing structural sessions
       const mockSessions: Session[] = [
         {
+          ...aSession(),
           sessionSlug: 'moderation-opening',
           eventCode: mockEventCode,
           language: 'de',

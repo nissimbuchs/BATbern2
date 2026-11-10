@@ -18,6 +18,7 @@ const answerPageTwo = () =>
         isVerified: false,
         createdAt: '2026-05-14T16:00:00Z',
         updatedAt: '2026-05-14T16:00:00Z',
+        createdBy: 'lead.organizer',
       },
     ],
     pagination: {

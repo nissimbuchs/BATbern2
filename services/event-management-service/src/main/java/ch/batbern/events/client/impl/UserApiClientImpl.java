@@ -270,9 +270,9 @@ public class UserApiClientImpl implements UserApiClient {
     public ch.batbern.events.notification.UserPreferences getPreferences(String username) {
         log.debug("Fetching preferences for username: {}", username);
 
-        // #1146: CUMS has no /api/v1/users/{username}/preferences; the internal read carries
-        // the preferences (VPC-only, no JWT, like getPreferredLanguage).
-        URI url = internalUserUri(username, "preferences");
+        // #1146: the internal read carries the notification settings (VPC-only, no JWT, like
+        // getPreferredLanguage); Story 4.9 merged them into the one `settings` include.
+        URI url = internalUserUri(username, "settings");
 
         try {
             HttpEntity<Void> request = new HttpEntity<>(new HttpHeaders());
@@ -286,7 +286,7 @@ public class UserApiClientImpl implements UserApiClient {
 
             UserResponse user = response.getBody();
             ch.batbern.events.notification.UserPreferences prefs =
-                    toNotificationPreferences(user != null ? user.getPreferences() : null);
+                    toNotificationPreferences(user != null ? user.getSettings() : null);
             log.debug("Successfully fetched preferences for username: {}", username);
             return prefs;
 
@@ -328,12 +328,12 @@ public class UserApiClientImpl implements UserApiClient {
         }
     }
 
-    /** CUMS preferences to the notification view; no preferences row means the CUMS defaults. */
+    /** CUMS settings to the notification view; no settings means the CUMS defaults. */
     private static ch.batbern.events.notification.UserPreferences toNotificationPreferences(
-            ch.batbern.events.dto.generated.users.UserPreferences source) {
-        ch.batbern.events.dto.generated.users.UserPreferences prefs = source != null
+            ch.batbern.events.dto.generated.users.UserSettings source) {
+        ch.batbern.events.dto.generated.users.UserSettings prefs = source != null
                 ? source
-                : new ch.batbern.events.dto.generated.users.UserPreferences();
+                : new ch.batbern.events.dto.generated.users.UserSettings();
         return ch.batbern.events.notification.UserPreferences.builder()
                 .emailNotificationsEnabled(!Boolean.FALSE.equals(prefs.getEmailNotifications()))
                 .inAppNotificationsEnabled(!Boolean.FALSE.equals(prefs.getInAppNotifications()))
@@ -346,12 +346,12 @@ public class UserApiClientImpl implements UserApiClient {
     }
 
     /**
-     * Story 7.3: resolve a user's preferred language via {@code ?include=preferences}.
+     * Story 7.3: resolve a user's preferred language via {@code ?include=settings}.
      *
      * <p>Lenient: any failure (blank username, 404, 5xx, network, missing preferences) yields
      * {@code null} so a per-recipient locale lookup can never abort a slides-online send. Cached
      * 15&nbsp;min under a {@code prefLang:} key so it does not collide with the base user cache
-     * entry (which is fetched without {@code ?include=preferences}).
+     * entry (which is fetched without {@code ?include=settings}).
      */
     @Override
     @Cacheable(value = "userApiCache", key = "'prefLang:' + #username", unless = "#result == null")
@@ -361,7 +361,7 @@ public class UserApiClientImpl implements UserApiClient {
         }
         log.debug("Fetching preferred language for username: {}", username);
 
-        URI url = internalUserUri(username, "preferences");
+        URI url = internalUserUri(username, "settings");
 
         try {
             HttpHeaders headers = new HttpHeaders();
@@ -375,12 +375,12 @@ public class UserApiClientImpl implements UserApiClient {
             );
 
             UserResponse user = response.getBody();
-            if (user == null || user.getPreferences() == null
-                    || user.getPreferences().getLanguage() == null) {
+            if (user == null || user.getSettings() == null
+                    || user.getSettings().getLanguage() == null) {
                 log.debug("No language preference available for username: {}", username);
                 return null;
             }
-            String language = user.getPreferences().getLanguage().getValue();
+            String language = user.getSettings().getLanguage().getValue();
             return language != null ? language.toLowerCase(java.util.Locale.ROOT) : null;
 
         } catch (Exception e) {
@@ -393,7 +393,7 @@ public class UserApiClientImpl implements UserApiClient {
     }
 
     /**
-     * Story 15.7 — Q&A notification cadence preference. Same proven {@code ?include=preferences}
+     * Story 15.7 — Q&A notification cadence preference. Same proven {@code ?include=settings}
      * path as {@link #getPreferredLanguage}; lenient (returns {@code null} on any failure/absence
      * so the caller applies the {@code live} default). Cached 15&nbsp;min under a {@code qnaFreq:}
      * key so it does not collide with the base user-cache entry.
@@ -406,7 +406,7 @@ public class UserApiClientImpl implements UserApiClient {
         }
         log.debug("Fetching Q&A notification frequency for username: {}", username);
 
-        URI url = internalUserUri(username, "preferences");
+        URI url = internalUserUri(username, "settings");
 
         try {
             HttpHeaders headers = new HttpHeaders();
@@ -420,12 +420,12 @@ public class UserApiClientImpl implements UserApiClient {
             );
 
             UserResponse user = response.getBody();
-            if (user == null || user.getPreferences() == null
-                    || user.getPreferences().getQnaNotificationFrequency() == null) {
+            if (user == null || user.getSettings() == null
+                    || user.getSettings().getQnaNotificationFrequency() == null) {
                 log.debug("No Q&A notification preference available for username: {}", username);
                 return null;
             }
-            String freq = user.getPreferences().getQnaNotificationFrequency().getValue();
+            String freq = user.getSettings().getQnaNotificationFrequency().getValue();
             return freq != null ? freq.toLowerCase(java.util.Locale.ROOT) : null;
 
         } catch (Exception e) {

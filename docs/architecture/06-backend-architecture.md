@@ -395,6 +395,12 @@ been 400s:
   CRITICAL. Validating in `SortParser` fixes this for every service that uses it and keeps
   punctuation — the injection vector Spring Data's guard exists to stop — out of sort expressions
   entirely. (Issue #903.)
+- **A body that does not bind** (malformed JSON, an unknown enum value) raises
+  `HttpMessageNotReadableException`. EMS maps it itself; CUMS and PCS had no handler and answered
+  500. The shared `ClientErrorClassifier`, which every catch-all asks first, now maps it to 400
+  with the fixed message "Malformed request body" (the parser's message names our classes and is
+  not passed on). Found by Story 4.9, when `PATCH /users/me/settings` with `theme: "neon"`
+  answered 500.
 
 ### Circuit Breaker, Bulkhead and Retry
 
@@ -708,12 +714,12 @@ demotion requests, an approval workflow (`RoleChangeRequest`, `RoleChangeApprova
 
 The newsletter send system uses an asynchronous fire-and-forget pattern to handle large recipient lists without blocking the API or exhausting thread pools:
 
-- **Trigger**: `POST /api/v1/events/{code}/newsletter/send` returns `202 Accepted` immediately
+- **Trigger**: the Mail Center composer (`POST /api/v1/events/{code}/mails`, audience `NEWSLETTER`) queues the send and returns `202 Accepted` immediately; the per-audience `/newsletter/send`, `/preview`, `/history` and `/sends/{sendId}/status|retry` endpoints were removed by Story 16.8c
 - **Processing**: `@Async` method sends emails sequentially with a pause between mails (`newsletter.send.rate-delay-ms`, default 70 ms, about 14 per second)
 - **Recipient iteration**: active subscribers are read in batches of 50 by keyset (`id > :lastId ORDER BY id`), not by OFFSET page, so recipients who unsubscribe or bounce during the send cannot make the loop skip anyone; each recipient is re-checked as active right before their mail (#1129)
-- **Progress tracking**: the `newsletter_sends` row tracks state (`PENDING` → `IN_PROGRESS` → `COMPLETED` / `PARTIAL` / `FAILED`), with sent, failed and total counts for progress polling
-- **Duplicate prevention**: A second send attempt while `IN_PROGRESS` returns `409 Conflict`
-- **Retry**: Dedicated retry endpoint to re-send failed recipients of a previous partial/failed send and to reach active subscribers that have no recipient row yet. A failed recipient whose subscriber was since deleted, unsubscribed or suppressed is marked `skipped` and never mailed again (#1129)
+- **Progress tracking**: the `newsletter_sends` row tracks state (`PENDING` → `IN_PROGRESS` → `COMPLETED` / `PARTIAL` / `FAILED`), with sent, failed and total counts; the Mail Center shows them on the send's row (`progress`)
+- **Duplicate prevention**: a second newsletter while one is queued (`PENDING`) or `IN_PROGRESS` returns `409 Conflict`. Registrant notices share `newsletter_sends` but not the guard: one in progress does not block the newsletter, nor the other way round (template-scoped guard, 16.8c)
+- **Retry**: the Mail Center retry (`POST /api/v1/events/{code}/mails/{mailKey}/retry`) sends a partial or failed newsletter again: to its failed recipients, and to active subscribers the send never reached (no recipient row yet). A failed recipient whose subscriber was since deleted, unsubscribed or suppressed is marked `skipped` and never mailed again (#1129)
 - **Orphan recovery**: on `ApplicationReadyEvent`, sends left `IN_PROGRESS` or `PENDING` by a killed task become `PARTIAL` (some mails went out) or `FAILED` (none did), so the organizer can retry (`NewsletterEmailService.recoverOrphanedSends`)
 
 ## Email Forwarding (in EMS)
@@ -1199,8 +1205,13 @@ One composer for every audience, on the same resource (no second mail resource).
 - **Key before an async send**: `JpaOutboundMailRecorder.open` creates the group's row (same
   `INSERT_IF_ABSENT`) so the response carries the key while the newsletter or reminder threads are
   still sending.
-- The old compose endpoints (newsletter, registrant notices, venue, speaker send-reminder) stay
-  until the clean-up release (16.8c).
+- The old compose endpoints (newsletter send, preview, history, send status and retry; registrant
+  notices preview and send; venue coordination preview and send; speaker send-reminder) were
+  removed by Story 16.8c: every organizer send goes through the composer. The services keep their
+  send methods for the adapters and return `QueuedSend` (send row, recipient count) instead of the
+  deleted DTOs. `OwnText` lives in mail core (`mailcenter.render`), so the newsletter and
+  registrant-notice jobs, which render the own text stored on their send row, no longer reach into
+  `mailcenter.compose`.
 
 ### One mail pipeline and variable catalog (Story 16.11)
 
@@ -1244,6 +1255,26 @@ Every template-based mail in event-management renders the same way:
   `SpeakerOwnTextMailService` (by status, outreach note, no reminder log). Recorded as `OWN_TEXT`.
 - Not yet on the pipeline: HTML built in Java (`NotificationService`, `QualityReviewService`, Story
   16.12), the partner invite in partner-coordination.
+
+## Settings: one store per kind (Story 4.9)
+
+- **Application settings** live in EMS `app_settings`, read and written only through
+  `AdminSettingsService` (`GET`/`PUT /admin/settings/{key}`, ORGANIZER). A structured setting is
+  a JSON value under its key and validated before it is stored: `venue.coordination.config` and
+  `presentation` (`PresentationSettings`: non-blank `aboutText`, integer `partnerCount` >= 0,
+  no other fields; anything else is a 400). The presenter screen reads it anonymously at
+  `GET /public/settings/presentation` (`PublicSettingsController`, next to
+  `/public/settings/features`); without a stored value it answers the former CUMS defaults. The
+  value moved from the CUMS table `presentation_settings` with EMS V152, which copies the row (a
+  no-op where the table does not exist, an existing key is kept). The table stays, unread, so an
+  old CUMS image can start mid-deploy or after a rollback; a follow-up migration drops it one
+  release later.
+- **A user's settings** are one CUMS resource, `GET`/`PATCH /users/me/settings`
+  (`UserSettingsService`): display, notifications and privacy in one object, partial update.
+  Storage stays the two embeddables on `user_profiles`. EMS reads language, Q&A frequency and
+  notification settings with `/internal/users/{username}?include=settings`.
+- **Derived configuration** that is not stored (feature flags, the gateway `/config`) is not a
+  setting and stays where it is.
 
 ## Auto-Enrollment on Event Creation
 

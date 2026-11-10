@@ -160,9 +160,12 @@ describe('publishingService', () => {
         phase3Enabled: true,
         phase3DaysBeforeEvent: 14,
       };
-      api.on('configureAutoPublish', ({ body }) => ({
+      api.on('configureAutoPublish', () => ({
         scheduled: true,
-        ...body,
+        phase2Enabled: true,
+        phase2DaysBeforeEvent: 30,
+        phase3Enabled: true,
+        phase3DaysBeforeEvent: 14,
         phase2TriggerDate: '2027-02-12T08:00:00Z',
         phase3TriggerDate: '2027-02-28T08:00:00Z',
       }));

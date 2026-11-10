@@ -412,12 +412,12 @@ export interface components {
        * Format: date
        * @description In the list, organizers only (omitted for other callers, GHSA-qhqv).
        */
-      partnershipEndDate?: string | null;
+      partnershipEndDate: string | null;
       isActive: boolean;
       /** @description Enriched via HTTP call (when include=company) */
-      company?: components['schemas']['CompanyInfo'] | null;
+      company: components['schemas']['CompanyInfo'] | null;
       /** @description Enriched partner contacts (when include=contacts) */
-      contacts?: components['schemas']['PartnerContactResponse'][] | null;
+      contacts: components['schemas']['PartnerContactResponse'][] | null;
     };
     CreatePartnerRequest: {
       companyName: string;
@@ -445,27 +445,27 @@ export interface components {
       /** @description Meaningful ID per ADR-003 */
       username: string;
       /** @description From User Service */
-      email?: string | null;
+      email: string | null;
       /** @description From User Service */
-      firstName?: string | null;
+      firstName: string | null;
       /** @description From User Service */
-      lastName?: string | null;
+      lastName: string | null;
       /** @description From User Service */
-      profilePictureUrl?: string | null;
+      profilePictureUrl: string | null;
     };
     /** @enum {string} */
     PartnershipLevel: 'BRONZE' | 'SILVER' | 'GOLD' | 'PLATINUM' | 'STRATEGIC';
     /** @description Enriched from Company Service (ADR-004) */
     CompanyInfo: {
-      companyName?: string;
+      companyName: string;
       /** @description Same as companyName (backwards compatibility) */
-      name?: string;
-      displayName?: string | null;
-      logoUrl?: string | null;
+      name: string;
+      displayName: string | null;
+      logoUrl: string | null;
       /** @description Industry sector */
-      industry?: string | null;
+      industry: string | null;
       /** @description Company website URL */
-      website?: string | null;
+      website: string | null;
     };
     PartnerStatistics: {
       /** @description Total number of partners */
@@ -474,11 +474,11 @@ export interface components {
       activePartners: number;
       /** @description Count of partners by tier (keys are UPPER_CASE per coding standards) */
       tierCounts: {
-        BRONZE?: number;
-        SILVER?: number;
-        GOLD?: number;
-        PLATINUM?: number;
-        STRATEGIC?: number;
+        BRONZE: number;
+        SILVER: number;
+        GOLD: number;
+        PLATINUM: number;
+        STRATEGIC: number;
       };
     };
     /** @description Partner note (Story 8.4) */
@@ -515,43 +515,43 @@ export interface components {
     /** @description Partner attendance dashboard (Story 8.1) */
     PartnerDashboardResponse: {
       /** @description Per-event attendance records, sorted by date descending */
-      attendanceSummary?: components['schemas']['AttendanceSummaryRecord'][];
+      attendanceSummary: components['schemas']['AttendanceSummaryRecord'][];
       /**
        * Format: decimal
        * @description Total partnership cost divided by total company attendees. Null if no attendees or no cost configured.
        * @example 555.56
        */
-      costPerAttendee?: number | null;
+      costPerAttendee: number | null;
     };
     AttendanceSummaryRecord: {
       /**
        * @description Event code (ADR-003)
        * @example BATbern57
        */
-      eventCode?: string;
+      eventCode: string;
       /**
        * @description Event title
        * @example Cloud Native Architecture
        */
-      eventTitle?: string;
+      eventTitle: string;
       /**
        * Format: date-time
        * @description Event date (ISO-8601)
        * @example 2024-06-01T00:00:00Z
        */
-      eventDate?: string;
+      eventDate: string;
       /**
        * Format: int64
        * @description Total confirmed registrations for this event
        * @example 120
        */
-      totalAttendees?: number;
+      totalAttendees: number;
       /**
        * Format: int64
        * @description Confirmed registrations from the partner company
        * @example 12
        */
-      companyAttendees?: number;
+      companyAttendees: number;
     };
     /** @description A topic suggestion with vote counts (Story 8.2 / 7.1) */
     TopicDTO: {
@@ -563,9 +563,9 @@ export interface components {
       /** @description Topic title */
       title: string;
       /** @description Topic description */
-      description?: string | null;
+      description: string | null;
       /** @description Company that suggested this topic (ADR-003 identifier). Null for COMMUNITY (attendee) suggestions — Story 7.1. */
-      suggestedByCompany?: string | null;
+      suggestedByCompany: string | null;
       /** @description Total number of votes */
       voteCount: number;
       /** @description True if the calling partner's company has voted for this topic */
@@ -576,7 +576,7 @@ export interface components {
        */
       status: 'PROPOSED' | 'SELECTED' | 'DECLINED';
       /** @description Event code when topic is selected (e.g. BATbern58) */
-      plannedEvent?: string | null;
+      plannedEvent: string | null;
       /** Format: date-time */
       createdAt: string | null;
       /**

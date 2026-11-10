@@ -6,13 +6,10 @@ import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.security.SecurityContextHelper;
 import ch.batbern.events.service.EventTaskService;
 import ch.batbern.events.tasks.api.generated.EventTasksApi;
-import ch.batbern.events.tasks.dto.generated.CompleteTaskRequest;
 import ch.batbern.events.tasks.dto.generated.CreateEventTaskRequest;
 import ch.batbern.events.tasks.dto.generated.CreateTasksFromTemplatesRequest;
 import ch.batbern.events.tasks.dto.generated.EventTaskResponse;
-import ch.batbern.events.tasks.dto.generated.ReassignTaskRequest;
 import ch.batbern.events.tasks.dto.generated.UpdateEventTaskRequest;
-import ch.batbern.events.tasks.dto.generated.UpdateTaskStatusRequest;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -38,9 +35,8 @@ import java.util.stream.Collectors;
  * - POST /api/v1/events/{eventCode}/tasks                - Create ad-hoc task
  * - POST /api/v1/events/{eventCode}/tasks/from-templates - Create tasks from templates
  * - GET  /api/v1/tasks/my-tasks                          - Get tasks assigned to current organizer
- * - PUT  /api/v1/tasks/{taskId}/complete                 - Mark task complete
- * - PUT  /api/v1/tasks/{taskId}/reassign                 - Reassign task to different organizer
- * - PUT  /api/v1/tasks/{taskId}/status                   - Update task status (drag-and-drop)
+ * - PATCH /api/v1/tasks/{taskId}                        - Complete, reopen, move, reassign, edit
+ * - DELETE /api/v1/tasks/{taskId}                       - Delete task
  *
  * Security: All endpoints require ORGANIZER role
  */
@@ -222,87 +218,8 @@ public class EventTaskController implements EventTasksApi {
     }
 
     /**
-     * Mark a task as complete.
-     * Story 5.5 AC25: Task completion tracking
-     *
-     * @param taskId task ID
-     * @param request completion request with optional notes
-     * @return updated task
-     */
-    @Override
-    @PreAuthorize("hasRole('ORGANIZER')")
-    public ResponseEntity<EventTaskResponse> completeTask(
-            UUID taskId,
-            CompleteTaskRequest request) {
-
-        String completedByUsername = securityContextHelper.getCurrentUsername();
-        log.info("PUT /api/v1/tasks/{}/complete - completedBy: {}", taskId, completedByUsername);
-
-        EventTask task = eventTaskService.completeTask(taskId, completedByUsername, request.getNotes());
-        String eventCode = eventRepository.findById(task.getEventId())
-                .map(Event::getEventCode)
-                .orElse(null);
-        EventTaskResponse response = toResponse(task, eventCode);
-
-        return ResponseEntity.ok(response);
-    }
-
-    /**
-     * Reassign a task to a different organizer.
-     * Story 5.5 AC27: Task assignment flexibility
-     *
-     * @param taskId task ID
-     * @param request reassignment request
-     * @return updated task
-     */
-    @Override
-    @PreAuthorize("hasRole('ORGANIZER')")
-    public ResponseEntity<EventTaskResponse> reassignTask(
-            UUID taskId,
-            ReassignTaskRequest request) {
-
-        log.info("PUT /api/v1/tasks/{}/reassign - newOrganizer: {}",
-                taskId, request.getNewOrganizerUsername());
-
-        EventTask task = eventTaskService.reassignTask(taskId, request.getNewOrganizerUsername());
-        String eventCode = eventRepository.findById(task.getEventId())
-                .map(Event::getEventCode)
-                .orElse(null);
-        EventTaskResponse response = toResponse(task, eventCode);
-
-        return ResponseEntity.ok(response);
-    }
-
-    /**
-     * Update task status (for drag-and-drop).
-     * Story 5.5: Manual status transitions via drag-and-drop
-     *
-     * Allows transitions: pending ↔ todo ↔ completed
-     *
-     * @param taskId task ID
-     * @param request status update request
-     * @return updated task
-     */
-    @Override
-    @PreAuthorize("hasRole('ORGANIZER')")
-    public ResponseEntity<EventTaskResponse> updateTaskStatus(
-            UUID taskId,
-            UpdateTaskStatusRequest request) {
-
-        log.info("PUT /api/v1/tasks/{}/status - newStatus: {}", taskId, request.getStatus());
-
-        EventTask task = eventTaskService.updateTaskStatus(taskId, request.getStatus());
-        String eventCode = eventRepository.findById(task.getEventId())
-                .map(Event::getEventCode)
-                .orElse(null);
-        EventTaskResponse response = toResponse(task, eventCode);
-
-        return ResponseEntity.ok(response);
-    }
-
-    /**
-     * Update task details (notes, due date, assigned organizer).
-     * Patch semantics: only provided non-null fields are updated.
+     * Update a task: status (complete, reopen, drag-and-drop), notes, due date, assignee.
+     * Patch semantics: only provided fields are updated. Completing records the caller.
      *
      * @param taskId task ID
      * @param request update request (all fields optional)
@@ -314,13 +231,16 @@ public class EventTaskController implements EventTasksApi {
             UUID taskId,
             UpdateEventTaskRequest request) {
 
-        log.info("PATCH /api/v1/tasks/{}", taskId);
+        log.info("PATCH /api/v1/tasks/{} - status: {}", taskId, request.getStatus());
 
         EventTask task = eventTaskService.updateTask(
                 taskId,
-                request.getNotes(),
-                toInstant(request.getDueDate()),
-                request.getAssignedOrganizerUsername()
+                new EventTaskService.TaskChanges(
+                        request.getStatus() == null ? null : request.getStatus().getValue(),
+                        request.getNotes(),
+                        toInstant(request.getDueDate()),
+                        request.getAssignedOrganizerUsername()),
+                securityContextHelper.getCurrentUsername()
         );
         String eventCode = eventRepository.findById(task.getEventId())
                 .map(Event::getEventCode)

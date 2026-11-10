@@ -19,8 +19,7 @@ import LogoutIcon from '@mui/icons-material/Logout';
 import LanguageIcon from '@mui/icons-material/Language';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import { UserContext } from '../../../types/auth';
-import { updateUserPreferences } from '../../../services/api/userApi';
-import type { UpdatePreferencesRequest } from '../../../types/user';
+import { updateUserSettings, type UserLanguage } from '../../../services/api/userApi';
 import { USER_GUIDE_URL } from '@/config/navigationConfig';
 
 interface UserMenuDropdownProps {
@@ -78,7 +77,7 @@ const UserMenuDropdown: React.FC<UserMenuDropdownProps> = ({
 
     // Persist to API (backend is ready, Story 2.6)
     try {
-      await updateUserPreferences({ language: newLang as UpdatePreferencesRequest['language'] });
+      await updateUserSettings({ language: newLang as UserLanguage });
       console.log('[UserMenuDropdown] Language preference persisted to backend:', newLang);
     } catch (error) {
       console.error('[UserMenuDropdown] Failed to persist language preference:', error);

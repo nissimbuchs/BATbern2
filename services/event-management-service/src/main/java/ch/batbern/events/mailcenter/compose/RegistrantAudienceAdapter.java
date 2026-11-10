@@ -129,14 +129,14 @@ public class RegistrantAudienceAdapter implements AudienceAdapter {
             }
             UUID sendId = notices.sendRegistrantOwnText(context.event(), request.ownSubject(), request.ownBodyHtml(),
                     request.locale(), context.organizerUsername(), statuses(request))
-                    .getSendId();
+                    .sendId();
             MailContext mailContext = MailContext.ownText(MailTrigger.forSend(sendId, context.organizerUsername()),
                     context.event().getEventCode(), MailContext.Audience.REGISTRANTS).forNewsletterSend(sendId, false);
             return List.of(new DeliveredMail(mailContext, render(context, recipients.recipients().get(0), false)));
         }
         String templateKey = context.request().templateKey();
         UUID sendId = notices.sendRegistrantNotice(context.event(), templateKey, context.organizerUsername())
-                .getSendId();
+                .sendId();
         MailContext mailContext = SlidesOnlineEmailService.mailContextFor(sendId, context.event().getEventCode(),
                 templateKey, context.organizerUsername());
         return List.of(new DeliveredMail(mailContext, render(context, recipients.recipients().get(0), false)));

@@ -2,7 +2,7 @@ openapi: 3.0.3
 info:
   title: BATbern Event Newsletter API
   version: 1.0.0
-  description: 'Event newsletters, registrant notices, slides-online mailing, newsletter subscriber lifecycle, and email templates.
+  description: 'Newsletter subscription and subscriber lifecycle, and email templates. Newsletters and registrant notices are sent through the Mail Center composer (event-mail-api).
 
 
     Carved from the consolidated events-api spec (API consolidation Phase 6). Paths preserved verbatim.'
@@ -24,9 +24,7 @@ tags:
 - name: Email Templates
   description: Email template management for organizers (Story 10.2)
 - name: Newsletter
-  description: Newsletter subscription, unsubscribe, and sending (NewsletterController, Story 10.7)
-- name: Registrant Notice
-  description: Ad-hoc registrant notice preview/send (RegistrantNoticeController)
+  description: Newsletter subscription, unsubscribe and subscriber management (NewsletterController, Story 10.7); sending is the Mail Center composer
 paths:
   /email-templates:
     get:
@@ -364,6 +362,8 @@ paths:
             application/json:
               schema:
                 type: object
+                required:
+                  - email
                 properties:
                   email:
                     type: string
@@ -498,31 +498,6 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
-  /newsletter/subscribers/count:
-    get:
-      tags:
-      - Newsletter
-      summary: Active subscriber count (ORGANIZER)
-      description: Cheap COUNT query used by the newsletter tab to display subscriber totals.
-      operationId: getSubscriberCount
-      security:
-      - BearerAuth: []
-      responses:
-        '200':
-          description: Active subscriber count
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SubscriberCountResponse'
-              examples:
-                default:
-                  summary: captured from the local anonymized database
-                  value:
-                    totalActive: 1057
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
   /newsletter/subscribers:
     get:
       tags:
@@ -574,6 +549,9 @@ paths:
             application/json:
               schema:
                 type: object
+                required:
+                  - data
+                  - pagination
                 properties:
                   data:
                     type: array
@@ -597,6 +575,7 @@ paths:
                         bounceCount: 0
                         lastBouncedAt: null
                         suppressedAt: null
+                        username: null
                       - id: f619e766-ed75-477d-a0a9-4d222ed20ce8
                         email: jonas.muster@example.com
                         firstName: Jonas
@@ -608,6 +587,7 @@ paths:
                         bounceCount: 0
                         lastBouncedAt: null
                         suppressedAt: null
+                        username: null
                     pagination:
                       page: 1
                       limit: 2
@@ -654,6 +634,7 @@ paths:
                     bounceCount: 0
                     lastBouncedAt: null
                     suppressedAt: null
+                    username: null
         '404':
           description: Subscriber not found
           content:
@@ -705,6 +686,7 @@ paths:
                     bounceCount: 0
                     lastBouncedAt: null
                     suppressedAt: null
+                    username: null
         '404':
           description: Subscriber not found
           content:
@@ -756,6 +738,7 @@ paths:
                     bounceCount: 0
                     lastBouncedAt: null
                     suppressedAt: null
+                    username: null
         '404':
           description: Subscriber not found
           content:
@@ -798,325 +781,8 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
-  /events/{eventCode}/registrant-notices/preview:
-    post:
-      tags:
-      - Registrant Notice
-      summary: Preview a registrant-notice mail in a chosen language (ORGANIZER)
-      description: 'Story 7.3 hardening — renders a REGISTRANT_NOTICE-category template (e.g. slides-online)
-
-        in the chosen preview language and reports how many active registrants would receive it.
-
-        The actual send still resolves each registrant''s own language; this locale is preview-only.
-
-        Rejects (400) a template that is not REGISTRANT_NOTICE.
-
-        '
-      operationId: previewRegistrantNotice
-      parameters:
-      - name: eventCode
-        in: path
-        required: true
-        schema:
-          type: string
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/RegistrantNoticePreviewRequest'
-      responses:
-        '200':
-          description: Rendered preview + recipient count
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/RegistrantNoticePreviewResponse'
-              examples:
-                default:
-                  summary: generated from the schema and captured sub-values
-                  value:
-                    subject: Sample title
-                    htmlPreview: sample
-                    recipientCount: 1
-        '400':
-          description: Template is not a registrant-notice template
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          description: Event not found
-  /events/{eventCode}/registrant-notices/send:
-    post:
-      tags:
-      - Registrant Notice
-      summary: Send a registrant-notice mail to the event's active registrants (ORGANIZER)
-      description: 'Story 7.3 hardening — sends a REGISTRANT_NOTICE-category template (e.g. slides-online) to the
-
-        event''s ACTIVE REGISTRANTS (registered/confirmed), NOT the newsletter-subscriber pool. Honours
-
-        the global newsletter opt-out, resolves the language per recipient (de*/en/else→German), guards
-
-        against double-send (409), and runs asynchronously. Rejects (400) a non-REGISTRANT_NOTICE template.
-
-        '
-      operationId: sendRegistrantNotice
-      parameters:
-      - name: eventCode
-        in: path
-        required: true
-        schema:
-          type: string
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/RegistrantNoticeSendRequest'
-      responses:
-        '200':
-          description: Registrant-notice send queued
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SlidesOnlineSendResponse'
-              examples:
-                default:
-                  summary: generated from the schema and captured sub-values
-                  value:
-                    sendId: 3f2b8c1e-5d4a-4e6b-9a7c-1b2d3e4f5a6b
-                    status: PENDING
-                    recipientCount: 1
-        '400':
-          description: Template is not a registrant-notice template
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          description: Event not found
-        '409':
-          description: A send of this template is already in progress or has already been sent
-  /events/{eventCode}/newsletter/send:
-    post:
-      tags:
-      - Newsletter
-      summary: Send newsletter to all active subscribers (ORGANIZER)
-      operationId: sendEventNewsletter
-      parameters:
-      - name: eventCode
-        in: path
-        required: true
-        schema:
-          type: string
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/NewsletterSendRequest'
-      responses:
-        '200':
-          description: Newsletter sent
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/NewsletterSendResponse'
-              examples:
-                default:
-                  summary: generated from the schema and captured sub-values
-                  value:
-                    id: 3f2b8c1e-5d4a-4e6b-9a7c-1b2d3e4f5a6b
-                    sentAt: "2026-05-14T16:00:00Z"
-                    isReminder: true
-                    locale: de
-                    recipientCount: 1
-                    sentByUsername: anna.muster
-                    status: PENDING
-                    sentCount: 1
-                    failedCount: 1
-                    startedAt: "2026-05-14T16:00:00Z"
-                    completedAt: "2026-05-14T16:00:00Z"
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          description: Event not found
-  /events/{eventCode}/newsletter/preview:
-    post:
-      tags:
-      - Newsletter
-      summary: Preview newsletter email (ORGANIZER, no send)
-      operationId: previewEventNewsletter
-      parameters:
-      - name: eventCode
-        in: path
-        required: true
-        schema:
-          type: string
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/NewsletterSendRequest'
-      responses:
-        '200':
-          description: Preview content
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/NewsletterPreviewResponse'
-              examples:
-                default:
-                  summary: generated from the schema and captured sub-values
-                  value:
-                    subject: Sample title
-                    htmlPreview: sample
-                    recipientCount: 1
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          description: Event not found
-  /events/{eventCode}/newsletter/history:
-    get:
-      tags:
-      - Newsletter
-      summary: Get newsletter send history for an event (ORGANIZER)
-      operationId: getNewsletterHistory
-      parameters:
-      - name: eventCode
-        in: path
-        required: true
-        schema:
-          type: string
-      responses:
-        '200':
-          description: Send history list
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/NewsletterSendResponse'
-              examples:
-                default:
-                  summary: captured from the local anonymized database
-                  value:
-                    []
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          description: Event not found
-  /events/{eventCode}/newsletter/sends/{sendId}/status:
-    get:
-      tags:
-      - Newsletter
-      summary: Poll send-job progress for a newsletter send (ORGANIZER)
-      operationId: getNewsletterSendStatus
-      parameters:
-      - name: eventCode
-        in: path
-        required: true
-        schema:
-          type: string
-      - name: sendId
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
-      responses:
-        '200':
-          description: Current send-job status and progress counts
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/NewsletterSendStatusResponse'
-              examples:
-                default:
-                  summary: generated from the schema and captured sub-values
-                  value:
-                    id: 3f2b8c1e-5d4a-4e6b-9a7c-1b2d3e4f5a6b
-                    status: PENDING
-                    sentCount: 1
-                    failedCount: 1
-                    totalCount: 1
-                    percentComplete: 1
-                    startedAt: "2026-05-14T16:00:00Z"
-                    completedAt: "2026-05-14T16:00:00Z"
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          description: Event or send record not found
-  /events/{eventCode}/newsletter/sends/{sendId}/retry:
-    post:
-      tags:
-      - Newsletter
-      summary: Retry failed recipients for a PARTIAL or FAILED send (ORGANIZER)
-      operationId: retryNewsletterSend
-      parameters:
-      - name: eventCode
-        in: path
-        required: true
-        schema:
-          type: string
-      - name: sendId
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
-      responses:
-        '200':
-          description: Retry job accepted; returns updated send response with PENDING status
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/NewsletterSendResponse'
-              examples:
-                default:
-                  summary: generated from the schema and captured sub-values
-                  value:
-                    id: 3f2b8c1e-5d4a-4e6b-9a7c-1b2d3e4f5a6b
-                    sentAt: "2026-05-14T16:00:00Z"
-                    isReminder: true
-                    locale: de
-                    recipientCount: 1
-                    sentByUsername: anna.muster
-                    status: PENDING
-                    sentCount: 1
-                    failedCount: 1
-                    startedAt: "2026-05-14T16:00:00Z"
-                    completedAt: "2026-05-14T16:00:00Z"
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          description: Event or send record not found
-        '409':
-          description: Send is already COMPLETED or IN_PROGRESS — retry not allowed
 components:
   schemas:
-    SubscriberCountResponse:
-      type: object
-      required:
-      - totalActive
-      properties:
-        totalActive:
-          type: integer
-          format: int64
-          description: Number of currently active newsletter subscribers
-          example: 1234
     NewsletterSubscribeRequest:
       type: object
       required:
@@ -1124,7 +790,7 @@ components:
       properties:
         email:
           type: string
-          format: email
+          format: idn-email
           # One email rule everywhere (#1102): ASCII local part (SES has no SMTPUTF8), any domain.
           # Source of truth: shared-kernel EmailAddresses.OPENAPI_PATTERN.
           pattern: '^[A-Za-z0-9!#$%&''*+/=?^_`{|}~-]+(\.[A-Za-z0-9!#$%&''*+/=?^_`{|}~-]+)*@[^\s@.]+(\.[^\s@.]+)+$'
@@ -1149,211 +815,28 @@ components:
       type: object
       required:
       - subscribed
+      - email
       properties:
         subscribed:
           type: boolean
         email:
           nullable: true
           type: string
-    NewsletterSendRequest:
-      type: object
-      required:
-      - isReminder
-      - locale
-      properties:
-        isReminder:
-          type: boolean
-        locale:
-          type: string
-          enum:
-          - de
-          - en
-        templateKey:
-          type: string
-          nullable: true
-          description: 'Optional template key override. If omitted, uses default ''newsletter-event''. Must be a NEWSLETTER category template key present in DB.
-
-            '
-        maxRecipients:
-          type: integer
-          nullable: true
-          description: 'Story 10.29 AC7: Maximum number of recipients for canary send mode. If omitted, sends to all active subscribers.
-
-            '
-        testMode:
-          type: boolean
-          nullable: true
-          default: false
-          description: 'When true, the send/preview targets only organizers (test send), not real
-            subscribers. Gates whether real recipient emails go out.'
-    NewsletterSendResponse:
-      type: object
-      required:
-      - id
-      - sentAt
-      - isReminder
-      - locale
-      - recipientCount
-      - status
-      properties:
-        id:
-          type: string
-          format: uuid
-        sentAt:
-          type: string
-          format: date-time
-        isReminder:
-          type: boolean
-        locale:
-          type: string
-        recipientCount:
-          type: integer
-        sentByUsername:
-          type: string
-        status:
-          type: string
-          enum:
-          - PENDING
-          - IN_PROGRESS
-          - COMPLETED
-          - PARTIAL
-          - FAILED
-          description: Send-job status
-        sentCount:
-          type: integer
-        failedCount:
-          type: integer
-        startedAt:
-          nullable: true
-          type: string
-          format: date-time
-        completedAt:
-          nullable: true
-          type: string
-          format: date-time
-    SlidesOnlineSendResponse:
-      type: object
-      description: Story 7.3 — response for a dedicated "slides are online" send (runs async).
-      required:
-      - sendId
-      - status
-      - recipientCount
-      properties:
-        sendId:
-          type: string
-          format: uuid
-          description: Id of the underlying newsletter_sends audit row (template_key='slides-online').
-        status:
-          type: string
-          enum:
-          - PENDING
-          - IN_PROGRESS
-          - COMPLETED
-          - PARTIAL
-          - FAILED
-          description: Send-job status at return time (PENDING).
-        recipientCount:
-          type: integer
-          description: Number of active registrants resolved as the recipient base.
-    RegistrantNoticePreviewRequest:
-      type: object
-      description: Story 7.3 hardening — request to preview a registrant-notice mail.
-      required:
-      - templateKey
-      properties:
-        templateKey:
-          type: string
-          description: A REGISTRANT_NOTICE-category template key (e.g. slides-online).
-        locale:
-          type: string
-          enum:
-          - de
-          - en
-          description: Preview language; defaults to German when omitted/unknown.
-    RegistrantNoticeSendRequest:
-      type: object
-      description: Story 7.3 hardening — request to send a registrant-notice mail to registrants.
-      required:
-      - templateKey
-      properties:
-        templateKey:
-          type: string
-          description: A REGISTRANT_NOTICE-category template key (e.g. slides-online).
-    RegistrantNoticePreviewResponse:
-      type: object
-      description: Story 7.3 hardening — rendered preview + active-registrant recipient count.
-      required:
-      - subject
-      - htmlPreview
-      - recipientCount
-      properties:
-        subject:
-          type: string
-          description: Rendered, variable-substituted subject line.
-        htmlPreview:
-          type: string
-          description: Rendered, layout-merged HTML body for the preview iframe.
-        recipientCount:
-          type: integer
-          description: Number of active registrants (registered/confirmed) who would receive the mail.
-    NewsletterSendStatusResponse:
-      type: object
-      required:
-      - id
-      - status
-      - sentCount
-      - failedCount
-      - totalCount
-      - percentComplete
-      properties:
-        id:
-          type: string
-          format: uuid
-        status:
-          type: string
-          enum:
-          - PENDING
-          - IN_PROGRESS
-          - COMPLETED
-          - PARTIAL
-          - FAILED
-        sentCount:
-          type: integer
-        failedCount:
-          type: integer
-        totalCount:
-          type: integer
-        percentComplete:
-          type: integer
-          minimum: 0
-          maximum: 100
-        startedAt:
-          nullable: true
-          type: string
-          format: date-time
-        completedAt:
-          nullable: true
-          type: string
-          format: date-time
-    NewsletterPreviewResponse:
-      type: object
-      required:
-      - subject
-      - htmlPreview
-      - recipientCount
-      properties:
-        subject:
-          type: string
-        htmlPreview:
-          type: string
-        recipientCount:
-          type: integer
     SubscriberResponse:
       type: object
       required:
       - id
       - email
       - subscribedAt
+      - firstName
+      - language
+      - source
+      - username
+      - unsubscribedAt
+      - bounceType
+      - bounceCount
+      - lastBouncedAt
+      - suppressedAt
       properties:
         id:
           type: string
@@ -1405,6 +888,9 @@ components:
       - isLayout
       - isSystemTemplate
       - updatedAt
+      - subject
+      - variables
+      - layoutKey
       properties:
         templateKey:
           type: string
@@ -1554,7 +1040,11 @@ components:
       properties:
         email:
           type: string
-          format: email
+          format: idn-email
+          # One email rule everywhere (#1102): ASCII local part (SES has no SMTPUTF8), any domain.
+          # Source of truth: shared-kernel EmailAddresses.OPENAPI_PATTERN.
+          pattern: '^[A-Za-z0-9!#$%&''*+/=?^_`{|}~-]+(\.[A-Za-z0-9!#$%&''*+/=?^_`{|}~-]+)*@[^\s@.]+(\.[^\s@.]+)+$'
+          maxLength: 254
         subscribed:
           type: boolean
         language:

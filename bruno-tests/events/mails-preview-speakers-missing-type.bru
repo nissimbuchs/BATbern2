@@ -1,0 +1,32 @@
+meta {
+  name: Mail composer — automatic speakers preview without a reminder type (400)
+  type: http
+  seq: 37
+}
+
+post {
+  url: {{baseUrl}}/events/BATbern59/mails/preview
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{organizerAuthToken}}
+}
+
+body:json {
+  {
+    "audience": "SPEAKERS"
+  }
+}
+
+tests {
+  test("automatic speakers mode needs speakerReminderType: 400 (404 where BATbern59 is not seeded)", function() {
+    expect([400, 404]).to.include(res.getStatus());
+  });
+}
+
+docs {
+  Story 16.8c: moved from speaker-pool-api/64-send-reminder-missing-type.bru when the
+  single-speaker send-reminder endpoint was removed. Preview only: nothing is sent.
+}

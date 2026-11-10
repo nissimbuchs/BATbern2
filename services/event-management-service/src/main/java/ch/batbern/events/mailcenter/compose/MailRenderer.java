@@ -18,7 +18,7 @@ import java.util.Map;
  */
 public final class MailRenderer {
 
-    public static final String LAYOUT_KEY = "batbern-default";
+    public static final String LAYOUT_KEY = MailContent.DEFAULT_LAYOUT_KEY;
 
     private MailRenderer() {
     }

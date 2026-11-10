@@ -3,7 +3,7 @@
  * Story 2.6: User Account Management Frontend
  */
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, type QueryClient } from '@tanstack/react-query';
 import type { User, UserPreferencesView, UserSettingsView } from '@/types/userAccount.types';
 import * as userAccountApi from '@/services/api/userAccountApi';
 
@@ -12,6 +12,17 @@ export const userAccountKeys = {
   profile: (userId: string) => ['user-profile', userId] as const,
   preferences: (userId: string) => ['user-preferences', userId] as const,
   settings: (userId: string) => ['user-settings', userId] as const,
+};
+
+/**
+ * Both views and both profile queries read the one settings resource (Story 4.9): the account
+ * profile (`['user-profile', …]`) and `useUserProfile` (`['userProfile']`, include=roles,settings).
+ */
+const invalidateSettings = (queryClient: QueryClient) => {
+  queryClient.invalidateQueries({ queryKey: ['user-preferences'] });
+  queryClient.invalidateQueries({ queryKey: ['user-settings'] });
+  queryClient.invalidateQueries({ queryKey: ['user-profile'] });
+  queryClient.invalidateQueries({ queryKey: ['userProfile'] });
 };
 
 /**
@@ -33,7 +44,8 @@ export const useUserPreferences = (userId: string) => {
   return useQuery({
     queryKey: userAccountKeys.preferences(userId),
     queryFn: async () => {
-      const data = await userAccountApi.getUserProfile(['preferences']);
+      // Story 4.9: display and notification settings are part of the one settings resource
+      const data = await userAccountApi.getUserProfile(['settings']);
       return data.preferences;
     },
     staleTime: 1000 * 60 * 10, // 10 minutes
@@ -83,8 +95,8 @@ export const useUpdateUserPreferences = () => {
     mutationFn: (preferences: Partial<UserPreferencesView>) =>
       userAccountApi.updateUserPreferences(preferences),
     onSuccess: () => {
-      // Invalidate and refetch preferences
-      queryClient.invalidateQueries({ queryKey: ['user-preferences'] });
+      // One settings resource (Story 4.9): both views and the profile read it
+      invalidateSettings(queryClient);
     },
   });
 };
@@ -99,8 +111,8 @@ export const useUpdateUserSettings = () => {
     mutationFn: (settings: Partial<UserSettingsView>) =>
       userAccountApi.updateUserSettings(settings),
     onSuccess: () => {
-      // Invalidate and refetch settings
-      queryClient.invalidateQueries({ queryKey: ['user-settings'] });
+      // One settings resource (Story 4.9): both views and the profile read it
+      invalidateSettings(queryClient);
     },
   });
 };

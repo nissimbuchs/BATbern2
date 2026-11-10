@@ -25,29 +25,3 @@ export interface UserProfile {
   profilePhotoUrl?: string;
   preferences: UserPreferencesData;
 }
-
-export interface UserProfileResponse {
-  userId: string;
-  email: string;
-  firstName: string;
-  lastName: string;
-  currentRole: UserRole;
-  availableRoles: UserRole[];
-  companyId?: string;
-  profilePhotoUrl?: string;
-  preferences: UserPreferencesData;
-}
-
-export interface UpdatePreferencesRequest {
-  language?: 'de' | 'en' | 'fr' | 'it' | 'rm' | 'es' | 'fi' | 'nl' | 'ja';
-  notifications?: {
-    emailEnabled?: boolean;
-    inAppEnabled?: boolean;
-  };
-  theme?: 'light' | 'dark';
-}
-
-export interface UpdatePreferencesResponse {
-  success: boolean;
-  preferences: UserPreferencesData;
-}

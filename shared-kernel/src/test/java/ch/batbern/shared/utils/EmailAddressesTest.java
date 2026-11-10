@@ -114,11 +114,11 @@ class EmailAddressesTest {
 
     @Test
     void should_carrySameRegexInEveryOpenApiSpec() throws IOException {
-        // Drift guard: every email pattern in docs/api must be exactly OPENAPI_PATTERN.
+        // Drift guard: every email pattern in docs/api (internal specs included) must be exactly OPENAPI_PATTERN.
         Path apiDir = Path.of("..", "docs", "api");
         Pattern yamlPattern = Pattern.compile("pattern: '(\\^\\[A-Za-z0-9!.*)'$", Pattern.MULTILINE);
         List<Path> specs;
-        try (Stream<Path> files = Files.list(apiDir)) {
+        try (Stream<Path> files = Stream.concat(Files.list(apiDir), Files.list(apiDir.resolve("internal")))) {
             specs = files.filter(p -> p.toString().endsWith(".openapi.yml")).toList();
         }
         int found = 0;
@@ -129,6 +129,7 @@ class EmailAddressesTest {
                 found++;
             }
         }
-        assertThat(found).as("request email fields carrying the rule").isEqualTo(14);
+        // every request e-mail property, plus two registration responses that echo the request
+        assertThat(found).as("email properties carrying the rule").isEqualTo(18);
     }
 }

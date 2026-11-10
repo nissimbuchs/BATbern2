@@ -244,9 +244,9 @@ describe('the committed baseline', () => {
     for (const expected of [
       'path-kebab-case POST /events/batch_registrations',
       'no-literal-under-events POST /events/batch_registrations',
-      'no-verb-segment POST /speakers/{speakerId}/ai/analyze-abstract',
-      'no-verb-segment PUT /tasks/{taskId}/complete',
-      'no-verb-segment PUT /tasks/{taskId}/reassign',
+      'no-verb-segment POST /events/{eventCode}/mails/preview',
+      'no-verb-segment POST /speaker-portal/events/{eventCode}/content/submit',
+      'no-verb-segment POST /logos/upload-from-url',
       'uuid-path-param POST /users/company-logo-requests/{requestId}/approve',
       'uuid-path-param POST /users/merge-requests/{requestId}/decline',
     ]) {

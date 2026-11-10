@@ -9,6 +9,7 @@ import { useUpdateUser } from '../useUpdateUser';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import * as userManagementApi from '@/services/api/userManagementApi';
 import type { User } from '@/types/user.types';
+import { aUser } from '@/test/fixtures';
 
 // Mock the API
 vi.mock('@/services/api/userManagementApi', () => ({
@@ -16,6 +17,7 @@ vi.mock('@/services/api/userManagementApi', () => ({
 }));
 
 const mockUser: User = {
+  ...aUser(),
   id: 'user-1',
   firstName: 'John',
   lastName: 'Doe',

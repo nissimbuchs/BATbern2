@@ -171,6 +171,7 @@ export function useSessionBatchImport(
               title: candidate.source.title,
               status: 'failed',
               message: errorMessage,
+              sessionSlug: null,
             });
           });
 

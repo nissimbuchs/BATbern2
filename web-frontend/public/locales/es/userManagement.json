@@ -286,7 +286,8 @@
       "allowMessaging": "Permitir mensajes directos de otros usuarios",
       "viewPolicy": "Ver política de privacidad",
       "save": "Guardar configuración de privacidad"
-    }
+    },
+    "saveFailed": "No se pudo guardar. Revisa los datos e inténtalo de nuevo."
   },
   "profile": {
     "personalInfo": "Información personal",

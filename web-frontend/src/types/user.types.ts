@@ -14,7 +14,6 @@ export type UpdateUserRequest = components['schemas']['UpdateUserRequest'];
 export type GetOrCreateUserRequest = components['schemas']['GetOrCreateUserRequest'];
 export type GetOrCreateUserResponse = components['schemas']['GetOrCreateUserResponse'];
 export type PaginatedUserResponse = components['schemas']['PaginatedUserResponse'];
-export type UserPreferences = components['schemas']['UserPreferences'];
 export type UserSettings = components['schemas']['UserSettings'];
 export type UpdateUserRolesRequest = components['schemas']['UpdateUserRolesRequest'];
 export type Company = components['schemas']['Company'];

@@ -35,7 +35,7 @@
     "saveFailed": "Salvataggio fallito. Riprova.",
     "venueCoordination": {
       "title": "Contatti sede & catering",
-      "subtitle": "Questi contatti ricevono le e-mail di preventivo e programma inviate dal tab Sede della pagina di dettaglio dell'evento. Sono uguali per ogni evento — definirli una sola volta qui.",
+      "subtitle": "Questi contatti ricevono le e-mail di preventivo e programma inviate dal tab Comunicazioni della pagina di dettaglio dell'evento. Sono uguali per ogni evento — definirli una sola volta qui.",
       "venueSection": "Contatto sede",
       "cateringSection": "Contatto catering",
       "coordinatorSection": "Coordinatore della sede",

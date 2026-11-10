@@ -158,6 +158,28 @@ class PartnerMeetingRsvpControllerIntegrationTest extends AbstractIntegrationTes
                 .andExpect(status().isBadRequest());
     }
 
+    @Test
+    void should_acceptIdnDomain_when_attendeeEmailFollowsTheRule() throws Exception {
+        // 4.9b: the #1102 rule (ASCII local part, any domain), as pcs-internal says
+        Map<String, Object> req = rsvpRequest(savedMeetingId, "juerg.brunner@bücherstube.example", "ACCEPTED");
+
+        mockMvc.perform(post(INTERNAL_BASE)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.attendeeEmail").value("juerg.brunner@bücherstube.example"));
+    }
+
+    @Test
+    void should_return400_when_attendeeEmailLocalPartIsNotAscii() throws Exception {
+        Map<String, Object> req = rsvpRequest(savedMeetingId, "jürg@bücherstube.example", "ACCEPTED");
+
+        mockMvc.perform(post(INTERNAL_BASE)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isBadRequest());
+    }
+
     // ─── AC7: GET RSVP list ────────────────────────────────────────────────────
 
     @Test

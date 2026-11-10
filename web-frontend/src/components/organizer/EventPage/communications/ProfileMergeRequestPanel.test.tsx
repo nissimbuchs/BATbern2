@@ -85,8 +85,8 @@ describe('ProfileMergeRequestPanel (#1237)', () => {
       ...open,
       status: 'APPROVED',
       decidedBy: 'orga.nizer',
-      preview: undefined,
-    } as ProfileMergeRequestView);
+      preview: null,
+    });
     const onDecided = vi.fn();
     renderPanel(onDecided);
 
@@ -104,8 +104,8 @@ describe('ProfileMergeRequestPanel (#1237)', () => {
       status: 'DECLINED',
       decidedBy: 'orga.nizer',
       reason: 'Andere Person',
-      preview: undefined,
-    } as ProfileMergeRequestView);
+      preview: null,
+    });
     renderPanel();
 
     await userEvent.click(await screen.findByTestId('merge-request-decline'));

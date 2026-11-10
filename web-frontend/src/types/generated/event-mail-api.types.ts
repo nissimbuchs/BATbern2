@@ -392,22 +392,22 @@ export interface components {
        */
       sentAt: string;
       /** @description Organizer who sent it; absent for automatic mail. */
-      senderUsername?: string | null;
+      senderUsername: string | null;
       audience: components['schemas']['MailAudience'];
-      templateKey?: string | null;
+      templateKey: string | null;
       /** @enum {string} */
       contentSource: 'TEMPLATE' | 'OWN_TEXT';
       /** @description Absent for a newsletter sent before the record existed. */
-      subject?: string | null;
+      subject: string | null;
       recipientCount: number;
       deliveredCount: number;
       failedCount: number;
       /** @description Number of mails this entry stands for (> 1 for a collapsed automatic entry). */
       messageCount: number;
       /** Format: uuid */
-      newsletterSendId?: string | null;
+      newsletterSendId: string | null;
       /** @description Send-job status of a newsletter (PENDING, IN_PROGRESS, COMPLETED, PARTIAL, FAILED). */
-      newsletterStatus?: string | null;
+      newsletterStatus: string | null;
       /** @description Test send to the organizers. */
       test: boolean;
       /**
@@ -415,39 +415,39 @@ export interface components {
        *     meeting invite or cancellation (Story 16.9). The meeting id is the partner meeting's public id.
        * @example partner-meeting:3f2a9c1e-7b4d-4e2a-9c1e-7b4d4e2a9c1e
        */
-      reference?: string | null;
+      reference: string | null;
       /**
        * @description Story 16.2a. `IN` for mail a person wrote to the platform; absent means `OUT`.
        * @enum {string}
        */
-      direction?: 'OUT' | 'IN';
+      direction: 'OUT' | 'IN';
       /** @description Story 16.2a. Sender of an inbound mail. */
-      fromAddress?: string | null;
-      fromName?: string | null;
-      eventCode?: string | null;
+      fromAddress: string | null;
+      fromName: string | null;
+      eventCode: string | null;
       /** @description Story 16.2a. The conversation an inbound mail belongs to. */
-      conversationKey?: string | null;
+      conversationKey: string | null;
       /** @description Story 16.7. Inbound mail flagged spam by SES; shown only in the Spam list. */
-      spam?: boolean | null;
+      spam: boolean | null;
       /**
        * @description Story 16.10. In the participant view: the delivery status of the participant's own address
        *     (the worst when several). Absent for received mail.
        * @enum {string|null}
        */
-      participantStatus?: 'SENT' | 'DELIVERED' | 'FAILED' | null;
+      participantStatus: 'SENT' | 'DELIVERED' | 'FAILED' | null;
       /**
        * @description Story 16.2a. Attachments of an inbound mail. Story 16.6: files up to 25 MB are kept (`kept`),
        *     larger ones by name only.
        */
-      attachments?: components['schemas']['MailAttachment'][] | null;
+      attachments: components['schemas']['MailAttachment'][] | null;
     };
     MailAttachment: {
       name: string;
-      contentType?: string;
+      contentType: string;
       /** Format: int64 */
-      size?: number;
+      size: number;
       /** @description Story 16.6. The file is kept and can be downloaded (getConversationAttachmentDownloadUrl). */
-      kept?: boolean;
+      kept: boolean;
     };
     MailMessagePatch: {
       /** @description Only `false` is accepted. */
@@ -467,13 +467,13 @@ export interface components {
     MailConversationSummary: {
       /** @example conv-12 */
       conversationKey: string;
-      eventCode?: string | null;
+      eventCode: string | null;
       audience: components['schemas']['MailAudience'];
       subject: string;
       counterpartAddress: string;
-      counterpartName?: string | null;
+      counterpartName: string | null;
       status: components['schemas']['MailConversationStatus'];
-      assigneeUsername?: string | null;
+      assigneeUsername: string | null;
       /** @description Where the first mail arrived, e.g. `batbern60-moderator@batbern.ch`, or `reply` for a reply to a mail. */
       via: string;
       /** Format: date-time */
@@ -483,12 +483,12 @@ export interface components {
        * Format: uuid
        * @description #1237: set when the conversation is a profile merge request; the Mail Center then shows the request with approve and decline (users API, /users/merge-requests/{id})
        */
-      mergeRequestId?: string | null;
+      mergeRequestId: string | null;
       /**
        * Format: uuid
        * @description #1246: set when the conversation is a company logo request; the Mail Center then shows the old and the new logo with accept and decline (users API, /users/company-logo-requests/{id})
        */
-      logoRequestId?: string | null;
+      logoRequestId: string | null;
     };
     MailConversationPage: {
       data: components['schemas']['MailConversationSummary'][];
@@ -519,9 +519,9 @@ export interface components {
     MailMessageDetail: {
       message: components['schemas']['MailMessageSummary'];
       /** @description The mail as sent, credentials redacted; absent for a newsletter sent before the record existed. */
-      bodyHtml?: string | null;
+      bodyHtml: string | null;
       recipients: components['schemas']['MailRecipientEntry'][];
-      progress?: components['schemas']['MailProgress'];
+      progress: components['schemas']['MailProgress'];
     };
     /** @description Send progress of a newsletter or registrant notice (Story 16.8); absent for other mail. */
     MailProgress: {
@@ -593,7 +593,7 @@ export interface components {
     MailAlreadySent: {
       /** Format: date-time */
       sentAt: string;
-      mailKey?: string | null;
+      mailKey: string | null;
     };
     MailSendRequest: components['schemas']['MailComposeRequest'] & {
       /** @enum {string} */
@@ -602,7 +602,7 @@ export interface components {
     MailComposeRecipient: {
       displayName: string;
       address: string;
-      cc?: string[];
+      cc: string[];
     };
     MailSampleRecipient: {
       displayName: string;
@@ -618,28 +618,28 @@ export interface components {
       html: string;
       recipientIndex: number;
       recipientCount: number;
-      recipient?: components['schemas']['MailComposeRecipient'];
+      recipient: components['schemas']['MailComposeRecipient'];
       sampleRecipients: components['schemas']['MailSampleRecipient'][];
       /** @description False when everyone gets the same text (newsletter, venue); no stepping then. */
       personalized: boolean;
       /** @description The template recipient `recipientIndex` gets (speakers in automatic mode). */
-      templateKey?: string | null;
+      templateKey: string | null;
       locale: string;
-      replyTo?: string | null;
+      replyTo: string | null;
       /** @description How many organizers a test send reaches. */
       organizerCount: number;
       skipped: components['schemas']['MailSkippedRecipient'][];
       unknownPlaceholders: string[];
       /** @description OWN_TEXT only. The subject with every filled value marked (display only). */
-      highlightedSubject?: string | null;
+      highlightedSubject: string | null;
       /** @description OWN_TEXT only. `html` with every filled value in `<mark data-var>` and every unknown placeholder in `<mark class="unknown">` (display only; never sent). */
-      highlightedHtml?: string | null;
+      highlightedHtml: string | null;
       /** @description The variables offered as chips for this audience (Story 16.5). */
-      offeredVariables?: string[];
+      offeredVariables: string[];
       /** @description Every variable own text for this audience may use. */
-      allowedVariables?: string[];
+      allowedVariables: string[];
       /** @description REGISTRANTS with OWN_TEXT only. A mail with this subject already went to this event's registrants; the send needs `confirmResend`. */
-      alreadySent?: components['schemas']['MailAlreadySent'] | null;
+      alreadySent: components['schemas']['MailAlreadySent'] | null;
     };
     MailSendResponse: {
       /** @description Keys of the recorded mail(s); speakers in automatic mode can give one per template. */
@@ -656,7 +656,7 @@ export interface components {
       /** @enum {string} */
       status: 'SENT' | 'DELIVERED' | 'FAILED';
       /** @description Bounce type/subtype, `complaint`, SES reject reason or SES error code. */
-      failureReason?: string | null;
+      failureReason: string | null;
     };
     MailCounts: {
       failedDeliveries: number;
@@ -880,6 +880,13 @@ export interface operations {
         };
         content?: never;
       };
+      /** @description A recipient is on a reserved domain (RFC 2606/6761) that never receives mail, e.g. a venue contact stored before the setting was validated. `details.code = RESERVED_DOMAIN`, `details.domain` names the domain; nothing is sent. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
     };
   };
   getEventMailCounts: {
@@ -980,7 +987,12 @@ export interface operations {
            *       "replyTo": "batbern60-moderator@batbern.ch",
            *       "organizerCount": 6,
            *       "skipped": [],
-           *       "unknownPlaceholders": []
+           *       "unknownPlaceholders": [],
+           *       "allowedVariables": [],
+           *       "alreadySent": null,
+           *       "highlightedHtml": null,
+           *       "highlightedSubject": null,
+           *       "offeredVariables": []
            *     }
            */
           'application/json': components['schemas']['MailPreviewResponse'];

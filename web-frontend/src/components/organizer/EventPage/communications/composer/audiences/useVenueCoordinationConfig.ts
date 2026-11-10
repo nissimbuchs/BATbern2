@@ -6,8 +6,6 @@ import {
   type VenueCoordinationConfig,
 } from '@/components/organizer/Admin/VenueCateringContactsTab';
 
-export type { VenueRecipientRole } from '@/services/venueCoordinationService';
-
 function parseConfig(raw: string | null | undefined): VenueCoordinationConfig | null {
   if (!raw) return null;
   try {

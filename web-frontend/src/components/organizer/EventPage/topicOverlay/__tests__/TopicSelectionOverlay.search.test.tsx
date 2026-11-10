@@ -10,8 +10,10 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import { api } from '@/test/msw/api';
 import { TopicSelectionOverlay } from '../TopicSelectionOverlay';
+import { aTopic } from '@/test/fixtures';
 
 const topic = (topicCode: string, title: string, description: string) => ({
+  ...aTopic(),
   topicCode,
   title,
   description,

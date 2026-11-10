@@ -275,6 +275,23 @@ components:
     NotificationResponse:
       type: object
       description: A single in-app notification. Null fields are serialized (not omitted).
+      required:
+        - id
+        - recipientUsername
+        - eventCode
+        - notificationType
+        - channel
+        - priority
+        - subject
+        - body
+        - status
+        - sentAt
+        - readAt
+        - failedAt
+        - failureReason
+        - metadata
+        - createdAt
+        - updatedAt
       properties:
         id:
           type: string
@@ -327,6 +344,9 @@ components:
           nullable: true
     NotificationsResponse:
       type: object
+      required:
+        - data
+        - pagination
       properties:
         data:
           type: array
@@ -337,6 +357,11 @@ components:
     NotificationPagination:
       type: object
       description: 1-based pagination metadata (notification inbox wire — page/limit/totalItems/totalPages only).
+      required:
+        - page
+        - limit
+        - totalItems
+        - totalPages
       properties:
         page:
           type: integer
@@ -349,12 +374,18 @@ components:
           type: integer
     NotificationCountResponse:
       type: object
+      required:
+        - count
       properties:
         count:
           type: integer
           format: int64
     MarkAsReadResponse:
       type: object
+      required:
+        - success
+        - markedCount
+        - updatedAt
       properties:
         success:
           type: boolean
@@ -365,6 +396,8 @@ components:
           format: date-time
     DeleteNotificationResponse:
       type: object
+      required:
+        - success
       properties:
         success:
           type: boolean

@@ -1,8 +1,6 @@
 package ch.batbern.events.service;
 
 import ch.batbern.events.client.UserApiClient;
-import ch.batbern.events.core.dto.generated.VenueCoordinationPreviewResponse;
-import ch.batbern.events.core.dto.generated.VenueCoordinationSendResponse;
 import ch.batbern.events.domain.EmailTemplate;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Session;
@@ -12,7 +10,6 @@ import ch.batbern.events.dto.venuecoordination.VenueCoordinationConfig.Contact;
 import ch.batbern.events.dto.venuecoordination.VenueCoordinationConfig.Role;
 import ch.batbern.events.dto.venuecoordination.VenueCoordinationConfig;
 import ch.batbern.events.exception.EventNotFoundException;
-import ch.batbern.events.mailcenter.compose.MailRenderer;
 import ch.batbern.events.mailcenter.render.MailContent;
 import ch.batbern.events.mailcenter.render.MailPipeline;
 import ch.batbern.events.mailcenter.render.RenderedMail;
@@ -45,7 +42,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
- * Orchestrates the Event-Detail Venue tab's preview + send flow:
+ * Renders and sends venue and catering mail for the Mail Center composer (Story 16.8):
  *
  *   1. Reads the {@link VenueCoordinationConfig} singleton (admin-managed JSON
  *      under {@code app_settings.venue.coordination.config}).
@@ -87,22 +84,6 @@ public class VenueCoordinationService {
     @Value("${app.base-url:https://batbern.ch}")
     private String baseUrl;
 
-    // ── Preview ───────────────────────────────────────────────────────────────
-
-    @Transactional(readOnly = true)
-    public VenueCoordinationPreviewResponse preview(String eventCode, String templateKey,
-                                                     List<Role> recipients, String locale,
-                                                     String notes) {
-        VenueMail mail = renderFor(eventCode, templateKey, recipients, locale, notes);
-        return VenueCoordinationPreviewResponse.builder()
-                .subject(mail.subject())
-                .htmlBody(mail.body())
-                .toEmail(mail.to())
-                .ccEmails(mail.cc())
-                .replyToEmail(mail.replyTo())
-                .build();
-    }
-
     /**
      * The venue mail as it goes out: one mail, first role To, the rest Cc, Reply-To the coordinator
      * (Story 16.8: the send and the composer's preview both render here).
@@ -132,8 +113,8 @@ public class VenueCoordinationService {
             String notes) {
         EmailTemplate template = loadTemplateOrThrow(templateKey, normaliseLocale(locale));
         return renderFor(eventCode, new MailContent(template.getTemplateKey(), normaliseLocale(locale),
-                Optional.ofNullable(template.getSubject()).orElse(""), template.getHtmlBody(), MailRenderer.LAYOUT_KEY,
-                MailContext.ContentSource.TEMPLATE), recipients, notes);
+                Optional.ofNullable(template.getSubject()).orElse(""), template.getHtmlBody(),
+                MailContent.DEFAULT_LAYOUT_KEY, MailContext.ContentSource.TEMPLATE), recipients, notes);
     }
 
     /** The venue mail from any content: a stored template or own text (Story 16.5). */
@@ -159,33 +140,25 @@ public class VenueCoordinationService {
 
     // ── Send ──────────────────────────────────────────────────────────────────
 
+    /** The template mail, recorded under the composer's trigger (Story 16.8: the composer opens it first). */
     @Transactional(readOnly = true)
-    public VenueCoordinationSendResponse send(String eventCode, String templateKey,
-                                               List<Role> recipients, String locale,
-                                               String notes, String sentByUsername) {
-        return send(eventCode, templateKey, recipients, locale, notes, sentByUsername,
-                MailTrigger.organizer(sentByUsername));
-    }
-
-    /** As above, recorded under the caller's trigger (Story 16.8: the composer opens it first). */
-    @Transactional(readOnly = true)
-    public VenueCoordinationSendResponse send(String eventCode, String templateKey,
+    public void send(String eventCode, String templateKey,
                                                List<Role> recipients, String locale,
                                                String notes, String sentByUsername, MailTrigger trigger) {
         VenueMail mail = renderFor(eventCode, templateKey, recipients, locale, notes);
-        return deliver(mail, MailContext.of(trigger, eventCode, MailContext.Audience.VENUE, templateKey), recipients,
+        deliver(mail, MailContext.of(trigger, eventCode, MailContext.Audience.VENUE, templateKey), recipients,
                 sentByUsername);
     }
 
     /** Own text (Story 16.5): the same single mail, rendered from the organizer's text. */
-    public VenueCoordinationSendResponse sendOwnText(String eventCode, MailContent content, List<Role> recipients,
+    public void sendOwnText(String eventCode, MailContent content, List<Role> recipients,
             String notes, String sentByUsername, MailTrigger trigger) {
         VenueMail mail = renderFor(eventCode, content, recipients, notes);
-        return deliver(mail, MailContext.ownText(trigger, eventCode, MailContext.Audience.VENUE), recipients,
+        deliver(mail, MailContext.ownText(trigger, eventCode, MailContext.Audience.VENUE), recipients,
                 sentByUsername);
     }
 
-    private VenueCoordinationSendResponse deliver(VenueMail mail, MailContext context, List<Role> recipients,
+    private void deliver(VenueMail mail, MailContext context, List<Role> recipients,
             String sentByUsername) {
         List<Role> uniqueRoles = recipients.stream().distinct().toList();
 
@@ -202,11 +175,7 @@ public class VenueCoordinationService {
                 configurationSetName,
                 mail.replyTo()
         );
-
-        return VenueCoordinationSendResponse.builder().sentTo(uniqueRoles).build();
     }
-
-    /** Story 16.11: the one pipeline; venue mail is always in the BATbern layout, as before. */
 
     private List<Contact> resolveContactsOrThrow(List<Role> recipients) {
         if (recipients == null || recipients.isEmpty()) {

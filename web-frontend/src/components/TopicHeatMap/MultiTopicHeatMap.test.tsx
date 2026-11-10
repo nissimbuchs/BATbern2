@@ -7,6 +7,7 @@ import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { MultiTopicHeatMap, type TopicWithHistory } from './MultiTopicHeatMap';
+import { aTopicUsage } from '@/test/fixtures';
 
 const year = new Date().getFullYear();
 
@@ -30,12 +31,9 @@ describe('MultiTopicHeatMap attendance in the tooltip', () => {
     const user = userEvent.setup();
     renderMap([
       topic('Known', [
+        { ...aTopicUsage(), eventNumber: 70, usedDate: `${year}-02-10T18:00:00Z`, attendance: 40 },
         {
-          eventNumber: 70,
-          usedDate: `${year}-02-10T18:00:00Z`,
-          attendance: 40,
-        },
-        {
+          ...aTopicUsage(),
           eventNumber: 71,
           usedDate: `${year}-03-10T18:00:00Z`,
           attendance: null,
@@ -43,6 +41,7 @@ describe('MultiTopicHeatMap attendance in the tooltip', () => {
       ]),
       topic('Upcoming', [
         {
+          ...aTopicUsage(),
           eventNumber: 72,
           usedDate: `${year}-02-20T18:00:00Z`,
           attendance: null,
@@ -66,7 +65,12 @@ describe('MultiTopicHeatMap staleness', () => {
     renderMap([
       {
         ...topic('Used', [
-          { eventNumber: 70, usedDate: `${year}-02-10T18:00:00Z`, attendance: 40 },
+          {
+            ...aTopicUsage(),
+            eventNumber: 70,
+            usedDate: `${year}-02-10T18:00:00Z`,
+            attendance: 40,
+          },
         ]),
         stalenessScore: null,
       },

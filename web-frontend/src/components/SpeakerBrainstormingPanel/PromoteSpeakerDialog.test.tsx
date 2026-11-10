@@ -11,6 +11,7 @@ import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { PromoteSpeakerDialog } from './PromoteSpeakerDialog';
 import type { SpeakerPoolEntry } from '@/types/speakerPool.types';
+import { aSpeakerPoolEntry } from '@/test/fixtures';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -42,6 +43,7 @@ vi.mock('@/hooks/useSpeakerPool', () => ({
 }));
 
 const speaker: SpeakerPoolEntry = {
+  ...aSpeakerPoolEntry(),
   id: 'speaker-1',
   eventId: 'event-1',
   speakerName: '', // intentionally blank to force form-driven entry

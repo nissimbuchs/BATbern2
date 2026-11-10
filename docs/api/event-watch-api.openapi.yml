@@ -408,6 +408,8 @@ components:
       - confirmedBy
       - arrivedAt
       - arrivalCount
+      - speakerFirstName
+      - speakerLastName
       properties:
         type:
           type: string
@@ -455,6 +457,10 @@ components:
       - venueName
       - eventStatus
       - sessions
+      - typicalStartTime
+      - typicalEndTime
+      - themeImageUrl
+      - currentPublishedPhase
       properties:
         eventCode:
           type: string
@@ -505,6 +511,16 @@ components:
       - sessionSlug
       - title
       - speakers
+      - abstract
+      - sessionType
+      - scheduledStartTime
+      - scheduledEndTime
+      - durationMinutes
+      - status
+      - actualStartTime
+      - actualEndTime
+      - overrunMinutes
+      - completedBy
       properties:
         sessionSlug:
           type: string
@@ -569,6 +585,13 @@ components:
       description: Speaker detail for Watch organizer sync.
       required:
       - username
+      - firstName
+      - lastName
+      - company
+      - companyLogoUrl
+      - profilePictureUrl
+      - bio
+      - speakerRole
       properties:
         username:
           type: string
@@ -613,6 +636,7 @@ components:
       - arrivedSpeakerCount
       - totalSpeakerCount
       - sessions
+      - currentSessionSlug
       properties:
         eventCode:
           type: string

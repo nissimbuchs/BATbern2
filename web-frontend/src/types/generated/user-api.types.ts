@@ -91,8 +91,7 @@ export interface paths {
      *
      *     **Resource Expansion**:
      *     - company: Expands company details
-     *     - preferences: Includes user preferences
-     *     - settings: Includes account settings
+     *     - settings: Includes the user's settings (display, notifications, privacy)
      *     - roles: Includes full role information
      *     - activity: Includes recent activity history
      *
@@ -124,8 +123,7 @@ export interface paths {
     };
     /**
      * List users with advanced query support
-     * @description Retrieve a paginated list of users with optional filtering, sorting,
-     *     field selection, and resource expansion.
+     * @description Retrieve a paginated list of users with optional filtering, sorting and resource expansion.
      *
      *     **Acceptance Criteria**: AC3, AC13, AC14
      *
@@ -144,14 +142,10 @@ export interface paths {
      *     - Descending: -createdAt
      *     - Multiple fields: lastName,-createdAt
      *
-     *     **Field Selection**:
-     *     - Specific fields: ?fields=id,email,firstName,lastName,roles
-     *     - All fields: omit fields parameter
-     *
      *     **Resource Expansion**:
      *     - ?include=company: Expands company details
      *     - ?include=roles: Includes full role information
-     *     - ?include=preferences: Includes user preferences
+     *     - ?include=settings: Includes the user's settings
      *
      *     **Performance**:
      *     - Basic query: <100ms (P95)
@@ -764,38 +758,6 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/users/me/preferences': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Get current user preferences
-     * @description Retrieve preferences for the currently authenticated user.
-     *
-     *     **Acceptance Criteria**: AC6
-     *
-     *     Includes: theme, language, notification settings, quiet hours
-     */
-    get: operations['getUserPreferences'];
-    /**
-     * Update current user preferences
-     * @description Update preferences for the currently authenticated user.
-     *
-     *     **Acceptance Criteria**: AC6
-     *
-     *     **Validation**: All preference values validated against allowed enums/formats
-     */
-    put: operations['updateUserPreferences'];
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
   '/users/me/settings': {
     parameters: {
       query?: never;
@@ -804,29 +766,25 @@ export interface paths {
       cookie?: never;
     };
     /**
-     * Get current user settings
-     * @description Retrieve account settings for the currently authenticated user.
-     *
-     *     **Acceptance Criteria**: AC7
-     *
-     *     Includes: privacy controls, account preferences, security settings
+     * Get the caller's settings
+     * @description The caller's settings as one object: display (theme, language, timezone), notifications
+     *     (channels, frequency, Q&A digest, quiet hours) and privacy. Story 4.9 merged the former
+     *     `/users/me/preferences` into this resource; the storage is unchanged.
      */
     get: operations['getUserSettings'];
-    /**
-     * Update current user settings
-     * @description Update account settings for the currently authenticated user.
-     *
-     *     **Acceptance Criteria**: AC7
-     *
-     *     **Privacy Controls**: Profile visibility, contact information display
-     *     **Security Settings**: Two-factor authentication enablement
-     */
-    put: operations['updateUserSettings'];
+    put?: never;
     post?: never;
     delete?: never;
     options?: never;
     head?: never;
-    patch?: never;
+    /**
+     * Change some of the caller's settings
+     * @description Partial update (ADR-013): only the fields in the body change, every other setting stays as
+     *     it is; `quietHoursStart` / `quietHoursEnd` set to an empty string clear them. Returns the
+     *     whole settings object. An unknown enum value, a malformed quiet hour or
+     *     a timezone that is not an IANA zone id answers 400.
+     */
+    patch: operations['updateUserSettings'];
     trace?: never;
   };
   '/users/me/additional-emails': {
@@ -1372,12 +1330,12 @@ export interface components {
     /** @description Public organizer projection for the About page (no sensitive fields; no email address, GHSA-qhqv: the page contacts info@batbern.ch) */
     PublicOrganizerResponse: {
       /** @description Username (public identifier) */
-      id?: string;
-      firstName?: string;
-      lastName?: string;
-      bio?: string | null;
-      profilePictureUrl?: string | null;
-      companyId?: string | null;
+      id: string;
+      firstName: string;
+      lastName: string;
+      bio: string | null;
+      profilePictureUrl: string | null;
+      companyId: string | null;
     };
     /** @description Cognito↔DB sync status snapshot (Story 1.2.5) */
     UserSyncStatus: {
@@ -1401,15 +1359,15 @@ export interface components {
        */
       username: string;
       /** @example John */
-      firstName?: string | null;
+      firstName: string | null;
       /** @example Doe */
-      lastName?: string | null;
+      lastName: string | null;
       /**
        * Format: uri
        * @description CloudFront URL of the user's portrait, when set.
        * @example https://cdn.batbern.ch/users/john.doe/profile.jpg
        */
-      profilePictureUrl?: string | null;
+      profilePictureUrl: string | null;
     };
     WatchPairingRequest: {
       /**
@@ -1453,9 +1411,9 @@ export interface components {
        * @description True if this user has a linked Cognito account (UUID not exposed per ADR-003)
        * @example true
        */
-      hasCognitoAccount?: boolean;
+      hasCognitoAccount: boolean;
       /**
-       * Format: email
+       * Format: idn-email
        * @example john.doe@example.com
        */
       email: string;
@@ -1464,20 +1422,20 @@ export interface components {
       /** @example Doe */
       lastName: string;
       /** @example Software engineer passionate about cloud architecture */
-      bio?: string | null;
+      bio: string | null;
       /**
        * @description Company name (unique identifier) - Story 1.16.2
        * @example Swiss IT Solutions AG
        */
-      companyId?: string | null;
+      companyId: string | null;
       roles: ('ORGANIZER' | 'SPEAKER' | 'PARTNER' | 'ATTENDEE')[];
       /**
        * Format: uri
        * @example https://cdn.batbern.ch/profile-pictures/550e8400.jpg
        */
-      profilePictureUrl?: string | null;
+      profilePictureUrl: string | null;
       /** @example true */
-      active?: boolean;
+      active: boolean;
       /**
        * Format: date-time
        * @example 2025-01-15T10:00:00Z
@@ -1492,7 +1450,7 @@ export interface components {
        * Format: date-time
        * @example 2025-01-20T14:30:00Z
        */
-      lastLoginAt?: string | null;
+      lastLoginAt: string | null;
       /**
        * Format: date-time
        * @description Story 12.11: moment the user accepted the Terms of Service + Privacy Policy.
@@ -1502,17 +1460,17 @@ export interface components {
        *     (write-once via UpdateUserRequest.termsAccepted).
        * @example 2026-06-04T16:00:00Z
        */
-      termsAcceptedAt?: string | null;
-      company?: components['schemas']['Company'] | null;
-      preferences?: components['schemas']['UserPreferences'] | null;
-      settings?: components['schemas']['UserSettings'] | null;
+      termsAcceptedAt: string | null;
+      company: components['schemas']['Company'] | null;
+      /** @description The user's settings, only with `?include=settings`. */
+      settings: components['schemas']['UserSettings'] | null;
       /**
        * @description Story 10.32: additional email addresses registered on this profile.
        *     Receive forwarded copies of mail addressed to the user (ok@/partner@/batbern{N}@
        *     role fan-out, registration confirmations) and are accepted as authorised
        *     senders by the Story 10.26 alias forwarding (EMS). Always present; may be empty.
        */
-      additionalEmails?: components['schemas']['AdditionalEmail'][];
+      additionalEmails: components['schemas']['AdditionalEmail'][];
     };
     /** @description One side of a merge, as the organizer sees it */
     UserMergeProfileSummary: {
@@ -1520,7 +1478,7 @@ export interface components {
       firstName: string;
       lastName: string;
       email: string;
-      companyId?: string | null;
+      companyId: string | null;
       /** @description The profile has a Cognito user, i.e. the person can log in with it */
       hasLogin: boolean;
       roles: string[];
@@ -1561,15 +1519,15 @@ export interface components {
       candidateId: string;
       /** @example h***@example.ch */
       maskedEmail: string;
-      companyName?: string | null;
+      companyName: string | null;
       /** @description #1237: a merge request for this profile is with the organizers */
-      requestPending?: boolean;
+      requestPending: boolean;
       /**
        * @description #1244: the earlier profile carries a placeholder address from the historical import
        *     (`vorname.nachname@batbern.ch`) that reaches nobody. Only the request to the organizers
        *     (#1237) is offered; a claim link is refused (409 `PLACEHOLDER_ADDRESS`).
        */
-      placeholderAddress?: boolean;
+      placeholderAddress: boolean;
     };
     CompanyLogoRequestCreate: {
       /** @description Upload id of a confirmed logo upload (`/logos/{uploadId}/confirm`) */
@@ -1587,20 +1545,20 @@ export interface components {
       /** @enum {string} */
       status: 'OPEN' | 'APPROVED' | 'DECLINED';
       requesterUsername: string;
-      requesterName?: string | null;
+      requesterName: string | null;
       /** @description Company identifier (ADR-003 slug) */
       companyName: string;
-      companyDisplayName?: string | null;
+      companyDisplayName: string | null;
       /** @description The company's logo when the request was made; absent when it had none */
-      oldLogoUrl?: string | null;
+      oldLogoUrl: string | null;
       newLogoUrl: string;
-      note?: string | null;
+      note: string | null;
       /** Format: date-time */
       createdAt: string;
-      decidedBy?: string | null;
+      decidedBy: string | null;
       /** Format: date-time */
-      decidedAt?: string | null;
-      reason?: string | null;
+      decidedAt: string | null;
+      reason: string | null;
     };
     ProfileMergeRequestCreate: {
       /** Format: uuid */
@@ -1624,15 +1582,15 @@ export interface components {
       requesterUsername: string;
       /** @description The profile without login (merge source) */
       sourceUsername: string;
-      note?: string | null;
+      note: string | null;
       /** Format: date-time */
       createdAt: string;
-      decidedBy?: string | null;
+      decidedBy: string | null;
       /** Format: date-time */
-      decidedAt?: string | null;
-      reason?: string | null;
+      decidedAt: string | null;
+      reason: string | null;
       /** @description Both profiles and what would move; absent once the request is decided */
-      preview?: components['schemas']['UserMergePreview'] | null;
+      preview: components['schemas']['UserMergePreview'] | null;
     };
     DuplicateCandidate: {
       /** @enum {string} */
@@ -1646,15 +1604,15 @@ export interface components {
     };
     DuplicateCandidateProfile: {
       username: string;
-      firstName?: string | null;
-      lastName?: string | null;
+      firstName: string | null;
+      lastName: string | null;
       email: string;
-      companyId?: string | null;
+      companyId: string | null;
       hasLogin: boolean;
       /** @description The address is an import placeholder (`vorname.nachname@batbern.ch`) */
       placeholderAddress: boolean;
       /** Format: date-time */
-      createdAt?: string | null;
+      createdAt: string | null;
     };
     DuplicateDismissal: {
       usernameA: string;
@@ -1662,7 +1620,7 @@ export interface components {
     };
     AccountMergeRequest: {
       /**
-       * Format: email
+       * Format: idn-email
        * @description Primary address of the other account
        */
       email: string;
@@ -1681,7 +1639,7 @@ export interface components {
     /** @description Story 10.32 — one additional email address registered on a user profile. */
     AdditionalEmail: {
       /**
-       * Format: email
+       * Format: idn-email
        * @example info@batbern.ch
        */
       email: string;
@@ -1689,7 +1647,7 @@ export interface components {
        * @description Optional free-text user hint (e.g. "Hostpoint shared mailbox").
        * @example Hostpoint shared
        */
-      label?: string | null;
+      label: string | null;
       /**
        * Format: date-time
        * @example 2026-05-22T10:00:00Z
@@ -1700,7 +1658,7 @@ export interface components {
        * @description Reserved for the v2 verification flow (Story 10.32 Resolved Decision #1).
        *     v1 always returns null.
        */
-      verifiedAt?: string | null;
+      verifiedAt: string | null;
       /**
        * @description #1244 — this address gets a copy of event mails (registration, waitlist,
        *     invitations, reminders). Event mails go to the primary address; a copy only to
@@ -1716,7 +1674,7 @@ export interface components {
     };
     AddAdditionalEmailRequest: {
       /**
-       * Format: email
+       * Format: idn-email
        * @example info@batbern.ch
        */
       email: string;
@@ -1763,7 +1721,12 @@ export interface components {
        */
       alreadyVerified: boolean;
     };
-    UserPreferences: {
+    /**
+     * @description The user's settings, one object (Story 4.9 merged the former UserPreferences into it).
+     *     Display: theme, language, timezone. Notifications: channels, frequency, Q&A digest, quiet
+     *     hours. Privacy: visibility and contact options.
+     */
+    UserSettings: {
       /**
        * @default auto
        * @enum {string}
@@ -1774,6 +1737,12 @@ export interface components {
        * @enum {string}
        */
       language: 'de' | 'en' | 'fr' | 'it' | 'rm' | 'es' | 'fi' | 'nl' | 'ja';
+      /**
+       * @description IANA zone id
+       * @default Europe/Zurich
+       * @example Europe/Zurich
+       */
+      timezone: string | null;
       /** @default true */
       emailNotifications: boolean;
       /** @default true */
@@ -1795,13 +1764,11 @@ export interface components {
        */
       qnaNotificationFrequency: 'live' | 'daily' | 'off';
       /** @example 22:00 */
-      quietHoursStart?: string | null;
+      quietHoursStart: string | null;
       /** @example 07:00 */
-      quietHoursEnd?: string | null;
-    };
-    UserSettings: {
+      quietHoursEnd: string | null;
       /**
-       * @default members_only
+       * @default public
        * @enum {string}
        */
       profileVisibility: 'public' | 'members_only' | 'private';
@@ -1809,21 +1776,52 @@ export interface components {
       showEmail: boolean;
       /** @default true */
       showCompany: boolean;
-      /** @default false */
+      /** @default true */
       showActivityHistory: boolean;
       /** @default true */
       allowMessaging: boolean;
       /** @default false */
       allowCalendarSync: boolean;
-      /** @example Europe/Zurich */
-      timezone?: string | null;
       /** @default false */
       twoFactorEnabled: boolean;
+    };
+    /**
+     * @description Partial update of the caller's settings: every field is optional and only the fields
+     *     present change. No defaults on purpose, so an absent field never overwrites a stored value.
+     *     null keeps a value; an empty string clears the quiet hours (as an empty assignee unassigns
+     *     a task).
+     */
+    UpdateUserSettingsRequest: {
+      /** @enum {string} */
+      theme?: 'light' | 'dark' | 'auto';
+      /** @enum {string} */
+      language?: 'de' | 'en' | 'fr' | 'it' | 'rm' | 'es' | 'fi' | 'nl' | 'ja';
+      /** @description IANA zone id, e.g. Europe/Zurich */
+      timezone?: string;
+      emailNotifications?: boolean;
+      inAppNotifications?: boolean;
+      pushNotifications?: boolean;
+      /** @enum {string} */
+      notificationFrequency?: 'immediate' | 'daily_digest' | 'weekly_digest';
+      /** @enum {string} */
+      qnaNotificationFrequency?: 'live' | 'daily' | 'off';
+      /** @description HH:mm; an empty string clears it (no quiet hours) */
+      quietHoursStart?: string;
+      /** @description HH:mm; an empty string clears it (no quiet hours) */
+      quietHoursEnd?: string;
+      /** @enum {string} */
+      profileVisibility?: 'public' | 'members_only' | 'private';
+      showEmail?: boolean;
+      showCompany?: boolean;
+      showActivityHistory?: boolean;
+      allowMessaging?: boolean;
+      allowCalendarSync?: boolean;
+      twoFactorEnabled?: boolean;
     };
     UpdateUserRequest: {
       firstName?: string;
       lastName?: string;
-      /** Format: email */
+      /** Format: idn-email */
       email?: string;
       bio?: string;
       /**
@@ -1859,15 +1857,15 @@ export interface components {
        * @description Company name (unique identifier) - Story 1.16.2
        * @example Swiss IT Solutions AG
        */
-      companyId?: string | null;
-      roles?: string[];
+      companyId: string | null;
+      roles: string[];
       /** Format: uri */
-      profilePictureUrl?: string | null;
+      profilePictureUrl: string | null;
     };
     /** @description Request body for creating a new user (Story 2.5.2 AC4) */
     CreateUserRequest: {
       /**
-       * Format: email
+       * Format: idn-email
        * @description User email address (must be unique)
        * @example anna.mueller@example.com
        */
@@ -1906,7 +1904,7 @@ export interface components {
      */
     ProvisionUserRequest: {
       /**
-       * Format: email
+       * Format: idn-email
        * @description Required. Lookup key for the existing-user path (case-insensitive).
        * @example jane.smith@example.com
        */
@@ -1966,7 +1964,7 @@ export interface components {
        *     invitation email and discards it from memory.
        * @example Tk7!aB2@nx9pQ4#z
        */
-      temporaryPassword?: string | null;
+      temporaryPassword: string | null;
       /**
        * @description Discriminator for the calling email service. Determines whether the
        *     invitation-email template renders the temp-password block or the
@@ -1999,7 +1997,7 @@ export interface components {
     /** @description Request to get an existing user or create a new one. Supports both authenticated (Cognito) and anonymous users (ADR-005). */
     GetOrCreateUserRequest: {
       /**
-       * Format: email
+       * Format: idn-email
        * @description User email address. Used as unique identifier for anonymous users and for account linking.
        * @example john.doe@example.com
        */
@@ -2042,9 +2040,9 @@ export interface components {
       /** @description True if user was created, false if existing */
       created: boolean;
       /** @description True if the caller supplied a companyId that differed from the existing user's stored company and the profile was updated as a result. Always false for newly-created users. Lets a registration flow tell the attendee their company on file was refreshed. */
-      companyUpdated?: boolean;
+      companyUpdated: boolean;
       /** @description Cognito user ID (only if created) */
-      cognitoUserId?: string | null;
+      cognitoUserId: string | null;
       user: components['schemas']['UserResponse'];
     };
     /**
@@ -2056,15 +2054,15 @@ export interface components {
        * @description Company name (unique identifier) - Story 1.16.2
        * @example Swiss IT Solutions AG
        */
-      id?: string;
+      id: string;
       /**
        * @description Company name (same as id)
        * @example Swiss IT Solutions AG
        */
-      name?: string;
-      displayName?: string | null;
-      industry?: string | null;
-      website?: string | null;
+      name: string;
+      displayName: string | null;
+      industry: string | null;
+      website: string | null;
     };
     PaginatedUserResponse: {
       data: components['schemas']['UserResponse'][];
@@ -2139,7 +2137,7 @@ export interface components {
        *       "Content-Type": "image/jpeg"
        *     }
        */
-      requiredHeaders?: {
+      requiredHeaders: {
         [key: string]: string;
       };
     };
@@ -2250,15 +2248,15 @@ export interface components {
     };
     PairingCodeResponse: {
       /** @example 482910 */
-      pairingCode?: string;
+      pairingCode: string;
       /** Format: date-time */
-      expiresAt?: string;
+      expiresAt: string;
       /** @example 24 */
-      hoursUntilExpiry?: number;
+      hoursUntilExpiry: number;
     };
     PairingStatusResponse: {
-      pairedWatches?: components['schemas']['PairedWatch'][];
-      pendingCode?: components['schemas']['PendingPairingCode'] | null;
+      pairedWatches: components['schemas']['PairedWatch'][];
+      pendingCode: components['schemas']['PendingPairingCode'] | null;
     };
     PairedWatch: {
       /**
@@ -2267,14 +2265,14 @@ export interface components {
        */
       id: string;
       /** @description Device name, nullable (not set during pairing flow). */
-      deviceName?: string | null;
+      deviceName: string | null;
       /** Format: date-time */
       pairedAt: string;
     };
     PendingPairingCode: {
-      code?: string;
+      code: string;
       /** Format: date-time */
-      expiresAt?: string;
+      expiresAt: string;
     };
   };
   responses: {
@@ -2559,8 +2557,6 @@ export interface operations {
         page?: number;
         /** @description Items per page (max 100) */
         limit?: number;
-        /** @description Comma-separated field names for sparse fieldsets */
-        fields?: string;
         /** @description Comma-separated list of resources to include */
         include?: string;
         /**
@@ -3359,55 +3355,6 @@ export interface operations {
       500: components['responses']['InternalServerError'];
     };
   };
-  getUserPreferences: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Preferences retrieved successfully */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['UserPreferences'];
-        };
-      };
-      401: components['responses']['Unauthorized'];
-      500: components['responses']['InternalServerError'];
-    };
-  };
-  updateUserPreferences: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['UserPreferences'];
-      };
-    };
-    responses: {
-      /** @description Preferences updated successfully */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['UserPreferences'];
-        };
-      };
-      400: components['responses']['BadRequest'];
-      401: components['responses']['Unauthorized'];
-      500: components['responses']['InternalServerError'];
-    };
-  };
   getUserSettings: {
     parameters: {
       query?: never;
@@ -3439,7 +3386,7 @@ export interface operations {
     };
     requestBody: {
       content: {
-        'application/json': components['schemas']['UserSettings'];
+        'application/json': components['schemas']['UpdateUserSettingsRequest'];
       };
     };
     responses: {

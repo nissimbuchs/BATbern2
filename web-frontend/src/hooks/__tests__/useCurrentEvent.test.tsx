@@ -40,13 +40,15 @@ describe('useCurrentEvent Hook', () => {
   };
 
   test('should_returnEventData_when_apiCallSucceeds', async () => {
-    const mockEvent: EventDetail = futureEvent(40, {
-      eventCode: 'BATbern61',
-      title: 'BATbern 2025',
-      description: 'Annual architecture conference',
-      currentAttendeeCount: 150,
+    const mockEvent: EventDetail = {
+      ...futureEvent(40, {
+        eventCode: 'BATbern61',
+        title: 'BATbern 2025',
+        description: 'Annual architecture conference',
+        currentAttendeeCount: 150,
+      }),
       sessions: [],
-    });
+    };
 
     vi.mocked(eventApiClient.getPublicCurrentEvent).mockResolvedValue(mockEvent);
 

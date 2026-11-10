@@ -23,6 +23,7 @@ import type {
   PartnerSort,
   PartnerPagination,
 } from '@/services/api/partnerApi';
+import { aPartner } from '@/test/fixtures';
 
 // Mock the partner API module
 vi.mock('@/services/api/partnerApi', () => ({
@@ -65,11 +66,14 @@ describe('Partner React Query Hooks (RED Phase - Task 2a)', () => {
           partnershipLevel: 'GOLD',
           partnershipStartDate: '2024-01-01',
           isActive: true,
+          partnershipEndDate: null,
           company: {
             companyName: 'TechCorp',
+            name: 'TechCorp',
             displayName: 'TechCorp Solutions AG',
             logoUrl: 'https://cdn.example.com/techcorp.png',
             industry: 'Technology',
+            website: null,
           },
           contacts: [
             {
@@ -77,6 +81,7 @@ describe('Partner React Query Hooks (RED Phase - Task 2a)', () => {
               email: 'john@techcorp.com',
               firstName: 'John',
               lastName: 'Doe',
+              profilePictureUrl: null,
             },
           ],
         },
@@ -216,6 +221,7 @@ describe('Partner React Query Hooks (RED Phase - Task 2a)', () => {
       const mockResponse1: PartnerListResponse = {
         data: [
           {
+            ...aPartner(),
             companyName: 'Company1',
             partnershipLevel: 'GOLD',
             partnershipStartDate: '2024-01-01',
@@ -235,6 +241,7 @@ describe('Partner React Query Hooks (RED Phase - Task 2a)', () => {
       const mockResponse2: PartnerListResponse = {
         data: [
           {
+            ...aPartner(),
             companyName: 'Company2',
             partnershipLevel: 'SILVER',
             partnershipStartDate: '2024-01-01',

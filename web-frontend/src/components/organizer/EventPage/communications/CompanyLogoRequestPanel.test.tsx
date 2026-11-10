@@ -33,6 +33,9 @@ const open: CompanyLogoRequestView = {
   oldLogoUrl: 'https://cdn.example.com/old.png',
   newLogoUrl: 'https://cdn.example.com/new.png',
   note: 'Rebranding im Juni',
+  decidedBy: null,
+  decidedAt: null,
+  reason: null,
   createdAt: '2026-11-07T10:00:00Z',
 };
 

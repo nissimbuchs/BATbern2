@@ -24,12 +24,12 @@ class ResponseConformanceTest {
     private static final String SPEC = "docs/api/companies-api.openapi.yml";
     private static final String VALID = """
             {"name":"swissit","displayName":"Swiss IT","isVerified":true,
-             "createdAt":"2026-01-01T10:00:00Z","updatedAt":"2026-01-01T10:00:00Z"}""";
+             "createdAt":"2026-01-01T10:00:00Z","updatedAt":"2026-01-01T10:00:00Z","createdBy":"lead.organizer"}""";
     private static final String BAD_NAME = """
             {"name":"Swiss IT AG","displayName":"Swiss IT","isVerified":true,
-             "createdAt":"2026-01-01T10:00:00Z","updatedAt":"2026-01-01T10:00:00Z"}""";
+             "createdAt":"2026-01-01T10:00:00Z","updatedAt":"2026-01-01T10:00:00Z","createdBy":"lead.organizer"}""";
     private static final String MISSING_UPDATED_AT = """
-            {"name":"swissit","isVerified":true,"createdAt":"2026-01-01T10:00:00Z"}""";
+            {"name":"swissit","isVerified":true,"createdAt":"2026-01-01T10:00:00Z","createdBy":"lead.organizer"}""";
 
     @TempDir
     Path tmp;

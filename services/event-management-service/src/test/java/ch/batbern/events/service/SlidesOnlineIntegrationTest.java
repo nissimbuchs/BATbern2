@@ -1,6 +1,6 @@
 package ch.batbern.events.service;
 
-import ch.batbern.events.client.UserApiClient;
+import ch.batbern.events.config.CumsContractHarness;
 import ch.batbern.events.config.TestAwsConfig;
 import ch.batbern.events.config.TestSecurityConfig;
 import ch.batbern.events.domain.EventTask;
@@ -21,17 +21,17 @@ import ch.batbern.shared.service.EmailService;
 import ch.batbern.shared.test.AbstractIntegrationTest;
 import ch.batbern.shared.test.mail.SesRecorder;
 import ch.batbern.shared.types.EventWorkflowState;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -41,8 +41,6 @@ import java.util.Map;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.lenient;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -53,15 +51,15 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  *
  * <p>Covers AC7: the task auto-created with due = eventDate+1; the dedicated send goes to active
  * registrants only; global opt-outs are excluded; DE/EN/German-fallback locale selection; the
- * double-send guard; and per-recipient failure isolation. No real outbound mail; rows cleaned per
- * test via the class-level {@code @Transactional} rollback.
+ * double-send guard; and per-recipient failure isolation. No real outbound mail. CUMS is the
+ * {@link CumsContractHarness} behind the real {@code UserApiClient}.
  *
  * <p>Lives in {@code ch.batbern.events.service} so it can drive the synchronous
  * {@code SlidesOnlineEmailService.processSend} core directly (deterministic — no @Async race),
- * while still exercising the registrant-notice controller via {@link MockMvc} for the auth + guard
- * cases (templateKey {@code slides-online}).
+ * while the auth, guard and first-send cases go through the Mail Center composer via
+ * {@link MockMvc} (templateKey {@code slides-online}, Story 16.8c). Not {@code @Transactional}:
+ * the composer send runs on an {@code @Async} thread, so this class removes its own rows.
  */
-@Transactional
 @Import({TestSecurityConfig.class, TestAwsConfig.class})
 @DisplayName("Slides-Online Integration Tests (Story 7.3)")
 class SlidesOnlineIntegrationTest extends AbstractIntegrationTest {
@@ -87,19 +85,36 @@ class SlidesOnlineIntegrationTest extends AbstractIntegrationTest {
     @Autowired
     private SlidesOnlineEmailService slidesOnlineEmailService;
 
-    @MockitoBean
-    private UserApiClient userApiClient;
+    @Autowired
+    private CumsContractHarness cums;
     @Autowired
     private SesRecorder sesRecorder;
+    @Autowired
+    private JdbcTemplate jdbc;
 
     private static final String EVENT_CODE = "BATbern760";
 
     @BeforeEach
     void setUp() {
-        recipientRepository.deleteAll();
-        sendRepository.deleteAll();
-        subscriberRepository.deleteAll();
+        cleanUp();
         sesRecorder.reset();
+    }
+
+    @AfterEach
+    void cleanUp() {
+        sesRecorder.awaitAsyncSends();
+        cums.reset();
+        jdbc.update("DELETE FROM mail_message WHERE event_code = ?", EVENT_CODE);
+        jdbc.update("DELETE FROM newsletter_recipients WHERE send_id IN (SELECT s.id FROM newsletter_sends s"
+                + " JOIN events e ON e.id = s.event_id WHERE e.event_code = ?)", EVENT_CODE);
+        jdbc.update("DELETE FROM newsletter_sends WHERE event_id IN (SELECT id FROM events WHERE event_code = ?)",
+                EVENT_CODE);
+        jdbc.update("DELETE FROM newsletter_subscribers WHERE email LIKE ?", "success+so760-%");
+        jdbc.update("DELETE FROM event_tasks WHERE event_id IN (SELECT id FROM events WHERE event_code = ?)",
+                EVENT_CODE);
+        jdbc.update("DELETE FROM registrations WHERE event_id IN (SELECT id FROM events WHERE event_code = ?)",
+                EVENT_CODE);
+        jdbc.update("DELETE FROM events WHERE event_code = ?", EVENT_CODE);
     }
 
     // ── AC1: task auto-created, due = eventDate + 1 day ──────────────────────
@@ -150,10 +165,10 @@ class SlidesOnlineIntegrationTest extends AbstractIntegrationTest {
                 .email(sim("opt")).language("de").source("explicit").unsubscribeToken("tok-opt")
                 .suppressedAt(Instant.now()).build());
 
-        lenient().when(userApiClient.getPreferredLanguage("att.en")).thenReturn("en");
-        lenient().when(userApiClient.getPreferredLanguage("att.de")).thenReturn("de");
-        lenient().when(userApiClient.getPreferredLanguage("att.fr")).thenReturn("fr");
-        lenient().when(userApiClient.getPreferredLanguage("att.attd")).thenReturn("en");
+        cums.userWithLanguage("att.en", "en");
+        cums.userWithLanguage("att.de", "de");
+        cums.userWithLanguage("att.fr", "fr");
+        cums.userWithLanguage("att.attd", "en");
 
         NewsletterSend send = savePendingSend(event.getId());
         slidesOnlineEmailService.processSend(send.getId(), event, "slides-online");
@@ -178,8 +193,31 @@ class SlidesOnlineIntegrationTest extends AbstractIntegrationTest {
         assertThat(completed.getStatus()).isEqualTo("COMPLETED");
         assertThat(completed.getSentCount()).isEqualTo(4);
         assertThat(completed.getFailedCount()).isZero();
-        assertThat(recipientRepository.findAll())
+        assertThat(recipientsOf(send))
                 .filteredOn(r -> "sent".equals(r.getDeliveryStatus())).hasSize(4);
+    }
+
+    // ── Way-1 deregistration call: each registrant's own cancel link ─────────
+
+    @Test
+    @DisplayName("each registrant's mail carries their own cancel link, never another registrant's")
+    void send_personalCancelLink() {
+        Event event = saveEvent(EVENT_CODE, Instant.parse("2026-03-06T15:00:00Z"));
+        saveRegistration(event.getId(), "att.one", sim("one"), "confirmed");
+        saveRegistration(event.getId(), "att.two", sim("two"), "confirmed");
+        Map<String, UUID> tokens = new HashMap<>();
+        registrationRepository.findByEventIdAndStatusIn(event.getId(), List.of("confirmed"))
+                .forEach(r -> tokens.put(r.getAttendeeEmail(), r.getDeregistrationToken()));
+
+        NewsletterSend send = savePendingSend(event.getId());
+        slidesOnlineEmailService.processSend(send.getId(), event, "registrant-notice-deregistration-call");
+
+        assertThat(sesRecorder.mailsTo(sim("one"))).singleElement().satisfies(mail -> assertThat(mail.html())
+                .contains("/deregister?token=" + tokens.get(sim("one")))
+                .doesNotContain(tokens.get(sim("two")).toString()));
+        assertThat(sesRecorder.mailsTo(sim("two"))).singleElement().satisfies(mail -> assertThat(mail.html())
+                .contains("/deregister?token=" + tokens.get(sim("two")))
+                .doesNotContain(tokens.get(sim("one")).toString()));
     }
 
     // ── AC6: per-recipient failure isolation ─────────────────────────────────
@@ -190,7 +228,6 @@ class SlidesOnlineIntegrationTest extends AbstractIntegrationTest {
         Event event = saveEvent(EVENT_CODE, Instant.parse("2026-03-06T15:00:00Z"));
         saveRegistration(event.getId(), "att.ok", sim("ok"), "confirmed");
         saveRegistration(event.getId(), "att.boom", sim("boom"), "confirmed");
-        lenient().when(userApiClient.getPreferredLanguage(anyString())).thenReturn("de");
 
         sesRecorder.failFor(sim("boom"), () -> SesRecorder.sesError("Throttling", "SES throttled"));
 
@@ -201,75 +238,152 @@ class SlidesOnlineIntegrationTest extends AbstractIntegrationTest {
         assertThat(result.getStatus()).isEqualTo("PARTIAL");
         assertThat(result.getSentCount()).isEqualTo(1);
         assertThat(result.getFailedCount()).isEqualTo(1);
-        List<NewsletterRecipient> recipients = recipientRepository.findAll();
+        List<NewsletterRecipient> recipients = recipientsOf(send);
         assertThat(recipients).extracting(NewsletterRecipient::getDeliveryStatus)
                 .containsExactlyInAnyOrder("sent", "failed");
     }
 
-    // ── AC5: double-send guard via the registrant-notice endpoint ────────────
-    // Story 17.1 removed the dedicated POST /events/{c}/slides-online/send; the same mail goes
-    // through POST /events/{c}/registrant-notices/send with templateKey=slides-online.
+    // ── AC5: double-send guard, through the Mail Center composer ─────────────
+    // Story 17.1 removed POST /events/{c}/slides-online/send, 16.8c the registrant-notices pair;
+    // the same mail goes out through POST /events/{c}/mails, audience REGISTRANTS.
 
     @Test
     @WithMockUser(username = "org.user", roles = {"ORGANIZER"})
-    @DisplayName("AC5: in-progress slides-online notice → registrant-notice endpoint returns 409")
-    void endpoint_inProgress_returns409() throws Exception {
+    @DisplayName("AC5: in-progress slides-online notice → the composer send answers 409 with a problem body")
+    void composer_inProgress_returns409() throws Exception {
         Event event = saveEvent(EVENT_CODE, Instant.parse("2026-03-06T15:00:00Z"));
+        saveRegistration(event.getId(), "att.de", sim("de"), "confirmed");
         NewsletterSend inProgress = savePendingSend(event.getId());
         inProgress.setStatus("IN_PROGRESS");
         sendRepository.save(inProgress);
 
-        mockMvc.perform(slidesOnlineRegistrantNotice(EVENT_CODE))
-                .andExpect(status().isConflict());
+        mockMvc.perform(slidesOnlineViaComposer(EVENT_CODE))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.status").value(409))
+                .andExpect(jsonPath("$.message").isNotEmpty());
+        sesRecorder.awaitAsyncSends();
+        assertThat(sesRecorder.mails()).isEmpty();
     }
 
     @Test
     @WithMockUser(username = "org.user", roles = {"ORGANIZER"})
-    @DisplayName("AC5: already-completed slides-online notice → registrant-notice endpoint returns 409")
-    void endpoint_alreadySent_returns409() throws Exception {
+    @DisplayName("AC5: already-completed slides-online notice → the composer send answers 409, nothing is sent")
+    void composer_alreadySent_returns409() throws Exception {
         Event event = saveEvent(EVENT_CODE, Instant.parse("2026-03-06T15:00:00Z"));
+        saveRegistration(event.getId(), "att.de", sim("de"), "confirmed");
         NewsletterSend done = savePendingSend(event.getId());
         done.setStatus("COMPLETED");
         sendRepository.save(done);
 
-        mockMvc.perform(slidesOnlineRegistrantNotice(EVENT_CODE))
+        mockMvc.perform(slidesOnlineViaComposer(EVENT_CODE))
                 .andExpect(status().isConflict());
+        sesRecorder.awaitAsyncSends();
+        assertThat(sesRecorder.mails()).isEmpty();
+        assertThat(sendsOf(event)).hasSize(1);
     }
 
     @Test
     @WithMockUser(username = "org.user", roles = {"ORGANIZER"})
-    @DisplayName("AC2: organizer, no prior send → 200 with PENDING + registrant count")
-    void endpoint_organizer_returns200Pending() throws Exception {
+    @DisplayName("AC2: organizer, no prior send → 202, the registrant gets the mail, the audit row completes")
+    void composer_firstSend_reachesRegistrant() throws Exception {
         Event event = saveEvent(EVENT_CODE, Instant.parse("2026-03-06T15:00:00Z"));
+        saveRegistration(event.getId(), "att.de", sim("de"), "confirmed");
 
-        mockMvc.perform(slidesOnlineRegistrantNotice(EVENT_CODE))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value("PENDING"))
-                .andExpect(jsonPath("$.recipientCount").value(0));
+        mockMvc.perform(slidesOnlineViaComposer(EVENT_CODE))
+                .andExpect(status().isAccepted())
+                .andExpect(jsonPath("$.recipientCount").value(1));
+
+        sesRecorder.awaitAsyncSends();
+        assertThat(sesRecorder.mailsTo(sim("de"))).singleElement()
+                .satisfies(mail -> assertThat(mail.subject()).contains("Die Folien sind online"));
+        assertThat(sendsOf(event)).singleElement().satisfies(send -> {
+            assertThat(send.getTemplateKey()).isEqualTo("slides-online");
+            assertThat(send.getStatus()).isEqualTo("COMPLETED");
+        });
+    }
+
+    @Test
+    @WithMockUser(username = "org.user", roles = {"ORGANIZER"})
+    @DisplayName("16.8c: a registrant notice in progress does not block the newsletter of the same event")
+    void composer_registrantNoticeInProgress_doesNotBlockNewsletter() throws Exception {
+        Event event = saveEvent(EVENT_CODE, Instant.parse("2026-03-06T15:00:00Z"));
+        subscriberRepository.save(NewsletterSubscriber.builder()
+                .email(sim("sub")).language("de").source("explicit").unsubscribeToken("tok-760-sub").build());
+        NewsletterSend notice = savePendingSend(event.getId()); // slides-online, a registrant notice
+        notice.setStatus("IN_PROGRESS");
+        sendRepository.save(notice);
+
+        mockMvc.perform(post("/api/v1/events/{eventCode}/mails", EVENT_CODE)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"audience\":\"NEWSLETTER\",\"locale\":\"de\",\"target\":\"RECIPIENTS\"}"))
+                .andExpect(status().isAccepted());
+
+        sesRecorder.awaitAsyncSends();
+        assertThat(sesRecorder.mailsTo(sim("sub"))).hasSize(1);
+    }
+
+    @Test
+    @WithMockUser(username = "org.user", roles = {"ORGANIZER"})
+    @DisplayName("16.8c: a newsletter still queued (PENDING) blocks a second newsletter: 409, nobody mailed twice")
+    void composer_newsletterPending_blocksNewsletter() throws Exception {
+        Event event = saveEvent(EVENT_CODE, Instant.parse("2026-03-06T15:00:00Z"));
+        subscriberRepository.save(NewsletterSubscriber.builder()
+                .email(sim("sub")).language("de").source("explicit").unsubscribeToken("tok-760-sub").build());
+        NewsletterSend queued = savePendingSend(event.getId()); // PENDING: before markInProgress
+        queued.setTemplateKey("newsletter-event");
+        sendRepository.save(queued);
+
+        mockMvc.perform(post("/api/v1/events/{eventCode}/mails", EVENT_CODE)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"audience\":\"NEWSLETTER\",\"locale\":\"de\",\"target\":\"RECIPIENTS\"}"))
+                .andExpect(status().isConflict());
+        sesRecorder.awaitAsyncSends();
+        assertThat(sesRecorder.mails()).isEmpty();
+        assertThat(sendsOf(event)).hasSize(1);
+    }
+
+    @Test
+    @WithMockUser(username = "org.user", roles = {"ORGANIZER"})
+    @DisplayName("16.8c: a newsletter in progress still blocks a second newsletter (409, positive control)")
+    void composer_newsletterInProgress_blocksNewsletter() throws Exception {
+        Event event = saveEvent(EVENT_CODE, Instant.parse("2026-03-06T15:00:00Z"));
+        subscriberRepository.save(NewsletterSubscriber.builder()
+                .email(sim("sub")).language("de").source("explicit").unsubscribeToken("tok-760-sub").build());
+        NewsletterSend running = savePendingSend(event.getId());
+        running.setTemplateKey("newsletter-event");
+        running.setStatus("IN_PROGRESS");
+        sendRepository.save(running);
+
+        mockMvc.perform(post("/api/v1/events/{eventCode}/mails", EVENT_CODE)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"audience\":\"NEWSLETTER\",\"locale\":\"de\",\"target\":\"RECIPIENTS\"}"))
+                .andExpect(status().isConflict());
+        sesRecorder.awaitAsyncSends();
+        assertThat(sesRecorder.mails()).isEmpty();
     }
 
     @Test
     @WithMockUser(username = "joe.user", roles = {"USER"})
     @DisplayName("AC2: non-organizer → 403")
-    void endpoint_nonOrganizer_returns403() throws Exception {
-        mockMvc.perform(slidesOnlineRegistrantNotice(EVENT_CODE))
+    void composer_nonOrganizer_returns403() throws Exception {
+        mockMvc.perform(slidesOnlineViaComposer(EVENT_CODE))
                 .andExpect(status().isForbidden());
     }
 
     @Test
     @WithMockUser(username = "org.user", roles = {"ORGANIZER"})
     @DisplayName("AC2: organizer, unknown event → 404")
-    void endpoint_unknownEvent_returns404() throws Exception {
-        mockMvc.perform(slidesOnlineRegistrantNotice("NOPE-EVENT"))
+    void composer_unknownEvent_returns404() throws Exception {
+        mockMvc.perform(slidesOnlineViaComposer("NOPE-EVENT"))
                 .andExpect(status().isNotFound());
     }
 
     // ── helpers ──────────────────────────────────────────────────────────────
 
-    private MockHttpServletRequestBuilder slidesOnlineRegistrantNotice(String eventCode) {
-        return post("/api/v1/events/{eventCode}/registrant-notices/send", eventCode)
+    private MockHttpServletRequestBuilder slidesOnlineViaComposer(String eventCode) {
+        return post("/api/v1/events/{eventCode}/mails", eventCode)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"templateKey\":\"slides-online\"}");
+                .content("{\"audience\":\"REGISTRANTS\",\"templateKey\":\"slides-online\",\"target\":\"RECIPIENTS\"}");
     }
 
     private Event saveEvent(String code, Instant date) {
@@ -315,8 +429,17 @@ class SlidesOnlineIntegrationTest extends AbstractIntegrationTest {
                 .build());
     }
 
+    /** This class's send rows: other classes' rows in the shared database are not ours. */
+    private List<NewsletterSend> sendsOf(Event event) {
+        return sendRepository.findAll().stream().filter(s -> event.getId().equals(s.getEventId())).toList();
+    }
+
+    private List<NewsletterRecipient> recipientsOf(NewsletterSend send) {
+        return recipientRepository.findAll().stream().filter(r -> send.getId().equals(r.getId().getSendId())).toList();
+    }
+
     /** A recipient that may receive mail: the SES mailbox simulator (nothing is delivered in tests). */
     private static String sim(String name) {
-        return "success+" + name + "@simulator.amazonses.com";
+        return "success+so760-" + name + "@simulator.amazonses.com";
     }
 }

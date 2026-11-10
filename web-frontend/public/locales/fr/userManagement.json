@@ -286,7 +286,8 @@
       "allowMessaging": "Autoriser les messages directs d'autres utilisateurs",
       "viewPolicy": "Voir la politique de confidentialité",
       "save": "Enregistrer les paramètres de confidentialité"
-    }
+    },
+    "saveFailed": "L’enregistrement a échoué. Veuillez vérifier vos saisies et réessayer."
   },
   "profile": {
     "personalInfo": "Informations personnelles",

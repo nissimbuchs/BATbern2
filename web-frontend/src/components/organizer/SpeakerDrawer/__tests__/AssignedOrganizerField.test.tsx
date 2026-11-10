@@ -15,6 +15,7 @@ import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AssignedOrganizerField } from '../AssignedOrganizerField';
 import type { SpeakerPoolEntry } from '@/types/speakerPool.types';
+import { aSpeakerPoolEntry } from '@/test/fixtures';
 
 // Mock i18next
 vi.mock('react-i18next', () => ({
@@ -65,6 +66,7 @@ vi.mock('@/hooks/useSpeakerPool', () => ({
 
 function makeSpeaker(overrides: Partial<SpeakerPoolEntry> = {}): SpeakerPoolEntry {
   return {
+    ...aSpeakerPoolEntry(),
     id: 'sp-1',
     eventId: 'evt-1',
     speakerName: 'Jane Doe',

@@ -150,10 +150,15 @@ public class AnalyticsService {
                     int total = toLong(row[6]).intValue();
 
                     AttendanceBreakdown bd = breakdown.getOrDefault(eventId, new AttendanceBreakdown());
-                    return new AttendanceEventItem(
-                            eventCode, eventNumber, title, toOffsetDateTime(date), total,
-                            bd.returningCount, bd.newCount)
-                            .category(category);
+                    return new AttendanceEventItem()
+                            .eventCode(eventCode)
+                            .eventNumber(eventNumber)
+                            .title(title)
+                            .eventDate(toOffsetDateTime(date))
+                            .category(category)
+                            .totalAttendees(total)
+                            .returningAttendees(bd.returningCount)
+                            .newAttendees(bd.newCount);
                 })
                 .toList();
 

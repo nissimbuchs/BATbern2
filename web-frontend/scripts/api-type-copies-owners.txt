@@ -12,7 +12,5 @@
 # Exception groups list the exact names they own, so a new copy never falls into one silently.
 
 # --- Stories that remove the lines ---
-# 16.8c (Mail Center composer clean-up) folds the newsletter send into the shared composer and
-# deletes this send chain. Not aliased now: the copies differ from the wire (request without
-# maxRecipients, response with testMode the server does not send and without isReminder/locale).
-N1	16.8c	^src/services/newsletterService\.ts$	NewsletterSend(Request|Response)
+# None left: 16.8c deleted the last copies (newsletterService NewsletterSendRequest/Response) with
+# the old newsletter send chain.

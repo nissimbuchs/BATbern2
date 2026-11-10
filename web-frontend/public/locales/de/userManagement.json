@@ -286,7 +286,8 @@
       "allowMessaging": "Direktnachrichten von anderen Benutzern erlauben",
       "viewPolicy": "Datenschutzerklärung anzeigen",
       "save": "Datenschutzeinstellungen speichern"
-    }
+    },
+    "saveFailed": "Speichern fehlgeschlagen. Bitte Eingaben prüfen und erneut versuchen."
   },
   "profile": {
     "personalInfo": "Persönliche Informationen",

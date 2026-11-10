@@ -16,6 +16,7 @@ import { I18nextProvider } from 'react-i18next';
 import i18n from '@/i18n/config';
 import { UnassignedSpeakersList } from '../UnassignedSpeakersList';
 import type { Session } from '@/types/event.types';
+import { aSession, aSessionSpeaker } from '@/test/fixtures';
 
 const renderWithProviders = (ui: React.ReactElement) => {
   return render(
@@ -28,6 +29,7 @@ const renderWithProviders = (ui: React.ReactElement) => {
 describe('UnassignedSpeakersList Component (Story 5.7 - Task 4a RED Phase)', () => {
   const mockUnassignedSessions: Session[] = [
     {
+      ...aSession(),
       sessionSlug: 'session-1',
       eventCode: 'BATbern142',
       language: 'de',
@@ -37,6 +39,7 @@ describe('UnassignedSpeakersList Component (Story 5.7 - Task 4a RED Phase)', () 
       room: null,
       speakers: [
         {
+          ...aSessionSpeaker(),
           username: 'john.doe',
           firstName: 'John',
           lastName: 'Doe',
@@ -47,6 +50,7 @@ describe('UnassignedSpeakersList Component (Story 5.7 - Task 4a RED Phase)', () 
       ],
     },
     {
+      ...aSession(),
       sessionSlug: 'session-2',
       eventCode: 'BATbern142',
       language: 'de',
@@ -56,6 +60,7 @@ describe('UnassignedSpeakersList Component (Story 5.7 - Task 4a RED Phase)', () 
       room: null,
       speakers: [
         {
+          ...aSessionSpeaker(),
           username: 'jane.smith',
           firstName: 'Jane',
           lastName: 'Smith',
@@ -66,6 +71,7 @@ describe('UnassignedSpeakersList Component (Story 5.7 - Task 4a RED Phase)', () 
       ],
     },
     {
+      ...aSession(),
       sessionSlug: 'session-3',
       eventCode: 'BATbern142',
       language: 'de',
@@ -75,6 +81,7 @@ describe('UnassignedSpeakersList Component (Story 5.7 - Task 4a RED Phase)', () 
       room: null,
       speakers: [
         {
+          ...aSessionSpeaker(),
           username: 'bob.johnson',
           firstName: 'Bob',
           lastName: 'Johnson',

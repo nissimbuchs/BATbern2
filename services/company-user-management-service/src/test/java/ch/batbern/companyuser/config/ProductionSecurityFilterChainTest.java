@@ -95,7 +95,6 @@ class ProductionSecurityFilterChainTest {
         "/api/v1/companies/acme",
         "/api/v1/public/organizers",
         "/api/v1/public/users/john.doe",
-        "/api/v1/public/settings/presentation",
         "/api/v1/users/additional-emails/verify",
         "/actuator/health"
     })
@@ -120,7 +119,9 @@ class ProductionSecurityFilterChainTest {
         "/api/v1/users/john.doe/roles",
         "/api/v1/companies/acme/employees",
         "/api/v1/admin/settings",
-        "/api/v1/notifications"
+        "/api/v1/notifications",
+        // Story 4.9: the presentation settings moved to EMS; CUMS no longer opens this path
+        "/api/v1/public/settings/presentation"
     })
     @DisplayName("should_return401_when_anonymousRequestsPersonalDataThroughGateway")
     void should_return401_when_anonymousRequestsPersonalDataThroughGateway(String path) throws Exception {

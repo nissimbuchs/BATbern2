@@ -5,9 +5,9 @@
  * Rewritten 2026-05-30 to the quality bar (getByTestId locators, no empty tests, deterministic
  * assertions — no `waitForTimeout`, no flaky popup waits). Story 2.6 Settings Tab.
  *
- * All tests here are READ-ONLY (no persistence) → `@gate`, no `@smoke`. The Settings tab's
- * persist actions (theme/timezone/notifications/privacy) require a reload that can drop the
- * test auth state, so they were `test.skip` placeholders → DELETED per the no-empty-tests bar.
+ * The `@gate` tests here are READ-ONLY. Story 4.9 adds one persistence test (theme and timezone
+ * through the one settings resource, `PATCH /users/me/settings`, survive a reload); it restores
+ * the user's values at the end and is not part of `@gate`/`@smoke`. Run it against local dev.
  *
  * Reality checks (verified in UserSettingsTab.tsx):
  *   • `change-password-button` has NO in-app handler — password change is a Cognito-managed
@@ -102,5 +102,56 @@ test.describe('Settings Management', { tag: '@gate' }, () => {
 
     await page.getByTestId('account-subtab').click();
     await expect(page.getByTestId('account-settings-panel')).toBeVisible();
+  });
+});
+
+/**
+ * Story 4.9: display, notification and privacy settings are one resource. Theme and timezone
+ * are saved with one `PATCH /users/me/settings` and survive a reload; the timezone used to go to
+ * `/users/me/preferences`, which dropped it. Restores the values it found.
+ */
+test.describe('Settings persistence (Story 4.9)', () => {
+  const openAccountSettings = async (page: import('@playwright/test').Page) => {
+    await page.goto('/account');
+    await page.getByTestId('settings-tab').click();
+    await expect(page.getByTestId('account-settings-panel')).toBeVisible();
+  };
+
+  const save = async (page: import('@playwright/test').Page) => {
+    const response = page.waitForResponse(
+      (r) => r.url().includes('/users/me/settings') && r.request().method() === 'PATCH'
+    );
+    await page.getByTestId('save-account-settings-button').click();
+    expect((await response).status()).toBe(200);
+  };
+
+  test('should_keepThemeAndTimezone_after_reload', async ({ page }) => {
+    await openAccountSettings(page);
+    const timezone = page.getByTestId('timezone-autocomplete').locator('input');
+    const originalTimezone = await timezone.inputValue();
+    let originalTheme = 'theme-auto';
+    for (const id of ['theme-light', 'theme-dark', 'theme-auto']) {
+      if (await page.getByTestId(id).locator('input').isChecked()) originalTheme = id;
+    }
+    const nextTimezone =
+      originalTimezone === 'America/New_York' ? 'Asia/Tokyo' : 'America/New_York';
+    const nextTheme = originalTheme === 'theme-dark' ? 'theme-light' : 'theme-dark';
+
+    await page.getByTestId(nextTheme).click();
+    await timezone.fill(nextTimezone);
+    await save(page);
+
+    try {
+      await page.reload();
+      await openAccountSettings(page);
+      await expect(page.getByTestId('timezone-autocomplete').locator('input')).toHaveValue(
+        nextTimezone
+      );
+      await expect(page.getByTestId(nextTheme).locator('input')).toBeChecked();
+    } finally {
+      await page.getByTestId(originalTheme).click();
+      await page.getByTestId('timezone-autocomplete').locator('input').fill(originalTimezone);
+      await save(page);
+    }
   });
 });

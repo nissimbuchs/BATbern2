@@ -152,6 +152,8 @@ public class SecurityConfig {
 
                 // Story 10.16: AI feature flag endpoint (public — no auth required)
                 .requestMatchers(HttpMethod.GET, "/api/v1/public/settings/features").permitAll()
+                // Story 4.9: moderator presentation settings (moved from CUMS), read by the projector page
+                .requestMatchers(HttpMethod.GET, "/api/v1/public/settings/presentation").permitAll()
 
                 // Story 16.9: internal service API (InternalMailController, partner-coordination records
                 // its partner meeting mails). Not routed by the API gateway, which also denies

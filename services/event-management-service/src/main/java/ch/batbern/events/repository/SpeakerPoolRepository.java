@@ -7,6 +7,7 @@ import org.springframework.stereotype.Repository;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -24,6 +25,16 @@ public interface SpeakerPoolRepository extends JpaRepository<SpeakerPool, UUID> 
      * @return list of speaker pool entries
      */
     List<SpeakerPool> findByEventId(UUID eventId);
+
+    /**
+     * Find a speaker pool entry only when it belongs to the given event (ADR-003: a UUID in a
+     * path is loaded scoped to its meaningful parent, so an entry of another event is not found).
+     *
+     * @param id      the speaker pool entry ID
+     * @param eventId the event ID
+     * @return the entry, empty when it does not exist or belongs to another event
+     */
+    Optional<SpeakerPool> findByIdAndEventId(UUID id, UUID eventId);
 
     /**
      * Find all speaker pool entries for several events (batch, for public session visibility).

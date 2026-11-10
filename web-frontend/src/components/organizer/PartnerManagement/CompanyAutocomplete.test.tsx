@@ -195,6 +195,7 @@ describe('CompanyAutocomplete Component - Story 2.8.3 AC3', () => {
       isVerified: false,
       createdAt: '2026-01-01T00:00:00Z',
       updatedAt: '2026-01-01T00:00:00Z',
+      createdBy: 'lead.organizer',
     };
     api.on('getOrCreateCompany', () => created);
     const user = userEvent.setup();

@@ -3,7 +3,7 @@ title: 'Test rules and ratchet (17.0a)'
 type: 'feature'
 ticket: '0a'
 created: '2026-11-07'
-status: 'built'
+status: done
 baseline_revision: '18b2051a6b1e0292cb36acd2d04824347b3fc97f'
 route: 'full'
 route_source: 'auto'

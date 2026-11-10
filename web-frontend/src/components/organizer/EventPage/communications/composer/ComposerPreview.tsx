@@ -76,9 +76,8 @@ export const ComposerPreview: React.FC<ComposerPreviewProps> = ({
           sx={{ flex: 1, minWidth: 0, overflowWrap: 'anywhere' }}
           data-testid="composer-recipient"
         >
-          {recipient &&
-            `${t('eventPage.mail.composer.recipients.to')}: ${recipient.displayName} <${recipient.address}>`}
-          {recipient?.cc && recipient.cc.length > 0 && (
+          {`${t('eventPage.mail.composer.recipients.to')}: ${recipient.displayName} <${recipient.address}>`}
+          {recipient.cc.length > 0 && (
             <>
               <br />
               {`${t('eventPage.mail.composer.recipients.cc')}: ${recipient.cc.join(', ')}`}

@@ -132,6 +132,9 @@ paths:
                           displayName: Die Mobiliar
                           logoUrl: https://cdn.batbern.ch/logos/mobiliar/logo.png
                           industry: Insurance
+                          website: null
+                        contacts: null
+                        partnershipEndDate: null
                     metadata:
                       page: 0
                       limit: 200
@@ -172,6 +175,9 @@ paths:
                     partnershipLevel: PLATINUM
                     partnershipStartDate: "2005-01-06"
                     isActive: true
+                    company: null
+                    contacts: null
+                    partnershipEndDate: null
         '400':
           description: Validation error
           content:
@@ -220,6 +226,9 @@ paths:
                     partnershipLevel: PLATINUM
                     partnershipStartDate: "2005-01-06"
                     isActive: true
+                    company: null
+                    contacts: null
+                    partnershipEndDate: null
         '404':
           description: Partner not found
           content:
@@ -252,6 +261,9 @@ paths:
                     partnershipLevel: PLATINUM
                     partnershipStartDate: "2005-01-06"
                     isActive: true
+                    company: null
+                    contacts: null
+                    partnershipEndDate: null
         '400':
           description: Validation error
           content:
@@ -318,6 +330,9 @@ paths:
                     partnershipLevel: PLATINUM
                     partnershipStartDate: "2005-01-06"
                     isActive: true
+                    company: null
+                    contacts: null
+                    partnershipEndDate: null
         '404':
           description: Partner not found
           content:
@@ -360,6 +375,7 @@ paths:
                       email: jonas.beispiel@example.com
                       firstName: Jonas
                       lastName: Beispiel
+                      profilePictureUrl: null
         '404':
           description: Partner not found
           content:
@@ -753,6 +769,7 @@ paths:
                       status: PROPOSED
                       createdAt: 2026-03-02T09:15:00Z
                       source: PARTNER
+                      plannedEvent: null
                     - id: 7a8b9c0d-1e2f-4a3b-8c4d-5e6f7a8b9c0d
                       title: Event sourcing ten years later
                       voteCount: 1
@@ -760,6 +777,9 @@ paths:
                       status: PROPOSED
                       createdAt: 2026-04-11T18:40:00Z
                       source: COMMUNITY
+                      description: null
+                      plannedEvent: null
+                      suggestedByCompany: null
         '401':
           description: Unauthorized
           content:
@@ -1098,6 +1118,9 @@ components:
         - partnershipLevel
         - partnershipStartDate
         - isActive
+        - partnershipEndDate
+        - company
+        - contacts
       properties:
         companyName:
           type: string
@@ -1176,6 +1199,10 @@ components:
       type: object
       required:
         - username
+        - email
+        - firstName
+        - lastName
+        - profilePictureUrl
       properties:
         username:
           type: string
@@ -1209,6 +1236,13 @@ components:
     CompanyInfo:
       type: object
       description: Enriched from Company Service (ADR-004)
+      required:
+        - companyName
+        - name
+        - displayName
+        - logoUrl
+        - industry
+        - website
       properties:
         companyName:
           type: string
@@ -1246,6 +1280,12 @@ components:
         tierCounts:
           type: object
           description: Count of partners by tier (keys are UPPER_CASE per coding standards)
+          required:
+            - BRONZE
+            - SILVER
+            - GOLD
+            - PLATINUM
+            - STRATEGIC
           properties:
             BRONZE:
               type: integer
@@ -1318,6 +1358,9 @@ components:
     PartnerDashboardResponse:
       type: object
       description: Partner attendance dashboard (Story 8.1)
+      required:
+        - attendanceSummary
+        - costPerAttendee
       properties:
         attendanceSummary:
           type: array
@@ -1333,6 +1376,12 @@ components:
 
     AttendanceSummaryRecord:
       type: object
+      required:
+        - eventCode
+        - eventTitle
+        - eventDate
+        - totalAttendees
+        - companyAttendees
       properties:
         eventCode:
           type: string
@@ -1361,7 +1410,7 @@ components:
     TopicDTO:
       type: object
       description: A topic suggestion with vote counts (Story 8.2 / 7.1)
-      required: [id, title, voteCount, currentPartnerHasVoted, status, createdAt, source]
+      required: [id, title, voteCount, currentPartnerHasVoted, status, createdAt, source, description, suggestedByCompany, plannedEvent]
       properties:
         id:
           type: string

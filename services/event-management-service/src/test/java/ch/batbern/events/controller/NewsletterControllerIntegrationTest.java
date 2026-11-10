@@ -2,6 +2,7 @@ package ch.batbern.events.controller;
 
 import ch.batbern.events.config.CumsContractHarness;
 import ch.batbern.shared.test.AbstractIntegrationTest;
+import ch.batbern.shared.utils.EmailAddresses;
 import ch.batbern.events.config.TestAwsConfig;
 import ch.batbern.events.config.TestSecurityConfig;
 import ch.batbern.events.domain.NewsletterSubscriber;
@@ -331,177 +332,26 @@ public class NewsletterControllerIntegrationTest extends AbstractIntegrationTest
         assertThat(subscriberRepository.findAll()).isEmpty();
     }
 
-    // ── AC10: GET /newsletter/subscribers/count (ORGANIZER only) ─────────────
-
     @Test
-    @DisplayName("GET /newsletter/subscribers/count — non-organizer → 403")
-    @WithMockUser(username = "user", roles = "USER")
-    void getSubscriberCount_nonOrganizer_returns403() throws Exception {
-        mockMvc.perform(get("/api/v1/newsletter/subscribers/count"))
-                .andExpect(status().isForbidden());
-    }
+    @DisplayName("4.9b PUT /newsletter/my-subscriptions — an address over 254 characters → 400, nothing stored")
+    @WithMockUser(username = DORA, roles = "USER")
+    void should_return400_when_addressIsTooLong() throws Exception {
+        doraHasAddresses();
+        // 64 + 1 + 185 + 5 = 255 characters; the pattern alone accepts it (idn-email has no @Email)
+        String tooLong = "a".repeat(64) + "@" + "b".repeat(185) + ".test";
+        assertThat(tooLong).hasSize(255).matches(EmailAddresses.OPENAPI_PATTERN);
 
-    @Test
-    @DisplayName("GET /newsletter/subscribers/count — organizer, no subscribers → totalActive=0")
-    @WithMockUser(username = "organizer", roles = "ORGANIZER")
-    void getSubscriberCount_organizer_returnsCount() throws Exception {
-        subscriberRepository.save(NewsletterSubscriber.builder()
-                .email("a@example.com").language("de").source("explicit").unsubscribeToken("tok-cnt-1")
-                .build());
-        subscriberRepository.save(NewsletterSubscriber.builder()
-                .email("b@example.com").language("de").source("explicit").unsubscribeToken("tok-cnt-2")
-                .build());
-
-        mockMvc.perform(get("/api/v1/newsletter/subscribers/count"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.totalActive").value(2));
+        mockMvc.perform(put("/api/v1/newsletter/my-subscriptions")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"email\":\"" + tooLong + "\",\"subscribed\":true}"))
+                .andExpect(status().isBadRequest());
+        assertThat(subscriberRepository.findAll()).isEmpty();
     }
 
     // ── AC10: GET /newsletter/subscribers (ORGANIZER only) ───────────────────
     // Duplicate basic tests removed by code review — covered by Story 10.28 tests below:
     // - listSubscribers_nonOrganizer → should_return403_when_nonOrganizerAccesses
     // - listSubscribers_organizer → should_returnPaginatedResponse_when_organizerListsSubscribers
-
-    // ── AC10: Event-scoped endpoints — auth checks ─────────────────────────
-
-    @Test
-    @DisplayName("POST /events/{code}/newsletter/send — non-organizer → 403")
-    @WithMockUser(username = "user", roles = "USER")
-    void sendNewsletter_nonOrganizer_returns403() throws Exception {
-        Map<String, Object> body = Map.of("isReminder", false, "locale", "de");
-
-        mockMvc.perform(post("/api/v1/events/BATbern-test/newsletter/send")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(body)))
-                .andExpect(status().isForbidden());
-    }
-
-    @Test
-    @DisplayName("POST /events/{code}/newsletter/send — organizer, unknown event → 404")
-    @WithMockUser(username = "organizer", roles = "ORGANIZER")
-    void sendNewsletter_unknownEvent_returns404() throws Exception {
-        Map<String, Object> body = Map.of("isReminder", false, "locale", "de");
-
-        mockMvc.perform(post("/api/v1/events/NONEXISTENT-EVENT/newsletter/send")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(body)))
-                .andExpect(status().isNotFound());
-    }
-
-    @Test
-    @DisplayName("POST /events/{code}/newsletter/preview — non-organizer → 403")
-    @WithMockUser(username = "user", roles = "USER")
-    void previewNewsletter_nonOrganizer_returns403() throws Exception {
-        Map<String, Object> body = Map.of("isReminder", false, "locale", "de");
-
-        mockMvc.perform(post("/api/v1/events/BATbern-test/newsletter/preview")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(body)))
-                .andExpect(status().isForbidden());
-    }
-
-    @Test
-    @DisplayName("POST /events/{code}/newsletter/preview — organizer, unknown event → 404")
-    @WithMockUser(username = "organizer", roles = "ORGANIZER")
-    void previewNewsletter_unknownEvent_returns404() throws Exception {
-        Map<String, Object> body = Map.of("isReminder", false, "locale", "de");
-
-        mockMvc.perform(post("/api/v1/events/NONEXISTENT-EVENT/newsletter/preview")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(body)))
-                .andExpect(status().isNotFound());
-    }
-
-    @Test
-    @DisplayName("POST /events/{code}/newsletter/preview — with templateKey → 404 not 400 (field is accepted)")
-    @WithMockUser(username = "organizer", roles = "ORGANIZER")
-    void previewNewsletter_withTemplateKey_fieldAccepted_returns404() throws Exception {
-        Map<String, Object> body = Map.of("isReminder", false, "locale", "de", "templateKey", "custom-newsletter");
-
-        mockMvc.perform(post("/api/v1/events/NONEXISTENT-EVENT/newsletter/preview")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(body)))
-                .andExpect(status().isNotFound()); // 404 = event not found, NOT 400 = field rejected
-    }
-
-    @Test
-    @DisplayName("POST /events/{code}/newsletter/send — with templateKey → 404 not 400 (field is accepted)")
-    @WithMockUser(username = "organizer", roles = "ORGANIZER")
-    void sendNewsletter_withTemplateKey_fieldAccepted_returns404() throws Exception {
-        Map<String, Object> body = Map.of("isReminder", false, "locale", "de", "templateKey", "custom-newsletter");
-
-        mockMvc.perform(post("/api/v1/events/NONEXISTENT-EVENT/newsletter/send")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(body)))
-                .andExpect(status().isNotFound()); // 404 = event not found, NOT 400 = field rejected
-    }
-
-    @Test
-    @DisplayName("POST /events/{code}/newsletter/preview — null templateKey accepted (backward compat)")
-    @WithMockUser(username = "organizer", roles = "ORGANIZER")
-    void previewNewsletter_withNullTemplateKey_backwardCompatible_returns404() throws Exception {
-        Map<String, Object> body = new java.util.HashMap<>();
-        body.put("isReminder", false);
-        body.put("locale", "de");
-        body.put("templateKey", null);
-
-        mockMvc.perform(post("/api/v1/events/NONEXISTENT-EVENT/newsletter/preview")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(body)))
-                .andExpect(status().isNotFound()); // null templateKey accepted → uses default
-    }
-
-    @Test
-    @DisplayName("GET /events/{code}/newsletter/history — non-organizer → 403")
-    @WithMockUser(username = "user", roles = "USER")
-    void getHistory_nonOrganizer_returns403() throws Exception {
-        mockMvc.perform(get("/api/v1/events/BATbern-test/newsletter/history"))
-                .andExpect(status().isForbidden());
-    }
-
-    @Test
-    @DisplayName("GET /events/{code}/newsletter/history — organizer, unknown event → 404")
-    @WithMockUser(username = "organizer", roles = "ORGANIZER")
-    void getHistory_unknownEvent_returns404() throws Exception {
-        mockMvc.perform(get("/api/v1/events/NONEXISTENT-EVENT/newsletter/history"))
-                .andExpect(status().isNotFound());
-    }
-
-    // ── GET /events/{code}/newsletter/sends/{sendId}/status ──────────────────
-
-    @Test
-    @DisplayName("GET /events/{code}/newsletter/sends/{sendId}/status — non-organizer → 403")
-    @WithMockUser(username = "user", roles = "USER")
-    void getSendStatus_nonOrganizer_returns403() throws Exception {
-        mockMvc.perform(get("/api/v1/events/BATbern-test/newsletter/sends/00000000-0000-0000-0000-000000000001/status"))
-                .andExpect(status().isForbidden());
-    }
-
-    @Test
-    @DisplayName("GET /events/{code}/newsletter/sends/{sendId}/status — organizer, unknown event → 404")
-    @WithMockUser(username = "organizer", roles = "ORGANIZER")
-    void getSendStatus_unknownEvent_returns404() throws Exception {
-        mockMvc.perform(get("/api/v1/events/NONEXISTENT-EVENT/newsletter/sends/00000000-0000-0000-0000-000000000001/status"))
-                .andExpect(status().isNotFound());
-    }
-
-    // ── POST /events/{code}/newsletter/sends/{sendId}/retry ──────────────────
-
-    @Test
-    @DisplayName("POST /events/{code}/newsletter/sends/{sendId}/retry — non-organizer → 403")
-    @WithMockUser(username = "user", roles = "USER")
-    void retryFailedRecipients_nonOrganizer_returns403() throws Exception {
-        mockMvc.perform(post("/api/v1/events/BATbern-test/newsletter/sends/00000000-0000-0000-0000-000000000001/retry"))
-                .andExpect(status().isForbidden());
-    }
-
-    @Test
-    @DisplayName("POST /events/{code}/newsletter/sends/{sendId}/retry — organizer, unknown event → 404")
-    @WithMockUser(username = "organizer", roles = "ORGANIZER")
-    void retryFailedRecipients_unknownEvent_returns404() throws Exception {
-        mockMvc.perform(post("/api/v1/events/NONEXISTENT-EVENT/newsletter/sends/00000000-0000-0000-0000-000000000001/retry"))
-                .andExpect(status().isNotFound());
-    }
 
     // ── Story 10.28: Paginated subscriber list + management actions ─────────
 

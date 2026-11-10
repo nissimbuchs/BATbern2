@@ -196,11 +196,11 @@ class S2sProviderContractIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @DisplayName("GET /internal/users/{username}, plain and with include=preferences, without any JWT")
+    @DisplayName("GET /internal/users/{username}, plain and with include=settings, without any JWT")
     void internalUser_matchesSpec() throws Exception {
         internal(get("/internal/users/" + SPEAKER), 200);
-        internal(get("/internal/users/" + SPEAKER).param("include", "preferences"), 200);
-        internal(get("/internal/users/" + SPEAKER).param("include", "company,roles,preferences"), 200);
+        internal(get("/internal/users/" + SPEAKER).param("include", "settings"), 200);
+        internal(get("/internal/users/" + SPEAKER).param("include", "company,roles,settings"), 200);
         internal(get("/internal/users/ghost.user"), 404);
     }
 

@@ -21,7 +21,7 @@ import i18n from '@/i18n/config';
 import { api } from '@/test/msw/api';
 import type { ResponseBody } from '@/test/msw/api';
 import { renderWithAuth, signedInAs } from '@/test/auth';
-import { anEvent, daysFromNow } from '@/test/fixtures';
+import { aSessionResponse, anEvent, anEventTask, daysFromNow } from '@/test/fixtures';
 import { EventPage } from '../EventPage';
 
 type EventDetail = ResponseBody<'getEvent', 200>;
@@ -64,6 +64,7 @@ const nothingPublishable: PublishingStatus = {
 };
 
 const aTask = (overrides: Partial<EventTask> = {}): EventTask => ({
+  ...anEventTask(),
   id: '7d1f0c2a-5b3e-4c1d-9a8f-000000000001',
   eventCode: EVENT_CODE,
   taskName: 'Book the venue',
@@ -291,21 +292,26 @@ describe('EventPage — lifecycle tab shell (Epic 14)', () => {
       serveEvent({
         pendingMaterialsCount: 1,
         sessions: [
-          { sessionSlug: 'keynote', eventCode: EVENT_CODE, title: 'Keynote', language: 'de' },
-          {
+          aSessionResponse({
+            sessionSlug: 'keynote',
+            eventCode: EVENT_CODE,
+            title: 'Keynote',
+            language: 'de',
+          }),
+          aSessionResponse({
             sessionSlug: 'panel',
             eventCode: EVENT_CODE,
             title: 'Panel',
             language: 'de',
             startTime: null,
-          },
-          {
+          }),
+          aSessionResponse({
             sessionSlug: 'welcome',
             eventCode: EVENT_CODE,
             title: 'Begrüssung',
             language: 'de',
             startTime: daysFromNow(40),
-          },
+          }),
         ],
       });
       await renderLoaded();

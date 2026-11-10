@@ -1,8 +1,7 @@
 /**
- * Venue & catering recipients and notes (extracted from VenueCoordinationComposer, Story 16.8b).
+ * Venue & catering recipients and notes of the composer's venue audience (Story 16.8b).
  *
- * The contacts are admin-managed singletons (app_setting `venue.coordination.config`). Used by the
- * old venue composer until 16.8c removes it, and by the shared composer's venue audience.
+ * The contacts are admin-managed singletons (app_setting `venue.coordination.config`).
  */
 import React from 'react';
 import {
@@ -18,7 +17,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { Link as RouterLink } from 'react-router-dom';
 import type { VenueCoordinationConfig } from '@/components/organizer/Admin/VenueCateringContactsTab';
-import type { VenueRecipientRole } from './useVenueCoordinationConfig';
+import type { VenueRole } from '../types';
 
 /** Warning with a link to Administration → Venue & Catering. */
 export const VenueNotConfiguredAlert: React.FC = () => {
@@ -40,8 +39,8 @@ interface VenueRecipientFieldsProps {
   config: VenueCoordinationConfig | null;
   venueConfigured: boolean;
   cateringConfigured: boolean;
-  roles: VenueRecipientRole[];
-  onRolesChange: (roles: VenueRecipientRole[]) => void;
+  roles: VenueRole[];
+  onRolesChange: (roles: VenueRole[]) => void;
   notes: string;
   onNotesChange: (notes: string) => void;
 }
@@ -57,14 +56,14 @@ export const VenueRecipientFields: React.FC<VenueRecipientFieldsProps> = ({
   onNotesChange,
 }) => {
   const { t } = useTranslation(['events', 'common']);
-  const toggle = (role: VenueRecipientRole, checked: boolean) => {
+  const toggle = (role: VenueRole, checked: boolean) => {
     const next = new Set(roles);
     if (checked) next.add(role);
     else next.delete(role);
     // Keep the order the backend expects: venue first, catering second.
     onRolesChange((['VENUE', 'CATERING'] as const).filter((r) => next.has(r)));
   };
-  const label = (role: VenueRecipientRole) => {
+  const label = (role: VenueRole) => {
     const name =
       role === 'VENUE'
         ? t('eventPage.venueCoordination.venueRole', 'Venue')

@@ -97,7 +97,7 @@ export const AuthContext = createContext<UseAuthReturn | undefined>(undefined);
  */
 /**
  * Coerce a backend locale to the frontend `UserContextPreferences.language` union. The backend
- * `UserPreferences` enum carries more locales (rm/es/fi/nl/ja/…) than the frontend
+ * `UserSettings` language enum carries more locales (rm/es/fi/nl/ja/…) than the frontend
  * 4-locale union, so a blind cast would put an out-of-union value into a typed field.
  * Values outside the union fall back to the prior value, then 'en'.
  */
@@ -113,24 +113,11 @@ function normalizeLanguage(
 
 async function hydrateUserFromDb(user: UserContext): Promise<UserContext> {
   try {
-    const profile = await getUserProfile(['roles', 'company', 'preferences']);
-    // The backend `/users/me` response (UserResponse, see user-api.types.ts) returns
-    // `roles: ('ORGANIZER' | …)[]` (UPPERCASE), `companyId` (the meaningful company name
-    // per ADR-003), and `preferences` (canonical UserPreferences). The declared
-    // `UserProfileResponse` return type in userApi.ts does not match the runtime shape,
-    // so we cast through `unknown` and read the real fields.
-    const raw = profile as unknown as {
-      roles?: string[];
-      currentRole?: string;
-      companyId?: string;
-      termsAcceptedAt?: string | null;
-      preferences?: {
-        language?: string;
-        theme?: string;
-        emailNotifications?: boolean;
-        pushNotifications?: boolean;
-      };
-    };
+    const profile = await getUserProfile(['roles', 'company', 'settings']);
+    // The generated wire type of `/users/me` (user-api): `roles` UPPERCASE, `companyId` (the
+    // meaningful company name, ADR-003) and `settings` (Story 4.9: display, notification and
+    // privacy settings in one object).
+    const raw = profile;
 
     let hydrated = user;
 
@@ -139,25 +126,25 @@ async function hydrateUserFromDb(user: UserContext): Promise<UserContext> {
       hydrated = { ...hydrated, companyId: raw.companyId };
     }
 
-    // Story 12.11: consent gate flag. The backend serializes with non_null inclusion,
-    // so a missing field on a SUCCESSFUL response means "no consent on record" → null
-    // (gate fires). Only a hydration FAILURE leaves it undefined (gate fails open).
-    hydrated = { ...hydrated, termsAcceptedAt: raw.termsAcceptedAt ?? null };
+    // Story 12.11: consent gate flag. A successful /users/me always carries it (users-api
+    // marks it required, 4.9b): null means "no consent on record" (gate fires). Only a
+    // hydration FAILURE leaves it undefined (gate fails open).
+    hydrated = { ...hydrated, termsAcceptedAt: raw.termsAcceptedAt };
 
     // Story 12.1: preferences sourced from the DB (was custom:preferences). Map the
-    // canonical backend shape onto the frontend UserContextPreferences contract; `language` is
-    // the regression-critical field for locale selection.
-    if (raw.preferences) {
-      const p = raw.preferences;
+    // canonical backend settings onto the frontend UserContextPreferences contract; `language`
+    // is the regression-critical field for locale selection.
+    if (raw.settings) {
+      const p = raw.settings;
       hydrated = {
         ...hydrated,
         preferences: {
           language: normalizeLanguage(p.language, hydrated.preferences?.language ?? 'en'),
           theme: p.theme === 'dark' ? 'dark' : 'light',
           notifications: {
-            email: p.emailNotifications ?? true,
+            email: p.emailNotifications,
             sms: false,
-            push: p.pushNotifications ?? true,
+            push: p.pushNotifications,
           },
           privacy: {
             showProfile: true,
@@ -176,10 +163,7 @@ async function hydrateUserFromDb(user: UserContext): Promise<UserContext> {
             r === 'organizer' || r === 'speaker' || r === 'partner' || r === 'attendee'
         );
       if (fetchedRoles.length > 0) {
-        const primary: UserRole =
-          raw.currentRole && fetchedRoles.includes(raw.currentRole.toLowerCase() as UserRole)
-            ? (raw.currentRole.toLowerCase() as UserRole)
-            : fetchedRoles[0];
+        const primary: UserRole = fetchedRoles[0];
         console.log(
           '[AuthProvider] Hydrated roles from /users/me (JWT custom:role was empty) —',
           'roles=',

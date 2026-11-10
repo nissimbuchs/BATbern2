@@ -144,66 +144,6 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/tasks/{taskId}/complete': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    /**
-     * Mark a task complete
-     * @description Story 5.5 AC25. ORGANIZER role required.
-     */
-    put: operations['completeTask'];
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/tasks/{taskId}/reassign': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    /**
-     * Reassign a task to a different organizer
-     * @description Story 5.5 AC27. ORGANIZER role required.
-     */
-    put: operations['reassignTask'];
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/tasks/{taskId}/status': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    /**
-     * Update a task's status (drag-and-drop)
-     * @description Story 5.5. ORGANIZER role required.
-     */
-    put: operations['updateTaskStatus'];
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
   '/tasks/{taskId}': {
     parameters: {
       query?: never;
@@ -222,8 +162,8 @@ export interface paths {
     options?: never;
     head?: never;
     /**
-     * Update task details (notes, due date, assignee)
-     * @description Patch semantics — only provided fields are updated. ORGANIZER role required.
+     * Update a task (status, notes, due date, assignee)
+     * @description Patch semantics: only provided fields are updated. Completing, reopening, moving on the board and reassigning all use this operation. ORGANIZER role required.
      */
     patch: operations['updateTask'];
     trace?: never;
@@ -242,16 +182,16 @@ export interface components {
       /** @description Due date type: immediate, relative_to_event, or absolute */
       dueDateType: string;
       /** @description Offset days for relative due dates (negative = before event, positive = after) */
-      dueDateOffsetDays?: number | null;
+      dueDateOffsetDays: number | null;
       /**
        * @description A pending task activates at whichever comes first: its trigger, or this many days before its due date. Null = trigger only (post-event templates).
        * @example 14
        */
-      activationLeadDays?: number | null;
+      activationLeadDays: number | null;
       /** @description Whether this is a default (non-editable) template */
       isDefault: boolean;
       /** @description Canonical username of the organizer who created the template (null for defaults) */
-      createdByUsername?: string | null;
+      createdByUsername: string | null;
       /** Format: date-time */
       createdAt: string;
       /** Format: date-time */
@@ -296,25 +236,25 @@ export interface components {
       /** Format: uuid */
       id: string;
       /** Format: uuid */
-      eventId?: string;
+      eventId: string;
       /** @description Event code (null for tasks without an event) */
-      eventCode?: string;
+      eventCode: string;
       /**
        * Format: uuid
        * @description Source template ID (null for ad-hoc tasks)
        */
-      templateId?: string | null;
+      templateId: string | null;
       taskName: string;
       triggerState: string;
       /** Format: date-time */
-      dueDate?: string | null;
-      assignedOrganizerUsername?: string | null;
+      dueDate: string | null;
+      assignedOrganizerUsername: string | null;
       /** @description Task status: pending (trigger not reached yet), todo, in_progress, completed, or cancelled (event archived, or the newsletter was superseded by a later one) */
       status: string;
-      notes?: string | null;
+      notes: string | null;
       /** Format: date-time */
-      completedDate?: string | null;
-      completedByUsername?: string | null;
+      completedDate: string | null;
+      completedByUsername: string | null;
       /** Format: date-time */
       createdAt: string;
       /** Format: date-time */
@@ -341,22 +281,13 @@ export interface components {
       /** @description Optional organizer username to assign the created task to */
       assignedOrganizerUsername?: string;
     };
-    /** @description Request to complete a task (Story 5.5 AC25) */
-    CompleteTaskRequest: {
-      /** @description Optional completion notes */
-      notes?: string;
-    };
-    /** @description Request to reassign a task (Story 5.5 AC27) */
-    ReassignTaskRequest: {
-      newOrganizerUsername: string;
-    };
-    /** @description Request to update a task's status (drag-and-drop) */
-    UpdateTaskStatusRequest: {
-      /** @description New task status: pending, todo, in_progress, or completed */
-      status: string;
-    };
-    /** @description Patch request for task details — only provided fields are updated */
+    /** @description Patch request for a task: only provided fields are updated. Status changes go through this body too (there are no verb endpoints). Setting status `completed` on a task that is not completed records the completion date and the caller as completedByUsername; any other status on a completed task clears both. */
     UpdateEventTaskRequest: {
+      /**
+       * @description New task status: pending, todo, in_progress, or completed
+       * @enum {string}
+       */
+      status?: 'pending' | 'todo' | 'in_progress' | 'completed';
       notes?: string;
       /** Format: date-time */
       dueDate?: string;
@@ -694,99 +625,6 @@ export interface operations {
       };
       401: components['responses']['Unauthorized'];
       403: components['responses']['Forbidden'];
-    };
-  };
-  completeTask: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Task ID */
-        taskId: components['parameters']['TaskId'];
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['CompleteTaskRequest'];
-      };
-    };
-    responses: {
-      /** @description Task completed */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['EventTaskResponse'];
-        };
-      };
-      400: components['responses']['BadRequest'];
-      401: components['responses']['Unauthorized'];
-      403: components['responses']['Forbidden'];
-      404: components['responses']['NotFound'];
-    };
-  };
-  reassignTask: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Task ID */
-        taskId: components['parameters']['TaskId'];
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['ReassignTaskRequest'];
-      };
-    };
-    responses: {
-      /** @description Task reassigned */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['EventTaskResponse'];
-        };
-      };
-      400: components['responses']['BadRequest'];
-      401: components['responses']['Unauthorized'];
-      403: components['responses']['Forbidden'];
-      404: components['responses']['NotFound'];
-    };
-  };
-  updateTaskStatus: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Task ID */
-        taskId: components['parameters']['TaskId'];
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['UpdateTaskStatusRequest'];
-      };
-    };
-    responses: {
-      /** @description Task status updated */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['EventTaskResponse'];
-        };
-      };
-      400: components['responses']['BadRequest'];
-      401: components['responses']['Unauthorized'];
-      403: components['responses']['Forbidden'];
-      404: components['responses']['NotFound'];
     };
   };
   deleteTask: {

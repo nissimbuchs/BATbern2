@@ -17,6 +17,7 @@ import {
   type KanbanThresholdConfig,
 } from '../kanbanThresholds';
 import type { SpeakerPoolEntry, SpeakerWorkflowState } from '@/types/speakerPool.types';
+import { aSpeakerPoolEntry } from '@/test/fixtures';
 
 // Fixed "now" — all tests anchor day arithmetic to this instant.
 const NOW = new Date('2026-05-16T12:00:00Z');
@@ -36,6 +37,7 @@ function makeSpeaker(
   // updatedAt is always sent; a record not touched since creation has updatedAt == createdAt.
   const createdAt = overrides.createdAt ?? NOW.toISOString();
   return {
+    ...aSpeakerPoolEntry(),
     id: `speaker-${status.toLowerCase()}`,
     eventId: 'event-1',
     speakerName: `${status} Speaker`,

@@ -187,9 +187,9 @@ class DistributionListServiceTest {
     void should_leaveOutAddresses_when_copyOffOrUnconfirmed() {
         when(eventRepository.findByEventCode(EVENT_CODE)).thenReturn(Optional.of(event));
         UserResponse organizer = new UserResponse().id("organizer.alice").email("alice@batbern.ch");
-        organizer.addAdditionalEmailsItem(new AdditionalEmail("off@example.com", OffsetDateTime.now())
+        organizer.addAdditionalEmailsItem(new AdditionalEmail().email("off@example.com").createdAt(OffsetDateTime.now())
                 .verifiedAt(OffsetDateTime.now()).receiveEventMail(false));
-        organizer.addAdditionalEmailsItem(new AdditionalEmail("pending@example.com", OffsetDateTime.now())
+        organizer.addAdditionalEmailsItem(new AdditionalEmail().email("pending@example.com").createdAt(OffsetDateTime.now())
                 .receiveEventMail(true));
         when(userApiClient.getUserByUsername("organizer.alice")).thenReturn(organizer);
 
@@ -296,7 +296,7 @@ class DistributionListServiceTest {
                 .email(email);
         for (String e : extras) {
             // #1244: confirmed and with the copy of event mails switched on
-            user.addAdditionalEmailsItem(new AdditionalEmail(e, OffsetDateTime.now())
+            user.addAdditionalEmailsItem(new AdditionalEmail().email(e).createdAt(OffsetDateTime.now())
                     .verifiedAt(OffsetDateTime.now())
                     .receiveEventMail(true));
         }

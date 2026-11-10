@@ -7,6 +7,7 @@ import ch.batbern.events.exception.EventNotFoundException;
 import ch.batbern.events.mailcenter.JpaOutboundMailRecorder;
 import ch.batbern.events.mailcenter.MailMessageQueryService;
 import ch.batbern.events.mailcenter.render.MailPipeline;
+import ch.batbern.events.mailcenter.render.OwnText;
 import ch.batbern.events.mailcenter.render.RenderedMail;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.NewsletterSendRepository;
@@ -263,7 +264,7 @@ public class MailComposerService {
             throw new IllegalArgumentException("The composer does not send to " + request.audience());
         }
         if (request.ownText()) {
-            OwnText.validateShape(request);
+            OwnText.validateShape(request.ownSubject(), request.ownBodyHtml());
         }
         adapter.validate(request);
         if (!request.ownText() && !adapter.allowsTemplate(request.templateKey())) {

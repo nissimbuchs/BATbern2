@@ -8,6 +8,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { NeedsAnswerSection } from '../NeedsAnswerSection';
 import { initials } from '../initials';
 import type { MailConversationSummary } from '@/services/mailConversationService';
+import { aConversation } from '@/test/fixtures';
 
 const {
   listEventConversations,
@@ -64,6 +65,7 @@ vi.mock('react-i18next', () => ({
 
 function conv(overrides: Partial<MailConversationSummary>): MailConversationSummary {
   return {
+    ...aConversation(),
     conversationKey: 'conv-1',
     eventCode: 'BATbern60',
     audience: 'SPEAKERS',

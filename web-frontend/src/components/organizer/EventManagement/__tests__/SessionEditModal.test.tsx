@@ -20,6 +20,7 @@ import { SessionEditModal, type SessionUpdateData } from '../SessionEditModal';
 type SaveFn = (sessionSlug: string, updates: SessionUpdateData) => Promise<void>;
 import type { SessionUI } from '@/types/event.types';
 import { AxiosError } from 'axios';
+import { aSession } from '@/test/fixtures';
 
 // Mock SessionSpeakersTab to isolate SessionEditModal tests
 vi.mock('../SessionSpeakersTab', () => ({
@@ -58,6 +59,7 @@ describe('SessionEditModal - Helper Functions', () => {
       // This is tested indirectly through the modal's time field initialization
       // We'll verify this by checking if times are correctly displayed
       const mockSession: SessionUI = {
+        ...aSession(),
         sessionSlug: 'test-session',
         eventCode: 'BATbern57',
         language: 'de',
@@ -90,6 +92,7 @@ describe('SessionEditModal - Helper Functions', () => {
 
     it('should_returnEmptyString_when_invalidISOString', () => {
       const mockSession: SessionUI = {
+        ...aSession(),
         sessionSlug: 'test-session',
         eventCode: 'BATbern57',
         language: 'de',
@@ -123,6 +126,7 @@ describe('SessionEditModal - Helper Functions', () => {
     it('should_createISOTimestamp_when_validEventDateAndTime', async () => {
       const mockOnSave = vi.fn<SaveFn>().mockResolvedValue(undefined);
       const mockSession: SessionUI = {
+        ...aSession(),
         sessionSlug: 'test-session',
         eventCode: 'BATbern57',
         language: 'de',
@@ -171,6 +175,7 @@ describe('SessionEditModal - Time Validation', () => {
 
   beforeEach(() => {
     mockSession = {
+      ...aSession(),
       sessionSlug: 'test-session',
       eventCode: 'BATbern57',
       language: 'de',
@@ -319,6 +324,7 @@ describe('SessionEditModal - Auto-Calculation Logic', () => {
 
   beforeEach(() => {
     mockSession = {
+      ...aSession(),
       sessionSlug: 'test-session',
       eventCode: 'BATbern57',
       language: 'de',
@@ -434,6 +440,7 @@ describe('SessionEditModal - Conflict Error Handling', () => {
     const user = userEvent.setup();
 
     const mockSession: SessionUI = {
+      ...aSession(),
       sessionSlug: 'test-session',
       eventCode: 'BATbern57',
       language: 'de',
@@ -488,6 +495,7 @@ describe('SessionEditModal - Conflict Error Handling', () => {
     const user = userEvent.setup();
 
     const mockSession: SessionUI = {
+      ...aSession(),
       sessionSlug: 'test-session',
       eventCode: 'BATbern57',
       language: 'de',
@@ -533,6 +541,7 @@ describe('SessionEditModal - Conflict Error Handling', () => {
     const user = userEvent.setup();
 
     const mockSession: SessionUI = {
+      ...aSession(),
       sessionSlug: 'test-session',
       eventCode: 'BATbern57',
       language: 'de',
@@ -571,6 +580,7 @@ describe('SessionEditModal - Form Validation', () => {
     const user = userEvent.setup();
 
     const mockSession: SessionUI = {
+      ...aSession(),
       sessionSlug: 'test-session',
       eventCode: 'BATbern57',
       language: 'de',
@@ -613,6 +623,7 @@ describe('SessionEditModal - Form Validation', () => {
     const user = userEvent.setup();
 
     const mockSession: SessionUI = {
+      ...aSession(),
       sessionSlug: 'test-session',
       eventCode: 'BATbern57',
       language: 'de',
@@ -667,6 +678,7 @@ describe('SessionEditModal - Form Validation', () => {
         open={true}
         onClose={vi.fn()}
         session={{
+          ...aSession(),
           sessionSlug: 'test-session',
           eventCode: 'BATbern57',
           language: 'de',
@@ -701,6 +713,7 @@ describe('SessionEditModal - Materials Tab (Story 5.9 - AC1)', () => {
 
   beforeEach(() => {
     mockSession = {
+      ...aSession(),
       sessionSlug: 'test-session',
       eventCode: 'BATbern57',
       language: 'de',
@@ -828,6 +841,7 @@ describe('SessionEditModal - Materials Tab (Story 5.9 - AC1)', () => {
 
 describe('SessionEditModal - Delete Material', () => {
   const mockSessionWithMaterials: SessionUI = {
+    ...aSession(),
     sessionSlug: 'test-session',
     language: 'de',
     eventCode: 'BATbern99',
@@ -932,6 +946,7 @@ describe('SessionEditModal - Delete Material', () => {
 
 describe('SessionEditModal - Speakers Tab', () => {
   const mockSession: SessionUI = {
+    ...aSession(),
     sessionSlug: 'test-session',
     eventCode: 'BATbern99',
     title: 'Test Session',

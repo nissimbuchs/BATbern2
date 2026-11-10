@@ -2,13 +2,12 @@
  * useUserProfile Hook
  * Story 1.17, Task 5b: React Query hook for user profile data
  *
- * Fetches and caches user profile data with roles and preferences.
+ * Fetches and caches user profile data with roles and settings.
  * Uses React Query for server state management with 5-minute stale time.
  */
 
 import { useQuery } from '@tanstack/react-query';
-import { getUserProfile } from '@/services/api/userApi';
-import type { UserProfileResponse } from '@/types/user';
+import { getUserProfile, type CurrentUserResponse } from '@/services/api/userApi';
 
 interface UseUserProfileOptions {
   enabled?: boolean;
@@ -16,10 +15,9 @@ interface UseUserProfileOptions {
 }
 
 /**
- * Fetch user profile with roles and preferences
+ * Fetch user profile with roles and settings
  */
-const fetchUserProfile = (): Promise<UserProfileResponse> =>
-  getUserProfile(['roles', 'preferences']);
+const fetchUserProfile = (): Promise<CurrentUserResponse> => getUserProfile(['roles', 'settings']);
 
 /**
  * Custom hook to fetch and cache user profile data

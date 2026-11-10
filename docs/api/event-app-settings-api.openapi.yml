@@ -2,11 +2,13 @@ openapi: 3.0.3
 info:
   title: BATbern App Settings API
   version: 1.0.0
-  description: 'Public application settings — runtime feature flags consumed by the frontend.
+  description: 'Public application settings: runtime feature flags and the moderator
+    presentation settings, read anonymously by the frontend.
 
 
-    Relocated from the AI spec (API consolidation Phase 8 — feature flags are an app-settings
-    concern, not an AI one). Path preserved verbatim (`/public/settings/features`).'
+    Feature flags were relocated from the AI spec (API consolidation Phase 8). The presentation
+    settings moved from CUMS to EMS in Story 4.9: they are stored in app_settings under the key
+    `presentation` and written with `PUT /admin/settings/presentation` (events-core-api).'
   contact:
     name: BATbern Platform Team
     email: platform@batbern.ch
@@ -42,10 +44,57 @@ paths:
                   summary: captured from the local anonymized database
                   value:
                     aiContentEnabled: false
+  /public/settings/presentation:
+    get:
+      tags:
+      - App Settings
+      operationId: getPresentationSettings
+      summary: Get the moderator presentation settings (public, no auth required)
+      description: >-
+        The About slide text and partner count of the moderator presentation page (Story 10.8a).
+        Stored in app_settings under the key `presentation` as JSON; without a stored value the
+        BATbern defaults are returned. Written by organizers with
+        `PUT /admin/settings/presentation` (events-core-api), whose value is this object as JSON.
+      security: []
+      responses:
+        '200':
+          description: Presentation settings
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PresentationSettingsResponse'
+              examples:
+                default:
+                  summary: captured from the local anonymized database
+                  value:
+                    aboutText: |-
+                      BATbern ist seit 2005 eine unabhängige Plattform zum Technologie Austausch zwischen IT-Experten.
+                      Sie bietet Fachvorträge aus der Praxis.
+                      Eine hervorragende Plattform zum Gedanken- und Erfahrungsaustausch.
+                      Platz für Networking während dem Apéro oder Lunch.
+                    partnerCount: 9
 components:
   schemas:
+    PresentationSettingsResponse:
+      type: object
+      description: Moderator presentation page settings (Story 10.8a)
+      required:
+      - aboutText
+      - partnerCount
+      properties:
+        aboutText:
+          type: string
+          description: Verein purpose text displayed on the About slide
+          example: BATbern ist eine unabhängige Plattform für Berner Architekten Treffen.
+        partnerCount:
+          type: integer
+          description: Number of active partner companies shown on the About slide
+          minimum: 0
+          example: 9
     FeatureFlagsResponse:
       type: object
+      required:
+        - aiContentEnabled
       properties:
         aiContentEnabled:
           type: boolean

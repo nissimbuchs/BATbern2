@@ -639,7 +639,7 @@ through this parent's path.
 | Transient technical handle | `uploadId`, `jobId`, merge or logo `requestId` | allowed |
 | Natural key is personal data | newsletter subscribers (the key would be an e-mail address, which must not appear in URLs or logs) | UUID required |
 | Unnamed top-level aggregate | tasks, task templates, partner meetings, topic suggestions, own notifications | allowed |
-| Child outside its parent | `POST /speakers/{speakerId}/ai/analyze-abstract` | not allowed: nest under the event (Epic 17) |
+| Child outside its parent | the former `POST /speakers/{speakerId}/ai/analyze-abstract` | not allowed: nested under the event since Story 4.9 (`POST /events/{eventCode}/speakers/{speakerId}/abstract-analysis`, loaded with `findByIdAndEventId`) |
 
 Database rules above are unchanged. Five nested cases were checked on 2026-11-07 and all scope
 correctly; a scoping test per nested resource makes this a rule rather than a habit.

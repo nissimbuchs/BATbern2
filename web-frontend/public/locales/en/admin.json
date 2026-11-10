@@ -35,7 +35,7 @@
     "saveFailed": "Save failed. Please try again.",
     "venueCoordination": {
       "title": "Venue & Catering Contacts",
-      "subtitle": "These contacts receive the offerte and timetable emails sent from the Event Detail Venue tab. They are the same across every event — define them once here.",
+      "subtitle": "These contacts receive the offerte and timetable emails sent from the Event Detail Communications tab. They are the same across every event — define them once here.",
       "venueSection": "Venue contact",
       "cateringSection": "Catering contact",
       "coordinatorSection": "Venue coordinator",

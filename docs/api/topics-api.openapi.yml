@@ -134,6 +134,8 @@ paths:
                         active: true
                         createdAt: "2026-03-06T14:42:40.505045+01:00"
                         updatedAt: "2026-11-07T18:13:18.040396+01:00"
+                        description: null
+                        usageHistory: null
                       - topicCode: tools-platforms
                         title: Tools & Platforms
                         description: Sample description for the API example.
@@ -148,6 +150,7 @@ paths:
                         active: true
                         createdAt: "2025-12-18T19:13:20.082946+01:00"
                         updatedAt: "2026-02-27T15:33:06.511028+01:00"
+                        usageHistory: null
                     pagination:
                       page: 1
                       limit: 2
@@ -205,6 +208,8 @@ paths:
                     active: true
                     createdAt: "2026-03-06T14:42:40.505045+01:00"
                     updatedAt: "2026-11-07T18:13:18.040396+01:00"
+                    description: null
+                    usageHistory: null
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -259,6 +264,8 @@ paths:
                     active: true
                     createdAt: "2026-03-06T14:42:40.505045+01:00"
                     updatedAt: "2026-11-07T18:13:18.040396+01:00"
+                    description: null
+                    usageHistory: null
         '404':
           $ref: '#/components/responses/NotFound'
         '401':
@@ -312,6 +319,8 @@ paths:
                     active: true
                     createdAt: "2026-03-06T14:42:40.505045+01:00"
                     updatedAt: "2026-11-07T18:13:18.040396+01:00"
+                    description: null
+                    usageHistory: null
         '400':
           $ref: '#/components/responses/BadRequest'
         '404':
@@ -719,6 +728,7 @@ components:
       required:
         - companyName
         - topics
+        - logoUrl
       properties:
         companyName:
           type: string
@@ -793,6 +803,18 @@ components:
         - topicCode
         - title
         - category
+        - description
+        - createdDate
+        - lastUsedDate
+        - usageCount
+        - stalenessScore
+        - colorZone
+        - status
+        - similarityScores
+        - active
+        - createdAt
+        - updatedAt
+        - usageHistory
       properties:
         topicCode:
           type: string
@@ -912,6 +934,8 @@ components:
         - eventNumber
         - usedDate
         - attendance
+        - eventCode
+        - eventDate
       properties:
         eventNumber:
           type: integer

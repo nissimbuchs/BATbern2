@@ -39,10 +39,13 @@ function postToSpeaker(post: QnaPostResponse): SessionSpeaker {
     username: post.postedByUsername ?? '',
     firstName,
     lastName: post.postedByLastName ?? '',
-    company: post.postedByCompanyName ?? undefined,
-    companyDisplayName: post.postedByCompanyName ?? undefined,
-    companyLogoUrl: post.postedByCompanyLogoUrl ?? undefined,
+    company: post.postedByCompanyName,
+    companyDisplayName: post.postedByCompanyName,
+    companyLogoUrl: post.postedByCompanyLogoUrl,
+    profilePictureUrl: null,
     // Required by SessionSpeaker but irrelevant for a Q&A poster (SpeakerDisplay ignores them).
+    bio: null,
+    presentationTitle: null,
     speakerRole: 'PRIMARY_SPEAKER',
     isConfirmed: true,
   };
@@ -76,7 +79,7 @@ export function SessionQnaThread({ eventCode, sessionSlug }: SessionQnaThreadPro
   const isOpen = thread.status === 'OPEN';
   // Taken-down posts are removed from the thread entirely (the backend already drops them; this
   // is a defensive client-side guard so a removed post never renders or inflates the count).
-  const posts = (thread.posts ?? []).filter((p) => !p.removed);
+  const posts = thread.posts.filter((p) => !p.removed);
   const questions = posts.filter((p) => !p.parentPostId);
   const answersByParent = posts.reduce<Record<string, QnaPostResponse[]>>((acc, p) => {
     if (p.parentPostId) {

@@ -328,7 +328,7 @@ export function getRegistrationSituation(
   isArchiveMode: boolean,
   now: number = Date.now()
 ): RegistrationSituation {
-  if (isArchiveMode || COMPLETED_STATES.includes(event.workflowState ?? '')) {
+  if (isArchiveMode || COMPLETED_STATES.includes(event.workflowState)) {
     return 'S5';
   }
   if (event.workflowState === 'EVENT_LIVE' || isEventDayReached(event, now)) {

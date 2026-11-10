@@ -1,9 +1,10 @@
 package ch.batbern.events.mailcenter;
 
+import ch.batbern.shared.utils.EmailAddresses;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -59,7 +60,7 @@ public class InternalRequestConversationController {
     public record OpenRequest(
             @NotNull UUID requestId,
             @Size(max = 255) String requesterName,
-            @NotBlank @Email @Size(max = 320) String requesterEmail,
+            @NotBlank @Pattern(regexp = EmailAddresses.OPENAPI_PATTERN) @Size(max = 320) String requesterEmail,
             @NotBlank @Size(max = 500) String subject,
             @Size(max = 500) String note) {
     }

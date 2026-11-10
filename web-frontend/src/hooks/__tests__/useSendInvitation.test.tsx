@@ -35,6 +35,7 @@ describe('useSendInvitation Hook', () => {
     status: 'INVITED',
     invitedAt: '2026-01-25T12:00:00Z',
     responseDeadline: '2026-02-08T12:00:00Z',
+    contentDeadline: null,
   };
 
   beforeEach(() => {

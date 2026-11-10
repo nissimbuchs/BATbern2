@@ -119,7 +119,7 @@ class OpenAiModelSelectionTest {
                 .andExpect(jsonPath("$.model").value("chat-latest"))
                 .andExpect(jsonPath("$.response_format.type").value("json_object"))
                 .andExpect(jsonPath("$.temperature").doesNotExist())
-                .andRespond(withSuccess(chatResponse("{\"wordCount\": 120}"), MediaType.APPLICATION_JSON));
+                .andRespond(withSuccess(chatResponse("{\"noPromotionScore\": 8, \"lessonsLearnedScore\": 7, \"wordCount\": 120}"), MediaType.APPLICATION_JSON));
 
         Optional<BatbernAiService.AbstractAnalysisResult> out = aiService().analyzeAbstract(
                 "Jane Doe", "A talk", "An abstract.");

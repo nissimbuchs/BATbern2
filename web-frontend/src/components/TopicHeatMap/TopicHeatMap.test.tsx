@@ -10,6 +10,7 @@ import { render, screen } from '@testing-library/react';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import TopicHeatMap from './TopicHeatMap';
 import type { TopicUsageHistory } from '@/types/topic.types';
+import { aTopicUsage } from '@/test/fixtures';
 
 // Mock react-i18next
 vi.mock('react-i18next', () => ({
@@ -41,26 +42,10 @@ describe('TopicHeatMap', () => {
   const theme = createTheme();
 
   const mockUsageHistory: TopicUsageHistory[] = [
-    {
-      eventNumber: 56,
-      usedDate: '2024-01-15T10:00:00Z',
-      attendance: 150,
-    },
-    {
-      eventNumber: 57,
-      usedDate: '2024-04-20T10:00:00Z',
-      attendance: 200,
-    },
-    {
-      eventNumber: 58,
-      usedDate: '2024-07-10T10:00:00Z',
-      attendance: 180,
-    },
-    {
-      eventNumber: 55,
-      usedDate: '2023-10-05T10:00:00Z',
-      attendance: 160,
-    },
+    { ...aTopicUsage(), eventNumber: 56, usedDate: '2024-01-15T10:00:00Z', attendance: 150 },
+    { ...aTopicUsage(), eventNumber: 57, usedDate: '2024-04-20T10:00:00Z', attendance: 200 },
+    { ...aTopicUsage(), eventNumber: 58, usedDate: '2024-07-10T10:00:00Z', attendance: 180 },
+    { ...aTopicUsage(), eventNumber: 55, usedDate: '2023-10-05T10:00:00Z', attendance: 160 },
   ];
 
   const renderComponent = (usageHistory: TopicUsageHistory[] = mockUsageHistory) =>
@@ -116,11 +101,7 @@ describe('TopicHeatMap', () => {
 
   it('should handle single usage entry', () => {
     const singleUsage: TopicUsageHistory[] = [
-      {
-        eventNumber: 56,
-        usedDate: '2024-01-15T10:00:00Z',
-        attendance: 150,
-      },
+      { ...aTopicUsage(), eventNumber: 56, usedDate: '2024-01-15T10:00:00Z', attendance: 150 },
     ];
     renderComponent(singleUsage);
     expect(screen.getByTestId('scatter-chart')).toBeInTheDocument();
@@ -128,21 +109,9 @@ describe('TopicHeatMap', () => {
 
   it('should handle multiple events in same quarter', () => {
     const sameQuarterUsage: TopicUsageHistory[] = [
-      {
-        eventNumber: 56,
-        usedDate: '2024-01-15T10:00:00Z',
-        attendance: 150,
-      },
-      {
-        eventNumber: 57,
-        usedDate: '2024-02-20T10:00:00Z',
-        attendance: 200,
-      },
-      {
-        eventNumber: 58,
-        usedDate: '2024-03-10T10:00:00Z',
-        attendance: 180,
-      },
+      { ...aTopicUsage(), eventNumber: 56, usedDate: '2024-01-15T10:00:00Z', attendance: 150 },
+      { ...aTopicUsage(), eventNumber: 57, usedDate: '2024-02-20T10:00:00Z', attendance: 200 },
+      { ...aTopicUsage(), eventNumber: 58, usedDate: '2024-03-10T10:00:00Z', attendance: 180 },
     ];
     renderComponent(sameQuarterUsage);
     expect(screen.getByTestId('scatter-chart')).toBeInTheDocument();

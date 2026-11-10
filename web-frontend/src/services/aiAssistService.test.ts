@@ -96,8 +96,8 @@ describe('aiAssistService', () => {
       wordCount: 120,
       shortenedAbstract: null,
     };
-    mock.onPost('/speakers/sp-1/ai/analyze-abstract').reply(200, analysis);
+    mock.onPost('/events/BATbern60/speakers/sp-1/abstract-analysis').reply(200, analysis);
 
-    await expect(analyzeAbstract('sp-1')).resolves.toEqual(analysis);
+    await expect(analyzeAbstract('BATbern60', 'sp-1')).resolves.toEqual(analysis);
   });
 });

@@ -539,11 +539,6 @@ erDiagram
         varchar associated_entity_id
         timestamp expires_at
     }
-    presentation_settings {
-        int id PK "single row"
-        text about_text
-        int partner_count
-    }
     user_profiles ||--o{ role_assignments : "user_id"
     user_profiles ||--o{ user_additional_emails : "user_id"
     user_profiles ||--o{ activity_history : "user_id"
@@ -554,8 +549,9 @@ erDiagram
 
 - `role_assignments` has a composite key (user, role); `granted_by` points to the organizer who
   granted it.
-- `presentation_settings` is a single row for the presenter screen (about text, number of partner
-  logos).
+- `presentation_settings` (CUMS V14) held the presenter screen settings until Story 4.9: EMS V152
+  copied its row into `app_settings` (key `presentation`). The table stays, unread, for one
+  release so an old CUMS image can still start (rollback safety); a follow-up migration drops it.
 - `shedlock` (scheduler locks) is declared by both CUMS (V12) and EMS (V31) with
   `CREATE TABLE IF NOT EXISTS`; `logos` likewise by CUMS (V10) and EMS (V5).
 
@@ -1221,7 +1217,7 @@ erDiagram
 
 | Table | Purpose |
 |---|---|
-| `app_settings` | Key-value settings edited in Administration, for example the forwarding recipients and `mailcenter.notify-instead-of-forward` |
+| `app_settings` | Key-value settings edited in Administration, the one store for application settings (`AdminSettingsService`, `/admin/settings/{key}`): for example the forwarding recipients, `mailcenter.notify-instead-of-forward`, `venue.coordination.config` (JSON) and `presentation` (JSON `{aboutText, partnerCount}` for the presenter screen, validated on write, read anonymously at `/public/settings/presentation`; moved from CUMS by V152, Story 4.9) |
 | `user_merge_log` | One row per profile merge: source and target username, who and how (ORGANIZER or SELF_CLAIM), what moved and what was removed (JSONB), a snapshot of the source profile |
 | `shedlock` | Scheduler locks so that only one task runs each scheduled job |
 | `logos` | Shared with CUMS, see above |
@@ -1325,9 +1321,12 @@ V139, `user_merge_log` V144.
 Dropped: `publishing_versions` (V28 to V89), `speakers` (V37 to V94), `speaker_invitation_tokens`
 (V43 to V104).
 
+Unread, to drop: the CUMS table `presentation_settings` (CUMS V14), copied into `app_settings` by
+EMS V152 (Story 4.9) and dropped by a follow-up migration one release later (rollback safety).
+
 **CUMS** (9 tables): `companies` V3, `user_profiles` V4, `role_assignments` V5,
 `activity_history` V6, `logos` V10, `shedlock` V12, `watch_pairings` V13,
-`presentation_settings` V14, `user_additional_emails` V16, `company_key_changes` V28 (shared: CUMS
+`presentation_settings` V14 (unread since Story 4.9, see above), `user_additional_emails` V16, `company_key_changes` V28 (shared: CUMS
 V28, EMS V150 and PCS V11 create it with the same canonical block, see below).
 
 **Company keys** (owner decision 2026-11-09): `companies.name`, the company's meaningful ID, is

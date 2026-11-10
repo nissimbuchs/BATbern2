@@ -6,9 +6,8 @@ info:
     Consolidated Users API for BATbern Event Management Platform.
 
     This API provides comprehensive user management capabilities with:
-    - **Resource Expansion**: `?include=` parameter for company, roles, preferences, settings, activity
+    - **Resource Expansion**: `?include=` parameter for company, roles, settings, activity
     - **Advanced Filtering**: MongoDB-style JSON filter syntax for complex queries
-    - **Field Selection**: Sparse fieldsets to reduce payload size
     - **Pagination**: Standard page/limit parameters
     - **Caching**: Caffeine in-memory cache (10min TTL)
     - **Role Management**: Business rules enforcement (minimum 2 organizers)
@@ -48,10 +47,8 @@ tags:
     description: User profile CRUD and management operations
   - name: User Search
     description: User search and autocomplete with caching
-  - name: User Preferences
-    description: User preference management
   - name: User Settings
-    description: User account settings management
+    description: The caller's settings, one resource (display, notifications, privacy; Story 4.9 merged the former preferences into it)
   - name: Role Management
     description: User role management with business rules
   - name: Profile Picture
@@ -249,8 +246,7 @@ paths:
 
         **Resource Expansion**:
         - company: Expands company details
-        - preferences: Includes user preferences
-        - settings: Includes account settings
+        - settings: Includes the user's settings (display, notifications, privacy)
         - roles: Includes full role information
         - activity: Includes recent activity history
 
@@ -264,7 +260,7 @@ paths:
           required: false
           schema:
             type: string
-            example: 'company,preferences,settings'
+            example: 'company,settings'
       responses:
         '200':
           description: User profile retrieved successfully
@@ -284,6 +280,15 @@ paths:
                     active: true
                     createdAt: 2025-01-15T10:00:00Z
                     updatedAt: 2025-01-15T10:00:00Z
+                    additionalEmails: []
+                    bio: null
+                    company: null
+                    companyId: null
+                    hasCognitoAccount: true
+                    lastLoginAt: null
+                    profilePictureUrl: null
+                    settings: null
+                    termsAcceptedAt: null
                 expandedUser:
                   summary: User with all expansions
                   value:
@@ -300,13 +305,32 @@ paths:
                       id: Swiss IT Solutions AG
                       name: Swiss IT Solutions AG
                       industry: Technology
-                    preferences:
+                      displayName: null
+                      website: null
+                    settings:
                       theme: dark
                       language: de
                       emailNotifications: true
-                    settings:
                       profileVisibility: members_only
                       showEmail: false
+                      allowCalendarSync: false
+                      allowMessaging: true
+                      inAppNotifications: true
+                      notificationFrequency: "immediate"
+                      pushNotifications: false
+                      qnaNotificationFrequency: "live"
+                      quietHoursEnd: null
+                      quietHoursStart: null
+                      showActivityHistory: true
+                      showCompany: true
+                      timezone: null
+                      twoFactorEnabled: false
+                    additionalEmails: []
+                    bio: null
+                    hasCognitoAccount: true
+                    lastLoginAt: null
+                    profilePictureUrl: null
+                    termsAcceptedAt: null
         '401':
           $ref: '#/components/responses/Unauthorized'
         '500':
@@ -356,6 +380,11 @@ paths:
                     updatedAt: "2026-11-08T14:43:13.089114Z"
                     termsAcceptedAt: "2026-02-22T12:54:23.442285Z"
                     additionalEmails: []
+                    company: null
+                    companyId: null
+                    lastLoginAt: null
+                    profilePictureUrl: null
+                    settings: null
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -373,8 +402,7 @@ paths:
         - User Management
       summary: List users with advanced query support
       description: |
-        Retrieve a paginated list of users with optional filtering, sorting,
-        field selection, and resource expansion.
+        Retrieve a paginated list of users with optional filtering, sorting and resource expansion.
 
         **Acceptance Criteria**: AC3, AC13, AC14
 
@@ -393,14 +421,10 @@ paths:
         - Descending: -createdAt
         - Multiple fields: lastName,-createdAt
 
-        **Field Selection**:
-        - Specific fields: ?fields=id,email,firstName,lastName,roles
-        - All fields: omit fields parameter
-
         **Resource Expansion**:
         - ?include=company: Expands company details
         - ?include=roles: Includes full role information
-        - ?include=preferences: Includes user preferences
+        - ?include=settings: Includes the user's settings
 
         **Performance**:
         - Basic query: <100ms (P95)
@@ -439,20 +463,13 @@ paths:
             minimum: 1
             maximum: 100
             default: 20
-        - name: fields
-          in: query
-          description: Comma-separated field names for sparse fieldsets
-          required: false
-          schema:
-            type: string
-            example: 'id,email,firstName,lastName,roles'
         - name: include
           in: query
           description: Comma-separated list of resources to include
           required: false
           schema:
             type: string
-            example: 'company,roles,preferences'
+            example: 'company,roles,settings'
         - name: search
           in: query
           description: |
@@ -495,6 +512,10 @@ paths:
                         updatedAt: "2026-02-25T17:06:54.373809Z"
                         termsAcceptedAt: null
                         additionalEmails: []
+                        bio: null
+                        company: null
+                        lastLoginAt: null
+                        settings: null
                       - id: felix.muster
                         hasCognitoAccount: true
                         email: felix.muster@example.com
@@ -508,6 +529,11 @@ paths:
                         updatedAt: "2025-12-27T13:57:45.62845Z"
                         termsAcceptedAt: null
                         additionalEmails: []
+                        bio: null
+                        company: null
+                        lastLoginAt: null
+                        profilePictureUrl: null
+                        settings: null
                     pagination:
                       page: 1
                       limit: 2
@@ -597,6 +623,14 @@ paths:
                     active: true
                     createdAt: '2025-10-21T20:00:00Z'
                     updatedAt: '2025-10-21T20:00:00Z'
+                    additionalEmails: []
+                    bio: null
+                    company: null
+                    hasCognitoAccount: true
+                    lastLoginAt: null
+                    profilePictureUrl: null
+                    settings: null
+                    termsAcceptedAt: null
         '400':
           description: Validation error
           content:
@@ -666,6 +700,7 @@ paths:
                       lastName: Beispiel
                       profilePictureUrl: https://cdn.batbern.ch/profile-pictures/2025/anna.beispiel/profile-a0ed134f-8619-44b1-be2b-6480b092196c.jpeg
                       companyId: galenica
+                      bio: null
         '500':
           $ref: '#/components/responses/InternalServerError'
 
@@ -1823,6 +1858,10 @@ paths:
                     updatedAt: "2026-02-25T17:06:54.373809Z"
                     termsAcceptedAt: null
                     additionalEmails: []
+                    bio: null
+                    company: null
+                    lastLoginAt: null
+                    settings: null
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -1882,6 +1921,11 @@ paths:
                     updatedAt: "2026-11-08T14:43:13.089114Z"
                     termsAcceptedAt: "2026-02-22T12:54:23.442285Z"
                     additionalEmails: []
+                    company: null
+                    companyId: null
+                    lastLoginAt: null
+                    profilePictureUrl: null
+                    settings: null
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -2034,111 +2078,15 @@ paths:
       security:
         - BearerAuth: []
 
-  /users/me/preferences:
-    get:
-      tags:
-        - User Preferences
-      summary: Get current user preferences
-      description: |
-        Retrieve preferences for the currently authenticated user.
-
-        **Acceptance Criteria**: AC6
-
-        Includes: theme, language, notification settings, quiet hours
-
-      operationId: getUserPreferences
-      responses:
-        '200':
-          description: Preferences retrieved successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UserPreferences'
-              examples:
-                default:
-                  summary: captured from the local anonymized database
-                  value:
-                    theme: auto
-                    language: de
-                    emailNotifications: true
-                    inAppNotifications: true
-                    pushNotifications: false
-                    notificationFrequency: immediate
-                    qnaNotificationFrequency: live
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-      security:
-        - BearerAuth: []
-
-    put:
-      tags:
-        - User Preferences
-      summary: Update current user preferences
-      description: |
-        Update preferences for the currently authenticated user.
-
-        **Acceptance Criteria**: AC6
-
-        **Validation**: All preference values validated against allowed enums/formats
-
-      operationId: updateUserPreferences
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UserPreferences'
-            examples:
-              preferenceUpdate:
-                summary: Update preferences
-                value:
-                  theme: dark
-                  language: de
-                  emailNotifications: true
-                  notificationFrequency: daily_digest
-                  quietHoursStart: '22:00'
-                  quietHoursEnd: '07:00'
-      responses:
-        '200':
-          description: Preferences updated successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UserPreferences'
-              examples:
-                default:
-                  summary: captured from the local anonymized database (same schema as a GET)
-                  value:
-                    theme: auto
-                    language: de
-                    emailNotifications: true
-                    inAppNotifications: true
-                    pushNotifications: false
-                    notificationFrequency: immediate
-                    qnaNotificationFrequency: live
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-      security:
-        - BearerAuth: []
-
   /users/me/settings:
     get:
       tags:
         - User Settings
-      summary: Get current user settings
+      summary: Get the caller's settings
       description: |
-        Retrieve account settings for the currently authenticated user.
-
-        **Acceptance Criteria**: AC7
-
-        Includes: privacy controls, account preferences, security settings
-
+        The caller's settings as one object: display (theme, language, timezone), notifications
+        (channels, frequency, Q&A digest, quiet hours) and privacy. Story 4.9 merged the former
+        `/users/me/preferences` into this resource; the storage is unchanged.
       operationId: getUserSettings
       responses:
         '200':
@@ -2151,13 +2099,22 @@ paths:
                 default:
                   summary: captured from the local anonymized database
                   value:
+                    theme: auto
+                    language: de
+                    timezone: Europe/Zurich
+                    emailNotifications: true
+                    inAppNotifications: true
+                    pushNotifications: false
+                    notificationFrequency: immediate
+                    qnaNotificationFrequency: live
+                    quietHoursStart: null
+                    quietHoursEnd: null
                     profileVisibility: public
                     showEmail: false
                     showCompany: true
                     showActivityHistory: true
                     allowMessaging: true
                     allowCalendarSync: false
-                    timezone: Europe/Zurich
                     twoFactorEnabled: false
         '401':
           $ref: '#/components/responses/Unauthorized'
@@ -2166,25 +2123,43 @@ paths:
       security:
         - BearerAuth: []
 
-    put:
+    patch:
       tags:
         - User Settings
-      summary: Update current user settings
+      summary: Change some of the caller's settings
       description: |
-        Update account settings for the currently authenticated user.
-
-        **Acceptance Criteria**: AC7
-
-        **Privacy Controls**: Profile visibility, contact information display
-        **Security Settings**: Two-factor authentication enablement
-
+        Partial update (ADR-013): only the fields in the body change, every other setting stays as
+        it is; `quietHoursStart` / `quietHoursEnd` set to an empty string clear them. Returns the
+        whole settings object. An unknown enum value, a malformed quiet hour or
+        a timezone that is not an IANA zone id answers 400.
       operationId: updateUserSettings
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UserSettings'
+              $ref: '#/components/schemas/UpdateUserSettingsRequest'
+            examples:
+              displayAndTimezone:
+                summary: Theme and timezone, nothing else changes
+                value:
+                  theme: dark
+                  timezone: Europe/Zurich
+              language:
+                summary: Switch the language
+                value:
+                  language: en
+              notifications:
+                summary: Daily digest with quiet hours
+                value:
+                  notificationFrequency: daily_digest
+                  quietHoursStart: '22:00'
+                  quietHoursEnd: '07:00'
+              clearQuietHours:
+                summary: No quiet hours any more
+                value:
+                  quietHoursStart: ''
+                  quietHoursEnd: ''
       responses:
         '200':
           description: Settings updated successfully
@@ -2194,15 +2169,24 @@ paths:
                 $ref: '#/components/schemas/UserSettings'
               examples:
                 default:
-                  summary: captured from the local anonymized database (same schema as a GET)
+                  summary: the whole object after a change of theme and timezone
                   value:
+                    theme: dark
+                    language: de
+                    timezone: Europe/Zurich
+                    emailNotifications: true
+                    inAppNotifications: true
+                    pushNotifications: false
+                    notificationFrequency: immediate
+                    qnaNotificationFrequency: live
+                    quietHoursStart: null
+                    quietHoursEnd: null
                     profileVisibility: public
                     showEmail: false
                     showCompany: true
                     showActivityHistory: true
                     allowMessaging: true
                     allowCalendarSync: false
-                    timezone: Europe/Zurich
                     twoFactorEnabled: false
         '400':
           $ref: '#/components/responses/BadRequest'
@@ -3177,6 +3161,13 @@ paths:
                     active: true
                     createdAt: 2025-01-15T10:00:00Z
                     updatedAt: 2025-01-20T14:30:00Z
+                    additionalEmails: []
+                    company: null
+                    companyId: null
+                    hasCognitoAccount: true
+                    lastLoginAt: null
+                    settings: null
+                    termsAcceptedAt: null
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -3320,6 +3311,13 @@ components:
       description: >-
         Public organizer projection for the About page (no sensitive fields; no email address,
         GHSA-qhqv: the page contacts info@batbern.ch)
+      required:
+        - id
+        - firstName
+        - lastName
+        - bio
+        - profilePictureUrl
+        - companyId
       properties:
         id:
           type: string
@@ -3366,6 +3364,9 @@ components:
         no other PII. Mirrors PublicOrganizerResponse's projection.
       required:
         - username
+        - firstName
+        - lastName
+        - profilePictureUrl
       properties:
         username:
           type: string
@@ -3451,6 +3452,16 @@ components:
         - roles
         - createdAt
         - updatedAt
+        - hasCognitoAccount
+        - bio
+        - companyId
+        - profilePictureUrl
+        - active
+        - lastLoginAt
+        - termsAcceptedAt
+        - company
+        - settings
+        - additionalEmails
       properties:
         id:
           type: string
@@ -3463,7 +3474,7 @@ components:
           example: true
         email:
           type: string
-          format: email
+          format: idn-email
           example: john.doe@example.com
         firstName:
           type: string
@@ -3521,11 +3532,8 @@ components:
           oneOf:
             - $ref: '#/components/schemas/Company'
             - type: 'null'
-        preferences:
-          oneOf:
-            - $ref: '#/components/schemas/UserPreferences'
-            - type: 'null'
         settings:
+          description: The user's settings, only with `?include=settings`.
           oneOf:
             - $ref: '#/components/schemas/UserSettings'
             - type: 'null'
@@ -3542,7 +3550,7 @@ components:
     UserMergeProfileSummary:
       type: object
       description: One side of a merge, as the organizer sees it
-      required: [username, firstName, lastName, email, hasLogin, roles, additionalEmails]
+      required: [username, firstName, lastName, email, hasLogin, roles, additionalEmails, companyId]
       properties:
         username:
           type: string
@@ -3624,7 +3632,7 @@ components:
             type: integer
     ProfileClaimCandidate:
       type: object
-      required: [candidateId, maskedEmail]
+      required: [candidateId, maskedEmail, companyName, requestPending, placeholderAddress]
       properties:
         candidateId:
           type: string
@@ -3670,7 +3678,7 @@ components:
           description: Optional; mailed to the requester when given
     CompanyLogoRequestView:
       type: object
-      required: [requestId, status, requesterUsername, companyName, newLogoUrl, createdAt]
+      required: [requestId, status, requesterUsername, companyName, newLogoUrl, createdAt, requesterName, companyDisplayName, oldLogoUrl, note, decidedBy, decidedAt, reason]
       properties:
         requestId:
           type: string
@@ -3742,7 +3750,7 @@ components:
           maxLength: 1000
     ProfileMergeRequestView:
       type: object
-      required: [requestId, status, requesterUsername, sourceUsername, createdAt]
+      required: [requestId, status, requesterUsername, sourceUsername, createdAt, note, decidedBy, decidedAt, reason, preview]
       properties:
         requestId:
           type: string
@@ -3796,7 +3804,7 @@ components:
           $ref: '#/components/schemas/DuplicateCandidateProfile'
     DuplicateCandidateProfile:
       type: object
-      required: [username, email, hasLogin, placeholderAddress]
+      required: [username, email, hasLogin, placeholderAddress, firstName, lastName, companyId, createdAt]
       properties:
         username:
           type: string
@@ -3840,7 +3848,10 @@ components:
       properties:
         email:
           type: string
-          format: email
+          format: idn-email
+          # One email rule everywhere (#1102): ASCII local part (SES has no SMTPUTF8), any domain.
+          # Source of truth: shared-kernel EmailAddresses.OPENAPI_PATTERN.
+          pattern: '^[A-Za-z0-9!#$%&''*+/=?^_`{|}~-]+(\.[A-Za-z0-9!#$%&''*+/=?^_`{|}~-]+)*@[^\s@.]+(\.[^\s@.]+)+$'
           maxLength: 255
           description: Primary address of the other account
     ProfileClaimRequest:
@@ -3874,10 +3885,13 @@ components:
       required:
         - email
         - createdAt
+        - label
+        - verifiedAt
+        - receiveEventMail
       properties:
         email:
           type: string
-          format: email
+          format: idn-email
           example: info@batbern.ch
         label:
           type: string
@@ -3920,7 +3934,7 @@ components:
       properties:
         email:
           type: string
-          format: email
+          format: idn-email
           # One email rule everywhere (#1102): ASCII local part (SES has no SMTPUTF8), any domain.
           # Source of truth: shared-kernel EmailAddresses.OPENAPI_PATTERN.
           pattern: '^[A-Za-z0-9!#$%&''*+/=?^_`{|}~-]+(\.[A-Za-z0-9!#$%&''*+/=?^_`{|}~-]+)*@[^\s@.]+(\.[^\s@.]+)+$'
@@ -3989,8 +4003,30 @@ components:
             re-confirm); false when this call set verified_at.
           example: false
 
-    UserPreferences:
+    UserSettings:
       type: object
+      description: |
+        The user's settings, one object (Story 4.9 merged the former UserPreferences into it).
+        Display: theme, language, timezone. Notifications: channels, frequency, Q&A digest, quiet
+        hours. Privacy: visibility and contact options.
+      required:
+        - theme
+        - language
+        - timezone
+        - emailNotifications
+        - inAppNotifications
+        - pushNotifications
+        - notificationFrequency
+        - qnaNotificationFrequency
+        - quietHoursStart
+        - quietHoursEnd
+        - profileVisibility
+        - showEmail
+        - showCompany
+        - showActivityHistory
+        - allowMessaging
+        - allowCalendarSync
+        - twoFactorEnabled
       properties:
         theme:
           type: string
@@ -4000,6 +4036,12 @@ components:
           type: string
           enum: [de, en, fr, it, rm, es, fi, nl, ja]
           default: de
+        timezone:
+          nullable: true
+          type: string
+          description: IANA zone id
+          default: Europe/Zurich
+          example: Europe/Zurich
         emailNotifications:
           type: boolean
           default: true
@@ -4032,14 +4074,10 @@ components:
           type: string
           pattern: '^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$'
           example: '07:00'
-
-    UserSettings:
-      type: object
-      properties:
         profileVisibility:
           type: string
           enum: [public, members_only, private]
-          default: members_only
+          default: public
         showEmail:
           type: boolean
           default: false
@@ -4048,20 +4086,71 @@ components:
           default: true
         showActivityHistory:
           type: boolean
-          default: false
+          default: true
         allowMessaging:
           type: boolean
           default: true
         allowCalendarSync:
           type: boolean
           default: false
-        timezone:
-          nullable: true
-          type: string
-          example: Europe/Zurich
         twoFactorEnabled:
           type: boolean
           default: false
+
+    UpdateUserSettingsRequest:
+      type: object
+      description: |
+        Partial update of the caller's settings: every field is optional and only the fields
+        present change. No defaults on purpose, so an absent field never overwrites a stored value.
+        null keeps a value; an empty string clears the quiet hours (as an empty assignee unassigns
+        a task).
+      properties:
+        theme:
+          type: string
+          enum: [light, dark, auto]
+        language:
+          type: string
+          enum: [de, en, fr, it, rm, es, fi, nl, ja]
+        timezone:
+          type: string
+          description: IANA zone id, e.g. Europe/Zurich
+          minLength: 1
+          maxLength: 64
+        emailNotifications:
+          type: boolean
+        inAppNotifications:
+          type: boolean
+        pushNotifications:
+          type: boolean
+        notificationFrequency:
+          type: string
+          enum: [immediate, daily_digest, weekly_digest]
+        qnaNotificationFrequency:
+          type: string
+          enum: ["live", "daily", "off"]
+        quietHoursStart:
+          type: string
+          description: HH:mm; an empty string clears it (no quiet hours)
+          pattern: '^(([0-1]?[0-9]|2[0-3]):[0-5][0-9])?$'
+        quietHoursEnd:
+          type: string
+          description: HH:mm; an empty string clears it (no quiet hours)
+          pattern: '^(([0-1]?[0-9]|2[0-3]):[0-5][0-9])?$'
+        profileVisibility:
+          type: string
+          enum: [public, members_only, private]
+        showEmail:
+          type: boolean
+        showCompany:
+          type: boolean
+        showActivityHistory:
+          type: boolean
+        allowMessaging:
+          type: boolean
+        allowCalendarSync:
+          type: boolean
+        twoFactorEnabled:
+          type: boolean
 
     UpdateUserRequest:
       type: object
@@ -4076,7 +4165,7 @@ components:
           maxLength: 100
         email:
           type: string
-          format: email
+          format: idn-email
           # One email rule everywhere (#1102): ASCII local part (SES has no SMTPUTF8), any domain.
           # Source of truth: shared-kernel EmailAddresses.OPENAPI_PATTERN.
           pattern: '^[A-Za-z0-9!#$%&''*+/=?^_`{|}~-]+(\.[A-Za-z0-9!#$%&''*+/=?^_`{|}~-]+)*@[^\s@.]+(\.[^\s@.]+)+$'
@@ -4111,6 +4200,9 @@ components:
         - email
         - firstName
         - lastName
+        - companyId
+        - roles
+        - profilePictureUrl
       properties:
         id:
           type: string
@@ -4147,7 +4239,7 @@ components:
       properties:
         email:
           type: string
-          format: email
+          format: idn-email
           # One email rule everywhere (#1102): ASCII local part (SES has no SMTPUTF8), any domain.
           # Source of truth: shared-kernel EmailAddresses.OPENAPI_PATTERN.
           pattern: '^[A-Za-z0-9!#$%&''*+/=?^_`{|}~-]+(\.[A-Za-z0-9!#$%&''*+/=?^_`{|}~-]+)*@[^\s@.]+(\.[^\s@.]+)+$'
@@ -4195,7 +4287,7 @@ components:
       properties:
         email:
           type: string
-          format: email
+          format: idn-email
           # One email rule everywhere (#1102): ASCII local part (SES has no SMTPUTF8), any domain.
           # Source of truth: shared-kernel EmailAddresses.OPENAPI_PATTERN.
           pattern: '^[A-Za-z0-9!#$%&''*+/=?^_`{|}~-]+(\.[A-Za-z0-9!#$%&''*+/=?^_`{|}~-]+)*@[^\s@.]+(\.[^\s@.]+)+$'
@@ -4261,6 +4353,7 @@ components:
         "use your existing password" block.
       required:
         - action
+        - temporaryPassword
       properties:
         temporaryPassword:
           type: string
@@ -4315,7 +4408,7 @@ components:
       properties:
         email:
           type: string
-          format: email
+          format: idn-email
           # One email rule everywhere (#1102): ASCII local part (SES has no SMTPUTF8), any domain.
           # Source of truth: shared-kernel EmailAddresses.OPENAPI_PATTERN.
           pattern: '^[A-Za-z0-9!#$%&''*+/=?^_`{|}~-]+(\.[A-Za-z0-9!#$%&''*+/=?^_`{|}~-]+)*@[^\s@.]+(\.[^\s@.]+)+$'
@@ -4355,6 +4448,8 @@ components:
         - username
         - created
         - user
+        - companyUpdated
+        - cognitoUserId
       properties:
         username:
           type: string
@@ -4383,6 +4478,12 @@ components:
       description: |
         Company details with meaningful IDs.
         Story 1.16.2: id field contains company name, not UUID.
+      required:
+        - id
+        - name
+        - displayName
+        - industry
+        - website
       properties:
         id:
           type: string
@@ -4486,6 +4587,7 @@ components:
         - s3Key
         - fileExtension
         - expiresInMinutes
+        - requiredHeaders
       properties:
         uploadUrl:
           type: string
@@ -4554,6 +4656,10 @@ components:
       $ref: './_shared.openapi.yml#/components/schemas/ErrorResponse'
     PairingCodeResponse:
       type: object
+      required:
+        - pairingCode
+        - expiresAt
+        - hoursUntilExpiry
       properties:
         pairingCode:
           type: string
@@ -4568,6 +4674,9 @@ components:
 
     PairingStatusResponse:
       type: object
+      required:
+        - pairedWatches
+        - pendingCode
       properties:
         pairedWatches:
           type: array
@@ -4583,6 +4692,7 @@ components:
       required:
         - id
         - pairedAt
+        - deviceName
       properties:
         id:
           type: string
@@ -4598,6 +4708,9 @@ components:
 
     PendingPairingCode:
       type: object
+      required:
+        - code
+        - expiresAt
       properties:
         code:
           type: string

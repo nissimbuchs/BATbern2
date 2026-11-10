@@ -240,7 +240,7 @@ export interface components {
        * @description Topic category; null if no topic assigned
        * @example ARCHITECTURE
        */
-      category?: string | null;
+      category: string | null;
       /** @example 78 */
       attendeeCount: number;
     };
@@ -263,7 +263,7 @@ export interface components {
        */
       eventDate: string;
       /** @example ARCHITECTURE */
-      category?: string | null;
+      category: string | null;
       /** @example 78 */
       totalAttendees: number;
       /**
@@ -330,7 +330,7 @@ export interface components {
        * @description Human-readable company name from the companies table
        * @example SBB AG
        */
-      displayName?: string | null;
+      displayName: string | null;
       /** @example 12 */
       attendeeCount: number;
     };
@@ -342,7 +342,7 @@ export interface components {
        * @description Human-readable company name from the companies table
        * @example SBB AG
        */
-      displayName?: string | null;
+      displayName: string | null;
       /**
        * @description Total confirmed speaker session appearances
        * @example 8
@@ -362,7 +362,7 @@ export interface components {
        * @description Human-readable company name from the companies table
        * @example SBB AG
        */
-      displayName?: string | null;
+      displayName: string | null;
       /** @example 67 */
       attendeeCount: number;
     };
@@ -406,38 +406,38 @@ export interface components {
        * @description Event code in format BATbern{number} (Story 1.16.2).
        * @example BATbern142
        */
-      eventCode?: string;
+      eventCode: string;
       /** @description Echoed back only when the `?timeframe=start,end` query param is supplied. */
       timeframe?: {
         /** @description ISO-8601 timestamp (start of the requested window). */
-        start?: string;
+        start: string;
         /** @description ISO-8601 timestamp (end of the requested window). */
-        end?: string;
+        end: string;
       };
       /** @description Computed metric blocks. Each key is present only when named in `?metrics=`. */
-      metrics?: {
+      metrics: {
         registrations?: {
-          total?: number;
-          byStatus?: {
-            confirmed?: number;
-            pending?: number;
-            cancelled?: number;
+          total: number;
+          byStatus: {
+            confirmed: number;
+            pending: number;
+            cancelled: number;
           };
         };
         attendance?: {
-          expected?: number;
-          actual?: number;
+          expected: number;
+          actual: number;
           /**
            * Format: double
            * @description Attendance percentage (currently a stub — equals 100 or 0).
            */
-          rate?: number;
+          rate: number;
         };
         engagement?: {
-          totalSessions?: number;
-          totalParticipants?: number;
+          totalSessions: number;
+          totalParticipants: number;
           /** Format: double */
-          averageSessionsPerParticipant?: number;
+          averageSessionsPerParticipant: number;
         };
       };
     };

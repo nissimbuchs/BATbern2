@@ -277,7 +277,7 @@ public class SecurityConfig {
                         // Global teaser images: public list for presenter view (_global = all events)
                         .requestMatchers(HttpMethod.GET, "/api/v1/events/_global/teaser-images").permitAll()
 
-                        // Story 10.8a: Public presentation settings (moderator page)
+                        // Story 10.8a: Public presentation settings (moderator page), served by EMS since 4.9
                         .requestMatchers(HttpMethod.GET, "/api/v1/public/settings/presentation").permitAll()
 
                         // Story 10.16: AI feature flags (public, no auth required)

@@ -81,11 +81,9 @@ export const TopicSelectionCard: React.FC<TopicSelectionCardProps> = ({
               size="small"
               variant="outlined"
             />
-            {topic.usageCount !== undefined && (
-              <Typography variant="caption" color="text.secondary">
-                {t('organizer:topicBacklog.details.usageCount', 'Usage Count')}: {topic.usageCount}
-              </Typography>
-            )}
+            <Typography variant="caption" color="text.secondary">
+              {t('organizer:topicBacklog.details.usageCount', 'Usage Count')}: {topic.usageCount}
+            </Typography>
             {topic.lastUsedDate && (
               <Typography variant="caption" color="text.secondary">
                 {t('organizer:topicBacklog.details.lastUsed', 'Last Used')}:{' '}

@@ -100,8 +100,8 @@ openApiGenerate {
         generateBuilders: 'true',
         containerDefaultToNull: 'true',  // unset collections serialize as absent, not `[]` (pre-7.14 contract)
         // Restore the class-level @JsonInclude(NON_NULL) the hand-written Company DTOs carried, so unset
-        // fields are OMITTED from JSON (not serialized as null). The sparse-fieldset (?fields=) and
-        // resource-expansion (?include=) contracts depend on absent fields — see AdvancedQueryIntegrationTest.
+        // fields are OMITTED from JSON (not serialized as null). The resource expansion (?include=logo)
+        // depends on it: without the include, the logo is absent, not null.
         additionalModelTypeAnnotations: '@com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)'
     ]
 

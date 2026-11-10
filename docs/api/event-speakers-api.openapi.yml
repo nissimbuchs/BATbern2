@@ -1461,6 +1461,7 @@ paths:
                     profileCompleteness: 60
                     upcomingEvents: []
                     pastEvents: []
+                    profilePictureUrl: null
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -1695,65 +1696,6 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
-      security:
-      - BearerAuth: []
-
-  /events/{eventCode}/speaker-pool/{speakerPoolId}/send-reminder:
-    post:
-      tags:
-        - Speaker Reminders
-      summary: Manually send a deadline reminder to a speaker (Story 6.5 AC8)
-      description: 'Bypasses dedup but respects the reminders-disabled flag. ORGANIZER role.'
-      operationId: sendSpeakerReminder
-      parameters:
-        - name: eventCode
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: speakerPoolId
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/SendReminderRequest'
-      responses:
-        '200':
-          description: Reminder sent
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SendReminderResponse'
-              examples:
-                default:
-                  summary: generated from the schema and captured sub-values
-                  value:
-                    message: Sample text for the API example.
-                    tier: sample
-                    emailAddress: ines.probe@example.com
-                    error: sample
-        '400':
-          description: Invalid reminder type or speaker state
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SendReminderResponse'
-        '409':
-          description: Reminders disabled for this speaker
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SendReminderResponse'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
       security:
       - BearerAuth: []
 
@@ -2000,7 +1942,7 @@ components:
       properties:
         email:
           type: string
-          format: email
+          format: idn-email
           # One email rule everywhere (#1102): ASCII local part (SES has no SMTPUTF8), any domain.
           # Source of truth: shared-kernel EmailAddresses.OPENAPI_PATTERN.
           pattern: '^[A-Za-z0-9!#$%&''*+/=?^_`{|}~-]+(\.[A-Za-z0-9!#$%&''*+/=?^_`{|}~-]+)*@[^\s@.]+(\.[^\s@.]+)+$'
@@ -2075,6 +2017,16 @@ components:
     SpeakerStatusResponse:
       type: object
       description: Response after a speaker status update (Story 5.4).
+      required:
+        - speakerId
+        - eventCode
+        - currentStatus
+        - previousStatus
+        - changedByUsername
+        - changeReason
+        - changedAt
+        - isSlotAssigned
+        - isPublishable
       properties:
         speakerId:
           type: string
@@ -2110,6 +2062,14 @@ components:
       type: object
       description: 'Single timeline entry — a workflow state change (speaker_status_history) or a
         synthesised content-rejection event (session_content_history with reviewer feedback).'
+      required:
+        - id
+        - kind
+        - previousStatus
+        - newStatus
+        - changedByUsername
+        - changeReason
+        - changedAt
       properties:
         id:
           type: string
@@ -2144,6 +2104,18 @@ components:
     StatusSummaryResponse:
       type: object
       description: Status dashboard summary (Story 5.4 AC5-6, AC13).
+      required:
+        - eventCode
+        - statusCounts
+        - totalSpeakers
+        - acceptedCount
+        - declinedCount
+        - pendingCount
+        - acceptanceRate
+        - minSlotsRequired
+        - maxSlotsAllowed
+        - thresholdMet
+        - overflowDetected
       properties:
         eventCode:
           type: string
@@ -2217,6 +2189,22 @@ components:
     SpeakerContentResponse:
       type: object
       description: Response for speaker content get/submit operations (Story 5.5).
+      required:
+        - speakerPoolId
+        - eventId
+        - sessionId
+        - presentationTitle
+        - presentationAbstract
+        - username
+        - speakerName
+        - company
+        - status
+        - hasContent
+        - warning
+        - submittedAt
+        - hasMaterial
+        - materialUrl
+        - materialFileName
       properties:
         speakerPoolId:
           type: string
@@ -2301,6 +2289,34 @@ components:
       - status
       - createdAt
       - updatedAt
+      - company
+      - companyDisplayName
+      - expertise
+      - assignedOrganizerId
+      - notes
+      - source
+      - proposedByUsername
+      - proposedSessionTitle
+      - proposedAbstract
+      - sessionId
+      - sessionSlug
+      - username
+      - email
+      - invitedAt
+      - responseDeadline
+      - contentDeadline
+      - acceptedAt
+      - declinedAt
+      - declineReason
+      - preferredTimeSlot
+      - travelRequirements
+      - technicalRequirements
+      - initialPresentationTitle
+      - preferenceComments
+      - contentSubmittedAt
+      - submittedTitle
+      - submittedAbstract
+      - isSlotAssigned
       properties:
         id:
           type: string
@@ -2571,6 +2587,7 @@ components:
       - organizerUsername
       - createdAt
       - updatedAt
+      - notes
       properties:
         id:
           type: string
@@ -2632,7 +2649,7 @@ components:
       properties:
         email:
           type: string
-          format: email
+          format: idn-email
           # One email rule everywhere (#1102): ASCII local part (SES has no SMTPUTF8), any domain.
           # Source of truth: shared-kernel EmailAddresses.OPENAPI_PATTERN.
           pattern: '^[A-Za-z0-9!#$%&''*+/=?^_`{|}~-]+(\.[A-Za-z0-9!#$%&''*+/=?^_`{|}~-]+)*@[^\s@.]+(\.[^\s@.]+)+$'
@@ -2679,6 +2696,8 @@ components:
       - status
       - created
       - createdAt
+      - username
+      - userCreated
       properties:
         speakerPoolId:
           type: string
@@ -2692,7 +2711,7 @@ components:
           example: jane.smith
         email:
           type: string
-          format: email
+          format: idn-email
           description: Speaker's email address
           example: jane.smith@example.com
         speakerName:
@@ -2752,7 +2771,7 @@ components:
           example: de
         email:
           type: string
-          format: email
+          format: idn-email
           # One email rule everywhere (#1102): ASCII local part (SES has no SMTPUTF8), any domain.
           # Source of truth: shared-kernel EmailAddresses.OPENAPI_PATTERN.
           pattern: '^[A-Za-z0-9!#$%&''*+/=?^_`{|}~-]+(\.[A-Za-z0-9!#$%&''*+/=?^_`{|}~-]+)*@[^\s@.]+(\.[^\s@.]+)+$'
@@ -2772,6 +2791,9 @@ components:
       - status
       - invitedAt
       - responseDeadline
+      - username
+      - email
+      - contentDeadline
       properties:
         speakerPoolId:
           type: string
@@ -2785,7 +2807,7 @@ components:
           example: jane.smith
         email:
           type: string
-          format: email
+          format: idn-email
           description: Speaker's email address
           example: jane.smith@example.com
         status:
@@ -2814,6 +2836,12 @@ components:
     SpeakerDashboardDto:
       type: object
       description: Speaker portal dashboard summary across all of the speaker's events (Story 6.4)
+      required:
+        - speakerName
+        - profilePictureUrl
+        - profileCompleteness
+        - upcomingEvents
+        - pastEvents
       properties:
         speakerName:
           type: string
@@ -2834,6 +2862,25 @@ components:
     DashboardUpcomingEventDto:
       type: object
       description: An upcoming event the speaker is involved in
+      required:
+        - eventCode
+        - eventTitle
+        - eventDate
+        - eventLocation
+        - sessionTitle
+        - workflowState
+        - workflowStateLabel
+        - hasTitle
+        - hasAbstract
+        - hasMaterial
+        - materialFileName
+        - responseDeadline
+        - contentDeadline
+        - reviewerFeedback
+        - organizerName
+        - organizerEmail
+        - respondUrl
+        - contentUrl
       properties:
         eventCode:
           type: string
@@ -2942,6 +2989,12 @@ components:
     SpeakerResponseResult:
       type: object
       description: Outcome of processing a speaker's invitation response (Story 6.2a)
+      required:
+        - success
+        - speakerName
+        - eventName
+        - nextSteps
+        - contentDeadline
       properties:
         success:
           type: boolean
@@ -3112,29 +3165,6 @@ components:
         uploadedAt:
           type: string
           format: date-time
-    SendReminderRequest:
-      type: object
-      description: Manual speaker reminder request (Story 6.5)
-      properties:
-        reminderType:
-          type: string
-          description: 'RESPONSE or CONTENT'
-        tier:
-          type: string
-          description: 'Optional: TIER_1/TIER_2/TIER_3 (auto-detected if omitted)'
-    SendReminderResponse:
-      type: object
-      description: Manual reminder result; error fields populated on the 400/409 paths
-      x-class-extra-annotation: '@com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)'
-      properties:
-        message:
-          type: string
-        tier:
-          type: string
-        emailAddress:
-          type: string
-        error:
-          type: string
     UpdateRemindersDisabledRequest:
       type: object
       required:
@@ -3144,6 +3174,9 @@ components:
           type: boolean
     RemindersDisabledResponse:
       type: object
+      required:
+        - speakerPoolId
+        - remindersDisabled
       properties:
         speakerPoolId:
           type: string

@@ -53,7 +53,7 @@ export const TaskWidget: React.FC<TaskWidgetProps> = ({ organizerUsername }) => 
   // Complete task mutation
   const completeTaskMutation = useMutation({
     mutationFn: ({ taskId, notes }: { taskId: string; notes?: string }) =>
-      taskService.completeTask(taskId, { notes }),
+      taskService.updateTask(taskId, { status: 'completed', notes }),
     onSuccess: () => {
       // Refresh every task list (this widget, the board, the Cockpit)
       queryClient.invalidateQueries({ queryKey: ['tasks'] });

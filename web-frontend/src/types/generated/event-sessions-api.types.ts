@@ -720,8 +720,8 @@ export interface components {
       changeReason?: string;
     };
     BulkTimingResponse: {
-      assignedCount?: number;
-      sessions?: components['schemas']['SessionResponse'][];
+      assignedCount: number;
+      sessions: components['schemas']['SessionResponse'][];
     };
     /**
      * @description Scheduling-conflict type (lowercase wire values)
@@ -732,22 +732,22 @@ export interface components {
     /** @enum {string} */
     ConflictSeverity: 'error' | 'warning';
     ConflictTimeRange: {
-      start?: string;
-      end?: string;
+      start: string;
+      end: string;
     };
     ConflictDetail: {
-      sessionSlug?: string;
-      conflictType?: components['schemas']['ConflictType'];
-      severity?: components['schemas']['ConflictSeverity'];
-      affectedSessions?: string[];
-      timeRange?: components['schemas']['ConflictTimeRange'];
-      resolution?: string;
+      sessionSlug: string;
+      conflictType: components['schemas']['ConflictType'];
+      severity: components['schemas']['ConflictSeverity'];
+      affectedSessions: string[];
+      timeRange: components['schemas']['ConflictTimeRange'];
+      resolution: string;
     };
     /** @description Comprehensive scheduling-conflict analysis (Story 5.7 AC9) */
     ConflictAnalysisResponse: {
-      hasConflicts?: boolean;
-      conflictCount?: number;
-      conflicts?: components['schemas']['ConflictDetail'][];
+      hasConflicts: boolean;
+      conflictCount: number;
+      conflicts: components['schemas']['ConflictDetail'][];
     };
     TimingConflictItem: {
       type?: string;
@@ -806,7 +806,7 @@ export interface components {
        * @description Deterministic, computed slot identity: segment type + 1-based ordinal among that type, in computed order (e.g. "MODERATION-1", "APERITIF-1", "SPEAKER_SLOT-3", "BREAK-2"). Stable across timing/config edits — the UI and the slot-assign endpoint address slots by this key rather than by wall-clock time. Computed/transient (Story 15.3); never persisted on a session.
        * @example SPEAKER_SLOT-3
        */
-      slotKey?: string;
+      slotKey: string;
       /**
        * Format: date-time
        * @description Slot start time (UTC ISO-8601)
@@ -823,22 +823,22 @@ export interface components {
        * @description Human-readable label for structural slots; null for SPEAKER_SLOT
        * @example Kaffee-Pause
        */
-      title?: string | null;
+      title: string | null;
       /**
        * @description 1-based global index for SPEAKER_SLOT entries across the full event day (never reset when switching AM → PM block). Null for structural slots.
        * @example 1
        */
-      slotIndex?: number | null;
+      slotIndex: number | null;
       /**
        * @description Session slug of the structural DB session occupying this slot. Null when no structural sessions have been generated yet, or for SPEAKER_SLOT.
        * @example moderation-start-abc
        */
-      sessionSlug?: string | null;
+      sessionSlug: string | null;
       /**
        * @description Session slug of the speaker session assigned to this SPEAKER_SLOT. Null if the slot is free, or for structural slots.
        * @example speaker-xyz
        */
-      assignedSessionSlug?: string | null;
+      assignedSessionSlug: string | null;
     };
     /** @description Full timetable for an event including slot grid and unassigned sessions. */
     TimetableResponse: {
@@ -867,41 +867,41 @@ export interface components {
        */
       eventCode: string;
       title: string;
-      description?: string | null;
+      description: string | null;
       /**
        * @description Session type — null for placeholder sessions, assigned during agenda planning.
        * @example keynote
        */
-      sessionType?: components['schemas']['SessionType'] | null;
+      sessionType: components['schemas']['SessionType'] | null;
       /**
        * Format: date-time
        * @description Session start time - null for placeholder sessions, assigned during slot assignment
        */
-      startTime?: string | null;
+      startTime: string | null;
       /**
        * Format: date-time
        * @description Session end time - null for placeholder sessions, assigned during slot assignment
        */
-      endTime?: string | null;
+      endTime: string | null;
       /** @example Main Hall */
-      room?: string | null;
+      room: string | null;
       /** @example 200 */
-      capacity?: number | null;
+      capacity: number | null;
       /**
        * @default de
        * @example de
        */
       language: string | null;
       /** Format: date-time */
-      createdAt?: string;
+      createdAt: string;
       /** Format: date-time */
-      updatedAt?: string;
+      updatedAt: string;
       /**
        * @description Story 1.15a.1b: Session speakers with enriched User data
        *     List of speakers assigned to this session with their roles
        */
-      speakers?: components['schemas']['SessionSpeaker'][] | null;
-      materialsStatus?: components['schemas']['MaterialsStatus'] | null;
+      speakers: components['schemas']['SessionSpeaker'][] | null;
+      materialsStatus: components['schemas']['MaterialsStatus'] | null;
     };
     /**
      * @description Story 1.15a.1b: Session speaker with enriched User data
@@ -927,32 +927,32 @@ export interface components {
        * @description Speaker's company identifier/slug (from User.companyId). Stable key used for logo lookup — NOT for display.
        * @example GoogleZH
        */
-      company?: string | null;
+      company: string | null;
       /**
        * @description Human-readable company name (companies.display_name, falling back to
        *     companies.name, then the company slug). Prefer this over `company` for
        *     display. Null when the speaker has no associated company.
        * @example Google Zürich
        */
-      companyDisplayName?: string | null;
+      companyDisplayName: string | null;
       /**
        * Format: uri
        * @description Speaker's profile picture URL (from User entity)
        * @example https://cdn.batbern.ch/logos/2025/users/john.doe/profile.jpg
        */
-      profilePictureUrl?: string | null;
+      profilePictureUrl: string | null;
       /**
        * Format: uri
        * @description Company logo CloudFront URL (cross-service DB join: logos table).
        *     Populated on archive list responses to avoid a separate useCompany API call.
        * @example https://cdn.batbern.ch/logos/2025/companies/sbb/logo.jpeg
        */
-      companyLogoUrl?: string | null;
+      companyLogoUrl: string | null;
       /**
        * @description Speaker's biography (from User entity)
        * @example Software engineer passionate about cloud architecture and security
        */
-      bio?: string | null;
+      bio: string | null;
       /**
        * @description Speaker's role in the session:
        *     - PRIMARY_SPEAKER: Main presenter
@@ -967,7 +967,7 @@ export interface components {
        * @description Optional speaker-specific presentation title (if different from session title)
        * @example Security Auditing Tools Deep Dive
        */
-      presentationTitle?: string | null;
+      presentationTitle: string | null;
       /**
        * @description Whether speaker has confirmed participation
        * @example true
@@ -980,12 +980,12 @@ export interface components {
      */
     SessionResponse: components['schemas']['Session'] & {
       /** @description Story 5.9: Uploaded session materials (populated by the service layer) */
-      materials?: components['schemas']['SessionMaterialResponse'][] | null;
+      materials: components['schemas']['SessionMaterialResponse'][] | null;
       /**
        * @description Story 5.9: Number of uploaded materials (for overview displays)
        * @example 3
        */
-      materialsCount?: number;
+      materialsCount: number;
     };
     /**
      * @description Story 5.9: Session material (uploaded slide deck / document).
@@ -1012,7 +1012,7 @@ export interface components {
        * @description CloudFront delivery URL for the material (null until CDN-published)
        * @example https://cdn.batbern.ch/materials/2026/batbern142/ui-design/slides.pdf
        */
-      cloudFrontUrl?: string;
+      cloudFrontUrl: string;
       /**
        * @description Original uploaded file name
        * @example slides.pdf
@@ -1060,12 +1060,12 @@ export interface components {
        * @description Story 5.10 forward-compat: whether text content has been extracted for RAG search
        * @example false
        */
-      contentExtracted?: boolean;
+      contentExtracted: boolean;
       /**
        * @description Story 5.10 forward-compat: content-extraction status
        * @example PENDING
        */
-      extractionStatus?: string;
+      extractionStatus: string;
     };
     /** @description Story 5.9: one already-uploaded material to associate with a session. Carries the upload correlation id from the presigned-URL step plus the file metadata. */
     MaterialUploadItem: {
@@ -1227,7 +1227,7 @@ export interface components {
        * @description Generated session slug (null if failed)
        * @example user-interface-design-abc123
        */
-      sessionSlug?: string | null;
+      sessionSlug: string | null;
     };
     /** @description Create a fully-defined session. title, sessionType, startTime and endTime are all required (the deployed controller rejects a request missing any of them with 400). */
     CreateSessionRequest: {
@@ -1328,12 +1328,12 @@ export interface components {
        * Format: time
        * @example 13:00
        */
-      typicalStartTime?: string | null;
+      typicalStartTime: string | null;
       /**
        * Format: time
        * @example 19:00
        */
-      typicalEndTime?: string | null;
+      typicalEndTime: string | null;
     };
     /**
      * @description Copy-on-edit payload for the PER-EVENT agenda config (Story 15.2). Writes only the
@@ -1430,19 +1430,19 @@ export interface components {
        * Format: uuid
        * @description Parent question id; null for a top-level question.
        */
-      parentPostId?: string | null;
+      parentPostId: string | null;
       /** @description Poster username (stable id / takedown target); null if removed. */
-      postedByUsername?: string | null;
+      postedByUsername: string | null;
       /** @description Poster first name (enriched from the user profile); null if removed/unknown. */
-      postedByFirstName?: string | null;
+      postedByFirstName: string | null;
       /** @description Poster last name (enriched from the user profile); null if removed/unknown. */
-      postedByLastName?: string | null;
+      postedByLastName: string | null;
       /** @description Poster company display name; null if removed, unknown, or hidden by preference. */
-      postedByCompanyName?: string | null;
+      postedByCompanyName: string | null;
       /** @description Poster company logo CDN URL; null if removed, unknown, or hidden by preference. */
-      postedByCompanyLogoUrl?: string | null;
+      postedByCompanyLogoUrl: string | null;
       /** @description Post text; null if removed. */
-      body?: string | null;
+      body: string | null;
       /** @description True if the post was taken down by an organizer. */
       removed: boolean;
       /** Format: date-time */
@@ -1459,9 +1459,9 @@ export interface components {
        */
       status: 'OPEN' | 'FROZEN';
       /** Format: date-time */
-      opensAt?: string;
+      opensAt: string;
       /** Format: date-time */
-      closesAt?: string;
+      closesAt: string;
       posts: components['schemas']['QnaPostResponse'][];
     };
     /**
@@ -1639,8 +1639,8 @@ export interface operations {
         };
         content: {
           'application/json': {
-            data?: components['schemas']['CompanySessionResponse'][];
-            pagination?: components['schemas']['PaginationMetadata'];
+            data: components['schemas']['CompanySessionResponse'][];
+            pagination: components['schemas']['PaginationMetadata'];
           };
         };
       };
@@ -1864,8 +1864,8 @@ export interface operations {
         };
         content: {
           'application/json': {
-            data?: components['schemas']['SessionResponse'][];
-            pagination?: components['schemas']['PaginationMetadata'];
+            data: components['schemas']['SessionResponse'][];
+            pagination: components['schemas']['PaginationMetadata'];
           };
         };
       };
@@ -2345,7 +2345,8 @@ export interface operations {
            *         {
            *           "title": "Backend Architecture",
            *           "status": "skipped",
-           *           "message": "Session already exists with title 'Backend Architecture'"
+           *           "message": "Session already exists with title 'Backend Architecture'",
+           *           "sessionSlug": null
            *         },
            *         {
            *           "title": "Database Design",

@@ -1,27 +1,17 @@
 package ch.batbern.events.controller;
 
 import ch.batbern.shared.utils.LoggingUtils;
-import ch.batbern.events.domain.Event;
-import ch.batbern.events.domain.NewsletterSend;
 import ch.batbern.events.newsletter.api.generated.NewsletterApi;
 import ch.batbern.events.newsletter.dto.generated.ListNewsletterSubscribers200Response;
 import ch.batbern.events.newsletter.dto.generated.MyNewsletterSubscriptionsResponse;
-import ch.batbern.events.newsletter.dto.generated.NewsletterPreviewResponse;
-import ch.batbern.events.newsletter.dto.generated.NewsletterSendRequest;
-import ch.batbern.events.newsletter.dto.generated.NewsletterSendResponse;
-import ch.batbern.events.newsletter.dto.generated.NewsletterSendStatusResponse;
 import ch.batbern.events.newsletter.dto.generated.NewsletterSubscribeRequest;
 import ch.batbern.events.newsletter.dto.generated.NewsletterSubscriptionStatusResponse;
 import ch.batbern.events.newsletter.dto.generated.NewsletterUnsubscribeRequest;
 import ch.batbern.events.newsletter.dto.generated.PatchNewsletterSubscriptionRequest;
 import ch.batbern.events.newsletter.dto.generated.PutMyNewsletterSubscriptionRequest;
-import ch.batbern.events.newsletter.dto.generated.SubscriberCountResponse;
 import ch.batbern.events.newsletter.dto.generated.SubscriberResponse;
 import ch.batbern.events.newsletter.dto.generated.VerifyUnsubscribeToken200Response;
-import ch.batbern.events.repository.EventRepository;
-import ch.batbern.events.repository.NewsletterSendRepository;
 import ch.batbern.events.security.SecurityContextHelper;
-import ch.batbern.events.service.NewsletterEmailService;
 import ch.batbern.events.service.NewsletterSubscriberService;
 import ch.batbern.events.service.PersonAddresses;
 import ch.batbern.shared.api.PaginationMetadata;
@@ -38,13 +28,12 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.UUID;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.NoSuchElementException;
 import java.util.Optional;
+import java.util.UUID;
 
 /**
  * Controller for Newsletter Subscription &amp; Sending endpoints (Story 10.7).
@@ -53,7 +42,8 @@ import java.util.Optional;
  *
  * <p>Public endpoints (no auth): subscribe, unsubscribe verify/confirm.
  * Authenticated: my-subscription get/patch.
- * ORGANIZER-only: subscriber management, preview, send, history.
+ * ORGANIZER-only: subscriber management. Sending, preview and retry are the Mail Center composer's
+ * ({@code /events/{eventCode}/mails}, Story 16.8; the old endpoints went with 16.8c).
  */
 @RestController
 @RequestMapping("/api/v1")
@@ -62,9 +52,6 @@ import java.util.Optional;
 public class NewsletterController implements NewsletterApi {
 
     private final NewsletterSubscriberService subscriberService;
-    private final NewsletterEmailService emailService;
-    private final EventRepository eventRepository;
-    private final NewsletterSendRepository sendRepository;
     private final SecurityContextHelper securityContextHelper;
     private final PersonAddresses personAddresses;
 
@@ -176,13 +163,6 @@ public class NewsletterController implements NewsletterApi {
 
     // ── Organizer endpoints ───────────────────────────────────────────────────
 
-    /** AC10: Active subscriber count only (ORGANIZER). Cheap COUNT query for the newsletter tab. */
-    @Override
-    @PreAuthorize("hasRole('ORGANIZER')")
-    public ResponseEntity<SubscriberCountResponse> getSubscriberCount() {
-        return ResponseEntity.ok(new SubscriberCountResponse().totalActive(subscriberService.getActiveCount()));
-    }
-
     /** Story 10.28: Paginated, searchable, sortable subscriber list (ORGANIZER). */
     @Override
     @PreAuthorize("hasRole('ORGANIZER')")
@@ -240,100 +220,5 @@ public class NewsletterController implements NewsletterApi {
     public ResponseEntity<Void> deleteSubscriberById(UUID id) {
         subscriberService.deleteById(id);
         return ResponseEntity.noContent().build();
-    }
-
-    /** AC10: Preview newsletter for an event (ORGANIZER, no sending). */
-    @Override
-    @PreAuthorize("hasRole('ORGANIZER')")
-    public ResponseEntity<NewsletterPreviewResponse> previewEventNewsletter(
-            String eventCode,
-            NewsletterSendRequest request) {
-        Event event = findEventOrThrow(eventCode);
-        NewsletterPreviewResponse preview = emailService.preview(
-                event,
-                Boolean.TRUE.equals(request.getIsReminder()),
-                localeOf(request),
-                request.getTemplateKey(),
-                Boolean.TRUE.equals(request.getTestMode())
-        );
-        return ResponseEntity.ok(preview);
-    }
-
-    /** AC10: Send newsletter for an event (ORGANIZER). */
-    @Override
-    @PreAuthorize("hasRole('ORGANIZER')")
-    public ResponseEntity<NewsletterSendResponse> sendEventNewsletter(
-            String eventCode,
-            NewsletterSendRequest request) {
-        Event event = findEventOrThrow(eventCode);
-        String sentByUsername = securityContextHelper.getCurrentUsername();
-        NewsletterSendResponse response = emailService.sendNewsletter(
-                event,
-                Boolean.TRUE.equals(request.getIsReminder()),
-                localeOf(request),
-                sentByUsername,
-                request.getTemplateKey(),
-                request.getMaxRecipients(),
-                Boolean.TRUE.equals(request.getTestMode())
-        );
-        return ResponseEntity.ok(response);
-    }
-
-    /** AC9: Get send history for an event (ORGANIZER). */
-    @Override
-    @PreAuthorize("hasRole('ORGANIZER')")
-    public ResponseEntity<List<NewsletterSendResponse>> getNewsletterHistory(String eventCode) {
-        Event event = findEventOrThrow(eventCode);
-        List<NewsletterSend> sends = sendRepository.findByEventIdOrderBySentAtDesc(event.getId());
-        List<NewsletterSendResponse> responses = sends.stream()
-                .map(emailService::toResponse)
-                .toList();
-        return ResponseEntity.ok(responses);
-    }
-
-    /**
-     * Poll send-job progress (ORGANIZER). Frontend calls this every 3s while PENDING or IN_PROGRESS.
-     */
-    @Override
-    @PreAuthorize("hasRole('ORGANIZER')")
-    public ResponseEntity<NewsletterSendStatusResponse> getNewsletterSendStatus(
-            String eventCode,
-            UUID sendId) {
-        Event event = findEventOrThrow(eventCode);
-        NewsletterSend send = sendRepository.findByIdAndEventId(sendId, event.getId())
-                .orElseThrow(() -> new NoSuchElementException(
-                        "Send not found: " + sendId + " for event " + eventCode));
-        return ResponseEntity.ok(emailService.toStatusResponse(send));
-    }
-
-    /** Retry failed recipients for a PARTIAL or FAILED send (ORGANIZER). */
-    @Override
-    @PreAuthorize("hasRole('ORGANIZER')")
-    public ResponseEntity<NewsletterSendResponse> retryNewsletterSend(
-            String eventCode,
-            UUID sendId) {
-        Event event = findEventOrThrow(eventCode);
-        NewsletterSend send = sendRepository.findByIdAndEventId(sendId, event.getId())
-                .orElseThrow(() -> new NoSuchElementException(
-                        "Send not found: " + sendId + " for event " + eventCode));
-        try {
-            String sentByUsername = securityContextHelper.getCurrentUsername();
-            NewsletterSendResponse response = emailService.retryFailedRecipients(send, event, sentByUsername);
-            return ResponseEntity.ok(response);
-        } catch (IllegalStateException e) {
-            return ResponseEntity.status(org.springframework.http.HttpStatus.CONFLICT).build();
-        }
-    }
-
-    // ── Helpers ───────────────────────────────────────────────────────────────
-
-    private Event findEventOrThrow(String eventCode) {
-        return eventRepository.findByEventCode(eventCode)
-                .orElseThrow(() -> new NoSuchElementException("Event not found: " + eventCode));
-    }
-
-    /** Generated locale is the de/en LocaleEnum; the email service operates on the wire string. */
-    private static String localeOf(NewsletterSendRequest request) {
-        return request.getLocale() != null ? request.getLocale().getValue() : null;
     }
 }

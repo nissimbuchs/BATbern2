@@ -4,7 +4,7 @@
  * HTTP client for Task Management APIs
  * Features:
  * - List/create/update/delete task templates
- * - List/create/complete/reassign event tasks
+ * - List/create/update (status, notes, due date, assignee)/delete event tasks
  * - Get my tasks / all tasks (filtering is client-side)
  * - JWT authentication via interceptors
  * - Error handling with correlation IDs
@@ -25,7 +25,7 @@ type Schemas = components['schemas'];
  *
  * The spec types task `status` as a free string; the closed set the UI relies
  * on is captured by the {@link TaskStatus} union and overlaid on the response/
- * status-update shapes so drag-and-drop columns and status maps stay type-safe.
+ * shapes so drag-and-drop columns and status maps stay type-safe.
  */
 export type TaskStatus = 'pending' | 'todo' | 'in_progress' | 'completed';
 
@@ -35,15 +35,9 @@ export type UpdateTaskTemplateRequest = Schemas['UpdateTaskTemplateRequest'];
 export type CreateEventTaskRequest = Schemas['CreateEventTaskRequest'];
 export type CreateTasksFromTemplatesRequest = Schemas['CreateTasksFromTemplatesRequest'];
 export type TemplateConfig = Schemas['TemplateConfig'];
-export type CompleteTaskRequest = Schemas['CompleteTaskRequest'];
-export type ReassignTaskRequest = Schemas['ReassignTaskRequest'];
 export type UpdateEventTaskRequest = Schemas['UpdateEventTaskRequest'];
 
 export type EventTaskResponse = Omit<Schemas['EventTaskResponse'], 'status'> & {
-  status: TaskStatus;
-};
-
-export type UpdateTaskStatusRequest = Omit<Schemas['UpdateTaskStatusRequest'], 'status'> & {
   status: TaskStatus;
 };
 
@@ -214,51 +208,14 @@ class TaskService {
   }
 
   /**
-   * Complete task (AC25)
-   *
-   * Marks a task as completed with optional notes
-   *
-   * @param taskId Task UUID
-   * @param request Completion data (optional notes)
-   * @returns Updated task details
-   * @throws Error if task not found (404), unauthorized (401, 403)
-   */
-  async completeTask(taskId: string, request: CompleteTaskRequest): Promise<EventTaskResponse> {
-    const response = await apiClient.put<EventTaskResponse>(
-      `${TASKS_API_PATH}/${taskId}/complete`,
-      request
-    );
-
-    return response.data;
-  }
-
-  /**
-   * Reassign task (AC27)
-   *
-   * Changes task assignment to a different organizer
-   *
-   * @param taskId Task UUID
-   * @param request Reassignment data (new organizer username)
-   * @returns Updated task details
-   * @throws Error if task not found (404), user not found (400), unauthorized (401, 403)
-   */
-  async reassignTask(taskId: string, request: ReassignTaskRequest): Promise<EventTaskResponse> {
-    const response = await apiClient.put<EventTaskResponse>(
-      `${TASKS_API_PATH}/${taskId}/reassign`,
-      request
-    );
-
-    return response.data;
-  }
-
-  /**
-   * Update task details (notes, dueDate, assignedOrganizerUsername) — patch semantics
-   *
-   * Only provided fields are updated; null = keep existing value.
+   * Update a task, patch semantics: status (complete, reopen, drag-and-drop), notes, due date,
+   * assignee (empty string unassigns). Only provided fields change. Completing records the
+   * caller as completedByUsername; any other status on a completed task clears the completion.
    *
    * @param taskId Task UUID
    * @param request Fields to update
    * @returns Updated task details
+   * @throws Error if task not found (404), invalid status (400), unauthorized (401, 403)
    */
   async updateTask(taskId: string, request: UpdateEventTaskRequest): Promise<EventTaskResponse> {
     const response = await apiClient.patch<EventTaskResponse>(
@@ -271,33 +228,6 @@ class TaskService {
 
   async deleteTask(taskId: string): Promise<void> {
     await apiClient.delete(`${TASKS_API_PATH}/${taskId}`);
-  }
-
-  /**
-   * Update task status (drag-and-drop)
-   *
-   * Changes task status via drag-and-drop transitions:
-   * - pending → todo (manual activation)
-   * - pending → completed (skip todo phase)
-   * - todo → completed (normal completion)
-   * - todo → pending (revert to pending)
-   * - completed → todo (reopen task)
-   * - completed → pending (reopen and revert)
-   *
-   * @param taskId Task UUID
-   * @param status New status
-   * @returns Updated task details
-   * @throws Error if task not found (404), invalid status (400), unauthorized (401, 403)
-   */
-  async updateTaskStatus(
-    taskId: string,
-    status: 'pending' | 'todo' | 'in_progress' | 'completed'
-  ): Promise<EventTaskResponse> {
-    const response = await apiClient.put<EventTaskResponse>(`${TASKS_API_PATH}/${taskId}/status`, {
-      status,
-    });
-
-    return response.data;
   }
 }
 

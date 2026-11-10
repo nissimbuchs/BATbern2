@@ -75,7 +75,7 @@ export const resolveSpeakerUserByName = async (
     const users = await searchUsers(query, SEARCH_LIMIT);
     // A role requirement narrows the candidate set but never turns an ambiguous set into a
     // pick by position — the same `users[0]` trap in a different guise.
-    const eligible = requireRole ? users.filter((u) => u.roles?.includes(requireRole)) : users;
+    const eligible = requireRole ? users.filter((u) => u.roles.includes(requireRole)) : users;
     if (eligible.length > 0) {
       sawCandidates = true;
     }

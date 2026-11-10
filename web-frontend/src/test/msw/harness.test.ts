@@ -76,6 +76,7 @@ describe('MSW harness', () => {
           isVerified: true,
           createdAt: '2026-05-14T16:00:00Z',
           updatedAt: '2026-05-14T16:00:00Z',
+          createdBy: 'lead.organizer',
         },
       ],
       pagination: {
@@ -114,6 +115,7 @@ describe('MSW harness', () => {
         isVerified: false,
         createdAt: '2026-05-14T16:00:00Z',
         updatedAt: '2026-05-14T16:00:00Z',
+        createdBy: 'lead.organizer',
       }),
       { status: 201 }
     );

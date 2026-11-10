@@ -15,7 +15,14 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { api } from '@/test/msw/api';
 import type { ResponseBody } from '@/test/msw/api';
 import { renderWithAuth, signedInAs } from '@/test/auth';
-import { anEvent, daysFromNow, shapes } from '@/test/fixtures';
+import {
+  aSessionResponse,
+  aSessionSpeaker,
+  aSpeakerPoolEntry,
+  anEvent,
+  daysFromNow,
+  shapes,
+} from '@/test/fixtures';
 import { EventSpeakersTab } from '../EventSpeakersTab';
 
 type EventDetail = ResponseBody<'getEvent', 200>;
@@ -30,6 +37,7 @@ const otherSpeaker = shapes.vietnamese; // Hông Ân Meier, username hongan.meie
 
 /** A session as `GET /events/{code}?include=sessions` and `/sessions/unassigned` return it. */
 const aSession = (overrides: Partial<SessionResponse>): SessionResponse => ({
+  ...aSessionResponse(),
   sessionSlug: 'session',
   eventCode: EVENT_CODE,
   title: 'Session',
@@ -47,6 +55,7 @@ const slottedSession = aSession({
   room: 'Saal',
   speakers: [
     {
+      ...aSessionSpeaker(),
       username: otherSpeaker.id,
       firstName: otherSpeaker.firstName,
       lastName: otherSpeaker.lastName,
@@ -64,6 +73,7 @@ const unslottedSession = aSession({
   endTime: null,
   speakers: [
     {
+      ...aSessionSpeaker(),
       username: speaker.id,
       firstName: speaker.firstName,
       lastName: speaker.lastName,
@@ -84,6 +94,7 @@ const anEventDetail = (sessions: SessionResponse[]): EventDetail => ({
 });
 
 const poolEntry: PoolEntry = {
+  ...aSpeakerPoolEntry(),
   id: '3f6c1e2a-8b4d-4c7e-9a1f-5d2b7e8c0a11',
   eventId: '9a1b2c3d-4e5f-4a6b-8c7d-0e1f2a3b4c5d',
   speakerName: `${speaker.firstName} ${speaker.lastName}`,
@@ -107,11 +118,16 @@ describe('EventSpeakersTab — Pool/Agenda/Slots sub-views (Epic 14 Phase C)', (
     localStorage.clear();
     api.on('getStatusSummary', () => ({
       eventCode: EVENT_CODE,
+      statusCounts: { ACCEPTED: 8, INVITED: 4 },
+      totalSpeakers: 12,
       acceptedCount: 8,
+      declinedCount: 0,
+      pendingCount: 4,
+      acceptanceRate: 66.7,
       minSlotsRequired: 12,
       maxSlotsAllowed: 12,
       thresholdMet: false,
-      acceptanceRate: 66.7,
+      overflowDetected: false,
     }));
     api.on('getSpeakerPool', () => [poolEntry]);
     api.on('getEvent', () => anEventDetail([slottedSession, unslottedSession]));

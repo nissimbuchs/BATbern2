@@ -120,11 +120,11 @@ class SpeakerInvitationEmailServiceTest {
 
         loginUrl = "https://batbern.ch/login";
 
-        freshCredentials = new InvitationCredentialsResponse(
-                InvitationCredentialsResponse.ActionEnum.FRESH_TEMP_PASSWORD)
+        freshCredentials = new InvitationCredentialsResponse()
+                .action(InvitationCredentialsResponse.ActionEnum.FRESH_TEMP_PASSWORD)
                 .temporaryPassword("Tk7!aB2@nx9pQ4#z");
-        useExistingCredentials = new InvitationCredentialsResponse(
-                InvitationCredentialsResponse.ActionEnum.USE_EXISTING_PASSWORD);
+        useExistingCredentials = new InvitationCredentialsResponse()
+                .action(InvitationCredentialsResponse.ActionEnum.USE_EXISTING_PASSWORD);
 
         // Real Mustache-style variable replacement (mirrors EmailService.replaceVariables).
         when(emailService.replaceVariables(anyString(), any())).thenAnswer(invocation -> {

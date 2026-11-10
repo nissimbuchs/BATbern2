@@ -1,246 +1,250 @@
 /**
- * Story 10.32 — UserSettingsTab additional-emails section tests.
+ * UserSettingsTab: additional e-mails (Story 10.32, #1244), Q&A frequency (Story 15.7),
+ * responsive sub-tabs, and the one settings resource (Story 4.9).
  *
- * Focus: the new AdditionalEmailsSection embedded under the Account sub-tab.
- * Mocks `useAddAdditionalEmail` / `useDeleteAdditionalEmail` via `vi.mock`.
- * Assertions use namespace-stripped i18n keys (per CLAUDE.md testing rules).
+ * Runs on the MSW harness with the real hooks, services and i18next (en): the harness checks
+ * every request against users-api and records it; texts are looked up in the real bundles.
  */
-import { describe, expect, test, vi, beforeEach, afterEach } from 'vitest';
+import { describe, expect, test, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { HttpResponse } from 'msw';
+import i18n from '@/i18n/config';
+import { api } from '@/test/msw/api';
 import UserSettingsTab from './UserSettingsTab';
-import type { AdditionalEmail } from '@/types/userAccount.types';
+import type { AdditionalEmail, UserPreferencesView } from '@/types/userAccount.types';
 
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string, opts?: Record<string, unknown>) => {
-      // Namespace-stripped, parametrised — matches CLAUDE.md test pattern.
-      if (opts && 'email' in opts) {
-        return `${key}::${opts.email as string}`;
-      }
-      return key;
-    },
-    i18n: { language: 'en' },
-  }),
-}));
+/** The en text of a userManagement key, as the screen renders it. */
+const en = (key: string) => i18n.t(key, { ns: 'userManagement', lng: 'en' });
 
-const mockAddMutate = vi.fn();
-const mockDeleteMutate = vi.fn();
-const mockResendMutate = vi.fn();
-const mockUpdateEmailMutate = vi.fn();
-const mockUpdatePrefs = vi.fn();
+const address = (email: string, over: Partial<AdditionalEmail> = {}): AdditionalEmail => ({
+  email,
+  label: null,
+  createdAt: '2026-05-22T10:00:00Z',
+  verifiedAt: null,
+  receiveEventMail: true,
+  ...over,
+});
 
-vi.mock('@/hooks/useUserAccount/useUserAccount', () => ({
-  useUpdateUserPreferences: () => ({ mutateAsync: mockUpdatePrefs, isPending: false }),
-  useUpdateUserSettings: () => ({ mutateAsync: vi.fn(), isPending: false }),
-  useAddAdditionalEmail: () => ({
-    mutateAsync: mockAddMutate,
-    isPending: false,
-  }),
-  useDeleteAdditionalEmail: () => ({
-    mutateAsync: mockDeleteMutate,
-    isPending: false,
-  }),
-  useResendVerification: () => ({
-    mutateAsync: mockResendMutate,
-    isPending: false,
-  }),
-  useUpdateAdditionalEmail: () => ({
-    mutate: mockUpdateEmailMutate,
-    isPending: false,
-  }),
-}));
-
-vi.mock('@/hooks/useNewsletter/useNewsletter', () => ({
-  useMySubscription: () => ({ data: { subscribed: false }, isLoading: false }),
-  usePatchMySubscription: () => ({ mutate: vi.fn(), isPending: false }),
-}));
-
-function renderWithProviders(additionalEmails: AdditionalEmail[] = []) {
-  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+function renderTab(additionalEmails: AdditionalEmail[] = [], preferences?: UserPreferencesView) {
+  const qc = new QueryClient({
+    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+  });
   return render(
     <QueryClientProvider client={qc}>
-      <UserSettingsTab email="anna.coordinator@example.com" additionalEmails={additionalEmails} />
+      <UserSettingsTab
+        email="anna.coordinator@example.com"
+        additionalEmails={additionalEmails}
+        preferences={preferences}
+      />
     </QueryClientProvider>
   );
 }
 
-describe('UserSettingsTab — Story 10.32 additional emails section', () => {
-  beforeEach(() => {
-    mockAddMutate.mockReset();
-    mockDeleteMutate.mockReset();
-    mockResendMutate.mockReset();
+const typeAddress = (value: string) =>
+  fireEvent.change(screen.getByTestId('additional-email-input').querySelector('input')!, {
+    target: { value },
   });
 
+describe('UserSettingsTab — Story 10.32 additional emails section', () => {
   test('should render the additional-emails section heading', () => {
-    renderWithProviders([]);
+    renderTab([]);
     expect(screen.getByTestId('additional-emails-section')).toBeInTheDocument();
-    expect(screen.getByText('settings.account.additionalEmailsTitle')).toBeInTheDocument();
+    expect(screen.getByText(en('settings.account.additionalEmailsTitle'))).toBeInTheDocument();
   });
 
   test('should render existing additional emails with delete buttons and unverified pill', () => {
-    renderWithProviders([
-      {
-        email: 'info@batbern.ch',
-        label: 'Hostpoint shared',
-        createdAt: '2026-05-22T10:00:00Z',
-        verifiedAt: null,
-        receiveEventMail: true,
-      },
-    ]);
-    expect(screen.getByTestId('additional-email-row-info@batbern.ch')).toBeInTheDocument();
-    expect(screen.getByTestId('additional-email-delete-info@batbern.ch')).toBeInTheDocument();
-    expect(screen.getByTestId('additional-email-unverified-info@batbern.ch')).toBeInTheDocument();
+    renderTab([address('info@example.com', { label: 'Hostpoint shared' })]);
+    expect(screen.getByTestId('additional-email-row-info@example.com')).toBeInTheDocument();
+    expect(screen.getByTestId('additional-email-delete-info@example.com')).toBeInTheDocument();
+    expect(screen.getByTestId('additional-email-unverified-info@example.com')).toBeInTheDocument();
   });
 
-  test('should call addAdditionalEmail on form submit with valid email', async () => {
-    mockAddMutate.mockResolvedValueOnce({
-      email: 'work@example.com',
-      label: null,
-      createdAt: '2026-05-22T10:00:00Z',
-      verifiedAt: null,
-      receiveEventMail: true,
-    });
+  test('should POST the new address on submit', async () => {
+    renderTab([]);
 
-    renderWithProviders([]);
-
-    fireEvent.change(screen.getByTestId('additional-email-input').querySelector('input')!, {
-      target: { value: 'work@example.com' },
-    });
+    typeAddress('work@example.com');
     fireEvent.click(screen.getByTestId('additional-email-add-button'));
 
-    await waitFor(() => {
-      expect(mockAddMutate).toHaveBeenCalledWith({
-        email: 'work@example.com',
-        label: undefined,
-      });
-    });
+    await waitFor(() => expect(api.calls('addAdditionalEmail')).toHaveLength(1));
+    expect(api.calls('addAdditionalEmail')[0].body).toEqual({ email: 'work@example.com' });
   });
 
-  test('should short-circuit on empty input without calling the mutation', async () => {
-    // Post-review (2026-05-22, P3-3): client-side EMAIL_REGEX was dropped in
-    // favour of HTML5 type="email" + authoritative backend validation. The
-    // remaining client-side gate is just the empty-string check.
-    renderWithProviders([]);
+  test('should short-circuit on empty input without calling the API', async () => {
+    renderTab([]);
 
-    // Empty input — Add button is disabled in this state, but assert the
-    // gate even if the button is clicked programmatically (defence-in-depth).
-    fireEvent.change(screen.getByTestId('additional-email-input').querySelector('input')!, {
-      target: { value: '   ' },
-    });
+    typeAddress('   ');
     fireEvent.click(screen.getByTestId('additional-email-add-button'));
 
-    expect(mockAddMutate).not.toHaveBeenCalled();
+    // positive control: the form is there and the click went through
+    expect(screen.getByTestId('additional-email-add-button')).toBeInTheDocument();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(api.calls('addAdditionalEmail')).toHaveLength(0);
   });
 
   test('should surface ADDITIONAL_EMAIL_DUPLICATE as inline error', async () => {
-    const axiosErr = Object.assign(new Error('409'), {
-      isAxiosError: true,
-      response: { status: 409, data: { errorCode: 'ADDITIONAL_EMAIL_DUPLICATE' } },
-    });
-    mockAddMutate.mockRejectedValueOnce(axiosErr);
+    api.on('addAdditionalEmail', () =>
+      HttpResponse.json({ errorCode: 'ADDITIONAL_EMAIL_DUPLICATE' }, { status: 409 })
+    );
+    renderTab([]);
 
-    renderWithProviders([]);
-
-    fireEvent.change(screen.getByTestId('additional-email-input').querySelector('input')!, {
-      target: { value: 'work@example.com' },
-    });
+    typeAddress('work@example.com');
     fireEvent.click(screen.getByTestId('additional-email-add-button'));
 
-    await waitFor(() => {
-      expect(
-        screen.getByText('settings.account.additionalEmailErrorDuplicate')
-      ).toBeInTheDocument();
-    });
+    expect(
+      await screen.findByText(en('settings.account.additionalEmailErrorDuplicate'))
+    ).toBeInTheDocument();
   });
 
-  test('should call deleteAdditionalEmail when delete icon clicked and Remove confirmed in dialog', async () => {
-    mockDeleteMutate.mockResolvedValueOnce(undefined);
-    renderWithProviders([
-      {
-        email: 'box@example.com',
-        label: null,
-        createdAt: '2026-05-22T10:00:00Z',
-        verifiedAt: null,
-        receiveEventMail: true,
-      },
-    ]);
+  test('should DELETE the address when Remove is confirmed in the dialog', async () => {
+    renderTab([address('box@example.com')]);
 
     fireEvent.click(screen.getByTestId('additional-email-delete-box@example.com'));
-    // P3-1 (post-2026-05-22 review): confirmation is now a MUI Dialog rather
-    // than window.confirm. Click the dialog's primary action to proceed.
     fireEvent.click(screen.getByTestId('additional-email-delete-confirm'));
 
-    await waitFor(() => {
-      expect(mockDeleteMutate).toHaveBeenCalledWith('box@example.com');
-    });
+    await waitFor(() => expect(api.calls('deleteAdditionalEmail')).toHaveLength(1));
+    expect(api.calls('deleteAdditionalEmail')[0].params).toEqual({ email: 'box@example.com' });
   });
 
-  test('should NOT delete when Cancel is clicked in the confirmation dialog', () => {
-    renderWithProviders([
-      {
-        email: 'box@example.com',
-        label: null,
-        createdAt: '2026-05-22T10:00:00Z',
-        verifiedAt: null,
-        receiveEventMail: true,
-      },
-    ]);
+  test('should NOT delete when Cancel is clicked in the confirmation dialog', async () => {
+    renderTab([address('box@example.com')]);
 
     fireEvent.click(screen.getByTestId('additional-email-delete-box@example.com'));
+    expect(screen.getByTestId('additional-email-delete-cancel')).toBeInTheDocument();
     fireEvent.click(screen.getByTestId('additional-email-delete-cancel'));
-    expect(mockDeleteMutate).not.toHaveBeenCalled();
+
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(api.calls('deleteAdditionalEmail')).toHaveLength(0);
   });
 
   test('should hide the add form and show limit alert when at cap', () => {
-    const five: AdditionalEmail[] = Array.from({ length: 5 }, (_, i) => ({
-      email: `box${i}@example.com`,
-      label: null,
-      createdAt: '2026-05-22T10:00:00Z',
-      verifiedAt: null,
-      receiveEventMail: true,
-    }));
-    renderWithProviders(five);
+    renderTab(Array.from({ length: 5 }, (_, i) => address(`box${i}@example.com`)));
 
     expect(screen.getByTestId('additional-emails-at-limit')).toBeInTheDocument();
     expect(screen.queryByTestId('additional-email-add-button')).not.toBeInTheDocument();
   });
+
+  test('should render verified pill (no resend) for a verified additional email', () => {
+    renderTab([address('box@example.com', { verifiedAt: '2026-06-06T11:00:00Z' })]);
+    expect(screen.getByTestId('additional-email-verified-box@example.com')).toBeInTheDocument();
+    expect(
+      screen.queryByTestId('additional-email-unverified-box@example.com')
+    ).not.toBeInTheDocument();
+    expect(screen.queryByTestId('additional-email-resend-box@example.com')).not.toBeInTheDocument();
+  });
+
+  test('should resend the verification when the Resend link is clicked', async () => {
+    renderTab([address('box@example.com')]);
+
+    fireEvent.click(screen.getByTestId('additional-email-resend-box@example.com'));
+
+    await waitFor(() => expect(api.calls('resendAdditionalEmailVerification')).toHaveLength(1));
+    expect(api.calls('resendAdditionalEmailVerification')[0].params).toEqual({
+      email: 'box@example.com',
+    });
+    expect(
+      await screen.findByText(en('settings.account.additionalEmailResendSuccess'))
+    ).toBeInTheDocument();
+  });
+
+  // #1244: copy of event mails per confirmed address
+  test('should switch the copy of event mails for a confirmed address and not offer it otherwise', async () => {
+    renderTab([
+      address('box@example.com', { verifiedAt: '2026-06-06T11:00:00Z', receiveEventMail: false }),
+      address('pending@example.com'),
+    ]);
+
+    expect(screen.queryByTestId('additional-email-event-copy-pending@example.com')).toBeNull();
+    fireEvent.click(screen.getByTestId('additional-email-event-copy-box@example.com'));
+
+    await waitFor(() => expect(api.calls('updateAdditionalEmail')).toHaveLength(1));
+    const [call] = api.calls('updateAdditionalEmail');
+    expect(call.params).toEqual({ email: 'box@example.com' });
+    expect(call.body).toEqual({ receiveEventMail: true });
+  });
+});
+
+describe('UserSettingsTab — one settings resource (Story 4.9)', () => {
+  test('should save theme and timezone together with PATCH /users/me/settings', async () => {
+    renderTab([]);
+
+    fireEvent.click(screen.getByTestId('theme-dark'));
+    fireEvent.change(screen.getByTestId('timezone-autocomplete').querySelector('input')!, {
+      target: { value: 'America/New_York' },
+    });
+    fireEvent.click(screen.getByTestId('save-account-settings-button'));
+
+    await waitFor(() => expect(api.calls('updateUserSettings')).toHaveLength(1));
+    expect(api.calls('updateUserSettings')[0].body).toMatchObject({
+      theme: 'dark',
+      timezone: 'America/New_York',
+    });
+    expect(screen.queryByTestId('save-account-settings-button-error')).toBeNull();
+  });
+
+  test('should show an error when CUMS rejects the value', async () => {
+    api.on('updateUserSettings', () =>
+      HttpResponse.json({ message: 'Not an IANA time zone id' }, { status: 400 })
+    );
+    vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    renderTab([]);
+
+    fireEvent.change(screen.getByTestId('timezone-autocomplete').querySelector('input')!, {
+      target: { value: 'Mars/Olympus' },
+    });
+    fireEvent.click(screen.getByTestId('save-account-settings-button'));
+
+    expect(await screen.findByTestId('save-account-settings-button-error')).toHaveTextContent(
+      en('settings.saveFailed')
+    );
+  });
+  test('should show a failed save only under the panel that saved', async () => {
+    api.on('updateUserSettings', () => HttpResponse.json({}, { status: 400 }));
+    vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    renderTab([]);
+
+    fireEvent.click(screen.getByTestId('save-account-settings-button'));
+    expect(await screen.findByTestId('save-account-settings-button-error')).toBeInTheDocument();
+
+    // the notifications panel shares the mutation, but its save did not fail
+    fireEvent.click(screen.getByRole('tab', { name: en('settings.tabs.notifications') }));
+    expect(await screen.findByTestId('save-notification-settings-button')).toBeInTheDocument();
+    expect(screen.queryByTestId('save-notification-settings-button-error')).toBeNull();
+
+    // its own failed save shows there, and the account error is gone
+    fireEvent.click(screen.getByTestId('save-notification-settings-button'));
+    expect(
+      await screen.findByTestId('save-notification-settings-button-error')
+    ).toBeInTheDocument();
+    expect(screen.queryByTestId('save-account-settings-button-error')).toBeNull();
+  });
 });
 
 describe('UserSettingsTab — Story 15.7 Q&A notification frequency', () => {
-  beforeEach(() => {
-    mockUpdatePrefs.mockReset();
-  });
-
-  function gotoNotifications() {
-    fireEvent.click(screen.getByRole('tab', { name: 'settings.tabs.notifications' }));
-  }
+  const gotoNotifications = () =>
+    fireEvent.click(screen.getByRole('tab', { name: en('settings.tabs.notifications') }));
 
   test('should render the three Q&A frequency options defaulting to live', () => {
-    renderWithProviders([]);
+    renderTab([]);
     gotoNotifications();
 
-    expect(screen.getByText('settings.notifications.qnaFrequency')).toBeInTheDocument();
+    expect(screen.getByText(en('settings.notifications.qnaFrequency'))).toBeInTheDocument();
     expect(screen.getByTestId('qna-frequency-live')).toBeInTheDocument();
     expect(screen.getByTestId('qna-frequency-daily')).toBeInTheDocument();
     expect(screen.getByTestId('qna-frequency-off')).toBeInTheDocument();
-
-    // Default LIVE is selected.
     expect(screen.getByTestId('qna-frequency-live').querySelector('input')).toBeChecked();
   });
 
-  test('should save the chosen Q&A frequency through updateUserPreferences', async () => {
-    mockUpdatePrefs.mockResolvedValueOnce(undefined);
-    renderWithProviders([]);
+  test('should save the chosen Q&A frequency with PATCH /users/me/settings', async () => {
+    renderTab([]);
     gotoNotifications();
 
     fireEvent.click(screen.getByTestId('qna-frequency-off').querySelector('input')!);
     fireEvent.click(screen.getByTestId('save-notification-settings-button'));
 
-    await waitFor(() => {
-      expect(mockUpdatePrefs).toHaveBeenCalledWith(
-        expect.objectContaining({ qnaNotificationFrequency: 'OFF' })
-      );
+    await waitFor(() => expect(api.calls('updateUserSettings')).toHaveLength(1));
+    expect(api.calls('updateUserSettings')[0].body).toMatchObject({
+      qnaNotificationFrequency: 'off',
     });
   });
 });
@@ -274,111 +278,27 @@ describe('UserSettingsTab — responsive sub-tabs (organizer mobile)', () => {
   const originalMatchMedia = window.matchMedia;
   afterEach(() => {
     window.matchMedia = originalMatchMedia;
+    vi.restoreAllMocks();
   });
 
   test('should_renderIconOnlySubTabs_when_mobileViewport', () => {
     installMatchMediaForWidth(375);
-    renderWithProviders([]);
+    renderTab([]);
 
-    // Tabs keep their aria-labels for accessibility...
-    const accountTab = screen.getByRole('tab', { name: 'settings.tabs.account' });
-    expect(accountTab).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: 'settings.tabs.notifications' })).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: 'settings.tabs.privacy' })).toBeInTheDocument();
-
-    // ...but the visible textual label is suppressed (icon-only) on phones.
-    expect(accountTab).not.toHaveTextContent('settings.tabs.account');
+    const accountTab = screen.getByRole('tab', { name: en('settings.tabs.account') });
+    expect(
+      screen.getByRole('tab', { name: en('settings.tabs.notifications') })
+    ).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: en('settings.tabs.privacy') })).toBeInTheDocument();
+    // the visible textual label is suppressed (icon-only) on phones
+    expect(accountTab).not.toHaveTextContent(en('settings.tabs.account'));
   });
 
   test('should_renderLabelledSubTabs_when_desktopViewport', () => {
     installMatchMediaForWidth(1280);
-    renderWithProviders([]);
+    renderTab([]);
 
-    const accountTab = screen.getByRole('tab', { name: /settings\.tabs\.account/ });
-    // Desktop shows the textual label alongside the icon.
-    expect(accountTab).toHaveTextContent('settings.tabs.account');
-  });
-
-  // Additional-email verification (v2)
-
-  test('should render verified pill (no resend) for a verified additional email', () => {
-    renderWithProviders([
-      {
-        email: 'box@example.com',
-        label: null,
-        createdAt: '2026-06-06T10:00:00Z',
-        verifiedAt: '2026-06-06T11:00:00Z',
-        receiveEventMail: true,
-      },
-    ]);
-    expect(screen.getByTestId('additional-email-verified-box@example.com')).toBeInTheDocument();
-    expect(
-      screen.queryByTestId('additional-email-unverified-box@example.com')
-    ).not.toBeInTheDocument();
-    expect(screen.queryByTestId('additional-email-resend-box@example.com')).not.toBeInTheDocument();
-  });
-
-  test('should render unverified pill + resend link for an unverified additional email', () => {
-    renderWithProviders([
-      {
-        email: 'box@example.com',
-        label: null,
-        createdAt: '2026-06-06T10:00:00Z',
-        verifiedAt: null,
-        receiveEventMail: true,
-      },
-    ]);
-    expect(screen.getByTestId('additional-email-unverified-box@example.com')).toBeInTheDocument();
-    expect(screen.getByTestId('additional-email-resend-box@example.com')).toBeInTheDocument();
-  });
-
-  test('should call resendVerification when the Resend link is clicked', async () => {
-    mockResendMutate.mockResolvedValueOnce(undefined);
-    renderWithProviders([
-      {
-        email: 'box@example.com',
-        label: null,
-        createdAt: '2026-06-06T10:00:00Z',
-        verifiedAt: null,
-        receiveEventMail: true,
-      },
-    ]);
-
-    fireEvent.click(screen.getByTestId('additional-email-resend-box@example.com'));
-
-    await waitFor(() => {
-      expect(mockResendMutate).toHaveBeenCalledWith('box@example.com');
-    });
-    expect(
-      await screen.findByText('settings.account.additionalEmailResendSuccess')
-    ).toBeInTheDocument();
-  });
-
-  // #1244: copy of event mails per confirmed address
-  test('should switch the copy of event mails for a confirmed address and not offer it otherwise', () => {
-    renderWithProviders([
-      {
-        email: 'box@example.com',
-        label: null,
-        createdAt: '2026-06-06T10:00:00Z',
-        verifiedAt: '2026-06-06T11:00:00Z',
-        receiveEventMail: false,
-      },
-      {
-        email: 'pending@example.com',
-        label: null,
-        createdAt: '2026-06-06T10:00:00Z',
-        verifiedAt: null,
-        receiveEventMail: true,
-      },
-    ]);
-
-    expect(screen.queryByTestId('additional-email-event-copy-pending@example.com')).toBeNull();
-    fireEvent.click(screen.getByTestId('additional-email-event-copy-box@example.com'));
-
-    expect(mockUpdateEmailMutate).toHaveBeenCalledWith({
-      email: 'box@example.com',
-      receiveEventMail: true,
-    });
+    const accountTab = screen.getByRole('tab', { name: en('settings.tabs.account') });
+    expect(accountTab).toHaveTextContent(en('settings.tabs.account'));
   });
 });

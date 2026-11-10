@@ -25,6 +25,7 @@ import {
 } from '@/hooks/useEvents';
 import { eventApiClient } from '@/services/eventApiClient';
 import type { EventFilters, EventListResponse, EventDetail } from '@/types/event.types';
+import { anEvent, anEventDetail } from '@/test/fixtures';
 
 // Mock the API client - Vitest v4 syntax
 vi.mock('@/services/eventApiClient', () => ({
@@ -73,6 +74,7 @@ describe('Event Management React Query Hooks', () => {
     const mockEventsResponse: EventListResponse = {
       data: [
         {
+          ...anEvent(),
           eventCode: 'BATbern56',
           eventNumber: 56,
           title: 'Cloud Computing 2025',
@@ -217,7 +219,7 @@ describe('Event Management React Query Hooks', () => {
   });
 
   describe('useEvent Hook', () => {
-    const mockEventDetail: EventDetail = {
+    const mockEventDetail: EventDetail = anEventDetail({
       eventCode: 'BATbern56',
       eventNumber: 56,
       title: 'Cloud Computing 2025',
@@ -234,12 +236,13 @@ describe('Event Management React Query Hooks', () => {
       updatedAt: '2025-01-10T15:00:00Z',
       createdBy: 'john.doe',
       venue: {
+        id: '5b4a3c2d-1e0f-4a9b-8c7d-6e5f4a3b2c1d',
         name: 'Kornhausforum',
         address: 'Kornhausplatz 18, 3011 Bern',
         capacity: 250,
       },
       sessions: [],
-    };
+    });
 
     it('should_fetchEventWithIncludes_when_includesProvided', async () => {
       vi.mocked(eventApiClient.getEvent).mockResolvedValue(mockEventDetail);
@@ -283,7 +286,7 @@ describe('Event Management React Query Hooks', () => {
   });
 
   describe('useCreateEvent Hook', () => {
-    const mockCreatedEvent = {
+    const mockCreatedEvent = anEvent({
       eventCode: 'BATbern57',
       eventNumber: 57,
       title: 'New Event',
@@ -299,7 +302,7 @@ describe('Event Management React Query Hooks', () => {
       createdAt: '2025-01-20T10:00:00Z',
       updatedAt: '2025-01-20T10:00:00Z',
       createdBy: 'john.doe',
-    };
+    });
 
     it('should_createEvent_when_mutationCalled', async () => {
       vi.mocked(eventApiClient.createEvent).mockResolvedValue(mockCreatedEvent);
@@ -362,7 +365,7 @@ describe('Event Management React Query Hooks', () => {
   });
 
   describe('useUpdateEvent Hook', () => {
-    const mockUpdatedEvent = {
+    const mockUpdatedEvent = anEvent({
       eventCode: 'BATbern56',
       eventNumber: 56,
       title: 'Updated Event',
@@ -378,7 +381,7 @@ describe('Event Management React Query Hooks', () => {
       createdAt: '2025-01-01T10:00:00Z',
       updatedAt: '2025-01-20T10:00:00Z',
       createdBy: 'john.doe',
-    };
+    });
 
     it('should_updateEvent_when_mutationCalled', async () => {
       vi.mocked(eventApiClient.patchEvent).mockResolvedValue(mockUpdatedEvent);

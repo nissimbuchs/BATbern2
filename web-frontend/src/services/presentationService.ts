@@ -7,10 +7,11 @@
  */
 
 import apiClient from './api/apiClient';
+import { updateAdminSetting } from './adminSettingsService';
 // events-api split into per-domain specs (API consolidation Phase 6).
 import type { components as coreComponents } from '@/types/generated/events-core-api.types';
 import type { components as sessionsComponents } from '@/types/generated/event-sessions-api.types';
-import type { components as companyComponents } from '@/types/generated/company-api.types';
+import type { components as appSettingsComponents } from '@/types/generated/event-app-settings-api.types';
 import type { User } from '@/types/user.types';
 
 export type PresentationEventDetail = coreComponents['schemas']['Event'] & {
@@ -25,9 +26,12 @@ export type PresentationEventDetail = coreComponents['schemas']['Event'] & {
 };
 
 export type PresentationSession = sessionsComponents['schemas']['Session'];
-export type PresentationSettings = companyComponents['schemas']['PresentationSettingsResponse'];
-export type PresentationSettingsRequest =
-  companyComponents['schemas']['PresentationSettingsRequest'];
+export type PresentationSettings = appSettingsComponents['schemas']['PresentationSettingsResponse'];
+/** What an organizer saves: the same object, stored as JSON in the app setting `presentation`. */
+export type PresentationSettingsRequest = PresentationSettings;
+
+/** The app_settings key the presentation settings are stored under (EMS, Story 4.9). */
+export const PRESENTATION_SETTING_KEY = 'presentation';
 
 const SKIP_AUTH = { headers: { 'Skip-Auth': 'true' } };
 
@@ -55,7 +59,10 @@ export const getPublicOrganizers = async (): Promise<User[]> => {
 
 /**
  * Fetches the next 3 upcoming events for the Upcoming Events slide.
- * Public endpoint — no auth required.
+ * Public read model (`GET /public/events?scope=upcoming`): published events from today on,
+ * nearest first, selected server-side. Story 4.9 found that the slide asked the organizer list
+ * `/events` with a `status` parameter no spec declares; EMS ignored it and returned the oldest
+ * events first, so the slide stayed empty.
  *
  * @param excludeEventCode — the event currently being presented; excluded from
  *   the result so the slide shows only genuinely *future* events, not the
@@ -64,21 +71,13 @@ export const getPublicOrganizers = async (): Promise<User[]> => {
 export const getUpcomingEvents = async (
   excludeEventCode?: string
 ): Promise<coreComponents['schemas']['Event'][]> => {
-  const response = await apiClient.get<{ data: coreComponents['schemas']['Event'][] }>('/events', {
-    params: {
-      status: 'AGENDA_PUBLISHED,TOPIC_SELECTION_DONE,TOPIC_SELECTION,CREATED',
-      limit: 10,
-      sort: 'date',
-    },
-    ...SKIP_AUTH,
-  });
-  // API returns paginated response; extract data array
-  const events =
-    response.data.data ?? (response.data as unknown as coreComponents['schemas']['Event'][]);
-  // Filter to strictly future events (same pattern as public UpcomingEventsSection),
-  // excluding the event currently on screen, then sort by date ascending and take the first 3.
+  const response = await apiClient.get<{ data: coreComponents['schemas']['Event'][] }>(
+    '/public/events',
+    { params: { scope: 'upcoming', limit: 10 }, ...SKIP_AUTH }
+  );
+  // Strictly future (the read model includes today), without the event on screen, nearest first.
   const now = new Date();
-  return events
+  return (response.data.data ?? [])
     .filter((e) => new Date(e.date) > now && e.eventCode !== excludeEventCode)
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
     .slice(0, 3);
@@ -98,12 +97,15 @@ export const getPresentationSettings = async (): Promise<PresentationSettings> =
 
 /**
  * Updates the presentation settings. Requires ORGANIZER role.
+ * Stored by EMS as JSON under the app setting `presentation` (`PUT /admin/settings/presentation`),
+ * which validates it (non-blank aboutText, partnerCount >= 0) and answers 400 otherwise.
  */
 export const updatePresentationSettings = async (
   data: PresentationSettingsRequest
 ): Promise<PresentationSettings> => {
-  const response = await apiClient.put<PresentationSettings>('/settings/presentation', data);
-  return response.data;
+  const value = JSON.stringify({ aboutText: data.aboutText, partnerCount: data.partnerCount });
+  await updateAdminSetting(PRESENTATION_SETTING_KEY, value);
+  return { aboutText: data.aboutText, partnerCount: data.partnerCount };
 };
 
 /**

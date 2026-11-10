@@ -21,8 +21,10 @@ vi.mock('react-intersection-observer', () => ({
 }));
 
 import { SpeakerDisplay } from '../SpeakerDisplay';
+import { aSessionSpeaker } from '@/test/fixtures';
 
 const baseSpeaker: SessionSpeaker = {
+  ...aSessionSpeaker(),
   username: 'anna.meier',
   firstName: 'Anna',
   lastName: 'Meier',

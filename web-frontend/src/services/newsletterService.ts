@@ -21,44 +21,6 @@ export type NewsletterSubscriptionStatusResponse = Schemas['NewsletterSubscripti
 export type NewsletterAddressSubscription = Schemas['NewsletterAddressSubscription'];
 export type MyNewsletterSubscriptionsResponse = Schemas['MyNewsletterSubscriptionsResponse'];
 
-export interface NewsletterSendRequest {
-  isReminder: boolean;
-  locale: 'de' | 'en';
-  templateKey?: string; // Optional override; service defaults to 'newsletter-event' if omitted
-  testMode?: boolean; // Send only to organizer-role subscribers
-}
-
-export interface NewsletterSendResponse {
-  id: string;
-  recipientCount: number;
-  sentAt: string;
-  /** PENDING | IN_PROGRESS | COMPLETED | PARTIAL | FAILED */
-  status: string;
-  sentCount: number;
-  failedCount: number;
-  startedAt?: string;
-  completedAt?: string;
-  testMode?: boolean;
-}
-
-export type NewsletterSendStatusResponse = Schemas['NewsletterSendStatusResponse'];
-export type NewsletterPreviewResponse = Schemas['NewsletterPreviewResponse'];
-
-export interface NewsletterSendHistoryItem {
-  id: string;
-  isReminder: boolean;
-  sentAt: string;
-  sentByUsername: string;
-  recipientCount: number;
-  templateKey: string;
-  status?: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'PARTIAL' | 'FAILED';
-  sentCount?: number;
-  failedCount?: number;
-  testMode?: boolean;
-}
-
-export type SubscriberCountResponse = Schemas['SubscriberCountResponse'];
-
 /** Subscribe an email to the newsletter (no auth required). Returns 409 if already subscribed.
  *  @param turnstileToken Optional Cloudflare Turnstile token (AC8, Story 10.31). Passed via
  *  X-Turnstile-Token header when present.
@@ -122,68 +84,6 @@ export async function putMySubscription(
   const response = await apiClient.put<MyNewsletterSubscriptionsResponse>(
     '/newsletter/my-subscriptions',
     { email, subscribed, ...(language ? { language } : {}) }
-  );
-  return response.data;
-}
-
-/** Get total active subscriber count (ORGANIZER only). */
-export async function getSubscriberCount(): Promise<SubscriberCountResponse> {
-  const response = await apiClient.get<SubscriberCountResponse>('/newsletter/subscribers/count');
-  return response.data;
-}
-
-/** Get newsletter send history for an event (ORGANIZER only). */
-export async function getNewsletterHistory(
-  eventCode: string
-): Promise<NewsletterSendHistoryItem[]> {
-  const response = await apiClient.get<NewsletterSendHistoryItem[]>(
-    `/events/${encodeURIComponent(eventCode)}/newsletter/history`
-  );
-  return response.data;
-}
-
-/** Preview newsletter email for an event (ORGANIZER only). */
-export async function previewNewsletter(
-  eventCode: string,
-  request: NewsletterSendRequest
-): Promise<NewsletterPreviewResponse> {
-  const response = await apiClient.post<NewsletterPreviewResponse>(
-    `/events/${encodeURIComponent(eventCode)}/newsletter/preview`,
-    request
-  );
-  return response.data;
-}
-
-/** Send newsletter for an event (ORGANIZER only). Returns immediately with PENDING status. */
-export async function sendNewsletter(
-  eventCode: string,
-  request: NewsletterSendRequest
-): Promise<NewsletterSendResponse> {
-  const response = await apiClient.post<NewsletterSendResponse>(
-    `/events/${encodeURIComponent(eventCode)}/newsletter/send`,
-    request
-  );
-  return response.data;
-}
-
-/** Poll send-job progress (ORGANIZER only). */
-export async function getSendStatus(
-  eventCode: string,
-  sendId: string
-): Promise<NewsletterSendStatusResponse> {
-  const response = await apiClient.get<NewsletterSendStatusResponse>(
-    `/events/${encodeURIComponent(eventCode)}/newsletter/sends/${encodeURIComponent(sendId)}/status`
-  );
-  return response.data;
-}
-
-/** Retry failed recipients for a PARTIAL or FAILED send (ORGANIZER only). */
-export async function retryFailedRecipients(
-  eventCode: string,
-  sendId: string
-): Promise<NewsletterSendResponse> {
-  const response = await apiClient.post<NewsletterSendResponse>(
-    `/events/${encodeURIComponent(eventCode)}/newsletter/sends/${encodeURIComponent(sendId)}/retry`
   );
   return response.data;
 }

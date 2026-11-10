@@ -18,6 +18,7 @@ import userEvent from '@testing-library/user-event';
 import { renderWithProviders as render } from '@/test/test-utils';
 import { SessionSpeakersTab } from '../SessionSpeakersTab';
 import type { SessionUI, SessionSpeaker } from '@/types/event.types';
+import { aSession, aSessionSpeaker } from '@/test/fixtures';
 
 // ─── Mocks ────────────────────────────────────────────────────────────────────
 
@@ -80,6 +81,7 @@ vi.mock('@/components/organizer/UserManagement/UserCreateEditModal', () => ({
 // ─── Test Fixtures ─────────────────────────────────────────────────────────────
 
 const primarySpeaker: SessionSpeaker = {
+  ...aSessionSpeaker(),
   username: 'john.doe',
   firstName: 'John',
   lastName: 'Doe',
@@ -89,6 +91,7 @@ const primarySpeaker: SessionSpeaker = {
 };
 
 const coSpeaker: SessionSpeaker = {
+  ...aSessionSpeaker(),
   username: 'jane.smith',
   firstName: 'Jane',
   lastName: 'Smith',
@@ -99,6 +102,7 @@ const coSpeaker: SessionSpeaker = {
 
 function makeSession(speakers: SessionSpeaker[] = []): SessionUI {
   return {
+    ...aSession(),
     sessionSlug: 'cloud-talk',
     eventCode: 'BATbern99',
     title: 'Cloud Talk',

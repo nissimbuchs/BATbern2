@@ -236,10 +236,10 @@ const NewsletterSubscriberTable: React.FC<NewsletterSubscriberTableProps> = ({
                 </Box>
               </TableCell>
               <TableCell sx={hideOnXsSx('language')}>
-                <Chip label={sub.language ?? '—'} size="small" variant="outlined" />
+                <Chip label={sub.language} size="small" variant="outlined" />
               </TableCell>
               <TableCell sx={hideOnXsSx('source')}>
-                <Chip label={sub.source ?? '—'} size="small" variant="outlined" />
+                <Chip label={sub.source} size="small" variant="outlined" />
               </TableCell>
               <TableCell sx={hideOnXsSx('subscribedAt')}>
                 {sub.subscribedAt ? new Date(sub.subscribedAt).toLocaleDateString() : '—'}

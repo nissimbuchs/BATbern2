@@ -5,7 +5,14 @@
 import { describe, expect, it } from 'vitest';
 import apiClient from '@/services/api/apiClient';
 import { listUsers, searchUsers } from '@/services/api/userManagementApi';
-import { namesakes, people, REGISTRATION_STATUSES, shapes, toSearchResult } from '@/test/fixtures';
+import {
+  aUser,
+  namesakes,
+  people,
+  REGISTRATION_STATUSES,
+  shapes,
+  toSearchResult,
+} from '@/test/fixtures';
 import { api } from './api';
 import { FIXTURE_BACKED_OPERATIONS, fixtureDefault, searchFold } from './fixtureDefaults';
 import { harness, SPEC_DIR } from './server';
@@ -153,6 +160,32 @@ describe('fixture-backed default bodies', () => {
     expect(validateAgainstSchema(files, op.file, schema, body)).toEqual([
       '$.data[0].additionalEmails: expected array, got null',
     ]);
+  });
+
+  it('the validator checks format idn-email: an IDN domain passes, a non-address fails', () => {
+    const op = [...harness().byId.values()].find((o) => o.key === 'listUsers');
+    if (!op) throw new Error('listUsers is not an operation of the specs');
+    const schema = op.success[0].media.schema;
+    const page = (email: string) => ({
+      data: [aUser({ email })],
+      pagination: {
+        page: 1,
+        limit: 20,
+        totalItems: 1,
+        totalPages: 1,
+        hasNext: false,
+        hasPrev: false,
+      },
+    });
+
+    expect(
+      validateAgainstSchema(files, op.file, schema, page('juerg.brunner@bücherstube.example'))
+    ).toEqual([]);
+    for (const bad of ['not an address', 'x@nodot']) {
+      expect(validateAgainstSchema(files, op.file, schema, page(bad))).toEqual([
+        '$.data[0].email: not a valid idn-email',
+      ]);
+    }
   });
 
   it('the validator rejects a broken fixture body (positive control)', () => {

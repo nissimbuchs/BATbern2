@@ -3,6 +3,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
 import UserMenuDropdown from './UserMenuDropdown';
 import { UserContext } from '../../../types/auth';
+import i18n from '@/i18n/config';
+import { api } from '@/test/msw/api';
 
 const mockNavigate = vi.fn();
 vi.mock('react-router-dom', async () => {
@@ -10,41 +12,8 @@ vi.mock('react-router-dom', async () => {
   return { ...actual, useNavigate: () => mockNavigate };
 });
 
-// Mutable state for i18n mock (must use vi.hoisted to be accessible in vi.mock factory)
-const mockI18nState = vi.hoisted(() => ({ language: 'de' }));
-
-// Mock i18next
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string) => {
-      const translations: Record<string, string> = {
-        'language.de': 'Deutsch',
-        'language.en': 'English',
-        'language.select': 'Language selector',
-      };
-      return translations[key] ?? key;
-    },
-    i18n: {
-      get language() {
-        return mockI18nState.language;
-      },
-      changeLanguage: vi.fn().mockResolvedValue(undefined),
-      options: {
-        resources: {
-          de: {},
-          en: {},
-        },
-      },
-    },
-  }),
-}));
-
-// Mock API client for language preference update
-vi.mock('../../../services/api/apiClient', () => ({
-  default: {
-    put: vi.fn().mockResolvedValue({ data: { success: true } }),
-  },
-}));
+/** The text of a common key in the current language, as the menu renders it (real i18next). */
+const text = (key: string) => i18n.t(key);
 
 const mockUser: UserContext = {
   userId: 'user-123',
@@ -84,7 +53,8 @@ describe('UserMenuDropdown', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockNavigate.mockClear();
-    mockI18nState.language = 'de'; // Reset to default language
+    void i18n.changeLanguage('de');
+    localStorage.clear();
     // Create a mock anchor element for the Menu
     anchorEl = document.createElement('div');
   });
@@ -117,7 +87,7 @@ describe('UserMenuDropdown', () => {
         />
       );
 
-      expect(screen.getByText('role.organizer')).toBeInTheDocument();
+      expect(screen.getByText(text('role.organizer'))).toBeInTheDocument();
     });
 
     it('should_renderProfileMenuItem_when_menuIsOpen', () => {
@@ -132,7 +102,7 @@ describe('UserMenuDropdown', () => {
         />
       );
 
-      expect(screen.getByText('menu.profile')).toBeInTheDocument();
+      expect(screen.getByText(text('menu.profile'))).toBeInTheDocument();
     });
 
     it('should_renderSettingsMenuItem_when_menuIsOpen', () => {
@@ -147,7 +117,7 @@ describe('UserMenuDropdown', () => {
         />
       );
 
-      expect(screen.getByText('menu.settings')).toBeInTheDocument();
+      expect(screen.getByText(text('menu.settings'))).toBeInTheDocument();
     });
 
     it('should_renderHelpMenuItem_when_menuIsOpen', () => {
@@ -162,7 +132,7 @@ describe('UserMenuDropdown', () => {
         />
       );
 
-      expect(screen.getByText('menu.help')).toBeInTheDocument();
+      expect(screen.getByText(text('menu.help'))).toBeInTheDocument();
     });
 
     it('should_renderLanguageSwitcher_when_menuIsOpen', () => {
@@ -177,7 +147,7 @@ describe('UserMenuDropdown', () => {
         />
       );
 
-      expect(screen.getByLabelText('Language selector')).toBeInTheDocument();
+      expect(screen.getByLabelText(text('language.select'))).toBeInTheDocument();
     });
 
     it('should_renderLogoutMenuItem_when_menuIsOpen', () => {
@@ -192,7 +162,7 @@ describe('UserMenuDropdown', () => {
         />
       );
 
-      expect(screen.getByText('menu.logout')).toBeInTheDocument();
+      expect(screen.getByText(text('menu.logout'))).toBeInTheDocument();
     });
 
     it('should_renderDividers_when_menuIsOpen', () => {
@@ -242,7 +212,7 @@ describe('UserMenuDropdown', () => {
         />
       );
 
-      const profileMenuItem = screen.getByText('menu.profile').closest('li');
+      const profileMenuItem = screen.getByText(text('menu.profile')).closest('li');
       expect(profileMenuItem).toBeInTheDocument();
 
       if (profileMenuItem) {
@@ -268,7 +238,7 @@ describe('UserMenuDropdown', () => {
         />
       );
 
-      const settingsMenuItem = screen.getByText('menu.settings').closest('li');
+      const settingsMenuItem = screen.getByText(text('menu.settings')).closest('li');
       expect(settingsMenuItem).toBeInTheDocument();
 
       if (settingsMenuItem) {
@@ -295,7 +265,7 @@ describe('UserMenuDropdown', () => {
         />
       );
 
-      const helpMenuItem = screen.getByText('menu.help').closest('li');
+      const helpMenuItem = screen.getByText(text('menu.help')).closest('li');
       expect(helpMenuItem).toBeInTheDocument();
 
       if (helpMenuItem) {
@@ -326,7 +296,7 @@ describe('UserMenuDropdown', () => {
         />
       );
 
-      const logoutMenuItem = screen.getByText('menu.logout').closest('li');
+      const logoutMenuItem = screen.getByText(text('menu.logout')).closest('li');
       expect(logoutMenuItem).toBeInTheDocument();
 
       if (logoutMenuItem) {
@@ -352,7 +322,7 @@ describe('UserMenuDropdown', () => {
         />
       );
 
-      const languageSelector = screen.getByLabelText('Language selector');
+      const languageSelector = screen.getByLabelText(text('language.select'));
       // Material-UI Select stores value in a different way
       const input = languageSelector.querySelector('input');
       expect(input?.value).toBe('de');
@@ -370,7 +340,7 @@ describe('UserMenuDropdown', () => {
         />
       );
 
-      const languageSelector = screen.getByLabelText('Language selector');
+      const languageSelector = screen.getByLabelText(text('language.select'));
 
       // Trigger language change to English by opening the select and clicking English
       fireEvent.mouseDown(languageSelector.querySelector('[role="combobox"]') || languageSelector);
@@ -386,7 +356,7 @@ describe('UserMenuDropdown', () => {
 
     it('should_changeLanguageToGerman_when_userSelectsGerman', async () => {
       // Start from English so switching to German is a real value change
-      mockI18nState.language = 'en';
+      await i18n.changeLanguage('en');
 
       const userWithEnglish = {
         ...mockUser,
@@ -407,7 +377,7 @@ describe('UserMenuDropdown', () => {
         />
       );
 
-      const languageSelector = screen.getByLabelText('Language selector');
+      const languageSelector = screen.getByLabelText(text('language.select'));
 
       // Trigger language change to German by opening the select and clicking DE
       fireEvent.mouseDown(languageSelector.querySelector('[role="combobox"]') || languageSelector);
@@ -421,8 +391,28 @@ describe('UserMenuDropdown', () => {
       });
     });
 
-    // API persistence test removed - backend API is not yet ready
-    // When backend API is implemented, add test here to verify API call
+    it('should_storeTheLanguageInTheUserSettings_when_changed', async () => {
+      renderWithRouter(
+        <UserMenuDropdown
+          user={mockUser}
+          anchorEl={anchorEl}
+          open={true}
+          onClose={vi.fn()}
+          onLogout={mockOnLogout}
+          onLanguageChange={mockOnLanguageChange}
+        />
+      );
+
+      const languageSelector = screen.getByLabelText(text('language.select'));
+      fireEvent.mouseDown(languageSelector.querySelector('[role="combobox"]') || languageSelector);
+      fireEvent.click(await screen.findByRole('option', { name: 'EN — English' }));
+
+      // Story 4.9: the language is part of the one settings resource
+      await waitFor(() => expect(api.calls('updateUserSettings')).toHaveLength(1));
+      const [call] = api.calls('updateUserSettings');
+      expect(call.method).toBe('PATCH');
+      expect(call.body).toEqual({ language: 'en' });
+    });
   });
 
   describe('Accessibility', () => {
@@ -438,7 +428,7 @@ describe('UserMenuDropdown', () => {
         />
       );
 
-      expect(screen.getByLabelText('Language selector')).toBeInTheDocument();
+      expect(screen.getByLabelText(text('language.select'))).toBeInTheDocument();
       // Get all menus and verify at least one exists (Select creates additional menu roles)
       const menus = screen.getAllByRole('menu');
       expect(menus.length).toBeGreaterThanOrEqual(1);

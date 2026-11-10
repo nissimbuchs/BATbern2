@@ -14,6 +14,7 @@ import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.ResultActions;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -51,17 +52,39 @@ class InternalMergeRequestIntegrationTest extends AbstractIntegrationTest {
     }
 
     private String open() throws Exception {
-        Map<String, Object> body = new HashMap<>();
-        body.put("requestId", REQUEST);
-        body.put("requesterName", "Anna Muster");
-        body.put("requesterEmail", "Anna.Private@Example.com");
-        body.put("subject", "Profil zusammenführen: Anna Muster");
-        body.put("note", "Bis 2024 bei Firma X");
-        String response = mockMvc.perform(post("/internal/mail-center/merge-requests")
-                        .contentType(MediaType.APPLICATION_JSON).content(objectMapper.writeValueAsString(body)))
+        String response = openRequest("Anna.Private@Example.com")
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
         return objectMapper.readTree(response).path("conversationKey").asText();
+    }
+
+    private ResultActions openRequest(String requesterEmail) throws Exception {
+        Map<String, Object> body = new HashMap<>();
+        body.put("requestId", REQUEST);
+        body.put("requesterName", "Anna Muster");
+        body.put("requesterEmail", requesterEmail);
+        body.put("subject", "Profil zusammenführen: Anna Muster");
+        body.put("note", "Bis 2024 bei Firma X");
+        return mockMvc.perform(post("/internal/mail-center/merge-requests")
+                .contentType(MediaType.APPLICATION_JSON).content(objectMapper.writeValueAsString(body)));
+    }
+
+    @Test
+    @DisplayName("4.9b: the requester address follows the #1102 rule, an IDN domain is accepted")
+    void open_acceptsIdnDomain() throws Exception {
+        openRequest("juerg.brunner@bücherstube.example").andExpect(status().isOk());
+
+        assertThat(jdbc.queryForObject("SELECT counterpart_address FROM mail_conversation WHERE merge_request_id = ?",
+                String.class, REQUEST)).isEqualTo("juerg.brunner@bücherstube.example");
+    }
+
+    @Test
+    @DisplayName("4.9b: a Unicode local part answers 400 and opens nothing")
+    void open_rejectsUnicodeLocalPart() throws Exception {
+        openRequest("jürg@bücherstube.example").andExpect(status().isBadRequest());
+
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM mail_conversation WHERE merge_request_id = ?",
+                Integer.class, REQUEST)).isZero();
     }
 
     @Test

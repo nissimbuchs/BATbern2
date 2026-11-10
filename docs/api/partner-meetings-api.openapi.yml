@@ -484,6 +484,11 @@ components:
     MeetingRsvpListResponse:
       type: object
       description: "RSVP list + summary for a partner meeting — Story 10.27 (AC7)"
+      required:
+        - meetingId
+        - inviteSentAt
+        - rsvps
+        - summary
       properties:
         meetingId:
           type: string
@@ -502,6 +507,10 @@ components:
 
     RsvpDTO:
       type: object
+      required:
+        - attendeeEmail
+        - status
+        - respondedAt
       properties:
         attendeeEmail:
           type: string
@@ -517,6 +526,10 @@ components:
     RsvpSummary:
       type: object
       description: "RSVP counts by status"
+      required:
+        - accepted
+        - declined
+        - tentative
       properties:
         accepted:
           type: integer

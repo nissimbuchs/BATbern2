@@ -18,17 +18,25 @@ import type { PartnerResponse } from '@/services/api/partnerApi';
 import { usePartnerStore } from '@/stores/partnerStore';
 import { usePartnerModalStore } from '@/stores/partnerModalStore';
 import { PartnerDirectoryScreen } from '../PartnerDirectoryScreen';
+import { aPartner } from '@/test/fixtures';
 
 type PartnerList = ResponseBody<'listPartners', 200>;
 type Statistics = ResponseBody<'getPartnerStatistics', 200>;
 
-const gold: PartnerResponse = {
+const gold: PartnerResponse = aPartner({
   companyName: 'mobiliar',
   partnershipLevel: 'GOLD',
   partnershipStartDate: '2020-01-01',
   isActive: true,
-  company: { name: 'mobiliar', displayName: 'Die Mobiliar', industry: 'Insurance' },
-};
+  company: {
+    companyName: 'mobiliar',
+    name: 'mobiliar',
+    displayName: 'Die Mobiliar',
+    logoUrl: null,
+    industry: 'Insurance',
+    website: null,
+  },
+});
 
 const page = (data: PartnerResponse[]): PartnerList => ({
   data,

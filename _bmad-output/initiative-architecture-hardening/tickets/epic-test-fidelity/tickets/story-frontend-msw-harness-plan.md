@@ -3,7 +3,7 @@ title: 'Frontend MSW harness (17.0c1)'
 type: 'feature'
 ticket: '0c1'
 created: '2026-11-08'
-status: 'built'
+status: done
 baseline_revision: 'bf8e0226a3cb9572b37bb86e9be4f9143c276b3f'
 route: 'full'
 route_source: 'auto'

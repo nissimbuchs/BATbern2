@@ -16,6 +16,7 @@ import { I18nextProvider } from 'react-i18next';
 import i18n from '@/i18n/config';
 import { DetailsTabPanel } from '../DetailsTabPanel';
 import type { SpeakerPoolEntry } from '@/types/speakerPool.types';
+import { aSpeakerPoolEntry } from '@/test/fixtures';
 
 // Lean mocks: the only outbound surfaces we care about are usePatchSpeakerPool
 // (the save mutation) and usePublicUser (the linked-User name resolver).
@@ -54,6 +55,7 @@ vi.mock('@/components/shared/OrganizerSelect', () => ({
 }));
 
 const makeSpeaker = (overrides: Partial<SpeakerPoolEntry> = {}): SpeakerPoolEntry => ({
+  ...aSpeakerPoolEntry(),
   id: 'speaker-pool-1',
   eventId: 'event-1',
   speakerName: 'Jane Doe',

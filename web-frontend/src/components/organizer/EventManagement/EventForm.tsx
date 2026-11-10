@@ -202,7 +202,7 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
           venueName: event.venueName || '',
           venueAddress: event.venueAddress || '',
           venueCapacity: event.venueCapacity || 200,
-          workflowState: event.workflowState || 'CREATED',
+          workflowState: event.workflowState,
           eventType: normalizeEventType((event as EventUI).eventType),
         }
       : {
@@ -282,7 +282,7 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
         venueName: event.venueName || '',
         venueAddress: event.venueAddress || '',
         venueCapacity: event.venueCapacity || 200,
-        workflowState: event.workflowState || 'CREATED',
+        workflowState: event.workflowState,
         eventType: normalizeEventType((event as EventUI).eventType),
       });
     }

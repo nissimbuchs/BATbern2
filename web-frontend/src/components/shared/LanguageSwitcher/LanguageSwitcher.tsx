@@ -1,9 +1,8 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Globe } from 'lucide-react';
-import { updateUserPreferences } from '../../../services/api/userApi';
+import { updateUserSettings, type UserLanguage } from '../../../services/api/userApi';
 import { useAuth } from '../../../hooks/useAuth';
-import type { UpdatePreferencesRequest } from '../../../types/user';
 
 /**
  * Language selector. Tailwind + a native <select> (no MUI): this control sits in the
@@ -37,7 +36,7 @@ const LanguageSwitcher: React.FC = () => {
     // Persist to API only if authenticated (backend is ready, Story 2.6)
     if (isAuthenticated) {
       try {
-        await updateUserPreferences({ language: newLang as UpdatePreferencesRequest['language'] });
+        await updateUserSettings({ language: newLang as UserLanguage });
         console.log('[LanguageSwitcher] Language preference saved to backend');
       } catch (error) {
         console.error('[LanguageSwitcher] Failed to persist language preference:', error);

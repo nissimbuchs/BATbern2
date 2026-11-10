@@ -11,6 +11,7 @@ import { render } from '@/test/test-utils';
 import userEvent from '@testing-library/user-event';
 import { FilterSidebar } from '../FilterSidebar';
 import type { ArchiveFilters } from '@/types/event.types';
+import { aTopic } from '@/test/fixtures';
 
 // Mock i18n
 vi.mock('react-i18next', () => ({
@@ -45,46 +46,46 @@ vi.mock('react-i18next', () => ({
 
 describe('FilterSidebar Component', () => {
   const mockTopics = [
-    {
+    aTopic({
       topicCode: 'cloud',
       title: 'Cloud Architecture',
       description: '',
       category: 'technical',
       usageCount: 23,
       active: true,
-    },
-    {
+    }),
+    aTopic({
       topicCode: 'devops',
       title: 'DevOps',
       description: '',
       category: 'technical',
       usageCount: 18,
       active: true,
-    },
-    {
+    }),
+    aTopic({
       topicCode: 'security',
       title: 'Security',
       description: '',
       category: 'technical',
       usageCount: 15,
       active: true,
-    },
-    {
+    }),
+    aTopic({
       topicCode: 'microservices',
       title: 'Microservices',
       description: '',
       category: 'technical',
       usageCount: 12,
       active: true,
-    },
-    {
+    }),
+    aTopic({
       topicCode: 'ai-ml',
       title: 'AI/ML',
       description: '',
       category: 'technical',
       usageCount: 8,
       active: true,
-    },
+    }),
   ];
 
   const defaultFilters: ArchiveFilters = {
@@ -501,14 +502,14 @@ describe('FilterSidebar Component', () => {
       const longTopicName = 'Cloud Architecture and Microservices Design Patterns';
       const topicsWithLongName = [
         ...mockTopics,
-        {
+        aTopic({
           topicCode: 'long',
           title: longTopicName,
           description: '',
           category: 'technical',
           usageCount: 5,
           active: true,
-        },
+        }),
       ];
 
       render(<FilterSidebar {...defaultProps} topics={topicsWithLongName} />);
@@ -518,14 +519,16 @@ describe('FilterSidebar Component', () => {
     });
 
     test('should_handleManyTopics_when_moreThan20Topics', () => {
-      const manyTopics = Array.from({ length: 25 }, (_, i) => ({
-        topicCode: `topic-${i}`,
-        title: `Topic ${i}`,
-        description: '',
-        category: 'technical',
-        usageCount: Math.floor(Math.random() * 50),
-        active: true,
-      }));
+      const manyTopics = Array.from({ length: 25 }, (_, i) =>
+        aTopic({
+          topicCode: `topic-${i}`,
+          title: `Topic ${i}`,
+          description: '',
+          category: 'technical',
+          usageCount: Math.floor(Math.random() * 50),
+          active: true,
+        })
+      );
 
       render(<FilterSidebar {...defaultProps} topics={manyTopics} />);
 

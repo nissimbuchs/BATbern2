@@ -10,7 +10,7 @@ This document outlines the Company Management Service API, which handles central
 
 The Company Management API provides endpoints for:
 - Company CRUD operations with full lifecycle management
-- Advanced query patterns (filter, sort, pagination, field selection, resource expansion)
+- Advanced query patterns (filter, sort, pagination, resource expansion)
 - Company search with autocomplete and Caffeine caching
 - Company verification workflows
 - Domain events raised in process (no message bus)
@@ -29,8 +29,7 @@ tags: [Companies]
 summary: List and search companies with advanced query support
 operationId: listCompanies
 description: |
-  Retrieve a paginated list of companies with optional filtering, sorting,
-  field selection, and resource expansion.
+  Retrieve a paginated list of companies with optional filtering, sorting and resource expansion.
 
   **Filter Syntax Examples**:
   - Single filter: {"industry":"Technology"}
@@ -43,10 +42,6 @@ description: |
   - Ascending: name or +name
   - Descending: -name
   - Multiple fields: industry,-createdAt
-
-  **Field Selection**:
-  - Specific fields: ?fields=id,name,industry
-  - All fields: omit fields parameter
 
   **Resource Expansion**:
   - Statistics: ?include=statistics (totalEvents, totalSpeakers, totalPartners)
@@ -89,13 +84,6 @@ parameters:
       minimum: 1
       maximum: 100
       default: 20
-  - name: fields
-    in: query
-    description: Comma-separated field names for sparse fieldsets
-    required: false
-    schema:
-      type: string
-      example: 'id,name,industry,isVerified'
   - name: include
     in: query
     description: Comma-separated list of resources to include
@@ -583,10 +571,8 @@ other service consumes them and there is no message bus (Story 17.2 part B, 2026
 - Maximum limit: 100 items per page
 - Response includes: `totalItems`, `totalPages`, `hasNext`, `hasPrev`
 
-**Field Selection** (Sparse Fieldsets):
-- Request specific fields: `?fields=id,name,industry`
-- Reduces payload size for large result sets
-- Always includes `id` field regardless of selection
+**No field selection**: the list has no `fields` parameter (removed 2026-11-09, no caller used it;
+ADR-013 §3 offers `fields` only when a caller needs it). An unknown query parameter is ignored.
 
 **Resource Expansion**:
 - `?include=statistics`: Adds totalEvents, totalSpeakers, totalPartners

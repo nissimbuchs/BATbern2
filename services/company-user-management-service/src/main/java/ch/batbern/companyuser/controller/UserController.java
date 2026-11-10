@@ -156,8 +156,8 @@ public class UserController implements UserManagementApi, UserAccountApi, Profil
     /**
      * AC3: List users (ADR-013 §3 single list-query vocabulary). {@code role}/{@code company}
      * are expressed inside the JSON {@code filter} (e.g. {@code {"role":"ORGANIZER"}});
-     * ordering via {@code sort} ({@code -createdAt}). {@code fields}/{@code include} are accepted
-     * for contract conformance; sparse-fieldset on the list is not applied server-side.
+     * ordering via {@code sort} ({@code -createdAt}). {@code include} is accepted for contract
+     * conformance and not applied on the list.
      *
      * <p>Organizer directory: ORGANIZER or ADMIN only. Services list users through
      * {@code GET /internal/users} ({@link InternalUserController}).
@@ -169,7 +169,7 @@ public class UserController implements UserManagementApi, UserAccountApi, Profil
             percentiles = {0.5, 0.95, 0.99})
     public ResponseEntity<PaginatedUserResponse> listUsers(
             String filter, String sort, Integer page, Integer limit,
-            String fields, String include, String search) {
+            String include, String search) {
         int pageNumber = page != null ? page : 1;
         int pageSize = limit != null ? limit : 20;
 

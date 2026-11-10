@@ -4,8 +4,8 @@ meta {
   seq: 8
 }
 
-put {
-  url: {{baseUrl}}/tasks/{{testTaskId}}/reassign
+patch {
+  url: {{baseUrl}}/tasks/{{testTaskId}}
   body: json
   auth: bearer
 }
@@ -16,7 +16,7 @@ auth:bearer {
 
 body:json {
   {
-    "newOrganizerUsername": "{{testOrganizerUsername}}"
+    "assignedOrganizerUsername": "{{testOrganizerUsername}}"
   }
 }
 
@@ -42,4 +42,9 @@ tests {
     expect(response.status).to.be.a('string');
     expect(response.triggerState).to.be.a('string');
   });
+}
+
+docs {
+  Story 4.9: reassigning goes through PATCH /tasks/{taskId} with assignedOrganizerUsername; the
+  former PUT /tasks/{taskId}/reassign verb endpoint is gone.
 }

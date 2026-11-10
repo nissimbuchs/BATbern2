@@ -46,6 +46,7 @@ const summary = (username: string, hasLogin: boolean) => ({
   firstName: 'Anna',
   lastName: 'Muster',
   email: `${username}@example.com`,
+  companyId: null,
   hasLogin,
   roles: ['ATTENDEE'],
   additionalEmails: [],

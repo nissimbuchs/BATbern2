@@ -148,11 +148,11 @@ class UserApiClientImplInternalContractTest {
     }
 
     @Test
-    @DisplayName("#1146: preferences come from ?include=preferences, without JWT")
+    @DisplayName("#1146, Story 4.9: notification settings come from ?include=settings, without JWT")
     void should_readPreferences_fromInclude() {
-        cums.expect(GET, "/internal/users/{username}").withQueryParam("include", "preferences")
+        cums.expect(GET, "/internal/users/{username}").withQueryParam("include", "settings")
                 .andExpect(UserApiClientImplInternalContractTest::noJwt)
-                .respondWithExample("withPreferences");
+                .respondWithExample("withSettings");
 
         UserPreferences prefs = client.getPreferences("anna.meier");
 
@@ -164,7 +164,7 @@ class UserApiClientImplInternalContractTest {
 
     @Test
     void should_fallBackToDefaultPreferences_when_userHasNone() {
-        cums.expect(GET, "/internal/users/{username}").withQueryParam("include", "preferences")
+        cums.expect(GET, "/internal/users/{username}").withQueryParam("include", "settings")
                 .respondWithExample("user");
 
         UserPreferences prefs = client.getPreferences("anna.meier");
@@ -176,9 +176,9 @@ class UserApiClientImplInternalContractTest {
 
     @Test
     void should_readPreferredLanguageAndQnaFrequency() {
-        cums.expect(GET, "/internal/users/{username}").withQueryParam("include", "preferences")
+        cums.expect(GET, "/internal/users/{username}").withQueryParam("include", "settings")
                 .times(ExpectedCount.twice())
-                .respondWithExample("withPreferences");
+                .respondWithExample("withSettings");
 
         assertThat(client.getPreferredLanguage("anna.meier")).isEqualTo("en");
         assertThat(client.getQnaNotificationFrequency("anna.meier")).isEqualTo("daily");
@@ -198,7 +198,9 @@ class UserApiClientImplInternalContractTest {
     private static final String PAGE_ONE_OF_TWO = """
             {"data": [{"id": "anna.organizer", "email": "anna@example.com", "firstName": "Anna",
                        "lastName": "Organizer", "roles": ["ORGANIZER"], "createdAt": "2025-01-15T10:00:00Z",
-                       "updatedAt": "2025-01-15T10:00:00Z"}],
+                       "updatedAt": "2025-01-15T10:00:00Z", "hasCognitoAccount": true, "bio": null,
+                       "companyId": null, "profilePictureUrl": null, "active": true, "lastLoginAt": null,
+                       "termsAcceptedAt": null, "company": null, "settings": null, "additionalEmails": []}],
              "pagination": {"page": 1, "limit": 100, "totalItems": 101, "totalPages": 2,
                             "hasNext": true, "hasPrev": false}}""";
 

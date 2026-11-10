@@ -164,9 +164,9 @@ describe('usePublishing', () => {
         phase3Enabled: true,
         phase3DaysBeforeEvent: 14,
       };
-      api.on('configureAutoPublish', ({ body }) => ({
+      api.on('configureAutoPublish', () => ({
         scheduled: true,
-        ...body,
+        ...schedule,
         phase2TriggerDate: '2025-04-15T08:00:00Z',
         phase3TriggerDate: '2025-05-01T08:00:00Z',
       }));

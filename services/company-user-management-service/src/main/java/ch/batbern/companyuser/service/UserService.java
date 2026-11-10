@@ -57,7 +57,6 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalTime;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
@@ -116,7 +115,7 @@ public class UserService {
 
     /**
      * Get current authenticated user with resource expansion
-     * AC14: Resource expansion (?include=company,preferences,settings)
+     * AC14: Resource expansion (?include=company,settings)
      */
     @Transactional(readOnly = true)
     public UserResponse getCurrentUser(String include) {
@@ -390,7 +389,7 @@ public class UserService {
 
     /**
      * Get user by username with resource expansion
-     * AC14: Resource expansion (?include=company,preferences,settings)
+     * AC14: Resource expansion (?include=company,settings)
      */
     @Transactional(readOnly = true)
     public UserResponse getUserByUsername(String username, String include) {
@@ -833,20 +832,18 @@ public class UserService {
             case FORCE_CHANGE_PASSWORD, RESET_REQUIRED -> {
                 String fresh = passwordGenerator.generate();
                 cognitoService.adminSetTemporaryPassword(user.getEmail(), fresh);
-                yield new InvitationCredentialsResponse(
-                        InvitationCredentialsResponse.ActionEnum.FRESH_TEMP_PASSWORD)
-                        .temporaryPassword(fresh);
+                yield new InvitationCredentialsResponse(fresh,
+                        InvitationCredentialsResponse.ActionEnum.FRESH_TEMP_PASSWORD);
             }
-            case CONFIRMED -> new InvitationCredentialsResponse(
+            case CONFIRMED -> new InvitationCredentialsResponse(null,
                     InvitationCredentialsResponse.ActionEnum.USE_EXISTING_PASSWORD);
             case UNCONFIRMED -> {
                 log.warn("UNCONFIRMED Cognito user for {} — defensively treating as FORCE_CHANGE_PASSWORD",
                         LoggingUtils.maskEmail(user.getEmail()));
                 String fresh = passwordGenerator.generate();
                 cognitoService.adminSetTemporaryPassword(user.getEmail(), fresh);
-                yield new InvitationCredentialsResponse(
-                        InvitationCredentialsResponse.ActionEnum.FRESH_TEMP_PASSWORD)
-                        .temporaryPassword(fresh);
+                yield new InvitationCredentialsResponse(fresh,
+                        InvitationCredentialsResponse.ActionEnum.FRESH_TEMP_PASSWORD);
             }
             case ARCHIVED, COMPROMISED, UNKNOWN_TO_SDK_VERSION -> {
                 String msg = String.format(
@@ -1073,7 +1070,7 @@ public class UserService {
 
     /**
      * Expand resources based on include parameter
-     * AC14: Resource expansion (?include=company,preferences,settings)
+     * AC14: Resource expansion (?include=company,settings)
      * @param response Base user response
      * @param include Comma-separated list of resources to expand
      * @return User response with expanded resources
@@ -1088,21 +1085,12 @@ public class UserService {
                         response.setCompany(expandCompany(response.getCompanyId()));
                     }
                     break;
-                case "preferences":
-                    // Fetch user with preferences
-                    User user = userRepository.findByUsername(response.getId())
-                            .orElseThrow(() -> new UserNotFoundException(response.getId()));
-                    if (user.getPreferences() != null) {
-                        response.setPreferences(mapPreferencesToDTO(user.getPreferences()));
-                    }
-                    break;
                 case "settings":
-                    // Fetch user with settings
+                    // Story 4.9: one settings object (display, notifications, privacy); the former
+                    // "preferences" include is merged into it
                     User userWithSettings = userRepository.findByUsername(response.getId())
                             .orElseThrow(() -> new UserNotFoundException(response.getId()));
-                    if (userWithSettings.getSettings() != null) {
-                        response.setSettings(mapSettingsToDTO(userWithSettings.getSettings()));
-                    }
+                    response.setSettings(UserSettingsService.toDto(userWithSettings));
                     break;
                 case "roles":
                     // Roles are already included in base response
@@ -1141,180 +1129,6 @@ public class UserService {
                             .id(companyId)
                             .name(companyId);
                 });
-    }
-
-    /**
-     * Get preferences for current authenticated user
-     * Story 2.6 AC21, AC24, AC28: Retrieve user preferences
-     *
-     * @return User preferences DTO
-     */
-    public ch.batbern.companyuser.dto.generated.UserPreferences getCurrentUserPreferences() {
-        String username = securityContext.getCurrentUsername();
-        log.debug("Getting preferences for user: {}", username);
-
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new UserNotFoundException(username));
-
-        if (user.getPreferences() == null) {
-            // Initialize with defaults if not set
-            user.setPreferences(ch.batbern.companyuser.domain.UserPreferences.builder().build());
-            userRepository.save(user);
-        }
-
-        return mapPreferencesToDTO(user.getPreferences());
-    }
-
-    /**
-     * Update preferences for current authenticated user
-     * Story 2.6 AC21: Persist theme changes
-     * Story 2.6 AC24: Persist timezone changes
-     * Story 2.6 AC28: Persist notification preferences
-     *
-     * @param preferencesDTO Updated preferences
-     * @return Updated preferences DTO
-     */
-    @Transactional
-    public ch.batbern.companyuser.dto.generated.UserPreferences updateCurrentUserPreferences(
-            ch.batbern.companyuser.dto.generated.UserPreferences preferencesDTO) {
-        String username = securityContext.getCurrentUsername();
-        log.info("Updating preferences for user: {}", username);
-
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new UserNotFoundException(username));
-
-        // Update domain preferences from DTO
-        if (user.getPreferences() == null) {
-            user.setPreferences(new ch.batbern.companyuser.domain.UserPreferences());
-        }
-
-        ch.batbern.companyuser.domain.UserPreferences prefs = user.getPreferences();
-        prefs.setTheme(preferencesDTO.getTheme().getValue());
-        prefs.setLanguage(preferencesDTO.getLanguage().getValue());
-        prefs.setEmailNotifications(preferencesDTO.getEmailNotifications());
-        prefs.setInAppNotifications(preferencesDTO.getInAppNotifications());
-        prefs.setPushNotifications(preferencesDTO.getPushNotifications());
-        prefs.setNotificationFrequency(preferencesDTO.getNotificationFrequency().getValue());
-        // Story 15.7 — PUT is full-replace (like every sibling field above); the generated DTO
-        // defaults this to "live" when omitted, so it is never null here.
-        prefs.setQnaNotificationFrequency(preferencesDTO.getQnaNotificationFrequency().getValue());
-
-        // Convert String to LocalTime for quiet hours
-        if (preferencesDTO.getQuietHoursStart() != null) {
-            prefs.setQuietHoursStart(LocalTime.parse(preferencesDTO.getQuietHoursStart()));
-        }
-        if (preferencesDTO.getQuietHoursEnd() != null) {
-            prefs.setQuietHoursEnd(LocalTime.parse(preferencesDTO.getQuietHoursEnd()));
-        }
-
-        userRepository.save(user);
-
-        log.info("Successfully updated preferences for user: {}", username);
-
-        return mapPreferencesToDTO(user.getPreferences());
-    }
-
-    /**
-     * Get settings for current authenticated user
-     * Story 2.6 AC34: Retrieve user settings
-     *
-     * @return User settings DTO
-     */
-    public ch.batbern.companyuser.dto.generated.UserSettings getCurrentUserSettings() {
-        String username = securityContext.getCurrentUsername();
-        log.debug("Getting settings for user: {}", username);
-
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new UserNotFoundException(username));
-
-        if (user.getSettings() == null) {
-            // Initialize with defaults if not set
-            user.setSettings(ch.batbern.companyuser.domain.UserSettings.builder().build());
-            userRepository.save(user);
-        }
-
-        return mapSettingsToDTO(user.getSettings());
-    }
-
-    /**
-     * Update settings for current authenticated user
-     * Story 2.6 AC34: Persist privacy settings
-     *
-     * @param settingsDTO Updated settings
-     * @return Updated settings DTO
-     */
-    @Transactional
-    public ch.batbern.companyuser.dto.generated.UserSettings updateCurrentUserSettings(
-            ch.batbern.companyuser.dto.generated.UserSettings settingsDTO) {
-        String username = securityContext.getCurrentUsername();
-        log.info("Updating settings for user: {}", username);
-
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new UserNotFoundException(username));
-
-        // Update domain settings from DTO
-        if (user.getSettings() == null) {
-            user.setSettings(new ch.batbern.companyuser.domain.UserSettings());
-        }
-
-        ch.batbern.companyuser.domain.UserSettings settings = user.getSettings();
-        settings.setProfileVisibility(settingsDTO.getProfileVisibility().getValue());
-        settings.setShowEmail(settingsDTO.getShowEmail());
-        settings.setShowCompany(settingsDTO.getShowCompany());
-        settings.setShowActivityHistory(settingsDTO.getShowActivityHistory());
-        settings.setAllowMessaging(settingsDTO.getAllowMessaging());
-        settings.setAllowCalendarSync(settingsDTO.getAllowCalendarSync());
-        settings.setTimezone(settingsDTO.getTimezone());
-        settings.setTwoFactorEnabled(settingsDTO.getTwoFactorEnabled());
-
-        userRepository.save(user);
-
-        log.info("Successfully updated settings for user: {}", username);
-
-        return mapSettingsToDTO(user.getSettings());
-    }
-
-    /**
-     * Map domain UserPreferences to generated DTO
-     */
-    private ch.batbern.companyuser.dto.generated.UserPreferences mapPreferencesToDTO(
-            ch.batbern.companyuser.domain.UserPreferences domain) {
-        return new ch.batbern.companyuser.dto.generated.UserPreferences()
-                .theme(ch.batbern.companyuser.dto.generated.UserPreferences.ThemeEnum.valueOf(
-                    domain.getTheme().toUpperCase()))
-                .language(ch.batbern.companyuser.dto.generated.UserPreferences.LanguageEnum.valueOf(
-                    domain.getLanguage().toUpperCase()))
-                .emailNotifications(domain.isEmailNotifications())
-                .inAppNotifications(domain.isInAppNotifications())
-                .pushNotifications(domain.isPushNotifications())
-                .notificationFrequency(ch.batbern.companyuser.dto.generated
-                    .UserPreferences.NotificationFrequencyEnum.valueOf(
-                        domain.getNotificationFrequency().toUpperCase()))
-                .qnaNotificationFrequency(ch.batbern.companyuser.dto.generated
-                    .UserPreferences.QnaNotificationFrequencyEnum.valueOf(
-                        (domain.getQnaNotificationFrequency() != null
-                            ? domain.getQnaNotificationFrequency() : "live").toUpperCase()))
-                .quietHoursStart(domain.getQuietHoursStart() != null
-                    ? domain.getQuietHoursStart().toString() : null)
-                .quietHoursEnd(domain.getQuietHoursEnd() != null
-                    ? domain.getQuietHoursEnd().toString() : null);
-    }
-
-    /**
-     * Map domain UserSettings to generated DTO
-     */
-    private ch.batbern.companyuser.dto.generated.UserSettings mapSettingsToDTO(
-            ch.batbern.companyuser.domain.UserSettings domain) {
-        return new ch.batbern.companyuser.dto.generated.UserSettings()
-                .profileVisibility(ch.batbern.companyuser.dto.generated.UserSettings.ProfileVisibilityEnum.valueOf(
-                    domain.getProfileVisibility().toUpperCase()))
-                .showEmail(domain.isShowEmail())
-                .showCompany(domain.isShowCompany())
-                .showActivityHistory(domain.isShowActivityHistory())
-                .allowMessaging(domain.isAllowMessaging())
-                .allowCalendarSync(domain.isAllowCalendarSync())
-                .timezone(domain.getTimezone())
-                .twoFactorEnabled(domain.isTwoFactorEnabled());
     }
 
     /**

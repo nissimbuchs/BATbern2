@@ -10,6 +10,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { MailCenterPage } from '../MailCenterPage';
 import type { MailConversationSummary } from '@/services/mailConversationService';
 import type { MailMessageSummary } from '@/services/mailMessageService';
+import { aConversation, aMailSummary } from '@/test/fixtures';
 
 const { conversations, messages, breakpoints } = vi.hoisted(() => ({
   conversations: {
@@ -75,6 +76,7 @@ const pagination = (n: number) => ({
 
 function conv(overrides: Partial<MailConversationSummary>): MailConversationSummary {
   return {
+    ...aConversation(),
     conversationKey: 'conv-1',
     eventCode: 'BATbern60',
     audience: 'SPEAKERS',
@@ -92,6 +94,7 @@ function conv(overrides: Partial<MailConversationSummary>): MailConversationSumm
 
 function mail(overrides: Partial<MailMessageSummary>): MailMessageSummary {
   return {
+    ...aMailSummary(),
     mailKey: 'general-5',
     sentAt: '2026-11-02T08:00:00Z',
     audience: 'PUBLIC',

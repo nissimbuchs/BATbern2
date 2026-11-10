@@ -10,6 +10,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { api } from '@/test/msw/api';
 import { useUserList } from './useUserList';
 import { useCompanies } from '@/hooks/useCompanies/useCompanies';
+import { aUser } from '@/test/fixtures';
 
 const wrapper = ({ children }: { children: React.ReactNode }) =>
   React.createElement(
@@ -33,7 +34,7 @@ describe('useUserList with allPages', () => {
       const page = Number(query.get('page'));
       return {
         data: [
-          {
+          aUser({
             id: `user.p${page}`,
             email: `user.p${page}@example.com`,
             firstName: 'Anna',
@@ -41,7 +42,7 @@ describe('useUserList with allPages', () => {
             roles: ['SPEAKER' as const],
             createdAt: '2026-05-14T16:00:00Z',
             updatedAt: '2026-05-14T16:00:00Z',
-          },
+          }),
         ],
         pagination: pagination(page, 3),
       };
@@ -79,6 +80,7 @@ describe('useCompanies with allPages', () => {
             isVerified: true,
             createdAt: '2026-05-14T16:00:00Z',
             updatedAt: '2026-05-14T16:00:00Z',
+            createdBy: 'lead.organizer',
           },
         ],
         pagination: pagination(page, 2),

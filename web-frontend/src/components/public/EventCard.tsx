@@ -209,12 +209,14 @@ export function EventCard({
                     key={speaker.username}
                     speaker={{
                       username: speaker.username,
-                      firstName: speaker.firstName ?? '',
-                      lastName: speaker.lastName ?? '',
-                      company: speaker.company ?? undefined,
-                      companyDisplayName: speaker.companyDisplayName ?? undefined,
-                      companyLogoUrl: speaker.companyLogoUrl ?? undefined,
-                      profilePictureUrl: speaker.profilePictureUrl ?? undefined,
+                      firstName: speaker.firstName,
+                      lastName: speaker.lastName,
+                      company: speaker.company,
+                      companyDisplayName: speaker.companyDisplayName,
+                      companyLogoUrl: speaker.companyLogoUrl,
+                      profilePictureUrl: speaker.profilePictureUrl,
+                      bio: null,
+                      presentationTitle: null,
                       speakerRole: 'PRIMARY_SPEAKER',
                       isConfirmed: true,
                     }}

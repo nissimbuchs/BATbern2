@@ -149,7 +149,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/speakers/{speakerId}/ai/analyze-abstract': {
+  '/events/{eventCode}/speakers/{speakerId}/abstract-analysis': {
     parameters: {
       query?: never;
       header?: never;
@@ -158,7 +158,10 @@ export interface paths {
     };
     get?: never;
     put?: never;
-    /** Analyze speaker abstract quality (GPT-4o). speakerId is SpeakerPool UUID; backend looks up speaker name, session title and abstract. */
+    /**
+     * Analyze the abstract quality of a speaker of this event
+     * @description speakerId is the speaker pool entry of this event (UUID, loaded scoped to the event); the backend looks up speaker name, session title and abstract and asks the configured chat model for a review. An entry of another event answers 404. ORGANIZER role required.
+     */
     post: operations['analyzeAbstract'];
     delete?: never;
     options?: never;
@@ -178,8 +181,8 @@ export interface components {
       jobId: string;
       /** @enum {string} */
       status: 'PENDING' | 'DONE' | 'FAILED';
-      imageUrl?: string | null;
-      s3Key?: string | null;
+      imageUrl: string | null;
+      s3Key: string | null;
     };
     AiThemeImageResponse: {
       imageUrl?: string;
@@ -579,6 +582,8 @@ export interface operations {
       query?: never;
       header?: never;
       path: {
+        eventCode: string;
+        /** @description Speaker pool entry ID of this event */
         speakerId: string;
       };
       cookie?: never;
@@ -596,6 +601,15 @@ export interface operations {
       };
       401: components['responses']['Unauthorized'];
       403: components['responses']['Forbidden'];
+      /** @description Event not found, or the speaker pool entry belongs to no speaker of this event */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
       /** @description AI service disabled or unavailable */
       503: {
         headers: {

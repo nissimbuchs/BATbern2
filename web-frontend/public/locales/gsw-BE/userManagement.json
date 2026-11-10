@@ -64,7 +64,8 @@
       "qnaFrequencyLive": "Live – während dr Session zämegfasst",
       "qnaFrequencyDaily": "Höchschtens einisch pro Tag",
       "qnaFrequencyOff": "Us – kei Mäldige"
-    }
+    },
+    "saveFailed": "Spichere het nid klappet. Bitte d Igabe prüefe u no einisch probiere."
   },
   "actions": {
     "openMenu": "Aktionsmenü ufmache"

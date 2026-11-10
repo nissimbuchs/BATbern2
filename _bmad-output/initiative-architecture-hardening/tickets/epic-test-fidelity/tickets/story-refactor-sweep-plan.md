@@ -3,7 +3,7 @@ title: 'Refactor sweep (epic test fidelity)'
 type: 'refactor'
 ticket: 'sweep'
 created: '2026-11-09'
-status: 'built'
+status: done
 baseline_revision: 'c1a0241740b849442eec50fd567245a568f18cc2'
 route: 'full'
 route_source: 'auto'

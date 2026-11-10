@@ -39,6 +39,7 @@ const profile = (username: string, hasLogin: boolean, placeholderAddress = false
   companyId: 'acme',
   hasLogin,
   placeholderAddress,
+  createdAt: '2025-03-01T09:00:00Z',
 });
 
 const pairs: DuplicateCandidate[] = [

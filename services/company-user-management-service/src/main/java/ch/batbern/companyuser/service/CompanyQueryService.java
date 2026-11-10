@@ -7,7 +7,6 @@ import ch.batbern.companyuser.dto.generated.PaginatedCompanyResponse;
 import ch.batbern.companyuser.repository.CompanyRepository;
 import ch.batbern.companyuser.specification.CompanySpecification;
 import ch.batbern.shared.api.DeterministicPaging;
-import ch.batbern.shared.api.FieldSelector;
 import ch.batbern.shared.api.FilterCriteria;
 import ch.batbern.shared.api.FilterParser;
 import ch.batbern.shared.api.IncludeParser;
@@ -46,7 +45,7 @@ public class CompanyQueryService {
     private final CompanyRepository companyRepository;
 
     /**
-     * Query companies with advanced filters, sorting, pagination, field selection, and resource expansion
+     * Query companies with advanced filters, sorting, pagination and resource expansion
      */
     public PaginatedCompanyResponse queryCompanies(
             String filterJson,
@@ -54,17 +53,15 @@ public class CompanyQueryService {
             String sortStr,
             Integer page,
             Integer limit,
-            String fieldsStr,
             String includeStr) {
 
-        log.debug("Querying companies - filter: {}, search: {}, sort: {}, page: {}, limit: {}, fields: {},"
-                + " include: {}", filterJson, search, sortStr, page, limit, fieldsStr, includeStr);
+        log.debug("Querying companies - filter: {}, search: {}, sort: {}, page: {}, limit: {}, include: {}",
+                filterJson, search, sortStr, page, limit, includeStr);
 
         // Parse query parameters
         FilterCriteria filterCriteria = FilterParser.parse(filterJson);
         List<SortCriteria> sortCriteria = SortParser.parse(sortStr);
         PaginationParams paginationParams = PaginationUtils.parseParams(page, limit);
-        Set<String> selectedFields = FieldSelector.parse(fieldsStr);
         Set<String> includes = IncludeParser.parse(includeStr);
 
         // Build JPA Specification from FilterCriteria plus the free-text search,
@@ -80,9 +77,9 @@ public class CompanyQueryService {
         // Query database
         Page<Company> companyPage = companyRepository.findAll(spec, pageable);
 
-        // Map to response DTOs with field selection and resource expansion
+        // Map to response DTOs with resource expansion
         List<CompanyResponse> companyResponses = companyPage.getContent().stream()
-                .map(company -> mapToResponse(company, selectedFields, includes))
+                .map(company -> mapToResponse(company, includes))
                 .collect(Collectors.toList());
 
         // Generate pagination metadata
@@ -140,10 +137,10 @@ public class CompanyQueryService {
     }
 
     /**
-     * Map Company entity to response DTO with field selection and resource expansion
+     * Map Company entity to response DTO with resource expansion
      * Story 1.16.2: Use company name as unique identifier (no separate id field)
      */
-    private CompanyResponse mapToResponse(Company company, Set<String> selectedFields, Set<String> includes) {
+    private CompanyResponse mapToResponse(Company company, Set<String> includes) {
         // Build base response (generated DTO: URI website, OffsetDateTime timestamps, isVerified)
         CompanyResponse.Builder builder = CompanyResponse.builder()
                 .name(company.getName())  // Story 1.16.2: name is the unique identifier
@@ -158,11 +155,6 @@ public class CompanyQueryService {
                         ? company.getUpdatedAt().atOffset(ZoneOffset.UTC) : null)
                 .createdBy(company.getCreatedBy());
 
-        // Apply field selection if specified
-        if (selectedFields != null) {
-            builder = applyFieldSelection(builder, selectedFields);
-        }
-
         CompanyResponse response = builder.build();
 
         // Apply resource expansion
@@ -171,52 +163,6 @@ public class CompanyQueryService {
         }
 
         return response;
-    }
-
-    /**
-     * Apply field selection to response builder
-     * Only include fields specified in selectedFields set
-     */
-    private CompanyResponse.Builder applyFieldSelection(
-            CompanyResponse.Builder builder, Set<String> selectedFields) {
-
-        // Convert DTO to map for field selection
-        CompanyResponse tempResponse = builder.build();
-
-        // Manually build new response with only selected fields
-        // Story 1.16.2: id field removed, name is the unique identifier
-        CompanyResponse.Builder filteredBuilder = CompanyResponse.builder();
-
-        // Story 1.16.2: Treat "id" field selector as "name" for backward compatibility
-        if (selectedFields.contains("id") || selectedFields.contains("name")) {
-            filteredBuilder.name(tempResponse.getName());
-        }
-        if (selectedFields.contains("displayName")) {
-            filteredBuilder.displayName(tempResponse.getDisplayName());
-        }
-        if (selectedFields.contains("website")) {
-            filteredBuilder.website(tempResponse.getWebsite());
-        }
-        if (selectedFields.contains("industry")) {
-            filteredBuilder.industry(tempResponse.getIndustry());
-        }
-        if (selectedFields.contains("description")) {
-            filteredBuilder.description(tempResponse.getDescription());
-        }
-        if (selectedFields.contains("isVerified")) {
-            filteredBuilder.isVerified(tempResponse.getIsVerified());
-        }
-        if (selectedFields.contains("createdAt")) {
-            filteredBuilder.createdAt(tempResponse.getCreatedAt());
-        }
-        if (selectedFields.contains("updatedAt")) {
-            filteredBuilder.updatedAt(tempResponse.getUpdatedAt());
-        }
-        if (selectedFields.contains("createdBy")) {
-            filteredBuilder.createdBy(tempResponse.getCreatedBy());
-        }
-
-        return filteredBuilder;
     }
 
     /**

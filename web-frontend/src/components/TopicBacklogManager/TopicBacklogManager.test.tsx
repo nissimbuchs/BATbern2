@@ -23,7 +23,7 @@ import userEvent from '@testing-library/user-event';
 import { HttpResponse } from 'msw';
 import { api } from '@/test/msw/api';
 import type { ResponseBody } from '@/test/msw/api';
-import { futureEvent } from '@/test/fixtures';
+import { aTopic, futureEvent } from '@/test/fixtures';
 import { renderWithProviders } from '@/test/test-utils';
 import { TopicBacklogManager } from './TopicBacklogManager';
 import type { TopicBacklogManagerProps } from './TopicBacklogManager';
@@ -32,6 +32,7 @@ type TopicList = ResponseBody<'topics-api/listTopics', 200>;
 type Topic = TopicList['data'][number];
 
 const bestand: Topic = {
+  ...aTopic(),
   topicCode: 'bauen-im-bestand-zuerich',
   title: 'Bauen im Bestand – Zürich',
   description: 'Umbau statt Neubau: Erfahrungen aus Zürich und Genève.',
@@ -47,6 +48,7 @@ const bestand: Topic = {
 };
 
 const fuehrung: Topic = {
+  ...aTopic(),
   topicCode: 'fuehrung-in-agilen-teams',
   title: 'Führung in agilen Teams',
   description: 'Management-Praktiken für selbstorganisierte Teams.',

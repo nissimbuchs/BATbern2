@@ -149,6 +149,9 @@ paths:
             application/json:
               schema:
                 type: object
+                required:
+                  - data
+                  - pagination
                 properties:
                   data:
                     type: array
@@ -173,6 +176,12 @@ paths:
                       organizerUsername: john.doe
                       currentAttendeeCount: 187
                       description: Cloud Native Architecture
+                      createdAt: "2026-05-14T16:00:00Z"
+                      eventType: "FULL_DAY"
+                      qnaEnabled: true
+                      qnaOpenTrigger: "EVENT_COMPLETED"
+                      qnaWindowDays: 14
+                      updatedAt: "2026-05-14T16:00:00Z"
                     pagination:
                       page: 0
                       limit: 20
@@ -360,6 +369,7 @@ paths:
                       code: digital-sovereignty
                       name: Digital Sovereignty
                       category: technical
+                      description: null
                     venue:
                       id: BATbern60
                       name: Zentrum Paul Klee
@@ -384,9 +394,15 @@ paths:
                             profilePictureUrl: https://cdn.batbern.ch/profile-pictures/2025/anna.beispiel/profile-a0ed134f-8619-44b1-be2b-6480b092196c.jpeg
                             speakerRole: MODERATOR
                             isConfirmed: true
+                            bio: null
+                            companyLogoUrl: null
+                            presentationTitle: null
                         materialsStatus: NONE
                         materials: []
                         materialsCount: 0
+                        capacity: null
+                        description: null
+                        room: null
                       - sessionSlug: batbern60-anna-muster
                         eventCode: BATbern60
                         title: "Weniger Cloud, mehr Klarheit: Digitale Souveränität bei Software, Daten, IT-Infrastruktur und KI"
@@ -407,9 +423,13 @@ paths:
                             profilePictureUrl: https://cdn.batbern.ch/profile-pictures/2026/gina.beispiel/profile-204ff4b2-2a91-491f-8985-944ad39e4733.jpg
                             speakerRole: PRIMARY_SPEAKER
                             isConfirmed: true
+                            bio: null
+                            companyLogoUrl: null
+                            presentationTitle: null
                         materialsStatus: NONE
                         materials: []
                         materialsCount: 0
+                        capacity: null
                     speakers:
                       - username: gina.beispiel
                         firstName: Gina
@@ -501,6 +521,9 @@ paths:
             application/json:
               schema:
                 type: object
+                required:
+                  - data
+                  - pagination
                 properties:
                   data:
                     type: array
@@ -578,6 +601,12 @@ paths:
                 - id: topic-2
                   name: Kubernetes
                   color: cyan
+                createdAt: "2026-05-14T16:00:00Z"
+                eventType: "FULL_DAY"
+                qnaEnabled: true
+                qnaOpenTrigger: "EVENT_COMPLETED"
+                qnaWindowDays: 14
+                updatedAt: "2026-05-14T16:00:00Z"
         '404':
           description: No current published event found
           content:
@@ -694,6 +723,12 @@ paths:
                     organizerUsername: john.doe
                     currentAttendeeCount: 187
                     description: Cloud Native Architecture
+                    createdAt: "2026-05-14T16:00:00Z"
+                    eventType: "FULL_DAY"
+                    qnaEnabled: true
+                    qnaOpenTrigger: "EVENT_COMPLETED"
+                    qnaWindowDays: 14
+                    updatedAt: "2026-05-14T16:00:00Z"
                 expandedEvent:
                   summary: Event with venue
                   value:
@@ -714,6 +749,12 @@ paths:
                       name: Kursaal Bern
                       address: Kornhausstrasse 3, 3013 Bern
                       capacity: 500
+                    createdAt: "2026-05-14T16:00:00Z"
+                    eventType: "FULL_DAY"
+                    qnaEnabled: true
+                    qnaOpenTrigger: "EVENT_COMPLETED"
+                    qnaWindowDays: 14
+                    updatedAt: "2026-05-14T16:00:00Z"
         '404':
           $ref: '#/components/responses/NotFound'
         '500':
@@ -1560,6 +1601,13 @@ paths:
                 defaultCapacity: 300
                 typicalStartTime: 09:00
                 typicalEndTime: '16:00'
+                aperitifDuration: 90
+                aperitifPosition: "end"
+                aperitifSlots: 1
+                breakDuration: 20
+                lunchDuration: 60
+                moderationEndDuration: 5
+                moderationStartDuration: 5
               - type: AFTERNOON
                 minSlots: 6
                 maxSlots: 8
@@ -1570,6 +1618,13 @@ paths:
                 defaultCapacity: 200
                 typicalStartTime: '13:00'
                 typicalEndTime: '19:00'
+                aperitifDuration: 90
+                aperitifPosition: "end"
+                aperitifSlots: 1
+                breakDuration: 20
+                lunchDuration: 60
+                moderationEndDuration: 5
+                moderationStartDuration: 5
               - type: EVENING
                 minSlots: 3
                 maxSlots: 4
@@ -1580,6 +1635,13 @@ paths:
                 defaultCapacity: 200
                 typicalStartTime: '16:00'
                 typicalEndTime: '19:00'
+                aperitifDuration: 90
+                aperitifPosition: "end"
+                aperitifSlots: 1
+                breakDuration: 20
+                lunchDuration: 60
+                moderationEndDuration: 5
+                moderationStartDuration: 5
         '500':
           $ref: '#/components/responses/InternalServerError'
       security:
@@ -1948,92 +2010,6 @@ paths:
         '403':
           $ref: '#/components/responses/Forbidden'
 
-  /events/{eventCode}/venue-coordination/preview:
-    post:
-      tags:
-        - Venue Coordination
-      summary: Preview a venue/catering coordination mail
-      description: 'Event Detail → Venue tab (Story). ORGANIZER role.'
-      operationId: previewVenueCoordination
-      parameters:
-        - name: eventCode
-          in: path
-          required: true
-          schema:
-            type: string
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/VenueCoordinationPreviewRequest'
-      responses:
-        '200':
-          description: Rendered preview
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/VenueCoordinationPreviewResponse'
-              examples:
-                default:
-                  summary: generated from the schema and captured sub-values
-                  value:
-                    subject: Sample title
-                    htmlBody: <p>Sample text for the API example.</p>
-                    toEmail: ines.probe@example.com
-                    ccEmails:
-                      - ines.probe@example.com
-                    replyToEmail: ines.probe@example.com
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-      security:
-        - BearerAuth: []
-
-  /events/{eventCode}/venue-coordination/send:
-    post:
-      tags:
-        - Venue Coordination
-      summary: Send a venue/catering coordination mail
-      description: 'Event Detail → Venue tab (Story). ORGANIZER role.'
-      operationId: sendVenueCoordination
-      parameters:
-        - name: eventCode
-          in: path
-          required: true
-          schema:
-            type: string
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/VenueCoordinationSendRequest'
-      responses:
-        '200':
-          description: Sent
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/VenueCoordinationSendResponse'
-              examples:
-                default:
-                  summary: generated from the schema and captured sub-values
-                  value:
-                    sentTo:
-                      - VENUE
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-      security:
-        - BearerAuth: []
-
   /events/{eventCode}/publish/{phase}:
     post:
       tags:
@@ -2164,6 +2140,7 @@ paths:
                       assignedCount: 0
                       totalCount: 0
                       unassignedSessions: []
+                    currentPhase: null
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -2287,7 +2264,14 @@ paths:
       tags:
         - Admin Settings
       summary: Set an admin setting by key
-      description: 'ORGANIZER role.'
+      description: >-
+        The one store for application settings (app_settings). ORGANIZER role. Structured
+        settings carry JSON in `value` and are validated before they are stored, otherwise 400:
+        `presentation` (moderator presentation page, Story 4.9) must be an object with a
+        non-blank `aboutText` and an integer `partnerCount` >= 0, read anonymously through
+        `GET /public/settings/presentation` (event-app-settings-api); `venue.coordination.config`
+        must be a venue coordination config object (blank clears it) whose contacts are not on a
+        reserved domain (RFC 2606/6761, such as example.com or *.invalid).
       operationId: setAdminSetting
       parameters:
         - name: key
@@ -2295,12 +2279,22 @@ paths:
           required: true
           schema:
             type: string
+          example: presentation
       requestBody:
         required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/SetAdminSettingRequest'
+            examples:
+              presentation:
+                summary: Presentation settings, stored as JSON under the key presentation
+                value:
+                  value: '{"aboutText":"BATbern ist eine unabhängige Plattform für Berner Architekten Treffen.","partnerCount":12}'
+              forwarding:
+                summary: A plain text setting
+                value:
+                  value: 'organizer@example.com'
       responses:
         '200':
           description: The updated setting
@@ -2314,6 +2308,8 @@ paths:
                   value:
                     key: uploads/2026/sample/file.png
                     value: sample
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -2367,6 +2363,9 @@ components:
   schemas:
     AdminSettingResponse:
       type: object
+      required:
+        - key
+        - value
       properties:
         key:
           type: string
@@ -2391,6 +2390,10 @@ components:
           type: boolean
     QnaWindowAdjustResponse:
       type: object
+      required:
+        - eventCode
+        - windowsAdjusted
+        - status
       properties:
         eventCode:
           type: string
@@ -2400,6 +2403,11 @@ components:
           type: string
     PublishPhaseResponse:
       type: object
+      required:
+        - phase
+        - published
+        - publishedAt
+        - cdnInvalidated
       properties:
         phase:
           type: string
@@ -2412,6 +2420,11 @@ components:
           type: boolean
     UnpublishPhaseResponse:
       type: object
+      required:
+        - phase
+        - published
+        - unpublishedAt
+        - cdnInvalidated
       properties:
         phase:
           type: string
@@ -2436,6 +2449,9 @@ components:
             type: string
     UnassignedSession:
       type: object
+      required:
+        - sessionSlug
+        - title
       properties:
         sessionSlug:
           type: string
@@ -2471,6 +2487,7 @@ components:
         - topic
         - speakers
         - sessions
+        - currentPhase
       properties:
         currentPhase:
           type: string
@@ -2522,6 +2539,14 @@ components:
           minimum: 1
     AutoPublishScheduleResponse:
       type: object
+      required:
+        - scheduled
+        - phase2Enabled
+        - phase2DaysBeforeEvent
+        - phase2TriggerDate
+        - phase3Enabled
+        - phase3DaysBeforeEvent
+        - phase3TriggerDate
       properties:
         scheduled:
           type: boolean
@@ -2541,69 +2566,6 @@ components:
         phase3TriggerDate:
           type: string
           format: date-time
-    VenueRole:
-      type: string
-      description: Venue-coordination recipient role
-      enum:
-        - VENUE
-        - CATERING
-    VenueCoordinationPreviewRequest:
-      type: object
-      required:
-        - templateKey
-        - recipients
-      properties:
-        templateKey:
-          type: string
-        recipients:
-          type: array
-          minItems: 1
-          items:
-            $ref: '#/components/schemas/VenueRole'
-        locale:
-          type: string
-          description: Locale (de | en); falls back to de
-        notes:
-          type: string
-    VenueCoordinationPreviewResponse:
-      type: object
-      properties:
-        subject:
-          type: string
-        htmlBody:
-          type: string
-        toEmail:
-          type: string
-        ccEmails:
-          type: array
-          items:
-            type: string
-        replyToEmail:
-          type: string
-    VenueCoordinationSendRequest:
-      type: object
-      required:
-        - templateKey
-        - recipients
-      properties:
-        templateKey:
-          type: string
-        locale:
-          type: string
-        notes:
-          type: string
-        recipients:
-          type: array
-          minItems: 1
-          items:
-            $ref: '#/components/schemas/VenueRole'
-    VenueCoordinationSendResponse:
-      type: object
-      properties:
-        sentTo:
-          type: array
-          items:
-            $ref: '#/components/schemas/VenueRole'
     TeaserImagePresentationPosition:
       type: string
       description: Controls which slide the image appears after in the moderator presentation.
@@ -2690,6 +2652,16 @@ components:
       description: A speaker as the public website shows it (Public Events).
       required:
       - username
+      - firstName
+      - lastName
+      - company
+      - companyDisplayName
+      - companyLogoUrl
+      - profilePictureUrl
+      - bio
+      - speakerRole
+      - talkTitle
+      - sessionSlug
       properties:
         username:
           type: string
@@ -2737,6 +2709,13 @@ components:
       - venueName
       - venueAddress
       - venueCapacity
+      - qnaEnabled
+      - qnaOpenTrigger
+      - qnaWindowDays
+      - createdAt
+      - updatedAt
+      - eventType
+      - workflowState
       properties:
         eventCode:
           type: string
@@ -2948,6 +2927,11 @@ components:
             Story BAT-109: Archive browsing with topic expansion
 
             '
+          required:
+            - code
+            - name
+            - description
+            - category
           properties:
             code:
               type: string
@@ -3054,6 +3038,11 @@ components:
               '
     Venue:
       type: object
+      required:
+        - id
+        - name
+        - address
+        - capacity
       properties:
         id:
           type: string
@@ -3304,6 +3293,13 @@ components:
       - defaultCapacity
       - typicalStartTime
       - typicalEndTime
+      - moderationStartDuration
+      - moderationEndDuration
+      - breakDuration
+      - lunchDuration
+      - aperitifSlots
+      - aperitifDuration
+      - aperitifPosition
       properties:
         type:
           $ref: '#/components/schemas/EventType'
@@ -3538,6 +3534,7 @@ components:
       required:
       - eventCode
       - workflowState
+      - updatedAt
       properties:
         eventCode:
           type: string
@@ -3654,6 +3651,15 @@ components:
         name so the Appreciation panel can show a friendly name rather than the raw username.
 
         '
+      required:
+        - id
+        - note
+        - thankedByUsername
+        - thankedByFirstName
+        - thankedByLastName
+        - thankedByCompanyName
+        - featured
+        - createdAt
       properties:
         id:
           type: string
@@ -3707,6 +3713,13 @@ components:
         exposed; company name/logo are null when the author opted out of showing their company.
 
         '
+      required:
+        - note
+        - eventCode
+        - thankedByFirstName
+        - thankedByLastName
+        - thankedByCompanyName
+        - thankedByCompanyLogoUrl
       properties:
         note:
           type: string
@@ -3742,6 +3755,7 @@ components:
         '
       required:
       - count
+      - notes
       properties:
         count:
           type: integer
@@ -3764,6 +3778,10 @@ components:
       required:
       - eventCode
       - eventTitle
+      - eventDate
+      - eventLocation
+      - workflowState
+      - registrationStatus
       properties:
         eventCode:
           type: string
@@ -3795,6 +3813,7 @@ components:
       required:
       - upcomingEvents
       - pastEvents
+      - attendeeName
       properties:
         attendeeName:
           type: string

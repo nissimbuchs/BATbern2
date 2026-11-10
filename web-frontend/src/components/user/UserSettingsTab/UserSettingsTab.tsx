@@ -508,18 +508,28 @@ const UserSettingsTab: React.FC<UserSettingsTabProps> = ({
   const updatePreferencesMutation = useUpdateUserPreferences();
   const updateSettingsMutation = useUpdateUserSettings();
 
-  const handleSavePreferences = async () => {
+  // The account and notification panels save through the same mutation: remember which
+  // panel's save failed, so the error shows only under that panel.
+  const [failedSection, setFailedSection] = useState<
+    'account' | 'notifications' | 'privacy' | null
+  >(null);
+
+  const handleSavePreferences = async (section: 'account' | 'notifications') => {
+    setFailedSection(null);
     try {
       await updatePreferencesMutation.mutateAsync(preferencesForm);
     } catch (error) {
+      setFailedSection(section);
       console.error('Failed to save preferences:', error);
     }
   };
 
   const handleSaveSettings = async () => {
+    setFailedSection(null);
     try {
       await updateSettingsMutation.mutateAsync(settingsForm);
     } catch (error) {
+      setFailedSection('privacy');
       console.error('Failed to save settings:', error);
     }
   };
@@ -618,12 +628,17 @@ const UserSettingsTab: React.FC<UserSettingsTabProps> = ({
 
           <Button
             variant="contained"
-            onClick={handleSavePreferences}
+            onClick={() => handleSavePreferences('account')}
             sx={{ mt: 2 }}
             data-testid="save-account-settings-button"
           >
             {t('settings.account.save')}
           </Button>
+          {failedSection === 'account' && (
+            <Alert severity="error" sx={{ mt: 2 }} data-testid="save-account-settings-button-error">
+              {t('settings.saveFailed')}
+            </Alert>
+          )}
 
           <Divider sx={{ my: 3 }} />
 
@@ -773,12 +788,21 @@ const UserSettingsTab: React.FC<UserSettingsTabProps> = ({
 
           <Button
             variant="contained"
-            onClick={handleSavePreferences}
+            onClick={() => handleSavePreferences('notifications')}
             sx={{ mt: 2 }}
             data-testid="save-notification-settings-button"
           >
             {t('settings.notifications.save')}
           </Button>
+          {failedSection === 'notifications' && (
+            <Alert
+              severity="error"
+              sx={{ mt: 2 }}
+              data-testid="save-notification-settings-button-error"
+            >
+              {t('settings.saveFailed')}
+            </Alert>
+          )}
 
           <Divider sx={{ my: 3 }} />
 
@@ -901,6 +925,11 @@ const UserSettingsTab: React.FC<UserSettingsTabProps> = ({
           >
             {t('settings.privacy.save')}
           </Button>
+          {failedSection === 'privacy' && (
+            <Alert severity="error" sx={{ mt: 2 }} data-testid="save-privacy-settings-button-error">
+              {t('settings.saveFailed')}
+            </Alert>
+          )}
         </Paper>
       </TabPanel>
     </Box>

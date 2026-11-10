@@ -3,7 +3,7 @@ title: 'Frontend gate against hand-written copies of generated API types (17.3c)
 type: 'feature'
 ticket: '3c'
 created: '2026-11-09'
-status: 'built'
+status: done
 baseline_revision: '67c384470d9e93f4483527071b42e5993f4fd896'
 route: 'full'
 route_source: 'auto'

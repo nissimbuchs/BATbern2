@@ -21,12 +21,45 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/public/settings/presentation': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get the moderator presentation settings (public, no auth required)
+     * @description The About slide text and partner count of the moderator presentation page (Story 10.8a). Stored in app_settings under the key `presentation` as JSON; without a stored value the BATbern defaults are returned. Written by organizers with `PUT /admin/settings/presentation` (events-core-api), whose value is this object as JSON.
+     */
+    get: operations['getPresentationSettings'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
   schemas: {
+    /** @description Moderator presentation page settings (Story 10.8a) */
+    PresentationSettingsResponse: {
+      /**
+       * @description Verein purpose text displayed on the About slide
+       * @example BATbern ist eine unabhängige Plattform für Berner Architekten Treffen.
+       */
+      aboutText: string;
+      /**
+       * @description Number of active partner companies shown on the About slide
+       * @example 9
+       */
+      partnerCount: number;
+    };
     FeatureFlagsResponse: {
-      aiContentEnabled?: boolean;
+      aiContentEnabled: boolean;
     };
   };
   responses: never;
@@ -53,6 +86,26 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['FeatureFlagsResponse'];
+        };
+      };
+    };
+  };
+  getPresentationSettings: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Presentation settings */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PresentationSettingsResponse'];
         };
       };
     };

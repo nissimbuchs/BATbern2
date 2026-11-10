@@ -1,10 +1,4 @@
 {
-  "newsletter": {
-    "templateSelect": {
-      "label": "Vorlage",
-      "createNew": "Neue Vorlage erstellen"
-    }
-  },
   "navigation": {
     "partners": "Partner",
     "topicManagement": "Themenverwaltung",

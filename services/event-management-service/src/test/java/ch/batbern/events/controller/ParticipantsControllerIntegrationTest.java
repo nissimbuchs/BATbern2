@@ -232,7 +232,7 @@ class ParticipantsControllerIntegrationTest extends AbstractIntegrationTest {
                         .email("bob@example.com")
                         .addAdditionalEmailsItem(
                                 // #1244: a copy only to a confirmed address with the copy switched on
-                                new AdditionalEmail("bob.work@example.com", OffsetDateTime.now())
+                                new AdditionalEmail().email("bob.work@example.com").createdAt(OffsetDateTime.now())
                                         .verifiedAt(OffsetDateTime.now())
                                         .receiveEventMail(true)));
 

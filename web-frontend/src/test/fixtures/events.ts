@@ -10,6 +10,7 @@
 import type { components } from '../../types/generated/events-core-api.types';
 
 export type Event = components['schemas']['Event'];
+export type EventDetail = components['schemas']['EventDetail'];
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -39,8 +40,19 @@ export function anEvent(overrides: Partial<Event> = {}): Event {
     workflowState: 'AGENDA_PUBLISHED',
     typicalStartTime: '18:00',
     typicalEndTime: '21:00',
+    qnaEnabled: true,
+    qnaOpenTrigger: 'EVENT_COMPLETED',
+    qnaWindowDays: 14,
+    createdAt: daysFromNow(-120),
+    updatedAt: daysFromNow(-120),
     ...overrides,
   };
+}
+
+/** The single-event view of `anEvent` (sessions, if any, carry the detail shape). */
+export function anEventDetail(overrides: Partial<EventDetail> = {}): EventDetail {
+  const event: Omit<Event, 'sessions'> = anEvent();
+  return { ...event, ...overrides };
 }
 
 /** An event that took place `daysAgo` days ago (default: about a year, archived). */

@@ -258,7 +258,8 @@
       "allowMessaging": "Allow direct messages from other users",
       "viewPolicy": "View Privacy Policy",
       "save": "Save Privacy Settings"
-    }
+    },
+    "saveFailed": "Saving failed. Please check your entries and try again."
   },
   "profile": {
     "personalInfo": "Personal Information",

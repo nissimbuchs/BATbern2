@@ -187,7 +187,7 @@ export const SessionSpeakersTab: React.FC<SessionSpeakersTabProps> = ({ session 
       setSelectedUser(null);
 
       // Grant SPEAKER role if not already present (fire-and-forget, non-fatal)
-      const existingRoles = (userToGrant.roles ?? []) as Role[];
+      const existingRoles = userToGrant.roles as Role[];
       if (!existingRoles.includes('SPEAKER')) {
         updateUserRoles(userToGrant.id, [...existingRoles, 'SPEAKER']).catch((err) => {
           console.error('Failed to grant SPEAKER role:', err);

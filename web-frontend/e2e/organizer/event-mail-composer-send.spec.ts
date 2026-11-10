@@ -223,14 +223,16 @@ describeSend('Organizer · Mail composer send', { tag: '@sends-real-email' }, ()
     // Each captured mail names one recipient on To:, and nobody gets it twice.
     const captured = (await (await request.get(`${EMS_URL}/dev/emails`)).json()) as Array<{
       to: string;
-      cc: string | null;
+      cc: string[] | null;
       subject: string;
     }>;
     const mine = captured.filter((m) => m.subject === marker);
-    expect(mine.length).toBe(row!.deliveredCount);
+    // Local dev gets no SES delivery events, so no recipient becomes DELIVERED (deliveredCount
+    // stays 0): every recorded recipient that did not fail is one captured mail.
+    expect(mine.length).toBe(row!.recipientCount - row!.failedCount);
     for (const m of mine) {
       expect(m.to).not.toMatch(/[,;]/);
-      expect(m.cc ?? '').toBe('');
+      expect(m.cc ?? []).toHaveLength(0);
     }
     expect(new Set(mine.map((m) => m.to)).size).toBe(mine.length);
   });

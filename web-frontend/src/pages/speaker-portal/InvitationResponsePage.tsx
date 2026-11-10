@@ -575,7 +575,7 @@ const InvitationResponsePage = () => {
             </div>
 
             <Card className="p-6 mb-8">
-              {responseResult.nextSteps && responseResult.nextSteps.length > 0 && (
+              {responseResult.nextSteps.length > 0 && (
                 <>
                   <h2 className="text-lg font-light text-zinc-100 mb-4">
                     {t('speakerPortal.invitationResponse.whatsNext')}

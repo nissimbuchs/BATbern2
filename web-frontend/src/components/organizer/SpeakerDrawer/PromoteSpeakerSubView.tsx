@@ -309,7 +309,7 @@ export const PromoteSpeakerSubView: React.FC<PromoteSpeakerSubViewProps> = ({
                 <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
                   {selectedUser.email}
                 </Typography>
-                {selectedUser.roles && selectedUser.roles.length > 0 && (
+                {selectedUser.roles.length > 0 && (
                   <Typography variant="caption" color="text.secondary">
                     {t('organizer:speakerContent.form.roleLabel', 'Role')}:{' '}
                     {selectedUser.roles.join(', ')}

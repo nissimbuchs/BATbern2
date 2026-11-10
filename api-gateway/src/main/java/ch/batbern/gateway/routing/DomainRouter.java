@@ -70,13 +70,6 @@ public class DomainRouter {
         } else if (cleanPath.matches("/api/v1/events/[^/]+/speakers/[^/]+/status(/.*)?")
                 || cleanPath.matches("/api/v1/events/[^/]+/speakers/status-summary")) {
             return "event-management-service";
-        // AI-Assist sub-paths on a speaker pool entry (e.g. /speakers/{id}/ai/analyze-abstract,
-        // declared by AiAssistController). The OpenAPI spec puts these under /speakers/{id}/ai
-        // (not /events/{code}/...) because speakerId is globally unique. We must whitelist
-        // this branch explicitly — the bare /api/v1/speakers/* prefix stays a 404 (see
-        // `should_throwRoutingException_when_bareSpeakersPathCalled`).
-        } else if (cleanPath.matches("/api/v1/speakers/[^/]+/ai/.*")) {
-            return "event-management-service";
         // EventTypeController (EMS). Distinct from /events — the hyphen breaks the /events prefix.
         } else if (cleanPath.startsWith("/api/v1/event-types")
                 || cleanPath.startsWith("/api/v1/events")
@@ -97,6 +90,7 @@ public class DomainRouter {
                 || cleanPath.startsWith("/api/v1/mails/")
                 || cleanPath.startsWith("/api/v1/ai") // Story 10.16: AI content generation
                 || cleanPath.equals("/api/v1/public/settings/features") // Story 10.16: Feature flags
+                || cleanPath.equals("/api/v1/public/settings/presentation") // Story 4.9: moved from CUMS
                 || cleanPath.equals("/api/v1/public/events") // Public Events read model (website)
                 || cleanPath.startsWith("/api/v1/public/events/")) {
             return "event-management-service";
@@ -109,8 +103,7 @@ public class DomainRouter {
         } else if (cleanPath.startsWith("/api/v1/companies")
                 || cleanPath.startsWith("/api/v1/users")
                 || cleanPath.startsWith("/api/v1/logos")
-                || cleanPath.startsWith("/api/v1/public")
-                || cleanPath.startsWith("/api/v1/settings")) { // Story 10.8a: Presentation settings
+                || cleanPath.startsWith("/api/v1/public")) {
             return "company-user-management-service";
         } else if (cleanPath.startsWith("/api/v1/admin/test-fixtures/cums")) {
             // Bruno test-fixture cleanup endpoint per service (PR 1 staging-hardening).

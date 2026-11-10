@@ -8,7 +8,6 @@ info:
     This API provides comprehensive company management capabilities with:
     - **Resource Expansion**: `?include=logo` for the company logo
     - **Advanced Filtering**: MongoDB-style JSON filter syntax for complex queries
-    - **Field Selection**: Sparse fieldsets to reduce payload size
     - **Pagination**: Standard page/limit parameters
     - **Caching**: Caffeine in-memory cache (15min TTL)
 
@@ -44,8 +43,6 @@ tags:
     description: Company search and autocomplete with caching
   - name: Company Verification
     description: Company verification
-  - name: Presentation Settings
-    description: Moderator presentation page settings (Story 10.8a)
   - name: Logos
     description: Generic logo/image upload (presigned-URL flow, URL proxy/import, admin cleanup) — LogoController, Story 1.16.3
 
@@ -232,7 +229,7 @@ paths:
         - Companies
       summary: List and search companies with advanced query support
       description: |
-        Retrieve a paginated list of companies with optional filtering, sorting, field selection, and resource expansion.
+        Retrieve a paginated list of companies with optional filtering, sorting and resource expansion.
 
         **Acceptance Criteria**: AC1, AC14, AC15
 
@@ -247,10 +244,6 @@ paths:
         - Ascending: `name` or `+name`
         - Descending: `-name`
         - Multiple fields: `industry,-createdAt`
-
-        **Field Selection**:
-        - Specific fields: `?fields=id,name,industry`
-        - All fields: omit `fields` parameter
 
         **Resource Expansion**:
         - Logo: `?include=logo` (url, s3Key, fileId)
@@ -304,13 +297,6 @@ paths:
             minimum: 1
             maximum: 100
             default: 20
-        - name: fields
-          in: query
-          description: Comma-separated field names for sparse fieldsets
-          required: false
-          schema:
-            type: string
-            example: 'id,name,industry,isVerified'
         - name: include
           in: query
           description: Comma-separated list of resources to include
@@ -342,6 +328,7 @@ paths:
                         isVerified: true
                         createdAt: 2025-01-15T10:00:00Z
                         updatedAt: 2025-01-15T10:00:00Z
+                        createdBy: "john.doe"
                     pagination:
                       page: 1
                       limit: 20
@@ -363,6 +350,7 @@ paths:
                           url: https://cdn.batbern.ch/logos/swiss-it-solutions-ag/logo.png
                           s3Key: logos/swiss-it-solutions-ag/logo.png
                           fileId: file-123
+                        createdBy: "john.doe"
                     pagination:
                       page: 1
                       limit: 20
@@ -487,6 +475,7 @@ paths:
                     isVerified: true
                     createdAt: 2025-01-15T10:00:00Z
                     updatedAt: 2025-01-15T10:00:00Z
+                    createdBy: "john.doe"
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
@@ -822,6 +811,7 @@ paths:
                     isVerified: false
                     createdAt: 2025-01-15T10:00:00Z
                     updatedAt: 2025-01-15T10:00:00Z
+                    createdBy: "john.doe"
         '400':
           $ref: '#/components/responses/BadRequest'
         '500':
@@ -836,88 +826,6 @@ paths:
   #
   # The logo upload operations are documented inline under the `Logos` tag in this spec
   # (served by LogoController -> generated LogosApi).
-
-  /public/settings/presentation:
-    get:
-      tags:
-        - Presentation Settings
-      summary: Get presentation settings (public)
-      description: |
-        Returns the moderator presentation page settings.
-
-        **Story 10.8a**: Moderator Presentation Page — Functional
-
-        **Security**: No authentication required — public endpoint.
-
-      operationId: getPresentationSettings
-      responses:
-        '200':
-          description: Presentation settings returned successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PresentationSettingsResponse'
-              examples:
-                defaults:
-                  summary: Default settings
-                  value:
-                    aboutText: BATbern ist eine unabhängige Plattform für Berner Architekten Treffen.
-                    partnerCount: 9
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-
-  /settings/presentation:
-    put:
-      tags:
-        - Presentation Settings
-      summary: Update presentation settings
-      description: |
-        Updates the moderator presentation page settings.
-
-        **Story 10.8a**: Moderator Presentation Page — Functional
-
-        **Authorization**: ORGANIZER role required.
-
-      operationId: updatePresentationSettings
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/PresentationSettingsRequest'
-            examples:
-              update:
-                summary: Update settings
-                value:
-                  aboutText: BATbern ist eine unabhängige Plattform für Berner Architekten Treffen.
-                  partnerCount: 12
-      responses:
-        '200':
-          description: Presentation settings updated successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PresentationSettingsResponse'
-              examples:
-                default:
-                  summary: captured from the local anonymized database (same schema as a GET)
-                  value:
-                    aboutText: |-
-                      BATbern ist seit 2005 eine unabhängige Plattform zum Technologie Austausch zwischen IT-Experten.
-                      Sie bietet Fachvorträge aus der Praxis.
-                      Eine hervorragende Plattform zum Gedanken- und Erfahrungsaustausch.
-                      Platz für Networking während dem Apéro oder Lunch.
-                    partnerCount: 9
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-      security:
-        - BearerAuth: []
 
 components:
   schemas:
@@ -941,6 +849,12 @@ components:
     LogoPresignedUploadUrl:
       type: object
       description: Presigned S3 upload URL + metadata for a logo upload
+      required:
+        - uploadUrl
+        - fileId
+        - fileExtension
+        - expiresInMinutes
+        - requiredHeaders
       properties:
         uploadUrl:
           type: string
@@ -980,6 +894,12 @@ components:
     LogoCleanupStatistics:
       type: object
       description: Counts of logo uploads by state (admin monitoring)
+      required:
+        - pendingCount
+        - confirmedCount
+        - associatedCount
+        - expiredPendingCount
+        - expiredConfirmedCount
       properties:
         pendingCount:
           type: integer
@@ -1014,41 +934,6 @@ components:
         uploadId:
           type: string
           description: Upload ID for use in subsequent company creation
-    PresentationSettingsResponse:
-      type: object
-      description: Moderator presentation page settings (Story 10.8a)
-      required:
-        - aboutText
-        - partnerCount
-      properties:
-        aboutText:
-          type: string
-          description: Verein purpose text displayed on the About slide
-          example: BATbern ist eine unabhängige Plattform für Berner Architekten Treffen.
-        partnerCount:
-          type: integer
-          description: Number of active partner companies shown on About slide
-          minimum: 0
-          example: 9
-
-    PresentationSettingsRequest:
-      type: object
-      description: Request body for updating moderator presentation page settings (Story 10.8a)
-      required:
-        - aboutText
-        - partnerCount
-      properties:
-        aboutText:
-          type: string
-          description: Verein purpose text displayed on the About slide
-          minLength: 1
-          example: BATbern ist eine unabhängige Plattform für Berner Architekten Treffen.
-        partnerCount:
-          type: integer
-          description: Number of active partner companies shown on About slide
-          minimum: 0
-          example: 9
-
     CompanyResponse:
       type: object
       description: |
@@ -1059,6 +944,7 @@ components:
         - isVerified
         - createdAt
         - updatedAt
+        - createdBy
       properties:
         name:
           type: string

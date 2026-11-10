@@ -377,7 +377,7 @@ export const EventSpeakersTab: React.FC<EventSpeakersTabProps> = ({ eventCode })
               sx={{ height: 8, borderRadius: 1 }}
             />
             <Typography variant="caption" color="text.secondary">
-              {summary?.acceptanceRate?.toFixed(1) || 0}%{' '}
+              {summary?.acceptanceRate.toFixed(1) ?? 0}%{' '}
               {t('events:eventPage.speakers.acceptanceRate', 'acceptance rate')}
             </Typography>
           </Box>

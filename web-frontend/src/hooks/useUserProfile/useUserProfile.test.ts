@@ -72,7 +72,7 @@ describe('useUserProfile Hook', () => {
 
       expect(result.current.data).toEqual(mockUserProfile);
       expect(profileCalls()).toHaveLength(1);
-      expect(profileCalls()[0].params).toEqual({ include: 'roles,preferences' });
+      expect(profileCalls()[0].params).toEqual({ include: 'roles,settings' });
     });
 
     test('should_showLoading_when_queryInProgress', () => {

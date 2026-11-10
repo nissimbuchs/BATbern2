@@ -286,7 +286,8 @@
       "allowMessaging": "Directe berichten van andere gebruikers toestaan",
       "viewPolicy": "Privacybeleid bekijken",
       "save": "Privacy-instellingen opslaan"
-    }
+    },
+    "saveFailed": "Opslaan mislukt. Controleer je invoer en probeer het opnieuw."
   },
   "profile": {
     "personalInfo": "Persoonlijke informatie",

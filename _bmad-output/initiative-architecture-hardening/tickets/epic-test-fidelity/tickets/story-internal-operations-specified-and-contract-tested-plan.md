@@ -3,7 +3,7 @@ title: '/internal operations specified and contract-tested (17.0b2)'
 type: 'feature'
 ticket: '0b2'
 created: '2026-11-08'
-status: 'built'
+status: done
 baseline_revision: 'aab7770b25bcd6e1a4679af7299675127c38a91c'
 route: 'full'
 route_source: 'auto'

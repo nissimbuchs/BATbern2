@@ -136,7 +136,7 @@ export interface paths {
     };
     /**
      * List and search companies with advanced query support
-     * @description Retrieve a paginated list of companies with optional filtering, sorting, field selection, and resource expansion.
+     * @description Retrieve a paginated list of companies with optional filtering, sorting and resource expansion.
      *
      *     **Acceptance Criteria**: AC1, AC14, AC15
      *
@@ -151,10 +151,6 @@ export interface paths {
      *     - Ascending: `name` or `+name`
      *     - Descending: `-name`
      *     - Multiple fields: `industry,-createdAt`
-     *
-     *     **Field Selection**:
-     *     - Specific fields: `?fields=id,name,industry`
-     *     - All fields: omit `fields` parameter
      *
      *     **Resource Expansion**:
      *     - Logo: `?include=logo` (url, s3Key, fileId)
@@ -348,54 +344,6 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/public/settings/presentation': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Get presentation settings (public)
-     * @description Returns the moderator presentation page settings.
-     *
-     *     **Story 10.8a**: Moderator Presentation Page — Functional
-     *
-     *     **Security**: No authentication required — public endpoint.
-     */
-    get: operations['getPresentationSettings'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/settings/presentation': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    /**
-     * Update presentation settings
-     * @description Updates the moderator presentation page settings.
-     *
-     *     **Story 10.8a**: Moderator Presentation Page — Functional
-     *
-     *     **Authorization**: ORGANIZER role required.
-     */
-    put: operations['updatePresentationSettings'];
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -414,17 +362,17 @@ export interface components {
     /** @description Presigned S3 upload URL + metadata for a logo upload */
     LogoPresignedUploadUrl: {
       /** @description The presigned S3 URL to PUT the file to */
-      uploadUrl?: string;
+      uploadUrl: string;
       /** @description Unique file identifier for tracking the upload */
-      fileId?: string;
+      fileId: string;
       /** @description S3 key where the file will be stored */
       s3Key?: string;
       /** @description File extension (used to reconstruct the S3 key on confirm) */
-      fileExtension?: string;
+      fileExtension: string;
       /** @description URL expiry in minutes (typically 15) */
-      expiresInMinutes?: number;
+      expiresInMinutes: number;
       /** @description Headers the client must send with the S3 PUT */
-      requiredHeaders?: {
+      requiredHeaders: {
         [key: string]: string;
       };
     };
@@ -439,15 +387,15 @@ export interface components {
     /** @description Counts of logo uploads by state (admin monitoring) */
     LogoCleanupStatistics: {
       /** Format: int64 */
-      pendingCount?: number;
+      pendingCount: number;
       /** Format: int64 */
-      confirmedCount?: number;
+      confirmedCount: number;
       /** Format: int64 */
-      associatedCount?: number;
+      associatedCount: number;
       /** Format: int64 */
-      expiredPendingCount?: number;
+      expiredPendingCount: number;
       /** Format: int64 */
-      expiredConfirmedCount?: number;
+      expiredConfirmedCount: number;
     };
     UploadImageFromUrlRequest: {
       /** @description External image URL to fetch and upload */
@@ -461,32 +409,6 @@ export interface components {
     UploadImageFromUrlResponse: {
       /** @description Upload ID for use in subsequent company creation */
       uploadId?: string;
-    };
-    /** @description Moderator presentation page settings (Story 10.8a) */
-    PresentationSettingsResponse: {
-      /**
-       * @description Verein purpose text displayed on the About slide
-       * @example BATbern ist eine unabhängige Plattform für Berner Architekten Treffen.
-       */
-      aboutText: string;
-      /**
-       * @description Number of active partner companies shown on About slide
-       * @example 9
-       */
-      partnerCount: number;
-    };
-    /** @description Request body for updating moderator presentation page settings (Story 10.8a) */
-    PresentationSettingsRequest: {
-      /**
-       * @description Verein purpose text displayed on the About slide
-       * @example BATbern ist eine unabhängige Plattform für Berner Architekten Treffen.
-       */
-      aboutText: string;
-      /**
-       * @description Number of active partner companies shown on About slide
-       * @example 9
-       */
-      partnerCount: number;
     };
     /**
      * @description Company response with meaningful IDs.
@@ -526,7 +448,7 @@ export interface components {
        *     the creator's token carried no `custom:username` claim.
        * @example john.doe
        */
-      createdBy?: string;
+      createdBy: string;
       logo?: components['schemas']['CompanyLogo'];
     };
     /** @description Company logo details (included when ?include=logo) */
@@ -939,8 +861,6 @@ export interface operations {
         page?: number;
         /** @description Items per page (max 100) */
         limit?: number;
-        /** @description Comma-separated field names for sparse fieldsets */
-        fields?: string;
         /** @description Comma-separated list of resources to include */
         include?: string;
       };
@@ -1161,55 +1081,6 @@ export interface operations {
         };
       };
       400: components['responses']['BadRequest'];
-      500: components['responses']['InternalServerError'];
-    };
-  };
-  getPresentationSettings: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Presentation settings returned successfully */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['PresentationSettingsResponse'];
-        };
-      };
-      500: components['responses']['InternalServerError'];
-    };
-  };
-  updatePresentationSettings: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['PresentationSettingsRequest'];
-      };
-    };
-    responses: {
-      /** @description Presentation settings updated successfully */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['PresentationSettingsResponse'];
-        };
-      };
-      400: components['responses']['BadRequest'];
-      401: components['responses']['Unauthorized'];
-      403: components['responses']['Forbidden'];
       500: components['responses']['InternalServerError'];
     };
   };

@@ -15,17 +15,21 @@ import type {
   LogoConfirmResponse,
 } from '@/types/userAccount.types';
 import type { components } from '@/types/generated/user-api.types';
+import { updateUserSettings as patchUserSettings, type UserSettingsChanges } from './userApi';
 
 type ProfilePictureUploadRequest = components['schemas']['ProfilePictureUploadRequest'];
 
 const USER_API_PATH = '/users';
 
+type WireSettings = components['schemas']['UserSettings'];
+
 /**
  * Get current user profile with consolidated data
- * Uses ?include query parameter for resource expansion
+ * Uses ?include query parameter for resource expansion. Story 4.9: the wire carries one
+ * `settings` object (display, notifications, privacy); the account page shows it as two views.
  */
 export const getUserProfile = async (
-  include: string[] = ['company', 'roles', 'preferences', 'settings', 'activity']
+  include: string[] = ['company', 'roles', 'settings', 'activity']
 ): Promise<{
   user: User;
   preferences?: UserPreferencesView;
@@ -38,7 +42,7 @@ export const getUserProfile = async (
 
   // Backend returns flat structure with user data at root level
   // Transform to expected structure: { user: {...}, preferences: {...}, settings: {...} }
-  const { preferences, settings, activity, ...userData } = data;
+  const { settings, activity, ...userData } = data;
 
   return {
     user: {
@@ -55,33 +59,33 @@ export const getUserProfile = async (
           }
         : undefined,
     },
-    preferences: preferences
-      ? {
-          theme: mapTheme(preferences.theme),
-          timezone: preferences.timezone || 'Europe/Zurich',
-          notificationChannels: {
-            email: preferences.emailNotifications ?? true,
-            inApp: preferences.inAppNotifications ?? true,
-            push: preferences.pushNotifications ?? false,
-          },
-          notificationFrequency: mapNotificationFrequency(preferences.notificationFrequency),
-          qnaNotificationFrequency: mapQnaNotificationFrequency(
-            preferences.qnaNotificationFrequency
-          ),
-        }
-      : undefined,
-    settings: settings
-      ? {
-          profileVisibility: mapProfileVisibility(settings.profileVisibility),
-          showEmail: settings.showEmail ?? false,
-          showCompany: settings.showCompany ?? true,
-          showActivity: settings.showActivityHistory ?? true,
-          allowMessaging: settings.allowMessaging ?? true,
-        }
-      : undefined,
+    preferences: settings ? toPreferencesView(settings) : undefined,
+    settings: settings ? toSettingsView(settings) : undefined,
     activity: activity || [],
   };
 };
+
+/** The display and notification part of the wire settings, as the account page shows it. */
+const toPreferencesView = (settings: WireSettings): UserPreferencesView => ({
+  theme: mapTheme(settings.theme),
+  timezone: settings.timezone || 'Europe/Zurich',
+  notificationChannels: {
+    email: settings.emailNotifications,
+    inApp: settings.inAppNotifications,
+    push: settings.pushNotifications,
+  },
+  notificationFrequency: mapNotificationFrequency(settings.notificationFrequency),
+  qnaNotificationFrequency: mapQnaNotificationFrequency(settings.qnaNotificationFrequency),
+});
+
+/** The privacy part of the wire settings, as the account page shows it. */
+const toSettingsView = (settings: WireSettings): UserSettingsView => ({
+  profileVisibility: mapProfileVisibility(settings.profileVisibility),
+  showEmail: settings.showEmail,
+  showCompany: settings.showCompany,
+  showActivity: settings.showActivityHistory,
+  allowMessaging: settings.allowMessaging,
+});
 
 // Helper functions to map backend enums to frontend enums
 const mapTheme = (theme?: string): 'LIGHT' | 'DARK' | 'AUTO' => {
@@ -98,8 +102,7 @@ const mapNotificationFrequency = (
 
 const mapProfileVisibility = (visibility?: string): 'PUBLIC' | 'MEMBERS_ONLY' | 'PRIVATE' => {
   if (!visibility) return 'MEMBERS_ONLY';
-  const mapped = visibility.toUpperCase().replace('_', '_');
-  return mapped as 'PUBLIC' | 'MEMBERS_ONLY' | 'PRIVATE';
+  return visibility.toUpperCase() as 'PUBLIC' | 'MEMBERS_ONLY' | 'PRIVATE';
 };
 
 // Story 15.7 — Q&A notification cadence (defaults to LIVE when absent, matching the backend default)
@@ -138,7 +141,7 @@ export const updateUserProfile = async (
   const data = response.data;
   // Destructure to exclude preferences, settings, activity from userData
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { preferences, settings, activity, ...userData } = data;
+  const { settings, activity, ...userData } = data;
 
   return {
     ...userData,
@@ -155,66 +158,44 @@ export const updateUserProfile = async (
 };
 
 /**
- * Update user preferences (theme, timezone, notifications)
- * Converts frontend enums (uppercase) to backend format (lowercase)
+ * Update the display and notification settings (theme, timezone, notifications).
+ * Story 4.9: one `PATCH /users/me/settings`; only the fields given change. The timezone is part
+ * of that resource now and is stored (it used to go to `/users/me/preferences`, which dropped it).
  */
 export const updateUserPreferences = async (
   preferences: Partial<UserPreferencesView>
 ): Promise<UserPreferencesView> => {
-  // Transform frontend preferences to backend format (lowercase enums)
-  const backendPreferences = {
-    theme: preferences.theme?.toLowerCase(),
+  const changes: UserSettingsChanges = {
+    theme: lower(preferences.theme),
     timezone: preferences.timezone,
     emailNotifications: preferences.notificationChannels?.email,
     inAppNotifications: preferences.notificationChannels?.inApp,
     pushNotifications: preferences.notificationChannels?.push,
-    notificationFrequency: preferences.notificationFrequency?.toLowerCase().replace('_', '_'),
-    qnaNotificationFrequency: preferences.qnaNotificationFrequency?.toLowerCase(),
+    notificationFrequency: lower(preferences.notificationFrequency),
+    qnaNotificationFrequency: lower(preferences.qnaNotificationFrequency),
   };
-
-  const response = await apiClient.put(`${USER_API_PATH}/me/preferences`, backendPreferences);
-
-  // Transform backend response back to frontend format (uppercase enums)
-  return {
-    theme: mapTheme(response.data.theme),
-    timezone: response.data.timezone || 'Europe/Zurich',
-    notificationChannels: {
-      email: response.data.emailNotifications ?? true,
-      inApp: response.data.inAppNotifications ?? true,
-      push: response.data.pushNotifications ?? false,
-    },
-    notificationFrequency: mapNotificationFrequency(response.data.notificationFrequency),
-    qnaNotificationFrequency: mapQnaNotificationFrequency(response.data.qnaNotificationFrequency),
-  };
+  return toPreferencesView(await patchUserSettings(changes));
 };
 
 /**
- * Update user settings (privacy, visibility)
- * Converts frontend enums (uppercase) to backend format (lowercase)
+ * Update the privacy settings. Story 4.9: the same `PATCH /users/me/settings`.
  */
 export const updateUserSettings = async (
   settings: Partial<UserSettingsView>
 ): Promise<UserSettingsView> => {
-  // Transform frontend settings to backend format (lowercase enums, snake_case)
-  const backendSettings = {
-    profileVisibility: settings.profileVisibility?.toLowerCase().replace('_', '_'),
+  const changes: UserSettingsChanges = {
+    profileVisibility: lower(settings.profileVisibility),
     showEmail: settings.showEmail,
     showCompany: settings.showCompany,
     showActivityHistory: settings.showActivity,
     allowMessaging: settings.allowMessaging,
   };
-
-  const response = await apiClient.put(`${USER_API_PATH}/me/settings`, backendSettings);
-
-  // Transform backend response back to frontend format (uppercase enums)
-  return {
-    profileVisibility: mapProfileVisibility(response.data.profileVisibility),
-    showEmail: response.data.showEmail ?? false,
-    showCompany: response.data.showCompany ?? true,
-    showActivity: response.data.showActivityHistory ?? true,
-    allowMessaging: response.data.allowMessaging ?? true,
-  };
+  return toSettingsView(await patchUserSettings(changes));
 };
+
+/** The UI's upper-case enum value as the wire's lower-case one; undefined stays undefined. */
+const lower = <T extends string>(value: T | undefined): Lowercase<T> | undefined =>
+  value === undefined ? undefined : (value.toLowerCase() as Lowercase<T>);
 
 /**
  * Remove profile picture

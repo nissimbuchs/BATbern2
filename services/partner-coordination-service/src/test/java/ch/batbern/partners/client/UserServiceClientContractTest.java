@@ -144,8 +144,11 @@ class UserServiceClientContractTest {
     /** A page of {@code count} partner users numbered from {@code from}, with hasNext as given. */
     private static String page(int page, int from, int count, boolean hasNext) {
         String users = IntStream.range(from, from + count).mapToObj(i -> """
-                {"id": "partner.user", "email": "partner%d@example.com", "firstName": "P", "lastName": "U",
-                 "roles": ["PARTNER"], "createdAt": "2025-01-15T10:00:00Z", "updatedAt": "2025-01-15T10:00:00Z"}"""
+                {"id": "partner.user", "hasCognitoAccount": true, "email": "partner%d@example.com",
+                 "firstName": "P", "lastName": "U", "bio": null, "companyId": null, "roles": ["PARTNER"],
+                 "profilePictureUrl": null, "active": true, "createdAt": "2025-01-15T10:00:00Z",
+                 "updatedAt": "2025-01-15T10:00:00Z", "lastLoginAt": null, "termsAcceptedAt": null,
+                 "company": null, "settings": null, "additionalEmails": []}"""
                 .formatted(i)).collect(Collectors.joining(","));
         return """
                 {"data": [%s], "pagination": {"page": %d, "limit": 100, "totalItems": 150, "totalPages": 2,

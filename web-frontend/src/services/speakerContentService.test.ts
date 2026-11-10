@@ -19,6 +19,7 @@ import type {
   SpeakerContentResponse,
   ReviewRequest,
 } from './speakerContentService';
+import { aSpeakerContent } from '@/test/fixtures';
 
 // Mock the apiClient module
 vi.mock('./api/apiClient', () => ({
@@ -46,6 +47,7 @@ describe('speakerContentService', () => {
       };
 
       const mockResponse: SpeakerContentResponse = {
+        ...aSpeakerContent(),
         speakerPoolId: 'pool-123',
         sessionId: 'session-456',
         status: 'CONTENT_SUBMITTED',
@@ -75,6 +77,7 @@ describe('speakerContentService', () => {
       };
 
       const mockResponse: SpeakerContentResponse = {
+        ...aSpeakerContent(),
         speakerPoolId: 'pool-789',
         sessionId: 'session-new-123',
         status: 'CONTENT_SUBMITTED',
@@ -181,6 +184,7 @@ describe('speakerContentService', () => {
   describe('getSpeakerContent (AC34)', () => {
     it('should fetch speaker content with session data', async () => {
       const mockResponse: SpeakerContentResponse = {
+        ...aSpeakerContent(),
         speakerPoolId: 'pool-123',
         sessionId: 'session-456',
         status: 'CONTENT_SUBMITTED',
@@ -201,6 +205,7 @@ describe('speakerContentService', () => {
 
     it('should handle orphaned session FK with warning', async () => {
       const mockResponse: SpeakerContentResponse = {
+        ...aSpeakerContent(),
         speakerPoolId: 'pool-123',
         sessionId: '',
         status: 'INVITED',
@@ -461,6 +466,7 @@ describe('speakerContentService', () => {
         };
 
         const mockResponse: SpeakerContentResponse = {
+          ...aSpeakerContent(),
           speakerPoolId: 'pool-123',
           sessionId: 'session-456',
           status: 'CONTENT_SUBMITTED',
@@ -516,6 +522,7 @@ describe('speakerContentService', () => {
         };
 
         const mockResponse: SpeakerContentResponse = {
+          ...aSpeakerContent(),
           speakerPoolId: 'pool-123',
           sessionId: 'session-456',
           status: 'CONTENT_SUBMITTED',
@@ -672,6 +679,7 @@ describe('speakerContentService', () => {
       };
 
       const mockResponse: SpeakerContentResponse = {
+        ...aSpeakerContent(),
         speakerPoolId: 'pool-123',
         sessionId: 'session-456',
         status: 'CONTENT_SUBMITTED',

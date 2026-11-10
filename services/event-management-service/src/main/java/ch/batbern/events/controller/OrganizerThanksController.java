@@ -50,7 +50,7 @@ public class OrganizerThanksController implements OrganizerThanksApi {
         String username = resolveUsername();
         String note = request != null ? request.getNote() : null;
         long count = thanksService.submitThanks(eventCode, username, note, getClientIp(currentHttpRequest()));
-        return ResponseEntity.ok(new ThanksCountResponse(count));
+        return ResponseEntity.ok(new ThanksCountResponse().count(count));
     }
 
     /** Read the aggregate count (public). Organizer callers also get the submitted notes (AC6). */

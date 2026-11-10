@@ -88,6 +88,7 @@ const mockCompanies: CompanyListResponse = {
       isVerified: true,
       createdAt: '2025-01-01T00:00:00Z',
       updatedAt: '2025-01-01T00:00:00Z',
+      createdBy: 'lead.organizer',
     },
     {
       name: 'SecondCo',
@@ -97,6 +98,7 @@ const mockCompanies: CompanyListResponse = {
       isVerified: false,
       createdAt: '2025-01-01T00:00:00Z',
       updatedAt: '2025-01-01T00:00:00Z',
+      createdBy: 'lead.organizer',
     },
   ],
   pagination: { page: 1, limit: 20, totalItems: 2, totalPages: 1, hasNext: false, hasPrev: false },

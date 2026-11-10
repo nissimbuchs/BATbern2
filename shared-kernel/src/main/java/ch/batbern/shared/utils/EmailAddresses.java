@@ -18,10 +18,12 @@ import java.util.regex.Pattern;
  *       addresses are stored as entered.</li>
  * </ul>
  *
- * <p>The same rule exists as {@link #OPENAPI_PATTERN} on every {@code format: email} field in
+ * <p>The same rule exists as {@link #OPENAPI_PATTERN} on every e-mail request field in
  * {@code docs/api/*.openapi.yml}, and as {@code web-frontend/src/utils/validation/email.ts} in the
  * frontend. The regex form cannot check lengths or IDNA validity, so it is deliberately looser;
- * {@code EmailAddressesTest} guards that it never rejects an address accepted here.
+ * {@code EmailAddressesTest} guards that it never rejects an address accepted here. The specs
+ * declare those fields {@code format: idn-email} (an IDN domain is valid), so the generator emits
+ * no {@code @Email} and the pattern is the request check (4.9b, owner decision 2026-11-09).
  */
 public final class EmailAddresses {
 

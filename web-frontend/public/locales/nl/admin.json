@@ -35,7 +35,7 @@
     "saveFailed": "Opslaan mislukt. Probeer het opnieuw.",
     "venueCoordination": {
       "title": "Locatie- en cateringcontacten",
-      "subtitle": "Deze contacten ontvangen de offerte- en programma-e-mails die vanaf het tabblad Locatie op de evenementdetailpagina worden verzonden. Ze zijn hetzelfde voor elk evenement — eenmalig hier definiëren.",
+      "subtitle": "Deze contacten ontvangen de offerte- en programma-e-mails die vanaf het tabblad Communicatie op de evenementdetailpagina worden verzonden. Ze zijn hetzelfde voor elk evenement — eenmalig hier definiëren.",
       "venueSection": "Locatiecontact",
       "cateringSection": "Cateringcontact",
       "coordinatorSection": "Locatiecoördinator",

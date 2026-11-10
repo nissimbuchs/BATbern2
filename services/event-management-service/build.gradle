@@ -118,7 +118,6 @@ openApiGenerate {
         'ErrorResponse': 'ch.batbern.shared.dto.ErrorResponse',
         'PaginationMetadata': 'ch.batbern.shared.api.PaginationMetadata',
         'PaginatedResponse': 'ch.batbern.shared.dto.PaginatedResponse',
-        'VenueRole': 'ch.batbern.events.dto.venuecoordination.VenueCoordinationConfig.Role',
     ]
 
     typeMappings = [
@@ -162,8 +161,7 @@ openApiGenerate {
         'SessionSpeaker': 'ch.batbern.events.sessions.dto.generated.SessionSpeaker',
         'SessionResponse': 'ch.batbern.events.sessions.dto.generated.SessionResponse',
         'SessionType': 'ch.batbern.events.sessions.dto.generated.SessionType',
-        'MaterialsStatus': 'ch.batbern.events.sessions.dto.generated.MaterialsStatus',
-        'VenueRole': 'ch.batbern.events.dto.venuecoordination.VenueCoordinationConfig.Role'
+        'MaterialsStatus': 'ch.batbern.events.sessions.dto.generated.MaterialsStatus'
     ]
 }
 
