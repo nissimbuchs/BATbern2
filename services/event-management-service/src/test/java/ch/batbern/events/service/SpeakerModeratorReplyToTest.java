@@ -112,11 +112,14 @@ class SpeakerModeratorReplyToTest {
     void should_replyToModeratorAlias_when_qualityReviewRequestsRevision() {
         QualityReviewService service = new QualityReviewService(eventRepository, speakerPoolRepository,
                 sessionRepository, sessionContentHistoryRepository, emailService, speakerWorkflowService,
-                primarySpeakerResolver, moderatorReplyAddress);
-        when(speakerPoolRepository.findById(speaker.getId())).thenReturn(Optional.of(speaker));
+                primarySpeakerResolver, moderatorReplyAddress,
+                new SpeakerPoolLookup(eventRepository, speakerPoolRepository));
+        when(eventRepository.findByEventCode(event.getEventCode())).thenReturn(Optional.of(event));
+        when(speakerPoolRepository.findByIdAndEventId(speaker.getId(), event.getId()))
+                .thenReturn(Optional.of(speaker));
         when(eventRepository.findById(event.getId())).thenReturn(Optional.of(event));
 
-        service.rejectContent(speaker.getId().toString(), "Please shorten the abstract", "organizer");
+        service.rejectContent(event.getEventCode(), speaker.getId(), "Please shorten the abstract", "organizer");
 
         verify(emailService).sendHtmlEmail(any(), eq("speaker@example.com"), anyList(), anyString(), anyString(), eq(MODERATOR));
     }

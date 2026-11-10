@@ -416,8 +416,8 @@ class ContentSubmissionServiceIntegrationTest extends AbstractIntegrationTest {
 
         assertThatThrownBy(() -> contentSubmissionService.submit(
                         missingId, EVENT_CODE, payload, ORGANIZER))
-                .isInstanceOf(jakarta.persistence.EntityNotFoundException.class)
-                .hasMessageContaining("Speaker not found");
+                .isInstanceOf(ch.batbern.shared.exception.NotFoundException.class)
+                .hasMessageContaining("Speaker pool entry not found in " + EVENT_CODE);
     }
 
     // ============================================================

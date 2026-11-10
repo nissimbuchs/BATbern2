@@ -38,6 +38,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 /**
@@ -77,8 +78,19 @@ public class SpeakerStatusServiceTest {
                 eventRepository,
                 agendaConfigResolver,
                 speakerWorkflowService,
-                sessionContentHistoryRepository
+                sessionContentHistoryRepository,
+                new SpeakerPoolLookup(eventRepository, speakerPoolRepository)
         );
+    }
+
+    /** The speaker pool entry exists in the event of the path (Story 4.10: loaded scoped). */
+    private void givenSpeakerInEvent(String eventCode, SpeakerPool speaker) {
+        Event event = new Event();
+        event.setId(speaker.getEventId());
+        event.setEventCode(eventCode);
+        when(eventRepository.findByEventCode(eventCode)).thenReturn(Optional.of(event));
+        when(speakerPoolRepository.findByIdAndEventId(speaker.getId(), speaker.getEventId()))
+                .thenReturn(Optional.of(speaker));
     }
 
     @Test
@@ -109,7 +121,7 @@ public class SpeakerStatusServiceTest {
         speaker.setId(speakerId);
         speaker.setEventId(eventId);
 
-        when(speakerPoolRepository.findById(speakerId)).thenReturn(Optional.of(speaker));
+        givenSpeakerInEvent(eventCode, speaker);
         when(speakerWorkflowService.transition(
                 eq(speakerId),
                 eq(SpeakerWorkflowState.CONTACTED),
@@ -147,11 +159,17 @@ public class SpeakerStatusServiceTest {
         request.setNewStatus(SpeakerWorkflowState.CONTACTED);
         request.setReason("Initial contact");
 
-        when(speakerPoolRepository.findById(speakerId)).thenReturn(Optional.empty());
+        Event event = new Event();
+        event.setId(UUID.randomUUID());
+        event.setEventCode(eventCode);
+        when(eventRepository.findByEventCode(eventCode)).thenReturn(Optional.of(event));
+        // An entry of another event, or none at all: not found in this event.
+        when(speakerPoolRepository.findByIdAndEventId(speakerId, event.getId())).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.updateStatus(eventCode, speakerId, organizerUsername, request))
                 .isInstanceOf(NotFoundException.class)
-                .hasMessageContaining("Speaker not found");
+                .hasMessageContaining("Speaker pool entry not found in " + eventCode);
+        verifyNoInteractions(speakerWorkflowService);
     }
 
     @Test
@@ -200,6 +218,10 @@ public class SpeakerStatusServiceTest {
         history.setPreviousStatus(SpeakerWorkflowState.IDENTIFIED);
         history.setNewStatus(SpeakerWorkflowState.CONTACTED);
 
+        SpeakerPool speaker = new SpeakerPool();
+        speaker.setId(speakerId);
+        speaker.setEventId(eventId);
+        givenSpeakerInEvent(eventCode, speaker);
         when(repository.findBySpeakerPoolIdOrderByChangedAtDesc(speakerId))
                 .thenReturn(List.of(history));
 
@@ -230,6 +252,7 @@ public class SpeakerStatusServiceTest {
 
         SpeakerPool pool = new SpeakerPool();
         pool.setId(speakerId);
+        pool.setEventId(UUID.randomUUID());
         pool.setSessionId(sessionId);
 
         SessionContentVersion rejection = new SessionContentVersion();
@@ -242,7 +265,7 @@ public class SpeakerStatusServiceTest {
         rejection.setReviewedAt(later);
 
         when(repository.findBySpeakerPoolIdOrderByChangedAtDesc(speakerId)).thenReturn(List.of(statusRow));
-        when(speakerPoolRepository.findById(speakerId)).thenReturn(Optional.of(pool));
+        givenSpeakerInEvent(eventCode, pool);
         when(sessionContentHistoryRepository.findRejectedBySessionIdOrderByReviewedAtDesc(sessionId))
                 .thenReturn(List.of(rejection));
 
@@ -270,6 +293,10 @@ public class SpeakerStatusServiceTest {
         // empty state instead.
         String eventCode = "BATbern998";
         UUID speakerId = UUID.randomUUID();
+        SpeakerPool speaker = new SpeakerPool();
+        speaker.setId(speakerId);
+        speaker.setEventId(UUID.randomUUID());
+        givenSpeakerInEvent(eventCode, speaker);
 
         when(repository.findBySpeakerPoolIdOrderByChangedAtDesc(speakerId))
                 .thenReturn(new ArrayList<>());

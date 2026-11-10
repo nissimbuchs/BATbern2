@@ -77,6 +77,7 @@ public class ContentSubmissionService {
     private final UserApiClient userApiClient;
     private final EventRepository eventRepository;
     private final PrimarySpeakerResolver primarySpeakerResolver;
+    private final SpeakerPoolLookup speakerPoolLookup;
 
     // ============================================================
     // Speaker portal helpers — Story 11.E.3 (Cognito Bearer auth)
@@ -283,24 +284,13 @@ public class ContentSubmissionService {
         log.info("Submitting content (Story 11.C.2): speakerPoolId={}, eventCode={}, actor={}",
                 speakerPoolId, eventCode, username);
 
-        // 2. Load the speaker pool entry.
-        SpeakerPool speaker = speakerPoolRepository.findById(speakerPoolId)
-                .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException(
-                        "Speaker not found in pool: " + speakerPoolId));
-
-        // P1 (review patch): verify the speaker's eventId matches the eventCode in the URL.
-        // Prevents cross-event corruption where a stale/mistyped URL pairs a speaker from
-        // event A with eventCode = event B's code (the new Session row would then have
-        // inconsistent event_id ↔ event_code).
+        // 2. Load the speaker pool entry scoped to the event in the path (ADR-003, Story 4.10):
+        //    an entry of another event is not found (404), so a stale or forged URL can never pair
+        //    event A's speaker with event B's code.
         ch.batbern.events.domain.Event eventForCode = eventRepository.findByEventCode(eventCode)
                 .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException(
                         "Event not found for code: " + eventCode));
-        if (!eventForCode.getId().equals(speaker.getEventId())) {
-            throw new IllegalArgumentException(
-                    "Speaker " + speakerPoolId + " does not belong to event " + eventCode
-                            + " (speaker.eventId=" + speaker.getEventId()
-                            + ", event.id=" + eventForCode.getId() + ")");
-        }
+        SpeakerPool speaker = speakerPoolLookup.inEvent(eventForCode, speakerPoolId);
 
         // 3. Pre-check the source state. SpeakerWorkflowService.transition() will also enforce
         //    this — we surface a friendly error message here before the workflow check runs.
@@ -485,17 +475,16 @@ public class ContentSubmissionService {
      * the FK (Story 5.5 AC34); workflow status is left untouched (Story 11.B.2 single-writer
      * invariant).
      *
+     * @param eventCode the event code from the path (the entry is loaded scoped to it)
      * @param poolId the speaker pool ID
      * @return the speaker content (may have {@code hasContent=false} if no session)
      */
     @Transactional
-    public SpeakerContentResponse getSpeakerContent(String poolId) {
+    public SpeakerContentResponse getSpeakerContent(String eventCode, UUID poolId) {
         log.debug("Fetching speaker content for pool entry: {}", poolId);
 
-        UUID poolUuid = UUID.fromString(poolId);
-        SpeakerPool speaker = speakerPoolRepository.findById(poolUuid)
-                .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException(
-                        "Speaker not found in pool"));
+        // Scoped to the event in the path (ADR-003, Story 4.10): another event's entry is 404.
+        SpeakerPool speaker = speakerPoolLookup.inEvent(eventCode, poolId);
 
         if (speaker.getSessionId() == null) {
             return SpeakerContentResponse.builder()

@@ -134,7 +134,7 @@ class QualityReviewServiceIntegrationTest extends AbstractIntegrationTest {
         SpeakerPool speaker = createSpeakerWithContent("john.doe", "John Doe");
 
         // When: Approve content
-        qualityReviewService.approveContent(speaker.getId().toString(), "moderator.user");
+        qualityReviewService.approveContent(TEST_EVENT_CODE, speaker.getId(), "moderator.user");
 
         // Then: Status updated to quality_reviewed
         SpeakerPool updated = speakerPoolRepository.findById(speaker.getId()).orElseThrow();
@@ -157,7 +157,7 @@ class QualityReviewServiceIntegrationTest extends AbstractIntegrationTest {
         sessionRepository.save(session);
 
         // When: Approve content
-        qualityReviewService.approveContent(speaker.getId().toString(), "moderator.user");
+        qualityReviewService.approveContent(TEST_EVENT_CODE, speaker.getId(), "moderator.user");
 
         // Then: Status transitions to QUALITY_REVIEWED (is_publishable is derived elsewhere)
         SpeakerPool updated = speakerPoolRepository.findById(speaker.getId()).orElseThrow();
@@ -174,7 +174,7 @@ class QualityReviewServiceIntegrationTest extends AbstractIntegrationTest {
 
         // When: Reject content with feedback
         qualityReviewService.rejectContent(
-                speaker.getId().toString(),
+                TEST_EVENT_CODE, speaker.getId(),
                 "Abstract needs more focus on lessons learned.",
                 "moderator.user"
         );
@@ -197,7 +197,7 @@ class QualityReviewServiceIntegrationTest extends AbstractIntegrationTest {
 
         // When/Then: Reject without feedback throws exception
         assertThatThrownBy(() -> qualityReviewService.rejectContent(
-                speaker.getId().toString(),
+                TEST_EVENT_CODE, speaker.getId(),
                 null,
                 "moderator.user"
         )).isInstanceOf(IllegalArgumentException.class)
@@ -215,7 +215,7 @@ class QualityReviewServiceIntegrationTest extends AbstractIntegrationTest {
 
         // When: Reject content with feedback
         qualityReviewService.rejectContent(
-                speaker.getId().toString(),
+                TEST_EVENT_CODE, speaker.getId(),
                 "Please add more details about lessons learned.",
                 "moderator.user"
         );
@@ -257,7 +257,7 @@ class QualityReviewServiceIntegrationTest extends AbstractIntegrationTest {
         // When: Reject content with feedback
         String feedback = "Please add more focus on lessons learned from the project.";
         qualityReviewService.rejectContent(
-                speaker.getId().toString(),
+                TEST_EVENT_CODE, speaker.getId(),
                 feedback,
                 "moderator.user"
         );
@@ -281,7 +281,7 @@ class QualityReviewServiceIntegrationTest extends AbstractIntegrationTest {
 
         // When: Reject content with feedback
         qualityReviewService.rejectContent(
-                speaker.getId().toString(),
+                TEST_EVENT_CODE, speaker.getId(),
                 "Abstract needs improvement.",
                 "quality.reviewer"
         );
@@ -303,7 +303,7 @@ class QualityReviewServiceIntegrationTest extends AbstractIntegrationTest {
         speakerPoolRepository.save(speaker);
 
         // When: Approve content on re-review
-        qualityReviewService.approveContent(speaker.getId().toString(), "moderator.user");
+        qualityReviewService.approveContent(TEST_EVENT_CODE, speaker.getId(), "moderator.user");
 
         // Then: Status updated to quality_reviewed
         SpeakerPool updated = speakerPoolRepository.findById(speaker.getId()).orElseThrow();
@@ -337,7 +337,7 @@ class QualityReviewServiceIntegrationTest extends AbstractIntegrationTest {
 
         // When: Try to approve with stale version
         // The service should handle OptimisticLockException gracefully
-        qualityReviewService.approveContent(speakerId.toString(), "moderator.user");
+        qualityReviewService.approveContent(TEST_EVENT_CODE, speakerId, "moderator.user");
 
         // Then: Status still updated successfully (service retried with fresh data)
         SpeakerPool updated = speakerPoolRepository.findById(speakerId).orElseThrow();

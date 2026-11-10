@@ -1,10 +1,8 @@
 package ch.batbern.events.controller;
 
-import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.SpeakerPool;
-import ch.batbern.events.exception.EventNotFoundException;
-import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
+import ch.batbern.events.service.SpeakerPoolLookup;
 import ch.batbern.events.speakers.api.generated.SpeakerRemindersApi;
 import ch.batbern.events.speakers.dto.generated.RemindersDisabledResponse;
 import ch.batbern.events.speakers.dto.generated.UpdateRemindersDisabledRequest;
@@ -33,7 +31,7 @@ import java.util.UUID;
 public class SpeakerReminderController implements SpeakerRemindersApi {
 
     private final SpeakerPoolRepository speakerPoolRepository;
-    private final EventRepository eventRepository;
+    private final SpeakerPoolLookup speakerPoolLookup;
 
     @Override
     @PreAuthorize("hasRole('ORGANIZER')")
@@ -45,15 +43,8 @@ public class SpeakerReminderController implements SpeakerRemindersApi {
 
         log.info("Updating reminders disabled for speaker {} on event {}", speakerPoolId, eventCode);
 
-        Event event = eventRepository.findByEventCode(eventCode)
-                .orElseThrow(() -> new EventNotFoundException("Event not found: " + eventCode));
-
-        SpeakerPool speaker = speakerPoolRepository.findById(speakerPoolId)
-                .orElseThrow(() -> new IllegalArgumentException("Speaker pool entry not found: " + speakerPoolId));
-
-        if (!speaker.getEventId().equals(event.getId())) {
-            throw new IllegalArgumentException("Speaker does not belong to event: " + eventCode);
-        }
+        // Scoped to the event in the path (ADR-003, Story 4.10): another event's entry is 404.
+        SpeakerPool speaker = speakerPoolLookup.inEvent(eventCode, speakerPoolId);
 
         Boolean remindersDisabled = request.getRemindersDisabled();
         if (remindersDisabled == null) {

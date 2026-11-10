@@ -55,8 +55,8 @@ public class EventSpeakerPoolController implements EventActionsApi {
     @Override
     @PreAuthorize("hasRole('ORGANIZER')")
     public ResponseEntity<Void> deleteSpeakerFromPool(String eventCode, UUID speakerId) {
-        // GlobalExceptionHandler: EventNotFoundException → 404, IllegalArgumentException → 404 (not found).
-        speakerPoolService.deleteSpeakerFromPool(eventCode, speakerId.toString());
+        // GlobalExceptionHandler: EventNotFoundException → 404, an entry not in this event → 404.
+        speakerPoolService.deleteSpeakerFromPool(eventCode, speakerId);
         return ResponseEntity.noContent().build();
     }
 
@@ -70,7 +70,7 @@ public class EventSpeakerPoolController implements EventActionsApi {
     public ResponseEntity<SpeakerPoolResponse> patchSpeakerPoolEntry(
             String eventCode, UUID speakerId, PatchSpeakerPoolRequest patchSpeakerPoolRequest) {
         SpeakerPoolResponse response = speakerPoolService.patchEntry(
-                eventCode, speakerId.toString(), patchSpeakerPoolRequest);
+                eventCode, speakerId, patchSpeakerPoolRequest);
         return ResponseEntity.ok(response);
     }
 }

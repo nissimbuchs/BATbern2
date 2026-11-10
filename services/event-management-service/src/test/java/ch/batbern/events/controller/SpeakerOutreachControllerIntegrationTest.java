@@ -18,6 +18,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,6 +33,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasSize;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -151,6 +153,34 @@ public class SpeakerOutreachControllerIntegrationTest extends AbstractIntegratio
         // a second status_history row would duplicate the entry in the unified feed.
         assertThat(speakerStatusHistoryRepository.findBySpeakerPoolIdOrderByChangedAtDesc(speakerId))
                 .isEmpty();
+    }
+
+    /**
+     * Story 4.10: the outreach actor is the organizer's username, never the e-mail address. A
+     * {@code @WithMockUser} principal has no e-mail, so it hid that the controller read the e-mail
+     * claim; a real token carries both claims.
+     */
+    @Test
+    void should_recordOrganizerUsernameNotEmail_when_tokenCarriesBoth() throws Exception {
+        Map<String, Object> request = new HashMap<>();
+        request.put("contactDate", OffsetDateTime.now(ZoneOffset.UTC).toString());
+        request.put("contactMethod", "phone");
+        request.put("notes", "Rückruf vereinbart.");
+
+        mockMvc.perform(post("/api/v1/events/{eventCode}/speakers/{speakerId}/outreach",
+                                eventCode, speakerId)
+                        .with(jwt().jwt(j -> j.subject("a1b2c3d4-0000-4000-8000-000000000042")
+                                        .claim("custom:username", "alice.mueller")
+                                        .claim("email", "Alice.Mueller@example.com"))
+                                .authorities(new SimpleGrantedAuthority("ROLE_ORGANIZER")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.organizerUsername").value("alice.mueller"));
+
+        assertThat(outreachHistoryRepository.findBySpeakerPoolId(speakerId))
+                .extracting(OutreachHistory::getOrganizerUsername)
+                .containsExactly("alice.mueller");
     }
 
     /**
