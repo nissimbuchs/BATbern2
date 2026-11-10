@@ -20,7 +20,6 @@
     "src/components/organizer/EventPage/EventParticipantFilters.test.tsx",
     "src/components/organizer/EventPage/EventParticipantList.test.tsx",
     "src/components/organizer/EventPage/EventParticipantsTab.test.tsx",
-    "src/components/organizer/EventPage/__tests__/EventNewsletterTab.test.tsx",
     "src/components/organizer/EventTypeConfigurationForm/EventTypeConfigurationForm.test.tsx",
     "src/components/organizer/EventTypeSelector/EventTypeSelector.test.tsx",
     "src/components/organizer/NewsletterSubscribers/__tests__/NewsletterSubscriberFilters.test.tsx",

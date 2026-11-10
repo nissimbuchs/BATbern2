@@ -30,7 +30,7 @@ Each release includes:
 
 Only items that are not live yet. Everything else is listed under its release below.
 
-- 📋 Epic 16 Mail Center: removal of the old compose screens (Story 16.8c, after one release and owner go); HTML in Java mails moved to templates (16.12); one mail value for the email service (16.13)
+- 📋 Epic 16 Mail Center: HTML in Java mails moved to templates (16.12); one mail value for the email service (16.13)
 - 📋 Epic 13 close-out: Jackson 3 switch-over, dependency versions handed back to the Spring Boot BOM
 - 📋 Epic 15: LinkedIn post drafts (Story 15.8)
 - 📋 Apple / generic OIDC SSO (Story 12-10) — extends "Continue with Google" with additional providers
@@ -41,6 +41,10 @@ Only items that are not live yet. Everything else is listed under its release be
 ## v1.4.x - Current Release
 
 ### Unreleased — after BATbern60
+
+**Improvement — One way to send mail to an audience (16.8c)**:
+- ✅ Newsletter, registrant notices (for example "the slides are online"), speaker reminders and venue and catering mail go out only from **+ New mail** on the event's Communications tab. The old Newsletter, Registrant notices and Venue sections and the reminder button per speaker were already hidden since 16.8b; their code and server endpoints are now removed. A newsletter's progress and **Retry** are on its row in the Mail Center.
+- ✅ The venue and catering contacts in Administration now say that their mails are sent from the Communications tab.
 
 **Improvement — No-shows (after BATbern60)**:
 - ✅ A registration can be marked **No-show**: registered for the event and did not come. The participant list has a *No-show* filter and chip, and the attendee's own event history says so.

@@ -35,7 +35,7 @@
     "saveFailed": "Tallennus epaonnistui. Yrita uudelleen.",
     "venueCoordination": {
       "title": "Tilan ja cateringin yhteyshenkilöt",
-      "subtitle": "Nämä yhteyshenkilöt saavat tarjous- ja aikataulusähköpostit, jotka lähetetään tapahtuman tietosivun Tila-välilehdeltä. Ne ovat samat jokaisessa tapahtumassa — määritä kerran tähän.",
+      "subtitle": "Nämä yhteyshenkilöt saavat tarjous- ja aikataulusähköpostit, jotka lähetetään tapahtuman tietosivun Viestintä-välilehdeltä. Ne ovat samat jokaisessa tapahtumassa — määritä kerran tähän.",
       "venueSection": "Tilan yhteyshenkilö",
       "cateringSection": "Cateringin yhteyshenkilö",
       "coordinatorSection": "Tilan koordinaattori",

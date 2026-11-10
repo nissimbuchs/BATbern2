@@ -23,7 +23,6 @@ vi.mock('@/services/speakerPoolService', () => ({
     patchSpeakerPool: vi.fn(),
     promoteToSpeaker: vi.fn(),
     sendInvitation: vi.fn(),
-    sendReminder: vi.fn(),
   },
 }));
 
@@ -43,7 +42,6 @@ import {
   usePatchSpeakerPool,
   usePromoteSpeakerToReady,
   useSendInvitation,
-  useSendReminder,
 } from './useSpeakerPool';
 import { useSpeakerOutreachHistory, useRecordOutreach } from './useSpeakerOutreach';
 
@@ -53,7 +51,6 @@ const mockDeleteSpeakerFromPool = vi.mocked(speakerPoolService.deleteSpeakerFrom
 const mockPatchSpeakerPool = vi.mocked(speakerPoolService.patchSpeakerPool);
 const mockPromoteToSpeaker = vi.mocked(speakerPoolService.promoteToSpeaker);
 const mockSendInvitation = vi.mocked(speakerPoolService.sendInvitation);
-const mockSendReminder = vi.mocked(speakerPoolService.sendReminder);
 const mockGetOutreachHistory = vi.mocked(speakerOutreachService.getOutreachHistory);
 const mockRecordOutreach = vi.mocked(speakerOutreachService.recordOutreach);
 
@@ -461,103 +458,6 @@ describe('useSendInvitation', () => {
 
     await act(async () => {
       await result.current.mutateAsync({ username: 'speaker-uuid' }).catch(() => {});
-    });
-
-    await waitFor(() => expect(result.current.isError).toBe(true));
-  });
-});
-
-// ── useSendReminder ─────────────────────────────────────────────────────────
-
-describe('useSendReminder', () => {
-  let qc: QueryClient;
-
-  beforeEach(() => {
-    qc = createQC();
-    vi.clearAllMocks();
-  });
-
-  it('should call sendReminder with eventCode, speakerPoolId, and request', async () => {
-    const mockResponse = {
-      message: 'Reminder sent successfully',
-      tier: 'TIER_1',
-      emailAddress: 'speaker@example.com',
-    };
-    mockSendReminder.mockResolvedValue(mockResponse as never);
-
-    const { result } = renderHook(() => useSendReminder('BAT142'), { wrapper: wrapper(qc) });
-
-    await act(async () => {
-      await result.current.mutateAsync({
-        speakerPoolId: 'sp-pool-1',
-        request: { reminderType: 'RESPONSE' as const },
-      });
-    });
-
-    expect(mockSendReminder).toHaveBeenCalledWith('BAT142', 'sp-pool-1', {
-      reminderType: 'RESPONSE',
-    });
-    await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data).toEqual(mockResponse);
-  });
-
-  it('should send CONTENT reminder type', async () => {
-    const mockResponse = {
-      message: 'Reminder sent',
-      tier: 'TIER_2',
-      emailAddress: 'speaker@example.com',
-    };
-    mockSendReminder.mockResolvedValue(mockResponse as never);
-
-    const { result } = renderHook(() => useSendReminder('BAT142'), { wrapper: wrapper(qc) });
-
-    await act(async () => {
-      await result.current.mutateAsync({
-        speakerPoolId: 'sp-pool-1',
-        request: { reminderType: 'CONTENT' as const, tier: 'TIER_2' },
-      });
-    });
-
-    expect(mockSendReminder).toHaveBeenCalledWith('BAT142', 'sp-pool-1', {
-      reminderType: 'CONTENT',
-      tier: 'TIER_2',
-    });
-  });
-
-  it('should invalidate speaker pool cache on success', async () => {
-    mockSendReminder.mockResolvedValue({
-      message: 'ok',
-      tier: 'TIER_1',
-      emailAddress: 'a@b.com',
-    } as never);
-    const invalidateSpy = vi.spyOn(qc, 'invalidateQueries');
-
-    const { result } = renderHook(() => useSendReminder('BAT142'), { wrapper: wrapper(qc) });
-
-    await act(async () => {
-      await result.current.mutateAsync({
-        speakerPoolId: 'sp-pool-1',
-        request: { reminderType: 'RESPONSE' as const },
-      });
-    });
-
-    expect(invalidateSpy).toHaveBeenCalledWith(
-      expect.objectContaining({ queryKey: expect.arrayContaining(['speakerPool']) })
-    );
-  });
-
-  it('should set isError on failure', async () => {
-    mockSendReminder.mockRejectedValue(new Error('Speaker not eligible for reminder'));
-
-    const { result } = renderHook(() => useSendReminder('BAT142'), { wrapper: wrapper(qc) });
-
-    await act(async () => {
-      await result.current
-        .mutateAsync({
-          speakerPoolId: 'sp-pool-1',
-          request: { reminderType: 'RESPONSE' as const },
-        })
-        .catch(() => {});
     });
 
     await waitFor(() => expect(result.current.isError).toBe(true));

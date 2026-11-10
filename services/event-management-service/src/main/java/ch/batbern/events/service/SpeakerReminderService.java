@@ -26,7 +26,6 @@ import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Locale;
-import java.util.UUID;
 
 /**
  * Service for processing speaker deadline reminders.
@@ -137,54 +136,6 @@ public class SpeakerReminderService {
                 responseReminders, contentReminders, skipped);
 
         return new ReminderProcessingResult(responseReminders, contentReminders, skipped);
-    }
-
-    /**
-     * Manually send a reminder for a specific speaker (AC8).
-     * Bypasses deduplication but respects reminders_disabled flag.
-     *
-     * @param speakerPoolId the speaker pool entry ID
-     * @param reminderType RESPONSE or CONTENT
-     * @param tier optional tier (auto-detected if null)
-     * @param triggeredBy organizer username
-     * @return result with tier used and email sent to
-     */
-    @Transactional
-    public ManualReminderResult sendManualReminder(
-            UUID speakerPoolId,
-            String reminderType,
-            String tier,
-            String triggeredBy
-    ) {
-        SpeakerPool speaker = speakerPoolRepository.findById(speakerPoolId)
-                .orElseThrow(() -> new IllegalArgumentException("Speaker pool entry not found: " + speakerPoolId));
-
-        // Validate reminders not disabled
-        if (Boolean.TRUE.equals(speaker.getRemindersDisabled())) {
-            throw new RemindersDisabledException("Reminders are disabled for this speaker");
-        }
-
-        // Validate speaker state matches reminder type
-        validateSpeakerState(speaker, reminderType);
-
-        // Get the event
-        Event event = eventRepository.findById(speaker.getEventId())
-                .orElseThrow(() -> new IllegalArgumentException("Event not found: " + speaker.getEventId()));
-
-        // Auto-detect tier if not specified
-        LocalDate deadline = deadlineFor(speaker, event, reminderType);
-
-        String effectiveTier = tier != null ? tier : autoDetectTier(LocalDate.now(), deadline);
-
-        // Send (bypass dedup for manual triggers)
-        sendAndLogReminder(speaker, event, reminderType, effectiveTier, deadline, triggeredBy,
-                MailTrigger.organizer(triggeredBy));
-
-        // Phase B: recipient routing now flows through PrimarySpeakerResolver. For manual
-        // reminder result, surface whatever email was actually used (may be null if the
-        // sender path skipped due to no resolvable recipient).
-        String resolvedEmail = primarySpeakerResolver.resolveEmail(speaker).orElse(null);
-        return new ManualReminderResult(effectiveTier, resolvedEmail);
     }
 
     /**
@@ -323,13 +274,10 @@ public class SpeakerReminderService {
 
     /**
      * Send the reminder email and log it.
-     */
-    /**
-     * Send the reminder email and log it.
      * DB records are persisted BEFORE sending email to ensure dedup safety:
      * if email succeeds but a later operation fails, the dedup record prevents
      * duplicate emails on the next scheduler run. If email fails, the DB record
-     * remains and the organizer can retry manually via the send-reminder endpoint.
+     * remains and the organizer can send it again from the Mail Center composer (speakers).
      */
     private void sendAndLogReminder(
             SpeakerPool speaker,
@@ -428,47 +376,7 @@ public class SpeakerReminderService {
         }
     }
 
-    private void validateSpeakerState(SpeakerPool speaker, String reminderType) {
-        if (REMINDER_TYPE_RESPONSE.equals(reminderType)) {
-            if (speaker.getStatus() != SpeakerWorkflowState.INVITED) {
-                throw new InvalidSpeakerStateException(
-                        "Speaker is not in INVITED state (current: " + speaker.getStatus() + ")");
-            }
-        } else if (REMINDER_TYPE_CONTENT.equals(reminderType)) {
-            if (speaker.getStatus() != SpeakerWorkflowState.ACCEPTED) {
-                throw new InvalidSpeakerStateException(
-                        "Speaker is not in ACCEPTED state (current: " + speaker.getStatus() + ")");
-            }
-            // Story 11.E.8: "content submitted" is now the presence of any
-            // session_content_history row for the speaker's session.
-            boolean noContentYet = speaker.getSessionId() == null
-                    || !sessionContentHistoryRepository.existsBySessionId(speaker.getSessionId());
-            if (!noContentYet) {
-                throw new InvalidSpeakerStateException(
-                        "Content already submitted for session " + speaker.getSessionId());
-            }
-        } else {
-            throw new IllegalArgumentException("Invalid reminder type: " + reminderType);
-        }
-    }
-
     // Result records
     public record ReminderProcessingResult(int responseReminders, int contentReminders, int skipped) {
-    }
-
-    public record ManualReminderResult(String tier, String emailAddress) {
-    }
-
-    // Exception classes
-    public static class RemindersDisabledException extends RuntimeException {
-        public RemindersDisabledException(String message) {
-            super(message);
-        }
-    }
-
-    public static class InvalidSpeakerStateException extends RuntimeException {
-        public InvalidSpeakerStateException(String message) {
-            super(message);
-        }
     }
 }

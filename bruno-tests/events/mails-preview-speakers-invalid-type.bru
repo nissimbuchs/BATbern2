@@ -1,0 +1,35 @@
+meta {
+  name: Mail composer — speakers preview rejects an unknown reminder type (400)
+  type: http
+  seq: 36
+}
+
+post {
+  url: {{baseUrl}}/events/BATbern59/mails/preview
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{organizerAuthToken}}
+}
+
+body:json {
+  {
+    "audience": "SPEAKERS",
+    "speakerReminderType": "INVALID_TYPE"
+  }
+}
+
+tests {
+  test("an unknown speakerReminderType is a 400, before anything is rendered", function() {
+    expect(res.getStatus()).to.equal(400);
+  });
+}
+
+docs {
+  Story 16.8c: moved from speaker-pool-api/63-send-reminder-invalid-type.bru when the
+  single-speaker send-reminder endpoint was removed. The composer's speakers audience takes the
+  reminder type; the spec enum (RESPONSE, CONTENT) rejects anything else. Preview only: nothing is
+  sent.
+}

@@ -35,7 +35,7 @@
     "saveFailed": "Speichern fehlgeschlagen. Bitte versuchen Sie es erneut.",
     "venueCoordination": {
       "title": "Kontakte Veranstaltungsort & Catering",
-      "subtitle": "Diese Kontakte erhalten die Offerten- und Zeitplan-Mails aus dem Tab «Veranstaltungsort» auf der Event-Detailseite. Sie sind für jedes Event gleich — einmal hier hinterlegen.",
+      "subtitle": "Diese Kontakte erhalten die Offerten- und Zeitplan-Mails aus dem Tab «Kommunikation» auf der Event-Detailseite. Sie sind für jedes Event gleich — einmal hier hinterlegen.",
       "venueSection": "Kontakt Veranstaltungsort",
       "cateringSection": "Kontakt Catering",
       "coordinatorSection": "Veranstaltungsort-Koordinator",

@@ -520,12 +520,6 @@
   "acceptTopic": {
     "descriptionOptional": "Description (optional)"
   },
-  "newsletter": {
-    "templateSelect": {
-      "label": "テンプレート",
-      "createNew": "新しいテンプレートを作成"
-    }
-  },
   "aiAssist": {
     "generateDescription": "✨ Beschreibung generieren",
     "regenerateDescription": "↻ Neu generieren",

@@ -622,46 +622,6 @@ export interface paths {
     patch: operations['updateTeaserImage'];
     trace?: never;
   };
-  '/events/{eventCode}/venue-coordination/preview': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Preview a venue/catering coordination mail
-     * @description Event Detail → Venue tab (Story). ORGANIZER role.
-     */
-    post: operations['previewVenueCoordination'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/events/{eventCode}/venue-coordination/send': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Send a venue/catering coordination mail
-     * @description Event Detail → Venue tab (Story). ORGANIZER role.
-     */
-    post: operations['sendVenueCoordination'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
   '/events/{eventCode}/publish/{phase}': {
     parameters: {
       query?: never;
@@ -876,34 +836,6 @@ export interface components {
       phase3DaysBeforeEvent: number;
       /** Format: date-time */
       phase3TriggerDate: string;
-    };
-    /**
-     * @description Venue-coordination recipient role
-     * @enum {string}
-     */
-    VenueRole: 'VENUE' | 'CATERING';
-    VenueCoordinationPreviewRequest: {
-      templateKey: string;
-      recipients: components['schemas']['VenueRole'][];
-      /** @description Locale (de | en); falls back to de */
-      locale?: string;
-      notes?: string;
-    };
-    VenueCoordinationPreviewResponse: {
-      subject: string;
-      htmlBody: string;
-      toEmail: string;
-      ccEmails: string[];
-      replyToEmail: string;
-    };
-    VenueCoordinationSendRequest: {
-      templateKey: string;
-      locale?: string;
-      notes?: string;
-      recipients: components['schemas']['VenueRole'][];
-    };
-    VenueCoordinationSendResponse: {
-      sentTo: components['schemas']['VenueRole'][];
     };
     /**
      * @description Controls which slide the image appears after in the moderator presentation.
@@ -3134,64 +3066,6 @@ export interface operations {
         };
         content?: never;
       };
-    };
-  };
-  previewVenueCoordination: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        eventCode: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['VenueCoordinationPreviewRequest'];
-      };
-    };
-    responses: {
-      /** @description Rendered preview */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['VenueCoordinationPreviewResponse'];
-        };
-      };
-      400: components['responses']['BadRequest'];
-      401: components['responses']['Unauthorized'];
-      403: components['responses']['Forbidden'];
-    };
-  };
-  sendVenueCoordination: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        eventCode: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['VenueCoordinationSendRequest'];
-      };
-    };
-    responses: {
-      /** @description Sent */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['VenueCoordinationSendResponse'];
-        };
-      };
-      400: components['responses']['BadRequest'];
-      401: components['responses']['Unauthorized'];
-      403: components['responses']['Forbidden'];
     };
   };
   publishPhase: {

@@ -43,12 +43,6 @@
   "speakerOutreach": {
     "emailPlaceholder": "speaker@example.com"
   },
-  "newsletter": {
-    "templateSelect": {
-      "label": "Vorlag",
-      "createNew": "Neus Vorlagi erstelle"
-    }
-  },
   "aiAssist": {
     "generateDescription": "✨ Beschreibung generieren",
     "regenerateDescription": "↻ Neu generieren",

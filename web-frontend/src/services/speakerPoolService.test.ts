@@ -20,8 +20,6 @@ import type {
   SpeakerPoolResponse,
   SendInvitationRequest,
   SendInvitationResponse,
-  SendReminderRequest,
-  SendReminderResponse,
 } from '@/types/speakerPool.types';
 import { aSpeakerPoolEntry } from '@/test/fixtures';
 
@@ -408,74 +406,6 @@ describe('speakerPoolService', () => {
       await expect(
         speakerPoolService.sendInvitation('BATbern56', 'speaker-username')
       ).rejects.toThrow('Speaker already invited');
-    });
-  });
-
-  describe('sendReminder', () => {
-    it('should send a response reminder', async () => {
-      const request: SendReminderRequest = {
-        reminderType: 'RESPONSE',
-      };
-
-      const mockResponse: SendReminderResponse = {
-        message: 'Reminder sent successfully',
-        tier: 'TIER_1',
-        emailAddress: 'speaker@example.com',
-      };
-
-      vi.mocked(apiClient.post).mockResolvedValue({ data: mockResponse });
-
-      const result = await speakerPoolService.sendReminder(
-        'BATbern56',
-        'pool-entry-uuid-123',
-        request
-      );
-
-      expect(apiClient.post).toHaveBeenCalledWith(
-        '/events/BATbern56/speaker-pool/pool-entry-uuid-123/send-reminder',
-        request
-      );
-      expect(result).toEqual(mockResponse);
-      expect(result.tier).toBe('TIER_1');
-    });
-
-    it('should send a content reminder with tier override', async () => {
-      const request: SendReminderRequest = {
-        reminderType: 'CONTENT',
-        tier: 'TIER_3',
-      };
-
-      const mockResponse: SendReminderResponse = {
-        message: 'Reminder sent successfully',
-        tier: 'TIER_3',
-        emailAddress: 'speaker@example.com',
-      };
-
-      vi.mocked(apiClient.post).mockResolvedValue({ data: mockResponse });
-
-      const result = await speakerPoolService.sendReminder(
-        'BATbern56',
-        'pool-entry-uuid-456',
-        request
-      );
-
-      expect(apiClient.post).toHaveBeenCalledWith(
-        '/events/BATbern56/speaker-pool/pool-entry-uuid-456/send-reminder',
-        request
-      );
-      expect(result.tier).toBe('TIER_3');
-      expect(result.emailAddress).toBe('speaker@example.com');
-    });
-
-    it('should propagate errors when reminder cannot be sent', async () => {
-      const error = new Error('Speaker has no email address');
-      vi.mocked(apiClient.post).mockRejectedValue(error);
-
-      await expect(
-        speakerPoolService.sendReminder('BATbern56', 'pool-entry-uuid-123', {
-          reminderType: 'RESPONSE',
-        })
-      ).rejects.toThrow('Speaker has no email address');
     });
   });
 

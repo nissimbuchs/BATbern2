@@ -9,7 +9,6 @@ import ch.batbern.events.domain.Registration;
 import ch.batbern.events.exception.DuplicateNewsletterSendException;
 import ch.batbern.events.exception.SlidesOnlineAlreadySentException;
 import ch.batbern.events.mailcenter.render.MailPipelines;
-import ch.batbern.events.newsletter.dto.generated.SlidesOnlineSendResponse;
 import ch.batbern.events.repository.NewsletterRecipientRepository;
 import ch.batbern.events.repository.NewsletterSendRepository;
 import ch.batbern.events.repository.NewsletterSubscriberRepository;
@@ -20,6 +19,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -156,11 +156,13 @@ class SlidesOnlineEmailServiceTest {
         SlidesOnlineEmailService selfMock = org.mockito.Mockito.mock(SlidesOnlineEmailService.class);
         service.setSelf(selfMock);
 
-        SlidesOnlineSendResponse resp = service.sendRegistrantNotice(event, "slides-online", "org.user");
+        QueuedSend queued = service.sendRegistrantNotice(event, "slides-online", "org.user");
 
-        assertThat(resp.getSendId()).isEqualTo(sendId);
-        assertThat(resp.getStatus()).isEqualTo(SlidesOnlineSendResponse.StatusEnum.PENDING);
-        assertThat(resp.getRecipientCount()).isEqualTo(2);
+        assertThat(queued.sendId()).isEqualTo(sendId);
+        assertThat(queued.recipientCount()).isEqualTo(2);
+        ArgumentCaptor<NewsletterSend> row = ArgumentCaptor.forClass(NewsletterSend.class);
+        verify(sendRepository).save(row.capture());
+        assertThat(row.getValue().getStatus()).isEqualTo("PENDING");
         verify(selfMock).executeSlidesOnlineSendAsync(sendId, event, "slides-online");
     }
 

@@ -15,7 +15,6 @@ import type {
   PatchSpeakerPoolRequest,
   PromoteSpeakerRequest,
   SendInvitationRequest,
-  SendReminderRequest,
 } from '@/types/speakerPool.types';
 
 /**
@@ -191,40 +190,6 @@ export function useSendInvitation(eventCode: string) {
       // Also invalidate status summary since counts have changed
       queryClient.invalidateQueries({
         queryKey: ['speakerStatusSummary', eventCode],
-      });
-    },
-  });
-}
-
-/**
- * Hook to send reminder to speaker (Story 6.5, ORGANIZER only)
- *
- * Sends a deadline reminder email to an invited or accepted speaker.
- *
- * @param eventCode Event code (e.g., "BATbern56")
- * @returns Mutation object with mutate function
- * @example
- * const sendReminder = useSendReminder('BATbern56');
- * sendReminder.mutate({
- *   speakerPoolId: 'uuid-here',
- *   request: { reminderType: 'RESPONSE' }
- * });
- */
-export function useSendReminder(eventCode: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({
-      speakerPoolId,
-      request,
-    }: {
-      speakerPoolId: string;
-      request: SendReminderRequest;
-    }) => speakerPoolService.sendReminder(eventCode, speakerPoolId, request),
-    onSuccess: () => {
-      // Invalidate speaker pool list to refetch updated data
-      queryClient.invalidateQueries({
-        queryKey: speakerPoolKeys.list(eventCode),
       });
     },
   });

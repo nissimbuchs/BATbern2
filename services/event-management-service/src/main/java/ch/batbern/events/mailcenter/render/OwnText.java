@@ -1,6 +1,5 @@
-package ch.batbern.events.mailcenter.compose;
+package ch.batbern.events.mailcenter.render;
 
-import ch.batbern.events.mailcenter.render.MailContent;
 import ch.batbern.shared.mail.MailContext;
 
 import java.nio.charset.StandardCharsets;
@@ -8,6 +7,9 @@ import java.nio.charset.StandardCharsets;
 /**
  * Own text (Story 16.5): the organizer's subject and body as one more {@link MailContent}, rendered
  * by the same pipeline and with the same variables as a template of the audience (16.11).
+ *
+ * <p>Mail core (Story 16.8c): the newsletter and registrant-notice send jobs render the own text
+ * stored on their send row through here, so it may use nothing of the mail center above it.
  */
 public final class OwnText {
 
@@ -24,9 +26,7 @@ public final class OwnText {
     }
 
     /** AC13: subject 1–500 characters on one line, body 1 character to 200 KB (400 otherwise). */
-    public static void validateShape(ComposeRequest request) {
-        String subject = request.ownSubject();
-        String body = request.ownBodyHtml();
+    public static void validateShape(String subject, String body) {
         if (subject == null || subject.isBlank()) {
             throw new IllegalArgumentException("ownSubject is required for own text");
         }
@@ -44,14 +44,9 @@ public final class OwnText {
         }
     }
 
-    /** The request's own text in the chosen language, with the BATbern layout. */
-    public static MailContent content(ComposeRequest request) {
-        return content(request.ownSubject(), request.ownBodyHtml(), request.locale());
-    }
-
-    /** Own text stored on a send row (newsletter, registrant notices). */
+    /** Own text in a language ({@code de} or {@code en}), with the BATbern layout. */
     public static MailContent content(String subject, String bodyHtml, String locale) {
-        return new MailContent(null, locale, subject, bodyHtml, MailRenderer.LAYOUT_KEY,
+        return new MailContent(null, locale, subject, bodyHtml, MailContent.DEFAULT_LAYOUT_KEY,
                 MailContext.ContentSource.OWN_TEXT);
     }
 }

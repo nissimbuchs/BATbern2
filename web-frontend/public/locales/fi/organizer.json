@@ -520,12 +520,6 @@
   "acceptTopic": {
     "descriptionOptional": "Description (optional)"
   },
-  "newsletter": {
-    "templateSelect": {
-      "label": "Malli",
-      "createNew": "Luo uusi malli"
-    }
-  },
   "aiAssist": {
     "generateDescription": "✨ Beschreibung generieren",
     "regenerateDescription": "↻ Neu generieren",

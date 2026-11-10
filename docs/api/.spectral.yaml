@@ -101,7 +101,6 @@ rules:
           - self-nominate
           - send-invitation
           - send-invite
-          - send-reminder
           - submit
           - subscribe
           - transition

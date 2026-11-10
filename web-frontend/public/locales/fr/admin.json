@@ -35,7 +35,7 @@
     "saveFailed": "Echec de l'enregistrement. Veuillez reessayer.",
     "venueCoordination": {
       "title": "Contacts lieu & restauration",
-      "subtitle": "Ces contacts reçoivent les courriels d'offerte et de programme depuis l'onglet Lieu de la page Détails de l'événement. Ils sont identiques pour chaque événement — à définir une seule fois ici.",
+      "subtitle": "Ces contacts reçoivent les courriels d'offerte et de programme depuis l'onglet Communications de la page Détails de l'événement. Ils sont identiques pour chaque événement — à définir une seule fois ici.",
       "venueSection": "Contact lieu",
       "cateringSection": "Contact restauration",
       "coordinatorSection": "Coordinateur·trice du lieu",

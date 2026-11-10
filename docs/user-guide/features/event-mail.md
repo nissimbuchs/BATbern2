@@ -1,6 +1,6 @@
 # Event mail page (Communications tab)
 
-> **Last Updated:** 2026-11-02 · Epic 16, Stories 16.3, 16.4, 16.8a, 16.8b, 16.2a, 16.7, 16.10
+> **Last Updated:** 2026-11-10 · Epic 16, Stories 16.3, 16.4, 16.8a, 16.8b, 16.8c, 16.2a, 16.7, 16.10
 
 The **Communications** tab of an event is its mail page. It answers "did the speakers get the
 slides mail?" without asking the team.
@@ -73,7 +73,8 @@ Every mail sent for the event, newest first, the newsletter included.
   were replaced by `[redacted]` when the mail was recorded.
 - **A newsletter that is still sending** shows its progress and refreshes by itself.
 - **A newsletter that left recipients out** (ended partial or failed) has **Retry** on its row: it
-  sends again to the failed recipients only.
+  sends again to the failed recipients and to active subscribers the send never reached. Nobody who
+  got it is mailed twice, and nobody who unsubscribed since.
 - **Test sends are hidden.** A test to the organizers is recorded with a TEST mark but hidden from
   the list; switch on **Show test sends** to see them.
 
@@ -107,6 +108,8 @@ belongs to one of its registrations.
 ![The + New mail menu](../assets/screenshots/features/event-mail-new-mail.png)
 
 The button sits at the top right of the communication tab, above all sections.
+It is the only place an organizer sends mail to these audiences: the former Newsletter, Registrant
+notices and Venue sections and the reminder button per speaker are gone (Story 16.8c).
 
 The menu offers **Newsletter, Registrants, Speakers, Venue & Catering, Partners**. All five open the
 same composer at the top of the page (full screen on a phone), with the same steps:

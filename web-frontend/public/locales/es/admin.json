@@ -35,7 +35,7 @@
     "saveFailed": "Error al guardar. Intentelo de nuevo.",
     "venueCoordination": {
       "title": "Contactos de lugar y catering",
-      "subtitle": "Estos contactos reciben los correos de oferta y programa enviados desde la pestaña Lugar de la página de detalle del evento. Son los mismos para cada evento — defínalos una sola vez aquí.",
+      "subtitle": "Estos contactos reciben los correos de oferta y programa enviados desde la pestaña Comunicaciones de la página de detalle del evento. Son los mismos para cada evento — defínalos una sola vez aquí.",
       "venueSection": "Contacto del lugar",
       "cateringSection": "Contacto del catering",
       "coordinatorSection": "Coordinador/a del lugar",

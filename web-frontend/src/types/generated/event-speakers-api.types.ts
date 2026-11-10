@@ -556,26 +556,6 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/events/{eventCode}/speaker-pool/{speakerPoolId}/send-reminder': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Manually send a deadline reminder to a speaker (Story 6.5 AC8)
-     * @description Bypasses dedup but respects the reminders-disabled flag. ORGANIZER role.
-     */
-    post: operations['sendSpeakerReminder'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
   '/events/{eventCode}/speaker-pool/{speakerPoolId}/reminders': {
     parameters: {
       query?: never;
@@ -1536,20 +1516,6 @@ export interface components {
       materialType?: string;
       /** Format: date-time */
       uploadedAt?: string;
-    };
-    /** @description Manual speaker reminder request (Story 6.5) */
-    SendReminderRequest: {
-      /** @description RESPONSE or CONTENT */
-      reminderType?: string;
-      /** @description Optional: TIER_1/TIER_2/TIER_3 (auto-detected if omitted) */
-      tier?: string;
-    };
-    /** @description Manual reminder result; error fields populated on the 400/409 paths */
-    SendReminderResponse: {
-      message?: string;
-      tier?: string;
-      emailAddress?: string;
-      error?: string;
     };
     UpdateRemindersDisabledRequest: {
       remindersDisabled: boolean;
@@ -2771,53 +2737,6 @@ export interface operations {
       401: components['responses']['Unauthorized'];
       403: components['responses']['Forbidden'];
       404: components['responses']['NotFound'];
-    };
-  };
-  sendSpeakerReminder: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        eventCode: string;
-        speakerPoolId: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['SendReminderRequest'];
-      };
-    };
-    responses: {
-      /** @description Reminder sent */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['SendReminderResponse'];
-        };
-      };
-      /** @description Invalid reminder type or speaker state */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['SendReminderResponse'];
-        };
-      };
-      401: components['responses']['Unauthorized'];
-      403: components['responses']['Forbidden'];
-      /** @description Reminders disabled for this speaker */
-      409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['SendReminderResponse'];
-        };
-      };
     };
   };
   updateRemindersDisabled: {

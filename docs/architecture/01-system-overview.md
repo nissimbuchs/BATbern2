@@ -312,7 +312,7 @@ flowchart TB
         C2["Sessions and agenda<br/>SessionController, GlobalSessionController,<br/>SlotAssignmentController, TimetableController"]
         C3["Speaker workflow<br/>EventSpeakerPoolController, SpeakerStatusController,<br/>SpeakerInvitationController, SpeakerOutreachController,<br/>SpeakerReminderController, SessionSpeakerController"]
         C4["Speaker portal<br/>SpeakerPortal*Controller, MaterialsUploadController,<br/>SessionMaterialsController"]
-        C5["Registrations<br/>EventController registration endpoints,<br/>ParticipantsController, DeregistrationController,<br/>RegistrantNoticeController"]
+        C5["Registrations<br/>EventController registration endpoints,<br/>ParticipantsController, DeregistrationController"]
         C6["Attendee contributions<br/>SelfNominationController, OrganizerThanksController,<br/>EventQnaController, SessionQnaController,<br/>AttendeeDashboardController"]
         C7["Tasks<br/>EventTaskController, TaskTemplateController"]
         C8["Mail<br/>EmailTemplateController, NewsletterController,<br/>mailcenter/MailConversationController,<br/>EventMailController"]

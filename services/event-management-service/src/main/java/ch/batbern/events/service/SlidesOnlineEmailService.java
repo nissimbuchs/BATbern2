@@ -8,12 +8,10 @@ import ch.batbern.events.domain.NewsletterSend;
 import ch.batbern.events.domain.Registration;
 import ch.batbern.events.exception.DuplicateNewsletterSendException;
 import ch.batbern.events.exception.SlidesOnlineAlreadySentException;
-import ch.batbern.events.mailcenter.compose.OwnText;
 import ch.batbern.events.mailcenter.render.MailContent;
 import ch.batbern.events.mailcenter.render.MailPipeline;
+import ch.batbern.events.mailcenter.render.OwnText;
 import ch.batbern.events.mailcenter.variables.MailVariable;
-import ch.batbern.events.newsletter.dto.generated.RegistrantNoticePreviewResponse;
-import ch.batbern.events.newsletter.dto.generated.SlidesOnlineSendResponse;
 import ch.batbern.events.repository.NewsletterRecipientRepository;
 import ch.batbern.events.repository.NewsletterSendRepository;
 import ch.batbern.events.repository.NewsletterSubscriberRepository;
@@ -144,8 +142,7 @@ public class SlidesOnlineEmailService {
      * @throws DuplicateNewsletterSendException (409) if such a send is already IN_PROGRESS
      * @throws SlidesOnlineAlreadySentException (409) if such a send already completed for the event
      */
-    public SlidesOnlineSendResponse sendRegistrantNotice(Event event, String templateKey,
-                                                         String sentByUsername) {
+    public QueuedSend sendRegistrantNotice(Event event, String templateKey, String sentByUsername) {
         requireRegistrantNoticeTemplate(templateKey);
         UUID eventId = event.getId();
 
@@ -184,11 +181,7 @@ public class SlidesOnlineEmailService {
         log.info("Registrant-notice send queued: sendId={}, event={}, template={}, registrants={}",
                 saved.getId(), event.getEventCode(), templateKey, registrants.size());
 
-        return SlidesOnlineSendResponse.builder()
-                .sendId(saved.getId())
-                .status(SlidesOnlineSendResponse.StatusEnum.PENDING)
-                .recipientCount(registrants.size())
-                .build();
+        return new QueuedSend(saved.getId(), registrants.size());
     }
 
     /**
@@ -196,7 +189,7 @@ public class SlidesOnlineEmailService {
      * is a 409; the one-shot-by-subject question is asked by the composer before this is called.
      * Everyone gets the text as written, with the layout in {@code locale}.
      */
-    public SlidesOnlineSendResponse sendRegistrantOwnText(Event event, String ownSubject, String ownBodyHtml,
+    public QueuedSend sendRegistrantOwnText(Event event, String ownSubject, String ownBodyHtml,
             String locale, String sentByUsername, List<String> statuses) {
         UUID eventId = event.getId();
         sendRepository.findFirstByEventIdAndTemplateKeyAndStatus(eventId, OwnText.REGISTRANTS_ROW_KEY,
@@ -223,11 +216,7 @@ public class SlidesOnlineEmailService {
         self.executeSlidesOnlineSendAsync(saved.getId(), event, OwnText.REGISTRANTS_ROW_KEY);
         log.info("Registrant own-text send queued: sendId={}, event={}, registrants={}",
                 saved.getId(), event.getEventCode(), registrants.size());
-        return SlidesOnlineSendResponse.builder()
-                .sendId(saved.getId())
-                .status(SlidesOnlineSendResponse.StatusEnum.PENDING)
-                .recipientCount(registrants.size())
-                .build();
+        return new QueuedSend(saved.getId(), registrants.size());
     }
 
     /** When own text with this subject last went to this event's registrants (COMPLETED or PARTIAL). */
@@ -243,36 +232,6 @@ public class SlidesOnlineEmailService {
         ch.batbern.events.mailcenter.render.RenderedMail mail =
                 mailPipeline.render(content, buildVariables(event, content.locale()));
         return new RenderedMail(mail.subject(), mail.html());
-    }
-
-    /**
-     * Render a registrant-notice template for preview in a chosen language and report how many
-     * active registrants would receive it. The actual SEND still resolves each registrant's own
-     * language (AC4); this preview locale only controls what the organizer sees.
-     */
-    @Transactional(readOnly = true)
-    public RegistrantNoticePreviewResponse previewRegistrantNotice(Event event, String templateKey,
-                                                                   String locale) {
-        requireRegistrantNoticeTemplate(templateKey);
-        String loc = "en".equalsIgnoreCase(locale) ? "en" : "de";
-        RenderedMail mail = renderBase(event, templateKey, loc);
-        // The real send personalises {{deregistrationUrl}} / {{recipientName}} per registrant
-        // (see processSend). For the organizer preview, fill those with a representative sample so
-        // the preview doesn't show literal {{deregistrationUrl}} placeholders.
-        Map<String, String> sampleVars = Map.of(
-                "deregistrationUrl", baseUrl + "/deregister?token=00000000-0000-0000-0000-000000000000",
-                "recipientName", "en".equals(loc) ? "Jane Doe" : "Erika Muster",
-                "attendeeFirstName", "en".equals(loc) ? "Jane" : "Erika");
-        String htmlPreview = emailService.replaceVariables(mail.html(), sampleVars);
-        String subjectPreview = emailService.replaceVariables(mail.subject(), sampleVars);
-        // Count-only query — don't hydrate the full Registration list just to size it.
-        int recipientCount = (int) registrationRepository
-                .countByEventIdAndStatusIn(event.getId(), ACTIVE_REGISTRANT_STATUSES);
-        return RegistrantNoticePreviewResponse.builder()
-                .subject(subjectPreview)
-                .htmlPreview(htmlPreview)
-                .recipientCount(recipientCount)
-                .build();
     }
 
     /**

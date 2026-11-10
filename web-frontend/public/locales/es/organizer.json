@@ -520,12 +520,6 @@
   "acceptTopic": {
     "descriptionOptional": "Description (optional)"
   },
-  "newsletter": {
-    "templateSelect": {
-      "label": "Plantilla",
-      "createNew": "Crear nueva plantilla"
-    }
-  },
   "aiAssist": {
     "generateDescription": "✨ Beschreibung generieren",
     "regenerateDescription": "↻ Neu generieren",

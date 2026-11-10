@@ -1,7 +1,7 @@
 /**
  * useNewsletter Hook (Story 10.7)
  *
- * React Query hooks for newsletter subscription and sending.
+ * React Query hooks for newsletter subscriptions. Sending is the Mail Center composer's (Story 16.8).
  */
 
 import {
@@ -16,19 +16,11 @@ import type {
   MyNewsletterSubscriptionsResponse,
   NewsletterSubscribeRequest,
   NewsletterSubscriptionStatusResponse,
-  NewsletterSendRequest,
-  NewsletterSendResponse,
-  NewsletterSendStatusResponse,
-  NewsletterPreviewResponse,
-  NewsletterSendHistoryItem,
-  SubscriberCountResponse,
 } from '@/services/newsletterService';
 
 export const NEWSLETTER_QUERY_KEYS = {
   mySubscription: ['newsletter', 'my-subscription'] as const,
   mySubscriptions: ['newsletter', 'my-subscriptions'] as const,
-  subscriberCount: ['newsletter', 'subscriber-count'] as const,
-  history: (eventCode: string) => ['newsletter', 'history', eventCode] as const,
 };
 
 export interface NewsletterSubscribeMutationVars {
@@ -130,94 +122,6 @@ export function usePutMySubscription(): UseMutationResult<
     onSuccess: (data) => {
       queryClient.setQueryData(NEWSLETTER_QUERY_KEYS.mySubscriptions, data);
       queryClient.invalidateQueries({ queryKey: NEWSLETTER_QUERY_KEYS.mySubscription });
-    },
-  });
-}
-
-/** Get total active subscriber count (organizer). */
-export function useSubscriberCount(): UseQueryResult<SubscriberCountResponse, Error> {
-  return useQuery({
-    queryKey: NEWSLETTER_QUERY_KEYS.subscriberCount,
-    queryFn: newsletterService.getSubscriberCount,
-    staleTime: 60 * 1000,
-  });
-}
-
-/** Get newsletter send history for an event. */
-export function useNewsletterHistory(
-  eventCode: string
-): UseQueryResult<NewsletterSendHistoryItem[], Error> {
-  return useQuery({
-    queryKey: NEWSLETTER_QUERY_KEYS.history(eventCode),
-    queryFn: () => newsletterService.getNewsletterHistory(eventCode),
-    staleTime: 30 * 1000,
-  });
-}
-
-/** Preview newsletter for an event. */
-export function useNewsletterPreview(): UseMutationResult<
-  NewsletterPreviewResponse,
-  Error,
-  { eventCode: string; request: NewsletterSendRequest }
-> {
-  return useMutation({
-    mutationFn: ({ eventCode, request }) => newsletterService.previewNewsletter(eventCode, request),
-  });
-}
-
-/** Send newsletter for an event. Returns immediately with PENDING status and a sendId. */
-export function useSendNewsletter(
-  eventCode: string
-): UseMutationResult<NewsletterSendResponse, Error, NewsletterSendRequest> {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (request) => newsletterService.sendNewsletter(eventCode, request),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: NEWSLETTER_QUERY_KEYS.history(eventCode) });
-      queryClient.invalidateQueries({ queryKey: NEWSLETTER_QUERY_KEYS.subscriberCount });
-    },
-  });
-}
-
-const TERMINAL_STATUSES = new Set(['COMPLETED', 'PARTIAL', 'FAILED']);
-
-/**
- * Poll send-job status every 3 seconds while status is PENDING or IN_PROGRESS.
- * Stops polling automatically when a terminal status is reached.
- */
-export function useSendStatus(
-  eventCode: string,
-  sendId: string | null
-): UseQueryResult<NewsletterSendStatusResponse, Error> {
-  return useQuery({
-    queryKey: ['newsletter', 'send-status', eventCode, sendId],
-    queryFn: () => newsletterService.getSendStatus(eventCode, sendId!),
-    enabled: !!sendId,
-    refetchInterval: (query) => {
-      const status = query.state.data?.status;
-      if (!status || TERMINAL_STATUSES.has(status)) {
-        return false;
-      }
-      return 3000;
-    },
-    staleTime: 0,
-  });
-}
-
-/** Retry failed recipients for a PARTIAL or FAILED send. */
-export function useRetryFailedRecipients(
-  eventCode: string
-): UseMutationResult<NewsletterSendResponse, Error, string> {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (sendId) => newsletterService.retryFailedRecipients(eventCode, sendId),
-    onSuccess: (_data, sendId) => {
-      queryClient.invalidateQueries({ queryKey: NEWSLETTER_QUERY_KEYS.history(eventCode) });
-      // Reset the cached send-status so the terminal PARTIAL/FAILED state is cleared
-      // and polling resumes (refetchInterval sees undefined status → returns 3000ms).
-      queryClient.resetQueries({
-        queryKey: ['newsletter', 'send-status', eventCode, sendId],
-      });
     },
   });
 }

@@ -714,12 +714,12 @@ demotion requests, an approval workflow (`RoleChangeRequest`, `RoleChangeApprova
 
 The newsletter send system uses an asynchronous fire-and-forget pattern to handle large recipient lists without blocking the API or exhausting thread pools:
 
-- **Trigger**: `POST /api/v1/events/{code}/newsletter/send` returns `202 Accepted` immediately
+- **Trigger**: the Mail Center composer (`POST /api/v1/events/{code}/mails`, audience `NEWSLETTER`) queues the send and returns `202 Accepted` immediately; the per-audience `/newsletter/send`, `/preview`, `/history` and `/sends/{sendId}/status|retry` endpoints were removed by Story 16.8c
 - **Processing**: `@Async` method sends emails sequentially with a pause between mails (`newsletter.send.rate-delay-ms`, default 70 ms, about 14 per second)
 - **Recipient iteration**: active subscribers are read in batches of 50 by keyset (`id > :lastId ORDER BY id`), not by OFFSET page, so recipients who unsubscribe or bounce during the send cannot make the loop skip anyone; each recipient is re-checked as active right before their mail (#1129)
-- **Progress tracking**: the `newsletter_sends` row tracks state (`PENDING` → `IN_PROGRESS` → `COMPLETED` / `PARTIAL` / `FAILED`), with sent, failed and total counts for progress polling
+- **Progress tracking**: the `newsletter_sends` row tracks state (`PENDING` → `IN_PROGRESS` → `COMPLETED` / `PARTIAL` / `FAILED`), with sent, failed and total counts; the Mail Center shows them on the send's row (`progress`)
 - **Duplicate prevention**: A second send attempt while `IN_PROGRESS` returns `409 Conflict`
-- **Retry**: Dedicated retry endpoint to re-send failed recipients of a previous partial/failed send and to reach active subscribers that have no recipient row yet. A failed recipient whose subscriber was since deleted, unsubscribed or suppressed is marked `skipped` and never mailed again (#1129)
+- **Retry**: the Mail Center retry (`POST /api/v1/events/{code}/mails/{mailKey}/retry`) re-sends to the failed recipients of a previous partial/failed send and to reach active subscribers that have no recipient row yet. A failed recipient whose subscriber was since deleted, unsubscribed or suppressed is marked `skipped` and never mailed again (#1129)
 - **Orphan recovery**: on `ApplicationReadyEvent`, sends left `IN_PROGRESS` or `PENDING` by a killed task become `PARTIAL` (some mails went out) or `FAILED` (none did), so the organizer can retry (`NewsletterEmailService.recoverOrphanedSends`)
 
 ## Email Forwarding (in EMS)
@@ -1205,8 +1205,13 @@ One composer for every audience, on the same resource (no second mail resource).
 - **Key before an async send**: `JpaOutboundMailRecorder.open` creates the group's row (same
   `INSERT_IF_ABSENT`) so the response carries the key while the newsletter or reminder threads are
   still sending.
-- The old compose endpoints (newsletter, registrant notices, venue, speaker send-reminder) stay
-  until the clean-up release (16.8c).
+- The old compose endpoints (newsletter send, preview, history, send status and retry; registrant
+  notices preview and send; venue coordination preview and send; speaker send-reminder) were
+  removed by Story 16.8c: every organizer send goes through the composer. The services keep their
+  send methods for the adapters and return `QueuedSend` (send row, recipient count) instead of the
+  deleted DTOs. `OwnText` lives in mail core (`mailcenter.render`), so the newsletter and
+  registrant-notice jobs, which render the own text stored on their send row, no longer reach into
+  `mailcenter.compose`.
 
 ### One mail pipeline and variable catalog (Story 16.11)
 

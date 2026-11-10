@@ -56,7 +56,7 @@ public class NewsletterAudienceAdapter implements AudienceAdapter {
     /** Story 16.5 AC3: what the subscriber gets, footer included when the text has no unsubscribe link. */
     @Override
     public MailContent ownTextContent(ComposeContext context) {
-        return NewsletterEmailService.withUnsubscribeFooter(OwnText.content(context.request()));
+        return NewsletterEmailService.withUnsubscribeFooter(context.request().ownTextContent());
     }
 
     @Override
@@ -109,14 +109,14 @@ public class NewsletterAudienceAdapter implements AudienceAdapter {
         ComposeRequest request = context.request();
         if (request.ownText()) {
             UUID sendId = newsletter.sendNewsletterOwnText(context.event(), request.locale(),
-                    context.organizerUsername(), request.ownSubject(), request.ownBodyHtml()).getId();
+                    context.organizerUsername(), request.ownSubject(), request.ownBodyHtml()).sendId();
             MailContext mailContext = NewsletterEmailService.ownTextMailContextFor(sendId,
                     context.event().getEventCode(), context.organizerUsername(), false);
             return List.of(new DeliveredMail(mailContext, render(context, recipients.recipients().get(0), false)));
         }
         String templateKey = newsletter.effectiveTemplateKey(request.templateKey());
         UUID sendId = newsletter.sendNewsletter(context.event(), request.newsletterReminder(), request.locale(),
-                context.organizerUsername(), templateKey, null, false).getId();
+                context.organizerUsername(), templateKey).sendId();
         MailContext mailContext = NewsletterEmailService.mailContextFor(sendId, context.event().getEventCode(),
                 templateKey, context.organizerUsername(), false);
         return List.of(new DeliveredMail(mailContext, render(context, recipients.recipients().get(0), false)));
@@ -125,7 +125,7 @@ public class NewsletterAudienceAdapter implements AudienceAdapter {
     private NewsletterDraft draft(ComposeContext context) {
         ComposeRequest request = context.request();
         if (request.ownText()) {
-            return newsletter.prepare(context.event(), request.locale(), false, OwnText.content(request));
+            return newsletter.prepare(context.event(), request.locale(), false, request.ownTextContent());
         }
         return newsletter.prepare(context.event(), request.locale(), request.newsletterReminder(),
                 newsletter.effectiveTemplateKey(request.templateKey()));

@@ -3,7 +3,7 @@
  *
  * Singleton config edited in Administration: the one venue contact, the one
  * catering contact, and the organizer who acts as venue coordinator (reply-to
- * on every venue-coordination email sent from the Event Detail Venue tab).
+ * on every venue mail sent from the composer in the Event Detail Communications tab).
  *
  * Persisted as a single JSON blob under app_settings key
  * `venue.coordination.config` via the existing key/value AdminSettings API —
@@ -115,7 +115,7 @@ export const VenueCateringContactsTab: React.FC = () => {
       <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
         {t(
           'settings.venueCoordination.subtitle',
-          'These contacts receive the offerte and timetable emails sent from the Event Detail Venue tab. They are the same across every event — define them once here.'
+          'These contacts receive the offerte and timetable emails sent from the Event Detail Communications tab. They are the same across every event — define them once here.'
         )}
       </Typography>
 

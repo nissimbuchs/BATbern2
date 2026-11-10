@@ -11,6 +11,7 @@ import ch.batbern.events.repository.OutreachHistoryRepository;
 import ch.batbern.events.repository.SessionContentHistoryRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
 import ch.batbern.events.repository.SpeakerReminderLogRepository;
+import ch.batbern.shared.mail.MailTrigger;
 import ch.batbern.shared.types.SpeakerWorkflowState;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -24,13 +25,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
@@ -130,9 +131,9 @@ class SpeakerReminderServiceTest {
         // "no resolvable recipient". lenient() because pure-utility tests (findMatchingTier,
         // autoDetectTier) never touch the resolver.
         org.mockito.Mockito.lenient().when(primarySpeakerResolver.resolveEmail(any()))
-                .thenReturn(java.util.Optional.of("john@example.com"));
+                .thenReturn(Optional.of("john@example.com"));
         org.mockito.Mockito.lenient().when(primarySpeakerResolver.resolve(any()))
-                .thenReturn(java.util.Optional.of(
+                .thenReturn(Optional.of(
                         new PrimarySpeakerResolver.PrimarySpeakerProfile(
                                 "john.doe", "john@example.com", "John", "Doe", "TestCo")));
     }
@@ -306,7 +307,7 @@ class SpeakerReminderServiceTest {
             when(speakerPoolRepository.findByEventId(eventId)).thenReturn(List.of(testSpeaker));
             when(reminderLogRepository.existsBySpeakerPoolIdAndReminderTypeAndTierAndDeadlineDateAndTriggeredBy(
                     any(), any(), any(), any(), any())).thenReturn(false);
-            when(primarySpeakerResolver.resolve(testSpeaker)).thenReturn(java.util.Optional.of(
+            when(primarySpeakerResolver.resolve(testSpeaker)).thenReturn(Optional.of(
                     new PrimarySpeakerResolver.PrimarySpeakerProfile(
                             "john.doe", "john@example.com", "John", "Doe", null)));
             when(userApiClient.getPreferredLanguage("john.doe")).thenReturn("en");
@@ -357,26 +358,19 @@ class SpeakerReminderServiceTest {
     }
 
     @Nested
-    @DisplayName("sendManualReminder")
-    class SendManualReminder {
+    @DisplayName("manual reminders (Mail Center composer, Story 16.8)")
+    class ManualReminders {
 
         @Test
-        @DisplayName("should send manual reminder and bypass dedup")
-        void shouldSendManualReminder() {
-            when(speakerPoolRepository.findById(speakerPoolId)).thenReturn(Optional.of(testSpeaker));
-            when(eventRepository.findById(eventId)).thenReturn(Optional.of(testEvent));
+        @DisplayName("sendManualReminders: explicit tier, outreach logged as manual_email by the organizer")
+        void shouldSendWithExplicitTier_andLogOutreach() {
+            List<String> keys = speakerReminderService.sendManualReminders(testEvent, "RESPONSE", "TIER_2",
+                    List.of(testSpeaker), MailTrigger.organizer("organizer1"), "organizer1");
 
-            var result = speakerReminderService.sendManualReminder(
-                    speakerPoolId, "RESPONSE", "TIER_2", "organizer1");
-
-            assertThat(result.tier()).isEqualTo("TIER_2");
-            assertThat(result.emailAddress()).isEqualTo("john@example.com");
-
+            assertThat(keys).containsExactly("speaker-reminder-response-tier2");
             verify(reminderEmailService).sendReminderEmail(
                     eq(testSpeaker), eq(testEvent), eq("RESPONSE"), eq("TIER_2"),
                     eq(testSpeaker.getResponseDeadline()), eq(Locale.GERMAN), any());
-
-            // Verify outreach logged with organizer username
             ArgumentCaptor<OutreachHistory> outreachCaptor = ArgumentCaptor.forClass(OutreachHistory.class);
             verify(outreachHistoryRepository).save(outreachCaptor.capture());
             assertThat(outreachCaptor.getValue().getOrganizerUsername()).isEqualTo("organizer1");
@@ -384,118 +378,56 @@ class SpeakerReminderServiceTest {
         }
 
         @Test
-        @DisplayName("should auto-detect tier when not specified")
+        @DisplayName("sendManualReminders: no tier → each speaker's own tier from their deadline")
         void shouldAutoDetectTier() {
             testSpeaker.setResponseDeadline(LocalDate.now().plusDays(8)); // closest to TIER_2
 
-            when(speakerPoolRepository.findById(speakerPoolId)).thenReturn(Optional.of(testSpeaker));
-            when(eventRepository.findById(eventId)).thenReturn(Optional.of(testEvent));
+            List<String> keys = speakerReminderService.sendManualReminders(testEvent, "RESPONSE", null,
+                    List.of(testSpeaker), MailTrigger.organizer("organizer1"), "organizer1");
 
-            var result = speakerReminderService.sendManualReminder(
-                    speakerPoolId, "RESPONSE", null, "organizer1");
-
-            assertThat(result.tier()).isEqualTo("TIER_2");
+            assertThat(keys).containsExactly("speaker-reminder-response-tier2");
         }
 
         @Test
-        @DisplayName("should throw RemindersDisabledException when reminders disabled")
-        void shouldThrow_whenRemindersDisabled() {
-            testSpeaker.setRemindersDisabled(true);
-            when(speakerPoolRepository.findById(speakerPoolId)).thenReturn(Optional.of(testSpeaker));
+        @DisplayName("sendManualReminders: a speaker with reminders disabled is not mailed; positive control mailed")
+        void shouldSkipRemindersDisabled() {
+            SpeakerPool muted = SpeakerPool.builder().id(UUID.randomUUID()).eventId(eventId)
+                    .speakerName("Mia Muted").status(SpeakerWorkflowState.INVITED)
+                    .responseDeadline(LocalDate.now().plusDays(14)).remindersDisabled(true).build();
 
-            assertThatThrownBy(() -> speakerReminderService.sendManualReminder(
-                    speakerPoolId, "RESPONSE", "TIER_1", "organizer1"))
-                    .isInstanceOf(SpeakerReminderService.RemindersDisabledException.class);
+            speakerReminderService.sendManualReminders(testEvent, "RESPONSE", "TIER_1",
+                    List.of(muted, testSpeaker), MailTrigger.organizer("organizer1"), "organizer1");
+
+            verify(reminderEmailService).sendReminderEmail(eq(testSpeaker), any(), any(), any(), any(), any(), any());
+            verify(reminderEmailService, never()).sendReminderEmail(eq(muted), any(), any(), any(), any(), any(),
+                    any());
         }
 
         @Test
-        @DisplayName("should throw InvalidSpeakerStateException for RESPONSE when not INVITED")
-        void shouldThrow_whenNotInvitedForResponse() {
-            testSpeaker.setStatus(SpeakerWorkflowState.ACCEPTED);
-            when(speakerPoolRepository.findById(speakerPoolId)).thenReturn(Optional.of(testSpeaker));
+        @DisplayName("manualAudience: RESPONSE → INVITED only; CONTENT → ACCEPTED without submitted content")
+        void shouldPickTheAudienceByType() {
+            UUID submittedSession = UUID.randomUUID();
+            SpeakerPool accepted = SpeakerPool.builder().id(UUID.randomUUID()).eventId(eventId)
+                    .speakerName("Anna Accepted").status(SpeakerWorkflowState.ACCEPTED).build();
+            SpeakerPool submitted = SpeakerPool.builder().id(UUID.randomUUID()).eventId(eventId)
+                    .speakerName("Sam Submitted").status(SpeakerWorkflowState.ACCEPTED)
+                    .sessionId(submittedSession).build();
+            when(speakerPoolRepository.findByEventId(eventId)).thenReturn(List.of(testSpeaker, accepted, submitted));
+            when(sessionContentHistoryRepository.existsBySessionId(submittedSession)).thenReturn(true);
 
-            assertThatThrownBy(() -> speakerReminderService.sendManualReminder(
-                    speakerPoolId, "RESPONSE", "TIER_1", "organizer1"))
-                    .isInstanceOf(SpeakerReminderService.InvalidSpeakerStateException.class);
+            assertThat(speakerReminderService.manualAudience(testEvent, "RESPONSE")).containsExactly(testSpeaker);
+            assertThat(speakerReminderService.manualAudience(testEvent, "CONTENT")).containsExactly(accepted);
         }
 
         @Test
-        @DisplayName("should throw InvalidSpeakerStateException for CONTENT when not ACCEPTED")
-        void shouldThrow_whenNotAcceptedForContent() {
-            testSpeaker.setStatus(SpeakerWorkflowState.INVITED);
-            when(speakerPoolRepository.findById(speakerPoolId)).thenReturn(Optional.of(testSpeaker));
+        @DisplayName("deadlineFor: no CONTENT or RESPONSE deadline → the event date (regression)")
+        void shouldFallBackToEventDate_whenDeadlineIsNull() {
+            LocalDate eventDay = testEvent.getDate().atZone(ZoneId.of("Europe/Zurich")).toLocalDate();
+            testSpeaker.setContentDeadline(null);
+            testSpeaker.setResponseDeadline(null);
 
-            assertThatThrownBy(() -> speakerReminderService.sendManualReminder(
-                    speakerPoolId, "CONTENT", "TIER_1", "organizer1"))
-                    .isInstanceOf(SpeakerReminderService.InvalidSpeakerStateException.class);
-        }
-
-        @Test
-        @DisplayName("should throw InvalidSpeakerStateException for CONTENT when content already submitted")
-        void shouldThrow_whenContentAlreadySubmitted() {
-            // Story 11.E.8: "content already submitted" is now derived from the presence of
-            // any session_content_history row for the speaker's session (previously checked
-            // speaker_pool.content_status which was dropped in V102).
-            UUID sessionId = UUID.randomUUID();
-            testSpeaker.setStatus(SpeakerWorkflowState.ACCEPTED);
-            testSpeaker.setContentDeadline(LocalDate.now().plusDays(7));
-            testSpeaker.setSessionId(sessionId);
-            when(speakerPoolRepository.findById(speakerPoolId)).thenReturn(Optional.of(testSpeaker));
-            when(sessionContentHistoryRepository.existsBySessionId(sessionId)).thenReturn(true);
-
-            assertThatThrownBy(() -> speakerReminderService.sendManualReminder(
-                    speakerPoolId, "CONTENT", "TIER_1", "organizer1"))
-                    .isInstanceOf(SpeakerReminderService.InvalidSpeakerStateException.class);
-        }
-
-        @Test
-        @DisplayName("should throw when speaker not found")
-        void shouldThrow_whenSpeakerNotFound() {
-            when(speakerPoolRepository.findById(speakerPoolId)).thenReturn(Optional.empty());
-
-            assertThatThrownBy(() -> speakerReminderService.sendManualReminder(
-                    speakerPoolId, "RESPONSE", "TIER_1", "organizer1"))
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("not found");
-        }
-
-        @Test
-        @DisplayName("should fallback to event date when CONTENT deadline is null")
-        void shouldFallbackToEventDate_whenContentDeadlineNull() {
-            // Regression: sendManualReminder threw when ACCEPTED speaker had no contentDeadline
-            testSpeaker.setStatus(SpeakerWorkflowState.ACCEPTED);
-            testSpeaker.setContentDeadline(null); // no deadline set
-
-            when(speakerPoolRepository.findById(speakerPoolId)).thenReturn(Optional.of(testSpeaker));
-            when(eventRepository.findById(eventId)).thenReturn(Optional.of(testEvent));
-
-            var result = speakerReminderService.sendManualReminder(
-                    speakerPoolId, "CONTENT", "TIER_1", "organizer1");
-
-            assertThat(result.tier()).isEqualTo("TIER_1");
-            assertThat(result.emailAddress()).isEqualTo("john@example.com");
-
-            // Verify email was sent (not thrown)
-            verify(reminderEmailService).sendReminderEmail(
-                    eq(testSpeaker), eq(testEvent), eq("CONTENT"), eq("TIER_1"),
-                    any(LocalDate.class), eq(Locale.GERMAN), any());
-        }
-
-        @Test
-        @DisplayName("should fallback to event date when RESPONSE deadline is null")
-        void shouldFallbackToEventDate_whenResponseDeadlineNull() {
-            testSpeaker.setResponseDeadline(null); // no deadline set
-
-            when(speakerPoolRepository.findById(speakerPoolId)).thenReturn(Optional.of(testSpeaker));
-            when(eventRepository.findById(eventId)).thenReturn(Optional.of(testEvent));
-
-            var result = speakerReminderService.sendManualReminder(
-                    speakerPoolId, "RESPONSE", "TIER_1", "organizer1");
-
-            assertThat(result.tier()).isEqualTo("TIER_1");
-            verify(reminderEmailService).sendReminderEmail(
-                    eq(testSpeaker), eq(testEvent), eq("RESPONSE"), eq("TIER_1"),
-                    any(LocalDate.class), eq(Locale.GERMAN), any());
+            assertThat(speakerReminderService.deadlineFor(testSpeaker, testEvent, "CONTENT")).isEqualTo(eventDay);
+            assertThat(speakerReminderService.deadlineFor(testSpeaker, testEvent, "RESPONSE")).isEqualTo(eventDay);
         }
     }
 }

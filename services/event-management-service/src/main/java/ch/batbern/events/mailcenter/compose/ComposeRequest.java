@@ -1,5 +1,7 @@
 package ch.batbern.events.mailcenter.compose;
 
+import ch.batbern.events.mailcenter.render.MailContent;
+import ch.batbern.events.mailcenter.render.OwnText;
 import ch.batbern.shared.mail.MailContext;
 
 import java.util.List;
@@ -58,5 +60,10 @@ public record ComposeRequest(
 
     public boolean ownText() {
         return contentSource == MailContext.ContentSource.OWN_TEXT;
+    }
+
+    /** The request's own text in the chosen language, with the BATbern layout. */
+    public MailContent ownTextContent() {
+        return OwnText.content(ownSubject, ownBodyHtml, locale);
     }
 }

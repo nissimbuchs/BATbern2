@@ -59,7 +59,7 @@ public interface AudienceAdapter {
      * language with the BATbern layout. The newsletter adds its unsubscribe footer.
      */
     default MailContent ownTextContent(ComposeContext context) {
-        return OwnText.content(context.request());
+        return context.request().ownTextContent();
     }
 
     /**

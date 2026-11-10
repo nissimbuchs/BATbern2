@@ -520,12 +520,6 @@
   "acceptTopic": {
     "descriptionOptional": "Description (optional)"
   },
-  "newsletter": {
-    "templateSelect": {
-      "label": "Modello",
-      "createNew": "Crea nuovo modello"
-    }
-  },
   "aiAssist": {
     "generateDescription": "✨ Beschreibung generieren",
     "regenerateDescription": "↻ Neu generieren",

@@ -50,10 +50,10 @@ CUMS (identity) is upstream of all. EMS (event) is upstream of PCS (partners).
 - Today's violations sit in `src/test/resources/archunit_store`. A new one fails the build; a fixed
   one drops out of the store on the next run: commit that. Never edit the store or its properties
   to accept a new one.
-- Left frozen after 17.5 (each with its owner): mail center wall 2 lines, `NewsletterEmailService`
-  and `SlidesOnlineEmailService` using `mailcenter.compose` (16.8c, 17.15); mail core 2 lines,
-  `MailPipeline` using `compose.MailRenderer` and `PlaceholderScanner` (17.15); EMS
-  `*Partner*Client*` 4 (17.8); CUMS clients 4 (17.6, 17.7). Watch, usermerge, notification: 0.
+- Left frozen after 17.5 (each with its owner): mail core 2 lines, `MailPipeline` using
+  `compose.MailRenderer` and `PlaceholderScanner` (17.15); EMS `*Partner*Client*` 4 (17.8); CUMS
+  clients 4 (17.6, 17.7). Mail center wall, watch, usermerge, notification: 0 (the mail center
+  wall since 16.8c moved `OwnText` to mail core).
 
 ## Reuse before you build
 

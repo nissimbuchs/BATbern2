@@ -18,6 +18,9 @@ import ch.batbern.shared.mail.MailContext;
 public record MailContent(String templateKey, String locale, String subject, String bodyHtml, String layoutKey,
         MailContext.ContentSource contentSource) {
 
+    /** The BATbern layout every composer audience and own text is rendered into. */
+    public static final String DEFAULT_LAYOUT_KEY = "batbern-default";
+
     public MailContent {
         bodyHtml = bodyHtml == null ? "" : bodyHtml;
     }

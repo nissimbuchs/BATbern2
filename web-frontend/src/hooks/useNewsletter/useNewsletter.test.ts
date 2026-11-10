@@ -7,10 +7,6 @@
  * - useUnsubscribeByToken: mutation
  * - useMySubscription: query
  * - usePatchMySubscription: mutation + setQueryData
- * - useSubscriberCount: query
- * - useNewsletterHistory: query by eventCode
- * - useNewsletterPreview: mutation
- * - useSendNewsletter: mutation + cache invalidation
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -24,10 +20,6 @@ vi.mock('@/services/newsletterService', () => ({
   unsubscribeByToken: vi.fn(),
   getMySubscription: vi.fn(),
   patchMySubscription: vi.fn(),
-  getSubscriberCount: vi.fn(),
-  getNewsletterHistory: vi.fn(),
-  previewNewsletter: vi.fn(),
-  sendNewsletter: vi.fn(),
 }));
 
 import * as newsletterService from '@/services/newsletterService';
@@ -37,10 +29,6 @@ import {
   useUnsubscribeByToken,
   useMySubscription,
   usePatchMySubscription,
-  useSubscriberCount,
-  useNewsletterHistory,
-  useNewsletterPreview,
-  useSendNewsletter,
 } from './useNewsletter';
 
 const mockSubscribe = vi.mocked(newsletterService.subscribe);
@@ -48,10 +36,6 @@ const mockVerifyToken = vi.mocked(newsletterService.verifyUnsubscribeToken);
 const mockUnsubscribeByToken = vi.mocked(newsletterService.unsubscribeByToken);
 const mockGetMySubscription = vi.mocked(newsletterService.getMySubscription);
 const mockPatchMySubscription = vi.mocked(newsletterService.patchMySubscription);
-const mockGetSubscriberCount = vi.mocked(newsletterService.getSubscriberCount);
-const mockGetNewsletterHistory = vi.mocked(newsletterService.getNewsletterHistory);
-const mockPreviewNewsletter = vi.mocked(newsletterService.previewNewsletter);
-const mockSendNewsletter = vi.mocked(newsletterService.sendNewsletter);
 
 const createQC = () =>
   new QueryClient({
@@ -209,135 +193,5 @@ describe('usePatchMySubscription', () => {
 
     expect(mockPatchMySubscription).toHaveBeenCalledWith(false, 'en');
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-  });
-});
-
-// ── useSubscriberCount ────────────────────────────────────────────────────────
-
-describe('useSubscriberCount', () => {
-  let qc: QueryClient;
-
-  beforeEach(() => {
-    qc = createQC();
-    vi.clearAllMocks();
-  });
-
-  it('should fetch total active subscriber count', async () => {
-    mockGetSubscriberCount.mockResolvedValue({ totalActive: 1500 } as never);
-
-    const { result } = renderHook(() => useSubscriberCount(), { wrapper: wrapper(qc) });
-
-    await waitFor(() => expect(result.current.isLoading).toBe(false));
-
-    expect(result.current.data?.totalActive).toBe(1500);
-  });
-});
-
-// ── useNewsletterHistory ──────────────────────────────────────────────────────
-
-describe('useNewsletterHistory', () => {
-  let qc: QueryClient;
-
-  beforeEach(() => {
-    qc = createQC();
-    vi.clearAllMocks();
-  });
-
-  it('should fetch send history for event', async () => {
-    const history = [{ id: 'h-1', isReminder: false, sentAt: '2025-01-01', recipientCount: 300 }];
-    mockGetNewsletterHistory.mockResolvedValue(history as never);
-
-    const { result } = renderHook(() => useNewsletterHistory('BAT142'), { wrapper: wrapper(qc) });
-
-    await waitFor(() => expect(result.current.isLoading).toBe(false));
-
-    expect(mockGetNewsletterHistory).toHaveBeenCalledWith('BAT142');
-    expect(result.current.data).toEqual(history);
-  });
-});
-
-// ── useNewsletterPreview ──────────────────────────────────────────────────────
-
-describe('useNewsletterPreview', () => {
-  let qc: QueryClient;
-
-  beforeEach(() => {
-    qc = createQC();
-    vi.clearAllMocks();
-  });
-
-  it('should call previewNewsletter with eventCode and request', async () => {
-    const preview = { subject: 'Newsletter', htmlPreview: '<p/>', recipientCount: 200 };
-    mockPreviewNewsletter.mockResolvedValue(preview as never);
-
-    const { result } = renderHook(() => useNewsletterPreview(), { wrapper: wrapper(qc) });
-
-    await act(async () => {
-      await result.current.mutateAsync({
-        eventCode: 'BAT142',
-        request: { isReminder: false, locale: 'de' },
-      });
-    });
-
-    expect(mockPreviewNewsletter).toHaveBeenCalledWith('BAT142', {
-      isReminder: false,
-      locale: 'de',
-    });
-    await waitFor(() => expect(result.current.isSuccess).toBe(true));
-  });
-});
-
-// ── useSendNewsletter ─────────────────────────────────────────────────────────
-
-describe('useSendNewsletter', () => {
-  let qc: QueryClient;
-
-  beforeEach(() => {
-    qc = createQC();
-    vi.clearAllMocks();
-  });
-
-  it('should call sendNewsletter for event', async () => {
-    const sent = { recipientCount: 300, sentAt: '2025-12-01T10:00:00Z' };
-    mockSendNewsletter.mockResolvedValue(sent as never);
-
-    const { result } = renderHook(() => useSendNewsletter('BAT142'), { wrapper: wrapper(qc) });
-
-    await act(async () => {
-      await result.current.mutateAsync({ isReminder: false, locale: 'de' });
-    });
-
-    expect(mockSendNewsletter).toHaveBeenCalledWith('BAT142', { isReminder: false, locale: 'de' });
-    await waitFor(() => expect(result.current.isSuccess).toBe(true));
-  });
-
-  it('should invalidate newsletter history and subscriber count on success', async () => {
-    mockSendNewsletter.mockResolvedValue({ recipientCount: 100, sentAt: '2025-01-01' } as never);
-    const invalidateSpy = vi.spyOn(qc, 'invalidateQueries');
-
-    const { result } = renderHook(() => useSendNewsletter('BAT142'), { wrapper: wrapper(qc) });
-
-    await act(async () => {
-      await result.current.mutateAsync({ isReminder: true, locale: 'en' });
-    });
-
-    expect(invalidateSpy).toHaveBeenCalledWith(
-      expect.objectContaining({ queryKey: expect.arrayContaining(['newsletter', 'history']) })
-    );
-    expect(invalidateSpy).toHaveBeenCalledWith(
-      expect.objectContaining({ queryKey: ['newsletter', 'subscriber-count'] })
-    );
-  });
-
-  it('should set isError on failure', async () => {
-    mockSendNewsletter.mockRejectedValue(new Error('Service unavailable'));
-
-    const { result } = renderHook(() => useSendNewsletter('BAT142'), { wrapper: wrapper(qc) });
-
-    await act(async () => {
-      await result.current.mutateAsync({ isReminder: false, locale: 'de' }).catch(() => {});
-    });
-
-    await waitFor(() => expect(result.current.isError).toBe(true));
   });
 });

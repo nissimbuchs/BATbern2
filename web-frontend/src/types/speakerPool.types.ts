@@ -69,18 +69,3 @@ export type SendInvitationRequest = components['schemas']['SendInvitationRequest
  * Response from send invitation endpoint
  */
 export type SendInvitationResponse = components['schemas']['SendInvitationResponse'];
-
-// ============================================================================
-// Send Reminder Types (Story 6.5)
-// ============================================================================
-
-/**
- * Request body for sending speaker reminder: `reminderType` RESPONSE (invited speakers) or
- * CONTENT (accepted speakers); `tier` (TIER_1..TIER_3) is auto-detected if omitted.
- */
-export type SendReminderRequest = components['schemas']['SendReminderRequest'];
-
-/**
- * Response from send reminder endpoint
- */
-export type SendReminderResponse = components['schemas']['SendReminderResponse'];
