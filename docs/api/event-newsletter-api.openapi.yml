@@ -2,7 +2,7 @@ openapi: 3.0.3
 info:
   title: BATbern Event Newsletter API
   version: 1.0.0
-  description: 'Event newsletters, registrant notices, slides-online mailing, newsletter subscriber lifecycle, and email templates.
+  description: 'Newsletter subscription and subscriber lifecycle, and email templates. Newsletters and registrant notices are sent through the Mail Center composer (event-mail-api).
 
 
     Carved from the consolidated events-api spec (API consolidation Phase 6). Paths preserved verbatim.'
@@ -498,31 +498,6 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
-  /newsletter/subscribers/count:
-    get:
-      tags:
-      - Newsletter
-      summary: Active subscriber count (ORGANIZER)
-      description: Cheap COUNT query used by the newsletter tab to display subscriber totals.
-      operationId: getSubscriberCount
-      security:
-      - BearerAuth: []
-      responses:
-        '200':
-          description: Active subscriber count
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SubscriberCountResponse'
-              examples:
-                default:
-                  summary: captured from the local anonymized database
-                  value:
-                    totalActive: 1057
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
   /newsletter/subscribers:
     get:
       tags:
@@ -808,16 +783,6 @@ paths:
           $ref: '#/components/responses/Forbidden'
 components:
   schemas:
-    SubscriberCountResponse:
-      type: object
-      required:
-      - totalActive
-      properties:
-        totalActive:
-          type: integer
-          format: int64
-          description: Number of currently active newsletter subscribers
-          example: 1234
     NewsletterSubscribeRequest:
       type: object
       required:

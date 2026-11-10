@@ -9,7 +9,6 @@ import ch.batbern.events.newsletter.dto.generated.NewsletterSubscriptionStatusRe
 import ch.batbern.events.newsletter.dto.generated.NewsletterUnsubscribeRequest;
 import ch.batbern.events.newsletter.dto.generated.PatchNewsletterSubscriptionRequest;
 import ch.batbern.events.newsletter.dto.generated.PutMyNewsletterSubscriptionRequest;
-import ch.batbern.events.newsletter.dto.generated.SubscriberCountResponse;
 import ch.batbern.events.newsletter.dto.generated.SubscriberResponse;
 import ch.batbern.events.newsletter.dto.generated.VerifyUnsubscribeToken200Response;
 import ch.batbern.events.security.SecurityContextHelper;
@@ -163,13 +162,6 @@ public class NewsletterController implements NewsletterApi {
     }
 
     // ── Organizer endpoints ───────────────────────────────────────────────────
-
-    /** AC10: Active subscriber count only (ORGANIZER). Cheap COUNT query for the newsletter tab. */
-    @Override
-    @PreAuthorize("hasRole('ORGANIZER')")
-    public ResponseEntity<SubscriberCountResponse> getSubscriberCount() {
-        return ResponseEntity.ok(new SubscriberCountResponse().totalActive(subscriberService.getActiveCount()));
-    }
 
     /** Story 10.28: Paginated, searchable, sortable subscriber list (ORGANIZER). */
     @Override

@@ -348,32 +348,6 @@ public class NewsletterControllerIntegrationTest extends AbstractIntegrationTest
         assertThat(subscriberRepository.findAll()).isEmpty();
     }
 
-    // ── AC10: GET /newsletter/subscribers/count (ORGANIZER only) ─────────────
-
-    @Test
-    @DisplayName("GET /newsletter/subscribers/count — non-organizer → 403")
-    @WithMockUser(username = "user", roles = "USER")
-    void getSubscriberCount_nonOrganizer_returns403() throws Exception {
-        mockMvc.perform(get("/api/v1/newsletter/subscribers/count"))
-                .andExpect(status().isForbidden());
-    }
-
-    @Test
-    @DisplayName("GET /newsletter/subscribers/count — organizer, no subscribers → totalActive=0")
-    @WithMockUser(username = "organizer", roles = "ORGANIZER")
-    void getSubscriberCount_organizer_returnsCount() throws Exception {
-        subscriberRepository.save(NewsletterSubscriber.builder()
-                .email("a@example.com").language("de").source("explicit").unsubscribeToken("tok-cnt-1")
-                .build());
-        subscriberRepository.save(NewsletterSubscriber.builder()
-                .email("b@example.com").language("de").source("explicit").unsubscribeToken("tok-cnt-2")
-                .build());
-
-        mockMvc.perform(get("/api/v1/newsletter/subscribers/count"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.totalActive").value(2));
-    }
-
     // ── AC10: GET /newsletter/subscribers (ORGANIZER only) ───────────────────
     // Duplicate basic tests removed by code review — covered by Story 10.28 tests below:
     // - listSubscribers_nonOrganizer → should_return403_when_nonOrganizerAccesses
