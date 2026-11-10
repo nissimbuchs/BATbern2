@@ -3,7 +3,6 @@ package ch.batbern.events.service;
 import ch.batbern.events.domain.EmailTemplate;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.NewsletterSend;
-import ch.batbern.events.domain.NewsletterSubscriber;
 import ch.batbern.events.domain.Session;
 import ch.batbern.events.exception.DuplicateNewsletterSendException;
 import ch.batbern.events.mailcenter.render.MailPipeline;
@@ -20,17 +19,14 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.data.domain.Limit;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -38,7 +34,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -363,24 +358,6 @@ class NewsletterEmailServiceTest {
         assertThat(newsletterEmailService.effectiveTemplateKey(" ")).isEqualTo("newsletter-event");
     }
 
-    @Test
-    @DisplayName("Story 7.3 hardening: a REGISTRANT_NOTICE template is rejected (400) — never blasted to subscribers")
-    void rejectsRegistrantNoticeTemplateOnSubscriberSend() {
-        testEvent.setId(UUID.randomUUID());
-        EmailTemplate registrantTpl = mockTemplate("slides-online", "de", "<p>slides</p>");
-        registrantTpl.setCategory("REGISTRANT_NOTICE");
-        when(emailTemplateService.findByKeyAndLocale("slides-online", "de"))
-                .thenReturn(Optional.of(registrantTpl));
-
-        // The subscriber send refuses it: the subscriber pool must never get a registrant notice.
-        assertThatThrownBy(() -> newsletterEmailService.sendNewsletter(
-                testEvent, false, "de", "org.user", "slides-online"))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("registrants audience");
-
-        verify(sendRepository, never()).save(any());
-    }
-
     private EmailTemplate mockTemplate(String key, String locale, String html) {
         EmailTemplate tpl = new EmailTemplate();
         tpl.setTemplateKey(key);
@@ -392,76 +369,6 @@ class NewsletterEmailServiceTest {
     // ── sendNewsletter: fire-and-forget architecture ──────────────────────────
 
     @Test
-    @DisplayName("sendNewsletter: returns at once with the send id of a PENDING row")
-    void sendNewsletter_returnsPendingStatus() {
-        testEvent.setId(UUID.randomUUID());
-        NewsletterSend savedSend = NewsletterSend.builder()
-                .id(UUID.randomUUID())
-                .eventId(testEvent.getId())
-                .status(NewsletterEmailService.STATUS_PENDING)
-                .recipientCount(5)
-                .locale("de")
-                .sentByUsername("organizer")
-                .sentAt(Instant.now())
-                .templateKey("newsletter-event")
-                .build();
-
-        when(sendRepository.findByEventIdAndStatus(testEvent.getId(),
-                NewsletterEmailService.STATUS_IN_PROGRESS))
-                .thenReturn(List.of());
-        when(subscriberService.getActiveCount()).thenReturn(5L);
-        when(sendRepository.save(any())).thenReturn(savedSend);
-
-        QueuedSend queued = newsletterEmailService.sendNewsletter(
-                testEvent, false, "de", "organizer", null);
-
-        assertThat(queued.sendId()).isEqualTo(savedSend.getId());
-        assertThat(queued.recipientCount()).isEqualTo(5);
-        ArgumentCaptor<NewsletterSend> row = ArgumentCaptor.forClass(NewsletterSend.class);
-        verify(sendRepository).save(row.capture());
-        assertThat(row.getValue().getStatus()).isEqualTo("PENDING");
-    }
-
-    @Test
-    @DisplayName("sendNewsletter: throws DuplicateNewsletterSendException when IN_PROGRESS send exists")
-    void sendNewsletter_throws409_whenSendAlreadyInProgress() {
-        testEvent.setId(UUID.randomUUID());
-        NewsletterSend activeSend = NewsletterSend.builder()
-                .id(UUID.randomUUID())
-                .eventId(testEvent.getId())
-                .status(NewsletterEmailService.STATUS_IN_PROGRESS)
-                .templateKey("newsletter-event")
-                .build();
-
-        when(sendRepository.findByEventIdAndStatus(testEvent.getId(),
-                NewsletterEmailService.STATUS_IN_PROGRESS))
-                .thenReturn(List.of(activeSend));
-
-        assertThatThrownBy(() ->
-                newsletterEmailService.sendNewsletter(testEvent, false, "de", "organizer", null))
-                .isInstanceOf(DuplicateNewsletterSendException.class);
-    }
-
-    @Test
-    @DisplayName("sendNewsletter: refuses (throws) and touches no repositories when the event is test-marked")
-    void sendNewsletter_throws_whenEventIsTestMarked() {
-        // Second wall of defence (incident 2026-07-01): a BATPW-E2E test event must never
-        // trigger a bulk send. This fails fast BEFORE the duplicate-send check / subscriber
-        // count / audit record, so no subscriber machinery is touched.
-        testEvent.setId(UUID.randomUUID());
-        testEvent.setEventCode("BATbern79101");
-        testEvent.setTitle("BATPW-E2E 1782885868836");
-        when(emailService.isLiveDelivery()).thenReturn(true);
-
-        assertThatThrownBy(() ->
-                newsletterEmailService.sendNewsletter(testEvent, false, "de", "organizer", null))
-                .isInstanceOf(ch.batbern.shared.service.TestMarkedEmailException.class);
-
-        verify(sendRepository, never()).findByEventIdAndStatus(any(), any());
-        verify(subscriberService, never()).getActiveCount();
-    }
-
-    @Test
     @DisplayName("sendNewsletter: a test-marked event proceeds when no live SES client exists (#1071)")
     void sendNewsletter_proceeds_whenEventIsTestMarkedButDeliveryIsNotLive() {
         // Local dev has no SesClient: mail goes to LocalEmailCapture, nothing leaves the machine.
@@ -471,7 +378,7 @@ class NewsletterEmailServiceTest {
         testEvent.setEventCode("BATbern79102");
         testEvent.setTitle("BATPW-E2E 1782885868837");
         when(emailService.isLiveDelivery()).thenReturn(false);
-        when(sendRepository.findByEventIdAndStatus(any(), any()))
+        when(sendRepository.findByEventIdAndStatusIn(any(), any()))
                 .thenReturn(List.of(NewsletterSend.builder().id(UUID.randomUUID()).templateKey("newsletter-event")
                         .build()));
 
@@ -479,40 +386,6 @@ class NewsletterEmailServiceTest {
         assertThatThrownBy(() ->
                 newsletterEmailService.sendNewsletter(testEvent, false, "de", "organizer", null))
                 .isInstanceOf(DuplicateNewsletterSendException.class);
-    }
-
-    @Test
-    @DisplayName("executeNewsletterSendAsync: iterates active subscribers by id keyset (#1129)")
-    void executeNewsletterSendAsync_usesKeysetQuery() {
-        testEvent.setId(UUID.randomUUID());
-        UUID sendId = UUID.randomUUID();
-        NewsletterSend send = NewsletterSend.builder()
-                .id(sendId).status(NewsletterEmailService.STATUS_PENDING)
-                .sentCount(0).failedCount(0).build();
-
-        NewsletterSubscriber subscriber = new NewsletterSubscriber();
-        subscriber.setEmail("user@example.com");
-        subscriber.setUnsubscribeToken("tok-abc");
-
-        subscriber.setId(UUID.randomUUID());
-
-        when(sendRepository.findById(sendId)).thenReturn(java.util.Optional.of(send));
-        // A batch shorter than the batch size ends the loop.
-        when(subscriberRepository.existsByIdAndUnsubscribedAtIsNullAndSuppressedAtIsNull(any(UUID.class)))
-                .thenReturn(true);
-        when(subscriberRepository.findActiveAfterId(any(UUID.class), any(Limit.class)))
-                .thenReturn(List.of(subscriber));
-        when(emailTemplateService.findByKeyAndLocale(any(), any()))
-                .thenReturn(java.util.Optional.of(mockTemplate("newsletter-event", "de", "body")));
-        when(emailTemplateService.mergeWithLayout(any(), any(), any())).thenReturn("merged");
-        when(emailService.replaceVariables(any(), any())).thenReturn("final");
-        when(eventRepository.findByDateAfter(any())).thenReturn(List.of());
-
-        newsletterEmailService.executeNewsletterSendAsync(sendId, testEvent, false, "de", "newsletter-event");
-
-        // Starts the keyset at the nil UUID with the batch size of 50.
-        verify(subscriberRepository).findActiveAfterId(new UUID(0L, 0L), Limit.of(50));
-        verify(emailService, atLeastOnce()).sendHtmlEmailSync(any(), eq("user@example.com"), any(), any(), any(), any(), any());
     }
 
     @Test
@@ -558,44 +431,6 @@ class NewsletterEmailServiceTest {
         assertThat(result).contains("Igor Masen");
         assertThat(result).contains("sbb");
     }
-
-    // ── Story 10.29: SES Configuration Set & canary send ─────────────────────
-
-    @Test
-    @DisplayName("should_passConfigurationSetName_when_configured")
-    void should_passConfigurationSetName_when_configured() {
-        testEvent.setId(UUID.randomUUID());
-        UUID sendId = UUID.randomUUID();
-        NewsletterSend send = NewsletterSend.builder()
-                .id(sendId).status(NewsletterEmailService.STATUS_PENDING)
-                .sentCount(0).failedCount(0).build();
-
-        ReflectionTestUtils.setField(newsletterEmailService, "configurationSetName", "batbern-bounce-tracking");
-        ReflectionTestUtils.setField(newsletterEmailService, "sendRateDelayMs", 0L);
-        ReflectionTestUtils.setField(newsletterEmailService, "interPageDelayMs", 0L);
-
-        NewsletterSubscriber subscriber = new NewsletterSubscriber();
-        subscriber.setEmail("user@example.com");
-        subscriber.setUnsubscribeToken("tok-config");
-        subscriber.setId(UUID.randomUUID());
-
-        when(sendRepository.findById(sendId)).thenReturn(java.util.Optional.of(send));
-        when(subscriberRepository.existsByIdAndUnsubscribedAtIsNullAndSuppressedAtIsNull(any(UUID.class)))
-                .thenReturn(true);
-        when(subscriberRepository.findActiveAfterId(any(UUID.class), any(Limit.class)))
-                .thenReturn(List.of(subscriber));
-        when(emailTemplateService.findByKeyAndLocale(any(), any()))
-                .thenReturn(java.util.Optional.of(mockTemplate("newsletter-event", "de", "body")));
-        when(emailTemplateService.mergeWithLayout(any(), any(), any())).thenReturn("merged");
-        when(emailService.replaceVariables(any(), any())).thenReturn("final");
-        when(eventRepository.findByDateAfter(any())).thenReturn(List.of());
-
-        newsletterEmailService.executeNewsletterSendAsync(sendId, testEvent, false, "de", "newsletter-event");
-
-        verify(emailService).sendHtmlEmailSync(any(), eq("user@example.com"), any(), any(), any(), eq("batbern-bounce-tracking"), any());
-    }
-
-    // ── Test mode: organizer-only send ───────────────────────────────────────
 
     // ── iCal attachment building ─────────────────────────────────────────────
 

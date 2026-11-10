@@ -11,14 +11,12 @@ import ch.batbern.events.repository.OutreachHistoryRepository;
 import ch.batbern.events.repository.SessionContentHistoryRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
 import ch.batbern.events.repository.SpeakerReminderLogRepository;
-import ch.batbern.shared.mail.MailTrigger;
 import ch.batbern.shared.types.SpeakerWorkflowState;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -358,50 +356,8 @@ class SpeakerReminderServiceTest {
     }
 
     @Nested
-    @DisplayName("manual reminders (Mail Center composer, Story 16.8)")
+    @DisplayName("manual reminders: audience and deadline (sending: ManualSpeakerReminderIntegrationTest)")
     class ManualReminders {
-
-        @Test
-        @DisplayName("sendManualReminders: explicit tier, outreach logged as manual_email by the organizer")
-        void shouldSendWithExplicitTier_andLogOutreach() {
-            List<String> keys = speakerReminderService.sendManualReminders(testEvent, "RESPONSE", "TIER_2",
-                    List.of(testSpeaker), MailTrigger.organizer("organizer1"), "organizer1");
-
-            assertThat(keys).containsExactly("speaker-reminder-response-tier2");
-            verify(reminderEmailService).sendReminderEmail(
-                    eq(testSpeaker), eq(testEvent), eq("RESPONSE"), eq("TIER_2"),
-                    eq(testSpeaker.getResponseDeadline()), eq(Locale.GERMAN), any());
-            ArgumentCaptor<OutreachHistory> outreachCaptor = ArgumentCaptor.forClass(OutreachHistory.class);
-            verify(outreachHistoryRepository).save(outreachCaptor.capture());
-            assertThat(outreachCaptor.getValue().getOrganizerUsername()).isEqualTo("organizer1");
-            assertThat(outreachCaptor.getValue().getContactMethod()).isEqualTo("manual_email");
-        }
-
-        @Test
-        @DisplayName("sendManualReminders: no tier → each speaker's own tier from their deadline")
-        void shouldAutoDetectTier() {
-            testSpeaker.setResponseDeadline(LocalDate.now().plusDays(8)); // closest to TIER_2
-
-            List<String> keys = speakerReminderService.sendManualReminders(testEvent, "RESPONSE", null,
-                    List.of(testSpeaker), MailTrigger.organizer("organizer1"), "organizer1");
-
-            assertThat(keys).containsExactly("speaker-reminder-response-tier2");
-        }
-
-        @Test
-        @DisplayName("sendManualReminders: a speaker with reminders disabled is not mailed; positive control mailed")
-        void shouldSkipRemindersDisabled() {
-            SpeakerPool muted = SpeakerPool.builder().id(UUID.randomUUID()).eventId(eventId)
-                    .speakerName("Mia Muted").status(SpeakerWorkflowState.INVITED)
-                    .responseDeadline(LocalDate.now().plusDays(14)).remindersDisabled(true).build();
-
-            speakerReminderService.sendManualReminders(testEvent, "RESPONSE", "TIER_1",
-                    List.of(muted, testSpeaker), MailTrigger.organizer("organizer1"), "organizer1");
-
-            verify(reminderEmailService).sendReminderEmail(eq(testSpeaker), any(), any(), any(), any(), any(), any());
-            verify(reminderEmailService, never()).sendReminderEmail(eq(muted), any(), any(), any(), any(), any(),
-                    any());
-        }
 
         @Test
         @DisplayName("manualAudience: RESPONSE → INVITED only; CONTENT → ACCEPTED without submitted content")
