@@ -1,0 +1,30 @@
+meta {
+  name: Unpublishing a phase that is not the current one is refused
+  type: http
+  seq: 6.5
+}
+
+post {
+  url: {{baseUrl}}/events/{{publishingEventCode}}/phases/agenda/unpublish
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+assert {
+  res.status: eq 409
+}
+
+tests {
+  test("the problem names the current phase", function() {
+    expect(res.getBody().message).to.contain("speakers");
+  });
+}
+
+docs {
+  Story 4.9b: after 05 the current phase is speakers; unpublishing the agenda
+  again would publish another phase by accident. 409.
+}

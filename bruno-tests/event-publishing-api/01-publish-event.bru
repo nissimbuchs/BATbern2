@@ -1,11 +1,11 @@
 meta {
   name: Publish the agenda phase (folded publish event)
   type: http
-  seq: 16
+  seq: 1
 }
 
 post {
-  url: {{baseUrl}}/events/{{createdEventCode}}/phases/agenda/publish
+  url: {{baseUrl}}/events/{{publishingEventCode}}/phases/agenda/publish
   body: none
   auth: bearer
 }
@@ -31,8 +31,8 @@ tests {
 docs {
   Story 4.9b: POST /events/{eventCode}/publish folded into the agenda phase
   publish (POST /events/{eventCode}/phases/{phase}/publish, the phase is the
-  addressed instance). The 00b fixture is CREATED, dated in the future and has
+  addressed instance). The 00 fixture is CREATED, dated in the future and has
   no untimed session, so the agenda is ready: the publish moves the event into
-  AGENDA_PUBLISHED and sets publishedAt (checked by 16a). Run against local
+  AGENDA_PUBLISHED and sets publishedAt (checked by 02). Run against local
   dev only: a publish acts on the public website.
 }

@@ -1,11 +1,11 @@
 meta {
   name: Agenda publish moved the event into AGENDA_PUBLISHED
   type: http
-  seq: 16.1
+  seq: 2
 }
 
 get {
-  url: {{baseUrl}}/events/{{createdEventCode}}
+  url: {{baseUrl}}/events/{{publishingEventCode}}
   body: none
   auth: bearer
 }

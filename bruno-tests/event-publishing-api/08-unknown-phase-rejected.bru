@@ -1,11 +1,11 @@
 meta {
   name: Unknown phase is a bad request
   type: http
-  seq: 16.7
+  seq: 8
 }
 
 post {
-  url: {{baseUrl}}/events/{{createdEventCode}}/phases/foo/publish
+  url: {{baseUrl}}/events/{{publishingEventCode}}/phases/foo/publish
   body: none
   auth: bearer
 }

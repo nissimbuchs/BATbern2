@@ -442,7 +442,7 @@ test.describe('Events API Consolidation - CRUD Operations (AC3-6)', { tag: '@qua
         organizerUsername: 'test.organizer',
         currentAttendeeCount: 0,
         description: 'Event replaced via PUT',
-        workflowState: 'CREATED',
+        // no workflowState: the state changes only through POST /events/{code}/transition (4.9b)
       }),
     });
 

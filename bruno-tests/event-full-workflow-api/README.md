@@ -17,14 +17,6 @@ order, not the filename order.
 | 12 | `12-list-registrations.bru` | Seed: list registrations on event #1 |
 | 13 | `13-create-registration.bru` | Seed: create a registration on event #1 |
 | 13a | `13a-create-anonymous-registration.bru.disabled` | Seed (disabled) |
-| 16 | `16-publish-event.bru` | Publish the agenda phase of event #1 (`POST …/phases/agenda/publish`, Story 4.9b: the former `/publish` folded into it) — 200 |
-| 16.1 | `16a-verify-agenda-publish-moved-workflow.bru` | Event #1 is AGENDA_PUBLISHED with `publishedAt` |
-| 16.2 | `16b-publishing-resource-schedule.bru` | `PATCH …/publishing`: partial schedule update |
-| 16.3 | `16c-publishing-resource-read.bru` | `GET …/publishing` returns the stored schedule |
-| 16.4 | `16d-unpublish-agenda-keeps-state.bru` | `POST …/phases/agenda/unpublish` |
-| 16.5 | `16e-verify-unpublish-kept-state.bru` | Published phase back to speakers |
-| 16.6 | `16f-verify-unpublish-workflow.bru` | Workflow state still AGENDA_PUBLISHED |
-| 16.7 | `16g-unknown-phase-rejected.bru` | `…/phases/foo/publish` — 400 |
 | 17.1 | `17a-advance-to-topic-selection.bru` | CREATED → TOPIC_SELECTION (override) |
 | 17.2 | `17b-advance-to-speaker-identification.bru` | TOPIC_SELECTION → SPEAKER_IDENTIFICATION (override) |
 | 17.3 | `17c-advance-to-slot-assignment.bru` | SPEAKER_IDENTIFICATION → SLOT_ASSIGNMENT (override) |
@@ -41,8 +33,9 @@ order, not the filename order.
 
 ## Why three fixture events
 
-The seed tests (12/13/16) mutate event #1 — registration is created and the
-event is moved to AGENDA_PUBLISHED by the agenda publish. The state-machine walk (17a→17g) advances
+The seed tests (12/13) mutate event #1 — a registration is created. Publishing
+(Story 4.9b) lives in the dev-only collection `event-publishing-api`: it acts on the
+public website and must not run post-deploy against staging = production. The state-machine walk (17a→17g) advances
 event #2 through all 8 states. The invalid-transition tests (18a/18b) need
 an event held in CREATED to verify rejection. Trying to share fixtures
 across these test paths would cause state-pollution failures, so each path

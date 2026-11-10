@@ -1,11 +1,11 @@
 meta {
   name: Unpublish left the workflow state alone
   type: http
-  seq: 16.6
+  seq: 7
 }
 
 get {
-  url: {{baseUrl}}/events/{{createdEventCode}}
+  url: {{baseUrl}}/events/{{publishingEventCode}}
   body: none
   auth: bearer
 }

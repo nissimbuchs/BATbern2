@@ -1,11 +1,11 @@
 meta {
   name: Unpublish the agenda phase — workflow state unchanged
   type: http
-  seq: 16.4
+  seq: 5
 }
 
 post {
-  url: {{baseUrl}}/events/{{createdEventCode}}/phases/agenda/unpublish
+  url: {{baseUrl}}/events/{{publishingEventCode}}/phases/agenda/unpublish
   body: none
   auth: bearer
 }
@@ -28,5 +28,5 @@ tests {
 
 docs {
   Story 4.9b: unpublish sets the phase back to speakers; the workflow state
-  stays AGENDA_PUBLISHED (checked by 16e).
+  stays AGENDA_PUBLISHED (checked by 06).
 }
