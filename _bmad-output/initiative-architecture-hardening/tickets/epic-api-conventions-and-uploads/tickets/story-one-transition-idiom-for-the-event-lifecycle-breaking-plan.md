@@ -3,14 +3,14 @@ title: 'One transition idiom for the event lifecycle (breaking)'
 type: 'refactor'
 ticket: '9b'
 created: '2026-11-10'
-status: 'review'
+status: 'in-review'
 baseline_revision: '1bc1e7abb9fb62408b25224fb92b56da667dac31'
 route: 'full'
 route_source: 'auto'
 risk: 'high'
-review: ''
-review_source: ''
-lenses_ran: []
+review: 'quick'
+review_source: 'pinned'
+lenses_ran: ['quick']
 review_loop_iteration: 0
 context:
   - '{project-root}/docs/architecture/ADR-013-rest-api-crud-conventions.md'
@@ -176,6 +176,15 @@ from Details → Settings.
   own); only their `workflowState` lines were removed.
 
 ## Review Triage Log
+
+Pass 1 (quick lens, 2026-11-10): high 2, medium 4, low 1, false 0. All patches (no-defer rule).
+- high, patch: `event-full-workflow-api` runs post-deploy against production, and 16/16b/16d now really publish the agenda there (CDN, organizer notification). Fix: move those files to a dev-only collection.
+- high, patch: unpublishing a phase that is not the current one publishes another, so speakers go public. Fix: 409 unless the phase is current; publishing a lower phase also gets 409.
+- medium, patch: nullable `publishing_config` columns cause an NPE (500) and abort the scheduler loop. Fix: per-field defaults, and the per-event try covers all per-event work.
+- medium, patch: an agenda schedule earlier than speakers, or speakers disabled, never fires. Fix: 400 on PATCH, the same rule in the form, spec text corrected.
+- medium, patch: e2e `should_replaceEvent_when_putRequested` still PUTs `workflowState` and now gets 400. Fix: remove it and sweep all callers.
+- medium, patch (implementer's own finding): auto-publish failures are only logged. Fix: failure metric (and alarm).
+- low, patch: the 400 transition example leaks a Java class name. Fix: a client message with the allowed states.
 
 ## Design Notes
 
