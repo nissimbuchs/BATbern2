@@ -3,7 +3,7 @@ title: 'Stub services gone from production (17.2 part A)'
 type: 'refactor'
 ticket: '2'
 created: '2026-11-07'
-status: 'built'
+status: 'done'
 baseline_revision: '061b3411d2d99001f76f2dba545b78f1b889925c'
 route: 'full'
 route_source: 'auto'
@@ -192,3 +192,7 @@ Pass 1 (quick lens), 2026-11-07: high 0, medium 4, low 5, false 0, maybe-false 0
 | 9 | AC1 grep too literal (SCS/AES, spaced names) | low | patch | Case-insensitive sweep done; deliberate leftovers listed in Implementation Notes. |
 
 Coordinator: fixed the pre-existing wrong endpoint ports in `status-all-instances.sh` and the `start-all-native.sh` header (checked against the port variables).
+
+## Production verification
+
+2026-11-10, owner go: orphaned stacks `BATbern-staging-SpeakerCoordination`, `-AttendeeExperience` and `-EventBus` deleted (no stack imported their exports; the bus had no rules or archives), and the two retained stub ECR repositories deleted. Checked live afterwards: `aws ecs list-services` lists the gateway, EMS, CUMS and PCS only; `aws events list-event-buses` lists `default` only; no leftover log group, alarm or Cloud Map service. The CDK guard `infrastructure/test/unit/no-event-bus.test.ts` now also fails on a stub stack or repository.

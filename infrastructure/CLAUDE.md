@@ -33,7 +33,7 @@ npm run deploy:staging         # Deploy all stacks to staging
 npm run deploy:prod            # Deploy all stacks to production (requires approval)
 
 # Selective staging deployments (faster iterations)
-npm run deploy:staging:microservices    # Deploy only microservices (6 concurrent)
+npm run deploy:staging:microservices    # Deploy only the 4 service stacks (EMS, PCS, CUMS, gateway service)
 npm run deploy:staging:infra           # Deploy only infrastructure
 npm run deploy:staging:frontend        # Deploy only frontend
 npm run deploy:staging:hotswap         # Fast deployment using hotswap for Lambda/ECS
@@ -43,7 +43,7 @@ npm run deploy:staging:layer0-foundation     # CICD, DNS, Monitoring, SES (4 con
 npm run deploy:staging:layer1-infrastructure # Network, Secrets, InboundEmail (3 concurrent)
 npm run deploy:staging:layer2-data          # Database, Storage, Bastion (2 concurrent)
 npm run deploy:staging:layer3-application   # Cognito, Cluster (2 concurrent)
-npm run deploy:staging:layer4-services      # All microservices (6 concurrent)
+npm run deploy:staging:layer4-services      # The 4 service stacks (4 concurrent)
 npm run deploy:staging:layer5-gateway       # API Gateway, Frontend (2 concurrent)
 npm run deploy:staging:all-layers           # Deploy all layers sequentially
 
@@ -119,7 +119,7 @@ Used by GitHub Actions for infrastructure changes:
 - Layer 1: Infrastructure (Network, Secrets, InboundEmail) - 3 concurrent
 - Layer 2: Data (Database, Storage, Bastion) - 2 concurrent
 - Layer 3: Application (Cognito, Cluster) - 2 concurrent
-- Layer 4: Services (All 6 microservices) - 6 concurrent
+- Layer 4: Services (EMS, PCS, CUMS, API gateway service) - 4 concurrent
 - Layer 5: Gateway (API Gateway, Frontend) - 2 concurrent
 
 ### Deployment Decision Tree
@@ -147,7 +147,7 @@ Used by GitHub Actions for infrastructure changes:
 
 ### Optimization Features
 
-1. **Increased Concurrency**: Microservices deploy with `--concurrency=6` (up from 3)
+1. **Concurrency**: the 4 service stacks deploy with `--concurrency=4`
 2. **Smart RDS Snapshots**: Only create snapshots when V*.sql migrations detected
 3. **Mid-Deployment Re-Auth**: Prevents AWS token expiration on long deployments
 4. **Direct IMAGE_TAG**: Eliminates GitHub API call overhead

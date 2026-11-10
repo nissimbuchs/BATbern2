@@ -114,9 +114,7 @@ jobs:
           if aws ecs describe-clusters --clusters batbern-dev --region ${{ env.AWS_REGION }} 2>/dev/null; then
             services=(
               "event-management-service"
-              "speaker-coordination-service"
               "partner-coordination-service"
-              "attendee-experience-service"
               "company-user-management-service"
             )
 

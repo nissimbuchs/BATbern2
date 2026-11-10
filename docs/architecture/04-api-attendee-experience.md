@@ -1,5 +1,7 @@
 # Attendee Experience API
 
+> **Served by `event-management-service`.** The Attendee Experience domain is part of EMS. The separate stub service, its stack and its ECR repository were removed by Story 17.2 (ADR-014); the stack was deleted in production on 2026-11-10. The specs are under `docs/api/`; where this page disagrees with them, the specs win.
+
 **Last Updated**: 2025-11-02
 **ADR References**:
 - [ADR-003: Meaningful Identifiers in Public APIs](./ADR-003-meaningful-identifiers-public-apis.md)

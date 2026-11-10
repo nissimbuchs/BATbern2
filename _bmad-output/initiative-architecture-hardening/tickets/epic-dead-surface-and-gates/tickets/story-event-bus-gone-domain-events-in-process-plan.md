@@ -3,7 +3,7 @@ title: 'Event bus gone, domain events in process (17.2 part B)'
 type: 'refactor'
 ticket: '2b'
 created: '2026-11-07'
-status: 'built'
+status: 'done'
 baseline_revision: '9786d3c9394116e7572dbdaa26189e5f5dd332f3'
 route: 'full'
 route_source: 'auto'
@@ -152,3 +152,7 @@ Pass 1 (quick lens), 2026-11-07: high 0, medium 1, low 4, false 1. Patched 3, de
 | 3 | Remaining-grep list incomplete; ADR-016:20 present tense | low | patch | List completed; ADR-016 now past tense. |
 | 4 | `infrastructure/CLAUDE.md` stack numbering gap 8 → 10 | low | defer | Agent-context file; deferred-work.md. |
 | 5 | Speaker-workflow event not exercised through the real publisher | low | rejected | Same `publish` path and the listener takes `DomainEvent<?>`; the matrix row says "e.g."; the tested transition event proves the hand-off. |
+
+## Production verification
+
+2026-11-10, owner go: orphaned stacks `BATbern-staging-SpeakerCoordination`, `-AttendeeExperience` and `-EventBus` deleted (no stack imported their exports; the bus had no rules or archives), and the two retained stub ECR repositories deleted. Checked live afterwards: `aws ecs list-services` lists the gateway, EMS, CUMS and PCS only; `aws events list-event-buses` lists `default` only; no leftover log group, alarm or Cloud Map service. The CDK guard `infrastructure/test/unit/no-event-bus.test.ts` now also fails on a stub stack or repository.
