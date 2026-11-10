@@ -66,7 +66,7 @@ class UserProvisioningCognitoRollbackIntegrationTest extends AbstractIntegration
         request.setFirstName("Rollback");
         request.setLastName("Victim");
 
-        assertThatThrownBy(() -> userService.provisionUserWithRole(request))
+        assertThatThrownBy(() -> userService.provisionUserWithRole(request, "system:test"))
                 .isInstanceOf(CognitoOperationException.class);
 
         // After the exception propagates, the @Transactional rolls back: no User row persists,

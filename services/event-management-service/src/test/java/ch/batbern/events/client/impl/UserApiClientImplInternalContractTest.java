@@ -5,6 +5,10 @@ import ch.batbern.events.config.CacheConfig;
 import ch.batbern.events.config.RestClientConfig;
 import ch.batbern.events.dto.generated.users.GetOrCreateUserRequest;
 import ch.batbern.events.dto.generated.users.GetOrCreateUserResponse;
+import ch.batbern.events.dto.generated.users.InvitationCredentialsResponse;
+import ch.batbern.events.dto.generated.users.PatchUserProfileRequest;
+import ch.batbern.events.dto.generated.users.ProvisionUserRequest;
+import ch.batbern.events.dto.generated.users.ProvisionUserResponse;
 import ch.batbern.events.dto.generated.users.UserResponse;
 import ch.batbern.events.exception.UserNotFoundException;
 import ch.batbern.events.exception.UserServiceException;
@@ -30,6 +34,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.test.web.client.ExpectedCount;
+import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
@@ -38,17 +43,20 @@ import java.util.Objects;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.springframework.http.HttpMethod.GET;
+import static org.springframework.http.HttpMethod.PATCH;
 import static org.springframework.http.HttpMethod.POST;
 
 /**
- * Contract test of every {@code /internal} call of {@link UserApiClientImpl} against
- * {@code docs/api/internal/cums-internal.openapi.yml} (Story 17.0b2): the real client on the real
- * {@code RestTemplate} bean, each request validated against the spec, answers from its examples.
- * Replaces the {@code @Mock RestTemplate} tests {@code UserApiClientImplInternalApiTest},
- * {@code UserApiClientImplGetOrCreateUserTest} and {@code UserApiClientImplPagedListsTest}.
+ * Contract test of every call of {@link UserApiClientImpl} against
+ * {@code docs/api/internal/cums-internal.openapi.yml} (Story 17.0b2; Epic 17 entry 6 moved the last
+ * public calls, provision, profile patch, invitation credentials and the company read, here and
+ * deleted the public-API contract test): the real client on the real {@code RestTemplate} bean,
+ * each request validated against the spec, answers from its examples. Only the internal spec is
+ * bound, so a call to any other path fails.
  *
- * <p>The internal API is VPC-only and carries no JWT: a signed-in user triggered every lookup
- * here, and their token must never reach CUMS (the results are cached for every caller).
+ * <p>ADR-016 decision 3: every call forwards the signed-in user's JWT and works without one. Each
+ * operation runs both ways (a user signed in, or nobody) and asserts the header is there or
+ * absent. CUMS's internal answers do not depend on the caller, so the reads stay cacheable.
  */
 @SpringBootTest(classes = {UserApiClientImpl.class, RestClientConfig.class, CacheConfig.class},
         webEnvironment = SpringBootTest.WebEnvironment.NONE,
@@ -74,11 +82,12 @@ class UserApiClientImplInternalContractTest {
 
     private ContractServer cums;
 
+    private static final String TOKEN = "user-token";
+
     @BeforeEach
     void setUp() {
         cacheManager.getCacheNames().forEach(n -> Objects.requireNonNull(cacheManager.getCache(n)).clear());
-        Jwt jwt = Jwt.withTokenValue("attendee-token").header("alg", "none").claim("sub", "attendee").build();
-        SecurityContextHolder.getContext().setAuthentication(new JwtAuthenticationToken(jwt));
+        SecurityContextHolder.clearContext();
         cums = ContractServer.bindTo(restTemplate, CUMS_INTERNAL);
     }
 
@@ -88,21 +97,40 @@ class UserApiClientImplInternalContractTest {
         cums.close();
     }
 
-    private static void noJwt(ClientHttpRequest request) {
-        assertThat(request.getHeaders().containsHeader(HttpHeaders.AUTHORIZATION)).isFalse();
+    /** A user signed in with a JWT (as on a request thread), or nobody (scheduler, SQS, anonymous). */
+    private static void signedIn(boolean user) {
+        if (user) {
+            Jwt jwt = Jwt.withTokenValue(TOKEN).header("alg", "none").claim("sub", "organizer").build();
+            SecurityContextHolder.getContext().setAuthentication(new JwtAuthenticationToken(jwt));
+        } else {
+            SecurityContextHolder.clearContext();
+        }
+    }
+
+    /** The JWT is forwarded when a user is signed in, and no {@code Authorization} is sent otherwise. */
+    private static java.util.function.Consumer<ClientHttpRequest> jwtForwardedIff(boolean user) {
+        return request -> {
+            if (user) {
+                assertThat(request.getHeaders().getFirst(HttpHeaders.AUTHORIZATION)).isEqualTo("Bearer " + TOKEN);
+            } else {
+                assertThat(request.getHeaders().containsHeader(HttpHeaders.AUTHORIZATION)).isFalse();
+            }
+        };
     }
 
     // ------------------------------------------------------------------ GET /internal/users/{username}
 
-    @Test
-    void should_readUser_withoutJwt() {
-        cums.expect(GET, "/internal/users/{username}").andExpect(UserApiClientImplInternalContractTest::noJwt)
+    @ParameterizedTest(name = "signed in: {0}")
+    @CsvSource({"true", "false"})
+    void should_readUser_withOrWithoutJwt(boolean user) {
+        signedIn(user);
+        cums.expect(GET, "/internal/users/{username}").andExpect(jwtForwardedIff(user))
                 .respondWithExample("user");
 
-        UserResponse user = client.getUserByUsername("anna.meier");
+        UserResponse found = client.getUserByUsername("anna.meier");
 
-        assertThat(user.getEmail()).isEqualTo("anna.meier@example.com");
-        assertThat(user.getFirstName()).isEqualTo("Anna");
+        assertThat(found.getEmail()).isEqualTo("anna.meier@example.com");
+        assertThat(found.getFirstName()).isEqualTo("Anna");
         cums.verify();
     }
 
@@ -137,21 +165,13 @@ class UserApiClientImplInternalContractTest {
         cums.verify();
     }
 
-    @Test
-    void should_validateUserExists_trueAndFalse() {
-        cums.expect(GET, "/internal/users/anna.meier").respondWithExample("user");
-        cums.expect(GET, "/internal/users/ghost.user").respondWithExample(HttpStatus.NOT_FOUND);
-
-        assertThat(client.validateUserExists("anna.meier")).isTrue();
-        assertThat(client.validateUserExists("ghost.user")).isFalse();
-        cums.verify();
-    }
-
-    @Test
-    @DisplayName("#1146, Story 4.9: notification settings come from ?include=settings, without JWT")
-    void should_readPreferences_fromInclude() {
+    @ParameterizedTest(name = "signed in: {0}")
+    @CsvSource({"true", "false"})
+    @DisplayName("#1146, Story 4.9: notification settings come from ?include=settings")
+    void should_readPreferences_fromInclude(boolean user) {
+        signedIn(user);
         cums.expect(GET, "/internal/users/{username}").withQueryParam("include", "settings")
-                .andExpect(UserApiClientImplInternalContractTest::noJwt)
+                .andExpect(jwtForwardedIff(user))
                 .respondWithExample("withSettings");
 
         UserPreferences prefs = client.getPreferences("anna.meier");
@@ -204,11 +224,13 @@ class UserApiClientImplInternalContractTest {
              "pagination": {"page": 1, "limit": 100, "totalItems": 101, "totalPages": 2,
                             "hasNext": true, "hasPrev": false}}""";
 
-    @Test
-    @DisplayName("organizers: every page is read, within limit 100, without JWT")
-    void should_readOrganizers_fromAllPages() {
+    @ParameterizedTest(name = "signed in: {0}")
+    @CsvSource({"true", "false"})
+    @DisplayName("organizers: every page is read, within limit 100")
+    void should_readOrganizers_fromAllPages(boolean user) {
+        signedIn(user);
         cums.expect(GET, "/internal/users").withQueryParam("role", "ORGANIZER").withQueryParam("page", "1")
-                .withQueryParam("limit", "100").andExpect(UserApiClientImplInternalContractTest::noJwt)
+                .withQueryParam("limit", "100").andExpect(jwtForwardedIff(user))
                 .respondWith(HttpStatus.OK, PAGE_ONE_OF_TWO);
         cums.expect(GET, "/internal/users").withQueryParam("role", "ORGANIZER").withQueryParam("page", "2")
                 .respondWithExample();
@@ -244,10 +266,13 @@ class UserApiClientImplInternalContractTest {
 
     // ------------------------------------------------------------------ GET /internal/email-owners
 
-    @Test
+    @ParameterizedTest(name = "signed in: {0}")
+    @CsvSource({"true", "false"})
     @DisplayName("#1183: a plus address arrives intact (%2B, not a space)")
-    void should_readEmailOwners_withPlusAddressEncoded() {
+    void should_readEmailOwners_withPlusAddressEncoded(boolean user) {
+        signedIn(user);
         cums.expect(GET, "/internal/email-owners").withQueryParam("email", "anna+events@example.com")
+                .andExpect(jwtForwardedIff(user))
                 .andExpect(r -> assertThat(r.getURI().getRawQuery()).isEqualTo("email=anna%2Bevents%40example.com"))
                 .respondWithExample("oneOwner");
 
@@ -268,9 +293,11 @@ class UserApiClientImplInternalContractTest {
                 .companyId("Swiss IT Solutions AG").cognitoSync(false);
     }
 
-    @Test
-    void should_getOrCreateUser_withoutJwt() {
-        cums.expect(POST, "/internal/users/get-or-create").andExpect(UserApiClientImplInternalContractTest::noJwt)
+    @ParameterizedTest(name = "signed in: {0}")
+    @CsvSource({"true", "false"})
+    void should_getOrCreateUser_withOrWithoutJwt(boolean user) {
+        signedIn(user);
+        cums.expect(POST, "/internal/users/get-or-create").andExpect(jwtForwardedIff(user))
                 .respondWithExample("created");
 
         GetOrCreateUserResponse response = client.getOrCreateUser(newAttendee());
@@ -300,6 +327,182 @@ class UserApiClientImplInternalContractTest {
         assertThatThrownBy(() -> client.getOrCreateUser(newAttendee()))
                 .isInstanceOf(UserServiceException.class)
                 .hasMessageStartingWith("Client error getting/creating user");
+        cums.verify();
+    }
+
+    // ------------------------------------------------------------------ POST /internal/users/provision
+
+    @ParameterizedTest(name = "signed in: {0}")
+    @CsvSource({"true", "false"})
+    void should_provisionSpeaker_withOrWithoutJwt(boolean user) {
+        signedIn(user);
+        cums.expect(POST, "/internal/users/provision").andExpect(jwtForwardedIff(user))
+                .respondWithExample("created");
+
+        ProvisionUserResponse response = client.provisionUserWithRole(new ProvisionUserRequest()
+                .email("anna.meier@example.com").firstName("Anna").lastName("Meier")
+                .role(ProvisionUserRequest.RoleEnum.SPEAKER));
+
+        assertThat(response.getUsername()).isEqualTo("anna.meier");
+        assertThat(response.getCreated()).isTrue();
+        cums.verify();
+    }
+
+    @Test
+    void should_provisionWithEmailOnly_whenNamesUnknown() {
+        cums.expect(POST, "/internal/users/provision").respondWithExample("alreadyExisted");
+
+        ProvisionUserResponse response = client.provisionUserWithRole(new ProvisionUserRequest()
+                .email("anna.meier@example.com").role(ProvisionUserRequest.RoleEnum.SPEAKER));
+
+        assertThat(response.getCreated()).isFalse();
+        cums.verify();
+    }
+
+    @Test
+    @DisplayName("a role CUMS refuses (SPEAKER only) surfaces as UserServiceException 400")
+    void should_throw_when_cumsRefusesRole() {
+        cums.expect(POST, "/internal/users/provision").respondWithExample(HttpStatus.BAD_REQUEST);
+
+        assertThatThrownBy(() -> client.provisionUserWithRole(new ProvisionUserRequest()
+                .email("anna.meier@example.com").role(ProvisionUserRequest.RoleEnum.ORGANIZER)))
+                .isInstanceOf(UserServiceException.class)
+                .satisfies(e -> assertThat(((UserServiceException) e).getStatusCode()).isEqualTo(400));
+        cums.verify();
+    }
+
+    // ------------------------------------------------------------------ PATCH /internal/users/{username}/profile
+
+    @ParameterizedTest(name = "signed in: {0}")
+    @CsvSource({"true", "false"})
+    void should_patchProfile_withOrWithoutJwt(boolean user) {
+        signedIn(user);
+        cums.expect(PATCH, "/internal/users/{username}/profile").andExpect(jwtForwardedIff(user))
+                .respondWithExample();
+
+        UserResponse patched = client.patchUserProfile("anna.meier", new PatchUserProfileRequest()
+                .bio("Software architect"));
+
+        assertThat(patched.getId()).isEqualTo("anna.meier");
+        assertThat(patched.getBio()).isEqualTo("Software architect");
+        cums.verify();
+    }
+
+    @Test
+    void should_throwUserNotFound_when_profileUserUnknown() {
+        cums.expect(PATCH, "/internal/users/{username}/profile").respondWithExample(HttpStatus.NOT_FOUND);
+
+        assertThatThrownBy(() -> client.patchUserProfile("ghost.user", new PatchUserProfileRequest().bio("x")))
+                .isInstanceOf(UserNotFoundException.class);
+        cums.verify();
+    }
+
+    // ------------------------------------------------------------------ issue-invitation-credentials
+
+    @ParameterizedTest(name = "signed in: {0}")
+    @CsvSource({"true", "false"})
+    void should_returnFreshTempPassword_withOrWithoutJwt(boolean user) {
+        signedIn(user);
+        cums.expect(POST, "/internal/users/{username}/issue-invitation-credentials")
+                .andExpect(jwtForwardedIff(user))
+                .respondWithExample("freshTempPassword");
+
+        InvitationCredentialsResponse result = client.issueInvitationCredentials("anna.meier");
+
+        assertThat(result.getAction()).isEqualTo(InvitationCredentialsResponse.ActionEnum.FRESH_TEMP_PASSWORD);
+        assertThat(result.getTemporaryPassword()).isEqualTo("Tk7!aB2@nx9pQ4#z");
+        cums.verify();
+    }
+
+    @Test
+    void should_keepExistingPassword_when_userConfirmed() {
+        cums.expect(POST, "/internal/users/{username}/issue-invitation-credentials")
+                .respondWithExample("useExistingPassword");
+
+        InvitationCredentialsResponse result = client.issueInvitationCredentials("anna.meier");
+
+        assertThat(result.getAction()).isEqualTo(InvitationCredentialsResponse.ActionEnum.USE_EXISTING_PASSWORD);
+        assertThat(result.getTemporaryPassword()).isNull();
+        cums.verify();
+    }
+
+    @Test
+    void should_failFast_when_freshPasswordActionComesWithNullPassword() {
+        cums.expect(POST, "/internal/users/{username}/issue-invitation-credentials")
+                .respondWith(HttpStatus.OK, "{\"temporaryPassword\": null, \"action\": \"FRESH_TEMP_PASSWORD\"}");
+
+        assertThatThrownBy(() -> client.issueInvitationCredentials("anna.meier"))
+                .isInstanceOf(UserServiceException.class)
+                .hasStackTraceContaining("no temporaryPassword");
+    }
+
+    @Test
+    void should_throwUserNotFound_when_credentialsUserUnknown() {
+        cums.expect(POST, "/internal/users/{username}/issue-invitation-credentials")
+                .respondWithExample(HttpStatus.NOT_FOUND);
+
+        assertThatThrownBy(() -> client.issueInvitationCredentials("ghost.user"))
+                .isInstanceOf(UserNotFoundException.class);
+        cums.verify();
+    }
+
+    // ------------------------------------------------------------------ GET /internal/companies/{name}
+
+    @ParameterizedTest(name = "signed in: {0}")
+    @CsvSource({"true", "false"})
+    void should_returnDisplayName_withOrWithoutJwt(boolean user) {
+        signedIn(user);
+        cums.expect(GET, "/internal/companies/{name}").andExpect(jwtForwardedIff(user)).respondWithExample();
+
+        assertThat(client.getCompanyDisplayName("swissitsolut")).isEqualTo("Swiss IT Solutions AG");
+        cums.verify();
+    }
+
+    @Test
+    void should_fallBackToName_when_displayNameMissing() {
+        cums.expect(GET, "/internal/companies/{name}").respondWith(HttpStatus.OK, """
+                {"name": "adesso", "isVerified": false, "createdAt": "2025-01-15T10:00:00Z",
+                 "updatedAt": "2025-01-15T10:00:00Z", "createdBy": "lead.organizer"}""");
+
+        assertThat(client.getCompanyDisplayName("adesso")).isEqualTo("adesso");
+        cums.verify();
+    }
+
+    @Test
+    void should_returnNull_when_companyUnknown() {
+        cums.expect(GET, "/internal/companies/{name}").respondWithExample(HttpStatus.NOT_FOUND);
+
+        assertThat(client.getCompanyDisplayName("ghost")).isNull();
+        cums.verify();
+    }
+
+    @Test
+    @DisplayName("a company name is one strictly encoded path segment")
+    void should_encodeCompanyName_asOnePathSegment() {
+        cums.expect(GET, "/internal/companies/{name}")
+                .andExpect(r -> assertThat(r.getURI().getRawPath()).isEqualTo("/internal/companies/a%2Fb%20c"))
+                .respondWithExample();
+
+        client.getCompanyDisplayName("a/b c");
+
+        cums.verify();
+    }
+
+    @Test
+    void should_returnNull_when_cumsUnreachable() {
+        cums.expect(GET, "/internal/companies/{name}").respondWith(request -> {
+            throw new ResourceAccessException("connection refused");
+        });
+
+        assertThat(client.getCompanyDisplayName("mobiliar")).isNull();
+        cums.verify();
+    }
+
+    @Test
+    void should_notCallCums_when_slugBlank() {
+        assertThat(client.getCompanyDisplayName(null)).isNull();
+        assertThat(client.getCompanyDisplayName("")).isNull();
+        assertThat(client.getCompanyDisplayName("   ")).isNull();
         cums.verify();
     }
 }

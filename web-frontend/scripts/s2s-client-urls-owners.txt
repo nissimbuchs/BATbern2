@@ -1,0 +1,16 @@
+# Owners of the S2S client URL baseline (s2s-client-urls-baseline.txt). Hand-maintained, reviewed
+# like code. Checked by `npm run check:s2s-client-urls` (also right after `--update`): every
+# baseline line matches exactly one group (else UNOWNED / AMBIGUOUS), and every group matches at
+# least one line (else STALE OWNER: the owning story moved the call, remove the group).
+# Policy: ADR-016 decision 2; docs/architecture/module-map.md, section "Gates".
+#
+# Format, TAB separated: <group id> <owner> <file regex> <URL regex>
+#   owner  the epic-3 entry or Epic 17 story that moves or deletes the call (6b, 8, 17.6), an issue
+#          (#1070), or "exception: <reason>" accepted by the owner (no exception without a reason)
+#   file   regex searched in the repo-relative path
+#   URL    regex searched in the URL literal
+# Entries: _bmad-output/initiative-architecture-hardening/tickets/epic-one-service-direction/.
+
+# --- Stories that remove the lines ---
+S1	6b	^services/partner-coordination-service/	/api/v1/
+S2	8	^services/event-management-service/.*/PartnerApiClientImpl\.java$	/api/v1/partners

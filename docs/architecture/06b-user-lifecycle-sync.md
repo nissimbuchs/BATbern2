@@ -247,7 +247,7 @@ sequenceDiagram
     Org->>EMS: POST /api/v1/events/{code}/speakers/{id}/promote<br/>email, firstName?, lastName?
     EMS->>EMS: PreAuthorize hasRole ORGANIZER, status must be CONTACTED
     EMS->>EMS: SpeakerWorkflowService.transition to READY
-    EMS->>CUMS: POST /api/v1/users/provision<br/>email, names, role SPEAKER
+    EMS->>CUMS: POST /internal/users/provision<br/>email, names, role SPEAKER, organizer JWT if any
     CUMS->>DB: findByEmailIgnoreCase
     alt user exists
         CUMS->>DB: addRole SPEAKER, idempotent
@@ -264,7 +264,7 @@ sequenceDiagram
 
     Note over Org,DB: Later, READY to INVITED
     Org->>EMS: invite speaker
-    EMS->>CUMS: POST /api/v1/users/{username}/issue-invitation-credentials
+    EMS->>CUMS: POST /internal/users/{username}/issue-invitation-credentials
     CUMS->>Cognito: AdminGetUser status
     alt FORCE_CHANGE_PASSWORD or RESET_REQUIRED
         CUMS->>Cognito: AdminSetUserPassword Permanent false, fresh temp password
@@ -276,9 +276,12 @@ sequenceDiagram
 ```
 
 **Steps performed by `UserService.provisionUserWithRole(...)` in `company-user-management-service`**
-(called by EMS `UserApiClient.provisionUserWithRole` → `POST /api/v1/users/provision`):
+(called by EMS `UserApiClient.provisionUserWithRole` → `POST /internal/users/provision`, VPC-only since
+Epic 17 entry 6; EMS forwards the organizer's JWT when there is one, and CUMS records that user or
+`system:ems-speaker-workflow` as `createdBy`):
 
-1. **Whitelist**: a non-ADMIN caller may only grant `SPEAKER`.
+1. **SPEAKER only**: any other role answers 400, whoever calls (no ADMIN branch; `/internal`
+   authorizes by operation, ADR-016).
 2. **Look up by lower-cased email.** If the user exists, grant the role (idempotent) and call
    `adminCreateUserSilently`, which is a no-op when the Cognito user exists and otherwise creates the
    missing shell and re-links the new `sub` into `user_profiles`. Returns `created=false`.

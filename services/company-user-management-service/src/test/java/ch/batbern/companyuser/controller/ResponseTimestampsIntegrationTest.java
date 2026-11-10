@@ -136,9 +136,8 @@ class ResponseTimestampsIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @WithMockUser(username = "test.organizer", roles = {"ORGANIZER"})
     void should_returnStoredUpdatedAt_when_userProfilePatched() throws Exception {
-        JsonNode body = call(patch("/api/v1/users/{username}/profile", USERNAME), "{\"bio\": \"Neue Bio\"}");
+        JsonNode body = call(patch("/internal/users/{username}/profile", USERNAME), "{\"bio\": \"Neue Bio\"}");
 
         assertUserUpdatedAt(body);
     }

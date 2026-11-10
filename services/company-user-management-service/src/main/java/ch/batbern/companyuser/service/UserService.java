@@ -498,7 +498,7 @@ public class UserService {
                 throw new EmailLinkedToAccountException(request.getEmail());
             }
             log.info("Creating new user: {}", LoggingUtils.maskEmail(request.getEmail()));
-            User newUser = createNewUser(request);
+            User newUser = createNewUser(request, getAuditUsername());
             return new GetOrCreateUserResponse()
                     .username(newUser.getUsername())
                     .created(true)
@@ -549,9 +549,10 @@ public class UserService {
     /**
      * Provision a User with a role (idempotent).
      *
-     * <p>Story 11.C.2 (AR13). Used by
-     * {@link ch.batbern.events.service.SpeakerWorkflowService#transition} at the
-     * CONTACTED → READY hook (called via {@code UserApiClient.provisionUserWithRole}).
+     * <p>Story 11.C.2 (AR13). Used by EMS {@code SpeakerWorkflowService.transition} at the
+     * CONTACTED → READY hook, through {@code POST /internal/users/provision} (Epic 17 entry 6).
+     * The operation grants SPEAKER only: it authorizes by operation, not by the caller's role
+     * (ADR-016 decision 3), so any other role answers 400.
      *
      * <p>Behaviour:
      * <ul>
@@ -580,11 +581,13 @@ public class UserService {
      * workflow transition aborts at CONTACTED → READY (no partial state).
      *
      * @param request username (optional), email (required), firstName, lastName, role (required)
+     * @param actor   who acted: the forwarded user's username, else {@code system:<job>}; recorded
+     *                as {@code createdBy} of a new user
      * @return canonical username + {@code created} flag
-     * @throws UserValidationException if email or role is missing/invalid
+     * @throws UserValidationException if email or role is missing/invalid, or the role is not SPEAKER
      */
     @Counted(value = "users.provisioning", description = "Count of user provisioning calls (Story 11.C.2)")
-    public ProvisionUserResponse provisionUserWithRole(ProvisionUserRequest request) {
+    public ProvisionUserResponse provisionUserWithRole(ProvisionUserRequest request, String actor) {
         if (request.getEmail() == null || request.getEmail().isBlank()) {
             throw new UserValidationException("email", "Email is required for user provisioning");
         }
@@ -593,22 +596,20 @@ public class UserService {
         }
         Role roleToGrant = parseRole(request.getRole().getValue());
 
-        // P0 (review patch): role-grant whitelist. A non-ADMIN caller (ORGANIZER) must not be able to
-        // grant arbitrary roles via this endpoint — Epic 11 only needs SPEAKER. Anything else is a 403
-        // unless the caller is ADMIN.
-        if (!securityContext.hasRole("ADMIN") && roleToGrant != Role.SPEAKER) {
+        // The operation grants SPEAKER only (Epic 17 entry 6): /internal authorizes by operation,
+        // never by the caller's role (ADR-016), so there is no ADMIN branch any more.
+        if (roleToGrant != Role.SPEAKER) {
             throw new UserValidationException(
                     "role",
-                    "Non-ADMIN callers may only provision the SPEAKER role via /users/provision (got "
-                            + roleToGrant + ")");
+                    "/internal/users/provision grants the SPEAKER role only (got " + roleToGrant + ")");
         }
 
         // P1 (review patch): normalize email to lowercase for both lookup AND persist so
         // "Jane@x.com" and "jane@x.com" resolve to the same User row. Idempotency claim now holds.
         String normalizedEmail = request.getEmail().trim().toLowerCase();
 
-        log.info("Provisioning user (Story 11.C.2): email={}, role={}",
-                LoggingUtils.maskEmail(normalizedEmail), roleToGrant);
+        log.info("Provisioning user (Story 11.C.2): email={}, role={}, actor={}",
+                LoggingUtils.maskEmail(normalizedEmail), roleToGrant, actor);
 
         // 1. Look up existing user by email (case-insensitive). Matches the getOrCreateUser contract.
         Optional<User> existingUser = userRepository.findByEmailIgnoreCase(normalizedEmail);
@@ -682,7 +683,7 @@ public class UserService {
 
         User created;
         try {
-            created = createNewUser(createRequest);
+            created = createNewUser(createRequest, actor);
         } catch (DataIntegrityViolationException e) {
             // P1 (review patch): another caller raced us to createNewUser for the same email
             // and won. The email UNIQUE constraint fired. Treat as idempotent: re-fetch and
@@ -748,7 +749,7 @@ public class UserService {
      *
      * <p>Story 11.E.2 (AC2 — Resolved Q#1 Variant B + Q#4). Called by EMS's
      * {@code SpeakerWorkflowService.runInvitedHook} via the sibling
-     * {@code POST /api/v1/users/{username}/issue-invitation-credentials} endpoint.
+     * {@code POST /internal/users/{username}/issue-invitation-credentials} endpoint.
      *
      * <p>Branches on the Cognito user's current status:
      * <ul>
@@ -776,6 +777,7 @@ public class UserService {
      * document the external-mutation invariant in code comments.
      *
      * @param username target user's username (must exist in PostgreSQL)
+     * @param actor    who acted: the forwarded user's username, else {@code system:<job>} (logged)
      * @return action discriminator + fresh temp password (or null)
      * @throws UserNotFoundException                   if {@code username} is not in CUMS
      * @throws UnprocessableInvitationStateException   if Cognito reports a status that needs operator intervention
@@ -784,8 +786,8 @@ public class UserService {
     // path below (Cognito user missing → create + re-link DB) needs write access to
     // user_profiles.cognito_user_id; readOnly would silently reject the update.
     @Transactional
-    public InvitationCredentialsResponse issueInvitationCredentials(String username) {
-        log.info("issueInvitationCredentials (Story 11.E.2): username={}", username);
+    public InvitationCredentialsResponse issueInvitationCredentials(String username, String actor) {
+        log.info("issueInvitationCredentials (Story 11.E.2): username={}, actor={}", username, actor);
 
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new UserNotFoundException(username));
@@ -895,11 +897,13 @@ public class UserService {
      *
      * @param username target user's username
      * @param request  bio (nullable) + profilePictureUrl (nullable); ≥1 must be non-null
+     * @param actor    who acted: the forwarded user's username, else {@code system:<job>}; recorded
+     *                 as {@code updatedBy} of the {@link UserUpdatedEvent}
      * @return updated {@link UserResponse}
      * @throws UserNotFoundException   if the username does not exist
      * @throws UserValidationException if both fields are null (no-op patches rejected)
      */
-    public UserResponse patchUserProfile(String username, PatchUserProfileRequest request) {
+    public UserResponse patchUserProfile(String username, PatchUserProfileRequest request, String actor) {
         if (request == null
                 || (request.getBio() == null && request.getProfilePictureUrl() == null)) {
             throw new UserValidationException(
@@ -919,7 +923,7 @@ public class UserService {
                     "At least one of 'bio' or 'profilePictureUrl' must be non-blank");
         }
 
-        log.info("Patching user profile (Story 11.C.2): username={}", username);
+        log.info("Patching user profile (Story 11.C.2): username={}, actor={}", username, actor);
 
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new UserNotFoundException(username));
@@ -949,7 +953,7 @@ public class UserService {
                 saved.getUsername(),
                 updatedFields,
                 null,
-                getAuditUsername());
+                actor);
         eventPublisher.publish(event);
 
         log.info("User profile patched: username={}, fields={}", saved.getUsername(), updatedFields.keySet());
@@ -1022,7 +1026,7 @@ public class UserService {
      * Create new user with username generation
      * Story 1.16.2: Generate username using SlugGenerationService
      */
-    private User createNewUser(GetOrCreateUserRequest request) {
+    private User createNewUser(GetOrCreateUserRequest request, String createdByUsername) {
         // No Cognito login here: request.cognitoSync has no effect. A login comes from the sign-up page
         // (the PreTokenGeneration Lambda then fills cognitoUserId) or from issue-credentials.
         // Story 1.16.2: Generate username from first/last name
@@ -1050,9 +1054,7 @@ public class UserService {
 
         User savedUser = userRepository.save(user);
 
-        // Publish domain event (Story 1.16.2: String IDs)
-        // Note: For create, get the current user performing the action
-        String createdByUsername = getAuditUsername();
+        // Publish domain event (Story 1.16.2: String IDs); createdBy is the caller's actor
         UserCreatedEvent event = new UserCreatedEvent(
             savedUser.getUsername(),  // aggregateId = username
             savedUser.getEmail(),

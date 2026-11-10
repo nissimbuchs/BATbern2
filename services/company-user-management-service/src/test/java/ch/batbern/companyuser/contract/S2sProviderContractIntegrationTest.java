@@ -43,13 +43,15 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * consumers' {@code ContractServer} answers from. The spec examples those consumers receive must
  * match the same schema.
  *
- * <p>Consumers: EMS {@code UserApiClientImpl} (provision, patch profile, invitation credentials,
- * company list and detail), PCS {@code CompanyServiceClientImpl} (company detail) and
- * {@code UserServiceClientImpl} ({@code /users/me}).
+ * <p>Public consumers left: PCS {@code CompanyServiceClientImpl} (company detail) and
+ * {@code UserServiceClientImpl} ({@code /users/me}); both move to {@code /internal} in 6b. EMS calls
+ * no public CUMS operation since Epic 17 entry 6.
  *
  * <p>Story 17.0b2: the same for every {@code /internal} operation in
  * {@code docs/api/internal/cums-internal.openapi.yml}, called by EMS {@code UserApiClientImpl},
- * PCS {@code UserServiceClientImpl} and the gateway's {@code GatewayUserStatusClient}.
+ * PCS {@code UserServiceClientImpl} and the gateway's {@code GatewayUserStatusClient}. Epic 17 entry
+ * 6 added the three speaker writes and the company read, each run with a forwarded JWT and without
+ * any (ADR-016 decision 3).
  */
 @Import(TestAwsConfig.class)
 @DisplayName("CUMS honours the S2S contract its consumers are tested against")
@@ -95,53 +97,12 @@ class S2sProviderContractIntegrationTest extends AbstractIntegrationTest {
 
     @ParameterizedTest(name = "{0} {1}")
     @CsvSource({
-        "users-api, POST,  /api/v1/users/provision",
-        "users-api, PATCH, /api/v1/users/{username}/profile",
-        "users-api, POST,  /api/v1/users/{username}/issue-invitation-credentials",
         "users-api, GET,   /api/v1/users/me",
-        "companies-api, GET, /api/v1/companies",
         "companies-api, GET, /api/v1/companies/{name}",
     })
     @DisplayName("spec examples of consumed operations match their schema")
     void should_haveValidExamples_forConsumedOperations(String spec, String method, String path) {
         assertExamplesMatchSchema("docs/api/" + spec + ".openapi.yml", method, path);
-    }
-
-    @Test
-    @WithMockUser(username = "organizer.alice", roles = "ORGANIZER")
-    void provision_matchesSpec() throws Exception {
-        MvcResult result = mockMvc.perform(post("/api/v1/users/provision")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"email\": \"contract.new@example.com\", \"role\": \"SPEAKER\"}"))
-                .andExpect(status().isOk())
-                .andReturn();
-
-        assertResponseMatchesSpec(USERS, result);
-    }
-
-    @Test
-    @WithMockUser(username = "organizer.alice", roles = "ORGANIZER")
-    void patchProfile_matchesSpec() throws Exception {
-        MvcResult result = mockMvc.perform(patch("/api/v1/users/" + SPEAKER + "/profile")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"bio\": \"Architect.\"}"))
-                .andExpect(status().isOk())
-                .andReturn();
-
-        assertResponseMatchesSpec(USERS, result);
-    }
-
-    @ParameterizedTest
-    @CsvSource({"FORCE_CHANGE_PASSWORD", "CONFIRMED"})
-    @WithMockUser(username = "organizer.alice", roles = "ORGANIZER")
-    void issueInvitationCredentials_matchesSpec(UserStatusType cognitoStatus) throws Exception {
-        cognito.givenLogin(SPEAKER_EMAIL, cognitoStatus);
-
-        MvcResult result = mockMvc.perform(post("/api/v1/users/" + SPEAKER + "/issue-invitation-credentials"))
-                .andExpect(status().isOk())
-                .andReturn();
-
-        assertResponseMatchesSpec(USERS, result);
     }
 
     @Test
@@ -152,16 +113,6 @@ class S2sProviderContractIntegrationTest extends AbstractIntegrationTest {
                 .andReturn();
 
         assertResponseMatchesSpec(USERS, result);
-    }
-
-    @Test
-    @WithMockUser(username = "organizer.alice", roles = "ORGANIZER")
-    void companyList_asPagedByEms_matchesSpec() throws Exception {
-        MvcResult result = mockMvc.perform(get("/api/v1/companies").param("page", "1").param("limit", "100"))
-                .andExpect(status().isOk())
-                .andReturn();
-
-        assertResponseMatchesSpec(COMPANIES, result);
     }
 
     @Test
@@ -183,6 +134,10 @@ class S2sProviderContractIntegrationTest extends AbstractIntegrationTest {
         "GET,  /internal/email-owners",
         "GET,  /internal/companies",
         "POST, /internal/users/get-or-create",
+        "POST, /internal/users/provision",
+        "PATCH, /internal/users/{username}/profile",
+        "POST, /internal/users/{username}/issue-invitation-credentials",
+        "GET,  /internal/companies/{name}",
     })
     @DisplayName("internal spec examples match their schema")
     void should_haveValidExamples_forInternalOperations(String method, String path) {
@@ -251,5 +206,50 @@ class S2sProviderContractIntegrationTest extends AbstractIntegrationTest {
         internal(post("/internal/users/get-or-create").contentType(MediaType.APPLICATION_JSON).content("""
                 {"email": "contract.new@example.com", "firstName": "Contract", "lastName": "New",
                  "cognitoSync": false}"""), 200);
+    }
+
+    // ------------------------------------------------------------------ Epic 17 entry 6
+
+    /** The organizer's JWT as EMS forwards it; {@code false} runs the call without any. */
+    private static MockHttpServletRequestBuilder withUser(MockHttpServletRequestBuilder request, boolean user) {
+        return user ? request.with(jwt().jwt(j -> j.subject("organizer-sub")
+                .claim("custom:username", "organizer.alice").claim("custom:role", "ORGANIZER"))) : request;
+    }
+
+    @ParameterizedTest(name = "forwarded JWT: {0}")
+    @CsvSource({"true", "false"})
+    void internalProvision_matchesSpec(boolean user) throws Exception {
+        internal(withUser(post("/internal/users/provision"), user).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"email\": \"contract.new@example.com\", \"role\": \"SPEAKER\"}"), 200);
+        internal(withUser(post("/internal/users/provision"), user).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"email\": \"contract.new@example.com\", \"role\": \"ORGANIZER\"}"), 400);
+    }
+
+    @ParameterizedTest(name = "forwarded JWT: {0}")
+    @CsvSource({"true", "false"})
+    void internalPatchProfile_matchesSpec(boolean user) throws Exception {
+        internal(withUser(patch("/internal/users/" + SPEAKER + "/profile"), user)
+                .contentType(MediaType.APPLICATION_JSON).content("{\"bio\": \"Architect.\"}"), 200);
+        internal(withUser(patch("/internal/users/ghost.user/profile"), user)
+                .contentType(MediaType.APPLICATION_JSON).content("{\"bio\": \"Architect.\"}"), 404);
+    }
+
+    @ParameterizedTest(name = "{0}, forwarded JWT: {1}")
+    @CsvSource({"FORCE_CHANGE_PASSWORD, true", "CONFIRMED, false"})
+    void internalIssueInvitationCredentials_matchesSpec(UserStatusType cognitoStatus, boolean user)
+            throws Exception {
+        cognito.givenLogin(SPEAKER_EMAIL, cognitoStatus);
+
+        internal(withUser(post("/internal/users/" + SPEAKER + "/issue-invitation-credentials"), user), 200);
+        internal(withUser(post("/internal/users/ghost.user/issue-invitation-credentials"), user), 404);
+    }
+
+    @ParameterizedTest(name = "forwarded JWT: {0}")
+    @CsvSource({"true", "false"})
+    void internalCompany_matchesSpec(boolean user) throws Exception {
+        MvcResult result = internal(withUser(get("/internal/companies/" + COMPANY), user), 200);
+        internal(withUser(get("/internal/companies/ghost"), user), 404);
+
+        assertThat(result.getResponse().getContentAsString()).contains("\"Contract Co AG\"");
     }
 }

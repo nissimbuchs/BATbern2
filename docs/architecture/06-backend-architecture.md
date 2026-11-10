@@ -266,7 +266,7 @@ Speakers are full Cognito users with the SPEAKER role. Provisioning is wired int
 
 **Provisioning lifecycle (Story 11.E.2 two-endpoint design — Resolved Q#1 Variant B):**
 
-1. **`CONTACTED → READY` transition** (`SpeakerWorkflowService.transition()` side-effect hook): the backend calls `UserApiClient.provisionUserWithRole(email, firstName, lastName, SPEAKER)`. The company-user-management-service performs, in order:
+1. **`CONTACTED → READY` transition** (`SpeakerWorkflowService.transition()` side-effect hook): the backend calls `UserApiClient.provisionUserWithRole(email, firstName, lastName, SPEAKER)`, which is CUMS `POST /internal/users/provision` (VPC-only, ADR-016; the organizer's JWT is forwarded when there is one, else CUMS records `system:ems-speaker-workflow`; the operation grants SPEAKER only). The company-user-management-service performs, in order:
    1. `cognito-idp:AdminCreateUser` with `MessageAction=SUPPRESS` and a **throwaway** temporary password. The user is created in Cognito with status `FORCE_CHANGE_PASSWORD`.
    2. SPEAKER role grant in `role_assignments` (database — NOT Cognito groups, per CLAUDE.md "Authentication & Roles").
    3. `INSERT INTO user_profiles` (idempotent on existing user).
@@ -274,7 +274,7 @@ Speakers are full Cognito users with the SPEAKER role. Provisioning is wired int
 
    Re-calling `provisionUserWithRole` for an already-provisioned user is idempotent and skips the Cognito call entirely (the Cognito user already exists).
 
-2. **`READY → INVITED` transition**: EMS's `runInvitedHook` calls the new sibling endpoint **`POST /api/v1/users/{username}/issue-invitation-credentials`**. CUMS branches on the Cognito user's current status (via `AdminGetUser`):
+2. **`READY → INVITED` transition**: EMS's `runInvitedHook` calls the sibling endpoint **`POST /internal/users/{username}/issue-invitation-credentials`** (internal since Epic 17 entry 6). CUMS branches on the Cognito user's current status (via `AdminGetUser`):
    - `FORCE_CHANGE_PASSWORD` / `RESET_REQUIRED` / `UNCONFIRMED` → generate a fresh temp password, call `AdminSetUserPassword(Permanent=false)`, return `{ action: "FRESH_TEMP_PASSWORD", temporaryPassword: "..." }`.
    - `CONFIRMED` → no Cognito mutation; return `{ action: "USE_EXISTING_PASSWORD", temporaryPassword: null }`.
    - `ARCHIVED` / `COMPROMISED` → return HTTP 422 (`UnprocessableInvitationStateException`).

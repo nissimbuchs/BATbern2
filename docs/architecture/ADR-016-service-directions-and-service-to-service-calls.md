@@ -66,6 +66,12 @@ measured how they call each other on develop `e7f76baf`:
 ## Enforcement
 - ArchUnit in every service: no new client package toward a downstream service (story 17.5).
 - OpenAPI lint: no `/internal` path in a public spec (story 17.4).
+- S2S client URL guard: no string literal in a service's `client` package contains `/api/v1`
+  (`web-frontend/scripts/check-s2s-client-urls.ts`, CI job `test-ratchet`; Epic 17 entry 6,
+  2026-11-10). Its baseline only shrinks.
+- One header helper for decision 3: shared-kernel `S2sHeaders.forCurrentUser()` forwards the
+  user's JWT when there is one and sends none otherwise; CUMS records the forwarded
+  `custom:username`, else `system:<job>` (Epic 17 entry 6).
 - `docs/architecture/module-map.md` carries these rules into every agent workflow.
 
 ## Related

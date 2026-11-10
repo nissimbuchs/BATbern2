@@ -358,7 +358,7 @@ export interface paths {
      *     **Business Rules**:
      *     - Speaker must exist in the pool for this event
      *     - Transitions speaker status to INVITED
-     *     - CUMS sibling endpoint `POST /users/{username}/issue-invitation-credentials`
+     *     - CUMS sibling endpoint `POST /internal/users/{username}/issue-invitation-credentials`
      *       mints a Cognito temporary password when needed (FRESH_TEMP_PASSWORD action),
      *       otherwise the email signals the speaker to reuse their existing password.
      *     - Publishes SpeakerInvitationSentEvent domain event

@@ -83,7 +83,7 @@ class ContentSubmissionServiceIntegrationTest extends AbstractIntegrationTest {
     private static final String EVENT_CODE = "BAT-11C2-INT";
     private static final String ORGANIZER = "organizer.alice";
     private static final String SPEAKER = "speaker.jane";
-    private static final String PROFILE = "/api/v1/users/{username}/profile";
+    private static final String PROFILE = "/internal/users/{username}/profile";
 
     private Event testEvent;
 

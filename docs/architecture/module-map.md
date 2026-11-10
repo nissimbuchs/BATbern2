@@ -9,7 +9,8 @@ CUMS (identity) is upstream of all. EMS (event) is upstream of PCS (partners).
 - Calls go downstream→upstream, to `/internal/**` only, never through the public API.
 - Forward the user's JWT when there is one: the receiver records who acted and checks ownership.
   Never require it: schedulers, SQS listeners and anonymous flows have none (`system:<job>`).
-  `/internal` authorizes by operation, never by the user's role.
+  `/internal` authorizes by operation, never by the user's role. Build the headers of every S2S
+  call with shared-kernel `S2sHeaders.forCurrentUser()`; no client writes its own token code.
 - Downstream must react to an upstream change? It pulls an `/internal` feed (`?since=cursor`,
   ShedLock job). No event bus.
 - Only allowed upstream→downstream call: the CUMS profile merge (`/internal/users/merge*`).
@@ -40,6 +41,14 @@ CUMS (identity) is upstream of all. EMS (event) is upstream of PCS (partners).
 
 ## Gates (ArchUnit, frozen, in each service's `test`)
 
+- S2S client URL guard (source scan, Epic 17 entry 6): no string literal in
+  `services/*/src/main/java/**/client/**` contains `/api/v1`. `web-frontend/scripts/
+  check-s2s-client-urls.ts`, `make check-s2s-client-urls`, CI job `test-ratchet`. The baseline
+  `s2s-client-urls-baseline.txt` may only shrink; each line has an owner in
+  `s2s-client-urls-owners.txt`. Left on 2026-11-10: 5 lines, the PCS clients 3 (6b) and
+  `PartnerApiClientImpl` 2 (8). A new call site fails as RAISED: call the provider's `/internal`
+  operation instead.
+
 - EMS `architecture/EmsModuleWallsTest`: nothing outside mail center (`mailcenter` + `forwarding`),
   `watch`, `usermerge` uses them (mail core in `mailcenter.render|variables` excepted); mail core
   (`mailcenter.render|variables`) uses no other mail-center class; `notification` uses none of
@@ -62,6 +71,7 @@ CUMS (identity) is upstream of all. EMS (event) is upstream of PCS (partners).
 | Send a template mail | `MailPipeline` + `EmailService` (shared-kernel) | load or render HTML yourself |
 | Mail to an audience | Mail Center: an `AudienceAdapter` for `MailComposerService` | add a `…/send` + `…/preview` endpoint pair |
 | User or company data | `UserApiClient` (cached, `/internal`) | store name/email (ADR-004) |
+| Headers of a service-to-service call | `S2sHeaders.forCurrentUser()` (shared-kernel) | read the `SecurityContext` in a client |
 | A person's proven addresses | `PersonAddresses` | read additional e-mails directly |
 | File upload | `/uploads/{purpose}` + a purpose handler (ADR-002, 2026-11) | new presign code or endpoints |
 | Admin or feature setting | `AdminSettingsService` (`/admin/settings/{key}`) | a new settings resource |

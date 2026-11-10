@@ -1,7 +1,6 @@
 package ch.batbern.companyuser.controller;
 
 import ch.batbern.shared.utils.LoggingUtils;
-import ch.batbern.companyuser.api.generated.DomainIntegrationApi;
 import ch.batbern.companyuser.api.generated.GdprComplianceApi;
 import ch.batbern.companyuser.api.generated.ProfilePictureApi;
 import ch.batbern.companyuser.api.generated.RoleManagementApi;
@@ -19,15 +18,11 @@ import ch.batbern.companyuser.dto.generated.AdditionalEmailVerificationCheckResp
 import ch.batbern.companyuser.dto.generated.AdditionalEmailVerificationConfirmResponse;
 import ch.batbern.companyuser.dto.generated.ConfirmAdditionalEmailVerificationRequest;
 import ch.batbern.companyuser.dto.generated.CreateUserRequest;
-import ch.batbern.companyuser.dto.generated.InvitationCredentialsResponse;
 import ch.batbern.companyuser.dto.generated.PaginatedUserResponse;
-import ch.batbern.companyuser.dto.generated.PatchUserProfileRequest;
 import ch.batbern.companyuser.dto.generated.PresignedUploadUrl;
 import ch.batbern.companyuser.dto.generated.ProfilePictureUploadConfirmRequest;
 import ch.batbern.companyuser.dto.generated.ProfilePictureUploadConfirmResponse;
 import ch.batbern.companyuser.dto.generated.ProfilePictureUploadRequest;
-import ch.batbern.companyuser.dto.generated.ProvisionUserRequest;
-import ch.batbern.companyuser.dto.generated.ProvisionUserResponse;
 import ch.batbern.companyuser.dto.generated.UpdateAdditionalEmailRequest;
 import ch.batbern.companyuser.dto.generated.UpdateUserRequest;
 import ch.batbern.companyuser.dto.generated.UpdateUserRolesRequest;
@@ -36,7 +31,6 @@ import ch.batbern.companyuser.dto.generated.UserRolesResponse;
 import ch.batbern.companyuser.dto.generated.UserSearchResponse;
 import ch.batbern.companyuser.dto.generated.UserReconciliationReport;
 import ch.batbern.companyuser.dto.generated.UserSyncStatus;
-import ch.batbern.companyuser.exception.UserValidationException;
 import ch.batbern.companyuser.repository.UserRepository;
 import ch.batbern.companyuser.security.SecurityContextHelper;
 import ch.batbern.companyuser.service.ImageUrlFetcher;
@@ -55,7 +49,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -69,11 +62,13 @@ import java.util.List;
  * <p>Phase 7 (ADR-006 / api-consolidation): contract-first — this controller
  * {@code implements} the generated {@code users-api.openapi.yml} interfaces
  * ({@code UserManagementApi}, {@code UserAccountApi}, {@code ProfilePictureApi},
- * {@code RoleManagementApi}, {@code UserSearchApi}, {@code DomainIntegrationApi},
- * {@code GdprComplianceApi}, {@code UserAdministrationApi}), which carry the HTTP method/path
- * mappings and request/response DTO types. The class-level {@code @RequestMapping("/api/v1")}
- * supplies the version prefix the interface paths omit (e.g. interface {@code /users/me} →
- * {@code /api/v1/users/me}).
+ * {@code RoleManagementApi}, {@code UserSearchApi}, {@code GdprComplianceApi},
+ * {@code UserAdministrationApi}), which carry the HTTP method/path mappings and request/response
+ * DTO types. The class-level {@code @RequestMapping("/api/v1")} supplies the version prefix the
+ * interface paths omit (e.g. interface {@code /users/me} → {@code /api/v1/users/me}).
+ *
+ * <p>The machine-only operations (provision, profile patch, invitation credentials) left this
+ * controller for {@link InternalUserController} (Epic 17 entry 6, ADR-016).
  *
  * <p>Method-level {@code @PreAuthorize} / {@code @Timed} stay on the implementation (the generated
  * interfaces carry neither); behaviour matches the pre-wiring controller exactly.
@@ -88,7 +83,7 @@ import java.util.List;
 @RequiredArgsConstructor
 @Slf4j
 public class UserController implements UserManagementApi, UserAccountApi, ProfilePictureApi,
-        RoleManagementApi, UserSearchApi, DomainIntegrationApi, GdprComplianceApi,
+        RoleManagementApi, UserSearchApi, GdprComplianceApi,
         UserAdministrationApi {
 
     private final UserService userService;
@@ -217,48 +212,6 @@ public class UserController implements UserManagementApi, UserAccountApi, Profil
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * Story 11.C.2 (AR14): Patch user profile fields (bio, profilePictureUrl).
-     *
-     * <p>Authorization: ORGANIZER, ADMIN, or SPEAKER. SPEAKERS may patch only their own profile
-     * (enforced below; throws {@link AccessDeniedException} otherwise).
-     */
-    @Override
-    @PreAuthorize("hasAnyRole('ORGANIZER', 'ADMIN', 'SPEAKER')")
-    @Timed(value = "users.patchUserProfile",
-            description = "Time to patch user profile fields (Story 11.C.2)",
-            percentiles = {0.5, 0.95, 0.99})
-    public ResponseEntity<UserResponse> patchUserProfile(
-            String username, PatchUserProfileRequest patchUserProfileRequest) {
-        // P2 (review patch): enforce `additionalProperties: false` at the controller level
-        // (the generated DTO silently absorbs unknown fields via `@JsonAnySetter`).
-        if (patchUserProfileRequest.getAdditionalProperties() != null
-                && !patchUserProfileRequest.getAdditionalProperties().isEmpty()) {
-            throw new UserValidationException(
-                    "request",
-                    "Unknown fields not allowed on PatchUserProfileRequest: "
-                            + patchUserProfileRequest.getAdditionalProperties().keySet());
-        }
-        log.info("PATCH /api/v1/users/{}/profile", username);
-
-        // Method-level role-scope enforcement: a SPEAKER that is not also ORGANIZER/ADMIN
-        // may patch only their own profile. The @PreAuthorize already restricts principals.
-        if (!securityContextHelper.hasRole("ORGANIZER") && !securityContextHelper.hasRole("ADMIN")) {
-            String currentUsername = securityContextHelper.getCurrentUsername();
-            // P3 (review patch): case-insensitive username comparison. The JWT issues canonical-case
-            // usernames; URL path-segments can be CDN-lowercased or mistyped.
-            if (currentUsername == null || !currentUsername.equalsIgnoreCase(username)) {
-                log.warn("Cross-speaker profile patch rejected: caller={}, target={}",
-                        currentUsername, username);
-                throw new AccessDeniedException("SPEAKER may only patch their own profile");
-            }
-        }
-
-        UserResponse response = userService.patchUserProfile(username, patchUserProfileRequest);
-
-        return ResponseEntity.ok(response);
-    }
-
     // ------------------------------------------------------------------------
     // UserSearchApi
     // ------------------------------------------------------------------------
@@ -288,58 +241,6 @@ public class UserController implements UserManagementApi, UserAccountApi, Profil
                         .toList();
 
         return ResponseEntity.ok(results);
-    }
-
-    // ------------------------------------------------------------------------
-    // DomainIntegrationApi
-    // ------------------------------------------------------------------------
-
-    /**
-     * Story 11.E.2 (AR15, FR9): Issue (or skip) Cognito temp credentials at invitation time.
-     * Service-to-service endpoint called by {@code SpeakerWorkflowService.runInvitedHook} at
-     * READY → INVITED. Idempotent.
-     */
-    @Override
-    @PreAuthorize("hasRole('ORGANIZER')")
-    @Timed(value = "users.issueInvitationCredentials",
-            description = "Time to issue invitation credentials (Story 11.E.2)",
-            percentiles = {0.5, 0.95, 0.99})
-    public ResponseEntity<InvitationCredentialsResponse> issueInvitationCredentials(String username) {
-        // Story 11.E.2 review patch (D3): narrow to hasRole('ORGANIZER') and log the
-        // actor → target → action triple for post-incident review.
-        String actor = securityContextHelper.getCurrentUsername();
-        log.info("POST /api/v1/users/{}/issue-invitation-credentials (actor={})",
-                username, actor != null ? actor : "<unknown>");
-        InvitationCredentialsResponse response = userService.issueInvitationCredentials(username);
-        log.info("Issued invitation credentials: actor={} target={} action={}",
-                actor != null ? actor : "<unknown>", username, response.getAction());
-        return ResponseEntity.ok(response);
-    }
-
-    /**
-     * Story 11.C.2 (AR13): Provision a User with a role. Service-to-service endpoint called by
-     * {@code SpeakerWorkflowService.transition()} at the CONTACTED → READY hook. Idempotent.
-     */
-    @Override
-    @PreAuthorize("hasAnyRole('ORGANIZER', 'ADMIN')")
-    @Timed(value = "users.provisionUser",
-            description = "Time to provision a user with role (Story 11.C.2)",
-            percentiles = {0.5, 0.95, 0.99})
-    public ResponseEntity<ProvisionUserResponse> provisionUserWithRole(ProvisionUserRequest provisionUserRequest) {
-        // P2 (review patch): enforce `additionalProperties: false` at the controller level.
-        if (provisionUserRequest.getAdditionalProperties() != null
-                && !provisionUserRequest.getAdditionalProperties().isEmpty()) {
-            throw new UserValidationException(
-                    "request",
-                    "Unknown fields not allowed on ProvisionUserRequest: "
-                            + provisionUserRequest.getAdditionalProperties().keySet());
-        }
-        log.info("POST /api/v1/users/provision — email: {}, role: {}",
-                LoggingUtils.maskEmail(provisionUserRequest.getEmail()), provisionUserRequest.getRole());
-
-        ProvisionUserResponse response = userService.provisionUserWithRole(provisionUserRequest);
-
-        return ResponseEntity.ok(response);
     }
 
     // ------------------------------------------------------------------------

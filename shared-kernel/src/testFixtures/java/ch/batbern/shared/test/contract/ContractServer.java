@@ -39,9 +39,9 @@ import static org.springframework.test.web.client.response.MockRestResponseCreat
  * response schema first.
  *
  * <pre>{@code
- * var server = ContractServer.bindTo(restTemplate, "docs/api/companies-api.openapi.yml");
- * server.expect(GET, "/api/v1/companies").respondWithExample();
- * var companies = client.getAllCompanies();   // request validated, example returned
+ * var server = ContractServer.bindTo(restTemplate, "docs/api/internal/cums-internal.openapi.yml");
+ * server.expect(GET, "/internal/companies/{name}").respondWithExample();
+ * var name = client.getCompanyDisplayName("swissitsolut");   // request validated, example returned
  * server.verify();
  * }</pre>
  *
@@ -57,7 +57,7 @@ import static org.springframework.test.web.client.response.MockRestResponseCreat
  * its spec in {@code docs/api/internal/}.
  *
  * <p>Expectations match on method and path (concrete, or a spec template such as
- * {@code /api/v1/companies/{name}}), are unordered, and default to exactly once. In a Spring
+ * {@code /internal/companies/{name}}), are unordered, and default to exactly once. In a Spring
  * test, call {@link #close()} after each test: the {@code RestTemplate} bean is shared by the
  * cached context, and {@code close()} gives it back its real request factory.
  */

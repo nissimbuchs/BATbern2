@@ -1,6 +1,5 @@
 package ch.batbern.events.client;
 
-import ch.batbern.events.dto.CompanyBasicDto;
 import ch.batbern.events.dto.generated.users.GetOrCreateUserRequest;
 import ch.batbern.events.dto.generated.users.GetOrCreateUserResponse;
 import ch.batbern.events.dto.generated.users.InvitationCredentialsResponse;
@@ -14,15 +13,13 @@ import ch.batbern.events.exception.UserServiceException;
 import java.util.List;
 
 /**
- * Client interface for communicating with the User Management Service API.
+ * Client of the company-user-management service (CUMS), its only way in from EMS.
  *
- * This client replaces direct database access to the user_profiles table,
- * providing API-based user data retrieval for speaker enrichment and validation.
+ * <p>Every operation is a CUMS {@code /internal} operation ({@code docs/api/internal/
+ * cums-internal.openapi.yml}, ADR-016). Calls forward the signed-in user's JWT when there is one
+ * and work without it (shared-kernel {@code S2sHeaders}). Reads are cached 15 min.
  *
- * Story 2.2a: Extended to support anonymous user creation (ADR-005)
- * Story BAT-7: Extended to support notification-related user queries
- *
- * All methods use aggressive caching (15min TTL) to minimize API calls.
+ * <p>Story 2.2a: anonymous user creation (ADR-005). Story BAT-7: notification-related queries.
  */
 public interface UserApiClient {
 
@@ -35,15 +32,6 @@ public interface UserApiClient {
      * @throws UserServiceException if API communication fails (5xx, timeout, network error)
      */
     UserResponse getUserByUsername(String username);
-
-    /**
-     * Check if a user exists by username.
-     *
-     * @param username User's username
-     * @return true if user exists, false otherwise
-     * @throws UserServiceException if API communication fails (5xx, timeout, network error)
-     */
-    boolean validateUserExists(String username);
 
     /**
      * Get or create user profile (ADR-005: Anonymous Event Registration).
@@ -78,8 +66,8 @@ public interface UserApiClient {
     /**
      * Get the user's preferred UI/web language (Story 7.3).
      *
-     * <p>Hits {@code GET /api/v1/users/{username}?include=preferences} and returns the lowercase
-     * language code from {@code preferences.language} (e.g. {@code "de"}, {@code "en"}, {@code "fr"}).
+     * <p>Hits {@code GET /internal/users/{username}?include=settings} and returns the lowercase
+     * language code from {@code settings.language} (e.g. {@code "de"}, {@code "en"}, {@code "fr"}).
      *
      * <p><b>Lenient by design:</b> returns {@code null} — never throws — when the username is
      * blank, the user/preferences are absent, or CUMS is degraded. The slides-online send treats
@@ -94,9 +82,9 @@ public interface UserApiClient {
     /**
      * Get the user's Q&A notification cadence preference (Story 15.7).
      *
-     * <p>Hits {@code GET /api/v1/users/{username}?include=preferences} (the same proven path as
+     * <p>Hits {@code GET /internal/users/{username}?include=settings} (the same path as
      * {@link #getPreferredLanguage}) and returns the lowercase value of
-     * {@code preferences.qnaNotificationFrequency} — {@code "live"}, {@code "daily"}, or
+     * {@code settings.qnaNotificationFrequency} — {@code "live"}, {@code "daily"}, or
      * {@code "off"}.
      *
      * <p><b>Lenient by design:</b> returns {@code null} — never throws — when the username is
@@ -144,19 +132,9 @@ public interface UserApiClient {
     List<String> getEmailOwners(String email);
 
     /**
-     * Get all companies (basic info) from the company-user-management-service.
-     * Used for the companies[] list in the legacy BAT export envelope.
-     * Story 10.20: AC1
-     *
-     * @return List of companies with name, displayName, website
-     * @throws UserServiceException if API communication fails (5xx, timeout, network error)
-     */
-    List<CompanyBasicDto> getAllCompanies();
-
-    /**
      * Resolve a single company slug to its human-readable display name.
      *
-     * <p>Hits {@code GET /api/v1/companies/{slug}} on company-user-management-service and
+     * <p>Hits {@code GET /internal/companies/{name}} on company-user-management-service and
      * returns {@code displayName} when set, falling back to the company {@code name}. The
      * lookup is cached per slug (15&nbsp;min) in {@code userApiCache} so repeated speakers
      * from the same company incur one upstream call.
@@ -191,12 +169,11 @@ public interface UserApiClient {
      *   <li>Idempotent: re-calling for an already-provisioned user is a no-op.</li>
      * </ul>
      *
-     * <p>Cognito wiring is deliberately stubbed in Story 11.C.2; {@code temporaryPassword}
-     * on the response is always {@code null}. Story 11.E.2 will wire
-     * {@code AdminCreateUser}/{@code AdminSetUserPassword} and populate that field.
+     * <p>CUMS ({@code POST /internal/users/provision}) creates the Cognito login silently and
+     * grants SPEAKER only; any other role answers 400 ({@link UserServiceException}).
      *
-     * @param request username (optional), email (required), firstName, lastName, role (required)
-     * @return canonical username + {@code created} flag + {@code temporaryPassword=null}
+     * @param request email (required), firstName, lastName, role (required, SPEAKER)
+     * @return canonical username + {@code created} flag
      * @throws UserServiceException if API communication fails (5xx, timeout, network error)
      */
     ProvisionUserResponse provisionUserWithRole(ProvisionUserRequest request);
@@ -210,8 +187,9 @@ public interface UserApiClient {
      * + ADR-007: {@code bio} and {@code profilePictureUrl} live on User (single source of
      * truth) and are overwritten globally.
      *
-     * <p>Authorization is enforced on the CUMS side: ORGANIZER/ADMIN may patch any user;
-     * SPEAKERS may patch only their own profile.
+     * <p>Authorization stays in EMS, where the user entered: {@code ContentSubmissionService}
+     * resolves the username server-side, so a speaker patches only their own profile. CUMS
+     * ({@code PATCH /internal/users/{username}/profile}) authorizes by operation (ADR-016).
      *
      * @param username target user's username
      * @param request  bio (nullable, max 5000) + profilePictureUrl (nullable, max 2048);

@@ -458,14 +458,15 @@ provider would reject fails the test with the validator's message, as an `Assert
 client's `catch (Exception e)` cannot swallow:
 
 ```java
-var server = ContractServer.bindTo(restTemplate, "docs/api/companies-api.openapi.yml");
-server.expect(GET, "/api/v1/companies").respondWithExample();   // or .respondWith(OK, json)
-var companies = client.getAllCompanies();                       // request validated, example returned
+var server = ContractServer.bindTo(restTemplate, "docs/api/internal/cums-internal.openapi.yml");
+server.expect(GET, "/internal/companies/{name}").respondWithExample(); // or .respondWith(OK, json)
+var name = client.getCompanyDisplayName("swissitsolut");              // request validated, example returned
 server.verify();
 ```
 
-Client contract tests live next to the client (`UserApiClientImplContractTest`,
-`CompanyServiceClientContractTest`, ...). An IT whose code calls a peer service binds the harness to
+Client contract tests live next to the client (`UserApiClientImplInternalContractTest`,
+`CompanyServiceClientContractTest`, ...); each call runs once with a signed-in JWT user (the header
+is forwarded) and once without (no `Authorization`), per ADR-016 decision 3 and `S2sHeaders`. An IT whose code calls a peer service binds the harness to
 the context's `RestTemplate` bean in `@BeforeEach` instead of a `@MockitoBean` of the client, and
 calls `close()` in `@AfterEach` (the bean is shared by the cached context);
 `.ignoringMissingAuthorization()` is allowed there only because a `@WithMockUser` caller has no JWT
@@ -497,7 +498,7 @@ method, path and spec. A client whose one `RestTemplate` reaches several specs b
 `ch.batbern.events.config`, picked up by the application's component scan like `TestAwsConfig`)
 is CUMS for every integration test context: the real `UserApiClientImpl` runs, defaults answer the
 user, user-list and email-owner reads, and a test registers other answers (`cums.user(...)`,
-`cums.answer(POST, "/api/v1/users/provision", ...)`) and reads what was sent (`cums.calls(...)`),
+`cums.answer(POST, "/internal/users/provision", ...)`) and reads what was sent (`cums.calls(...)`),
 then calls `cums.reset()`. A test that binds its own `ContractServer` to that `RestTemplate` (for
 PCS) displaces the CUMS harness for its duration, and CUMS calls then fail as "not an operation of
 ..."; to keep CUMS, bind with `.onlyFor(uri -> !uri.toString().startsWith(cumsBaseUrl))` so CUMS

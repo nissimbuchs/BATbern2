@@ -689,6 +689,18 @@ jobs:
         working-directory: ./web-frontend
         run: npm run check:test-ratchet
 
+      # Epic 17 entry 6 (ADR-016): no service client calls another service's public /api/v1 URL.
+      # A source scan of services/*/src/main/java/**/client/**, so it lives in this job without a
+      # path filter, like the ratchet. A new call site fails (RAISED), a removed one too (STALE)
+      # until the baseline shrinks.
+      - name: S2S client URL guard tests
+        working-directory: ./web-frontend
+        run: npx vitest run scripts/check-s2s-client-urls.test.ts
+
+      - name: S2S client URL guard
+        working-directory: ./web-frontend
+        run: npm run check:s2s-client-urls
+
   # Story 17.4: for every operation a PR adds to docs/api/*.openapi.yml, the 3 most similar
   # existing operations, as one PR comment (marked, updated in place on every push). Informative:
   # continue-on-error, and nothing needs this job.

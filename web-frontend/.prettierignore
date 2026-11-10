@@ -61,3 +61,6 @@ scripts/__fixtures__/api-type-copies
 # Test type-check exclude list: fixture tree for scripts/check-test-typecheck.test.ts, one file
 # that must not compile on purpose.
 scripts/__fixtures__/test-typecheck
+
+# Epic 17 entry 6: fixture tree for scripts/check-s2s-client-urls.test.ts, read as text.
+scripts/__fixtures__/s2s-client-urls

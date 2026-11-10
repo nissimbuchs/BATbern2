@@ -94,8 +94,8 @@ class SpeakerWorkflowServiceIntegrationTest extends AbstractIntegrationTest {
     private UUID testEventId;
     private static final String TEST_EVENT_CODE = "BAT-WF-INT-TEST";
     private static final String ORGANIZER = "test-organizer";
-    private static final String PROVISION = "/api/v1/users/provision";
-    private static final String CREDENTIALS = "/api/v1/users/{username}/issue-invitation-credentials";
+    private static final String PROVISION = "/internal/users/provision";
+    private static final String CREDENTIALS = "/internal/users/{username}/issue-invitation-credentials";
 
     @AfterEach
     void resetCums() {

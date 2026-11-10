@@ -104,9 +104,9 @@ class SpeakerAutoRegistrationIntegrationTest extends AbstractIntegrationTest {
                 .build();
         event = eventRepository.save(event);
 
-        cums.answer(POST, "/api/v1/users/provision",
+        cums.answer(POST, "/internal/users/provision",
                 call -> Reply.ok("{\"username\": \"speaker.user\", \"created\": true}"));
-        cums.answer(POST, "/api/v1/users/{username}/issue-invitation-credentials", call -> Reply.ok(
+        cums.answer(POST, "/internal/users/{username}/issue-invitation-credentials", call -> Reply.ok(
                 "{\"action\": \"FRESH_TEMP_PASSWORD\", \"temporaryPassword\": \"Test1234!@#abcde\"}"));
     }
 
