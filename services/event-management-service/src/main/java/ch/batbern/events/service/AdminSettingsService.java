@@ -3,6 +3,7 @@ package ch.batbern.events.service;
 import ch.batbern.events.dto.venuecoordination.VenueCoordinationConfig;
 import ch.batbern.events.entity.AppSettingEntity;
 import ch.batbern.events.repository.AppSettingRepository;
+import ch.batbern.shared.util.ReservedEmailDomain;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -11,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
+import java.util.stream.Stream;
 
 /**
  * The one store for application settings (app_settings, {@code /admin/settings/{key}}).
@@ -59,18 +61,32 @@ public class AdminSettingsService {
 
     /**
      * The same parse {@code VenueCoordinationService} applies on read; a blank value means "not
-     * configured", as there.
+     * configured", as there. A contact on a reserved domain (RFC 2606/6761) is refused.
      */
     private void requireVenueCoordinationConfig(String value) {
         if (value == null || value.isBlank()) {
             return;
         }
+        VenueCoordinationConfig config;
         try {
-            objectMapper.readValue(value, VenueCoordinationConfig.class);
+            config = objectMapper.readValue(value, VenueCoordinationConfig.class);
         } catch (JsonProcessingException e) {
             throw new IllegalArgumentException("Invalid value for setting '"
                     + VenueCoordinationConfig.SETTING_KEY + "': not a venue coordination config");
         }
+        // 16.8c: the venue mail goes to these addresses; one SES would never deliver to is refused here
+        Stream.of(config.getVenue(), config.getCatering())
+                .filter(contact -> contact != null && ReservedEmailDomain.isReserved(contact.getEmail()))
+                .findFirst()
+                .ifPresent(contact -> {
+                    throw new IllegalArgumentException("Invalid value for setting '"
+                            + VenueCoordinationConfig.SETTING_KEY + "': the address of " + contact.getName()
+                            + " is on the reserved domain " + domainOf(contact.getEmail()));
+                });
+    }
+
+    private static String domainOf(String email) {
+        return email.substring(email.lastIndexOf('@') + 1);
     }
 
     /**

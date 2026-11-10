@@ -179,6 +179,25 @@ class VenueComposerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isPreconditionFailed());
     }
 
+    @Test
+    @WithMockUser(username = "organizer", roles = "ORGANIZER")
+    @DisplayName("send to a stored contact on a reserved domain → 422 naming the domain, nothing sent")
+    void send_whenContactOnReservedDomain_returns422() throws Exception {
+        // Written past the setting's validation, as an old row or the anonymized local snapshot holds it
+        jdbc.update("UPDATE app_settings SET setting_value = ? WHERE setting_key = ?",
+                CONFIG_JSON.replace(VENUE, "redacted@example.invalid"), VenueCoordinationConfig.SETTING_KEY);
+
+        mockMvc.perform(post(BASE).contentType(MediaType.APPLICATION_JSON).content("""
+                        {"audience":"VENUE","templateKey":"venue-timetable","locale":"de",
+                         "venueRecipients":["VENUE"],"target":"RECIPIENTS"}
+                        """))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.status", is(422)))
+                .andExpect(jsonPath("$.message", containsString("example.invalid")))
+                .andExpect(jsonPath("$.message", not(containsString("redacted"))));
+        assertThat(sesRecorder.mails()).isEmpty();
+    }
+
     private ResultActions preview(String request) throws Exception {
         return mockMvc.perform(post(BASE + "/preview").contentType(MediaType.APPLICATION_JSON).content(request))
                 .andExpect(status().isOk());

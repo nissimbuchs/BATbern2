@@ -880,6 +880,13 @@ export interface operations {
         };
         content?: never;
       };
+      /** @description A recipient is on a reserved domain (RFC 2606/6761) that never receives mail, e.g. a venue contact stored before the setting was validated. `details.code = RESERVED_DOMAIN`, `details.domain` names the domain; nothing is sent. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
     };
   };
   getEventMailCounts: {

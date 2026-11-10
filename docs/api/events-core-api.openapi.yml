@@ -2270,7 +2270,8 @@ paths:
         `presentation` (moderator presentation page, Story 4.9) must be an object with a
         non-blank `aboutText` and an integer `partnerCount` >= 0, read anonymously through
         `GET /public/settings/presentation` (event-app-settings-api); `venue.coordination.config`
-        must be a venue coordination config object (blank clears it).
+        must be a venue coordination config object (blank clears it) whose contacts are not on a
+        reserved domain (RFC 2606/6761, such as example.com or *.invalid).
       operationId: setAdminSetting
       parameters:
         - name: key

@@ -196,6 +196,10 @@ paths:
           description: A newsletter send is running, or this registrant notice was already sent. Own
             text to registrants with a subject already sent answers `details.code = ALREADY_SENT`
             with `details.sentAt` unless `confirmResend` is true.
+        '422':
+          description: A recipient is on a reserved domain (RFC 2606/6761) that never receives mail,
+            e.g. a venue contact stored before the setting was validated. `details.code =
+            RESERVED_DOMAIN`, `details.domain` names the domain; nothing is sent.
   /events/{eventCode}/mails/counts:
     get:
       tags:

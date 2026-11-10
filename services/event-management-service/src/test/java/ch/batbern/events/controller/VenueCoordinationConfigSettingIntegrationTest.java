@@ -26,7 +26,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * The venue coordination config ({@code venue.coordination.config}) is validated on write with
  * the parse {@code VenueCoordinationService} applies on read: a value it could not read is a 400
- * and is not stored (Story 4.9).
+ * and is not stored (Story 4.9). A contact on a reserved domain (RFC 2606/6761), which SES would
+ * never be asked to deliver to, is a 400 as well (16.8c).
  */
 @Import({TestSecurityConfig.class, TestAwsConfig.class})
 class VenueCoordinationConfigSettingIntegrationTest extends AbstractIntegrationTest {
@@ -34,8 +35,8 @@ class VenueCoordinationConfigSettingIntegrationTest extends AbstractIntegrationT
     private static final String URL = "/api/v1/admin/settings/" + VenueCoordinationConfig.SETTING_KEY;
     private static final String VALID = """
             {"venue": {"salutation": "Liebe Frau Brünnimann", "name": "Kornhausforum",
-                       "email": "venue@example.com"},
-             "catering": {"name": "Apéro AG", "email": "catering@example.com"},
+                       "email": "success+venue@simulator.amazonses.com"},
+             "catering": {"name": "Apéro AG", "email": "success+catering@simulator.amazonses.com"},
              "coordinatorUsername": "carla.muster"}""";
 
     @Autowired
@@ -71,6 +72,19 @@ class VenueCoordinationConfigSettingIntegrationTest extends AbstractIntegrationT
         putValue(VALID, 200);
 
         putValue(value, 400);
+
+        String stored = appSettingRepository.findBySettingKey(VenueCoordinationConfig.SETTING_KEY)
+                .orElseThrow().getSettingValue();
+        assertThat(stored).isEqualTo(VALID);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"venue@example.com", "kontakt@kornhaus.test", "catering@caterer.invalid"})
+    @WithMockUser(username = "carla.muster", roles = "ORGANIZER")
+    void should_return400AndKeepTheStoredValue_when_aContactIsOnAReservedDomain(String address) throws Exception {
+        putValue(VALID, 200);
+
+        putValue(VALID.replace("success+catering@simulator.amazonses.com", address), 400);
 
         String stored = appSettingRepository.findBySettingKey(VenueCoordinationConfig.SETTING_KEY)
                 .orElseThrow().getSettingValue();
