@@ -125,9 +125,31 @@ public final class CumsContractHarness implements AutoCloseable {
         answers.put("GET /api/v1/companies/{name}", call -> new Reply(HttpStatus.NOT_FOUND, null));
     }
 
-    /** Answers {@code GET /internal/users/{username}} with this body (checked against the spec). */
+    /**
+     * Answers {@code GET /internal/users/{username}} with this body, laid over a complete user
+     * (CUMS always sends every {@code UserResponse} property, 4.9b): a test states the fields it
+     * cares about. The result is checked against the spec.
+     */
     public void user(String username, String userJson) {
-        users.put(username, userJson);
+        @SuppressWarnings("unchecked")
+        Map<String, Object> user = (Map<String, Object>) parse(
+                userJson(username, "Test", "User", username + "@test.com", null));
+        @SuppressWarnings("unchecked")
+        Map<String, Object> given = (Map<String, Object>) parse(userJson);
+        user.putAll(given);
+        if (user.get("additionalEmails") instanceof List<?> emails) {
+            for (Object email : emails) {
+                if (email instanceof Map<?, ?> entry) {
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> additional = (Map<String, Object>) entry;
+                    // EMS reads an unset receiveEventMail as false (EventMailCopies)
+                    additional.putIfAbsent("label", null);
+                    additional.putIfAbsent("verifiedAt", null);
+                    additional.putIfAbsent("receiveEventMail", false);
+                }
+            }
+        }
+        users.put(username, toJson(user));
         evict(username);
     }
 
@@ -220,13 +242,18 @@ public final class CumsContractHarness implements AutoCloseable {
         user.put("email", email);
         user.put("firstName", firstName);
         user.put("lastName", lastName);
-        if (companyId != null) {
-            user.put("companyId", companyId);
-        }
+        user.put("hasCognitoAccount", true);
+        user.put("bio", null);
+        user.put("companyId", companyId);
         user.put("roles", List.of());
+        user.put("profilePictureUrl", null);
         user.put("active", true);
         user.put("createdAt", "2025-01-15T10:00:00Z");
         user.put("updatedAt", "2025-01-15T10:00:00Z");
+        user.put("lastLoginAt", null);
+        user.put("termsAcceptedAt", null);
+        user.put("company", null);
+        user.put("settings", null);
         user.put("additionalEmails", List.of());
         try {
             return new ObjectMapper().writeValueAsString(user);
@@ -263,6 +290,7 @@ public final class CumsContractHarness implements AutoCloseable {
         user.put("email", username + "@test.com");
         user.put("firstName", "Test");
         user.put("lastName", "User");
+        user.put("hasCognitoAccount", true);
         user.put("companyId", "TestCompany");
         user.put("bio", "Test user bio");
         user.put("profilePictureUrl", "https://cdn.test.com/profile.jpg");
@@ -270,6 +298,10 @@ public final class CumsContractHarness implements AutoCloseable {
         user.put("active", true);
         user.put("createdAt", "2025-01-15T10:00:00Z");
         user.put("updatedAt", "2025-01-15T10:00:00Z");
+        user.put("lastLoginAt", null);
+        user.put("termsAcceptedAt", null);
+        user.put("company", null);
+        user.put("settings", null);
         user.put("additionalEmails", List.of());
         return Reply.ok(toJson(user));
     }

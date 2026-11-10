@@ -280,6 +280,15 @@ paths:
                     active: true
                     createdAt: 2025-01-15T10:00:00Z
                     updatedAt: 2025-01-15T10:00:00Z
+                    additionalEmails: []
+                    bio: null
+                    company: null
+                    companyId: null
+                    hasCognitoAccount: true
+                    lastLoginAt: null
+                    profilePictureUrl: null
+                    settings: null
+                    termsAcceptedAt: null
                 expandedUser:
                   summary: User with all expansions
                   value:
@@ -296,12 +305,32 @@ paths:
                       id: Swiss IT Solutions AG
                       name: Swiss IT Solutions AG
                       industry: Technology
+                      displayName: null
+                      website: null
                     settings:
                       theme: dark
                       language: de
                       emailNotifications: true
                       profileVisibility: members_only
                       showEmail: false
+                      allowCalendarSync: false
+                      allowMessaging: true
+                      inAppNotifications: true
+                      notificationFrequency: "immediate"
+                      pushNotifications: false
+                      qnaNotificationFrequency: "live"
+                      quietHoursEnd: null
+                      quietHoursStart: null
+                      showActivityHistory: true
+                      showCompany: true
+                      timezone: null
+                      twoFactorEnabled: false
+                    additionalEmails: []
+                    bio: null
+                    hasCognitoAccount: true
+                    lastLoginAt: null
+                    profilePictureUrl: null
+                    termsAcceptedAt: null
         '401':
           $ref: '#/components/responses/Unauthorized'
         '500':
@@ -351,6 +380,11 @@ paths:
                     updatedAt: "2026-11-08T14:43:13.089114Z"
                     termsAcceptedAt: "2026-02-22T12:54:23.442285Z"
                     additionalEmails: []
+                    company: null
+                    companyId: null
+                    lastLoginAt: null
+                    profilePictureUrl: null
+                    settings: null
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -479,6 +513,10 @@ paths:
                         updatedAt: "2026-02-25T17:06:54.373809Z"
                         termsAcceptedAt: null
                         additionalEmails: []
+                        bio: null
+                        company: null
+                        lastLoginAt: null
+                        settings: null
                       - id: felix.muster
                         hasCognitoAccount: true
                         email: felix.muster@example.com
@@ -492,6 +530,11 @@ paths:
                         updatedAt: "2025-12-27T13:57:45.62845Z"
                         termsAcceptedAt: null
                         additionalEmails: []
+                        bio: null
+                        company: null
+                        lastLoginAt: null
+                        profilePictureUrl: null
+                        settings: null
                     pagination:
                       page: 1
                       limit: 2
@@ -581,6 +624,14 @@ paths:
                     active: true
                     createdAt: '2025-10-21T20:00:00Z'
                     updatedAt: '2025-10-21T20:00:00Z'
+                    additionalEmails: []
+                    bio: null
+                    company: null
+                    hasCognitoAccount: true
+                    lastLoginAt: null
+                    profilePictureUrl: null
+                    settings: null
+                    termsAcceptedAt: null
         '400':
           description: Validation error
           content:
@@ -650,6 +701,7 @@ paths:
                       lastName: Beispiel
                       profilePictureUrl: https://cdn.batbern.ch/profile-pictures/2025/anna.beispiel/profile-a0ed134f-8619-44b1-be2b-6480b092196c.jpeg
                       companyId: galenica
+                      bio: null
         '500':
           $ref: '#/components/responses/InternalServerError'
 
@@ -1807,6 +1859,10 @@ paths:
                     updatedAt: "2026-02-25T17:06:54.373809Z"
                     termsAcceptedAt: null
                     additionalEmails: []
+                    bio: null
+                    company: null
+                    lastLoginAt: null
+                    settings: null
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -1866,6 +1922,11 @@ paths:
                     updatedAt: "2026-11-08T14:43:13.089114Z"
                     termsAcceptedAt: "2026-02-22T12:54:23.442285Z"
                     additionalEmails: []
+                    company: null
+                    companyId: null
+                    lastLoginAt: null
+                    profilePictureUrl: null
+                    settings: null
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -3101,6 +3162,13 @@ paths:
                     active: true
                     createdAt: 2025-01-15T10:00:00Z
                     updatedAt: 2025-01-20T14:30:00Z
+                    additionalEmails: []
+                    company: null
+                    companyId: null
+                    hasCognitoAccount: true
+                    lastLoginAt: null
+                    settings: null
+                    termsAcceptedAt: null
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -3244,6 +3312,13 @@ components:
       description: >-
         Public organizer projection for the About page (no sensitive fields; no email address,
         GHSA-qhqv: the page contacts info@batbern.ch)
+      required:
+        - id
+        - firstName
+        - lastName
+        - bio
+        - profilePictureUrl
+        - companyId
       properties:
         id:
           type: string
@@ -3290,6 +3365,9 @@ components:
         no other PII. Mirrors PublicOrganizerResponse's projection.
       required:
         - username
+        - firstName
+        - lastName
+        - profilePictureUrl
       properties:
         username:
           type: string
@@ -3375,6 +3453,16 @@ components:
         - roles
         - createdAt
         - updatedAt
+        - hasCognitoAccount
+        - bio
+        - companyId
+        - profilePictureUrl
+        - active
+        - lastLoginAt
+        - termsAcceptedAt
+        - company
+        - settings
+        - additionalEmails
       properties:
         id:
           type: string
@@ -3463,7 +3551,7 @@ components:
     UserMergeProfileSummary:
       type: object
       description: One side of a merge, as the organizer sees it
-      required: [username, firstName, lastName, email, hasLogin, roles, additionalEmails]
+      required: [username, firstName, lastName, email, hasLogin, roles, additionalEmails, companyId]
       properties:
         username:
           type: string
@@ -3545,7 +3633,7 @@ components:
             type: integer
     ProfileClaimCandidate:
       type: object
-      required: [candidateId, maskedEmail]
+      required: [candidateId, maskedEmail, companyName, requestPending, placeholderAddress]
       properties:
         candidateId:
           type: string
@@ -3591,7 +3679,7 @@ components:
           description: Optional; mailed to the requester when given
     CompanyLogoRequestView:
       type: object
-      required: [requestId, status, requesterUsername, companyName, newLogoUrl, createdAt]
+      required: [requestId, status, requesterUsername, companyName, newLogoUrl, createdAt, requesterName, companyDisplayName, oldLogoUrl, note, decidedBy, decidedAt, reason]
       properties:
         requestId:
           type: string
@@ -3663,7 +3751,7 @@ components:
           maxLength: 1000
     ProfileMergeRequestView:
       type: object
-      required: [requestId, status, requesterUsername, sourceUsername, createdAt]
+      required: [requestId, status, requesterUsername, sourceUsername, createdAt, note, decidedBy, decidedAt, reason, preview]
       properties:
         requestId:
           type: string
@@ -3717,7 +3805,7 @@ components:
           $ref: '#/components/schemas/DuplicateCandidateProfile'
     DuplicateCandidateProfile:
       type: object
-      required: [username, email, hasLogin, placeholderAddress]
+      required: [username, email, hasLogin, placeholderAddress, firstName, lastName, companyId, createdAt]
       properties:
         username:
           type: string
@@ -3798,6 +3886,9 @@ components:
       required:
         - email
         - createdAt
+        - label
+        - verifiedAt
+        - receiveEventMail
       properties:
         email:
           type: string
@@ -3919,6 +4010,24 @@ components:
         The user's settings, one object (Story 4.9 merged the former UserPreferences into it).
         Display: theme, language, timezone. Notifications: channels, frequency, Q&A digest, quiet
         hours. Privacy: visibility and contact options.
+      required:
+        - theme
+        - language
+        - timezone
+        - emailNotifications
+        - inAppNotifications
+        - pushNotifications
+        - notificationFrequency
+        - qnaNotificationFrequency
+        - quietHoursStart
+        - quietHoursEnd
+        - profileVisibility
+        - showEmail
+        - showCompany
+        - showActivityHistory
+        - allowMessaging
+        - allowCalendarSync
+        - twoFactorEnabled
       properties:
         theme:
           type: string
@@ -4092,6 +4201,9 @@ components:
         - email
         - firstName
         - lastName
+        - companyId
+        - roles
+        - profilePictureUrl
       properties:
         id:
           type: string
@@ -4242,6 +4354,7 @@ components:
         "use your existing password" block.
       required:
         - action
+        - temporaryPassword
       properties:
         temporaryPassword:
           type: string
@@ -4336,6 +4449,8 @@ components:
         - username
         - created
         - user
+        - companyUpdated
+        - cognitoUserId
       properties:
         username:
           type: string
@@ -4364,6 +4479,12 @@ components:
       description: |
         Company details with meaningful IDs.
         Story 1.16.2: id field contains company name, not UUID.
+      required:
+        - id
+        - name
+        - displayName
+        - industry
+        - website
       properties:
         id:
           type: string
@@ -4467,6 +4588,7 @@ components:
         - s3Key
         - fileExtension
         - expiresInMinutes
+        - requiredHeaders
       properties:
         uploadUrl:
           type: string
@@ -4535,6 +4657,10 @@ components:
       $ref: './_shared.openapi.yml#/components/schemas/ErrorResponse'
     PairingCodeResponse:
       type: object
+      required:
+        - pairingCode
+        - expiresAt
+        - hoursUntilExpiry
       properties:
         pairingCode:
           type: string
@@ -4549,6 +4675,9 @@ components:
 
     PairingStatusResponse:
       type: object
+      required:
+        - pairedWatches
+        - pendingCode
       properties:
         pairedWatches:
           type: array
@@ -4564,6 +4693,7 @@ components:
       required:
         - id
         - pairedAt
+        - deviceName
       properties:
         id:
           type: string
@@ -4579,6 +4709,9 @@ components:
 
     PendingPairingCode:
       type: object
+      required:
+        - code
+        - expiresAt
       properties:
         code:
           type: string

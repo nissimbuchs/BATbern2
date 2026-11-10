@@ -112,10 +112,10 @@ export const PartnerAttendanceDashboard: React.FC<Props> = ({ companyName }) => 
       ? [
           {
             eventCode: s.eventCode,
-            eventTitle: s.eventTitle ?? '',
+            eventTitle: s.eventTitle,
             eventDate: s.eventDate,
-            companyAttendees: s.companyAttendees ?? 0,
-            totalAttendees: s.totalAttendees ?? 0,
+            companyAttendees: s.companyAttendees,
+            totalAttendees: s.totalAttendees,
           },
         ]
       : []

@@ -9,6 +9,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { FilterSheet } from '../FilterSheet';
 import type { ArchiveFilters } from '@/types/event.types';
 import type { Topic } from '@/types/topic.types';
+import { aTopic } from '@/test/fixtures';
 
 // Mock FilterSidebar since we're testing FilterSheet in isolation
 vi.mock('../FilterSidebar', () => ({
@@ -49,20 +50,20 @@ vi.mock('react-i18next', () => ({
 
 describe('FilterSheet Component', () => {
   const mockTopics: Topic[] = [
-    {
+    aTopic({
       topicCode: 'topic1',
       title: 'Cloud Architecture',
       category: 'technical',
       description: 'Cloud topics',
       active: true,
-    },
-    {
+    }),
+    aTopic({
       topicCode: 'topic2',
       title: 'Security',
       category: 'technical',
       description: 'Security topics',
       active: true,
-    },
+    }),
   ];
 
   const mockFilters: ArchiveFilters = {

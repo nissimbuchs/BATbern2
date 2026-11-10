@@ -93,6 +93,8 @@ components:
           example: 9
     FeatureFlagsResponse:
       type: object
+      required:
+        - aiContentEnabled
       properties:
         aiContentEnabled:
           type: boolean

@@ -56,8 +56,7 @@ export const EventCard: React.FC<EventCardProps> = ({ event, onEdit, onCardClick
   const [isHovered, setIsHovered] = useState(false);
 
   const eventUI = event as EventUI;
-  // Use new workflowState from Story 5.1a (fallback to 'CREATED')
-  const workflowState = event.workflowState || 'CREATED';
+  const workflowState = event.workflowState;
   const progress = getWorkflowProgress(workflowState);
   const workflowLabel = getWorkflowStateLabel(workflowState, t);
   const workflowStep = getWorkflowStepNumber(workflowState);
@@ -146,7 +145,7 @@ export const EventCard: React.FC<EventCardProps> = ({ event, onEdit, onCardClick
             <EventIcon fontSize="small" color="action" />
             <Typography variant="body2" color="text.secondary">
               {formattedDate}
-              {eventUI.eventType && ` • ${t(`dashboard.eventType.${eventUI.eventType}`)}`}
+              {` • ${t(`dashboard.eventType.${eventUI.eventType}`)}`}
             </Typography>
           </Stack>
 

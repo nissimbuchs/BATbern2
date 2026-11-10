@@ -59,7 +59,7 @@ export interface components {
       partnerCount: number;
     };
     FeatureFlagsResponse: {
-      aiContentEnabled?: boolean;
+      aiContentEnabled: boolean;
     };
   };
   responses: never;

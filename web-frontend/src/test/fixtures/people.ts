@@ -33,6 +33,13 @@ export function aUser(overrides: Partial<UserResponse> = {}): UserResponse {
     roles: ['ATTENDEE'],
     active: true,
     hasCognitoAccount: true,
+    bio: null,
+    companyId: null,
+    profilePictureUrl: null,
+    lastLoginAt: null,
+    termsAcceptedAt: FIXTURE_CREATED_AT,
+    company: null,
+    settings: null,
     additionalEmails: [],
     createdAt: FIXTURE_CREATED_AT,
     updatedAt: FIXTURE_CREATED_AT,
@@ -47,9 +54,9 @@ export function toSearchResult(user: UserResponse): UserSearchResponse {
     email: user.email,
     firstName: user.firstName,
     lastName: user.lastName,
-    ...(user.companyId ? { companyId: user.companyId } : {}),
+    companyId: user.companyId,
     roles: [...user.roles],
-    ...(user.profilePictureUrl ? { profilePictureUrl: user.profilePictureUrl } : {}),
+    profilePictureUrl: user.profilePictureUrl,
   };
 }
 

@@ -160,7 +160,7 @@ class UserApiClientImplContractTest {
     @Test
     void should_failFast_when_freshPasswordActionComesWithoutPassword() {
         bind(USERS).expect(POST, "/api/v1/users/{username}/issue-invitation-credentials")
-                .respondWith(HttpStatus.OK, "{\"action\": \"FRESH_TEMP_PASSWORD\"}");
+                .respondWith(HttpStatus.OK, "{\"temporaryPassword\": null, \"action\": \"FRESH_TEMP_PASSWORD\"}");
 
         assertThatThrownBy(() -> client.issueInvitationCredentials("jane.smith"))
                 .isInstanceOf(UserServiceException.class)
@@ -177,9 +177,9 @@ class UserApiClientImplContractTest {
                 .andExpect(UserApiClientImplContractTest::forwardsJwt)
                 .respondWith(HttpStatus.OK, """
                         {"data": [{"name": "AcmeZH", "isVerified": true, "createdAt": "2025-01-15T10:00:00Z",
-                                   "updatedAt": "2025-01-15T10:00:00Z"},
+                                   "updatedAt": "2025-01-15T10:00:00Z", "createdBy": "lead.organizer"},
                                   {"name": "GoogleZH", "isVerified": true, "createdAt": "2025-01-15T10:00:00Z",
-                                   "updatedAt": "2025-01-15T10:00:00Z"}],
+                                   "updatedAt": "2025-01-15T10:00:00Z", "createdBy": "lead.organizer"}],
                          "pagination": {"page": 1, "limit": 100, "totalItems": 101, "totalPages": 2,
                                         "hasNext": true, "hasPrev": false}}""");
         cums.expect(GET, "/api/v1/companies").withQueryParam("page", "2").respondWithExample();
@@ -204,7 +204,8 @@ class UserApiClientImplContractTest {
     @Test
     void should_fallBackToName_when_displayNameMissing() {
         bind(COMPANIES).expect(GET, "/api/v1/companies/{name}").respondWith(HttpStatus.OK, """
-                {"name": "adesso", "isVerified": false, "createdAt": "2025-01-15T10:00:00Z", "updatedAt": "2025-01-15T10:00:00Z"}""");
+                {"name": "adesso", "isVerified": false, "createdAt": "2025-01-15T10:00:00Z", "updatedAt": "2025-01-15T10:00:00Z",
+                 "createdBy": "lead.organizer"}""");
 
         assertThat(client.getCompanyDisplayName("adesso")).isEqualTo("adesso");
         server.verify();

@@ -7,6 +7,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { EventLogistics } from './EventLogistics';
 import type { EventDetail } from '@/types/event.types';
+import { anEventDetail } from '@/test/fixtures';
 
 // Mock react-i18next
 vi.mock('react-i18next', () => ({
@@ -24,7 +25,7 @@ vi.mock('react-i18next', () => ({
 }));
 
 describe('EventLogistics', () => {
-  const mockEvent: EventDetail = {
+  const mockEvent: EventDetail = anEventDetail({
     eventCode: 'BATbern25',
     eventNumber: 25,
     title: 'Test Event',
@@ -40,7 +41,7 @@ describe('EventLogistics', () => {
     waitlistCount: 0,
     typicalStartTime: '16:00',
     typicalEndTime: '19:00',
-  };
+  });
 
   it('should render date correctly', () => {
     render(<EventLogistics event={mockEvent} />);

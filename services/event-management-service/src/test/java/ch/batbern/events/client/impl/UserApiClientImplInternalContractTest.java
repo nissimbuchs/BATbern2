@@ -198,7 +198,9 @@ class UserApiClientImplInternalContractTest {
     private static final String PAGE_ONE_OF_TWO = """
             {"data": [{"id": "anna.organizer", "email": "anna@example.com", "firstName": "Anna",
                        "lastName": "Organizer", "roles": ["ORGANIZER"], "createdAt": "2025-01-15T10:00:00Z",
-                       "updatedAt": "2025-01-15T10:00:00Z"}],
+                       "updatedAt": "2025-01-15T10:00:00Z", "hasCognitoAccount": true, "bio": null,
+                       "companyId": null, "profilePictureUrl": null, "active": true, "lastLoginAt": null,
+                       "termsAcceptedAt": null, "company": null, "settings": null, "additionalEmails": []}],
              "pagination": {"page": 1, "limit": 100, "totalItems": 101, "totalPages": 2,
                             "hasNext": true, "hasPrev": false}}""";
 

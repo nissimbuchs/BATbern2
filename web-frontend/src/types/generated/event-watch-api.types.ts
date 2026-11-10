@@ -190,9 +190,9 @@ export interface components {
       /** @example anna.meier */
       speakerUsername: string;
       /** @example Anna */
-      speakerFirstName?: string;
+      speakerFirstName: string;
       /** @example Meier */
-      speakerLastName?: string;
+      speakerLastName: string;
       /** @example marco.muster */
       confirmedBy: string;
       /**
@@ -223,16 +223,16 @@ export interface components {
        * @description HH:mm in Europe/Zurich timezone, derived from first session
        * @example 18:00
        */
-      typicalStartTime?: string | null;
+      typicalStartTime: string | null;
       /**
        * @description HH:mm in Europe/Zurich timezone, derived from last session
        * @example 22:00
        */
-      typicalEndTime?: string | null;
+      typicalEndTime: string | null;
       /** @example https://cdn.example.com/theme/batbern57.jpg */
-      themeImageUrl?: string | null;
+      themeImageUrl: string | null;
       /** @example AGENDA */
-      currentPublishedPhase?: string | null;
+      currentPublishedPhase: string | null;
       /**
        * @example SCHEDULED
        * @enum {string}
@@ -246,69 +246,69 @@ export interface components {
       sessionSlug: string;
       /** @example Cloud Architecture Keynote */
       title: string;
-      abstract?: string | null;
-      sessionType?: components['schemas']['SessionType'] | null;
+      abstract: string | null;
+      sessionType: components['schemas']['SessionType'] | null;
       /**
        * Format: date-time
        * @example 2026-03-01T17:00:00Z
        */
-      scheduledStartTime?: string | null;
+      scheduledStartTime: string | null;
       /**
        * Format: date-time
        * @example 2026-03-01T17:45:00Z
        */
-      scheduledEndTime?: string | null;
+      scheduledEndTime: string | null;
       /** @example 45 */
-      durationMinutes?: number | null;
+      durationMinutes: number | null;
       speakers: components['schemas']['WatchSpeakerDetail'][];
       /**
        * @description Derived from timing relative to now; W4 adds real-time override.
        * @example SCHEDULED
        * @enum {string|null}
        */
-      status?: 'SCHEDULED' | 'ACTIVE' | 'COMPLETED' | null;
+      status: 'SCHEDULED' | 'ACTIVE' | 'COMPLETED' | null;
       /**
        * Format: date-time
        * @description Populated in W4 (session control). Always null in W2.3.
        */
-      actualStartTime?: string | null;
+      actualStartTime: string | null;
       /**
        * Format: date-time
        * @description Populated in W4 (session control). Always null in W2.3.
        */
-      actualEndTime?: string | null;
+      actualEndTime: string | null;
       /**
        * @description Populated in W4. Always 0 in W2.3.
        * @example 0
        */
-      overrunMinutes?: number;
+      overrunMinutes: number;
       /** @description Populated in W4. Always null in W2.3. */
-      completedBy?: string | null;
+      completedBy: string | null;
     };
     /** @description Speaker detail for Watch organizer sync. */
     WatchSpeakerDetail: {
       /** @example john.doe */
       username: string;
       /** @example John */
-      firstName?: string | null;
+      firstName: string | null;
       /** @example Doe */
-      lastName?: string | null;
+      lastName: string | null;
       /**
        * @description Speaker's company display name (Story 15.5). Resolved at read time from the speaker's user profile; null when the speaker has no company.
        * @example ACME Corp
        */
-      company?: string | null;
+      company: string | null;
       /**
        * @description CloudFront URL of the speaker's company logo (Story 15.5), shown on the presenter + live-control surfaces. Null when the company has no logo.
        * @example https://cdn.batbern.ch/logos/acme.png
        */
-      companyLogoUrl?: string | null;
+      companyLogoUrl: string | null;
       /** @example https://cdn.example.com/portrait/john.doe.jpg */
-      profilePictureUrl?: string | null;
+      profilePictureUrl: string | null;
       /** @example Cloud architect with 10 years experience */
-      bio?: string | null;
+      bio: string | null;
       /** @example panelist */
-      speakerRole?: string | null;
+      speakerRole: string | null;
     };
     /** @description Live agenda timing snapshot for an event (Story 15.1). Assembled from persistent storage only, so it is identical across Fargate tasks. Polled over REST in place of the retired STOMP `/topic/events/{eventCode}/state` broadcast. */
     LiveTimingResponse: {
@@ -329,7 +329,7 @@ export interface components {
        * @description Slug of the session currently active (now within scheduled start/end), or null.
        * @example cloud-keynote
        */
-      currentSessionSlug?: string | null;
+      currentSessionSlug: string | null;
       /**
        * @description Number of distinct speakers confirmed arrived.
        * @example 3

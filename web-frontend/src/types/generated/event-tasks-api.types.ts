@@ -182,16 +182,16 @@ export interface components {
       /** @description Due date type: immediate, relative_to_event, or absolute */
       dueDateType: string;
       /** @description Offset days for relative due dates (negative = before event, positive = after) */
-      dueDateOffsetDays?: number | null;
+      dueDateOffsetDays: number | null;
       /**
        * @description A pending task activates at whichever comes first: its trigger, or this many days before its due date. Null = trigger only (post-event templates).
        * @example 14
        */
-      activationLeadDays?: number | null;
+      activationLeadDays: number | null;
       /** @description Whether this is a default (non-editable) template */
       isDefault: boolean;
       /** @description Canonical username of the organizer who created the template (null for defaults) */
-      createdByUsername?: string | null;
+      createdByUsername: string | null;
       /** Format: date-time */
       createdAt: string;
       /** Format: date-time */
@@ -236,25 +236,25 @@ export interface components {
       /** Format: uuid */
       id: string;
       /** Format: uuid */
-      eventId?: string;
+      eventId: string;
       /** @description Event code (null for tasks without an event) */
-      eventCode?: string;
+      eventCode: string;
       /**
        * Format: uuid
        * @description Source template ID (null for ad-hoc tasks)
        */
-      templateId?: string | null;
+      templateId: string | null;
       taskName: string;
       triggerState: string;
       /** Format: date-time */
-      dueDate?: string | null;
-      assignedOrganizerUsername?: string | null;
+      dueDate: string | null;
+      assignedOrganizerUsername: string | null;
       /** @description Task status: pending (trigger not reached yet), todo, in_progress, completed, or cancelled (event archived, or the newsletter was superseded by a later one) */
       status: string;
-      notes?: string | null;
+      notes: string | null;
       /** Format: date-time */
-      completedDate?: string | null;
-      completedByUsername?: string | null;
+      completedDate: string | null;
+      completedByUsername: string | null;
       /** Format: date-time */
       createdAt: string;
       /** Format: date-time */

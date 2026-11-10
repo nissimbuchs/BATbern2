@@ -16,7 +16,7 @@ export function useFeatureFlags(): FeatureFlags {
     queryKey: ['feature-flags'],
     queryFn: async () => {
       const flags = await getFeatureFlags();
-      return { aiContentEnabled: flags.aiContentEnabled ?? false };
+      return { aiContentEnabled: flags.aiContentEnabled };
     },
     staleTime: 5 * 60 * 1000, // 5 minutes — feature flags don't change often
     gcTime: 10 * 60 * 1000,

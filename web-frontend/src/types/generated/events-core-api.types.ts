@@ -795,8 +795,8 @@ export type webhooks = Record<string, never>;
 export interface components {
   schemas: {
     AdminSettingResponse: {
-      key?: string;
-      value?: string | null;
+      key: string;
+      value: string | null;
     };
     SetAdminSettingRequest: {
       value?: string;
@@ -808,31 +808,31 @@ export interface components {
       open?: boolean;
     };
     QnaWindowAdjustResponse: {
-      eventCode?: string;
-      windowsAdjusted?: number;
-      status?: string;
+      eventCode: string;
+      windowsAdjusted: number;
+      status: string;
     };
     PublishPhaseResponse: {
-      phase?: string;
-      published?: boolean;
+      phase: string;
+      published: boolean;
       /** Format: date-time */
-      publishedAt?: string;
-      cdnInvalidated?: boolean;
+      publishedAt: string;
+      cdnInvalidated: boolean;
     };
     UnpublishPhaseResponse: {
-      phase?: string;
-      published?: boolean;
+      phase: string;
+      published: boolean;
       /** Format: date-time */
-      unpublishedAt?: string;
-      cdnInvalidated?: boolean;
+      unpublishedAt: string;
+      cdnInvalidated: boolean;
     };
     ValidationStatus: {
       isValid: boolean;
       errors: string[];
     };
     UnassignedSession: {
-      sessionSlug?: string;
-      title?: string;
+      sessionSlug: string;
+      title: string;
     };
     SessionValidationStatus: {
       isValid: boolean;
@@ -843,7 +843,7 @@ export interface components {
     };
     PublishingStatusResponse: {
       /** @description The phase published last (topic, speakers, agenda); null before the first. */
-      currentPhase?: string | null;
+      currentPhase: string | null;
       publishedPhases: string[];
       topic: components['schemas']['ValidationStatus'];
       speakers: components['schemas']['ValidationStatus'];
@@ -867,15 +867,15 @@ export interface components {
       phase3DaysBeforeEvent?: number;
     };
     AutoPublishScheduleResponse: {
-      scheduled?: boolean;
-      phase2Enabled?: boolean | null;
-      phase2DaysBeforeEvent?: number;
+      scheduled: boolean;
+      phase2Enabled: boolean | null;
+      phase2DaysBeforeEvent: number;
       /** Format: date-time */
-      phase2TriggerDate?: string;
-      phase3Enabled?: boolean | null;
-      phase3DaysBeforeEvent?: number;
+      phase2TriggerDate: string;
+      phase3Enabled: boolean | null;
+      phase3DaysBeforeEvent: number;
       /** Format: date-time */
-      phase3TriggerDate?: string;
+      phase3TriggerDate: string;
     };
     /**
      * @description Venue-coordination recipient role
@@ -890,11 +890,11 @@ export interface components {
       notes?: string;
     };
     VenueCoordinationPreviewResponse: {
-      subject?: string;
-      htmlBody?: string;
-      toEmail?: string;
-      ccEmails?: string[];
-      replyToEmail?: string;
+      subject: string;
+      htmlBody: string;
+      toEmail: string;
+      ccEmails: string[];
+      replyToEmail: string;
     };
     VenueCoordinationSendRequest: {
       templateKey: string;
@@ -903,7 +903,7 @@ export interface components {
       recipients: components['schemas']['VenueRole'][];
     };
     VenueCoordinationSendResponse: {
-      sentTo?: components['schemas']['VenueRole'][];
+      sentTo: components['schemas']['VenueRole'][];
     };
     /**
      * @description Controls which slide the image appears after in the moderator presentation.
@@ -974,19 +974,19 @@ export interface components {
     PublicSpeaker: {
       /** @example john.doe */
       username: string;
-      firstName?: string;
-      lastName?: string;
-      company?: string | null;
-      companyDisplayName?: string | null;
-      companyLogoUrl?: string | null;
-      profilePictureUrl?: string | null;
-      bio?: string | null;
+      firstName: string;
+      lastName: string;
+      company: string | null;
+      companyDisplayName: string | null;
+      companyLogoUrl: string | null;
+      profilePictureUrl: string | null;
+      bio: string | null;
       /** @example PRIMARY_SPEAKER */
-      speakerRole?: string | null;
+      speakerRole: string | null;
       /** @description Only once the agenda is published (AGENDA phase, completed, archived). */
-      talkTitle?: string | null;
+      talkTitle: string | null;
       /** @description Only together with talkTitle. */
-      sessionSlug?: string | null;
+      sessionSlug: string | null;
     };
     Event: {
       /**
@@ -1029,19 +1029,19 @@ export interface components {
        * @description Story 7.5 rework: master on/off for this event's per-session Q&A.
        * @example true
        */
-      qnaEnabled?: boolean;
+      qnaEnabled: boolean;
       /**
        * @description Story 7.5 rework: WHEN the Q&A windows open. EVENT_COMPLETED (default, "digital
        *     afterglow") or SPEAKERS_PUBLISHED (opt-in: open once the speakers phase publishes).
        * @example EVENT_COMPLETED
        * @enum {string}
        */
-      qnaOpenTrigger?: 'EVENT_COMPLETED' | 'SPEAKERS_PUBLISHED';
+      qnaOpenTrigger: 'EVENT_COMPLETED' | 'SPEAKERS_PUBLISHED';
       /**
        * @description Story 7.5 rework: window length; windows close at (event date + this many days).
        * @example 14
        */
-      qnaWindowDays?: number;
+      qnaWindowDays: number;
       /**
        * @description Story 10.11 — Count of registrations with status registered or confirmed.
        * @example 42
@@ -1087,9 +1087,9 @@ export interface components {
       /** @example Cloud Native Architecture and Best Practices */
       description?: string;
       /** Format: date-time */
-      createdAt?: string;
+      createdAt: string;
       /** Format: date-time */
-      updatedAt?: string;
+      updatedAt: string;
       /**
        * Format: uri
        * @description CloudFront URL for event theme image.
@@ -1121,7 +1121,7 @@ export interface components {
        * @description Event type (FULL_DAY, AFTERNOON, EVENING).
        *     Story 5.1: Event Type Definition
        */
-      eventType?: components['schemas']['EventType'];
+      eventType: components['schemas']['EventType'];
       /**
        * Format: time
        * @description Typical start time for this event type (from event_types table).
@@ -1140,23 +1140,23 @@ export interface components {
        * @description Current workflow state (16-step workflow).
        *     Story 5.1a: Event Workflow State Machine
        */
-      workflowState?: components['schemas']['EventWorkflowState'];
+      workflowState: components['schemas']['EventWorkflowState'];
       /**
        * @description Expanded topic details (only included when ?include=topics).
        *     Story BAT-109: Archive browsing with topic expansion
        */
       topic?: {
         /** @example cloud-native-security-2024 */
-        code?: string;
+        code: string;
         /** @example Cloud Native Security */
-        name?: string;
+        name: string;
         /** @example Security patterns for cloud-native applications */
-        description?: string | null;
+        description: string | null;
         /**
          * @example technical
          * @enum {string}
          */
-        category?:
+        category:
           'technical' | 'management' | 'soft_skills' | 'industry_trends' | 'tools_platforms';
       } | null;
       /**
@@ -1204,10 +1204,10 @@ export interface components {
       currentPublishedPhase?: 'TOPIC' | 'SPEAKERS' | 'AGENDA' | null;
     };
     Venue: {
-      id?: string;
-      name?: string;
-      address?: string;
-      capacity?: number;
+      id: string;
+      name: string;
+      address: string;
+      capacity: number;
     };
     /** @description The eight required fields are the ones the event row cannot be stored without (owner decision 2026-11-09); a create without one answers 400 naming the field. */
     CreateEventRequest: {
@@ -1538,7 +1538,7 @@ export interface components {
        */
       workflowState: string;
       /** Format: date-time */
-      updatedAt?: string;
+      updatedAt: string;
     };
     /**
      * @description Request to transition event to target workflow state (Story 5.1a - AC12).
@@ -1622,24 +1622,24 @@ export interface components {
        * Format: uuid
        * @description The thank-you note id (for the organizer feature toggle).
        */
-      id?: string;
+      id: string;
       /** @description The submitted note (may be null if the thank-you carried no note). */
-      note?: string | null;
+      note: string | null;
       /** @description The logged-in attendee's username, or null for an anonymous clap. */
-      thankedByUsername?: string | null;
+      thankedByUsername: string | null;
       /** @description Resolved author first name (null for anonymous). */
-      thankedByFirstName?: string | null;
+      thankedByFirstName: string | null;
       /** @description Resolved author last name (null for anonymous). */
-      thankedByLastName?: string | null;
+      thankedByLastName: string | null;
       /** @description Resolved company display name (null when anonymous or opted out). */
-      thankedByCompanyName?: string | null;
+      thankedByCompanyName: string | null;
       /** @description Whether this note is currently featured on the public marquee (Story 7.7). */
-      featured?: boolean;
+      featured: boolean;
       /**
        * Format: date-time
        * @description When the thank-you was submitted.
        */
-      createdAt?: string;
+      createdAt: string;
     };
     /** @description Story 7.7: organizer request to feature/un-feature a thank-you note on the public marquee. */
     ThanksFeaturePatchRequest: {
@@ -1653,17 +1653,17 @@ export interface components {
      */
     FeaturedThanksResponse: {
       /** @description The submitted note text. */
-      note?: string | null;
+      note: string | null;
       /** @description The event the thank-you was for. */
-      eventCode?: string;
+      eventCode: string;
       /** @description Author first name (shown on the card). */
-      thankedByFirstName?: string | null;
+      thankedByFirstName: string | null;
       /** @description Author last name. */
-      thankedByLastName?: string | null;
+      thankedByLastName: string | null;
       /** @description Company display name (null when the author opted out). */
-      thankedByCompanyName?: string | null;
+      thankedByCompanyName: string | null;
       /** @description Company logo CloudFront URL (null when opted out or no logo). */
-      thankedByCompanyLogoUrl?: string | null;
+      thankedByCompanyLogoUrl: string | null;
     };
     /**
      * @description Story 7.4: response for both the POST submit and the GET aggregate. `count` (the public
@@ -1678,7 +1678,7 @@ export interface components {
        */
       count: number;
       /** @description Organizer-only list of submitted notes (newest first); null for the public. */
-      notes?: components['schemas']['ThanksNoteResponse'][] | null;
+      notes: components['schemas']['ThanksNoteResponse'][] | null;
     };
     /**
      * @description Story 7.6: one event on the attendee dashboard. The client links the card to
@@ -1689,13 +1689,13 @@ export interface components {
       eventCode: string;
       eventTitle: string;
       /** Format: date-time */
-      eventDate?: string;
+      eventDate: string;
       /** @description The event venue name. */
-      eventLocation?: string | null;
+      eventLocation: string | null;
       /** @description The event's UPPER_CASE workflow state (e.g. EVENT_COMPLETED, ARCHIVED). */
-      workflowState?: string | null;
+      workflowState: string | null;
       /** @description The attendee's registration status (registered|confirmed|waitlist|attended|no_show). */
-      registrationStatus?: string | null;
+      registrationStatus: string | null;
     };
     /**
      * @description Story 7.6: the attendee's event history — every participated (non-cancelled) event, split
@@ -1703,7 +1703,7 @@ export interface components {
      */
     AttendeeDashboardResponse: {
       /** @description Display name (denormalized from a registration) or the username. */
-      attendeeName?: string | null;
+      attendeeName: string | null;
       upcomingEvents: components['schemas']['AttendeeEventCardResponse'][];
       pastEvents: components['schemas']['AttendeeEventCardResponse'][];
     };
@@ -1745,32 +1745,32 @@ export interface components {
        * @description Speaker's company identifier/slug (from User.companyId). Stable key used for logo lookup — NOT for display.
        * @example GoogleZH
        */
-      company?: string | null;
+      company: string | null;
       /**
        * @description Human-readable company name (companies.display_name, falling back to
        *     companies.name, then the company slug). Prefer this over `company` for
        *     display. Null when the speaker has no associated company.
        * @example Google Zürich
        */
-      companyDisplayName?: string | null;
+      companyDisplayName: string | null;
       /**
        * Format: uri
        * @description Speaker's profile picture URL (from User entity)
        * @example https://cdn.batbern.ch/logos/2025/users/john.doe/profile.jpg
        */
-      profilePictureUrl?: string | null;
+      profilePictureUrl: string | null;
       /**
        * Format: uri
        * @description Company logo CloudFront URL (cross-service DB join: logos table).
        *     Populated on archive list responses to avoid a separate useCompany API call.
        * @example https://cdn.batbern.ch/logos/2025/companies/sbb/logo.jpeg
        */
-      companyLogoUrl?: string | null;
+      companyLogoUrl: string | null;
       /**
        * @description Speaker's biography (from User entity)
        * @example Software engineer passionate about cloud architecture and security
        */
-      bio?: string | null;
+      bio: string | null;
       /**
        * @description Speaker's role in the session:
        *     - PRIMARY_SPEAKER: Main presenter
@@ -1785,7 +1785,7 @@ export interface components {
        * @description Optional speaker-specific presentation title (if different from session title)
        * @example Security Auditing Tools Deep Dive
        */
-      presentationTitle?: string | null;
+      presentationTitle: string | null;
       /**
        * @description Whether speaker has confirmed participation
        * @example true
@@ -1818,41 +1818,41 @@ export interface components {
        */
       eventCode: string;
       title: string;
-      description?: string | null;
+      description: string | null;
       /**
        * @description Session type — null for placeholder sessions, assigned during agenda planning.
        * @example keynote
        */
-      sessionType?: components['schemas']['SessionType'] | null;
+      sessionType: components['schemas']['SessionType'] | null;
       /**
        * Format: date-time
        * @description Session start time - null for placeholder sessions, assigned during slot assignment
        */
-      startTime?: string | null;
+      startTime: string | null;
       /**
        * Format: date-time
        * @description Session end time - null for placeholder sessions, assigned during slot assignment
        */
-      endTime?: string | null;
+      endTime: string | null;
       /** @example Main Hall */
-      room?: string | null;
+      room: string | null;
       /** @example 200 */
-      capacity?: number | null;
+      capacity: number | null;
       /**
        * @default de
        * @example de
        */
       language: string | null;
       /** Format: date-time */
-      createdAt?: string;
+      createdAt: string;
       /** Format: date-time */
-      updatedAt?: string;
+      updatedAt: string;
       /**
        * @description Story 1.15a.1b: Session speakers with enriched User data
        *     List of speakers assigned to this session with their roles
        */
-      speakers?: components['schemas']['SessionSpeaker'][] | null;
-      materialsStatus?: components['schemas']['MaterialsStatus'] | null;
+      speakers: components['schemas']['SessionSpeaker'][] | null;
+      materialsStatus: components['schemas']['MaterialsStatus'] | null;
     };
     /**
      * @description Page-based pagination metadata returned with every paginated list response.
@@ -1957,7 +1957,7 @@ export interface components {
        * @description CloudFront delivery URL for the material (null until CDN-published)
        * @example https://cdn.batbern.ch/materials/2026/batbern142/ui-design/slides.pdf
        */
-      cloudFrontUrl?: string;
+      cloudFrontUrl: string;
       /**
        * @description Original uploaded file name
        * @example slides.pdf
@@ -2005,12 +2005,12 @@ export interface components {
        * @description Story 5.10 forward-compat: whether text content has been extracted for RAG search
        * @example false
        */
-      contentExtracted?: boolean;
+      contentExtracted: boolean;
       /**
        * @description Story 5.10 forward-compat: content-extraction status
        * @example PENDING
        */
-      extractionStatus?: string;
+      extractionStatus: string;
     };
     /**
      * @description Story 1.15a.1b: Session response with embedded speakers + materials.
@@ -2018,12 +2018,12 @@ export interface components {
      */
     SessionResponse: components['schemas']['Session'] & {
       /** @description Story 5.9: Uploaded session materials (populated by the service layer) */
-      materials?: components['schemas']['SessionMaterialResponse'][] | null;
+      materials: components['schemas']['SessionMaterialResponse'][] | null;
       /**
        * @description Story 5.9: Number of uploaded materials (for overview displays)
        * @example 3
        */
-      materialsCount?: number;
+      materialsCount: number;
     };
   };
   responses: {
@@ -2118,8 +2118,8 @@ export interface operations {
         };
         content: {
           'application/json': {
-            data?: components['schemas']['Event'][];
-            pagination?: components['schemas']['PaginationMetadata'];
+            data: components['schemas']['Event'][];
+            pagination: components['schemas']['PaginationMetadata'];
           };
         };
       };
@@ -2230,8 +2230,8 @@ export interface operations {
         };
         content: {
           'application/json': {
-            data?: components['schemas']['Event'][];
-            pagination?: components['schemas']['PaginationMetadata'];
+            data: components['schemas']['Event'][];
+            pagination: components['schemas']['PaginationMetadata'];
           };
         };
       };
@@ -2290,7 +2290,13 @@ export interface operations {
            *           "name": "Kubernetes",
            *           "color": "cyan"
            *         }
-           *       ]
+           *       ],
+           *       "createdAt": "2026-05-14T16:00:00Z",
+           *       "eventType": "FULL_DAY",
+           *       "qnaEnabled": true,
+           *       "qnaOpenTrigger": "EVENT_COMPLETED",
+           *       "qnaWindowDays": 14,
+           *       "updatedAt": "2026-05-14T16:00:00Z"
            *     }
            */
           'application/json': components['schemas']['EventDetail'];
@@ -2824,7 +2830,14 @@ export interface operations {
            *         "lunchSlots": 1,
            *         "defaultCapacity": 300,
            *         "typicalStartTime": "09:00",
-           *         "typicalEndTime": "16:00"
+           *         "typicalEndTime": "16:00",
+           *         "aperitifDuration": 90,
+           *         "aperitifPosition": "end",
+           *         "aperitifSlots": 1,
+           *         "breakDuration": 20,
+           *         "lunchDuration": 60,
+           *         "moderationEndDuration": 5,
+           *         "moderationStartDuration": 5
            *       },
            *       {
            *         "type": "AFTERNOON",
@@ -2836,7 +2849,14 @@ export interface operations {
            *         "lunchSlots": 0,
            *         "defaultCapacity": 200,
            *         "typicalStartTime": "13:00",
-           *         "typicalEndTime": "19:00"
+           *         "typicalEndTime": "19:00",
+           *         "aperitifDuration": 90,
+           *         "aperitifPosition": "end",
+           *         "aperitifSlots": 1,
+           *         "breakDuration": 20,
+           *         "lunchDuration": 60,
+           *         "moderationEndDuration": 5,
+           *         "moderationStartDuration": 5
            *       },
            *       {
            *         "type": "EVENING",
@@ -2848,7 +2868,14 @@ export interface operations {
            *         "lunchSlots": 0,
            *         "defaultCapacity": 200,
            *         "typicalStartTime": "16:00",
-           *         "typicalEndTime": "19:00"
+           *         "typicalEndTime": "19:00",
+           *         "aperitifDuration": 90,
+           *         "aperitifPosition": "end",
+           *         "aperitifSlots": 1,
+           *         "breakDuration": 20,
+           *         "lunchDuration": 60,
+           *         "moderationEndDuration": 5,
+           *         "moderationStartDuration": 5
            *       }
            *     ]
            */

@@ -343,7 +343,7 @@ export const MailComposer: React.FC<MailComposerProps> = ({ eventCode, audience,
             >
               {t('eventPage.mail.composer.speakers.detected', {
                 templateKey: shown.templateKey,
-                name: shown.recipient?.displayName ?? '',
+                name: shown.recipient.displayName,
               })}
             </Typography>
           )}

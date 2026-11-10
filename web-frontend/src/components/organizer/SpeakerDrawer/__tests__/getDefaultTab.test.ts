@@ -16,9 +16,11 @@
 import { describe, it, expect } from 'vitest';
 import { getDefaultTab } from '../getDefaultTab';
 import type { SpeakerPoolEntry } from '@/types/speakerPool.types';
+import { aSpeakerPoolEntry } from '@/test/fixtures';
 
 function makeSpeaker(status: SpeakerPoolEntry['status']): SpeakerPoolEntry {
   return {
+    ...aSpeakerPoolEntry(),
     id: 'sp-1',
     eventId: 'evt-1',
     speakerName: 'Test Speaker',

@@ -17,6 +17,7 @@ import {
   uploadProfilePictureFromUrl,
   type UserSettingsResponse,
 } from './userApi';
+import { aUser } from '@/test/fixtures';
 
 const settings = (over: Partial<UserSettingsResponse> = {}): UserSettingsResponse => ({
   theme: 'auto',
@@ -50,18 +51,18 @@ describe('userApi', () => {
     });
 
     it('asks for roles and the merged settings with include', async () => {
-      api.on('getCurrentUser', () => ({
-        id: 'anna.meier',
-        email: 'anna.meier@example.com',
-        firstName: 'Anna',
-        lastName: 'Meier',
-        roles: ['SPEAKER' as const],
-        active: true,
-        createdAt: '2025-01-15T10:00:00Z',
-        updatedAt: '2025-01-15T10:00:00Z',
-        additionalEmails: [],
-        settings: settings({ language: 'fr' }),
-      }));
+      api.on('getCurrentUser', () =>
+        aUser({
+          id: 'anna.meier',
+          email: 'anna.meier@example.com',
+          firstName: 'Anna',
+          lastName: 'Meier',
+          roles: ['SPEAKER'],
+          createdAt: '2025-01-15T10:00:00Z',
+          updatedAt: '2025-01-15T10:00:00Z',
+          settings: settings({ language: 'fr' }),
+        })
+      );
 
       const user = await getUserProfile(['roles', 'settings']);
 
@@ -127,6 +128,7 @@ describe('userApi', () => {
         username: params.username,
         firstName: 'Alice',
         lastName: 'Brünnimann',
+        profilePictureUrl: null,
       }));
 
       try {

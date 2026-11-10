@@ -28,12 +28,14 @@ describe('Partner Analytics API Client - Story 8.1', () => {
     attendanceSummary: [
       {
         eventCode: 'BAT-42',
+        eventTitle: 'BATbern 42',
         eventDate: '2026-01-15T18:00:00Z',
         totalAttendees: 120,
         companyAttendees: 8,
       },
       {
         eventCode: 'BAT-41',
+        eventTitle: 'BATbern 41',
         eventDate: '2025-11-20T18:00:00Z',
         totalAttendees: 110,
         companyAttendees: 5,

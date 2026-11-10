@@ -10,6 +10,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import EventSettingsTab from './EventSettingsTab';
+import { anEvent } from '@/test/fixtures';
 
 // Mock hooks
 const mockMutateAsync = vi.fn();
@@ -62,25 +63,20 @@ vi.mock('react-router-dom', async () => {
   return { ...actual, useNavigate: () => vi.fn() };
 });
 
-const mockEvent = {
+const mockEvent = anEvent({
   eventCode: 'BAT-2024-01',
   eventNumber: 42,
   title: 'Test Event',
-  subtitle: 'Test Subtitle',
   date: '2024-06-15T18:00:00Z',
   registrationDeadline: '2024-06-10T23:59:59Z',
   venueName: 'Test Venue',
   venueAddress: 'Test Address',
   venueCapacity: 200,
   organizerUsername: 'john.doe',
-  currentWorkflowState: 'DRAFT' as const,
-  workflowHistory: [],
-  registrationCount: 0,
-  attendanceCount: 0,
   currentAttendeeCount: 0,
   createdAt: '2024-01-01T00:00:00Z',
   updatedAt: '2024-01-15T10:30:00Z',
-};
+});
 
 const renderWithProviders = (ui: React.ReactElement) => {
   const queryClient = new QueryClient({

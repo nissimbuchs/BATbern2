@@ -126,10 +126,10 @@ async function hydrateUserFromDb(user: UserContext): Promise<UserContext> {
       hydrated = { ...hydrated, companyId: raw.companyId };
     }
 
-    // Story 12.11: consent gate flag. The backend serializes with non_null inclusion,
-    // so a missing field on a SUCCESSFUL response means "no consent on record" → null
-    // (gate fires). Only a hydration FAILURE leaves it undefined (gate fails open).
-    hydrated = { ...hydrated, termsAcceptedAt: raw.termsAcceptedAt ?? null };
+    // Story 12.11: consent gate flag. A successful /users/me always carries it (users-api
+    // marks it required, 4.9b): null means "no consent on record" (gate fires). Only a
+    // hydration FAILURE leaves it undefined (gate fails open).
+    hydrated = { ...hydrated, termsAcceptedAt: raw.termsAcceptedAt };
 
     // Story 12.1: preferences sourced from the DB (was custom:preferences). Map the
     // canonical backend settings onto the frontend UserContextPreferences contract; `language`
@@ -142,9 +142,9 @@ async function hydrateUserFromDb(user: UserContext): Promise<UserContext> {
           language: normalizeLanguage(p.language, hydrated.preferences?.language ?? 'en'),
           theme: p.theme === 'dark' ? 'dark' : 'light',
           notifications: {
-            email: p.emailNotifications ?? true,
+            email: p.emailNotifications,
             sms: false,
-            push: p.pushNotifications ?? true,
+            push: p.pushNotifications,
           },
           privacy: {
             showProfile: true,

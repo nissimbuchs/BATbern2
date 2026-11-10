@@ -306,6 +306,11 @@ paths:
                 organizerCount: 6
                 skipped: []
                 unknownPlaceholders: []
+                allowedVariables: []
+                alreadySent: null
+                highlightedHtml: null
+                highlightedSubject: null
+                offeredVariables: []
         '400':
           description: Invalid request (template not allowed for the audience, recipient index out of
             range, missing audience field, own text without subject or body or with a line break in
@@ -375,6 +380,7 @@ paths:
                       conversationKey: null
                       spam: false
                       participantStatus: null
+                      attachments: null
                     bodyHtml: <p>Sample text for the API example.</p>
                     recipients:
                       - address: gina.muster@example.com
@@ -581,6 +587,7 @@ paths:
                         conversationKey: null
                         spam: false
                         participantStatus: null
+                        attachments: null
                       - mailKey: BATbern60-99
                         sentAt: "2026-11-04T20:35:01.754355Z"
                         senderUsername: null
@@ -603,6 +610,7 @@ paths:
                         conversationKey: null
                         spam: false
                         participantStatus: null
+                        attachments: null
                     pagination:
                       page: 1
                       limit: 2
@@ -669,6 +677,7 @@ paths:
                       conversationKey: null
                       spam: false
                       participantStatus: null
+                      attachments: null
                     bodyHtml: <p>Sample text for the API example.</p>
                     recipients:
                       - address: gina.muster@example.com
@@ -739,6 +748,7 @@ paths:
                       conversationKey: null
                       spam: false
                       participantStatus: null
+                      attachments: null
                     bodyHtml: <p>Sample text for the API example.</p>
                     recipients:
                       - address: gina.muster@example.com
@@ -946,6 +956,7 @@ paths:
                           conversationKey: conv-5
                           participantStatus: null
                           attachments: []
+                          spam: null
                         bodyHtml: <p>Sample text for the API example.</p>
                         recipients: []
                         progress: null
@@ -1075,6 +1086,7 @@ paths:
                       conversationKey: null
                       spam: false
                       participantStatus: null
+                      attachments: null
                     bodyHtml: <p>Sample text for the API example.</p>
                     recipients:
                       - address: gina.muster@example.com
@@ -1231,6 +1243,20 @@ components:
       - failedCount
       - messageCount
       - test
+      - senderUsername
+      - templateKey
+      - subject
+      - newsletterSendId
+      - newsletterStatus
+      - reference
+      - direction
+      - fromAddress
+      - fromName
+      - eventCode
+      - conversationKey
+      - spam
+      - participantStatus
+      - attachments
       properties:
         mailKey:
           type: string
@@ -1331,6 +1357,9 @@ components:
       type: object
       required:
       - name
+      - contentType
+      - size
+      - kept
       properties:
         name:
           type: string
@@ -1384,6 +1413,11 @@ components:
       - via
       - lastMessageAt
       - messageCount
+      - eventCode
+      - counterpartName
+      - assigneeUsername
+      - mergeRequestId
+      - logoRequestId
       properties:
         conversationKey:
           type: string
@@ -1488,6 +1522,8 @@ components:
       required:
       - message
       - recipients
+      - bodyHtml
+      - progress
       properties:
         message:
           $ref: '#/components/schemas/MailMessageSummary'
@@ -1639,6 +1675,7 @@ components:
       type: object
       required:
       - sentAt
+      - mailKey
       properties:
         sentAt:
           type: string
@@ -1663,6 +1700,7 @@ components:
       required:
       - displayName
       - address
+      - cc
       properties:
         displayName:
           type: string
@@ -1707,6 +1745,14 @@ components:
       - organizerCount
       - skipped
       - unknownPlaceholders
+      - recipient
+      - templateKey
+      - replyTo
+      - highlightedSubject
+      - highlightedHtml
+      - offeredVariables
+      - allowedVariables
+      - alreadySent
       properties:
         subject:
           type: string
@@ -1802,6 +1848,7 @@ components:
       - address
       - kind
       - status
+      - failureReason
       properties:
         address:
           type: string

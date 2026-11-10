@@ -90,7 +90,7 @@ class NotificationApiClient {
         `${NOTIFICATION_API_PATH}/count?${params.toString()}`
       );
 
-      return response.data.count ?? 0;
+      return response.data.count;
     } catch (error) {
       throw this.transformError(error);
     }

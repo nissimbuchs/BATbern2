@@ -140,10 +140,6 @@ description: |
   - Descending: -createdAt
   - Multiple fields: lastName,-createdAt
 
-  **Field Selection**:
-  - Specific fields: ?fields=id,email,firstName,lastName,roles
-  - All fields: omit fields parameter
-
   **Resource Expansion**:
   - ?include=company: Expands company details
   - ?include=roles: Includes full role information
@@ -187,13 +183,6 @@ parameters:
       minimum: 1
       maximum: 100
       default: 20
-  - name: fields
-    in: query
-    description: Comma-separated field names for sparse fieldsets
-    required: false
-    schema:
-      type: string
-      example: 'id,email,firstName,lastName,roles'
   - name: include
     in: query
     description: Comma-separated list of resources to include
@@ -1260,10 +1249,8 @@ other service consumes them and there is no message bus (Story 17.2 part B, 2026
 - Maximum limit: 100 items per page
 - Response includes: `totalItems`, `totalPages`, `hasNext`, `hasPrev`
 
-**Field Selection** (Sparse Fieldsets):
-- Request specific fields: `?fields=id,email,firstName,lastName,roles`
-- Reduces payload size for large result sets
-- Always includes `id` field regardless of selection
+**No field selection**: the list has no `fields` parameter (removed 2026-11-09, no caller used it;
+ADR-013 §3 offers `fields` only when a caller needs it). An unknown query parameter is ignored.
 
 **Resource Expansion**:
 - `?include=company`: Expands company details

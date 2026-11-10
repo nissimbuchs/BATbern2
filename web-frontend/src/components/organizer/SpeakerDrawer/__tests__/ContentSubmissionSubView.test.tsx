@@ -25,6 +25,7 @@ import { speakerContentService } from '@/services/speakerContentService';
 import { searchUsers, updateUserRoles } from '@/services/api/userManagementApi';
 import type { SpeakerPoolEntry } from '@/types/speakerPool.types';
 import type { UserSearchResponse } from '@/types/user.types';
+import { aSpeakerContent, aSpeakerPoolEntry } from '@/test/fixtures';
 
 // ─── Mocks ────────────────────────────────────────────────────────────────────
 
@@ -33,7 +34,9 @@ const TEST_USER: UserSearchResponse = {
   email: 'jane@example.com',
   firstName: 'Jane',
   lastName: 'Doe',
+  companyId: null,
   roles: ['SPEAKER'],
+  profilePictureUrl: null,
 };
 
 vi.mock('@/services/speakerContentService', () => ({
@@ -79,6 +82,7 @@ vi.mock('@/components/organizer/UserManagement/UserCreateEditModal', () => ({
 // ─── Fixtures + render helper ─────────────────────────────────────────────────
 
 const makeSpeaker = (overrides: Partial<SpeakerPoolEntry> = {}): SpeakerPoolEntry => ({
+  ...aSpeakerPoolEntry(),
   id: 'speaker-pool-1',
   eventId: 'event-1',
   speakerName: 'Jane Doe',
@@ -135,10 +139,12 @@ describe('ContentSubmissionSubView — AC10 cases 41 + 44 (post Epic 11 bio/port
     // so the deterministic stub-driven flow stays in control.
     vi.mocked(searchUsers).mockResolvedValue([]);
     vi.mocked(updateUserRoles).mockResolvedValue({} as never);
-    vi.mocked(speakerContentService.submitContent).mockResolvedValue({
-      speakerPoolId: 'speaker-pool-1',
-      status: 'CONTENT_SUBMITTED',
-    });
+    vi.mocked(speakerContentService.submitContent).mockResolvedValue(
+      aSpeakerContent({
+        speakerPoolId: 'speaker-pool-1',
+        status: 'CONTENT_SUBMITTED',
+      })
+    );
   });
 
   afterEach(() => {

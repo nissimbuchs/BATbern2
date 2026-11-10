@@ -131,7 +131,8 @@ class EventManagementClientContractTest {
         assertThat(summary.startTime()).isEqualTo(LocalTime.of(16, 0));
         assertThat(summary.endTime()).isEqualTo(LocalTime.of(19, 0));
         assertThat(summary.eventDate()).isEqualTo(LocalDate.of(2026, 11, 5));
-        assertThat(summary.venue()).isEqualTo("Kursaal Bern");
+        // EMS always has the venue address (venue_address NOT NULL, required since 4.9b)
+        assertThat(summary.venue()).isEqualTo("Kursaal Bern, Kornhausstrasse 3, 3013 Bern");
         server.verify();
     }
 

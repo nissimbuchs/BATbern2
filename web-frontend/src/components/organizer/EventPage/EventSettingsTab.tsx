@@ -119,13 +119,11 @@ export const EventSettingsTab: React.FC<EventSettingsTabProps> = ({ event, event
   };
 
   // Story 7.5 rework: per-event Q&A settings.
-  const [qnaEnabled, setQnaEnabled] = useState<boolean>(event.qnaEnabled ?? true);
+  const [qnaEnabled, setQnaEnabled] = useState<boolean>(event.qnaEnabled);
   const [qnaOpenTrigger, setQnaOpenTrigger] = useState<'EVENT_COMPLETED' | 'SPEAKERS_PUBLISHED'>(
-    event.qnaOpenTrigger ?? 'EVENT_COMPLETED'
+    event.qnaOpenTrigger
   );
-  const [qnaWindowDays, setQnaWindowDays] = useState<string>(
-    (event.qnaWindowDays ?? 14).toString()
-  );
+  const [qnaWindowDays, setQnaWindowDays] = useState<string>(event.qnaWindowDays.toString());
   const [qnaError, setQnaError] = useState<string | null>(null);
   const [qnaSuccess, setQnaSuccess] = useState(false);
 

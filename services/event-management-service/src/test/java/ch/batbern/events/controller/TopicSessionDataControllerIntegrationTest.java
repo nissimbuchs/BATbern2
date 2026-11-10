@@ -68,7 +68,7 @@ public class TopicSessionDataControllerIntegrationTest extends AbstractIntegrati
     void should_return200_with_sessionData_when_organizer() throws Exception {
         pcs.expect(HttpMethod.GET, "/api/v1/partners/topics").respondWith(HttpStatus.OK, """
                 [{"id": "3f1c2a9e-8b4d-4c6e-9a7f-1d2e3f4a5b6c", "title": "AI in Operations",
-                  "suggestedByCompany": "Swisscom", "voteCount": 2, "currentPartnerHasVoted": false,
+                  "description": null, "plannedEvent": null, "suggestedByCompany": "Swisscom", "voteCount": 2, "currentPartnerHasVoted": false,
                   "status": "PROPOSED", "createdAt": "2026-02-01T10:00:00Z", "source": "PARTNER"}]""");
         pcs.expect(HttpMethod.GET, "/api/v1/partners").respondWithExample();
         when(trendingTopicsService.getTrendingTopics()).thenReturn(

@@ -15,7 +15,7 @@ import ArchivePage from '../ArchivePage';
 import { eventApiClient } from '@/services/eventApiClient';
 import { topicService } from '@/services/topicService';
 import type { EventListResponse } from '@/types/event.types';
-import { pastEvent } from '@/test/fixtures';
+import { aSession, aSessionSpeaker, aTopic, pastEvent } from '@/test/fixtures';
 
 // Mock eventApiClient
 vi.mock('@/services/eventApiClient', () => ({
@@ -106,30 +106,30 @@ describe('ArchivePage Component', () => {
   });
 
   const mockTopics = [
-    {
+    aTopic({
       topicCode: 'cloud',
       title: 'Cloud Architecture',
       description: '',
       category: 'technical',
       usageCount: 23,
       active: true,
-    },
-    {
+    }),
+    aTopic({
       topicCode: 'devops',
       title: 'DevOps',
       description: '',
       category: 'technical',
       usageCount: 18,
       active: true,
-    },
-    {
+    }),
+    aTopic({
       topicCode: 'security',
       title: 'Security',
       description: '',
       category: 'technical',
       usageCount: 15,
       active: true,
-    },
+    }),
   ];
 
   const mockEventsPage1: EventListResponse = {
@@ -142,16 +142,23 @@ describe('ArchivePage Component', () => {
         registrationDeadline: '2024-12-15T00:00:00Z',
         venueName: 'Kornhausforum',
         workflowState: 'EVENT_COMPLETED',
-        topic: { code: 'cloud-architecture', name: 'Cloud Architecture' },
+        topic: {
+          code: 'cloud-architecture',
+          name: 'Cloud Architecture',
+          description: null,
+          category: 'technical',
+        },
         themeImageUrl: 'https://cdn.batbern.ch/2024/theme.jpg',
         sessions: [
           {
+            ...aSession(),
             sessionSlug: 's1',
             eventCode: 'BAT2024',
             title: 'Serverless at Scale',
             language: 'de',
             speakers: [
               {
+                ...aSessionSpeaker(),
                 username: 'john.doe',
                 firstName: 'John',
                 lastName: 'Doe',
@@ -162,12 +169,14 @@ describe('ArchivePage Component', () => {
             ],
           },
           {
+            ...aSession(),
             sessionSlug: 's2',
             eventCode: 'BAT2024',
             title: 'Container Orchestration',
             language: 'de',
             speakers: [
               {
+                ...aSessionSpeaker(),
                 username: 'jane.smith',
                 firstName: 'Jane',
                 lastName: 'Smith',
@@ -178,12 +187,14 @@ describe('ArchivePage Component', () => {
             ],
           },
           {
+            ...aSession(),
             sessionSlug: 's3',
             eventCode: 'BAT2024',
             title: 'Microservices Patterns',
             language: 'de',
             speakers: [
               {
+                ...aSessionSpeaker(),
                 username: 'bob.wilson',
                 firstName: 'Bob',
                 lastName: 'Wilson',
@@ -203,15 +214,17 @@ describe('ArchivePage Component', () => {
         registrationDeadline: '2023-11-20T00:00:00Z',
         venueName: 'Bern Congress',
         workflowState: 'ARCHIVED',
-        topic: { code: 'devops', name: 'DevOps' },
+        topic: { code: 'devops', name: 'DevOps', description: null, category: 'technical' },
         sessions: [
           {
+            ...aSession(),
             sessionSlug: 's4',
             eventCode: 'BAT2023',
             title: 'CI/CD Pipelines',
             language: 'de',
             speakers: [
               {
+                ...aSessionSpeaker(),
                 username: 'alice.johnson',
                 firstName: 'Alice',
                 lastName: 'Johnson',
@@ -412,7 +425,7 @@ describe('ArchivePage Component', () => {
             registrationDeadline: '2022-10-10T00:00:00Z',
             venueName: 'Bern Tech Hub',
             workflowState: 'ARCHIVED',
-            topic: { code: 'security', name: 'Security' },
+            topic: { code: 'security', name: 'Security', description: null, category: 'technical' },
             sessions: [],
           }),
         ],

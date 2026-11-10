@@ -23,6 +23,7 @@ import type {
   SendReminderRequest,
   SendReminderResponse,
 } from '@/types/speakerPool.types';
+import { aSpeakerPoolEntry } from '@/test/fixtures';
 
 // Mock the apiClient module
 vi.mock('./api/apiClient', () => ({
@@ -54,6 +55,7 @@ describe('speakerPoolService', () => {
       };
 
       const mockResponse: SpeakerPoolResponse = {
+        ...aSpeakerPoolEntry(),
         id: 'pool-123',
         eventId: 'event-456',
         speakerName: 'Dr. Jane Smith',
@@ -81,6 +83,7 @@ describe('speakerPoolService', () => {
       };
 
       const mockResponse: SpeakerPoolResponse = {
+        ...aSpeakerPoolEntry(),
         id: 'pool-124',
         eventId: 'event-456',
         speakerName: 'John Doe',
@@ -95,8 +98,9 @@ describe('speakerPoolService', () => {
 
       expect(apiClient.post).toHaveBeenCalledWith('/events/BATbern56/speakers/pool', request);
       expect(result.speakerName).toBe('John Doe');
-      expect(result.company).toBeUndefined();
-      expect(result.expertise).toBeUndefined();
+      // EMS sends every property; an unset one is null
+      expect(result.company).toBeNull();
+      expect(result.expertise).toBeNull();
     });
 
     it('should propagate validation errors for empty speaker name', async () => {
@@ -156,6 +160,7 @@ describe('speakerPoolService', () => {
     it('should fetch speaker pool for event', async () => {
       const mockSpeakerPool: SpeakerPoolEntry[] = [
         {
+          ...aSpeakerPoolEntry(),
           id: 'pool-123',
           eventId: 'event-456',
           speakerName: 'Dr. Jane Smith',
@@ -168,6 +173,7 @@ describe('speakerPoolService', () => {
           updatedAt: '2025-12-13T10:00:00Z',
         },
         {
+          ...aSpeakerPoolEntry(),
           id: 'pool-124',
           eventId: 'event-456',
           speakerName: 'Prof. Robert Johnson',
@@ -274,6 +280,7 @@ describe('speakerPoolService', () => {
       };
 
       const mockResponse: SpeakerPoolResponse = {
+        ...aSpeakerPoolEntry(),
         id: 'pool-123',
         eventId: 'event-456',
         speakerName: 'Dr. Jane Smith',
@@ -306,6 +313,7 @@ describe('speakerPoolService', () => {
       };
 
       const mockResponse: SpeakerPoolResponse = {
+        ...aSpeakerPoolEntry(),
         id: 'pool-123',
         eventId: 'event-456',
         speakerName: 'Dr. Jane Smith',
@@ -379,6 +387,7 @@ describe('speakerPoolService', () => {
         status: 'INVITED',
         invitedAt: '2025-12-15T10:00:00Z',
         responseDeadline: '2025-12-29T00:00:00Z',
+        contentDeadline: null,
       };
 
       vi.mocked(apiClient.post).mockResolvedValue({ data: mockResponse });
@@ -484,6 +493,7 @@ describe('speakerPoolService', () => {
       };
 
       const mockResponse: SpeakerPoolResponse = {
+        ...aSpeakerPoolEntry(),
         id: 'pool-125',
         eventId: 'event-456',
         speakerName: 'Test Speaker',

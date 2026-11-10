@@ -24,6 +24,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SpeakerStatusLanes } from '../SpeakerStatusLanes';
 import { DEFAULT_KANBAN_THRESHOLDS } from '../kanbanThresholds';
 import type { SpeakerPoolEntry, SpeakerWorkflowState } from '@/types/speakerPool.types';
+import { aSpeakerPoolEntry } from '@/test/fixtures';
 
 if (!DEFAULT_KANBAN_THRESHOLDS.CONTACTED) {
   throw new Error('kanbanThresholds CONTACTED default missing — test setup invariant violated');
@@ -151,6 +152,7 @@ describe('SpeakerStatusLanes — 4-phase kanban (Story 14.C.2)', () => {
     status: SpeakerWorkflowState,
     overrides: Partial<SpeakerPoolEntry> = {}
   ): SpeakerPoolEntry => ({
+    ...aSpeakerPoolEntry(),
     id: `speaker-${status.toLowerCase()}`,
     eventId: 'event-1',
     speakerName: `${status} Speaker`,
@@ -476,6 +478,7 @@ describe('SpeakerStatusLanes — workflow-safe cross-column drag (Story 14.C.3)'
     status: SpeakerWorkflowState,
     overrides: Partial<SpeakerPoolEntry> = {}
   ): SpeakerPoolEntry => ({
+    ...aSpeakerPoolEntry(),
     id: `speaker-${status.toLowerCase()}`,
     eventId: 'event-1',
     speakerName: `${status} Speaker`,

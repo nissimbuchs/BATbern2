@@ -28,9 +28,8 @@ import {
 import type { Topic, TopicUsageHistory } from '@/types/topic.types';
 import { knownSum } from './usageTotals';
 
-export interface TopicWithHistory extends Topic {
-  usageHistory?: TopicUsageHistory[] | null;
-}
+/** A topic with its usage history: the wire Topic always carries `usageHistory` (null when unknown). */
+export type TopicWithHistory = Topic;
 
 export interface MultiTopicHeatMapProps {
   topics: TopicWithHistory[];

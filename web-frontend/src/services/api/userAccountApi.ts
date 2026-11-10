@@ -70,9 +70,9 @@ const toPreferencesView = (settings: WireSettings): UserPreferencesView => ({
   theme: mapTheme(settings.theme),
   timezone: settings.timezone || 'Europe/Zurich',
   notificationChannels: {
-    email: settings.emailNotifications ?? true,
-    inApp: settings.inAppNotifications ?? true,
-    push: settings.pushNotifications ?? false,
+    email: settings.emailNotifications,
+    inApp: settings.inAppNotifications,
+    push: settings.pushNotifications,
   },
   notificationFrequency: mapNotificationFrequency(settings.notificationFrequency),
   qnaNotificationFrequency: mapQnaNotificationFrequency(settings.qnaNotificationFrequency),
@@ -81,10 +81,10 @@ const toPreferencesView = (settings: WireSettings): UserPreferencesView => ({
 /** The privacy part of the wire settings, as the account page shows it. */
 const toSettingsView = (settings: WireSettings): UserSettingsView => ({
   profileVisibility: mapProfileVisibility(settings.profileVisibility),
-  showEmail: settings.showEmail ?? false,
-  showCompany: settings.showCompany ?? true,
-  showActivity: settings.showActivityHistory ?? true,
-  allowMessaging: settings.allowMessaging ?? true,
+  showEmail: settings.showEmail,
+  showCompany: settings.showCompany,
+  showActivity: settings.showActivityHistory,
+  allowMessaging: settings.allowMessaging,
 });
 
 // Helper functions to map backend enums to frontend enums

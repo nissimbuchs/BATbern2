@@ -102,6 +102,11 @@ function previewFor(req: MailComposeRequest): MailPreviewResponse {
     organizerCount: 2,
     skipped: [],
     unknownPlaceholders: [],
+    highlightedSubject: null,
+    highlightedHtml: null,
+    offeredVariables: [],
+    allowedVariables: [],
+    alreadySent: null,
     ...previewOverride,
   };
 }
@@ -116,9 +121,12 @@ function answerBackend() {
         templateKey: key,
         locale,
         category,
-        isLayout: false,
-        isSystemTemplate: true,
+        subject: null,
         htmlBody: '<p>Template</p>',
+        variables: null,
+        isLayout: false,
+        layoutKey: null,
+        isSystemTemplate: true,
         updatedAt: '2026-05-14T16:00:00Z',
       }))
     );

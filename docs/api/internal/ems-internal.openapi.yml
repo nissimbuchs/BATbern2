@@ -201,6 +201,7 @@ paths:
                     title: BATbern 143 - Data
                     date: '2026-11-05T15:00:00Z'
                     venueName: Kursaal Bern
+                    venueAddress: Kornhausstrasse 3, 3013 Bern
                     eventType: EVENING
                     startTime: '2026-11-05T15:00:00Z'
                     endTime: '2026-11-05T18:00:00Z'
@@ -377,7 +378,7 @@ components:
   schemas:
     EventSchedule:
       type: object
-      required: [eventCode, title, date, startTime, endTime]
+      required: [eventCode, title, date, startTime, endTime, venueName, venueAddress, eventType]
       description: >-
         Hand-written record `InternalEventScheduleController.EventSchedule`. Optional properties are
         `null` when unknown.

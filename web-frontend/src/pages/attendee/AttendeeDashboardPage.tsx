@@ -47,7 +47,7 @@ function EventCard({ event, linkPrefix }: { event: AttendeeEventCard; linkPrefix
             <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground mt-0.5">
               <span className="flex items-center gap-1">
                 <Calendar className="w-3.5 h-3.5" aria-hidden="true" />
-                {formatDate(event.eventDate ?? undefined)}
+                {formatDate(event.eventDate)}
               </span>
               {event.eventLocation && (
                 <span className="flex items-center gap-1">

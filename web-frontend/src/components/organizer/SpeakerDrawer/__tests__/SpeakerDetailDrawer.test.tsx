@@ -25,6 +25,7 @@ import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SpeakerDetailDrawer } from '../SpeakerDetailDrawer';
 import type { SpeakerPoolEntry, SpeakerWorkflowState } from '@/types/speakerPool.types';
+import { aSpeakerPoolEntry } from '@/test/fixtures';
 
 // i18n mock — passthrough that strips namespace, returns deterministic English labels
 // for the keys the drawer + its children actually render. Mirrors the pattern in
@@ -136,6 +137,7 @@ describe('SpeakerDetailDrawer — Story 11.D.4 AC10 cases 31-38', () => {
     status: SpeakerWorkflowState,
     overrides: Partial<SpeakerPoolEntry> = {}
   ): SpeakerPoolEntry => ({
+    ...aSpeakerPoolEntry(),
     id: `speaker-${status.toLowerCase()}`,
     eventId: 'event-1',
     speakerName: `${status} Speaker`,

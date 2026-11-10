@@ -338,14 +338,14 @@ public class RegistrationService {
                     StatusEnum statusEnum = dbStatus != null ? StatusEnum.fromValue(dbStatus) : null;
                     OffsetDateTime registrationDate = registration.getRegistrationDate() != null
                             ? registration.getRegistrationDate().atOffset(ZoneOffset.UTC) : null;
-                    return new MyRegistrationResponse(true)
+                    return new MyRegistrationResponse().registered(true)
                             .registrationCode(registration.getRegistrationCode())
                             .eventCode(eventCode)
                             .status(statusEnum)
                             .registrationDate(registrationDate)
                             .waitlistPosition(registration.getWaitlistPosition()); // AC13 (Story 10.11)
                 })
-                .orElse(new MyRegistrationResponse(false));
+                .orElse(new MyRegistrationResponse().registered(false));
     }
 
     /**

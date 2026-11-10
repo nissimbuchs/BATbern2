@@ -11,6 +11,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { api } from '@/test/msw/api';
 import { PartnerList } from '../PartnerList';
 import { usePartnerStore } from '@/stores/partnerStore';
+import { aPartner } from '@/test/fixtures';
 
 beforeEach(() => {
   usePartnerStore.setState({ searchQuery: 'mueller', page: 1 });
@@ -18,13 +19,20 @@ beforeEach(() => {
     // Matched by the backend through the display name "Müller Bau AG": neither the slug nor
     // the query "mueller" contains the other, so a browser-side filter would drop it.
     data: [
-      {
+      aPartner({
         companyName: 'mullerbau',
-        partnershipLevel: 'GOLD' as const,
+        partnershipLevel: 'GOLD',
         isActive: true,
         partnershipStartDate: '2023-01-15',
-        company: { name: 'mullerbau', displayName: 'Müller Bau AG' },
-      },
+        company: {
+          companyName: 'mullerbau',
+          name: 'mullerbau',
+          displayName: 'Müller Bau AG',
+          logoUrl: null,
+          industry: null,
+          website: null,
+        },
+      }),
     ],
     metadata: {
       page: 1,

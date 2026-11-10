@@ -91,7 +91,7 @@ class PartnerControllerIntegrationTest extends AbstractIntegrationTest {
         cums.expect(HttpMethod.GET, "/api/v1/companies/{name}").times(ExpectedCount.manyTimes())
                 .respondWith(HttpStatus.OK, """
                         {"name": "GoogleZH", "displayName": "Google Zurich", "isVerified": true,
-                         "createdAt": "2025-01-15T10:00:00Z", "updatedAt": "2025-01-15T10:00:00Z"}""");
+                         "createdAt": "2025-01-15T10:00:00Z", "updatedAt": "2025-01-15T10:00:00Z", "createdBy": "lead.organizer"}""");
     }
 
     @AfterEach

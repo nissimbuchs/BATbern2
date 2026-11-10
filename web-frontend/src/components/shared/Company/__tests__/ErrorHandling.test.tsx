@@ -176,6 +176,7 @@ describe('Error Handling & Loading States (AC 13)', () => {
           isVerified: true,
           createdAt: '2025-01-01T00:00:00Z',
           updatedAt: '2025-01-01T00:00:00Z',
+          createdBy: 'lead.organizer',
         },
       ];
 

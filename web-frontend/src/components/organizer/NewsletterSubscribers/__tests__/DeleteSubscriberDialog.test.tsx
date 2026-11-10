@@ -10,6 +10,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { I18nextProvider } from 'react-i18next';
 import i18n from '../../../../i18n/config';
 import DeleteSubscriberDialog from '../DeleteSubscriberDialog';
+import { aSubscriber } from '@/test/fixtures';
 
 const mockMutate = vi.fn();
 
@@ -22,7 +23,7 @@ vi.mock('@/hooks/useNewsletterSubscribers', () => ({
   }),
 }));
 
-const mockSubscriber = {
+const mockSubscriber = aSubscriber({
   id: 'sub-1',
   email: 'delete-me@example.com',
   firstName: 'Charlie',
@@ -30,7 +31,7 @@ const mockSubscriber = {
   source: 'website',
   subscribedAt: '2026-01-15T10:00:00Z',
   unsubscribedAt: null,
-};
+});
 
 const renderWithProviders = (ui: React.ReactElement) => {
   const queryClient = new QueryClient({

@@ -26,6 +26,7 @@ import {
   useRemoveProfilePicture,
 } from './useUserAccount';
 import { useUserProfile as useUserProfileQuery } from '@/hooks/useUserProfile/useUserProfile';
+import { aUser } from '@/test/fixtures';
 
 const settings = (over: Partial<UserSettingsResponse> = {}): UserSettingsResponse => ({
   theme: 'dark',
@@ -48,7 +49,7 @@ const settings = (over: Partial<UserSettingsResponse> = {}): UserSettingsRespons
   ...over,
 });
 
-const user = {
+const user = aUser({
   id: 'matthias.keller',
   email: 'matthias.keller@example.com',
   firstName: 'Matthias',
@@ -58,7 +59,7 @@ const user = {
   createdAt: '2024-01-01T10:00:00Z',
   updatedAt: '2025-01-15T10:00:00Z',
   additionalEmails: [],
-};
+});
 
 let qc: QueryClient;
 const wrapper = ({ children }: { children: React.ReactNode }) =>
@@ -179,7 +180,10 @@ describe('saving settings', () => {
 
 describe('profile and picture', () => {
   it('useUpdateUserProfile PATCHes /users/me and invalidates profile and user lists', async () => {
-    api.on('patchCurrentUser', ({ body }) => ({ ...user, ...body }));
+    api.on('patchCurrentUser', ({ body }) => ({
+      ...user,
+      firstName: body?.firstName ?? user.firstName,
+    }));
     const invalidate = vi.spyOn(qc, 'invalidateQueries');
     const { result } = renderHook(() => useUpdateUserProfile(), { wrapper });
 
@@ -206,6 +210,7 @@ describe('profile and picture', () => {
       s3Key: 'users/matthias.keller/p.png',
       fileExtension: 'png',
       expiresInMinutes: 15,
+      requiredHeaders: { 'Content-Type': 'image/png' },
     }));
     api.on('confirmProfilePictureUpload', () => ({
       profilePictureUrl: 'https://cdn.example.com/p.png',

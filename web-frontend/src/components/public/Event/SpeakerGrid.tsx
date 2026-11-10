@@ -39,15 +39,15 @@ export const SpeakerGrid = ({ speakers }: SpeakerGridProps) => {
               <SpeakerDisplay
                 speaker={{
                   username: speaker.username,
-                  firstName: speaker.firstName ?? '',
-                  lastName: speaker.lastName ?? '',
-                  company: speaker.company ?? undefined,
-                  companyDisplayName: speaker.companyDisplayName ?? undefined,
-                  companyLogoUrl: speaker.companyLogoUrl ?? undefined,
-                  profilePictureUrl: speaker.profilePictureUrl ?? undefined,
-                  bio: speaker.bio ?? undefined,
+                  firstName: speaker.firstName,
+                  lastName: speaker.lastName,
+                  company: speaker.company,
+                  companyDisplayName: speaker.companyDisplayName,
+                  companyLogoUrl: speaker.companyLogoUrl,
+                  profilePictureUrl: speaker.profilePictureUrl,
+                  bio: speaker.bio,
                   speakerRole: (speaker.speakerRole as SpeakerRole) || 'PRIMARY_SPEAKER',
-                  presentationTitle: undefined,
+                  presentationTitle: null,
                   isConfirmed: true,
                 }}
                 size="medium"

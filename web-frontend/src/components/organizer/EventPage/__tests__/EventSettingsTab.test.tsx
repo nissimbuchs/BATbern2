@@ -12,6 +12,7 @@ import { I18nextProvider } from 'react-i18next';
 import i18n from '@/i18n/config';
 import { EventSettingsTab } from '../EventSettingsTab';
 import type { Event } from '@/types/event.types';
+import { anEvent } from '@/test/fixtures';
 
 // Mock event API client
 vi.mock('@/services/eventApiClient', () => ({
@@ -33,6 +34,7 @@ vi.mock('react-router-dom', async () => {
 
 // Mock event data
 const mockEvent: Event = {
+  ...anEvent(),
   eventCode: 'BAT54',
   eventNumber: 54,
   title: 'Spring Conference 2025',
@@ -251,26 +253,6 @@ describe('EventSettingsTab Component (Story 5.6)', () => {
       await waitFor(() => {
         expect(mockNavigate).toHaveBeenCalledWith('/organizer/events');
       });
-    });
-  });
-
-  describe('Edge Cases', () => {
-    it('should_handleMissingCreatedAt_gracefully', () => {
-      // "Event Information" section (which displayed dates) was replaced by
-      // "Event Moderator" in Story 5.7 — component renders regardless of date presence.
-      const eventWithoutDates = { ...mockEvent, createdAt: undefined };
-      renderWithProviders(<EventSettingsTab event={eventWithoutDates} eventCode="BAT54" />);
-
-      expect(screen.getByText(/Event Moderator/i)).toBeInTheDocument();
-    });
-
-    it('should_handleMissingUpdatedAt_gracefully', () => {
-      // "Event Information" section (which displayed dates) was replaced by
-      // "Event Moderator" in Story 5.7 — component renders regardless of date presence.
-      const eventWithoutDates = { ...mockEvent, updatedAt: undefined };
-      renderWithProviders(<EventSettingsTab event={eventWithoutDates} eventCode="BAT54" />);
-
-      expect(screen.getByText(/Event Moderator/i)).toBeInTheDocument();
     });
   });
 });

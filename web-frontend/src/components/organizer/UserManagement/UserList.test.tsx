@@ -12,6 +12,7 @@ import { MemoryRouter } from 'react-router-dom';
 import UserList from './UserList';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { User } from '@/types/user.types';
+import { aUser } from '@/test/fixtures';
 
 // Mock react-router-dom
 const mockNavigate = vi.fn();
@@ -108,6 +109,7 @@ vi.mock('./UserPagination', () => ({
 
 const mockUsers: User[] = [
   {
+    ...aUser(),
     id: 'user-1',
     firstName: 'John',
     lastName: 'Doe',

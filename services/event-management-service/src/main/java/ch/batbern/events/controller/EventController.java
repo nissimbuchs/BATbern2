@@ -110,7 +110,7 @@ import java.util.stream.Collectors;
  * - Rich filtering (?filter={JSON})
  * - Sorting (?sort=-date,+title)
  * - Pagination (?page=1&limit=20)
- * - Field selection (?fields=id,title,date)
+ * (No field selection: the events lists have no {@code fields} parameter, ADR-013 §3.)
  */
 @RestController
 @RequestMapping("/api/v1")

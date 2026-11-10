@@ -832,20 +832,18 @@ public class UserService {
             case FORCE_CHANGE_PASSWORD, RESET_REQUIRED -> {
                 String fresh = passwordGenerator.generate();
                 cognitoService.adminSetTemporaryPassword(user.getEmail(), fresh);
-                yield new InvitationCredentialsResponse(
-                        InvitationCredentialsResponse.ActionEnum.FRESH_TEMP_PASSWORD)
-                        .temporaryPassword(fresh);
+                yield new InvitationCredentialsResponse(fresh,
+                        InvitationCredentialsResponse.ActionEnum.FRESH_TEMP_PASSWORD);
             }
-            case CONFIRMED -> new InvitationCredentialsResponse(
+            case CONFIRMED -> new InvitationCredentialsResponse(null,
                     InvitationCredentialsResponse.ActionEnum.USE_EXISTING_PASSWORD);
             case UNCONFIRMED -> {
                 log.warn("UNCONFIRMED Cognito user for {} — defensively treating as FORCE_CHANGE_PASSWORD",
                         LoggingUtils.maskEmail(user.getEmail()));
                 String fresh = passwordGenerator.generate();
                 cognitoService.adminSetTemporaryPassword(user.getEmail(), fresh);
-                yield new InvitationCredentialsResponse(
-                        InvitationCredentialsResponse.ActionEnum.FRESH_TEMP_PASSWORD)
-                        .temporaryPassword(fresh);
+                yield new InvitationCredentialsResponse(fresh,
+                        InvitationCredentialsResponse.ActionEnum.FRESH_TEMP_PASSWORD);
             }
             case ARCHIVED, COMPROMISED, UNKNOWN_TO_SDK_VERSION -> {
                 String msg = String.format(

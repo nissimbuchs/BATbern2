@@ -87,7 +87,7 @@ class PartnerPerformanceTest extends AbstractIntegrationTest {
         cums.expect(HttpMethod.GET, "/api/v1/companies/{name}").times(ExpectedCount.manyTimes())
                 .respondWith(HttpStatus.OK, """
                         {"name": "PerfTestCo", "displayName": "Performance Test Company", "isVerified": true,
-                         "createdAt": "2025-01-15T10:00:00Z", "updatedAt": "2025-01-15T10:00:00Z"}""");
+                         "createdAt": "2025-01-15T10:00:00Z", "updatedAt": "2025-01-15T10:00:00Z", "createdBy": "lead.organizer"}""");
 
         UserResponse mockUser = new UserResponse();
         mockUser.setId("perf.user");

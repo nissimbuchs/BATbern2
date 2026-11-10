@@ -16,10 +16,12 @@ import { isAxiosError } from 'axios';
 import { api } from '@/test/msw/api';
 import { useSpeakerPool, useAddSpeakerToPool, speakerPoolKeys } from './useSpeakerPool';
 import type { SpeakerPoolEntry } from '@/types/speakerPool.types';
+import { aSpeakerPoolEntry } from '@/test/fixtures';
 
 const EVENT_ID = '7c9e6679-7425-40de-944b-e07fc1f90ae7';
 
 const entry = (overrides: Partial<SpeakerPoolEntry>): SpeakerPoolEntry => ({
+  ...aSpeakerPoolEntry(),
   id: '3fa85f64-5717-4562-b3fc-2c963f66afa6',
   eventId: EVENT_ID,
   speakerName: 'Hông Ân Nguyễn',
@@ -233,7 +235,7 @@ describe('useSpeakerPool hooks', () => {
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(api.calls('addSpeakerToPool')[0].body).toEqual({ speakerName: 'John Doe' });
       expect(result.current.data?.speakerName).toBe('John Doe');
-      expect(result.current.data?.company).toBeUndefined();
+      expect(result.current.data?.company).toBeNull();
     });
 
     it('should refetch the event pool after adding a speaker', async () => {

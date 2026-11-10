@@ -429,7 +429,7 @@ export interface components {
     };
     NewsletterSubscriptionStatusResponse: {
       subscribed: boolean;
-      email?: string | null;
+      email: string | null;
     };
     NewsletterSendRequest: {
       isReminder: boolean;
@@ -528,25 +528,25 @@ export interface components {
       /** Format: uuid */
       id: string;
       email: string;
-      firstName?: string | null;
-      language?: string;
-      source?: string;
-      username?: string | null;
+      firstName: string | null;
+      language: string;
+      source: string;
+      username: string | null;
       /** Format: date-time */
       subscribedAt: string;
       /** Format: date-time */
-      unsubscribedAt?: string | null;
+      unsubscribedAt: string | null;
       /** @description Bounce type: 'hard', 'soft', 'complaint', or null */
-      bounceType?: string | null;
+      bounceType: string | null;
       /** @description Number of bounces recorded */
-      bounceCount?: number | null;
+      bounceCount: number | null;
       /** Format: date-time */
-      lastBouncedAt?: string | null;
+      lastBouncedAt: string | null;
       /**
        * Format: date-time
        * @description Non-null means subscriber is excluded from sends
        */
-      suppressedAt?: string | null;
+      suppressedAt: string | null;
     };
     /** @description Email template with full content and metadata */
     EmailTemplateResponse: {
@@ -569,17 +569,17 @@ export interface components {
         | 'PARTNER'
         | 'MAIL_CENTER';
       /** @description Email subject line (null for layout templates) */
-      subject?: string | null;
+      subject: string | null;
       /** @description HTML body content */
       htmlBody: string;
       /** @description Available template variables (JSONB) */
-      variables?: {
+      variables: {
         [key: string]: unknown;
       } | null;
       /** @description True if this is a layout (shell) template */
       isLayout: boolean;
       /** @description Key of the layout template to use (null for standalone or layout templates) */
-      layoutKey?: string | null;
+      layoutKey: string | null;
       /** @description True if this is a built-in system template (cannot be deleted) */
       isSystemTemplate: boolean;
       /**
@@ -1027,7 +1027,7 @@ export interface operations {
         };
         content: {
           'application/json': {
-            email?: string;
+            email: string;
           };
         };
       };
@@ -1211,8 +1211,8 @@ export interface operations {
         };
         content: {
           'application/json': {
-            data?: components['schemas']['SubscriberResponse'][];
-            pagination?: components['schemas']['PaginationMetadata'];
+            data: components['schemas']['SubscriberResponse'][];
+            pagination: components['schemas']['PaginationMetadata'];
           };
         };
       };

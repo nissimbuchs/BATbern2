@@ -34,6 +34,7 @@ import {
   useResubscribeSubscriber,
   useDeleteSubscriber,
 } from './useNewsletterSubscriberMutations';
+import { aSubscriber } from '@/test/fixtures';
 
 const mockList = vi.mocked(listNewsletterSubscribers);
 const mockUnsubscribe = vi.mocked(unsubscribeNewsletterSubscriber);
@@ -52,7 +53,7 @@ const wrapper =
 
 const mockPaginatedResponse = {
   data: [
-    {
+    aSubscriber({
       id: 'sub-1',
       email: 'alice@example.com',
       firstName: 'Alice',
@@ -60,7 +61,7 @@ const mockPaginatedResponse = {
       source: 'explicit',
       subscribedAt: '2026-01-01T00:00:00Z',
       unsubscribedAt: null,
-    },
+    }),
   ],
   pagination: {
     page: 1,
@@ -72,7 +73,7 @@ const mockPaginatedResponse = {
   },
 };
 
-const mockSubscriberResponse = {
+const mockSubscriberResponse = aSubscriber({
   id: 'sub-1',
   email: 'alice@example.com',
   firstName: 'Alice',
@@ -80,7 +81,7 @@ const mockSubscriberResponse = {
   source: 'explicit',
   subscribedAt: '2026-01-01T00:00:00Z',
   unsubscribedAt: '2026-03-01T00:00:00Z',
-};
+});
 
 describe('useNewsletterSubscriberList', () => {
   beforeEach(() => vi.clearAllMocks());

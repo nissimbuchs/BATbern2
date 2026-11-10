@@ -231,11 +231,9 @@ export const TopicDetailsPanel: React.FC<TopicDetailsPanelProps> = ({
               {new Date(topic.lastUsedDate).toLocaleDateString()}
             </Typography>
           )}
-          {topic.usageCount !== undefined && (
-            <Typography variant="body2">
-              {t('topicBacklog.details.usageCount', 'Usage Count')}: {topic.usageCount}
-            </Typography>
-          )}
+          <Typography variant="body2">
+            {t('topicBacklog.details.usageCount', 'Usage Count')}: {topic.usageCount}
+          </Typography>
         </Box>
 
         {/* Usage History Heat Map (AC2) */}

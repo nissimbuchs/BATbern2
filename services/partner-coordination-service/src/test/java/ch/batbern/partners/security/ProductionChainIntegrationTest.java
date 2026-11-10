@@ -71,7 +71,7 @@ class ProductionChainIntegrationTest extends AbstractIntegrationTest {
         cums.expect(HttpMethod.GET, "/api/v1/companies/{name}").times(ExpectedCount.manyTimes())
                 .respondWith(HttpStatus.OK, """
                         {"name": "ChainTestCo", "displayName": "Chain Test Co", "isVerified": true,
-                         "createdAt": "2025-01-15T10:00:00Z", "updatedAt": "2025-01-15T10:00:00Z"}""");
+                         "createdAt": "2025-01-15T10:00:00Z", "updatedAt": "2025-01-15T10:00:00Z", "createdBy": "lead.organizer"}""");
     }
 
     @AfterEach

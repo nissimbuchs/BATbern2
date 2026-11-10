@@ -19,7 +19,7 @@ import { HttpResponse, delay } from 'msw';
 import { api } from '@/test/msw/api';
 import type { ResponseBody } from '@/test/msw/api';
 import { renderWithAuth, signedInAs } from '@/test/auth';
-import { daysFromNow, futureEvent, type Event } from '@/test/fixtures';
+import { anEventTask, daysFromNow, futureEvent, type Event } from '@/test/fixtures';
 import { useEventStore } from '@/stores/eventStore';
 import { EventManagementDashboard } from '../EventManagementDashboard';
 
@@ -85,6 +85,7 @@ const eventPage = (data: Event[]): EventList => ({
 });
 
 const aTask = (overrides: Partial<Task> = {}): Task => ({
+  ...anEventTask(),
   id: 'b7a1c2d3-0000-4000-8000-000000000001',
   eventId: 'e1a2b3c4-0000-4000-8000-000000000061',
   eventCode: 'BATbern61',
@@ -109,6 +110,11 @@ const aNotification = (overrides: Partial<NotificationRow> = {}): NotificationRo
   subject: 'Lukas Meier assigned you a task',
   body: 'Assigned speaker outreach for BATbern61',
   status: 'UNREAD',
+  sentAt: daysFromNow(-1),
+  readAt: null,
+  failedAt: null,
+  failureReason: null,
+  metadata: null,
   createdAt: daysFromNow(-1),
   updatedAt: daysFromNow(-1),
   ...overrides,

@@ -7,6 +7,7 @@ import { describe, it, expect } from 'vitest';
 import { api } from '@/test/msw/api';
 import { listAllUsers } from './userManagementApi';
 import { companyApiClient } from './companyApi';
+import { aUser } from '@/test/fixtures';
 
 const pagination = (page: number, totalPages: number) => ({
   page,
@@ -18,6 +19,7 @@ const pagination = (page: number, totalPages: number) => ({
 });
 
 const user = (id: string) => ({
+  ...aUser(),
   id,
   email: `${id}@example.com`,
   firstName: 'Anna',
@@ -33,6 +35,7 @@ const company = (name: string) => ({
   isVerified: true,
   createdAt: '2026-05-14T16:00:00Z',
   updatedAt: '2026-05-14T16:00:00Z',
+  createdBy: 'lead.organizer',
 });
 
 describe('listAllUsers', () => {

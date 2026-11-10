@@ -784,30 +784,30 @@ export interface components {
        * Format: uuid
        * @description Speaker pool ID
        */
-      speakerId?: string;
+      speakerId: string;
       /**
        * @description Event code (ADR-003)
        * @example BATbern56
        */
-      eventCode?: string;
-      currentStatus?: components['schemas']['SpeakerWorkflowState'];
-      previousStatus?: components['schemas']['SpeakerWorkflowState'];
+      eventCode: string;
+      currentStatus: components['schemas']['SpeakerWorkflowState'];
+      previousStatus: components['schemas']['SpeakerWorkflowState'];
       /**
        * @description Organizer who made the change
        * @example john.doe
        */
-      changedByUsername?: string;
+      changedByUsername: string;
       /** @description Reason for the change */
-      changeReason?: string | null;
+      changeReason: string | null;
       /**
        * Format: date-time
        * @description When the change occurred
        */
-      changedAt?: string;
+      changedAt: string;
       /** @description Derived (ADR-009 §0.1): true when the speaker has a sessionId assigned. */
-      isSlotAssigned?: boolean;
+      isSlotAssigned: boolean;
       /** @description Derived: currentStatus == QUALITY_REVIEWED AND isSlotAssigned. */
-      isPublishable?: boolean;
+      isPublishable: boolean;
     };
     /** @description Single timeline entry — a workflow state change (speaker_status_history) or a synthesised content-rejection event (session_content_history with reviewer feedback). */
     StatusHistoryItem: {
@@ -815,25 +815,25 @@ export interface components {
        * Format: uuid
        * @description History record ID
        */
-      id?: string;
+      id: string;
       /**
        * @description STATUS_CHANGE = speaker_status_history row; CONTENT_REJECTED = a content-rejection event (not a state transition, surfaced for the History tab).
        * @default STATUS_CHANGE
        * @enum {string}
        */
       kind: 'STATUS_CHANGE' | 'CONTENT_REJECTED';
-      previousStatus?: components['schemas']['SpeakerWorkflowState'] | null;
-      newStatus?: components['schemas']['SpeakerWorkflowState'] | null;
+      previousStatus: components['schemas']['SpeakerWorkflowState'] | null;
+      newStatus: components['schemas']['SpeakerWorkflowState'] | null;
       /** @example john.doe */
-      changedByUsername?: string | null;
-      changeReason?: string | null;
+      changedByUsername: string | null;
+      changeReason: string | null;
       /** Format: date-time */
-      changedAt?: string;
+      changedAt: string;
     };
     /** @description Status dashboard summary (Story 5.4 AC5-6, AC13). */
     StatusSummaryResponse: {
       /** @example BATbern56 */
-      eventCode?: string;
+      eventCode: string;
       /**
        * @description Count of speakers per workflow state (keys are SpeakerWorkflowState names).
        * @example {
@@ -842,23 +842,23 @@ export interface components {
        *       "ACCEPTED": 6
        *     }
        */
-      statusCounts?: {
+      statusCounts: {
         [key: string]: number;
       };
       /** Format: int64 */
-      totalSpeakers?: number;
+      totalSpeakers: number;
       /** Format: int64 */
-      acceptedCount?: number;
+      acceptedCount: number;
       /** Format: int64 */
-      declinedCount?: number;
+      declinedCount: number;
       /** Format: int64 */
-      pendingCount?: number;
+      pendingCount: number;
       /** Format: double */
-      acceptanceRate?: number;
-      minSlotsRequired?: number;
-      maxSlotsAllowed?: number;
-      thresholdMet?: boolean;
-      overflowDetected?: boolean;
+      acceptanceRate: number;
+      minSlotsRequired: number;
+      maxSlotsAllowed: number;
+      thresholdMet: boolean;
+      overflowDetected: boolean;
     };
     /** @description Organizer-on-behalf content submission (Story 5.5 / 11.C.2). Unknown body fields are rejected (400). */
     SubmitContentRequest: {
@@ -888,33 +888,33 @@ export interface components {
     /** @description Response for speaker content get/submit operations (Story 5.5). */
     SpeakerContentResponse: {
       /** Format: uuid */
-      speakerPoolId?: string;
+      speakerPoolId: string;
       /** Format: uuid */
-      eventId?: string;
+      eventId: string;
       /** Format: uuid */
-      sessionId?: string | null;
-      presentationTitle?: string | null;
-      presentationAbstract?: string | null;
+      sessionId: string | null;
+      presentationTitle: string | null;
+      presentationAbstract: string | null;
       /** @example john.doe */
-      username?: string | null;
+      username: string | null;
       /** @example John Doe */
-      speakerName?: string;
-      company?: string | null;
-      status?: components['schemas']['SpeakerWorkflowState'];
+      speakerName: string;
+      company: string | null;
+      status: components['schemas']['SpeakerWorkflowState'];
       /** @description False if the session was deleted (AC34). */
-      hasContent?: boolean;
+      hasContent: boolean;
       /** @description Warning message if issues detected (AC34). */
-      warning?: string | null;
+      warning: string | null;
       /** Format: date-time */
-      submittedAt?: string | null;
-      hasMaterial?: boolean | null;
+      submittedAt: string | null;
+      hasMaterial: boolean | null;
       /**
        * @description Material download URL (CloudFront CDN).
        * @example https://cdn.batbern.ch/materials/presentation.pdf
        */
-      materialUrl?: string | null;
+      materialUrl: string | null;
       /** @example zero-trust-presentation.pdf */
-      materialFileName?: string | null;
+      materialFileName: string | null;
     };
     /**
      * @description Quality-review action: APPROVE → QUALITY_REVIEWED; REJECT → requires feedback.
@@ -953,23 +953,23 @@ export interface components {
        * @description Company identifier/slug of the speaker (from User.companyId). Stable key — NOT for display.
        * @example TechCorpAG
        */
-      company?: string | null;
+      company: string | null;
       /**
        * @description Human-readable company name (companies.display_name, falling back to
        *     companies.name, then the slug). Prefer this over `company` for display.
        * @example Tech Corp AG
        */
-      companyDisplayName?: string | null;
+      companyDisplayName: string | null;
       /**
        * @description Areas of expertise
        * @example Cloud Architecture, Kubernetes, DevOps
        */
-      expertise?: string | null;
+      expertise: string | null;
       /**
        * @description Username of organizer assigned for outreach
        * @example alice.mueller
        */
-      assignedOrganizerId?: string | null;
+      assignedOrganizerId: string | null;
       /**
        * @description Current status of the speaker in the pool workflow — the 8 ADR-009 §0.1 states, serialized as the UPPER_CASE SpeakerWorkflowState enum name (legacy SLOT_ASSIGNED/CONFIRMED/WITHDREW/OVERFLOW were removed per ADR-009 §0.7; slot assignment is now the derived isSlotAssigned flag).
        *     Story 5.2 - AC13: Initial status = 'IDENTIFIED'
@@ -989,7 +989,7 @@ export interface components {
        * @description Free-text notes about the speaker
        * @example Met at KubeCon 2024. Very enthusiastic about BATbern.
        */
-      notes?: string | null;
+      notes: string | null;
       /**
        * @description Story 7.2 — provenance of the pool row. `organizer_added` for organizer-sourced
        *     candidates (the default), `self_nomination` for attendee "I Could Speak on That"
@@ -997,22 +997,22 @@ export interface components {
        * @example self_nomination
        * @enum {string}
        */
-      source?: 'organizer_added' | 'self_nomination';
+      source: 'organizer_added' | 'self_nomination';
       /**
        * @description Story 7.2 — username of the self-nominating attendee (null for organizer-added rows).
        * @example jane.attendee
        */
-      proposedByUsername?: string | null;
+      proposedByUsername: string | null;
       /**
        * @description Story 7.2 — the talk title the attendee proposed (null for organizer-added rows).
        * @example Event-driven architecture in practice
        */
-      proposedSessionTitle?: string | null;
+      proposedSessionTitle: string | null;
       /**
        * @description Story 7.2 — the talk abstract the attendee proposed, stored raw (null for organizer-added rows).
        * @example A field report on migrating a monolith to an event-driven core.
        */
-      proposedAbstract?: string | null;
+      proposedAbstract: string | null;
       /**
        * Format: date-time
        * @description Timestamp when speaker was added to pool
@@ -1030,103 +1030,103 @@ export interface components {
        * @description Session UUID — set once a session is assigned to the speaker (Story 5.5).
        * @example 456e4567-e89b-12d3-a456-426614174222
        */
-      sessionId?: string | null;
+      sessionId: string | null;
       /**
        * @description Addressable session slug, surfaced alongside sessionId so the organizer drawer's content tab can PATCH /events/{code}/sessions/{slug} directly (2026-05-20).
        * @example event-driven-architecture
        */
-      sessionSlug?: string | null;
+      sessionSlug: string | null;
       /**
        * @description Canonical primary-speaker username, resolved from session_users → CUMS at read time (Story 11.E.9). Null for pre-READY pool rows (no User yet).
        * @example jane.smith
        */
-      username?: string | null;
+      username: string | null;
       /**
        * @description Primary-speaker email, resolved live from CUMS (Story 6.1c / 11.E.9). Null for pre-READY rows or when CUMS is degraded.
        * @example jane.smith@example.com
        */
-      email?: string | null;
+      email: string | null;
       /**
        * Format: date-time
        * @description Timestamp the invitation was sent (Story 6.1b).
        * @example 2025-12-14 09:00:00+00:00
        */
-      invitedAt?: string | null;
+      invitedAt: string | null;
       /**
        * Format: date
        * @description Date by which the speaker must respond to the invitation (Story 6.1b).
        * @example 2025-12-21
        */
-      responseDeadline?: string | null;
+      responseDeadline: string | null;
       /**
        * Format: date
        * @description Date by which the speaker must submit content (Story 6.1b).
        * @example 2026-01-15
        */
-      contentDeadline?: string | null;
+      contentDeadline: string | null;
       /**
        * Format: date-time
        * @description Timestamp the speaker accepted the invitation (Story 6.2a).
        * @example 2025-12-16 11:30:00+00:00
        */
-      acceptedAt?: string | null;
+      acceptedAt: string | null;
       /**
        * Format: date-time
        * @description Timestamp the speaker declined (Story 6.2a).
        * @example 2025-12-16 11:30:00+00:00
        */
-      declinedAt?: string | null;
+      declinedAt: string | null;
       /**
        * @description Free-text reason given when the speaker declined (Story 6.2a).
        * @example Scheduling conflict with another conference.
        */
-      declineReason?: string | null;
+      declineReason: string | null;
       /**
        * @description Speaker-stated time-slot preference (Story 6.2a).
        * @example Morning
        */
-      preferredTimeSlot?: string | null;
+      preferredTimeSlot: string | null;
       /**
        * @description Speaker-stated travel requirements (Story 6.2a).
        * @example Needs hotel booking for the night before.
        */
-      travelRequirements?: string | null;
+      travelRequirements: string | null;
       /**
        * @description Speaker-stated technical/AV requirements (Story 6.2a).
        * @example HDMI adapter for MacBook; clicker.
        */
-      technicalRequirements?: string | null;
+      technicalRequirements: string | null;
       /**
        * @description Initial working title captured at response time (Story 6.2a). sessions.title is canonical post-content; this stays null after Story 11.E.8.
        * @example Scaling event-driven systems
        */
-      initialPresentationTitle?: string | null;
+      initialPresentationTitle: string | null;
       /**
        * @description Free-text comments accompanying the speaker''s preferences (Story 6.2a).
        * @example Happy to do a workshop instead of a talk if useful.
        */
-      preferenceComments?: string | null;
+      preferenceComments: string | null;
       /**
        * Format: date-time
        * @description Timestamp of the latest content submission, derived from session_content_history at read time (Story 6.3 / 11.E.8).
        * @example 2026-01-10 14:00:00+00:00
        */
-      contentSubmittedAt?: string | null;
+      contentSubmittedAt: string | null;
       /**
        * @description Current presentation title (mirrors sessions.title, the canonical source per Story 11.E.8 §2.9).
        * @example Event-driven architecture in practice
        */
-      submittedTitle?: string | null;
+      submittedTitle: string | null;
       /**
        * @description Current presentation abstract (mirrors sessions.description, canonical per Story 11.E.8 §2.9).
        * @example A field report on migrating a monolith to an event-driven core.
        */
-      submittedAbstract?: string | null;
+      submittedAbstract: string | null;
       /**
        * @description Derived flag (ADR-009 §0.1, computed at read time — NOT persisted): true when the speaker's session has a start_time set.
        * @example true
        */
-      isSlotAssigned?: boolean | null;
+      isSlotAssigned: boolean | null;
     };
     /**
      * @description Request to record a speaker outreach attempt.
@@ -1190,7 +1190,7 @@ export interface components {
        *     She's interested but needs to check her calendar.
        *     Follow up next Tuesday.
        */
-      notes?: string | null;
+      notes: string | null;
       /**
        * @description Username of the organizer who made the contact
        * @example alice.mueller
@@ -1262,7 +1262,7 @@ export interface components {
        * @description Speaker's username
        * @example jane.smith
        */
-      username?: string | null;
+      username: string | null;
       /**
        * Format: idn-email
        * @description Speaker's email address
@@ -1297,7 +1297,7 @@ export interface components {
        * @description True if a new User account was created
        * @example true
        */
-      userCreated?: boolean;
+      userCreated: boolean;
       /**
        * Format: date-time
        * @description When the SpeakerPool entry was created
@@ -1354,13 +1354,13 @@ export interface components {
        * @description Speaker's username
        * @example jane.smith
        */
-      username?: string | null;
+      username: string | null;
       /**
        * Format: idn-email
        * @description Speaker's email address
        * @example jane.smith@example.com
        */
-      email?: string;
+      email: string;
       /**
        * @description Updated status — always INVITED after sending (UPPER_CASE SpeakerWorkflowState enum name).
        * @example INVITED
@@ -1384,37 +1384,37 @@ export interface components {
        * @description Deadline for content submission
        * @example 2026-03-10
        */
-      contentDeadline?: string | null;
+      contentDeadline: string | null;
     };
     /** @description Speaker portal dashboard summary across all of the speaker's events (Story 6.4) */
     SpeakerDashboardDto: {
-      speakerName?: string;
-      profilePictureUrl?: string | null;
+      speakerName: string;
+      profilePictureUrl: string | null;
       /** @description Profile completeness percentage (0–100) */
-      profileCompleteness?: number;
-      upcomingEvents?: components['schemas']['DashboardUpcomingEventDto'][];
-      pastEvents?: components['schemas']['DashboardPastEventDto'][];
+      profileCompleteness: number;
+      upcomingEvents: components['schemas']['DashboardUpcomingEventDto'][];
+      pastEvents: components['schemas']['DashboardPastEventDto'][];
     };
     /** @description An upcoming event the speaker is involved in */
     DashboardUpcomingEventDto: {
-      eventCode?: string;
-      eventTitle?: string;
-      eventDate?: string;
-      eventLocation?: string;
-      sessionTitle?: string;
-      workflowState?: string;
-      workflowStateLabel?: string;
-      hasTitle?: boolean;
-      hasAbstract?: boolean;
-      hasMaterial?: boolean;
-      materialFileName?: string | null;
-      responseDeadline?: string | null;
-      contentDeadline?: string | null;
-      reviewerFeedback?: string | null;
-      organizerName?: string | null;
-      organizerEmail?: string | null;
-      respondUrl?: string | null;
-      contentUrl?: string | null;
+      eventCode: string;
+      eventTitle: string;
+      eventDate: string;
+      eventLocation: string;
+      sessionTitle: string;
+      workflowState: string;
+      workflowStateLabel: string;
+      hasTitle: boolean;
+      hasAbstract: boolean;
+      hasMaterial: boolean;
+      materialFileName: string | null;
+      responseDeadline: string | null;
+      contentDeadline: string | null;
+      reviewerFeedback: string | null;
+      organizerName: string | null;
+      organizerEmail: string | null;
+      respondUrl: string | null;
+      contentUrl: string | null;
     };
     /** @description A past event the speaker presented at */
     DashboardPastEventDto: {
@@ -1454,16 +1454,16 @@ export interface components {
     };
     /** @description Outcome of processing a speaker's invitation response (Story 6.2a) */
     SpeakerResponseResult: {
-      success?: boolean;
-      speakerName?: string;
-      eventName?: string;
+      success: boolean;
+      speakerName: string;
+      eventName: string;
       /** @description Next steps for the speaker after responding */
-      nextSteps?: string[];
+      nextSteps: string[];
       /**
        * Format: date
        * @description Content submission deadline (if accepted)
        */
-      contentDeadline?: string | null;
+      contentDeadline: string | null;
     };
     /** @description The speaker portal's content-submission state for one event (Story 6.3) */
     SpeakerContentInfo: {
@@ -1555,8 +1555,8 @@ export interface components {
       remindersDisabled: boolean;
     };
     RemindersDisabledResponse: {
-      speakerPoolId?: string;
-      remindersDisabled?: boolean;
+      speakerPoolId: string;
+      remindersDisabled: boolean;
     };
     /**
      * @description Standard error envelope returned on every 4xx/5xx response across all services.

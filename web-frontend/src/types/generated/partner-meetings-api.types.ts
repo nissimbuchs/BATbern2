@@ -211,31 +211,31 @@ export interface components {
     /** @description RSVP list + summary for a partner meeting — Story 10.27 (AC7) */
     MeetingRsvpListResponse: {
       /** Format: uuid */
-      meetingId?: string;
+      meetingId: string;
       /**
        * Format: date-time
        * @description When the calendar invite was sent, null if not yet sent
        */
-      inviteSentAt?: string | null;
-      rsvps?: components['schemas']['RsvpDTO'][];
-      summary?: components['schemas']['RsvpSummary'];
+      inviteSentAt: string | null;
+      rsvps: components['schemas']['RsvpDTO'][];
+      summary: components['schemas']['RsvpSummary'];
     };
     RsvpDTO: {
       /** @description Email of the partner contact who responded */
-      attendeeEmail?: string;
+      attendeeEmail: string;
       /**
        * @description iCal PARTSTAT mapped to an RSVP status
        * @enum {string}
        */
-      status?: 'ACCEPTED' | 'DECLINED' | 'TENTATIVE';
+      status: 'ACCEPTED' | 'DECLINED' | 'TENTATIVE';
       /** Format: date-time */
-      respondedAt?: string;
+      respondedAt: string;
     };
     /** @description RSVP counts by status */
     RsvpSummary: {
-      accepted?: number;
-      declined?: number;
-      tentative?: number;
+      accepted: number;
+      declined: number;
+      tentative: number;
     };
     /**
      * @description Standard error envelope returned on every 4xx/5xx response across all services.

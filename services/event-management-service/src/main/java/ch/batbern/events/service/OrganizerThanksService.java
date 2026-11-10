@@ -101,7 +101,7 @@ public class OrganizerThanksService {
 
         long count = thanksRepository.countByEventId(event.getId());
         if (!includeNotes) {
-            return new ThanksCountResponse(count);
+            return new ThanksCountResponse().count(count);
         }
 
         List<OrganizerThanks> rows = thanksRepository.findByEventIdOrderByCreatedAtDesc(event.getId());
@@ -121,7 +121,7 @@ public class OrganizerThanksService {
                     return noteResponse(t, a, showCompany);
                 })
                 .toList();
-        return new ThanksCountResponse(count).notes(notes);
+        return new ThanksCountResponse().count(count).notes(notes);
     }
 
     /** Build the generated ThanksNoteResponse (Instant → OffsetDateTime at the wire boundary). */

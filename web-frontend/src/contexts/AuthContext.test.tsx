@@ -329,7 +329,7 @@ describe('AuthContext — Multi-Role Support (Story 9.5)', () => {
     test('should pick up termsAcceptedAt from /users/me on refreshUser()', async () => {
       mockMultiRoleUser(['attendee']);
       // Initial hydration: consent confirmed absent → null (gate armed).
-      usersMeReplies({ roles: [], companyId: undefined });
+      usersMeReplies({ roles: [], companyId: null, termsAcceptedAt: null });
 
       const { result } = renderHook(() => useAuth(), { wrapper });
       await waitFor(() => expect(result.current.isAuthenticated).toBe(true));
@@ -347,7 +347,7 @@ describe('AuthContext — Multi-Role Support (Story 9.5)', () => {
 
     test('regression guard (review patch 2026-06-04): overrides survive a silently-failed hydration — the gate must lift after a successful consent PUT even when the refresh GET fails', async () => {
       mockMultiRoleUser(['attendee']);
-      usersMeReplies({ roles: [], companyId: undefined });
+      usersMeReplies({ roles: [], companyId: null, termsAcceptedAt: null });
 
       const { result } = renderHook(() => useAuth(), { wrapper });
       await waitFor(() => expect(result.current.isAuthenticated).toBe(true));

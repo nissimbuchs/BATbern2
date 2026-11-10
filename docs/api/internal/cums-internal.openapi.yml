@@ -64,6 +64,11 @@ paths:
                     createdAt: '2025-01-15T10:00:00Z'
                     updatedAt: '2025-01-15T10:00:00Z'
                     additionalEmails: []
+                    company: null
+                    lastLoginAt: null
+                    profilePictureUrl: null
+                    settings: null
+                    termsAcceptedAt: null
                 withSettings:
                   value:
                     id: anna.meier
@@ -93,6 +98,13 @@ paths:
                       allowCalendarSync: false
                       timezone: Europe/Zurich
                       twoFactorEnabled: false
+                    bio: null
+                    company: null
+                    companyId: null
+                    hasCognitoAccount: true
+                    lastLoginAt: null
+                    profilePictureUrl: null
+                    termsAcceptedAt: null
         '404':
           description: No user with this username
           content:
@@ -169,6 +181,13 @@ paths:
                         createdAt: '2025-01-15T10:00:00Z'
                         updatedAt: '2025-01-15T10:00:00Z'
                         additionalEmails: []
+                        bio: null
+                        company: null
+                        hasCognitoAccount: true
+                        lastLoginAt: null
+                        profilePictureUrl: null
+                        settings: null
+                        termsAcceptedAt: null
                     pagination:
                       page: 1
                       limit: 100
@@ -287,6 +306,14 @@ paths:
                       createdAt: '2025-01-15T10:00:00Z'
                       updatedAt: '2025-01-15T10:00:00Z'
                       additionalEmails: []
+                      bio: null
+                      company: null
+                      hasCognitoAccount: true
+                      lastLoginAt: null
+                      profilePictureUrl: null
+                      settings: null
+                      termsAcceptedAt: null
+                    cognitoUserId: null
                 existing:
                   value:
                     username: anna.meier
@@ -302,6 +329,15 @@ paths:
                       createdAt: '2025-01-15T10:00:00Z'
                       updatedAt: '2025-01-15T10:00:00Z'
                       additionalEmails: []
+                      bio: null
+                      company: null
+                      companyId: null
+                      hasCognitoAccount: true
+                      lastLoginAt: null
+                      profilePictureUrl: null
+                      settings: null
+                      termsAcceptedAt: null
+                    cognitoUserId: null
         '400':
           description: Invalid request body
           content:

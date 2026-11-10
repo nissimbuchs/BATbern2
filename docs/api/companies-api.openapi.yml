@@ -328,6 +328,7 @@ paths:
                         isVerified: true
                         createdAt: 2025-01-15T10:00:00Z
                         updatedAt: 2025-01-15T10:00:00Z
+                        createdBy: "john.doe"
                     pagination:
                       page: 1
                       limit: 20
@@ -349,6 +350,7 @@ paths:
                           url: https://cdn.batbern.ch/logos/swiss-it-solutions-ag/logo.png
                           s3Key: logos/swiss-it-solutions-ag/logo.png
                           fileId: file-123
+                        createdBy: "john.doe"
                     pagination:
                       page: 1
                       limit: 20
@@ -473,6 +475,7 @@ paths:
                     isVerified: true
                     createdAt: 2025-01-15T10:00:00Z
                     updatedAt: 2025-01-15T10:00:00Z
+                    createdBy: "john.doe"
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
@@ -808,6 +811,7 @@ paths:
                     isVerified: false
                     createdAt: 2025-01-15T10:00:00Z
                     updatedAt: 2025-01-15T10:00:00Z
+                    createdBy: "john.doe"
         '400':
           $ref: '#/components/responses/BadRequest'
         '500':
@@ -845,6 +849,12 @@ components:
     LogoPresignedUploadUrl:
       type: object
       description: Presigned S3 upload URL + metadata for a logo upload
+      required:
+        - uploadUrl
+        - fileId
+        - fileExtension
+        - expiresInMinutes
+        - requiredHeaders
       properties:
         uploadUrl:
           type: string
@@ -884,6 +894,12 @@ components:
     LogoCleanupStatistics:
       type: object
       description: Counts of logo uploads by state (admin monitoring)
+      required:
+        - pendingCount
+        - confirmedCount
+        - associatedCount
+        - expiredPendingCount
+        - expiredConfirmedCount
       properties:
         pendingCount:
           type: integer
@@ -928,6 +944,7 @@ components:
         - isVerified
         - createdAt
         - updatedAt
+        - createdBy
       properties:
         name:
           type: string

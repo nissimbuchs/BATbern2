@@ -315,8 +315,8 @@ class SpeakerInvitationControllerIntegrationTest extends AbstractIntegrationTest
         // Story 11.E.2 review patch (P8 / B10): stub the new sibling endpoint that the
         // INVITED hook now calls. Without this stub the mock would return null and the
         // email-rendering path would silently no-op the temp-password block.
-        InvitationCredentialsResponse credentialsResponse = new InvitationCredentialsResponse(
-                InvitationCredentialsResponse.ActionEnum.FRESH_TEMP_PASSWORD)
+        InvitationCredentialsResponse credentialsResponse = new InvitationCredentialsResponse()
+                .action(InvitationCredentialsResponse.ActionEnum.FRESH_TEMP_PASSWORD)
                 .temporaryPassword("TestTemp123!abcde");
         when(userApiClient.issueInvitationCredentials(testUsername))
                 .thenReturn(credentialsResponse);

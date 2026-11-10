@@ -8,6 +8,7 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SessionCards } from './SessionCards';
 import type { SessionUI, SessionMaterial } from '@/types/event.types';
+import { aSession, aSessionSpeaker } from '@/test/fixtures';
 
 // Mock API clients
 vi.mock('@/services/companyApiClient', () => ({
@@ -45,6 +46,7 @@ describe('SessionCards', () => {
 
   const mockSessions: SessionUI[] = [
     {
+      ...aSession(),
       sessionSlug: 'keynote-session',
       eventCode: 'BATbern142',
       title: 'Opening Keynote',
@@ -57,6 +59,7 @@ describe('SessionCards', () => {
       language: 'de',
       speakers: [
         {
+          ...aSessionSpeaker(),
           username: 'john.doe',
           firstName: 'John',
           lastName: 'Doe',
@@ -66,6 +69,7 @@ describe('SessionCards', () => {
       ],
     },
     {
+      ...aSession(),
       sessionSlug: 'workshop-sustainable',
       eventCode: 'BATbern142',
       title: 'Sustainable Materials Workshop',
@@ -78,6 +82,7 @@ describe('SessionCards', () => {
       language: 'de',
       speakers: [
         {
+          ...aSessionSpeaker(),
           username: 'jane.smith',
           firstName: 'Jane',
           lastName: 'Smith',
@@ -223,6 +228,7 @@ describe('SessionCards', () => {
     const sessionsWithStructural: SessionUI[] = [
       ...mockSessions,
       {
+        ...aSession(),
         sessionSlug: 'lunch-break',
         eventCode: 'BATbern142',
         title: 'Lunch Break',
@@ -230,6 +236,7 @@ describe('SessionCards', () => {
         language: 'de',
       },
       {
+        ...aSession(),
         sessionSlug: 'morning-break',
         eventCode: 'BATbern142',
         title: 'Coffee Break',
@@ -237,6 +244,7 @@ describe('SessionCards', () => {
         language: 'de',
       },
       {
+        ...aSession(),
         sessionSlug: 'moderation-intro',
         eventCode: 'BATbern142',
         title: 'Opening Moderation',
@@ -260,6 +268,7 @@ describe('SessionCards', () => {
   it('should_returnNull_when_allSessionsAreStructural', () => {
     const structuralOnly: SessionUI[] = [
       {
+        ...aSession(),
         sessionSlug: 'lunch',
         eventCode: 'BATbern142',
         title: 'Lunch',
@@ -267,6 +276,7 @@ describe('SessionCards', () => {
         language: 'de',
       },
       {
+        ...aSession(),
         sessionSlug: 'break',
         eventCode: 'BATbern142',
         title: 'Break',

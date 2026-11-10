@@ -364,6 +364,8 @@ paths:
             application/json:
               schema:
                 type: object
+                required:
+                  - email
                 properties:
                   email:
                     type: string
@@ -574,6 +576,9 @@ paths:
             application/json:
               schema:
                 type: object
+                required:
+                  - data
+                  - pagination
                 properties:
                   data:
                     type: array
@@ -597,6 +602,7 @@ paths:
                         bounceCount: 0
                         lastBouncedAt: null
                         suppressedAt: null
+                        username: null
                       - id: f619e766-ed75-477d-a0a9-4d222ed20ce8
                         email: jonas.muster@example.com
                         firstName: Jonas
@@ -608,6 +614,7 @@ paths:
                         bounceCount: 0
                         lastBouncedAt: null
                         suppressedAt: null
+                        username: null
                     pagination:
                       page: 1
                       limit: 2
@@ -654,6 +661,7 @@ paths:
                     bounceCount: 0
                     lastBouncedAt: null
                     suppressedAt: null
+                    username: null
         '404':
           description: Subscriber not found
           content:
@@ -705,6 +713,7 @@ paths:
                     bounceCount: 0
                     lastBouncedAt: null
                     suppressedAt: null
+                    username: null
         '404':
           description: Subscriber not found
           content:
@@ -756,6 +765,7 @@ paths:
                     bounceCount: 0
                     lastBouncedAt: null
                     suppressedAt: null
+                    username: null
         '404':
           description: Subscriber not found
           content:
@@ -1149,6 +1159,7 @@ components:
       type: object
       required:
       - subscribed
+      - email
       properties:
         subscribed:
           type: boolean
@@ -1354,6 +1365,15 @@ components:
       - id
       - email
       - subscribedAt
+      - firstName
+      - language
+      - source
+      - username
+      - unsubscribedAt
+      - bounceType
+      - bounceCount
+      - lastBouncedAt
+      - suppressedAt
       properties:
         id:
           type: string
@@ -1405,6 +1425,9 @@ components:
       - isLayout
       - isSystemTemplate
       - updatedAt
+      - subject
+      - variables
+      - layoutKey
       properties:
         templateKey:
           type: string

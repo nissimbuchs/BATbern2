@@ -12,6 +12,7 @@ import { I18nextProvider } from 'react-i18next';
 import i18n from '@/i18n/config';
 import { EventPublishingTab } from '../EventPublishingTab';
 import type { Event, PublishingStatusResponse } from '@/types/event.types';
+import { anEvent } from '@/test/fixtures';
 
 // Mock child components
 vi.mock('@/components/Publishing/ValidationDashboard/ValidationDashboard', () => ({
@@ -74,6 +75,7 @@ vi.mock('@/hooks/useSlotAssignment/useSlotAssignment', () => ({
 
 // Mock event data
 const mockEvent: Event = {
+  ...anEvent(),
   eventCode: 'BAT2025-FULL-DAY',
   eventNumber: 2025,
   title: 'BATbern 2025 Full Day Conference',

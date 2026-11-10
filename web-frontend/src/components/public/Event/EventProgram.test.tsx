@@ -8,6 +8,7 @@ import { render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { EventProgram } from './EventProgram';
 import type { SessionUI } from '@/types/event.types';
+import { aSession, aSessionSpeaker } from '@/test/fixtures';
 
 // Mock API clients
 vi.mock('@/services/companyApiClient', () => ({
@@ -38,6 +39,7 @@ describe('EventProgram', () => {
 
   const mockSessions: SessionUI[] = [
     {
+      ...aSession(),
       sessionSlug: 'keynote-morning',
       eventCode: 'BATbern142',
       title: 'Opening Keynote',
@@ -50,6 +52,7 @@ describe('EventProgram', () => {
       language: 'de',
       speakers: [
         {
+          ...aSessionSpeaker(),
           username: 'john.doe',
           firstName: 'John',
           lastName: 'Doe',
@@ -59,6 +62,7 @@ describe('EventProgram', () => {
       ],
     },
     {
+      ...aSession(),
       sessionSlug: 'workshop-morning',
       eventCode: 'BATbern142',
       title: 'Morning Workshop',
@@ -71,6 +75,7 @@ describe('EventProgram', () => {
       language: 'de',
       speakers: [
         {
+          ...aSessionSpeaker(),
           username: 'jane.smith',
           firstName: 'Jane',
           lastName: 'Smith',
@@ -80,6 +85,7 @@ describe('EventProgram', () => {
       ],
     },
     {
+      ...aSession(),
       sessionSlug: 'lunch-break',
       eventCode: 'BATbern142',
       title: 'Lunch Break',
@@ -93,6 +99,7 @@ describe('EventProgram', () => {
       speakers: [],
     },
     {
+      ...aSession(),
       // Non-structural session with no speakers — used to validate "Speaker TBA" rendering.
       // lunch/break/moderation render as compact icon strips (no speaker section shown).
       sessionSlug: 'talk-no-speaker',
@@ -219,6 +226,7 @@ describe('EventProgram', () => {
   describe('Session Materials Display (Story 5.9 - Task 8a)', () => {
     const mockSessionsWithMaterials: SessionUI[] = [
       {
+        ...aSession(),
         sessionSlug: 'keynote-morning',
         eventCode: 'BATbern142',
         title: 'Opening Keynote',
@@ -231,6 +239,7 @@ describe('EventProgram', () => {
         language: 'de',
         speakers: [
           {
+            ...aSessionSpeaker(),
             username: 'john.doe',
             firstName: 'John',
             lastName: 'Doe',
@@ -360,6 +369,7 @@ describe('EventProgram', () => {
     it('should_notDisplayMaterials_when_sessionHasNoMaterials', () => {
       const sessionsWithoutMaterials: SessionUI[] = [
         {
+          ...aSession(),
           sessionSlug: 'workshop-morning',
           eventCode: 'BATbern142',
           title: 'Morning Workshop',

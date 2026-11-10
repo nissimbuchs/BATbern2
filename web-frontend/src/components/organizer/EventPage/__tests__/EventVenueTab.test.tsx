@@ -14,6 +14,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import i18n from '@/i18n/config';
 import { EventVenueTab } from '../EventVenueTab';
 import type { Event } from '@/types/event.types';
+import { anEvent } from '@/test/fixtures';
 
 // Mock the composer — its real behaviour is covered by its own tests.
 vi.mock('../VenueCoordinationComposer', () => ({
@@ -23,6 +24,7 @@ vi.mock('../VenueCoordinationComposer', () => ({
 }));
 
 const mockEvent: Event = {
+  ...anEvent(),
   eventCode: 'BAT54',
   eventNumber: 54,
   title: 'Spring Conference 2025',

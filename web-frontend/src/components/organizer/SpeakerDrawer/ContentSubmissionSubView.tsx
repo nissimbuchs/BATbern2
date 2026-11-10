@@ -261,7 +261,7 @@ export const ContentSubmissionSubView: React.FC<ContentSubmissionSubViewProps> =
     if (!selectedUser && !isSessionAssigned) return;
 
     if (selectedUser) {
-      const existingRoles = (selectedUser.roles ?? []) as Role[];
+      const existingRoles = selectedUser.roles as Role[];
       if (!existingRoles.includes('SPEAKER')) {
         try {
           await updateUserRoles(selectedUser.id, [...existingRoles, 'SPEAKER']);
@@ -478,7 +478,7 @@ export const ContentSubmissionSubView: React.FC<ContentSubmissionSubViewProps> =
                       <Typography variant="body2" color="text.secondary" gutterBottom>
                         {selectedUser.email}
                       </Typography>
-                      {selectedUser.roles && selectedUser.roles.length > 0 && (
+                      {selectedUser.roles.length > 0 && (
                         <Typography variant="caption" color="text.secondary">
                           Role: {selectedUser.roles.join(', ')}
                         </Typography>

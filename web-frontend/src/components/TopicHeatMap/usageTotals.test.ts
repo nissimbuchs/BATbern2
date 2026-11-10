@@ -6,12 +6,13 @@
 import { describe, expect, it } from 'vitest';
 import type { TopicUsageHistory } from '@/types/topic.types';
 import { knownSum, quarterlyUsage } from './usageTotals';
+import { aTopicUsage } from '@/test/fixtures';
 
 const usage = (
   eventNumber: number,
   usedDate: string,
   attendance: number | null
-): TopicUsageHistory => ({ eventNumber, usedDate, attendance });
+): TopicUsageHistory => ({ ...aTopicUsage(), eventNumber, usedDate, attendance });
 
 describe('knownSum', () => {
   it('ignores unknown values and answers null when none is known', () => {

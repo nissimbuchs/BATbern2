@@ -362,17 +362,17 @@ export interface components {
     /** @description Presigned S3 upload URL + metadata for a logo upload */
     LogoPresignedUploadUrl: {
       /** @description The presigned S3 URL to PUT the file to */
-      uploadUrl?: string;
+      uploadUrl: string;
       /** @description Unique file identifier for tracking the upload */
-      fileId?: string;
+      fileId: string;
       /** @description S3 key where the file will be stored */
       s3Key?: string;
       /** @description File extension (used to reconstruct the S3 key on confirm) */
-      fileExtension?: string;
+      fileExtension: string;
       /** @description URL expiry in minutes (typically 15) */
-      expiresInMinutes?: number;
+      expiresInMinutes: number;
       /** @description Headers the client must send with the S3 PUT */
-      requiredHeaders?: {
+      requiredHeaders: {
         [key: string]: string;
       };
     };
@@ -387,15 +387,15 @@ export interface components {
     /** @description Counts of logo uploads by state (admin monitoring) */
     LogoCleanupStatistics: {
       /** Format: int64 */
-      pendingCount?: number;
+      pendingCount: number;
       /** Format: int64 */
-      confirmedCount?: number;
+      confirmedCount: number;
       /** Format: int64 */
-      associatedCount?: number;
+      associatedCount: number;
       /** Format: int64 */
-      expiredPendingCount?: number;
+      expiredPendingCount: number;
       /** Format: int64 */
-      expiredConfirmedCount?: number;
+      expiredConfirmedCount: number;
     };
     UploadImageFromUrlRequest: {
       /** @description External image URL to fetch and upload */
@@ -448,7 +448,7 @@ export interface components {
        *     the creator's token carried no `custom:username` claim.
        * @example john.doe
        */
-      createdBy?: string;
+      createdBy: string;
       logo?: components['schemas']['CompanyLogo'];
     };
     /** @description Company logo details (included when ?include=logo) */

@@ -276,7 +276,7 @@ export interface components {
       /** @description Partner company name */
       companyName: string;
       /** @description Company logo URL (may be null when not available) */
-      logoUrl?: string | null;
+      logoUrl: string | null;
       topics: components['schemas']['TopicEntry'][];
     };
     /** @description A single partner topic suggestion enriched with cluster, votes, and date */
@@ -322,7 +322,7 @@ export interface components {
        * @description Detailed topic description
        * @example Best practices for securing cloud-native applications
        */
-      description?: string | null;
+      description: string | null;
       /**
        * @description Topic category
        * @example Security
@@ -332,37 +332,37 @@ export interface components {
        * Format: date-time
        * @description When the topic was created
        */
-      createdDate?: string | null;
+      createdDate: string | null;
       /**
        * Format: date-time
        * @description When the topic was last used in an event
        */
-      lastUsedDate?: string | null;
+      lastUsedDate: string | null;
       /**
        * @description Number of times topic has been used
        * @example 3
        */
-      usageCount?: number;
+      usageCount: number;
       /**
        * @description Staleness score (0-100, higher = safer to reuse)
        * @example 75
        */
-      stalenessScore?: number | null;
-      colorZone?: components['schemas']['TopicColorZone'] | null;
-      status?: components['schemas']['TopicStatus'] | null;
+      stalenessScore: number | null;
+      colorZone: components['schemas']['TopicColorZone'] | null;
+      status: components['schemas']['TopicStatus'] | null;
       /** @description Similarity scores to other topics */
-      similarityScores?: components['schemas']['SimilarityScore'][] | null;
+      similarityScores: components['schemas']['SimilarityScore'][] | null;
       /**
        * @description Whether the topic is active
        * @default true
        */
       active: boolean;
       /** Format: date-time */
-      createdAt?: string | null;
+      createdAt: string | null;
       /** Format: date-time */
-      updatedAt?: string | null;
+      updatedAt: string | null;
       /** @description Usage history (populated when include=history) */
-      usageHistory?: components['schemas']['TopicUsageHistory'][] | null;
+      usageHistory: components['schemas']['TopicUsageHistory'][] | null;
     };
     /**
      * @description Color coding for topic freshness visualization
@@ -401,13 +401,13 @@ export interface components {
        * @description Human-readable event code
        * @example BATbern56
        */
-      eventCode?: string;
+      eventCode: string;
       /**
        * Format: date
        * @description Event date (ISO 8601)
        * @example 2025-03-15
        */
-      eventDate?: string;
+      eventDate: string;
       /**
        * Format: date-time
        * @description When the topic was used

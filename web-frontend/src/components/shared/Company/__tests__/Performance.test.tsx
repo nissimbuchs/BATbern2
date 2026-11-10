@@ -94,6 +94,7 @@ describe('Performance Tests (AC 10)', () => {
         isVerified: true,
         createdAt: '2025-01-01T00:00:00Z',
         updatedAt: '2025-01-01T00:00:00Z',
+        createdBy: 'lead.organizer',
       };
 
       renderWithProviders(<CompanyCard company={mockCompany} onClick={() => {}} viewMode="grid" />);

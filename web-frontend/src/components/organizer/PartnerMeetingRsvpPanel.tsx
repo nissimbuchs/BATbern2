@@ -29,7 +29,7 @@ interface PartnerMeetingRsvpPanelProps {
   refreshKey?: number;
 }
 
-const statusColor = (status: NonNullable<RsvpDTO['status']>): 'success' | 'error' | 'warning' => {
+const statusColor = (status: RsvpDTO['status']): 'success' | 'error' | 'warning' => {
   if (status === 'ACCEPTED') return 'success';
   if (status === 'DECLINED') return 'error';
   return 'warning';
@@ -84,13 +84,13 @@ const PartnerMeetingRsvpPanel: React.FC<PartnerMeetingRsvpPanelProps> = ({
             data-testid="rsvp-summary"
           >
             {t('meetings.rsvp.summary', {
-              accepted: data.summary?.accepted ?? 0,
-              declined: data.summary?.declined ?? 0,
-              tentative: data.summary?.tentative ?? 0,
+              accepted: data.summary.accepted,
+              declined: data.summary.declined,
+              tentative: data.summary.tentative,
             })}
           </Typography>
 
-          {!data.rsvps?.length ? (
+          {data.rsvps.length === 0 ? (
             <Typography variant="body2" color="text.secondary">
               {t('meetings.rsvp.noResponses')}
             </Typography>
@@ -98,20 +98,16 @@ const PartnerMeetingRsvpPanel: React.FC<PartnerMeetingRsvpPanelProps> = ({
             <List dense disablePadding>
               {data.rsvps.map((rsvp) => (
                 <ListItem key={rsvp.attendeeEmail} disableGutters>
-                  {rsvp.status && (
-                    <Chip
-                      label={t(`meetings.rsvp.status.${rsvp.status.toLowerCase()}`)}
-                      color={statusColor(rsvp.status)}
-                      size="small"
-                      sx={{ mr: 1, minWidth: 90 }}
-                      data-testid={`rsvp-chip-${rsvp.attendeeEmail}`}
-                    />
-                  )}
+                  <Chip
+                    label={t(`meetings.rsvp.status.${rsvp.status.toLowerCase()}`)}
+                    color={statusColor(rsvp.status)}
+                    size="small"
+                    sx={{ mr: 1, minWidth: 90 }}
+                    data-testid={`rsvp-chip-${rsvp.attendeeEmail}`}
+                  />
                   <ListItemText
                     primary={rsvp.attendeeEmail}
-                    secondary={
-                      rsvp.respondedAt ? new Date(rsvp.respondedAt).toLocaleString() : undefined
-                    }
+                    secondary={new Date(rsvp.respondedAt).toLocaleString()}
                   />
                 </ListItem>
               ))}

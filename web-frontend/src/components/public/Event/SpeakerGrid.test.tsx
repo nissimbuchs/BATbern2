@@ -40,6 +40,8 @@ describe('SpeakerGrid', () => {
       firstName: 'John',
       lastName: 'Doe',
       company: 'GoogleZH',
+      companyDisplayName: null,
+      companyLogoUrl: null,
       profilePictureUrl: 'https://cdn.batbern.ch/logos/2025/users/john.doe/profile.jpg',
       speakerRole: 'PRIMARY_SPEAKER',
       bio: 'Architect and author.',
@@ -51,16 +53,22 @@ describe('SpeakerGrid', () => {
       firstName: 'Jane',
       lastName: 'Smith',
       company: 'AcmeCorp',
+      companyDisplayName: null,
+      companyLogoUrl: null,
       profilePictureUrl: 'https://cdn.batbern.ch/logos/2025/users/jane.smith/profile.jpg',
       speakerRole: 'PRIMARY_SPEAKER',
+      bio: null,
       talkTitle: 'Green Building Innovations',
       sessionSlug: 'workshop-sustainable',
     },
   ];
 
-  const lineupOnly: PublicSpeaker[] = agendaSpeakers.map(
-    ({ talkTitle: _t, sessionSlug: _s, ...rest }) => rest
-  );
+  // Before the agenda is public the API sends talkTitle and sessionSlug as null.
+  const lineupOnly: PublicSpeaker[] = agendaSpeakers.map((speaker) => ({
+    ...speaker,
+    talkTitle: null,
+    sessionSlug: null,
+  }));
 
   it('should_renderOneCardPerSpeaker_when_speakersProvided', () => {
     renderWithProviders(<SpeakerGrid speakers={agendaSpeakers} />);
@@ -99,9 +107,7 @@ describe('SpeakerGrid', () => {
   });
 
   it('should_displayInitials_when_noProfilePictureProvided', () => {
-    renderWithProviders(
-      <SpeakerGrid speakers={[{ ...lineupOnly[0], profilePictureUrl: undefined }]} />
-    );
+    renderWithProviders(<SpeakerGrid speakers={[{ ...lineupOnly[0], profilePictureUrl: null }]} />);
 
     expect(screen.getByText('JD')).toBeInTheDocument();
   });

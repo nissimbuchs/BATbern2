@@ -531,31 +531,30 @@ export interface components {
        * @description Unique registration code (public identifier). Present when registered=true.
        * @example BATbern142-reg-ABC123
        */
-      registrationCode?: string | null;
+      registrationCode: string | null;
       /**
        * @description Event code this registration belongs to. Present when registered=true.
        * @example BATbern142
        */
-      eventCode?: string | null;
+      eventCode: string | null;
       /**
        * @description Registration status (uppercase). Present when registered=true.
        * @example CONFIRMED
        * @enum {string|null}
        */
-      status?:
-        'REGISTERED' | 'CONFIRMED' | 'WAITLIST' | 'CANCELLED' | 'ATTENDED' | 'NO_SHOW' | null;
+      status: 'REGISTERED' | 'CONFIRMED' | 'WAITLIST' | 'CANCELLED' | 'ATTENDED' | 'NO_SHOW' | null;
       /**
        * Format: date-time
        * @description ISO-8601 timestamp when registration was created. Present when registered=true.
        * @example 2025-11-01T10:30:00Z
        */
-      registrationDate?: string | null;
+      registrationDate: string | null;
       /**
        * @description Story 10.11 (AC13): Position on the waitlist (1-based). Null when status is not WAITLIST.
        *     Backward-compatible addition — null for non-waitlist registrations.
        * @example 3
        */
-      waitlistPosition?: number | null;
+      waitlistPosition: number | null;
     };
     /**
      * @description Email distribution list resolved for an event/kind pair.
@@ -586,12 +585,12 @@ export interface components {
        */
       eventCode: string;
       /** @description Event title. Set by `listUserRegistrations`; null elsewhere. */
-      eventTitle?: string | null;
+      eventTitle: string | null;
       /**
        * Format: date-time
        * @description Event date. Set by `listUserRegistrations`; null elsewhere.
        */
-      eventDate?: string | null;
+      eventDate: string | null;
       /**
        * @description Attendee username from user_profiles (ADR-003: meaningful identifiers in public APIs).
        *     Format: firstname.lastname or firstname.lastname.2 for duplicates.
@@ -599,13 +598,13 @@ export interface components {
        */
       attendeeUsername: string;
       /** @description First name from user_profiles */
-      attendeeFirstName?: string | null;
+      attendeeFirstName: string | null;
       /** @description Last name from user_profiles */
-      attendeeLastName?: string | null;
+      attendeeLastName: string | null;
       /** @description E-mail from user_profiles */
-      attendeeEmail?: string | null;
+      attendeeEmail: string | null;
       /** @description Company ID from user_profiles.company_id; null for attendees without a company */
-      attendeeCompany?: string | null;
+      attendeeCompany: string | null;
       /**
        * @description NO_SHOW = registered for a past event and did not come (not counted as attendance).
        * @enum {string}
@@ -615,13 +614,13 @@ export interface components {
        * @description Position on the waitlist (1-based, Story 10.11). Null when status is not WAITLIST.
        * @example 2
        */
-      waitlistPosition?: number | null;
+      waitlistPosition: number | null;
       /** Format: date-time */
-      registrationDate?: string | null;
+      registrationDate: string | null;
       /** Format: date-time */
-      createdAt?: string | null;
+      createdAt: string | null;
       /** Format: date-time */
-      updatedAt?: string | null;
+      updatedAt: string | null;
     };
     /**
      * @description **Story 4.1.5c**: Minimal response with no sensitive data.
@@ -640,7 +639,7 @@ export interface components {
        * @description True when the attendee was an existing user and the company they entered differed from the one on file, so their profile company was refreshed. The UI shows a notice when true.
        * @example false
        */
-      companyUpdated?: boolean;
+      companyUpdated: boolean;
     };
     /**
      * @description Story 4.1.5a: Event registration request (ADR-006)
@@ -1167,11 +1166,11 @@ export interface operations {
         content: {
           'application/json': {
             /** @example BATbern57-reg-A1B2C3 */
-            registrationCode?: string;
+            registrationCode: string;
             /** @example confirmed */
-            status?: string;
+            status: string;
             /** @example jane.doe */
-            attendeeUsername?: string;
+            attendeeUsername: string;
           };
         };
       };
@@ -1647,7 +1646,7 @@ export interface operations {
         content: {
           'application/json': {
             /** @example Registration cancelled successfully */
-            message?: string;
+            message: string;
           };
         };
       };
@@ -1701,7 +1700,7 @@ export interface operations {
         content: {
           'application/json': {
             /** @example If you are registered for this event, you'll receive a cancellation link by email. */
-            message?: string;
+            message: string;
           };
         };
       };
@@ -1785,7 +1784,14 @@ export interface operations {
            *         "eventTitle": "Cloud Native Architecture",
            *         "eventDate": "2023-03-15T18:00:00Z",
            *         "status": "ATTENDED",
-           *         "registrationDate": "2023-02-01T10:30:00Z"
+           *         "registrationDate": "2023-02-01T10:30:00Z",
+           *         "attendeeCompany": null,
+           *         "attendeeEmail": null,
+           *         "attendeeFirstName": null,
+           *         "attendeeLastName": null,
+           *         "createdAt": null,
+           *         "updatedAt": null,
+           *         "waitlistPosition": null
            *       },
            *       {
            *         "registrationCode": "BATbern142-reg-P4T8W1",
@@ -1794,7 +1800,14 @@ export interface operations {
            *         "eventTitle": "Microservices Patterns",
            *         "eventDate": "2023-05-20T18:00:00Z",
            *         "status": "ATTENDED",
-           *         "registrationDate": "2023-04-10T14:20:00Z"
+           *         "registrationDate": "2023-04-10T14:20:00Z",
+           *         "attendeeCompany": null,
+           *         "attendeeEmail": null,
+           *         "attendeeFirstName": null,
+           *         "attendeeLastName": null,
+           *         "createdAt": null,
+           *         "updatedAt": null,
+           *         "waitlistPosition": null
            *       }
            *     ]
            */

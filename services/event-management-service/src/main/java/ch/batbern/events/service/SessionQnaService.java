@@ -264,8 +264,9 @@ public class SessionQnaService {
         Map<String, QnaAuthorProjection> portraits = loadAuthorPortraits(authorUsernames);
         List<QnaPostResponse> posts =
                 visible.stream().map(p -> toPostResponse(p, portraits)).toList();
-        return new QnaWindowResponse(
-                QnaWindowResponse.StatusEnum.fromValue(window.getStatus().name()), posts)
+        return new QnaWindowResponse()
+                .status(QnaWindowResponse.StatusEnum.fromValue(window.getStatus().name()))
+                .posts(posts)
                 .opensAt(toOffset(window.getOpensAt()))
                 .closesAt(toOffset(window.getClosesAt()));
     }
@@ -287,13 +288,13 @@ public class SessionQnaService {
                                            Map<String, QnaAuthorProjection> portraits) {
         if (post.isRemoved()) {
             // Tombstone — null out identity + content (the UI shows "removed by organizer").
-            return new QnaPostResponse(post.getId(), true, toOffset(post.getCreatedAt()))
+            return new QnaPostResponse().id(post.getId()).removed(true).createdAt(toOffset(post.getCreatedAt()))
                     .parentPostId(post.getParentPostId());
         }
         QnaAuthorProjection a = portraits.get(post.getPostedByUsername());
         // Honour the user's "show company" preference; absent projection → no enrichment.
         boolean showCompany = a != null && !Boolean.FALSE.equals(a.getShowCompany());
-        return new QnaPostResponse(post.getId(), false, toOffset(post.getCreatedAt()))
+        return new QnaPostResponse().id(post.getId()).removed(false).createdAt(toOffset(post.getCreatedAt()))
                 .parentPostId(post.getParentPostId())
                 .postedByUsername(post.getPostedByUsername())
                 .postedByFirstName(a != null ? a.getFirstName() : null)

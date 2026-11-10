@@ -17,6 +17,7 @@ import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { CreateTopicModal } from './CreateTopicModal';
 import type { Topic } from '@/types/topic.types';
+import { aTopic } from '@/test/fixtures';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -32,6 +33,7 @@ vi.mock('@/services/topicService', () => ({
 }));
 
 const mockTopic: Topic = {
+  ...aTopic(),
   topicCode: 'existing-topic',
   title: 'Existing Topic',
   description: 'An existing topic description',

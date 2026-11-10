@@ -151,54 +151,54 @@ export interface components {
     /** @description A single in-app notification. Null fields are serialized (not omitted). */
     NotificationResponse: {
       /** Format: uuid */
-      id?: string;
-      recipientUsername?: string;
-      eventCode?: string | null;
-      notificationType?: string;
-      channel?: string;
-      priority?: string;
-      subject?: string | null;
-      body?: string | null;
-      status?: string;
+      id: string;
+      recipientUsername: string;
+      eventCode: string | null;
+      notificationType: string;
+      channel: string;
+      priority: string;
+      subject: string | null;
+      body: string | null;
+      status: string;
       /** Format: date-time */
-      sentAt?: string | null;
+      sentAt: string | null;
       /** Format: date-time */
-      readAt?: string | null;
+      readAt: string | null;
       /** Format: date-time */
-      failedAt?: string | null;
-      failureReason?: string | null;
-      metadata?: {
+      failedAt: string | null;
+      failureReason: string | null;
+      metadata: {
         [key: string]: unknown;
       } | null;
       /** Format: date-time */
-      createdAt?: string | null;
+      createdAt: string | null;
       /** Format: date-time */
-      updatedAt?: string | null;
+      updatedAt: string | null;
     };
     NotificationsResponse: {
-      data?: components['schemas']['NotificationResponse'][];
-      pagination?: components['schemas']['NotificationPagination'];
+      data: components['schemas']['NotificationResponse'][];
+      pagination: components['schemas']['NotificationPagination'];
     };
     /** @description 1-based pagination metadata (notification inbox wire — page/limit/totalItems/totalPages only). */
     NotificationPagination: {
-      page?: number;
-      limit?: number;
+      page: number;
+      limit: number;
       /** Format: int64 */
-      totalItems?: number;
-      totalPages?: number;
+      totalItems: number;
+      totalPages: number;
     };
     NotificationCountResponse: {
       /** Format: int64 */
-      count?: number;
+      count: number;
     };
     MarkAsReadResponse: {
-      success?: boolean;
-      markedCount?: number;
+      success: boolean;
+      markedCount: number;
       /** Format: date-time */
-      updatedAt?: string;
+      updatedAt: string;
     };
     DeleteNotificationResponse: {
-      success?: boolean;
+      success: boolean;
     };
     BatchOperationRequest: {
       notificationIds: string[];

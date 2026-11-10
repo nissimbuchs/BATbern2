@@ -9,6 +9,7 @@ import { render, screen, fireEvent, waitFor, within } from '@testing-library/rea
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MailSentList } from '../MailSentList';
 import type { MailMessageSummary } from '@/services/mailMessageService';
+import { aMailSummary } from '@/test/fixtures';
 
 const { listMailMessages, getMailMessage, retryMail, getRsvps, breakpoints } = vi.hoisted(() => ({
   listMailMessages: vi.fn(),
@@ -41,6 +42,7 @@ vi.mock('react-i18next', () => ({
 
 function row(overrides: Partial<MailMessageSummary>): MailMessageSummary {
   return {
+    ...aMailSummary(),
     mailKey: 'BATbern60-1',
     sentAt: '2026-10-28T10:00:00Z',
     senderUsername: 'organizer1',

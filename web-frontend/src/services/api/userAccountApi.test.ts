@@ -21,6 +21,7 @@ import {
   requestPresignedUrlForUser,
   confirmUploadForUser,
 } from './userAccountApi';
+import { aUser } from '@/test/fixtures';
 
 const settings = (over: Partial<UserSettingsResponse> = {}): UserSettingsResponse => ({
   theme: 'auto',
@@ -43,7 +44,7 @@ const settings = (over: Partial<UserSettingsResponse> = {}): UserSettingsRespons
   ...over,
 });
 
-const user = {
+const user = aUser({
   id: 'hong.an',
   email: 'hong.an@example.com',
   firstName: 'Hông',
@@ -53,7 +54,7 @@ const user = {
   createdAt: '2023-06-15T10:00:00Z',
   updatedAt: '2025-01-15T10:00:00Z',
   additionalEmails: [],
-};
+});
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -72,7 +73,13 @@ describe('getUserProfile', () => {
     api.on('getCurrentUser', () => ({
       ...user,
       companyId: 'AcmeAG',
-      company: { id: 'AcmeAG', name: 'AcmeAG', displayName: 'Acme AG' },
+      company: {
+        id: 'AcmeAG',
+        name: 'AcmeAG',
+        displayName: 'Acme AG',
+        industry: null,
+        website: null,
+      },
     }));
 
     const result = await getUserProfile(['company']);
@@ -128,7 +135,10 @@ describe('getUserProfile', () => {
 
 describe('updateUserProfile', () => {
   it('PATCHes /users/me with only the allowed, defined fields', async () => {
-    api.on('patchCurrentUser', ({ body }) => ({ ...user, ...body }));
+    api.on('patchCurrentUser', ({ body }) => ({
+      ...user,
+      firstName: body?.firstName ?? user.firstName,
+    }));
 
     const result = await updateUserProfile({
       firstName: 'Hông',
@@ -210,6 +220,7 @@ describe('profile picture', () => {
     s3Key: 'users/hong.an/picture.jpg',
     fileExtension: 'jpg',
     expiresInMinutes: 15,
+    requiredHeaders: { 'Content-Type': 'image/png' },
   };
 
   it('removes the own picture', async () => {

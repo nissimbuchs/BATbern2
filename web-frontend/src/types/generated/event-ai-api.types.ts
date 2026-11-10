@@ -181,8 +181,8 @@ export interface components {
       jobId: string;
       /** @enum {string} */
       status: 'PENDING' | 'DONE' | 'FAILED';
-      imageUrl?: string | null;
-      s3Key?: string | null;
+      imageUrl: string | null;
+      s3Key: string | null;
     };
     AiThemeImageResponse: {
       imageUrl?: string;

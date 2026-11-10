@@ -477,11 +477,17 @@ generated code does) is documented in `GeneratedCodeSemantics`. An e-mail proper
 stored address is `format: idn-email` (CUMS stores IDN domains, `x@müller.ch`); a request property
 also carries the #1102 `pattern` (`EmailAddresses.OPENAPI_PATTERN`), which the generator turns into
 `@Pattern` (it emits no `@Email` for `idn-email`). The harness checks both e-mail formats as a
-mailbox shape, because the validator's IANA TLD list rejects the reserved `.example` test domains. `null` is valid only where the spec says `nullable`
-(owner decision 2026-11-09): the services write an unset field as `null`, so a response property
-they can leave unset is marked `nullable: true` (3.1: a nullable reference is
-`oneOf: [$ref, {type: 'null'}]`), and a `null` the spec does not allow fails the test, in the S2S
-harness and in the MSW harness's schema validator alike.
+mailbox shape, because the validator's IANA TLD list rejects the reserved `.example` test domains.
+`null` is valid only where the spec says `nullable` (owner decision 2026-11-09): the services write
+an unset field as `null`, so a response property they can leave unset is marked `nullable: true`
+(3.1: a nullable reference is `oneOf: [$ref, {type: 'null'}]`), and a `null` the spec does not
+allow fails the test, in the S2S harness and in the MSW harness's schema validator alike. The
+reverse holds for presence (4.9b, owner decision 2026-11-09): a response property that every
+producing code path sends is in the schema's `required`, nullable or not (`required` says present,
+`nullable` says it may be `null`), so the generated types do not call it optional. A property
+becomes `required` only when the integration suites show it in every response and the producing
+code confirms it (a class without `@JsonInclude(NON_NULL)` writes every field; a `NON_NULL` class
+needs the value to be always set).
 
 `/internal/**` (17.0b2): every internal operation is specified in `docs/api/internal/` (one spec per
 provider, server `/`, full paths; schemas `$ref` the public components where the DTO is generated
@@ -524,7 +530,8 @@ with array indices as `*` (`listCompanies /data/*/createdBy pattern`,
 specs) passes the configuration to the test JVM and, after a full run (no `--tests`, no
 `-PskipIntegration`), fails on a STALE line that no response produces any more. Remove it, or rewrite
 the file from a full run: `./gradlew :services:<svc>:test -PupdateResponseConformanceBaseline`
-(refused on a partial run). Outside Gradle (no system properties) the gate is off.
+(refused on a partial run). Outside Gradle (no system properties) the gate is off. Since 4.9b (2026-11-10)
+all three baselines (CUMS, EMS, PCS) are empty.
 
 #### Frontend: the MSW harness (17.0c1)
 

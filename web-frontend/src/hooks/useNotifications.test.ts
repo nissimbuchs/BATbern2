@@ -143,7 +143,11 @@ describe('useNotifications', () => {
 
   describe('useMarkAsRead', () => {
     it('should call markAsRead and invalidate queries on success', async () => {
-      mockClient.markAsRead.mockResolvedValue({ success: true, markedCount: 1 });
+      mockClient.markAsRead.mockResolvedValue({
+        success: true,
+        markedCount: 1,
+        updatedAt: '2026-05-14T16:00:00Z',
+      });
       const invalidateSpy = vi.spyOn(qc, 'invalidateQueries');
 
       const { result } = renderHook(() => useMarkAsRead(), { wrapper: createWrapper(qc) });
@@ -159,7 +163,11 @@ describe('useNotifications', () => {
 
   describe('useBatchMarkAsRead', () => {
     it('should call batchMarkAsRead and invalidate queries', async () => {
-      mockClient.batchMarkAsRead.mockResolvedValue({ success: true, markedCount: 2 });
+      mockClient.batchMarkAsRead.mockResolvedValue({
+        success: true,
+        markedCount: 2,
+        updatedAt: '2026-05-14T16:00:00Z',
+      });
       const invalidateSpy = vi.spyOn(qc, 'invalidateQueries');
 
       const { result } = renderHook(() => useBatchMarkAsRead(), { wrapper: createWrapper(qc) });

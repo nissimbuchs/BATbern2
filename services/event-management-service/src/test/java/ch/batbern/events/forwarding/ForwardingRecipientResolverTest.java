@@ -51,8 +51,8 @@ class ForwardingRecipientResolverTest {
         when(userApiClient.getOrganizerUsernames()).thenReturn(List.of("alice", "bob"));
         when(userApiClient.getUserByUsername("alice")).thenReturn(new UserResponse().id("alice")
                 .email("Alice@Example.org")
-                .addAdditionalEmailsItem(new AdditionalEmail("alice.legacy@example.org", OffsetDateTime.now()))
-                .addAdditionalEmailsItem(new AdditionalEmail("ALICE@example.org", OffsetDateTime.now())));
+                .addAdditionalEmailsItem(new AdditionalEmail().email("alice.legacy@example.org").createdAt(OffsetDateTime.now()))
+                .addAdditionalEmailsItem(new AdditionalEmail().email("ALICE@example.org").createdAt(OffsetDateTime.now())));
         when(userApiClient.getUserByUsername("bob")).thenReturn(new UserResponse().id("bob").email("bob@example.org"));
     }
 

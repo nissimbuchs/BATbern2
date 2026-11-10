@@ -5,3 +5,4 @@
 export * from './people.ts';
 export * from './events.ts';
 export * from './registrations.ts';
+export * from './wire.ts';

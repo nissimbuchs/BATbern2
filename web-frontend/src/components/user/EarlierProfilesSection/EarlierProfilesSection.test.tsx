@@ -9,6 +9,7 @@ import { I18nextProvider } from 'react-i18next';
 import i18n from '../../../i18n/config';
 import { EarlierProfilesSection } from './EarlierProfilesSection';
 import * as api from '@/services/api/userAccountApi';
+import { aClaimCandidate } from '@/test/fixtures';
 
 vi.mock('@/services/api/userAccountApi', () => ({
   listProfileClaimCandidates: vi.fn(),
@@ -45,7 +46,12 @@ describe('EarlierProfilesSection (#1183 D)', () => {
 
   it('should_sendLink_when_thisIsMeClicked', async () => {
     vi.mocked(api.listProfileClaimCandidates).mockResolvedValue([
-      { candidateId: 'c-1', maskedEmail: 'a***@example.com', companyName: 'acme' },
+      {
+        ...aClaimCandidate(),
+        candidateId: 'c-1',
+        maskedEmail: 'a***@example.com',
+        companyName: 'acme',
+      },
     ]);
     vi.mocked(api.requestProfileClaim).mockResolvedValue();
     renderSection();
@@ -60,9 +66,16 @@ describe('EarlierProfilesSection (#1183 D)', () => {
   // #1237: no access to the old address — ask the organizers
   it('should_sendRequestWithNote_when_noAccess', async () => {
     vi.mocked(api.listProfileClaimCandidates)
-      .mockResolvedValueOnce([{ candidateId: 'c-1', maskedEmail: 'a***@oldco.example.com' }])
+      .mockResolvedValueOnce([
+        { ...aClaimCandidate(), candidateId: 'c-1', maskedEmail: 'a***@oldco.example.com' },
+      ])
       .mockResolvedValue([
-        { candidateId: 'c-1', maskedEmail: 'a***@oldco.example.com', requestPending: true },
+        {
+          ...aClaimCandidate(),
+          candidateId: 'c-1',
+          maskedEmail: 'a***@oldco.example.com',
+          requestPending: true,
+        },
       ]);
     vi.mocked(api.requestProfileMerge).mockResolvedValue('r-1');
     renderSection();
@@ -79,7 +92,12 @@ describe('EarlierProfilesSection (#1183 D)', () => {
 
   it('should_offerNeitherPath_when_requestPending', async () => {
     vi.mocked(api.listProfileClaimCandidates).mockResolvedValue([
-      { candidateId: 'c-1', maskedEmail: 'a***@oldco.example.com', requestPending: true },
+      {
+        ...aClaimCandidate(),
+        candidateId: 'c-1',
+        maskedEmail: 'a***@oldco.example.com',
+        requestPending: true,
+      },
     ]);
     renderSection();
 
@@ -91,7 +109,12 @@ describe('EarlierProfilesSection (#1183 D)', () => {
   it('should_offerOnlyTheRequest_when_placeholderAddress', async () => {
     // #1244: an imported profile with vorname.nachname@batbern.ch: a link would reach nobody
     vi.mocked(api.listProfileClaimCandidates).mockResolvedValue([
-      { candidateId: 'c-1', maskedEmail: 'a***@batbern.ch', placeholderAddress: true },
+      {
+        ...aClaimCandidate(),
+        candidateId: 'c-1',
+        maskedEmail: 'a***@batbern.ch',
+        placeholderAddress: true,
+      },
     ]);
     vi.mocked(api.requestProfileMerge).mockResolvedValue('r-1');
     const user = userEvent.setup();
@@ -108,7 +131,7 @@ describe('EarlierProfilesSection (#1183 D)', () => {
 
   it('should_explainCooldown_when_recentlyDeclined', async () => {
     vi.mocked(api.listProfileClaimCandidates).mockResolvedValue([
-      { candidateId: 'c-1', maskedEmail: 'a***@oldco.example.com' },
+      { ...aClaimCandidate(), candidateId: 'c-1', maskedEmail: 'a***@oldco.example.com' },
     ]);
     vi.mocked(api.requestProfileMerge).mockRejectedValue({
       response: { status: 409, data: { errorCode: 'MERGE_REQUEST_DECLINED' } },

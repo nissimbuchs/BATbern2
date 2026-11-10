@@ -333,6 +333,9 @@ components:
       - eventCode
       - displayUrl
       - uploadedAt
+      - filename
+      - uploadedBy
+      - sortOrder
       properties:
         id:
           type: string

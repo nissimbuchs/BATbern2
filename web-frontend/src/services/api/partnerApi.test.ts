@@ -14,7 +14,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { HttpResponse } from 'msw';
 import { fetchAuthSession } from 'aws-amplify/auth';
 import { api } from '@/test/msw/api';
-import { shapes } from '@/test/fixtures';
+import { aPartner, shapes } from '@/test/fixtures';
 import type { UserResponse } from '@/test/fixtures';
 import type { ResponseBody } from '@/test/msw/api';
 import * as partnerApi from './partnerApi';
@@ -29,9 +29,11 @@ const asContact = (user: UserResponse): PartnerContact => ({
   firstName: user.firstName,
   lastName: user.lastName,
   email: user.email,
+  profilePictureUrl: user.profilePictureUrl,
 });
 
 const gold: PartnerResponse = {
+  ...aPartner(),
   companyName: 'mobiliar',
   partnershipLevel: 'GOLD',
   partnershipStartDate: '2020-01-01',
@@ -165,7 +167,7 @@ describe('Partner API Client - Story 2.8.1 (Partner Directory)', () => {
       api.on('getPartnerStatistics', () => ({
         totalPartners: 12,
         activePartners: 10,
-        tierCounts: { GOLD: 4, SILVER: 6 },
+        tierCounts: { BRONZE: 0, SILVER: 6, GOLD: 4, PLATINUM: 0, STRATEGIC: 0 },
       }));
 
       const stats = await partnerApi.getPartnerStatistics();
@@ -233,14 +235,14 @@ describe('Partner API Client - Story 2.8.3 (Partner Create/Edit)', () => {
         partnershipStartDate: '2025-01-01',
         partnershipEndDate: '2025-12-31',
       };
-      api.on('createPartner', ({ body }) => ({ ...body!, isActive: true }), { status: 201 });
+      api.on('createPartner', () => aPartner({ ...request, isActive: true }), { status: 201 });
 
       const result = await partnerApi.createPartner(request);
 
       const [call] = api.calls('createPartner');
       expect(call.method).toBe('POST');
       expect(call.body).toEqual(request);
-      expect(result).toEqual({ ...request, isActive: true });
+      expect(result).toEqual({ ...request, isActive: true, company: null, contacts: null });
     });
 
     it('should_sendOnlyRequiredFields_when_noEndDate', async () => {

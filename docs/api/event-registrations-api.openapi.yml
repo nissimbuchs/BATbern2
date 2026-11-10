@@ -222,6 +222,7 @@ paths:
                   value:
                     message: You are already on the waitlist for this event. A new confirmation email has been sent.
                     email: anna.vorlage@example.com
+                    companyUpdated: false
         '201':
           description: Registration created successfully - confirmation email sent
           content:
@@ -329,6 +330,10 @@ paths:
             application/json:
               schema:
                 type: object
+                required:
+                  - registrationCode
+                  - status
+                  - attendeeUsername
                 properties:
                   registrationCode:
                     type: string
@@ -478,10 +483,16 @@ paths:
                     eventCode: BATbern142
                     status: CONFIRMED
                     registrationDate: '2025-11-01T10:30:00Z'
+                    waitlistPosition: null
                 not_registered:
                   summary: User has no registration
                   value:
                     registered: false
+                    eventCode: null
+                    registrationCode: null
+                    registrationDate: null
+                    status: null
+                    waitlistPosition: null
         '401':
           $ref: '#/components/responses/Unauthorized'
         '500':
@@ -1036,6 +1047,8 @@ paths:
             application/json:
               schema:
                 type: object
+                required:
+                  - message
                 properties:
                   message:
                     type: string
@@ -1097,6 +1110,8 @@ paths:
             application/json:
               schema:
                 type: object
+                required:
+                  - message
                 properties:
                   message:
                     type: string
@@ -1288,6 +1303,13 @@ paths:
                 eventDate: '2023-03-15T18:00:00Z'
                 status: ATTENDED
                 registrationDate: '2023-02-01T10:30:00Z'
+                attendeeCompany: null
+                attendeeEmail: null
+                attendeeFirstName: null
+                attendeeLastName: null
+                createdAt: null
+                updatedAt: null
+                waitlistPosition: null
               - registrationCode: BATbern142-reg-P4T8W1
                 eventCode: BATbern36
                 attendeeUsername: anna.muster
@@ -1295,6 +1317,13 @@ paths:
                 eventDate: '2023-05-20T18:00:00Z'
                 status: ATTENDED
                 registrationDate: '2023-04-10T14:20:00Z'
+                attendeeCompany: null
+                attendeeEmail: null
+                attendeeFirstName: null
+                attendeeLastName: null
+                createdAt: null
+                updatedAt: null
+                waitlistPosition: null
         '401':
           $ref: '#/components/responses/Unauthorized'
         '500':
@@ -1332,6 +1361,11 @@ components:
         '
       required:
       - registered
+      - registrationCode
+      - eventCode
+      - status
+      - registrationDate
+      - waitlistPosition
       properties:
         registered:
           type: boolean
@@ -1416,6 +1450,16 @@ components:
       - eventCode
       - status
       - attendeeUsername
+      - eventTitle
+      - eventDate
+      - attendeeFirstName
+      - attendeeLastName
+      - attendeeEmail
+      - attendeeCompany
+      - waitlistPosition
+      - registrationDate
+      - createdAt
+      - updatedAt
       properties:
         registrationCode:
           type: string
@@ -1495,6 +1539,7 @@ components:
       required:
       - message
       - email
+      - companyUpdated
       properties:
         message:
           type: string

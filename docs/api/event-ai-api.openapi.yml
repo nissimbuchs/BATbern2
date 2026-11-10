@@ -493,6 +493,8 @@ components:
       required:
       - jobId
       - status
+      - imageUrl
+      - s3Key
       properties:
         jobId:
           type: string

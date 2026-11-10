@@ -9,6 +9,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import { ParticipantMailList } from '../ParticipantMailList';
 import type { MailMessageSummary } from '@/services/mailMessageService';
+import { aMailSummary } from '@/test/fixtures';
 
 const { messages, breakpoints } = vi.hoisted(() => ({
   messages: { listMails: vi.fn(), getMail: vi.fn() },
@@ -41,7 +42,7 @@ const pagination = (n: number) => ({
   hasPrev: false,
 });
 
-const base: MailMessageSummary = {
+const base: MailMessageSummary = aMailSummary({
   mailKey: 'BATbern60-1',
   sentAt: '2026-11-01T08:00:00Z',
   audience: 'SPEAKERS',
@@ -56,7 +57,7 @@ const base: MailMessageSummary = {
   eventCode: 'BATbern60',
   senderUsername: 'lead.organizer',
   participantStatus: 'DELIVERED',
-};
+});
 
 function renderList() {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });

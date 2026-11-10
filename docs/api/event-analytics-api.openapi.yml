@@ -517,6 +517,7 @@ components:
       - title
       - eventDate
       - attendeeCount
+      - category
       properties:
         eventCode:
           type: string
@@ -561,6 +562,7 @@ components:
       - totalAttendees
       - returningAttendees
       - newAttendees
+      - category
       properties:
         eventCode:
           type: string
@@ -678,6 +680,7 @@ components:
       - year
       - companyName
       - attendeeCount
+      - displayName
       properties:
         year:
           type: integer
@@ -700,6 +703,7 @@ components:
       - companyName
       - sessionCount
       - uniqueSpeakers
+      - displayName
       properties:
         companyName:
           type: string
@@ -723,6 +727,7 @@ components:
       required:
       - companyName
       - attendeeCount
+      - displayName
       properties:
         companyName:
           type: string
@@ -788,6 +793,9 @@ components:
         `?timeframe=` is supplied. The 2026-06-29 rewrite dropped the previously-documented flat
         fields (totalRegistrations/confirmedAttendees/cancellations/waitlist/registrationTrend) —
         no implementation ever produced them and the frontend reads none of them.'
+      required:
+        - eventCode
+        - metrics
       properties:
         eventCode:
           type: string
@@ -797,6 +805,9 @@ components:
         timeframe:
           type: object
           description: 'Echoed back only when the `?timeframe=start,end` query param is supplied.'
+          required:
+            - start
+            - end
           properties:
             start:
               type: string
@@ -811,11 +822,18 @@ components:
           properties:
             registrations:
               type: object
+              required:
+                - total
+                - byStatus
               properties:
                 total:
                   type: integer
                 byStatus:
                   type: object
+                  required:
+                    - confirmed
+                    - pending
+                    - cancelled
                   properties:
                     confirmed:
                       type: integer
@@ -825,6 +843,10 @@ components:
                       type: integer
             attendance:
               type: object
+              required:
+                - expected
+                - actual
+                - rate
               properties:
                 expected:
                   type: integer
@@ -836,6 +858,10 @@ components:
                   description: Attendance percentage (currently a stub — equals 100 or 0).
             engagement:
               type: object
+              required:
+                - totalSessions
+                - totalParticipants
+                - averageSessionsPerParticipant
               properties:
                 totalSessions:
                   type: integer

@@ -149,6 +149,9 @@ paths:
             application/json:
               schema:
                 type: object
+                required:
+                  - data
+                  - pagination
                 properties:
                   data:
                     type: array
@@ -173,6 +176,12 @@ paths:
                       organizerUsername: john.doe
                       currentAttendeeCount: 187
                       description: Cloud Native Architecture
+                      createdAt: "2026-05-14T16:00:00Z"
+                      eventType: "FULL_DAY"
+                      qnaEnabled: true
+                      qnaOpenTrigger: "EVENT_COMPLETED"
+                      qnaWindowDays: 14
+                      updatedAt: "2026-05-14T16:00:00Z"
                     pagination:
                       page: 0
                       limit: 20
@@ -360,6 +369,7 @@ paths:
                       code: digital-sovereignty
                       name: Digital Sovereignty
                       category: technical
+                      description: null
                     venue:
                       id: BATbern60
                       name: Zentrum Paul Klee
@@ -384,9 +394,15 @@ paths:
                             profilePictureUrl: https://cdn.batbern.ch/profile-pictures/2025/anna.beispiel/profile-a0ed134f-8619-44b1-be2b-6480b092196c.jpeg
                             speakerRole: MODERATOR
                             isConfirmed: true
+                            bio: null
+                            companyLogoUrl: null
+                            presentationTitle: null
                         materialsStatus: NONE
                         materials: []
                         materialsCount: 0
+                        capacity: null
+                        description: null
+                        room: null
                       - sessionSlug: batbern60-anna-muster
                         eventCode: BATbern60
                         title: "Weniger Cloud, mehr Klarheit: Digitale Souveränität bei Software, Daten, IT-Infrastruktur und KI"
@@ -407,9 +423,13 @@ paths:
                             profilePictureUrl: https://cdn.batbern.ch/profile-pictures/2026/gina.beispiel/profile-204ff4b2-2a91-491f-8985-944ad39e4733.jpg
                             speakerRole: PRIMARY_SPEAKER
                             isConfirmed: true
+                            bio: null
+                            companyLogoUrl: null
+                            presentationTitle: null
                         materialsStatus: NONE
                         materials: []
                         materialsCount: 0
+                        capacity: null
                     speakers:
                       - username: gina.beispiel
                         firstName: Gina
@@ -501,6 +521,9 @@ paths:
             application/json:
               schema:
                 type: object
+                required:
+                  - data
+                  - pagination
                 properties:
                   data:
                     type: array
@@ -578,6 +601,12 @@ paths:
                 - id: topic-2
                   name: Kubernetes
                   color: cyan
+                createdAt: "2026-05-14T16:00:00Z"
+                eventType: "FULL_DAY"
+                qnaEnabled: true
+                qnaOpenTrigger: "EVENT_COMPLETED"
+                qnaWindowDays: 14
+                updatedAt: "2026-05-14T16:00:00Z"
         '404':
           description: No current published event found
           content:
@@ -694,6 +723,12 @@ paths:
                     organizerUsername: john.doe
                     currentAttendeeCount: 187
                     description: Cloud Native Architecture
+                    createdAt: "2026-05-14T16:00:00Z"
+                    eventType: "FULL_DAY"
+                    qnaEnabled: true
+                    qnaOpenTrigger: "EVENT_COMPLETED"
+                    qnaWindowDays: 14
+                    updatedAt: "2026-05-14T16:00:00Z"
                 expandedEvent:
                   summary: Event with venue
                   value:
@@ -714,6 +749,12 @@ paths:
                       name: Kursaal Bern
                       address: Kornhausstrasse 3, 3013 Bern
                       capacity: 500
+                    createdAt: "2026-05-14T16:00:00Z"
+                    eventType: "FULL_DAY"
+                    qnaEnabled: true
+                    qnaOpenTrigger: "EVENT_COMPLETED"
+                    qnaWindowDays: 14
+                    updatedAt: "2026-05-14T16:00:00Z"
         '404':
           $ref: '#/components/responses/NotFound'
         '500':
@@ -1560,6 +1601,13 @@ paths:
                 defaultCapacity: 300
                 typicalStartTime: 09:00
                 typicalEndTime: '16:00'
+                aperitifDuration: 90
+                aperitifPosition: "end"
+                aperitifSlots: 1
+                breakDuration: 20
+                lunchDuration: 60
+                moderationEndDuration: 5
+                moderationStartDuration: 5
               - type: AFTERNOON
                 minSlots: 6
                 maxSlots: 8
@@ -1570,6 +1618,13 @@ paths:
                 defaultCapacity: 200
                 typicalStartTime: '13:00'
                 typicalEndTime: '19:00'
+                aperitifDuration: 90
+                aperitifPosition: "end"
+                aperitifSlots: 1
+                breakDuration: 20
+                lunchDuration: 60
+                moderationEndDuration: 5
+                moderationStartDuration: 5
               - type: EVENING
                 minSlots: 3
                 maxSlots: 4
@@ -1580,6 +1635,13 @@ paths:
                 defaultCapacity: 200
                 typicalStartTime: '16:00'
                 typicalEndTime: '19:00'
+                aperitifDuration: 90
+                aperitifPosition: "end"
+                aperitifSlots: 1
+                breakDuration: 20
+                lunchDuration: 60
+                moderationEndDuration: 5
+                moderationStartDuration: 5
         '500':
           $ref: '#/components/responses/InternalServerError'
       security:
@@ -2164,6 +2226,7 @@ paths:
                       assignedCount: 0
                       totalCount: 0
                       unassignedSessions: []
+                    currentPhase: null
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -2385,6 +2448,9 @@ components:
   schemas:
     AdminSettingResponse:
       type: object
+      required:
+        - key
+        - value
       properties:
         key:
           type: string
@@ -2409,6 +2475,10 @@ components:
           type: boolean
     QnaWindowAdjustResponse:
       type: object
+      required:
+        - eventCode
+        - windowsAdjusted
+        - status
       properties:
         eventCode:
           type: string
@@ -2418,6 +2488,11 @@ components:
           type: string
     PublishPhaseResponse:
       type: object
+      required:
+        - phase
+        - published
+        - publishedAt
+        - cdnInvalidated
       properties:
         phase:
           type: string
@@ -2430,6 +2505,11 @@ components:
           type: boolean
     UnpublishPhaseResponse:
       type: object
+      required:
+        - phase
+        - published
+        - unpublishedAt
+        - cdnInvalidated
       properties:
         phase:
           type: string
@@ -2454,6 +2534,9 @@ components:
             type: string
     UnassignedSession:
       type: object
+      required:
+        - sessionSlug
+        - title
       properties:
         sessionSlug:
           type: string
@@ -2489,6 +2572,7 @@ components:
         - topic
         - speakers
         - sessions
+        - currentPhase
       properties:
         currentPhase:
           type: string
@@ -2540,6 +2624,14 @@ components:
           minimum: 1
     AutoPublishScheduleResponse:
       type: object
+      required:
+        - scheduled
+        - phase2Enabled
+        - phase2DaysBeforeEvent
+        - phase2TriggerDate
+        - phase3Enabled
+        - phase3DaysBeforeEvent
+        - phase3TriggerDate
       properties:
         scheduled:
           type: boolean
@@ -2585,6 +2677,12 @@ components:
           type: string
     VenueCoordinationPreviewResponse:
       type: object
+      required:
+        - subject
+        - htmlBody
+        - toEmail
+        - ccEmails
+        - replyToEmail
       properties:
         subject:
           type: string
@@ -2617,6 +2715,8 @@ components:
             $ref: '#/components/schemas/VenueRole'
     VenueCoordinationSendResponse:
       type: object
+      required:
+        - sentTo
       properties:
         sentTo:
           type: array
@@ -2708,6 +2808,16 @@ components:
       description: A speaker as the public website shows it (Public Events).
       required:
       - username
+      - firstName
+      - lastName
+      - company
+      - companyDisplayName
+      - companyLogoUrl
+      - profilePictureUrl
+      - bio
+      - speakerRole
+      - talkTitle
+      - sessionSlug
       properties:
         username:
           type: string
@@ -2755,6 +2865,13 @@ components:
       - venueName
       - venueAddress
       - venueCapacity
+      - qnaEnabled
+      - qnaOpenTrigger
+      - qnaWindowDays
+      - createdAt
+      - updatedAt
+      - eventType
+      - workflowState
       properties:
         eventCode:
           type: string
@@ -2966,6 +3083,11 @@ components:
             Story BAT-109: Archive browsing with topic expansion
 
             '
+          required:
+            - code
+            - name
+            - description
+            - category
           properties:
             code:
               type: string
@@ -3072,6 +3194,11 @@ components:
               '
     Venue:
       type: object
+      required:
+        - id
+        - name
+        - address
+        - capacity
       properties:
         id:
           type: string
@@ -3322,6 +3449,13 @@ components:
       - defaultCapacity
       - typicalStartTime
       - typicalEndTime
+      - moderationStartDuration
+      - moderationEndDuration
+      - breakDuration
+      - lunchDuration
+      - aperitifSlots
+      - aperitifDuration
+      - aperitifPosition
       properties:
         type:
           $ref: '#/components/schemas/EventType'
@@ -3556,6 +3690,7 @@ components:
       required:
       - eventCode
       - workflowState
+      - updatedAt
       properties:
         eventCode:
           type: string
@@ -3672,6 +3807,15 @@ components:
         name so the Appreciation panel can show a friendly name rather than the raw username.
 
         '
+      required:
+        - id
+        - note
+        - thankedByUsername
+        - thankedByFirstName
+        - thankedByLastName
+        - thankedByCompanyName
+        - featured
+        - createdAt
       properties:
         id:
           type: string
@@ -3725,6 +3869,13 @@ components:
         exposed; company name/logo are null when the author opted out of showing their company.
 
         '
+      required:
+        - note
+        - eventCode
+        - thankedByFirstName
+        - thankedByLastName
+        - thankedByCompanyName
+        - thankedByCompanyLogoUrl
       properties:
         note:
           type: string
@@ -3760,6 +3911,7 @@ components:
         '
       required:
       - count
+      - notes
       properties:
         count:
           type: integer
@@ -3782,6 +3934,10 @@ components:
       required:
       - eventCode
       - eventTitle
+      - eventDate
+      - eventLocation
+      - workflowState
+      - registrationStatus
       properties:
         eventCode:
           type: string
@@ -3813,6 +3969,7 @@ components:
       required:
       - upcomingEvents
       - pastEvents
+      - attendeeName
       properties:
         attendeeName:
           type: string

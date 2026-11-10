@@ -123,7 +123,7 @@ class ContractServerTest {
         assertThatThrownBy(() -> server.expect(GET, "/api/v1/companies/{name}")
                 .respondWith(HttpStatus.OK, """
                         {"name": 42, "isVerified": true,
-                         "createdAt": "2025-01-15T10:00:00Z", "updatedAt": "2025-01-15T10:00:00Z"}"""))
+                         "createdAt": "2025-01-15T10:00:00Z", "updatedAt": "2025-01-15T10:00:00Z", "createdBy": "lead.organizer"}"""))
                 .isInstanceOf(AssertionError.class)
                 .hasMessageContaining("Test body for GET /api/v1/companies/{name} 200")
                 .hasMessageContaining("[validation.response.body.schema.type]")
@@ -135,7 +135,7 @@ class ContractServerTest {
     void should_answerWithCustomBody_when_itMatchesResponseSchema() {
         server.expect(GET, "/api/v1/companies/{name}").respondWith(HttpStatus.OK, """
                 {"name": "GoogleZH", "displayName": "Google Schweiz GmbH", "isVerified": true,
-                 "createdAt": "2025-01-01T00:00:00Z", "updatedAt": "2025-01-01T00:00:00Z"}""");
+                 "createdAt": "2025-01-01T00:00:00Z", "updatedAt": "2025-01-01T00:00:00Z", "createdBy": "lead.organizer"}""");
 
         String body = restTemplate.exchange(BASE + "/api/v1/companies/GoogleZH", GET, withJwt(), String.class)
                 .getBody();
@@ -210,7 +210,9 @@ class ContractServerTest {
         server = ContractServer.bindTo(restTemplate, USERS);
         server.expect(PATCH, "/api/v1/users/{username}/profile").respondWith(HttpStatus.OK, """
                 {"id": "jane.smith", "email": "jane.smith@example.com", "firstName": "Jane", "lastName": "Smith",
-                 "bio": "x", "roles": ["SPEAKER"], "active": true,
+                 "bio": "x", "roles": ["SPEAKER"], "active": true, "hasCognitoAccount": true, "companyId": null,
+                 "profilePictureUrl": null, "lastLoginAt": null, "termsAcceptedAt": null, "company": null,
+                 "settings": null, "additionalEmails": [],
                  "createdAt": "2025-01-01T00:00:00Z", "updatedAt": "2025-01-01T00:00:00Z"}""");
         HttpHeaders headers = new HttpHeaders();
         headers.setBearerAuth("t");
@@ -300,6 +302,9 @@ class ContractServerTest {
         server.expect(GET, "/internal/users/{username}").times(org.springframework.test.web.client.ExpectedCount
                 .manyTimes()).respondPerRequest(HttpStatus.OK, call -> """
                         {"id": "%s", "email": "x@example.com", "firstName": "F", "lastName": "L", "roles": [],
+                         "bio": null, "active": true, "hasCognitoAccount": true, "companyId": null,
+                         "profilePictureUrl": null, "lastLoginAt": null, "termsAcceptedAt": null, "company": null,
+                         "settings": null, "additionalEmails": [],
                          "createdAt": "2025-01-01T00:00:00Z", "updatedAt": "2025-01-01T00:00:00Z"}"""
                 .formatted(call.pathVariables().get("username")));
 
@@ -384,7 +389,7 @@ class ContractServerTest {
 
     // ---------------------------------------------------------------- GeneratedCodeSemantics
 
-    private static final String COMPANY_DATES = "\"createdAt\": \"2025-01-15T10:00:00Z\", "
+    private static final String COMPANY_DATES = "\"createdBy\": \"lead.organizer\", \"createdAt\": \"2025-01-15T10:00:00Z\", "
             + "\"updatedAt\": \"2025-01-15T10:00:00Z\"";
 
     @Test
@@ -410,7 +415,9 @@ class ContractServerTest {
         OpenApiContract registrations = OpenApiContract.load("docs/api/event-registrations-api.openapi.yml");
         String registration = """
                 {"registrationCode": "BATbern1-reg-ABC123", "eventCode": "BATbern1", "status": "REGISTERED",
-                 "attendeeUsername": "anna.muster", "eventTitle": null, "waitlistPosition": null}""";
+                 "attendeeUsername": "anna.muster", "eventTitle": null, "eventDate": null, "attendeeFirstName": null,
+                 "attendeeLastName": null, "attendeeEmail": null, "attendeeCompany": null, "waitlistPosition": null,
+                 "registrationDate": null, "createdAt": null, "updatedAt": null}""";
 
         assertThat(registrations.validateResponse("GET", "/api/v1/events/registrations", 200,
                 "[" + registration + "]")).isEmpty();
@@ -421,7 +428,10 @@ class ContractServerTest {
         String page = """
                 {"data": [{"mailKey": "BATbern1-1", "sentAt": "2026-05-14T16:00:00Z", "audience": "REGISTRANTS",
                   "contentSource": "TEMPLATE", "recipientCount": 1, "deliveredCount": 1, "failedCount": 0,
-                  "messageCount": 1, "test": false, "participantStatus": null}],
+                  "messageCount": 1, "test": false, "participantStatus": null, "senderUsername": null,
+                  "templateKey": null, "subject": null, "newsletterSendId": null, "newsletterStatus": null,
+                  "reference": null, "direction": "OUT", "fromAddress": null, "fromName": null, "eventCode": null,
+                  "conversationKey": null, "spam": null, "attachments": null}],
                  "pagination": {"page": 1, "limit": 20, "totalItems": 1, "totalPages": 1,
                   "hasNext": false, "hasPrev": false}}""";
         assertThat(mail.validateResponse("GET", "/api/v1/events/BATbern1/mails", 200, page)).isEmpty();
@@ -443,7 +453,8 @@ class ContractServerTest {
         assertThat(OpenApiContract.load(USERS).validateResponse("POST",
                 "/api/v1/users/merge-requests/0b9f8e2a-1c3d-4e5f-8a7b-9c0d1e2f3a4b/decline", 200, """
                 {"requestId": "0b9f8e2a-1c3d-4e5f-8a7b-9c0d1e2f3a4b", "status": "DECLINED", "requesterUsername": "anna.muster",
-                 "sourceUsername": "anna.muster.2", "createdAt": "2026-05-14T16:00:00Z", "preview": null}"""))
+                 "sourceUsername": "anna.muster.2", "createdAt": "2026-05-14T16:00:00Z", "note": null,
+                 "decidedBy": null, "decidedAt": null, "reason": null, "preview": null}"""))
                 .isEmpty();
         // 3.1, oneOf [$ref, type: 'null']
         assertThat(OpenApiContract.load(USERS).validateResponse("GET",
@@ -455,7 +466,10 @@ class ContractServerTest {
                 "/api/v1/events/BATbern1/mails/preview", 200, """
                 {"subject": "S", "html": "<p>H</p>", "recipientIndex": 0, "recipientCount": 1,
                  "sampleRecipients": [], "personalized": false, "locale": "de", "organizerCount": 0,
-                 "skipped": [], "unknownPlaceholders": [], "alreadySent": null}"""))
+                 "skipped": [], "unknownPlaceholders": [], "alreadySent": null,
+                 "recipient": {"displayName": "P", "address": "p@example.com", "cc": []}, "templateKey": null,
+                 "replyTo": null, "highlightedSubject": null, "highlightedHtml": null, "offeredVariables": [],
+                 "allowedVariables": []}"""))
                 .isEmpty();
         // 3.0, nullable allOf of an enum, inherited through SessionResponse = allOf [Session, ...]
         OpenApiContract sessions = OpenApiContract.load("docs/api/event-sessions-api.openapi.yml");
@@ -472,7 +486,9 @@ class ContractServerTest {
         String event = """
                 {"eventCode": "BATbern1", "title": "T", "eventNumber": 1, "date": "2026-06-11T16:00:00Z",
                  "registrationDeadline": "2026-06-04T16:00:00Z", "venueName": "V", "venueAddress": "A",
-                 "venueCapacity": 1, "typicalStartTime": "%s"}""";
+                 "venueCapacity": 1, "currentAttendeeCount": 0, "eventType": "EVENING", "workflowState": "CREATED",
+                 "qnaEnabled": true, "qnaOpenTrigger": "EVENT_COMPLETED", "qnaWindowDays": 14,
+                 "createdAt": "2026-01-01T00:00:00Z", "updatedAt": "2026-01-01T00:00:00Z", "typicalStartTime": "%s"}""";
 
         assertThat(events.validateResponse("GET", "/api/v1/events/BATbern1", 200, event.formatted("18:00"))).isEmpty();
         assertThat(events.validateResponse("GET", "/api/v1/events/BATbern1", 200, event.formatted("6pm")))
@@ -483,7 +499,8 @@ class ContractServerTest {
     @DisplayName("format: idn-email checks the mailbox shape and accepts the reserved .example TLD (4.9b)")
     void should_acceptIdnAddressUnderReservedTld_andRejectNonAddress() {
         OpenApiContract users = OpenApiContract.load(USERS);
-        String additional = "{\"email\": \"%s\", \"createdAt\": \"2026-05-22T10:00:00Z\"}";
+        String additional = "{\"email\": \"%s\", \"label\": null, \"createdAt\": \"2026-05-22T10:00:00Z\", "
+                + "\"verifiedAt\": null, \"receiveEventMail\": false}";
 
         // The 17.0d IDN person: Apache Commons' TLD list alone rejected it (no .example TLD)
         assertThat(users.validateResponse("POST", "/api/v1/users/me/additional-emails", 201,

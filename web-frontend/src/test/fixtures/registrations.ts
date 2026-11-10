@@ -33,6 +33,8 @@ export function aRegistration(
   return {
     registrationCode: 'BATbern61-reg-A3X9K1',
     eventCode: 'BATbern61',
+    eventTitle: 'Künstliche Intelligenz & Architektur',
+    eventDate: daysFromNow(40),
     attendeeUsername: attendee.id,
     attendeeFirstName: attendee.firstName,
     attendeeLastName: attendee.lastName,

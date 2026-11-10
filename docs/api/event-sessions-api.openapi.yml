@@ -83,6 +83,9 @@ paths:
             application/json:
               schema:
                 type: object
+                required:
+                  - data
+                  - pagination
                 properties:
                   data:
                     type: array
@@ -446,6 +449,9 @@ paths:
             application/json:
               schema:
                 type: object
+                required:
+                  - data
+                  - pagination
                 properties:
                   data:
                     type: array
@@ -530,9 +536,15 @@ paths:
                         profilePictureUrl: https://cdn.batbern.ch/profile-pictures/2025/anna.beispiel/profile-a0ed134f-8619-44b1-be2b-6480b092196c.jpeg
                         speakerRole: MODERATOR
                         isConfirmed: true
+                        bio: null
+                        companyLogoUrl: null
+                        presentationTitle: null
                     materialsStatus: NONE
                     materials: []
                     materialsCount: 0
+                    capacity: null
+                    description: null
+                    room: null
         '400':
           $ref: '#/components/responses/BadRequest'
         '404':
@@ -771,9 +783,15 @@ paths:
                         profilePictureUrl: https://cdn.batbern.ch/profile-pictures/2025/anna.beispiel/profile-a0ed134f-8619-44b1-be2b-6480b092196c.jpeg
                         speakerRole: MODERATOR
                         isConfirmed: true
+                        bio: null
+                        companyLogoUrl: null
+                        presentationTitle: null
                     materialsStatus: NONE
                     materials: []
                     materialsCount: 0
+                    capacity: null
+                    description: null
+                    room: null
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -836,9 +854,15 @@ paths:
                         profilePictureUrl: https://cdn.batbern.ch/profile-pictures/2025/anna.beispiel/profile-a0ed134f-8619-44b1-be2b-6480b092196c.jpeg
                         speakerRole: MODERATOR
                         isConfirmed: true
+                        bio: null
+                        companyLogoUrl: null
+                        presentationTitle: null
                     materialsStatus: NONE
                     materials: []
                     materialsCount: 0
+                    capacity: null
+                    description: null
+                    room: null
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -898,9 +922,15 @@ paths:
                             profilePictureUrl: https://cdn.batbern.ch/profile-pictures/2025/anna.beispiel/profile-a0ed134f-8619-44b1-be2b-6480b092196c.jpeg
                             speakerRole: MODERATOR
                             isConfirmed: true
+                            bio: null
+                            companyLogoUrl: null
+                            presentationTitle: null
                         materialsStatus: NONE
                         materials: []
                         materialsCount: 0
+                        capacity: null
+                        description: null
+                        room: null
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -1302,6 +1332,7 @@ paths:
                 - title: Backend Architecture
                   status: skipped
                   message: Session already exists with title 'Backend Architecture'
+                  sessionSlug: null
                 - title: Database Design
                   status: success
                   message: Session created successfully
@@ -1397,9 +1428,15 @@ paths:
                         profilePictureUrl: https://cdn.batbern.ch/profile-pictures/2025/anna.beispiel/profile-a0ed134f-8619-44b1-be2b-6480b092196c.jpeg
                         speakerRole: MODERATOR
                         isConfirmed: true
+                        bio: null
+                        companyLogoUrl: null
+                        presentationTitle: null
                     materialsStatus: NONE
                     materials: []
                     materialsCount: 0
+                    capacity: null
+                    description: null
+                    room: null
         '404':
           $ref: '#/components/responses/NotFound'
         '500':
@@ -1478,9 +1515,15 @@ paths:
                         profilePictureUrl: https://cdn.batbern.ch/profile-pictures/2025/anna.beispiel/profile-a0ed134f-8619-44b1-be2b-6480b092196c.jpeg
                         speakerRole: MODERATOR
                         isConfirmed: true
+                        bio: null
+                        companyLogoUrl: null
+                        presentationTitle: null
                     materialsStatus: NONE
                     materials: []
                     materialsCount: 0
+                    capacity: null
+                    description: null
+                    room: null
         '400':
           $ref: '#/components/responses/BadRequest'
         '404':
@@ -1585,6 +1628,9 @@ paths:
                       profilePictureUrl: https://cdn.batbern.ch/profile-pictures/2025/anna.beispiel/profile-a0ed134f-8619-44b1-be2b-6480b092196c.jpeg
                       speakerRole: MODERATOR
                       isConfirmed: true
+                      bio: null
+                      companyLogoUrl: null
+                      presentationTitle: null
         '404':
           $ref: '#/components/responses/NotFound'
         '500':
@@ -1651,6 +1697,9 @@ paths:
                     profilePictureUrl: https://cdn.batbern.ch/profile-pictures/2025/anna.beispiel/profile-a0ed134f-8619-44b1-be2b-6480b092196c.jpeg
                     speakerRole: MODERATOR
                     isConfirmed: true
+                    bio: null
+                    companyLogoUrl: null
+                    presentationTitle: null
         '400':
           $ref: '#/components/responses/BadRequest'
         '404':
@@ -1751,6 +1800,9 @@ paths:
                     profilePictureUrl: https://cdn.batbern.ch/profile-pictures/2025/anna.beispiel/profile-a0ed134f-8619-44b1-be2b-6480b092196c.jpeg
                     speakerRole: MODERATOR
                     isConfirmed: true
+                    bio: null
+                    companyLogoUrl: null
+                    presentationTitle: null
         '404':
           $ref: '#/components/responses/NotFound'
         '500':
@@ -1811,6 +1863,9 @@ paths:
                     profilePictureUrl: https://cdn.batbern.ch/profile-pictures/2025/anna.beispiel/profile-a0ed134f-8619-44b1-be2b-6480b092196c.jpeg
                     speakerRole: MODERATOR
                     isConfirmed: true
+                    bio: null
+                    companyLogoUrl: null
+                    presentationTitle: null
         '404':
           $ref: '#/components/responses/NotFound'
         '500':
@@ -2104,6 +2159,9 @@ components:
           type: string
     BulkTimingResponse:
       type: object
+      required:
+        - assignedCount
+        - sessions
       properties:
         assignedCount:
           type: integer
@@ -2126,6 +2184,9 @@ components:
       - warning
     ConflictTimeRange:
       type: object
+      required:
+        - start
+        - end
       properties:
         start:
           type: string
@@ -2133,6 +2194,13 @@ components:
           type: string
     ConflictDetail:
       type: object
+      required:
+        - sessionSlug
+        - conflictType
+        - severity
+        - affectedSessions
+        - timeRange
+        - resolution
       properties:
         sessionSlug:
           type: string
@@ -2151,6 +2219,10 @@ components:
     ConflictAnalysisResponse:
       type: object
       description: Comprehensive scheduling-conflict analysis (Story 5.7 AC9)
+      required:
+        - hasConflicts
+        - conflictCount
+        - conflicts
       properties:
         hasConflicts:
           type: boolean
@@ -2241,6 +2313,11 @@ components:
       - type
       - startTime
       - endTime
+      - slotKey
+      - title
+      - slotIndex
+      - sessionSlug
+      - assignedSessionSlug
       properties:
         type:
           type: string
@@ -2329,6 +2406,17 @@ components:
       - sessionSlug
       - eventCode
       - title
+      - description
+      - sessionType
+      - startTime
+      - endTime
+      - room
+      - capacity
+      - language
+      - createdAt
+      - updatedAt
+      - speakers
+      - materialsStatus
       properties:
         sessionSlug:
           type: string
@@ -2411,6 +2499,12 @@ components:
       - lastName
       - speakerRole
       - isConfirmed
+      - company
+      - companyDisplayName
+      - profilePictureUrl
+      - companyLogoUrl
+      - bio
+      - presentationTitle
       properties:
         username:
           type: string
@@ -2506,6 +2600,9 @@ components:
       allOf:
       - $ref: '#/components/schemas/Session'
       - type: object
+        required:
+          - materials
+          - materialsCount
         properties:
           materials:
             nullable: true
@@ -2537,6 +2634,9 @@ components:
       - uploadedBy
       - createdAt
       - updatedAt
+      - cloudFrontUrl
+      - contentExtracted
+      - extractionStatus
       properties:
         id:
           type: string
@@ -2781,6 +2881,7 @@ components:
       - title
       - status
       - message
+      - sessionSlug
       properties:
         title:
           type: string
@@ -2914,6 +3015,8 @@ components:
       - aperitifSlots
       - aperitifDuration
       - aperitifPosition
+      - typicalStartTime
+      - typicalEndTime
       properties:
         source:
           $ref: '#/components/schemas/AgendaConfigSource'
@@ -3142,6 +3245,13 @@ components:
       - id
       - removed
       - createdAt
+      - parentPostId
+      - postedByUsername
+      - postedByFirstName
+      - postedByLastName
+      - postedByCompanyName
+      - postedByCompanyLogoUrl
+      - body
       properties:
         id:
           type: string
@@ -3191,6 +3301,8 @@ components:
       required:
       - status
       - posts
+      - opensAt
+      - closesAt
       properties:
         status:
           type: string

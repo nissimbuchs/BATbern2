@@ -9,6 +9,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { TopicDetailsPanel } from './TopicDetailsPanel';
 import type { Topic } from '@/types/topic.types';
 import * as useTopicsHook from '@/hooks/useTopics';
+import { aTopic } from '@/test/fixtures';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -34,6 +35,7 @@ vi.mock('@/services/topicService', () => ({
 }));
 
 const mockTopic: Topic = {
+  ...aTopic(),
   topicCode: 'topic-123',
   title: 'Cloud Native Architecture',
   description: 'Modern cloud patterns',

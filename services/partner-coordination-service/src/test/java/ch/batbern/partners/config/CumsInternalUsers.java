@@ -52,10 +52,12 @@ public final class CumsInternalUsers {
      */
     public CumsInternalUsers put(String lookedUp, String id, String companyId) {
         users.put(lookedUp, """
-                {"id": "%s", "email": "%s@example.com", "firstName": "Test", "lastName": "User", %s
-                 "roles": ["PARTNER"], "active": true, "createdAt": "2025-01-15T10:00:00Z",
-                 "updatedAt": "2025-01-15T10:00:00Z", "additionalEmails": []}"""
-                .formatted(id, id, companyId == null ? "" : "\"companyId\": \"" + companyId + "\","));
+                {"id": "%s", "hasCognitoAccount": true, "email": "%s@example.com", "firstName": "Test",
+                 "lastName": "User", "bio": null, "companyId": %s, "roles": ["PARTNER"],
+                 "profilePictureUrl": null, "active": true, "createdAt": "2025-01-15T10:00:00Z",
+                 "updatedAt": "2025-01-15T10:00:00Z", "lastLoginAt": null, "termsAcceptedAt": null,
+                 "company": null, "settings": null, "additionalEmails": []}"""
+                .formatted(id, id, companyId == null ? "null" : "\"" + companyId + "\""));
         return this;
     }
 }

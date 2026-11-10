@@ -25,10 +25,12 @@ import {
   topicKeys,
 } from './useTopics';
 import type { Topic, TopicListResponse, TopicUsageHistory } from '@/types/topic.types';
+import { aTopic, aTopicUsage } from '@/test/fixtures';
 
 const LIST = 'topics-api/listTopics';
 
 const topic: Topic = {
+  ...aTopic(),
   topicCode: 'cloud-native-architecture',
   title: 'Cloud Native Architecture',
   description: 'Modern cloud patterns',
@@ -274,8 +276,18 @@ describe('useTopics hooks', () => {
 
   describe('useTopicUsageHistory', () => {
     const history: TopicUsageHistory[] = [
-      { eventNumber: 58, eventCode: 'BATbern58', usedDate: '2025-11-14', attendance: 182 },
-      { eventNumber: 41, eventCode: 'BATbern41', usedDate: '2017-05-05', attendance: null },
+      aTopicUsage({
+        eventNumber: 58,
+        eventDate: '2025-11-14T16:00:00Z',
+        usedDate: '2025-11-14',
+        attendance: 182,
+      }),
+      aTopicUsage({
+        eventNumber: 41,
+        eventDate: '2017-05-05T16:00:00Z',
+        usedDate: '2017-05-05',
+        attendance: null,
+      }),
     ];
 
     it('should fetch the usage history of a code', async () => {
@@ -307,6 +319,7 @@ describe('useTopics hooks', () => {
 
   describe('useCreateTopic', () => {
     const created: Topic = {
+      ...aTopic(),
       topicCode: 'ai-powered-devops',
       title: 'AI-Powered DevOps',
       description: 'Exploring AI in DevOps',

@@ -16,11 +16,21 @@ import { renderHook, waitFor, act } from '@testing-library/react';
 import { HttpResponse } from 'msw';
 import { api } from '@/test/msw/api';
 import { useSlotAssignment } from './useSlotAssignment';
-import type { BulkTimingRequest, Session, SessionTimingRequest } from '@/types/event.types';
+import type { BulkTimingRequest, SessionTimingRequest } from '@/types/event.types';
+import type { components } from '@/types/generated/event-sessions-api.types';
+import { aSessionResponse, aSessionSpeaker } from '@/test/fixtures';
+
+type SessionResponse = components['schemas']['SessionResponse'];
 
 const EVENT = 'BATbern142';
 
-const session = (slug: string, firstName: string, lastName: string, company: string): Session => ({
+const session = (
+  slug: string,
+  firstName: string,
+  lastName: string,
+  company: string
+): SessionResponse => ({
+  ...aSessionResponse(),
   sessionSlug: slug,
   eventCode: EVENT,
   title: `${firstName} ${lastName} - ${company}`,
@@ -29,6 +39,7 @@ const session = (slug: string, firstName: string, lastName: string, company: str
   language: 'de',
   speakers: [
     {
+      ...aSessionSpeaker(),
       username: `${firstName}.${lastName}`.toLowerCase(),
       firstName,
       lastName,
@@ -39,7 +50,7 @@ const session = (slug: string, firstName: string, lastName: string, company: str
   ],
 });
 
-const unassigned: Session[] = [
+const unassigned: SessionResponse[] = [
   session('session-1', 'Hông Ân', 'Meier', 'Acme AG'),
   session('session-2', 'Jean-Luc', 'O’Neill', 'Tech Inc'),
 ];
@@ -64,7 +75,7 @@ const timingConflict = {
 };
 
 /** Renders the hook on the given pool and waits until it has loaded. */
-const renderLoaded = async (pool: Session[] = unassigned) => {
+const renderLoaded = async (pool: SessionResponse[] = unassigned) => {
   api.on('getUnassignedSessions', () => pool);
   const view = renderHook(() => useSlotAssignment(EVENT));
   await waitFor(() => expect(view.result.current.isLoading).toBe(false));
@@ -239,7 +250,7 @@ describe('useSlotAssignment', () => {
     };
 
     it('should_bulkAssign_when_autoAssignmentTriggered', async () => {
-      api.on('bulkAssignTiming', () => ({ assignedCount: 2 }));
+      api.on('bulkAssignTiming', () => ({ assignedCount: 2, sessions: unassigned }));
       const { result } = await renderLoaded();
 
       await act(async () => {
