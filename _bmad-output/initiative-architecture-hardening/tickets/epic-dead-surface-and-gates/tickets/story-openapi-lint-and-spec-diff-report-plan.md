@@ -3,7 +3,7 @@ title: 'OpenAPI lint and spec-diff report (17.4)'
 type: 'feature'
 ticket: '4'
 created: '2026-11-08'
-status: 'built'
+status: 'done'
 baseline_revision: 'c2410c8a6aeaee61f8b2d07aac672edd67d8977b'
 route: 'full'
 route_source: 'auto'
@@ -127,3 +127,7 @@ Pass 1 (quick lens), 2026-11-08: high 0, medium 2, low 2, false 1. Patched 4, re
 | 5 | `--base origin/develop` lists `GET /config` | false | rejected | 1c3bbde1 is on the first PR's branch, which this branch stacks on; after that PR merges and this branch rebases, `GET /config` is on develop. |
 
 Source conflict for the owner: ADR-013 allows action endpoints (`POST /{id}/{verb}`), the PRD's 17.4 rule lists verb endpoints as violations. The lint follows the PRD; ADR-013 or the rule should be aligned.
+
+## Production verification
+
+2026-11-10: live since #1258 (merged 75a2d315). Its gate ran as a required check, green, in the later production PRs #1281 and #1286, and its baseline only shrank there. Checked in the git history and the PR checks, not by a separate live probe (the gate runs in CI, not in production).

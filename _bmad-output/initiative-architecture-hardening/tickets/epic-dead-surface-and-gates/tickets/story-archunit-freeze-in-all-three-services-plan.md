@@ -3,7 +3,7 @@ title: 'ArchUnit freeze and first wall fixes (17.5)'
 type: 'feature'
 ticket: '5'
 created: '2026-11-08'
-status: 'built'
+status: 'done'
 baseline_revision: 'eb341346514da557f3c28e27c470c01b898d03b0'
 route: 'full'
 route_source: 'auto'
@@ -268,3 +268,7 @@ is rewritten only when the set of violations changes.
 | 5 | New files only intent-to-add in the index | low | patch | stage everything at commit (`git add -A` on the touched paths), checked in step 5 |
 | 6 | `docs/watch-app/architecture.md` lists `JwtStompInterceptor` under `watch/` | low | patch | moved to `security/` in both trees |
 | 7 | `should_fail_when_mailCoreUsesMailCenter`'s `noneMatch(FixtureMailPipeline)` is vacuous | low | patch | `FixtureMailPipeline.resolve(FixtureMailVariable)` gives a real mail-core-to-mail-core edge |
+
+## Production verification
+
+2026-11-10: live since #1258 (merged 75a2d315). Its gate ran as a required check, green, in the later production PRs #1281 and #1286, and its baseline only shrank there. Checked in the git history and the PR checks, not by a separate live probe (the gate runs in CI, not in production).

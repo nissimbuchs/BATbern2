@@ -3,7 +3,7 @@ title: 'Frontend HTTP calls moved into the service layer (17.3b)'
 type: 'refactor'
 ticket: '3b'
 created: '2026-11-08'
-status: 'built'
+status: 'done'
 baseline_revision: '7820a614aca557d054026c69c3b01ad1d3f3c806'
 route: 'full'
 route_source: 'auto'
@@ -186,3 +186,7 @@ handling and query key. Three test findings, all patched:
 
 Re-verified after the patches: plan Vitest set 217 files, 2648 passed, 0 failed (`173b-v2-vitest.log`);
 type-check, lint:ci exit 0; `make check-test-ratchet` exit 0; `check:api-paths` 301/301, 0 allow-listed.
+
+## Production verification
+
+2026-11-10: live since #1258 (merged 75a2d315). Its gate ran as a required check, green, in the later production PRs #1281 and #1286, and its baseline only shrank there. Checked in the git history and the PR checks, not by a separate live probe (the gate runs in CI, not in production).
