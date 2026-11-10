@@ -15,8 +15,8 @@ import java.util.UUID;
 @Repository
 public interface NewsletterSendRepository extends JpaRepository<NewsletterSend, UUID> {
 
-    /** The sends of an event in one status; newsletter and registrant notices share the table. */
-    List<NewsletterSend> findByEventIdAndStatus(UUID eventId, String status);
+    /** The sends of an event in these statuses; newsletter and registrant notices share the table. */
+    List<NewsletterSend> findByEventIdAndStatusIn(UUID eventId, Collection<String> statuses);
 
     /**
      * Story 7.3: template-scoped in-progress guard for the dedicated slides-online send.

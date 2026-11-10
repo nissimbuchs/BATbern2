@@ -109,7 +109,7 @@ class SlidesOnlineIntegrationTest extends AbstractIntegrationTest {
                 + " JOIN events e ON e.id = s.event_id WHERE e.event_code = ?)", EVENT_CODE);
         jdbc.update("DELETE FROM newsletter_sends WHERE event_id IN (SELECT id FROM events WHERE event_code = ?)",
                 EVENT_CODE);
-        jdbc.update("DELETE FROM newsletter_subscribers WHERE email LIKE 'success+%@simulator.amazonses.com'");
+        jdbc.update("DELETE FROM newsletter_subscribers WHERE email LIKE ?", "success+so760-%");
         jdbc.update("DELETE FROM event_tasks WHERE event_id IN (SELECT id FROM events WHERE event_code = ?)",
                 EVENT_CODE);
         jdbc.update("DELETE FROM registrations WHERE event_id IN (SELECT id FROM events WHERE event_code = ?)",
@@ -193,8 +193,31 @@ class SlidesOnlineIntegrationTest extends AbstractIntegrationTest {
         assertThat(completed.getStatus()).isEqualTo("COMPLETED");
         assertThat(completed.getSentCount()).isEqualTo(4);
         assertThat(completed.getFailedCount()).isZero();
-        assertThat(recipientRepository.findAll())
+        assertThat(recipientsOf(send))
                 .filteredOn(r -> "sent".equals(r.getDeliveryStatus())).hasSize(4);
+    }
+
+    // ── Way-1 deregistration call: each registrant's own cancel link ─────────
+
+    @Test
+    @DisplayName("each registrant's mail carries their own cancel link, never another registrant's")
+    void send_personalCancelLink() {
+        Event event = saveEvent(EVENT_CODE, Instant.parse("2026-03-06T15:00:00Z"));
+        saveRegistration(event.getId(), "att.one", sim("one"), "confirmed");
+        saveRegistration(event.getId(), "att.two", sim("two"), "confirmed");
+        Map<String, UUID> tokens = new HashMap<>();
+        registrationRepository.findByEventIdAndStatusIn(event.getId(), List.of("confirmed"))
+                .forEach(r -> tokens.put(r.getAttendeeEmail(), r.getDeregistrationToken()));
+
+        NewsletterSend send = savePendingSend(event.getId());
+        slidesOnlineEmailService.processSend(send.getId(), event, "registrant-notice-deregistration-call");
+
+        assertThat(sesRecorder.mailsTo(sim("one"))).singleElement().satisfies(mail -> assertThat(mail.html())
+                .contains("/deregister?token=" + tokens.get(sim("one")))
+                .doesNotContain(tokens.get(sim("two")).toString()));
+        assertThat(sesRecorder.mailsTo(sim("two"))).singleElement().satisfies(mail -> assertThat(mail.html())
+                .contains("/deregister?token=" + tokens.get(sim("two")))
+                .doesNotContain(tokens.get(sim("one")).toString()));
     }
 
     // ── AC6: per-recipient failure isolation ─────────────────────────────────
@@ -215,7 +238,7 @@ class SlidesOnlineIntegrationTest extends AbstractIntegrationTest {
         assertThat(result.getStatus()).isEqualTo("PARTIAL");
         assertThat(result.getSentCount()).isEqualTo(1);
         assertThat(result.getFailedCount()).isEqualTo(1);
-        List<NewsletterRecipient> recipients = recipientRepository.findAll();
+        List<NewsletterRecipient> recipients = recipientsOf(send);
         assertThat(recipients).extracting(NewsletterRecipient::getDeliveryStatus)
                 .containsExactlyInAnyOrder("sent", "failed");
     }
@@ -256,7 +279,7 @@ class SlidesOnlineIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isConflict());
         sesRecorder.awaitAsyncSends();
         assertThat(sesRecorder.mails()).isEmpty();
-        assertThat(sendRepository.findAll()).hasSize(1);
+        assertThat(sendsOf(event)).hasSize(1);
     }
 
     @Test
@@ -273,7 +296,7 @@ class SlidesOnlineIntegrationTest extends AbstractIntegrationTest {
         sesRecorder.awaitAsyncSends();
         assertThat(sesRecorder.mailsTo(sim("de"))).singleElement()
                 .satisfies(mail -> assertThat(mail.subject()).contains("Die Folien sind online"));
-        assertThat(sendRepository.findAll()).singleElement().satisfies(send -> {
+        assertThat(sendsOf(event)).singleElement().satisfies(send -> {
             assertThat(send.getTemplateKey()).isEqualTo("slides-online");
             assertThat(send.getStatus()).isEqualTo("COMPLETED");
         });
@@ -297,6 +320,26 @@ class SlidesOnlineIntegrationTest extends AbstractIntegrationTest {
 
         sesRecorder.awaitAsyncSends();
         assertThat(sesRecorder.mailsTo(sim("sub"))).hasSize(1);
+    }
+
+    @Test
+    @WithMockUser(username = "org.user", roles = {"ORGANIZER"})
+    @DisplayName("16.8c: a newsletter still queued (PENDING) blocks a second newsletter: 409, nobody mailed twice")
+    void composer_newsletterPending_blocksNewsletter() throws Exception {
+        Event event = saveEvent(EVENT_CODE, Instant.parse("2026-03-06T15:00:00Z"));
+        subscriberRepository.save(NewsletterSubscriber.builder()
+                .email(sim("sub")).language("de").source("explicit").unsubscribeToken("tok-760-sub").build());
+        NewsletterSend queued = savePendingSend(event.getId()); // PENDING: before markInProgress
+        queued.setTemplateKey("newsletter-event");
+        sendRepository.save(queued);
+
+        mockMvc.perform(post("/api/v1/events/{eventCode}/mails", EVENT_CODE)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"audience\":\"NEWSLETTER\",\"locale\":\"de\",\"target\":\"RECIPIENTS\"}"))
+                .andExpect(status().isConflict());
+        sesRecorder.awaitAsyncSends();
+        assertThat(sesRecorder.mails()).isEmpty();
+        assertThat(sendsOf(event)).hasSize(1);
     }
 
     @Test
@@ -386,8 +429,17 @@ class SlidesOnlineIntegrationTest extends AbstractIntegrationTest {
                 .build());
     }
 
+    /** This class's send rows: other classes' rows in the shared database are not ours. */
+    private List<NewsletterSend> sendsOf(Event event) {
+        return sendRepository.findAll().stream().filter(s -> event.getId().equals(s.getEventId())).toList();
+    }
+
+    private List<NewsletterRecipient> recipientsOf(NewsletterSend send) {
+        return recipientRepository.findAll().stream().filter(r -> send.getId().equals(r.getId().getSendId())).toList();
+    }
+
     /** A recipient that may receive mail: the SES mailbox simulator (nothing is delivered in tests). */
     private static String sim(String name) {
-        return "success+" + name + "@simulator.amazonses.com";
+        return "success+so760-" + name + "@simulator.amazonses.com";
     }
 }

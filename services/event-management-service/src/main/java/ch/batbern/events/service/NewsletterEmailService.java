@@ -254,9 +254,10 @@ public class NewsletterEmailService {
                     "newsletter for event " + event.getEventCode() + " (" + event.getTitle() + ")");
         }
 
-        // Duplicate-send prevention: reject if a newsletter send is already in progress for this
-        // event. Registrant notices share the table but not the guard (16.8c): their job does not
-        // block the newsletter, as the newsletter does not block theirs.
+        // Duplicate-send prevention: reject if a newsletter send of this event is queued (PENDING,
+        // before the @Async job marks it) or running. Registrant notices share the table but not
+        // the guard (16.8c): their job does not block the newsletter, as the newsletter does not
+        // block theirs.
         newsletterInProgress(event)
                 .ifPresent(active -> {
                     throw new DuplicateNewsletterSendException(
@@ -920,9 +921,10 @@ public class NewsletterEmailService {
 
     // ── Private helpers ───────────────────────────────────────────────────────
 
-    /** The first IN_PROGRESS send of this event that is a newsletter, not a registrant notice. */
+    /** The first PENDING or IN_PROGRESS send of this event that is a newsletter, not a registrant notice. */
     private Optional<NewsletterSend> newsletterInProgress(Event event) {
-        return sendRepository.findByEventIdAndStatus(event.getId(), STATUS_IN_PROGRESS).stream()
+        return sendRepository.findByEventIdAndStatusIn(event.getId(), List.of(STATUS_PENDING, STATUS_IN_PROGRESS))
+                .stream()
                 .filter(send -> !isRegistrantNoticeRow(send.getTemplateKey()))
                 .findFirst();
     }
