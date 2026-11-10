@@ -31,7 +31,8 @@ import static org.springframework.test.web.client.response.MockRestResponseCreat
  * {@code docs/api/internal/cums-internal.openapi.yml} (Story 17.0b2, replaces the
  * {@code @Mock RestTemplate} test): the real client on the real {@code cumsStatusRestTemplate} bean
  * of {@code WebClientConfig}, the request validated against the spec, answers from it.
- * Fail-open contract: 404 or no {@code active} is unknown (empty), anything else transient throws
+ * Fail-open contract: 404 is unknown (empty; {@code active} is required by the spec), anything else
+ * transient throws
  * {@link GatewayUserStatusException}.
  */
 @SpringBootTest(classes = {WebClientConfig.class, GatewayUserStatusClient.class},
@@ -50,7 +51,10 @@ class GatewayUserStatusClientContractTest {
     private static final String USER = "/internal/users/{username}";
     private static final String USER_BODY = """
             {"id": "anna.meier", "email": "anna.meier@example.com", "firstName": "Anna", "lastName": "Meier",
-             "roles": ["SPEAKER"], %s "createdAt": "2025-01-15T10:00:00Z", "updatedAt": "2025-01-15T10:00:00Z"}""";
+             "roles": ["SPEAKER"], "active": %s, "additionalEmails": [], "bio": null, "companyId": null,
+             "company": null, "hasCognitoAccount": true, "lastLoginAt": null, "profilePictureUrl": null,
+             "settings": null, "termsAcceptedAt": null,
+             "createdAt": "2025-01-15T10:00:00Z", "updatedAt": "2025-01-15T10:00:00Z"}""";
 
     @Autowired
     @Qualifier("cumsStatusRestTemplate")
@@ -84,17 +88,9 @@ class GatewayUserStatusClientContractTest {
 
     @Test
     void should_returnActiveFalse_when_deactivated() {
-        cums.expect(GET, USER).respondWith(HttpStatus.OK, USER_BODY.formatted("\"active\": false,"));
+        cums.expect(GET, USER).respondWith(HttpStatus.OK, USER_BODY.formatted("false"));
 
         assertThat(client.getActiveStatus("anna.meier")).contains(false);
-        cums.verify();
-    }
-
-    @Test
-    void should_returnEmpty_when_bodyHasNoActiveFlag() {
-        cums.expect(GET, USER).respondWith(HttpStatus.OK, USER_BODY.formatted(""));
-
-        assertThat(client.getActiveStatus("anna.meier")).isEmpty();
         cums.verify();
     }
 
