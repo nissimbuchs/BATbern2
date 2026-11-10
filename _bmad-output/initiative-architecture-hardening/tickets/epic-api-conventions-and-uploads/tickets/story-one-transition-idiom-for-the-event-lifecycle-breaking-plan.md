@@ -3,7 +3,7 @@ title: 'One transition idiom for the event lifecycle (breaking)'
 type: 'refactor'
 ticket: '9b'
 created: '2026-11-10'
-status: 'in-review'
+status: 'built'
 baseline_revision: '1bc1e7abb9fb62408b25224fb92b56da667dac31'
 route: 'full'
 route_source: 'auto'
@@ -220,3 +220,7 @@ Decisions by the agent under the owner's go (2026-11-10, "Yes" to 4.9b):
 - `cd web-frontend && npm run type-check && npm run lint:api && npx vitest run --maxWorkers=4`: expected green.
 - `make check-test-ratchet check-i18n-keys check-api-type-copies check-frontend-api-paths`: expected green.
 - `./scripts/ci/run-bruno-tests.sh development --collection event-full-workflow-api` against local dev: expected PASS.
+
+Final verification (2026-11-10, after review pass 1):
+- Full suites green: shared-kernel, EMS, CUMS, PCS, gateway. Frontend type-check, vitest, lint:api, lint:api-internal, lint:ci, check:api-types, ratchet, i18n, type-copies and api-paths are green, and so are infrastructure jest, prettier and eslint (`~/.cache/batbern-test-logs/v49b2/`).
+- Local dev: Bruno, all 16 collections green (including the new dev-only `event-publishing-api`). Playwright lifecycle, speaker-pool golden path, event-management flow and settings: 36 passed, 10 skipped (quarantined or skipped by design).
