@@ -218,6 +218,7 @@ export class EventManagementStack extends cdk.Stack {
         serviceDisplayName: 'EventManagement',
         alarmTopic: props.alarmTopic,
         serviceLogGroup: domainService.logGroup,
+        scheduledJobFailures: true, // ScheduledJobFailures, the auto-publish job (Story 4.9b)
         thresholds: {
           memoryUtilization: 85, // JVM heap capped via MaxRAMPercentage; 85% gives headroom for non-heap
           oomKillCount: envName === 'production' ? 1 : 3,
