@@ -158,7 +158,7 @@ class UserApiClientImplContractTest {
     }
 
     @Test
-    void should_failFast_when_freshPasswordActionComesWithoutPassword() {
+    void should_failFast_when_freshPasswordActionComesWithNullPassword() {
         bind(USERS).expect(POST, "/api/v1/users/{username}/issue-invitation-credentials")
                 .respondWith(HttpStatus.OK, "{\"temporaryPassword\": null, \"action\": \"FRESH_TEMP_PASSWORD\"}");
 

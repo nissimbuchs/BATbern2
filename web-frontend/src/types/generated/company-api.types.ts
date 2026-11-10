@@ -136,7 +136,7 @@ export interface paths {
     };
     /**
      * List and search companies with advanced query support
-     * @description Retrieve a paginated list of companies with optional filtering, sorting, field selection, and resource expansion.
+     * @description Retrieve a paginated list of companies with optional filtering, sorting and resource expansion.
      *
      *     **Acceptance Criteria**: AC1, AC14, AC15
      *

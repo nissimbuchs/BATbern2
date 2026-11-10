@@ -2,6 +2,7 @@ package ch.batbern.events.controller;
 
 import ch.batbern.events.config.CumsContractHarness;
 import ch.batbern.shared.test.AbstractIntegrationTest;
+import ch.batbern.shared.utils.EmailAddresses;
 import ch.batbern.events.config.TestAwsConfig;
 import ch.batbern.events.config.TestSecurityConfig;
 import ch.batbern.events.domain.NewsletterSubscriber;
@@ -328,6 +329,22 @@ public class NewsletterControllerIntegrationTest extends AbstractIntegrationTest
                             .content("{\"email\":\"" + address + "\",\"subscribed\":true}"))
                     .andExpect(status().isForbidden());
         }
+        assertThat(subscriberRepository.findAll()).isEmpty();
+    }
+
+    @Test
+    @DisplayName("4.9b PUT /newsletter/my-subscriptions — an address over 254 characters → 400, nothing stored")
+    @WithMockUser(username = DORA, roles = "USER")
+    void should_return400_when_addressIsTooLong() throws Exception {
+        doraHasAddresses();
+        // 64 + 1 + 185 + 5 = 255 characters; the pattern alone accepts it (idn-email has no @Email)
+        String tooLong = "a".repeat(64) + "@" + "b".repeat(185) + ".test";
+        assertThat(tooLong).hasSize(255).matches(EmailAddresses.OPENAPI_PATTERN);
+
+        mockMvc.perform(put("/api/v1/newsletter/my-subscriptions")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"email\":\"" + tooLong + "\",\"subscribed\":true}"))
+                .andExpect(status().isBadRequest());
         assertThat(subscriberRepository.findAll()).isEmpty();
     }
 

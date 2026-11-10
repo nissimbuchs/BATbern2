@@ -166,9 +166,10 @@ const FORMATS: Record<string, RegExp> = {
   date: /^\d{4}-\d{2}-\d{2}$/,
   uuid: /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
   email: /^[^\s@]+@[^\s@]+$/,
-  // RFC 6531: the domain (and in JSON Schema also the local part) may be non-ASCII. The #1102
+  // RFC 6531: the domain (and in JSON Schema also the local part) may be non-ASCII; the domain
+  // is dotted. Same shape as shared-kernel GeneratedCodeSemantics.IDN_EMAIL_SHAPE. The #1102
   // pattern next to it in the specs is what restricts the local part to ASCII.
-  'idn-email': /^[^\s@]+@[^\s@]+$/u,
+  'idn-email': /^[^\s@]+@[^\s@.]+(\.[^\s@.]+)+$/u,
 };
 
 function typeOf(value: unknown): string {

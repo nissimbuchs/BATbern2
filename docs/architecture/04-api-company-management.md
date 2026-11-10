@@ -10,7 +10,7 @@ This document outlines the Company Management Service API, which handles central
 
 The Company Management API provides endpoints for:
 - Company CRUD operations with full lifecycle management
-- Advanced query patterns (filter, sort, pagination, field selection, resource expansion)
+- Advanced query patterns (filter, sort, pagination, resource expansion)
 - Company search with autocomplete and Caffeine caching
 - Company verification workflows
 - Domain events raised in process (no message bus)
@@ -29,8 +29,7 @@ tags: [Companies]
 summary: List and search companies with advanced query support
 operationId: listCompanies
 description: |
-  Retrieve a paginated list of companies with optional filtering, sorting,
-  field selection, and resource expansion.
+  Retrieve a paginated list of companies with optional filtering, sorting and resource expansion.
 
   **Filter Syntax Examples**:
   - Single filter: {"industry":"Technology"}

@@ -3,14 +3,14 @@ title: '4.9 owner additions: idn-email, no fields projection, always-set propert
 type: 'refactor'
 ticket: ''
 created: '2026-11-09'
-status: 'done'
+status: 'in-review'
 baseline_revision: '6156367789162f7f927093bae625e935d6e68e3b'
 route: 'full'
 route_source: 'auto'
 risk: 'high'
-review: ''
-review_source: ''
-lenses_ran: []
+review: 'quick'
+review_source: 'pinned'
+lenses_ran: ['quick']
 review_loop_iteration: 0
 context:
   - '{project-root}/_bmad-output/initiative-architecture-hardening/null-vs-optional-options.md'
@@ -108,7 +108,7 @@ TLD list has no `.example` (RFC 2606). Measured with the jar: `x@bücherstube.ch
 reads `email` as RFC 5321), but the baseline line only went away with `GeneratedCodeSemantics` rule 4:
 both e-mail formats are checked as a mailbox shape, the #1102 pattern deciding where present
 (ContractServerTest positive control). AccountMergeRequest and PutMyNewsletterSubscriptionRequest had
-only `@Email`, so they gained the #1102 pattern (EmailAddressesTest count 14 → 16). Red-first ITs in
+only `@Email`, so they gained the #1102 pattern (EmailAddressesTest: 14 → 16 properties, two of them registration responses that echo the request; 18 after review pass 1 added the two internal request properties and scanned `docs/api/internal/`). Red-first ITs in
 UserControllerIntegrationTest (IDN create 201 + conforming response; Unicode local part 400).
 
 **fields.** Removed from both specs, CompanyQueryService projection, UserController parameter;
@@ -281,6 +281,16 @@ userAccountApi/AuthContext settings guards and PartnerMeetingRsvpPanel; two impo
 ## Plan Change Log
 
 ## Review Triage Log
+
+Pass 1 (quick lens, 2026-11-10): medium 2, low 6, false 0. All patches. Applied after the 16.8c implementer finished, so builds do not run in parallel.
+- medium, patch: `PutMyNewsletterSubscriptionRequest.email` has no `maxLength` after `@Email` left (the plan rule says `@Size` remains). Add 254 and an IT.
+- medium, patch: the internal `RecordRsvpRequest.attendeeEmail` and `OpenRequestConversation.requesterEmail` lack the #1102 pattern, which coding-standards says every request carries. `EmailAddressesTest` does not scan `internal/`. Add the pattern and extend the test.
+- low, patch: the MSW `idn-email` regex accepts `x@nodot`, unlike `GeneratedCodeSemantics.IDN_EMAIL_SHAPE`. Align it and add a test case.
+- low, patch: stale "field selection" wording in the `companies-api` and `users-api` operation descriptions and in `04-api-*` docs.
+- low, patch: the stale CUMS `build.gradle` comment about `?fields=`.
+- low, patch: new `!` and `as` in the `fixtureDefaults.test.ts` idn test.
+- low, patch: the `UserApiClientImplContractTest` test name says "without password" but the stub sends null.
+- low, patch: `EmailAddressesTest` labels its count "request fields" although it also counts two responses.
 
 ## Design Notes
 

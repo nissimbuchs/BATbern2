@@ -14,7 +14,7 @@ This document outlines the User Management Service API, which handles user profi
 
 The User Management API provides endpoints for:
 - User profile CRUD operations with full lifecycle management
-- Advanced query patterns (filter, sort, pagination, field selection, resource expansion)
+- Advanced query patterns (filter, sort, pagination, resource expansion)
 - User search with autocomplete and Caffeine caching
 - User preferences and settings management
 - Role management with business rules enforcement
@@ -124,8 +124,7 @@ tags: [User Management]
 summary: List users with advanced query support
 operationId: listUsers
 description: |
-  Retrieve a paginated list of users with optional filtering, sorting,
-  field selection, and resource expansion.
+  Retrieve a paginated list of users with optional filtering, sorting and resource expansion.
 
   **Authorization**: ORGANIZER role required
 
