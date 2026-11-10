@@ -1306,7 +1306,7 @@ export interface components {
        * @description Suggested base filename (extension is derived from the fetched content type)
        * @default profile
        */
-      filename: string;
+      filename?: string;
     };
     AdminUploadProfilePictureFromUrlResponse: {
       /** @description CDN URL of the uploaded profile picture */
@@ -2021,7 +2021,7 @@ export interface components {
        * @description If true, creates a new user if not found. If false, returns error if user doesn't exist.
        * @default true
        */
-      createIfMissing: boolean;
+      createIfMissing?: boolean;
       /**
        * @description Has no effect; kept for compatibility. This operation never creates a Cognito login: the
        *     profile is created with cognito_id=NULL either way. A login comes from the sign-up page
@@ -2029,7 +2029,7 @@ export interface components {
        * @default true
        * @example false
        */
-      cognitoSync: boolean;
+      cognitoSync?: boolean;
     };
     GetOrCreateUserResponse: {
       /**

@@ -1247,7 +1247,7 @@ export interface components {
       room?: string;
       capacity?: number;
       /** @default de */
-      language: string;
+      language?: string;
     };
     /**
      * @description Partial session update (PATCH). Only the provided fields are changed.

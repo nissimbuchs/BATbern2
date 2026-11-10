@@ -763,6 +763,8 @@ changes a screen fills that screen's keys.
 #### Frontend: generated API type copies
 
 The wire types come from `web-frontend/src/types/generated/` (generated from `docs/api/`, ADR-006).
+They are generated with `--default-non-nullable false`: a spec `default` does not make a property
+required, only `required` does, so a request may leave out what the server defaults.
 A hand-written copy drifts silently: when the spec changes (e.g. a field becomes optional or
 `| null`), the copy still compiles and the UI reads a field the server no longer sends. Alias the
 generated type and keep the export name, so imports stay unchanged:

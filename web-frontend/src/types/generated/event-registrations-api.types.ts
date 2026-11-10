@@ -507,12 +507,12 @@ export interface components {
        * @description When the event is full, true adds over capacity; false returns 409.
        * @default false
        */
-      force: boolean;
+      force?: boolean;
       /**
        * @description Send the attendee a "you have a confirmed spot" email.
        * @default true
        */
-      notify: boolean;
+      notify?: boolean;
     };
     /**
      * @description Story 10.10: Minimal registration status for the authenticated user (AC1).
@@ -684,12 +684,12 @@ export interface components {
          * @description Subscribe to newsletter
          * @default false
          */
-        newsletterSubscribed: boolean;
+        newsletterSubscribed?: boolean;
         /**
          * @description Receive event reminders
          * @default true
          */
-        eventReminders: boolean;
+        eventReminders?: boolean;
       };
       /**
        * @description Dietary preferences, accessibility needs, etc.

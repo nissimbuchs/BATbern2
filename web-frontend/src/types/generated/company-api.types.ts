@@ -404,7 +404,7 @@ export interface components {
        * @description Suggested base filename (extension derived from content type)
        * @default logo
        */
-      filename: string;
+      filename?: string;
     };
     UploadImageFromUrlResponse: {
       /** @description Upload ID for use in subsequent company creation */

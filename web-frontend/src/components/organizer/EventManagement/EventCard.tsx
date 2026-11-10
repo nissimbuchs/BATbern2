@@ -62,7 +62,7 @@ export const EventCard: React.FC<EventCardProps> = ({ event, onEdit, onCardClick
   const workflowStep = getWorkflowStepNumber(workflowState);
   const capacity = eventUI.capacity || event.venueCapacity || 0;
   const attendeePercentage =
-    capacity > 0 ? Math.round((event.currentAttendeeCount / capacity) * 100) : 0;
+    capacity > 0 ? Math.round(((event.currentAttendeeCount ?? 0) / capacity) * 100) : 0;
 
   const locale = i18n.language === 'de' ? de : enUS;
   const eventDate = eventUI.eventDate || event.date;

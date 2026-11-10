@@ -263,7 +263,7 @@ export interface components {
        * @default de
        * @enum {string}
        */
-      language: 'de' | 'en';
+      language?: 'de' | 'en';
     };
     NewsletterUnsubscribeRequest: {
       token: string;
@@ -368,7 +368,7 @@ export interface components {
        * @description Whether this is a layout template
        * @default false
        */
-      isLayout: boolean;
+      isLayout?: boolean;
       /** @description Layout template key to use (e.g. batbern-default) */
       layoutKey?: string | null;
     };
@@ -399,7 +399,7 @@ export interface components {
        * @description Preferred newsletter language when subscribing; defaults to 'de'.
        * @default de
        */
-      language: string | null;
+      language?: string | null;
     };
     PatchNewsletterSubscriptionRequest: {
       subscribed: boolean;
@@ -407,7 +407,7 @@ export interface components {
        * @description Preferred newsletter language; defaults to 'de' when omitted.
        * @default de
        */
-      language: string | null;
+      language?: string | null;
     };
     /**
      * @description Standard error envelope returned on every 4xx/5xx response across all services.

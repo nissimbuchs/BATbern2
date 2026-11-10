@@ -9,12 +9,8 @@ import type { components } from '@/types/generated/event-newsletter-api.types';
 
 type Schemas = components['schemas'];
 
-/**
- * `language` has a spec default (`de`), so the generated type makes it required (openapi-typescript
- * reads a default as always present); on a request it may be omitted and the server applies it.
- */
-export type NewsletterSubscribeRequest = Omit<Schemas['NewsletterSubscribeRequest'], 'language'> &
-  Partial<Pick<Schemas['NewsletterSubscribeRequest'], 'language'>>;
+/** `language` may be omitted; the server applies its default (`de`). */
+export type NewsletterSubscribeRequest = Schemas['NewsletterSubscribeRequest'];
 export type NewsletterUnsubscribeRequest = Schemas['NewsletterUnsubscribeRequest'];
 export type NewsletterSubscriptionStatusResponse = Schemas['NewsletterSubscriptionStatusResponse'];
 /** #1244: newsletter state of one of the authenticated user's addresses. */

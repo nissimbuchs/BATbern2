@@ -981,7 +981,7 @@ export interface components {
        * @default 0
        * @example 0
        */
-      currentAttendeeCount: number;
+      currentAttendeeCount?: number;
       /** Format: date-time */
       publishedAt?: string | null;
       /**
@@ -1135,7 +1135,7 @@ export interface components {
        */
       organizerUsername: string;
       /** @default 0 */
-      currentAttendeeCount: number;
+      currentAttendeeCount?: number;
       /** Format: date-time */
       publishedAt?: string;
       metadata?: string;
@@ -1462,7 +1462,7 @@ export interface components {
        *     Defaults to false if not provided.
        * @default false
        */
-      overrideValidation: boolean | null;
+      overrideValidation?: boolean | null;
       /**
        * @description Optional reason for overriding workflow validation.
        *     Used for audit trail when overrideValidation is true.

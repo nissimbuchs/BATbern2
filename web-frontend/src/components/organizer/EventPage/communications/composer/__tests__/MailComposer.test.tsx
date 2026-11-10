@@ -76,6 +76,9 @@ let sendStatus = 202;
 let sendBody: Record<string, unknown> | null = null;
 
 function previewFor(req: MailComposeRequest): MailPreviewResponse {
+  // The server's defaults for what the request leaves out (spec `default`).
+  const recipientIndex = req.recipientIndex ?? 0;
+  const locale = req.locale ?? 'de';
   const personalized = req.audience === 'REGISTRANTS' || req.audience === 'SPEAKERS';
   const count = personalized
     ? 3
@@ -83,13 +86,13 @@ function previewFor(req: MailComposeRequest): MailPreviewResponse {
       ? 1
       : 120;
   return {
-    subject: `Subject ${req.audience} #${req.recipientIndex}`,
-    html: `<p>Hello recipient ${req.recipientIndex}</p>`,
-    recipientIndex: req.recipientIndex,
+    subject: `Subject ${req.audience} #${recipientIndex}`,
+    html: `<p>Hello recipient ${recipientIndex}</p>`,
+    recipientIndex,
     recipientCount: count,
     recipient: {
-      displayName: `Person ${req.recipientIndex}`,
-      address: `p${req.recipientIndex}@example.com`,
+      displayName: `Person ${recipientIndex}`,
+      address: `p${recipientIndex}@example.com`,
       cc: [],
     },
     sampleRecipients: Array.from({ length: Math.min(count, 8) }, (_, i) => ({
@@ -97,7 +100,7 @@ function previewFor(req: MailComposeRequest): MailPreviewResponse {
     })),
     personalized,
     templateKey: req.templateKey ?? 'speaker-reminder-response-tier2',
-    locale: req.locale,
+    locale,
     replyTo: 'batbern60-moderator@example.com',
     organizerCount: 2,
     skipped: [],

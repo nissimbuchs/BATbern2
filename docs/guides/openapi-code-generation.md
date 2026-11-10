@@ -862,15 +862,21 @@ Add scripts to `web-frontend/package.json`:
 {
   "scripts": {
     "generate:api-types": "npm run generate:api-types:companies && npm run generate:api-types:users && npm run generate:api-types:events",
-    "generate:api-types:companies": "openapi-typescript ../docs/api/companies-api.openapi.yml -o src/types/generated/company-api.types.ts && prettier --write src/types/generated/company-api.types.ts",
-    "generate:api-types:users": "openapi-typescript ../docs/api/users-api.openapi.yml -o src/types/generated/user-api.types.ts && prettier --write src/types/generated/user-api.types.ts",
-    "generate:api-types:events": "openapi-typescript ../docs/api/events-api.openapi.yml -o src/types/generated/events-api.types.ts && prettier --write src/types/generated/events-api.types.ts"
+    "generate:api-types:companies": "openapi-typescript ../docs/api/companies-api.openapi.yml --default-non-nullable false -o src/types/generated/company-api.types.ts && prettier --write src/types/generated/company-api.types.ts",
+    "generate:api-types:users": "openapi-typescript ../docs/api/users-api.openapi.yml --default-non-nullable false -o src/types/generated/user-api.types.ts && prettier --write src/types/generated/user-api.types.ts",
+    "generate:api-types:events": "openapi-typescript ../docs/api/events-api.openapi.yml --default-non-nullable false -o src/types/generated/events-api.types.ts && prettier --write src/types/generated/events-api.types.ts"
   },
   "devDependencies": {
     "openapi-typescript": "^7.10.1"
   }
 }
 ```
+
+Every script passes `--default-non-nullable false`. openapi-typescript otherwise reads a `default`
+as "always present" and makes the property required, so a request property the server defaults
+(`NewsletterSubscribeRequest.language`, `MailComposeRequest.locale`) could not be left out. With the
+flag a property is required only where the spec lists it in `required`; a response property that
+every producing code path sends belongs there (see `coding-standards.md` → "S2S contract harness").
 
 ### Generated TypeScript Types
 
