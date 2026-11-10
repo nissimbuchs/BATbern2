@@ -35,13 +35,13 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
 
     // AWS SDK for Cognito (the gateway sends no mail; its unused SesClient bean was removed in 17.0b3)
-    implementation platform('software.amazon.awssdk:bom:2.57.6')
+    implementation platform('software.amazon.awssdk:bom:2.57.11')
     implementation 'software.amazon.awssdk:cognitoidentityprovider'
     implementation 'software.amazon.awssdk:auth'
 
     // JWT Processing
-    implementation 'com.auth0:java-jwt:4.6.0'
-    implementation 'com.auth0:jwks-rsa:0.23.1'
+    implementation 'com.auth0:java-jwt:4.6.2'
+    implementation 'com.auth0:jwks-rsa:0.24.2'
 
     // Jackson for JSON processing (version managed by Spring Boot)
     // Epic 13 (SB4): keep Jackson 2 (com.fasterxml) defaults during migration — payload parity.
@@ -88,7 +88,7 @@ dependencies {
     testImplementation 'org.testcontainers:testcontainers'
     testImplementation 'org.testcontainers:testcontainers-junit-jupiter'
     testImplementation 'org.testcontainers:testcontainers-localstack'
-    testImplementation 'io.rest-assured:rest-assured:6.0.1'
+    testImplementation 'io.rest-assured:rest-assured:6.3.0'
 }
 
 dependencyManagement {
