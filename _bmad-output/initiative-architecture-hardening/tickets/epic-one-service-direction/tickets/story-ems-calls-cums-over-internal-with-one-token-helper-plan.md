@@ -3,7 +3,7 @@ title: 'EMS calls CUMS over /internal with one token helper'
 type: 'refactor'
 ticket: '6'
 created: '2026-11-10'
-status: 'in-progress'
+status: 'done'
 baseline_revision: '23e6150f42634a669f02bcae495d9d0e56e533bc'
 route: 'full'
 route_source: 'auto'
@@ -67,18 +67,18 @@ context:
 ## Tasks & Acceptance
 
 **Execution:**
-- [ ] `shared-kernel/src/main/java/ch/batbern/shared/security/S2sHeaders.java` + unit test -- Static helper: `Authorization: Bearer` from a `Jwt` principal (`JwtAuthenticationToken`), empty headers otherwise, no WARN. Content-Type is up to the caller.
-- [ ] `docs/api/internal/cums-internal.openapi.yml` -- `POST /internal/users/provision`, `PATCH /internal/users/{username}/profile`, `POST /internal/users/{username}/issue-invitation-credentials`, `GET /internal/companies/{name}` with examples and `$ref` to users-api and companies-api schemas. The JWT is optional. One consumer: EMS speaker workflow (6b adds PCS for companies).
-- [ ] `docs/api/users-api.openapi.yml` -- remove the 3 paths and the now-empty tag. Then `api-lint-baseline.txt` (`--update`) and remove G02 from `api-lint-owners.txt`.
-- [ ] CUMS `InternalUserController`, `InternalCompanyController`, `UserController`, `UserService` -- add the 4 endpoints (`@Valid`, `additionalProperties` rejection kept). Delete the public methods. Provision grants SPEAKER only. Actor = forwarded `custom:username`, else `system:<job>` (Design Notes).
-- [ ] CUMS tests -- move `UserProvisioningAndPatchIntegrationTest` to the internal paths. Each operation runs with `jwt()` and anonymously. Drop the role 403 cases; add SPEAKER-only and actor assertions. `S2sProviderContractIntegrationTest`: the 4 internal operations; delete provision, profile, credentials and the paged company list from the public blocks (keep `/users/me` and `/companies/{name}` for PCS).
-- [ ] EMS `UserApiClient(Impl)` -- every call uses `S2sHeaders`. The 4 calls go to `/internal`. Delete `getAllCompanies` and `validateUserExists`, and fix the `CompanyBasicDto` javadoc.
-- [ ] EMS tests -- contract tests against `cums-internal`: each moved call once with JWT (header forwarded) and once without (header absent). Update `CumsContractHarness.ANSWERABLE` and the integration tests that answer the old paths.
-- [ ] `api-gateway/.../ProductionSecurityFilterChainTest.java` -- add `/internal/users/provision` and `/internal/companies/acme` to the denied paths.
-- [ ] `web-frontend/scripts/check-s2s-client-urls.ts` + `s2s-client-urls-baseline.txt` + `s2s-client-urls-owners.txt` + `check-s2s-client-urls.test.ts` + `__fixtures__/s2s-client-urls/` -- scan `services/*/src/main/java/**/client/**` for `"/api/v1`. Baseline lines are keyed by file and URL: PCS 3 → 6b, `PartnerApiClientImpl` 2 → 8. RAISED or STALE fails. `npm run check:s2s-client-urls`, `make check-s2s-client-urls`, and steps in the `test-ratchet` CI job.
-- [ ] `bruno-tests/users-api/22..26` -- delete the 6 files and update the collection README.
-- [ ] `web-frontend` -- `npm run generate:api-types`.
-- [ ] Docs -- `module-map.md` Gates (the guard), ADR-016 Enforcement, the `InternalUserController` javadoc, and docs from `.github/doc-drift-mappings.yml`.
+- [x] `shared-kernel/src/main/java/ch/batbern/shared/security/S2sHeaders.java` + unit test -- Static helper: `Authorization: Bearer` from a `Jwt` principal (`JwtAuthenticationToken`), empty headers otherwise, no WARN. Content-Type is up to the caller.
+- [x] `docs/api/internal/cums-internal.openapi.yml` -- `POST /internal/users/provision`, `PATCH /internal/users/{username}/profile`, `POST /internal/users/{username}/issue-invitation-credentials`, `GET /internal/companies/{name}` with examples and `$ref` to users-api and companies-api schemas. The JWT is optional. One consumer: EMS speaker workflow (6b adds PCS for companies).
+- [x] `docs/api/users-api.openapi.yml` -- remove the 3 paths and the now-empty tag. Then `api-lint-baseline.txt` (`--update`) and remove G02 from `api-lint-owners.txt`.
+- [x] CUMS `InternalUserController`, `InternalCompanyController`, `UserController`, `UserService` -- add the 4 endpoints (`@Valid`, `additionalProperties` rejection kept). Delete the public methods. Provision grants SPEAKER only. Actor = forwarded `custom:username`, else `system:<job>` (Design Notes).
+- [x] CUMS tests -- move `UserProvisioningAndPatchIntegrationTest` to the internal paths. Each operation runs with `jwt()` and anonymously. Drop the role 403 cases; add SPEAKER-only and actor assertions. `S2sProviderContractIntegrationTest`: the 4 internal operations; delete provision, profile, credentials and the paged company list from the public blocks (keep `/users/me` and `/companies/{name}` for PCS).
+- [x] EMS `UserApiClient(Impl)` -- every call uses `S2sHeaders`. The 4 calls go to `/internal`. Delete `getAllCompanies` and `validateUserExists`, and fix the `CompanyBasicDto` javadoc.
+- [x] EMS tests -- contract tests against `cums-internal`: each moved call once with JWT (header forwarded) and once without (header absent). Update `CumsContractHarness.ANSWERABLE` and the integration tests that answer the old paths.
+- [x] `api-gateway/.../ProductionSecurityFilterChainTest.java` -- add `/internal/users/provision` and `/internal/companies/acme` to the denied paths.
+- [x] `web-frontend/scripts/check-s2s-client-urls.ts` + `s2s-client-urls-baseline.txt` + `s2s-client-urls-owners.txt` + `check-s2s-client-urls.test.ts` + `__fixtures__/s2s-client-urls/` -- scan `services/*/src/main/java/**/client/**` for `"/api/v1`. Baseline lines are keyed by file and URL: PCS 3 → 6b, `PartnerApiClientImpl` 2 → 8. RAISED or STALE fails. `npm run check:s2s-client-urls`, `make check-s2s-client-urls`, and steps in the `test-ratchet` CI job.
+- [x] `bruno-tests/users-api/22..26` -- delete the 6 files and update the collection README.
+- [x] `web-frontend` -- `npm run generate:api-types`.
+- [x] Docs -- `module-map.md` Gates (the guard), ADR-016 Enforcement, the `InternalUserController` javadoc, and docs from `.github/doc-drift-mappings.yml`.
 
 **Acceptance Criteria:**
 - Given local dev, when an organizer invites a new speaker, then CUMS logs `POST /internal/users/provision` and `.../issue-invitation-credentials` and the credentials mail lands in `/dev/mails`.
@@ -89,6 +89,65 @@ context:
 - Given each moved call, when an integration test runs it with and without a user JWT, then both pass. `ProductionSecurityFilterChainTest` still denies `/internal/**`.
 
 ## Implementation Notes
+
+Built 2026-11-10 (owner blanket go), local commits on `feature/17-overnight-2026-11-10`, no PR.
+
+- `S2sHeaders.forCurrentUser()` (shared-kernel security): bearer from a `Jwt` principal, empty
+  headers otherwise, no log line. Every `UserApiClientImpl` call uses it, the internal reads too
+  (decision above); `createHeadersWithJwtToken` is gone.
+- CUMS: `InternalUserController` gains provision, profile patch and invitation credentials
+  (`@Valid`, unknown properties 400); `InternalCompanyController` gains `GET /internal/companies/{name}`.
+  `UserController` no longer implements `DomainIntegrationApi` and lost `patchUserProfile`.
+  `UserService` takes an explicit `actor` for the 3 writes (provision: `createdBy` of the
+  `UserCreatedEvent`; patch: `updatedBy` of the `UserUpdatedEvent`; credentials: log). Actor =
+  `SecurityContextHelper.actorOr(job)`: forwarded `custom:username` (else subject), otherwise
+  `system:ems-speaker-workflow` (provision, credentials) or `system:ems-content-submission` (patch).
+  Provision grants SPEAKER only; the ADMIN branch is removed.
+- EMS: the 4 calls on `/internal`; `getAllCompanies` and `validateUserExists` deleted; misplaced
+  javadoc of `getCompanyDisplayName` moved back onto it. `UserApiClientImplContractTest` (public
+  calls) deleted, its cases merged into `UserApiClientImplInternalContractTest`, which binds only
+  `cums-internal`; every operation runs signed in and not, asserting the header present or absent.
+  `CumsContractHarness` binds only `cums-internal` and no longer needs `ignoringMissingAuthorization`.
+- Touch rule: `SessionSpeakerControllerIntegrationTest` and `SpeakerInvitationControllerIntegrationTest`
+  moved off the `UserApiClient` mock onto the harness; ratchet `be-mock-s2s-client` 56 -> 54.
+- Found by the harness and fixed in this story: EMS sends `"companyId": null` in get-or-create when
+  a speaker is invited without a company, which the spec did not allow (CUMS accepted it).
+  `GetOrCreateUserRequest.companyId` is now `nullable` (users-api, types regenerated).
+- Found by the provider contract test, fixed in its own commit: 15 error handlers (CUMS 13, EMS 1,
+  PCS 1) sent `severity` `WARNING` or `ERROR`, outside the spec enum; the response conformance gate
+  checks only 2xx. Mapped to LOW/MEDIUM/HIGH/CRITICAL as the other handlers do; guarded by
+  shared-kernel `ErrorResponseSeverityValuesTest` (source scan, red first).
+- Guard `check-s2s-client-urls.ts`: comment-aware Java literal scan of `services/*/src/main/java`
+  files under a `client` directory, baseline + owners like `check-api-type-copies`; owner ids may
+  be epic entry ids (`6b`, `8`). Baseline created with `--update --allow-growth` (5 lines: PCS 3 ->
+  6b, `PartnerApiClientImpl` 2 -> 8). At `23e6150f` the same scan finds 10 lines (the 5 removed
+  `UserApiClientImpl` sites, checked by scanning the old file).
+- Spectral baseline 105 -> 104 entries (G02 gone). ArchUnit stores unchanged.
+- Bruno users-api 22-26 deleted (6 files); README says why and where the coverage lives now.
+- Commits: 94c13b45 `fix(api)` (severity values), 8a2fb9fd `refactor(s2s)` (the story).
+
+**Verification (run 2026-11-10, logs in `~/.cache/batbern-test-logs/6-*.log`):**
+- Gradle, one at a time: shared-kernel 638 tests, CUMS 954, EMS 2712, PCS 276, all 0 failures;
+  `ProductionSecurityFilterChainTest` denies `/internal/users/provision` and
+  `/internal/companies/acme`. The first full shared-kernel run failed 2 `ContractServerTest` cases
+  that used the removed public paths; moved to the internal spec, green. ArchUnit stores unchanged.
+- `lint:api` 104 entries, `lint:api-internal`, `check:api-types`, `type-check`, `check:test-ratchet`
+  (be-mock-s2s-client 56 -> 54), `check:frontend-api-paths`, `check:s2s-client-urls` (5 lines),
+  vitest of the guard (13 tests): all exit 0.
+- Local dev (CUMS and EMS restarted): the 3 old public paths answer 405 (provision) and 404 (profile,
+  credentials) through the gateway; `/internal/companies/acme` through the gateway 403. On a new
+  fixture event `BATbern39728` the organizer promoted a speaker and sent the invitation: CUMS logged
+  `POST /internal/users/provision ... actor=batbern.organizer` and `Issued invitation credentials:
+  actor=batbern.organizer ... USE_EXISTING_PASSWORD`; the invitation mail is in the local capture
+  (`GET /dev/emails`). The speaker then submitted content with a bio: CUMS logged
+  `PATCH /internal/users/batbern.speaker/profile (actor=batbern.speaker)` and the bio was on the
+  profile; the bio was reset to NULL in the local DB afterwards.
+- Deviation: the local check used the existing test speaker (`batbern.speaker`, CONFIRMED login),
+  not a new one. Local CUMS talks to the production Cognito pool, so a new speaker would have created
+  a production login; the existing-user branch and `USE_EXISTING_PASSWORD` mutate nothing there.
+  The new-user branch is covered by `UserProvisioningAndPatchIntegrationTest` (in-memory Cognito).
+- Open, after deploy: the production check of the 3 public paths (expect 405/404) and the
+  access-control DAST.
 
 ## Plan Change Log
 
