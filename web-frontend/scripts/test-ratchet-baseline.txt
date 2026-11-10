@@ -73,7 +73,6 @@ be-mock-s2s-client	services/event-management-service/src/test/java/ch/batbern/ev
 be-mock-s2s-client	services/event-management-service/src/test/java/ch/batbern/events/service/RegistrationServiceBatchTest.java	1
 be-mock-s2s-client	services/event-management-service/src/test/java/ch/batbern/events/service/RegistrationServiceConfirmationTest.java	1
 be-mock-s2s-client	services/event-management-service/src/test/java/ch/batbern/events/service/SessionUserServiceTest.java	1
-be-mock-s2s-client	services/event-management-service/src/test/java/ch/batbern/events/service/SlidesOnlineEmailServiceTest.java	1
 be-mock-s2s-client	services/event-management-service/src/test/java/ch/batbern/events/service/SpeakerAutoRegistrationServiceTest.java	1
 be-mock-s2s-client	services/event-management-service/src/test/java/ch/batbern/events/service/SpeakerDashboardServiceTest.java	1
 be-mock-s2s-client	services/event-management-service/src/test/java/ch/batbern/events/service/SpeakerInvitationServiceTest.java	1
@@ -575,7 +574,6 @@ fe-mock-services	web-frontend/src/hooks/useEvents.test.ts	1
 fe-mock-services	web-frontend/src/hooks/useInfiniteEvents.test.ts	1
 fe-mock-services	web-frontend/src/hooks/useLiveSessionControl/useLiveSessionControl.test.ts	1
 fe-mock-services	web-frontend/src/hooks/useMyRegistration.test.ts	1
-fe-mock-services	web-frontend/src/hooks/useNewsletter/useNewsletter.test.ts	1
 fe-mock-services	web-frontend/src/hooks/useNewsletterSubscribers/useNewsletterSubscriberMutations.test.ts	1
 fe-mock-services	web-frontend/src/hooks/useNewsletterSubscribers/useNewsletterSubscribers.test.ts	1
 fe-mock-services	web-frontend/src/hooks/useNotifications.test.ts	1
@@ -592,7 +590,6 @@ fe-mock-services	web-frontend/src/hooks/useRecentEventPhotos.test.ts	1
 fe-mock-services	web-frontend/src/hooks/useRegistration/useRegistration.test.ts	2
 fe-mock-services	web-frontend/src/hooks/useSessionSpeakers.test.ts	1
 fe-mock-services	web-frontend/src/hooks/useSpeakerOutreach.test.tsx	1
-fe-mock-services	web-frontend/src/hooks/useSpeakerPoolHooks.test.ts	2
 fe-mock-services	web-frontend/src/hooks/useTimetable/useTimetable.test.ts	1
 fe-mock-services	web-frontend/src/hooks/useUserManagement/__tests__/useCreateUser.test.tsx	1
 fe-mock-services	web-frontend/src/hooks/useUserManagement/__tests__/useDeleteUser.test.tsx	1
@@ -632,7 +629,6 @@ fe-mock-services	web-frontend/src/services/deregistrationService.test.ts	1
 fe-mock-services	web-frontend/src/services/emailTemplateService.test.ts	1
 fe-mock-services	web-frontend/src/services/eventApiClient.mocked.test.ts	1
 fe-mock-services	web-frontend/src/services/eventTypeService.test.ts	1
-fe-mock-services	web-frontend/src/services/newsletterService.test.ts	1
 fe-mock-services	web-frontend/src/services/notificationApiClient.test.ts	1
 fe-mock-services	web-frontend/src/services/publicOrganizerService.test.ts	1
 fe-mock-services	web-frontend/src/services/registrationService.test.ts	1
@@ -640,7 +636,6 @@ fe-mock-services	web-frontend/src/services/sessionService.test.ts	1
 fe-mock-services	web-frontend/src/services/slotAssignmentService/slotAssignmentService.test.ts	4
 fe-mock-services	web-frontend/src/services/speakerContentService.test.ts	1
 fe-mock-services	web-frontend/src/services/speakerOutreachService.test.ts	1
-fe-mock-services	web-frontend/src/services/speakerPoolService.test.ts	1
 fe-mock-services	web-frontend/src/services/speakerPortalService.test.ts	1
 fe-mock-services	web-frontend/src/services/speakerStatusService.test.ts	1
 fe-mock-services	web-frontend/src/services/timetableService/__tests__/timetableService.test.ts	1
