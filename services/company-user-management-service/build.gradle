@@ -46,7 +46,7 @@ dependencies {
     runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.13.0'
 
     // Service-specific: Testing
-    testImplementation 'io.rest-assured:rest-assured:6.0.1'
+    testImplementation 'io.rest-assured:rest-assured:6.3.0'
     testImplementation 'org.awaitility:awaitility:4.3.0'
     // Story 17.0b3: TestAwsConfig registers the SesRecorder's SesClient (EmailService runs for real).
     testImplementation 'software.amazon.awssdk:ses'
