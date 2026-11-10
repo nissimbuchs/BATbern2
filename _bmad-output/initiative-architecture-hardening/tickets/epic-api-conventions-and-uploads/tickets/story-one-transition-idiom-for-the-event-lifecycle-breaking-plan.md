@@ -137,7 +137,7 @@ Counts (baseline 1bc1e7ab → after):
 - Test ratchet: fe-mock-components −4, fe-mock-hooks −3, fe-mock-services −2, fe-mock-i18n −2
   (EventPublishingTab, PublishingControls, workflowService, EventWorkflowStateSection on the MSW
   harness); be-transactional-it unchanged (the new CDN IT has no class-level `@Transactional`).
-- Operations in the public specs: 303 → 300 (the specMatcher/examples positive controls now say
+- Operations in the public specs: 302 → 300 (7 operations became 5) (the specMatcher/examples positive controls now say
   "more than 290").
 - EMS suite: 2695 tests, 0 failures, response conformance baseline 0 lines, all still produced.
 - Vitest: 460 files, 5876 passed.
