@@ -117,17 +117,51 @@ describe('EventPublishingTab', () => {
     expect(save).toBeDisabled();
 
     await user.click(
-      within(schedule).getByRole('switch', { name: 'Publish speakers automatically' })
+      within(schedule).getByRole('switch', { name: 'Publish agenda automatically' })
     );
     expect(save).toBeEnabled();
     await user.click(save);
 
     await waitFor(() => expect(api.calls('patchPublishing')).toHaveLength(1));
-    expect(api.calls('patchPublishing')[0].body).toEqual({ phase2Enabled: false });
+    expect(api.calls('patchPublishing')[0].body).toEqual({ phase3Enabled: false });
     expect(await within(schedule).findByText('Schedule saved.')).toBeInTheDocument();
     expect(
-      within(schedule).getByRole('switch', { name: 'Publish speakers automatically' })
+      within(schedule).getByRole('switch', { name: 'Publish agenda automatically' })
     ).not.toBeChecked();
+  });
+
+  it('does not save an agenda that would auto-publish before the speakers', async () => {
+    const user = userEvent.setup();
+    api.on('getPublishing', () => publishing());
+
+    renderTab();
+
+    const schedule = await screen.findByTestId('auto-publish-schedule');
+    const save = within(schedule).getByTestId('save-auto-publish-schedule');
+    const agendaDays = within(
+      within(schedule).getByTestId('auto-publish-schedule-agenda')
+    ).getByLabelText('Days before the event');
+    await user.clear(agendaDays);
+    await user.type(agendaDays, '40');
+
+    expect(within(schedule).getByTestId('auto-publish-schedule-order')).toHaveTextContent(
+      'The agenda is only auto-published after the speakers'
+    );
+    expect(save).toBeDisabled();
+
+    // positive control: the same days as the speakers are fine
+    await user.clear(agendaDays);
+    await user.type(agendaDays, '30');
+    expect(within(schedule).queryByTestId('auto-publish-schedule-order')).not.toBeInTheDocument();
+    expect(save).toBeEnabled();
+
+    // speakers off while the agenda stays on is refused as well
+    await user.click(
+      within(schedule).getByRole('switch', { name: 'Publish speakers automatically' })
+    );
+    expect(within(schedule).getByTestId('auto-publish-schedule-order')).toBeInTheDocument();
+    expect(save).toBeDisabled();
+    expect(api.calls('patchPublishing')).toHaveLength(0);
   });
 
   it('refuses days outside 1 to 365 before sending anything', async () => {

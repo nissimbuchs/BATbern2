@@ -1004,7 +1004,8 @@
       "triggerDate": "{{date}}",
       "save": "Tallenna aikataulu",
       "saved": "Aikataulu tallennettu.",
-      "error": "Aikataulun tallennus epäonnistui."
+      "error": "Aikataulun tallennus epäonnistui.",
+      "agendaBeforeSpeakers": "Ohjelma julkaistaan automaattisesti vasta puhujien jälkeen: ota puhujat käyttöön äläkä anna ohjelmalle enempää päiviä ennen tapahtumaa kuin puhujille."
     }
   },
   "notifications": {

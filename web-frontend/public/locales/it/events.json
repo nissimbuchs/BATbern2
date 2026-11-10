@@ -1004,7 +1004,8 @@
       "triggerDate": "Il {{date}}",
       "save": "Salva la pianificazione",
       "saved": "Pianificazione salvata.",
-      "error": "Impossibile salvare la pianificazione."
+      "error": "Impossibile salvare la pianificazione.",
+      "agendaBeforeSpeakers": "Il programma viene pubblicato automaticamente solo dopo i relatori: attiva i relatori e non dare al programma più giorni prima dell'evento che ai relatori."
     }
   },
   "notifications": {

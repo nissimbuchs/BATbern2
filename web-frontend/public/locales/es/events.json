@@ -1004,7 +1004,8 @@
       "triggerDate": "El {{date}}",
       "save": "Guardar la programación",
       "saved": "Programación guardada.",
-      "error": "No se pudo guardar la programación."
+      "error": "No se pudo guardar la programación.",
+      "agendaBeforeSpeakers": "El programa solo se publica automáticamente después de los ponentes: activa los ponentes y no des al programa más días antes del evento que a los ponentes."
     }
   },
   "notifications": {

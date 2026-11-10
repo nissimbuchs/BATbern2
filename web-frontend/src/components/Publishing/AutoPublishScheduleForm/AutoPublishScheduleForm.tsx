@@ -4,7 +4,9 @@
  * The auto-publish schedule of an event, part of the publishing resource
  * (`GET`/`PATCH /events/{eventCode}/publishing`): whether and how many days before the event the
  * daily job publishes the speakers and the agenda. Without a stored schedule EMS answers the
- * defaults (30 and 14 days, both on). Saving sends only the fields that changed.
+ * defaults (30 and 14 days, both on). Saving sends only the fields that changed. The agenda is only
+ * auto-published after the speakers, so a schedule with the agenda first, or the agenda on while
+ * the speakers are off, is not saved (EMS refuses it with 400 too).
  */
 
 import React, { useEffect, useMemo, useState } from 'react';
@@ -89,6 +91,12 @@ export const AutoPublishScheduleForm: React.FC<AutoPublishScheduleFormProps> = (
   const daysValid =
     validDays(draft.phase2DaysBeforeEvent) && validDays(draft.phase3DaysBeforeEvent);
   const unchanged = Object.keys(changes).length === 0;
+  // The agenda auto-publish needs the speakers already published (EMS answers 400 otherwise):
+  // not while the speakers auto-publish is off, and not on more days before the event.
+  const agendaBeforeSpeakers =
+    draft.phase3Enabled &&
+    (!draft.phase2Enabled ||
+      (daysValid && Number(draft.phase3DaysBeforeEvent) > Number(draft.phase2DaysBeforeEvent)));
 
   const handleSave = async () => {
     setSaved(false);
@@ -176,12 +184,17 @@ export const AutoPublishScheduleForm: React.FC<AutoPublishScheduleFormProps> = (
           (value) => edit({ phase3DaysBeforeEvent: value })
         )}
       </Stack>
+      {agendaBeforeSpeakers && (
+        <Alert severity="warning" sx={{ mt: 2 }} data-testid="auto-publish-schedule-order">
+          {t('publishing.schedule.agendaBeforeSpeakers')}
+        </Alert>
+      )}
       <Stack direction="row" spacing={2} alignItems="center" sx={{ mt: 2 }}>
         <Button
           variant="contained"
           size="small"
           onClick={handleSave}
-          disabled={unchanged || !daysValid || isScheduling}
+          disabled={unchanged || !daysValid || agendaBeforeSpeakers || isScheduling}
           startIcon={isScheduling ? <CircularProgress size={16} /> : undefined}
           data-testid="save-auto-publish-schedule"
         >

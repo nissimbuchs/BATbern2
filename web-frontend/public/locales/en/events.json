@@ -1016,7 +1016,8 @@
       "triggerDate": "On {{date}}",
       "save": "Save schedule",
       "saved": "Schedule saved.",
-      "error": "The schedule could not be saved."
+      "error": "The schedule could not be saved.",
+      "agendaBeforeSpeakers": "The agenda is only auto-published after the speakers: switch the speakers on, and give the agenda no more days before the event than the speakers."
     }
   },
   "notifications": {

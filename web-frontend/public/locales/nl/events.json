@@ -1004,7 +1004,8 @@
       "triggerDate": "Op {{date}}",
       "save": "Planning opslaan",
       "saved": "Planning opgeslagen.",
-      "error": "De planning kon niet worden opgeslagen."
+      "error": "De planning kon niet worden opgeslagen.",
+      "agendaBeforeSpeakers": "Het programma wordt pas na de sprekers automatisch gepubliceerd: zet de sprekers aan en geef het programma niet meer dagen voor het evenement dan de sprekers."
     }
   },
   "notifications": {

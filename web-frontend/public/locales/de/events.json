@@ -1016,7 +1016,8 @@
       "triggerDate": "Am {{date}}",
       "save": "Zeitplan speichern",
       "saved": "Zeitplan gespeichert.",
-      "error": "Der Zeitplan konnte nicht gespeichert werden."
+      "error": "Der Zeitplan konnte nicht gespeichert werden.",
+      "agendaBeforeSpeakers": "Das Programm wird erst nach den Referenten automatisch veröffentlicht: Referenten einschalten und für das Programm nicht mehr Tage vor dem Anlass wählen als für die Referenten."
     }
   },
   "notifications": {

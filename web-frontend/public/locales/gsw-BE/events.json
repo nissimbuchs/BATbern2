@@ -1010,7 +1010,8 @@
       "triggerDate": "Am {{date}}",
       "save": "Zytplan spichere",
       "saved": "Zytplan gspicheret.",
-      "error": "Dr Zytplan het nid chönne gspicheret wärde."
+      "error": "Dr Zytplan het nid chönne gspicheret wärde.",
+      "agendaBeforeSpeakers": "Ds Programm wird ersch nach de Referänte automatisch veröffentlicht: Referänte ischalte und für ds Programm nid meh Täg vor em Aalass wähle als für d Referänte."
     }
   },
   "notifications": {

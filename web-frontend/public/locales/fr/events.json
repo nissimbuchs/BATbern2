@@ -1004,7 +1004,8 @@
       "triggerDate": "Le {{date}}",
       "save": "Enregistrer le calendrier",
       "saved": "Calendrier enregistré.",
-      "error": "Le calendrier n'a pas pu être enregistré."
+      "error": "Le calendrier n'a pas pu être enregistré.",
+      "agendaBeforeSpeakers": "Le programme n'est publié automatiquement qu'après les intervenants : activez les intervenants et ne donnez pas au programme plus de jours avant l'événement qu'aux intervenants."
     }
   },
   "notifications": {

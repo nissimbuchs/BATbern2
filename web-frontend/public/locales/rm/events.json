@@ -1004,7 +1004,8 @@
       "triggerDate": "Ils {{date}}",
       "save": "Memorisar il plan",
       "saved": "Plan memorisà.",
-      "error": "Il plan n'ha betg pudì vegnir memorisà."
+      "error": "Il plan n'ha betg pudì vegnir memorisà.",
+      "agendaBeforeSpeakers": "Il program vegn publitgà automaticamain pir suenter ils referents: activai ils referents e na dai al program betg dapli dis avant l'occurrenza che als referents."
     }
   },
   "notifications": {
