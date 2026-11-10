@@ -1,6 +1,6 @@
 # Story 16.8: One shared composer for all audiences
 
-Status: in-progress (16.8a and 16.8b live via #1174, 2026-11-01; 16.8c open, after one release and owner go)
+Status: review (16.8a and 16.8b live via #1174, 2026-11-01; 16.8c built 2026-11-10 under Epic 17, plan `_bmad-output/initiative-architecture-hardening/tickets/epic-dead-surface-and-gates/tickets/story-mail-center-composer-clean-up-plan.md`)
 
 ## Story
 
@@ -141,8 +141,8 @@ Do not start 16.8c in the same branch as 16.8b. Wait for the owner's go after 16
 
 ### Part 16.8c — clean-up (PR 3, after one release, owner go required)
 
-- [ ] **Task 17 — Remove** (AC: 18): components and endpoints listed in Dev Notes; spec entries in `event-newsletter-api.openapi.yml`, `events-core-api.openapi.yml`, `event-speakers-api.openapi.yml`; regenerate types; Bruno `bruno-tests/events/venue-coordination-preview.bru` and `bruno-tests/speaker-pool-api/61..66-send-reminder-*.bru` (move the negative cases worth keeping to `mails-preview-*`); `useNewsletterHistory`, `useSendStatus`, `useRetryFailedRecipients`, `useSendReminder`, `usePreviewRegistrantNotice`, `useSendRegistrantNotice` and their services once unused.
-- [ ] **Task 18 — Verify**: grep the repo for each removed operationId and path; full EMS + Vitest + Playwright; docs updated (`[no-doc]` not allowed here, the user guide changes).
+- [x] **Task 17 — Remove** (AC: 18): components and endpoints listed in Dev Notes; spec entries in `event-newsletter-api.openapi.yml`, `events-core-api.openapi.yml`, `event-speakers-api.openapi.yml`; regenerate types; Bruno `bruno-tests/events/venue-coordination-preview.bru` and `bruno-tests/speaker-pool-api/61..66-send-reminder-*.bru` (move the negative cases worth keeping to `mails-preview-*`); `useNewsletterHistory`, `useSendStatus`, `useRetryFailedRecipients`, `useSendReminder`, `usePreviewRegistrantNotice`, `useSendRegistrantNotice` and their services once unused.
+- [x] **Task 18 — Verify**: grep the repo for each removed operationId and path; full EMS + Vitest + Playwright; docs updated (`[no-doc]` not allowed here, the user guide changes).
 
 ## Dev Notes
 
