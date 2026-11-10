@@ -36,8 +36,8 @@ rules:
   # `me`): `POST /companies/{name}/verify`, `POST /users/me/merge`. Everywhere else a verb is
   # flagged: after a literal (`POST /users/me/profile-claims/confirm`), with another method
   # (`PUT /tasks/{taskId}/complete`), on a collection (`POST /users/provision`), or followed by a
-  # parameter or qualifier (`/publish/{phase}`, `/deregister/by-email`). For a read (GET, HEAD,
-  # OPTIONS) only the last segment counts: `GET /publish/status` names a sub-resource.
+  # parameter or qualifier (`/deregister/by-email`). For a read (GET, HEAD,
+  # OPTIONS) only the last segment counts: `GET …/workflow/status` names a sub-resource.
   # The list below is a detector that tells a verb from a sub-resource noun, not a permission list:
   # no action name is allowed by being on or off it. The right verb for the right action.
   # Contents: the Story 17.4 set (first block) plus every verb segment found in the specs on

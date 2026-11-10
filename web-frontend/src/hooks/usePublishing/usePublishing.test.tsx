@@ -30,6 +30,12 @@ const status: PublishingStatusResponse = {
     totalCount: 2,
     unassignedSessions: [{ sessionSlug: 'keynote', title: 'Keynote' }],
   },
+  phase2Enabled: true,
+  phase2DaysBeforeEvent: 30,
+  phase2TriggerDate: '2025-04-15T08:00:00Z',
+  phase3Enabled: true,
+  phase3DaysBeforeEvent: 14,
+  phase3TriggerDate: '2025-05-01T08:00:00Z',
 };
 
 describe('usePublishing', () => {
@@ -43,7 +49,7 @@ describe('usePublishing', () => {
     queryClient = new QueryClient({
       defaultOptions: { queries: { retry: false, gcTime: 0 }, mutations: { retry: false } },
     });
-    api.on('getPublishingStatus', () => status);
+    api.on('getPublishing', () => status);
   });
 
   afterEach(() => {
@@ -61,7 +67,7 @@ describe('usePublishing', () => {
       const { result } = await renderLoaded();
 
       expect(result.current.publishingStatus).toEqual(status);
-      expect(api.calls('getPublishingStatus')[0].params.eventCode).toBe(EVENT);
+      expect(api.calls('getPublishing')[0].params.eventCode).toBe(EVENT);
     });
 
     it('should start idle, with no validation errors', async () => {
@@ -84,14 +90,14 @@ describe('usePublishing', () => {
         cdnInvalidated: true,
       }));
       const { result } = await renderLoaded();
-      expect(api.calls('getPublishingStatus')).toHaveLength(1);
+      expect(api.calls('getPublishing')).toHaveLength(1);
 
       act(() => result.current.publishPhase('speakers'));
 
       await waitFor(() => expect(api.calls('publishPhase')).toHaveLength(1));
       expect(api.calls('publishPhase')[0].params).toEqual({ eventCode: EVENT, phase: 'speakers' });
       await waitFor(() => expect(result.current.isPublishing).toBe(false));
-      await waitFor(() => expect(api.calls('getPublishingStatus')).toHaveLength(2));
+      await waitFor(() => expect(api.calls('getPublishing')).toHaveLength(2));
       expect(result.current.publishError).toBeNull();
     });
 
@@ -152,33 +158,48 @@ describe('usePublishing', () => {
         phase: 'speakers',
       });
       await waitFor(() => expect(result.current.isUnpublishing).toBe(false));
-      await waitFor(() => expect(api.calls('getPublishingStatus')).toHaveLength(2));
+      await waitFor(() => expect(api.calls('getPublishing')).toHaveLength(2));
     });
   });
 
-  describe('scheduleAutoPublish', () => {
-    it('should send the schedule of both triggers', async () => {
-      const schedule = {
-        phase2Enabled: true,
-        phase2DaysBeforeEvent: 30,
-        phase3Enabled: true,
-        phase3DaysBeforeEvent: 14,
-      };
-      api.on('configureAutoPublish', () => ({
-        scheduled: true,
-        ...schedule,
-        phase2TriggerDate: '2025-04-15T08:00:00Z',
-        phase3TriggerDate: '2025-05-01T08:00:00Z',
-      }));
+  describe('updateSchedule', () => {
+    it('should PATCH only the given fields and put the answer into the status cache', async () => {
+      api.on('patchPublishing', ({ body }) => ({ ...status, ...body }));
       const { result } = await renderLoaded();
 
-      act(() => result.current.scheduleAutoPublish(schedule));
+      await act(() => result.current.updateSchedule({ phase2Enabled: false }));
 
-      await waitFor(() => expect(api.calls('configureAutoPublish')).toHaveLength(1));
-      const [call] = api.calls('configureAutoPublish');
+      const [call] = api.calls('patchPublishing');
       expect(call.params.eventCode).toBe(EVENT);
-      expect(call.body).toEqual(schedule);
-      await waitFor(() => expect(result.current.isScheduling).toBe(false));
+      expect(call.body).toEqual({ phase2Enabled: false });
+      await waitFor(() => expect(result.current.publishingStatus?.phase2Enabled).toBe(false));
+      // the answer replaced the cache: no second GET
+      expect(api.calls('getPublishing')).toHaveLength(1);
+      expect(result.current.isScheduling).toBe(false);
+    });
+
+    it('should reject and expose the error when EMS refuses the schedule', async () => {
+      api.on('patchPublishing', () =>
+        HttpResponse.json(
+          {
+            timestamp: '2026-11-10T08:00:00Z',
+            status: 400,
+            error: 'Bad Request',
+            message: 'min 1',
+          },
+          { status: 400 }
+        )
+      );
+      const { result } = await renderLoaded();
+
+      await act(async () => {
+        await expect(
+          result.current.updateSchedule({ phase2DaysBeforeEvent: 1 })
+        ).rejects.toBeTruthy();
+      });
+
+      await waitFor(() => expect(result.current.scheduleError).toBeTruthy());
+      expect(result.current.publishingStatus?.phase2DaysBeforeEvent).toBe(30);
     });
   });
 });

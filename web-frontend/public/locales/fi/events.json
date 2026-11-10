@@ -992,7 +992,20 @@
     "sections": {
       "validation": "Validointi",
       "phases": "Julkaisuvaihe",
-      "publishNext": "Julkaise seuraava vaihe"
+      "publishNext": "Julkaise seuraava vaihe",
+      "schedule": "Automaattinen julkaisu"
+    },
+    "schedule": {
+      "description": "Päivittäinen ajo julkaisee nämä vaiheet verkkosivulla annettuna päivänä ennen tapahtumaa. Vain julkaisemattomat vaiheet.",
+      "speakers": "Julkaise puhujat automaattisesti",
+      "agenda": "Julkaise ohjelma automaattisesti",
+      "daysBefore": "Päivää ennen tapahtumaa",
+      "invalidDays": "1–365 päivää",
+      "triggerDate": "{{date}}",
+      "save": "Tallenna aikataulu",
+      "saved": "Aikataulu tallennettu.",
+      "error": "Aikataulun tallennus epäonnistui.",
+      "agendaBeforeSpeakers": "Ohjelma julkaistaan automaattisesti vasta puhujien jälkeen: ota puhujat käyttöön äläkä anna ohjelmalle enempää päiviä ennen tapahtumaa kuin puhujille."
     }
   },
   "notifications": {

@@ -2,10 +2,10 @@
  * Publishing Service
  * Story 5.7 - Task 5b: Progressive Publishing Frontend
  *
- * API client for progressive publishing operations:
- * - Publish/unpublish phases (topic → speakers → agenda)
- * - Publishing status with the validation of every phase
- * - Auto-publish scheduling
+ * API client for progressive publishing operations (Story 4.9b, one transition idiom):
+ * - Publish/unpublish phases (topic → speakers → agenda): `POST /events/{code}/phases/{phase}/…`
+ * - The publishing resource, `GET`/`PATCH /events/{code}/publishing`: status, the validation of
+ *   every phase and the auto-publish schedule
  *
  * Request and response types are the generated ones of events-core-api (17.0c2).
  */
@@ -16,8 +16,7 @@ import type {
   PublishPhaseResponse,
   UnpublishPhaseResponse,
   PublishingStatusResponse,
-  AutoPublishScheduleRequest,
-  AutoPublishScheduleResponse,
+  PatchPublishingRequest,
 } from '@/types/event.types';
 
 /**
@@ -35,7 +34,7 @@ async function publishPhase(
   phase: PublishingPhase
 ): Promise<PublishPhaseResponse> {
   const response = await apiClient.post<PublishPhaseResponse>(
-    `/events/${eventCode}/publish/${phase}`
+    `/events/${eventCode}/phases/${phase}/publish`
   );
   return response.data;
 }
@@ -52,40 +51,37 @@ async function unpublishPhase(
   phase: PublishingPhase
 ): Promise<UnpublishPhaseResponse> {
   const response = await apiClient.post<UnpublishPhaseResponse>(
-    `/events/${eventCode}/unpublish/${phase}`
+    `/events/${eventCode}/phases/${phase}/unpublish`
   );
   return response.data;
 }
 
 /**
- * Get publishing status including validation for all phases
- * Story BAT-11: Used by EventPublishingTab to display real validation data
+ * The publishing resource: published phases, the validation of every phase and the auto-publish
+ * schedule (defaults when none is stored).
  *
  * @param eventCode - Event code (e.g., "BATbern142")
- * @returns Publishing status with validation for all phases
  */
-async function getPublishingStatus(eventCode: string): Promise<PublishingStatusResponse> {
-  const response = await apiClient.get<PublishingStatusResponse>(
-    `/events/${eventCode}/publish/status`
-  );
+async function getPublishing(eventCode: string): Promise<PublishingStatusResponse> {
+  const response = await apiClient.get<PublishingStatusResponse>(`/events/${eventCode}/publishing`);
   return response.data;
 }
 
 /**
- * Configure the auto-publish schedule of an event: whether and how many days before the event
- * the speakers (phase 2) and agenda (phase 3) are published. It used to send
- * `{ scheduledDate }`, a body EMS does not read (found by the MSW harness, 17.0c2).
+ * Set the auto-publish schedule: whether and how many days before the event the speakers
+ * (phase 2) and the agenda (phase 3) are published by the daily job. Partial: only the fields
+ * sent change.
  *
  * @param eventCode - Event code
- * @param request - `{ phase2Enabled, phase2DaysBeforeEvent, phase3Enabled, phase3DaysBeforeEvent }`
- * @returns The configured schedule with its trigger dates
+ * @param request - any of `{ phase2Enabled, phase2DaysBeforeEvent, phase3Enabled, phase3DaysBeforeEvent }`
+ * @returns The whole publishing resource with the stored schedule and its trigger dates
  */
-async function scheduleAutoPublish(
+async function patchPublishing(
   eventCode: string,
-  request: AutoPublishScheduleRequest
-): Promise<AutoPublishScheduleResponse> {
-  const response = await apiClient.post<AutoPublishScheduleResponse>(
-    `/events/${eventCode}/publish/schedule`,
+  request: PatchPublishingRequest
+): Promise<PublishingStatusResponse> {
+  const response = await apiClient.patch<PublishingStatusResponse>(
+    `/events/${eventCode}/publishing`,
     request
   );
   return response.data;
@@ -98,8 +94,8 @@ async function scheduleAutoPublish(
 export const publishingService = {
   publishPhase,
   unpublishPhase,
-  getPublishingStatus,
-  scheduleAutoPublish,
+  getPublishing,
+  patchPublishing,
 };
 
-export { publishPhase, unpublishPhase, getPublishingStatus, scheduleAutoPublish };
+export { publishPhase, unpublishPhase, getPublishing, patchPublishing };

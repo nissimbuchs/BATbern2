@@ -23,21 +23,25 @@ import {
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { usePublishing } from '@/hooks/usePublishing/usePublishing';
-import type { PublishingPhase, PublishValidationDetail } from '@/types/event.types';
+import type { PublishingPhase } from '@/types/event.types';
 
 export interface PublishingControlsProps {
   eventCode: string;
   currentPhase: PublishingPhase;
-  validationErrors?: PublishValidationDetail[];
 }
 
-export const PublishingControls: React.FC<PublishingControlsProps> = ({
-  eventCode,
-  validationErrors = [],
-}) => {
+export const PublishingControls: React.FC<PublishingControlsProps> = ({ eventCode }) => {
   const { t } = useTranslation('events');
-  const { publishPhase, unpublishPhase, isPublishing, isUnpublishing, publishingStatus } =
-    usePublishing(eventCode);
+  // The 422 reasons come from this component's own publish (Story 4.9b): the tab used to pass the
+  // errors of its own hook instance, whose mutation never runs, so no reason was ever shown.
+  const {
+    publishPhase,
+    unpublishPhase,
+    isPublishing,
+    isUnpublishing,
+    publishingStatus,
+    validationErrors,
+  } = usePublishing(eventCode);
   const [revertDialogOpen, setRevertDialogOpen] = useState(false);
 
   const [isAnnouncingPublish, setIsAnnouncingPublish] = useState(false);

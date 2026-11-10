@@ -6,21 +6,25 @@ import ch.batbern.events.domain.PublishingConfig;
 import ch.batbern.events.domain.Session;
 import ch.batbern.events.domain.SpeakerPool;
 import ch.batbern.events.core.dto.generated.EventType;
+import ch.batbern.events.core.dto.generated.PatchPublishingRequest;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.PublishingConfigRepository;
 import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
+import ch.batbern.events.service.publishing.PublishingService;
 import ch.batbern.shared.types.EventWorkflowState;
 import ch.batbern.shared.types.SpeakerWorkflowState;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.util.List;
 import java.time.temporal.ChronoUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -30,8 +34,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Story BAT-16 (AC5): Scheduled Auto-Publishing
  *
  * Tests:
- * - Auto-publish speakers phase 30 days before event
- * - Auto-publish agenda phase 14 days before event
+ * - Auto-publish speakers phase 30 days before event (default) or on the stored day (4.9b)
+ * - Auto-publish agenda phase 14 days before event (default) or on the stored day (4.9b)
  * - Respect auto-publish configuration flags
  * - Skip events without complete timing
  */
@@ -53,6 +57,12 @@ public class PublishingScheduledServiceIntegrationTest extends AbstractIntegrati
 
     @Autowired
     private PublishingConfigRepository publishingConfigRepository;
+
+    @Autowired
+    private PublishingService publishingService;
+
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
 
     // Use timestamp-based sequence to ensure uniqueness across test runs
     private int eventNumberSequence = (int) (System.currentTimeMillis() % 50000) + 50000;
@@ -248,6 +258,95 @@ public class PublishingScheduledServiceIntegrationTest extends AbstractIntegrati
         assertThat(updated.getCurrentPublishedPhase()).isEqualTo("speakers");
     }
 
+    /**
+     * Story 4.9b: the job honours the stored days, not a fixed 30. An event 10 days away with a
+     * 10-day schedule is published; one 30 days away with the same schedule is not (it would have
+     * been under the fixed 30 days).
+     */
+    @Test
+    void should_autoPublishSpeakersOnStoredDay_when_scheduleDiffersFromDefault() {
+        Event tenDaysAway = createEvent("BAT-SPEAKERS-10", startOfDayIn(10), null);
+        Event thirtyDaysAway = createEvent("BAT-SPEAKERS-30-NOT", startOfDayIn(30), null);
+        for (Event event : List.of(tenDaysAway, thirtyDaysAway)) {
+            publishingConfigRepository.save(PublishingConfig.builder()
+                    .eventId(event.getId())
+                    .autoPublishSpeakersDaysBefore(10)
+                    .build());
+        }
+
+        publishingScheduledService.autoPublishSpeakers();
+
+        assertThat(eventRepository.findById(tenDaysAway.getId()).orElseThrow().getCurrentPublishedPhase())
+                .isEqualTo("speakers");
+        assertThat(eventRepository.findById(thirtyDaysAway.getId()).orElseThrow().getCurrentPublishedPhase())
+                .isNull();
+    }
+
+    @Test
+    void should_autoPublishAgendaOnStoredDay_when_scheduleDiffersFromDefault() {
+        Event sevenDaysAway = createEvent("BAT-AGENDA-7", startOfDayIn(7), "speakers");
+        createSessionWithTiming(sevenDaysAway, sevenDaysAway.getDate());
+        Event fourteenDaysAway = createEvent("BAT-AGENDA-14-NOT", startOfDayIn(14), "speakers");
+        createSessionWithTiming(fourteenDaysAway, fourteenDaysAway.getDate());
+        for (Event event : List.of(sevenDaysAway, fourteenDaysAway)) {
+            publishingConfigRepository.save(PublishingConfig.builder()
+                    .eventId(event.getId())
+                    .autoPublishAgendaDaysBefore(7)
+                    .build());
+        }
+
+        publishingScheduledService.autoPublishAgenda();
+
+        Event published = eventRepository.findById(sevenDaysAway.getId()).orElseThrow();
+        assertThat(published.getCurrentPublishedPhase()).isEqualTo("agenda");
+        assertThat(published.getWorkflowState()).isEqualTo(EventWorkflowState.AGENDA_PUBLISHED);
+        assertThat(eventRepository.findById(fourteenDaysAway.getId()).orElseThrow().getCurrentPublishedPhase())
+                .isEqualTo("speakers");
+    }
+
+    /**
+     * The schedule set through the API is the one the job reads: PATCH switches speakers off for
+     * one event, the default event next to it is still published.
+     */
+    @Test
+    void should_skipOnlyTheDisabledEvent_when_twoEventsShareTheDay() {
+        Event disabled = createEvent("BAT-SPEAKERS-OFF", startOfDayIn(30), null);
+        Event byDefault = createEvent("BAT-SPEAKERS-ON", startOfDayIn(30), null);
+        publishingService.patchPublishing(disabled.getEventCode(),
+                PatchPublishingRequest.builder().phase2Enabled(false).phase3Enabled(false).build());
+
+        publishingScheduledService.autoPublishSpeakers();
+
+        assertThat(eventRepository.findById(disabled.getId()).orElseThrow().getCurrentPublishedPhase()).isNull();
+        assertThat(eventRepository.findById(byDefault.getId()).orElseThrow().getCurrentPublishedPhase())
+                .isEqualTo("speakers");
+    }
+
+    /**
+     * publishing_config columns are nullable (V28): a row holding NULLs means the defaults, field by
+     * field, and the job goes on with the next event.
+     */
+    @Test
+    void should_useDefaultsAndGoOn_when_storedScheduleHoldsNulls() {
+        Event withNulls = createEvent("BAT-SPEAKERS-NULLS", startOfDayIn(30), null);
+        Event next = createEvent("BAT-SPEAKERS-NEXT", startOfDayIn(30), null);
+        eventRepository.flush();
+        jdbcTemplate.update("INSERT INTO publishing_config (event_id, auto_publish_speakers, "
+                + "auto_publish_speakers_days_before, auto_publish_agenda, auto_publish_agenda_days_before) "
+                + "VALUES (?, NULL, NULL, NULL, NULL)", withNulls.getId());
+
+        publishingScheduledService.autoPublishSpeakers();
+
+        assertThat(eventRepository.findById(withNulls.getId()).orElseThrow().getCurrentPublishedPhase())
+                .isEqualTo("speakers");
+        assertThat(eventRepository.findById(next.getId()).orElseThrow().getCurrentPublishedPhase())
+                .isEqualTo("speakers");
+    }
+
+    private static Instant startOfDayIn(int days) {
+        return LocalDate.now().plusDays(days).atStartOfDay(ZoneId.systemDefault()).toInstant();
+    }
+
     // ============================================
     // Helper Methods
     // ============================================
@@ -286,7 +385,7 @@ public class PublishingScheduledServiceIntegrationTest extends AbstractIntegrati
         Session session = Session.builder()
                 .eventId(event.getId())
                 .eventCode(event.getEventCode())
-                .sessionSlug("test-session")
+                .sessionSlug("test-session-" + event.getEventCode().toLowerCase())
                 .title("Test Session")
                 .sessionType("presentation")
                 .startTime(eventDate.plus(2, ChronoUnit.HOURS))

@@ -23,8 +23,6 @@ security:
 tags:
 - name: Events
   description: Event CRUD and listing operations
-- name: Event Actions
-  description: Event publishing and workflow operations
 - name: Event Workflow
   description: Event workflow state transitions and status (EventWorkflowController)
 - name: Event Types
@@ -763,7 +761,9 @@ paths:
       tags:
       - Events
       summary: Update event (full replacement)
-      description: 'Replace all event data with new data.
+      description: 'Replace all event data with new data. The workflow state is not part of the body: it changes only through
+
+        `POST /events/{eventCode}/transition` (Story 4.9b); a `workflowState` field is an unknown property and answers 400.
 
 
         **Acceptance Criteria**: AC4
@@ -833,7 +833,9 @@ paths:
       tags:
       - Events
       summary: Partially update event
-      description: 'Update specific fields of an event without replacing all data.
+      description: 'Update specific fields of an event without replacing all data. The workflow state is not part of the body: it changes only through
+
+        `POST /events/{eventCode}/transition` (Story 4.9b); a `workflowState` field is an unknown property and answers 400.
 
 
         **Acceptance Criteria**: AC5
@@ -942,144 +944,42 @@ paths:
           $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/InternalServerError'
-  /events/{eventCode}/publish:
-    post:
-      tags:
-      - Event Actions
-      summary: Publish event
-      description: 'Publish an event after validation checks.
-
-
-        **Acceptance Criteria**: AC7
-
-        **Story**: 1.16.2 - Uses eventCode (meaningful ID) instead of UUID
-
-
-        **Validation Rules**:
-
-        - Event must have a date
-
-        - Event must have a title
-
-        - Event must be in draft status
-
-
-        **Cache Invalidation**: All event caches cleared on publish
-
-
-
-        **Security**: ORGANIZER role required; any other role gets 403.'
-      operationId: publishEvent
-      parameters:
-      - name: eventCode
-        in: path
-        description: Event code in format BATbern{number}
-        required: true
-        schema:
-          type: string
-          pattern: ^BATbern[0-9]+$
-          example: BATbern142
-      responses:
-        '403':
-          description: Forbidden (ORGANIZER role required)
-        '200':
-          description: Event published successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Event'
-              examples:
-                default:
-                  summary: generated from the schema and captured sub-values
-                  value:
-                    eventCode: BATbern66
-                    title: TBD Herbst 28
-                    eventNumber: 66
-                    date: "2028-11-03T00:00:00Z"
-                    registrationDeadline: "2028-11-02T00:00:00Z"
-                    venueName: Zentrum Paul Klee
-                    venueAddress: Monument im Fruchtland 3, 3006 Bern
-                    venueCapacity: 220
-                    qnaEnabled: true
-                    qnaOpenTrigger: EVENT_COMPLETED
-                    qnaWindowDays: 14
-                    organizerUsername: carla.muster
-                    currentAttendeeCount: 0
-                    description: TBD
-                    createdAt: "2026-09-10T15:28:35.293481Z"
-                    updatedAt: "2026-09-10T15:28:35.293481Z"
-                    eventType: EVENING
-                    workflowState: CREATED
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '422':
-          $ref: '#/components/responses/UnprocessableEntity'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-  /events/{eventCode}/workflow/transition:
+  /events/{eventCode}/transition:
     post:
       tags:
       - Event Workflow
-      summary: Transition event to target workflow state
-      description: 'Transition an event to a specific target workflow state.
+      summary: Transition the event to a target workflow state
+      description: 'The one way to change an event''s workflow state (ADR-013 section 1, action
+
+        sub-resource `POST /{instance}/{verb}`, Story 4.9b). The event write bodies (PUT, PATCH)
+
+        carry no `workflowState`; publishing the agenda phase moves the event into AGENDA_PUBLISHED
+
+        as a side effect (`POST /events/{eventCode}/phases/agenda/publish`).
 
 
-        **Story**: 5.1a - Workflow State Machine Foundation
+        **States** (8, V82): CREATED, TOPIC_SELECTION, SPEAKER_IDENTIFICATION, SLOT_ASSIGNMENT,
 
-        **Acceptance Criteria**: AC12
+        AGENDA_PUBLISHED, EVENT_LIVE, EVENT_COMPLETED, ARCHIVED. The scheduler moves AGENDA_PUBLISHED
 
-        **Authorization**: Requires ORGANIZER role
-
-        **Rate Limiting**: 10 transitions per minute per user (API Gateway)
-
-        **Performance**: <200ms (P95)
+        to EVENT_LIVE on event day and EVENT_LIVE to EVENT_COMPLETED after it.
 
 
-        **16-Step Workflow**:
+        **Validation**: the state machine checks that the target is reachable from the current state
 
-        1. CREATED - Initial state
+        and the business rules of the target (e.g. speakers confirmed). An unknown `targetState`
 
-        2. TOPIC_SELECTION - Topics being selected
+        answers 400; an invalid transition or a failed rule answers 422. `overrideValidation: true`
 
-        3. SPEAKER_BRAINSTORMING - Identifying potential speakers
-
-        4. SPEAKER_OUTREACH - Contacting speakers
-
-        5. SPEAKER_CONFIRMATION - Confirming speaker participation
-
-        6. CONTENT_COLLECTION - Collecting presentations and materials
-
-        7. QUALITY_REVIEW - Reviewing content quality
-
-        8. THRESHOLD_CHECK - Checking minimum speaker threshold
-
-        9. OVERFLOW_MANAGEMENT - Managing speaker overflow
-
-        10. SLOT_ASSIGNMENT - Assigning speakers to time slots
-
-        11. AGENDA_PUBLISHED - Publishing agenda
-
-        12. (removed - AGENDA_FINALIZED consolidated into AGENDA_PUBLISHED flow, V82)
-
-        13. NEWSLETTER_SENT - Newsletter sent to attendees
-
-        14. EVENT_READY - Event ready to start
-
-        15. PARTNER_MEETING_COMPLETE - Partner meetings completed
-
-        16. ARCHIVED - Event archived
+        skips both checks and is logged with `overrideReason` for the audit trail.
 
 
-        **Validation**:
+        **Side effects**: `EventWorkflowTransitionEvent` fires (task activation, Q&A windows,
 
-        - Some transitions require business rule validation (e.g., minimum speakers for SPEAKER_OUTREACH)
-
-        - Invalid transitions return 400 Bad Request
-
-        - Validation failures return 422 Unprocessable Entity
+        archival cleanup); all event caches are cleared.
 
 
-        **Cache Invalidation**: All event caches cleared on state transition
+        **Security**: ORGANIZER role required; any other role gets 403.
 
         '
       operationId: transitionEventWorkflowState
@@ -1118,29 +1018,28 @@ paths:
                     workflowState: TOPIC_SELECTION
                     updatedAt: "2026-05-14T16:00:00Z"
         '400':
-          description: Invalid state transition
+          description: Unknown target state
           content:
             application/json:
               schema:
                 $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
               examples:
-                invalidTransition:
-                  summary: Invalid transition (e.g., CREATED → ARCHIVED)
+                unknownState:
+                  summary: A targetState that is no workflow state
                   value:
                     timestamp: '2025-12-11T10:00:00Z'
-                    path: /api/v1/events/BATbern142/workflow/transition
+                    path: /api/v1/events/BATbern142/transition
                     status: 400
                     error: Bad Request
-                    message: Invalid transition from CREATED to ARCHIVED
+                    message: "Unknown target state 'PUBLISHED'. Allowed: CREATED, TOPIC_SELECTION, SPEAKER_IDENTIFICATION, SLOT_ASSIGNMENT, AGENDA_PUBLISHED, EVENT_LIVE, EVENT_COMPLETED, ARCHIVED"
                     correlationId: abc-123-def
                     severity: MEDIUM
-                    details:
-                      fromState: CREATED
-                      toState: ARCHIVED
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
         '422':
-          description: Validation failure (business rules not met)
+          description: Invalid transition (e.g. CREATED to ARCHIVED) or business rules not met
           content:
             application/json:
               schema:
@@ -1150,7 +1049,7 @@ paths:
                   summary: Insufficient speakers for transition
                   value:
                     timestamp: '2025-12-11T10:00:00Z'
-                    path: /api/v1/events/BATbern142/workflow/transition
+                    path: /api/v1/events/BATbern142/transition
                     status: 422
                     error: Unprocessable Entity
                     message: Insufficient speakers identified
@@ -2010,12 +1909,30 @@ paths:
         '403':
           $ref: '#/components/responses/Forbidden'
 
-  /events/{eventCode}/publish/{phase}:
+  /events/{eventCode}/phases/{phase}/publish:
     post:
       tags:
         - Publishing Engine
-      summary: Publish a progressive-publishing phase (topic/speakers/agenda)
-      description: 'Story progressive publishing (AC14-16). ORGANIZER role.'
+      summary: Publish a progressive-publishing phase (topic, speakers, agenda)
+      description: 'Publishes the phase on the public website: evicts the event caches and invalidates
+
+        the CDN paths of the phase. Re-publishing the current phase is allowed, a phase below it
+        answers 409 (step back with unpublish). Publishing `speakers` signals the Q&A windows
+
+        (`SpeakersPhasePublishedEvent`). Publishing `agenda` validates the event (title, date, a date in
+
+        the future when the publish moves the workflow, timed sessions) and answers 422 with every
+
+        reason when it is not ready; it generates the structural sessions (moderation, breaks) if none
+
+        exist, and moves an event before AGENDA_PUBLISHED into AGENDA_PUBLISHED (sets `publishedAt`,
+
+        fires `EventPublishedEvent`). It never moves the workflow backwards. Story 4.9b folded the
+
+        former `POST /events/{eventCode}/publish` into this operation.
+
+
+        **Security**: ORGANIZER role required; any other role gets 403.'
       operationId: publishPhase
       parameters:
         - name: eventCode
@@ -2026,8 +1943,13 @@ paths:
         - name: phase
           in: path
           required: true
+          description: The phase, the addressed instance. Any other value answers 400.
           schema:
             type: string
+            enum:
+              - topic
+              - speakers
+              - agenda
       responses:
         '200':
           description: Phase published
@@ -2037,9 +1959,9 @@ paths:
                 $ref: '#/components/schemas/PublishPhaseResponse'
               examples:
                 default:
-                  summary: generated from the schema and captured sub-values
+                  summary: the speakers phase published
                   value:
-                    phase: sample
+                    phase: speakers
                     published: true
                     publishedAt: "2026-05-14T16:00:00Z"
                     cdnInvalidated: true
@@ -2049,21 +1971,59 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: A phase above this one is published; use unpublish to step back. Nothing changed.
+          content:
+            application/json:
+              schema:
+                $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+              examples:
+                conflict:
+                  summary: topic while the speakers are published
+                  value:
+                    timestamp: '2026-11-10T10:00:00Z'
+                    path: /api/v1/events/BATbern142/phases/topic/publish
+                    status: 409
+                    error: Conflict
+                    message: "The speakers phase is published; publishing topic would step back. Unpublish speakers instead."
+                    correlationId: abc-123-def
+                    severity: LOW
         '422':
-          description: The event's content is not ready for this phase (PublishingEngineController).
+          description: The event is not ready for this phase; nothing was changed.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/PublishValidationError'
+              examples:
+                notReady:
+                  summary: agenda with an untimed session
+                  value:
+                    error: VALIDATION_ERROR
+                    message: The agenda cannot be published yet
+                    validationErrors:
+                      - sessionSlug: keynote
+                        field: timing
+                        message: Session has no timing assigned
       security:
         - BearerAuth: []
 
-  /events/{eventCode}/unpublish/{phase}:
+  /events/{eventCode}/phases/{phase}/unpublish:
     post:
       tags:
         - Publishing Engine
       summary: Unpublish a progressive-publishing phase
-      description: 'Story progressive publishing (AC18). ORGANIZER role.'
+      description: 'Sets the published phase back to the one before (agenda to speakers, speakers to
+
+        topic, topic to none), evicts the caches and invalidates the CDN paths of the phase. Only
+
+        the current published phase can be unpublished (otherwise 409). The workflow state is not
+
+        changed.
+
+
+        **Security**: ORGANIZER role required; any other role gets 403.'
       operationId: unpublishPhase
       parameters:
         - name: eventCode
@@ -2074,8 +2034,13 @@ paths:
         - name: phase
           in: path
           required: true
+          description: The phase, the addressed instance. Any other value answers 400.
           schema:
             type: string
+            enum:
+              - topic
+              - speakers
+              - agenda
       responses:
         '200':
           description: Phase unpublished
@@ -2085,10 +2050,10 @@ paths:
                 $ref: '#/components/schemas/UnpublishPhaseResponse'
               examples:
                 default:
-                  summary: generated from the schema and captured sub-values
+                  summary: the agenda phase unpublished
                   value:
-                    phase: sample
-                    published: true
+                    phase: agenda
+                    published: false
                     unpublishedAt: "2026-05-14T16:00:00Z"
                     cdnInvalidated: true
         '400':
@@ -2097,16 +2062,42 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: The phase is not the current published phase; only the current one can be unpublished. Nothing changed.
+          content:
+            application/json:
+              schema:
+                $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+              examples:
+                conflict:
+                  summary: agenda while only the topic is published
+                  value:
+                    timestamp: '2026-11-10T10:00:00Z'
+                    path: /api/v1/events/BATbern142/phases/agenda/unpublish
+                    status: 409
+                    error: Conflict
+                    message: "Only the current phase can be unpublished; the current phase is topic, not agenda."
+                    correlationId: abc-123-def
+                    severity: LOW
       security:
         - BearerAuth: []
 
-  /events/{eventCode}/publish/status:
+  /events/{eventCode}/publishing:
     get:
       tags:
         - Publishing Engine
-      summary: Get publishing status + per-phase validation
-      description: 'ORGANIZER role.'
-      operationId: getPublishingStatus
+      summary: Get the publishing state, per-phase validation and auto-publish schedule
+      description: 'One resource for what is published, what is ready and when the scheduler publishes
+
+        the next phase. Without a stored schedule the defaults apply (speakers 30 days, agenda 14
+
+        days before the event, both enabled).
+
+
+        **Security**: ORGANIZER role required; any other role gets 403.'
+      operationId: getPublishing
       parameters:
         - name: eventCode
           in: path
@@ -2115,14 +2106,14 @@ paths:
             type: string
       responses:
         '200':
-          description: Publishing status
+          description: Publishing state and schedule
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/PublishingStatusResponse'
               examples:
                 default:
-                  summary: captured from the local anonymized database
+                  summary: captured from the local anonymized database, schedule defaults added
                   value:
                     publishedPhases: []
                     topic:
@@ -2141,20 +2132,41 @@ paths:
                       totalCount: 0
                       unassignedSessions: []
                     currentPhase: null
+                    phase2Enabled: true
+                    phase2DaysBeforeEvent: 30
+                    phase2TriggerDate: "2026-10-14T16:00:00Z"
+                    phase3Enabled: true
+                    phase3DaysBeforeEvent: 14
+                    phase3TriggerDate: "2026-10-30T16:00:00Z"
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
       security:
         - BearerAuth: []
-
-  /events/{eventCode}/publish/schedule:
-    post:
+    patch:
       tags:
         - Publishing Engine
-      summary: Configure the auto-publish schedule
-      description: 'Story progressive publishing (AC19). ORGANIZER role.'
-      operationId: configureAutoPublish
+      summary: Set the auto-publish schedule
+      description: 'Partial update of the schedule: only the fields present change. The daily
+
+        auto-publish job reads it per event: it publishes the speakers phase on the day
+
+        `phase2DaysBeforeEvent` before the event if `phase2Enabled`, and the agenda phase on the day
+
+        `phase3DaysBeforeEvent` before it if `phase3Enabled`, the speakers phase is already published
+
+        and every session is timed. Because of that precondition a schedule in which the agenda is
+
+        enabled while the speakers are not, or the agenda days exceed the speakers days, would never
+
+        fire: it answers 400 and nothing is stored.
+
+
+        **Security**: ORGANIZER role required; any other role gets 403.'
+      operationId: patchPublishing
       parameters:
         - name: eventCode
           in: path
@@ -2166,67 +2178,52 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/AutoPublishScheduleRequest'
+              $ref: '#/components/schemas/PatchPublishingRequest'
+            examples:
+              disableSpeakers:
+                summary: no automatic speakers publish for this event
+                value:
+                  phase2Enabled: false
       responses:
         '200':
-          description: Schedule configured
+          description: Schedule stored; the whole publishing resource
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AutoPublishScheduleResponse'
+                $ref: '#/components/schemas/PublishingStatusResponse'
               examples:
                 default:
-                  summary: generated from the schema and captured sub-values
+                  summary: speakers auto-publish switched off
                   value:
-                    scheduled: true
-                    phase2Enabled: true
-                    phase2DaysBeforeEvent: 1
-                    phase2TriggerDate: "2026-05-14T16:00:00Z"
+                    publishedPhases:
+                      - topic
+                    topic:
+                      isValid: true
+                      errors: []
+                    speakers:
+                      isValid: true
+                      errors: []
+                    sessions:
+                      isValid: true
+                      errors: []
+                      assignedCount: 6
+                      totalCount: 6
+                      unassignedSessions: []
+                    currentPhase: topic
+                    phase2Enabled: false
+                    phase2DaysBeforeEvent: 30
+                    phase2TriggerDate: "2026-10-14T16:00:00Z"
                     phase3Enabled: true
-                    phase3DaysBeforeEvent: 1
-                    phase3TriggerDate: "2026-05-14T16:00:00Z"
+                    phase3DaysBeforeEvent: 14
+                    phase3TriggerDate: "2026-10-30T16:00:00Z"
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
-      security:
-        - BearerAuth: []
-    get:
-      tags:
-        - Publishing Engine
-      summary: Get the auto-publish schedule
-      description: 'ORGANIZER role.'
-      operationId: getAutoPublishSchedule
-      parameters:
-        - name: eventCode
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Schedule
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AutoPublishScheduleResponse'
-              examples:
-                default:
-                  summary: generated from the schema and captured sub-values
-                  value:
-                    scheduled: true
-                    phase2Enabled: true
-                    phase2DaysBeforeEvent: 1
-                    phase2TriggerDate: "2026-05-14T16:00:00Z"
-                    phase3Enabled: true
-                    phase3DaysBeforeEvent: 1
-                    phase3TriggerDate: "2026-05-14T16:00:00Z"
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
       security:
         - BearerAuth: []
 
@@ -2488,6 +2485,15 @@ components:
         - speakers
         - sessions
         - currentPhase
+        - phase2Enabled
+        - phase2DaysBeforeEvent
+        - phase2TriggerDate
+        - phase3Enabled
+        - phase3DaysBeforeEvent
+        - phase3TriggerDate
+      description: 'The publishing resource (`GET`/`PATCH /events/{eventCode}/publishing`): published
+
+        phases, per-phase validation and the auto-publish schedule.'
       properties:
         currentPhase:
           type: string
@@ -2503,9 +2509,31 @@ components:
           $ref: '#/components/schemas/ValidationStatus'
         sessions:
           $ref: '#/components/schemas/SessionValidationStatus'
+        phase2Enabled:
+          type: boolean
+          description: Whether the scheduler publishes the speakers phase (default true).
+        phase2DaysBeforeEvent:
+          type: integer
+          minimum: 1
+          description: Days before the event on which the speakers phase is auto-published (default 30).
+        phase2TriggerDate:
+          type: string
+          format: date-time
+          description: The event date minus phase2DaysBeforeEvent.
+        phase3Enabled:
+          type: boolean
+          description: Whether the scheduler publishes the agenda phase (default true).
+        phase3DaysBeforeEvent:
+          type: integer
+          minimum: 1
+          description: Days before the event on which the agenda phase is auto-published (default 14).
+        phase3TriggerDate:
+          type: string
+          format: date-time
+          description: The event date minus phase3DaysBeforeEvent.
     PublishValidationError:
       type: object
-      description: 422 of publishPhase, the reasons the phase cannot be published yet.
+      description: 422 of publishPhase, every reason the phase cannot be published yet.
       properties:
         error:
           type: string
@@ -2524,48 +2552,23 @@ components:
                 type: string
               message:
                 type: string
-    AutoPublishScheduleRequest:
+    PatchPublishingRequest:
       type: object
+      description: Partial update of the auto-publish schedule; only present fields change.
+      additionalProperties: false
       properties:
         phase2Enabled:
           type: boolean
         phase2DaysBeforeEvent:
           type: integer
           minimum: 1
+          maximum: 365
         phase3Enabled:
           type: boolean
         phase3DaysBeforeEvent:
           type: integer
           minimum: 1
-    AutoPublishScheduleResponse:
-      type: object
-      required:
-        - scheduled
-        - phase2Enabled
-        - phase2DaysBeforeEvent
-        - phase2TriggerDate
-        - phase3Enabled
-        - phase3DaysBeforeEvent
-        - phase3TriggerDate
-      properties:
-        scheduled:
-          type: boolean
-        phase2Enabled:
-          nullable: true
-          type: boolean
-        phase2DaysBeforeEvent:
-          type: integer
-        phase2TriggerDate:
-          type: string
-          format: date-time
-        phase3Enabled:
-          nullable: true
-          type: boolean
-        phase3DaysBeforeEvent:
-          type: integer
-        phase3TriggerDate:
-          type: string
-          format: date-time
+          maximum: 365
     TeaserImagePresentationPosition:
       type: string
       description: Controls which slide the image appears after in the moderator presentation.
@@ -3156,8 +3159,6 @@ components:
           nullable: true
           minimum: 1
           description: Story 10.11 — Optional registration limit. Null = unlimited (clears any existing cap).
-        workflowState:
-          $ref: '#/components/schemas/EventWorkflowState'
         organizerUsername:
           type: string
           pattern: ^[a-z]+\.[a-z]+(\.[0-9]+)?$
@@ -3210,8 +3211,6 @@ components:
           nullable: true
           minimum: 1
           description: Story 10.11 — Optional registration limit. Null = unlimited (clears any existing cap).
-        workflowState:
-          $ref: '#/components/schemas/EventWorkflowState'
         organizerUsername:
           type: string
           pattern: ^[a-z]+\.[a-z]+(\.[0-9]+)?$

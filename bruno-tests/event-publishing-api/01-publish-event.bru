@@ -1,0 +1,38 @@
+meta {
+  name: Publish the agenda phase (folded publish event)
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/events/{{publishingEventCode}}/phases/agenda/publish
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("the agenda phase is published", function() {
+    const body = res.getBody();
+    expect(body.phase).to.equal("agenda");
+    expect(body.published).to.equal(true);
+    expect(body.publishedAt).to.be.a("string");
+    expect(body.cdnInvalidated).to.be.a("boolean");
+  });
+}
+
+docs {
+  Story 4.9b: POST /events/{eventCode}/publish folded into the agenda phase
+  publish (POST /events/{eventCode}/phases/{phase}/publish, the phase is the
+  addressed instance). The 00 fixture is CREATED, dated in the future and has
+  no untimed session, so the agenda is ready: the publish moves the event into
+  AGENDA_PUBLISHED and sets publishedAt (checked by 02). Run against local
+  dev only: a publish acts on the public website.
+}

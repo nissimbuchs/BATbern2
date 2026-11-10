@@ -2,7 +2,7 @@
 
 > Archive completed events and manage publication workflows
 
-> **Last Updated:** 2026-11-04 — 8-state EVENT workflow: `AGENDA_FINALIZED` and the "Finalize Agenda" step were removed (V84, #552); state changes and archiving now live in **Details → Settings → Event state**; automatic archiving after 14 days.
+> **Last Updated:** 2026-11-10 — per-event auto-publish schedule in the Publishing tab, one state-change endpoint (Story 4.9b). 2026-11-04 — 8-state EVENT workflow: `AGENDA_FINALIZED` and the "Finalize Agenda" step were removed (V84, #552); state changes and archiving now live in **Details → Settings → Event state**; automatic archiving after 14 days.
 >
 > **2026-06-13** — Speaker publish-readiness now uses the derived `is_publishable` flag (ADR-009 / Epic 11) rather than a `confirmed` state.
 
@@ -88,23 +88,23 @@ Event state: Any workflow state → **ARCHIVED**
 
 ### Auto-Publishing Schedule
 
-BATbern automatically publishes event content on a fixed schedule to reduce manual work and ensure timely publication:
+BATbern automatically publishes event content on a schedule to reduce manual work and ensure timely publication. Each event has its own schedule: **Publishing tab → Auto-publish schedule** switches the speakers and the agenda publish on or off and sets how many days before the event each one runs (1 to 365). Without a change the defaults apply: speakers 30 days, agenda 14 days before the event, both on. Since 2026-11 (Story 4.9b) the job reads this schedule; before, it always used 30 and 14 days. Because the agenda is only auto-published once the speakers are published, the agenda cannot be scheduled earlier than the speakers, and not while the speakers auto-publish is off; the form says so and does not save such a schedule. A failed auto-publish raises the alarm `EventManagement-Scheduled-Job-Failures`; publish the phase by hand then.
 
-**Speaker Profiles** (30 days before event):
-- Scheduled job runs daily at 01:00
+**Speaker Profiles** (default 30 days before event):
+- Scheduled job runs daily at 01:00, skipped for an event whose speakers auto-publish is off
 - Checks all events where `currentPublishedPhase` has not yet reached "speakers" (i.e. speakers not yet published), regardless of event workflow state
-- For events exactly 30 days away (or past this date if not yet published):
+- For events exactly the scheduled number of days away (a missed day is not caught up):
   - Publishes all **publishable** speaker profiles (`is_publishable` = `QUALITY_REVIEWED AND is_slot_assigned`) to the public website
   - Sets speaker.publishedAt timestamp
   - Activates the "Newsletter: Speaker Lineup" task
 
-**Full Agenda** (14 days before event):
-- Scheduled job runs daily at 01:00
+**Full Agenda** (default 14 days before event):
+- Scheduled job runs daily at 01:00, skipped for an event whose agenda auto-publish is off
 - Checks all events where `currentPublishedPhase = "speakers"` (speakers already published) **and** all sessions have timing configured
-- For events exactly 14 days away (or past this date if not yet published):
+- For events exactly the scheduled number of days away (a missed day is not caught up):
   - Publishes complete session schedule with time slots
-  - Sets event.agendaPublishedAt timestamp
-  - Transitions event to **AGENDA_PUBLISHED** state
+  - Transitions an event before AGENDA_PUBLISHED to **AGENDA_PUBLISHED** and sets its `publishedAt`
+    (never moves a live or completed event backwards)
   - Generates the structural slots (moderation, breaks, lunch, apéro) from the event type's agenda
     config if none are stored yet. Manual and automatic publishing both do this; an existing,
     edited structure is never overwritten. Before this, the website showed the talks only until
@@ -113,8 +113,13 @@ BATbern automatically publishes event content on a fixed schedule to reduce manu
 
 **Manual Override**:
 - Organizers can manually publish speakers/agenda before auto-publish dates
-- Use Publishing tab → "Publish Speakers Now" or "Publish Agenda Now"
-- Prevents duplicate auto-publishing (checks publishedAt timestamps)
+- Use Publishing tab → **Publish Speakers** or **Publish Agenda**
+- Prevents duplicate auto-publishing: the job skips a phase that is already published
+- **Revert** steps back from the current phase only (agenda → speakers → topic → none). Publishing a phase below the one already published is refused: revert instead.
+- Publishing the agenda checks that the event has a title and a date, that every session has a
+  time and, when the publish moves the event into AGENDA_PUBLISHED, that the date is in the
+  future. When something is missing, nothing is published and the Publishing tab lists every
+  reason.
 
 ### Automated State Transitions (Implemented)
 
@@ -716,8 +721,16 @@ After archival:
 ## API Reference
 
 ```
-POST /api/v1/events/{eventCode}/workflow/transition   Change event state (including ARCHIVED; optional override + reason)
-GET  /api/v1/events/{eventCode}/workflow/status       Current workflow state
+POST  /api/v1/events/{eventCode}/transition                 Change event state (including ARCHIVED; optional override + reason)
+GET   /api/v1/events/{eventCode}/workflow/status            Current workflow state
+POST  /api/v1/events/{eventCode}/phases/{phase}/publish     Publish topic, speakers or agenda
+POST  /api/v1/events/{eventCode}/phases/{phase}/unpublish   Revert to the phase before
+GET   /api/v1/events/{eventCode}/publishing                 Published phases, validation, auto-publish schedule
+PATCH /api/v1/events/{eventCode}/publishing                 Set the auto-publish schedule
 ```
+
+Since Story 4.9b (2026-11) the event state changes only through `…/transition` (the event's PUT
+and PATCH carry no state) and the former `…/publish`, `…/publish/{phase}`, `…/publish/schedule`,
+`…/publish/status` and `…/workflow/transition` are gone, without aliases.
 
 See [API Documentation](../../api/) for complete specifications.

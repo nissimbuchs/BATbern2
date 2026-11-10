@@ -10,6 +10,7 @@ import ch.batbern.events.repository.EventTaskRepository;
 import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.events.repository.TaskTemplateRepository;
 import ch.batbern.events.scheduled.PublishingScheduledService;
+import ch.batbern.events.service.publishing.PublishingPhase;
 import ch.batbern.events.service.publishing.PublishingService;
 import ch.batbern.shared.test.AbstractIntegrationTest;
 import ch.batbern.shared.types.EventWorkflowState;
@@ -29,7 +30,7 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
@@ -97,7 +98,7 @@ class TaskActivationIntegrationTest extends AbstractIntegrationTest {
         Event event = createEvent("TA-LIVE-REPUB", eventDate, EventWorkflowState.EVENT_LIVE, "agenda");
         createTimedSession(event, eventDate);
 
-        publishingService.publishPhase(event.getEventCode(), "agenda");
+        publishingService.publishPhase(event.getEventCode(), PublishingPhase.AGENDA);
 
         assertThat(eventRepository.findById(event.getId()).orElseThrow().getWorkflowState())
                 .isEqualTo(EventWorkflowState.EVENT_LIVE);
@@ -105,14 +106,16 @@ class TaskActivationIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     @WithMockUser(username = "alice.organizer", roles = "ORGANIZER")
-    void should_activateTasks_when_workflowStateIsChangedViaPatch() throws Exception {
+    void should_activateTasks_when_workflowStateIsChangedViaTransition() throws Exception {
         Instant eventDate = Instant.now().plus(40, ChronoUnit.DAYS);
-        Event event = createEvent("TA-PATCH", eventDate, EventWorkflowState.TOPIC_SELECTION, null);
+        Event event = createEvent("TA-TRANSITION", eventDate, EventWorkflowState.TOPIC_SELECTION, null);
         EventTask slotTask = createPendingTask(event, "Slot work", "slot_assignment", eventDate, null);
 
-        mockMvc.perform(patch("/api/v1/events/" + event.getEventCode())
+        // Story 4.9b: the one way to change the state (PUT/PATCH no longer carry workflowState)
+        mockMvc.perform(post("/api/v1/events/" + event.getEventCode() + "/transition")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"workflowState\":\"SLOT_ASSIGNMENT\"}"))
+                        .content("{\"targetState\":\"SLOT_ASSIGNMENT\",\"overrideValidation\":true,"
+                                + "\"overrideReason\":\"task activation test\"}"))
                 .andExpect(status().isOk());
 
         assertThat(eventRepository.findById(event.getId()).orElseThrow().getWorkflowState())
@@ -184,7 +187,7 @@ class TaskActivationIntegrationTest extends AbstractIntegrationTest {
         EventTask lineup = createPendingTaskFromSystemTemplate(event, "newsletter_speakers");
         EventTask topic = createTodoTaskFromSystemTemplate(event, "newsletter_topic");
 
-        publishingService.publishPhase(event.getEventCode(), "speakers");
+        publishingService.publishPhase(event.getEventCode(), PublishingPhase.SPEAKERS);
 
         assertThat(reload(lineup).getStatus()).isEqualTo("todo");
         EventTask cancelledTopic = reload(topic);

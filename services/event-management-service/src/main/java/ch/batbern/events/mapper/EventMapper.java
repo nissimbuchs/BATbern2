@@ -185,9 +185,6 @@ public class EventMapper {
             entity.setEventType(EventType.fromValue(request.getEventType()));
         }
 
-        if (request.getWorkflowState() != null) {
-            entity.setWorkflowState(request.getWorkflowState());
-        }
         entity.setRegistrationCapacity(request.getRegistrationCapacity());
     }
 
@@ -244,9 +241,6 @@ public class EventMapper {
         }
         if (request.getEventType() != null) {
             entity.setEventType(EventType.fromValue(request.getEventType()));
-        }
-        if (request.getWorkflowState() != null) {
-            entity.setWorkflowState(request.getWorkflowState());
         }
         if (request.getTopicCode() != null) {
             entity.setTopicCode(request.getTopicCode());

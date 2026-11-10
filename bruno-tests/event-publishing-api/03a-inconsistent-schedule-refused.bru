@@ -1,0 +1,31 @@
+meta {
+  name: A schedule whose agenda runs before the speakers is refused
+  type: http
+  seq: 3.5
+}
+
+patch {
+  url: {{baseUrl}}/events/{{publishingEventCode}}/publishing
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+body:json {
+  {
+    "phase3DaysBeforeEvent": 40
+  }
+}
+
+assert {
+  res.status: eq 400
+}
+
+docs {
+  Story 4.9b: the agenda auto-publish needs the speakers already published, so
+  agenda days greater than speakers days (21 after 03) would never fire. 400,
+  nothing stored (04 reads 10 back).
+}

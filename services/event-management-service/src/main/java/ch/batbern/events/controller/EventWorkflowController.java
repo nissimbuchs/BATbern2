@@ -21,7 +21,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.time.ZoneOffset;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Event Workflow Controller
@@ -54,8 +56,8 @@ public class EventWorkflowController implements EventWorkflowApi {
 
     /**
      * Transition event to target workflow state (AC12).
-     * POST /api/v1/events/{eventCode}/workflow/transition — requires ORGANIZER role,
-     * rate-limited to 10 transitions/min (API Gateway). Username from JWT for audit.
+     * POST /api/v1/events/{eventCode}/transition — the one way to change the workflow state
+     * (Story 4.9b, ADR-013 section 1); requires ORGANIZER role. Username from JWT for audit.
      */
     @Override
     @PreAuthorize("hasRole('ORGANIZER')")
@@ -88,7 +90,7 @@ public class EventWorkflowController implements EventWorkflowApi {
                 .orElseThrow(() -> new EventNotFoundException("Event not found: " + eventCode));
 
         // Parse target state
-        EventWorkflowState targetState = EventWorkflowState.valueOf(transitionStateRequest.getTargetState());
+        EventWorkflowState targetState = parseTargetState(transitionStateRequest.getTargetState());
 
         // Perform transition via state machine with override flag
         Event updatedEvent = stateMachine.transitionToState(
@@ -154,6 +156,22 @@ public class EventWorkflowController implements EventWorkflowApi {
                  eventCode, currentState, nextAvailableStates);
 
         return ResponseEntity.ok(statusDto);
+    }
+
+    /**
+     * The target state, or a 400 (IllegalArgumentException handler) naming the allowed states,
+     * never the Java enum's own message with its class name.
+     */
+    private static EventWorkflowState parseTargetState(String targetState) {
+        try {
+            return EventWorkflowState.valueOf(targetState);
+        } catch (IllegalArgumentException | NullPointerException e) {
+            throw new IllegalArgumentException(String.format(
+                    "Unknown target state '%s'. Allowed: %s", targetState,
+                    Arrays.stream(EventWorkflowState.values())
+                            .map(Enum::name)
+                            .collect(Collectors.joining(", "))));
+        }
     }
 
     /**

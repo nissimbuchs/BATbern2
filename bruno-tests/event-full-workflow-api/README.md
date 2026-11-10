@@ -17,7 +17,6 @@ order, not the filename order.
 | 12 | `12-list-registrations.bru` | Seed: list registrations on event #1 |
 | 13 | `13-create-registration.bru` | Seed: create a registration on event #1 |
 | 13a | `13a-create-anonymous-registration.bru.disabled` | Seed (disabled) |
-| 16 | `16-publish-event.bru` | Seed: publish event #1 via `/publish` shortcut (expects 200 or 422 since the event has no sessions) |
 | 17.1 | `17a-advance-to-topic-selection.bru` | CREATED → TOPIC_SELECTION (override) |
 | 17.2 | `17b-advance-to-speaker-identification.bru` | TOPIC_SELECTION → SPEAKER_IDENTIFICATION (override) |
 | 17.3 | `17c-advance-to-slot-assignment.bru` | SPEAKER_IDENTIFICATION → SLOT_ASSIGNMENT (override) |
@@ -34,8 +33,9 @@ order, not the filename order.
 
 ## Why three fixture events
 
-The seed tests (12/13/16) mutate event #1 — registration is created and the
-event is moved to PUBLISHED. The state-machine walk (17a→17g) advances
+The seed tests (12/13) mutate event #1 — a registration is created. Publishing
+(Story 4.9b) lives in the dev-only collection `event-publishing-api`: it acts on the
+public website and must not run post-deploy against staging = production. The state-machine walk (17a→17g) advances
 event #2 through all 8 states. The invalid-transition tests (18a/18b) need
 an event held in CREATED to verify rejection. Trying to share fixtures
 across these test paths would cause state-pollution failures, so each path

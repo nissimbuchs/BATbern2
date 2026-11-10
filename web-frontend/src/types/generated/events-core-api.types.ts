@@ -200,7 +200,8 @@ export interface paths {
     get: operations['getEvent'];
     /**
      * Update event (full replacement)
-     * @description Replace all event data with new data.
+     * @description Replace all event data with new data. The workflow state is not part of the body: it changes only through
+     *     `POST /events/{eventCode}/transition` (Story 4.9b); a `workflowState` field is an unknown property and answers 400.
      *
      *     **Acceptance Criteria**: AC4
      *     **Story**: 1.16.2 - Uses eventCode (meaningful ID) instead of UUID
@@ -230,7 +231,8 @@ export interface paths {
     head?: never;
     /**
      * Partially update event
-     * @description Update specific fields of an event without replacing all data.
+     * @description Update specific fields of an event without replacing all data. The workflow state is not part of the body: it changes only through
+     *     `POST /events/{eventCode}/transition` (Story 4.9b); a `workflowState` field is an unknown property and answers 400.
      *
      *     **Acceptance Criteria**: AC5
      *     **Story**: 1.16.2 - Uses eventCode (meaningful ID) instead of UUID
@@ -243,7 +245,7 @@ export interface paths {
     patch: operations['patchEvent'];
     trace?: never;
   };
-  '/events/{eventCode}/publish': {
+  '/events/{eventCode}/transition': {
     parameters: {
       query?: never;
       header?: never;
@@ -253,72 +255,25 @@ export interface paths {
     get?: never;
     put?: never;
     /**
-     * Publish event
-     * @description Publish an event after validation checks.
+     * Transition the event to a target workflow state
+     * @description The one way to change an event's workflow state (ADR-013 section 1, action
+     *     sub-resource `POST /{instance}/{verb}`, Story 4.9b). The event write bodies (PUT, PATCH)
+     *     carry no `workflowState`; publishing the agenda phase moves the event into AGENDA_PUBLISHED
+     *     as a side effect (`POST /events/{eventCode}/phases/agenda/publish`).
      *
-     *     **Acceptance Criteria**: AC7
-     *     **Story**: 1.16.2 - Uses eventCode (meaningful ID) instead of UUID
+     *     **States** (8, V82): CREATED, TOPIC_SELECTION, SPEAKER_IDENTIFICATION, SLOT_ASSIGNMENT,
+     *     AGENDA_PUBLISHED, EVENT_LIVE, EVENT_COMPLETED, ARCHIVED. The scheduler moves AGENDA_PUBLISHED
+     *     to EVENT_LIVE on event day and EVENT_LIVE to EVENT_COMPLETED after it.
      *
-     *     **Validation Rules**:
-     *     - Event must have a date
-     *     - Event must have a title
-     *     - Event must be in draft status
+     *     **Validation**: the state machine checks that the target is reachable from the current state
+     *     and the business rules of the target (e.g. speakers confirmed). An unknown `targetState`
+     *     answers 400; an invalid transition or a failed rule answers 422. `overrideValidation: true`
+     *     skips both checks and is logged with `overrideReason` for the audit trail.
      *
-     *     **Cache Invalidation**: All event caches cleared on publish
-     *
+     *     **Side effects**: `EventWorkflowTransitionEvent` fires (task activation, Q&A windows,
+     *     archival cleanup); all event caches are cleared.
      *
      *     **Security**: ORGANIZER role required; any other role gets 403.
-     */
-    post: operations['publishEvent'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/events/{eventCode}/workflow/transition': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Transition event to target workflow state
-     * @description Transition an event to a specific target workflow state.
-     *
-     *     **Story**: 5.1a - Workflow State Machine Foundation
-     *     **Acceptance Criteria**: AC12
-     *     **Authorization**: Requires ORGANIZER role
-     *     **Rate Limiting**: 10 transitions per minute per user (API Gateway)
-     *     **Performance**: <200ms (P95)
-     *
-     *     **16-Step Workflow**:
-     *     1. CREATED - Initial state
-     *     2. TOPIC_SELECTION - Topics being selected
-     *     3. SPEAKER_BRAINSTORMING - Identifying potential speakers
-     *     4. SPEAKER_OUTREACH - Contacting speakers
-     *     5. SPEAKER_CONFIRMATION - Confirming speaker participation
-     *     6. CONTENT_COLLECTION - Collecting presentations and materials
-     *     7. QUALITY_REVIEW - Reviewing content quality
-     *     8. THRESHOLD_CHECK - Checking minimum speaker threshold
-     *     9. OVERFLOW_MANAGEMENT - Managing speaker overflow
-     *     10. SLOT_ASSIGNMENT - Assigning speakers to time slots
-     *     11. AGENDA_PUBLISHED - Publishing agenda
-     *     12. (removed - AGENDA_FINALIZED consolidated into AGENDA_PUBLISHED flow, V82)
-     *     13. NEWSLETTER_SENT - Newsletter sent to attendees
-     *     14. EVENT_READY - Event ready to start
-     *     15. PARTNER_MEETING_COMPLETE - Partner meetings completed
-     *     16. ARCHIVED - Event archived
-     *
-     *     **Validation**:
-     *     - Some transitions require business rule validation (e.g., minimum speakers for SPEAKER_OUTREACH)
-     *     - Invalid transitions return 400 Bad Request
-     *     - Validation failures return 422 Unprocessable Entity
-     *
-     *     **Cache Invalidation**: All event caches cleared on state transition
      */
     post: operations['transitionEventWorkflowState'];
     delete?: never;
@@ -622,7 +577,7 @@ export interface paths {
     patch: operations['updateTeaserImage'];
     trace?: never;
   };
-  '/events/{eventCode}/publish/{phase}': {
+  '/events/{eventCode}/phases/{phase}/publish': {
     parameters: {
       query?: never;
       header?: never;
@@ -632,8 +587,17 @@ export interface paths {
     get?: never;
     put?: never;
     /**
-     * Publish a progressive-publishing phase (topic/speakers/agenda)
-     * @description Story progressive publishing (AC14-16). ORGANIZER role.
+     * Publish a progressive-publishing phase (topic, speakers, agenda)
+     * @description Publishes the phase on the public website: evicts the event caches and invalidates
+     *     the CDN paths of the phase. Re-publishing the current phase is allowed, a phase below it answers 409 (step back with unpublish). Publishing `speakers` signals the Q&A windows
+     *     (`SpeakersPhasePublishedEvent`). Publishing `agenda` validates the event (title, date, a date in
+     *     the future when the publish moves the workflow, timed sessions) and answers 422 with every
+     *     reason when it is not ready; it generates the structural sessions (moderation, breaks) if none
+     *     exist, and moves an event before AGENDA_PUBLISHED into AGENDA_PUBLISHED (sets `publishedAt`,
+     *     fires `EventPublishedEvent`). It never moves the workflow backwards. Story 4.9b folded the
+     *     former `POST /events/{eventCode}/publish` into this operation.
+     *
+     *     **Security**: ORGANIZER role required; any other role gets 403.
      */
     post: operations['publishPhase'];
     delete?: never;
@@ -642,7 +606,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/events/{eventCode}/unpublish/{phase}': {
+  '/events/{eventCode}/phases/{phase}/unpublish': {
     parameters: {
       query?: never;
       header?: never;
@@ -653,7 +617,12 @@ export interface paths {
     put?: never;
     /**
      * Unpublish a progressive-publishing phase
-     * @description Story progressive publishing (AC18). ORGANIZER role.
+     * @description Sets the published phase back to the one before (agenda to speakers, speakers to
+     *     topic, topic to none), evicts the caches and invalidates the CDN paths of the phase. Only
+     *     the current published phase can be unpublished (otherwise 409). The workflow state is not
+     *     changed.
+     *
+     *     **Security**: ORGANIZER role required; any other role gets 403.
      */
     post: operations['unpublishPhase'];
     delete?: never;
@@ -662,7 +631,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/events/{eventCode}/publish/status': {
+  '/events/{eventCode}/publishing': {
     parameters: {
       query?: never;
       header?: never;
@@ -670,40 +639,32 @@ export interface paths {
       cookie?: never;
     };
     /**
-     * Get publishing status + per-phase validation
-     * @description ORGANIZER role.
+     * Get the publishing state, per-phase validation and auto-publish schedule
+     * @description One resource for what is published, what is ready and when the scheduler publishes
+     *     the next phase. Without a stored schedule the defaults apply (speakers 30 days, agenda 14
+     *     days before the event, both enabled).
+     *
+     *     **Security**: ORGANIZER role required; any other role gets 403.
      */
-    get: operations['getPublishingStatus'];
+    get: operations['getPublishing'];
     put?: never;
     post?: never;
     delete?: never;
     options?: never;
     head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/events/{eventCode}/publish/schedule': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
     /**
-     * Get the auto-publish schedule
-     * @description ORGANIZER role.
+     * Set the auto-publish schedule
+     * @description Partial update of the schedule: only the fields present change. The daily
+     *     auto-publish job reads it per event: it publishes the speakers phase on the day
+     *     `phase2DaysBeforeEvent` before the event if `phase2Enabled`, and the agenda phase on the day
+     *     `phase3DaysBeforeEvent` before it if `phase3Enabled`, the speakers phase is already published
+     *     and every session is timed. Because of that precondition a schedule in which the agenda is
+     *     enabled while the speakers are not, or the agenda days exceed the speakers days, would never
+     *     fire: it answers 400 and nothing is stored.
+     *
+     *     **Security**: ORGANIZER role required; any other role gets 403.
      */
-    get: operations['getAutoPublishSchedule'];
-    put?: never;
-    /**
-     * Configure the auto-publish schedule
-     * @description Story progressive publishing (AC19). ORGANIZER role.
-     */
-    post: operations['configureAutoPublish'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
+    patch: operations['patchPublishing'];
     trace?: never;
   };
   '/admin/settings/{key}': {
@@ -801,6 +762,10 @@ export interface components {
       totalCount: number;
       unassignedSessions: components['schemas']['UnassignedSession'][];
     };
+    /**
+     * @description The publishing resource (`GET`/`PATCH /events/{eventCode}/publishing`): published
+     *     phases, per-phase validation and the auto-publish schedule.
+     */
     PublishingStatusResponse: {
       /** @description The phase published last (topic, speakers, agenda); null before the first. */
       currentPhase: string | null;
@@ -808,8 +773,26 @@ export interface components {
       topic: components['schemas']['ValidationStatus'];
       speakers: components['schemas']['ValidationStatus'];
       sessions: components['schemas']['SessionValidationStatus'];
+      /** @description Whether the scheduler publishes the speakers phase (default true). */
+      phase2Enabled: boolean;
+      /** @description Days before the event on which the speakers phase is auto-published (default 30). */
+      phase2DaysBeforeEvent: number;
+      /**
+       * Format: date-time
+       * @description The event date minus phase2DaysBeforeEvent.
+       */
+      phase2TriggerDate: string;
+      /** @description Whether the scheduler publishes the agenda phase (default true). */
+      phase3Enabled: boolean;
+      /** @description Days before the event on which the agenda phase is auto-published (default 14). */
+      phase3DaysBeforeEvent: number;
+      /**
+       * Format: date-time
+       * @description The event date minus phase3DaysBeforeEvent.
+       */
+      phase3TriggerDate: string;
     };
-    /** @description 422 of publishPhase, the reasons the phase cannot be published yet. */
+    /** @description 422 of publishPhase, every reason the phase cannot be published yet. */
     PublishValidationError: {
       /** @example VALIDATION_ERROR */
       error?: string;
@@ -820,22 +803,12 @@ export interface components {
         message?: string;
       }[];
     };
-    AutoPublishScheduleRequest: {
+    /** @description Partial update of the auto-publish schedule; only present fields change. */
+    PatchPublishingRequest: {
       phase2Enabled?: boolean;
       phase2DaysBeforeEvent?: number;
       phase3Enabled?: boolean;
       phase3DaysBeforeEvent?: number;
-    };
-    AutoPublishScheduleResponse: {
-      scheduled: boolean;
-      phase2Enabled: boolean | null;
-      phase2DaysBeforeEvent: number;
-      /** Format: date-time */
-      phase2TriggerDate: string;
-      phase3Enabled: boolean | null;
-      phase3DaysBeforeEvent: number;
-      /** Format: date-time */
-      phase3TriggerDate: string;
     };
     /**
      * @description Controls which slide the image appears after in the moderator presentation.
@@ -1187,7 +1160,6 @@ export interface components {
       venueCapacity?: number;
       /** @description Story 10.11 — Optional registration limit. Null = unlimited (clears any existing cap). */
       registrationCapacity?: number | null;
-      workflowState?: components['schemas']['EventWorkflowState'];
       /**
        * @description Username of the event organizer in format "firstname.lastname" or "firstname.lastname.2" for collisions.
        *     Story 1.16.2: Public API uses meaningful IDs (usernames), not UUIDs.
@@ -1215,7 +1187,6 @@ export interface components {
       venueCapacity?: number;
       /** @description Story 10.11 — Optional registration limit. Null = unlimited (clears any existing cap). */
       registrationCapacity?: number | null;
-      workflowState?: components['schemas']['EventWorkflowState'];
       /**
        * @description Username of the event organizer in format "firstname.lastname" or "firstname.lastname.2" for collisions.
        *     Story 1.16.2: Public API uses meaningful IDs (usernames), not UUIDs.
@@ -2392,39 +2363,6 @@ export interface operations {
       500: components['responses']['InternalServerError'];
     };
   };
-  publishEvent: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Event code in format BATbern{number} */
-        eventCode: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Event published successfully */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['Event'];
-        };
-      };
-      /** @description Forbidden (ORGANIZER role required) */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      404: components['responses']['NotFound'];
-      422: components['responses']['UnprocessableEntity'];
-      500: components['responses']['InternalServerError'];
-    };
-  };
   transitionEventWorkflowState: {
     parameters: {
       query?: never;
@@ -2450,7 +2388,7 @@ export interface operations {
           'application/json': components['schemas']['WorkflowTransitionResponse'];
         };
       };
-      /** @description Invalid state transition */
+      /** @description Unknown target state */
       400: {
         headers: {
           [name: string]: unknown;
@@ -2459,8 +2397,9 @@ export interface operations {
           'application/json': components['schemas']['ErrorResponse'];
         };
       };
+      403: components['responses']['Forbidden'];
       404: components['responses']['NotFound'];
-      /** @description Validation failure (business rules not met) */
+      /** @description Invalid transition (e.g. CREATED to ARCHIVED) or business rules not met */
       422: {
         headers: {
           [name: string]: unknown;
@@ -3074,7 +3013,8 @@ export interface operations {
       header?: never;
       path: {
         eventCode: string;
-        phase: string;
+        /** @description The phase, the addressed instance. Any other value answers 400. */
+        phase: 'topic' | 'speakers' | 'agenda';
       };
       cookie?: never;
     };
@@ -3092,7 +3032,17 @@ export interface operations {
       400: components['responses']['BadRequest'];
       401: components['responses']['Unauthorized'];
       403: components['responses']['Forbidden'];
-      /** @description The event's content is not ready for this phase (PublishingEngineController). */
+      404: components['responses']['NotFound'];
+      /** @description A phase above this one is published; use unpublish to step back. Nothing changed. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      /** @description The event is not ready for this phase; nothing was changed. */
       422: {
         headers: {
           [name: string]: unknown;
@@ -3109,7 +3059,8 @@ export interface operations {
       header?: never;
       path: {
         eventCode: string;
-        phase: string;
+        /** @description The phase, the addressed instance. Any other value answers 400. */
+        phase: 'topic' | 'speakers' | 'agenda';
       };
       cookie?: never;
     };
@@ -3127,9 +3078,19 @@ export interface operations {
       400: components['responses']['BadRequest'];
       401: components['responses']['Unauthorized'];
       403: components['responses']['Forbidden'];
+      404: components['responses']['NotFound'];
+      /** @description The phase is not the current published phase; only the current one can be unpublished. Nothing changed. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
     };
   };
-  getPublishingStatus: {
+  getPublishing: {
     parameters: {
       query?: never;
       header?: never;
@@ -3140,7 +3101,7 @@ export interface operations {
     };
     requestBody?: never;
     responses: {
-      /** @description Publishing status */
+      /** @description Publishing state and schedule */
       200: {
         headers: {
           [name: string]: unknown;
@@ -3151,33 +3112,10 @@ export interface operations {
       };
       401: components['responses']['Unauthorized'];
       403: components['responses']['Forbidden'];
+      404: components['responses']['NotFound'];
     };
   };
-  getAutoPublishSchedule: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        eventCode: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Schedule */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['AutoPublishScheduleResponse'];
-        };
-      };
-      401: components['responses']['Unauthorized'];
-      403: components['responses']['Forbidden'];
-    };
-  };
-  configureAutoPublish: {
+  patchPublishing: {
     parameters: {
       query?: never;
       header?: never;
@@ -3188,22 +3126,23 @@ export interface operations {
     };
     requestBody: {
       content: {
-        'application/json': components['schemas']['AutoPublishScheduleRequest'];
+        'application/json': components['schemas']['PatchPublishingRequest'];
       };
     };
     responses: {
-      /** @description Schedule configured */
+      /** @description Schedule stored; the whole publishing resource */
       200: {
         headers: {
           [name: string]: unknown;
         };
         content: {
-          'application/json': components['schemas']['AutoPublishScheduleResponse'];
+          'application/json': components['schemas']['PublishingStatusResponse'];
         };
       };
       400: components['responses']['BadRequest'];
       401: components['responses']['Unauthorized'];
       403: components['responses']['Forbidden'];
+      404: components['responses']['NotFound'];
     };
   };
   getAdminSetting: {

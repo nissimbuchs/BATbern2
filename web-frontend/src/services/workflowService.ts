@@ -4,7 +4,8 @@
  * HTTP client for Event Workflow Status APIs
  * Features:
  * - Get workflow status (GET /api/v1/events/{code}/workflow/status)
- * - Transition workflow state (POST /api/v1/events/{code}/workflow/transition)
+ * - Transition workflow state (POST /api/v1/events/{code}/transition, Story 4.9b: the one way to
+ *   change the state; PUT/PATCH of the event carry no workflowState)
  * - JWT authentication via interceptors
  * - Error handling with correlation IDs
  */
@@ -16,7 +17,7 @@ import type { components } from '@/types/generated/events-core-api.types';
 export type WorkflowStatusDto = components['schemas']['WorkflowStatusDto'];
 export type TransitionStateRequest = components['schemas']['TransitionStateRequest'];
 export type EventWorkflowState = components['schemas']['EventWorkflowState'];
-export type Event = components['schemas']['Event'];
+export type WorkflowTransitionResponse = components['schemas']['WorkflowTransitionResponse'];
 
 // API base path for workflow endpoints
 const WORKFLOW_API_PATH = '/events';
@@ -49,7 +50,7 @@ class WorkflowService {
    * @param targetState The target workflow state (e.g., "TOPIC_SELECTION")
    * @param override Optional flag to bypass workflow validation (defaults to false)
    * @param reason Optional reason for overriding validation (for audit trail)
-   * @returns Updated Event with new workflow state
+   * @returns The event code, its workflow state after the transition and `updatedAt`
    * @throws Error if invalid transition, validation fails, or unauthorized
    */
   async transitionWorkflowState(
@@ -57,7 +58,7 @@ class WorkflowService {
     targetState: EventWorkflowState,
     override?: boolean,
     reason?: string
-  ): Promise<Event> {
+  ): Promise<WorkflowTransitionResponse> {
     const requestBody: TransitionStateRequest = {
       targetState,
       overrideValidation: override ?? false,
@@ -68,8 +69,8 @@ class WorkflowService {
       requestBody.overrideReason = reason;
     }
 
-    const response = await apiClient.post<Event>(
-      `${WORKFLOW_API_PATH}/${eventCode}/workflow/transition`,
+    const response = await apiClient.post<WorkflowTransitionResponse>(
+      `${WORKFLOW_API_PATH}/${eventCode}/transition`,
       requestBody
     );
 

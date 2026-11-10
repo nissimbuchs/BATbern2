@@ -12,7 +12,10 @@
 
 // events-api was split into per-domain specs (API consolidation Phase 6); each re-export
 // below is sourced from the spec that owns the schema.
-import type { components as coreComponents } from './generated/events-core-api.types';
+import type {
+  components as coreComponents,
+  operations as coreOperations,
+} from './generated/events-core-api.types';
 import type { components as sessionsComponents } from './generated/event-sessions-api.types';
 import type { components as registrationsComponents } from './generated/event-registrations-api.types';
 import type { components as analyticsComponents } from './generated/event-analytics-api.types';
@@ -356,18 +359,20 @@ export type ConflictAnalysisResponse = sessionsComponents['schemas']['ConflictAn
 // ============================================================================
 
 /**
- * Publishing phase type
+ * Publishing phase: the addressed instance of `POST /events/{eventCode}/phases/{phase}/publish`
+ * (Story 4.9b), from the spec's path parameter enum.
  */
-export type PublishingPhase = 'topic' | 'speakers' | 'agenda';
+export type PublishingPhase = coreOperations['publishPhase']['parameters']['path']['phase'];
 
-// Publishing engine (events-core-api `publishPhase`, `unpublishPhase`, `getPublishingStatus`,
-// `configureAutoPublish`): the types EMS sends, from the spec. Hand-written copies that had
+// Publishing engine (events-core-api `publishPhase`, `unpublishPhase`, `getPublishing`,
+// `patchPublishing`): the types EMS sends, from the spec. Hand-written copies that had
 // drifted from the backend (version numbers, `{ scheduledDate }`) were removed in 17.0c2.
 export type PublishPhaseResponse = coreComponents['schemas']['PublishPhaseResponse'];
 export type UnpublishPhaseResponse = coreComponents['schemas']['UnpublishPhaseResponse'];
+/** The publishing resource: published phases, per-phase validation and auto-publish schedule. */
 export type PublishingStatusResponse = coreComponents['schemas']['PublishingStatusResponse'];
-export type AutoPublishScheduleRequest = coreComponents['schemas']['AutoPublishScheduleRequest'];
-export type AutoPublishScheduleResponse = coreComponents['schemas']['AutoPublishScheduleResponse'];
+/** Partial update of the auto-publish schedule (`PATCH /events/{eventCode}/publishing`). */
+export type PatchPublishingRequest = coreComponents['schemas']['PatchPublishingRequest'];
 /** The 422 body of `publishPhase`: why the phase cannot be published yet. */
 export type PublishValidationError = coreComponents['schemas']['PublishValidationError'];
 export type PublishValidationDetail = NonNullable<

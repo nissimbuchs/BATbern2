@@ -28,7 +28,7 @@ docs {
   PR 2 split (paired with 00b-fixture-event.bru): DELETE cascade removes
   registrations created by 13-create-registration. Accepts 204 (deleted),
   404 (already deleted), or 409 (state machine refuses DELETE because the
-  event is in a published state where 16-publish-event succeeded). The
+  event is in a state that forbids DELETE). The
   409 path becomes impossible once PR 2b adds the full state-advancement
   flow because the workflow ends in ARCHIVED, which is deletable.
 }

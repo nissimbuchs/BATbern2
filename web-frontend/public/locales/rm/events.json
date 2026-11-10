@@ -992,7 +992,20 @@
     "sections": {
       "validation": "Validaziun",
       "phases": "Fasa da publicaziun",
-      "publishNext": "Publitgar la proxima fasa"
+      "publishNext": "Publitgar la proxima fasa",
+      "schedule": "Publicaziun automatica"
+    },
+    "schedule": {
+      "description": "La lavur quotidiana publitgescha questas fasas sin la website il di indicà avant l'occurrenza. Mo fasas betg anc publitgadas.",
+      "speakers": "Publitgar ils referents automaticamain",
+      "agenda": "Publitgar il program automaticamain",
+      "daysBefore": "Dis avant l'occurrenza",
+      "invalidDays": "1 fin 365 dis",
+      "triggerDate": "Ils {{date}}",
+      "save": "Memorisar il plan",
+      "saved": "Plan memorisà.",
+      "error": "Il plan n'ha betg pudì vegnir memorisà.",
+      "agendaBeforeSpeakers": "Il program vegn publitgà automaticamain pir suenter ils referents: activai ils referents e na dai al program betg dapli dis avant l'occurrenza che als referents."
     }
   },
   "notifications": {

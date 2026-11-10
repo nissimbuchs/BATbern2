@@ -1,0 +1,32 @@
+meta {
+  name: Unpublish the agenda phase — workflow state unchanged
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{baseUrl}}/events/{{publishingEventCode}}/phases/agenda/unpublish
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("the agenda phase is unpublished", function() {
+    const body = res.getBody();
+    expect(body.phase).to.equal("agenda");
+    expect(body.published).to.equal(false);
+  });
+}
+
+docs {
+  Story 4.9b: unpublish sets the phase back to speakers; the workflow state
+  stays AGENDA_PUBLISHED (checked by 06).
+}

@@ -992,7 +992,20 @@
     "sections": {
       "validation": "Validazione",
       "phases": "Fase di pubblicazione",
-      "publishNext": "Pubblica la fase successiva"
+      "publishNext": "Pubblica la fase successiva",
+      "schedule": "Pubblicazione automatica"
+    },
+    "schedule": {
+      "description": "Il processo giornaliero pubblica queste fasi sul sito nel giorno indicato prima dell'evento. Solo le fasi non ancora pubblicate.",
+      "speakers": "Pubblica i relatori automaticamente",
+      "agenda": "Pubblica il programma automaticamente",
+      "daysBefore": "Giorni prima dell'evento",
+      "invalidDays": "Da 1 a 365 giorni",
+      "triggerDate": "Il {{date}}",
+      "save": "Salva la pianificazione",
+      "saved": "Pianificazione salvata.",
+      "error": "Impossibile salvare la pianificazione.",
+      "agendaBeforeSpeakers": "Il programma viene pubblicato automaticamente solo dopo i relatori: attiva i relatori e non dare al programma più giorni prima dell'evento che ai relatori."
     }
   },
   "notifications": {

@@ -3,7 +3,7 @@ title: 'Mail Center composer clean-up (16.8c)'
 type: 'refactor'
 ticket: '168c'
 created: '2026-11-09'
-status: 'built'
+status: 'done'
 baseline_revision: 'b13922c2fa7a7fe78b174d893999a393f56fb65f'
 route: 'full'
 route_source: 'auto'
@@ -184,3 +184,5 @@ Final verification (2026-11-10, all three plans together on one tree):
 - Full suites green: shared-kernel, EMS, CUMS, PCS. Frontend type-check, vitest, lint:api, lint:api-internal, lint:ci, check:api-types, ratchet, i18n, type-copies and api-paths are green too (`~/.cache/batbern-test-logs/vfinal/`).
 - The gateway suite found two contract-test bodies without the new required properties; fixed in c9c2c64c, suite green.
 - Local dev, run against the shared dev database (V152 only copies, so other worktrees are unaffected): Bruno, all 15 collections green. Playwright: settings, admin tabs, additional e-mails, tasks, task templates and mail composer, 37/37 green. The presentation settings read from EMS returns the copied CUMS text.
+
+Live: merged and deployed with #1281 on 2026-11-10 (bb367d49), production checked: V152 applied, the retired operations answer 404.

@@ -28,7 +28,7 @@ function strings(value: unknown): string[] {
 
 describe('spec examples (MSW harness defaults)', () => {
   it('reads all public specs (positive control)', () => {
-    expect(operations.length).toBeGreaterThan(300);
+    expect(operations.length).toBeGreaterThan(290);
     expect(jsonResponses.length).toBeGreaterThan(250);
   });
 

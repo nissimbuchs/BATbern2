@@ -1004,7 +1004,20 @@
     "sections": {
       "validation": "Validation",
       "phases": "Publishing phase",
-      "publishNext": "Publish next phase"
+      "publishNext": "Publish next phase",
+      "schedule": "Auto-publish schedule"
+    },
+    "schedule": {
+      "description": "The daily job publishes these phases on the website on the given day before the event. Unpublished phases only.",
+      "speakers": "Publish speakers automatically",
+      "agenda": "Publish agenda automatically",
+      "daysBefore": "Days before the event",
+      "invalidDays": "1 to 365 days",
+      "triggerDate": "On {{date}}",
+      "save": "Save schedule",
+      "saved": "Schedule saved.",
+      "error": "The schedule could not be saved.",
+      "agendaBeforeSpeakers": "The agenda is only auto-published after the speakers: switch the speakers on, and give the agenda no more days before the event than the speakers."
     }
   },
   "notifications": {

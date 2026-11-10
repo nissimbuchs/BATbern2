@@ -992,7 +992,20 @@
     "sections": {
       "validation": "Validatie",
       "phases": "Publicatiefase",
-      "publishNext": "Volgende fase publiceren"
+      "publishNext": "Volgende fase publiceren",
+      "schedule": "Automatisch publiceren"
+    },
+    "schedule": {
+      "description": "De dagelijkse taak publiceert deze fasen op de website op de opgegeven dag voor het evenement. Alleen niet-gepubliceerde fasen.",
+      "speakers": "Sprekers automatisch publiceren",
+      "agenda": "Programma automatisch publiceren",
+      "daysBefore": "Dagen voor het evenement",
+      "invalidDays": "1 tot 365 dagen",
+      "triggerDate": "Op {{date}}",
+      "save": "Planning opslaan",
+      "saved": "Planning opgeslagen.",
+      "error": "De planning kon niet worden opgeslagen.",
+      "agendaBeforeSpeakers": "Het programma wordt pas na de sprekers automatisch gepubliceerd: zet de sprekers aan en geef het programma niet meer dagen voor het evenement dan de sprekers."
     }
   },
   "notifications": {

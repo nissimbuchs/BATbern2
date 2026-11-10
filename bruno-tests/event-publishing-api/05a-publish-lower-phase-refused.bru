@@ -1,0 +1,30 @@
+meta {
+  name: Publishing a phase below the published one is refused
+  type: http
+  seq: 4.5
+}
+
+post {
+  url: {{baseUrl}}/events/{{publishingEventCode}}/phases/topic/publish
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+assert {
+  res.status: eq 409
+}
+
+tests {
+  test("the problem names the current phase", function() {
+    expect(res.getBody().message).to.contain("agenda");
+  });
+}
+
+docs {
+  Story 4.9b: with the agenda published, publishing the topic would step the
+  website back; that is what unpublish is for. 409.
+}

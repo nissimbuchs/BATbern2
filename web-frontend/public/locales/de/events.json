@@ -1004,7 +1004,20 @@
     "sections": {
       "validation": "Validierung",
       "phases": "Veröffentlichungsphase",
-      "publishNext": "Nächste Phase veröffentlichen"
+      "publishNext": "Nächste Phase veröffentlichen",
+      "schedule": "Automatische Veröffentlichung"
+    },
+    "schedule": {
+      "description": "Der tägliche Job veröffentlicht diese Phasen am angegebenen Tag vor dem Anlass auf der Website. Nur noch nicht veröffentlichte Phasen.",
+      "speakers": "Referenten automatisch veröffentlichen",
+      "agenda": "Programm automatisch veröffentlichen",
+      "daysBefore": "Tage vor dem Anlass",
+      "invalidDays": "1 bis 365 Tage",
+      "triggerDate": "Am {{date}}",
+      "save": "Zeitplan speichern",
+      "saved": "Zeitplan gespeichert.",
+      "error": "Der Zeitplan konnte nicht gespeichert werden.",
+      "agendaBeforeSpeakers": "Das Programm wird erst nach den Referenten automatisch veröffentlicht: Referenten einschalten und für das Programm nicht mehr Tage vor dem Anlass wählen als für die Referenten."
     }
   },
   "notifications": {

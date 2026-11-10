@@ -1,0 +1,33 @@
+meta {
+  name: Agenda publish moved the event into AGENDA_PUBLISHED
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/events/{{publishingEventCode}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("workflow state is AGENDA_PUBLISHED and publishedAt is set", function() {
+    const event = res.getBody();
+    expect(event.workflowState).to.equal("AGENDA_PUBLISHED");
+    expect(event.publishedAt).to.be.a("string");
+    expect(event.currentPublishedPhase).to.match(/^agenda$/i);
+  });
+}
+
+docs {
+  Story 4.9b: the folded publishEvent side effects of the agenda publish
+  (workflow AGENDA_PUBLISHED, publishedAt) seen through the event read.
+}

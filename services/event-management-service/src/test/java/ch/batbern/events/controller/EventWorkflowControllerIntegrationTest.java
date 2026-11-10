@@ -27,10 +27,12 @@ import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.not;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -39,7 +41,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * Story 5.1a: Workflow State Machine Foundation
  *
  * Test Scenarios (AC12-14):
- * - Test 3.1: should_return200_when_validWorkflowTransition_requested (PUT /workflow/transition)
+ * - Test 3.1: should_return200_when_validWorkflowTransition_requested (POST /transition)
  * - Test 3.2: should_return400_when_invalidStateTransition_attempted
  * - Test 3.3: should_return422_when_validationFails_forTransition (e.g., insufficient speakers)
  * - Test 3.4: should_return200WithStatus_when_workflowStatusQueried (GET /workflow/status)
@@ -77,7 +79,7 @@ public class EventWorkflowControllerIntegrationTest extends AbstractIntegrationT
 
     /**
      * Test 3.1: should_return200_when_validWorkflowTransition_requested
-     * AC12: EventWorkflowController exposes PUT /api/v1/events/{code}/workflow/transition endpoint
+     * AC12: EventWorkflowController exposes POST /api/v1/events/{code}/transition (Story 4.9b)
      * Updated: Added authentication (ORGANIZER role required)
      */
     @Test
@@ -90,8 +92,8 @@ public class EventWorkflowControllerIntegrationTest extends AbstractIntegrationT
                 }
                 """;
 
-        // When: POST /api/v1/events/{code}/workflow/transition (with ORGANIZER authentication)
-        mockMvc.perform(post("/api/v1/events/{code}/workflow/transition", testEvent.getEventCode())
+        // When: POST /api/v1/events/{code}/transition (with ORGANIZER authentication)
+        mockMvc.perform(post("/api/v1/events/{code}/transition", testEvent.getEventCode())
                         .with(user("john.doe").roles("ORGANIZER"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(transitionRequest))
@@ -107,6 +109,41 @@ public class EventWorkflowControllerIntegrationTest extends AbstractIntegrationT
     }
 
     /**
+     * Story 4.9b: an unknown target state is a bad request; the state stays.
+     */
+    @Test
+    @DisplayName("Should return 400 when the target state is no workflow state")
+    void should_return400_when_targetStateUnknown() throws Exception {
+        mockMvc.perform(post("/api/v1/events/{code}/transition", testEvent.getEventCode())
+                        .with(user("john.doe").roles("ORGANIZER"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"targetState\": \"PUBLISHED\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message", containsString("PUBLISHED")))
+                .andExpect(jsonPath("$.message", containsString("TOPIC_SELECTION")))
+                .andExpect(content().string(not(containsString("ch.batbern"))));
+
+        assertThat(eventRepository.findById(testEvent.getId()).orElseThrow().getWorkflowState())
+                .isEqualTo(EventWorkflowState.CREATED);
+    }
+
+    /**
+     * Story 4.9b: the transition is an organizer action; other roles get 403 and change nothing.
+     */
+    @Test
+    @DisplayName("Should return 403 when a non-organizer transitions the event")
+    void should_return403_when_nonOrganizerTransitions() throws Exception {
+        mockMvc.perform(post("/api/v1/events/{code}/transition", testEvent.getEventCode())
+                        .with(user("pia.partner").roles("PARTNER"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"targetState\": \"TOPIC_SELECTION\"}"))
+                .andExpect(status().isForbidden());
+
+        assertThat(eventRepository.findById(testEvent.getId()).orElseThrow().getWorkflowState())
+                .isEqualTo(EventWorkflowState.CREATED);
+    }
+
+    /**
      * Test 3.1a: should_transitionThroughMultipleStates_when_validTransitionsRequested
      * Additional test for sequential transitions
      */
@@ -114,7 +151,7 @@ public class EventWorkflowControllerIntegrationTest extends AbstractIntegrationT
     @DisplayName("Should transition through multiple states when valid transitions requested")
     void should_transitionThroughMultipleStates_when_validTransitionsRequested() throws Exception {
         // Transition 1: CREATED → TOPIC_SELECTION
-        mockMvc.perform(post("/api/v1/events/{code}/workflow/transition", testEvent.getEventCode())
+        mockMvc.perform(post("/api/v1/events/{code}/transition", testEvent.getEventCode())
                         .with(user("john.doe").roles("ORGANIZER"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"targetState\": \"TOPIC_SELECTION\"}"))
@@ -122,7 +159,7 @@ public class EventWorkflowControllerIntegrationTest extends AbstractIntegrationT
                 .andExpect(jsonPath("$.workflowState", is("TOPIC_SELECTION")));
 
         // Transition 2: TOPIC_SELECTION → TOPIC_SELECTION (idempotent - should succeed)
-        mockMvc.perform(post("/api/v1/events/{code}/workflow/transition", testEvent.getEventCode())
+        mockMvc.perform(post("/api/v1/events/{code}/transition", testEvent.getEventCode())
                         .with(user("john.doe").roles("ORGANIZER"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"targetState\": \"TOPIC_SELECTION\"}"))
@@ -149,7 +186,7 @@ public class EventWorkflowControllerIntegrationTest extends AbstractIntegrationT
                 """;
 
         // When: Attempt invalid transition CREATED → ARCHIVED (skipping all intermediate states)
-        mockMvc.perform(post("/api/v1/events/{code}/workflow/transition", testEvent.getEventCode())
+        mockMvc.perform(post("/api/v1/events/{code}/transition", testEvent.getEventCode())
                         .with(user("john.doe").roles("ORGANIZER"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(invalidTransitionRequest))
@@ -176,7 +213,7 @@ public class EventWorkflowControllerIntegrationTest extends AbstractIntegrationT
         eventRepository.save(testEvent);
 
         // When: Attempt backward transition SPEAKER_IDENTIFICATION → CREATED
-        mockMvc.perform(post("/api/v1/events/{code}/workflow/transition", testEvent.getEventCode())
+        mockMvc.perform(post("/api/v1/events/{code}/transition", testEvent.getEventCode())
                         .with(user("john.doe").roles("ORGANIZER"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"targetState\": \"CREATED\"}"))
@@ -197,7 +234,7 @@ public class EventWorkflowControllerIntegrationTest extends AbstractIntegrationT
         eventRepository.save(testEvent);
 
         // When: Attempt transition to SLOT_ASSIGNMENT (requires minimum threshold - at least 1 ACCEPTED speaker)
-        mockMvc.perform(post("/api/v1/events/{code}/workflow/transition", testEvent.getEventCode())
+        mockMvc.perform(post("/api/v1/events/{code}/transition", testEvent.getEventCode())
                         .with(user("john.doe").roles("ORGANIZER"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"targetState\": \"SLOT_ASSIGNMENT\"}"))
@@ -223,7 +260,7 @@ public class EventWorkflowControllerIntegrationTest extends AbstractIntegrationT
         eventRepository.save(testEvent);
 
         // When: Attempt transition to SLOT_ASSIGNMENT (requires at least 1 ACCEPTED speaker)
-        mockMvc.perform(post("/api/v1/events/{code}/workflow/transition", testEvent.getEventCode())
+        mockMvc.perform(post("/api/v1/events/{code}/transition", testEvent.getEventCode())
                         .with(user("john.doe").roles("ORGANIZER"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"targetState\": \"SLOT_ASSIGNMENT\"}"))
@@ -286,7 +323,7 @@ public class EventWorkflowControllerIntegrationTest extends AbstractIntegrationT
         // Production authentication is enforced by SecurityConfig, not TestSecurityConfig
 
         // When: Access workflow transition endpoint (with authentication)
-        mockMvc.perform(post("/api/v1/events/{code}/workflow/transition", testEvent.getEventCode())
+        mockMvc.perform(post("/api/v1/events/{code}/transition", testEvent.getEventCode())
                         .with(user("john.doe").roles("ORGANIZER"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"targetState\": \"TOPIC_SELECTION\"}"))
@@ -308,7 +345,7 @@ public class EventWorkflowControllerIntegrationTest extends AbstractIntegrationT
     @DisplayName("Should return 404 when event not found for transition")
     void should_return404_when_eventNotFound_forTransition() throws Exception {
         // When: Attempt transition on non-existent event
-        mockMvc.perform(post("/api/v1/events/{code}/workflow/transition", "BATbern999")
+        mockMvc.perform(post("/api/v1/events/{code}/transition", "BATbern999")
                         .with(user("john.doe").roles("ORGANIZER"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"targetState\": \"TOPIC_SELECTION\"}"))
@@ -338,7 +375,7 @@ public class EventWorkflowControllerIntegrationTest extends AbstractIntegrationT
     @DisplayName("Should return 400 when invalid request body is provided")
     void should_return400_when_invalidRequestBody_provided() throws Exception {
         // When: Send request with invalid targetState value
-        mockMvc.perform(post("/api/v1/events/{code}/workflow/transition", testEvent.getEventCode())
+        mockMvc.perform(post("/api/v1/events/{code}/transition", testEvent.getEventCode())
                         .with(user("john.doe").roles("ORGANIZER"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"targetState\": \"INVALID_STATE\"}"))

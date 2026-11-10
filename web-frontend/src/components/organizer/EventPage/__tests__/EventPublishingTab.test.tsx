@@ -1,351 +1,234 @@
 /**
- * EventPublishingTab Component Tests (Story 5.7 - Task 7)
+ * EventPublishingTab (Story 5.7, Story 4.9b)
  *
- * Tests for the publishing tab with real API integration.
- * Validates that the component correctly fetches and displays publishing status.
+ * The real tab with its real children, hooks and services against the MSW harness (Epic 17 test
+ * fidelity, touch rule): every request is checked against events-core-api and the publishing
+ * resource answers with a typed override. Story 4.9b: status and auto-publish schedule are one
+ * resource (`GET`/`PATCH /events/{eventCode}/publishing`), phases are published through
+ * `POST /events/{eventCode}/phases/{phase}/publish`.
  */
 
-import { render, screen } from '@testing-library/react';
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { render, screen, waitFor, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { I18nextProvider } from 'react-i18next';
-import i18n from '@/i18n/config';
+import { MemoryRouter } from 'react-router-dom';
+import { HttpResponse } from 'msw';
+import { api } from '@/test/msw/api';
 import { EventPublishingTab } from '../EventPublishingTab';
 import type { Event, PublishingStatusResponse } from '@/types/event.types';
 import { anEvent } from '@/test/fixtures';
 
-// Mock child components
-vi.mock('@/components/Publishing/ValidationDashboard/ValidationDashboard', () => ({
-  ValidationDashboard: ({ eventCode, phase }: { eventCode: string; phase: string }) => (
-    <div data-testid="validation-dashboard">
-      {eventCode}-{phase}
-    </div>
-  ),
-}));
+const EVENT_CODE = 'BATbern61';
+const DAY = 24 * 60 * 60 * 1000;
 
-vi.mock('@/components/Publishing/PublishingControls/PublishingControls', () => ({
-  PublishingControls: ({
-    eventCode,
-    currentPhase,
-  }: {
-    eventCode: string;
-    currentPhase: string;
-  }) => (
-    <div data-testid="publishing-controls">
-      {eventCode}-{currentPhase}
-    </div>
-  ),
-}));
-
-vi.mock('@/components/Publishing/PublishingTimeline/PublishingTimeline', () => ({
-  PublishingTimeline: ({
-    eventCode,
-    currentPhase,
-    publishedPhases,
-  }: {
-    eventCode: string;
-    currentPhase: string;
-    publishedPhases: string[];
-  }) => (
-    <div data-testid="publishing-timeline">
-      {eventCode}-{currentPhase}-{publishedPhases.join(',')}
-    </div>
-  ),
-}));
-
-vi.mock('@/components/Publishing/LivePreview/LivePreview', () => ({
-  LivePreview: ({ eventCode, phase }: { eventCode: string; phase: string }) => (
-    <div data-testid="live-preview">
-      {eventCode}-{phase}
-    </div>
-  ),
-}));
-
-// Mock hooks
-const mockUsePublishing = vi.fn();
-const mockUseSlotAssignment = vi.fn();
-
-vi.mock('@/hooks/usePublishing/usePublishing', () => ({
-  usePublishing: (eventCode: string) => mockUsePublishing(eventCode),
-}));
-
-vi.mock('@/hooks/useSlotAssignment/useSlotAssignment', () => ({
-  useSlotAssignment: (eventCode: string) => mockUseSlotAssignment(eventCode),
-}));
-
-// Mock event data
-const mockEvent: Event = {
+const event: Event = {
   ...anEvent(),
-  eventCode: 'BAT2025-FULL-DAY',
-  eventNumber: 2025,
-  title: 'BATbern 2025 Full Day Conference',
-  description: 'Advanced software architecture conference',
-  date: '2025-06-15T09:00:00Z',
-  registrationDeadline: '2025-06-08T23:59:59Z',
-  venueName: 'Kursaal Bern',
-  venueAddress: 'Kornhausstrasse 3, 3013 Bern',
-  venueCapacity: 300,
+  eventCode: EVENT_CODE,
+  title: 'BATbern61 Brünnimann-Abend',
+  date: new Date(Date.now() + 60 * DAY).toISOString(),
   workflowState: 'SLOT_ASSIGNMENT',
-  organizerUsername: 'test.organizer',
-  currentAttendeeCount: 0,
-  createdAt: '2025-01-01T10:00:00Z',
-  updatedAt: '2025-01-02T14:30:00Z',
+  topicCode: 'cloud-architecture',
 };
 
-// Mock publishing status responses
-const mockPublishingStatusNoPhase: PublishingStatusResponse = {
-  currentPhase: null,
-  publishedPhases: [],
+const publishing = (
+  overrides: Partial<PublishingStatusResponse> = {}
+): PublishingStatusResponse => ({
+  currentPhase: 'topic',
+  publishedPhases: ['topic'],
   topic: { isValid: true, errors: [] },
   speakers: { isValid: true, errors: [] },
-  sessions: {
-    isValid: true,
-    errors: [],
-    assignedCount: 2,
-    totalCount: 2,
-    unassignedSessions: [],
-  },
-};
+  sessions: { isValid: true, errors: [], assignedCount: 6, totalCount: 6, unassignedSessions: [] },
+  phase2Enabled: true,
+  phase2DaysBeforeEvent: 30,
+  phase2TriggerDate: new Date(Date.now() + 30 * DAY).toISOString(),
+  phase3Enabled: true,
+  phase3DaysBeforeEvent: 14,
+  phase3TriggerDate: new Date(Date.now() + 46 * DAY).toISOString(),
+  ...overrides,
+});
 
-const mockPublishingStatusTopicPublished: PublishingStatusResponse = {
-  currentPhase: 'TOPIC',
-  publishedPhases: ['TOPIC'],
-  topic: { isValid: true, errors: [] },
-  speakers: { isValid: true, errors: [] },
-  sessions: {
-    isValid: true,
-    errors: [],
-    assignedCount: 2,
-    totalCount: 2,
-    unassignedSessions: [],
-  },
-};
-
-const mockPublishingStatusWithInvalidSessions: PublishingStatusResponse = {
-  currentPhase: 'SPEAKERS',
-  publishedPhases: ['TOPIC', 'SPEAKERS'],
-  topic: { isValid: true, errors: [] },
-  speakers: { isValid: true, errors: [] },
-  sessions: {
-    isValid: false,
-    errors: ['Some sessions do not have timings assigned'],
-    assignedCount: 2,
-    totalCount: 3,
-    unassignedSessions: [{ sessionSlug: 'bob-jones-cloudco', title: 'Kubernetes Best Practices' }],
-  },
-};
-
-describe('EventPublishingTab Component (Story 5.7 - Task 7)', () => {
+describe('EventPublishingTab', () => {
   let queryClient: QueryClient;
 
-  // Test wrapper with providers
-  const renderWithProviders = (ui: React.ReactElement) => {
-    return render(
-      <QueryClientProvider client={queryClient}>
-        <I18nextProvider i18n={i18n}>{ui}</I18nextProvider>
-      </QueryClientProvider>
+  const renderTab = () =>
+    render(
+      <MemoryRouter>
+        <QueryClientProvider client={queryClient}>
+          <EventPublishingTab event={event} eventCode={EVENT_CODE} />
+        </QueryClientProvider>
+      </MemoryRouter>
     );
-  };
 
   beforeEach(() => {
-    vi.clearAllMocks();
     queryClient = new QueryClient({
-      defaultOptions: {
-        queries: { retry: false },
-        mutations: { retry: false },
-      },
+      defaultOptions: { queries: { retry: false, gcTime: 0 }, mutations: { retry: false } },
     });
-
-    // Default mock return values
-    mockUseSlotAssignment.mockReturnValue({
-      unassignedSessions: [],
-    });
+    // useSlotAssignment: no session without timing
+    api.on('getUnassignedSessions', () => []);
   });
 
   afterEach(() => {
     queryClient.clear();
   });
 
-  describe('Loading State', () => {
-    it('should_displayLoadingSkeleton_while_fetching', () => {
-      mockUsePublishing.mockReturnValue({
-        publishingStatus: undefined,
-        isLoadingStatus: true,
-        validationErrors: [],
-      });
+  it('shows a skeleton until the publishing resource is loaded', async () => {
+    api.on('getPublishing', () => publishing());
 
-      const { container } = renderWithProviders(
-        <EventPublishingTab event={mockEvent} eventCode="BAT2025-FULL-DAY" />
-      );
+    const { container } = renderTab();
 
-      // Verify skeletons are displayed (MUI Skeleton uses MuiSkeleton-root class)
-      const skeletons = container.querySelectorAll('.MuiSkeleton-root');
-      expect(skeletons.length).toBeGreaterThan(0);
-    });
+    expect(container.querySelectorAll('.MuiSkeleton-root').length).toBeGreaterThan(0);
+    expect(await screen.findByTestId('publish-topic-button')).toBeInTheDocument();
+    expect(api.calls('getPublishing')[0].params.eventCode).toBe(EVENT_CODE);
   });
 
-  describe('Publishing Status Integration', () => {
-    it('should_fetchPublishingStatus_on_mount', () => {
-      mockUsePublishing.mockReturnValue({
-        publishingStatus: mockPublishingStatusNoPhase,
-        isLoadingStatus: false,
-        validationErrors: [],
-      });
+  it('shows the published phase in the controls and the timeline', async () => {
+    api.on('getPublishing', () => publishing());
 
-      renderWithProviders(<EventPublishingTab event={mockEvent} eventCode="BAT2025-FULL-DAY" />);
+    renderTab();
 
-      // Verify usePublishing was called with eventCode
-      expect(mockUsePublishing).toHaveBeenCalledWith('BAT2025-FULL-DAY');
-    });
-
-    it('should_displayValidationData_from_API', () => {
-      mockUsePublishing.mockReturnValue({
-        publishingStatus: mockPublishingStatusNoPhase,
-        isLoadingStatus: false,
-        validationErrors: [],
-      });
-
-      renderWithProviders(<EventPublishingTab event={mockEvent} eventCode="BAT2025-FULL-DAY" />);
-
-      // Verify ValidationDashboard receives data
-      const validationDashboard = screen.getByTestId('validation-dashboard');
-      expect(validationDashboard).toBeInTheDocument();
-      expect(validationDashboard).toHaveTextContent('BAT2025-FULL-DAY');
-    });
-
-    it('should_passCorrectPhase_to_childComponents', () => {
-      mockUsePublishing.mockReturnValue({
-        publishingStatus: mockPublishingStatusTopicPublished,
-        isLoadingStatus: false,
-        validationErrors: [],
-      });
-
-      renderWithProviders(<EventPublishingTab event={mockEvent} eventCode="BAT2025-FULL-DAY" />);
-
-      // Verify all components receive correct phase data
-      expect(screen.getByTestId('validation-dashboard')).toHaveTextContent('topic');
-      expect(screen.getByTestId('publishing-controls')).toHaveTextContent('topic');
-      expect(screen.getByTestId('publishing-timeline')).toHaveTextContent('topic');
-      expect(screen.getByTestId('live-preview')).toHaveTextContent('topic');
-    });
-
-    it('should_displayPublishedPhases_correctly', () => {
-      mockUsePublishing.mockReturnValue({
-        publishingStatus: mockPublishingStatusTopicPublished,
-        isLoadingStatus: false,
-        validationErrors: [],
-      });
-
-      renderWithProviders(<EventPublishingTab event={mockEvent} eventCode="BAT2025-FULL-DAY" />);
-
-      // Verify timeline shows published phases
-      const timeline = screen.getByTestId('publishing-timeline');
-      expect(timeline).toHaveTextContent('topic');
-    });
-
-    it('should_handleInvalidSessions_from_status', () => {
-      mockUsePublishing.mockReturnValue({
-        publishingStatus: mockPublishingStatusWithInvalidSessions,
-        isLoadingStatus: false,
-        validationErrors: [],
-      });
-
-      mockUseSlotAssignment.mockReturnValue({
-        unassignedSessions: [
-          { sessionSlug: 'bob-jones-cloudco', title: 'Kubernetes Best Practices' },
-        ],
-      });
-
-      renderWithProviders(<EventPublishingTab event={mockEvent} eventCode="BAT2025-FULL-DAY" />);
-
-      // Component should render without crashing
-      expect(screen.getByTestId('validation-dashboard')).toBeInTheDocument();
-    });
-
-    it('should_fallbackToDefault_when_statusIsNull', () => {
-      mockUsePublishing.mockReturnValue({
-        publishingStatus: null,
-        isLoadingStatus: false,
-        validationErrors: [],
-      });
-
-      renderWithProviders(<EventPublishingTab event={mockEvent} eventCode="BAT2025-FULL-DAY" />);
-
-      // Should default to 'topic' phase
-      expect(screen.getByTestId('validation-dashboard')).toHaveTextContent('topic');
-    });
+    const topic = await screen.findByTestId('publish-topic-button');
+    expect(topic).toBeDisabled();
+    expect(topic).toHaveTextContent('Topic Published');
+    expect(screen.getByTestId('publish-speakers-button')).toBeEnabled();
+    expect(screen.getByTestId('icon-complete-topic')).toBeInTheDocument();
   });
 
-  describe('Component Integration', () => {
-    it('should_renderAllChildComponents', () => {
-      mockUsePublishing.mockReturnValue({
-        publishingStatus: mockPublishingStatusNoPhase,
-        isLoadingStatus: false,
-        validationErrors: [],
-      });
+  it('shows the stored schedule in the timeline, and no chip for a phase switched off', async () => {
+    api.on('getPublishing', () => publishing({ phase3Enabled: false }));
 
-      renderWithProviders(<EventPublishingTab event={mockEvent} eventCode="BAT2025-FULL-DAY" />);
+    renderTab();
 
-      // Verify all child components are rendered
-      expect(screen.getByTestId('validation-dashboard')).toBeInTheDocument();
-      expect(screen.getByTestId('publishing-controls')).toBeInTheDocument();
-      expect(screen.getByTestId('publishing-timeline')).toBeInTheDocument();
-      expect(screen.getByTestId('live-preview')).toBeInTheDocument();
-    });
-
-    it('should_passEventCode_to_allComponents', () => {
-      mockUsePublishing.mockReturnValue({
-        publishingStatus: mockPublishingStatusNoPhase,
-        isLoadingStatus: false,
-        validationErrors: [],
-      });
-
-      renderWithProviders(<EventPublishingTab event={mockEvent} eventCode="BAT2025-FULL-DAY" />);
-
-      // Verify eventCode is passed to all components
-      expect(screen.getByTestId('validation-dashboard')).toHaveTextContent('BAT2025-FULL-DAY');
-      expect(screen.getByTestId('publishing-controls')).toHaveTextContent('BAT2025-FULL-DAY');
-      expect(screen.getByTestId('publishing-timeline')).toHaveTextContent('BAT2025-FULL-DAY');
-      expect(screen.getByTestId('live-preview')).toHaveTextContent('BAT2025-FULL-DAY');
-    });
+    expect(await screen.findByTestId('auto-publish-speakers')).toBeInTheDocument();
+    const timeline = screen.getByTestId('publishing-timeline-container');
+    expect(within(timeline).getByText(/Auto-publish in 30 days/)).toBeInTheDocument();
+    expect(within(timeline).queryByText(/Auto-publish in 46 days/)).not.toBeInTheDocument();
   });
 
-  describe('Edge Cases', () => {
-    it('should_handleMissingEventDate_gracefully', () => {
-      const eventWithoutDate = { ...mockEvent, date: undefined };
+  it('saves only the changed schedule field and shows what EMS stored', async () => {
+    const user = userEvent.setup();
+    api.on('getPublishing', () => publishing());
+    api.on('patchPublishing', ({ body }) => publishing({ ...body }));
 
-      mockUsePublishing.mockReturnValue({
-        publishingStatus: mockPublishingStatusNoPhase,
-        isLoadingStatus: false,
-        validationErrors: [],
-      });
+    renderTab();
 
-      renderWithProviders(
-        <EventPublishingTab
-          event={eventWithoutDate as unknown as Event}
-          eventCode="BAT2025-FULL-DAY"
-        />
-      );
+    const schedule = await screen.findByTestId('auto-publish-schedule');
+    const save = within(schedule).getByTestId('save-auto-publish-schedule');
+    expect(save).toBeDisabled();
 
-      // Should render without crashing
-      expect(screen.getByTestId('publishing-timeline')).toBeInTheDocument();
+    await user.click(
+      within(schedule).getByRole('switch', { name: 'Publish agenda automatically' })
+    );
+    expect(save).toBeEnabled();
+    await user.click(save);
+
+    await waitFor(() => expect(api.calls('patchPublishing')).toHaveLength(1));
+    expect(api.calls('patchPublishing')[0].body).toEqual({ phase3Enabled: false });
+    expect(await within(schedule).findByText('Schedule saved.')).toBeInTheDocument();
+    expect(
+      within(schedule).getByRole('switch', { name: 'Publish agenda automatically' })
+    ).not.toBeChecked();
+  });
+
+  it('does not save an agenda that would auto-publish before the speakers', async () => {
+    const user = userEvent.setup();
+    api.on('getPublishing', () => publishing());
+
+    renderTab();
+
+    const schedule = await screen.findByTestId('auto-publish-schedule');
+    const save = within(schedule).getByTestId('save-auto-publish-schedule');
+    const agendaDays = within(
+      within(schedule).getByTestId('auto-publish-schedule-agenda')
+    ).getByLabelText('Days before the event');
+    await user.clear(agendaDays);
+    await user.type(agendaDays, '40');
+
+    expect(within(schedule).getByTestId('auto-publish-schedule-order')).toHaveTextContent(
+      'The agenda is only auto-published after the speakers'
+    );
+    expect(save).toBeDisabled();
+
+    // positive control: the same days as the speakers are fine
+    await user.clear(agendaDays);
+    await user.type(agendaDays, '30');
+    expect(within(schedule).queryByTestId('auto-publish-schedule-order')).not.toBeInTheDocument();
+    expect(save).toBeEnabled();
+
+    // speakers off while the agenda stays on is refused as well
+    await user.click(
+      within(schedule).getByRole('switch', { name: 'Publish speakers automatically' })
+    );
+    expect(within(schedule).getByTestId('auto-publish-schedule-order')).toBeInTheDocument();
+    expect(save).toBeDisabled();
+    expect(api.calls('patchPublishing')).toHaveLength(0);
+  });
+
+  it('refuses days outside 1 to 365 before sending anything', async () => {
+    const user = userEvent.setup();
+    api.on('getPublishing', () => publishing());
+
+    renderTab();
+
+    const schedule = await screen.findByTestId('auto-publish-schedule');
+    const agendaDays = within(
+      within(schedule).getByTestId('auto-publish-schedule-agenda')
+    ).getByLabelText('Days before the event');
+    await user.clear(agendaDays);
+    await user.type(agendaDays, '0');
+
+    expect(within(schedule).getByText('1 to 365 days')).toBeInTheDocument();
+    expect(within(schedule).getByTestId('save-auto-publish-schedule')).toBeDisabled();
+    expect(api.calls('patchPublishing')).toHaveLength(0);
+  });
+
+  it('publishes the speakers phase through POST …/phases/speakers/publish', async () => {
+    const user = userEvent.setup();
+    api.on('getPublishing', () => publishing());
+    api.on('publishPhase', ({ params }) => ({
+      phase: params.phase,
+      published: true,
+      publishedAt: '2026-11-10T10:00:00Z',
+      cdnInvalidated: true,
+    }));
+
+    renderTab();
+
+    await user.click(await screen.findByTestId('publish-speakers-button'));
+
+    await waitFor(() => expect(api.calls('publishPhase')).toHaveLength(1));
+    expect(api.calls('publishPhase')[0].params).toEqual({
+      eventCode: EVENT_CODE,
+      phase: 'speakers',
     });
+    // the status is read again after the publish
+    await waitFor(() => expect(api.calls('getPublishing').length).toBeGreaterThan(1));
+  });
 
-    it('should_handleUndefinedUnassignedSessions', () => {
-      mockUsePublishing.mockReturnValue({
-        publishingStatus: mockPublishingStatusNoPhase,
-        isLoadingStatus: false,
-        validationErrors: [],
-      });
+  it('lists every reason of a 422 when the agenda is not ready', async () => {
+    const user = userEvent.setup();
+    api.on('getPublishing', () =>
+      publishing({ currentPhase: 'speakers', publishedPhases: ['topic', 'speakers'] })
+    );
+    api.on('publishPhase', () =>
+      HttpResponse.json(
+        {
+          error: 'VALIDATION_ERROR',
+          message: 'Event date must be in the future; All sessions must have timing assigned',
+          validationErrors: [
+            { sessionSlug: null, field: 'date', message: 'Event date must be in the future' },
+            { sessionSlug: 'keynote', field: 'timing', message: 'Session has no timing assigned' },
+          ],
+        },
+        { status: 422 }
+      )
+    );
 
-      mockUseSlotAssignment.mockReturnValue({
-        unassignedSessions: undefined,
-      });
+    renderTab();
 
-      renderWithProviders(<EventPublishingTab event={mockEvent} eventCode="BAT2025-FULL-DAY" />);
+    await user.click(await screen.findByTestId('publish-agenda-button'));
 
-      // Should handle undefined gracefully
-      expect(screen.getByTestId('validation-dashboard')).toBeInTheDocument();
-    });
+    expect(await screen.findByText('• Event date must be in the future')).toBeInTheDocument();
+    expect(screen.getByText('• Session has no timing assigned')).toBeInTheDocument();
   });
 });

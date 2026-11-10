@@ -3,7 +3,7 @@ title: 'API conventions I (breaking): tasks, settings, nested abstract analysis'
 type: 'refactor'
 ticket: '9'
 created: '2026-11-09'
-status: 'built'
+status: 'done'
 baseline_revision: '32e579339ce8ae889a72b7261df6b2bcf14d66d3'
 route: 'full'
 route_source: 'auto'
@@ -192,3 +192,5 @@ Decisions taken by the agent under the owner's blanket go (2026-11-09, "assume a
 - Bruno tasks collection and the settings Playwright spec against local dev (`make dev-native-up`): expected green.
 
 Verification after review (2026-11-10): shared-kernel, EMS, CUMS, PCS and gateway full suites green; frontend type-check, vitest, lint:api, lint:ci, ratchet, i18n, type-copy and API-path checks green (logs `~/.cache/batbern-test-logs/v49core/`). Live check on local dev, Bruno tasks and the settings Playwright spec run after 4.9b and 16.8c, on a cloned dev database. Follow-up drop of `presentation_settings`: #1280 (one release later, rollback safety).
+
+Live: merged and deployed with #1281 on 2026-11-10 (bb367d49), production checked: V152 applied, the retired operations answer 404.

@@ -7,7 +7,11 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { HttpResponse } from 'msw';
 import { setNavigationCallback } from '@/services/api/apiClient';
 import { api } from '@/test/msw/api';
-import type { AutoPublishScheduleRequest, PublishValidationError } from '@/types/event.types';
+import type {
+  PatchPublishingRequest,
+  PublishingStatusResponse,
+  PublishValidationError,
+} from '@/types/event.types';
 import { publishingService } from './publishingService';
 
 const navigate = vi.fn();
@@ -25,7 +29,7 @@ const rejection = (promise: Promise<unknown>) =>
 
 describe('publishingService', () => {
   describe('publishPhase', () => {
-    it('posts to /events/{code}/publish/{phase} and returns what EMS answers', async () => {
+    it('posts to /events/{code}/phases/{phase}/publish and returns what EMS answers', async () => {
       api.on('publishPhase', ({ params }) => ({
         phase: params.phase,
         published: true,
@@ -37,6 +41,7 @@ describe('publishingService', () => {
 
       const [call] = api.calls('publishPhase');
       expect(call.method).toBe('POST');
+      expect(call.url.pathname).toContain('/events/BATbern61/phases/topic/publish');
       expect(call.params).toEqual({ eventCode: 'BATbern61', phase: 'topic' });
       expect(call.body).toBeUndefined();
       expect(result).toEqual({
@@ -94,7 +99,7 @@ describe('publishingService', () => {
   });
 
   describe('unpublishPhase', () => {
-    it('posts to /events/{code}/unpublish/{phase} and returns what EMS answers', async () => {
+    it('posts to /events/{code}/phases/{phase}/unpublish and returns what EMS answers', async () => {
       api.on('unpublishPhase', ({ params }) => ({
         phase: params.phase,
         published: false,
@@ -112,9 +117,18 @@ describe('publishingService', () => {
     });
   });
 
-  describe('getPublishingStatus', () => {
-    it('reads the status with the validation of every phase', async () => {
-      api.on('getPublishingStatus', () => ({
+  const schedule = {
+    phase2Enabled: true,
+    phase2DaysBeforeEvent: 30,
+    phase2TriggerDate: '2027-02-12T08:00:00Z',
+    phase3Enabled: true,
+    phase3DaysBeforeEvent: 14,
+    phase3TriggerDate: '2027-02-28T08:00:00Z',
+  };
+
+  describe('getPublishing', () => {
+    it('reads the status with the validation of every phase and the schedule', async () => {
+      api.on('getPublishing', () => ({
         currentPhase: 'topic',
         publishedPhases: ['topic'],
         topic: { isValid: true, errors: [] },
@@ -126,57 +140,64 @@ describe('publishingService', () => {
           totalCount: 3,
           unassignedSessions: [{ sessionSlug: 'keynote-bruennimann', title: 'Keynote' }],
         },
+        ...schedule,
       }));
 
-      const status = await publishingService.getPublishingStatus('BATbern61');
+      const status = await publishingService.getPublishing('BATbern61');
 
-      expect(api.calls('getPublishingStatus')[0].params.eventCode).toBe('BATbern61');
+      const [call] = api.calls('getPublishing');
+      expect(call.url.pathname).toContain('/events/BATbern61/publishing');
       expect(status.currentPhase).toBe('topic');
       expect(status.speakers.errors).toEqual(['At least 3 sessions required']);
       expect(status.sessions.unassignedSessions).toHaveLength(1);
+      expect(status.phase3DaysBeforeEvent).toBe(14);
     });
 
-    it('answers the spec example by default (no phase published yet)', async () => {
-      const status = await publishingService.getPublishingStatus('BATbern61');
+    it('answers the spec example by default (no phase published yet, default schedule)', async () => {
+      const status = await publishingService.getPublishing('BATbern61');
 
       expect(status.publishedPhases).toEqual([]);
       expect(status.topic.isValid).toBe(false);
+      expect(status.phase2DaysBeforeEvent).toBe(30);
     });
 
     it('rejects when the service is unavailable', async () => {
-      api.on('getPublishingStatus', () => HttpResponse.error());
+      api.on('getPublishing', () => HttpResponse.error());
 
-      await expect(publishingService.getPublishingStatus('BATbern61')).rejects.toMatchObject({
+      await expect(publishingService.getPublishing('BATbern61')).rejects.toMatchObject({
         code: 'ERR_NETWORK',
       });
     });
   });
 
-  describe('scheduleAutoPublish', () => {
-    it('sends the schedule body EMS reads (configureAutoPublish), not a date', async () => {
-      const request: AutoPublishScheduleRequest = {
-        phase2Enabled: true,
-        phase2DaysBeforeEvent: 30,
-        phase3Enabled: true,
-        phase3DaysBeforeEvent: 14,
+  describe('patchPublishing', () => {
+    it('sends only the schedule fields that change and returns the whole resource', async () => {
+      const request: PatchPublishingRequest = { phase2Enabled: false };
+      const stored: PublishingStatusResponse = {
+        currentPhase: null,
+        publishedPhases: [],
+        topic: { isValid: true, errors: [] },
+        speakers: { isValid: true, errors: [] },
+        sessions: {
+          isValid: true,
+          errors: [],
+          assignedCount: 6,
+          totalCount: 6,
+          unassignedSessions: [],
+        },
+        ...schedule,
+        phase2Enabled: false,
       };
-      api.on('configureAutoPublish', () => ({
-        scheduled: true,
-        phase2Enabled: true,
-        phase2DaysBeforeEvent: 30,
-        phase3Enabled: true,
-        phase3DaysBeforeEvent: 14,
-        phase2TriggerDate: '2027-02-12T08:00:00Z',
-        phase3TriggerDate: '2027-02-28T08:00:00Z',
-      }));
+      api.on('patchPublishing', () => stored);
 
-      const result = await publishingService.scheduleAutoPublish('BATbern61', request);
+      const result = await publishingService.patchPublishing('BATbern61', request);
 
-      const [call] = api.calls('configureAutoPublish');
-      expect(call.method).toBe('POST');
-      expect(call.params.eventCode).toBe('BATbern61');
-      expect(call.body).toEqual(request);
-      expect(result).toMatchObject({ scheduled: true, phase2DaysBeforeEvent: 30 });
+      const [call] = api.calls('patchPublishing');
+      expect(call.method).toBe('PATCH');
+      expect(call.url.pathname).toContain('/events/BATbern61/publishing');
+      expect(call.body).toEqual({ phase2Enabled: false });
+      expect(result.phase2Enabled).toBe(false);
+      expect(result.phase3Enabled).toBe(true);
     });
   });
 });

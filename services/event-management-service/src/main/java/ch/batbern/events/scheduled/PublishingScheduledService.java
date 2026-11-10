@@ -1,13 +1,15 @@
 package ch.batbern.events.scheduled;
 
 import ch.batbern.events.domain.Event;
+import ch.batbern.events.domain.PublishingConfig;
 import ch.batbern.events.domain.Session;
 import ch.batbern.events.repository.EventRepository;
-import ch.batbern.events.repository.PublishingConfigRepository;
 import ch.batbern.events.repository.SessionRepository;
+import ch.batbern.events.service.publishing.PublishingPhase;
 import ch.batbern.events.service.publishing.PublishingService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -16,16 +18,29 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.List;
+import java.util.function.Function;
+import java.util.function.Predicate;
 
 /**
  * Publishing Scheduled Service
  * Story BAT-16 (AC5): Scheduled Auto-Publishing
  *
- * Handles automated publishing of event phases based on configurable schedules:
- * - Speakers phase: Auto-publishes N days before event (default: 30 days)
- * - Agenda phase: Auto-publishes N days before event (default: 14 days)
+ * <p>Publishes a phase on the day its stored schedule names (the {@code publishing_config} row of
+ * the event, set through {@code PATCH /events/{eventCode}/publishing}; without a row the defaults
+ * apply: speakers 30 days, agenda 14 days before the event, both enabled):
+ * <ul>
+ *   <li>Speakers: when the event is {@code autoPublishSpeakersDaysBefore} days away, enabled, and
+ *       nothing or only the topic is published.</li>
+ *   <li>Agenda: when the event is {@code autoPublishAgendaDaysBefore} days away, enabled, the
+ *       speakers are published and every session is timed.</li>
+ * </ul>
+ * Until Story 4.9b the job used fixed 30 and 14 days and ignored the stored days.
  *
- * Runs daily at 1 AM to check for events ready to auto-publish.
+ * <p>A failure for one event is recorded in {@link ScheduledJobFailures} (metric and alarmed log
+ * marker) and the job goes on with the next event.
+ *
+ * <p>Runs daily at 1 AM. The lock sits on {@link #runDailyAutoPublish()} only, so a test (or an
+ * operator) can call the two jobs directly without waiting for the lock of an earlier run.
  */
 @Service
 @EnableScheduling
@@ -35,155 +50,74 @@ public class PublishingScheduledService {
 
     private final EventRepository eventRepository;
     private final SessionRepository sessionRepository;
-    private final PublishingConfigRepository publishingConfigRepository;
     private final PublishingService publishingService;
+    private final ScheduledJobFailures failures;
 
-    /**
-     * Auto-publish speakers phase
-     * Runs daily at 1 AM to find events that should have speakers published
-     *
-     * Default: 30 days before event date
-     * Configurable per event via PublishingConfig.autoPublishSpeakersDaysBefore
-     */
-    @Scheduled(cron = "0 0 1 * * *") // Daily at 1 AM
+    @Scheduled(cron = "0 0 1 * * *")
+    @SchedulerLock(name = "PublishingScheduledService_runDailyAutoPublish",
+            lockAtLeastFor = "PT5M", lockAtMostFor = "PT30M")
+    public void runDailyAutoPublish() {
+        autoPublishSpeakers();
+        autoPublishAgenda();
+    }
+
+    /** Publish the speakers phase of every event whose schedule says today. */
     public void autoPublishSpeakers() {
-        log.info("Running auto-publish speakers job");
-
-        // Default: 30 days before event
-        int daysBefore = 30;
-
-        // Calculate target date (events happening N days from now)
-        LocalDate targetDate = LocalDate.now().plusDays(daysBefore);
-        Instant dayStart = targetDate.atStartOfDay(ZoneId.systemDefault()).toInstant();
-        Instant dayEnd = targetDate.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant();
-
-        // Find all events on this date (regardless of workflow state)
-        // We'll filter by current published phase below
-        List<Event> candidateEvents = eventRepository.findAll().stream()
-                .filter(e -> {
-                    if (e.getDate() == null) {
-                        return false;
-                    }
-                    Instant eventDate = e.getDate();
-                    return !eventDate.isBefore(dayStart) && eventDate.isBefore(dayEnd);
-                })
-                .toList();
-
-        log.info("Found {} candidate events for auto-publish speakers", candidateEvents.size());
-
-        // Filter events that:
-        // 1. Have currentPublishedPhase = null or "topic" (not yet published speakers)
-        // 2. Have auto-publish enabled (check PublishingConfig)
-        candidateEvents.stream()
-                .filter(e -> e.getCurrentPublishedPhase() == null
-                        || "topic".equalsIgnoreCase(e.getCurrentPublishedPhase()))
-                .forEach(event -> {
-                    try {
-                        // Check if auto-publish is enabled for this event
-                        boolean autoPublishEnabled = publishingConfigRepository.findByEventId(event.getId())
-                                .map(config -> config.getAutoPublishSpeakers() != null
-                                        && config.getAutoPublishSpeakers())
-                                .orElse(true); // Default to true if no config exists
-
-                        if (autoPublishEnabled) {
-                            log.info("Auto-publishing speakers for event: {}", event.getEventCode());
-                            publishingService.publishPhase(event.getEventCode(), "speakers");
-                            log.info("Successfully auto-published speakers for event: {}", event.getEventCode());
-                        } else {
-                            log.debug("Auto-publish speakers disabled for event: {}", event.getEventCode());
-                        }
-                    } catch (Exception ex) {
-                        log.error("Failed to auto-publish speakers for event: {}", event.getEventCode(), ex);
-                    }
-                });
+        autoPublish(PublishingPhase.SPEAKERS,
+                e -> e.getCurrentPublishedPhase() == null
+                        || PublishingPhase.TOPIC.value().equalsIgnoreCase(e.getCurrentPublishedPhase()),
+                config -> Boolean.TRUE.equals(config.getAutoPublishSpeakers()),
+                PublishingConfig::getAutoPublishSpeakersDaysBefore);
     }
 
-    /**
-     * Auto-publish agenda phase
-     * Runs daily at 1 AM to find events that should have agenda published
-     *
-     * Default: 14 days before event date
-     * Configurable per event via PublishingConfig.autoPublishAgendaDaysBefore
-     *
-     * Prerequisites:
-     * - Current published phase must be "speakers"
-     * - All sessions must have timing assigned
-     */
-    @Scheduled(cron = "0 0 1 * * *") // Daily at 1 AM
+    /** Publish the agenda phase of every event whose schedule says today and whose sessions are timed. */
     public void autoPublishAgenda() {
-        log.info("Running auto-publish agenda job");
-
-        // Default: 14 days before event
-        int daysBefore = 14;
-
-        // Calculate target date (events happening N days from now)
-        LocalDate targetDate = LocalDate.now().plusDays(daysBefore);
-        Instant dayStart = targetDate.atStartOfDay(ZoneId.systemDefault()).toInstant();
-        Instant dayEnd = targetDate.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant();
-
-        // Find all events on this date
-        List<Event> candidateEvents = eventRepository.findAll().stream()
-                .filter(e -> {
-                    if (e.getDate() == null) {
-                        return false;
-                    }
-                    Instant eventDate = e.getDate();
-                    return !eventDate.isBefore(dayStart) && eventDate.isBefore(dayEnd);
-                })
-                .toList();
-
-        log.info("Found {} candidate events for auto-publish agenda", candidateEvents.size());
-
-        // Filter events that:
-        // 1. Have currentPublishedPhase = "speakers" (not yet published agenda)
-        // 2. Have all sessions with timing assigned
-        // 3. Have auto-publish enabled
-        candidateEvents.stream()
-                .filter(e -> "speakers".equalsIgnoreCase(e.getCurrentPublishedPhase()))
-                .filter(this::allSessionsHaveTiming)
-                .forEach(event -> {
-                    try {
-                        // Check if auto-publish is enabled for this event
-                        boolean autoPublishEnabled = publishingConfigRepository.findByEventId(event.getId())
-                                .map(config -> config.getAutoPublishAgenda() != null
-                                        && config.getAutoPublishAgenda())
-                                .orElse(true); // Default to true if no config exists
-
-                        if (autoPublishEnabled) {
-                            log.info("Auto-publishing agenda for event: {}", event.getEventCode());
-                            publishingService.publishPhase(event.getEventCode(), "agenda");
-                            log.info("Successfully auto-published agenda for event: {}", event.getEventCode());
-                        } else {
-                            log.debug("Auto-publish agenda disabled for event: {}", event.getEventCode());
-                        }
-                    } catch (Exception ex) {
-                        log.error("Failed to auto-publish agenda for event: {}", event.getEventCode(), ex);
-                    }
-                });
+        autoPublish(PublishingPhase.AGENDA,
+                e -> PublishingPhase.SPEAKERS.value().equalsIgnoreCase(e.getCurrentPublishedPhase())
+                        && allSessionsHaveTiming(e),
+                config -> Boolean.TRUE.equals(config.getAutoPublishAgenda()),
+                PublishingConfig::getAutoPublishAgendaDaysBefore);
     }
 
-    /**
-     * Check if all sessions for an event have timing assigned
-     *
-     * @param event The event to check
-     * @return true if all sessions have start and end times
-     */
+    private void autoPublish(PublishingPhase phase,
+                             Predicate<Event> ready,
+                             Predicate<PublishingConfig> enabled,
+                             Function<PublishingConfig, Integer> daysBefore) {
+        LocalDate today = LocalDate.now();
+        Instant startOfToday = today.atStartOfDay(ZoneId.systemDefault()).toInstant();
+        List<Event> upcoming = eventRepository.findByDateAfter(startOfToday);
+        log.info("Auto-publish {}: {} upcoming event(s) to check", phase.value(), upcoming.size());
+
+        for (Event event : upcoming) {
+            // Everything per event inside the try: one bad row never stops the others (4.9b)
+            try {
+                PublishingConfig schedule = publishingService.scheduleOf(event);
+                if (!enabled.test(schedule)) {
+                    log.debug("Auto-publish {} disabled for event {}", phase.value(), event.getEventCode());
+                    continue;
+                }
+                LocalDate eventDay = event.getDate().atZone(ZoneId.systemDefault()).toLocalDate();
+                if (!eventDay.equals(today.plusDays(daysBefore.apply(schedule)))) {
+                    continue;
+                }
+                if (!ready.test(event)) {
+                    log.debug("Event {} is not ready for auto-publish {}", event.getEventCode(), phase.value());
+                    continue;
+                }
+                publishingService.publishPhase(event.getEventCode(), phase);
+                log.info("Auto-published {} for event {}", phase.value(), event.getEventCode());
+            } catch (Exception ex) {
+                failures.record("auto-publish-" + phase.value(), event.getEventCode(), ex);
+            }
+        }
+    }
+
     private boolean allSessionsHaveTiming(Event event) {
         List<Session> sessions = sessionRepository.findByEventId(event.getId());
-
         if (sessions.isEmpty()) {
             log.warn("Event {} has no sessions, cannot auto-publish agenda", event.getEventCode());
             return false;
         }
-
-        boolean allHaveTiming = sessions.stream()
-                .allMatch(s -> s.getStartTime() != null && s.getEndTime() != null);
-
-        if (!allHaveTiming) {
-            log.debug("Event {} has sessions without timing, skipping auto-publish agenda",
-                    event.getEventCode());
-        }
-
-        return allHaveTiming;
+        return sessions.stream().allMatch(s -> s.getStartTime() != null && s.getEndTime() != null);
     }
 }

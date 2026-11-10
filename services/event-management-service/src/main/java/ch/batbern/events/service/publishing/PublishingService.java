@@ -1,10 +1,10 @@
 package ch.batbern.events.service.publishing;
 
+import ch.batbern.events.config.CacheConfig;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.PublishingConfig;
 import ch.batbern.events.domain.Session;
-import ch.batbern.events.core.dto.generated.AutoPublishScheduleRequest;
-import ch.batbern.events.core.dto.generated.AutoPublishScheduleResponse;
+import ch.batbern.events.core.dto.generated.PatchPublishingRequest;
 import ch.batbern.events.core.dto.generated.PublishPhaseResponse;
 import ch.batbern.events.core.dto.generated.PublishingStatusResponse;
 import ch.batbern.events.core.dto.generated.SessionValidationStatus;
@@ -12,6 +12,7 @@ import ch.batbern.events.core.dto.generated.UnassignedSession;
 import ch.batbern.events.core.dto.generated.UnpublishPhaseResponse;
 import ch.batbern.events.core.dto.generated.ValidationStatus;
 import ch.batbern.events.dto.PublishValidationError;
+import ch.batbern.events.event.EventPublishedEvent;
 import ch.batbern.events.exception.EventNotFoundException;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.PublishingConfigRepository;
@@ -21,6 +22,7 @@ import ch.batbern.events.service.CdnInvalidationService;
 import ch.batbern.events.service.EventWorkflowStateMachine;
 import ch.batbern.events.service.StructuralSessionService;
 import ch.batbern.events.security.SecurityContextHelper;
+import ch.batbern.shared.events.DomainEventPublisher;
 import ch.batbern.shared.types.EventWorkflowState;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,6 +31,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
@@ -38,12 +42,12 @@ import java.util.stream.Collectors;
  * Integrated Publishing Service
  * Story BAT-11 (5.7): Slot Assignment & Progressive Publishing
  *
- * Handles:
- * - Phase publishing (topic, speakers, agenda) with validation
+ * Handles (Story 4.9b: one transition idiom, see ADR-013 section 1):
+ * - Phase publishing (topic, speakers, agenda) with validation; the agenda publish moves the
+ *   workflow into AGENDA_PUBLISHED
  * - Unpublishing phases
  * - CDN cache invalidation
- * - Auto-publish scheduling
- * - Preview generation
+ * - The publishing resource: status and auto-publish schedule
  */
 @Service
 @RequiredArgsConstructor
@@ -61,170 +65,187 @@ public class PublishingService {
     private final CdnInvalidationService cdnInvalidationService;
     private final org.springframework.context.ApplicationEventPublisher applicationEventPublisher;
     private final StructuralSessionService structuralSessionService;
+    private final DomainEventPublisher domainEventPublisher;
 
     /**
-     * Publish a specific phase (topic, speakers, or agenda)
+     * Publish a phase on the public website (Story 4.9b: the one way to publish, folds the former
+     * {@code POST /events/{eventCode}/publish}).
+     *
+     * <p>The agenda is validated first ({@link #validateAgenda}), and nothing changes when it is not
+     * ready. Publishing the agenda of an event before AGENDA_PUBLISHED moves it there through the
+     * state machine, so {@code EventWorkflowTransitionEvent} fires and the agenda_published tasks
+     * activate (setting the state directly left BATbern60's tasks pending on 2026-10-23, organizer
+     * cockpit plan T1), sets {@code publishedAt} and fires {@link EventPublishedEvent}. Override =
+     * true: this path never ran the transition rules ({@link #validateAgenda} is its gate), and the
+     * auto-publish job must not start failing on rules it bypassed before. It never moves an event
+     * backwards: re-publishing the agenda of a live or completed event leaves its state alone.
      */
-    public PublishPhaseResponse publishPhase(String eventCode, String phase) {
-        log.info("Publishing phase {} for event {}", phase, eventCode);
+    public PublishPhaseResponse publishPhase(String eventCode, PublishingPhase phase) {
+        log.info("Publishing phase {} for event {}", phase.value(), eventCode);
 
         Event event = eventRepository.findByEventCode(eventCode)
                 .orElseThrow(() -> new EventNotFoundException(eventCode));
 
-        // Validate content is ready for this phase
-        validatePhaseContent(event, phase);
+        PublishingPhase current = currentPhaseOf(event);
+        if (current != null && phase.ordinal() < current.ordinal()) {
+            throw new PhaseConflictException(String.format(
+                    "The %s phase is published; publishing %s would step back. Unpublish %s instead.",
+                    current.value(), phase.value(), current.value()));
+        }
 
-        // Update event publishing state
-        event.setCurrentPublishedPhase(phase.toLowerCase());
-        event.setLastPublishedAt(Instant.now());
+        boolean movesWorkflow = phase == PublishingPhase.AGENDA
+                && isBefore(event.getWorkflowState(), EventWorkflowState.AGENDA_PUBLISHED);
+        if (phase == PublishingPhase.AGENDA) {
+            validateAgenda(event, movesWorkflow);
+        }
 
+        Instant now = Instant.now();
+        event.setCurrentPublishedPhase(phase.value());
+        event.setLastPublishedAt(now);
         eventRepository.save(event);
 
-        // If publishing agenda, transition workflow state through the state machine so that
-        // EventWorkflowTransitionEvent fires and the agenda_published tasks activate. Setting the
-        // state directly here left BATbern60's tasks pending on 2026-10-23 (organizer cockpit
-        // plan T1). Override = true: this path never ran transition/business-rule validation
-        // (validatePhaseContent above is its gate), and the auto-publish job must not start
-        // failing on rules it previously bypassed. Never move an event backwards: re-publishing
-        // the agenda of a live or completed event leaves its state alone.
-        if ("agenda".equals(phase) && isBefore(event.getWorkflowState(), EventWorkflowState.AGENDA_PUBLISHED)) {
+        if (movesWorkflow) {
+            EventWorkflowState previousState = event.getWorkflowState();
             String actor = securityContextHelper.getCurrentUsernameOrNull();
+            String username = actor != null ? actor : "system";
             event = eventWorkflowStateMachine.transitionToState(
                     eventCode,
                     EventWorkflowState.AGENDA_PUBLISHED,
-                    actor != null ? actor : "system",
+                    username,
                     true,
                     "Agenda phase published");
+            event.setPublishedAt(now);
+            event = eventRepository.save(event);
+            domainEventPublisher.publish(new EventPublishedEvent(
+                    event.getId(),
+                    event.getEventCode(),
+                    event.getTitle(),
+                    event.getEventNumber(),
+                    event.getDate(),
+                    event.getPublishedAt(),
+                    previousState != null ? previousState.name() : null,
+                    username));
         }
 
         // #1108: the public agenda shows stored sessions only. Generate moderation, breaks and
         // apéro if nobody pressed "Generate structure"; never overwrites an edited structure.
-        if ("agenda".equals(phase)) {
+        if (phase == PublishingPhase.AGENDA) {
             structuralSessionService.generateIfMissing(eventCode);
         }
 
-        // Evict cache for this event
         evictEventCache(event.getEventCode());
-
-        // Invalidate CDN cache (Story BAT-16, AC6)
-        String cdnInvalidationId = cdnInvalidationService.invalidateCache(event.getEventCode(), phase);
-        boolean cdnInvalidated = cdnInvalidationId != null && !cdnInvalidationId.startsWith("error");
+        boolean cdnInvalidated = invalidateCdn(event.getEventCode(), phase);
 
         // Story 7.5 rework: when the speakers phase publishes, signal the Q&A listener — it opens
         // the windows iff this event's qnaOpenTrigger == SPEAKERS_PUBLISHED (idempotent; no-op
         // otherwise). Decoupled via an application event, mirroring the EVENT_COMPLETED path.
-        if ("speakers".equals(phase.toLowerCase())) {
+        if (phase == PublishingPhase.SPEAKERS) {
             applicationEventPublisher.publishEvent(
                     new ch.batbern.events.event.SpeakersPhasePublishedEvent(event.getEventCode()));
         }
 
         return PublishPhaseResponse.builder()
-                .phase(phase)
+                .phase(phase.value())
                 .published(true)
-                .publishedAt(Instant.now().atOffset(java.time.ZoneOffset.UTC))
+                .publishedAt(now.atOffset(ZoneOffset.UTC))
                 .cdnInvalidated(cdnInvalidated)
                 .build();
     }
 
     /**
-     * Unpublish a specific phase
+     * Unpublish a phase: the published phase goes back to the one before it. The workflow state is
+     * not changed.
      */
-    public UnpublishPhaseResponse unpublishPhase(String eventCode, String phase) {
-        log.info("Unpublishing phase {} for event {}", phase, eventCode);
+    public UnpublishPhaseResponse unpublishPhase(String eventCode, PublishingPhase phase) {
+        log.info("Unpublishing phase {} for event {}", phase.value(), eventCode);
 
         Event event = eventRepository.findByEventCode(eventCode)
                 .orElseThrow(() -> new EventNotFoundException(eventCode));
 
-        // Revert to previous phase
-        String previousPhase = getPreviousPhase(phase);
-        event.setCurrentPublishedPhase(previousPhase != null ? previousPhase.toLowerCase() : null);
+        PublishingPhase current = currentPhaseOf(event);
+        if (current != phase) {
+            throw new PhaseConflictException(String.format(
+                    "Only the current phase can be unpublished; the current phase is %s, not %s.",
+                    current != null ? current.value() : "none", phase.value()));
+        }
 
+        PublishingPhase previous = phase.previous();
+        event.setCurrentPublishedPhase(previous != null ? previous.value() : null);
         eventRepository.save(event);
 
-        // Evict cache for this event
         evictEventCache(event.getEventCode());
-
-        // Invalidate CDN cache (Story BAT-16, AC6)
-        String cdnInvalidationId = cdnInvalidationService.invalidateCache(event.getEventCode(), phase);
-        boolean cdnInvalidated = cdnInvalidationId != null && !cdnInvalidationId.startsWith("error");
+        boolean cdnInvalidated = invalidateCdn(event.getEventCode(), phase);
 
         return UnpublishPhaseResponse.builder()
-                .phase(phase)
+                .phase(phase.value())
                 .published(false)
-                .unpublishedAt(Instant.now().atOffset(java.time.ZoneOffset.UTC))
+                .unpublishedAt(Instant.now().atOffset(ZoneOffset.UTC))
                 .cdnInvalidated(cdnInvalidated)
                 .build();
     }
 
     /**
-     * Configure auto-publish schedule
+     * The auto-publish schedule of an event: the stored row, or the defaults when there is none.
+     * The scheduler reads it through here too, so the page and the job never disagree.
      */
-    public AutoPublishScheduleResponse configureAutoPublish(String eventCode, AutoPublishScheduleRequest request) {
+    @Transactional(readOnly = true)
+    public PublishingConfig scheduleOf(Event event) {
+        return publishingConfigRepository.findByEventId(event.getId())
+                .orElseGet(() -> PublishingConfig.builder().eventId(event.getId()).build());
+    }
+
+    /**
+     * PATCH of the publishing resource: stores the present schedule fields, leaves the others.
+     */
+    public PublishingStatusResponse patchPublishing(String eventCode, PatchPublishingRequest request) {
         Event event = eventRepository.findByEventCode(eventCode)
                 .orElseThrow(() -> new EventNotFoundException(eventCode));
 
-        // Find or create publishing config
-        PublishingConfig config = publishingConfigRepository.findByEventId(event.getId())
-                .orElse(PublishingConfig.builder()
-                        .eventId(event.getId())
-                        .build());
-
-        // Update configuration
-        config.setAutoPublishSpeakers(request.getPhase2Enabled());
-        config.setAutoPublishSpeakersDaysBefore(request.getPhase2DaysBeforeEvent());
-        config.setAutoPublishAgenda(request.getPhase3Enabled());
-        config.setAutoPublishAgendaDaysBefore(request.getPhase3DaysBeforeEvent());
-
+        PublishingConfig config = scheduleOf(event);
+        boolean speakersEnabled = request.getPhase2Enabled() != null
+                ? request.getPhase2Enabled() : config.getAutoPublishSpeakers();
+        int speakersDays = request.getPhase2DaysBeforeEvent() != null
+                ? request.getPhase2DaysBeforeEvent() : config.getAutoPublishSpeakersDaysBefore();
+        boolean agendaEnabled = request.getPhase3Enabled() != null
+                ? request.getPhase3Enabled() : config.getAutoPublishAgenda();
+        int agendaDays = request.getPhase3DaysBeforeEvent() != null
+                ? request.getPhase3DaysBeforeEvent() : config.getAutoPublishAgendaDaysBefore();
+        // The agenda auto-publish needs the speakers already published: a schedule in which the
+        // agenda would run first, or without the speakers, would never fire.
+        if (agendaEnabled && !speakersEnabled) {
+            throw new IllegalArgumentException(
+                    "The agenda auto-publish needs the speakers published first: switch the speakers "
+                            + "auto-publish on, or the agenda auto-publish off");
+        }
+        if (agendaEnabled && agendaDays > speakersDays) {
+            throw new IllegalArgumentException(String.format(
+                    "The agenda auto-publish (%d days before) would run before the speakers are "
+                            + "published (%d days before): agenda days must not exceed speakers days",
+                    agendaDays, speakersDays));
+        }
+        if (request.getPhase2Enabled() != null) {
+            config.setAutoPublishSpeakers(request.getPhase2Enabled());
+        }
+        if (request.getPhase2DaysBeforeEvent() != null) {
+            config.setAutoPublishSpeakersDaysBefore(request.getPhase2DaysBeforeEvent());
+        }
+        if (request.getPhase3Enabled() != null) {
+            config.setAutoPublishAgenda(request.getPhase3Enabled());
+        }
+        if (request.getPhase3DaysBeforeEvent() != null) {
+            config.setAutoPublishAgendaDaysBefore(request.getPhase3DaysBeforeEvent());
+        }
         publishingConfigRepository.save(config);
 
-        // Calculate trigger dates
-        Instant phase2TriggerDate = event.getDate()
-                .minus(request.getPhase2DaysBeforeEvent(), ChronoUnit.DAYS);
-        Instant phase3TriggerDate = event.getDate()
-                .minus(request.getPhase3DaysBeforeEvent(), ChronoUnit.DAYS);
-
-        return AutoPublishScheduleResponse.builder()
-                .scheduled(true)
-                .phase2Enabled(request.getPhase2Enabled())
-                .phase2DaysBeforeEvent(request.getPhase2DaysBeforeEvent())
-                .phase2TriggerDate(phase2TriggerDate.atOffset(java.time.ZoneOffset.UTC))
-                .phase3Enabled(request.getPhase3Enabled())
-                .phase3DaysBeforeEvent(request.getPhase3DaysBeforeEvent())
-                .phase3TriggerDate(phase3TriggerDate.atOffset(java.time.ZoneOffset.UTC))
-                .build();
+        return getPublishing(eventCode);
     }
 
     /**
-     * Get auto-publish schedule
+     * The publishing resource: published phases, per-phase validation and the auto-publish
+     * schedule (GET /events/{eventCode}/publishing).
      */
-    public AutoPublishScheduleResponse getAutoPublishSchedule(String eventCode) {
-        Event event = eventRepository.findByEventCode(eventCode)
-                .orElseThrow(() -> new EventNotFoundException(eventCode));
-
-        PublishingConfig config = publishingConfigRepository.findByEventId(event.getId())
-                .orElseThrow(() -> new RuntimeException("Publishing config not found"));
-
-        Instant phase2TriggerDate = event.getDate()
-                .minus(config.getAutoPublishSpeakersDaysBefore(), ChronoUnit.DAYS);
-        Instant phase3TriggerDate = event.getDate()
-                .minus(config.getAutoPublishAgendaDaysBefore(), ChronoUnit.DAYS);
-
-        return AutoPublishScheduleResponse.builder()
-                .scheduled(true)
-                .phase2Enabled(config.getAutoPublishSpeakers())
-                .phase2DaysBeforeEvent(config.getAutoPublishSpeakersDaysBefore())
-                .phase2TriggerDate(phase2TriggerDate.atOffset(java.time.ZoneOffset.UTC))
-                .phase3Enabled(config.getAutoPublishAgenda())
-                .phase3DaysBeforeEvent(config.getAutoPublishAgendaDaysBefore())
-                .phase3TriggerDate(phase3TriggerDate.atOffset(java.time.ZoneOffset.UTC))
-                .build();
-    }
-
-    /**
-     * Get publishing status including validation for all phases
-     * Used by frontend to display current publishing state and validation errors
-     */
-    public PublishingStatusResponse getPublishingStatus(String eventCode) {
+    @Transactional(readOnly = true)
+    public PublishingStatusResponse getPublishing(String eventCode) {
         Event event = eventRepository.findByEventCode(eventCode)
                 .orElseThrow(() -> new EventNotFoundException(eventCode));
 
@@ -286,6 +307,7 @@ public class PublishingService {
 
         // Determine published phases from currentPublishedPhase
         List<String> publishedPhases = determinePublishedPhases(event.getCurrentPublishedPhase());
+        PublishingConfig schedule = scheduleOf(event);
 
         return PublishingStatusResponse.builder()
                 .currentPhase(event.getCurrentPublishedPhase())
@@ -305,7 +327,17 @@ public class PublishingService {
                         .totalCount(allSessions.size())
                         .unassignedSessions(unassignedList)
                         .build())
+                .phase2Enabled(schedule.getAutoPublishSpeakers())
+                .phase2DaysBeforeEvent(schedule.getAutoPublishSpeakersDaysBefore())
+                .phase2TriggerDate(triggerDate(event, schedule.getAutoPublishSpeakersDaysBefore()))
+                .phase3Enabled(schedule.getAutoPublishAgenda())
+                .phase3DaysBeforeEvent(schedule.getAutoPublishAgendaDaysBefore())
+                .phase3TriggerDate(triggerDate(event, schedule.getAutoPublishAgendaDaysBefore()))
                 .build();
+    }
+
+    private static OffsetDateTime triggerDate(Event event, int daysBefore) {
+        return event.getDate().minus(daysBefore, ChronoUnit.DAYS).atOffset(ZoneOffset.UTC);
     }
 
     /**
@@ -335,28 +367,57 @@ public class PublishingService {
     // ==================== HELPER METHODS ====================
 
     /**
-     * Validate that content is ready for the requested phase
+     * The agenda is ready when the event has a title and a date, every session is timed, and, when
+     * the publish moves the workflow into AGENDA_PUBLISHED, the date is in the future (the rules of
+     * the former {@code POST /events/{eventCode}/publish}, Story 4.9b). Re-publishing the agenda of
+     * an event already published, live or archived does not need a future date: organizers correct
+     * the agenda on the event day. Every failed rule is reported, not only the first.
      */
-    private void validatePhaseContent(Event event, String phase) {
-        if ("agenda".equals(phase)) {
-            // Check that all sessions have timing assigned
-            List<Session> sessionsWithoutTiming = sessionRepository.findByEventId(event.getId()).stream()
-                    .filter(s -> s.getStartTime() == null || s.getEndTime() == null)
-                    .collect(Collectors.toList());
-
-            if (!sessionsWithoutTiming.isEmpty()) {
-                throw new PublishValidationException(
-                        "All sessions must have timing assigned",
-                        sessionsWithoutTiming.stream()
-                                .map(s -> PublishValidationError.ValidationDetail.builder()
-                                        .sessionSlug(s.getSessionSlug())
-                                        .field("timing")
-                                        .message("Session has no timing assigned")
-                                        .build())
-                                .collect(Collectors.toList())
-                );
-            }
+    private void validateAgenda(Event event, boolean movesWorkflow) {
+        List<PublishValidationError.ValidationDetail> details = new ArrayList<>();
+        if (event.getTitle() == null || event.getTitle().isBlank()) {
+            details.add(detail(null, "title", "Event title is required for publishing"));
         }
+        if (event.getDate() == null) {
+            details.add(detail(null, "date", "Event date is required for publishing"));
+        } else if (movesWorkflow && event.getWorkflowState() != EventWorkflowState.ARCHIVED
+                && event.getDate().isBefore(Instant.now())) {
+            details.add(detail(null, "date", "Event date must be in the future"));
+        }
+        sessionRepository.findByEventId(event.getId()).stream()
+                .filter(s -> s.getStartTime() == null || s.getEndTime() == null)
+                .forEach(s -> details.add(detail(s.getSessionSlug(), "timing", "Session has no timing assigned")));
+
+        if (details.isEmpty()) {
+            return;
+        }
+        List<String> reasons = new ArrayList<>();
+        details.stream()
+                .map(d -> "timing".equals(d.getField()) ? "All sessions must have timing assigned" : d.getMessage())
+                .distinct()
+                .forEach(reasons::add);
+        throw new PublishValidationException(String.join("; ", reasons), details);
+    }
+
+    private static PublishValidationError.ValidationDetail detail(String sessionSlug, String field, String message) {
+        return PublishValidationError.ValidationDetail.builder()
+                .sessionSlug(sessionSlug)
+                .field(field)
+                .message(message)
+                .build();
+    }
+
+    private boolean invalidateCdn(String eventCode, PublishingPhase phase) {
+        String invalidationId = cdnInvalidationService.invalidateCache(eventCode, phase.value());
+        return invalidationId != null && !invalidationId.startsWith("error");
+    }
+
+    private static PublishingPhase currentPhaseOf(Event event) {
+        String stored = event.getCurrentPublishedPhase();
+        if (stored == null || stored.isBlank() || "none".equalsIgnoreCase(stored)) {
+            return null;
+        }
+        return PublishingPhase.fromValue(stored.toLowerCase(java.util.Locale.ROOT));
     }
 
     private static boolean isBefore(EventWorkflowState state, EventWorkflowState reference) {
@@ -364,44 +425,35 @@ public class PublishingService {
     }
 
     /**
-     * Get previous phase (for unpublishing)
-     */
-    private String getPreviousPhase(String currentPhase) {
-        switch (currentPhase.toLowerCase()) {
-            case "speakers":
-                return "topic";
-            case "agenda":
-                return "speakers";
-            default:
-                return null;
-        }
-    }
-
-    /**
-     * Evict all cache entries for an event
+     * Evict what a publish changes: the event views (every include combination) and the archive
+     * list, which shows the workflow state an agenda publish may move.
      */
     private void evictEventCache(String eventCode) {
-        if (cacheManager != null) {
-            org.springframework.cache.Cache cache = cacheManager.getCache("eventWithIncludes");
+        if (cacheManager == null) {
+            return;
+        }
+        for (String name : List.of(CacheConfig.EVENT_WITH_INCLUDES_CACHE, CacheConfig.ARCHIVE_EVENTS_CACHE)) {
+            org.springframework.cache.Cache cache = cacheManager.getCache(name);
             if (cache != null) {
-                // Evict all possible cache keys for this event (with different include combinations)
-                cache.evict(eventCode + "_none");
-                cache.evict(eventCode + "_venue");
-                cache.evict(eventCode + "_speakers");
-                cache.evict(eventCode + "_sessions");
-                cache.evict(eventCode + "_venue,speakers");
-                cache.evict(eventCode + "_venue,sessions");
-                cache.evict(eventCode + "_speakers,sessions");
-                cache.evict(eventCode + "_venue,speakers,sessions");
-                // Clear the entire cache to be safe
                 cache.clear();
             }
         }
+        log.debug("Event caches cleared after publishing change of {}", eventCode);
     }
 
     // NOTE: finalizeAgenda() and unfinalizeAgenda() removed in V82.
     // AGENDA_FINALIZED state was removed from the workflow. The scheduler now transitions
     // AGENDA_PUBLISHED → EVENT_LIVE automatically on event day (daily 00:01 Bern time).
+
+    /**
+     * A publish or unpublish that does not fit the current phase (409): unpublish only the current
+     * phase, never publish below it.
+     */
+    public static class PhaseConflictException extends RuntimeException {
+        public PhaseConflictException(String message) {
+            super(message);
+        }
+    }
 
     /**
      * Custom exception for publishing validation errors

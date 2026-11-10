@@ -130,6 +130,23 @@ transition, a notification) did not happen. The alarm is a CloudWatch metric fil
 3. Fix the listener test first. Whether a listener failure should fail the caller instead is
    story 17.12, not something to change during an incident.
 
+### Scheduled job failures
+
+**Alarm:** `EventManagement-Scheduled-Job-Failures`. Fires on the first recorded failure in a
+5-minute window.
+
+A scheduled job that cannot process one item records it in `ScheduledJobFailures` (EMS) and goes
+on with the next one. Today that is the daily auto-publish (01:00): an event whose speakers or
+agenda could not be published by the job. The alarm is a CloudWatch metric filter on the marker
+`SCHEDULED_JOB_FAILED` in the EMS log group (metric
+`BATbern/ScheduledJobs ScheduledJobFailures-EventManagement`).
+
+1. Find the line and its stack trace (it names the job, e.g. `auto-publish-agenda`, and the item,
+   the event code):
+   `aws logs filter-log-events --log-group-name /aws/ecs/BATbern-staging/event-management --start-time <ms> --filter-pattern '"SCHEDULED_JOB_FAILED"'`
+2. The job does not retry: the auto-publish runs on exactly the scheduled day. Publish the phase by
+   hand in the event's Publishing tab once the cause is clear.
+
 ---
 
 ## Database

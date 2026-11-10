@@ -1217,76 +1217,33 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
     }
 
     // ============================================================================
-    // AC7: Publish Event
+    // Story 4.9b: the workflow state changes only through POST /events/{eventCode}/transition;
+    // POST /events/{eventCode}/publish folded into the agenda phase publish
+    // (PublishingEngineControllerIntegrationTest).
     // ============================================================================
 
     @Test
-    @DisplayName("should_publishEvent_when_validationPasses")
+    @DisplayName("should_rejectWorkflowState_when_eventPatched")
     @WithMockUser(username = "test.organizer", roles = "ORGANIZER")
-    void should_publishEvent_when_validationPasses() throws Exception {
-        // Create an event in SLOT_ASSIGNMENT state (ready to be published)
-        // The workflow requires SLOT_ASSIGNMENT → AGENDA_PUBLISHED transition
-        Event draftEvent = createTestEvent("BATbern 2028", "2028-09-15T09:00:00Z", "SLOT_ASSIGNMENT");
+    void should_rejectWorkflowState_when_eventPatched() throws Exception {
+        Event event = createTestEvent("BATbern 2028", "2028-09-15T09:00:00Z", "SLOT_ASSIGNMENT");
 
-        // Story 5.7: Must have at least one session with timing assigned before publishing
-        ch.batbern.events.domain.Session session = ch.batbern.events.domain.Session.builder()
-                .eventId(draftEvent.getId())
-                .eventCode(draftEvent.getEventCode())
-                .sessionSlug("keynote-2028")
-                .title("Keynote 2028")
-                .sessionType("keynote")
-                .startTime(Instant.parse("2028-09-15T09:00:00Z"))
-                .endTime(Instant.parse("2028-09-15T10:00:00Z"))
-                .room("Main Hall")
-                .capacity(200)
-                .build();
-        session = sessionRepository.save(session);
+        // workflowState is no field of PatchEventRequest any more: unknown property, 400
+        mockMvc.perform(patch("/api/v1/events/" + event.getEventCode())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"title\": \"BATbern 2028 – Brünnimann\", \"workflowState\": \"ARCHIVED\"}"))
+                .andExpect(status().isBadRequest());
+        Event unchanged = eventRepository.findById(event.getId()).orElseThrow();
+        assertThat(unchanged.getWorkflowState()).isEqualTo(EventWorkflowState.SLOT_ASSIGNMENT);
+        assertThat(unchanged.getTitle()).isEqualTo("BATbern 2028");
 
-        // Story 11.B.3 (ADR-009 §0.1): validateAllSpeakersConfirmed requires every
-        // accepted-or-beyond speaker to be publishable (QUALITY_REVIEWED + session.start_time
-        // set). Seed one QUALITY_REVIEWED speaker linked to the session above.
-        speakerPoolRepository.save(ch.batbern.events.domain.SpeakerPool.builder()
-                .eventId(draftEvent.getId())
-                .speakerName("Publishable Speaker")
-                .status(ch.batbern.shared.types.SpeakerWorkflowState.QUALITY_REVIEWED)
-                .sessionId(session.getId())
-                .build());
-
-        mockMvc.perform(post("/api/v1/events/" + draftEvent.getEventCode() + "/publish")
-                        .contentType(MediaType.APPLICATION_JSON))
+        // positive control: the same PATCH without the state applies
+        mockMvc.perform(patch("/api/v1/events/" + event.getEventCode())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"title\": \"BATbern 2028 – Brünnimann\"}"))
                 .andExpect(status().isOk())
-                // Story 1.16.2: Event responses use eventCode, not id
-                .andExpect(jsonPath("$.eventCode").value(draftEvent.getEventCode()))
-                .andExpect(jsonPath("$.workflowState").value("AGENDA_PUBLISHED"))
-                .andExpect(jsonPath("$.title").value("BATbern 2028"));
-    }
-
-    @Test
-    @DisplayName("should_return422_when_validationFails")
-    @WithMockUser(username = "test.organizer", roles = "ORGANIZER")
-    void should_return422_when_validationFails() throws Exception {
-        // Create an event with minimal valid data that passes database constraints
-        // but should fail publish validation (e.g., past event date)
-        Event invalidEvent = Event.builder()
-                .title("Incomplete Event")
-                .eventCode("BATbern9999")
-                .eventNumber(9999)
-                .date(Instant.parse("2020-01-01T00:00:00Z")) // Past date - should fail publish validation
-                .registrationDeadline(Instant.parse("2019-12-01T00:00:00Z"))
-                .venueName("Test Venue")
-                .venueAddress("123 Test St")
-                .venueCapacity(100)
-                .organizerUsername("test.organizer")
-                .eventType(EventType.EVENING)
-                .workflowState(ch.batbern.shared.types.EventWorkflowState.CREATED)
-                .build();
-        Event savedInvalidEvent = eventRepository.save(invalidEvent);
-
-        mockMvc.perform(post("/api/v1/events/" + savedInvalidEvent.getEventCode() + "/publish")
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isUnprocessableEntity())
-                .andExpect(jsonPath("$.error").value("Unprocessable Entity"))
-                .andExpect(jsonPath("$.message").exists());
+                .andExpect(jsonPath("$.title").value("BATbern 2028 – Brünnimann"))
+                .andExpect(jsonPath("$.workflowState").value("SLOT_ASSIGNMENT"));
     }
 
     // ============================================================================

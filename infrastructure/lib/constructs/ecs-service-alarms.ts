@@ -16,9 +16,16 @@ import { Construct } from 'constructs';
  * - OOM kill detection (exit code 137)
  * - Task failure rate (abnormal restarts)
  * - Domain event listener failures swallowed by the publisher (log based, with serviceLogGroup)
+ * - Scheduled-job failures recorded by EMS ScheduledJobFailures (log based, opt-in)
  */
 /** Namespace of the log-based domain-event metrics. */
 export const DOMAIN_EVENTS_NAMESPACE = 'BATbern/DomainEvents';
+
+/** Namespace of the log-based scheduled-job metrics. */
+export const SCHEDULED_JOBS_NAMESPACE = 'BATbern/ScheduledJobs';
+
+/** ScheduledJobFailures.LOG_MARKER (EMS): first token of its failure line. */
+export const SCHEDULED_JOB_FAILURE_MARKER = 'SCHEDULED_JOB_FAILED';
 
 /** SpringDomainEventPublisher.LOG_MARKER (shared-kernel): first token of its listener-failure line. */
 export const DOMAIN_EVENT_LISTENER_FAILURE_MARKER = 'DOMAIN_EVENT_LISTENER_FAILED';
@@ -64,6 +71,14 @@ export interface EcsServiceAlarmsProps {
    * event listener. Pass it only for services that run that publisher (EMS, CUMS, PCS).
    */
   readonly serviceLogGroup?: logs.ILogGroup;
+
+  /**
+   * With serviceLogGroup: also create the `{Service}-Scheduled-Job-Failures` alarm on the marker
+   * EMS's `ScheduledJobFailures` writes when a scheduled job skips an item it could not process
+   * (Story 4.9b). Only for services that have that recorder (EMS).
+   * @default false
+   */
+  readonly scheduledJobFailures?: boolean;
 
   /**
    * Override production detection (defaults to environment === 'production')
@@ -287,12 +302,50 @@ export class EcsServiceAlarms extends Construct {
       listenerFailureAlarm.node.addDependency(listenerFailureFilter);
     }
 
+    // Alarm 5: items a scheduled job could not process (Story 4.9b, assertion rule "no silent
+    // catch in schedulers without a metric"). Same log-based pattern as alarm 4: EMS's
+    // ScheduledJobFailures logs SCHEDULED_JOB_FAILED and counts it in Micrometer, which reaches
+    // nobody; scheduled-job-failure-alarm.test.ts reads the marker from the Java source.
+    let scheduledJobFailureAlarm: cloudwatch.Alarm | undefined;
+
+    if (props.serviceLogGroup && props.scheduledJobFailures) {
+      const scheduledJobMetricName = `ScheduledJobFailures-${serviceDisplayName}`;
+
+      const scheduledJobFilter = new logs.MetricFilter(this, 'ScheduledJobFailureMetricFilter', {
+        logGroup: props.serviceLogGroup,
+        metricNamespace: SCHEDULED_JOBS_NAMESPACE,
+        metricName: scheduledJobMetricName,
+        filterPattern: logs.FilterPattern.literal(`"${SCHEDULED_JOB_FAILURE_MARKER}"`),
+        metricValue: '1',
+        defaultValue: 0,
+      });
+
+      scheduledJobFailureAlarm = new cloudwatch.Alarm(this, 'ScheduledJobFailures', {
+        alarmName: `batbern-${props.environment}-${serviceDisplayName}-Scheduled-Job-Failures`,
+        alarmDescription: `${serviceDisplayName}: a scheduled job could not process an item and skipped it (log marker ${SCHEDULED_JOB_FAILURE_MARKER}, e.g. an auto-publish that failed for one event)`,
+        metric: new cloudwatch.Metric({
+          namespace: SCHEDULED_JOBS_NAMESPACE,
+          metricName: scheduledJobMetricName,
+          statistic: 'Sum',
+          period: cdk.Duration.minutes(5),
+        }),
+        threshold: 0,
+        evaluationPeriods: 1,
+        comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
+        treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
+      });
+      scheduledJobFailureAlarm.addAlarmAction(alarmAction);
+      scheduledJobFailureAlarm.addOkAction(alarmAction);
+      scheduledJobFailureAlarm.node.addDependency(scheduledJobFilter);
+    }
+
     // Output alarm names for reference
     const alarmNames = [
       memoryUtilizationAlarm.alarmName,
       ...(oomKillAlarm ? [oomKillAlarm.alarmName] : []),
       taskFailureAlarm.alarmName,
       ...(listenerFailureAlarm ? [listenerFailureAlarm.alarmName] : []),
+      ...(scheduledJobFailureAlarm ? [scheduledJobFailureAlarm.alarmName] : []),
     ];
 
     new cdk.CfnOutput(this, 'AlarmNames', {

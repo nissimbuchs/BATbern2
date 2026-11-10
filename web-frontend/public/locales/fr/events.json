@@ -992,7 +992,20 @@
     "sections": {
       "validation": "Validation",
       "phases": "Phase de publication",
-      "publishNext": "Publier la phase suivante"
+      "publishNext": "Publier la phase suivante",
+      "schedule": "Publication automatique"
+    },
+    "schedule": {
+      "description": "La tâche quotidienne publie ces phases sur le site le jour indiqué avant l'événement. Uniquement les phases non publiées.",
+      "speakers": "Publier les intervenants automatiquement",
+      "agenda": "Publier le programme automatiquement",
+      "daysBefore": "Jours avant l'événement",
+      "invalidDays": "1 à 365 jours",
+      "triggerDate": "Le {{date}}",
+      "save": "Enregistrer le calendrier",
+      "saved": "Calendrier enregistré.",
+      "error": "Le calendrier n'a pas pu être enregistré.",
+      "agendaBeforeSpeakers": "Le programme n'est publié automatiquement qu'après les intervenants : activez les intervenants et ne donnez pas au programme plus de jours avant l'événement qu'aux intervenants."
     }
   },
   "notifications": {

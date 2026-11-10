@@ -44,6 +44,23 @@ that still had more than one endpoint to extend:
   `POST /events/{eventCode}/speakers/{speakerId}/abstract-analysis`, loaded with
   `findByIdAndEventId` (§5); the noun avoids a verb segment.
 
+**Story 4.9b (2026-11, one transition idiom for the event lifecycle, breaking, no aliases)**
+records the EMS idiom: the action sub-resource of §1 row 4, `POST /{instance}/{verb}`, already the
+most common EMS shape (speakers review/promote, registrations promote, mails retry).
+
+- **Phases are instances:** `POST /events/{eventCode}/phases/{phase}/publish` and `…/unpublish`,
+  `phase` an enum (`topic`, `speakers`, `agenda`; any other value 400). The verb follows the
+  addressed instance, so `no-verb-segment` passes without an exception.
+- **Workflow:** `POST /events/{eventCode}/transition` `{targetState, overrideValidation,
+  overrideReason}`. `workflowState` left the event PUT/PATCH bodies, so there is one way to change
+  the state (an agenda publish moves it as its side effect).
+- **Publishing state and schedule are one resource:** `GET`/`PATCH /events/{eventCode}/publishing`
+  (status, per-phase validation and the auto-publish schedule; PATCH partial). A schedule is a field
+  change, not a transition (§1 row 2).
+- **Folded:** `POST /events/{eventCode}/publish` is the agenda publish now; its validation runs
+  there next to the timing rule (422 `PublishValidationError` listing every reason).
+- Lint: `no-verb-segment` 43 to 39 findings, owner group T1 removed.
+
 ## Context
 
 BATbern has ~13 OpenAPI specs across five services. An audit during the
@@ -65,10 +82,13 @@ governed per-story rather than by a written rule. The result is drift:
    PUT+PATCH twins; partner domain: PATCH-only; topics/sessions: PUT reusing the create
    schema for partial updates).
 
-3. **Three competing state-transition idioms** for one concept. EMS event lifecycle has
-   `POST …/publish`, `POST …/workflow/advance`, **and** `PUT …/workflow/transition`. The
-   partner domain mixes action-PATCH (`/status`), boolean-in-PATCH (`isActive`),
-   action-POST (`/send-invite`), and POST/DELETE toggle (`/vote`).
+3. **Competing state-transition idioms** for one concept. The EMS event lifecycle had four
+   (found 2026-06, recounted 2026-11): `POST …/publish` (validated, jumped to AGENDA_PUBLISHED,
+   no CDN invalidation), `POST …/publish/{phase}` and `…/unpublish/{phase}` with an unvalidated
+   string phase, `POST …/workflow/transition`, and `workflowState` in the event PUT/PATCH body,
+   applied with override; the auto-publish schedule was a verb (`POST …/publish/schedule`). Fixed
+   by Story 4.9b, below. The partner domain mixes action-PATCH (`/status`), boolean-in-PATCH
+   (`isActive`), action-POST (`/send-invite`), and POST/DELETE toggle (`/vote`).
 
 4. **Convention drift between sibling specs.** get-or-create is `:get-or-create` (colon,
    companies) vs `/get-or-create` (slash, users). List filtering is JSON:API `filter`/`sort`
@@ -197,8 +217,8 @@ offset-pagination contract that nothing implements).
 - **PUT-as-full-replace vs PATCH-as-partial:** `events-api` `/events/{eventCode}`.
 - **POST-create + PATCH-update split:** `events-api` speaker-pool
   (`addSpeakerToPool` / `patchSpeakerPoolEntry`).
-- **Action sub-resources:** EMS speaker `…/confirm`, `…/decline`, `…/promote`;
-  CUMS `…/verify`, `…/roles`.
+- **Action sub-resources:** EMS speaker `…/confirm`, `…/decline`, `…/promote`; EMS event
+  `…/transition`, `…/phases/{phase}/publish` (4.9b); CUMS `…/verify`, `…/roles`.
 - **Idempotent toggle:** `partner-topics-api` `POST`/`DELETE /partners/topics/{id}/vote`.
 - **Single error schema for 100% of error responses:** `events-api` / `topics-api`.
 

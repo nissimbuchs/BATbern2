@@ -63,13 +63,11 @@ tests {
 
 docs {
   PR 2 split (plan §C): owns the parent event that the seed tests
-  (12 list-registrations, 13 create-registration, 16 publish-event) run
+  (12 list-registrations, 13 create-registration) run
   against. PR 2b will replace this with a richer state-machine fixture
   that walks all 8 workflow states. For now, a single fresh CREATED-state
   event is enough for the 3 seed tests.
 
-  16-publish-event probably returns 422 here because the event lacks
-  sessions/speakers/registrations needed for publish to succeed — that's
-  expected (test asserts oneOf([200, 422])). Event remains in CREATED,
-  which 98-delete-fixture-event can DELETE without state-transition help.
+  Publishing moved to the dev-only collection event-publishing-api (Story 4.9b):
+  a publish acts on the public website. The event stays CREATED here.
 }
