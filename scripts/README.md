@@ -60,9 +60,6 @@ Central location for all operational scripts used in development, CI/CD, and con
 
 # Run smoke tests
 ./scripts/ci/smoke-tests.sh
-
-# Run regression suite
-./scripts/ci/regression-suite.sh
 ```
 
 ---
@@ -91,8 +88,6 @@ scripts/
 │   ├── setup-ecr-repositories.sh      # Setup container registries
 │   ├── setup-github-oidc-provider.sh  # Setup GitHub Actions OIDC
 │   ├── smoke-tests.sh                 # Post-deployment smoke tests
-│   ├── regression-suite.sh            # Full regression tests
-│   ├── performance-tests.sh           # Performance benchmarks
 │   ├── security-scan.sh               # Security scanning
 │   ├── rollback-deployment.sh         # Rollback to previous version
 │   ├── monitor-canary.sh              # Monitor canary deployments

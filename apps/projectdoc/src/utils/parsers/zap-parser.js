@@ -119,7 +119,7 @@ const RULE_NAMES = {
   '90033': 'Loosely Scoped Cookie',
 };
 
-// ─── Category groupings (same as zap-summary-report.py) ────────────────────
+// ─── Category groupings ─────────────────────────────────────────────────────
 export const SCAN_GROUPS = [
   { name: 'Injection Attacks', rules: [
     '40018','40019','40020','40021','40022','40027',
