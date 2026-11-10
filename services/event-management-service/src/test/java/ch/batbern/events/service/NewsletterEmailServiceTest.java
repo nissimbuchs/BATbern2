@@ -406,9 +406,9 @@ class NewsletterEmailServiceTest {
                 .templateKey("newsletter-event")
                 .build();
 
-        when(sendRepository.findFirstByEventIdAndStatus(testEvent.getId(),
+        when(sendRepository.findByEventIdAndStatus(testEvent.getId(),
                 NewsletterEmailService.STATUS_IN_PROGRESS))
-                .thenReturn(java.util.Optional.empty());
+                .thenReturn(List.of());
         when(subscriberService.getActiveCount()).thenReturn(5L);
         when(sendRepository.save(any())).thenReturn(savedSend);
 
@@ -430,11 +430,12 @@ class NewsletterEmailServiceTest {
                 .id(UUID.randomUUID())
                 .eventId(testEvent.getId())
                 .status(NewsletterEmailService.STATUS_IN_PROGRESS)
+                .templateKey("newsletter-event")
                 .build();
 
-        when(sendRepository.findFirstByEventIdAndStatus(testEvent.getId(),
+        when(sendRepository.findByEventIdAndStatus(testEvent.getId(),
                 NewsletterEmailService.STATUS_IN_PROGRESS))
-                .thenReturn(java.util.Optional.of(activeSend));
+                .thenReturn(List.of(activeSend));
 
         assertThatThrownBy(() ->
                 newsletterEmailService.sendNewsletter(testEvent, false, "de", "organizer", null))
@@ -456,7 +457,7 @@ class NewsletterEmailServiceTest {
                 newsletterEmailService.sendNewsletter(testEvent, false, "de", "organizer", null))
                 .isInstanceOf(ch.batbern.shared.service.TestMarkedEmailException.class);
 
-        verify(sendRepository, never()).findFirstByEventIdAndStatus(any(), any());
+        verify(sendRepository, never()).findByEventIdAndStatus(any(), any());
         verify(subscriberService, never()).getActiveCount();
     }
 
@@ -470,8 +471,9 @@ class NewsletterEmailServiceTest {
         testEvent.setEventCode("BATbern79102");
         testEvent.setTitle("BATPW-E2E 1782885868837");
         when(emailService.isLiveDelivery()).thenReturn(false);
-        when(sendRepository.findFirstByEventIdAndStatus(any(), any()))
-                .thenReturn(java.util.Optional.of(NewsletterSend.builder().id(UUID.randomUUID()).build()));
+        when(sendRepository.findByEventIdAndStatus(any(), any()))
+                .thenReturn(List.of(NewsletterSend.builder().id(UUID.randomUUID()).templateKey("newsletter-event")
+                        .build()));
 
         // Reaches the duplicate-send check, i.e. passed the marker wall.
         assertThatThrownBy(() ->

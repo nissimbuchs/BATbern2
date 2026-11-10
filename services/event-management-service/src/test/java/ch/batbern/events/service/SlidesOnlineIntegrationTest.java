@@ -280,6 +280,46 @@ class SlidesOnlineIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
+    @WithMockUser(username = "org.user", roles = {"ORGANIZER"})
+    @DisplayName("16.8c: a registrant notice in progress does not block the newsletter of the same event")
+    void composer_registrantNoticeInProgress_doesNotBlockNewsletter() throws Exception {
+        Event event = saveEvent(EVENT_CODE, Instant.parse("2026-03-06T15:00:00Z"));
+        subscriberRepository.save(NewsletterSubscriber.builder()
+                .email(sim("sub")).language("de").source("explicit").unsubscribeToken("tok-760-sub").build());
+        NewsletterSend notice = savePendingSend(event.getId()); // slides-online, a registrant notice
+        notice.setStatus("IN_PROGRESS");
+        sendRepository.save(notice);
+
+        mockMvc.perform(post("/api/v1/events/{eventCode}/mails", EVENT_CODE)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"audience\":\"NEWSLETTER\",\"locale\":\"de\",\"target\":\"RECIPIENTS\"}"))
+                .andExpect(status().isAccepted());
+
+        sesRecorder.awaitAsyncSends();
+        assertThat(sesRecorder.mailsTo(sim("sub"))).hasSize(1);
+    }
+
+    @Test
+    @WithMockUser(username = "org.user", roles = {"ORGANIZER"})
+    @DisplayName("16.8c: a newsletter in progress still blocks a second newsletter (409, positive control)")
+    void composer_newsletterInProgress_blocksNewsletter() throws Exception {
+        Event event = saveEvent(EVENT_CODE, Instant.parse("2026-03-06T15:00:00Z"));
+        subscriberRepository.save(NewsletterSubscriber.builder()
+                .email(sim("sub")).language("de").source("explicit").unsubscribeToken("tok-760-sub").build());
+        NewsletterSend running = savePendingSend(event.getId());
+        running.setTemplateKey("newsletter-event");
+        running.setStatus("IN_PROGRESS");
+        sendRepository.save(running);
+
+        mockMvc.perform(post("/api/v1/events/{eventCode}/mails", EVENT_CODE)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"audience\":\"NEWSLETTER\",\"locale\":\"de\",\"target\":\"RECIPIENTS\"}"))
+                .andExpect(status().isConflict());
+        sesRecorder.awaitAsyncSends();
+        assertThat(sesRecorder.mails()).isEmpty();
+    }
+
+    @Test
     @WithMockUser(username = "joe.user", roles = {"USER"})
     @DisplayName("AC2: non-organizer → 403")
     void composer_nonOrganizer_returns403() throws Exception {

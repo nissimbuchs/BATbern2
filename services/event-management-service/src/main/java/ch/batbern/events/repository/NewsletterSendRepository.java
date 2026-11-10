@@ -15,8 +15,8 @@ import java.util.UUID;
 @Repository
 public interface NewsletterSendRepository extends JpaRepository<NewsletterSend, UUID> {
 
-    /** Returns the first IN_PROGRESS send for this event (for duplicate-send prevention). */
-    Optional<NewsletterSend> findFirstByEventIdAndStatus(UUID eventId, String status);
+    /** The sends of an event in one status; newsletter and registrant notices share the table. */
+    List<NewsletterSend> findByEventIdAndStatus(UUID eventId, String status);
 
     /**
      * Story 7.3: template-scoped in-progress guard for the dedicated slides-online send.

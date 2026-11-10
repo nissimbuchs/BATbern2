@@ -52,6 +52,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Service for building and sending newsletter emails (Story 10.7 — AC8, AC10).
@@ -253,8 +254,10 @@ public class NewsletterEmailService {
                     "newsletter for event " + event.getEventCode() + " (" + event.getTitle() + ")");
         }
 
-        // Duplicate-send prevention: reject if a send is already in progress for this event.
-        sendRepository.findFirstByEventIdAndStatus(event.getId(), STATUS_IN_PROGRESS)
+        // Duplicate-send prevention: reject if a newsletter send is already in progress for this
+        // event. Registrant notices share the table but not the guard (16.8c): their job does not
+        // block the newsletter, as the newsletter does not block theirs.
+        newsletterInProgress(event)
                 .ifPresent(active -> {
                     throw new DuplicateNewsletterSendException(
                             "A newsletter send is already in progress for event "
@@ -916,6 +919,24 @@ public class NewsletterEmailService {
     }
 
     // ── Private helpers ───────────────────────────────────────────────────────
+
+    /** The first IN_PROGRESS send of this event that is a newsletter, not a registrant notice. */
+    private Optional<NewsletterSend> newsletterInProgress(Event event) {
+        return sendRepository.findByEventIdAndStatus(event.getId(), STATUS_IN_PROGRESS).stream()
+                .filter(send -> !isRegistrantNoticeRow(send.getTemplateKey()))
+                .findFirst();
+    }
+
+    /** Whether a {@code newsletter_sends} row is a registrant notice: own text or a template of that category. */
+    private boolean isRegistrantNoticeRow(String templateKey) {
+        if (OwnText.REGISTRANTS_ROW_KEY.equals(templateKey)) {
+            return true;
+        }
+        return templateKey != null && Stream.of("de", "en")
+                .map(locale -> emailTemplateService.findByKeyAndLocale(templateKey, locale))
+                .flatMap(Optional::stream)
+                .anyMatch(t -> "REGISTRANT_NOTICE".equalsIgnoreCase(t.getCategory()));
+    }
 
     private String resolveTemplateKey(@Nullable String templateKey) {
         return (templateKey != null && !templateKey.isBlank()) ? templateKey : DEFAULT_TEMPLATE_KEY;
