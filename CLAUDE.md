@@ -806,7 +806,7 @@ make test  # Run all tests with coverage reports
 
 Dependabot opens grouped PRs monthly; **one batch a month** reaches production, not one deploy per PR.
 
-**Configuration**: `.github/dependabot.yml`: monthly, grouped, 2-5 open PRs per ecosystem. Dependabot PRs
+**Configuration**: `.github/dependabot.yml`: monthly, grouped, 2-5 open PRs per ecosystem, no automatic rebase (`rebase-strategy: "disabled"`, owner 2026-11-10; a conflicting PR is superseded next month or rebased by hand with `@dependabot rebase`). Dependabot PRs
 target `develop` and get full CI there, but never deploy (`build.yml`) and never auto-merge (`auto-merge.yml`).
 
 **Monthly batch** (`.github/workflows/dependabot-batch-merge.yml`, first Monday 10:36 UTC, #1076):
