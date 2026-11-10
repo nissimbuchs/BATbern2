@@ -20,6 +20,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.event.ApplicationEvents;
 import org.springframework.test.context.event.RecordApplicationEvents;
@@ -86,6 +87,9 @@ public class PublishingEngineControllerIntegrationTest extends AbstractIntegrati
 
     @Autowired
     private ApplicationEvents applicationEvents;
+
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
 
     private Event testEvent;
     private String eventCode;
@@ -359,28 +363,29 @@ public class PublishingEngineControllerIntegrationTest extends AbstractIntegrati
     void should_storeOnlyPresentScheduleFields_when_publishingPatched() throws Exception {
         mockMvc.perform(patch("/api/v1/events/{eventCode}/publishing", eventCode)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"phase2Enabled\": false, \"phase3DaysBeforeEvent\": 10}"))
+                        .content("{\"phase2DaysBeforeEvent\": 21, \"phase3DaysBeforeEvent\": 10}"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.phase2Enabled").value(false))
-                .andExpect(jsonPath("$.phase2DaysBeforeEvent").value(30))
+                .andExpect(jsonPath("$.phase2Enabled").value(true))
+                .andExpect(jsonPath("$.phase2DaysBeforeEvent").value(21))
                 .andExpect(jsonPath("$.phase3Enabled").value(true))
                 .andExpect(jsonPath("$.phase3DaysBeforeEvent").value(10))
                 .andExpect(jsonPath("$.topic.isValid").value(true));
 
         PublishingConfig stored = publishingConfigRepository.findByEventId(testEvent.getId()).orElseThrow();
-        assertThat(stored.getAutoPublishSpeakers()).isFalse();
-        assertThat(stored.getAutoPublishSpeakersDaysBefore()).isEqualTo(30);
+        assertThat(stored.getAutoPublishSpeakers()).isTrue();
+        assertThat(stored.getAutoPublishSpeakersDaysBefore()).isEqualTo(21);
         assertThat(stored.getAutoPublishAgenda()).isTrue();
         assertThat(stored.getAutoPublishAgendaDaysBefore()).isEqualTo(10);
 
         // a second PATCH changes only its own field
         mockMvc.perform(patch("/api/v1/events/{eventCode}/publishing", eventCode)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"phase2Enabled\": true}"))
+                        .content("{\"phase3Enabled\": false}"))
                 .andExpect(status().isOk());
         mockMvc.perform(get("/api/v1/events/{eventCode}/publishing", eventCode))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.phase2Enabled").value(true))
+                .andExpect(jsonPath("$.phase3Enabled").value(false))
+                .andExpect(jsonPath("$.phase2DaysBeforeEvent").value(21))
                 .andExpect(jsonPath("$.phase3DaysBeforeEvent").value(10));
     }
 
@@ -401,6 +406,107 @@ public class PublishingEngineControllerIntegrationTest extends AbstractIntegrati
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"phase2Enabled\": false}"))
                 .andExpect(status().isForbidden());
+    }
+
+    /**
+     * publishing_config columns are nullable (V28). A row holding NULLs answers the default per
+     * field instead of a 500 or a null in a required property, and PATCH works on it.
+     */
+    @Test
+    @WithMockUser(username = "test.organizer", roles = {"ORGANIZER"})
+    void should_answerDefaultsPerField_when_storedScheduleHoldsNulls() throws Exception {
+        eventRepository.flush();
+        jdbcTemplate.update("INSERT INTO publishing_config (event_id, auto_publish_speakers, "
+                + "auto_publish_speakers_days_before, auto_publish_agenda, auto_publish_agenda_days_before) "
+                + "VALUES (?, NULL, NULL, false, NULL)", testEvent.getId());
+
+        mockMvc.perform(get("/api/v1/events/{eventCode}/publishing", eventCode))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.phase2Enabled").value(true))
+                .andExpect(jsonPath("$.phase2DaysBeforeEvent").value(30))
+                .andExpect(jsonPath("$.phase3Enabled").value(false))
+                .andExpect(jsonPath("$.phase3DaysBeforeEvent").value(14))
+                .andExpect(jsonPath("$.phase3TriggerDate").exists());
+
+        mockMvc.perform(patch("/api/v1/events/{eventCode}/publishing", eventCode)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"phase2DaysBeforeEvent\": 20}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.phase2DaysBeforeEvent").value(20))
+                .andExpect(jsonPath("$.phase3Enabled").value(false));
+    }
+
+    /**
+     * The agenda auto-publish needs the speakers already published: a schedule whose agenda would
+     * run first (more days before the event) or without the speakers would never fire.
+     */
+    @Test
+    @WithMockUser(username = "test.organizer", roles = {"ORGANIZER"})
+    void should_return400_when_agendaWouldAutoPublishBeforeSpeakers() throws Exception {
+        mockMvc.perform(patch("/api/v1/events/{eventCode}/publishing", eventCode)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"phase3DaysBeforeEvent\": 40}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value(containsString("speakers")));
+        mockMvc.perform(patch("/api/v1/events/{eventCode}/publishing", eventCode)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"phase2Enabled\": false}"))
+                .andExpect(status().isBadRequest());
+        assertThat(publishingConfigRepository.findByEventId(testEvent.getId())).isEmpty();
+
+        // positive controls: equal days, and both off
+        mockMvc.perform(patch("/api/v1/events/{eventCode}/publishing", eventCode)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"phase3DaysBeforeEvent\": 30}"))
+                .andExpect(status().isOk());
+        mockMvc.perform(patch("/api/v1/events/{eventCode}/publishing", eventCode)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"phase2Enabled\": false, \"phase3Enabled\": false}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.phase2Enabled").value(false))
+                .andExpect(jsonPath("$.phase3Enabled").value(false));
+    }
+
+    /**
+     * Unpublish only steps back from the current phase: unpublishing another one would publish a
+     * phase by accident (agenda with only the topic published would make the speakers public).
+     */
+    @Test
+    @WithMockUser(username = "test.organizer", roles = {"ORGANIZER"})
+    void should_return409_when_unpublishingAPhaseThatIsNotTheCurrentOne() throws Exception {
+        mockMvc.perform(post("/api/v1/events/{eventCode}/phases/topic/publish", eventCode))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/v1/events/{eventCode}/phases/agenda/unpublish", eventCode))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value(containsString("topic")));
+        assertThat(eventRepository.findById(testEvent.getId()).orElseThrow().getCurrentPublishedPhase())
+                .isEqualTo("topic");
+
+        mockMvc.perform(post("/api/v1/events/{eventCode}/phases/topic/unpublish", eventCode))
+                .andExpect(status().isOk());
+        assertThat(eventRepository.findById(testEvent.getId()).orElseThrow().getCurrentPublishedPhase())
+                .isNull();
+    }
+
+    /**
+     * Publishing a phase below the published one would step the website back; that is what
+     * unpublish is for. Re-publishing the current phase stays allowed.
+     */
+    @Test
+    @WithMockUser(username = "test.organizer", roles = {"ORGANIZER"})
+    void should_return409_when_publishingAPhaseBelowTheCurrentOne() throws Exception {
+        mockMvc.perform(post("/api/v1/events/{eventCode}/phases/speakers/publish", eventCode))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/v1/events/{eventCode}/phases/topic/publish", eventCode))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value(containsString("speakers")));
+        assertThat(eventRepository.findById(testEvent.getId()).orElseThrow().getCurrentPublishedPhase())
+                .isEqualTo("speakers");
+
+        mockMvc.perform(post("/api/v1/events/{eventCode}/phases/speakers/publish", eventCode))
+                .andExpect(status().isOk());
     }
 
     /**

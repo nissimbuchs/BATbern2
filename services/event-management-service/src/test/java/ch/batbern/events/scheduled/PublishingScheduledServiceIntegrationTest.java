@@ -18,6 +18,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
@@ -59,6 +60,9 @@ public class PublishingScheduledServiceIntegrationTest extends AbstractIntegrati
 
     @Autowired
     private PublishingService publishingService;
+
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
 
     // Use timestamp-based sequence to ensure uniqueness across test runs
     private int eventNumberSequence = (int) (System.currentTimeMillis() % 50000) + 50000;
@@ -309,12 +313,33 @@ public class PublishingScheduledServiceIntegrationTest extends AbstractIntegrati
         Event disabled = createEvent("BAT-SPEAKERS-OFF", startOfDayIn(30), null);
         Event byDefault = createEvent("BAT-SPEAKERS-ON", startOfDayIn(30), null);
         publishingService.patchPublishing(disabled.getEventCode(),
-                PatchPublishingRequest.builder().phase2Enabled(false).build());
+                PatchPublishingRequest.builder().phase2Enabled(false).phase3Enabled(false).build());
 
         publishingScheduledService.autoPublishSpeakers();
 
         assertThat(eventRepository.findById(disabled.getId()).orElseThrow().getCurrentPublishedPhase()).isNull();
         assertThat(eventRepository.findById(byDefault.getId()).orElseThrow().getCurrentPublishedPhase())
+                .isEqualTo("speakers");
+    }
+
+    /**
+     * publishing_config columns are nullable (V28): a row holding NULLs means the defaults, field by
+     * field, and the job goes on with the next event.
+     */
+    @Test
+    void should_useDefaultsAndGoOn_when_storedScheduleHoldsNulls() {
+        Event withNulls = createEvent("BAT-SPEAKERS-NULLS", startOfDayIn(30), null);
+        Event next = createEvent("BAT-SPEAKERS-NEXT", startOfDayIn(30), null);
+        eventRepository.flush();
+        jdbcTemplate.update("INSERT INTO publishing_config (event_id, auto_publish_speakers, "
+                + "auto_publish_speakers_days_before, auto_publish_agenda, auto_publish_agenda_days_before) "
+                + "VALUES (?, NULL, NULL, NULL, NULL)", withNulls.getId());
+
+        publishingScheduledService.autoPublishSpeakers();
+
+        assertThat(eventRepository.findById(withNulls.getId()).orElseThrow().getCurrentPublishedPhase())
+                .isEqualTo("speakers");
+        assertThat(eventRepository.findById(next.getId()).orElseThrow().getCurrentPublishedPhase())
                 .isEqualTo("speakers");
     }
 

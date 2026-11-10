@@ -1031,7 +1031,7 @@ paths:
                     path: /api/v1/events/BATbern142/transition
                     status: 400
                     error: Bad Request
-                    message: No enum constant ch.batbern.shared.types.EventWorkflowState.PUBLISHED
+                    message: "Unknown target state 'PUBLISHED'. Allowed: CREATED, TOPIC_SELECTION, SPEAKER_IDENTIFICATION, SLOT_ASSIGNMENT, AGENDA_PUBLISHED, EVENT_LIVE, EVENT_COMPLETED, ARCHIVED"
                     correlationId: abc-123-def
                     severity: MEDIUM
         '403':
@@ -1916,7 +1916,8 @@ paths:
       summary: Publish a progressive-publishing phase (topic, speakers, agenda)
       description: 'Publishes the phase on the public website: evicts the event caches and invalidates
 
-        the CDN paths of the phase. Publishing `speakers` signals the Q&A windows
+        the CDN paths of the phase. Re-publishing the current phase is allowed, a phase below it
+        answers 409 (step back with unpublish). Publishing `speakers` signals the Q&A windows
 
         (`SpeakersPhasePublishedEvent`). Publishing `agenda` validates the event (title, date, a date in
 
@@ -1972,6 +1973,23 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+        '409':
+          description: A phase above this one is published; use unpublish to step back. Nothing changed.
+          content:
+            application/json:
+              schema:
+                $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+              examples:
+                conflict:
+                  summary: topic while the speakers are published
+                  value:
+                    timestamp: '2026-11-10T10:00:00Z'
+                    path: /api/v1/events/BATbern142/phases/topic/publish
+                    status: 409
+                    error: Conflict
+                    message: "The speakers phase is published; publishing topic would step back. Unpublish speakers instead."
+                    correlationId: abc-123-def
+                    severity: LOW
         '422':
           description: The event is not ready for this phase; nothing was changed.
           content:
@@ -1998,9 +2016,11 @@ paths:
       summary: Unpublish a progressive-publishing phase
       description: 'Sets the published phase back to the one before (agenda to speakers, speakers to
 
-        topic, topic to none), evicts the caches and invalidates the CDN paths of the phase. The
+        topic, topic to none), evicts the caches and invalidates the CDN paths of the phase. Only
 
-        workflow state is not changed.
+        the current published phase can be unpublished (otherwise 409). The workflow state is not
+
+        changed.
 
 
         **Security**: ORGANIZER role required; any other role gets 403.'
@@ -2044,6 +2064,23 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+        '409':
+          description: The phase is not the current published phase; only the current one can be unpublished. Nothing changed.
+          content:
+            application/json:
+              schema:
+                $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+              examples:
+                conflict:
+                  summary: agenda while only the topic is published
+                  value:
+                    timestamp: '2026-11-10T10:00:00Z'
+                    path: /api/v1/events/BATbern142/phases/agenda/unpublish
+                    status: 409
+                    error: Conflict
+                    message: "Only the current phase can be unpublished; the current phase is topic, not agenda."
+                    correlationId: abc-123-def
+                    severity: LOW
       security:
         - BearerAuth: []
 
@@ -2119,7 +2156,13 @@ paths:
 
         `phase2DaysBeforeEvent` before the event if `phase2Enabled`, and the agenda phase on the day
 
-        `phase3DaysBeforeEvent` before it if `phase3Enabled` and every session is timed.
+        `phase3DaysBeforeEvent` before it if `phase3Enabled`, the speakers phase is already published
+
+        and every session is timed. Because of that precondition a schedule in which the agenda is
+
+        enabled while the speakers are not, or the agenda days exceed the speakers days, would never
+
+        fire: it answers 400 and nothing is stored.
 
 
         **Security**: ORGANIZER role required; any other role gets 403.'

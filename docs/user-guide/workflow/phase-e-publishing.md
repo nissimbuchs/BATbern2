@@ -88,7 +88,7 @@ Event state: Any workflow state → **ARCHIVED**
 
 ### Auto-Publishing Schedule
 
-BATbern automatically publishes event content on a schedule to reduce manual work and ensure timely publication. Each event has its own schedule: **Publishing tab → Auto-publish schedule** switches the speakers and the agenda publish on or off and sets how many days before the event each one runs (1 to 365). Without a change the defaults apply: speakers 30 days, agenda 14 days before the event, both on. Since 2026-11 (Story 4.9b) the job reads this schedule; before, it always used 30 and 14 days.
+BATbern automatically publishes event content on a schedule to reduce manual work and ensure timely publication. Each event has its own schedule: **Publishing tab → Auto-publish schedule** switches the speakers and the agenda publish on or off and sets how many days before the event each one runs (1 to 365). Without a change the defaults apply: speakers 30 days, agenda 14 days before the event, both on. Since 2026-11 (Story 4.9b) the job reads this schedule; before, it always used 30 and 14 days. Because the agenda is only auto-published once the speakers are published, the agenda cannot be scheduled earlier than the speakers, and not while the speakers auto-publish is off; the form says so and does not save such a schedule. A failed auto-publish raises the alarm `EventManagement-Scheduled-Job-Failures`; publish the phase by hand then.
 
 **Speaker Profiles** (default 30 days before event):
 - Scheduled job runs daily at 01:00, skipped for an event whose speakers auto-publish is off
@@ -115,6 +115,7 @@ BATbern automatically publishes event content on a schedule to reduce manual wor
 - Organizers can manually publish speakers/agenda before auto-publish dates
 - Use Publishing tab → **Publish Speakers** or **Publish Agenda**
 - Prevents duplicate auto-publishing: the job skips a phase that is already published
+- **Revert** steps back from the current phase only (agenda → speakers → topic → none). Publishing a phase below the one already published is refused: revert instead.
 - Publishing the agenda checks that the event has a title and a date, that every session has a
   time and, when the publish moves the event into AGENDA_PUBLISHED, that the date is in the
   future. When something is missing, nothing is published and the Publishing tab lists every

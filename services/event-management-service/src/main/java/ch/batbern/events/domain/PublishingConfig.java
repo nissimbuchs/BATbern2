@@ -39,6 +39,10 @@ import java.util.UUID;
 @Builder
 public class PublishingConfig {
 
+    public static final boolean DEFAULT_ENABLED = true;
+    public static final int DEFAULT_SPEAKERS_DAYS_BEFORE = 30;
+    public static final int DEFAULT_AGENDA_DAYS_BEFORE = 14;
+
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     @Column(name = "id", updatable = false, nullable = false, columnDefinition = "UUID")
@@ -50,19 +54,19 @@ public class PublishingConfig {
 
     @Column(name = "auto_publish_speakers")
     @Builder.Default
-    private Boolean autoPublishSpeakers = true;
+    private Boolean autoPublishSpeakers = DEFAULT_ENABLED;
 
     @Column(name = "auto_publish_speakers_days_before")
     @Builder.Default
-    private Integer autoPublishSpeakersDaysBefore = 30;
+    private Integer autoPublishSpeakersDaysBefore = DEFAULT_SPEAKERS_DAYS_BEFORE;
 
     @Column(name = "auto_publish_agenda")
     @Builder.Default
-    private Boolean autoPublishAgenda = true;
+    private Boolean autoPublishAgenda = DEFAULT_ENABLED;
 
     @Column(name = "auto_publish_agenda_days_before")
     @Builder.Default
-    private Integer autoPublishAgendaDaysBefore = 14;
+    private Integer autoPublishAgendaDaysBefore = DEFAULT_AGENDA_DAYS_BEFORE;
 
     @Column(name = "requires_approval")
     @Builder.Default
@@ -76,6 +80,25 @@ public class PublishingConfig {
 
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
+
+    // The schedule columns are nullable (V28). A NULL means the default, field by field (Story
+    // 4.9b), so the page and the auto-publish job never see a null or fail on one.
+
+    public Boolean getAutoPublishSpeakers() {
+        return autoPublishSpeakers != null ? autoPublishSpeakers : DEFAULT_ENABLED;
+    }
+
+    public Integer getAutoPublishSpeakersDaysBefore() {
+        return autoPublishSpeakersDaysBefore != null ? autoPublishSpeakersDaysBefore : DEFAULT_SPEAKERS_DAYS_BEFORE;
+    }
+
+    public Boolean getAutoPublishAgenda() {
+        return autoPublishAgenda != null ? autoPublishAgenda : DEFAULT_ENABLED;
+    }
+
+    public Integer getAutoPublishAgendaDaysBefore() {
+        return autoPublishAgendaDaysBefore != null ? autoPublishAgendaDaysBefore : DEFAULT_AGENDA_DAYS_BEFORE;
+    }
 
     @PrePersist
     protected void onCreate() {

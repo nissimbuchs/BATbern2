@@ -8,6 +8,9 @@ import ch.batbern.events.core.dto.generated.UnpublishPhaseResponse;
 import ch.batbern.events.dto.PublishValidationError;
 import ch.batbern.events.service.publishing.PublishingPhase;
 import ch.batbern.events.service.publishing.PublishingService;
+import ch.batbern.shared.dto.ErrorResponse;
+import ch.batbern.shared.util.CorrelationIdGenerator;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -15,6 +18,8 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.time.Instant;
 
 /**
  * REST Controller for Publishing Engine.
@@ -54,6 +59,23 @@ public class PublishingEngineController implements PublishingEngineApi {
     public ResponseEntity<PublishingStatusResponse> patchPublishing(
             String eventCode, PatchPublishingRequest patchPublishingRequest) {
         return ResponseEntity.ok(publishingService.patchPublishing(eventCode, patchPublishingRequest));
+    }
+
+    /**
+     * 409: unpublish only the current phase, never publish below it (Story 4.9b).
+     */
+    @ExceptionHandler(PublishingService.PhaseConflictException.class)
+    public ResponseEntity<ErrorResponse> handlePhaseConflict(
+            PublishingService.PhaseConflictException ex, HttpServletRequest request) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .path(request.getRequestURI())
+                .status(HttpStatus.CONFLICT.value())
+                .error("Conflict")
+                .message(ex.getMessage())
+                .correlationId(CorrelationIdGenerator.current())
+                .severity("LOW")
+                .build());
     }
 
     /**

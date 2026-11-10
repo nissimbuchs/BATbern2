@@ -567,8 +567,14 @@ sequenceDiagram
 - Crons are the defaults in `EventWorkflowScheduledService` and `PublishingScheduledService`.
   `PublishingScheduledService.runDailyAutoPublish` (01:00, ShedLock) reads each event's
   `publishing_config` row through `PublishingService.scheduleOf` (defaults when there is none:
-  speakers 30 days, agenda 14 days before, both enabled) and publishes a phase on exactly that day.
-  Until Story 4.9b it used fixed 30 and 14 days.
+  speakers 30 days, agenda 14 days before, both enabled; a NULL column means its default) and
+  publishes a phase on exactly that day. Until Story 4.9b it used fixed 30 and 14 days. A failure
+  for one event is recorded in `ScheduledJobFailures` (Micrometer counter
+  `batbern.scheduled.job.failures`, log marker `SCHEDULED_JOB_FAILED`, alarm
+  `EventManagement-Scheduled-Job-Failures`) and the job goes on with the next event. `PATCH
+  …/publishing` refuses (400) a schedule whose agenda would never fire: agenda enabled with
+  speakers off, or more agenda days than speakers days (the agenda needs the speakers published).
+  Unpublish works only on the current phase and publishing below it is refused (409).
 - **One transition idiom (Story 4.9b, ADR-013 section 1):** the workflow state changes only through
   `POST /events/{eventCode}/transition` (`EventWorkflowController`, the state machine; override with
   reason) and as a side effect of `POST /events/{eventCode}/phases/agenda/publish`

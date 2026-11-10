@@ -108,6 +108,14 @@ class PublishingCdnInvalidationIntegrationTest extends AbstractIntegrationTest {
     @Test
     @WithMockUser(username = "test.organizer", roles = {"ORGANIZER"})
     void should_invalidateTopicPaths_when_topicPhaseUnpublished() throws Exception {
+        mockMvc.perform(post("/api/v1/events/{eventCode}/phases/topic/publish", eventCode))
+                .andExpect(status().isOk());
+        reset(cloudFrontClient);
+        when(cloudFrontClient.createInvalidation(any(CreateInvalidationRequest.class)))
+                .thenReturn(CreateInvalidationResponse.builder()
+                        .invalidation(Invalidation.builder().id("I2TESTINVALIDATION").build())
+                        .build());
+
         mockMvc.perform(post("/api/v1/events/{eventCode}/phases/topic/unpublish", eventCode))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.cdnInvalidated").value(true));

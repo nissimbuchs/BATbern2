@@ -86,6 +86,13 @@ public class PublishingService {
         Event event = eventRepository.findByEventCode(eventCode)
                 .orElseThrow(() -> new EventNotFoundException(eventCode));
 
+        PublishingPhase current = currentPhaseOf(event);
+        if (current != null && phase.ordinal() < current.ordinal()) {
+            throw new PhaseConflictException(String.format(
+                    "The %s phase is published; publishing %s would step back. Unpublish %s instead.",
+                    current.value(), phase.value(), current.value()));
+        }
+
         boolean movesWorkflow = phase == PublishingPhase.AGENDA
                 && isBefore(event.getWorkflowState(), EventWorkflowState.AGENDA_PUBLISHED);
         if (phase == PublishingPhase.AGENDA) {
@@ -155,6 +162,13 @@ public class PublishingService {
         Event event = eventRepository.findByEventCode(eventCode)
                 .orElseThrow(() -> new EventNotFoundException(eventCode));
 
+        PublishingPhase current = currentPhaseOf(event);
+        if (current != phase) {
+            throw new PhaseConflictException(String.format(
+                    "Only the current phase can be unpublished; the current phase is %s, not %s.",
+                    current != null ? current.value() : "none", phase.value()));
+        }
+
         PublishingPhase previous = phase.previous();
         event.setCurrentPublishedPhase(previous != null ? previous.value() : null);
         eventRepository.save(event);
@@ -188,6 +202,27 @@ public class PublishingService {
                 .orElseThrow(() -> new EventNotFoundException(eventCode));
 
         PublishingConfig config = scheduleOf(event);
+        boolean speakersEnabled = request.getPhase2Enabled() != null
+                ? request.getPhase2Enabled() : config.getAutoPublishSpeakers();
+        int speakersDays = request.getPhase2DaysBeforeEvent() != null
+                ? request.getPhase2DaysBeforeEvent() : config.getAutoPublishSpeakersDaysBefore();
+        boolean agendaEnabled = request.getPhase3Enabled() != null
+                ? request.getPhase3Enabled() : config.getAutoPublishAgenda();
+        int agendaDays = request.getPhase3DaysBeforeEvent() != null
+                ? request.getPhase3DaysBeforeEvent() : config.getAutoPublishAgendaDaysBefore();
+        // The agenda auto-publish needs the speakers already published: a schedule in which the
+        // agenda would run first, or without the speakers, would never fire.
+        if (agendaEnabled && !speakersEnabled) {
+            throw new IllegalArgumentException(
+                    "The agenda auto-publish needs the speakers published first: switch the speakers "
+                            + "auto-publish on, or the agenda auto-publish off");
+        }
+        if (agendaEnabled && agendaDays > speakersDays) {
+            throw new IllegalArgumentException(String.format(
+                    "The agenda auto-publish (%d days before) would run before the speakers are "
+                            + "published (%d days before): agenda days must not exceed speakers days",
+                    agendaDays, speakersDays));
+        }
         if (request.getPhase2Enabled() != null) {
             config.setAutoPublishSpeakers(request.getPhase2Enabled());
         }
@@ -377,6 +412,14 @@ public class PublishingService {
         return invalidationId != null && !invalidationId.startsWith("error");
     }
 
+    private static PublishingPhase currentPhaseOf(Event event) {
+        String stored = event.getCurrentPublishedPhase();
+        if (stored == null || stored.isBlank() || "none".equalsIgnoreCase(stored)) {
+            return null;
+        }
+        return PublishingPhase.fromValue(stored.toLowerCase(java.util.Locale.ROOT));
+    }
+
     private static boolean isBefore(EventWorkflowState state, EventWorkflowState reference) {
         return state == null || state.ordinal() < reference.ordinal();
     }
@@ -401,6 +444,16 @@ public class PublishingService {
     // NOTE: finalizeAgenda() and unfinalizeAgenda() removed in V82.
     // AGENDA_FINALIZED state was removed from the workflow. The scheduler now transitions
     // AGENDA_PUBLISHED → EVENT_LIVE automatically on event day (daily 00:01 Bern time).
+
+    /**
+     * A publish or unpublish that does not fit the current phase (409): unpublish only the current
+     * phase, never publish below it.
+     */
+    public static class PhaseConflictException extends RuntimeException {
+        public PhaseConflictException(String message) {
+            super(message);
+        }
+    }
 
     /**
      * Custom exception for publishing validation errors

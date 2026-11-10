@@ -589,7 +589,7 @@ export interface paths {
     /**
      * Publish a progressive-publishing phase (topic, speakers, agenda)
      * @description Publishes the phase on the public website: evicts the event caches and invalidates
-     *     the CDN paths of the phase. Publishing `speakers` signals the Q&A windows
+     *     the CDN paths of the phase. Re-publishing the current phase is allowed, a phase below it answers 409 (step back with unpublish). Publishing `speakers` signals the Q&A windows
      *     (`SpeakersPhasePublishedEvent`). Publishing `agenda` validates the event (title, date, a date in
      *     the future when the publish moves the workflow, timed sessions) and answers 422 with every
      *     reason when it is not ready; it generates the structural sessions (moderation, breaks) if none
@@ -618,8 +618,9 @@ export interface paths {
     /**
      * Unpublish a progressive-publishing phase
      * @description Sets the published phase back to the one before (agenda to speakers, speakers to
-     *     topic, topic to none), evicts the caches and invalidates the CDN paths of the phase. The
-     *     workflow state is not changed.
+     *     topic, topic to none), evicts the caches and invalidates the CDN paths of the phase. Only
+     *     the current published phase can be unpublished (otherwise 409). The workflow state is not
+     *     changed.
      *
      *     **Security**: ORGANIZER role required; any other role gets 403.
      */
@@ -656,7 +657,10 @@ export interface paths {
      * @description Partial update of the schedule: only the fields present change. The daily
      *     auto-publish job reads it per event: it publishes the speakers phase on the day
      *     `phase2DaysBeforeEvent` before the event if `phase2Enabled`, and the agenda phase on the day
-     *     `phase3DaysBeforeEvent` before it if `phase3Enabled` and every session is timed.
+     *     `phase3DaysBeforeEvent` before it if `phase3Enabled`, the speakers phase is already published
+     *     and every session is timed. Because of that precondition a schedule in which the agenda is
+     *     enabled while the speakers are not, or the agenda days exceed the speakers days, would never
+     *     fire: it answers 400 and nothing is stored.
      *
      *     **Security**: ORGANIZER role required; any other role gets 403.
      */
@@ -3029,6 +3033,15 @@ export interface operations {
       401: components['responses']['Unauthorized'];
       403: components['responses']['Forbidden'];
       404: components['responses']['NotFound'];
+      /** @description A phase above this one is published; use unpublish to step back. Nothing changed. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
       /** @description The event is not ready for this phase; nothing was changed. */
       422: {
         headers: {
@@ -3066,6 +3079,15 @@ export interface operations {
       401: components['responses']['Unauthorized'];
       403: components['responses']['Forbidden'];
       404: components['responses']['NotFound'];
+      /** @description The phase is not the current published phase; only the current one can be unpublished. Nothing changed. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
     };
   };
   getPublishing: {

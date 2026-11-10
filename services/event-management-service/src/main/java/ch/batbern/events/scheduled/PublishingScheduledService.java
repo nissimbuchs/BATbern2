@@ -36,6 +36,9 @@ import java.util.function.Predicate;
  * </ul>
  * Until Story 4.9b the job used fixed 30 and 14 days and ignored the stored days.
  *
+ * <p>A failure for one event is recorded in {@link ScheduledJobFailures} (metric and alarmed log
+ * marker) and the job goes on with the next event.
+ *
  * <p>Runs daily at 1 AM. The lock sits on {@link #runDailyAutoPublish()} only, so a test (or an
  * operator) can call the two jobs directly without waiting for the lock of an earlier run.
  */
@@ -48,6 +51,7 @@ public class PublishingScheduledService {
     private final EventRepository eventRepository;
     private final SessionRepository sessionRepository;
     private final PublishingService publishingService;
+    private final ScheduledJobFailures failures;
 
     @Scheduled(cron = "0 0 1 * * *")
     @SchedulerLock(name = "PublishingScheduledService_runDailyAutoPublish",
@@ -85,24 +89,25 @@ public class PublishingScheduledService {
         log.info("Auto-publish {}: {} upcoming event(s) to check", phase.value(), upcoming.size());
 
         for (Event event : upcoming) {
-            PublishingConfig schedule = publishingService.scheduleOf(event);
-            if (!enabled.test(schedule)) {
-                log.debug("Auto-publish {} disabled for event {}", phase.value(), event.getEventCode());
-                continue;
-            }
-            LocalDate eventDay = event.getDate().atZone(ZoneId.systemDefault()).toLocalDate();
-            if (!eventDay.equals(today.plusDays(daysBefore.apply(schedule)))) {
-                continue;
-            }
-            if (!ready.test(event)) {
-                log.debug("Event {} is not ready for auto-publish {}", event.getEventCode(), phase.value());
-                continue;
-            }
+            // Everything per event inside the try: one bad row never stops the others (4.9b)
             try {
+                PublishingConfig schedule = publishingService.scheduleOf(event);
+                if (!enabled.test(schedule)) {
+                    log.debug("Auto-publish {} disabled for event {}", phase.value(), event.getEventCode());
+                    continue;
+                }
+                LocalDate eventDay = event.getDate().atZone(ZoneId.systemDefault()).toLocalDate();
+                if (!eventDay.equals(today.plusDays(daysBefore.apply(schedule)))) {
+                    continue;
+                }
+                if (!ready.test(event)) {
+                    log.debug("Event {} is not ready for auto-publish {}", event.getEventCode(), phase.value());
+                    continue;
+                }
                 publishingService.publishPhase(event.getEventCode(), phase);
                 log.info("Auto-published {} for event {}", phase.value(), event.getEventCode());
             } catch (Exception ex) {
-                log.error("Failed to auto-publish {} for event {}", phase.value(), event.getEventCode(), ex);
+                failures.record("auto-publish-" + phase.value(), event.getEventCode(), ex);
             }
         }
     }

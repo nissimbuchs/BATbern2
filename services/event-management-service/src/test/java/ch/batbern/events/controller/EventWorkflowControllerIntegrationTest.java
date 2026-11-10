@@ -27,10 +27,12 @@ import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.not;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -116,7 +118,10 @@ public class EventWorkflowControllerIntegrationTest extends AbstractIntegrationT
                         .with(user("john.doe").roles("ORGANIZER"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"targetState\": \"PUBLISHED\"}"))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message", containsString("PUBLISHED")))
+                .andExpect(jsonPath("$.message", containsString("TOPIC_SELECTION")))
+                .andExpect(content().string(not(containsString("ch.batbern"))));
 
         assertThat(eventRepository.findById(testEvent.getId()).orElseThrow().getWorkflowState())
                 .isEqualTo(EventWorkflowState.CREATED);
