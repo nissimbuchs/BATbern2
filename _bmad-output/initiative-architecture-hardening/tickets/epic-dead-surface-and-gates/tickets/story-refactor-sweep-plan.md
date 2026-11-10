@@ -8,9 +8,9 @@ baseline_revision: 'cde40896e1f0bda5e0987d19b2e5394696291524'
 route: 'full'
 route_source: 'auto'
 risk: 'low'
-review: ''
-review_source: ''
-lenses_ran: []
+review: 'quick'
+review_source: 'pinned'
+lenses_ran: ['quick']
 review_loop_iteration: 0
 context:
   - '{project-root}/docs/architecture/coding-standards.md'
@@ -106,6 +106,19 @@ Built 2026-11-10 on `feature/17-overnight-2026-11-10`, local commits only, no PR
 
 ## Review Triage Log
 
+Pass 1 (quick lens), 2026-11-10: 0 high, 4 medium, 2 low, 2 false.
+
+| # | Finding | Verdict | Route | Evidence / action |
+|---|---------|---------|-------|-------------------|
+| 1 | `tsconfig.test-harness.json` exclude list shrank by 2 despite the Never line | false | reject | No bad outcome: the shrink-only gate (`check-test-typecheck.ts`) reports STALE for an excluded file that compiles, so leaving the lines would fail CI. The Never line meant not to reshape epic 2's list; removing entries the gate demands is that gate's own rule. Recorded as a deviation from the plan text. |
+| 2 | `EventCard.tsx:158` renders `undefined/120` when `currentAttendeeCount` is absent | medium | patch | Line 65 has `?? 0`, line 158 not; the property is optional and not always sent. |
+| 3 | 401 half of the pass-through guards untested (`sessionApiClient`, `slotAssignmentService`) | medium | patch | Rewritten suites only send 403/409; dropping `401 ||` passes. Add 401 to the cases. |
+| 4 | Non-Axios fallback of `transformError` uncovered (sessionService, sessionApiClient, slotAssignmentService) | medium | patch | Old tests for plain Error / non-Error throws deleted, no replacement. |
+| 5 | `batchImportSessions` timeout 120000 no longer asserted | medium | patch | Both deleted suites asserted it; assert via a request interceptor on the real client, no own-code mock. |
+| 6 | `SessionEditModal` delete-failure test still on axios-mock-adapter | medium | patch | Frozen matrix: session service errors via MSW. Move that test to the MSW harness. |
+| 7 | `02-cicd-pipeline.svg` stage labels disagree with its `.excalidraw`; container height not closed | low | patch | Direct correction: the `.excalidraw` is the source; align the SVG text, shrink the container. |
+| 8 | Implementation Notes say 27 guards, diff shows 26 | false | reject | Fix would edit this build's plan. |
+
 ## Design Notes
 
 Architecture note: modules touched: frontend services and generated types, docs, `scripts/ci`. New dependencies: none. New endpoints: none. Components reused: MSW harness (17.0c). Deviations: none.
@@ -122,3 +135,5 @@ Baselines at start: api-layer 0, api-type-copies 0, Spectral 105, CUMS ArchUnit 
 - `cd web-frontend && npm run type-check && npm run check:api-types && npx vitest run --maxWorkers=4` -- expected: green
 - `make check-test-ratchet` -- expected: no RAISED line
 - `cd web-frontend && npm run lint:ci` -- expected: green
+
+Final verification 2026-11-10 after the review patches (41371550): type-check, check:api-types, lint:ci green; Vitest 460 files, 5902 passed, 36 skipped, 20 todo; test ratchet clean. Nothing deferred.
