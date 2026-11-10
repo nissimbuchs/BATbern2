@@ -1,6 +1,5 @@
 package ch.batbern.events.dto;
 
-import ch.batbern.shared.types.EventWorkflowState;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
@@ -54,7 +53,6 @@ public class UpdateEventRequest {
              message = "Event type must be AFTERNOON, EVENING, or FULL_DAY")
     private String eventType;
 
-    private EventWorkflowState workflowState;
 
     // Story 10.11: nullable — null means unlimited
     private Integer registrationCapacity;

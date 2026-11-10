@@ -277,7 +277,6 @@ class EventMapperTest {
                     .description("Updated description")
                     .themeImageUploadId("upload-789")
                     .eventType("FULL_DAY")
-                    .workflowState(EventWorkflowState.AGENDA_PUBLISHED)
                     .build();
 
             // When
@@ -298,7 +297,8 @@ class EventMapperTest {
             assertThat(entity.getDescription()).isEqualTo("Updated description");
             assertThat(entity.getThemeImageUploadId()).isEqualTo("upload-789");
             assertThat(entity.getEventType()).isEqualTo(EventType.FULL_DAY);
-            assertThat(entity.getWorkflowState()).isEqualTo(EventWorkflowState.AGENDA_PUBLISHED);
+            // Story 4.9b: the state changes only through POST /events/{eventCode}/transition
+            assertThat(entity.getWorkflowState()).isEqualTo(EventWorkflowState.CREATED);
         }
     }
 
@@ -382,7 +382,6 @@ class EventMapperTest {
                     .description("Fully patched")
                     .themeImageUploadId("patch-upload")
                     .eventType("EVENING")
-                    .workflowState(EventWorkflowState.SLOT_ASSIGNMENT)
                     .build();
 
             // When
@@ -403,7 +402,7 @@ class EventMapperTest {
             assertThat(entity.getDescription()).isEqualTo("Fully patched");
             assertThat(entity.getThemeImageUploadId()).isEqualTo("patch-upload");
             assertThat(entity.getEventType()).isEqualTo(EventType.EVENING);
-            assertThat(entity.getWorkflowState()).isEqualTo(EventWorkflowState.SLOT_ASSIGNMENT);
+            assertThat(entity.getWorkflowState()).isEqualTo(EventWorkflowState.CREATED); // not patchable (4.9b)
         }
     }
 

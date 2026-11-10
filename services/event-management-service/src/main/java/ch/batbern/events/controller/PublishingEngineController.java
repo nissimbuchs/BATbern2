@@ -1,15 +1,14 @@
 package ch.batbern.events.controller;
 
 import ch.batbern.events.core.api.generated.PublishingEngineApi;
-import ch.batbern.events.core.dto.generated.AutoPublishScheduleRequest;
-import ch.batbern.events.core.dto.generated.AutoPublishScheduleResponse;
+import ch.batbern.events.core.dto.generated.PatchPublishingRequest;
 import ch.batbern.events.core.dto.generated.PublishPhaseResponse;
 import ch.batbern.events.core.dto.generated.PublishingStatusResponse;
 import ch.batbern.events.core.dto.generated.UnpublishPhaseResponse;
 import ch.batbern.events.dto.PublishValidationError;
+import ch.batbern.events.service.publishing.PublishingPhase;
 import ch.batbern.events.service.publishing.PublishingService;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -21,12 +20,13 @@ import org.springframework.web.bind.annotation.RestController;
  * REST Controller for Publishing Engine.
  * Story BAT-11 (5.7): Slot Assignment & Progressive Publishing.
  *
- * <p>API-consolidation Phase 7: implements the generated {@link PublishingEngineApi}.
+ * <p>API-consolidation Phase 7: implements the generated {@link PublishingEngineApi}. Story 4.9b:
+ * the phase is the addressed instance ({@code POST /events/{eventCode}/phases/{phase}/publish}),
+ * status and schedule are one resource ({@code GET/PATCH /events/{eventCode}/publishing}).
  */
 @RestController
 @RequestMapping("/api/v1")
 @RequiredArgsConstructor
-@Slf4j
 public class PublishingEngineController implements PublishingEngineApi {
 
     private final PublishingService publishingService;
@@ -34,38 +34,26 @@ public class PublishingEngineController implements PublishingEngineApi {
     @Override
     @PreAuthorize("hasRole('ORGANIZER')")
     public ResponseEntity<PublishPhaseResponse> publishPhase(String eventCode, String phase) {
-        log.info("Publishing phase {} for event {}", phase, eventCode);
-        return ResponseEntity.ok(publishingService.publishPhase(eventCode, phase));
+        return ResponseEntity.ok(publishingService.publishPhase(eventCode, PublishingPhase.fromValue(phase)));
     }
 
     @Override
     @PreAuthorize("hasRole('ORGANIZER')")
     public ResponseEntity<UnpublishPhaseResponse> unpublishPhase(String eventCode, String phase) {
-        log.info("Unpublishing phase {} for event {}", phase, eventCode);
-        return ResponseEntity.ok(publishingService.unpublishPhase(eventCode, phase));
+        return ResponseEntity.ok(publishingService.unpublishPhase(eventCode, PublishingPhase.fromValue(phase)));
     }
 
     @Override
     @PreAuthorize("hasRole('ORGANIZER')")
-    public ResponseEntity<PublishingStatusResponse> getPublishingStatus(String eventCode) {
-        log.info("Getting publishing status for event {}", eventCode);
-        return ResponseEntity.ok(publishingService.getPublishingStatus(eventCode));
+    public ResponseEntity<PublishingStatusResponse> getPublishing(String eventCode) {
+        return ResponseEntity.ok(publishingService.getPublishing(eventCode));
     }
 
     @Override
     @PreAuthorize("hasRole('ORGANIZER')")
-    public ResponseEntity<AutoPublishScheduleResponse> configureAutoPublish(
-            String eventCode,
-            AutoPublishScheduleRequest request) {
-        log.info("Configuring auto-publish schedule for event {}", eventCode);
-        return ResponseEntity.ok(publishingService.configureAutoPublish(eventCode, request));
-    }
-
-    @Override
-    @PreAuthorize("hasRole('ORGANIZER')")
-    public ResponseEntity<AutoPublishScheduleResponse> getAutoPublishSchedule(String eventCode) {
-        log.info("Getting auto-publish schedule for event {}", eventCode);
-        return ResponseEntity.ok(publishingService.getAutoPublishSchedule(eventCode));
+    public ResponseEntity<PublishingStatusResponse> patchPublishing(
+            String eventCode, PatchPublishingRequest patchPublishingRequest) {
+        return ResponseEntity.ok(publishingService.patchPublishing(eventCode, patchPublishingRequest));
     }
 
     /**

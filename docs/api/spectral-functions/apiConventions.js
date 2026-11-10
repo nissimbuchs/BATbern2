@@ -9,7 +9,7 @@
  * options.check:
  *   kebab           every literal path segment is kebab-case (optional `.ext` suffix allowed)
  *   verb            no literal path segment is in options.verbs (`.ext` ignored); for GET, HEAD
- *                   and OPTIONS only the last segment counts (`GET /publish/status` is a read).
+ *                   and OPTIONS only the last segment counts (`GET …/workflow/status` is a read).
  *                   Exempt: the ADR-013 section 1 action shape `POST /{id}/{verb}`, a verb as the
  *                   last segment of a POST directly after an instance identifier (a parameter or
  *                   `me`). The list only tells a verb from a sub-resource noun; it permits nothing.

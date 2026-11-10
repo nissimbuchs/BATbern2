@@ -25,7 +25,6 @@ import ch.batbern.events.dto.UpdateEventRequest;
 import ch.batbern.events.mapper.EventMapper;
 import ch.batbern.events.mapper.EventGeneratedMapper;
 import ch.batbern.events.core.api.generated.EventsApi;
-import ch.batbern.events.core.api.generated.EventActionsApi;
 import ch.batbern.events.core.api.generated.PublicEventsApi;
 import ch.batbern.events.core.dto.generated.EventDetail;
 import ch.batbern.events.core.dto.generated.ListEvents200Response;
@@ -34,7 +33,6 @@ import ch.batbern.events.analytics.dto.generated.AttendanceSummaryDTO;
 import ch.batbern.events.analytics.dto.generated.EventAnalytics;
 import ch.batbern.events.dto.AttendanceSummaryProjection;
 import ch.batbern.events.event.EventCreatedEvent;
-import ch.batbern.events.event.EventPublishedEvent;
 import ch.batbern.events.event.EventUpdatedEvent;
 import ch.batbern.events.exception.BusinessValidationException;
 import ch.batbern.events.exception.EventHasRealRegistrationsException;
@@ -44,7 +42,6 @@ import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.LogoRepository;
 import ch.batbern.events.service.AgendaConfigResolver;
 import ch.batbern.events.service.EventSearchService;
-import ch.batbern.events.service.EventWorkflowStateMachine;
 import ch.batbern.events.service.publishing.PublicEventShaper;
 import ch.batbern.events.service.publishing.PublicSessionVisibilityPolicy;
 import ch.batbern.events.service.publishing.PublicSessionVisibilityService;
@@ -117,7 +114,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Slf4j
 @Tag(name = "Events", description = "Event management API - consolidated endpoints")
-public class EventController implements EventsApi, EventActionsApi, EventReportingApi, PublicEventsApi {
+public class EventController implements EventsApi, EventReportingApi, PublicEventsApi {
 
     private final EventSearchService eventSearchService;
     private final EventRepository eventRepository;
@@ -125,7 +122,6 @@ public class EventController implements EventsApi, EventActionsApi, EventReporti
     private final EventMapper eventMapper;
     private final EventGeneratedMapper eventGeneratedMapper;
     private final LogoRepository logoRepository;
-    private final EventWorkflowStateMachine eventWorkflowStateMachine;
     private final ch.batbern.events.repository.SessionRepository sessionRepository;
     private final ch.batbern.events.service.EventAnalyticsService eventAnalyticsService;
     private final ch.batbern.shared.events.DomainEventPublisher eventPublisher;
@@ -1140,7 +1136,7 @@ public class EventController implements EventsApi, EventActionsApi, EventReporti
         if (request.getEventType() != null) {
             event.setEventType(ch.batbern.events.core.dto.generated.EventType.fromValue(request.getEventType()));
         }
-        // workflowState is applied after save via applyWorkflowStateChange (organizer cockpit plan T1)
+        // The workflow state is not part of PUT/PATCH: POST /events/{eventCode}/transition (Story 4.9b)
         boolean capacityChanged = !Objects.equals(
                 event.getRegistrationCapacity(), request.getRegistrationCapacity());
         event.setRegistrationCapacity(request.getRegistrationCapacity()); // null = unlimited
@@ -1152,7 +1148,6 @@ public class EventController implements EventsApi, EventActionsApi, EventReporti
 
         // Save updated event
         Event updatedEvent = eventRepository.save(event);
-        updatedEvent = applyWorkflowStateChange(updatedEvent, request.getWorkflowState());
         if (capacityChanged) {
             // A raised capacity frees places: give them to the waitlist, in order
             waitlistPromotionService.promoteFromWaitlist(updatedEvent.getId());
@@ -1252,7 +1247,6 @@ public class EventController implements EventsApi, EventActionsApi, EventReporti
 
         // Save patched event
         Event patchedEvent = eventRepository.save(event);
-        patchedEvent = applyWorkflowStateChange(patchedEvent, request.getWorkflowState());
         if (request.getRegistrationCapacity() != null) {
             // Saving the capacity (raised, or saved again unchanged) fills free places from the
             // waitlist, in order. Saving it again is how an organizer fills places already free.
@@ -1367,92 +1361,6 @@ public class EventController implements EventsApi, EventActionsApi, EventReporti
     }
 
     /**
-     * Publish Event (AC7 + AC15 cache invalidation)
-     * Story 1.16.2: Updated to use eventCode instead of UUID
-     *
-     * POST /api/v1/events/{eventCode}/publish
-     *
-     * Validates event meets publication requirements and changes status to "published"
-     */
-    @Override
-    @CacheEvict(value = CacheConfig.EVENT_WITH_INCLUDES_CACHE, allEntries = true)
-    @PreAuthorize("hasRole('ORGANIZER')")
-    public ResponseEntity<ch.batbern.events.core.dto.generated.Event> publishEvent(String eventCode) {
-        log.debug("POST /api/v1/events/{}/publish", eventCode);
-
-        // Find event by eventCode
-        Event event = eventRepository.findByEventCode(eventCode)
-                .orElseThrow(() -> new EventNotFoundException("Event not found with code: " + eventCode));
-
-        // Validate event can be published
-        validateForPublishing(event);
-
-        // Store previous workflow state for domain event
-        EventWorkflowState previousWorkflowState = event.getWorkflowState();
-
-        // Transition to AGENDA_PUBLISHED workflow state
-        String userId = securityContextHelper.getCurrentUsername();
-        Event publishedEvent = eventWorkflowStateMachine.transitionToState(
-                eventCode,
-                EventWorkflowState.AGENDA_PUBLISHED,
-                userId
-        );
-
-        // Set published timestamp
-        publishedEvent.setPublishedAt(Instant.now());
-        publishedEvent = eventRepository.save(publishedEvent);
-
-        // Publish domain event (Story 2.2: Architecture Compliance)
-        try {
-            EventPublishedEvent domainEvent = new EventPublishedEvent(
-                    publishedEvent.getId(),           // Internal UUID
-                    publishedEvent.getEventCode(),    // Public business identifier
-                    publishedEvent.getTitle(),
-                    publishedEvent.getEventNumber(),
-                    publishedEvent.getDate(),
-                    publishedEvent.getPublishedAt(),
-                    previousWorkflowState != null ? previousWorkflowState.name() : null,
-                    userId
-            );
-            eventPublisher.publish(domainEvent);
-            log.info("Published EventPublishedEvent for event: {}", publishedEvent.getEventCode());
-        } catch (Exception e) {
-            log.warn("Failed to publish EventPublishedEvent for event {}: {}",
-                publishedEvent.getEventCode(), e.getMessage());
-            // Continue - event publishing succeeded, domain event publishing failure is non-critical
-        }
-
-        // Build response using EventMapper (BAT-91 Phase 3)
-        EventResponse response = eventMapper.toDto(publishedEvent);
-        enrichWithRegistrationCounts(response, publishedEvent.getId());
-        enrichWithTeaserImages(response);
-        enrichWithEventTimes(response, publishedEvent);
-
-        return ResponseEntity.ok(eventGeneratedMapper.toEvent(response));
-    }
-
-    /**
-     * Validate event meets requirements for publishing
-     *
-     * @param event Event to validate
-     * @throws BusinessValidationException if validation fails
-     */
-    private void validateForPublishing(Event event) {
-        // Check required fields for publishing
-        if (event.getDate() == null) {
-            throw new BusinessValidationException("Event date is required for publishing");
-        }
-        if (event.getTitle() == null || event.getTitle().trim().isEmpty()) {
-            throw new BusinessValidationException("Event title is required for publishing");
-        }
-        // Check that event date is in the future (unless event is archived)
-        // Historical events can have past dates when imported with archived status
-        if (event.getWorkflowState() != EventWorkflowState.ARCHIVED && event.getDate().isBefore(Instant.now())) {
-            throw new BusinessValidationException("Event date must be in the future");
-        }
-    }
-
-    /**
      * Parse ISO 8601 date string to Instant
      *
      * @param dateString ISO 8601 formatted date string
@@ -1513,7 +1421,6 @@ public class EventController implements EventsApi, EventActionsApi, EventReporti
                 .description(g.getDescription())
                 .themeImageUploadId(g.getThemeImageUploadId())
                 .eventType(g.getEventType() == null ? null : g.getEventType().getValue())
-                .workflowState(toSharedWorkflowState(g.getWorkflowState()))
                 .registrationCapacity(g.getRegistrationCapacity())
                 .build();
     }
@@ -1534,7 +1441,6 @@ public class EventController implements EventsApi, EventActionsApi, EventReporti
                 .description(g.getDescription())
                 .themeImageUploadId(g.getThemeImageUploadId())
                 .eventType(g.getEventType() == null ? null : g.getEventType().getValue())
-                .workflowState(toSharedWorkflowState(g.getWorkflowState()))
                 .topicCode(g.getTopicCode())
                 .topicSelectionNote(g.getTopicSelectionNote())
                 .registrationCapacity(g.getRegistrationCapacity())
@@ -1617,25 +1523,6 @@ public class EventController implements EventsApi, EventActionsApi, EventReporti
         response.setTypicalEndTime(eventTimeResolver.formatEndTime(event));
     }
 
-    /**
-     * Apply a workflow state requested through PUT/PATCH via the state machine, so that
-     * {@code EventWorkflowTransitionEvent} fires (task activation, Q&amp;A windows, archival cleanup).
-     * Setting the field directly skipped all listeners (organizer cockpit plan T1).
-     * Override = true keeps the previous behaviour of these endpoints: organizers use them to
-     * correct a state by hand, which never went through transition validation.
-     */
-    private Event applyWorkflowStateChange(Event saved, EventWorkflowState requested) {
-        if (requested == null || requested == saved.getWorkflowState()) {
-            return saved;
-        }
-        return eventWorkflowStateMachine.transitionToState(
-                saved.getEventCode(),
-                requested,
-                securityContextHelper.getCurrentUsername(),
-                true,
-                "Workflow state set via event update (PUT/PATCH)");
-    }
-
     private void applyPatchUpdates(Event event, PatchEventRequest request) {
         if (request.getTitle() != null) {
             event.setTitle(request.getTitle());
@@ -1702,7 +1589,7 @@ public class EventController implements EventsApi, EventActionsApi, EventReporti
         if (request.getThemeImageUploadId() != null && !request.getThemeImageUploadId().isBlank()) {
             event.setThemeImageUploadId(request.getThemeImageUploadId());
         }
-        // workflowState is applied after save via applyWorkflowStateChange (organizer cockpit plan T1)
+        // The workflow state is not part of PUT/PATCH: POST /events/{eventCode}/transition (Story 4.9b)
         // Story 10.4: Set topicCode directly via PATCH (blob selector accept flow)
         if (request.getTopicCode() != null) {
             event.setTopicCode(request.getTopicCode());

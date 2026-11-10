@@ -1,7 +1,6 @@
 package ch.batbern.events.dto;
 
 import ch.batbern.events.domain.QnaOpenTrigger;
-import ch.batbern.shared.types.EventWorkflowState;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Pattern;
@@ -56,7 +55,6 @@ public class PatchEventRequest {
              message = "Event type must be AFTERNOON, EVENING, or FULL_DAY")
     private String eventType;
 
-    private EventWorkflowState workflowState;
 
     // Story 10.4: Set topic code directly (bypasses workflow state machine — for blob selector accept flow)
     private String topicCode;

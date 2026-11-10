@@ -42,11 +42,7 @@ no-verb-segment	event-speakers-api.openapi.yml	POST /events/{eventCode}/speakers
 no-verb-segment	event-speakers-api.openapi.yml	POST /events/{eventCode}/speakers/self-nominate
 no-verb-segment	event-speakers-api.openapi.yml	POST /speaker-portal/events/{eventCode}/content/submit
 no-verb-segment	event-speakers-api.openapi.yml	POST /speaker-portal/events/{eventCode}/materials/confirm
-no-verb-segment	events-core-api.openapi.yml	POST /events/{eventCode}/publish/schedule
-no-verb-segment	events-core-api.openapi.yml	POST /events/{eventCode}/publish/{phase}
 no-verb-segment	events-core-api.openapi.yml	POST /events/{eventCode}/teaser-images/confirm
-no-verb-segment	events-core-api.openapi.yml	POST /events/{eventCode}/unpublish/{phase}
-no-verb-segment	events-core-api.openapi.yml	POST /events/{eventCode}/workflow/transition
 no-verb-segment	partners-api.openapi.yml	GET /partners/{companyName}/analytics/export
 no-verb-segment	topics-api.openapi.yml	POST /topics/calculate-similarities
 no-verb-segment	users-api.openapi.yml	GET /users/additional-emails/verify

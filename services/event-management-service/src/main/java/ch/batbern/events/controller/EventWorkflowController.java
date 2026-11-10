@@ -54,8 +54,8 @@ public class EventWorkflowController implements EventWorkflowApi {
 
     /**
      * Transition event to target workflow state (AC12).
-     * POST /api/v1/events/{eventCode}/workflow/transition — requires ORGANIZER role,
-     * rate-limited to 10 transitions/min (API Gateway). Username from JWT for audit.
+     * POST /api/v1/events/{eventCode}/transition — the one way to change the workflow state
+     * (Story 4.9b, ADR-013 section 1); requires ORGANIZER role. Username from JWT for audit.
      */
     @Override
     @PreAuthorize("hasRole('ORGANIZER')")

@@ -5,6 +5,7 @@ import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Session;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SessionRepository;
+import ch.batbern.events.service.publishing.PublishingPhase;
 import ch.batbern.events.service.publishing.PublishingService;
 import ch.batbern.shared.test.AbstractIntegrationTest;
 import ch.batbern.shared.types.EventWorkflowState;
@@ -46,7 +47,7 @@ class AgendaStructuralSessionsIntegrationTest extends AbstractIntegrationTest {
         Event event = createEvent();
         createTalk(event);
 
-        publishingService.publishPhase(event.getEventCode(), "agenda");
+        publishingService.publishPhase(event.getEventCode(), PublishingPhase.AGENDA);
 
         List<Session> structural = sessionRepository.findByEventIdAndSessionTypeIn(
                 event.getId(), StructuralSessionService.GENERATED_TYPES);
@@ -68,7 +69,7 @@ class AgendaStructuralSessionsIntegrationTest extends AbstractIntegrationTest {
                 .endTime(event.getDate().plus(5, ChronoUnit.HOURS))
                 .build());
 
-        publishingService.publishPhase(event.getEventCode(), "agenda");
+        publishingService.publishPhase(event.getEventCode(), PublishingPhase.AGENDA);
 
         List<Session> structural = sessionRepository.findByEventIdAndSessionTypeIn(
                 event.getId(), StructuralSessionService.GENERATED_TYPES);
