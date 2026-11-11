@@ -1,0 +1,40 @@
+meta {
+  name: Single mode — add the cancelled person with the confirmation mail
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/events/{{participantsEventCode}}/participants
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+body:json {
+  {
+    "username": "{{participantsNotifyUsername}}",
+    "notify": true
+  }
+}
+
+assert {
+  res.status: eq 201
+}
+
+tests {
+  test("the cancelled registration is replaced by a confirmed one", function() {
+    const body = res.getBody();
+    expect(body.status).to.equal("confirmed");
+    expect(body.attendeeUsername).to.equal(bru.getVar("participantsNotifyUsername"));
+  });
+}
+
+docs {
+  Story 4.10c: the one mail of this collection, the organizer-added
+  confirmation, to a @batbern-test.ch address. Local dev writes it to /dev/mails;
+  never run this file against staging (dev-only collection).
+}

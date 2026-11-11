@@ -1,0 +1,41 @@
+meta {
+  name: Single mode — add an existing user without mail (notify false)
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/events/{{participantsEventCode}}/participants
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+body:json {
+  {
+    "username": "{{testSpeakerUsername}}",
+    "notify": false
+  }
+}
+
+assert {
+  res.status: eq 201
+}
+
+tests {
+  test("confirmed, single-mode fields only", function() {
+    const body = res.getBody();
+    expect(body.status).to.equal("confirmed");
+    expect(body.attendeeUsername).to.equal(bru.getEnvVar("testSpeakerUsername"));
+    expect(body.registrationCode).to.be.a("string");
+    expect(body.enrolled).to.equal(undefined);
+  });
+}
+
+docs {
+  Story 4.10c: the single add with notify=false sends no mail. The positive
+  control is 04, which sends exactly one.
+}

@@ -1,0 +1,25 @@
+meta {
+  name: The old paths are gone (/newsletter/my-subscription)
+  type: http
+  seq: 10
+}
+
+get {
+  url: {{baseUrl}}/newsletter/my-subscription
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+tests {
+  test("404 or 405, no handler", function() {
+    expect([404, 405]).to.include(res.getStatus());
+  });
+}
+
+docs {
+  Story 4.10c: breaking, no alias.
+}

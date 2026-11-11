@@ -1,0 +1,30 @@
+meta {
+  name: Mode error — two modes in one body answer 400
+  type: http
+  seq: 8
+}
+
+post {
+  url: {{baseUrl}}/events/{{participantsEventCode}}/participants
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+body:json {
+  {
+    "username": "{{testSpeakerUsername}}",
+    "stakeholders": true
+  }
+}
+
+assert {
+  res.status: eq 400
+}
+
+docs {
+  Story 4.10c: exactly one of username, people or stakeholders: true.
+}

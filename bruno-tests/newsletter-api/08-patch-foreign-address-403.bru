@@ -1,0 +1,31 @@
+meta {
+  name: PATCH /newsletter/my-subscriptions — an address that is not mine answers 403
+  type: http
+  seq: 8
+}
+
+patch {
+  url: {{baseUrl}}/newsletter/my-subscriptions
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+body:json {
+  {
+    "email": "{{newsletterEmail}}",
+    "subscribed": false
+  }
+}
+
+assert {
+  res.status: eq 403
+}
+
+docs {
+  Story 4.10c: the anonymous subscriber of 01 is not the organizer's address, so the
+  organizer cannot unsubscribe it here (the organizer endpoints are /subscribers/{id}/*).
+}

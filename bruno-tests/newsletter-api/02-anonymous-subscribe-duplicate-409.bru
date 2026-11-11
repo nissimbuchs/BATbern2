@@ -1,0 +1,25 @@
+meta {
+  name: Anonymous subscribe — the same address again answers 409
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/newsletter/subscribers
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "email": "{{newsletterEmail}}"
+  }
+}
+
+assert {
+  res.status: eq 409
+}
+
+docs {
+  Story 4.10c: unchanged rule, an active address is not subscribed twice.
+}

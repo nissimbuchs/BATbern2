@@ -1,0 +1,26 @@
+meta {
+  name: Cleanup — delete the participants fixture event
+  type: http
+  seq: 98
+}
+
+delete {
+  url: {{baseUrl}}/events/{{participantsEventCode}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+tests {
+  test("fixture event deleted or left to the number sweep", function() {
+    expect([204, 404, 409]).to.include(res.getStatus());
+  });
+}
+
+docs {
+  Story 4.10c: the event holds real attendees after 03/04, so DELETE answers 409
+  (real-attendee guard); 99 force-deletes the reserved number range regardless.
+}

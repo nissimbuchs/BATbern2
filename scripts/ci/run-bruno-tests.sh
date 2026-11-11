@@ -129,9 +129,13 @@ collections=(
 # endpoint (@Profile dev/local/test only), so it cannot pass against staging/production.
 # event-publishing-api publishes phases (public website, CDN invalidation, EventPublishedEvent
 # and organizer notices), which must never happen on staging = production (Story 4.9b).
+# participants-api writes registrations, creates users and sends an organizer-added mail;
+# newsletter-api subscribes an address anonymously (Story 4.10c).
 dev_only_collections=(
     "speaker-portal-api"
     "event-publishing-api"
+    "participants-api"
+    "newsletter-api"
 )
 
 # Never run as a collection. Each entry needs a reason; add one here only on purpose.

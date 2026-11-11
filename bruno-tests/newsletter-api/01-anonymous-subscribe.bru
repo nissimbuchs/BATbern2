@@ -1,0 +1,37 @@
+meta {
+  name: Anonymous subscribe — POST /newsletter/subscribers answers 200
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/newsletter/subscribers
+  body: json
+  auth: none
+}
+
+script:pre-request {
+  bru.setVar("newsletterEmail", `e2e-newsletter+${Date.now()}@batbern.ch`);
+}
+
+body:json {
+  {
+    "email": "{{newsletterEmail}}",
+    "firstName": "Bruno",
+    "language": "de"
+  }
+}
+
+assert {
+  res.status: eq 200
+}
+
+docs {
+  Story 4.10c: subscribing is POST on the collection (was POST /newsletter/subscribe).
+  Anonymous, no Turnstile token (local dev has Turnstile off; production checks an
+  invalid token, a missing one passes, Story 10.31 AC2). No mail is sent. The address
+  is synthetic, non-reserved and unique per run; 99 deletes the row. Dev-only
+  collection: never subscribe from a test against staging, which is production.
+  The gateway allows 5 anonymous subscribe calls per IP in 5 minutes: this
+  collection makes 2.
+}
