@@ -3,7 +3,7 @@ title: 'Refactor sweep'
 type: 'refactor'
 ticket: 'sweep'
 created: '2026-11-11'
-status: 'in-progress'
+status: 'built'
 baseline_revision: '92abe9cbdd3e13c098ad1add4cb57648843c9fe8'
 route: 'full'
 route_source: 'auto'
@@ -57,17 +57,49 @@ Owner go 2026-11-11 (overnight queue 7b → 8b → sweep → PR; decide with a r
 ## Tasks & Acceptance
 
 **Execution:**
-- [ ] Spec: `WITHDRAWN` in the cums-internal decision schema.
-- [ ] CUMS: withdrawal on rollback, `postToEvery` for decisions, tests.
-- [ ] EMS: accept `WITHDRAWN`, test.
-- [ ] PCS: V12 + log write, tests.
-- [ ] Docs: `06-backend-architecture.md` (withdrawal, PCS log), `06b-user-lifecycle-sync.md` (undo by hand now covers PCS), changelog.
-- [ ] Epic closing record in Implementation Notes: every leftover of plans 6, 6b, 7, 7b, 8, 8b with closed / moved (and where).
+- [x] Spec: `WITHDRAWN` in the cums-internal decision schema.
+- [x] CUMS: withdrawal on rollback, `postToEvery` for decisions, tests.
+- [x] EMS: accept `WITHDRAWN`, test.
+- [x] PCS: V12 + log write, tests.
+- [x] Docs: `06-backend-architecture.md` (withdrawal, PCS log), `06b-user-lifecycle-sync.md` (undo by hand now covers PCS), changelog.
+- [x] Epic closing record in Implementation Notes: every leftover of plans 6, 6b, 7, 7b, 8, 8b with closed / moved (and where).
 
 **Acceptance Criteria:**
 - Given the CUMS, EMS and PCS suites, then they pass with the new tests.
 - Given local dev, when a PCS row moves in a merge, then `partner_user_merge_log` holds its id.
 - Given the epic's leftovers, then each is closed in code or named with the story that owns it.
+
+## Implementation Notes
+
+Built 2026-11-11 on `feature/17-7b-user-reference-contract`, commit `b42cdb76`, local only, no push, no PR. Not reviewed yet.
+
+- **Spec.** `cums-internal.openapi.yml` `MailCenterRequestDecided.status` enum `[APPROVED, DECLINED, WITHDRAWN]` with a description; the decision operation's text says every implementer is told and what WITHDRAWN means. Frontend types unaffected (`check:api-types` clean, internal specs are not generated).
+- **CUMS.** `MailCenterRequestDecisions.open(Opened)` replaces the direct `mailCenter.opened(...)` in `ProfileMergeRequestService` and `CompanyLogoRequestService` (their `MailCenterRequestContract` field is gone). After a successful open it registers `afterCompletion(STATUS_ROLLED_BACK)` that sends `WITHDRAWN` / `system:mail-center-request` / now through the existing `decided(...)` (ERROR + `mailcenter.request_contract.failures` on failure). **Deviation from the Code Map:** the withdrawal is also registered when the open failed with a timeout (`SocketTimeoutException` or `HttpTimeoutException` in the cause chain), because a timed-out open is exactly the case where EMS may still commit the conversation (the deferred entry's main case, and the residual in Design Notes assumes the withdrawal is sent). A refused (HTTP error) or unreachable (connection refused) open still sends nothing, as the matrix says. A connect timeout also counts as a timeout; the extra withdrawal is then a harmless no-op. `HttpMailCenterRequestContract.decided` uses `ContractCalls.postToEvery`.
+- **EMS.** `InternalRequestConversationController.Status` gains `WITHDRAWN`; `RequestConversations.close` unchanged (same DONE, same `last_inbound_at <= decidedAt` guard, so a later reply reopens through the existing inbound rule).
+- **PCS.** `V12__partner_user_merge_log.sql` (id, source_username, target_username, performed_by, trigger, moved jsonb, performed_at; indexes on source and target). Plan listed five columns; `performed_by` and `trigger` added because the merge call carries them and an undo by hand needs to know who merged. `UserReferenceService.merge` uses `UPDATE ... RETURNING id::text`, writes the row only when something moved.
+- **Tests.** CUMS `ProfileMergeRequestIntegrationTest` +3 (commit failure via a throwing `beforeCommit` in an enclosing transaction; open timeout -> 502 + WITHDRAWN; rollback with the withdrawal refused -> counter +1), `CompanyLogoRequestIntegrationTest` +1 (later failure in an enclosing transaction), `HttpMailCenterRequestContractTest` +1 (two implementers, first down, second told, exception names only the first). The existing "Mail Center down" tests (connection refused) now also prove that no withdrawal is sent (an unexpected call fails `verify()`). RED checked for the two first merge ITs (failed without the registration). EMS `InternalRequestConversationIntegrationTest` +1 (WITHDRAWN closes, `updated_by` system). PCS `UserReferenceIntegrationTest` +2 (one log row with the exact ids after merge + repeat; no row for a person without rows).
+- **Docs.** ADR-016 costs, `06-backend-architecture.md` (Withdrawn bullet, decided to every implementer, PCS log, undo log line), `06b-user-lifecycle-sync.md` (PCS moves, Undo), `03-data-architecture.md` (merge line, PCS related tables), changelog entry. `deferred-work.md`: both entries closed with a `resolved:` line.
+- **Verification (2026-11-11).** shared-kernel and CUMS 988 tests 0 failures (22 skipped); EMS 2779, 0 failures (15 skipped); PCS 290, 0 failures; checkstyle main+test for all three; `lint:api-internal`, `check:api-types`, `make check-test-ratchet` (no RAISED), `check-s2s-client-urls` (0) pass. Logs `~/.cache/batbern-test-logs/sweep/`.
+- **Local dev (AC 2), 23:26 CET.** PCS, CUMS, EMS restarted on the new jars; V12 applied (`partner_user_merge_log` present). A partner note under `sweep.source`, `POST :8004/internal/user-references/merge` to `sweep.target` twice: first 200, second 200 with all counts 0; exactly one log row `{"partner_notes.author_username": ["d1929bb9-…"]}`, `performed_by` orga.sweep, ORGANIZER. Test rows removed. The withdrawal was not provoked on local dev (needs a rollback after the open); covered by the ITs.
+- **Epic 17 rule (C15).** Deferred entries of this epic 2 -> 0. ArchUnit stores CUMS 0, EMS service-direction 0 (unchanged).
+
+### Epic closing record (plans 6, 6b, 7, 7b, 8, 8b)
+
+| Plan | Leftover | State |
+|---|---|---|
+| 6 | none deferred; review findings 1-5 patched in the story | closed |
+| 6b | gateway GHSA-qhqv matcher listing `/api/v1/events/attendance-summary` ("out of scope" in the notes) | closed by 6b review #8: no `attendance-summary` in `api-gateway/src/main` (grep 2026-11-11) |
+| 7 | pass 2 #1 orphan conversation on a failed filing (deferred) | closed here (withdrawal), residual named above |
+| 7 | pass 2 #2 decision stops at the first failing implementer (rejected) | closed here (`postToEvery`) |
+| 7 | PRD entry 7 still described the pull feed | closed: `epic-17-architecture-hardening.md` L483 says no polling |
+| 7 | AC 3 primary-email push not run on local dev | closed by decision: make-primary needs the production Cognito pool; covered by `PrimaryEmailIntegrationTest` |
+| 7b | #4 PCS keeps no undo record (deferred) | closed here (V12) |
+| 7b | #2 make-primary not run end to end (rejected) | closed by decision, same reason as above |
+| 8 | manual DevTools click-through not done | closed by decision: Playwright run and gateway log cover it |
+| 8b | #1 a 404 from a first implementer stops the next (rejected) | closed by decision: one implementer (PCS); revisit with a second implementer, no story needed now |
+| 8b | counter not read live (actuator not exposed locally) | closed: covered by `HttpCalendarReplyContractTest` |
+
+Nothing moved to another story.
 
 ## Design Notes
 
