@@ -3,7 +3,7 @@ title: 'EMS pulls Mail Center requests from CUMS'
 type: 'refactor'
 ticket: '7'
 created: '2026-11-11'
-status: 'in-review'
+status: 'built'
 baseline_revision: '9d10da27cb011b4a8604cb0c016cd11080483ca8'
 route: 'full'
 route_source: 'auto'
@@ -95,6 +95,10 @@ Built 2026-11-11 on `feature/17-3-7-mailcenter-request-feed`, no commit, no push
 - **Extra docs:** user guide `event-mail.md` (delay of about 1.5 min), changelog entry, doc-drift mapping for `mailcenter/MailCenterRequestFeed*`.
 - **Ratchet:** `be-mock-s2s-client` fell by 2 (CUMS request ITs), baseline updated.
 - **Review fixes (2026-11-11):** a decision read again closes an existing conversation only when `last_inbound_at <= changedAt` (a requester's reply keeps it open; one opened in the same pass closes regardless); the feed LEFT JOINs the profile and sends name/address null when it is gone (EMS then opens nothing but still closes); a dedicated `InvalidLimitException` instead of mapping every `IllegalArgumentException` to 400; `RequestConversations.open` links a stored but unlinked conversation by its group id; deciding in the Mail Center PATCHes the conversation DONE at once (`ConversationDetail`, MSW test); users-api approve/decline texts say who closes the conversation.
+
+- Review pass 1 patches in `74b9b31c`. Full verify after them (2026-11-11): CUMS 979 tests and EMS 2780, 0 failures; frontend type-check, the communications Vitest folder (112), i18n keys, `check:api-types`, `lint:api`, `lint:api-internal`, the ratchet, the S2S guard and the API paths all green. Story references removed from the new code comments.
+- Local dev (AC 1, 2), 2026-11-11 18:49-18:52 UTC. V30 and V153 applied on restart. First poll: cursor stored, no history opened. The two OPEN rows (merge and logo) were inserted by SQL, because neither test account has a merge candidate or a company; the trigger, feed, job and `RequestConversations` ran unchanged. Both conversations opened 33 s after insert, with the subject and requester as before. Declined through the API as organizer (`POST /users/merge-requests/{id}/decline`, `/users/company-logo-requests/{id}/decline`): both DONE 51 s later, `updated_by` = the organizer. Test rows removed afterwards.
+- AC 3 (primary-email push, unchanged code): not run on local dev, where make-primary needs the production Cognito pool. Covered by the existing integration tests, which pass. The close-at-once from the Mail Center is covered by `ConversationDetail.decision.test.tsx`, not by a browser run.
 
 ## Plan Change Log
 
