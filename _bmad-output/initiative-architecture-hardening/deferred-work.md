@@ -102,3 +102,6 @@
   summary: PCS writes no merge log, so a profile merge cannot be undone by hand for topic_suggestions.suggested_by, partner_notes.author_username and partner_meetings.created_by.
   evidence: EMS's user_merge_log records only EMS rows; PCS `usermerge` updates in place. Production volume small (43 topic suggestions, 2 notes, 2 meetings on 2026-11-11). Options: a PCS merge log table, or the holder returns moved row ids that CUMS stores.
   resolved: 2026-11-11, commit b42cdb76 (Epic 17 sweep). PCS V12 `partner_user_merge_log`: one row per merge that moved rows, with the moved ids per column; none for a merge that moved nothing. 06b "Undo" names it.
+- source_plan: `_bmad-output/initiative-architecture-hardening/tickets/epic-one-service-direction/tickets/story-refactor-sweep-plan.md`
+  summary: When CUMS times out opening a Mail Center conversation, its WITHDRAWN decision probably reaches EMS before the slow open commits, so the conversation stays OPEN for a request that does not exist.
+  evidence: The withdrawal is sent at once after the 10 s read timeout; `RequestConversations.close` then updates 0 rows and the late open creates the conversation. Not measured. Fix: EMS keeps a withdrawal marker per request id that a later open respects. Rare: needs EMS slower than 10 s.

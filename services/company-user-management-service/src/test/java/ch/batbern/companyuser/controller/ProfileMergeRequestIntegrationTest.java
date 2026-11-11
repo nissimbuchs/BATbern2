@@ -175,6 +175,18 @@ class ProfileMergeRequestIntegrationTest extends AbstractIntegrationTest {
                 .respondWithStatus(HttpStatus.NO_CONTENT);
     }
 
+    /** The implementer is told the filing was withdrawn, by the system. */
+    private void expectWithdrawn(String kind) {
+        mailCenter.expect(POST, MailCenterContract.DECIDED)
+                .andExpect(r -> {
+                    String body = ((MockClientHttpRequest) r).getBodyAsString();
+                    assertThat((String) JsonPath.read(body, "$.kind")).isEqualTo(kind);
+                    assertThat((String) JsonPath.read(body, "$.status")).isEqualTo("WITHDRAWN");
+                    assertThat((String) JsonPath.read(body, "$.decidedBy")).isEqualTo("system:mail-center-request");
+                })
+                .respondWithStatus(HttpStatus.NO_CONTENT);
+    }
+
     private void expectNoDecision() {
         mailCenter.expect(POST, MailCenterContract.DECIDED).times(ExpectedCount.never())
                 .respondWithStatus(HttpStatus.NO_CONTENT);
@@ -237,11 +249,12 @@ class ProfileMergeRequestIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @DisplayName("when the Mail Center does not answer: 502, nothing stored, the person can ask again")
+    @DisplayName("when the Mail Center does not answer: 502, nothing stored, WITHDRAWN sent, the person can ask again")
     void request_mailCenterDown_nothingStored() throws Exception {
         mailCenter.expect(POST, MailCenterContract.OPENED).respondWith(r -> {
             throw new ConnectException("Connection refused");
         });
+        expectWithdrawn("MERGE");
 
         mockMvc.perform(post("/api/v1/users/me/profile-claims/merge-requests").with(requester())
                         .contentType(MediaType.APPLICATION_JSON)
@@ -333,6 +346,21 @@ class ProfileMergeRequestIntegrationTest extends AbstractIntegrationTest {
         assertThat((String) JsonPath.read(body, "$.kind")).isEqualTo("MERGE");
         assertThat((String) JsonPath.read(body, "$.status")).isEqualTo("WITHDRAWN");
         assertThat((String) JsonPath.read(body, "$.decidedBy")).isEqualTo("system:mail-center-request");
+    }
+
+    @Test
+    @DisplayName("sweep: a refused open (an earlier implementer may have opened): 502, nothing stored, WITHDRAWN sent")
+    void request_openRefused_withdrawsConversation() throws Exception {
+        mailCenter.expect(POST, MailCenterContract.OPENED).respondWithStatus(HttpStatus.BAD_REQUEST);
+        expectWithdrawn("MERGE");
+
+        mockMvc.perform(post("/api/v1/users/me/profile-claims/merge-requests").with(requester())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"candidateId\":\"" + guest.getId() + "\"}"))
+                .andExpect(status().isBadGateway());
+
+        mailCenter.verify();
+        assertThat(requestRepository.findAll()).isEmpty();
     }
 
     @Test

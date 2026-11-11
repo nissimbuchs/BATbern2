@@ -314,8 +314,8 @@ paths:
         editor, unless the requester wrote after `decidedAt` (the conversation then stays OPEN for
         that answer). A request without a conversation is ignored. Idempotent. Every implementer is
         told, also after one failed (one ERROR per failed decision). Status `WITHDRAWN` (sweep,
-        2026-11): the filing transaction rolled back after the conversation was opened, so no
-        request exists; `decidedBy` is then `system:mail-center-request` and the conversation is
+        2026-11): the filing transaction rolled back (also after a failed open), so no request
+        exists; `decidedBy` is then `system:mail-center-request` and the conversation is
         closed the same way.
       parameters:
         - name: requestId

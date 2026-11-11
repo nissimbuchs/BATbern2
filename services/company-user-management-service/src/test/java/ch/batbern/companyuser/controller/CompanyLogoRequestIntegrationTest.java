@@ -267,11 +267,15 @@ class CompanyLogoRequestIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @DisplayName("when the Mail Center is unreachable: 502, nothing stored")
+    @DisplayName("when the Mail Center is unreachable: 502, nothing stored, WITHDRAWN sent")
     void request_mailCenterDown_nothingStored() throws Exception {
         mailCenter.expect(POST, MailCenterContract.OPENED).respondWith(r -> {
             throw new ConnectException("Connection refused");
         });
+        mailCenter.expect(POST, MailCenterContract.DECIDED)
+                .andExpect(r -> assertThat(((MockClientHttpRequest) r).getBodyAsString())
+                        .contains("\"kind\":\"LOGO\"", "\"status\":\"WITHDRAWN\""))
+                .respondWithStatus(HttpStatus.NO_CONTENT);
 
         String body = create(anna(), "up-1", null, 502);
 

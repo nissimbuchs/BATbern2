@@ -18,8 +18,9 @@ import java.util.UUID;
 /**
  * Calls the Mail Center request contract at every configured implementer through shared-kernel
  * {@link ContractCalls}: the user's JWT is forwarded when there is one (ADR-016 decision 3). An
- * opening stops at the first failing implementer (the filing fails); a decision goes to every
- * implementer, also after one failed.
+ * opening stops at the first failing implementer (the filing fails, and its rollback withdraws the
+ * conversation at every implementer); a decision or withdrawal goes to every implementer, also after
+ * one failed.
  */
 @Component
 public class HttpMailCenterRequestContract implements MailCenterRequestContract {

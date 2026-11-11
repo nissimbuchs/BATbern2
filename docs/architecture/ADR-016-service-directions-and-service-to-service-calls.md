@@ -71,7 +71,7 @@ measured how they call each other on develop `e7f76baf`:
   contract (8b).
 - A contract call fails while its implementer is down. Where the call is part of the action, the
   action fails with it (as before 2026-11): filing a merge or logo request answers 502 and stores
-  nothing (a filing that rolls back after the open, or whose open timed out, tells the contract
+  nothing (a filing that rolls back after an open attempt, failed or not, tells every implementer
   `WITHDRAWN`, Epic 17 sweep); a profile merge answers 502 and keeps the source profile (holders that already merged
   are idempotent, so repeating the merge completes it). A primary-address change stands and a
   holder that missed it is logged as a WARN. Where it reports an action already committed, the action stands and the failure is

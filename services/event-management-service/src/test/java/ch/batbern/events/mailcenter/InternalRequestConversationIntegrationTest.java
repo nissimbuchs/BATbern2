@@ -2,6 +2,8 @@ package ch.batbern.events.mailcenter;
 
 import ch.batbern.events.config.TestAwsConfig;
 import ch.batbern.events.config.TestSecurityConfig;
+import ch.batbern.events.mailcenter.inbound.InboundMail;
+import ch.batbern.events.mailcenter.inbound.InboundMailStore;
 import ch.batbern.shared.test.AbstractIntegrationTest;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.AfterEach;
@@ -21,6 +23,7 @@ import org.springframework.test.web.servlet.ResultActions;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -43,6 +46,7 @@ class InternalRequestConversationIntegrationTest extends AbstractIntegrationTest
 
     private static final UUID MERGE = UUID.fromString("7a1c0000-0000-4000-8000-000000001237");
     private static final UUID LOGO = UUID.fromString("7a1c0000-0000-4000-8000-000000001246");
+    private static final String REPLY_GROUP = "it-sweep-withdrawn-reply";
 
     @Autowired
     private MockMvc mockMvc;
@@ -50,13 +54,16 @@ class InternalRequestConversationIntegrationTest extends AbstractIntegrationTest
     private ObjectMapper objectMapper;
     @Autowired
     private JdbcTemplate jdbc;
+    @Autowired
+    private InboundMailStore inboundStore;
 
     @BeforeEach
     @AfterEach
     void cleanUp() {
         jdbc.update("DELETE FROM mail_conversation WHERE merge_request_id = ? OR logo_request_id = ?", MERGE, LOGO);
-        jdbc.update("DELETE FROM mail_message WHERE send_group_id IN (?, ?)",
-                RequestConversations.Kind.MERGE.groupId(MERGE), RequestConversations.Kind.LOGO.groupId(LOGO));
+        jdbc.update("DELETE FROM mail_message WHERE send_group_id IN (?, ?, ?)",
+                RequestConversations.Kind.MERGE.groupId(MERGE), RequestConversations.Kind.LOGO.groupId(LOGO),
+                REPLY_GROUP);
     }
 
     private ResultActions open(String kind, UUID id, String requesterEmail, String note) throws Exception {
@@ -216,6 +223,28 @@ class InternalRequestConversationIntegrationTest extends AbstractIntegrationTest
 
         assertThat(conversation("merge_request_id", MERGE)).containsEntry("status", "DONE")
                 .containsEntry("updated_by", "system:mail-center-request");
+    }
+
+    @Test
+    @DisplayName("sweep: a withdrawn conversation reopens when the requester replies later")
+    void withdrawn_reopensOnALaterReply() throws Exception {
+        openMerge();
+        mockMvc.perform(post("/internal/mail-center-requests/{id}/decision", MERGE)
+                        .contentType(MediaType.APPLICATION_JSON).content("""
+                                {"kind": "MERGE", "status": "WITHDRAWN", "decidedBy": "system:mail-center-request",
+                                 "decidedAt": "%s"}""".formatted(Instant.now())))
+                .andExpect(status().isNoContent());
+        assertThat(conversation("merge_request_id", MERGE)).containsEntry("status", "DONE");
+        UUID conversationId = jdbc.queryForObject("SELECT id FROM mail_conversation WHERE merge_request_id = ?",
+                UUID.class, MERGE);
+
+        inboundStore.store(new InboundMail("<reply-" + MERGE + "@example.com>", null, null,
+                        "anna.private@example.com", "Anna Muster", null, List.of("replies@batbern.ch"), null,
+                        "Re: Profil zusammenführen: Anna Muster", "Ist meine Anfrage angekommen?", null, null, null,
+                        null, null, null, null, null, false),
+                REPLY_GROUP, "REPLIES", null, new InboundMailStore.Placement(conversationId, null, "SYSTEM", null));
+
+        assertThat(conversation("merge_request_id", MERGE)).containsEntry("status", "OPEN");
     }
 
     @Test

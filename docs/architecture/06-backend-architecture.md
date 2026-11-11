@@ -713,11 +713,12 @@ amended 2026-11-11: no polling): `POST /internal/mail-center-requests` (opened) 
   answer fails the filing: 502 `MERGE_REQUEST_NOT_DELIVERED` or `LOGO_REQUEST_NOT_DELIVERED`, the row
   is rolled back, the person can send again. The body carries kind, request id, the requester's name
   and primary address, the subject (the German text organizers see) and the note.
-- **Withdrawn** (Epic 17 sweep). `MailCenterRequestDecisions.open` makes the open call and, once it went
-  out (answered, or timed out, where EMS may still commit it), registers on the filing transaction:
-  should it roll back (commit failure, a later failure, the timeout itself), the contract is told the
-  decision `WITHDRAWN` by `system:mail-center-request`, and EMS closes the conversation of a request
-  that does not exist. A refused or unreachable open sends nothing. A failed withdrawal is an ERROR and
+- **Withdrawn** (Epic 17 sweep). `MailCenterRequestDecisions.open` registers on the filing transaction
+  before every open call, whatever its outcome (an earlier implementer may have opened before a later
+  one failed; a timed-out open may still be committed): should the transaction roll back (a failed
+  open, a commit failure, a later failure), every implementer is told the decision `WITHDRAWN` by
+  `system:mail-center-request` and closes the conversation of a request that does not exist; one
+  without the conversation answers 204 and changes nothing. A failed withdrawal is an ERROR and
   counted like a decision. No outbox, no retry. Residual: when EMS commits a timed-out open only after
   the withdrawal arrived, the withdrawal found nothing to close and the conversation stays open; an
   organizer sets it Done.

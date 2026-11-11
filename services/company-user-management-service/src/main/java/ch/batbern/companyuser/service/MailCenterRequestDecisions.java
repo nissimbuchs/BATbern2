@@ -10,16 +10,16 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
-import java.net.SocketTimeoutException;
-import java.net.http.HttpTimeoutException;
 import java.time.Instant;
 import java.util.UUID;
 
 /**
- * Tells the Mail Center request contract that a merge or logo request was decided, once the
- * decision is committed. A failure does not undo the decision: it is logged as an ERROR and counted
- * ({@value #FAILURES}). The conversation then stays OPEN until an organizer closes it; deciding in the
- * Mail Center closes it there at once anyway.
+ * The CUMS side of the Mail Center request contract around a merge or logo request: opens the
+ * conversation while the request is filed ({@link #open}), withdraws it when the filing rolls back
+ * ({@code WITHDRAWN}, every implementer), and delivers the decision once it is committed
+ * ({@link #afterCommit}). A failed withdrawal or decision does not undo anything: it is logged as an
+ * ERROR and counted ({@value #FAILURES}). The conversation then stays OPEN until an organizer closes
+ * it; deciding in the Mail Center closes it there at once anyway.
  */
 @Component
 @Slf4j
@@ -35,7 +35,7 @@ public class MailCenterRequestDecisions {
     public MailCenterRequestDecisions(MailCenterRequestContract contract, ObjectProvider<MeterRegistry> meterRegistry) {
         this.contract = contract;
         this.failures = Counter.builder(FAILURES)
-                .description("Decisions of merge or logo requests the Mail Center did not take")
+                .description("Withdrawals and decisions of merge or logo requests the Mail Center did not take")
                 .register(meterRegistry.getIfAvailable(() -> Metrics.globalRegistry));
     }
 
@@ -58,35 +58,21 @@ public class MailCenterRequestDecisions {
 
     /**
      * Opens the conversation of a request being filed, inside the filing transaction, and arranges its
-     * withdrawal should that transaction roll back ({@link #withdrawOnRollback}). A failed open fails
-     * the filing ({@link MailCenterRequestContract.MailCenterCallFailedException}). When the open timed
-     * out, the implementer may still commit the conversation, so the withdrawal is arranged as well;
-     * when it was refused or unreachable, nothing was opened and nothing is withdrawn.
+     * withdrawal should that transaction roll back ({@link #withdrawOnRollback}), whatever the open's
+     * outcome: an earlier implementer may have opened before a later one failed, and a timed-out open
+     * may still be committed. A failed open fails the filing
+     * ({@link MailCenterRequestContract.MailCenterCallFailedException}), so its rollback sends the
+     * withdrawal to every implementer; one without the conversation changes nothing (204).
      */
     public void open(MailCenterRequestContract.Opened request) {
-        try {
-            contract.opened(request);
-        } catch (MailCenterRequestContract.MailCenterCallFailedException e) {
-            if (timedOut(e)) {
-                withdrawOnRollback(request.kind(), request.requestId());
-            }
-            throw e;
-        }
         withdrawOnRollback(request.kind(), request.requestId());
-    }
-
-    private static boolean timedOut(Throwable e) {
-        for (Throwable t = e; t != null; t = t.getCause()) {
-            if (t instanceof SocketTimeoutException || t instanceof HttpTimeoutException) {
-                return true;
-            }
-        }
-        return false;
+        contract.opened(request);
     }
 
     /**
-     * Registers, on the filing transaction, the withdrawal of a request whose conversation was just
-     * opened: when that transaction rolls back (commit failure, a later failure), no request exists,
+     * Registers, on the filing transaction, the withdrawal of a request whose conversation is being
+     * opened: when that transaction rolls back (a failed open, a commit failure, a later failure), no
+     * request exists,
      * so the contract is told {@code WITHDRAWN} by {@value #WITHDRAWN_BY} and the conversation is
      * closed. A failed withdrawal is logged as an ERROR and counted like a decision. Without a
      * transaction there is nothing to roll back and nothing is registered.
