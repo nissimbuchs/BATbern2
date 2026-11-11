@@ -122,11 +122,11 @@ class ResponseConformanceTest {
     @Test
     void should_pickTheMostSpecificTemplate_when_severalSpecsMatch() {
         OpenApiContract core = OpenApiContract.load("docs/api/events-core-api.openapi.yml");
-        OpenApiContract analytics = OpenApiContract.load("docs/api/event-analytics-api.openapi.yml");
-        ResponseConformance gate = new ResponseConformance(List.of(core, analytics), Set.of(), tmp, false);
+        OpenApiContract registrations = OpenApiContract.load("docs/api/event-registrations-api.openapi.yml");
+        ResponseConformance gate = new ResponseConformance(List.of(core, registrations), Set.of(), tmp, false);
 
-        assertThat(core.operationVariables("GET", "/api/v1/events/attendance-summary")).isPresent();
-        assertThat(gate.owner("GET", "/api/v1/events/attendance-summary")).contains(analytics);
+        assertThat(core.operationVariables("GET", "/api/v1/events/registrations")).isPresent();
+        assertThat(gate.owner("GET", "/api/v1/events/registrations")).contains(registrations);
         assertThat(gate.owner("GET", "/api/v1/events/BATbern57")).contains(core);
     }
 

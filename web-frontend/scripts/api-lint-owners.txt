@@ -17,7 +17,6 @@
 # III, 17.11 upload contract company-logo, 17.11a-d upload purposes).
 
 # --- Stories and issues that remove the lines ---
-G01	17.6	no-literal-under-events	GET /events/attendance-summary$
 N5	17.10b	no-verb-segment	(/notifications/(batch-delete|batch-read|\{id\}/read)$|/sessions/batch-import$)
 N6	17.10b	(no-literal-under-events|path-kebab-case)	(/events/types|/events/recent-photos$|GET /events/registrations$|/companies:get-or-create$)
 N8	17.10b	no-personal-data-path-param	/users/me/additional-emails/\{email\}

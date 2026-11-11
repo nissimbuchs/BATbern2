@@ -139,9 +139,10 @@ Main `permitAll` entries of the event-management chain
 | `GET/POST /api/v1/events/{code}/thanks`, `GET /api/v1/thanks/featured` | Thank the organizers |
 | `/internal/**` | Service-to-service only; the gateway denies it (below) |
 
-Literal organizer paths that the wildcards would match (`/events/attendance-summary`,
-`/events/registrations`, `/sessions/unassigned`, `/sessions/conflicts`) are declared
-`authenticated()` before the public wildcards (GHSA-qhqv).
+Literal organizer paths that the wildcards would match (`/events/registrations`,
+`/sessions/unassigned`, `/sessions/conflicts`) are declared `authenticated()` before the public
+wildcards (GHSA-qhqv). The partner attendance summary, once `/events/attendance-summary` here, is
+`GET /internal/events/attendance-summary` since Epic 17 6b (ems-internal, called by PCS).
 
 #### Public Events read model (2026-10-07)
 
@@ -229,7 +230,7 @@ public SecurityFilterChain filterChain(HttpSecurity http, JwtAuthenticationConve
         .authorizeHttpRequests(auth -> auth
             .requestMatchers("/actuator/health", "/actuator/info").permitAll()
             // organizer literals before the public wildcards (GHSA-qhqv)
-            .requestMatchers(HttpMethod.GET, "/api/v1/events/attendance-summary", ...).authenticated()
+            .requestMatchers(HttpMethod.GET, "/api/v1/events/registrations", ...).authenticated()
             .requestMatchers(HttpMethod.GET, "/api/v1/events/*").permitAll()
             // ... further public reads and token-credentialed writes ...
             .requestMatchers("/internal/**").permitAll()   // the gateway denies it

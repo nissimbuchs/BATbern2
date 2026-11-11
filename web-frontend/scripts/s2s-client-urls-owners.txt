@@ -12,5 +12,4 @@
 # Entries: _bmad-output/initiative-architecture-hardening/tickets/epic-one-service-direction/.
 
 # --- Stories that remove the lines ---
-S1	6b	^services/partner-coordination-service/	/api/v1/
 S2	8	^services/event-management-service/.*/PartnerApiClientImpl\.java$	/api/v1/partners

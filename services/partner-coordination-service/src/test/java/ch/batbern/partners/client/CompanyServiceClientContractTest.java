@@ -6,6 +6,7 @@ import ch.batbern.partners.exception.CompanyServiceException;
 import ch.batbern.shared.test.contract.ContractServer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.restclient.test.autoconfigure.RestClientTest;
@@ -19,17 +20,20 @@ import org.springframework.test.context.TestPropertySource;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestTemplate;
 
+import java.time.Instant;
 import java.util.Objects;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.springframework.http.HttpMethod.GET;
+import static org.springframework.test.web.client.response.MockRestResponseCreators.withStatus;
 
 /**
- * Contract test of {@link CompanyServiceClient} against {@code companies-api} (Story 17.0b1): the
- * real client on the real {@code RestTemplate}, each request validated against the CUMS spec and
- * answered from its examples. Replaces the former CompanyServiceClientTest, whose hand-written
- * bodies were never checked against the spec.
+ * Contract test of {@link CompanyServiceClient} against {@code cums-internal} (Story 17.0b1; the
+ * company read moved from the public companies-api to {@code GET /internal/companies/{name}} in
+ * Epic 17 6b): the real client on the real {@code RestTemplate}, each request validated against the
+ * CUMS spec and answered from its examples. Each call runs once with a signed-in user's JWT (forwarded)
+ * and once without (no {@code Authorization}), per ADR-016 decision 3 and {@code S2sHeaders}.
  */
 @RestClientTest(components = {
     ch.batbern.partners.client.impl.CompanyServiceClientImpl.class,
@@ -39,10 +43,9 @@ import static org.springframework.http.HttpMethod.GET;
 @TestPropertySource(properties = "company-service.base-url=http://company-user-management:8080")
 class CompanyServiceClientContractTest {
 
-    private static final String COMPANIES = "docs/api/companies-api.openapi.yml";
     private static final String CUMS_INTERNAL = "docs/api/internal/cums-internal.openapi.yml";
     private static final String COMPANY_NAMES = "/internal/companies";
-    private static final String COMPANY = "/api/v1/companies/{name}";
+    private static final String COMPANY = "/internal/companies/{name}";
     private static final String TOKEN = "test-jwt-token-abc123";
 
     @Autowired
@@ -58,10 +61,11 @@ class CompanyServiceClientContractTest {
 
     @BeforeEach
     void setUp() {
-        Jwt jwt = Jwt.withTokenValue(TOKEN).header("alg", "RS256").claim("sub", "organizer.user").build();
+        Jwt jwt = Jwt.withTokenValue(TOKEN).header("alg", "RS256").claim("sub", "organizer.user")
+                .expiresAt(Instant.now().plusSeconds(3600)).build();
         SecurityContextHolder.getContext().setAuthentication(new JwtAuthenticationToken(jwt));
         Objects.requireNonNull(cacheManager.getCache("companyApiCache")).clear();
-        server = ContractServer.bindTo(restTemplate, COMPANIES, CUMS_INTERNAL);
+        server = ContractServer.bindTo(restTemplate, CUMS_INTERNAL);
     }
 
     @AfterEach
@@ -85,7 +89,7 @@ class CompanyServiceClientContractTest {
     void should_encodeCompanyName_asOnePathSegment() {
         server.expect(GET, COMPANY)
                 .andExpect(r -> assertThat(r.getURI().getRawPath())
-                        .isEqualTo("/api/v1/companies/Meier%2FPartner%20AG"))
+                        .isEqualTo("/internal/companies/Meier%2FPartner%20AG"))
                 .respondWithExample();
 
         assertThat(companyServiceClient.getCompanyByName("Meier/Partner AG")).isNotNull();
@@ -100,6 +104,19 @@ class CompanyServiceClientContractTest {
                 .respondWithExample();
 
         assertThat(companyServiceClient.getCompanyByName("TestCompany")).isNotNull();
+        server.verify();
+    }
+
+    @Test
+    @DisplayName("without a user (scheduler, async, test) the company read goes out without Authorization")
+    void should_readCompany_when_noUserSignedIn() {
+        SecurityContextHolder.clearContext();
+        server.expect(GET, COMPANY)
+                .andExpect(r -> assertThat(r.getHeaders().containsHeader(HttpHeaders.AUTHORIZATION)).isFalse())
+                .respondWithExample();
+
+        assertThat(companyServiceClient.getCompanyByName("swissitsolut").getDisplayName())
+                .isEqualTo("Swiss IT Solutions AG");
         server.verify();
     }
 
@@ -126,7 +143,9 @@ class CompanyServiceClientContractTest {
 
     @Test
     void should_throwServiceException_when_cumsFails() {
-        server.expect(GET, COMPANY).respondWithStatus(HttpStatus.INTERNAL_SERVER_ERROR);
+        // 500 is no answer the spec declares (an unexpected failure): custom creator, the request is
+        // still validated.
+        server.expect(GET, COMPANY).respondWith(withStatus(HttpStatus.INTERNAL_SERVER_ERROR));
 
         assertThatThrownBy(() -> companyServiceClient.getCompanyByName("GoogleZH"))
                 .isInstanceOf(CompanyServiceException.class)
@@ -150,10 +169,24 @@ class CompanyServiceClientContractTest {
 
     @Test
     void should_returnSlugsFromInternalCompanies_when_searching() {
-        server.expect(GET, COMPANY_NAMES).withQueryParam("search", "Die Mobiliar").respondWithExample("matches");
+        server.expect(GET, COMPANY_NAMES).withQueryParam("search", "Die Mobiliar")
+                .andExpect(r -> assertThat(r.getHeaders().getFirst(HttpHeaders.AUTHORIZATION))
+                        .isEqualTo("Bearer " + TOKEN))
+                .respondWithExample("matches");
 
         assertThat(companyServiceClient.findCompanyNames("Die Mobiliar"))
                 .containsExactly("diemobiliar", "mobiliarag");
+        server.verify();
+    }
+
+    @Test
+    void should_searchWithoutAuthorization_when_noUserSignedIn() {
+        SecurityContextHolder.clearContext();
+        server.expect(GET, COMPANY_NAMES).withQueryParam("search", "Die Mobiliar")
+                .andExpect(r -> assertThat(r.getHeaders().containsHeader(HttpHeaders.AUTHORIZATION)).isFalse())
+                .respondWithExample("matches");
+
+        assertThat(companyServiceClient.findCompanyNames("Die Mobiliar")).hasSize(2);
         server.verify();
     }
 

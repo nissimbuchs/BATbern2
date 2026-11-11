@@ -1,7 +1,6 @@
 package ch.batbern.partners.performance;
 
-import ch.batbern.partners.client.UserServiceClient;
-import ch.batbern.partners.client.user.dto.UserResponse;
+import ch.batbern.partners.config.CumsInternalUsers;
 import ch.batbern.partners.config.TestAwsConfig;
 import ch.batbern.partners.config.TestSecurityConfig;
 import ch.batbern.partners.domain.Partner;
@@ -15,7 +14,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.cache.CacheManager;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpMethod;
@@ -28,8 +26,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -62,11 +58,8 @@ class PartnerPerformanceTest extends AbstractIntegrationTest {
     @Autowired
     private CacheManager cacheManager;
 
-    /** CUMS behind the real CompanyServiceClient, answering per companies-api (Story 17.0b1). */
+    /** CUMS behind the real Company and User service clients, answering per cums-internal (17.0b1, 6b). */
     private ContractServer cums;
-
-    @MockitoBean
-    private UserServiceClient userServiceClient;
 
     private Partner testPartner;
 
@@ -82,20 +75,14 @@ class PartnerPerformanceTest extends AbstractIntegrationTest {
         testPartner = partnerRepository.save(testPartner);
 
         cacheManager.getCacheNames().forEach(name -> cacheManager.getCache(name).clear());
-        cums = ContractServer.bindTo(restTemplate, "docs/api/companies-api.openapi.yml")
-                .ignoringMissingAuthorization();
-        cums.expect(HttpMethod.GET, "/api/v1/companies/{name}").times(ExpectedCount.manyTimes())
+        cums = ContractServer.bindTo(restTemplate, CumsInternalUsers.CUMS_INTERNAL);
+        cums.expect(HttpMethod.GET, "/internal/companies/{name}").times(ExpectedCount.manyTimes())
                 .respondWith(HttpStatus.OK, """
                         {"name": "PerfTestCo", "displayName": "Performance Test Company", "isVerified": true,
                          "createdAt": "2025-01-15T10:00:00Z", "updatedAt": "2025-01-15T10:00:00Z", "createdBy": "lead.organizer"}""");
 
-        UserResponse mockUser = new UserResponse();
-        mockUser.setId("perf.user");
-        mockUser.setEmail("perf.user@example.com");
-        mockUser.setFirstName("Performance");
-        mockUser.setLastName("User");
-        when(userServiceClient.getUsersByCompanyAndRole(anyString(), anyString()))
-                .thenReturn(java.util.List.of(mockUser));
+        CumsInternalUsers.partnerContacts(cums, "PerfTestCo",
+                CumsInternalUsers.user("perf.user", "PerfTestCo", "Performance", "User"));
     }
 
     @AfterEach

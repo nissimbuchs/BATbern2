@@ -5,16 +5,14 @@ import ch.batbern.partners.client.user.dto.PaginatedUserResponse;
 import ch.batbern.partners.client.user.dto.UserResponse;
 import ch.batbern.partners.exception.UserNotFoundException;
 import ch.batbern.partners.exception.UserServiceException;
+import ch.batbern.shared.security.S2sHeaders;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpServerErrorException;
@@ -31,7 +29,11 @@ import java.util.Map;
 /**
  * Implementation of UserServiceClient using Spring RestTemplate.
  *
- * Communicates with the Company User Management Service REST API to retrieve user profile data.
+ * Reads user profiles from the Company User Management Service's internal API
+ * ({@code docs/api/internal/cums-internal.openapi.yml}). Every call carries the headers of
+ * {@link S2sHeaders#forCurrentUser()}: the user's JWT when there is one, none otherwise (ADR-016
+ * decision 3). The internal reads do not depend on the caller, so the cached answers are the same
+ * for everyone.
  */
 @Component
 @RequiredArgsConstructor
@@ -41,9 +43,10 @@ public class UserServiceClientImpl implements UserServiceClient {
     private final RestTemplate restTemplate;
 
     /**
-     * CUMS internal user API: VPC-only, not routed by the gateway, no JWT. The public
-     * {@code /api/v1/users} directory is organizer-only, and these results are cached for every
-     * caller, so they must not depend on whose request triggered the lookup.
+     * CUMS internal user API: VPC-only, not routed by the gateway, a forwarded JWT optional. The
+     * public {@code /api/v1/users} directory is organizer-only, and these results are cached for
+     * every caller, so they must not depend on whose request triggered the lookup: the internal
+     * operations authorize by operation, never by the forwarded user.
      */
     private static final String INTERNAL_USERS_PATH = "/internal/users";
 
@@ -73,7 +76,7 @@ public class UserServiceClientImpl implements UserServiceClient {
                 .encode().buildAndExpand(username).toUri();
 
         try {
-            HttpEntity<Void> request = new HttpEntity<>(new HttpHeaders());
+            HttpEntity<Void> request = new HttpEntity<>(S2sHeaders.forCurrentUser());
 
             ResponseEntity<UserResponse> response = restTemplate.exchange(
                     url,
@@ -118,51 +121,8 @@ public class UserServiceClientImpl implements UserServiceClient {
     }
 
     /**
-     * Get the currently authenticated user's own profile via GET /users/me.
-     * Accessible to any authenticated user regardless of role.
-     */
-    @Override
-    public UserResponse getCurrentUserProfile() {
-        log.debug("Fetching current user profile via /users/me");
-
-        String url = userServiceBaseUrl + "/api/v1/users/me";
-
-        try {
-            HttpHeaders headers = createHeadersWithJwtToken();
-            HttpEntity<Void> request = new HttpEntity<>(headers);
-
-            ResponseEntity<UserResponse> response = restTemplate.exchange(
-                    url,
-                    HttpMethod.GET,
-                    request,
-                    UserResponse.class
-            );
-
-            log.debug("Successfully fetched current user profile");
-            return response.getBody();
-
-        } catch (HttpClientErrorException e) {
-            log.error("Client error fetching current user profile: {} - {}", e.getStatusCode(), e.getMessage());
-            throw new UserServiceException("Client error fetching current user profile", e.getStatusCode().value(), e);
-
-        } catch (HttpServerErrorException e) {
-            log.error("Server error fetching current user profile: {} - {}", e.getStatusCode(), e.getMessage());
-            throw new UserServiceException(
-                    "User Service error fetching current user profile", e.getStatusCode().value(), e);
-
-        } catch (ResourceAccessException e) {
-            log.error("Network error connecting to User Service for /users/me: {}", e.getMessage());
-            throw new UserServiceException("Failed to connect to User Service for /users/me", e);
-
-        } catch (Exception e) {
-            log.error("Unexpected error fetching current user profile: {}", e.getMessage(), e);
-            throw new UserServiceException("Unexpected error fetching current user profile", e);
-        }
-    }
-
-    /**
      * List all users for a company with the given role.
-     * Calls the CUMS internal API {@code GET /internal/users?company=…&role=…}, without JWT, page by page.
+     * Calls the CUMS internal API {@code GET /internal/users?company=…&role=…}, page by page.
      */
     @Override
     @Cacheable(value = "usersByCompanyRoleCache", key = "#companyName + '-' + #role")
@@ -173,7 +133,7 @@ public class UserServiceClientImpl implements UserServiceClient {
 
     /**
      * List all users with the given role across all companies.
-     * Calls the CUMS internal API {@code GET /internal/users?role=…}, without JWT, page by page.
+     * Calls the CUMS internal API {@code GET /internal/users?role=…}, page by page.
      */
     @Override
     @Cacheable(value = "usersByRoleCache", key = "#role")
@@ -218,10 +178,10 @@ public class UserServiceClientImpl implements UserServiceClient {
         return users;
     }
 
-    /** One page from the CUMS internal API (no JWT). */
+    /** One page from the CUMS internal API. */
     private PaginatedUserResponse fetchUserPage(URI url, String context) {
         try {
-            HttpEntity<Void> request = new HttpEntity<>(new HttpHeaders());
+            HttpEntity<Void> request = new HttpEntity<>(S2sHeaders.forCurrentUser());
 
             ResponseEntity<PaginatedUserResponse> response = restTemplate.exchange(
                     url,
@@ -248,28 +208,5 @@ public class UserServiceClientImpl implements UserServiceClient {
             log.error("Unexpected error fetching users ({}): {}", context, e.getMessage(), e);
             throw new UserServiceException("Unexpected error fetching users: " + context, e);
         }
-    }
-
-    private HttpHeaders createHeadersWithJwtToken() {
-        HttpHeaders headers = new HttpHeaders();
-
-        try {
-            Object principal = SecurityContextHolder.getContext()
-                    .getAuthentication()
-                    .getPrincipal();
-
-            if (principal instanceof Jwt jwt) {
-                headers.set("Authorization", "Bearer " + jwt.getTokenValue());
-                log.trace("JWT token propagated to User Service");
-            } else {
-                log.warn("No JWT token found in SecurityContext, principal type: {}",
-                        principal != null ? principal.getClass().getSimpleName() : "null");
-            }
-
-        } catch (Exception e) {
-            log.warn("Failed to extract JWT token from SecurityContext: {}", e.getMessage());
-        }
-
-        return headers;
     }
 }

@@ -26,9 +26,7 @@ import ch.batbern.events.core.api.generated.PublicEventsApi;
 import ch.batbern.events.core.dto.generated.EventDetail;
 import ch.batbern.events.core.dto.generated.ListEvents200Response;
 import ch.batbern.events.analytics.api.generated.EventReportingApi;
-import ch.batbern.events.analytics.dto.generated.AttendanceSummaryDTO;
 import ch.batbern.events.analytics.dto.generated.EventAnalytics;
-import ch.batbern.events.dto.AttendanceSummaryProjection;
 import ch.batbern.events.event.EventCreatedEvent;
 import ch.batbern.events.event.EventUpdatedEvent;
 import ch.batbern.events.exception.BusinessValidationException;
@@ -55,7 +53,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
-import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 import java.util.Set;
@@ -2409,53 +2406,4 @@ public class EventController implements EventsApi, EventReportingApi, PublicEven
 
     // Speaker-pool (brainstorming) endpoints moved to EventSpeakerPoolController (Phase 7:
     // implements the generated EventActionsApi). See that class + the api-consolidation plan.
-
-    // ================================
-    // Partner Analytics Endpoints (Story 8.1: Partner Attendance Dashboard)
-    // ================================
-
-    /**
-     * Get attendance summary per event for a given company.
-     * Story 8.1: Partner Attendance Dashboard - AC1, AC2, AC5, AC6
-     *
-     * GET /api/v1/events/attendance-summary?companyName={name}&fromYear={year}
-     *
-     * Server-to-server endpoint: called by partner-coordination-service.
-     * Returns one row per event with total and company-specific attendee counts.
-     * Isolation is enforced at partner-coordination-service level (PARTNER sees only own company).
-     *
-     * @param companyName Company identifier (ADR-003 meaningful ID)
-     * @param fromYear    Earliest year to include (defaults to current year - 5)
-     * @return List of attendance summaries ordered by event date descending
-     */
-    @Override
-    @PreAuthorize("hasRole('PARTNER') or hasRole('ORGANIZER')")
-    public ResponseEntity<List<AttendanceSummaryDTO>> getAttendanceSummary(
-            String companyName,
-            Integer fromYear) {
-
-        log.debug("GET /api/v1/events/attendance-summary - companyName: {}, fromYear: {}",
-                companyName, fromYear);
-
-        int resolvedFromYear = (fromYear != null) ? fromYear : (LocalDate.now().getYear() - 5);
-        Instant fromDate = LocalDate.of(resolvedFromYear, 1, 1)
-                .atStartOfDay(ZoneId.of("UTC"))
-                .toInstant();
-
-        List<AttendanceSummaryDTO> result = registrationRepository.findAttendanceSummary(companyName, fromDate)
-                .stream()
-                .map(EventController::toAttendanceSummaryDTO)
-                .toList();
-
-        return ResponseEntity.ok(result);
-    }
-
-    private static AttendanceSummaryDTO toAttendanceSummaryDTO(AttendanceSummaryProjection p) {
-        return new AttendanceSummaryDTO()
-                .eventCode(p.eventCode())
-                .eventTitle(p.eventTitle())
-                .eventDate(p.eventDate() != null ? p.eventDate().atOffset(ZoneOffset.UTC) : null)
-                .totalAttendees(p.totalAttendees())
-                .companyAttendees(p.companyAttendees());
-    }
 }

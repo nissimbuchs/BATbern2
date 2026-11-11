@@ -68,12 +68,14 @@ measured how they call each other on develop `e7f76baf`:
 - OpenAPI lint: no `/internal` path in a public spec (story 17.4).
 - S2S client URL guard: no string literal in a service's `client` package contains `/api/v1`
   (`web-frontend/scripts/check-s2s-client-urls.ts`, CI job `test-ratchet`; Epic 17 entry 6,
-  2026-11-10). Its baseline only shrinks.
+  2026-11-10). Its baseline only shrinks: 5 lines at the start, 2 since 6b (2026-11-11: PCS calls
+  CUMS and EMS over `/internal` only; left: EMS `PartnerApiClientImpl`, owned by entry 8).
 - One header helper for decision 3: shared-kernel `S2sHeaders.forCurrentUser()` forwards the
   user's JWT when there is one and sends none otherwise; CUMS records the forwarded
   `custom:username`, else `system:<job>` (Epic 17 entry 6). A token that expires within 60 s
   (`EXPIRY_MARGIN`) is not forwarded: the receiver would answer 401 even on `/internal`, and an
-  `@Async` task may outlive the token; the call then goes out as a system call.
+  `@Async` task may outlive the token; the call then goes out as a system call. Every EMS and PCS
+  client uses it, PCS's `HttpOutboundMailRecorder` included (6b).
 - `docs/architecture/module-map.md` carries these rules into every agent workflow.
 
 ## Related

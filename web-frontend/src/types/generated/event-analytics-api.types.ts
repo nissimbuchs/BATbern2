@@ -4,32 +4,6 @@
  */
 
 export interface paths {
-  '/events/attendance-summary': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Get attendance summary per event for a company
-     * @description Returns per-event attendee counts (total and company-specific).
-     *     Called server-to-server by partner-coordination-service.
-     *
-     *     **Story**: 8.1 - Partner Attendance Dashboard (AC1, AC2, AC5, AC6)
-     *
-     *     **Authorization**: PARTNER or ORGANIZER role required.
-     *     Data isolation enforced at partner-coordination-service level.
-     */
-    get: operations['getAttendanceSummary'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
   '/events/{eventCode}/analytics': {
     parameters: {
       query?: never;
@@ -372,34 +346,6 @@ export interface components {
       eventCode: string;
       distribution: components['schemas']['CompanyAttendanceShare'][];
     };
-    /** @description Per-event attendance summary for a given company (Story 8.1) */
-    AttendanceSummaryDTO: {
-      /**
-       * @description Event code (e.g. 'BATbern142')
-       * @example BATbern142
-       */
-      eventCode: string;
-      /**
-       * @description Event title (used by the partner attendance XLSX export)
-       * @example BATbern 142 - Cloud Native
-       */
-      eventTitle: string;
-      /**
-       * Format: date-time
-       * @description Event date (ISO-8601)
-       */
-      eventDate: string;
-      /**
-       * Format: int64
-       * @description Total confirmed attendees for this event
-       */
-      totalAttendees: number;
-      /**
-       * Format: int64
-       * @description Confirmed attendees from the queried company
-       */
-      companyAttendees: number;
-    };
     /** @description Per-event analytics. Truthful to EventAnalyticsService.generateAnalytics: a dynamic envelope whose `metrics` sub-objects are present only when requested via the `?metrics=` query param (registrations, attendance, engagement), and `timeframe` only when `?timeframe=` is supplied. The 2026-06-29 rewrite dropped the previously-documented flat fields (totalRegistrations/confirmedAttendees/cancellations/waitlist/registrationTrend) — no implementation ever produced them and the frontend reads none of them. */
     EventAnalytics: {
       /**
@@ -551,45 +497,6 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
-  getAttendanceSummary: {
-    parameters: {
-      query: {
-        /** @description Company identifier (ADR-003 meaningful ID, e.g. 'GoogleZH') */
-        companyName: string;
-        /** @description Earliest year to include (default: current year minus 5) */
-        fromYear?: number;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description List of per-event attendance summaries */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['AttendanceSummaryDTO'][];
-        };
-      };
-      /** @description Unauthorized */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Forbidden — requires PARTNER or ORGANIZER role */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
   getEventAnalytics: {
     parameters: {
       query?: {

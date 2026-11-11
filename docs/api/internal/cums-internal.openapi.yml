@@ -4,8 +4,8 @@ info:
   version: 1.0.0
   description: |
     Service-to-service operations of company-user-management under `/internal/**` (Story 17.0b2).
-    Callers: event-management (`UserApiClientImpl`), partner-coordination (`UserServiceClientImpl`)
-    and the API gateway (`GatewayUserStatusClient`).
+    Callers: event-management (`UserApiClientImpl`), partner-coordination (`UserServiceClientImpl`,
+    `CompanyServiceClientImpl`) and the API gateway (`GatewayUserStatusClient`).
 
     Not a public API: the API gateway does not route `/internal/**` and denies it explicitly; the
     services reach it inside the VPC through Service Connect. The JWT is optional (ADR-016 decision
@@ -32,7 +32,9 @@ paths:
       description: |
         Same `UserResponse` as the public users-api. `include` adds the related objects
         (`company`, `roles`, `settings`, comma-separated; Story 4.9 merged the former `preferences` into `settings`). The username is a path segment and
-        must be percent-encoded by the caller.
+        must be percent-encoded by the caller. Consumers: EMS, the API gateway, and PCS (the partner
+        ownership check, and `GET /api/v1/partners/me`, which reads the caller's company here by the
+        JWT's `custom:username` since 6b instead of the public `GET /api/v1/users/me`).
       parameters:
         - name: username
           in: path

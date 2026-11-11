@@ -19,10 +19,14 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.mock.http.client.MockClientHttpRequest;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.web.client.RestTemplate;
 
 import java.net.ConnectException;
 import java.net.SocketTimeoutException;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 
@@ -65,11 +69,12 @@ class HttpOutboundMailRecorderContractTest {
     @AfterEach
     void tearDown() {
         ((Logger) LoggerFactory.getLogger(HttpOutboundMailRecorder.class)).detachAppender(logs);
+        SecurityContextHolder.clearContext();
         server.close();
     }
 
     @Test
-    @DisplayName("AC1: posts the flat payload to /internal/mails without an Authorization header")
+    @DisplayName("AC1: posts the flat payload to /internal/mails; on the async send thread (no user) without Authorization")
     void record_postsPayloadWithoutToken() {
         server.expect(POST, MAILS).andExpect(request -> {
             assertThat(request.getURI().toString()).isEqualTo(BASE + MAILS);
@@ -96,6 +101,23 @@ class HttpOutboundMailRecorderContractTest {
         recorder.record(context, new OutboundMail(TO, List.of(), "Invite", "<p>i</p>", "ses-1", null));
 
         server.verify();
+    }
+
+    @Test
+    @DisplayName("sent while a user is signed in: the user's JWT is forwarded (S2sHeaders, ADR-016 decision 3)")
+    void record_forwardsUsersJwt_when_signedIn() {
+        Jwt jwt = Jwt.withTokenValue("organizer-token").header("alg", "RS256").claim("sub", "organizer1")
+                .expiresAt(Instant.now().plusSeconds(3600)).build();
+        SecurityContextHolder.getContext().setAuthentication(new JwtAuthenticationToken(jwt));
+        server.expect(POST, MAILS)
+                .andExpect(request -> assertThat(request.getHeaders().getFirst(HttpHeaders.AUTHORIZATION))
+                        .isEqualTo("Bearer organizer-token"))
+                .respondWithStatus(HttpStatus.ACCEPTED);
+
+        recorder.record(context, mail());
+
+        server.verify();
+        assertThat(logs.list).isEmpty();
     }
 
     @Test

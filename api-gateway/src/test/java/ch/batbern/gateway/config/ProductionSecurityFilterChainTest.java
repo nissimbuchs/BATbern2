@@ -162,7 +162,7 @@ class ProductionSecurityFilterChainTest {
 
     @ParameterizedTest
     @ValueSource(strings = {"/internal/users/john.doe", "/internal/users", "/internal/partner-meetings/rsvps",
-        "/internal/users/provision", "/internal/companies/acme"})
+        "/internal/users/provision", "/internal/companies/acme", "/internal/events/attendance-summary"})
     @DisplayName("should_denyInternalPath_when_requestedThroughGateway")
     void should_denyInternalPath_when_requestedThroughGateway(String path) throws Exception {
         // /internal/** is the VPC-only service API; even a valid token must not reach it here.

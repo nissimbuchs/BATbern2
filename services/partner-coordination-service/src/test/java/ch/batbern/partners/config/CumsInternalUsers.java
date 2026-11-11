@@ -11,13 +11,14 @@ import java.util.concurrent.ConcurrentHashMap;
 import static org.springframework.http.HttpMethod.GET;
 
 /**
- * CUMS {@code GET /internal/users/{username}} for PCS integration tests (Story 17.0b2): the real
+ * CUMS {@code GET /internal/users/{username}} (and, with {@link #partnerContacts}, the paged
+ * {@code GET /internal/users}) for PCS integration tests (Story 17.0b2): the real
  * {@code UserServiceClient} asks, a {@link ContractServer} bound with
  * {@link #CUMS_INTERNAL} answers, and both the request and every answer are checked against the
  * CUMS internal spec. Replaces {@code @MockitoBean UserServiceClient}.
  *
  * <pre>{@code
- * cums = ContractServer.bindTo(restTemplate, CumsInternalUsers.CUMS_INTERNAL).ignoringMissingAuthorization();
+ * cums = ContractServer.bindTo(restTemplate, CumsInternalUsers.CUMS_INTERNAL);
  * users = CumsInternalUsers.answerOn(cums);
  * users.put("alice", "alice.alpha", "AlphaCo");   // the caller "alice" belongs to AlphaCo
  * }</pre>
@@ -51,13 +52,38 @@ public final class CumsInternalUsers {
      * principal is called.
      */
     public CumsInternalUsers put(String lookedUp, String id, String companyId) {
-        users.put(lookedUp, """
-                {"id": "%s", "hasCognitoAccount": true, "email": "%s@example.com", "firstName": "Test",
-                 "lastName": "User", "bio": null, "companyId": %s, "roles": ["PARTNER"],
+        users.put(lookedUp, user(id, companyId, "Test", "User"));
+        return this;
+    }
+
+    /**
+     * {@code GET /internal/users?company=...&role=PARTNER} (every page call of
+     * {@code getUsersByCompanyAndRole}) answers one page with {@code users} (from {@link #user}) for
+     * {@code company}, and an empty page for any other company. Replaces a stubbed
+     * {@code UserServiceClient.getUsersByCompanyAndRole}.
+     */
+    public static void partnerContacts(ContractServer server, String company, String... users) {
+        server.expect(GET, "/internal/users").times(ExpectedCount.manyTimes())
+                .respondPerRequest(call -> Reply.ok(company.equals(call.queryParam("company"))
+                        ? page(users) : page()));
+    }
+
+    /** One {@code UserResponse} of the cums-internal spec: a PARTNER {@code id} of {@code companyId}. */
+    public static String user(String id, String companyId, String firstName, String lastName) {
+        return """
+                {"id": "%s", "hasCognitoAccount": true, "email": "%s@example.com", "firstName": "%s",
+                 "lastName": "%s", "bio": null, "companyId": %s, "roles": ["PARTNER"],
                  "profilePictureUrl": null, "active": true, "createdAt": "2025-01-15T10:00:00Z",
                  "updatedAt": "2025-01-15T10:00:00Z", "lastLoginAt": null, "termsAcceptedAt": null,
                  "company": null, "settings": null, "additionalEmails": []}"""
-                .formatted(id, id, companyId == null ? "null" : "\"" + companyId + "\""));
-        return this;
+                .formatted(id, id, firstName, lastName, companyId == null ? "null" : "\"" + companyId + "\"");
+    }
+
+    /** The only page of {@code GET /internal/users} holding {@code users}. */
+    private static String page(String... users) {
+        return """
+                {"data": [%s], "pagination": {"page": 1, "limit": 100, "totalItems": %d, "totalPages": %d,
+                 "hasNext": false, "hasPrev": false}}""".formatted(String.join(",", users), users.length,
+                users.length == 0 ? 0 : 1);
     }
 }

@@ -5,7 +5,6 @@
 # the story or issue that removes it, or an accepted exception with its reason. A PR that
 # grows the baseline states why and adds the owner group.
 # Format: <rule> TAB <spec file> TAB <METHOD> <path>, sorted.
-no-literal-under-events	event-analytics-api.openapi.yml	GET /events/attendance-summary
 no-literal-under-events	event-media-api.openapi.yml	GET /events/recent-photos
 no-literal-under-events	event-registrations-api.openapi.yml	GET /events/registrations
 no-literal-under-events	events-core-api.openapi.yml	GET /events/current

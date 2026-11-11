@@ -29,7 +29,6 @@ be-mock-in-process	services/event-management-service/src/test/java/ch/batbern/ev
 be-mock-in-process	services/event-management-service/src/test/java/ch/batbern/events/watch/WatchEventCompletionIntegrationTest.java	1
 be-mock-in-process	services/event-management-service/src/test/java/ch/batbern/events/watch/WatchExtendSessionIntegrationTest.java	1
 be-mock-in-process	services/event-management-service/src/test/java/ch/batbern/events/watch/WatchSessionServiceIntegrationTest.java	1
-be-mock-in-process	services/partner-coordination-service/src/test/java/ch/batbern/partners/controller/PartnerContactControllerIntegrationTest.java	1
 be-mock-s2s-client	api-gateway/src/test/java/ch/batbern/gateway/integration/AccountActiveGateIntegrationTest.java	1
 be-mock-s2s-client	api-gateway/src/test/java/ch/batbern/gateway/security/AccountActiveFilterTest.java	1
 be-mock-s2s-client	services/company-user-management-service/src/test/java/ch/batbern/companyuser/controller/CompanyLogoRequestIntegrationTest.java	1
@@ -73,11 +72,8 @@ be-mock-s2s-client	services/event-management-service/src/test/java/ch/batbern/ev
 be-mock-s2s-client	services/event-management-service/src/test/java/ch/batbern/events/service/SpeakerReminderServiceTest.java	1
 be-mock-s2s-client	services/event-management-service/src/test/java/ch/batbern/events/service/SpeakerWorkflowServiceTest.java	1
 be-mock-s2s-client	services/event-management-service/src/test/java/ch/batbern/events/service/TaskReminderEmailServiceTest.java	1
-be-mock-s2s-client	services/partner-coordination-service/src/test/java/ch/batbern/partners/controller/PartnerContactControllerIntegrationTest.java	1
-be-mock-s2s-client	services/partner-coordination-service/src/test/java/ch/batbern/partners/controller/PartnerControllerIntegrationTest.java	1
 be-mock-s2s-client	services/partner-coordination-service/src/test/java/ch/batbern/partners/controller/PartnerMeetingControllerIntegrationTest.java	1
 be-mock-s2s-client	services/partner-coordination-service/src/test/java/ch/batbern/partners/controller/PartnerMeetingInviteFailureIntegrationTest.java	1
-be-mock-s2s-client	services/partner-coordination-service/src/test/java/ch/batbern/partners/performance/PartnerPerformanceTest.java	1
 be-mock-s2s-client	services/partner-coordination-service/src/test/java/ch/batbern/partners/service/PartnerServiceTest.java	1
 be-transactional-it	services/company-user-management-service/src/test/java/ch/batbern/companyuser/controller/AccountMergeIntegrationTest.java	1
 be-transactional-it	services/company-user-management-service/src/test/java/ch/batbern/companyuser/controller/AdditionalEmailVerificationIntegrationTest.java	1

@@ -45,9 +45,9 @@ CUMS (identity) is upstream of all. EMS (event) is upstream of PCS (partners).
   `services/*/src/main/java/**/client/**` contains `/api/v1`. `web-frontend/scripts/
   check-s2s-client-urls.ts`, `make check-s2s-client-urls`, CI job `test-ratchet`. The baseline
   `s2s-client-urls-baseline.txt` may only shrink; each line has an owner in
-  `s2s-client-urls-owners.txt`. Left on 2026-11-10: 5 lines, the PCS clients 3 (6b) and
-  `PartnerApiClientImpl` 2 (8). A new call site fails as RAISED: call the provider's `/internal`
-  operation instead.
+  `s2s-client-urls-owners.txt`. Left on 2026-11-11: 2 lines, `PartnerApiClientImpl` (owner 8);
+  PCS calls CUMS and EMS over `/internal` only since 6b. A new call site fails as RAISED: call the
+  provider's `/internal` operation instead.
 
 - EMS `architecture/EmsModuleWallsTest`: nothing outside mail center (`mailcenter` + `forwarding`),
   `watch`, `usermerge` uses them (mail core in `mailcenter.render|variables` excepted); mail core

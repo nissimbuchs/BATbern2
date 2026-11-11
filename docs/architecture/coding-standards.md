@@ -472,8 +472,9 @@ JWT needs an `expiresAt`). An IT whose code calls a peer service binds the harne
 the context's `RestTemplate` bean in `@BeforeEach` instead of a `@MockitoBean` of the client, and
 calls `close()` in `@AfterEach` (the bean is shared by the cached context);
 `.ignoringMissingAuthorization()` is allowed there only because a `@WithMockUser` caller has no JWT
-to forward; it applies only to the PCS `ContractServer` bindings, whose public specs require a JWT
-(the EMS `CumsContractHarness` binds only the internal spec, which requires none). Each provider proves its side in `S2sProviderContractIntegrationTest` (CUMS, EMS, PCS):
+to forward; it applies only to a binding of a public spec, which requires a JWT. Since 6b the one
+left is EMS `TopicSessionDataControllerIntegrationTest` on partners-api (owner: entry 8); the internal
+specs (EMS `CumsContractHarness`, every PCS binding) require none. Each provider proves its side in `S2sProviderContractIntegrationTest` (CUMS, EMS, PCS):
 every consumed operation runs through the real controller and `ProviderContract` checks the
 response, and the examples, against the same spec. A spec without a usable example for a consumed
 operation gets one. How the harness reads `null`, `format: time` and the e-mail formats (as the
@@ -522,7 +523,7 @@ as an `alwaysDo` handler on the auto-configured `MockMvc`; the validator is the 
 (`OpenApiContract` with `GeneratedCodeSemantics`), there is no second one. A request of a path no
 own spec has (actuator, dev endpoints), a non-2xx answer, an empty body and non-JSON bodies (CSV,
 ICS, XLSX) are not checked. Where several specs match, the most specific template wins
-(`/events/attendance-summary` over `/events/{eventCode}`).
+(`/events/registrations` over `/events/{eventCode}`).
 
 A violation fails the request that produced it, inside its test, with the validator's message and
 the body: fix the response (production code), the spec, or the test data that the spec rejects. A

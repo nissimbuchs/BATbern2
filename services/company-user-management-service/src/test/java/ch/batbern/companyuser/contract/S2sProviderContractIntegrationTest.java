@@ -8,6 +8,7 @@ import ch.batbern.companyuser.repository.CompanyRepository;
 import ch.batbern.companyuser.repository.UserRepository;
 import ch.batbern.shared.test.AbstractIntegrationTest;
 import ch.batbern.shared.types.Role;
+import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -17,7 +18,6 @@ import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
-import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
@@ -38,27 +38,22 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * Provider half of the S2S contract (Story 17.0b1): every CUMS operation that EMS or PCS call on
- * the public API runs through the real controller, and its response must match the spec the
- * consumers' {@code ContractServer} answers from. The spec examples those consumers receive must
- * match the same schema.
+ * Provider half of the S2S contract (Stories 17.0b1, 17.0b2): every {@code /internal} operation in
+ * {@code docs/api/internal/cums-internal.openapi.yml} runs through the real controller, and its
+ * response must match the spec the consumers' {@code ContractServer} answers from; the spec
+ * examples those consumers receive must match the same schema. Consumers: EMS
+ * {@code UserApiClientImpl}, PCS {@code UserServiceClientImpl} and {@code CompanyServiceClientImpl},
+ * and the gateway's {@code GatewayUserStatusClient}. Epic 17 entry 6 added the three speaker writes
+ * and the company read, each run with a forwarded JWT and without any (ADR-016 decision 3).
  *
- * <p>Public consumers left: PCS {@code CompanyServiceClientImpl} (company detail) and
- * {@code UserServiceClientImpl} ({@code /users/me}); both move to {@code /internal} in 6b. EMS calls
- * no public CUMS operation since Epic 17 entry 6.
- *
- * <p>Story 17.0b2: the same for every {@code /internal} operation in
- * {@code docs/api/internal/cums-internal.openapi.yml}, called by EMS {@code UserApiClientImpl},
- * PCS {@code UserServiceClientImpl} and the gateway's {@code GatewayUserStatusClient}. Epic 17 entry
- * 6 added the three speaker writes and the company read, each run with a forwarded JWT and without
- * any (ADR-016 decision 3).
+ * <p>No service calls a public CUMS operation any more: EMS since Epic 17 entry 6, PCS since 6b
+ * (its company read and its {@code /users/me} moved to {@code /internal/companies/{name}} and
+ * {@code /internal/users/{username}}).
  */
 @Import(TestAwsConfig.class)
 @DisplayName("CUMS honours the S2S contract its consumers are tested against")
 class S2sProviderContractIntegrationTest extends AbstractIntegrationTest {
 
-    private static final String USERS = "docs/api/users-api.openapi.yml";
-    private static final String COMPANIES = "docs/api/companies-api.openapi.yml";
     private static final String CUMS_INTERNAL = "docs/api/internal/cums-internal.openapi.yml";
     private static final String SPEAKER = "contract.speaker";
     private static final String SPEAKER_EMAIL = "contract.speaker@example.com";
@@ -95,36 +90,6 @@ class S2sProviderContractIntegrationTest extends AbstractIntegrationTest {
         companyRepository.findByName(COMPANY).ifPresent(companyRepository::delete);
     }
 
-    @ParameterizedTest(name = "{0} {1}")
-    @CsvSource({
-        "users-api, GET,   /api/v1/users/me",
-        "companies-api, GET, /api/v1/companies/{name}",
-    })
-    @DisplayName("spec examples of consumed operations match their schema")
-    void should_haveValidExamples_forConsumedOperations(String spec, String method, String path) {
-        assertExamplesMatchSchema("docs/api/" + spec + ".openapi.yml", method, path);
-    }
-
-    @Test
-    void currentUser_matchesSpec() throws Exception {
-        MvcResult result = mockMvc.perform(get("/api/v1/users/me")
-                        .with(jwt().jwt(j -> j.subject("contract-sub").claim("custom:username", SPEAKER))))
-                .andExpect(status().isOk())
-                .andReturn();
-
-        assertResponseMatchesSpec(USERS, result);
-    }
-
-    @Test
-    @WithMockUser(username = "organizer.alice", roles = "ORGANIZER")
-    void companyDetail_matchesSpec() throws Exception {
-        MvcResult result = mockMvc.perform(get("/api/v1/companies/" + COMPANY))
-                .andExpect(status().isOk())
-                .andReturn();
-
-        assertResponseMatchesSpec(COMPANIES, result);
-    }
-
     // ------------------------------------------------------------------ /internal (Story 17.0b2)
 
     @ParameterizedTest(name = "{0} {1}")
@@ -157,6 +122,17 @@ class S2sProviderContractIntegrationTest extends AbstractIntegrationTest {
         internal(get("/internal/users/" + SPEAKER).param("include", "settings"), 200);
         internal(get("/internal/users/" + SPEAKER).param("include", "company,roles,settings"), 200);
         internal(get("/internal/users/ghost.user"), 404);
+    }
+
+    @Test
+    @DisplayName("6b: GET /internal/users/{username} with the partner's JWT forwarded, as PCS /partners/me sends it")
+    void internalUser_withForwardedPartnerJwt_matchesSpec() throws Exception {
+        MvcResult result = internal(get("/internal/users/" + SPEAKER).with(jwt().jwt(j -> j.subject("partner-sub")
+                .claim("custom:username", SPEAKER).claim("custom:role", "PARTNER"))), 200);
+        internal(get("/internal/users/ghost.user").with(jwt().jwt(j -> j.subject("partner-sub")
+                .claim("custom:username", "ghost.user").claim("custom:role", "PARTNER"))), 404);
+
+        assertThat(JsonPath.<String>read(result.getResponse().getContentAsString(), "$.companyId")).isEqualTo(COMPANY);
     }
 
     @Test

@@ -87,6 +87,12 @@ context:
 
 ## Implementation Notes
 
+- `/partners/me`: a CUMS 404 for the resolved username (a token without `custom:username` falls back to the subject) becomes `PartnerNotFoundException` "not linked" (404, as before for "no company"), per the decision; the client itself still throws `UserNotFoundException`.
+- `ResponseConformanceTest` (shared-kernel) used `/events/attendance-summary` as its "most specific template" case; it now uses `/events/registrations` (registrations-api over core). Javadoc and coding-standards follow.
+- Also moved: PCS `ProductionChainIntegrationTest` and the PCS provider `S2sProviderContractIntegrationTest` (they bound companies-api for the company read). Touch rule also took `PartnerPerformanceTest` off its `UserServiceClient` mock (`CumsInternalUsers.partnerContacts`). Ratchet: `be-mock-s2s-client` 50 → 47, `be-mock-in-process` 34 → 33. No `ignoringMissingAuthorization` left in PCS.
+- Not changed: the gateway's GHSA-qhqv matcher still lists `/api/v1/events/attendance-summary` (anonymous gets 401 there; harmless, out of scope). EMS no longer lists it: with a token the old path reaches `GET /events/{eventCode}` and answers 400 (validated code), measured on local dev.
+- Local dev (2026-11-11, as `batbern.partner`): `/partners/me` 200 `sbb`; dashboard 200 (22 rows); XLSX export 200; contacts 200; other company's dashboard 403; PCS log shows `GET :8002/internal/events/attendance-summary` 200, `:8001/internal/users/batbern.partner`, `:8001/internal/companies/sbb`, no `/users/me` or `/api/v1/companies`; CUMS log shows the forwarded JWT on `/internal/users/batbern.partner`. The EMS local log does not log request paths at its level, so the EMS-side line is the PCS client log. Old public path: anonymous 401 (gateway), partner 400; gateway `/internal/events/attendance-summary` 403. Not compared row-for-row against pre-change output (same repository query).
+
 ## Plan Change Log
 
 ## Review Triage Log

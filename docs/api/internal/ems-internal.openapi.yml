@@ -6,10 +6,12 @@ info:
     Service-to-service operations of event-management under `/internal/**` (Story 17.0b2).
     Callers: company-user-management (`HttpEventManagementUserMergeClient`,
     `HttpEventManagementMailCenterClient`) and partner-coordination (`HttpOutboundMailRecorder`,
-    `EventManagementClientImpl.getEventSummary`).
+    `EventManagementClientImpl.getEventSummary` and `.getAttendanceSummary`).
 
     Not a public API: the API gateway does not route `/internal/**` and denies it explicitly; the
-    services reach it inside the VPC through Service Connect, without a JWT. Public API tooling does
+    services reach it inside the VPC through Service Connect. The JWT is optional (ADR-016 decision
+    3): a caller forwards the user's JWT when there is one (shared-kernel `S2sHeaders`) and never
+    has to; no operation here looks at the user's role. Public API tooling does
     not read `docs/api/internal/`. The specs describe the endpoints as they are; Story 17.6
     redesigns them (the verb segments stay until then). Paths are full paths (server `/`).
 servers:
@@ -212,6 +214,63 @@ paths:
               schema:
                 $ref: '../_shared.openapi.yml#/components/schemas/ErrorResponse'
 
+  /internal/events/attendance-summary:
+    get:
+      operationId: getAttendanceSummary
+      summary: Attendees per event, in total and of one company (partner attendance dashboard)
+      description: |
+        partner-coordination (`EventManagementClientImpl.getAttendanceSummary`, Story 8.1) builds the
+        partner attendance dashboard and its XLSX export from it. One row per event since 1 January
+        of `fromYear` (UTC), newest first; only confirmed registrations count. Authorized by
+        operation, not by the caller's role: the role and ownership check (PARTNER of the company or
+        ORGANIZER) stays on the partner-coordination endpoint the user entered through (ADR-016
+        decision 3). A forwarded JWT is optional and does not change the answer. Until 6b (Epic 17)
+        the public `GET /api/v1/events/attendance-summary` of event-analytics-api.
+      parameters:
+        - name: companyName
+          in: query
+          required: true
+          description: Company identifier (ADR-003 meaningful ID).
+          schema:
+            type: string
+          example: GoogleZH
+        - name: fromYear
+          in: query
+          required: false
+          description: 'Earliest year to include (default: current year minus 5).'
+          schema:
+            type: integer
+          example: 2021
+      responses:
+        '200':
+          description: Per-event attendance, newest event first
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AttendanceSummary'
+              examples:
+                twoEvents:
+                  summary: Two events, newest first
+                  value:
+                    - eventCode: BATbern142
+                      eventTitle: BATbern 142 - Cloud Native
+                      eventDate: '2026-06-11T16:00:00Z'
+                      totalAttendees: 180
+                      companyAttendees: 6
+                    - eventCode: BATbern141
+                      eventTitle: BATbern 141 - Security
+                      eventDate: '2025-11-13T16:00:00Z'
+                      totalAttendees: 160
+                      companyAttendees: 4
+        '400':
+          description: '`companyName` missing or `fromYear` not an integer'
+          content:
+            application/json:
+              schema:
+                $ref: '../_shared.openapi.yml#/components/schemas/ErrorResponse'
+
   /internal/mails:
     post:
       operationId: recordInternalMail
@@ -376,6 +435,34 @@ components:
       example: 2f6d8c1a-5b7e-4c3d-9a0f-1e2d3c4b5a69
 
   schemas:
+    AttendanceSummary:
+      type: object
+      required: [eventCode, eventTitle, eventDate, totalAttendees, companyAttendees]
+      description: >-
+        Hand-written record `InternalAttendanceSummaryController.AttendanceSummary`: one event's
+        confirmed attendees, in total and of the queried company (Story 8.1).
+      properties:
+        eventCode:
+          type: string
+        eventTitle:
+          type: string
+          description: Event title (the partner attendance XLSX export shows it).
+        eventDate:
+          type: string
+          format: date-time
+          description: Start of the event (instant).
+        totalAttendees:
+          type: integer
+          format: int64
+          minimum: 0
+          description: Confirmed attendees of the event.
+        companyAttendees:
+          type: integer
+          format: int64
+          minimum: 0
+          description: Confirmed attendees from the queried company.
+      additionalProperties: false
+
     EventSchedule:
       type: object
       required: [eventCode, title, date, startTime, endTime, venueName, venueAddress, eventType]

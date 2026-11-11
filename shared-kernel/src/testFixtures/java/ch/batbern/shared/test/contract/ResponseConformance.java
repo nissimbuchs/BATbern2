@@ -180,7 +180,7 @@ public final class ResponseConformance {
 
     /**
      * The spec serving the request: the one with the most specific template, so
-     * {@code /events/attendance-summary} (analytics) wins over {@code /events/{eventCode}} (core).
+     * {@code /events/registrations} (registrations) wins over {@code /events/{eventCode}} (core).
      */
     Optional<OpenApiContract> owner(String method, String path) {
         return contracts.stream()

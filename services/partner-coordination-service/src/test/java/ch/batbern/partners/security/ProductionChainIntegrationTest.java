@@ -60,15 +60,14 @@ class ProductionChainIntegrationTest extends AbstractIntegrationTest {
     @Autowired
     private RestTemplate restTemplate;
 
-    /** CUMS behind the real CompanyServiceClient, answering per companies-api. */
+    /** CUMS behind the real CompanyServiceClient, answering per cums-internal (6b). */
     private ContractServer cums;
 
     @BeforeEach
     void setUp() {
         partnerRepository.deleteAll();
-        cums = ContractServer.bindTo(restTemplate, "docs/api/companies-api.openapi.yml")
-                .ignoringMissingAuthorization();
-        cums.expect(HttpMethod.GET, "/api/v1/companies/{name}").times(ExpectedCount.manyTimes())
+        cums = ContractServer.bindTo(restTemplate, "docs/api/internal/cums-internal.openapi.yml");
+        cums.expect(HttpMethod.GET, "/internal/companies/{name}").times(ExpectedCount.manyTimes())
                 .respondWith(HttpStatus.OK, """
                         {"name": "ChainTestCo", "displayName": "Chain Test Co", "isVerified": true,
                          "createdAt": "2025-01-15T10:00:00Z", "updatedAt": "2025-01-15T10:00:00Z", "createdBy": "lead.organizer"}""");

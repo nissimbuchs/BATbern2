@@ -3,9 +3,6 @@
 # Policy: ADR-016 decision 2, docs/architecture/module-map.md section "Gates".
 # Existing call sites only. Every line has exactly one owner group in web-frontend/scripts/s2s-client-urls-owners.txt:
 # the story that moves or deletes the call, or an accepted exception with its reason.
-# Format: <file> TAB <URL literal>, sorted.
+# Format: <file> TAB <URL literal>, sorted, one line per occurrence.
 services/event-management-service/src/main/java/ch/batbern/events/client/impl/PartnerApiClientImpl.java	/api/v1/partners/topics
 services/event-management-service/src/main/java/ch/batbern/events/client/impl/PartnerApiClientImpl.java	/api/v1/partners?include=company&size=200
-services/partner-coordination-service/src/main/java/ch/batbern/partners/client/impl/CompanyServiceClientImpl.java	/api/v1/companies/{name}
-services/partner-coordination-service/src/main/java/ch/batbern/partners/client/impl/EventManagementClientImpl.java	/api/v1/events/attendance-summary
-services/partner-coordination-service/src/main/java/ch/batbern/partners/client/impl/UserServiceClientImpl.java	/api/v1/users/me

@@ -48,8 +48,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * Provider half of the S2S contract (Story 17.0b1): the two PCS operations EMS calls on the public
  * API ({@code PartnerApiClientImpl}) run through the real controller, exactly as EMS calls them,
  * and must match the spec EMS's contract test answers from. {@code include=company} makes PCS call
- * CUMS in turn, through its real client against the companies-api harness; the caller lookup goes
- * to CUMS {@code /internal/users/{username}}, validated against cums-internal (17.0b2).
+ * CUMS in turn, through its real client, on {@code /internal/companies/{name}} (6b; the public
+ * companies-api before) with the organizer's JWT forwarded; the caller lookup goes to CUMS
+ * {@code /internal/users/{username}}. Both validated against cums-internal (17.0b2).
  *
  * <p>Story 17.0b2: the one PCS {@code /internal} operation, {@code POST /internal/partner-meetings/rsvps}
  * (EMS {@code PartnerMeetingRsvpClientImpl}), against {@code docs/api/internal/pcs-internal.openapi.yml}.
@@ -90,8 +91,7 @@ class S2sProviderContractIntegrationTest extends AbstractIntegrationTest {
                 .companyName(COMPANY).suggestedBy("partner.contract")
                 .title("Contract testing across services").createdAt(Instant.now())
                 .build());
-        cums = ContractServer.bindTo(restTemplate, "docs/api/companies-api.openapi.yml",
-                CumsInternalUsers.CUMS_INTERNAL);
+        cums = ContractServer.bindTo(restTemplate, CumsInternalUsers.CUMS_INTERNAL);
         // Every topic list looks the caller up in CUMS, through the internal API (17.0b2: specified).
         CumsInternalUsers.answerOn(cums).put("organizer.alice", "organizer.alice", null);
     }
@@ -127,7 +127,7 @@ class S2sProviderContractIntegrationTest extends AbstractIntegrationTest {
     @Test
     @DisplayName("GET /partners?include=company&size=200, as EMS sends it, returns every partner and matches the spec")
     void partnerListWithCompany_matchesSpec() throws Exception {
-        cums.expect(GET, "/api/v1/companies/{name}").times(ExpectedCount.manyTimes())
+        cums.expect(GET, "/internal/companies/{name}").times(ExpectedCount.manyTimes())
                 .andExpect(r -> assertThat(r.getHeaders().getFirst(HttpHeaders.AUTHORIZATION)).startsWith("Bearer "))
                 .respondWithExample();
 
@@ -142,7 +142,8 @@ class S2sProviderContractIntegrationTest extends AbstractIntegrationTest {
     }
 
     private static org.springframework.test.web.servlet.request.RequestPostProcessor organizer() {
-        return jwt().jwt(j -> j.subject("organizer.alice").claim("custom:username", "organizer.alice"))
+        return jwt().jwt(j -> j.subject("organizer.alice").claim("custom:username", "organizer.alice")
+                        .expiresAt(Instant.now().plusSeconds(3600)))
                 .authorities(new SimpleGrantedAuthority("ROLE_ORGANIZER"));
     }
 
