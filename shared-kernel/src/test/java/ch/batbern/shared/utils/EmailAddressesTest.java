@@ -130,6 +130,7 @@ class EmailAddressesTest {
             }
         }
         // every request e-mail property, plus two registration responses that echo the request
-        assertThat(found).as("email properties carrying the rule").isEqualTo(18);
+        // (17 since 4.10 removed POST /events/{eventCode}/speakers/invite and its request body)
+        assertThat(found).as("email properties carrying the rule").isEqualTo(17);
     }
 }

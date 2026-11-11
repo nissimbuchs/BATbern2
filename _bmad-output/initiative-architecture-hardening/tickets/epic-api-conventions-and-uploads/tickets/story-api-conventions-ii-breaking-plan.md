@@ -3,7 +3,7 @@ title: 'API conventions II (breaking): me/username twins for profile and picture
 type: 'refactor'
 ticket: '10'
 created: '2026-11-10'
-status: 'in-review'
+status: 'built'
 baseline_revision: 'ac006ac1ac2902b492c581a48b8d110cd1874993'
 route: 'full'
 route_source: 'auto'
@@ -245,3 +245,5 @@ Sizes, measured at `ac006ac1`:
 
 **Manual checks:**
 - Local dev (`make dev-native-restart-service` for CUMS and EMS): walk through the acceptance criteria; the old paths answer 404/405 through the gateway; `/dev/emails` holds only the invitation.
+
+Final verification 2026-11-11 after the review patches (701ca6d4): shared-kernel (after updating EmailAddressesTest to 17 e-mail properties, the invite request body is gone), CUMS, EMS, PCS and gateway suites green; lint:api (101), lint:api-internal, check:api-types, type-check, check:s2s-client-urls, Vitest 458 files / 5909 passed, test ratchet and API paths green. Playwright on local dev: 21 passed after the profile fixes, profile specs 9/9 after the patches. After deploy: old paths 404/405 (self paths 403/400), access-control DAST, #1287 for the owner.
