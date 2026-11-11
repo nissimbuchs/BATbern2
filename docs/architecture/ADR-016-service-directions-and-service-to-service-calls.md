@@ -43,7 +43,9 @@ measured how they call each other on develop `e7f76baf`:
    refuse it and must deliver preview counts. It becomes a contract owned by CUMS,
    `/internal/user-references/preview|merge`, implemented by every service that stores usernames
    (EMS, and PCS, which stores usernames but is not covered today) and listed in CUMS configuration.
-   CUMS depends on its own contract, not on EMS by name. No other upstream→downstream call is allowed.
+   CUMS depends on its own contract, not on EMS by name. Amendment 2026-11-11 (owner): a primary-email change is a second
+   operation of that contract, `/internal/user-references/primary-email`, also synchronous, because
+   a registration mail must not go to the old address while a feed waits for its next poll. No other upstream→downstream call is allowed.
 6. **Direct table reads across services** (the services share one PostgreSQL database) are not a
    substitute for `/internal` calls. The existing ones are listed for the database review; no new ones.
 
