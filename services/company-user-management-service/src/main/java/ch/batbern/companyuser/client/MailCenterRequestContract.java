@@ -21,14 +21,17 @@ public interface MailCenterRequestContract {
     /** A request was filed; throws {@link MailCenterCallFailedException} when an implementer did not take it. */
     void opened(Opened request);
 
-    /** A request was decided; throws {@link MailCenterCallFailedException} when an implementer did not take it. */
+    /**
+     * A request was decided (or withdrawn); every implementer is told, also after one failed. Throws
+     * {@link MailCenterCallFailedException} naming every implementer that did not take it.
+     */
     void decided(UUID requestId, Decided decision);
 
     record Opened(Kind kind, UUID requestId, String requesterName, String requesterEmail, String subject,
             String note) {
     }
 
-    /** {@code status} APPROVED or DECLINED. */
+    /** {@code status} APPROVED or DECLINED, or WITHDRAWN when the filing rolled back after the open. */
     record Decided(Kind kind, String status, String decidedBy, Instant decidedAt) {
     }
 

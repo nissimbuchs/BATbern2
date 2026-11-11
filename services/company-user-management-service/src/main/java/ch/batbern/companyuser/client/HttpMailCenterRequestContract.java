@@ -17,7 +17,9 @@ import java.util.UUID;
 
 /**
  * Calls the Mail Center request contract at every configured implementer through shared-kernel
- * {@link ContractCalls}: the user's JWT is forwarded when there is one (ADR-016 decision 3).
+ * {@link ContractCalls}: the user's JWT is forwarded when there is one (ADR-016 decision 3). An
+ * opening stops at the first failing implementer (the filing fails); a decision goes to every
+ * implementer, also after one failed.
  */
 @Component
 public class HttpMailCenterRequestContract implements MailCenterRequestContract {
@@ -70,7 +72,7 @@ public class HttpMailCenterRequestContract implements MailCenterRequestContract 
         body.put("status", decision.status());
         body.put("decidedBy", decision.decidedBy());
         body.put("decidedAt", decision.decidedAt().toString());
-        call(() -> calls.post("/internal/mail-center-requests/{requestId}/decision", body, requestId));
+        call(() -> calls.postToEvery("/internal/mail-center-requests/{requestId}/decision", body, requestId));
     }
 
     private static void call(Runnable call) {

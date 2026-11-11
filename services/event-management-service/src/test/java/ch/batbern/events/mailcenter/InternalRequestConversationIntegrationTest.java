@@ -204,6 +204,21 @@ class InternalRequestConversationIntegrationTest extends AbstractIntegrationTest
     }
 
     @Test
+    @DisplayName("sweep: a WITHDRAWN filing (CUMS rolled back after the open) closes the conversation as the system")
+    void withdrawn_closesConversation() throws Exception {
+        openMerge();
+
+        mockMvc.perform(post("/internal/mail-center-requests/{id}/decision", MERGE)
+                        .contentType(MediaType.APPLICATION_JSON).content("""
+                                {"kind": "MERGE", "status": "WITHDRAWN", "decidedBy": "system:mail-center-request",
+                                 "decidedAt": "%s"}""".formatted(Instant.now())))
+                .andExpect(status().isNoContent());
+
+        assertThat(conversation("merge_request_id", MERGE)).containsEntry("status", "DONE")
+                .containsEntry("updated_by", "system:mail-center-request");
+    }
+
+    @Test
     @DisplayName("a decision for a request without a conversation changes nothing")
     void decision_withoutConversation_isIgnored() throws Exception {
         decide("LOGO", LOGO, Instant.now()).andExpect(status().isNoContent());

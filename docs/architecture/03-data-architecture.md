@@ -169,7 +169,7 @@ links, speaking history and so on) were dropped, not migrated. The role is grant
 - Cognito sync: the Cognito triggers read and write `user_profiles`; see
   [06b-user-lifecycle-sync.md](./06b-user-lifecycle-sync.md).
 - Deleting or merging a user: merge is orchestrated by CUMS and logged in EMS `user_merge_log`
-  (#1183). A cascade of user deletion across all services with an audit log (not verified
+  (#1183) and, for the partner rows, PCS `partner_user_merge_log` (V12, Epic 17 sweep). A cascade of user deletion across all services with an audit log (not verified
   2026-11-04).
 
 **Caching:** Caffeine caches `companySearch` and `userSearch` in CUMS, 15-minute TTL
@@ -188,7 +188,8 @@ derived: every user with the PARTNER role whose `company_id` is the partner's co
 (`PartnerContactService`).
 
 **Related:** `partner_notes` (organizer notes), `partner_meetings` with `partner_meeting_rsvps`,
-`topic_suggestions` with `topic_votes`. Partner analytics (attendance of a partner's employees)
+`topic_suggestions` with `topic_votes`, `partner_user_merge_log` (one row per profile merge that
+moved a PCS username: source, target, who and how, the moved row ids per column; V12). Partner analytics (attendance of a partner's employees)
 are computed on request from EMS registrations; nothing is stored in PCS.
 
 ### Event

@@ -1197,7 +1197,8 @@ Measured on production 2026-11-07: 257 / 24 / 22 pairs for the three rules, 24 w
 - **What moves in partner-coordination** (`UserReferenceService`, since Epic 17 entry 7b): who suggested
   a topic (`topic_suggestions.suggested_by`), who wrote a partner note (`partner_notes.author_username`),
   who created a partner meeting (`partner_meetings.created_by`). No unique key, so no collision and no
-  blocker; no log of its own. Before 7b these rows kept the merged-away username; a read-only production
+  blocker. Since the Epic 17 sweep a merge that moved rows writes one `partner_user_merge_log` row (PCS
+  V12) with the moved ids per column; a repeat that moves nothing writes none. Before 7b these rows kept the merged-away username; a read-only production
   count on 2026-11-11 found none naming a former merge source (0 of 43, 0 of 2, 0 of 2).
 - **Collisions**: same session, same event (arrivals, proposals, thanks) → the source row goes. Two
   registrations for one event → the better one stays (attended, confirmed, registered, waitlist, cancelled;
@@ -1205,7 +1206,9 @@ Measured on production 2026-11-07: 257 / 24 / 22 pairs for the three rules, 24 w
 - **Refused**: both lead a different talk at the same event (409 `MERGE_NOT_ALLOWED` with reason
   `BLOCKED`, or `MERGE_BLOCKED` if it arises between preview and merge); the organizer removes one first.
 - **Undo** is by hand, from `user_merge_log` (event-management, V144): the moved row keys per column, every
-  removed row in full, and the deleted source profile with its roles and addresses.
+  removed row in full, and the deleted source profile with its roles and addresses. The partner-coordination
+  part from `partner_user_merge_log` (V12): set the three columns back to the source username for the ids
+  listed under `moved`.
 - **Requests (E, #1237)**: the mail to the old address is the ownership proof in D; without it a human
   decides. An approved request merges **without carrying any of the source's addresses**
   (`UserMergeService.merge(..., carryAddresses = false)`): an address nobody proved must not become a

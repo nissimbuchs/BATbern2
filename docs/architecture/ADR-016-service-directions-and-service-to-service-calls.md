@@ -71,11 +71,13 @@ measured how they call each other on develop `e7f76baf`:
   contract (8b).
 - A contract call fails while its implementer is down. Where the call is part of the action, the
   action fails with it (as before 2026-11): filing a merge or logo request answers 502 and stores
-  nothing; a profile merge answers 502 and keeps the source profile (holders that already merged
+  nothing (a filing that rolls back after the open, or whose open timed out, tells the contract
+  `WITHDRAWN`, Epic 17 sweep); a profile merge answers 502 and keeps the source profile (holders that already merged
   are idempotent, so repeating the merge completes it). A primary-address change stands and a
   holder that missed it is logged as a WARN. Where it reports an action already committed, the action stands and the failure is
   logged as an ERROR and counted: a Mail Center request decision (`mailcenter.request_contract.failures`;
-  the conversation then stays open until an organizer closes it) and a calendar reply
+  the conversation then stays open until an organizer closes it; every implementer is told, also after
+  one failed) and a calendar reply
   (`forwarding.calendar_reply_contract.failures`; the RSVP is then not recorded, inbound processing
   goes on). Accepted by the owner 2026-11-11
   for CUMS and EMS, which are almost never down.

@@ -12,6 +12,7 @@ import ch.batbern.companyuser.repository.CompanyLogoRequestRepository;
 import ch.batbern.companyuser.repository.CompanyRepository;
 import ch.batbern.companyuser.repository.LogoRepository;
 import ch.batbern.companyuser.repository.UserRepository;
+import ch.batbern.companyuser.service.CompanyLogoRequestService;
 import ch.batbern.shared.test.mail.SesRecorder;
 import ch.batbern.shared.test.AbstractIntegrationTest;
 import ch.batbern.shared.test.contract.ContractServer;
@@ -31,6 +32,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.mock.http.client.MockClientHttpRequest;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.test.web.client.ExpectedCount;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
@@ -39,11 +45,13 @@ import java.net.ConnectException;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.springframework.http.HttpMethod.POST;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -90,6 +98,10 @@ class CompanyLogoRequestIntegrationTest extends AbstractIntegrationTest {
     private HttpMailCenterRequestContract mailCenterContract;
     @Autowired
     private JdbcTemplate jdbc;
+    @Autowired
+    private CompanyLogoRequestService requestService;
+    @Autowired
+    private PlatformTransactionManager transactionManager;
 
     private ContractServer mailCenter;
     /** The id of the request filed first by {@link #createOk()}; the decision is expected for it. */
@@ -267,6 +279,35 @@ class CompanyLogoRequestIntegrationTest extends AbstractIntegrationTest {
         assertThat(requestRepository.count()).isZero();
         assertThat(logoRepository.findByUploadId("up-1").orElseThrow().getStatus()).isEqualTo(LogoStatus.CONFIRMED);
         mailCenter.verify();
+    }
+
+    @Test
+    @DisplayName("sweep: a later failure rolls the filing back after the open: nothing stored, the conversation is WITHDRAWN")
+    void request_rolledBackAfterOpen_withdrawsConversation() {
+        expectOpened();
+        StringBuilder withdrawn = new StringBuilder();
+        mailCenter.expect(POST, MailCenterContract.DECIDED)
+                .andExpect(r -> withdrawn.append(((MockClientHttpRequest) r).getBodyAsString()))
+                .respondWithStatus(HttpStatus.NO_CONTENT);
+
+        SecurityContextHolder.getContext().setAuthentication(UsernamePasswordAuthenticationToken.authenticated(
+                new org.springframework.security.core.userdetails.User("anna.muster", "",
+                        List.of(new SimpleGrantedAuthority("ROLE_ATTENDEE"))),
+                null, List.of(new SimpleGrantedAuthority("ROLE_ATTENDEE"))));
+        try {
+            assertThatThrownBy(() -> new TransactionTemplate(transactionManager).executeWithoutResult(tx -> {
+                requestService.request("up-1", null);
+                throw new IllegalStateException("simulated later failure");
+            })).hasMessageContaining("simulated later failure");
+        } finally {
+            SecurityContextHolder.clearContext();
+        }
+
+        mailCenter.verify();
+        assertThat(requestRepository.count()).isZero();
+        assertThat((String) JsonPath.read(withdrawn.toString(), "$.kind")).isEqualTo("LOGO");
+        assertThat((String) JsonPath.read(withdrawn.toString(), "$.status")).isEqualTo("WITHDRAWN");
+        assertThat((String) JsonPath.read(withdrawn.toString(), "$.decidedBy")).isEqualTo("system:mail-center-request");
     }
 
     // ---------------------------------------------------------------- organizers decide

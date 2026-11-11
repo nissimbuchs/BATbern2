@@ -38,12 +38,13 @@ class HttpMailCenterRequestContractTest {
     private static final UUID REQUEST = UUID.fromString("2f6d8c1a-5b7e-4c3d-9a0f-1e2d3c4b5a69");
     private static final String IMPLEMENTER = "http://implementer:8080";
 
+    private RestTemplate restTemplate;
     private ContractServer implementer;
     private HttpMailCenterRequestContract contract;
 
     @BeforeEach
     void setUp() {
-        RestTemplate restTemplate = new RestTemplateBuilder().build();
+        restTemplate = new RestTemplateBuilder().build();
         implementer = ContractServer.bindTo(restTemplate, MailCenterContract.CUMS_INTERNAL);
         contract = new HttpMailCenterRequestContract(restTemplate, List.of(IMPLEMENTER));
     }
@@ -113,6 +114,27 @@ class HttpMailCenterRequestContractTest {
 
         assertThatThrownBy(() -> contract.opened(new Opened(Kind.MERGE, REQUEST, "A", "a@example.com", "S", null)))
                 .isInstanceOf(MailCenterCallFailedException.class);
+        implementer.verify();
+    }
+
+    @Test
+    void should_tellEveryImplementer_theDecision_whenTheFirstIsDown() {
+        String second = "http://second-implementer:8080";
+        HttpMailCenterRequestContract two = new HttpMailCenterRequestContract(restTemplate,
+                List.of(IMPLEMENTER, second));
+        implementer.expect(POST, DECIDED).atHost("implementer").respondWith(request -> {
+            throw new ConnectException("Connection refused");
+        });
+        implementer.expect(POST, DECIDED).atHost("second-implementer")
+                .andExpect(r -> assertThat(body(r)).contains("\"status\":\"WITHDRAWN\"",
+                        "\"decidedBy\":\"system:mail-center-request\""))
+                .respondWithStatus(HttpStatus.NO_CONTENT);
+
+        assertThatThrownBy(() -> two.decided(REQUEST, new Decided(Kind.MERGE, "WITHDRAWN",
+                "system:mail-center-request", Instant.now())))
+                .isInstanceOf(MailCenterCallFailedException.class)
+                .hasMessageContaining(IMPLEMENTER)
+                .hasMessageNotContaining(second);
         implementer.verify();
     }
 

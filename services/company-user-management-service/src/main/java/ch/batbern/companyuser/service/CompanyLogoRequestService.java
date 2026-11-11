@@ -45,7 +45,6 @@ public class CompanyLogoRequestService {
     private final LogoRepository logoRepository;
     private final GenericLogoService logoService;
     private final CompanyService companyService;
-    private final MailCenterRequestContract mailCenter;
     private final MailCenterRequestDecisions mailCenterDecisions;
     private final CompanyLogoRequestEmailService emailService;
     private final SecurityContextHelper securityContext;
@@ -56,7 +55,9 @@ public class CompanyLogoRequestService {
 
     /**
      * The caller asks for a new logo of their company; the Mail Center request contract opens the
-     * conversation within this transaction, so a request is never stored without it.
+     * conversation within this transaction, so a request is never stored without it. Should this
+     * transaction still roll back after the open, the conversation is withdrawn
+     * ({@link MailCenterRequestDecisions#open}).
      */
     @Transactional
     public Details request(String logoUploadId, String note) {
@@ -90,8 +91,9 @@ public class CompanyLogoRequestService {
                 .build());
 
         String name = fullName(caller);
-        mailCenter.opened(new MailCenterRequestContract.Opened(MailCenterRequestContract.Kind.LOGO, saved.getId(),
-                name, caller.getEmail(), "Neues Logo für " + displayName(company) + ": " + name, trimmedNote));
+        mailCenterDecisions.open(new MailCenterRequestContract.Opened(MailCenterRequestContract.Kind.LOGO,
+                saved.getId(), name, caller.getEmail(), "Neues Logo für " + displayName(company) + ": " + name,
+                trimmedNote));
         log.info("COMPANY_LOGO_REQUESTED id={} requester={} company={}", saved.getId(), caller.getUsername(),
                 companyName);
         return new Details(saved, caller, company);

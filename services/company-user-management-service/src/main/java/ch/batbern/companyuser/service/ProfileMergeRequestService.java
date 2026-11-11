@@ -38,7 +38,6 @@ public class ProfileMergeRequestService {
     private final ProfileMergeRequestRepository requests;
     private final UserRepository userRepository;
     private final UserMergeService mergeService;
-    private final MailCenterRequestContract mailCenter;
     private final MailCenterRequestDecisions mailCenterDecisions;
     private final ProfileMergeRequestEmailService emailService;
     private final SecurityContextHelper securityContext;
@@ -48,7 +47,9 @@ public class ProfileMergeRequestService {
 
     /**
      * The caller asks to merge one of their candidates; the Mail Center request contract opens the
-     * conversation within this transaction, so a request is never stored without it.
+     * conversation within this transaction, so a request is never stored without it. Should this
+     * transaction still roll back after the open, the conversation is withdrawn
+     * ({@link MailCenterRequestDecisions#open}).
      */
     @Transactional
     public ProfileMergeRequest request(UUID candidateId, String note) {
@@ -74,8 +75,8 @@ public class ProfileMergeRequestService {
                 .build());
         User caller = pair.caller();
         String name = (nullToEmpty(caller.getFirstName()) + " " + nullToEmpty(caller.getLastName())).trim();
-        mailCenter.opened(new MailCenterRequestContract.Opened(MailCenterRequestContract.Kind.MERGE, saved.getId(),
-                name, caller.getEmail(), "Profil zusammenführen: " + name, trimmedNote));
+        mailCenterDecisions.open(new MailCenterRequestContract.Opened(MailCenterRequestContract.Kind.MERGE,
+                saved.getId(), name, caller.getEmail(), "Profil zusammenführen: " + name, trimmedNote));
         log.info("PROFILE_MERGE_REQUESTED id={} requester={} source={}", saved.getId(), requester, source);
         return saved;
     }

@@ -20,7 +20,8 @@ import java.util.UUID;
  * Event-management implements the Mail Center request contract that company-user-management owns
  * (ADR-016 decision 4, Epic 17 entry 7; spec {@code docs/api/internal/cums-internal.openapi.yml}):
  * CUMS opens the conversation of a profile merge request (#1237) or a company logo request (#1246)
- * while it files the request, and tells the decision once it is committed. Both calls are
+ * while it files the request, and tells the decision once it is committed, or {@code WITHDRAWN} when
+ * the filing rolled back after the conversation was opened (closed the same way). Both calls are
  * idempotent. {@code /internal/**} is VPC only: the API gateway does not route it and denies it. A
  * forwarded JWT is optional and changes nothing; the conversation records the decider CUMS sends.
  * Approving and declining stay in company-user-management.
@@ -53,7 +54,8 @@ public class InternalRequestConversationController {
             @Size(max = 500) String note) {
     }
 
-    public enum Status { APPROVED, DECLINED }
+    /** APPROVED or DECLINED by an organizer; WITHDRAWN when the filing rolled back after the open (sweep). */
+    public enum Status { APPROVED, DECLINED, WITHDRAWN }
 
     public record Decided(
             @NotNull RequestConversations.Kind kind,

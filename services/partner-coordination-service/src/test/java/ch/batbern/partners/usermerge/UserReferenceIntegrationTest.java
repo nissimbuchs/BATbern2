@@ -9,6 +9,8 @@ import ch.batbern.partners.domain.PartnershipLevel;
 import ch.batbern.partners.repository.PartnerMeetingRepository;
 import ch.batbern.partners.repository.PartnerRepository;
 import ch.batbern.shared.test.AbstractIntegrationTest;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -21,7 +23,9 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -54,6 +58,8 @@ class UserReferenceIntegrationTest extends AbstractIntegrationTest {
     private PartnerRepository partnerRepository;
     @Autowired
     private PartnerMeetingRepository meetingRepository;
+    @Autowired
+    private ObjectMapper objectMapper;
 
     @BeforeEach
     void seed() {
@@ -76,6 +82,7 @@ class UserReferenceIntegrationTest extends AbstractIntegrationTest {
 
     @AfterEach
     void cleanUp() {
+        jdbc.update("DELETE FROM partner_user_merge_log WHERE source_username IN (?, ?)", SOURCE, "merge7b.nobody");
         jdbc.update("DELETE FROM topic_suggestions WHERE suggested_by IN (?, ?, ?)", SOURCE, TARGET, OTHER);
         jdbc.update("DELETE FROM partner_meetings WHERE created_by IN (?, ?, ?)", SOURCE, TARGET, OTHER);
         partnerRepository.findByCompanyName(COMPANY).ifPresent(partnerRepository::delete);
@@ -139,6 +146,50 @@ class UserReferenceIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.moved['partner_notes.author_username']").value(0))
                 .andExpect(jsonPath("$.moved['partner_meetings.created_by']").value(0));
         assertThat(count("SELECT count(*) FROM topic_suggestions WHERE suggested_by = ?", TARGET)).isEqualTo(2);
+    }
+
+    @Test
+    @DisplayName("sweep: a merge that moves rows writes one merge log row with the moved ids; a repeat writes none")
+    void merge_writesOneLogRow_withTheMovedIds() throws Exception {
+        List<String> topics = jdbc.queryForList("SELECT id::text FROM topic_suggestions WHERE suggested_by = ?",
+                String.class, SOURCE);
+        String note = jdbc.queryForObject("SELECT id::text FROM partner_notes WHERE author_username = ?",
+                String.class, SOURCE);
+        String meeting = jdbc.queryForObject("SELECT id::text FROM partner_meetings WHERE created_by = ?",
+                String.class, SOURCE);
+
+        mockMvc.perform(post("/internal/user-references/merge").contentType(MediaType.APPLICATION_JSON)
+                .content(mergeBody())).andExpect(status().isOk());
+        mockMvc.perform(post("/internal/user-references/merge").contentType(MediaType.APPLICATION_JSON)
+                .content(mergeBody())).andExpect(status().isOk());
+
+        List<Map<String, Object>> rows = jdbc.queryForList("SELECT target_username, performed_by, trigger,"
+                + " moved::text AS moved, performed_at FROM partner_user_merge_log WHERE source_username = ?", SOURCE);
+        assertThat(rows).hasSize(1);
+        Map<String, Object> row = rows.get(0);
+        assertThat(row).containsEntry("target_username", TARGET).containsEntry("performed_by", "organizer.alice")
+                .containsEntry("trigger", "ORGANIZER");
+        assertThat(row.get("performed_at")).isNotNull();
+        JsonNode moved = objectMapper.readTree((String) row.get("moved"));
+        assertThat(ids(moved.path("topic_suggestions.suggested_by"))).containsExactlyInAnyOrderElementsOf(topics);
+        assertThat(ids(moved.path("partner_notes.author_username"))).containsExactly(note);
+        assertThat(ids(moved.path("partner_meetings.created_by"))).containsExactly(meeting);
+    }
+
+    @Test
+    @DisplayName("sweep: a merge of a person without partner rows writes no merge log row")
+    void merge_nothingHeld_writesNoLogRow() throws Exception {
+        mockMvc.perform(post("/internal/user-references/merge").contentType(MediaType.APPLICATION_JSON)
+                .content(mergeBody().replace(SOURCE, "merge7b.nobody"))).andExpect(status().isOk());
+
+        assertThat(count("SELECT count(*) FROM partner_user_merge_log WHERE source_username = ?", "merge7b.nobody"))
+                .isZero();
+    }
+
+    private static List<String> ids(JsonNode array) {
+        List<String> ids = new ArrayList<>();
+        array.forEach(n -> ids.add(n.asText()));
+        return ids;
     }
 
     @Test

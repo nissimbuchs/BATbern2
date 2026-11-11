@@ -10,6 +10,7 @@ import ch.batbern.companyuser.domain.User;
 import ch.batbern.companyuser.domain.UserAdditionalEmail;
 import ch.batbern.companyuser.repository.ProfileMergeRequestRepository;
 import ch.batbern.companyuser.repository.UserRepository;
+import ch.batbern.companyuser.service.ProfileMergeRequestService;
 import ch.batbern.shared.test.mail.SesRecorder;
 import ch.batbern.shared.test.AbstractIntegrationTest;
 import ch.batbern.shared.test.contract.ContractServer;
@@ -31,19 +32,29 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.mock.http.client.MockClientHttpRequest;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
 import org.springframework.test.web.client.ExpectedCount;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.net.ConnectException;
+import java.net.SocketTimeoutException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static ch.batbern.companyuser.client.UserReferenceHolders.HOLDER_A;
 import static ch.batbern.companyuser.client.UserReferenceHolders.HOLDER_B;
 import static org.springframework.http.HttpMethod.GET;
@@ -94,6 +105,10 @@ class ProfileMergeRequestIntegrationTest extends AbstractIntegrationTest {
     private JdbcTemplate jdbc;
     @Autowired
     private MeterRegistry meterRegistry;
+    @Autowired
+    private ProfileMergeRequestService requestService;
+    @Autowired
+    private PlatformTransactionManager transactionManager;
 
     private ContractServer mailCenter;
     private ContractServer holders;
@@ -290,6 +305,76 @@ class ProfileMergeRequestIntegrationTest extends AbstractIntegrationTest {
         mailCenter.verify();
     }
 
+    @Test
+    @DisplayName("sweep: the filing's commit fails after the open: nothing stored, the conversation is WITHDRAWN")
+    void request_commitFailsAfterOpen_withdrawsConversation() {
+        expectOpened();
+        StringBuilder withdrawn = new StringBuilder();
+        mailCenter.expect(POST, MailCenterContract.DECIDED)
+                .andExpect(r -> withdrawn.append(r.getURI().getPath()).append(' ')
+                        .append(((MockClientHttpRequest) r).getBodyAsString()))
+                .respondWithStatus(HttpStatus.NO_CONTENT);
+        UUID[] id = new UUID[1];
+
+        assertThatThrownBy(() -> asRequester(() -> new TransactionTemplate(transactionManager).executeWithoutResult(tx -> {
+            id[0] = requestService.request(guest.getId(), null).getId();
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void beforeCommit(boolean readOnly) {
+                    throw new IllegalStateException("simulated commit failure");
+                }
+            });
+        }))).hasMessageContaining("simulated commit failure");
+
+        mailCenter.verify();
+        assertThat(requestRepository.findAll()).isEmpty();
+        assertThat(withdrawn.toString()).startsWith("/internal/mail-center-requests/" + id[0] + "/decision ");
+        String body = withdrawn.substring(withdrawn.indexOf(" ") + 1);
+        assertThat((String) JsonPath.read(body, "$.kind")).isEqualTo("MERGE");
+        assertThat((String) JsonPath.read(body, "$.status")).isEqualTo("WITHDRAWN");
+        assertThat((String) JsonPath.read(body, "$.decidedBy")).isEqualTo("system:mail-center-request");
+    }
+
+    @Test
+    @DisplayName("sweep: the open times out (the Mail Center may still commit it): 502, nothing stored, WITHDRAWN sent")
+    void request_openTimesOut_withdrawsConversation() throws Exception {
+        mailCenter.expect(POST, MailCenterContract.OPENED).respondWith(r -> {
+            throw new SocketTimeoutException("Read timed out");
+        });
+        mailCenter.expect(POST, MailCenterContract.DECIDED)
+                .andExpect(r -> assertThat(((MockClientHttpRequest) r).getBodyAsString())
+                        .contains("\"status\":\"WITHDRAWN\"", "\"decidedBy\":\"system:mail-center-request\""))
+                .respondWithStatus(HttpStatus.NO_CONTENT);
+
+        mockMvc.perform(post("/api/v1/users/me/profile-claims/merge-requests").with(requester())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"candidateId\":\"" + guest.getId() + "\"}"))
+                .andExpect(status().isBadGateway())
+                .andExpect(jsonPath("$.errorCode").value("MERGE_REQUEST_NOT_DELIVERED"));
+
+        mailCenter.verify();
+        assertThat(requestRepository.findAll()).isEmpty();
+    }
+
+    @Test
+    @DisplayName("sweep: a withdrawal the Mail Center does not take is logged and counted")
+    void request_rolledBack_withdrawalFails_isCounted() {
+        expectOpened();
+        mailCenter.expect(POST, MailCenterContract.DECIDED).respondWith(r -> {
+            throw new ConnectException("Connection refused");
+        });
+        double failuresBefore = failures();
+
+        asRequester(() -> new TransactionTemplate(transactionManager).executeWithoutResult(tx -> {
+            requestService.request(guest.getId(), null);
+            tx.setRollbackOnly();
+        }));
+
+        mailCenter.verify();
+        assertThat(requestRepository.findAll()).isEmpty();
+        assertThat(failures()).isEqualTo(failuresBefore + 1);
+    }
+
     // ---------------------------------------------------------------- the organizers decide
 
     @Test
@@ -422,6 +507,19 @@ class ProfileMergeRequestIntegrationTest extends AbstractIntegrationTest {
     private double failures() {
         Counter counter = meterRegistry.find("mailcenter.request_contract.failures").counter();
         return counter == null ? 0 : counter.count();
+    }
+
+    /** Runs {@code action} as the requester, outside MockMvc (the test owns the filing's transaction). */
+    private static void asRequester(Runnable action) {
+        SecurityContextHolder.getContext().setAuthentication(UsernamePasswordAuthenticationToken.authenticated(
+                new org.springframework.security.core.userdetails.User("anna.muster.2", "",
+                        List.of(new SimpleGrantedAuthority("ROLE_ATTENDEE"))),
+                null, List.of(new SimpleGrantedAuthority("ROLE_ATTENDEE"))));
+        try {
+            action.run();
+        } finally {
+            SecurityContextHolder.clearContext();
+        }
     }
 
     private static RequestPostProcessor requester() {

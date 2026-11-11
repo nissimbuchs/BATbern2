@@ -312,7 +312,11 @@ paths:
         logged as an ERROR and counted (`mailcenter.request_contract.failures`); it does not undo
         the decision. The implementer marks the conversation DONE with `decidedBy` as the last
         editor, unless the requester wrote after `decidedAt` (the conversation then stays OPEN for
-        that answer). A request without a conversation is ignored. Idempotent.
+        that answer). A request without a conversation is ignored. Idempotent. Every implementer is
+        told, also after one failed (one ERROR per failed decision). Status `WITHDRAWN` (sweep,
+        2026-11): the filing transaction rolled back after the conversation was opened, so no
+        request exists; `decidedBy` is then `system:mail-center-request` and the conversation is
+        closed the same way.
       parameters:
         - name: requestId
           in: path
@@ -1048,12 +1052,15 @@ components:
           enum: [MERGE, LOGO]
         status:
           type: string
-          enum: [APPROVED, DECLINED]
+          enum: [APPROVED, DECLINED, WITHDRAWN]
+          description: |
+            APPROVED or DECLINED by an organizer; WITHDRAWN when the filing rolled back after the
+            conversation was opened (no request exists in CUMS).
         decidedBy:
           type: string
           minLength: 1
           maxLength: 100
-          description: Username of the organizer who decided.
+          description: Username of the organizer who decided, or `system:mail-center-request` for WITHDRAWN.
         decidedAt:
           type: string
           format: date-time

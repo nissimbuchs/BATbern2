@@ -713,8 +713,17 @@ amended 2026-11-11: no polling): `POST /internal/mail-center-requests` (opened) 
   answer fails the filing: 502 `MERGE_REQUEST_NOT_DELIVERED` or `LOGO_REQUEST_NOT_DELIVERED`, the row
   is rolled back, the person can send again. The body carries kind, request id, the requester's name
   and primary address, the subject (the German text organizers see) and the note.
+- **Withdrawn** (Epic 17 sweep). `MailCenterRequestDecisions.open` makes the open call and, once it went
+  out (answered, or timed out, where EMS may still commit it), registers on the filing transaction:
+  should it roll back (commit failure, a later failure, the timeout itself), the contract is told the
+  decision `WITHDRAWN` by `system:mail-center-request`, and EMS closes the conversation of a request
+  that does not exist. A refused or unreachable open sends nothing. A failed withdrawal is an ERROR and
+  counted like a decision. No outbox, no retry. Residual: when EMS commits a timed-out open only after
+  the withdrawal arrived, the withdrawal found nothing to close and the conversation stays open; an
+  organizer sets it Done.
 - **Decided.** After the decision commits (`MailCenterRequestDecisions`, a transaction
-  synchronization), with kind, status, `decidedBy` and `decidedAt`. A failure is logged as ERROR
+  synchronization), with kind, status, `decidedBy` and `decidedAt`, to every implementer, also after
+  one failed (`ContractCalls.postToEvery`). A failure is logged as ERROR
   (`MAIL_CENTER_REQUEST decision not delivered`) and counted (`mailcenter.request_contract.failures`);
   it does not undo the decision, and the conversation stays OPEN until an organizer sets it Done.
   Deciding in the Mail Center sets the conversation DONE itself (`PATCH /conversations/{key}`).
@@ -787,7 +796,9 @@ sequenceDiagram
   holders have moved their rows, and running the merge again finishes it.
 - **What PCS moves** (`UserReferenceService.COLUMNS`): `topic_suggestions.suggested_by`,
   `partner_notes.author_username`, `partner_meetings.created_by`. None is part of a unique key, so
-  PCS never conflicts or blocks; it writes no log of its own.
+  PCS never conflicts or blocks. A merge that moved rows writes one `partner_user_merge_log` row
+  (PCS V12, Epic 17 sweep): source, target, `performed_by`, `trigger` and `moved`
+  (`{"table.column": [ids]}`); a merge that moved nothing (a repeat) writes none.
 - **What EMS moves** (`UserMergeService.MOVES`): registrations, session_users, speaker_arrivals,
   session_qna_notification, live_timing_presence, session_proposals, organizer_thanks,
   notifications, session_qna_post, session_content_history, newsletter_subscribers. Audit columns
@@ -795,7 +806,8 @@ sequenceDiagram
 - **Registration rank** when both have one for the same event: attended, confirmed, registered,
   waitlist, then no_show and cancelled (equal); the target's wins a tie.
 - `user_merge_log` (EMS V144) holds what is needed to undo a merge by hand: `moved`,
-  `removed_rows`, `source_profile`, `trigger` (`ORGANIZER` or `SELF_CLAIM`).
+  `removed_rows`, `source_profile`, `trigger` (`ORGANIZER` or `SELF_CLAIM`); the PCS part is in
+  `partner_user_merge_log` (PCS V12).
 
 ## Role Management Service
 
