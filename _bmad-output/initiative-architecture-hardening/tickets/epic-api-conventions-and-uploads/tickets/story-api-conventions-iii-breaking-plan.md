@@ -3,14 +3,14 @@ title: 'API conventions III (breaking), part 1: EMS verb and namespace paths'
 type: 'refactor'
 ticket: '10b'
 created: '2026-11-11'
-status: 'in-progress'
+status: 'built'
 baseline_revision: 'd1d85bdcff25ed7d1ced36a124eee6cfc7d383cc'
 route: 'full'
 route_source: 'auto'
 risk: 'high'
-review: ''
-review_source: ''
-lenses_ran: []
+review: 'quick'
+review_source: 'pinned'
+lenses_ran: ['quick']
 review_loop_iteration: 0
 context:
   - '{project-root}/docs/architecture/coding-standards.md'
@@ -101,6 +101,17 @@ context:
 
 ## Review Triage Log
 
+Pass 1 (quick lens), 2026-11-11: 2 high, 2 medium, 2 low, 0 false.
+
+| # | Finding | Verdict | Route | Evidence / action |
+|---|---------|---------|-------|-------------------|
+| 1 | shared-kernel `ResponseConformanceTest` L124-129 and `ContractServerTest` L424 still use the removed `GET /events/registrations` (live specs) | high | patch | Suite would go red; move the examples to a path that exists, fix the javadocs and the coding-standards sentence. |
+| 2 | Frontend notification queries lost the username in their cache key; no cache clear on sign-out → a second organizer in the same tab sees the first one's inbox | high | patch | Clear the query cache on sign-out (class fix) and key per user. |
+| 3 | Four removed operations accept any 4xx instead of a pinned status | medium | patch | Pin the measured status (400) in the ITs and Bruno 11. |
+| 4 | A failed session-import chunk discards the totals of chunks already committed | medium | patch | Accumulate per chunk, report partial results with the error. |
+| 5 | Session mode check lives in the controller; plan and spec say the service | low | patch | Move it to the service. |
+| 6 | `markedCount` counts already-read notifications and overwrites their `readAt` | low | patch | Count and change only unread ones. |
+
 ## Design Notes
 
 **Architecture note.**
@@ -141,3 +152,5 @@ context:
 
 **Manual checks:**
 - After `timeout 600 make dev-native-restart-service SERVICE=event-management` and the same for `api-gateway`: walk the ACs. Through the gateway, the old paths answer their pinned statuses, and `/dev/mails` gets nothing new.
+
+Final verification 2026-11-11 after the review patches (bade6e7c): shared-kernel, CUMS, EMS, PCS and gateway suites green; lint:api (88), lint:api-internal, check:api-types, type-check, check:s2s-client-urls, Vitest 5878 passed, test ratchet and API paths green. Local dev before the patches: Bruno 21/21 collections, Playwright 24 passed. After deploy: old paths at their pinned status, anonymous GET /event-types and /public/event-photos 200, access-control DAST.
