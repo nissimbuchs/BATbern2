@@ -1,174 +1,108 @@
 /**
- * useAiPrompts Hook Tests
- *
- * Coverage for:
- * - useAiPrompts: fetch list of AI prompts
- * - useUpdateAiPrompt: mutation + cache invalidation
- * - useResetAiPrompt: mutation + cache invalidation
+ * useAiPrompts hooks on the MSW harness (Story 4.10b, Epic 17 test fidelity): the real
+ * aiPromptService and apiClient run against a prompt store the handlers keep, so each mutation is
+ * checked by its effect: read, mutate, read again.
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { renderHook, waitFor, act } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { HttpResponse } from 'msw';
 import React from 'react';
-
-vi.mock('@/services/aiPromptService', () => ({
-  listAiPrompts: vi.fn(),
-  updateAiPrompt: vi.fn(),
-  resetAiPrompt: vi.fn(),
-}));
-
-import { listAiPrompts, updateAiPrompt, resetAiPrompt } from '@/services/aiPromptService';
+import { api } from '@/test/msw/api';
+import type { AiPromptResponse } from '@/services/aiPromptService';
 import { useAiPrompts, useUpdateAiPrompt, useResetAiPrompt } from './useAiPrompts';
 
-const mockList = vi.mocked(listAiPrompts);
-const mockUpdate = vi.mocked(updateAiPrompt);
-const mockReset = vi.mocked(resetAiPrompt);
+const DEFAULT_TEXT = 'Write a German event description';
 
-const createQC = () =>
-  new QueryClient({
+let store: AiPromptResponse[];
+let qc: QueryClient;
+
+const wrapper = ({ children }: { children: React.ReactNode }) =>
+  React.createElement(QueryClientProvider, { client: qc }, children);
+
+beforeEach(() => {
+  qc = new QueryClient({
     defaultOptions: { queries: { retry: false, gcTime: 0 }, mutations: { retry: false } },
   });
+  store = [
+    {
+      promptKey: 'event_description',
+      displayName: 'Event Description',
+      promptText: 'Schreibe über Brünnimann’s Vortrag',
+      defaultText: DEFAULT_TEXT,
+      updatedAt: '2026-11-10T08:00:00Z',
+    },
+  ];
+  api.on('listAiPrompts', () => store);
+  api.on('updateAiPrompt', ({ params, body }) => {
+    store = store.map((p) =>
+      p.promptKey === params.promptKey ? { ...p, promptText: body?.promptText ?? p.promptText } : p
+    );
+    return store[0];
+  });
+  api.on('deleteAiPromptOverride', ({ params }) => {
+    store = store.map((p) =>
+      p.promptKey === params.promptKey ? { ...p, promptText: p.defaultText } : p
+    );
+    return store[0];
+  });
+});
 
-const wrapper =
-  (qc: QueryClient) =>
-  ({ children }: { children: React.ReactNode }) =>
-    React.createElement(QueryClientProvider, { client: qc }, children);
-
-const MOCK_PROMPTS = [
-  { promptKey: 'event_description', promptText: 'Describe the event', isDefault: false },
-  { promptKey: 'theme_image', promptText: 'Generate image', isDefault: true },
-];
+const renderWith = <T>(useMutationHook: () => T) =>
+  renderHook(() => ({ prompts: useAiPrompts(), mutation: useMutationHook() }), { wrapper });
 
 describe('useAiPrompts', () => {
-  let qc: QueryClient;
+  it('should_loadThePrompts', async () => {
+    const { result } = renderHook(() => useAiPrompts(), { wrapper });
 
-  beforeEach(() => {
-    qc = createQC();
-    vi.clearAllMocks();
+    await waitFor(() => expect(result.current.data?.[0].promptKey).toBe('event_description'));
   });
 
-  it('should fetch and return AI prompts list', async () => {
-    mockList.mockResolvedValue(MOCK_PROMPTS as never);
+  it('should_setIsError_when_listFails', async () => {
+    api.on('listAiPrompts', () => HttpResponse.json({ message: 'boom' }, { status: 500 }));
 
-    const { result } = renderHook(() => useAiPrompts(), { wrapper: wrapper(qc) });
-
-    await waitFor(() => expect(result.current.isLoading).toBe(false));
-
-    expect(mockList).toHaveBeenCalled();
-    expect(result.current.data).toEqual(MOCK_PROMPTS);
-  });
-
-  it('should set isError on failure', async () => {
-    mockList.mockRejectedValue(new Error('Forbidden'));
-
-    const { result } = renderHook(() => useAiPrompts(), { wrapper: wrapper(qc) });
+    const { result } = renderHook(() => useAiPrompts(), { wrapper });
 
     await waitFor(() => expect(result.current.isError).toBe(true));
-  });
-
-  it('should start in loading state', () => {
-    mockList.mockImplementation(() => new Promise(() => {}));
-
-    const { result } = renderHook(() => useAiPrompts(), { wrapper: wrapper(qc) });
-
-    expect(result.current.isLoading).toBe(true);
   });
 });
 
 describe('useUpdateAiPrompt', () => {
-  let qc: QueryClient;
+  it('should_showTheNewText_when_updated', async () => {
+    const { result } = renderWith(useUpdateAiPrompt);
+    await waitFor(() => expect(result.current.prompts.data).toHaveLength(1));
 
-  beforeEach(() => {
-    qc = createQC();
-    vi.clearAllMocks();
-  });
-
-  it('should call updateAiPrompt with promptKey and promptText', async () => {
-    mockUpdate.mockResolvedValue(MOCK_PROMPTS[0] as never);
-
-    const { result } = renderHook(() => useUpdateAiPrompt(), { wrapper: wrapper(qc) });
-
-    await act(async () => {
-      await result.current.mutateAsync({
+    await act(() =>
+      result.current.mutation.mutateAsync({
         promptKey: 'event_description',
-        promptText: 'New prompt text',
-      });
-    });
+        promptText: 'Neu: O’Neill',
+      })
+    );
 
-    expect(mockUpdate).toHaveBeenCalledWith('event_description', 'New prompt text');
-    await waitFor(() => expect(result.current.isSuccess).toBe(true));
-  });
-
-  it('should invalidate aiPrompts cache on success', async () => {
-    mockUpdate.mockResolvedValue(MOCK_PROMPTS[0] as never);
-    const invalidateSpy = vi.spyOn(qc, 'invalidateQueries');
-
-    const { result } = renderHook(() => useUpdateAiPrompt(), { wrapper: wrapper(qc) });
-
-    await act(async () => {
-      await result.current.mutateAsync({ promptKey: 'event_description', promptText: 'text' });
-    });
-
-    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['aiPrompts'] });
-  });
-
-  it('should set isError on failure', async () => {
-    mockUpdate.mockRejectedValue(new Error('Not found'));
-
-    const { result } = renderHook(() => useUpdateAiPrompt(), { wrapper: wrapper(qc) });
-
-    await act(async () => {
-      await result.current.mutateAsync({ promptKey: 'missing', promptText: 'x' }).catch(() => {});
-    });
-
-    await waitFor(() => expect(result.current.isError).toBe(true));
+    await waitFor(() => expect(result.current.prompts.data?.[0].promptText).toBe('Neu: O’Neill'));
   });
 });
 
 describe('useResetAiPrompt', () => {
-  let qc: QueryClient;
+  it('should_showTheDefaultText_when_overrideDeleted', async () => {
+    const { result } = renderWith(useResetAiPrompt);
+    await waitFor(() => expect(result.current.prompts.data).toHaveLength(1));
 
-  beforeEach(() => {
-    qc = createQC();
-    vi.clearAllMocks();
+    await act(() => result.current.mutation.mutateAsync('event_description'));
+
+    await waitFor(() => expect(result.current.prompts.data?.[0].promptText).toBe(DEFAULT_TEXT));
+    expect(api.calls('deleteAiPromptOverride')[0].params.promptKey).toBe('event_description');
   });
 
-  it('should call resetAiPrompt with the promptKey', async () => {
-    mockReset.mockResolvedValue(MOCK_PROMPTS[1] as never);
-
-    const { result } = renderHook(() => useResetAiPrompt(), { wrapper: wrapper(qc) });
-
-    await act(async () => {
-      await result.current.mutateAsync('theme_image');
-    });
-
-    expect(mockReset).toHaveBeenCalledWith('theme_image');
-    await waitFor(() => expect(result.current.isSuccess).toBe(true));
-  });
-
-  it('should invalidate aiPrompts cache on success', async () => {
-    mockReset.mockResolvedValue(MOCK_PROMPTS[1] as never);
-    const invalidateSpy = vi.spyOn(qc, 'invalidateQueries');
-
-    const { result } = renderHook(() => useResetAiPrompt(), { wrapper: wrapper(qc) });
+  it('should_setIsError_when_deleteFails', async () => {
+    api.on('deleteAiPromptOverride', () => HttpResponse.json({ message: 'boom' }, { status: 500 }));
+    const { result } = renderWith(useResetAiPrompt);
 
     await act(async () => {
-      await result.current.mutateAsync('theme_image');
+      await result.current.mutation.mutateAsync('event_description').catch(() => undefined);
     });
 
-    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['aiPrompts'] });
-  });
-
-  it('should set isError on failure', async () => {
-    mockReset.mockRejectedValue(new Error('Server error'));
-
-    const { result } = renderHook(() => useResetAiPrompt(), { wrapper: wrapper(qc) });
-
-    await act(async () => {
-      await result.current.mutateAsync('event_description').catch(() => {});
-    });
-
-    await waitFor(() => expect(result.current.isError).toBe(true));
+    await waitFor(() => expect(result.current.mutation.isError).toBe(true));
   });
 });

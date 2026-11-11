@@ -22,6 +22,7 @@ import static org.mockito.Mockito.when;
 class ResponseConformanceTest {
 
     private static final String SPEC = "docs/api/companies-api.openapi.yml";
+    private static final String FIXTURES = "shared-kernel/src/test/resources/contract/";
     private static final String VALID = """
             {"name":"swissit","displayName":"Swiss IT","isVerified":true,
              "createdAt":"2026-01-01T10:00:00Z","updatedAt":"2026-01-01T10:00:00Z","createdBy":"lead.organizer"}""";
@@ -121,13 +122,16 @@ class ResponseConformanceTest {
 
     @Test
     void should_pickTheMostSpecificTemplate_when_severalSpecsMatch() {
-        OpenApiContract core = OpenApiContract.load("docs/api/events-core-api.openapi.yml");
-        OpenApiContract analytics = OpenApiContract.load("docs/api/event-analytics-api.openapi.yml");
-        ResponseConformance gate = new ResponseConformance(List.of(core, analytics), Set.of(), tmp, false);
+        // Synthetic pair: since Story 4.10b no docs/api spec has a literal that another spec's
+        // template also matches (the /events literals left the {eventCode} namespace), so the
+        // rule is shown on two fixture specs: /events/archive in one, /events/{eventCode} in the other.
+        OpenApiContract template = OpenApiContract.load(FIXTURES + "template-spec.openapi.yml");
+        OpenApiContract literal = OpenApiContract.load(FIXTURES + "literal-spec.openapi.yml");
+        ResponseConformance gate = new ResponseConformance(List.of(template, literal), Set.of(), tmp, false);
 
-        assertThat(core.operationVariables("GET", "/api/v1/events/attendance-summary")).isPresent();
-        assertThat(gate.owner("GET", "/api/v1/events/attendance-summary")).contains(analytics);
-        assertThat(gate.owner("GET", "/api/v1/events/BATbern57")).contains(core);
+        assertThat(template.operationVariables("GET", "/api/v1/events/archive")).isPresent();
+        assertThat(gate.owner("GET", "/api/v1/events/archive")).contains(literal);
+        assertThat(gate.owner("GET", "/api/v1/events/BATbern57")).contains(template);
     }
 
     @Test

@@ -9,10 +9,10 @@
 import type React from 'react';
 import type { ComposeAudience, MailComposeRequest } from '@/services/mailMessageService';
 
-export type ComposerLocale = MailComposeRequest['locale'];
+export type ComposerLocale = NonNullable<MailComposeRequest['locale']>;
 export type SpeakerReminderType = NonNullable<MailComposeRequest['speakerReminderType']>;
 export type VenueRole = NonNullable<MailComposeRequest['venueRecipients']>[number];
-export type ContentSource = MailComposeRequest['contentSource'];
+export type ContentSource = NonNullable<MailComposeRequest['contentSource']>;
 export type SpeakerStatus = NonNullable<MailComposeRequest['speakerStatuses']>[number];
 export type RegistrantStatus = NonNullable<MailComposeRequest['registrantStatuses']>[number];
 

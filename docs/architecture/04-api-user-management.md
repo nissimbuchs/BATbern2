@@ -70,26 +70,31 @@ responses:
     description: Internal server error
 ```
 
-#### Update Current User
+#### Update a User's Profile
 
 ```yaml
-PUT /api/v1/users/me
+PATCH /api/v1/users/{username}
 tags: [User Management]
-summary: Update current user profile
-operationId: updateCurrentUser
+summary: Partially update a user's profile
+operationId: patchUser
 description: |
-  Update the profile of the currently authenticated user.
+  Story 4.10: one endpoint for self-service and organizers (replaces `PATCH /users/me` and
+  `PUT /users/{username}`; ADR-013 §1, PATCH is the default mutation). Only the fields present
+  change.
 
-  **Validation Rules**:
-  - Email must be valid format and unique
-  - Names: 2-100 characters
-  - Bio: max 2000 characters
+  **Authorization**: the user themself (`@userOwnership.isCurrentUser(#username)`: the JWT's
+  `custom:username`, or, without that claim, the user whose `cognito_user_id` is the token
+  subject) or ORGANIZER/ADMIN for any user; anyone else 403.
 
-  **Database Only**: User updates stored in PostgreSQL only (per ADR-001, NO Cognito sync)
+  **Consent**: `termsAccepted` (Story 12.11, write-once) is accepted only on the caller's own
+  profile; for another user it is 403.
 
-  **Events Published**: UserUpdatedEvent (in-process domain event)
+  **Database Only**: stored in PostgreSQL only (ADR-001, no Cognito sync)
 
-  **Cache Invalidation**: All user caches cleared on update
+  **Events Published**: UserUpdatedEvent, actor = the caller's username (the user themself or
+  the organizer)
+
+  **Cache Invalidation**: user search caches cleared on update
 
 security:
   - BearerAuth: []
@@ -100,21 +105,15 @@ requestBody:
       schema:
         $ref: '#/components/schemas/UpdateUserRequest'
 responses:
-  '200':
-    description: User updated successfully
-    content:
-      application/json:
-        schema:
-          $ref: '#/components/schemas/UserResponse'
-  '400':
-    description: Bad request - validation error
-  '401':
-    description: Unauthorized
-  '409':
-    description: Conflict - email already exists
-  '500':
-    description: Internal server error
+  '200': UserResponse
+  '400': validation error
+  '403': not the user and not an organizer/admin, or consent for another user
+  '404': user not found
+  '409': EMAIL_DUPLICATE, the new email is already another user's address (user_profiles_email_key / uq_user_profiles_email_lower)
 ```
+
+`GET /api/v1/users/me` stays the self read (the login bootstrap): the frontend takes the
+username for the write from it, never from the token.
 
 #### List Users (Admin/Organizer)
 
@@ -630,125 +629,14 @@ responses:
 - Updates logo status to CONFIRMED
 - See ADR-002 for endpoint details
 
-**Association: Associate with User** - `PATCH /api/v1/users/me`
-- Include `profilePictureFileId` in request body
-- User service associates logo with user profile
-- Copies file from temp to final S3 location
-- Updates logo status to ASSOCIATED
-- Returns updated user with `profilePictureUrl`
-
-#### Update User Profile (with Profile Picture)
-
-**Note**: This is an extension of the standard user update endpoint to support profile picture association.
-
-```yaml
-PATCH /api/v1/users/me
-tags: [User Management, Profile Picture]
-summary: Update user profile (including profile picture)
-operationId: updateCurrentUser
-description: |
-  Update user profile fields including profile picture association.
-
-  **Profile Picture (ADR-002)**:
-  - Set profilePictureFileId to uploadId from Generic File Upload Service
-  - User service will associate logo, copy to final location, update profilePictureUrl
-  - To remove: set profilePictureFileId to null
-
-  **Fields**:
-  - firstName, lastName: User's name (ADR-004: single source of truth)
-  - bio: Biography (ADR-004: single source of truth for Speaker, Attendee, etc.)
-  - profilePictureFileId: Logo uploadId from ADR-002 upload flow
-  - termsAccepted: ToS/Privacy consent (Story 12.11) — WRITE-ONCE: `true` with no
-    consent on record stamps terms_accepted_at with the SERVER clock; repeat `true`
-    is a no-op; `false`/absent never changes or revokes recorded consent. GET
-    /users/me returns `termsAcceptedAt` unconditionally (null = no consent → the
-    frontend onboarding gate redirects to /profile?onboarding=1). See
-    06b-user-lifecycle-sync.md "Pattern C".
-
-security:
-  - BearerAuth: []
-requestBody:
-  required: true
-  content:
-    application/json:
-      schema:
-        type: object
-        properties:
-          firstName:
-            type: string
-            minLength: 2
-            maxLength: 100
-          lastName:
-            type: string
-            minLength: 2
-            maxLength: 100
-          bio:
-            type: string
-            maxLength: 2000
-          profilePictureFileId:
-            type: string
-            description: Logo uploadId from Generic File Upload Service (ADR-002)
-            example: abc123-def456
-          termsAccepted:
-            type: boolean
-            description: Write-once ToS/Privacy consent (Story 12.11) — server clock; never revocable via API
-            example: true
-      example:
-        firstName: Anna
-        lastName: Müller
-        bio: Passionate about distributed systems and cloud architecture.
-        profilePictureFileId: abc123-def456
-responses:
-  '200':
-    description: User updated successfully, profile picture associated
-    content:
-      application/json:
-        schema:
-          $ref: '#/components/schemas/UserResponse'
-        example:
-          username: anna.mueller
-          email: anna.mueller@example.com
-          firstName: Anna
-          lastName: Müller
-          bio: Passionate about distributed systems and cloud architecture.
-          profilePictureUrl: https://cdn.batbern.ch/logos/2025/users/anna.mueller/logo-abc123.jpg
-          profilePictureS3Key: logos/2025/users/anna.mueller/logo-abc123.jpg
-          profilePictureFileId: abc123-def456
-  '400':
-    description: Bad request - validation error or invalid uploadId
-  '401':
-    description: Unauthorized
-  '404':
-    description: Logo not found or not in CONFIRMED status
-  '500':
-    description: Internal server error
-```
-
-#### Remove Profile Picture
-
-```yaml
-DELETE /api/v1/users/me/picture
-tags: [Profile Picture]
-summary: Remove profile picture
-operationId: removeProfilePicture
-description: |
-  Remove user's profile picture (reverts to default avatar).
-
-  **Action**:
-  - Removes profilePictureUrl, profilePictureS3Key, profilePictureFileId from user
-  - Marks associated logo as deleted (soft delete)
-  - S3 file cleanup handled by scheduled job
-
-security:
-  - BearerAuth: []
-responses:
-  '204':
-    description: Profile picture removed successfully
-  '401':
-    description: Unauthorized
-  '500':
-    description: Internal server error
-```
+**Profile picture (Story 4.10).** One set for the user themself and for organizers:
+`POST /api/v1/users/{username}/picture/presigned-url` → PUT to S3 →
+`POST /api/v1/users/{username}/picture/confirm` (associates the picture), and
+`DELETE /api/v1/users/{username}/picture`. Authorization: the user themself
+(`@userOwnership.isCurrentUser(#username)`) or ORGANIZER. The `/users/me/picture*` twins are
+gone; `/users/me/...` now matches the `{username}` templates with the username `me`, which no
+user has (`chk_username_format`): 403 for a non-organizer, 400 for an organizer, nothing
+changes. The full contract is `docs/api/users-api.openapi.yml`.
 
 ### GDPR Compliance
 
@@ -1267,7 +1155,7 @@ ADR-013 §3 offers `fields` only when a caller needs it). An unknown query param
 - Token claims: `sub` (Cognito user ID), `email`, `custom:role` (roles from database)
 
 **Authorization Levels**:
-- Public (authenticated): GET /users/me, PUT /users/me, preferences, settings
+- Self (the user themself, or ORGANIZER/ADMIN): GET /users/me (self only), PATCH /users/{username}, /users/{username}/picture* (pictures: self or ORGANIZER), /users/me/settings (self only)
 - ORGANIZER: GET /users (list all), GET /users/{id}, role management, DELETE /users (GDPR deletion)
 - Self-service: Users can delete their own account
 

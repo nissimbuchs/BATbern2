@@ -41,8 +41,9 @@ const NotificationsPage: React.FC = () => {
   const [hideRead, setHideRead] = useState(false);
 
   const { data, isLoading } = useNotifications(
-    { username: user?.username || '', status: hideRead ? 'UNREAD' : undefined },
-    { page: 1, limit: 50 }
+    { status: hideRead ? 'UNREAD' : undefined },
+    { page: 1, limit: 50 },
+    { enabled: !!user }
   );
 
   const markAsReadMutation = useMarkAsRead();
@@ -92,6 +93,7 @@ const NotificationsPage: React.FC = () => {
               startIcon={<DoneAllIcon />}
               onClick={handleMarkAllAsRead}
               disabled={batchMarkAsReadMutation.isPending}
+              data-testid="notifications-mark-all-read"
             >
               {t('notifications.markAllAsRead')} ({unreadIds.length})
             </Button>
@@ -132,6 +134,8 @@ const NotificationsPage: React.FC = () => {
                 <React.Fragment key={notification.id}>
                   {idx > 0 && <Divider component="li" />}
                   <ListItem
+                    data-testid={`notification-item-${notification.id}`}
+                    data-unread={isUnread ? 'true' : 'false'}
                     alignItems="flex-start"
                     sx={{
                       py: 1.5,
@@ -177,6 +181,7 @@ const NotificationsPage: React.FC = () => {
                             <Tooltip title={t('notifications.markAsRead')}>
                               <IconButton
                                 size="small"
+                                data-testid={`notification-mark-read-${notification.id}`}
                                 onClick={() => markAsReadMutation.mutateAsync(notification.id)}
                                 disabled={markAsReadMutation.isPending}
                               >
@@ -187,6 +192,7 @@ const NotificationsPage: React.FC = () => {
                           <Tooltip title={t('notifications.delete')}>
                             <IconButton
                               size="small"
+                              data-testid={`notification-delete-${notification.id}`}
                               onClick={() =>
                                 deleteNotificationMutation.mutateAsync(notification.id)
                               }

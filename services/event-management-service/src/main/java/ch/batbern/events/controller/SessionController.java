@@ -14,9 +14,8 @@ import ch.batbern.events.service.SessionService;
 import ch.batbern.events.service.StructuralSessionService;
 import ch.batbern.events.service.publishing.PublicSessionVisibilityService;
 import ch.batbern.events.sessions.api.generated.SessionsApi;
-import ch.batbern.events.sessions.dto.generated.BatchImportSessionRequest;
-import ch.batbern.events.sessions.dto.generated.BatchImportSessionResult;
 import ch.batbern.events.sessions.dto.generated.CreateSessionRequest;
+import ch.batbern.events.sessions.dto.generated.CreateSessionResponse;
 import ch.batbern.events.sessions.dto.generated.ListSessions200Response;
 import ch.batbern.events.sessions.dto.generated.PatchSessionRequest;
 import ch.batbern.events.sessions.dto.generated.SessionResponse;
@@ -195,15 +194,25 @@ public class SessionController implements SessionsApi {
     }
 
     /**
-     * AC10: Create a new session for an event.
+     * AC10 / Story 4.10b: create sessions of an event, one session or a historical import.
      * POST /api/v1/events/{eventCode}/sessions
+     *
+     * <p>Exactly one mode per request (as the participants create of Story 4.10c): the single
+     * session fields, or {@code imports}; {@link SessionService#isImport} checks it. None, both, or a
+     * single create without its four required fields answer 400. Single answers 201
+     * {@code {session}}, import 200 with counts and details.
      */
     @Override
     @CacheEvict(value = CacheConfig.EVENT_WITH_INCLUDES_CACHE, allEntries = true)
     @PreAuthorize("hasRole('ORGANIZER')")
-    public ResponseEntity<SessionResponse> createSession(
+    public ResponseEntity<CreateSessionResponse> createSession(
             String eventCode,
             CreateSessionRequest createSessionRequest) {
+
+        if (sessionService.isImport(createSessionRequest)) {
+            return ResponseEntity.ok(
+                    sessionBatchImportService.importSessions(eventCode, createSessionRequest.getImports()));
+        }
 
         // Find event by eventCode
         UUID eventId = eventRepository.findByEventCode(eventCode)
@@ -229,7 +238,7 @@ public class SessionController implements SessionsApi {
                 .endTime(toInstant(createSessionRequest.getEndTime()))
                 .room(createSessionRequest.getRoom())
                 .capacity(createSessionRequest.getCapacity())
-                .language(createSessionRequest.getLanguage())
+                .language(createSessionRequest.getLanguage() != null ? createSessionRequest.getLanguage() : "de")
                 .build();
 
         Session savedSession = sessionRepository.save(session);
@@ -237,7 +246,7 @@ public class SessionController implements SessionsApi {
         // Convert to SessionResponse with speakers (Story 1.15a.1b)
         SessionResponse response = sessionService.toSessionResponse(savedSession, eventCode);
 
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        return ResponseEntity.status(HttpStatus.CREATED).body(new CreateSessionResponse().session(response));
     }
 
     /**
@@ -338,23 +347,6 @@ public class SessionController implements SessionsApi {
         sessionRepository.deleteById(session.getId());
 
         return ResponseEntity.noContent().build();
-    }
-
-    /**
-     * Batch import sessions from legacy JSON (sessions.json).
-     * POST /api/v1/events/{eventCode}/sessions/batch-import
-     */
-    @Override
-    @CacheEvict(value = CacheConfig.EVENT_WITH_INCLUDES_CACHE, allEntries = true)
-    @PreAuthorize("hasRole('ORGANIZER')")
-    public ResponseEntity<BatchImportSessionResult> batchImportSessions(
-            String eventCode,
-            List<BatchImportSessionRequest> batchImportSessionRequest) {
-
-        BatchImportSessionResult result =
-                sessionBatchImportService.importSessions(eventCode, batchImportSessionRequest);
-
-        return ResponseEntity.ok(result);
     }
 
     /**

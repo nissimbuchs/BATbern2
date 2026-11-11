@@ -241,7 +241,6 @@
     },
     "newsletter": {
       "title": "Newsletter",
-      "subscribe": "Subscribe to newsletter",
       "description": "Receive monthly updates about BATbern events"
     },
     "privacy": {

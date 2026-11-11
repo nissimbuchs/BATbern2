@@ -1,0 +1,30 @@
+meta {
+  name: Mode error — no mode and stakeholders false answer 400
+  type: http
+  seq: 9
+}
+
+post {
+  url: {{baseUrl}}/events/{{participantsEventCode}}/participants
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+body:json {
+  {
+    "stakeholders": false
+  }
+}
+
+assert {
+  res.status: eq 400
+}
+
+docs {
+  Story 4.10c: stakeholders false is not a mode; the empty body is covered by the
+  EMS integration test.
+}

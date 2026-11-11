@@ -4,16 +4,21 @@ info:
   version: 1.0.0
   description: |
     Service-to-service operations of company-user-management under `/internal/**` (Story 17.0b2).
-    Callers: event-management (`UserApiClientImpl`), partner-coordination (`UserServiceClientImpl`)
-    and the API gateway (`GatewayUserStatusClient`).
+    Callers: event-management (`UserApiClientImpl`), partner-coordination (`UserServiceClientImpl`,
+    `CompanyServiceClientImpl`) and the API gateway (`GatewayUserStatusClient`).
 
     Not a public API: the API gateway does not route `/internal/**` and denies it explicitly; the
-    services reach it inside the VPC through Service Connect, without a JWT. The public tooling
+    services reach it inside the VPC through Service Connect. The JWT is optional (ADR-016 decision
+    3): a caller forwards the user's JWT when there is one (shared-kernel `S2sHeaders`) and never
+    has to. No operation here looks at the user's role; each authorizes by what it does, and a write
+    records who acted: the forwarded user's `custom:username`, else `system:<job>` with the job its
+    description names. The public tooling
     (frontend path check, type generation, API similarity, ZAP coverage, access-control probe,
     `lint:api`) does not read `docs/api/internal/`; `npm run lint:api-internal` lints it with the
     reduced ruleset `docs/api/internal/.spectral.yaml`.
 
-    The specs describe the endpoints as they are; Story 17.6 redesigns them. Paths are full paths
+    Epic 17 entry 6 (17.6 part A) moved the three machine-only writes of users-api here (provision,
+    profile patch, invitation credentials) and added the single company read. Paths are full paths
     (server `/`), so a path here is the path on the wire.
 servers:
   - url: /
@@ -27,7 +32,9 @@ paths:
       description: |
         Same `UserResponse` as the public users-api. `include` adds the related objects
         (`company`, `roles`, `settings`, comma-separated; Story 4.9 merged the former `preferences` into `settings`). The username is a path segment and
-        must be percent-encoded by the caller.
+        must be percent-encoded by the caller. Consumers: EMS, the API gateway, and PCS (the partner
+        ownership check, and `GET /api/v1/partners/me`, which reads the caller's company here by the
+        JWT's `custom:username` since 6b instead of the public `GET /api/v1/users/me`).
       parameters:
         - name: username
           in: path
@@ -270,6 +277,9 @@ paths:
         Used by event-management for anonymous event registration and speaker provisioning. A
         verified additional email resolves to its owner; an unverified one answers 409
         `EMAIL_LINKED_TO_ACCOUNT`.
+
+        Actor of a new user (`createdBy` of the `UserCreatedEvent`): the forwarded user's
+        `custom:username`, else `system:ems-get-or-create` (anonymous registration has no user).
       requestBody:
         required: true
         content:
@@ -357,4 +367,266 @@ paths:
                 error: Conflict
                 errorCode: EMAIL_LINKED_TO_ACCOUNT
                 message: This email is linked to an existing account, please sign in
+                severity: LOW
+
+  /internal/users/provision:
+    post:
+      operationId: provisionInternalUser
+      summary: Provision a speaker (Story 11.C.2)
+      description: |
+        EMS speaker workflow, CONTACTED to READY. Finds the user by e-mail (case-insensitive) or
+        creates one, grants SPEAKER, and creates the Cognito login silently (`AdminCreateUser` with
+        `MessageAction=SUPPRESS`, status `FORCE_CHANGE_PASSWORD`); the throwaway password is never
+        returned. Idempotent: a second call answers the same username with `created: false`.
+
+        Grants SPEAKER only: any other `role` answers 400, whoever calls. Without names, first and
+        last name are derived from the e-mail's local part. Unknown properties answer 400.
+
+        Actor: the forwarded user, else `system:ems-speaker-workflow` (`createdBy` of a new user).
+        Moved from the public `POST /api/v1/users/provision` (Epic 17 entry 6).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../users-api.openapi.yml#/components/schemas/ProvisionUserRequest'
+            examples:
+              speaker:
+                value:
+                  email: anna.meier@example.com
+                  firstName: Anna
+                  lastName: Meier
+                  role: SPEAKER
+              emailOnly:
+                value:
+                  email: anna.meier@example.com
+                  role: SPEAKER
+      responses:
+        '200':
+          description: The provisioned user, created now or already there
+          content:
+            application/json:
+              schema:
+                $ref: '../users-api.openapi.yml#/components/schemas/ProvisionUserResponse'
+              examples:
+                created:
+                  value:
+                    username: anna.meier
+                    created: true
+                alreadyExisted:
+                  value:
+                    username: anna.meier
+                    created: false
+        '400':
+          description: Invalid body, an unknown property, or a role other than SPEAKER
+          content:
+            application/json:
+              schema:
+                $ref: '../_shared.openapi.yml#/components/schemas/ErrorResponse'
+              example:
+                timestamp: '2026-11-10T10:00:00Z'
+                path: /internal/users/provision
+                status: 400
+                error: Bad Request
+                message: '/internal/users/provision grants the SPEAKER role only (got ORGANIZER)'
+                severity: LOW
+        '502':
+          description: Cognito failed; nothing was stored. The caller may retry (idempotent).
+          content:
+            application/json:
+              schema:
+                $ref: '../_shared.openapi.yml#/components/schemas/ErrorResponse'
+
+  /internal/users/{username}/profile:
+    patch:
+      operationId: patchInternalUserProfile
+      summary: Patch a user's bio and profile picture (Story 11.C.2)
+      description: |
+        EMS content submission: a speaker's CV text or portrait becomes the user's `bio` or
+        `profilePictureUrl` (one value per user, ADR-009). At least one of the two must be non-blank;
+        a missing or `null` field stays as it is. Unknown properties answer 400.
+
+        EMS checks before the call that a speaker submits only for themselves (the role check stays
+        on the EMS endpoint where the user entered); this operation does not look at the caller.
+
+        Actor: the forwarded user, else `system:ems-content-submission` (`updatedBy` of the
+        `UserUpdatedEvent`). Moved from the public `PATCH /api/v1/users/{username}/profile` (Epic 17
+        entry 6).
+      parameters:
+        - name: username
+          in: path
+          required: true
+          schema:
+            type: string
+          example: anna.meier
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../users-api.openapi.yml#/components/schemas/PatchUserProfileRequest'
+            examples:
+              bioOnly:
+                value:
+                  bio: Software architect
+              bioAndPicture:
+                value:
+                  bio: Software architect
+                  profilePictureUrl: https://cdn.batbern.ch/profile-pictures/2025/anna.meier/profile-1.jpg
+      responses:
+        '200':
+          description: The user after the patch
+          content:
+            application/json:
+              schema:
+                $ref: '../users-api.openapi.yml#/components/schemas/UserResponse'
+              examples:
+                patched:
+                  value:
+                    id: anna.meier
+                    hasCognitoAccount: true
+                    email: anna.meier@example.com
+                    firstName: Anna
+                    lastName: Meier
+                    bio: Software architect
+                    companyId: null
+                    roles: [SPEAKER]
+                    active: true
+                    createdAt: '2025-01-15T10:00:00Z'
+                    updatedAt: '2025-01-20T14:30:00Z'
+                    additionalEmails: []
+                    company: null
+                    lastLoginAt: null
+                    profilePictureUrl: null
+                    settings: null
+                    termsAcceptedAt: null
+        '400':
+          description: Both fields missing or blank, or an unknown property
+          content:
+            application/json:
+              schema:
+                $ref: '../_shared.openapi.yml#/components/schemas/ErrorResponse'
+        '404':
+          description: No user with this username
+          content:
+            application/json:
+              schema:
+                $ref: '../_shared.openapi.yml#/components/schemas/ErrorResponse'
+              example:
+                timestamp: '2026-11-10T10:00:00Z'
+                path: /internal/users/ghost.user/profile
+                status: 404
+                error: Not Found
+                message: 'User not found: ghost.user'
+                severity: LOW
+
+  /internal/users/{username}/issue-invitation-credentials:
+    post:
+      operationId: issueInternalInvitationCredentials
+      summary: Issue or skip the temporary password at invitation (Story 11.E.2)
+      description: |
+        EMS speaker workflow, READY to INVITED. A login in `FORCE_CHANGE_PASSWORD`,
+        `RESET_REQUIRED` or `UNCONFIRMED` gets a fresh temporary password (`FRESH_TEMP_PASSWORD`);
+        a `CONFIRMED` login keeps its password (`USE_EXISTING_PASSWORD`, `temporaryPassword: null`).
+        A missing login is created first. The password is in this answer only, never stored.
+        Idempotent: each fresh password replaces the previous one.
+
+        Actor: the forwarded user, else `system:ems-speaker-workflow` (logged). Moved from the
+        public `POST /api/v1/users/{username}/issue-invitation-credentials` (Epic 17 entry 6).
+      parameters:
+        - name: username
+          in: path
+          required: true
+          schema:
+            type: string
+          example: anna.meier
+      responses:
+        '200':
+          description: Credentials issued, or the existing password stays
+          content:
+            application/json:
+              schema:
+                $ref: '../users-api.openapi.yml#/components/schemas/InvitationCredentialsResponse'
+              examples:
+                freshTempPassword:
+                  value:
+                    temporaryPassword: 'Tk7!aB2@nx9pQ4#z'
+                    action: FRESH_TEMP_PASSWORD
+                useExistingPassword:
+                  value:
+                    temporaryPassword: null
+                    action: USE_EXISTING_PASSWORD
+        '404':
+          description: No user with this username
+          content:
+            application/json:
+              schema:
+                $ref: '../_shared.openapi.yml#/components/schemas/ErrorResponse'
+              example:
+                timestamp: '2026-11-10T10:00:00Z'
+                path: /internal/users/ghost.user/issue-invitation-credentials
+                status: 404
+                error: Not Found
+                message: 'User not found: ghost.user'
+                severity: LOW
+        '422':
+          description: The login is ARCHIVED, COMPROMISED or in an unknown state; an operator must act
+          content:
+            application/json:
+              schema:
+                $ref: '../_shared.openapi.yml#/components/schemas/ErrorResponse'
+        '502':
+          description: Cognito failed; the caller aborts the transition and may retry
+          content:
+            application/json:
+              schema:
+                $ref: '../_shared.openapi.yml#/components/schemas/ErrorResponse'
+
+  /internal/companies/{name}:
+    get:
+      operationId: getInternalCompany
+      summary: One company by name
+      description: |
+        The same `CompanyResponse` as the public `GET /api/v1/companies/{name}`, which stays public
+        for users (ADR-016 decision 2: services do not call the public API). Consumers: EMS
+        (speaker company display name, Epic 17 entry 6) and PCS (partner companies, 6b). The name is
+        a path segment and must be percent-encoded by the caller.
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+          example: swissitsolut
+      responses:
+        '200':
+          description: The company
+          content:
+            application/json:
+              schema:
+                $ref: '../companies-api.openapi.yml#/components/schemas/CompanyResponse'
+              examples:
+                company:
+                  value:
+                    name: swissitsolut
+                    displayName: Swiss IT Solutions AG
+                    industry: Technology
+                    website: https://swiss-it.ch
+                    description: Leading Swiss IT consulting firm
+                    isVerified: true
+                    createdAt: '2025-01-15T10:00:00Z'
+                    updatedAt: '2025-01-15T10:00:00Z'
+                    createdBy: john.doe
+        '404':
+          description: No company with this name
+          content:
+            application/json:
+              schema:
+                $ref: '../_shared.openapi.yml#/components/schemas/ErrorResponse'
+              example:
+                timestamp: '2026-11-10T10:00:00Z'
+                path: /internal/companies/ghost
+                status: 404
+                error: Not Found
+                message: 'Company not found: ghost'
                 severity: LOW

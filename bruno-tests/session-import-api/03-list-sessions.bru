@@ -1,0 +1,26 @@
+meta {
+  name: The imported sessions are there
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/events/{{sessionImportEventCode}}/sessions?limit=100
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+tests {
+  test("exactly the two imported titles", function() {
+    expect(res.getStatus()).to.equal(200);
+    const titles = res.getBody().data.map(s => s.title).sort();
+    expect(titles).to.eql([
+      "BRUNO-TEST Import: Brünnimann über Resilienz",
+      "BRUNO-TEST Import: O’Neill zu Plattformen"
+    ]);
+  });
+}

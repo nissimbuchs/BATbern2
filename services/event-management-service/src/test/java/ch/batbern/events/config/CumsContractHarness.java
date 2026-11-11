@@ -26,14 +26,14 @@ import static org.springframework.http.HttpMethod.GET;
 /**
  * CUMS behind the real {@code UserApiClientImpl} in every EMS integration test (Story 17.0b2): a
  * {@link ContractServer} on the shared {@code RestTemplate} that answers CUMS and validates every
- * request against its specs (the internal API {@code docs/api/internal/cums-internal.openapi.yml},
- * the public {@code users-api} and {@code companies-api}). It replaces the Mockito
- * {@code UserApiClient} of the former {@code TestUserApiClientConfig}.
+ * request against the CUMS internal spec {@code docs/api/internal/cums-internal.openapi.yml}, the
+ * only CUMS API EMS calls since Epic 17 entry 6. It replaces the Mockito {@code UserApiClient} of
+ * the former {@code TestUserApiClientConfig}.
  *
  * <p>Only requests to {@code user-service.base-url} reach it; every other call of the shared
- * {@code RestTemplate} (PCS) goes to the real request factory, as before. A missing JWT is not
- * checked here ({@code @WithMockUser} callers have none to forward); the client contract tests
- * prove the JWT handling.
+ * {@code RestTemplate} (PCS) goes to the real request factory, as before. The internal spec requires
+ * no JWT, so a {@code @WithMockUser} caller (no JWT to forward) passes; the client contract test
+ * proves that a JWT is forwarded when there is one.
  *
  * <p>Answers by default, the same data the Mockito default gave:
  * <ul>
@@ -44,11 +44,11 @@ import static org.springframework.http.HttpMethod.GET;
  *       {@link #usersWithRole(String, String...)} (no {@code company} filter) or
  *       {@link #usersOfCompany(String, String, String...)} (that role in that company only)</li>
  *   <li>{@code GET /internal/email-owners}: none, or those registered with {@link #emailOwners}</li>
- *   <li>{@code GET /api/v1/companies/{name}}: 404, so the client's display name falls back to the
+ *   <li>{@code GET /internal/companies/{name}}: 404, so the client's display name falls back to the
  *       slug, as the Mockito default ({@code null}) did</li>
  * </ul>
- * Every other operation (get-or-create, provision, profile patch, invitation credentials, the
- * company list) has no default: a test of such a flow registers its answer with
+ * Every other operation (get-or-create, provision, profile patch, invitation credentials) has no
+ * default: a test of such a flow registers its answer with
  * {@link #answer(HttpMethod, String, Function)} and reads what was sent with
  * {@link #calls(HttpMethod, String)}. An unregistered call, or a path no spec has, fails the test.
  *
@@ -72,17 +72,14 @@ import static org.springframework.http.HttpMethod.GET;
 public final class CumsContractHarness implements AutoCloseable {
 
     public static final String CUMS_INTERNAL = "docs/api/internal/cums-internal.openapi.yml";
-    public static final String USERS = "docs/api/users-api.openapi.yml";
-    public static final String COMPANIES = "docs/api/companies-api.openapi.yml";
 
     /** The operations a test can answer, besides the three internal reads with defaults. */
     private static final List<String> ANSWERABLE = List.of(
             "POST /internal/users/get-or-create",
-            "POST /api/v1/users/provision",
-            "PATCH /api/v1/users/{username}/profile",
-            "POST /api/v1/users/{username}/issue-invitation-credentials",
-            "GET /api/v1/companies",
-            "GET /api/v1/companies/{name}");
+            "POST /internal/users/provision",
+            "PATCH /internal/users/{username}/profile",
+            "POST /internal/users/{username}/issue-invitation-credentials",
+            "GET /internal/companies/{name}");
 
     /** CUMS usernames: lower-case first and last name, optional numeric suffix (DB check). */
     private static final String USERNAME = "^[a-z]+\\.[a-z]+(\\.[0-9]+)?$";
@@ -100,9 +97,8 @@ public final class CumsContractHarness implements AutoCloseable {
     public CumsContractHarness(RestTemplate restTemplate, String cumsBaseUrl, CacheManager cacheManager) {
         this.cacheManager = cacheManager;
         String cums = cumsBaseUrl + "/";
-        this.server = ContractServer.bindTo(restTemplate, CUMS_INTERNAL, USERS, COMPANIES)
-                .onlyFor(uri -> uri.toString().startsWith(cums))
-                .ignoringMissingAuthorization();
+        this.server = ContractServer.bindTo(restTemplate, CUMS_INTERNAL)
+                .onlyFor(uri -> uri.toString().startsWith(cums));
         for (String operation : ANSWERABLE) {
             String[] parts = operation.split(" ", 2);
             server.expect(HttpMethod.valueOf(parts[0]), parts[1]).times(ExpectedCount.manyTimes())
@@ -122,7 +118,7 @@ public final class CumsContractHarness implements AutoCloseable {
 
     /** Default answers, restored by {@link #reset()}. */
     private void defaults() {
-        answers.put("GET /api/v1/companies/{name}", call -> new Reply(HttpStatus.NOT_FOUND, null));
+        answers.put("GET /internal/companies/{name}", call -> new Reply(HttpStatus.NOT_FOUND, null));
     }
 
     /**
@@ -221,7 +217,7 @@ public final class CumsContractHarness implements AutoCloseable {
 
     /**
      * Answers one of the operations without a default, for example
-     * {@code answer(POST, "/api/v1/users/provision", call -> Reply.ok(...))}. The reply is
+     * {@code answer(POST, "/internal/users/provision", call -> Reply.ok(...))}. The reply is
      * checked against the spec.
      */
     public void answer(HttpMethod method, String pathTemplate, Function<Call, Reply> reply) {

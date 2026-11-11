@@ -1,11 +1,11 @@
 meta {
-  name: POST /events/types — no create endpoint by design
+  name: POST /event-types — no create endpoint by design
   type: http
   seq: 8
 }
 
 post {
-  url: {{baseUrl}}/events/types
+  url: {{baseUrl}}/event-types
   body: json
   auth: bearer
 }
@@ -36,7 +36,7 @@ tests {
 docs {
   PR 2a (plan §C): documents the API gap. Event types are a closed enum
   (FULL_DAY | AFTERNOON | EVENING) seeded by Flyway migration, not a
-  CRUD entity. There is no POST /events/types endpoint by design.
+  CRUD entity. There is no POST /event-types endpoint by design.
 
   This test is a contract assertion: if a future controller change
   inadvertently adds a POST handler, this fails and someone has to make

@@ -123,7 +123,7 @@ web-frontend/
 │   ├── locales/        # 10 locales: de, en, fr, it, rm, es, fi, nl, ja, gsw-BE
 │   └── icons/  assets/  manifest.webmanifest  offline.html  robots.txt
 ├── e2e/                # Playwright: organizer/, speaker/, partner/, auth/, workflows/, regression/, helpers/, fixtures/, *.spec.ts
-├── scripts/            # prerender.mjs, preview-prerender.mjs, check-api-types.sh, i18n/
+├── scripts/            # prerender.mjs, preview-prerender.mjs, check-*.ts gates, i18n/
 ├── vite.config.ts  playwright.config.ts  tailwind.config.js
 └── package.json
 ```

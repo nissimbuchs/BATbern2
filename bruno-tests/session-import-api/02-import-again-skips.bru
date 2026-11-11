@@ -1,0 +1,43 @@
+meta {
+  name: Importing the same sessions again skips them
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/events/{{sessionImportEventCode}}/sessions
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+body:json {
+  {
+    "imports": []
+  }
+}
+
+script:pre-request {
+  const bat = Number(bru.getVar("sessionImportEventNumber"));
+  req.setBody({
+    imports: [
+      { bat, title: "BRUNO-TEST Import: Brünnimann über Resilienz", abstract: "Synthetisch", referenten: [] },
+      { bat, title: "BRUNO-TEST Import: O’Neill zu Plattformen", abstract: "Synthetisch", referenten: [] }
+    ]
+  });
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("duplicates by (event, title) are skipped", function() {
+    const body = res.getBody();
+    expect(body.successfullyCreated).to.equal(0);
+    expect(body.skipped).to.equal(2);
+  });
+}

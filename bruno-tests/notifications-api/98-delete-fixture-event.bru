@@ -1,0 +1,26 @@
+meta {
+  name: Cleanup — delete the notifications fixture event
+  type: http
+  seq: 98
+}
+
+delete {
+  url: {{baseUrl}}/events/{{notifEventCode}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+tests {
+  test("fixture event deleted or left to the number sweep", function() {
+    expect([204, 404, 409]).to.include(res.getStatus());
+  });
+}
+
+docs {
+  Story 4.10b: deleting the event removes its sessions (cascade, V2) and its notifications
+  (#1068). 99 sweeps the reserved number range regardless.
+}

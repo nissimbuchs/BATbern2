@@ -25,7 +25,7 @@ import java.util.List;
  * - GET  /api/v1/ai-prompts              - list all 3 prompts
  * - GET  /api/v1/ai-prompts/{key}        - get single prompt
  * - PUT  /api/v1/ai-prompts/{key}        - update prompt text
- * - POST /api/v1/ai-prompts/{key}/reset  - reset to default
+ * - DELETE /api/v1/ai-prompts/{key}/override - remove the override, back to the default text (4.10b)
  */
 @RestController
 @RequestMapping("/api/v1")
@@ -69,8 +69,8 @@ public class AiPromptController implements AiPromptsApi {
     }
 
     @Override
-    public ResponseEntity<AiPromptResponse> resetAiPrompt(String promptKey) {
-        log.debug("POST /api/v1/ai-prompts/{}/reset", promptKey);
+    public ResponseEntity<AiPromptResponse> deleteAiPromptOverride(String promptKey) {
+        log.debug("DELETE /api/v1/ai-prompts/{}/override", promptKey);
         try {
             return ResponseEntity.ok(aiPromptMapper.toResponse(aiPromptService.reset(promptKey)));
         } catch (EntityNotFoundException e) {

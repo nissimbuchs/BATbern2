@@ -1,8 +1,16 @@
 # users-api collection
 
 Bruno API contract tests for `UserController` (CUMS) — covers GET-me, GDPR
-delete, provisioning, role updates, search/list filters, profile picture
-uploads, and the Story-10.32 additional-emails sub-flow.
+delete, role updates, search/list filters, profile picture uploads, and the
+Story-10.32 additional-emails sub-flow.
+
+Provisioning, the profile patch and invitation credentials are not public any
+more (Epic 17 entry 6, ADR-016): EMS calls them on CUMS `/internal/**`, which
+the gateway denies, so Bruno cannot reach them. Their former files 22-26 are
+deleted; the CUMS integration tests (`UserProvisioningAndPatchIntegrationTest`,
+`S2sProviderContractIntegrationTest`) and the EMS client contract test cover
+them, and the speaker-pool collection still drives provisioning end to end
+through the public promote-to-READY endpoint.
 
 ## Audit pass (PR 5, plan §D.3 + F1 + F2 + F3 + F4)
 
@@ -74,7 +82,7 @@ every future test 15 with 422.
 | 0 | `00-pretest-cleanup-users` | Sweep stale `bruno.test.*` users + cascades. |
 | 0 | `00a-pretest-cleanup-additional-emails` | Sweep stale `bruno-test-*` additional emails. |
 | 1 | `01-get-current-user` | Captures `currentUserEmail` + `authUserEmail`. |
-| … | (existing 02-26 tests, unchanged in seq) | … |
+| … | (existing 02-21 and 27-29 tests, unchanged in seq) | … |
 | 98 | `99-posttest-cleanup-users` | Final sweep of `bruno.test.*` users. |
 | 99 | `99a-posttest-cleanup-additional-emails` | Final sweep of `bruno-test-*` additional emails. |
 

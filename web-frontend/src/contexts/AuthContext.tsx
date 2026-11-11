@@ -4,7 +4,16 @@
  * Provides shared auth state across all components using React Context
  */
 
-import React, { createContext, useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+  useRef,
+} from 'react';
+import { QueryClientContext } from '@tanstack/react-query';
 import { authService } from '@services/auth/authService';
 import { useOptionalConfig } from './useConfig';
 import {
@@ -527,6 +536,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }, []);
 
+  // Optional: AuthProvider also renders without a QueryClientProvider (some tests).
+  const queryClient = useContext(QueryClientContext);
+
   /**
    * Sign out user
    */
@@ -536,6 +548,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     try {
       await authService.signOut();
+      // Every cached query belongs to the user who signs out (inbox, counts, profile, ...): the
+      // next user in this tab must not see it (Story 4.10b). One place covers every query.
+      queryClient?.clear();
       setState({
         isAuthenticated: false,
         isLoading: false,
@@ -555,7 +570,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         },
       }));
     }
-  }, []);
+  }, [queryClient]);
 
   /**
    * Sign up new user

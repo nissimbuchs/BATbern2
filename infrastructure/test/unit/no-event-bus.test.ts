@@ -99,4 +99,19 @@ describe('No event bus (Story 17.2 part B)', () => {
       '"events:PutRule"'
     );
   });
+
+  // Story 17.2 part A: the two stub services are gone too (ADR-014). Their stacks were deleted
+  // in production on 2026-11-10 after no stack imported their exports; this keeps them out.
+  test('should_haveNoStubServiceStack_when_stagingAppBuilt', () => {
+    expect(
+      Object.keys(templates).filter((name) => /SpeakerCoordination|AttendeeExperience/.test(name))
+    ).toEqual([]);
+  });
+
+  test('should_declareNoStubServiceRepository_when_stagingAppBuilt', () => {
+    const offenders = Object.entries(templates)
+      .filter(([, body]) => /speaker-coordination|attendee-experience/.test(body))
+      .map(([name]) => name);
+    expect(offenders).toEqual([]);
+  });
 });

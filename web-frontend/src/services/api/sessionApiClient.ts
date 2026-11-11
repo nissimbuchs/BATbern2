@@ -7,7 +7,7 @@
  */
 
 import apiClient from '@/services/api/apiClient';
-import { AxiosError } from 'axios';
+import { isAxiosError } from 'axios';
 import type { Session, SessionMaterial, SessionSpeaker } from '@/types/event.types';
 import type { FileUploadPresignedUrl, FileUploadTarget } from '@/types/fileUpload.types';
 import type { components as EventSessionsComponents } from '@/types/generated/event-sessions-api.types';
@@ -83,7 +83,7 @@ class SessionApiClient {
     } catch (error) {
       // Re-throw AxiosError to preserve 401/403 auth errors
       if (
-        error instanceof AxiosError &&
+        isAxiosError(error) &&
         (error.response?.status === 401 || error.response?.status === 403)
       ) {
         throw error;
@@ -117,7 +117,7 @@ class SessionApiClient {
     } catch (error) {
       // Re-throw AxiosError to preserve auth errors
       if (
-        error instanceof AxiosError &&
+        isAxiosError(error) &&
         (error.response?.status === 401 || error.response?.status === 403)
       ) {
         throw error;
@@ -168,7 +168,7 @@ class SessionApiClient {
       );
     } catch (error) {
       if (
-        error instanceof AxiosError &&
+        isAxiosError(error) &&
         (error.response?.status === 401 || error.response?.status === 403)
       ) {
         throw error;
@@ -190,7 +190,7 @@ class SessionApiClient {
       await apiClient.delete(`${SESSION_API_PATH}/${eventCode}/sessions/${sessionSlug}`);
     } catch (error) {
       if (
-        error instanceof AxiosError &&
+        isAxiosError(error) &&
         (error.response?.status === 401 || error.response?.status === 403)
       ) {
         throw error;
@@ -222,7 +222,7 @@ class SessionApiClient {
       return response.data;
     } catch (error) {
       if (
-        error instanceof AxiosError &&
+        isAxiosError(error) &&
         (error.response?.status === 401 || error.response?.status === 403)
       ) {
         throw error;
@@ -247,7 +247,7 @@ class SessionApiClient {
       );
     } catch (error) {
       if (
-        error instanceof AxiosError &&
+        isAxiosError(error) &&
         (error.response?.status === 401 || error.response?.status === 403)
       ) {
         throw error;
@@ -273,7 +273,7 @@ class SessionApiClient {
    * Transform Axios errors into user-friendly error messages
    */
   private transformError(error: unknown): Error {
-    if (error instanceof AxiosError) {
+    if (isAxiosError(error)) {
       // Extract error message from response
       const message =
         error.response?.data?.message ||

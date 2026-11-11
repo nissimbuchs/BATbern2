@@ -1,7 +1,6 @@
 package ch.batbern.companyuser.controller;
 
 import ch.batbern.shared.utils.LoggingUtils;
-import ch.batbern.companyuser.api.generated.DomainIntegrationApi;
 import ch.batbern.companyuser.api.generated.GdprComplianceApi;
 import ch.batbern.companyuser.api.generated.ProfilePictureApi;
 import ch.batbern.companyuser.api.generated.RoleManagementApi;
@@ -19,15 +18,11 @@ import ch.batbern.companyuser.dto.generated.AdditionalEmailVerificationCheckResp
 import ch.batbern.companyuser.dto.generated.AdditionalEmailVerificationConfirmResponse;
 import ch.batbern.companyuser.dto.generated.ConfirmAdditionalEmailVerificationRequest;
 import ch.batbern.companyuser.dto.generated.CreateUserRequest;
-import ch.batbern.companyuser.dto.generated.InvitationCredentialsResponse;
 import ch.batbern.companyuser.dto.generated.PaginatedUserResponse;
-import ch.batbern.companyuser.dto.generated.PatchUserProfileRequest;
 import ch.batbern.companyuser.dto.generated.PresignedUploadUrl;
 import ch.batbern.companyuser.dto.generated.ProfilePictureUploadConfirmRequest;
 import ch.batbern.companyuser.dto.generated.ProfilePictureUploadConfirmResponse;
 import ch.batbern.companyuser.dto.generated.ProfilePictureUploadRequest;
-import ch.batbern.companyuser.dto.generated.ProvisionUserRequest;
-import ch.batbern.companyuser.dto.generated.ProvisionUserResponse;
 import ch.batbern.companyuser.dto.generated.UpdateAdditionalEmailRequest;
 import ch.batbern.companyuser.dto.generated.UpdateUserRequest;
 import ch.batbern.companyuser.dto.generated.UpdateUserRolesRequest;
@@ -36,9 +31,7 @@ import ch.batbern.companyuser.dto.generated.UserRolesResponse;
 import ch.batbern.companyuser.dto.generated.UserSearchResponse;
 import ch.batbern.companyuser.dto.generated.UserReconciliationReport;
 import ch.batbern.companyuser.dto.generated.UserSyncStatus;
-import ch.batbern.companyuser.exception.UserValidationException;
 import ch.batbern.companyuser.repository.UserRepository;
-import ch.batbern.companyuser.security.SecurityContextHelper;
 import ch.batbern.companyuser.service.ImageUrlFetcher;
 import ch.batbern.companyuser.service.PrimaryEmailService;
 import ch.batbern.companyuser.service.ProfilePictureService;
@@ -55,13 +48,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.net.URI;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * REST Controller for User Management.
@@ -69,17 +62,23 @@ import java.util.List;
  * <p>Phase 7 (ADR-006 / api-consolidation): contract-first — this controller
  * {@code implements} the generated {@code users-api.openapi.yml} interfaces
  * ({@code UserManagementApi}, {@code UserAccountApi}, {@code ProfilePictureApi},
- * {@code RoleManagementApi}, {@code UserSearchApi}, {@code DomainIntegrationApi},
- * {@code GdprComplianceApi}, {@code UserAdministrationApi}), which carry the HTTP method/path
- * mappings and request/response DTO types. The class-level {@code @RequestMapping("/api/v1")}
- * supplies the version prefix the interface paths omit (e.g. interface {@code /users/me} →
- * {@code /api/v1/users/me}).
+ * {@code RoleManagementApi}, {@code UserSearchApi}, {@code GdprComplianceApi},
+ * {@code UserAdministrationApi}), which carry the HTTP method/path mappings and request/response
+ * DTO types. The class-level {@code @RequestMapping("/api/v1")} supplies the version prefix the
+ * interface paths omit (e.g. interface {@code /users/me} → {@code /api/v1/users/me}).
+ *
+ * <p>The machine-only operations (provision, profile patch, invitation credentials) left this
+ * controller for {@link InternalUserController} (Epic 17 entry 6, ADR-016).
+ *
+ * <p>Story 4.10: a user's profile and picture are one set, {@code /users/{username}}, for the
+ * user themself and for organizers ({@code @userOwnership.isCurrentUser(#username)} next to the
+ * role rule); the {@code /users/me} twins are gone. {@code GET /users/me} stays as the self read.
  *
  * <p>Method-level {@code @PreAuthorize} / {@code @Timed} stay on the implementation (the generated
  * interfaces carry neither); behaviour matches the pre-wiring controller exactly.
  *
  * <p>The formerly-undocumented endpoints — service-to-service {@code GET /users/by-company},
- * admin {@code PUT /users/{username}}, {@code POST /users/{username}/profile-picture/upload-from-url},
+ * {@code POST /users/{username}/profile-picture/upload-from-url},
  * {@code POST /users/admin/reconcile}, {@code GET /users/admin/sync-status} — are now contract-first
  * too (spec ops added under User Management / Profile Picture / User Administration tags).
  */
@@ -88,13 +87,12 @@ import java.util.List;
 @RequiredArgsConstructor
 @Slf4j
 public class UserController implements UserManagementApi, UserAccountApi, ProfilePictureApi,
-        RoleManagementApi, UserSearchApi, DomainIntegrationApi, GdprComplianceApi,
+        RoleManagementApi, UserSearchApi, GdprComplianceApi,
         UserAdministrationApi {
 
     private final UserService userService;
     private final UserSearchService userSearchService;
     private final ProfilePictureService profilePictureService;
-    private final SecurityContextHelper securityContextHelper;
     private final UserRepository userRepository;
     private final ch.batbern.companyuser.service.UserReconciliationService reconciliationService;
     private final ch.batbern.companyuser.service.RoleService roleService;
@@ -121,20 +119,6 @@ public class UserController implements UserManagementApi, UserAccountApi, Profil
         UserResponse response = (include != null && !include.isEmpty())
                 ? userService.getCurrentUser(include)
                 : userService.getCurrentUser();
-
-        return ResponseEntity.ok(response);
-    }
-
-    /** AC2: Partially update current user profile. */
-    @Override
-    @Timed(value = "users.patchCurrentUser",
-            description = "Time to partially update current user profile",
-            percentiles = {0.5, 0.95, 0.99})
-    @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<UserResponse> patchCurrentUser(UpdateUserRequest updateUserRequest) {
-        log.info("Patching current user profile");
-
-        UserResponse response = userService.updateCurrentUser(updateUserRequest);
 
         return ResponseEntity.ok(response);
     }
@@ -217,48 +201,6 @@ public class UserController implements UserManagementApi, UserAccountApi, Profil
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * Story 11.C.2 (AR14): Patch user profile fields (bio, profilePictureUrl).
-     *
-     * <p>Authorization: ORGANIZER, ADMIN, or SPEAKER. SPEAKERS may patch only their own profile
-     * (enforced below; throws {@link AccessDeniedException} otherwise).
-     */
-    @Override
-    @PreAuthorize("hasAnyRole('ORGANIZER', 'ADMIN', 'SPEAKER')")
-    @Timed(value = "users.patchUserProfile",
-            description = "Time to patch user profile fields (Story 11.C.2)",
-            percentiles = {0.5, 0.95, 0.99})
-    public ResponseEntity<UserResponse> patchUserProfile(
-            String username, PatchUserProfileRequest patchUserProfileRequest) {
-        // P2 (review patch): enforce `additionalProperties: false` at the controller level
-        // (the generated DTO silently absorbs unknown fields via `@JsonAnySetter`).
-        if (patchUserProfileRequest.getAdditionalProperties() != null
-                && !patchUserProfileRequest.getAdditionalProperties().isEmpty()) {
-            throw new UserValidationException(
-                    "request",
-                    "Unknown fields not allowed on PatchUserProfileRequest: "
-                            + patchUserProfileRequest.getAdditionalProperties().keySet());
-        }
-        log.info("PATCH /api/v1/users/{}/profile", username);
-
-        // Method-level role-scope enforcement: a SPEAKER that is not also ORGANIZER/ADMIN
-        // may patch only their own profile. The @PreAuthorize already restricts principals.
-        if (!securityContextHelper.hasRole("ORGANIZER") && !securityContextHelper.hasRole("ADMIN")) {
-            String currentUsername = securityContextHelper.getCurrentUsername();
-            // P3 (review patch): case-insensitive username comparison. The JWT issues canonical-case
-            // usernames; URL path-segments can be CDN-lowercased or mistyped.
-            if (currentUsername == null || !currentUsername.equalsIgnoreCase(username)) {
-                log.warn("Cross-speaker profile patch rejected: caller={}, target={}",
-                        currentUsername, username);
-                throw new AccessDeniedException("SPEAKER may only patch their own profile");
-            }
-        }
-
-        UserResponse response = userService.patchUserProfile(username, patchUserProfileRequest);
-
-        return ResponseEntity.ok(response);
-    }
-
     // ------------------------------------------------------------------------
     // UserSearchApi
     // ------------------------------------------------------------------------
@@ -288,58 +230,6 @@ public class UserController implements UserManagementApi, UserAccountApi, Profil
                         .toList();
 
         return ResponseEntity.ok(results);
-    }
-
-    // ------------------------------------------------------------------------
-    // DomainIntegrationApi
-    // ------------------------------------------------------------------------
-
-    /**
-     * Story 11.E.2 (AR15, FR9): Issue (or skip) Cognito temp credentials at invitation time.
-     * Service-to-service endpoint called by {@code SpeakerWorkflowService.runInvitedHook} at
-     * READY → INVITED. Idempotent.
-     */
-    @Override
-    @PreAuthorize("hasRole('ORGANIZER')")
-    @Timed(value = "users.issueInvitationCredentials",
-            description = "Time to issue invitation credentials (Story 11.E.2)",
-            percentiles = {0.5, 0.95, 0.99})
-    public ResponseEntity<InvitationCredentialsResponse> issueInvitationCredentials(String username) {
-        // Story 11.E.2 review patch (D3): narrow to hasRole('ORGANIZER') and log the
-        // actor → target → action triple for post-incident review.
-        String actor = securityContextHelper.getCurrentUsername();
-        log.info("POST /api/v1/users/{}/issue-invitation-credentials (actor={})",
-                username, actor != null ? actor : "<unknown>");
-        InvitationCredentialsResponse response = userService.issueInvitationCredentials(username);
-        log.info("Issued invitation credentials: actor={} target={} action={}",
-                actor != null ? actor : "<unknown>", username, response.getAction());
-        return ResponseEntity.ok(response);
-    }
-
-    /**
-     * Story 11.C.2 (AR13): Provision a User with a role. Service-to-service endpoint called by
-     * {@code SpeakerWorkflowService.transition()} at the CONTACTED → READY hook. Idempotent.
-     */
-    @Override
-    @PreAuthorize("hasAnyRole('ORGANIZER', 'ADMIN')")
-    @Timed(value = "users.provisionUser",
-            description = "Time to provision a user with role (Story 11.C.2)",
-            percentiles = {0.5, 0.95, 0.99})
-    public ResponseEntity<ProvisionUserResponse> provisionUserWithRole(ProvisionUserRequest provisionUserRequest) {
-        // P2 (review patch): enforce `additionalProperties: false` at the controller level.
-        if (provisionUserRequest.getAdditionalProperties() != null
-                && !provisionUserRequest.getAdditionalProperties().isEmpty()) {
-            throw new UserValidationException(
-                    "request",
-                    "Unknown fields not allowed on ProvisionUserRequest: "
-                            + provisionUserRequest.getAdditionalProperties().keySet());
-        }
-        log.info("POST /api/v1/users/provision — email: {}, role: {}",
-                LoggingUtils.maskEmail(provisionUserRequest.getEmail()), provisionUserRequest.getRole());
-
-        ProvisionUserResponse response = userService.provisionUserWithRole(provisionUserRequest);
-
-        return ResponseEntity.ok(response);
     }
 
     // ------------------------------------------------------------------------
@@ -431,8 +321,8 @@ public class UserController implements UserManagementApi, UserAccountApi, Profil
      */
     @Override
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<Void> makeAdditionalEmailPrimary(String email) {
-        primaryEmailService.makePrimary(email);
+    public ResponseEntity<Void> makeAdditionalEmailPrimary(UUID emailId) {
+        primaryEmailService.makePrimary(emailId);
         return ResponseEntity.noContent().build();
     }
 
@@ -442,25 +332,23 @@ public class UserController implements UserManagementApi, UserAccountApi, Profil
      */
     @Override
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<AdditionalEmail> updateAdditionalEmail(String email,
+    public ResponseEntity<AdditionalEmail> updateAdditionalEmail(UUID emailId,
             UpdateAdditionalEmailRequest updateAdditionalEmailRequest) {
-        return ResponseEntity.ok(userService.updateAdditionalEmail(email, updateAdditionalEmailRequest));
+        return ResponseEntity.ok(userService.updateAdditionalEmail(emailId, updateAdditionalEmailRequest));
     }
 
     /**
-     * Story 10.32 — Remove an additional email from the caller's profile. Under Spring Boot 3's
-     * {@code PathPatternParser} the {@code {email}} segment captures the full address (incl. the
-     * trailing {@code .com}) without the legacy {@code :.+} regex. Frontend callers MUST
-     * {@code encodeURIComponent} the email — see {@code userAccountApi.ts}.
+     * Story 10.32 — Remove an additional email from the caller's profile. Keyed by the row id since
+     * Story 4.10d (the address never goes in the path); another user's id is 404.
      */
     @Override
     @Timed(value = "users.additionalEmails.delete",
             description = "Time to remove an additional email from the current user",
             percentiles = {0.5, 0.95, 0.99})
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<Void> deleteAdditionalEmail(String email) {
+    public ResponseEntity<Void> deleteAdditionalEmail(UUID emailId) {
         log.info("Removing additional email for current user");
-        userService.deleteAdditionalEmail(email);
+        userService.deleteAdditionalEmail(emailId);
         return ResponseEntity.noContent().build();
     }
 
@@ -474,9 +362,9 @@ public class UserController implements UserManagementApi, UserAccountApi, Profil
             description = "Time to resend an additional-email verification email",
             percentiles = {0.5, 0.95, 0.99})
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<Void> resendAdditionalEmailVerification(String email) {
+    public ResponseEntity<Void> resendAdditionalEmailVerification(UUID emailId) {
         log.info("Resending additional-email verification for current user");
-        userService.resendVerification(email);
+        userService.resendVerification(emailId);
         return ResponseEntity.noContent().build();
     }
 
@@ -514,86 +402,18 @@ public class UserController implements UserManagementApi, UserAccountApi, Profil
     // ProfilePictureApi
     // ------------------------------------------------------------------------
 
-    /** AC10: Request presigned URL for the caller's own profile picture upload. */
-    @Override
-    @Timed(value = "users.profilePicture.requestPresignedUrl",
-            description = "Time to generate presigned URL for profile picture",
-            percentiles = {0.5, 0.95, 0.99})
-    @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<PresignedUploadUrl> requestProfilePictureUploadUrl(
-            ProfilePictureUploadRequest profilePictureUploadRequest) {
-        log.info("Requesting presigned URL for profile picture upload: {}",
-                profilePictureUploadRequest.getFileName());
-
-        String currentUsername = securityContextHelper.getCurrentUsername();
-        User user = userRepository.findByUsername(currentUsername)
-            .orElseThrow(() -> new ch.batbern.companyuser.exception.UserNotFoundException(currentUsername));
-
-        PresignedUploadUrl response = profilePictureService.generateProfilePictureUploadUrl(
-            user.getId(),
-            user.getUsername(),
-            profilePictureUploadRequest.getFileName(),
-            profilePictureUploadRequest.getFileSize());
-
-        return ResponseEntity.ok(response);
-    }
-
-    /** AC10: Confirm the caller's own profile picture upload completion. */
-    @Override
-    @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<ProfilePictureUploadConfirmResponse> confirmProfilePictureUpload(
-            ProfilePictureUploadConfirmRequest profilePictureUploadConfirmRequest) {
-        log.info("Confirming profile picture upload: fileId={}",
-                profilePictureUploadConfirmRequest.getFileId());
-
-        String currentUsername = securityContextHelper.getCurrentUsername();
-        User user = userRepository.findByUsername(currentUsername)
-            .orElseThrow(() -> new ch.batbern.companyuser.exception.UserNotFoundException(currentUsername));
-
-        profilePictureService.confirmProfilePictureUpload(
-            user.getId(),
-            user.getUsername(),
-            profilePictureUploadConfirmRequest.getFileId(),
-            profilePictureUploadConfirmRequest.getFileExtension());
-
-        UserResponse updatedUser = userService.getCurrentUser();
-
-        return ResponseEntity.ok(toConfirmResponse(updatedUser.getProfilePictureUrl()));
-    }
-
     /**
-     * AC13: Remove the current user's own profile picture. The literal {@code /me/picture} mapping
-     * takes precedence over {@code /{username}/picture}, so a self-removal no longer falls through
-     * to the admin handler with a literal {@code username="me"}.
+     * Request a presigned URL for a user's profile picture upload: the user themself or an
+     * organizer (Story 4.10, replaces {@code /users/me/picture/presigned-url}).
      */
     @Override
-    @Timed(value = "users.profilePicture.remove",
-            description = "Time to remove own profile picture",
-            percentiles = {0.5, 0.95, 0.99})
-    @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<Void> removeOwnProfilePicture() {
-        String currentUsername = securityContextHelper.getCurrentUsername();
-        log.info("Removing own profile picture for user: {}", currentUsername);
-
-        User user = userRepository.findByUsername(currentUsername)
-            .orElseThrow(() -> new ch.batbern.companyuser.exception.UserNotFoundException(currentUsername));
-
-        user.setProfilePictureUrl(null);
-        user.setProfilePictureS3Key(null);
-        userRepository.save(user);
-
-        return ResponseEntity.noContent().build();
-    }
-
-    /** Admin: Request presigned URL for a specific user's profile picture upload. */
-    @Override
-    @PreAuthorize("hasRole('ORGANIZER')")
-    @Timed(value = "users.profilePicture.admin.requestPresignedUrl",
-            description = "Time to generate presigned URL for user profile picture (admin)",
+    @PreAuthorize("hasRole('ORGANIZER') or @userOwnership.isCurrentUser(#username)")
+    @Timed(value = "users.profilePicture.requestPresignedUrl",
+            description = "Time to generate presigned URL for a profile picture",
             percentiles = {0.5, 0.95, 0.99})
     public ResponseEntity<PresignedUploadUrl> requestProfilePictureUploadUrlForUser(
             String username, ProfilePictureUploadRequest profilePictureUploadRequest) {
-        log.info("Admin requesting presigned URL for profile picture upload for user: {}, file: {}",
+        log.info("Requesting presigned URL for profile picture upload for user: {}, file: {}",
                 username, profilePictureUploadRequest.getFileName());
 
         User user = userRepository.findByUsername(username)
@@ -608,15 +428,15 @@ public class UserController implements UserManagementApi, UserAccountApi, Profil
         return ResponseEntity.ok(response);
     }
 
-    /** Admin: Confirm a specific user's profile picture upload completion. */
+    /** Confirm a user's profile picture upload: the user themself or an organizer (Story 4.10). */
     @Override
-    @PreAuthorize("hasRole('ORGANIZER')")
-    @Timed(value = "users.profilePicture.admin.confirm",
-            description = "Time to confirm profile picture upload for user (admin)",
+    @PreAuthorize("hasRole('ORGANIZER') or @userOwnership.isCurrentUser(#username)")
+    @Timed(value = "users.profilePicture.confirm",
+            description = "Time to confirm a profile picture upload",
             percentiles = {0.5, 0.95, 0.99})
     public ResponseEntity<ProfilePictureUploadConfirmResponse> confirmProfilePictureUploadForUser(
             String username, ProfilePictureUploadConfirmRequest profilePictureUploadConfirmRequest) {
-        log.info("Admin confirming profile picture upload for user: {}, fileId={}",
+        log.info("Confirming profile picture upload for user: {}, fileId={}",
                 username, profilePictureUploadConfirmRequest.getFileId());
 
         User user = userRepository.findByUsername(username)
@@ -633,14 +453,14 @@ public class UserController implements UserManagementApi, UserAccountApi, Profil
         return ResponseEntity.ok(toConfirmResponse(updatedUser.getProfilePictureUrl()));
     }
 
-    /** Admin: Remove a specific user's profile picture. */
+    /** Remove a user's profile picture: the user themself or an organizer (Story 4.10). */
     @Override
-    @PreAuthorize("hasRole('ORGANIZER')")
-    @Timed(value = "users.profilePicture.admin.remove",
-            description = "Time to remove profile picture for user (admin)",
+    @PreAuthorize("hasRole('ORGANIZER') or @userOwnership.isCurrentUser(#username)")
+    @Timed(value = "users.profilePicture.remove",
+            description = "Time to remove a profile picture",
             percentiles = {0.5, 0.95, 0.99})
     public ResponseEntity<Void> removeProfilePictureForUser(String username) {
-        log.info("Admin removing profile picture for user: {}", username);
+        log.info("Removing profile picture for user: {}", username);
 
         User user = userRepository.findByUsername(username)
             .orElseThrow(() -> new ch.batbern.companyuser.exception.UserNotFoundException(username));
@@ -653,26 +473,22 @@ public class UserController implements UserManagementApi, UserAccountApi, Profil
     }
 
     // ------------------------------------------------------------------------
-    // Undocumented endpoints (no users-api operation) — hand-rolled; spec follow-up.
+    // Profile update and organizer-only profile operations
     // ------------------------------------------------------------------------
 
     /**
-     * Update user profile by username (Organizer/Admin only). Allows organizers/admins to update
-     * any user's profile. PUT /api/v1/users/{username}.
+     * Partially update a user's profile: the user themself or an organizer/admin (Story 4.10, one
+     * endpoint replacing {@code PATCH /users/me} and {@code PUT /users/{username}}). Consent
+     * ({@code termsAccepted}) is self only, enforced in {@link UserService#updateUser}.
      */
     @Override
-    @PreAuthorize("hasAnyRole('ORGANIZER', 'ADMIN')")
-    @Timed(value = "users.updateUserByUsername",
-            description = "Time to update user by username (admin/organizer)",
+    @PreAuthorize("hasAnyRole('ORGANIZER', 'ADMIN') or @userOwnership.isCurrentUser(#username)")
+    @Timed(value = "users.patchUser",
+            description = "Time to partially update a user profile",
             percentiles = {0.5, 0.95, 0.99})
-    public ResponseEntity<UserResponse> updateUserByUsername(
-            String username,
-            UpdateUserRequest updateUserRequest) {
-        log.info("Updating user {} by organizer/admin", username);
-
-        UserResponse response = userService.updateUserByUsername(username, updateUserRequest);
-
-        return ResponseEntity.ok(response);
+    public ResponseEntity<UserResponse> patchUser(String username, UpdateUserRequest updateUserRequest) {
+        log.info("Patching user {}", username);
+        return ResponseEntity.ok(userService.updateUser(username, updateUserRequest));
     }
 
     /**

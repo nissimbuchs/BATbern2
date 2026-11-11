@@ -172,7 +172,7 @@ export function useDeleteSpeakerFromPool() {
  * @example
  * const sendInvitation = useSendInvitation('BATbern56');
  * sendInvitation.mutate({
- *   username: 'speaker-uuid',
+ *   speakerId: '<pool entry id>',
  *   options: { responseDeadline: '2026-02-01T00:00:00Z', locale: 'en' }
  * });
  */
@@ -180,8 +180,8 @@ export function useSendInvitation(eventCode: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ username, options }: { username: string; options?: SendInvitationRequest }) =>
-      speakerPoolService.sendInvitation(eventCode, username, options),
+    mutationFn: ({ speakerId, options }: { speakerId: string; options?: SendInvitationRequest }) =>
+      speakerPoolService.sendInvitation(eventCode, speakerId, options),
     onSuccess: () => {
       // Invalidate speaker pool list for this event to refetch (speaker moves to INVITED)
       queryClient.invalidateQueries({

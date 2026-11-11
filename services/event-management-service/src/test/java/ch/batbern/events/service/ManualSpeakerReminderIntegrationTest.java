@@ -148,6 +148,10 @@ class ManualSpeakerReminderIntegrationTest extends AbstractIntegrationTest {
         assertThat(reminderLog(far)).extracting(row -> row.get("tier")).containsExactly("TIER_1");
         assertThat(sesRecorder.mailsTo(sim("nora.near"))).hasSize(1);
         assertThat(sesRecorder.mailsTo(sim("fritz.far"))).hasSize(1);
+        // Story 16.0 AC1 (moved here from SpeakerModeratorReplyToTest, Story 4.10): the speaker's
+        // answer to a tiered reminder reaches the event's moderator alias, not replies@.
+        assertThat(sesRecorder.mailsTo(sim("nora.near"))).singleElement().satisfies(mail ->
+                assertThat(mail.replyTo()).singleElement().asString().startsWith("batbern762-moderator@"));
     }
 
     @Test

@@ -24,10 +24,10 @@ public interface UserAdditionalEmailRepository extends JpaRepository<UserAdditio
     boolean existsByEmailIgnoreCase(String email);
 
     /**
-     * Look up a specific additional email on a specific user (used by the
-     * delete endpoint).
+     * Story 4.10d: one of the caller's additional emails by its id, loaded scoped to the owner, so
+     * another user's or an unknown id is the same empty result (404).
      */
-    Optional<UserAdditionalEmail> findByUserAndEmailIgnoreCase(User user, String email);
+    Optional<UserAdditionalEmail> findByIdAndUser(UUID id, User user);
 
     /**
      * Count additional emails for a given user — used by the cap check.

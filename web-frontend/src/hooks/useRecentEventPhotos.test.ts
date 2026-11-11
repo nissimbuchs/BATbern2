@@ -1,67 +1,54 @@
 /**
- * useRecentEventPhotos Hook Tests (Story 10.21)
+ * useRecentEventPhotos (Story 10.21) on the MSW harness (Story 4.10b, Epic 17 test fidelity): the
+ * real eventApiClient and apiClient run, and the request is checked against event-media-api, so
+ * the old `/events/recent-photos` path would fail the test.
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { HttpResponse } from 'msw';
 import React from 'react';
+import { api } from '@/test/msw/api';
 import { useRecentEventPhotos } from './useRecentEventPhotos';
 
-vi.mock('@/services/eventApiClient', () => ({
-  eventApiClient: {
-    getRecentEventPhotos: vi.fn(),
-  },
-}));
+let qc: QueryClient;
 
-import { eventApiClient } from '@/services/eventApiClient';
+const wrapper = ({ children }: { children: React.ReactNode }) =>
+  React.createElement(QueryClientProvider, { client: qc }, children);
 
-const mockGetRecentEventPhotos = vi.mocked(eventApiClient.getRecentEventPhotos);
-
-const createQC = () =>
-  new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
-
-const createWrapper =
-  (qc: QueryClient) =>
-  ({ children }: { children: React.ReactNode }) =>
-    React.createElement(QueryClientProvider, { client: qc }, children);
+beforeEach(() => {
+  qc = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
+});
 
 describe('useRecentEventPhotos', () => {
-  let qc: QueryClient;
-
-  beforeEach(() => {
-    qc = createQC();
-    vi.clearAllMocks();
-  });
-
-  it('should fetch recent photos with default params', async () => {
-    const mockPhotos = [{ id: 'photo-1', cloudFrontUrl: 'https://cdn.example.com/p1.jpg' }];
-    mockGetRecentEventPhotos.mockResolvedValue(
-      mockPhotos as Awaited<ReturnType<typeof eventApiClient.getRecentEventPhotos>>
-    );
-
-    const { result } = renderHook(() => useRecentEventPhotos(), { wrapper: createWrapper(qc) });
+  it('should_loadThePublicSample_withDefaultParams', async () => {
+    const { result } = renderHook(() => useRecentEventPhotos(), { wrapper });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data).toEqual(mockPhotos);
-    expect(mockGetRecentEventPhotos).toHaveBeenCalledWith(20, 5);
+    const [call] = api.calls('getRecentEventPhotos');
+    expect(call.url.pathname).toMatch(/\/public\/event-photos$/);
+    expect(call.query.get('limit')).toBe('20');
+    expect(call.query.get('lastNEvents')).toBe('5');
+    // The spec example: two photos of past events.
+    expect(result.current.data?.map((p) => p.eventCode)).toEqual(['BATbern58', 'BATbern56']);
   });
 
-  it('should fetch with custom limit and lastNEvents', async () => {
-    mockGetRecentEventPhotos.mockResolvedValue([]);
+  it('should_passCustomLimitAndWindow', async () => {
+    api.on('getRecentEventPhotos', () => []);
 
-    const { result } = renderHook(() => useRecentEventPhotos(10, 3), {
-      wrapper: createWrapper(qc),
-    });
+    const { result } = renderHook(() => useRecentEventPhotos(10, 3), { wrapper });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(mockGetRecentEventPhotos).toHaveBeenCalledWith(10, 3);
+    const [call] = api.calls('getRecentEventPhotos');
+    expect(call.query.get('limit')).toBe('10');
+    expect(call.query.get('lastNEvents')).toBe('3');
   });
 
-  it('should set isError when fetch fails', async () => {
-    mockGetRecentEventPhotos.mockRejectedValue(new Error('Network error'));
+  it('should_setIsError_when_fetchFails', async () => {
+    api.on('getRecentEventPhotos', () => HttpResponse.error());
 
-    const { result } = renderHook(() => useRecentEventPhotos(), { wrapper: createWrapper(qc) });
+    const { result } = renderHook(() => useRecentEventPhotos(), { wrapper });
 
     await waitFor(() => expect(result.current.isError).toBe(true));
   });

@@ -300,7 +300,7 @@ export const EventTypeConfigurationForm: React.FC<EventTypeConfigurationFormProp
             helperText={errors.defaultCapacity}
             fullWidth
             required
-            inputProps={{ min: 1 }}
+            inputProps={{ min: 1, 'data-testid': 'event-type-config-default-capacity' }}
           />
         </Stack>
 

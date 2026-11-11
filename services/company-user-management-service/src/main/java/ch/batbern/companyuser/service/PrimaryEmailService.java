@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.Locale;
+import java.util.UUID;
 
 /**
  * #1244 step 2 — "Als Hauptadresse verwenden": a confirmed additional address becomes the primary
@@ -24,9 +25,10 @@ import java.util.Locale;
  *
  * <p>Order: Cognito moves the login first (it refuses an address another login holds, which is the
  * case for the account merge); then the profile swaps the two addresses, the old primary stays as a
- * confirmed additional address. If the profile step fails, the login is moved back. Last,
- * event-management moves upcoming registrations made under the old address; that step is best
- * effort, because those registrations are still found through the old address.
+ * confirmed additional address (a new row, so the ids of the addresses change). If the profile
+ * step fails, the login is moved back. Last, event-management moves upcoming registrations made
+ * under the old address; that step is best effort, because those registrations are still found
+ * through the old address.
  */
 @Service
 @RequiredArgsConstructor
@@ -40,13 +42,14 @@ public class PrimaryEmailService {
     private final SecurityContextHelper securityContext;
 
     @Transactional
-    public void makePrimary(String email) {
+    public void makePrimary(UUID emailId) {
         String username = securityContext.getCurrentUsername();
         User user = userRepository.findByUsernameForUpdate(username)
                 .orElseThrow(() -> new UserNotFoundException("Current user profile not found", true));
-        String newEmail = email.trim().toLowerCase(Locale.ROOT);
-        UserAdditionalEmail row = additionalEmailRepository.findByUserAndEmailIgnoreCase(user, newEmail)
-                .orElseThrow(() -> new AdditionalEmailNotFoundException(newEmail));
+        // Story 4.10d: loaded by id, scoped to the caller; another user's or an unknown id is 404
+        UserAdditionalEmail row = additionalEmailRepository.findByIdAndUser(emailId, user)
+                .orElseThrow(() -> new AdditionalEmailNotFoundException(emailId));
+        String newEmail = row.getEmail().toLowerCase(Locale.ROOT);
         if (row.getVerifiedAt() == null) {
             throw new AdditionalEmailNotVerifiedException(newEmail);
         }

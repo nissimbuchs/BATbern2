@@ -103,15 +103,7 @@ export interface paths {
     delete?: never;
     options?: never;
     head?: never;
-    /**
-     * Partially update current user profile
-     * @description Partially update the profile of the currently authenticated user.
-     *
-     *     **Acceptance Criteria**: AC2
-     *
-     *     Similar to PUT but allows partial updates.
-     */
-    patch: operations['patchCurrentUser'];
+    patch?: never;
     trace?: never;
   };
   '/users': {
@@ -677,13 +669,7 @@ export interface paths {
      *     their own record via `GET /users/me`.
      */
     get: operations['getUserByUsername'];
-    /**
-     * Update a user's profile by username (Organizer/Admin)
-     * @description Full update of any user's profile by an organizer/admin.
-     *
-     *     **Authorization**: ORGANIZER or ADMIN role required
-     */
-    put: operations['updateUserByUsername'];
+    put?: never;
     post?: never;
     /**
      * Delete user and all associated data
@@ -706,7 +692,21 @@ export interface paths {
     delete: operations['deleteUser'];
     options?: never;
     head?: never;
-    patch?: never;
+    /**
+     * Partially update a user's profile
+     * @description Partial update of a user's profile; only the fields present change (ADR-013 §1).
+     *     One endpoint for self-service and for organizers (Story 4.10, replaces
+     *     `PATCH /users/me` and `PUT /users/{username}`).
+     *
+     *     **Authorization**: the user themself (`username` is the caller's own), or ORGANIZER /
+     *     ADMIN for any user; anyone else gets 403.
+     *
+     *     **Consent**: `termsAccepted` is the user's own consent (Story 12.11, write-once). It is
+     *     accepted only on the caller's own profile; sending it for another user is 403.
+     *
+     *     **Audit**: the `UserUpdatedEvent` records the caller's username as the actor.
+     */
+    patch: operations['patchUser'];
     trace?: never;
   };
   '/users/search': {
@@ -814,7 +814,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/users/me/additional-emails/{email}': {
+  '/users/me/additional-emails/{emailId}': {
     parameters: {
       query?: never;
       header?: never;
@@ -841,7 +841,7 @@ export interface paths {
     patch: operations['updateAdditionalEmail'];
     trace?: never;
   };
-  '/users/me/additional-emails/{email}/make-primary': {
+  '/users/me/additional-emails/{emailId}/make-primary': {
     parameters: {
       query?: never;
       header?: never;
@@ -863,7 +863,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/users/me/additional-emails/{email}/resend-verification': {
+  '/users/me/additional-emails/{emailId}/resend-verification': {
     parameters: {
       query?: never;
       header?: never;
@@ -965,87 +965,6 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/users/me/picture': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    post?: never;
-    /**
-     * Remove own profile picture
-     * @description Remove the authenticated user's own profile picture.
-     *
-     *     **Acceptance Criteria**: AC13
-     *
-     *     Self-service counterpart to `DELETE /users/{username}/picture` (admin). Resolves the
-     *     caller from the bearer token; idempotent in effect (clears the picture references).
-     */
-    delete: operations['removeOwnProfilePicture'];
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/users/me/picture/presigned-url': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Request presigned URL for profile picture upload
-     * @description Generate presigned S3 upload URL for current user's profile picture.
-     *
-     *     **Acceptance Criteria**: AC10
-     *
-     *     **File Constraints**:
-     *     - Max size: 5 MB
-     *     - Allowed formats: PNG, JPG, JPEG, SVG
-     *     - Recommended dimensions: 400x400 to 1000x1000 pixels
-     *
-     *     **Upload Process**:
-     *     1. Client calls this endpoint to get presigned URL
-     *     2. Client uploads directly to S3 using presigned URL
-     *     3. Client calls /users/me/picture/confirm with file ID and extension
-     */
-    post: operations['requestProfilePictureUploadUrl'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/users/me/picture/confirm': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Confirm profile picture upload completion
-     * @description Confirm that profile picture has been uploaded to S3 and associate with user.
-     *
-     *     **Acceptance Criteria**: AC10
-     *
-     *     Must be called after successful upload to presigned URL.
-     */
-    post: operations['confirmProfilePictureUpload'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
   '/users/{username}/picture/presigned-url': {
     parameters: {
       query?: never;
@@ -1056,19 +975,20 @@ export interface paths {
     get?: never;
     put?: never;
     /**
-     * Request presigned URL for user profile picture upload (Admin)
-     * @description Admin endpoint to generate presigned S3 upload URL for a specific user's profile picture.
+     * Request presigned URL for a profile picture upload
+     * @description Generate a presigned S3 upload URL for a user's profile picture. One endpoint for
+     *     self-service and for organizers (Story 4.10, replaces `/users/me/picture/presigned-url`).
      *
-     *     **Authorization**: ORGANIZER role required
+     *     **Authorization**: the user themself, or ORGANIZER for any user; anyone else gets 403.
      *
      *     **File Constraints**:
      *     - Max size: 5 MB
      *     - Allowed formats: PNG, JPG, JPEG, SVG
      *
      *     **Upload Process**:
-     *     1. Admin calls this endpoint to get presigned URL
-     *     2. Admin uploads directly to S3 using presigned URL
-     *     3. Admin calls /users/{username}/picture/confirm with file ID and extension
+     *     1. Client calls this endpoint to get presigned URL
+     *     2. Client uploads directly to S3 using presigned URL
+     *     3. Client calls /users/{username}/picture/confirm with file ID and extension
      */
     post: operations['requestProfilePictureUploadUrlForUser'];
     delete?: never;
@@ -1087,10 +1007,11 @@ export interface paths {
     get?: never;
     put?: never;
     /**
-     * Confirm user profile picture upload completion (Admin)
-     * @description Admin endpoint to confirm that profile picture has been uploaded to S3 for a specific user.
+     * Confirm a profile picture upload
+     * @description Confirm that a profile picture has been uploaded to S3 and associate it with the user
+     *     (Story 4.10, replaces `/users/me/picture/confirm`).
      *
-     *     **Authorization**: ORGANIZER role required
+     *     **Authorization**: the user themself, or ORGANIZER for any user; anyone else gets 403.
      *
      *     Must be called after successful upload to presigned URL.
      */
@@ -1112,10 +1033,10 @@ export interface paths {
     put?: never;
     post?: never;
     /**
-     * Remove user profile picture (Admin)
-     * @description Admin endpoint to remove profile picture for a specific user.
+     * Remove a profile picture
+     * @description Remove a user's profile picture (Story 4.10, replaces `DELETE /users/me/picture`).
      *
-     *     **Authorization**: ORGANIZER role required
+     *     **Authorization**: the user themself, or ORGANIZER for any user; anyone else gets 403.
      *
      *     Clears profile picture URL and S3 key from user entity.
      */
@@ -1123,126 +1044,6 @@ export interface paths {
     options?: never;
     head?: never;
     patch?: never;
-    trace?: never;
-  };
-  '/users/provision': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Provision a user with a role (Story 11.C.2 — AR13)
-     * @description Idempotent endpoint for the canonical "create User + grant role" flow used by the
-     *     Speaker Workflow Service (`SpeakerWorkflowService.transition()` at CONTACTED → READY).
-     *
-     *     **ADR-009**: Decision 3 — Cognito provisioning. Cognito wiring is split across two
-     *     endpoints per Story 11.E.2's Resolved Q#1 Variant B:
-     *
-     *     - **READY (this endpoint)**: `AdminCreateUser` (silent shell, `MessageAction=SUPPRESS`)
-     *       creates the Cognito user in `FORCE_CHANGE_PASSWORD` state. The temporary password
-     *       passed to Cognito is internal-only and is **NOT** returned in the response.
-     *     - **INVITED (sibling endpoint `/users/{username}/issue-invitation-credentials`)**:
-     *       `AdminGetUser` + conditional `AdminSetUserPassword(Permanent=false)` issues the
-     *       fresh temporary password embedded in the invitation email.
-     *
-     *     SPEAKER role is granted via a row insert into PostgreSQL `user_roles` per ADR-001 —
-     *     NOT via `AdminAddUserToGroup` (no Cognito groups exist; see Story 11.E.1 Resolved Q#1).
-     *
-     *     **Behaviour**:
-     *     - If User exists by email (case-insensitive lookup, matches `getOrCreateUser`):
-     *       grants the requested role if not already held; returns existing `username` and `created=false`.
-     *     - If User does not exist: creates User row, grants role, returns generated `username` and
-     *       `created=true`. The username is auto-generated from email per the existing
-     *       `getOrCreateUser` policy.
-     *     - **Idempotent**: re-calling for an already-provisioned user is a no-op and returns
-     *       the same `username` with `created=false`. The `role_assignments` UNIQUE constraint
-     *       backs the idempotency guarantee at the DB layer.
-     *
-     *     **Authorization**: ORGANIZER or ADMIN (service-to-service call from event-management-service
-     *     propagates the ORGANIZER JWT per `microservices-http-clients.md`).
-     *
-     *     **Performance**: <200ms (P95)
-     */
-    post: operations['provisionUserWithRole'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/users/{username}/issue-invitation-credentials': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Issue (or skip) Cognito temp credentials at invitation time (Story 11.E.2 — AR15/FR9)
-     * @description Service-to-service endpoint called by `SpeakerWorkflowService.runInvitedHook` at
-     *     READY → INVITED. Delegates to Cognito's `AdminGetUser` + conditional
-     *     `AdminSetUserPassword(Permanent=false)` to mint a fresh temporary password (when
-     *     the user is `FORCE_CHANGE_PASSWORD` / `RESET_REQUIRED` / `UNCONFIRMED`) or to
-     *     confirm that the existing password remains valid (when the user is `CONFIRMED`).
-     *
-     *     **Per Resolved Q#1 Variant B + Q#4** of Story 11.E.2: credential issuance is
-     *     deliberately decoupled from `/users/provision` (which only runs the silent
-     *     `AdminCreateUser` shell). The two-endpoint design avoids storing the temp password
-     *     anywhere between READY and INVITED.
-     *
-     *     **Idempotent**: repeated calls are safe. `FRESH_TEMP_PASSWORD` branch overwrites the
-     *     previous temp password (only the most recently issued one is valid). `USE_EXISTING_PASSWORD`
-     *     branch is a pure read.
-     *
-     *     **Authorization**: ORGANIZER or ADMIN (service-to-service call from
-     *     event-management-service propagates the ORGANIZER JWT).
-     *
-     *     **Performance**: <300ms (P95)
-     */
-    post: operations['issueInvitationCredentials'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/users/{username}/profile': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    /**
-     * Patch user profile fields (bio, profilePictureUrl) (Story 11.C.2 — AR14)
-     * @description Narrow profile-patch endpoint scoped to `bio` and `profilePictureUrl`. Used by the
-     *     consolidated `ContentSubmissionService` when an organizer (on behalf) or a speaker
-     *     (self) submits content that includes a CV blurb or a portrait.
-     *
-     *     **ADR-009 Decision 2 + ADR-007**: `bio` and `profilePictureUrl` live on the User
-     *     entity (single source of truth). This endpoint overwrites the global values — there
-     *     is no per-event snapshot.
-     *
-     *     **Authorization**: ORGANIZER, ADMIN, or SPEAKER. If the principal has role SPEAKER but
-     *     **not** ORGANIZER/ADMIN, the service enforces `currentUsername == pathVariable.username`
-     *     and returns 403 otherwise. Prevents a SPEAKER from patching another speaker's profile.
-     *
-     *     **Validation**: At least one of `bio` or `profilePictureUrl` must be non-null. Null
-     *     fields are left unchanged.
-     */
-    patch: operations['patchUserProfile'];
     trace?: never;
   };
   '/watch/pair': {
@@ -1306,7 +1107,7 @@ export interface components {
        * @description Suggested base filename (extension is derived from the fetched content type)
        * @default profile
        */
-      filename: string;
+      filename?: string;
     };
     AdminUploadProfilePictureFromUrlResponse: {
       /** @description CDN URL of the uploaded profile picture */
@@ -1639,6 +1440,13 @@ export interface components {
     /** @description Story 10.32 — one additional email address registered on a user profile. */
     AdditionalEmail: {
       /**
+       * Format: uuid
+       * @description Story 4.10d — the key of this address in the `…/additional-emails/{emailId}` operations.
+       *     Making an address primary replaces the rows, so the ids change; read them again.
+       * @example 7c9e6679-7425-40de-944b-e07fc1f90ae7
+       */
+      id: string;
+      /**
        * Format: idn-email
        * @example info@batbern.ch
        */
@@ -1823,6 +1631,7 @@ export interface components {
       lastName?: string;
       /** Format: idn-email */
       email?: string;
+      /** @description A blank value clears the bio (stored and returned as null). */
       bio?: string;
       /**
        * @description Company name (unique identifier, alphanumeric only)
@@ -1900,7 +1709,9 @@ export interface components {
     };
     /**
      * @description Request to provision a User with a role (Story 11.C.2 — AR13).
-     *     Used by SpeakerWorkflowService.transition() at CONTACTED → READY.
+     *     Used by SpeakerWorkflowService.transition() at CONTACTED → READY, through the internal
+     *     `POST /internal/users/provision` (docs/api/internal/cums-internal.openapi.yml; no public
+     *     operation uses this schema since Epic 17 entry 6).
      */
     ProvisionUserRequest: {
       /**
@@ -1922,9 +1733,8 @@ export interface components {
        */
       lastName?: string | null;
       /**
-       * @description Role to grant. **Non-ADMIN callers may only grant SPEAKER via this endpoint.**
-       *     ADMIN callers may grant any role. Server returns 400 if a non-ADMIN caller
-       *     requests a non-SPEAKER role.
+       * @description Role to grant. `POST /internal/users/provision` grants SPEAKER only and answers 400
+       *     for any other value, whoever calls.
        * @example SPEAKER
        * @enum {string}
        */
@@ -1933,7 +1743,7 @@ export interface components {
     /**
      * @description Response from the user-provisioning endpoint. Story 11.E.2 (Resolved Q#1 Variant B)
      *     removed the `temporaryPassword` field — credential issuance is owned by the sibling
-     *     `/users/{username}/issue-invitation-credentials` endpoint, which is called at
+     *     `/internal/users/{username}/issue-invitation-credentials` endpoint, which is called at
      *     READY → INVITED rather than at CONTACTED → READY.
      */
     ProvisionUserResponse: {
@@ -1952,7 +1762,7 @@ export interface components {
       created: boolean;
     };
     /**
-     * @description Response from `/users/{username}/issue-invitation-credentials` (Story 11.E.2 — AR15/FR9).
+     * @description Response from `/internal/users/{username}/issue-invitation-credentials` (Story 11.E.2 — AR15/FR9).
      *     Determines whether the invitation email renders the "temporary password" block or the
      *     "use your existing password" block.
      */
@@ -2013,15 +1823,16 @@ export interface components {
        */
       lastName: string;
       /**
-       * @description Company name (unique identifier) - Story 1.16.2. Optional for anonymous event registration.
+       * @description Company name (unique identifier) - Story 1.16.2. Optional for anonymous event registration;
+       *     missing or `null` means no company (EMS sends `null` when a speaker is invited without one).
        * @example Swiss IT Solutions AG
        */
-      companyId?: string;
+      companyId?: string | null;
       /**
        * @description If true, creates a new user if not found. If false, returns error if user doesn't exist.
        * @default true
        */
-      createIfMissing: boolean;
+      createIfMissing?: boolean;
       /**
        * @description Has no effect; kept for compatibility. This operation never creates a Cognito login: the
        *     profile is created with cognito_id=NULL either way. A login comes from the sign-up page
@@ -2029,7 +1840,7 @@ export interface components {
        * @default true
        * @example false
        */
-      cognitoSync: boolean;
+      cognitoSync?: boolean;
     };
     GetOrCreateUserResponse: {
       /**
@@ -2515,34 +2326,6 @@ export interface operations {
         };
       };
       401: components['responses']['Unauthorized'];
-      500: components['responses']['InternalServerError'];
-    };
-  };
-  patchCurrentUser: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['UpdateUserRequest'];
-      };
-    };
-    responses: {
-      /** @description User updated successfully */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['UserResponse'];
-        };
-      };
-      400: components['responses']['BadRequest'];
-      401: components['responses']['Unauthorized'];
-      409: components['responses']['Conflict'];
       500: components['responses']['InternalServerError'];
     };
   };
@@ -3265,7 +3048,32 @@ export interface operations {
       500: components['responses']['InternalServerError'];
     };
   };
-  updateUserByUsername: {
+  deleteUser: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Username (unique identifier) */
+        username: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description User deleted successfully */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+      404: components['responses']['NotFound'];
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  patchUser: {
     parameters: {
       query?: never;
       header?: never;
@@ -3294,31 +3102,18 @@ export interface operations {
       401: components['responses']['Unauthorized'];
       403: components['responses']['Forbidden'];
       404: components['responses']['NotFound'];
-      500: components['responses']['InternalServerError'];
-    };
-  };
-  deleteUser: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Username (unique identifier) */
-        username: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description User deleted successfully */
-      204: {
+      /**
+       * @description `EMAIL_DUPLICATE`: the new `email` is already another user's address
+       *     (case-insensitive, one address per profile). Nothing is changed.
+       */
+      409: {
         headers: {
           [name: string]: unknown;
         };
-        content?: never;
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
       };
-      401: components['responses']['Unauthorized'];
-      403: components['responses']['Forbidden'];
-      404: components['responses']['NotFound'];
       500: components['responses']['InternalServerError'];
     };
   };
@@ -3458,11 +3253,11 @@ export interface operations {
       header?: never;
       path: {
         /**
-         * @description URL-encoded email address. Case-insensitive match against the caller's
-         *     additional emails.
-         * @example info@batbern.ch
+         * @description The `id` of one of the caller's additional addresses (`AdditionalEmail.id` in
+         *     `GET /users/me`). Another user's or an unknown id answers 404. The address itself
+         *     never goes in the path (ADR-003 amendment 2026-11).
          */
-        email: string;
+        emailId: string;
       };
       cookie?: never;
     };
@@ -3476,7 +3271,7 @@ export interface operations {
         content?: never;
       };
       401: components['responses']['Unauthorized'];
-      /** @description No matching additional email on the caller's profile. */
+      /** @description No additional email with this id on the caller's profile. */
       404: {
         headers: {
           [name: string]: unknown;
@@ -3493,8 +3288,12 @@ export interface operations {
       query?: never;
       header?: never;
       path: {
-        /** @description URL-encoded email address, case-insensitive. */
-        email: string;
+        /**
+         * @description The `id` of one of the caller's additional addresses (`AdditionalEmail.id` in
+         *     `GET /users/me`). Another user's or an unknown id answers 404. The address itself
+         *     never goes in the path (ADR-003 amendment 2026-11).
+         */
+        emailId: string;
       };
       cookie?: never;
     };
@@ -3514,7 +3313,7 @@ export interface operations {
         };
       };
       401: components['responses']['Unauthorized'];
-      /** @description No matching additional email on the caller's profile. */
+      /** @description No additional email with this id on the caller's profile. */
       404: {
         headers: {
           [name: string]: unknown;
@@ -3539,8 +3338,12 @@ export interface operations {
       query?: never;
       header?: never;
       path: {
-        /** @description URL-encoded email address, case-insensitive. */
-        email: string;
+        /**
+         * @description The `id` of one of the caller's additional addresses (`AdditionalEmail.id` in
+         *     `GET /users/me`). Another user's or an unknown id answers 404. The address itself
+         *     never goes in the path (ADR-003 amendment 2026-11).
+         */
+        emailId: string;
       };
       cookie?: never;
     };
@@ -3554,7 +3357,7 @@ export interface operations {
         content?: never;
       };
       401: components['responses']['Unauthorized'];
-      /** @description No matching additional email on the caller's profile. */
+      /** @description No additional email with this id on the caller's profile. */
       404: {
         headers: {
           [name: string]: unknown;
@@ -3583,11 +3386,11 @@ export interface operations {
       header?: never;
       path: {
         /**
-         * @description URL-encoded email address. Case-insensitive match against the caller's
-         *     additional emails.
-         * @example info@batbern.ch
+         * @description The `id` of one of the caller's additional addresses (`AdditionalEmail.id` in
+         *     `GET /users/me`). Another user's or an unknown id answers 404. The address itself
+         *     never goes in the path (ADR-003 amendment 2026-11).
          */
-        email: string;
+        emailId: string;
       };
       cookie?: never;
     };
@@ -3601,7 +3404,7 @@ export interface operations {
         content?: never;
       };
       401: components['responses']['Unauthorized'];
-      /** @description No matching additional email on the caller's profile. */
+      /** @description No additional email with this id on the caller's profile. */
       404: {
         headers: {
           [name: string]: unknown;
@@ -3612,6 +3415,19 @@ export interface operations {
       };
       /** @description The email is already verified. Error code: `ALREADY_VERIFIED`. */
       409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      /**
+       * @description The address is on a reserved domain (RFC 2606/6761, e.g. `.invalid`) that never receives
+       *     mail, for example one stored before addresses were validated. `details.code` is
+       *     `RESERVED_DOMAIN`, `details.domain` names the domain; the address itself is not echoed.
+       */
+      422: {
         headers: {
           [name: string]: unknown;
         };
@@ -3761,82 +3577,6 @@ export interface operations {
       500: components['responses']['InternalServerError'];
     };
   };
-  removeOwnProfilePicture: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Profile picture removed successfully */
-      204: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      401: components['responses']['Unauthorized'];
-      404: components['responses']['NotFound'];
-      500: components['responses']['InternalServerError'];
-    };
-  };
-  requestProfilePictureUploadUrl: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['ProfilePictureUploadRequest'];
-      };
-    };
-    responses: {
-      /** @description Presigned upload URL generated successfully */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['PresignedUploadUrl'];
-        };
-      };
-      400: components['responses']['BadRequest'];
-      401: components['responses']['Unauthorized'];
-      500: components['responses']['InternalServerError'];
-    };
-  };
-  confirmProfilePictureUpload: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['ProfilePictureUploadConfirmRequest'];
-      };
-    };
-    responses: {
-      /** @description Upload confirmed successfully */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['ProfilePictureUploadConfirmResponse'];
-        };
-      };
-      400: components['responses']['BadRequest'];
-      401: components['responses']['Unauthorized'];
-      404: components['responses']['NotFound'];
-      500: components['responses']['InternalServerError'];
-    };
-  };
   requestProfilePictureUploadUrlForUser: {
     parameters: {
       query?: never;
@@ -3920,131 +3660,6 @@ export interface operations {
         };
         content?: never;
       };
-      401: components['responses']['Unauthorized'];
-      403: components['responses']['Forbidden'];
-      404: components['responses']['NotFound'];
-      500: components['responses']['InternalServerError'];
-    };
-  };
-  provisionUserWithRole: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['ProvisionUserRequest'];
-      };
-    };
-    responses: {
-      /** @description User provisioned (created or already existed) */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['ProvisionUserResponse'];
-        };
-      };
-      400: components['responses']['BadRequest'];
-      401: components['responses']['Unauthorized'];
-      403: components['responses']['Forbidden'];
-      500: components['responses']['InternalServerError'];
-      /**
-       * @description Cognito upstream error. Story 11.E.2 wired `AdminCreateUser` (silent) at READY,
-       *     so a transient Cognito 5xx, throttle, or network failure during the call is
-       *     mapped to `CognitoOperationException` → 502 here. Caller should retry; the
-       *     provisioning is idempotent.
-       */
-      502: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['ErrorResponse'];
-        };
-      };
-    };
-  };
-  issueInvitationCredentials: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Target user's username (Story 1.16.2) */
-        username: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Credentials issued or confirmed existing */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['InvitationCredentialsResponse'];
-        };
-      };
-      401: components['responses']['Unauthorized'];
-      403: components['responses']['Forbidden'];
-      404: components['responses']['NotFound'];
-      /**
-       * @description Cognito user is in a state that requires operator intervention (ARCHIVED,
-       *     COMPROMISED, UNKNOWN). EMS should NOT silently retry.
-       */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['ErrorResponse'];
-        };
-      };
-      500: components['responses']['InternalServerError'];
-      /**
-       * @description Upstream Cognito Admin SDK call failed. EMS should treat this as a transient
-       *     upstream error (retry after a brief backoff) and abort the INVITED transition.
-       */
-      502: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['ErrorResponse'];
-        };
-      };
-    };
-  };
-  patchUserProfile: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Target user's username (Story 1.16.2) */
-        username: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['PatchUserProfileRequest'];
-      };
-    };
-    responses: {
-      /** @description Profile patched successfully */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['UserResponse'];
-        };
-      };
-      400: components['responses']['BadRequest'];
       401: components['responses']['Unauthorized'];
       403: components['responses']['Forbidden'];
       404: components['responses']['NotFound'];

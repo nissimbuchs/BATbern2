@@ -22,6 +22,8 @@ export interface SelfNominateRequest {
  * Self-nominate as a speaker for {@code eventCode}. The attendee's name + company are
  * auto-filled server-side from their profile — the body carries only the proposed talk.
  *
+ * Story 4.10: `POST /events/{eventCode}/speaker-nominations` (it was `speakers/self-nominate`).
+ *
  * @throws on 409 if the event's topic is unset/unpublished, or the attendee already nominated.
  */
 export const selfNominateSpeaker = async (
@@ -29,7 +31,7 @@ export const selfNominateSpeaker = async (
   req: SelfNominateRequest
 ): Promise<SpeakerPoolResponse> => {
   const response = await apiClient.post<SpeakerPoolResponse>(
-    `/events/${eventCode}/speakers/self-nominate`,
+    `/events/${eventCode}/speaker-nominations`,
     req
   );
   return response.data;

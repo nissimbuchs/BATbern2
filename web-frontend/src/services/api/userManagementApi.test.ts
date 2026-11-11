@@ -465,7 +465,7 @@ describe('UserManagementApi', () => {
         updatedAt: '2025-01-20T10:00:00Z',
       };
 
-      mock.onPut(`/users/${username}`, updateData).reply(200, mockResponse);
+      mock.onPatch(`/users/${username}`, updateData).reply(200, mockResponse);
 
       const result = await updateUser(username, updateData);
 
@@ -491,7 +491,7 @@ describe('UserManagementApi', () => {
         updatedAt: '2025-01-20T10:00:00Z',
       };
 
-      mock.onPut(`/users/${username}`, updateData).reply(200, mockResponse);
+      mock.onPatch(`/users/${username}`, updateData).reply(200, mockResponse);
 
       const result = await updateUser(username, updateData);
 
@@ -502,7 +502,7 @@ describe('UserManagementApi', () => {
       const username = 'nonexistent.user';
       const updateData = { firstName: 'Ghost' };
 
-      mock.onPut(`/users/${username}`).reply(404, {
+      mock.onPatch(`/users/${username}`).reply(404, {
         code: 'USER_NOT_FOUND',
         message: 'User not found',
       });

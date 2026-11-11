@@ -68,7 +68,7 @@ const UserProfileTab: React.FC<UserProfileTabProps> = ({ user, activity }) => {
 
   const handlePhotoUpload = async (file: File) => {
     try {
-      await uploadPhotoMutation.mutateAsync({ file });
+      await uploadPhotoMutation.mutateAsync({ username: user.username, file });
     } catch (error) {
       console.error('Photo upload failed:', error);
     }
@@ -77,7 +77,7 @@ const UserProfileTab: React.FC<UserProfileTabProps> = ({ user, activity }) => {
   const handlePhotoRemove = async () => {
     if (window.confirm(t('profile.removePhotoConfirm'))) {
       try {
-        await removePhotoMutation.mutateAsync();
+        await removePhotoMutation.mutateAsync(user.username);
       } catch (error) {
         console.error('Photo removal failed:', error);
       }
@@ -87,10 +87,13 @@ const UserProfileTab: React.FC<UserProfileTabProps> = ({ user, activity }) => {
   const handleSave = async () => {
     try {
       await updateProfileMutation.mutateAsync({
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        bio: formData.bio,
-        companyId: formData.company?.name || undefined,
+        username: user.username,
+        updates: {
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          bio: formData.bio,
+          companyId: formData.company?.name || undefined,
+        },
       });
       setIsEditing(false);
     } catch (error) {

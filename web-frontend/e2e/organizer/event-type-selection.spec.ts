@@ -30,19 +30,29 @@
  * future event of that type — mutating it on staging (=prod) has a wide blast radius and no
  * clean restore. So ALL mutating paths are excluded:
  *   • The UI edit flow is opened and CANCELLED (never saved) — read-only.
- *   • The old `PUT /events/types/{type}` "update (ORGANIZER only)" and "400 invalid" API tests
+ *   • The old `PUT /events/types/{type}` (since Story 4.10b `/event-types/{type}`) "update
+ *     (ORGANIZER only)" and "400 invalid" API tests
  *     used `Bearer ${E2E_TEST_TOKEN}` (unset → never passed) AND mutate global config → DELETED.
  *   • The old `403 without role` PUT test is UNTESTABLE here: playwright.config injects a global
  *     `Authorization` header when AUTH_TOKEN is set, so a header-less `request.put` still runs
  *     AS ORGANIZER → it would 200 and MUTATE prod config, not 403 → DELETED. (Same reasoning
  *     PR 4 used to drop the authenticated reconcile-POST.)
- * Only read-only GET contract checks remain on the API side. Nothing in this spec mutates, so
- * there is no `@smoke` here — slice 4's single mutating+cleanup `@smoke` is the topic create
- * (topic-selection.spec.ts). All tests are `@gate`.
+ * Only read-only GET contract checks remain on the API side. Nothing in the `@gate` part mutates,
+ * so there is no `@smoke` here — slice 4's single mutating+cleanup `@smoke` is the topic create
+ * (topic-selection.spec.ts).
+ *
+ * Story 4.10b adds one MUTATING test, guarded to LOCAL DEV (`TEST_ENV=development`, never
+ * `@gate`): an organizer edits the EVENING default capacity in the admin tab, the value persists
+ * after a reload, and the exact prior configuration (read from `GET /event-types/EVENING`, every
+ * field) is written back afterwards, also when the test fails.
  */
 
 import { test, expect } from '@playwright/test';
 import { API_URL } from '../../playwright.config';
+import { readOrganizerToken } from '../helpers/event-fixture';
+
+const LOCAL_DEV = (process.env.TEST_ENV ?? 'development') === 'development';
+const describeLocal = LOCAL_DEV ? test.describe : test.describe.skip;
 
 test.describe('Event Type Selection (Story 5.1)', { tag: '@gate' }, () => {
   test.describe('Selector in the New-Event form', () => {
@@ -68,7 +78,7 @@ test.describe('Event Type Selection (Story 5.1)', { tag: '@gate' }, () => {
 
     test('should_showLoadingState_while_fetchingEventTypes', async ({ page }) => {
       // Delay the event-types fetch so the loading variant of the selector is observable.
-      await page.route('**/api/v1/events/types', async (route) => {
+      await page.route('**/api/v1/event-types', async (route) => {
         await new Promise((resolve) => setTimeout(resolve, 1000));
         await route.continue();
       });
@@ -110,9 +120,9 @@ test.describe('Event Type Selection (Story 5.1)', { tag: '@gate' }, () => {
     });
   });
 
-  test.describe('GET /events/types contract (read-only)', () => {
+  test.describe('GET /event-types contract (read-only)', () => {
     test('should_returnThreeEventTypes_when_listingTypes', async ({ request }) => {
-      const response = await request.get(`${API_URL}/api/v1/events/types`);
+      const response = await request.get(`${API_URL}/api/v1/event-types`);
       expect(response.status()).toBe(200);
 
       const eventTypes = (await response.json()) as Array<{
@@ -132,8 +142,57 @@ test.describe('Event Type Selection (Story 5.1)', { tag: '@gate' }, () => {
     });
 
     test('should_return404_when_eventTypeDoesNotExist', async ({ request }) => {
-      const response = await request.get(`${API_URL}/api/v1/events/types/INVALID_TYPE`);
+      const response = await request.get(`${API_URL}/api/v1/event-types/INVALID_TYPE`);
       expect(response.status()).toBe(404);
     });
+  });
+});
+
+describeLocal('Event Types admin edit (4.10b, local dev only)', () => {
+  type EventTypeConfig = Record<string, unknown> & { type: string; defaultCapacity: number };
+  let token: string;
+  let original: EventTypeConfig;
+
+  const apiCall = (method: string, body?: unknown) =>
+    fetch(`${API_URL}/api/v1/event-types/EVENING`, {
+      method,
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      body: body === undefined ? undefined : JSON.stringify(body),
+    });
+
+  test.beforeAll(async () => {
+    token = readOrganizerToken();
+    const res = await apiCall('GET');
+    expect(res.status).toBe(200);
+    original = (await res.json()) as EventTypeConfig;
+  });
+
+  test.afterAll(async () => {
+    // Write back every field of the configuration read before the test (the PUT replaces all).
+    const body = Object.fromEntries(Object.entries(original).filter(([key]) => key !== 'type'));
+    const res = await apiCall('PUT', body);
+    expect(res.status).toBe(200);
+    const restored = (await (await apiCall('GET')).json()) as EventTypeConfig;
+    expect(restored).toEqual(original);
+  });
+
+  test('should_persistDefaultCapacity_when_organizerSavesEventType', async ({ page }) => {
+    const edited = original.defaultCapacity + 7;
+
+    await page.goto('/organizer/admin?tab=0');
+    await expect(page.getByTestId('event-types-tab')).toBeVisible();
+    await page.getByTestId('edit-event-type-EVENING').click();
+    await page.getByTestId('event-type-config-default-capacity').fill(String(edited));
+    await page.getByTestId('event-type-config-save').click();
+    await expect(page.getByTestId('event-type-config-save')).toBeHidden();
+
+    await page.reload();
+    await expect(page.getByTestId('event-type-card-EVENING')).toContainText(String(edited));
+    const stored = (await (await apiCall('GET')).json()) as EventTypeConfig;
+    expect(stored.defaultCapacity).toBe(edited);
   });
 });

@@ -637,12 +637,34 @@ through this parent's path.
 |---|---|---|
 | Owned child under its parent | event photos, teaser images, thank-you notes, Q&A posts, session materials, partner notes, newsletter sends, watch pairing, speaker-pool entries (no username before READY) | allowed |
 | Transient technical handle | `uploadId`, `jobId`, merge or logo `requestId` | allowed |
-| Natural key is personal data | newsletter subscribers (the key would be an e-mail address, which must not appear in URLs or logs) | UUID required |
+| Natural key is personal data | newsletter subscribers, a user's additional e-mail addresses (the key would be an e-mail address, which must not appear in URLs or logs; `AdditionalEmail.id` also reaches EMS in the internal user response, where it is neither stored nor used: accepted, Story 4.10d) | UUID required |
 | Unnamed top-level aggregate | tasks, task templates, partner meetings, topic suggestions, own notifications | allowed |
 | Child outside its parent | the former `POST /speakers/{speakerId}/ai/analyze-abstract` | not allowed: nested under the event since Story 4.9 (`POST /events/{eventCode}/speakers/{speakerId}/abstract-analysis`, loaded with `findByIdAndEventId`) |
 
 Database rules above are unchanged. Five nested cases were checked on 2026-11-07 and all scope
 correctly; a scoping test per nested resource makes this a rule rather than a habit.
+
+**Speakers (Story 4.10, 2026-11-10).** A speaker of an event has one key: `{speakerId}`, the speaker
+pool entry UUID, under `/events/{eventCode}/speakers` (the owned-child case above). The other keys
+are gone: `/speakers/pool/{speakerId}`, `/speaker-pool/{speakerPoolId}`, and a username or UUID in
+`/speakers/{username}/send-invitation`. The Spectral rule `speaker-path-key` fails a different
+parameter in that position, a `speakerId` without `format: uuid`, and a second collection literal.
+The 2026-11-07 check above had missed the speakers: most speaker operations loaded the entry by
+bare id, so another event's speaker could be read and changed (status, review, outreach) through
+this event's path. Every one now loads through `SpeakerPoolLookup` (`findByIdAndEventId`), and
+`SpeakerCrossEventScopingIntegrationTest` proves it per operation (404, nothing changed, no mail).
+The 12 operations are accepted one by one in the lint owner file (group X1).
+
+**Additional e-mail addresses (Story 4.10d, 2026-11-11).** The four operations on one of the
+caller's additional addresses took the address in the path (`/users/me/additional-emails/{email}`:
+PATCH, DELETE, `make-primary`, `resend-verification`), so it landed in access logs, browser history
+and caches. They take `{emailId}` now, the existing `user_additional_emails.id`, loaded scoped to the
+caller (`findByIdAndUser`): another user's or an unknown id answers 404, nothing changes, no mail and
+no Cognito call. `AdditionalEmail` carries the `id` as a required field. The id also reaches EMS in
+the internal user response (`cums-internal` refs `UserResponse`); EMS neither stores nor uses it,
+which is accepted: the id never keys anything outside CUMS. Making an address primary replaces the
+rows, so the ids change and the client reads them again. The old `{email}` paths answer 400 (the
+segment is no UUID), pinned in the ITs. The 4 operations are accepted in lint owner group X3.
 
 ## Revision History
 
@@ -650,6 +672,8 @@ correctly; a scoping test per nested resource makes this a rule rather than a ha
 |------|---------|---------|--------|
 | 2025-11-02 | 1.0 | Initial ADR creation | Winston (Architect Agent) |
 | 2026-11-07 | 1.2 | Amendment: when a UUID in a path is allowed (owner decision after the 2026-11 review) | Winston (Architect Agent) |
+| 2026-11-10 | 1.3 | Amendment: one speaker key `{speakerId}`, scoped loads proven per operation (Story 4.10) | Claude Code |
+| 2026-11-11 | 1.4 | Amendment: a user's additional e-mail addresses keyed by `{emailId}`, the address leaves the path (Story 4.10d) | Claude Code |
 | 2025-11-08 | 1.1 | **CRITICAL CLARIFICATION**: Added comprehensive "Microservice Isolation Rules" section with 5 rules and decision tree. Made it crystal clear that cross-service references MUST use meaningful IDs (companyName, username, eventCode), NOT UUIDs. Updated database layer description to distinguish within-service vs. cross-service references. | Claude Code |
 
 ---

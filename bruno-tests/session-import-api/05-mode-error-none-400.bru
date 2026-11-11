@@ -1,0 +1,25 @@
+meta {
+  name: No mode answers 400
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{baseUrl}}/events/{{sessionImportEventCode}}/sessions
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+body:json {
+  {}
+}
+
+tests {
+  test("400", function() {
+    expect(res.getStatus()).to.equal(400);
+  });
+}

@@ -2,7 +2,7 @@
  * UserCreateEditModal Tests
  *
  * Covers the organizer's "remove photo" of another user, whose DELETE moved into
- * userAccountApi.removeProfilePictureForUser. HTTP is stubbed at the boundary with
+ * userAccountApi.removeProfilePicture (Story 4.10: one `/users/{username}/picture` set). HTTP is stubbed at the boundary with
  * axios-mock-adapter on apiClient; the real hooks and services run.
  */
 

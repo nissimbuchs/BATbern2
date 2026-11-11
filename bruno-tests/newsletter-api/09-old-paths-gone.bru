@@ -1,0 +1,32 @@
+meta {
+  name: The old paths are gone (/newsletter/subscribe)
+  type: http
+  seq: 9
+}
+
+post {
+  url: {{baseUrl}}/newsletter/subscribe
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+body:json {
+  {
+    "email": "{{newsletterEmail}}"
+  }
+}
+
+tests {
+  test("404 or 405, no handler", function() {
+    expect([404, 405]).to.include(res.getStatus());
+  });
+}
+
+docs {
+  Story 4.10c: breaking, no alias. Authenticated, so the gateway routes it and the
+  missing handler answers (anonymous it would be a 401 at the gateway).
+}

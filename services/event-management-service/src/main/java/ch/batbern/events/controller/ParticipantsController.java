@@ -3,19 +3,30 @@ package ch.batbern.events.controller;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Registration;
 import ch.batbern.events.registrations.api.generated.ParticipantsApi;
-import ch.batbern.events.registrations.dto.generated.AddParticipant201Response;
-import ch.batbern.events.registrations.dto.generated.AddParticipantRequest;
+import ch.batbern.events.registrations.dto.generated.AddParticipantsRequest;
+import ch.batbern.events.registrations.dto.generated.AddParticipantsResponse;
 import ch.batbern.events.registrations.dto.generated.DistributionListResponse;
+import ch.batbern.events.registrations.dto.generated.RegistrationPage;
+import ch.batbern.events.dto.RegistrationResponse;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.security.SecurityContextHelper;
 import ch.batbern.events.service.DistributionListService;
 import ch.batbern.events.service.ParticipantsDocxExportService;
 import ch.batbern.events.service.ParticipantsExportService;
 import ch.batbern.events.service.RegistrationService;
+import ch.batbern.shared.api.DeterministicPaging;
+import ch.batbern.shared.api.FilterCriteria;
+import ch.batbern.shared.api.FilterOperator;
+import ch.batbern.shared.api.FilterParser;
+import ch.batbern.shared.api.PaginationMetadata;
+import ch.batbern.shared.api.PaginationParams;
+import ch.batbern.shared.api.PaginationUtils;
 import ch.batbern.shared.exception.NotFoundException;
+import ch.batbern.shared.exception.ValidationException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.ByteArrayResource;
+import org.springframework.data.domain.Page;
 import org.springframework.core.io.Resource;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
@@ -30,13 +41,15 @@ import java.util.ArrayList;
 import java.util.Set;
 
 /**
- * Controller for event-participant download + per-event distribution-list resolution.
+ * Controller for event participants: create, badge downloads and per-event distribution lists.
  *
  * <p>{@code implements} the generated {@link ParticipantsApi} interface (event-registrations
  * spec, ADR-006 contract-first). The interface supplies verb/path/param mapping and generated
  * DTO types; the class-level {@code @RequestMapping("/api/v1")} supplies the version prefix.
  *
  * <ul>
+ *   <li>{@code POST /events/{eventCode}/participants} — organizer-only; the one create of
+ *       participants: a single user, a historical import list or the stakeholders (4.10c).</li>
  *   <li>{@code GET /events/{eventCode}/distribution-list/{kind}} — organizer-only (email
  *       addresses). Alias forwarding resolves the same lists in-process via
  *       {@code DistributionListService}, not over HTTP.</li>
@@ -86,36 +99,104 @@ public class ParticipantsController implements ParticipantsApi {
     }
 
     /**
-     * Organizer "Add participant": add an existing user onto the event as a confirmed
-     * participant (no self-registration / email-confirmation step). Organizer-only.
+     * The one create of participants (Story 4.10c): exactly one of {@code username} (single add,
+     * 201, optional {@code force}/{@code notify}), {@code people} (historical import, 200) or
+     * {@code stakeholders: true} (200). Any other combination is a 400. Organizer-only.
      *
-     * @return 201 with the created registration's code/status; 404 unknown event/user;
-     *         409 already-registered (generic) or capacity-full ({@code details.code =
-     *         "capacity_exceeded"} unless {@code force=true}).
+     * <p>Single add: an existing user as a confirmed participant (no self-registration step);
+     * 404 unknown user, 409 already registered or event full ({@code details.code =
+     * "capacity_exceeded"} unless {@code force=true}). Only this mode sends mail.
      */
     @Override
     @PreAuthorize("hasRole('ORGANIZER')")
-    public ResponseEntity<AddParticipant201Response> addParticipant(
+    public ResponseEntity<AddParticipantsResponse> addParticipants(
             String eventCode,
-            AddParticipantRequest request) {
-        log.debug("POST /events/{}/participants username={}", eventCode, request.getUsername());
+            AddParticipantsRequest request) {
+        Mode mode = mode(request);
+        log.debug("POST /events/{}/participants mode={}", eventCode, mode);
 
         Event event = eventRepository.findByEventCode(eventCode)
                 .orElseThrow(() -> new NotFoundException("Event not found: " + eventCode));
 
-        // Generated DTO booleans are nullable; preserve the spec defaults (force=false, notify=true).
-        boolean force = Boolean.TRUE.equals(request.getForce());
-        boolean notify = request.getNotify() == null || request.getNotify();
+        return switch (mode) {
+            case SINGLE -> {
+                // Spec defaults: force absent = false, notify absent = true.
+                boolean force = Boolean.TRUE.equals(request.getForce());
+                boolean notify = request.getNotify() == null || request.getNotify();
+                String addedBy = securityContextHelper.getCurrentUsername();
+                Registration registration = registrationService.addParticipant(
+                        event, request.getUsername(), force, notify, addedBy);
+                yield ResponseEntity.status(HttpStatus.CREATED).body(new AddParticipantsResponse()
+                        .registrationCode(registration.getRegistrationCode())
+                        .status(registration.getStatus())
+                        .attendeeUsername(registration.getAttendeeUsername()));
+            }
+            case PEOPLE -> ResponseEntity.ok(registrationService.importParticipants(event, request.getPeople()));
+            case STAKEHOLDERS -> {
+                RegistrationService.EnrollmentSummary result = registrationService.enrollStakeholders(event);
+                yield ResponseEntity.ok(new AddParticipantsResponse()
+                        .enrolled(result.enrolled())
+                        .skipped(result.skipped()));
+            }
+        };
+    }
 
-        String addedBy = securityContextHelper.getCurrentUsername();
-        Registration registration = registrationService.addParticipant(
-                event, request.getUsername(), force, notify, addedBy);
+    /**
+     * One attendee's registrations across all events, newest event first (Story 4.10b, moved from
+     * {@code EventController}'s {@code GET /events/registrations} with the username in a header).
+     * {@code filter} must be exactly {@code {"attendeeUsername": "<username>"}}; anything else 400.
+     */
+    @Override
+    @PreAuthorize("hasRole('ORGANIZER')")
+    public ResponseEntity<RegistrationPage> listUserRegistrations(String filter, Integer page, Integer limit) {
+        String attendeeUsername = attendeeUsernameFrom(filter);
+        PaginationParams params = PaginationUtils.parseParams(page, limit != null ? limit : 25);
+        Page<RegistrationResponse> result = registrationService.listForAttendee(
+                attendeeUsername, DeterministicPaging.orderedByQuery(params.getPage() - 1, params.getLimit()));
 
-        AddParticipant201Response body = new AddParticipant201Response()
-                .registrationCode(registration.getRegistrationCode())
-                .status(registration.getStatus())
-                .attendeeUsername(registration.getAttendeeUsername());
-        return ResponseEntity.status(HttpStatus.CREATED).body(body);
+        return ResponseEntity.ok(new RegistrationPage()
+                .data(result.getContent())
+                .pagination(PaginationMetadata.builder()
+                        .page(params.getPage())
+                        .limit(params.getLimit())
+                        .totalItems(result.getTotalElements())
+                        .totalPages(result.getTotalPages())
+                        .hasNext(result.hasNext())
+                        .hasPrev(result.hasPrevious())
+                        .build()));
+    }
+
+    /** The one filter {@code GET /registrations} accepts: {@code {"attendeeUsername": "<username>"}}. */
+    private static String attendeeUsernameFrom(String filter) {
+        FilterCriteria criteria = FilterParser.parse(filter);
+        if (criteria == null
+                || criteria.getOperator() != FilterOperator.EQUALS
+                || !"attendeeUsername".equals(criteria.getField())
+                || !(criteria.getValue() instanceof String username)
+                || username.isBlank()) {
+            throw new ValidationException("filter must be {\"attendeeUsername\": \"<username>\"}");
+        }
+        return username;
+    }
+
+    private enum Mode { SINGLE, PEOPLE, STAKEHOLDERS }
+
+    /** Exactly one mode per request; force and notify belong to the single add. */
+    private static Mode mode(AddParticipantsRequest request) {
+        boolean single = request.getUsername() != null;
+        boolean people = request.getPeople() != null;
+        boolean stakeholders = request.getStakeholders() != null;
+        int modes = (single ? 1 : 0) + (people ? 1 : 0) + (stakeholders ? 1 : 0);
+        if (modes != 1) {
+            throw new ValidationException("Give exactly one of username, people or stakeholders");
+        }
+        if (!single && (request.getForce() != null || request.getNotify() != null)) {
+            throw new ValidationException("force and notify belong to the single add (username)");
+        }
+        if (stakeholders && !request.getStakeholders()) {
+            throw new ValidationException("stakeholders must be true");
+        }
+        return single ? Mode.SINGLE : people ? Mode.PEOPLE : Mode.STAKEHOLDERS;
     }
 
     /**

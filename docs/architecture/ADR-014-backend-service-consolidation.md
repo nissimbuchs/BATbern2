@@ -1,7 +1,7 @@
 # ADR-014: Backend Service Consolidation — EMS + CUMS Primary; Speaker & Attendee Services Dormant
 
 ## Status
-Accepted (2026-06-26)
+Accepted (2026-06-26). Stubs and event bus removed from production 2026-11-10 (Epic 17, 17.2)
 
 ## Context
 
@@ -137,3 +137,13 @@ every service, so it has always been the mapper of the HTTP converters (API JSON
 
 Production cleanup after the deploy, with the owner's go: `delete-stack` the orphaned
 `BATbern-staging-EventBus` stack (CUMS and PCS no longer import its exports once deployed).
+
+## Production cleanup done 2026-11-10
+
+With the owner's go, the three orphaned stacks were deleted: `BATbern-staging-SpeakerCoordination`
+(1 task still running until then), `BATbern-staging-AttendeeExperience` (0 tasks) and
+`BATbern-staging-EventBus` (bus `batbern-staging`, no rules or archives). Before the delete, no
+other stack imported any of their exports. The two stub ECR repositories
+(`batbern/staging/speaker-coordination-service`, `.../attendee-experience-service`), which the CICD
+stack had retained, were deleted too. Production now runs four services (gateway, EMS, CUMS, PCS)
+and only the `default` event bus.

@@ -90,7 +90,7 @@ Because federation skips PostConfirmation and PreAuthentication (see Context #2)
 > **Consent addendum (Story 12.11, 2026-06-04):** the JIT/federated provisioning footprint
 > records **no ToS/Privacy consent** — `user_profiles.terms_accepted_at` (V17) stays NULL for
 > federated identities, and a frontend `ProtectedRoute` gate blocks consent-less users on
-> `/profile?onboarding=1` until they explicitly accept (write-once via `PUT /users/me`,
+> `/profile?onboarding=1` until they explicitly accept (write-once via `PATCH /users/{own username}` since Story 4.10, before `PUT /users/me`,
 > server clock). Native sign-ups get consent stamped by PostConfirmation while it still
 > exists; once PostConfirmation is retired (D7), the gate is the universal consent collector
 > for ALL new identities. See `06b-user-lifecycle-sync.md` Pattern C.

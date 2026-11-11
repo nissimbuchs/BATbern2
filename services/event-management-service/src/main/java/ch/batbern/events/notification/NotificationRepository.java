@@ -39,10 +39,16 @@ public interface NotificationRepository extends JpaRepository<Notification, UUID
     long countByRecipientUsernameAndStatus(String recipientUsername, String status);
 
     /**
-     * Find delivery history for a user by channel
+     * One notification, only if it belongs to the recipient (Story 4.10b): a caller never reaches
+     * another user's notification by id.
      */
-    java.util.List<Notification> findByRecipientUsernameAndChannelOrderByCreatedAtDesc(
-            String recipientUsername, String channel);
+    java.util.Optional<Notification> findByIdAndRecipientUsername(UUID id, String recipientUsername);
+
+    /**
+     * The recipient's notifications among the given ids; ids of other users are left out.
+     */
+    java.util.List<Notification> findAllByIdInAndRecipientUsername(
+            java.util.Collection<UUID> ids, String recipientUsername);
 
     /**
      * Find notifications by status created before a certain time (for cleanup jobs)

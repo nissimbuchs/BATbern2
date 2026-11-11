@@ -76,7 +76,7 @@ class CompanyServiceTest {
     @BeforeEach
     void setUp() {
         companyService = new CompanyService(companyRepository, logoRepository, eventPublisher, searchService,
-                securityContextHelper, genericLogoService, slugService);
+                securityContextHelper, genericLogoService, slugService, new CompanyInserter(companyRepository));
 
         // Story 1.16.2: the company name (key) is the identifier, a slug since 2026-11-09
         companyName = "testcompany";
@@ -655,41 +655,6 @@ class CompanyServiceTest {
         verify(companyRepository).save(argThat(company ->
             company.getName().equals(expectedSlug)
                 && company.getDisplayName().equals(displayName)
-        ));
-    }
-
-    @Test
-    @DisplayName("Test 4.28: should_addNumericSuffix_when_slugCollisionOccurs")
-    void should_addNumericSuffix_when_slugCollisionOccurs() {
-        // Given
-        String displayName = "Test Co";
-        String expectedSlug = "testco";
-        String collisionSlug = "testco2"; // within 12 letters/digits, not "testco-2"
-        when(securityContextHelper.getCurrentUsername()).thenReturn("test.user");
-        when(companyRepository.findByName(expectedSlug)).thenReturn(Optional.empty());
-        when(companyRepository.existsByName(expectedSlug)).thenReturn(true);
-        when(companyRepository.save(any(Company.class))).thenAnswer(invocation -> {
-            Company company = invocation.getArgument(0);
-            return Company.builder()
-                    .id(UUID.randomUUID())
-                    .name(company.getName())
-                    .displayName(company.getDisplayName())
-                    .isVerified(false)
-                    .createdBy(company.getCreatedBy())
-                    .createdAt(Instant.now())
-                    .updatedAt(Instant.now())
-                    .build();
-        });
-
-        // When
-        Company result = companyService.getOrCreateCompany(displayName);
-
-        // Then
-        assertThat(result).isNotNull();
-        assertThat(result.getName()).isEqualTo(collisionSlug);
-        assertThat(result.getDisplayName()).isEqualTo(displayName);
-        verify(companyRepository).save(argThat(company ->
-            company.getName().equals(collisionSlug)
         ));
     }
 

@@ -4,17 +4,15 @@ import ch.batbern.partners.client.CompanyServiceClient;
 import ch.batbern.partners.client.company.dto.CompanyResponse;
 import ch.batbern.partners.exception.CompanyNotFoundException;
 import ch.batbern.partners.exception.CompanyServiceException;
+import ch.batbern.shared.security.S2sHeaders;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpServerErrorException;
@@ -30,13 +28,14 @@ import java.util.List;
 /**
  * Implementation of CompanyServiceClient using Spring RestTemplate.
  *
- * Communicates with the Company User Management Service REST API to retrieve company data.
+ * Reads company data from the Company User Management Service's internal API
+ * ({@code docs/api/internal/cums-internal.openapi.yml}): {@code /internal/companies/**} is not routed
+ * by the API gateway and is reachable only inside the VPC (ADR-016 decision 2, Epic 17 6b).
  *
  * Features:
- * - JWT token propagation from incoming requests
+ * - Headers from {@link S2sHeaders#forCurrentUser()}: the user's JWT when there is one, none otherwise
  * - Aggressive caching (15min TTL) for performance
  * - Fail-fast error handling
- * - Comprehensive logging
  */
 @Component
 @RequiredArgsConstructor
@@ -49,9 +48,10 @@ public class CompanyServiceClientImpl implements CompanyServiceClient {
     private String companyServiceBaseUrl;
 
     /**
-     * Get company by company name.
+     * Get company by company name, from {@code GET /internal/companies/{name}} (the same
+     * {@code CompanyResponse} as the public {@code GET /api/v1/companies/{name}}, which stays for users).
      *
-     * Cached for 15 minutes to minimize API calls.
+     * Cached for 15 minutes to minimize API calls. The answer does not depend on the caller.
      *
      * @param companyName Company's name (unique identifier per ADR-003)
      * @return Company data
@@ -64,12 +64,11 @@ public class CompanyServiceClientImpl implements CompanyServiceClient {
         log.debug("Fetching company data for company name: {}", companyName);
 
         // One strictly encoded path segment: a '/', '?' or space in the name cannot change the path.
-        URI url = UriComponentsBuilder.fromUriString(companyServiceBaseUrl + "/api/v1/companies/{name}")
+        URI url = UriComponentsBuilder.fromUriString(companyServiceBaseUrl + "/internal/companies/{name}")
                 .encode().buildAndExpand(companyName).toUri();
 
         try {
-            HttpHeaders headers = createHeadersWithJwtToken();
-            HttpEntity<Void> request = new HttpEntity<>(headers);
+            HttpEntity<Void> request = new HttpEntity<>(S2sHeaders.forCurrentUser());
 
             ResponseEntity<CompanyResponse> response = restTemplate.exchange(
                     url,
@@ -126,7 +125,7 @@ public class CompanyServiceClientImpl implements CompanyServiceClient {
      *
      * <p>{@code /internal/companies} is not routed by the API gateway and needs no JWT
      * (service-to-service inside the VPC, like {@code /internal/users}); the user's JWT is
-     * forwarded when there is one.
+     * forwarded when there is one ({@link S2sHeaders}).
      */
     @Override
     public List<String> findCompanyNames(String search) {
@@ -138,7 +137,7 @@ public class CompanyServiceClientImpl implements CompanyServiceClient {
                 .toUri();
         try {
             ResponseEntity<List<String>> response = restTemplate.exchange(
-                    uri, HttpMethod.GET, new HttpEntity<>(createHeadersWithJwtToken()),
+                    uri, HttpMethod.GET, new HttpEntity<>(S2sHeaders.forCurrentUser()),
                     new ParameterizedTypeReference<List<String>>() { });
             List<String> names = response.getBody();
             return names != null ? names : List.of();
@@ -149,38 +148,5 @@ public class CompanyServiceClientImpl implements CompanyServiceClient {
             log.error("Company name search failed: {}", e.getMessage());
             throw new CompanyServiceException("Failed to connect to Company Service for the company-name search", e);
         }
-    }
-
-    /**
-     * Create HTTP headers with JWT token propagated from SecurityContext.
-     *
-     * Extracts the JWT token from the current security context and adds it
-     * to the Authorization header for service-to-service communication.
-     *
-     * @return HttpHeaders with Authorization Bearer token
-     */
-    private HttpHeaders createHeadersWithJwtToken() {
-        HttpHeaders headers = new HttpHeaders();
-
-        try {
-            Object principal = SecurityContextHolder.getContext()
-                    .getAuthentication()
-                    .getPrincipal();
-
-            if (principal instanceof Jwt jwt) {
-                String token = jwt.getTokenValue();
-                headers.set("Authorization", "Bearer " + token);
-                log.trace("JWT token propagated to Company Service");
-            } else {
-                log.warn("No JWT token found in SecurityContext, principal type: {}",
-                        principal != null ? principal.getClass().getSimpleName() : "null");
-            }
-
-        } catch (Exception e) {
-            log.warn("Failed to extract JWT token from SecurityContext: {}", e.getMessage());
-            // Continue without token - let the Company Service handle authorization
-        }
-
-        return headers;
     }
 }

@@ -34,7 +34,7 @@ import java.util.UUID;
  * Design Notes:
  * - References User (not Speaker) to reduce cross-service dependencies
  * - User entity contains all profile data (name, company, photo) per ADR-004
- * - Speaker-specific workflow data can be added later in speaker-coordination-service
+ * - Speaker-specific workflow data lives in the speaker pool of this service (ADR-009, ADR-014)
  * - Supports multiple speaker roles: primary_speaker, co_speaker, moderator, panelist
  */
 @Entity

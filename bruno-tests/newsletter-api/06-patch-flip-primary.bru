@@ -1,0 +1,44 @@
+meta {
+  name: PATCH /newsletter/my-subscriptions — flip the primary address only
+  type: http
+  seq: 6
+}
+
+patch {
+  url: {{baseUrl}}/newsletter/my-subscriptions
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+script:pre-request {
+  req.setBody({
+    email: bru.getVar("newsletterPrimary"),
+    subscribed: !bru.getVar("newsletterPrimarySubscribed"),
+  });
+}
+
+body:json {
+  {
+    "email": "replaced-by-the-pre-request-script@batbern.ch"
+  }
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("the primary address changed", function() {
+    const primary = res.getBody().addresses[0];
+    expect(primary.email).to.equal(bru.getVar("newsletterPrimary"));
+    expect(primary.subscribed).to.equal(!bru.getVar("newsletterPrimarySubscribed"));
+  });
+}
+
+docs {
+  Story 4.10c: partial PATCH per address (was PUT). No mail. 07 restores the state.
+}

@@ -145,8 +145,10 @@ public class UserController implements UserManagementApi {
     }
 
     @Override
-    public ResponseEntity<UserResponse> updateCurrentUser(UpdateUserRequest request) {
-        UserResponse updated = userService.updateCurrentUser(request);
+    @PreAuthorize("@userOwnership.isCurrentUser(#username) or hasAnyRole('ORGANIZER', 'ADMIN')")
+    public ResponseEntity<UserResponse> patchUser(String username, UpdateUserRequest request) {
+        // Story 4.10: one PATCH /users/{username} for self-service and organizers
+        UserResponse updated = userService.updateUser(username, request);
         return ResponseEntity.ok(updated);
     }
 
@@ -220,10 +222,9 @@ public class UserService {
         return mapToResponse(user, includes);
     }
 
-    public UserResponse updateCurrentUser(UpdateUserRequest request) {
-        UUID userId = getCurrentUserId();
-        User user = userRepository.findById(userId)
-            .orElseThrow(() -> new NotFoundException("User not found: " + userId));
+    public UserResponse updateUser(String username, UpdateUserRequest request) {
+        User user = userRepository.findByUsername(username)
+            .orElseThrow(() -> new NotFoundException("User not found: " + username));
 
         // Update fields from generated DTO
         if (request.getFirstName() != null) {

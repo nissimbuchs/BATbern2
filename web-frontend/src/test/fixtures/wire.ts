@@ -167,6 +167,7 @@ export function aSpeakerPoolEntry(
     proposedAbstract: null,
     createdAt: FIXTURE_CREATED_AT,
     updatedAt: FIXTURE_CREATED_AT,
+    remindersDisabled: false,
     sessionId: null,
     sessionSlug: null,
     username: null,

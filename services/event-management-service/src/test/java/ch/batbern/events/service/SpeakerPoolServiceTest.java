@@ -80,7 +80,8 @@ class SpeakerPoolServiceTest {
                 speakerPoolRepository, eventRepository, sessionContentHistoryRepository,
                 sessionRepository, sessionUserRepository,
                 sessionProposalRepository, userApiClient, eventPublisher, securityContextHelper,
-                primarySpeakerResolver, new SpeakerPoolMapper()
+                primarySpeakerResolver, new SpeakerPoolMapper(),
+                new SpeakerPoolLookup(eventRepository, speakerPoolRepository)
         );
 
         eventId = UUID.randomUUID();

@@ -269,7 +269,6 @@
     },
     "newsletter": {
       "title": "Newsletter",
-      "subscribe": "S'abonner à la newsletter",
       "description": "Recevoir des mises à jour mensuelles sur les événements BATbern"
     },
     "privacy": {

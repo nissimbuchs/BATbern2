@@ -1,0 +1,43 @@
+meta {
+  name: PATCH /newsletter/my-subscriptions — restore the primary address
+  type: http
+  seq: 7
+}
+
+patch {
+  url: {{baseUrl}}/newsletter/my-subscriptions
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+script:pre-request {
+  req.setBody({
+    email: bru.getVar("newsletterPrimary"),
+    subscribed: bru.getVar("newsletterPrimarySubscribed"),
+  });
+}
+
+body:json {
+  {
+    "email": "replaced-by-the-pre-request-script@batbern.ch"
+  }
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("the primary address is back where it was", function() {
+    const primary = res.getBody().addresses[0];
+    expect(primary.subscribed).to.equal(bru.getVar("newsletterPrimarySubscribed"));
+  });
+}
+
+docs {
+  Story 4.10c: puts back what 06 changed.
+}

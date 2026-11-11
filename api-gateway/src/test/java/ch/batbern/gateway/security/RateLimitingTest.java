@@ -209,7 +209,7 @@ class RateLimitingTest {
     // ════════════════════════════════════════════════════════════════════════════
     // T1.2 — per-IP, per-path anonymous limits on SES-triggering POSTs.
     // Goal: stop OWASP ZAP / scripted abuse from burning SES quota on
-    //   /events/*/registrations, /newsletter/subscribe, /registrations/deregister/by-email
+    //   /events/*/registrations, /newsletter/subscribers, /registrations/deregister/by-email
     // ════════════════════════════════════════════════════════════════════════════
 
     @Test
@@ -235,19 +235,33 @@ class RateLimitingTest {
     }
 
     @Test
-    @DisplayName("anonPathLimit — POST /newsletter/subscribe blocks after limit per IP")
+    @DisplayName("anonPathLimit — POST /newsletter/subscribers blocks after limit per IP")
     void should_blockNewsletterSubscribe_when_perIpLimitReached() {
         MockHttpServletRequest request = new MockHttpServletRequest();
         request.setMethod("POST");
-        request.setRequestURI("/api/v1/newsletter/subscribe");
+        request.setRequestURI("/api/v1/newsletter/subscribers");
         request.setRemoteAddr("203.0.113.11");
         when(rateLimitStorage.tryAcquireForPath(eq("203.0.113.11"),
-                eq("POST"), eq("/api/v1/newsletter/subscribe"),
+                eq("POST"), eq("/api/v1/newsletter/subscribers"),
                 any(), any())).thenReturn(false);
 
         boolean allowed = rateLimiter.isAnonymousRequestAllowed(request);
 
         assertThat(allowed).isFalse();
+    }
+
+    @Test
+    @DisplayName("anonPathLimit — the organizer's POST /newsletter/subscribers/{id}/unsubscribe is not the subscribe policy (4.10c, exact path)")
+    void should_notApplySubscribePolicy_when_postIsBelowTheCollection() {
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.setMethod("POST");
+        request.setRequestURI("/api/v1/newsletter/subscribers/00000000-0000-0000-0000-000000000001/unsubscribe");
+        request.setRemoteAddr("203.0.113.13");
+        when(rateLimitStorage.getRateLimit(any(), any())).thenReturn(50);
+
+        rateLimiter.isAnonymousRequestAllowed(request);
+
+        verify(rateLimitStorage, never()).tryAcquireForPath(any(), any(), any(), any(), any());
     }
 
     @Test
@@ -273,7 +287,7 @@ class RateLimitingTest {
     void should_useXForwardedFor_when_behindProxy() {
         MockHttpServletRequest request = new MockHttpServletRequest();
         request.setMethod("POST");
-        request.setRequestURI("/api/v1/newsletter/subscribe");
+        request.setRequestURI("/api/v1/newsletter/subscribers");
         request.setRemoteAddr("10.0.0.1"); // internal ALB hop
         request.addHeader("X-Forwarded-For", "198.51.100.42, 10.0.0.1");
         when(rateLimitStorage.tryAcquireForPath(any(), any(), any(), any(), any()))
@@ -289,7 +303,7 @@ class RateLimitingTest {
     void should_ignoreSpoofedFirstHop_when_clientSetsXForwardedFor() {
         MockHttpServletRequest request = new MockHttpServletRequest();
         request.setMethod("POST");
-        request.setRequestURI("/api/v1/newsletter/subscribe");
+        request.setRequestURI("/api/v1/newsletter/subscribers");
         request.setRemoteAddr("10.0.0.1");
         // The client sent "X-Forwarded-For: 192.0.2.77"; the ALB appended the real peer.
         request.addHeader("X-Forwarded-For", "192.0.2.77, 198.51.100.42");
@@ -310,19 +324,19 @@ class RateLimitingTest {
         // global anonymous quota. The stub argument must match the new keying.
         MockHttpServletRequest request = new MockHttpServletRequest();
         request.setMethod("GET");
-        request.setRequestURI("/api/v1/newsletter/subscribe");
+        request.setRequestURI("/api/v1/newsletter/subscribers");
         request.setRemoteAddr("203.0.113.20");
         when(rateLimitStorage.getCurrentRequestCount(
-                "anonymous:203.0.113.20", "/api/v1/newsletter/subscribe", "anonymous"))
+                "anonymous:203.0.113.20", "/api/v1/newsletter/subscribers", "anonymous"))
                 .thenReturn(0);
-        when(rateLimitStorage.getRateLimit("anonymous", "/api/v1/newsletter/subscribe")).thenReturn(50);
+        when(rateLimitStorage.getRateLimit("anonymous", "/api/v1/newsletter/subscribers")).thenReturn(50);
 
         boolean allowed = rateLimiter.isAnonymousRequestAllowed(request);
 
         assertThat(allowed).isTrue();
         verify(rateLimitStorage, never()).tryAcquireForPath(any(), any(), any(), any(), any());
         verify(rateLimitStorage).incrementRequestCount(
-                "anonymous:203.0.113.20", "/api/v1/newsletter/subscribe", "anonymous");
+                "anonymous:203.0.113.20", "/api/v1/newsletter/subscribers", "anonymous");
     }
 
     @Test

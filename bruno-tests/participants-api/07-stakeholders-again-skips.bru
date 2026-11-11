@@ -1,0 +1,37 @@
+meta {
+  name: Stakeholder mode — a second call enrols nobody
+  type: http
+  seq: 7
+}
+
+post {
+  url: {{baseUrl}}/events/{{participantsEventCode}}/participants
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+body:json {
+  {
+    "stakeholders": true
+  }
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("everyone skipped the second time", function() {
+    const body = res.getBody();
+    expect(body.enrolled).to.equal(0);
+    expect(body.skipped).to.equal(bru.getVar("participantsStakeholderTotal"));
+  });
+}
+
+docs {
+  Story 4.10c: idempotent stakeholder enrolment.
+}

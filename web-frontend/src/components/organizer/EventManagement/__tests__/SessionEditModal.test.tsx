@@ -21,6 +21,8 @@ type SaveFn = (sessionSlug: string, updates: SessionUpdateData) => Promise<void>
 import type { SessionUI } from '@/types/event.types';
 import { AxiosError } from 'axios';
 import { aSession } from '@/test/fixtures';
+import { HttpResponse } from 'msw';
+import { api } from '@/test/msw/api';
 
 // Mock SessionSpeakersTab to isolate SessionEditModal tests
 vi.mock('../SessionSpeakersTab', () => ({
@@ -917,7 +919,14 @@ describe('SessionEditModal - Delete Material', () => {
   });
 
   it('should_showError_when_deleteFails', async () => {
-    http.onDelete(MATERIAL_URL).networkError();
+    // On the MSW harness: real axios raises the error, the real sessionApiClient maps it.
+    http.restore();
+    api.on('deleteSessionMaterial', () =>
+      HttpResponse.json(
+        { status: 500, error: 'Internal Server Error', message: 'Material is locked' },
+        { status: 500 }
+      )
+    );
     const user = userEvent.setup();
     render(
       <SessionEditModal
@@ -936,11 +945,16 @@ describe('SessionEditModal - Delete Material', () => {
     await user.click(deleteButton);
 
     await waitFor(() => {
-      expect(screen.getByText('Network Error')).toBeInTheDocument();
+      expect(screen.getByText('Material is locked')).toBeInTheDocument();
     });
 
     // Material should still be in list
     expect(screen.getByText('slides.pptx')).toBeInTheDocument();
+    expect(api.calls('deleteSessionMaterial')[0].params).toEqual({
+      eventCode: 'BATbern99',
+      sessionSlug: 'test-session',
+      materialId: 'mat-1',
+    });
   });
 });
 

@@ -3,6 +3,7 @@ package ch.batbern.partners.client.impl;
 import ch.batbern.partners.client.EventManagementClient;
 import ch.batbern.partners.client.dto.AttendanceSummaryDTO;
 import ch.batbern.partners.client.dto.EventSummaryDTO;
+import ch.batbern.shared.security.S2sHeaders;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -10,11 +11,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
@@ -33,8 +31,10 @@ import java.util.List;
  * Story 8.1: Partner Attendance Dashboard
  * Story 8.3: Partner Meeting Coordination — getEventSummary for ICS generation
  *
- * Communicates with event-management-service to retrieve attendance data (public API, with the
- * user's JWT) and event schedules (internal API, no JWT needed).
+ * Communicates with event-management-service's internal API ({@code docs/api/internal/ems-internal.openapi.yml})
+ * to retrieve attendance data and event schedules. Every call carries the headers of
+ * {@link S2sHeaders#forCurrentUser()}: the user's JWT when there is one, none otherwise (ADR-016
+ * decision 3); neither operation depends on the caller.
  * Results are Caffeine-cached (15 min attendance, 1 hour event summary).
  */
 @Component
@@ -50,8 +50,10 @@ public class EventManagementClientImpl implements EventManagementClient {
     private String eventManagementBaseUrl;
 
     /**
-     * Get attendance summary for a company from event-management-service.
-     * Cached 15 minutes per (companyName, fromYear) pair (AC5).
+     * Get attendance summary for a company from event-management-service, from the internal
+     * {@code GET /internal/events/attendance-summary} (6b; the public
+     * {@code /api/v1/events/attendance-summary} before). The role and ownership check is
+     * {@code PartnerAnalyticsController}'s. Cached 15 minutes per (companyName, fromYear) pair (AC5).
      */
     @Override
     @Cacheable(value = "partnerAttendanceCache", key = "#companyName + '-' + #fromYear")
@@ -61,7 +63,7 @@ public class EventManagementClientImpl implements EventManagementClient {
 
         // Strictly encoded: a '+' or '&' in a company name stays part of the value.
         URI url = UriComponentsBuilder
-                .fromUriString(eventManagementBaseUrl + "/api/v1/events/attendance-summary")
+                .fromUriString(eventManagementBaseUrl + "/internal/events/attendance-summary")
                 .queryParam("companyName", "{companyName}")
                 .queryParam("fromYear", "{fromYear}")
                 .encode()
@@ -69,8 +71,7 @@ public class EventManagementClientImpl implements EventManagementClient {
                 .toUri();
 
         try {
-            HttpHeaders headers = createHeadersWithJwtToken();
-            HttpEntity<Void> request = new HttpEntity<>(headers);
+            HttpEntity<Void> request = new HttpEntity<>(S2sHeaders.forCurrentUser());
 
             ResponseEntity<List<AttendanceSummaryDTO>> response = restTemplate.exchange(
                     url,
@@ -114,7 +115,7 @@ public class EventManagementClientImpl implements EventManagementClient {
 
         try {
             // The user's JWT is forwarded when there is one (attribution); the operation needs none.
-            HttpEntity<Void> request = new HttpEntity<>(createHeadersWithJwtToken());
+            HttpEntity<Void> request = new HttpEntity<>(S2sHeaders.forCurrentUser());
             EventSchedule body = restTemplate.exchange(url, HttpMethod.GET, request, EventSchedule.class).getBody();
             if (body == null) {
                 throw new RuntimeException("Empty response from event-management-service for eventCode: " + eventCode);
@@ -156,25 +157,6 @@ public class EventManagementClientImpl implements EventManagementClient {
             return venueName;
         }
         return venueName + ", " + venueAddress;
-    }
-
-    private HttpHeaders createHeadersWithJwtToken() {
-        HttpHeaders headers = new HttpHeaders();
-        try {
-            Object principal = SecurityContextHolder.getContext()
-                    .getAuthentication()
-                    .getPrincipal();
-
-            if (principal instanceof Jwt jwt) {
-                headers.set("Authorization", "Bearer " + jwt.getTokenValue());
-                log.trace("JWT token propagated to event-management-service");
-            } else {
-                log.debug("No JWT token in SecurityContext for event-management-service call");
-            }
-        } catch (Exception e) {
-            log.warn("Failed to extract JWT token for event-management-service: {}", e.getMessage());
-        }
-        return headers;
     }
 
     /** Schema {@code EventSchedule} of the ems-internal spec; unknown properties are ignored. */

@@ -85,6 +85,24 @@ public class SecurityContextHelper {
     }
 
     /**
+     * Who acted on an {@code /internal} write (ADR-016 decision 3): the forwarded user's username
+     * ({@code custom:username}, else the subject) when the caller sent a JWT, otherwise
+     * {@code system:<job>}. Only a JWT counts as a user: an S2S call carries the user's token or
+     * nothing.
+     *
+     * @param systemJob the job named in the internal spec for calls without a user, e.g.
+     *                  {@code ems-speaker-workflow}
+     */
+    public String actorOr(String systemJob) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.getPrincipal() instanceof Jwt jwt) {
+            String username = jwt.getClaimAsString("custom:username");
+            return username != null && !username.isBlank() ? username : jwt.getSubject();
+        }
+        return "system:" + systemJob;
+    }
+
+    /**
      * Gets the current authenticated user's email from JWT token or mock user
      * @return User email (email claim from JWT or username from mock user)
      * @throws SecurityException if not authenticated

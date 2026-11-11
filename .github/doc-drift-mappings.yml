@@ -95,6 +95,40 @@ mappings:
     docs:
       - "docs/architecture/06-backend-architecture.md"
 
+  # ── Service-to-service calls (ADR-016, Epic 17 entries 6 and 6b) ─────────────
+  # A client's URL, transport or headers and the internal specs are the S2S contract: the
+  # direction and token rules, the guard baseline and the harness text live in these docs.
+  - source_pattern: "services/partner-coordination-service/src/main/java/ch/batbern/partners/client/"
+    docs:
+      - "docs/architecture/module-map.md"
+      - "docs/architecture/ADR-016-service-directions-and-service-to-service-calls.md"
+  - source_pattern: "services/event-management-service/src/main/java/ch/batbern/events/client/"
+    docs:
+      - "docs/architecture/module-map.md"
+      - "docs/architecture/ADR-016-service-directions-and-service-to-service-calls.md"
+  - source_pattern: "services/company-user-management-service/src/main/java/ch/batbern/companyuser/client/"
+    docs:
+      - "docs/architecture/module-map.md"
+      - "docs/architecture/ADR-016-service-directions-and-service-to-service-calls.md"
+  - source_pattern: "services/partner-coordination-service/src/main/java/ch/batbern/partners/mail/HttpOutboundMailRecorder.java"
+    docs:
+      - "docs/architecture/module-map.md"
+      - "docs/architecture/ADR-016-service-directions-and-service-to-service-calls.md"
+  - source_pattern: "api-gateway/src/main/java/ch/batbern/gateway/client/GatewayUserStatusClient.java"
+    docs:
+      - "docs/architecture/module-map.md"
+      - "docs/architecture/ADR-016-service-directions-and-service-to-service-calls.md"
+  # The topic canvas composes partner-coordination and EMS data in the browser (entry 8) instead of
+  # EMS calling partner-coordination; moving it back would reopen the EMS→PCS edge.
+  - source_pattern: "web-frontend/src/services/blobTopicService.ts"
+    docs:
+      - "docs/architecture/ADR-016-service-directions-and-service-to-service-calls.md"
+      - "docs/api/topics-api.openapi.yml"
+  - source_pattern: "docs/api/internal/"
+    docs:
+      - "docs/architecture/module-map.md"
+      - "docs/architecture/coding-standards.md"
+
   # ── Frontend ─────────────────────────────────────────────────────────────────
   - source_pattern: "web-frontend/src/components/speaker"
     docs:

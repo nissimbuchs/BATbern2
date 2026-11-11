@@ -59,6 +59,7 @@ public class SpeakerStatusService {
     private final AgendaConfigResolver agendaConfigResolver;
     private final SpeakerWorkflowService speakerWorkflowService;
     private final SessionContentHistoryRepository sessionContentHistoryRepository;
+    private final SpeakerPoolLookup speakerPoolLookup;
 
     /**
      * Update speaker status by delegating to {@link SpeakerWorkflowService#transition} — the
@@ -97,9 +98,9 @@ public class SpeakerStatusService {
         log.info("Updating speaker {} status to {} for event {} by {}",
             speakerId, request.getNewStatus(), eventCode, organizerUsername);
 
-        // Early existence check
-        SpeakerPool speaker = speakerPoolRepository.findById(speakerId)
-                .orElseThrow(() -> new NotFoundException("Speaker not found: " + speakerId));
+        // Early existence check, scoped to the event in the path (ADR-003, Story 4.10): an entry
+        // of another event is 404 and is never transitioned through this event's path.
+        SpeakerPool speaker = speakerPoolLookup.inEvent(eventCode, speakerId);
 
         // Organizer-facing API: forbid same-state writes on terminal DECLINED to prevent
         // audit-trail pollution via reason-less "re-affirm" clicks. Programmatic same-state
@@ -144,16 +145,18 @@ public class SpeakerStatusService {
     public List<StatusHistoryItem> getStatusHistory(String eventCode, UUID speakerId) {
         log.debug("Fetching status history for speaker {} in event {}", speakerId, eventCode);
 
+        // Scoped to the event in the path (ADR-003, Story 4.10): another event's entry is 404.
+        SpeakerPool speaker = speakerPoolLookup.inEvent(eventCode, speakerId);
+
         List<SpeakerStatusHistory> history = repository.findBySpeakerPoolIdOrderByChangedAtDesc(speakerId);
 
         // Interleave content-rejection events (ADR-009: rejecting content does NOT transition
         // workflow state, so it never lands in speaker_status_history — but the organizer
         // History tab needs to show the feedback and timestamp). Look up the speaker's
         // session and surface every session_content_history row that carries reviewerFeedback.
-        List<SessionContentVersion> rejections = speakerPoolRepository.findById(speakerId)
-            .map(SpeakerPool::getSessionId)
-            .map(sessionContentHistoryRepository::findRejectedBySessionIdOrderByReviewedAtDesc)
-            .orElseGet(List::of);
+        List<SessionContentVersion> rejections = speaker.getSessionId() == null
+            ? List.of()
+            : sessionContentHistoryRepository.findRejectedBySessionIdOrderByReviewedAtDesc(speaker.getSessionId());
 
         return java.util.stream.Stream.concat(
                 history.stream().map(this::mapToHistoryItem),

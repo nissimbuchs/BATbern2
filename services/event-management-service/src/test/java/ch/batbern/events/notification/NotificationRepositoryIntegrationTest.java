@@ -1,13 +1,13 @@
 package ch.batbern.events.notification;
 
 import ch.batbern.shared.test.AbstractIntegrationTest;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.List;
@@ -24,8 +24,10 @@ import static org.assertj.core.api.Assertions.assertThat;
  * - Query methods work correctly
  * - Indexes are being used
  * - ADR-003 compliance (meaningful IDs work)
+ *
+ * Data is committed and removed before and after each test, no class-level {@code @Transactional}
+ * (Test fidelity rules).
  */
-@Transactional
 class NotificationRepositoryIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
@@ -39,6 +41,11 @@ class NotificationRepositoryIntegrationTest extends AbstractIntegrationTest {
         notificationRepository.deleteAll();
         testUsername = "john.doe";
         testEventCode = "BATbern123";
+    }
+
+    @AfterEach
+    void tearDown() {
+        notificationRepository.deleteAll();
     }
 
     /**
@@ -127,23 +134,19 @@ class NotificationRepositoryIntegrationTest extends AbstractIntegrationTest {
     }
 
     /**
-     * Should find delivery history by channel
+     * Story 4.10b: a notification is loaded scoped to its recipient; another user's id finds nothing.
      */
     @Test
-    void should_findDeliveryHistory_when_queryingByUsernameAndChannel() {
-        // Given
-        Notification email = createNotificationWithChannel(testUsername, "EMAIL");
-        Notification sms = createNotificationWithChannel(testUsername, "SMS");
+    void should_findOnlyOwnNotifications_when_loadingByIdAndRecipient() {
+        Notification own = notificationRepository.save(createNotificationWithChannel(testUsername, "IN_APP"));
+        Notification foreign = notificationRepository.save(createNotificationWithChannel("hongan.nguyen", "IN_APP"));
 
-        notificationRepository.saveAll(List.of(email, sms));
-
-        // When
-        List<Notification> result = notificationRepository
-                .findByRecipientUsernameAndChannelOrderByCreatedAtDesc(testUsername, "EMAIL");
-
-        // Then
-        assertThat(result).hasSize(1);
-        assertThat(result.get(0).getChannel()).isEqualTo("EMAIL");
+        assertThat(notificationRepository.findByIdAndRecipientUsername(own.getId(), testUsername)).isPresent();
+        assertThat(notificationRepository.findByIdAndRecipientUsername(foreign.getId(), testUsername)).isEmpty();
+        assertThat(notificationRepository.findAllByIdInAndRecipientUsername(
+                List.of(own.getId(), foreign.getId()), testUsername))
+                .extracting(Notification::getId)
+                .containsExactly(own.getId());
     }
 
     /**

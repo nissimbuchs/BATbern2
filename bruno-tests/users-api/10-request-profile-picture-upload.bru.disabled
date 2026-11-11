@@ -5,7 +5,7 @@ meta {
 }
 
 post {
-  url: {{baseUrl}}/users/me/picture/presigned-url
+  url: {{baseUrl}}/users/{{currentUsername}}/picture/presigned-url
   body: json
   auth: bearer
 }

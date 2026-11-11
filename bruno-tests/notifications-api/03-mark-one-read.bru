@@ -1,0 +1,36 @@
+meta {
+  name: Mark one notification read (PATCH /notifications/{id})
+  type: http
+  seq: 3
+}
+
+patch {
+  url: {{baseUrl}}/notifications/{{notifId}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+body:json {
+  {
+    "status": "READ"
+  }
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("one notification marked", function() {
+    expect(res.getBody().success).to.equal(true);
+    expect(res.getBody().markedCount).to.equal(1);
+  });
+}
+
+docs {
+  Story 4.10b: replaces PUT /notifications/{id}/read.
+}

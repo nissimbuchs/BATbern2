@@ -1,7 +1,6 @@
 package ch.batbern.events.controller;
 
 import ch.batbern.events.config.CacheConfig;
-import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.SpeakerPool;
 import ch.batbern.events.mapper.SpeakerPoolMapper;
 import ch.batbern.events.speakers.api.generated.SpeakerStatusApi;
@@ -18,16 +17,15 @@ import ch.batbern.events.speakers.dto.generated.SubmitContentRequest;
 import ch.batbern.events.speakers.dto.generated.UpdateStatusRequest;
 import ch.batbern.events.exception.InvalidPromotionStateException;
 import ch.batbern.events.exception.ReadyRequiresPromoteException;
-import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
 import ch.batbern.events.service.ContentSubmissionService;
 import ch.batbern.events.service.QualityReviewService;
+import ch.batbern.events.service.SpeakerPoolLookup;
 import ch.batbern.events.service.SpeakerStatusService;
 import ch.batbern.events.service.SpeakerWorkflowService;
 import ch.batbern.events.service.content.ContentSubmissionPayload;
 import ch.batbern.events.service.workflow.TransitionPayload;
 import ch.batbern.shared.exception.InvalidStateTransitionException;
-import ch.batbern.shared.exception.NotFoundException;
 import ch.batbern.shared.types.SpeakerWorkflowState;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -63,10 +61,10 @@ public class SpeakerStatusController implements SpeakerStatusApi {
     private final QualityReviewService qualityReviewService;
     private final SpeakerWorkflowService speakerWorkflowService;
     private final SpeakerPoolRepository speakerPoolRepository;
-    private final EventRepository eventRepository;
     private final ch.batbern.events.security.SecurityContextHelper securityContextHelper;
     private final ch.batbern.events.service.PrimarySpeakerResolver primarySpeakerResolver;
     private final SpeakerPoolMapper speakerPoolMapper;
+    private final SpeakerPoolLookup speakerPoolLookup;
 
     /**
      * Promote a CONTACTED speaker to READY (Story 11.D.1). Drives the {@code CONTACTED → READY}
@@ -86,15 +84,8 @@ public class SpeakerStatusController implements SpeakerStatusApi {
 
         log.info("POST /api/v1/events/{}/speakers/{}/promote", eventCode, speakerId);
 
-        Event event = eventRepository.findByEventCode(eventCode)
-                .orElseThrow(() -> new NotFoundException("Event not found: " + eventCode));
-        SpeakerPool speaker = speakerPoolRepository.findById(speakerId)
-                .orElseThrow(() -> new NotFoundException("Speaker pool entry not found: " + speakerId));
-
-        if (!event.getId().equals(speaker.getEventId())) {
-            throw new NotFoundException(
-                    "Speaker " + speakerId + " does not belong to event " + eventCode);
-        }
+        // Scoped to the event in the path (ADR-003, Story 4.10): another event's entry is 404.
+        SpeakerPool speaker = speakerPoolLookup.inEvent(eventCode, speakerId);
 
         SpeakerWorkflowState current = speaker.getStatus();
         if (current != SpeakerWorkflowState.CONTACTED) {
@@ -119,7 +110,7 @@ public class SpeakerStatusController implements SpeakerStatusApi {
         } catch (InvalidStateTransitionException ex) {
             // TOCTOU: state changed between the pre-check and the transition reload. Re-classify
             // the generic 422 as the tailored 409 the dialog renders, using the latest known state.
-            SpeakerWorkflowState latest = speakerPoolRepository.findById(speakerId)
+            SpeakerWorkflowState latest = speakerPoolRepository.findByIdAndEventId(speakerId, speaker.getEventId())
                     .map(SpeakerPool::getStatus)
                     .orElse(current);
             throw new InvalidPromotionStateException(latest,
@@ -227,13 +218,13 @@ public class SpeakerStatusController implements SpeakerStatusApi {
     public ResponseEntity<SpeakerContentResponse> getSpeakerContent(
             String eventCode, UUID speakerId) {
         log.info("GET /api/v1/events/{}/speakers/{}/content", eventCode, speakerId);
-        return ResponseEntity.ok(contentSubmissionService.getSpeakerContent(speakerId.toString()));
+        return ResponseEntity.ok(contentSubmissionService.getSpeakerContent(eventCode, speakerId));
     }
 
     /**
      * Get quality-review queue (Story 5.5 AC11). API-consolidation Phase 7: maps the
      * CONTENT_SUBMITTED pool entries to {@link SpeakerPoolResponse} (the same shape as
-     * GET /speakers/pool), replacing the prior raw-entity return.
+     * GET /events/{eventCode}/speakers), replacing the prior raw-entity return.
      */
     @Override
     @PreAuthorize("hasRole('ORGANIZER')")
@@ -261,10 +252,10 @@ public class SpeakerStatusController implements SpeakerStatusApi {
         String moderatorUsername = getCurrentUsername();
 
         if (reviewRequest.getAction() == ReviewAction.APPROVE) {
-            qualityReviewService.approveContent(speakerId.toString(), moderatorUsername);
+            qualityReviewService.approveContent(eventCode, speakerId, moderatorUsername);
         } else if (reviewRequest.getAction() == ReviewAction.REJECT) {
             qualityReviewService.rejectContent(
-                    speakerId.toString(), reviewRequest.getFeedback(), moderatorUsername);
+                    eventCode, speakerId, reviewRequest.getFeedback(), moderatorUsername);
         }
 
         return ResponseEntity.noContent().build();

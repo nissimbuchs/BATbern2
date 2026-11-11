@@ -72,6 +72,16 @@ class DomainRouterTest {
                 .isEqualTo("company-user-management-service");
     }
 
+    @Test
+    @DisplayName("should_routeHomepagePhotosToEms_when_publicEventPhotosCalled")
+    void should_routeHomepagePhotosToEms_when_publicEventPhotosCalled() {
+        // Story 4.10b: the one /public/event-photos path is EMS; other /public paths stay CUMS.
+        assertThat(domainRouter.determineTargetService("/api/v1/public/event-photos?limit=20"))
+                .isEqualTo("event-management-service");
+        assertThat(domainRouter.determineTargetService("/api/v1/public/event-photos/x"))
+                .isEqualTo("company-user-management-service");
+    }
+
     // Regression: /api/v1/event-types must route to EMS. There was NO route for it
     // (it doesn't match the /api/v1/events prefix — the hyphen breaks it), so the
     // gateway threw RoutingException → 500. The event-types-api Bruno suite had been
@@ -604,17 +614,19 @@ class DomainRouterTest {
     }
 
     // Regression test for the double-encoding bug caught by Bruno
-    // users-api/17-delete-additional-email. The DELETE path embeds a URL-encoded
+    // users-api/17-delete-additional-email. The DELETE path then embedded a URL-encoded
     // email (`bruno-test-<ts>%40e2e.batbern.invalid`); a previous build() default
     // re-encoded the `%` as `%25`, producing `%2540` upstream which Spring
     // Security's StrictHttpFirewall rejects ("potentially malicious String '%25'").
+    // Since Story 4.10d no path carries an address (the additional email is keyed by its id),
+    // but any percent-encoded path segment must still be forwarded verbatim.
     @Test
     @DisplayName("should_preservePathEncoding_when_pathContainsPercentEncodedAtSign")
     void should_preservePathEncoding_when_pathContainsPercentEncodedAtSign() {
         // Given
         String targetService = "company-user-management-service";
         MockHttpServletRequest request = new MockHttpServletRequest();
-        request.setRequestURI("/api/v1/users/me/additional-emails/bruno-test-1234%40e2e.batbern.invalid");
+        request.setRequestURI("/api/v1/companies/a%40b%20c");
         request.setMethod("DELETE");
 
         ArgumentCaptor<URI> uriCaptor = ArgumentCaptor.forClass(URI.class);
@@ -633,7 +645,7 @@ class DomainRouterTest {
         assertThat(rawPath).contains("%40");
         assertThat(rawPath).doesNotContain("%2540");
         assertThat(uriCaptor.getValue().toString())
-                .isEqualTo("http://localhost:8085/api/v1/users/me/additional-emails/bruno-test-1234%40e2e.batbern.invalid");
+                .isEqualTo("http://localhost:8085/api/v1/companies/a%40b%20c");
     }
 
     // Regression test for the Cache-Control stripping bug caught by Bruno

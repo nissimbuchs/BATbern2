@@ -37,7 +37,7 @@ public class RateLimiter {
      */
     private static final List<PathPolicy> ANON_PATH_POLICIES = List.of(
             new PathPolicy("POST", "/api/v1/events/*/registrations", 5, Duration.ofMinutes(5)),
-            new PathPolicy("POST", "/api/v1/newsletter/subscribe", 5, Duration.ofMinutes(5)),
+            new PathPolicy("POST", "/api/v1/newsletter/subscribers", 5, Duration.ofMinutes(5)),
             new PathPolicy("POST", "/api/v1/registrations/deregister/by-email", 3, Duration.ofMinutes(5))
     );
 

@@ -13,7 +13,7 @@
  *    GET /companies/{slug}), falling back to the display-name initial.
  *  - When no existing company matches the query, an explicit "Create new company" row
  *    lets the user deliberately create one. Picking it MATERIALISES the company via
- *    POST /companies:get-or-create and reports the resulting canonical-slug Company,
+ *    POST /companies/get-or-create and reports the resulting canonical-slug Company,
  *    so every parent's existing `company.name` save logic keeps working unchanged.
  *
  * Contract unchanged: fully controlled, `value: Company | null`, `onChange(Company | null)`.

@@ -28,10 +28,12 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.springframework.http.HttpMethod.GET;
 
 /**
- * Contract test of {@link EventManagementClient} against the EMS specs (Story 17.0b1):
- * {@code GET /events/attendance-summary} (event-analytics-api) and
- * {@code GET /internal/events/{eventCode}/schedule} (ems-internal; before the 17.0 deferred work the
- * public {@code GET /events/{eventCode}?include=sessions}, which shows sessions to organizers only).
+ * Contract test of {@link EventManagementClient} against the EMS internal spec (Story 17.0b1):
+ * {@code GET /internal/events/attendance-summary} (Epic 17 6b; the public
+ * {@code GET /events/attendance-summary} of event-analytics-api before) and
+ * {@code GET /internal/events/{eventCode}/schedule} (before the 17.0 deferred work the public
+ * {@code GET /events/{eventCode}?include=sessions}, which shows sessions to organizers only). Each
+ * call runs with a signed-in user's JWT (forwarded) and without (no {@code Authorization}).
  */
 @RestClientTest(components = {
     ch.batbern.partners.client.impl.EventManagementClientImpl.class,
@@ -41,7 +43,6 @@ import static org.springframework.http.HttpMethod.GET;
 @TestPropertySource(properties = "event-management-service.base-url=http://event-management:8080")
 class EventManagementClientContractTest {
 
-    private static final String ANALYTICS = "docs/api/event-analytics-api.openapi.yml";
     private static final String EMS_INTERNAL = "docs/api/internal/ems-internal.openapi.yml";
 
     @Autowired
@@ -57,7 +58,8 @@ class EventManagementClientContractTest {
 
     @BeforeEach
     void setUp() {
-        Jwt jwt = Jwt.withTokenValue("partner-token").header("alg", "RS256").claim("sub", "partner.user").build();
+        Jwt jwt = Jwt.withTokenValue("partner-token").header("alg", "RS256").claim("sub", "partner.user")
+                .expiresAt(Instant.now().plusSeconds(3600)).build();
         SecurityContextHolder.getContext().setAuthentication(new JwtAuthenticationToken(jwt));
         cacheManager.getCacheNames().forEach(name -> cacheManager.getCache(name).clear());
     }
@@ -72,8 +74,8 @@ class EventManagementClientContractTest {
 
     @Test
     void should_mapAttendanceSummary_fromSpecExample() {
-        server = ContractServer.bindTo(restTemplate, ANALYTICS);
-        server.expect(GET, "/api/v1/events/attendance-summary")
+        server = ContractServer.bindTo(restTemplate, EMS_INTERNAL);
+        server.expect(GET, "/internal/events/attendance-summary")
                 .withQueryParam("companyName", "GoogleZH")
                 .andExpect(r -> assertThat(r.getHeaders().getFirst(HttpHeaders.AUTHORIZATION))
                         .isEqualTo("Bearer partner-token"))
@@ -88,9 +90,23 @@ class EventManagementClientContractTest {
     }
 
     @Test
+    @DisplayName("without a user (async, scheduler, test) the attendance read goes out without Authorization")
+    void should_readAttendanceSummary_when_noJwtToForward() {
+        SecurityContextHolder.clearContext();
+        server = ContractServer.bindTo(restTemplate, EMS_INTERNAL);
+        server.expect(GET, "/internal/events/attendance-summary")
+                .withQueryParam("companyName", "GoogleZH").withQueryParam("fromYear", "2021")
+                .andExpect(r -> assertThat(r.getHeaders().containsHeader(HttpHeaders.AUTHORIZATION)).isFalse())
+                .respondWithExample();
+
+        assertThat(client.getAttendanceSummary("GoogleZH", 2021)).hasSize(2);
+        server.verify();
+    }
+
+    @Test
     void should_encodeCompanyNameStrictly_inAttendanceQuery() {
-        server = ContractServer.bindTo(restTemplate, ANALYTICS);
-        server.expect(GET, "/api/v1/events/attendance-summary")
+        server = ContractServer.bindTo(restTemplate, EMS_INTERNAL);
+        server.expect(GET, "/internal/events/attendance-summary")
                 .withQueryParam("companyName", "Meier+Partner & Co")
                 .andExpect(r -> assertThat(r.getURI().getRawQuery())
                         .isEqualTo("companyName=Meier%2BPartner%20%26%20Co&fromYear=2021"))
@@ -133,6 +149,19 @@ class EventManagementClientContractTest {
         assertThat(summary.eventDate()).isEqualTo(LocalDate.of(2026, 11, 5));
         // EMS always has the venue address (venue_address NOT NULL, required since 4.9b)
         assertThat(summary.venue()).isEqualTo("Kursaal Bern, Kornhausstrasse 3, 3013 Bern");
+        server.verify();
+    }
+
+    @Test
+    @DisplayName("a signed-in user's JWT is forwarded to the schedule read")
+    void should_forwardJwt_when_readingEventSummary() {
+        server = ContractServer.bindTo(restTemplate, EMS_INTERNAL);
+        server.expect(GET, "/internal/events/{eventCode}/schedule")
+                .andExpect(r -> assertThat(r.getHeaders().getFirst(HttpHeaders.AUTHORIZATION))
+                        .isEqualTo("Bearer partner-token"))
+                .respondWithExample("agendaPublished");
+
+        assertThat(client.getEventSummary("BATbern142").title()).isEqualTo("BATbern 142 - Cloud Native");
         server.verify();
     }
 

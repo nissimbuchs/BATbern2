@@ -97,8 +97,6 @@ class ProductionSecurityFilterChainTest {
 
     @ParameterizedTest
     @ValueSource(strings = {
-        "/api/v1/events/attendance-summary",
-        "/api/v1/events/registrations",
         "/api/v1/events/BATbern60/sessions/unassigned",
         "/api/v1/events/BATbern60/sessions/conflicts"
     })
@@ -114,12 +112,27 @@ class ProductionSecurityFilterChainTest {
     @ValueSource(strings = {
         "/api/v1/events/BATbern60",
         "/api/v1/events/BATbern60/sessions/keynote",
-        "/api/v1/events/types",
-        "/api/v1/events/recent-photos"
+        // Story 4.10b: moved out of the {eventCode} namespace, public by exact path
+        "/api/v1/event-types",
+        "/api/v1/public/event-photos"
     })
     @DisplayName("should_reachService_when_anonymousRequestsPublicEventPath")
     void should_reachService_when_anonymousRequestsPublicEventPath(String path) throws Exception {
         mockMvc.perform(get(path)).andExpect(status().isOk());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+        "/api/v1/registrations",
+        "/api/v1/event-types/EVENING",
+        "/api/v1/public/event-photos/x",
+        "/api/v1/notifications"
+    })
+    @DisplayName("should_return401_when_anonymousRequestsOrganizerPathOf410b")
+    void should_return401_when_anonymousRequestsOrganizerPathOf410b(String path) throws Exception {
+        // Story 4.10b: the attendee history, one event type and the inbox need a token; only the
+        // exact public paths above are anonymous.
+        mockMvc.perform(get(path)).andExpect(status().isUnauthorized());
     }
 
     @Test
@@ -161,7 +174,8 @@ class ProductionSecurityFilterChainTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"/internal/users/john.doe", "/internal/users", "/internal/partner-meetings/rsvps"})
+    @ValueSource(strings = {"/internal/users/john.doe", "/internal/users", "/internal/partner-meetings/rsvps",
+        "/internal/users/provision", "/internal/companies/acme", "/internal/events/attendance-summary"})
     @DisplayName("should_denyInternalPath_when_requestedThroughGateway")
     void should_denyInternalPath_when_requestedThroughGateway(String path) throws Exception {
         // /internal/** is the VPC-only service API; even a valid token must not reach it here.

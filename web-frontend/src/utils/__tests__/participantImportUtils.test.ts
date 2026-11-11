@@ -3,7 +3,7 @@ import {
   parseParticipantCsv,
   generateSyntheticEmail,
   extractEventParticipation,
-  convertParticipantToRegistrationRequest,
+  convertParticipantToImportRow,
 } from '../participantImportUtils';
 import type { SourceParticipant } from '../../types/participantImport.types';
 
@@ -208,8 +208,8 @@ describe('participantImportUtils', () => {
     });
   });
 
-  describe('convertParticipantToRegistrationRequest', () => {
-    it('should_convertToRequest_when_validParticipantProvided', () => {
+  describe('convertParticipantToImportRow', () => {
+    it('should_convertToImportRow_when_validParticipantProvided', () => {
       const participant: SourceParticipant = {
         Name: 'John Doe',
         FirstName: 'John',
@@ -223,16 +223,13 @@ describe('participantImportUtils', () => {
         participant[i.toString()] = i === 2 || i === 5 || i === 25 ? '1' : '';
       }
 
-      const request = convertParticipantToRegistrationRequest(participant);
+      const row = convertParticipantToImportRow(participant);
 
-      expect(request.participantEmail).toBe('john.doe@example.com');
-      expect(request.firstName).toBe('John');
-      expect(request.lastName).toBe('Doe');
-      expect(request.registrations).toHaveLength(3);
-      expect(request.registrations[0]).toEqual({
-        eventCode: 'BATbern2',
-        status: 'ATTENDED',
-      });
+      expect(row.email).toBe('john.doe@example.com');
+      expect(row.firstName).toBe('John');
+      expect(row.lastName).toBe('Doe');
+      expect(row.eventCodes).toEqual(['BATbern2', 'BATbern5', 'BATbern25']);
+      expect(row.companyId).toBe('example');
     });
 
     it('should_useSyntheticEmail_when_emailMissing', () => {
@@ -249,10 +246,10 @@ describe('participantImportUtils', () => {
         participant[i.toString()] = i === 10 ? '1' : '';
       }
 
-      const request = convertParticipantToRegistrationRequest(participant);
+      const row = convertParticipantToImportRow(participant);
 
-      expect(request.participantEmail).toBe('jane.smith@batbern.ch');
-      expect(request.registrations).toHaveLength(1);
+      expect(row.email).toBe('jane.smith@batbern.ch');
+      expect(row.eventCodes).toHaveLength(1);
     });
 
     it('should_handleGermanCharactersInSyntheticEmail_when_nameHasUmlauts', () => {
@@ -269,12 +266,12 @@ describe('participantImportUtils', () => {
         participant[i.toString()] = i === 1 ? '1' : '';
       }
 
-      const request = convertParticipantToRegistrationRequest(participant);
+      const row = convertParticipantToImportRow(participant);
 
-      expect(request.participantEmail).toBe('hans.mueller@batbern.ch');
+      expect(row.email).toBe('hans.mueller@batbern.ch');
     });
 
-    it('should_returnEmptyRegistrations_when_noEventsAttended', () => {
+    it('should_returnNoEvents_when_noEventsAttended', () => {
       const participant: SourceParticipant = {
         Name: 'Test User',
         FirstName: 'Test',
@@ -288,9 +285,9 @@ describe('participantImportUtils', () => {
         participant[i.toString()] = '';
       }
 
-      const request = convertParticipantToRegistrationRequest(participant);
+      const row = convertParticipantToImportRow(participant);
 
-      expect(request.registrations).toHaveLength(0);
+      expect(row.eventCodes).toHaveLength(0);
     });
   });
 });

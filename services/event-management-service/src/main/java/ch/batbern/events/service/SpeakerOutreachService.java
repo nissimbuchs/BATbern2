@@ -2,9 +2,7 @@ package ch.batbern.events.service;
 
 import ch.batbern.events.domain.OutreachHistory;
 import ch.batbern.events.domain.SpeakerPool;
-import ch.batbern.events.exception.SpeakerNotFoundException;
 import ch.batbern.events.repository.OutreachHistoryRepository;
-import ch.batbern.events.repository.SpeakerPoolRepository;
 import ch.batbern.events.service.workflow.TransitionPayload;
 import ch.batbern.shared.types.SpeakerWorkflowState;
 import org.slf4j.Logger;
@@ -29,17 +27,17 @@ public class SpeakerOutreachService {
     private static final Logger LOG = LoggerFactory.getLogger(SpeakerOutreachService.class);
 
     private final OutreachHistoryRepository outreachHistoryRepository;
-    private final SpeakerPoolRepository speakerPoolRepository;
     private final SpeakerWorkflowService speakerWorkflowService;
+    private final SpeakerPoolLookup speakerPoolLookup;
 
     public SpeakerOutreachService(
             OutreachHistoryRepository outreachHistoryRepository,
-            SpeakerPoolRepository speakerPoolRepository,
-            SpeakerWorkflowService speakerWorkflowService
+            SpeakerWorkflowService speakerWorkflowService,
+            SpeakerPoolLookup speakerPoolLookup
     ) {
         this.outreachHistoryRepository = outreachHistoryRepository;
-        this.speakerPoolRepository = speakerPoolRepository;
         this.speakerWorkflowService = speakerWorkflowService;
+        this.speakerPoolLookup = speakerPoolLookup;
     }
 
     /**
@@ -51,17 +49,19 @@ public class SpeakerOutreachService {
      * 3. Transition speaker state to CONTACTED
      * 4. Publish SpeakerContactedEvent (future)
      *
+     * @param eventCode the event code from the path (the entry is loaded scoped to it)
      * @param speakerId UUID of the speaker being contacted
      * @param contactDate When the contact was made
      * @param contactMethod How contact was made (email, phone, in_person)
      * @param notes Free-text notes about the conversation
      * @param organizerUsername Username of organizer making contact
      * @return Created outreach history record
-     * @throws SpeakerNotFoundException if speaker not found
+     * @throws ch.batbern.shared.exception.NotFoundException if the speaker is not in that event
      * @throws IllegalStateException if speaker not in valid state for contact
      */
     @Transactional
     public OutreachHistory recordOutreach(
+            String eventCode,
             UUID speakerId,
             Instant contactDate,
             String contactMethod,
@@ -70,9 +70,9 @@ public class SpeakerOutreachService {
     ) {
         LOG.info("Recording outreach for speaker {} by organizer {}", speakerId, organizerUsername);
 
-        // 1. Validate speaker exists
-        SpeakerPool speaker = speakerPoolRepository.findById(speakerId)
-                .orElseThrow(() -> new SpeakerNotFoundException(speakerId));
+        // 1. Validate speaker exists in the event of the path (ADR-003, Story 4.10): an entry of
+        //    another event is 404 and gets no outreach row and no transition.
+        SpeakerPool speaker = speakerPoolLookup.inEvent(eventCode, speakerId);
 
         // 2. Validate speaker is in correct state for outreach
         // Only IDENTIFIED speakers should be contacted for the first time
@@ -119,10 +119,12 @@ public class SpeakerOutreachService {
     /**
      * Get outreach history for a speaker, ordered by most recent first.
      *
+     * @param eventCode the event code from the path (the entry is loaded scoped to it; 404 otherwise)
      * @param speakerId UUID of the speaker
      * @return List of outreach attempts, most recent first
      */
-    public List<OutreachHistory> getOutreachHistory(UUID speakerId) {
+    public List<OutreachHistory> getOutreachHistory(String eventCode, UUID speakerId) {
+        speakerPoolLookup.inEvent(eventCode, speakerId);
         return outreachHistoryRepository.findBySpeakerPoolIdOrderByContactDateDesc(speakerId);
     }
 

@@ -1,0 +1,25 @@
+meta {
+  name: Cleanup — delete the subscriber 01 created
+  type: http
+  seq: 99
+}
+
+delete {
+  url: {{baseUrl}}/newsletter/subscribers/{{newsletterSubscriberId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+tests {
+  test("deleted", function() {
+    expect([204, 404]).to.include(res.getStatus());
+  });
+}
+
+docs {
+  Story 4.10c: leaves no synthetic subscriber behind.
+}

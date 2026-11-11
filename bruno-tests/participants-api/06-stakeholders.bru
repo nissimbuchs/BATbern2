@@ -1,0 +1,39 @@
+meta {
+  name: Stakeholder mode — enrol organizers and partners, idempotent
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{baseUrl}}/events/{{participantsEventCode}}/participants
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+body:json {
+  {
+    "stakeholders": true
+  }
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("counts only, no per-person results", function() {
+    const body = res.getBody();
+    expect(body.enrolled).to.be.a("number");
+    expect(body.skipped).to.be.a("number");
+    expect(body.results).to.equal(undefined);
+    bru.setVar("participantsStakeholderTotal", body.enrolled + body.skipped);
+  });
+}
+
+docs {
+  Story 4.10c: formerly POST /events/{eventCode}/enroll-stakeholders. No mail.
+}

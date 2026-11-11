@@ -115,18 +115,21 @@ let sendResponses: { status: number; body: Record<string, unknown> }[] = [];
 let createStatus = 201;
 
 function previewFor(req: MailComposeRequest): MailPreviewResponse {
+  // The server's defaults for what the request leaves out (spec `default`).
+  const recipientIndex = req.recipientIndex ?? 0;
+  const locale = req.locale ?? 'de';
   const personalized = req.audience === 'REGISTRANTS' || req.audience === 'SPEAKERS';
   const own = req.contentSource === 'OWN_TEXT';
   return {
     subject: own ? `${req.ownSubject}` : `Subject ${req.audience}`,
     html: own ? `<p>plain ${req.ownBodyHtml}</p>` : '<p>Template</p>',
-    recipientIndex: req.recipientIndex,
+    recipientIndex,
     recipientCount: personalized ? 3 : 1,
     recipient: { displayName: 'Person 0', address: 'p0@example.com', cc: [] },
     sampleRecipients: [{ displayName: 'Person 0' }],
     personalized,
     templateKey: own ? null : (req.templateKey ?? 'speaker-reminder-response-tier1'),
-    locale: req.locale,
+    locale,
     replyTo: null,
     organizerCount: 2,
     skipped: [],

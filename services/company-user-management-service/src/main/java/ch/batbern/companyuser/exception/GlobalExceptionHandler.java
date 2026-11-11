@@ -3,6 +3,7 @@ package ch.batbern.companyuser.exception;
 import ch.batbern.shared.dto.ErrorResponse;
 import ch.batbern.shared.exception.ClientErrorClassifier;
 import ch.batbern.shared.exception.ValidationException;
+import ch.batbern.shared.service.ReservedEmailRecipientException;
 import ch.batbern.shared.util.CorrelationIdGenerator;
 import ch.batbern.shared.utils.LoggingUtils;
 import jakarta.servlet.http.HttpServletRequest;
@@ -44,7 +45,7 @@ public class GlobalExceptionHandler {
                 .error("Not Found")
                 .message(ex.getMessage())
                 .correlationId(CorrelationIdGenerator.current())
-                .severity("WARNING")
+                .severity("LOW")
                 .build();
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
     }
@@ -205,6 +206,36 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * A mail to a recipient on a reserved domain (RFC 2606/6761, e.g. {@code .invalid}) is refused by
+     * the mail wall, for example the resend of a verification link to an additional address stored
+     * before addresses were validated (422, as the EMS mail center answers it). Names the domain
+     * only: the full address stays out of the answer and the logs.
+     */
+    @ExceptionHandler(ReservedEmailRecipientException.class)
+    public ResponseEntity<ErrorResponse> handleReservedEmailRecipientException(
+            ReservedEmailRecipientException ex,
+            HttpServletRequest request) {
+        String recipient = ex.getRecipient() == null ? "" : ex.getRecipient();
+        String domain = recipient.substring(recipient.lastIndexOf('@') + 1);
+        log.warn("Mail refused, recipient on reserved domain {}", domain);
+        Map<String, Object> details = new HashMap<>();
+        details.put("code", "RESERVED_DOMAIN");
+        details.put("domain", domain);
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .path(request.getRequestURI())
+                .status(HttpStatus.UNPROCESSABLE_ENTITY.value())
+                .error("Unprocessable Entity")
+                .message("A recipient is on the reserved domain " + domain + ", which never receives mail."
+                        + " Correct the address and send again.")
+                .correlationId(CorrelationIdGenerator.current())
+                .severity("LOW")
+                .details(details)
+                .build();
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(error);
+    }
+
+    /**
      * #1244 — a copy of event mails was requested for an unconfirmed additional address.
      * Maps to 409 with errorCode {@code NOT_VERIFIED}.
      */
@@ -292,6 +323,25 @@ public class GlobalExceptionHandler {
             return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
         }
 
+        // Story 4.10: PATCH /users/{username} with an address that is another profile's
+        // (user_profiles_email_key, and uq_user_profiles_email_lower case-insensitively) is the
+        // caller's conflict, not a 500.
+        if (causeMessage.contains("user_profiles_email_key")
+                || causeMessage.contains("uq_user_profiles_email_lower")) {
+            log.warn("Profile email duplicate (DB-level): {}", LoggingUtils.maskEmailsIn(ex.getMessage()));
+            ErrorResponse error = ErrorResponse.builder()
+                    .timestamp(Instant.now())
+                    .path(request.getRequestURI())
+                    .status(HttpStatus.CONFLICT.value())
+                    .error("Conflict")
+                    .errorCode("EMAIL_DUPLICATE")
+                    .message("Email is already registered for another user")
+                    .correlationId(CorrelationIdGenerator.current())
+                    .severity("LOW")
+                    .build();
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+        }
+
         // A NUL byte in the input fails here too (SQLState 22021): the client's fault, not ours.
         Optional<ClientErrorClassifier.ClientError> clientError = ClientErrorClassifier.classify(ex);
         if (clientError.isPresent()) {
@@ -308,7 +358,7 @@ public class GlobalExceptionHandler {
                 .error("Internal Server Error")
                 .message("A data integrity error occurred")
                 .correlationId(CorrelationIdGenerator.current())
-                .severity("ERROR")
+                .severity("HIGH")
                 .build();
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
     }
@@ -361,7 +411,7 @@ public class GlobalExceptionHandler {
                 .error("Conflict")
                 .message(ex.getMessage())
                 .correlationId(CorrelationIdGenerator.current())
-                .severity("WARNING")
+                .severity("MEDIUM")
                 .build();
         return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
     }
@@ -429,7 +479,7 @@ public class GlobalExceptionHandler {
                 .error("Validation Failed")
                 .message(messageBuilder.toString())
                 .correlationId(CorrelationIdGenerator.current())
-                .severity("WARNING")
+                .severity("MEDIUM")
                 .details(validationErrors)
                 .build();
 
@@ -452,7 +502,7 @@ public class GlobalExceptionHandler {
                 .error("Bad Request")
                 .message(ex.getMessage())
                 .correlationId(CorrelationIdGenerator.current())
-                .severity("WARNING")
+                .severity("MEDIUM")
                 .build();
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
     }
@@ -478,7 +528,7 @@ public class GlobalExceptionHandler {
                 .error("Bad Request")
                 .message(ex.getMessage())
                 .correlationId(CorrelationIdGenerator.current())
-                .severity("WARNING")
+                .severity("MEDIUM")
                 .build();
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
     }
@@ -510,7 +560,7 @@ public class GlobalExceptionHandler {
                     .error("Unauthorized")
                     .message("Authentication required")
                     .correlationId(CorrelationIdGenerator.current())
-                    .severity("WARNING")
+                    .severity("MEDIUM")
                     .build();
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
         } else {
@@ -522,7 +572,7 @@ public class GlobalExceptionHandler {
                     .error("Forbidden")
                     .message("Access denied")
                     .correlationId(CorrelationIdGenerator.current())
-                    .severity("WARNING")
+                    .severity("MEDIUM")
                     .build();
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
         }
@@ -544,7 +594,7 @@ public class GlobalExceptionHandler {
                 .error("Forbidden")
                 .message("Access denied")
                 .correlationId(CorrelationIdGenerator.current())
-                .severity("WARNING")
+                .severity("MEDIUM")
                 .build();
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
     }
@@ -625,7 +675,7 @@ public class GlobalExceptionHandler {
                 .error("Bad Request")
                 .message(ex.getMessage())
                 .correlationId(CorrelationIdGenerator.current())
-                .severity("WARNING")
+                .severity("MEDIUM")
                 .build();
         return ResponseEntity.badRequest().body(error);
     }
@@ -670,7 +720,7 @@ public class GlobalExceptionHandler {
                 .error("Bad Gateway")
                 .message("Identity provider unavailable; please retry shortly")
                 .correlationId(CorrelationIdGenerator.current())
-                .severity("ERROR")
+                .severity("HIGH")
                 .build();
         return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(error);
     }
@@ -716,7 +766,7 @@ public class GlobalExceptionHandler {
                 .error(HttpStatus.valueOf(ex.getStatusCode().value()).getReasonPhrase())
                 .message(ex.getReason() != null ? ex.getReason() : "Request rejected")
                 .correlationId(CorrelationIdGenerator.current())
-                .severity("WARNING")
+                .severity("LOW")
                 .build();
         return ResponseEntity.status(ex.getStatusCode()).body(error);
     }
@@ -773,7 +823,7 @@ public class GlobalExceptionHandler {
                 .error("Internal Server Error")
                 .message("An unexpected error occurred")
                 .correlationId(correlationId)
-                .severity("ERROR")
+                .severity("CRITICAL")
                 .build();
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
     }

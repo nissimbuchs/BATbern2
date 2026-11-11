@@ -1,0 +1,45 @@
+meta {
+  name: Make Primary refused for an unconfirmed address (4.10d)
+  type: http
+  seq: 16
+}
+
+post {
+  url: {{baseUrl}}/users/me/additional-emails/{{additionalEmailId}}/make-primary
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Accept: application/json
+}
+
+script:pre-request {
+  if (!bru.getVar("additionalEmailId")) {
+    throw new Error("Precondition: runtime var `additionalEmailId` is unset. Run test 15 (add-additional-email) first.");
+  }
+}
+
+assert {
+  res.status: eq 409
+  res.body.errorCode: eq NOT_VERIFIED
+}
+
+tests {
+  test("an unconfirmed address cannot become the primary: 409 NOT_VERIFIED", function() {
+    expect(res.getStatus()).to.equal(409);
+    expect(res.getBody().errorCode).to.equal("NOT_VERIFIED");
+  });
+}
+
+docs {
+  Story 4.10d. Make-primary moves the Cognito login, so Bruno calls it ONLY for an unconfirmed,
+  unknown or foreign id, never for a confirmed address: this collection also runs against
+  production after every deploy. The happy path runs in PrimaryEmailIntegrationTest against
+  InMemoryCognito. The row of test 15 is unconfirmed (its verification link is never opened).
+}

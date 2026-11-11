@@ -18,9 +18,14 @@ export interface PartnerTopicItem {
   createdAt: string;
 }
 
+/**
+ * Partner topics of one company. Composed in the browser by `blobTopicService.getSessionData`
+ * from partner-coordination (topics, logos) and EMS (`classifyTopics`), Epic 17 entry 8.
+ * `companyName` is "Unknown" for topics without a company; `logoUrl` is null without a logo.
+ */
 export interface PartnerTopicEntry {
   companyName: string;
-  logoUrl: string;
+  logoUrl: string | null;
   topics: PartnerTopicItem[];
 }
 

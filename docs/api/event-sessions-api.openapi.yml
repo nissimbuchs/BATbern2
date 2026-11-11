@@ -41,8 +41,6 @@ tags:
   description: Per-session Q&A thread — public read, authenticated post, organizer takedown (SessionQnaController)
 - name: Timetable
   description: Authoritative per-event timetable / slot grid (TimetableController)
-- name: Bulk Operations
-  description: Batch operations on multiple events
 - name: Company Sessions
   description: Cross-event session search by company — sessions with at least one speaker
     from the given company, enriched with event + full speaker context (GlobalSessionController,
@@ -478,17 +476,23 @@ paths:
     post:
       tags:
       - Sessions
-      summary: Create session
-      description: 'Create a new session for the event.
+      summary: Create sessions of the event (organizer); one session or a historical import
+      description: |
+        The one way to create sessions of an event (Story 4.10b, ADR-013 §1; replaces
+        `POST /events/{eventCode}/sessions/batch-import`). The body carries **exactly one** of two
+        modes; none, both, an empty `imports` list or more than 100 items answer `400`.
 
+        - **Single** (`201`, `{session}`): the session fields `title`, `sessionType`, `startTime`
+          and `endTime` (all four required in this mode) plus the optional `description`, `room`,
+          `capacity` and `language`.
+        - **Import** (`imports`, `200`): up to 100 sessions from the legacy sessions.json
+          (historical data migration). Duplicates by (event, title) are skipped, speakers are
+          assigned by `speakerId` → username, times follow sequential slots; one failing item does
+          not stop the others. The response carries the counts and a result per item.
 
-        **Acceptance Criteria**: AC10
+        The response carries the fields of its mode only.
 
-        **Story**: 1.16.2 - Uses eventCode (meaningful ID) instead of UUID
-
-
-
-        **Security**: ORGANIZER role required; any other role gets 403.'
+        **Security**: ORGANIZER role required; any other role gets 403.
       operationId: createSession
       parameters:
       - name: eventCode
@@ -505,46 +509,97 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/CreateSessionRequest'
+            examples:
+              single:
+                summary: Create one session
+                value:
+                  title: Moderation Start
+                  sessionType: moderation
+                  startTime: "2026-11-06T15:00:00Z"
+                  endTime: "2026-11-06T15:05:00Z"
+                  language: de
+              import:
+                summary: Historical import from sessions.json
+                value:
+                  imports:
+                  - bat: 142
+                    title: User Interface Design
+                    abstract: Discussion on modern UI patterns
+                    referenten:
+                    - name: Anna Muster, Die Mobiliar
+                      bio: Expert in UI design
+                      company: mobiliar
+                      portrait: anna.muster.jpg
+                      speakerId: anna.muster
       responses:
         '403':
           description: Forbidden (ORGANIZER role required)
-        '201':
-          description: Session created successfully
+        '200':
+          description: Import mode (`imports`) processed (may include skipped or failed items)
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SessionResponse'
+                $ref: '#/components/schemas/CreateSessionResponse'
+              examples:
+                default:
+                  summary: An import of three sessions, one already there
+                  value:
+                    totalProcessed: 3
+                    successfullyCreated: 2
+                    updated: 0
+                    skipped: 1
+                    failed: 0
+                    details:
+                    - title: User Interface Design
+                      status: success
+                      message: Session created successfully
+                      sessionSlug: user-interface-design-abc123
+                    - title: Backend Architecture
+                      status: skipped
+                      message: Session already exists with title 'Backend Architecture'
+                      sessionSlug: null
+                    - title: Database Design
+                      status: success
+                      message: Session created successfully
+                      sessionSlug: database-design-def456
+        '201':
+          description: Single mode; the session was created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateSessionResponse'
               examples:
                 default:
                   summary: captured from the local anonymized database (same schema as a GET)
                   value:
-                    sessionSlug: moderation-start-4
-                    eventCode: BATbern66
-                    title: Moderation Start
-                    sessionType: moderation
-                    startTime: "2026-11-06T15:00:00Z"
-                    endTime: "2026-11-06T15:05:00Z"
-                    language: de
-                    createdAt: "2026-10-24T15:46:13.440741Z"
-                    updatedAt: "2026-10-24T15:46:13.440741Z"
-                    speakers:
-                      - username: anna.beispiel
-                        firstName: Anna
-                        lastName: Beispiel
-                        company: galenica
-                        companyDisplayName: Galenica
-                        profilePictureUrl: https://cdn.batbern.ch/profile-pictures/2025/anna.beispiel/profile-a0ed134f-8619-44b1-be2b-6480b092196c.jpeg
-                        speakerRole: MODERATOR
-                        isConfirmed: true
-                        bio: null
-                        companyLogoUrl: null
-                        presentationTitle: null
-                    materialsStatus: NONE
-                    materials: []
-                    materialsCount: 0
-                    capacity: null
-                    description: null
-                    room: null
+                    session:
+                      sessionSlug: moderation-start-4
+                      eventCode: BATbern66
+                      title: Moderation Start
+                      sessionType: moderation
+                      startTime: "2026-11-06T15:00:00Z"
+                      endTime: "2026-11-06T15:05:00Z"
+                      language: de
+                      createdAt: "2026-10-24T15:46:13.440741Z"
+                      updatedAt: "2026-10-24T15:46:13.440741Z"
+                      speakers:
+                        - username: anna.beispiel
+                          firstName: Anna
+                          lastName: Beispiel
+                          company: galenica
+                          companyDisplayName: Galenica
+                          profilePictureUrl: https://cdn.batbern.ch/profile-pictures/2025/anna.beispiel/profile-a0ed134f-8619-44b1-be2b-6480b092196c.jpeg
+                          speakerRole: MODERATOR
+                          isConfirmed: true
+                          bio: null
+                          companyLogoUrl: null
+                          presentationTitle: null
+                      materialsStatus: NONE
+                      materials: []
+                      materialsCount: 0
+                      capacity: null
+                      description: null
+                      room: null
         '400':
           $ref: '#/components/responses/BadRequest'
         '404':
@@ -1251,104 +1306,6 @@ paths:
             application/json:
               schema:
                 $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
-  /events/{eventCode}/sessions/batch-import:
-    post:
-      tags:
-      - Sessions
-      - Bulk Operations
-      summary: Batch import sessions from legacy JSON
-      description: 'Import multiple sessions from sessions.json with speaker assignments.
-
-
-        **Features**:
-
-        - Duplicate detection by (event_id, title)
-
-        - Automatic speaker assignment via speakerId → username matching
-
-        - Sequential 45-minute time slot calculation
-
-        - Graceful error handling for missing speakers
-
-
-        **Note**: This endpoint is designed for historical data migration from
-
-        the legacy BATspa application. For normal session creation, use the
-
-        POST /events/{eventCode}/sessions endpoint.
-
-
-
-        **Security**: ORGANIZER role required; any other role gets 403.'
-      operationId: batchImportSessions
-      parameters:
-      - name: eventCode
-        in: path
-        description: Event code in format BATbern{number}
-        required: true
-        schema:
-          type: string
-          pattern: ^BATbern[0-9]+$
-          example: BATbern142
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: array
-              items:
-                $ref: '#/components/schemas/BatchImportSessionRequest'
-            example:
-            - bat: 142
-              title: User Interface Design
-              abstract: Discussion on modern UI patterns
-              pdf: BAT142_UI_Design.pdf
-              referenten:
-              - name: Anna Muster, Die Mobiliar
-                bio: Expert in UI design
-                company: mobiliar
-                portrait: anna.muster.jpg
-                speakerId: anna.muster
-      responses:
-        '403':
-          description: Forbidden (ORGANIZER role required)
-        '200':
-          description: Import completed (may include skipped/failed sessions)
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/BatchImportSessionResult'
-              example:
-                totalProcessed: 3
-                successfullyCreated: 2
-                updated: 0
-                skipped: 1
-                failed: 0
-                details:
-                - title: User Interface Design
-                  status: success
-                  message: Session created successfully
-                  sessionSlug: user-interface-design-abc123
-                - title: Backend Architecture
-                  status: skipped
-                  message: Session already exists with title 'Backend Architecture'
-                  sessionSlug: null
-                - title: Database Design
-                  status: success
-                  message: Session created successfully
-                  sessionSlug: database-design-def456
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '404':
-          description: Event not found
-          content:
-            application/json:
-              schema:
-                $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-      security:
-      - BearerAuth: []
   /events/{eventCode}/sessions/{sessionSlug}:
     get:
       tags:
@@ -2834,44 +2791,6 @@ components:
           type: string
           description: Speaker ID (maps to username in user_profiles)
           example: thomas.goetz
-    BatchImportSessionResult:
-      type: object
-      description: 'Result of batch import operation with success/skip/fail counts.
-
-        '
-      required:
-      - totalProcessed
-      - successfullyCreated
-      - updated
-      - skipped
-      - failed
-      - details
-      properties:
-        totalProcessed:
-          type: integer
-          description: Total sessions processed
-          example: 3
-        successfullyCreated:
-          type: integer
-          description: Successfully created sessions
-          example: 2
-        updated:
-          type: integer
-          description: Existing sessions updated (e.g. materials added to a duplicate)
-          example: 0
-        skipped:
-          type: integer
-          description: Skipped sessions (duplicates)
-          example: 1
-        failed:
-          type: integer
-          description: Failed imports
-          example: 0
-        details:
-          type: array
-          description: Detailed results per session
-          items:
-            $ref: '#/components/schemas/SessionImportDetail'
     SessionImportDetail:
       type: object
       description: 'Detail for a single session import result.
@@ -2907,14 +2826,9 @@ components:
           example: user-interface-design-abc123
     CreateSessionRequest:
       type: object
-      description: 'Create a fully-defined session. title, sessionType, startTime and
-        endTime are all required (the deployed controller rejects a request missing any
-        of them with 400).'
-      required:
-      - title
-      - sessionType
-      - startTime
-      - endTime
+      description: 'Create sessions of an event, in exactly one mode (checked by the service, 400
+        otherwise; Story 4.10b). Single: the session fields, where title, sessionType, startTime
+        and endTime are required. Import: `imports` only, 1 to 100 items.'
       properties:
         title:
           type: string
@@ -2939,7 +2853,42 @@ components:
         language:
           type: string
           maxLength: 10
-          default: de
+          description: Single mode; `de` when absent.
+        imports:
+          type: array
+          description: Import mode; sessions from the legacy sessions.json.
+          minItems: 1
+          maxItems: 100
+          items:
+            $ref: '#/components/schemas/BatchImportSessionRequest'
+    CreateSessionResponse:
+      type: object
+      x-class-extra-annotation: '@com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)'
+      description: 'Result of POST /events/{eventCode}/sessions; carries the fields of its mode only.
+        Single (201): `session`. Import (200): the counts and `details`.'
+      properties:
+        session:
+          $ref: '#/components/schemas/SessionResponse'
+        totalProcessed:
+          type: integer
+          description: Import mode; items processed
+        successfullyCreated:
+          type: integer
+          description: Import mode; sessions created
+        updated:
+          type: integer
+          description: Import mode; existing sessions updated (e.g. materials added to a duplicate)
+        skipped:
+          type: integer
+          description: Import mode; skipped items (duplicates)
+        failed:
+          type: integer
+          description: Import mode; failed items
+        details:
+          type: array
+          description: Import mode; result per item
+          items:
+            $ref: '#/components/schemas/SessionImportDetail'
     PatchSessionRequest:
       type: object
       description: 'Partial session update (PATCH). Only the provided fields are changed.

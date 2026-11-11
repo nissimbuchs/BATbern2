@@ -1,0 +1,29 @@
+meta {
+  name: The old batch-import path is gone
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{baseUrl}}/events/{{sessionImportEventCode}}/sessions/batch-import
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+body:json {
+  []
+}
+
+tests {
+  test("405: batch-import now falls on /sessions/{sessionSlug}, which has no POST", function() {
+    expect(res.getStatus()).to.equal(405);
+  });
+}
+
+docs {
+  Story 4.10b, breaking, no alias. Pinned by SessionCreateIntegrationTest.
+}

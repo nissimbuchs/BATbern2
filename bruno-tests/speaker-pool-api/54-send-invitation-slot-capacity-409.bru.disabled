@@ -5,7 +5,7 @@ meta {
 }
 
 post {
-  url: {{baseUrl}}/events/{{slotCapacityEventCode}}/speakers/{{slotCapacityCandidateUsername}}/send-invitation
+  url: {{baseUrl}}/events/{{slotCapacityEventCode}}/speakers/{{slotCapacityCandidateSpeakerId}}/send-invitation
   body: json
   auth: bearer
 }
@@ -51,7 +51,9 @@ docs {
 
   Setup expectation (same as test 53): by the time this test runs, the event referenced
   by `slotCapacityEventCode` has `count(ACCEPTED) + count(INVITED) >= max_slots`, and
-  `slotCapacityCandidateUsername` is the username of a speaker pool entry at READY. The
+  `slotCapacityCandidateSpeakerId` is the id of a speaker pool entry at READY in that
+  event (the same variable as test 53; Story 4.10: send-invitation takes the pool entry id, it took a
+  username or a UUID). The
   seed for the scenario lives in a dedicated setup script (or CI fixture) that the runner
   invokes before this test.
 

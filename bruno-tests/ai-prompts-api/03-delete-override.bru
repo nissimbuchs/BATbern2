@@ -1,0 +1,31 @@
+meta {
+  name: Delete the override (DELETE /ai-prompts/{key}/override)
+  type: http
+  seq: 3
+}
+
+delete {
+  url: {{baseUrl}}/ai-prompts/event_description/override
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("the prompt text is the default again", function() {
+    const body = res.getBody();
+    expect(body.promptText).to.equal(body.defaultText);
+    expect(body.promptText).to.equal(bru.getVar("aiPromptDefaultText"));
+  });
+}
+
+docs {
+  Story 4.10b: replaces POST /ai-prompts/{key}/reset.
+}

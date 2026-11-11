@@ -1,0 +1,19 @@
+meta {
+  name: Anonymous GET /newsletter/subscribers stays 401
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/newsletter/subscribers
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 401
+}
+
+docs {
+  Story 4.10c: only the POST on the collection is public (exact path, gateway and EMS).
+}

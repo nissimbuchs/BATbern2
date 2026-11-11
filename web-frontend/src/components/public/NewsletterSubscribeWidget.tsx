@@ -11,7 +11,7 @@ import { emailProblem } from '@/utils/validation/email';
 import axios from 'axios';
 import { Input } from '@/components/public/ui/input';
 import { Button } from '@/components/public/ui/button';
-import { useNewsletterSubscribe, useMySubscription } from '@/hooks/useNewsletter/useNewsletter';
+import { useNewsletterSubscribe, useMySubscriptions } from '@/hooks/useNewsletter/useNewsletter';
 import { useAuth } from '@/hooks/useAuth/useAuth';
 import { useTurnstile } from '@/hooks/useTurnstile';
 
@@ -28,7 +28,7 @@ export function NewsletterSubscribeWidget() {
   // #818 defect 2: an already-subscribed, logged-in visitor was still shown the subscribe form.
   // The widget only ever learned 'already-subscribed' by SUBMITTING and having the server say so.
   //
-  // `useMySubscription` hits an authenticated endpoint, so it must stay disabled for anonymous
+  // `useMySubscriptions` hits an authenticated endpoint, so it must stay disabled for anonymous
   // visitors — otherwise every public page view fires a guaranteed 401. Anonymous visitors keep
   // the old behaviour, which is correct: we cannot know whether they are subscribed.
   //
@@ -36,7 +36,10 @@ export function NewsletterSubscribeWidget() {
   // SessionQnaThread) and pulls no MUI, so this does not breach the Tailwind-only bundle boundary
   // for public routes.
   const { isAuthenticated } = useAuth();
-  const { data: mySubscription } = useMySubscription({ enabled: isAuthenticated });
+  const { data: mySubscriptions } = useMySubscriptions({ enabled: isAuthenticated });
+  // Subscribed with any of their addresses (4.10c: the per-address list replaced the single
+  // status, which was "subscribed" when any row of the user was active).
+  const anySubscribed = mySubscriptions?.addresses.some((a) => a.subscribed) ?? false;
   const { getToken, resetWidget, widgetRef } = useTurnstile();
 
   async function handleSubmit(e: React.FormEvent) {
@@ -91,7 +94,7 @@ export function NewsletterSubscribeWidget() {
   }
 
   // Known-subscribed authenticated visitor: never show the form.
-  if (isAuthenticated && mySubscription?.subscribed) {
+  if (isAuthenticated && anySubscribed) {
     return (
       <div className="py-4 text-center text-sm text-muted-foreground">
         {t('newsletter.widget.alreadySubscribed')}

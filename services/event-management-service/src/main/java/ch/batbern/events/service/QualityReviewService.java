@@ -43,6 +43,7 @@ public class QualityReviewService {
     private final SpeakerWorkflowService speakerWorkflowService;
     private final PrimarySpeakerResolver primarySpeakerResolver;
     private final ModeratorReplyAddress moderatorReplyAddress;
+    private final SpeakerPoolLookup speakerPoolLookup;
 
     @Value("${app.base-url:https://batbern.ch}")
     private String baseUrl;
@@ -76,17 +77,16 @@ public class QualityReviewService {
      * "ready for agenda" predicate ({@code is_publishable = QUALITY_REVIEWED && slot_assigned})
      * is computed at read time (exposed in 11.B.3).
      *
-     * @param poolId the speaker pool ID
+     * @param eventCode the event code from the path (the entry is loaded scoped to it)
+     * @param speakerId the speaker pool ID
      * @param moderatorUsername the moderator approving the content
      */
     @Transactional
-    public void approveContent(String poolId, String moderatorUsername) {
-        log.info("Approving content for speaker pool entry: {} by moderator: {}", poolId, moderatorUsername);
+    public void approveContent(String eventCode, java.util.UUID speakerId, String moderatorUsername) {
+        log.info("Approving content for speaker pool entry: {} by moderator: {}", speakerId, moderatorUsername);
 
-        java.util.UUID speakerId = java.util.UUID.fromString(poolId);
-        if (!speakerPoolRepository.existsById(speakerId)) {
-            throw new jakarta.persistence.EntityNotFoundException("Speaker pool entry not found: " + poolId);
-        }
+        // Scoped to the event in the path (ADR-003, Story 4.10): another event's entry is 404.
+        speakerPoolLookup.inEvent(eventCode, speakerId);
 
         TransitionPayload payload = TransitionPayload.builder()
                 .reason("Content approved by moderator")
@@ -110,22 +110,23 @@ public class QualityReviewService {
      * left "submitted" territory; they just need to revise. Resubmission creates a new
      * version row with no feedback, flipping the derived status back to {@code SUBMITTED}.
      *
+     * @param eventCode the event code from the path (the entry is loaded scoped to it)
      * @param poolId the speaker pool ID
      * @param feedback the rejection feedback (required)
      * @param moderatorUsername the moderator rejecting the content
      * @throws IllegalArgumentException if feedback is missing
      */
     @Transactional
-    public void rejectContent(String poolId, String feedback, String moderatorUsername) {
+    public void rejectContent(String eventCode, java.util.UUID poolId, String feedback,
+                              String moderatorUsername) {
         log.info("Rejecting content for speaker pool entry: {} by moderator: {}", poolId, moderatorUsername);
 
         if (feedback == null || feedback.trim().isEmpty()) {
             throw new IllegalArgumentException("Feedback is required when rejecting content");
         }
 
-        SpeakerPool speaker = speakerPoolRepository.findById(java.util.UUID.fromString(poolId))
-                .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException(
-                        "Speaker pool entry not found: " + poolId));
+        // Scoped to the event in the path (ADR-003, Story 4.10): another event's entry is 404.
+        SpeakerPool speaker = speakerPoolLookup.inEvent(eventCode, poolId);
 
         // Audit trail — keep the human-readable note on speaker_pool.notes so the rejection
         // history is browsable independently of the version table.

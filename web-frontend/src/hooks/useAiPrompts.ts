@@ -5,7 +5,7 @@
  */
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { listAiPrompts, updateAiPrompt, resetAiPrompt } from '@/services/aiPromptService';
+import { listAiPrompts, updateAiPrompt, deleteAiPromptOverride } from '@/services/aiPromptService';
 
 const QUERY_KEY = 'aiPrompts' as const;
 
@@ -27,10 +27,11 @@ export function useUpdateAiPrompt() {
   });
 }
 
+/** "Reset to default": deletes the prompt's override (Story 4.10b). */
 export function useResetAiPrompt() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (promptKey: string) => resetAiPrompt(promptKey),
+    mutationFn: (promptKey: string) => deleteAiPromptOverride(promptKey),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEY] });
     },

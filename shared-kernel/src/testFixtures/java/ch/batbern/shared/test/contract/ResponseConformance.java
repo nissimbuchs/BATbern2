@@ -180,7 +180,8 @@ public final class ResponseConformance {
 
     /**
      * The spec serving the request: the one with the most specific template, so
-     * {@code /events/attendance-summary} (analytics) wins over {@code /events/{eventCode}} (core).
+     * a literal {@code /events/archive} of one spec wins over {@code /events/{eventCode}} of another
+     * (fixture pair in {@code ResponseConformanceTest}; docs/api has none since Story 4.10b).
      */
     Optional<OpenApiContract> owner(String method, String path) {
         return contracts.stream()

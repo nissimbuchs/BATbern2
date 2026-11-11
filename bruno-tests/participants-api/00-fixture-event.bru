@@ -1,0 +1,62 @@
+meta {
+  name: Fixture — create the event the participants tests act on
+  type: http
+  seq: 0
+}
+
+post {
+  url: {{baseUrl}}/events
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+script:pre-request {
+  const now = Date.now();
+  const eventNumber = 10000 + Math.floor(Math.random() * 90000); // reserved test range, swept by 99
+  const dayMs = 24 * 60 * 60 * 1000;
+  bru.setVar("participantsTimestamp", now);
+  bru.setVar("participantsEventNumber", eventNumber);
+  bru.setVar("participantsEventDate", new Date(now + 60 * dayMs).toISOString());
+  bru.setVar("participantsRegDeadline", new Date(now + 53 * dayMs).toISOString());
+  bru.setVar("participantsImportEmail", `bruno-import-${now}@e2e.batbern.invalid`);
+  bru.setVar("participantsNotifyEmail", `bruno-notify-${now}@batbern-test.ch`);
+}
+
+body:json {
+  {
+    "title": "Bruno Participants Fixture Event {{participantsTimestamp}}",
+    "eventNumber": {{participantsEventNumber}},
+    "date": "{{participantsEventDate}}",
+    "registrationDeadline": "{{participantsRegDeadline}}",
+    "venueName": "Participants Test Venue",
+    "venueAddress": "Test Address 7, 3000 Bern",
+    "venueCapacity": 100,
+    "organizerUsername": "{{organizerUsername}}",
+    "description": "Parent event for participants-api tests (Story 4.10c)",
+    "eventType": "EVENING"
+  }
+}
+
+assert {
+  res.status: eq 201
+  res.body.eventCode: isDefined
+}
+
+tests {
+  test("participantsEventCode set for the collection", function() {
+    bru.setVar("participantsEventCode", res.getBody().eventCode);
+  });
+}
+
+docs {
+  Story 4.10c: dev-only collection (dev_only_collections in
+  scripts/ci/run-bruno-tests.sh). It writes registrations, creates users and
+  sends one organizer-added confirmation mail (04), so it must never run against
+  staging, which is production. On local dev the mail lands in /dev/mails.
+  Event number in the reserved test range [10000, 99999]; 99 sweeps it, 99b
+  sweeps the imported users by their synthetic domains.
+}

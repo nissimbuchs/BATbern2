@@ -387,7 +387,7 @@ public class GlobalExceptionHandler {
                 .error(HttpStatus.valueOf(ex.getStatusCode().value()).getReasonPhrase())
                 .message(ex.getReason() != null ? ex.getReason() : "Request rejected")
                 .correlationId(CorrelationIdGenerator.current())
-                .severity("WARNING")
+                .severity("LOW")
                 .build();
         return ResponseEntity.status(ex.getStatusCode()).body(error);
     }

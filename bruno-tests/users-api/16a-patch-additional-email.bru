@@ -1,0 +1,53 @@
+meta {
+  name: Change Additional Email Setting by id (4.10d)
+  type: http
+  seq: 16
+}
+
+patch {
+  url: {{baseUrl}}/users/me/additional-emails/{{additionalEmailId}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "receiveEventMail": false
+  }
+}
+
+script:pre-request {
+  if (!bru.getVar("additionalEmailId")) {
+    throw new Error("Precondition: runtime var `additionalEmailId` is unset. Run test 15 (add-additional-email) first.");
+  }
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("should return 200 with the address of that id", function() {
+    expect(res.getStatus()).to.equal(200);
+    const body = res.getBody();
+    expect(body.id).to.equal(bru.getVar("additionalEmailId"));
+    expect(body.email).to.equal(bru.getVar("additionalEmail"));
+    expect(body.receiveEventMail).to.equal(false);
+  });
+}
+
+docs {
+  Story 4.10d: PATCH /users/me/additional-emails/{emailId}. Switching the copy of event mails
+  OFF works for the unconfirmed row created by test 15 and changes nothing (it was off), so this
+  is safe against production.
+}

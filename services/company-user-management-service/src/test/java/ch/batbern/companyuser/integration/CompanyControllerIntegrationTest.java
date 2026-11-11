@@ -6,7 +6,6 @@ import org.springframework.cache.CacheManager;
 import ch.batbern.companyuser.domain.Company;
 import ch.batbern.companyuser.config.TestAwsConfig;
 import ch.batbern.companyuser.dto.generated.CreateCompanyRequest;
-import ch.batbern.companyuser.dto.generated.GetOrCreateCompanyRequest;
 import ch.batbern.companyuser.dto.generated.UpdateCompanyRequest;
 import ch.batbern.companyuser.repository.CompanyRepository;
 import ch.batbern.shared.test.AbstractIntegrationTest;
@@ -110,104 +109,7 @@ class CompanyControllerIntegrationTest extends AbstractIntegrationTest {
         assertThat(companyRepository.findByName("newcompany")).isPresent();
     }
 
-    // ── POST /companies:get-or-create (colon custom method, AIP-136) ──────────
-
-    @Test
-    @DisplayName("POST /companies:get-or-create - creates company for any authenticated role (incl. ATTENDEE)")
-    @WithMockUser(username = "test.user", roles = {"ATTENDEE"})
-    void shouldGetOrCreateCompany_whenAuthenticatedAttendee() throws Exception {
-        GetOrCreateCompanyRequest request = GetOrCreateCompanyRequest.builder()
-                .displayName("Infowell GmbH")
-                .build();
-
-        mockMvc.perform(post("/api/v1/companies:get-or-create")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.displayName").value("Infowell GmbH"))
-                // ADR-003: name is the generated lowercase-alphanumeric slug
-                .andExpect(jsonPath("$.name").value(org.hamcrest.Matchers.matchesPattern("^[a-z0-9]+$")));
-
-        assertThat(companyRepository.findByNameContainingIgnoreCase("infowell")).hasSize(1);
-    }
-
-    @Test
-    @DisplayName("POST /companies:get-or-create - is idempotent (no duplicate on repeat)")
-    @WithMockUser(username = "test.user", roles = {"SPEAKER"})
-    void shouldBeIdempotent_whenSameDisplayNameRepeated() throws Exception {
-        long before = companyRepository.count();
-        GetOrCreateCompanyRequest request = GetOrCreateCompanyRequest.builder()
-                .displayName("Repeat Co AG")
-                .build();
-        String body = objectMapper.writeValueAsString(request);
-
-        mockMvc.perform(post("/api/v1/companies:get-or-create")
-                        .contentType(MediaType.APPLICATION_JSON).content(body))
-                .andExpect(status().isOk());
-        mockMvc.perform(post("/api/v1/companies:get-or-create")
-                        .contentType(MediaType.APPLICATION_JSON).content(body))
-                .andExpect(status().isOk());
-
-        // Exactly one new company created across both calls
-        assertThat(companyRepository.count()).isEqualTo(before + 1);
-    }
-
-    @Test
-    @DisplayName("POST /companies:get-or-create - resolves existing company by generated slug (no duplicate)")
-    @WithMockUser(username = "test.user", roles = {"PARTNER"})
-    void shouldResolveExisting_whenSlugMatches() throws Exception {
-        // Seed a properly-slugged company: slug("Slugged Co") == "sluggedco".
-        Company existing = Company.builder()
-                .name("sluggedco")
-                .displayName("Slugged Co")
-                .isVerified(false)
-                .createdAt(Instant.now())
-                .updatedAt(Instant.now())
-                .createdBy("test.user")
-                .build();
-        companyRepository.save(existing);
-        long before = companyRepository.count();
-
-        GetOrCreateCompanyRequest request = GetOrCreateCompanyRequest.builder()
-                .displayName("Slugged Co")
-                .build();
-
-        mockMvc.perform(post("/api/v1/companies:get-or-create")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.name").value("sluggedco"));
-
-        // No new company — existing one resolved by slug
-        assertThat(companyRepository.count()).isEqualTo(before);
-    }
-
-    @Test
-    @DisplayName("POST /companies:get-or-create - returns 401 when not authenticated")
-    void shouldReturn401_whenGetOrCreateUnauthenticated() throws Exception {
-        GetOrCreateCompanyRequest request = GetOrCreateCompanyRequest.builder()
-                .displayName("Anon Co")
-                .build();
-
-        mockMvc.perform(post("/api/v1/companies:get-or-create")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isUnauthorized());
-    }
-
-    @Test
-    @DisplayName("POST /companies:get-or-create - returns 400 when displayName blank")
-    @WithMockUser(username = "test.user", roles = {"ATTENDEE"})
-    void shouldReturn400_whenGetOrCreateDisplayNameBlank() throws Exception {
-        GetOrCreateCompanyRequest request = GetOrCreateCompanyRequest.builder()
-                .displayName("")
-                .build();
-
-        mockMvc.perform(post("/api/v1/companies:get-or-create")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isBadRequest());
-    }
+    // POST /companies/get-or-create: CompanyGetOrCreateIntegrationTest (Story 4.10d, committing).
 
     @Test
     @DisplayName("POST /companies - should return 401 when not authenticated")

@@ -5,7 +5,7 @@ meta {
 }
 
 post {
-  url: {{baseUrl}}/events/{{createdEventCode}}/speakers/pool
+  url: {{baseUrl}}/events/{{createdEventCode}}/speakers
   body: json
   auth: bearer
 }
@@ -26,7 +26,7 @@ assert {
 }
 
 tests {
-  test("returns 400 Bad Request when 'email' is present on POST /speakers/pool (AR23)", function() {
+  test("returns 400 Bad Request when 'email' is present on POST /events/{eventCode}/speakers (AR23)", function() {
     expect(res.getStatus()).to.equal(400);
   });
 }

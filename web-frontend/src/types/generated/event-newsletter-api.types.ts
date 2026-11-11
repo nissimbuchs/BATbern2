@@ -71,23 +71,6 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/newsletter/subscribe': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** Subscribe to BATbern newsletter (public) */
-    post: operations['subscribeNewsletter'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
   '/newsletter/unsubscribe/verify': {
     parameters: {
       query?: never;
@@ -122,24 +105,6 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/newsletter/my-subscription': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Get authenticated user's subscription status */
-    get: operations['getMyNewsletterSubscription'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    /** Update authenticated user's subscription */
-    patch: operations['patchMyNewsletterSubscription'];
-    trace?: never;
-  };
   '/newsletter/my-subscriptions': {
     parameters: {
       query?: never;
@@ -150,20 +115,25 @@ export interface paths {
     /**
      * The authenticated user's newsletter state per address (#1244)
      * @description One entry per address of the caller: the primary address first, then every confirmed
-     *     additional address. Unconfirmed addresses are not listed.
+     *     additional address. Unconfirmed addresses are not listed. After them, any address still
+     *     subscribed under the caller's username that is no longer one of theirs (`primary: false`),
+     *     so it can be unsubscribed.
      */
     get: operations['getMyNewsletterSubscriptions'];
-    /**
-     * Subscribe or unsubscribe one of the authenticated user's addresses (#1244)
-     * @description Changes only the given address; the others stay as they are. The address must be the
-     *     caller's primary or a confirmed additional address (403 otherwise).
-     */
-    put: operations['putMyNewsletterSubscription'];
+    put?: never;
     post?: never;
     delete?: never;
     options?: never;
     head?: never;
-    patch?: never;
+    /**
+     * Change the newsletter state of one of the authenticated user's addresses (#1244, 4.10c)
+     * @description Partial: only the given address changes, and of it only the fields present (`subscribed`,
+     *     `language`); the other addresses stay as they are. The address must be the caller's
+     *     primary or a confirmed additional address. An address still subscribed under the
+     *     caller's username that is no longer one of theirs (listed by the GET) may only be
+     *     unsubscribed (`subscribed: false`). Anything else answers 403. No mail is sent.
+     */
+    patch: operations['patchMyNewsletterSubscriptions'];
     trace?: never;
   };
   '/newsletter/subscribers': {
@@ -176,7 +146,17 @@ export interface paths {
     /** List subscribers with pagination, search, and sort (ORGANIZER) */
     get: operations['listNewsletterSubscribers'];
     put?: never;
-    post?: never;
+    /**
+     * Subscribe an address to the BATbern newsletter (public)
+     * @description Anonymous, the website's subscribe form (Story 10.7, path since 4.10c). When Turnstile is
+     *     on, the gateway checks the Cloudflare token in the `X-Turnstile-Token` header: an invalid
+     *     token answers 403, a missing one is let through (fail-open, Story 10.31 AC2, for blocked
+     *     widgets). The gateway allows 5 anonymous calls per client IP in 5 minutes (429). A
+     *     previously unsubscribed address is reactivated. No mail is sent: there is no confirmation
+     *     (double opt-in is the owner's decision, #1288). The other operations of this collection
+     *     are the organizer's.
+     */
+    post: operations['createNewsletterSubscriber'];
     delete?: never;
     options?: never;
     head?: never;
@@ -263,14 +243,10 @@ export interface components {
        * @default de
        * @enum {string}
        */
-      language: 'de' | 'en';
+      language?: 'de' | 'en';
     };
     NewsletterUnsubscribeRequest: {
       token: string;
-    };
-    NewsletterSubscriptionStatusResponse: {
-      subscribed: boolean;
-      email: string | null;
     };
     SubscriberResponse: {
       /** Format: uuid */
@@ -368,7 +344,7 @@ export interface components {
        * @description Whether this is a layout template
        * @default false
        */
-      isLayout: boolean;
+      isLayout?: boolean;
       /** @description Layout template key to use (e.g. batbern-default) */
       layoutKey?: string | null;
     };
@@ -390,24 +366,20 @@ export interface components {
       /** @description The account's primary address. */
       primary: boolean;
       subscribed: boolean;
+      /** @description Newsletter language of this address; null when it has never been subscribed. */
+      language: string | null;
     };
-    PutMyNewsletterSubscriptionRequest: {
+    /** @description The address to change, and only the fields to change (partial, 4.10c). */
+    PatchMyNewsletterSubscriptionRequest: {
       /** Format: idn-email */
       email: string;
-      subscribed: boolean;
+      /** @description Subscribe (true) or unsubscribe (false) this address; absent = unchanged. */
+      subscribed?: boolean;
       /**
-       * @description Preferred newsletter language when subscribing; defaults to 'de'.
-       * @default de
+       * @description Newsletter language of this address; absent = unchanged (a new subscription gets `de`).
+       * @enum {string}
        */
-      language: string | null;
-    };
-    PatchNewsletterSubscriptionRequest: {
-      subscribed: boolean;
-      /**
-       * @description Preferred newsletter language; defaults to 'de' when omitted.
-       * @default de
-       */
-      language: string | null;
+      language?: 'de' | 'en';
     };
     /**
      * @description Standard error envelope returned on every 4xx/5xx response across all services.
@@ -717,46 +689,6 @@ export interface operations {
       404: components['responses']['NotFound'];
     };
   };
-  subscribeNewsletter: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['NewsletterSubscribeRequest'];
-      };
-    };
-    responses: {
-      /** @description Successfully subscribed */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Invalid email address */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['ErrorResponse'];
-        };
-      };
-      /** @description Email already actively subscribed */
-      409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['ErrorResponse'];
-        };
-      };
-    };
-  };
   verifyUnsubscribeToken: {
     parameters: {
       query: {
@@ -817,52 +749,6 @@ export interface operations {
       };
     };
   };
-  getMyNewsletterSubscription: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Subscription status */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['NewsletterSubscriptionStatusResponse'];
-        };
-      };
-      401: components['responses']['Unauthorized'];
-    };
-  };
-  patchMyNewsletterSubscription: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['PatchNewsletterSubscriptionRequest'];
-      };
-    };
-    responses: {
-      /** @description Subscription updated */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['NewsletterSubscriptionStatusResponse'];
-        };
-      };
-      401: components['responses']['Unauthorized'];
-    };
-  };
   getMyNewsletterSubscriptions: {
     parameters: {
       query?: never;
@@ -884,7 +770,7 @@ export interface operations {
       401: components['responses']['Unauthorized'];
     };
   };
-  putMyNewsletterSubscription: {
+  patchMyNewsletterSubscriptions: {
     parameters: {
       query?: never;
       header?: never;
@@ -893,7 +779,7 @@ export interface operations {
     };
     requestBody: {
       content: {
-        'application/json': components['schemas']['PutMyNewsletterSubscriptionRequest'];
+        'application/json': components['schemas']['PatchMyNewsletterSubscriptionRequest'];
       };
     };
     responses: {
@@ -904,6 +790,15 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['MyNewsletterSubscriptionsResponse'];
+        };
+      };
+      /** @description Invalid address or language */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
         };
       };
       401: components['responses']['Unauthorized'];
@@ -944,6 +839,69 @@ export interface operations {
       };
       401: components['responses']['Unauthorized'];
       403: components['responses']['Forbidden'];
+    };
+  };
+  createNewsletterSubscriber: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        /**
+         * @example {
+         *       "email": "hugo.muster@example.com",
+         *       "firstName": "Hugo",
+         *       "language": "de"
+         *     }
+         */
+        'application/json': components['schemas']['NewsletterSubscribeRequest'];
+      };
+    };
+    responses: {
+      /** @description Subscribed (new or reactivated); no body */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Invalid or reserved address */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      /** @description Turnstile token invalid (gateway) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      /** @description Address already actively subscribed */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      /** @description Too many subscribe calls from this client (gateway) */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
     };
   };
   unsubscribeSubscriberById: {

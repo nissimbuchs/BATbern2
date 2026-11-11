@@ -10,27 +10,33 @@ import ch.batbern.shared.test.AbstractIntegrationTest;
 import ch.batbern.shared.test.contract.ContractServer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.cache.CacheManager;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.closeTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -62,7 +68,7 @@ class PartnerAnalyticsControllerIntegrationTest extends AbstractIntegrationTest 
     @Autowired
     private CacheManager cacheManager;
 
-    /** EMS behind the real EventManagementClient, answering per event-analytics-api (Story 17.0b1). */
+    /** EMS behind the real EventManagementClient, answering per ems-internal (Story 17.0b1, 6b). */
     private ContractServer ems;
 
 
@@ -73,10 +79,10 @@ class PartnerAnalyticsControllerIntegrationTest extends AbstractIntegrationTest 
     void setUp() {
         partnerRepository.deleteAll();
         cacheManager.getCacheNames().forEach(name -> cacheManager.getCache(name).clear());
-        // @WithMockUser callers carry no JWT to forward, hence ignoringMissingAuthorization.
-        // One RestTemplate, two providers: EMS analytics and the CUMS user lookup (Story 17.0b2).
-        ems = ContractServer.bindTo(restTemplate, "docs/api/event-analytics-api.openapi.yml",
-                CumsInternalUsers.CUMS_INTERNAL).ignoringMissingAuthorization();
+        // One RestTemplate, two providers: the EMS attendance summary and the CUMS user lookup, both
+        // internal specs, which need no JWT (Story 17.0b2, 6b).
+        ems = ContractServer.bindTo(restTemplate, "docs/api/internal/ems-internal.openapi.yml",
+                CumsInternalUsers.CUMS_INTERNAL);
 
         googlePartner = createPartner("GoogleZH", PartnershipLevel.GOLD, new BigDecimal("10000.00"));
         microsoftPartner = createPartner("MicrosoftZH", PartnershipLevel.PLATINUM, new BigDecimal("20000.00"));
@@ -92,7 +98,7 @@ class PartnerAnalyticsControllerIntegrationTest extends AbstractIntegrationTest 
 
     /** EMS answers the attendance summary for {@code company} with {@code json} (checked against the spec). */
     private void emsAnswers(String company, String json) {
-        ems.expect(HttpMethod.GET, "/api/v1/events/attendance-summary").withQueryParam("companyName", company)
+        ems.expect(HttpMethod.GET, "/internal/events/attendance-summary").withQueryParam("companyName", company)
                 .respondWith(HttpStatus.OK, json);
     }
 
@@ -120,6 +126,23 @@ class PartnerAnalyticsControllerIntegrationTest extends AbstractIntegrationTest 
     }
 
     @Test
+    @DisplayName("6b: a partner's JWT reaches EMS's internal attendance read; the role check stays here")
+    void should_forwardPartnersJwt_toEmsInternalAttendanceSummary() throws Exception {
+        ems.expect(HttpMethod.GET, "/internal/events/attendance-summary").withQueryParam("companyName", "GoogleZH")
+                .andExpect(r -> assertThat(r.getHeaders().getFirst(HttpHeaders.AUTHORIZATION))
+                        .isEqualTo("Bearer partner-jwt"))
+                .respondWith(HttpStatus.OK, "[" + summary("BATbern57", "BATbern 57", "2024-06-01T00:00:00Z", 100, 10) + "]");
+
+        mockMvc.perform(get("/api/v1/partners/GoogleZH/analytics/dashboard")
+                        .with(jwt().jwt(j -> j.tokenValue("partner-jwt").claim("custom:username", "partner.google")
+                                        .expiresAt(Instant.now().plusSeconds(3600)))
+                                .authorities(new SimpleGrantedAuthority("ROLE_PARTNER"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.attendanceSummary", hasSize(1)));
+        ems.verify();
+    }
+
+    @Test
     @WithMockUser(username = "partner.google", roles = "PARTNER")
     void should_return403_when_partnerRequestsOtherCompany() throws Exception {
         mockMvc.perform(get("/api/v1/partners/MicrosoftZH/analytics/dashboard")
@@ -143,7 +166,7 @@ class PartnerAnalyticsControllerIntegrationTest extends AbstractIntegrationTest 
     @Test
     @WithMockUser(username = "organizer.user", roles = "ORGANIZER")
     void should_passFromYearToClient_when_fromYearParamProvided() throws Exception {
-        ems.expect(HttpMethod.GET, "/api/v1/events/attendance-summary").withQueryParam("companyName", "GoogleZH")
+        ems.expect(HttpMethod.GET, "/internal/events/attendance-summary").withQueryParam("companyName", "GoogleZH")
                 .withQueryParam("fromYear", "2020")
                 .respondWith(HttpStatus.OK, "[" + summary("BATbern57", "BATbern 57", "2024-06-01T00:00:00Z", 100, 10) + "]");
 

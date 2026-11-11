@@ -51,6 +51,9 @@ updates:
     # One entry, one limit. Previously 7 entries x 2-3 each allowed up to 20 PRs
     # while every individual entry looked conservative.
     open-pull-requests-limit: 5
+    # No automatic rebase: every rebase re-ran full CI on a PR the monthly batch
+    # would merge anyway (owner 2026-11-10). `@dependabot rebase` still works.
+    rebase-strategy: "disabled"
     groups:
       # applies-to defaults to version-updates, so WITHOUT this block security
       # updates arrive ungrouped — one PR per advisory, exempt from
@@ -147,6 +150,9 @@ updates:
       day: "monday"
       time: "03:30"
     open-pull-requests-limit: 3
+    # No automatic rebase: every rebase re-ran full CI on a PR the monthly batch
+    # would merge anyway (owner 2026-11-10). `@dependabot rebase` still works.
+    rebase-strategy: "disabled"
     groups:
       # applies-to defaults to version-updates, so WITHOUT this block security
       # updates arrive ungrouped — one PR per advisory, exempt from
@@ -205,6 +211,9 @@ updates:
       day: "monday"
       time: "04:00"
     open-pull-requests-limit: 3
+    # No automatic rebase: every rebase re-ran full CI on a PR the monthly batch
+    # would merge anyway (owner 2026-11-10). `@dependabot rebase` still works.
+    rebase-strategy: "disabled"
     groups:
       # applies-to defaults to version-updates, so WITHOUT this block security
       # updates arrive ungrouped — one PR per advisory, exempt from
@@ -267,6 +276,9 @@ updates:
       day: "monday"
       time: "04:30"
     open-pull-requests-limit: 3
+    # No automatic rebase: every rebase re-ran full CI on a PR the monthly batch
+    # would merge anyway (owner 2026-11-10). `@dependabot rebase` still works.
+    rebase-strategy: "disabled"
     groups:
       # applies-to defaults to version-updates, so WITHOUT this block security
       # updates arrive ungrouped — one PR per advisory, exempt from
@@ -297,6 +309,9 @@ updates:
       day: "monday"
       time: "03:30"
     open-pull-requests-limit: 2
+    # No automatic rebase: every rebase re-ran full CI on a PR the monthly batch
+    # would merge anyway (owner 2026-11-10). `@dependabot rebase` still works.
+    rebase-strategy: "disabled"
     groups:
       # applies-to defaults to version-updates, so WITHOUT this block security
       # updates arrive ungrouped — one PR per advisory, exempt from

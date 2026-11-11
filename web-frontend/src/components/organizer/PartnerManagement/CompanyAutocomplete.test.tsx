@@ -2,7 +2,7 @@
  * CompanyAutocomplete Component Tests (Story 2.8.3, AC3: company search)
  *
  * The real companyApi, useCompany and React Query run against the MSW harness (17.0c2):
- * `GET /companies/search` and `POST /companies:get-or-create` are checked against
+ * `GET /companies/search` and `POST /companies/get-or-create` are checked against
  * companies-api, answered with typed bodies, and the test reads what was sent.
  */
 
@@ -197,7 +197,7 @@ describe('CompanyAutocomplete Component - Story 2.8.3 AC3', () => {
       updatedAt: '2026-01-01T00:00:00Z',
       createdBy: 'lead.organizer',
     };
-    api.on('getOrCreateCompany', () => created);
+    api.on('getOrCreateCompany', () => created, { status: 201 });
     const user = userEvent.setup();
     const { input, onChange } = renderAutocomplete();
 

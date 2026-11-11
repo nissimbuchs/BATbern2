@@ -1,11 +1,11 @@
 meta {
-  name: Update Current User
+  name: Update Own User (PATCH /users/{username})
   type: http
   seq: 3
 }
 
 patch {
-  url: {{baseUrl}}/users/me
+  url: {{baseUrl}}/users/{{currentUsername}}
   body: json
   auth: bearer
 }
@@ -30,7 +30,7 @@ body:json {
 
 script:pre-request {
   // Do not mutate a profile we cannot put back. 01 sets `profileRestorable` false when the
-  // account's firstName/lastName are blank, because PATCH /users/me rejects blanks with 400
+  // account's firstName/lastName are blank, because PATCH /users/{username} rejects blanks with 400
   // and 03b's restore would therefore fail, leaving a REAL account named "Updated User" with
   // a Bruno test string as its bio. Staging IS production, so that account is a live organizer.
   if (bru.getVar("profileRestorable") !== true) {
@@ -61,4 +61,9 @@ tests {
     // Verification would require Cognito API check
     expect(res.getStatus()).to.equal(200);
   });
+}
+
+docs {
+  Story 4.10: the own profile is written at PATCH /users/{username} with the username that
+  01 read from GET /users/me (the /users/me PATCH twin is gone).
 }

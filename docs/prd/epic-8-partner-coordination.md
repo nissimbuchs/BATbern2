@@ -62,7 +62,7 @@ partner-coordination-service
   PartnerAnalyticsController
        │
        ├─ HTTP GET event-management-service:
-       │    /api/v1/events/attendance-summary
+       │    /internal/events/attendance-summary
        │      ?companyName={name}&fromYear={year}
        │
        ▼
@@ -76,7 +76,7 @@ partner-coordination-service
 **Key endpoints:**
 - `GET /api/v1/partners/{companyName}/analytics/dashboard?fromYear={year}` (PARTNER, ORGANIZER)
 - `GET /api/v1/partners/{companyName}/analytics/export` → XLSX download (PARTNER, ORGANIZER)
-- `GET /api/v1/events/attendance-summary?companyName={name}&fromYear={year}` on event-management-service (internal)
+- `GET /internal/events/attendance-summary?companyName={name}&fromYear={year}` on event-management-service (VPC-only, ems-internal spec; the public `/api/v1/events/attendance-summary` until Epic 17 6b)
 
 **Performance targets:** Dashboard P95 < 5s | Cached response < 50ms | Cold response < 500ms
 

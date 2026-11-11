@@ -71,8 +71,9 @@ export interface SessionImportCandidate {
 }
 
 /**
- * Result of a batch import operation
- * Matches BatchImportSessionResult.java DTO
+ * Result of a batch import as the UI holds it: the import-mode fields of the wire
+ * `CreateSessionResponse`, summed over the requests and always present. Not the wire shape (whose
+ * fields are optional, one schema for both create modes), hence its own name.
  */
 export interface SessionBatchImportResult {
   /** Total sessions processed */

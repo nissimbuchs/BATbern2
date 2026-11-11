@@ -458,18 +458,23 @@ provider would reject fails the test with the validator's message, as an `Assert
 client's `catch (Exception e)` cannot swallow:
 
 ```java
-var server = ContractServer.bindTo(restTemplate, "docs/api/companies-api.openapi.yml");
-server.expect(GET, "/api/v1/companies").respondWithExample();   // or .respondWith(OK, json)
-var companies = client.getAllCompanies();                       // request validated, example returned
+var server = ContractServer.bindTo(restTemplate, "docs/api/internal/cums-internal.openapi.yml");
+server.expect(GET, "/internal/companies/{name}").respondWithExample(); // or .respondWith(OK, json)
+var name = client.getCompanyDisplayName("swissitsolut");              // request validated, example returned
 server.verify();
 ```
 
-Client contract tests live next to the client (`UserApiClientImplContractTest`,
-`CompanyServiceClientContractTest`, ...). An IT whose code calls a peer service binds the harness to
+Client contract tests live next to the client (`UserApiClientImplInternalContractTest`,
+`CompanyServiceClientContractTest`, ...); each call runs once with a signed-in JWT user (the header
+is forwarded) and once without (no `Authorization`), per ADR-016 decision 3 and `S2sHeaders`
+(which forwards a token only while it stays valid for `S2sHeaders.EXPIRY_MARGIN`, 60 s, so a test
+JWT needs an `expiresAt`). An IT whose code calls a peer service binds the harness to
 the context's `RestTemplate` bean in `@BeforeEach` instead of a `@MockitoBean` of the client, and
 calls `close()` in `@AfterEach` (the bean is shared by the cached context);
 `.ignoringMissingAuthorization()` is allowed there only because a `@WithMockUser` caller has no JWT
-to forward. Each provider proves its side in `S2sProviderContractIntegrationTest` (CUMS, EMS, PCS):
+to forward; it applies only to a binding of a public spec, which requires a JWT. None is left since
+entry 8 (2026-11-11): no service calls a public spec any more, and the internal specs (EMS
+`CumsContractHarness`, every PCS binding) require no JWT. Each provider proves its side in `S2sProviderContractIntegrationTest` (CUMS, EMS, PCS):
 every consumed operation runs through the real controller and `ProviderContract` checks the
 response, and the examples, against the same spec. A spec without a usable example for a consumed
 operation gets one. How the harness reads `null`, `format: time` and the e-mail formats (as the
@@ -497,7 +502,7 @@ method, path and spec. A client whose one `RestTemplate` reaches several specs b
 `ch.batbern.events.config`, picked up by the application's component scan like `TestAwsConfig`)
 is CUMS for every integration test context: the real `UserApiClientImpl` runs, defaults answer the
 user, user-list and email-owner reads, and a test registers other answers (`cums.user(...)`,
-`cums.answer(POST, "/api/v1/users/provision", ...)`) and reads what was sent (`cums.calls(...)`),
+`cums.answer(POST, "/internal/users/provision", ...)`) and reads what was sent (`cums.calls(...)`),
 then calls `cums.reset()`. A test that binds its own `ContractServer` to that `RestTemplate` (for
 PCS) displaces the CUMS harness for its duration, and CUMS calls then fail as "not an operation of
 ..."; to keep CUMS, bind with `.onlyFor(uri -> !uri.toString().startsWith(cumsBaseUrl))` so CUMS
@@ -517,8 +522,10 @@ which registers `ResponseConformance` (shared-kernel test fixtures, `ch.batbern.
 as an `alwaysDo` handler on the auto-configured `MockMvc`; the validator is the S2S harness's
 (`OpenApiContract` with `GeneratedCodeSemantics`), there is no second one. A request of a path no
 own spec has (actuator, dev endpoints), a non-2xx answer, an empty body and non-JSON bodies (CSV,
-ICS, XLSX) are not checked. Where several specs match, the most specific template wins
-(`/events/attendance-summary` over `/events/{eventCode}`).
+ICS, XLSX) are not checked. Where several specs match, the most specific template wins (a literal
+`/events/archive` of one spec over `/events/{eventCode}` of another; since Story 4.10b no pair of
+`docs/api` specs overlaps like that, and `ResponseConformanceTest` shows the rule on two fixture
+specs).
 
 A violation fails the request that produced it, inside its test, with the validator's message and
 the body: fix the response (production code), the spec, or the test data that the spec rejects. A
@@ -763,6 +770,8 @@ changes a screen fills that screen's keys.
 #### Frontend: generated API type copies
 
 The wire types come from `web-frontend/src/types/generated/` (generated from `docs/api/`, ADR-006).
+They are generated with `--default-non-nullable false`: a spec `default` does not make a property
+required, only `required` does, so a request may leave out what the server defaults.
 A hand-written copy drifts silently: when the spec changes (e.g. a field becomes optional or
 `| null`), the copy still compiles and the UI reads a field the server no longer sends. Alias the
 generated type and keep the export name, so imports stay unchanged:
@@ -862,17 +871,18 @@ test('organizer can create and publish event', async ({ page }) => {
 
 `npm run lint:api` (in `web-frontend/`, `make lint-api`, CI `frontend-static` in the required
 `build-frontend` check) runs Spectral with the repo ruleset `docs/api/.spectral.yaml` over the
-public specs `docs/api/*.openapi.yml` (not `_shared.openapi.yml`). Six rules, one finding per
+public specs `docs/api/*.openapi.yml` (not `_shared.openapi.yml`). Seven rules, one finding per
 operation (Story 17.4):
 
 | Rule | Fails on | Source |
 |---|---|---|
-| `path-kebab-case` | a literal path segment that is not kebab-case (`speakerSlots`, `batch_registrations`, `companies:get-or-create`); an `.ext` suffix is allowed, path parameters are exempt | ADR-013, naming table above |
+| `path-kebab-case` | a literal path segment that is not kebab-case (`speakerSlots`, `batch_registrations`, the former `companies:get-or-create` until Story 4.10d); an `.ext` suffix is allowed, path parameters are exempt | ADR-013, naming table above |
 | `no-verb-segment` | a verb outside the ADR-013 §1 action shape `POST /{id}/{verb}` (the verb is the last segment of a POST, directly after a parameter or `me`: `POST /companies/{name}/verify`, `POST /users/me/merge` pass). Flagged: a verb after a literal (`POST /users/me/profile-claims/confirm`), with another method (`PUT /tasks/{taskId}/complete`), on a collection (`POST /users/provision`), followed by a parameter or qualifier (`POST /registrations/deregister/by-email`); for a read only the last segment counts (`GET …/download` fails, `GET …/workflow/status` passes). The verb list in the ruleset only tells a verb from a sub-resource noun; it allows nothing. `search`, `get-or-create`, `vote` are not on it | ADR-013 |
 | `no-internal-path` | a path under `/internal` in a public spec | ADR-016 |
 | `no-literal-under-events` | a literal directly under `/events/` (`/events/current`): it shares the namespace of `{eventCode}` | ADR-013 |
 | `uuid-path-param` | a path parameter with `format: uuid`, or a string named `id` / `*Id` without a format (`uploadId`); an operation parameter replaces the path-level one of the same name. Not seen: a UUID under another name without a format | ADR-003 amendment 2026-11 |
-| `no-personal-data-path-param` | a path parameter named `email` or ending in `Email`, case-insensitive (`/users/me/additional-emails/{email}`); path-level and operation-level parameters as for `uuid-path-param`. Personal data never goes in a path | ADR-003 amendment 2026-11 |
+| `no-personal-data-path-param` | a path parameter named `email` or ending in `Email`, case-insensitive (the former `/users/me/additional-emails/{email}`, keyed by `{emailId}` since Story 4.10d); path-level and operation-level parameters as for `uuid-path-param`. Personal data never goes in a path | ADR-003 amendment 2026-11 |
+| `speaker-path-key` | under `/events/{eventCode}/speakers/`, a path parameter that is not `{speakerId}` with `format: uuid` (`/speakers/{username}/send-invitation`), and a second speaker collection literal (`speaker-pool`, `speakers/pool`). Literal sub-collections (`review-queue`) and a session's speaker (`/sessions/{slug}/speakers/{username}`) pass | ADR-003 amendment, Story 4.10 |
 
 **Baseline policy.** Existing violations are listed in `web-frontend/scripts/api-lint-baseline.txt`
 (rule, spec file, method, path; no line numbers). The lint fails on a NEW finding and on a STALE one

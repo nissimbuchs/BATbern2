@@ -19,7 +19,8 @@ type UpdateEventSlotConfigurationRequest =
   components['schemas']['UpdateEventSlotConfigurationRequest'];
 
 // API base path for event type endpoints
-const EVENT_TYPES_API_PATH = '/events/types';
+// Story 4.10b: /event-types (was /events/types, a literal in the {eventCode} namespace)
+const EVENT_TYPES_API_PATH = '/event-types';
 
 /**
  * Event Type Service Class

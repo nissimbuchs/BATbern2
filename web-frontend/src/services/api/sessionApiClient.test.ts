@@ -1,277 +1,229 @@
 /**
- * Session API Client Tests (Story BAT-17)
+ * sessionApiClient tests (session update, materials, deletion, speakers)
  *
- * Tests for session management HTTP client:
- * - updateSession, associateMaterials, getMaterialDownloadUrl
- * - deleteSession, assignSpeaker, removeSpeaker
- * - Error handling including 401/403 passthrough
+ * The client runs with the real apiClient against the MSW harness (Epic 17 test fidelity): every
+ * request is checked against event-sessions-api and each test reads what went over the wire. A
+ * 401/403 reaches the caller as the AxiosError itself (the auth handling needs it); any other HTTP
+ * error as an `Error` with the server's message, "Event not found" / "Session not found" for a 404
+ * naming one, and the correlation id when the response carries one.
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { AxiosError } from 'axios';
-import { sessionApiClient } from './sessionApiClient';
-import type { SessionUpdateRequest, AssignSpeakerRequest } from './sessionApiClient';
+import { afterEach, describe, it, expect } from 'vitest';
+import { HttpResponse } from 'msw';
+import { isAxiosError } from 'axios';
+import { api } from '@/test/msw/api';
 import apiClient from './apiClient';
+import { sessionApiClient } from './sessionApiClient';
+import type { AssignSpeakerRequest } from './sessionApiClient';
 
-vi.mock('./apiClient', () => ({
-  default: {
-    get: vi.fn(),
-    post: vi.fn(),
-    patch: vi.fn(),
-    delete: vi.fn(),
-  },
-}));
+const EVENT = 'BATbern142';
+const alice: AssignSpeakerRequest = { username: 'hong.an', speakerRole: 'PRIMARY_SPEAKER' };
 
-const mockApiClient = vi.mocked(apiClient);
+/** An error answer in the services' error shape, optionally with a correlation id header. */
+const problem = (status: number, body: Record<string, unknown>, correlationId?: string) =>
+  HttpResponse.json(
+    { timestamp: '2026-11-10T08:00:00Z', status, ...body },
+    { status, headers: correlationId ? { 'x-correlation-id': correlationId } : {} }
+  );
 
-// Helper to create a realistic AxiosError-like object
-function makeAxiosError(status: number, message = 'Error'): AxiosError {
-  const err = new AxiosError(message);
-  Object.defineProperty(err, 'isAxiosError', { value: true, writable: false });
-  err.response = {
-    status,
-    data: { message, error: message },
-    headers: { 'x-correlation-id': 'corr-99' },
-    statusText: String(status),
-    config: {} as AxiosError['config'],
-  };
-  return err;
-}
+/** Resolves to what `promise` rejected with; fails the test when it resolves. */
+const rejectionOf = async (promise: Promise<unknown>): Promise<unknown> =>
+  promise.then(
+    () => {
+      throw new Error('expected a rejection');
+    },
+    (e: unknown) => e
+  );
+
+/** The methods that pass a 401/403 through, with the operation each calls. */
+const authPassingMethods = [
+  ['patchSession', () => sessionApiClient.updateSession(EVENT, 'session-1', {})],
+  [
+    'associateMaterials',
+    () => sessionApiClient.associateMaterials(EVENT, 'session-1', { materials: [] }),
+  ],
+  ['deleteSessionMaterial', () => sessionApiClient.deleteMaterial(EVENT, 'session-1', 'mat-1')],
+  ['deleteSession', () => sessionApiClient.deleteSession(EVENT, 'session-1')],
+  ['assignSpeakerToSession', () => sessionApiClient.assignSpeaker(EVENT, 'session-1', alice)],
+  ['removeSpeakerFromSession', () => sessionApiClient.removeSpeaker(EVENT, 'session-1', 'hong.an')],
+] as const;
+
+/**
+ * Makes the next requests fail before they leave the process with `value`, a non-axios error (an
+ * auth token lookup that throws, say). A request interceptor on the real apiClient: it runs first
+ * and its rejection reaches the service unchanged.
+ */
+let ejectFailure: (() => void) | null = null;
+const failBeforeSending = (value: unknown) => {
+  const id = apiClient.interceptors.request.use(() => {
+    throw value;
+  });
+  ejectFailure = () => apiClient.interceptors.request.eject(id);
+};
+afterEach(() => {
+  ejectFailure?.();
+  ejectFailure = null;
+});
 
 describe('sessionApiClient', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
-  // ── updateSession ─────────────────────────────────────────────────────────────
-
-  describe('updateSession', () => {
-    it('should PATCH session and return updated session', async () => {
-      const mockSession = { slug: 'session-1', title: 'Updated Title', durationMinutes: 45 };
-      mockApiClient.patch.mockResolvedValue({ data: mockSession });
-
-      const updates: SessionUpdateRequest = { title: 'Updated Title', durationMinutes: 45 };
-      const result = await sessionApiClient.updateSession('BATbern142', 'session-1', updates);
-
-      expect(mockApiClient.patch).toHaveBeenCalledWith(
-        '/events/BATbern142/sessions/session-1',
-        updates
-      );
-      expect(result.title).toBe('Updated Title');
-    });
-
-    it('should re-throw 401 errors without transformation', async () => {
-      const authError = makeAxiosError(401);
-      mockApiClient.patch.mockRejectedValue(authError);
-
-      await expect(
-        sessionApiClient.updateSession('BATbern142', 'session-1', {})
-      ).rejects.toBeInstanceOf(AxiosError);
-    });
-
-    it('should re-throw 403 errors without transformation', async () => {
-      const authError = makeAxiosError(403);
-      mockApiClient.patch.mockRejectedValue(authError);
-
-      await expect(
-        sessionApiClient.updateSession('BATbern142', 'session-1', {})
-      ).rejects.toBeInstanceOf(AxiosError);
-    });
-
-    it('should transform non-auth errors', async () => {
-      mockApiClient.patch.mockRejectedValue(makeAxiosError(500));
-
-      await expect(sessionApiClient.updateSession('BATbern142', 'session-1', {})).rejects.toThrow(
-        'Error (Correlation ID: corr-99)'
-      );
-    });
-
-    it('should handle 404 with Event in message', async () => {
-      const err = makeAxiosError(404, 'Event not found');
-      mockApiClient.patch.mockRejectedValue(err);
-
-      await expect(sessionApiClient.updateSession('NOTFOUND', 'session-1', {})).rejects.toThrow(
-        'Event not found'
-      );
-    });
-
-    it('should handle 404 with Session in message', async () => {
-      const err = makeAxiosError(404, 'Session not found');
-      mockApiClient.patch.mockRejectedValue(err);
-
-      await expect(sessionApiClient.updateSession('BATbern142', 'no-session', {})).rejects.toThrow(
-        'Session not found'
-      );
-    });
-  });
-
-  // ── associateMaterials ────────────────────────────────────────────────────────
-
-  describe('associateMaterials', () => {
-    it('should POST materials and return created list', async () => {
-      const mockMaterials = [{ id: 'mat-1', fileName: 'slides.pdf', materialType: 'PRESENTATION' }];
-      mockApiClient.post.mockResolvedValue({ data: mockMaterials });
-
-      const result = await sessionApiClient.associateMaterials('BATbern142', 'session-1', {
-        materials: [
-          {
-            uploadId: 'up-1',
-            materialType: 'PRESENTATION',
-            fileName: 'slides.pdf',
-            fileExtension: 'pdf',
-            fileSize: 500_000,
-            mimeType: 'application/pdf',
-          },
-        ],
+  describe('requests', () => {
+    it('should_patchSession_when_updated', async () => {
+      await sessionApiClient.updateSession(EVENT, 'session-1', {
+        title: 'Updated Title',
+        durationMinutes: 45,
       });
 
-      expect(mockApiClient.post).toHaveBeenCalledWith(
-        '/events/BATbern142/sessions/session-1/materials',
-        expect.objectContaining({
-          materials: expect.arrayContaining([expect.objectContaining({ uploadId: 'up-1' })]),
-        })
-      );
-      expect(result[0].fileName).toBe('slides.pdf');
+      const [call] = api.calls('patchSession');
+      expect(call.params).toEqual({ eventCode: EVENT, sessionSlug: 'session-1' });
+      expect(call.body).toEqual({ title: 'Updated Title', durationMinutes: 45 });
     });
 
-    it('should re-throw 401 errors', async () => {
-      mockApiClient.post.mockRejectedValue(makeAxiosError(401));
-
-      await expect(
-        sessionApiClient.associateMaterials('BATbern142', 'session-1', { materials: [] })
-      ).rejects.toBeInstanceOf(AxiosError);
-    });
-  });
-
-  // ── getMaterialDownloadUrl ────────────────────────────────────────────────────
-
-  describe('getMaterialDownloadUrl', () => {
-    it('should return download URL object', async () => {
-      mockApiClient.get.mockResolvedValue({ data: { downloadUrl: 'https://s3.example.com/file' } });
-
-      const result = await sessionApiClient.getMaterialDownloadUrl(
-        'BATbern142',
-        'session-1',
-        'mat-uuid'
-      );
-
-      expect(mockApiClient.get).toHaveBeenCalledWith(
-        '/events/BATbern142/sessions/session-1/materials/mat-uuid/download'
-      );
-      expect(result.downloadUrl).toBe('https://s3.example.com/file');
-    });
-
-    it('should transform errors', async () => {
-      mockApiClient.get.mockRejectedValue(makeAxiosError(404, 'Session not found'));
-
-      await expect(
-        sessionApiClient.getMaterialDownloadUrl('BATbern142', 'no-session', 'mat')
-      ).rejects.toThrow('Session not found');
-    });
-  });
-
-  // ── deleteSession ─────────────────────────────────────────────────────────────
-
-  describe('deleteSession', () => {
-    it('should DELETE session', async () => {
-      mockApiClient.delete.mockResolvedValue({ data: undefined });
-
-      await sessionApiClient.deleteSession('BATbern142', 'session-1');
-
-      expect(mockApiClient.delete).toHaveBeenCalledWith('/events/BATbern142/sessions/session-1');
-    });
-
-    it('should re-throw 403 errors', async () => {
-      mockApiClient.delete.mockRejectedValue(makeAxiosError(403));
-
-      await expect(
-        sessionApiClient.deleteSession('BATbern142', 'session-1')
-      ).rejects.toBeInstanceOf(AxiosError);
-    });
-
-    it('should transform 500 errors', async () => {
-      const err = makeAxiosError(500, 'Internal error');
-      mockApiClient.delete.mockRejectedValue(err);
-
-      await expect(sessionApiClient.deleteSession('BATbern142', 'session-1')).rejects.toThrow();
-    });
-  });
-
-  // ── assignSpeaker ─────────────────────────────────────────────────────────────
-
-  describe('assignSpeaker', () => {
-    it('should POST speaker assignment and return SessionSpeaker', async () => {
-      const mockSpeaker = { username: 'alice', speakerRole: 'PRIMARY_SPEAKER' };
-      mockApiClient.post.mockResolvedValue({ data: mockSpeaker });
-
-      const request: AssignSpeakerRequest = {
-        username: 'alice',
-        speakerRole: 'PRIMARY_SPEAKER',
+    it('should_postMaterials_when_associated', async () => {
+      const material = {
+        uploadId: 'up-1',
+        materialType: 'PRESENTATION',
+        fileName: 'Präsentation Brünnimann.pdf',
+        fileExtension: 'pdf',
+        fileSize: 500_000,
+        mimeType: 'application/pdf',
       };
-      const result = await sessionApiClient.assignSpeaker('BATbern142', 'session-1', request);
 
-      expect(mockApiClient.post).toHaveBeenCalledWith(
-        '/events/BATbern142/sessions/session-1/speakers',
-        request
-      );
-      expect(result.username).toBe('alice');
+      await sessionApiClient.associateMaterials(EVENT, 'session-1', { materials: [material] });
+
+      const [call] = api.calls('associateMaterials');
+      expect(call.params).toEqual({ eventCode: EVENT, sessionSlug: 'session-1' });
+      expect(call.body).toEqual({ materials: [material] });
     });
 
-    it('should re-throw 401 errors', async () => {
-      mockApiClient.post.mockRejectedValue(makeAxiosError(401));
+    it('should_returnDownloadUrl_when_requested', async () => {
+      api.on('getMaterialDownloadUrl', () => ({ downloadUrl: 'https://s3.example.com/file' }));
 
-      await expect(
-        sessionApiClient.assignSpeaker('BATbern142', 'session-1', {
-          username: 'alice',
-          speakerRole: 'PRIMARY_SPEAKER',
-        })
-      ).rejects.toBeInstanceOf(AxiosError);
+      const result = await sessionApiClient.getMaterialDownloadUrl(EVENT, 'session-1', 'mat-uuid');
+
+      expect(result.downloadUrl).toBe('https://s3.example.com/file');
+      expect(api.calls('getMaterialDownloadUrl')[0].params).toEqual({
+        eventCode: EVENT,
+        sessionSlug: 'session-1',
+        materialId: 'mat-uuid',
+      });
     });
 
-    it('should transform non-auth errors', async () => {
-      mockApiClient.post.mockRejectedValue(makeAxiosError(404, 'Session not found'));
+    it('should_deleteMaterial_when_removed', async () => {
+      await sessionApiClient.deleteMaterial(EVENT, 'session-1', 'mat-1');
 
-      await expect(
-        sessionApiClient.assignSpeaker('BATbern142', 'no-session', {
-          username: 'alice',
-          speakerRole: 'PRIMARY_SPEAKER',
-        })
-      ).rejects.toThrow('Session not found');
+      expect(api.calls('deleteSessionMaterial')[0].params).toEqual({
+        eventCode: EVENT,
+        sessionSlug: 'session-1',
+        materialId: 'mat-1',
+      });
+    });
+
+    it('should_deleteSession_when_removed', async () => {
+      await sessionApiClient.deleteSession(EVENT, 'session-1');
+
+      expect(api.calls('deleteSession')[0].params).toEqual({
+        eventCode: EVENT,
+        sessionSlug: 'session-1',
+      });
+    });
+
+    it('should_postSpeaker_when_assigned', async () => {
+      await sessionApiClient.assignSpeaker(EVENT, 'session-1', alice);
+
+      expect(api.calls('assignSpeakerToSession')[0].body).toEqual(alice);
+    });
+
+    it('should_deleteSpeaker_when_removed', async () => {
+      await sessionApiClient.removeSpeaker(EVENT, 'session-1', 'hong.an');
+
+      expect(api.calls('removeSpeakerFromSession')[0].params).toEqual({
+        eventCode: EVENT,
+        sessionSlug: 'session-1',
+        username: 'hong.an',
+      });
     });
   });
 
-  // ── removeSpeaker ─────────────────────────────────────────────────────────────
+  describe('auth errors pass through', () => {
+    const cases = authPassingMethods.flatMap(([op, call]) =>
+      ([401, 403] as const).map((status) => [op, status, call] as const)
+    );
 
-  describe('removeSpeaker', () => {
-    it('should DELETE speaker from session', async () => {
-      mockApiClient.delete.mockResolvedValue({ data: undefined });
+    it.each(cases)('%s re-throws a %i as the AxiosError', async (op, status, call) => {
+      api.on(op, () => problem(status, { error: 'Unauthorized', message: 'Not allowed' }));
 
-      await sessionApiClient.removeSpeaker('BATbern142', 'session-1', 'alice');
+      const error = await rejectionOf(call());
 
-      expect(mockApiClient.delete).toHaveBeenCalledWith(
-        '/events/BATbern142/sessions/session-1/speakers/alice'
+      expect(isAxiosError(error)).toBe(true);
+      expect(isAxiosError(error) && error.response?.status).toBe(status);
+    });
+  });
+
+  describe('other errors are mapped to the server message', () => {
+    it.each(authPassingMethods)(
+      '%s maps a 500 to its message and correlation id',
+      async (op, call) => {
+        api.on(op, () =>
+          problem(500, { error: 'Internal Server Error', message: 'DB unavailable' }, 'corr-99')
+        );
+
+        const error = await rejectionOf(call());
+
+        expect(isAxiosError(error)).toBe(false);
+        expect(error).toEqual(new Error('DB unavailable (Correlation ID: corr-99)'));
+      }
+    );
+
+    it('should_mapDownloadUrlError_when_requestFails', async () => {
+      api.on('getMaterialDownloadUrl', () =>
+        problem(404, { error: 'Not Found', message: 'Session not found: no-session' })
+      );
+
+      await expect(
+        sessionApiClient.getMaterialDownloadUrl(EVENT, 'no-session', 'mat')
+      ).rejects.toEqual(new Error('Session not found'));
+    });
+
+    it('should_sayEventNotFound_when_404NamesTheEvent', async () => {
+      api.on('patchSession', () =>
+        problem(404, { error: 'Not Found', message: 'Event not found: NOTFOUND' })
+      );
+
+      await expect(sessionApiClient.updateSession('NOTFOUND', 'session-1', {})).rejects.toEqual(
+        new Error('Event not found')
       );
     });
 
-    it('should re-throw 401 on auth error', async () => {
-      mockApiClient.delete.mockRejectedValue(makeAxiosError(401));
+    it('should_useErrorField_when_noMessage', async () => {
+      api.on('assignSpeakerToSession', () => problem(409, { error: 'Speaker already assigned' }));
 
-      await expect(
-        sessionApiClient.removeSpeaker('BATbern142', 'session-1', 'alice')
-      ).rejects.toBeInstanceOf(AxiosError);
+      await expect(sessionApiClient.assignSpeaker(EVENT, 'session-1', alice)).rejects.toEqual(
+        new Error('Speaker already assigned')
+      );
     });
 
-    it('should transform plain Error', async () => {
-      const err = new Error('plain error');
-      mockApiClient.delete.mockRejectedValue(err);
+    it('should_useAxiosMessage_when_networkFails', async () => {
+      api.on('removeSpeakerFromSession', () => HttpResponse.error());
 
-      await expect(
-        sessionApiClient.removeSpeaker('BATbern142', 'session-1', 'alice')
-      ).rejects.toThrow('plain error');
+      await expect(sessionApiClient.removeSpeaker(EVENT, 'session-1', 'hong.an')).rejects.toEqual(
+        new Error('Network Error')
+      );
+    });
+  });
+  describe('errors that are not from axios', () => {
+    it('should_passPlainErrorThrough_when_deleteSessionThrowsBeforeSending', async () => {
+      const thrown = new Error('Token lookup failed');
+      failBeforeSending(thrown);
+
+      await expect(sessionApiClient.deleteSession(EVENT, 'session-1')).rejects.toBe(thrown);
+    });
+
+    it('should_wrapNonError_when_deleteSessionThrowsBeforeSending', async () => {
+      failBeforeSending('raw string error');
+
+      await expect(sessionApiClient.deleteSession(EVENT, 'session-1')).rejects.toEqual(
+        new Error('An unexpected error occurred')
+      );
     });
   });
 });

@@ -129,9 +129,22 @@ collections=(
 # endpoint (@Profile dev/local/test only), so it cannot pass against staging/production.
 # event-publishing-api publishes phases (public website, CDN invalidation, EventPublishedEvent
 # and organizer notices), which must never happen on staging = production (Story 4.9b).
+# participants-api writes registrations, creates users and sends an organizer-added mail;
+# newsletter-api subscribes an address anonymously (Story 4.10c).
+# notifications-api creates an event and marks and deletes the caller's notifications;
+# ai-prompts-api changes a global prompt (and restores it); session-import-api imports
+# sessions into its own fixture event (Story 4.10b).
+# company-get-or-create-api creates a company through get-or-create (201) and deletes it; the
+# production collection companies-api checks only the 200 of an existing company (Story 4.10d).
 dev_only_collections=(
     "speaker-portal-api"
     "event-publishing-api"
+    "participants-api"
+    "newsletter-api"
+    "notifications-api"
+    "ai-prompts-api"
+    "session-import-api"
+    "company-get-or-create-api"
 )
 
 # Never run as a collection. Each entry needs a reason; add one here only on purpose.

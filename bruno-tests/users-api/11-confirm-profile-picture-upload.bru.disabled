@@ -5,7 +5,7 @@ meta {
 }
 
 post {
-  url: {{baseUrl}}/users/me/picture/confirm
+  url: {{baseUrl}}/users/{{currentUsername}}/picture/confirm
   body: json
   auth: bearer
 }

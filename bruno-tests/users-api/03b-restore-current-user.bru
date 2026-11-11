@@ -5,7 +5,7 @@ meta {
 }
 
 patch {
-  url: {{baseUrl}}/users/me
+  url: {{baseUrl}}/users/{{currentUsername}}
   body: json
   auth: bearer
 }
@@ -91,7 +91,7 @@ docs {
   Hardened 2026-09-09. Previously this pair was unconditionally destructive: 01 captured
   `user.firstName || ""`, 03 overwrote the profile with "Updated"/"User", and 03b PATCHed the
   captured values back. When the account's firstName/lastName were already blank, the restore
-  sent empty strings, PATCH /users/me rejected them with 400, and the account was left named
+  sent empty strings, PATCH /users/me (since Story 4.10 PATCH /users/{username}) rejected them with 400, and the account was left named
   "Updated User" with "Updated bio via Bruno API test - <epoch>" as its bio. Since this
   collection also runs against staging, and staging IS production, the account at risk is a
   live organizer.

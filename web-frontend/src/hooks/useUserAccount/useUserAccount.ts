@@ -69,13 +69,15 @@ export const useUserSettings = (userId: string) => {
 };
 
 /**
- * Hook to update user profile
+ * Hook to update a user's profile: `PATCH /users/{username}` (Story 4.10). `username` is the
+ * hydrated user's (`/users/me`), the own one on the account page.
  */
 export const useUpdateUserProfile = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (updates: Partial<User>) => userAccountApi.updateUserProfile(updates),
+    mutationFn: ({ username, updates }: { username: string; updates: Partial<User> }) =>
+      userAccountApi.updateUserProfile(username, updates),
     onSuccess: () => {
       // Invalidate and refetch user profile
       queryClient.invalidateQueries({ queryKey: ['user-profile'] });
@@ -124,8 +126,15 @@ export const useUploadProfilePicture = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ file, onProgress }: { file: File; onProgress?: (progress: number) => void }) =>
-      userAccountApi.uploadProfilePicture(file, onProgress),
+    mutationFn: ({
+      username,
+      file,
+      onProgress,
+    }: {
+      username: string;
+      file: File;
+      onProgress?: (progress: number) => void;
+    }) => userAccountApi.uploadProfilePicture(username, file, onProgress),
     onSuccess: () => {
       // Invalidate and refetch user profile to get new picture URL
       queryClient.invalidateQueries({ queryKey: ['user-profile'] });
@@ -142,7 +151,7 @@ export const useRemoveProfilePicture = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: () => userAccountApi.removeProfilePicture(),
+    mutationFn: (username: string) => userAccountApi.removeProfilePicture(username),
     onSuccess: () => {
       // Invalidate and refetch user profile
       queryClient.invalidateQueries({ queryKey: ['user-profile'] });
@@ -173,7 +182,7 @@ export const useAddAdditionalEmail = () => {
 export const useDeleteAdditionalEmail = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (email: string) => userAccountApi.deleteAdditionalEmail(email),
+    mutationFn: (emailId: string) => userAccountApi.deleteAdditionalEmail(emailId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['user-profile'] });
     },
@@ -186,8 +195,8 @@ export const useDeleteAdditionalEmail = () => {
 export const useUpdateAdditionalEmail = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ email, receiveEventMail }: { email: string; receiveEventMail: boolean }) =>
-      userAccountApi.updateAdditionalEmail(email, { receiveEventMail }),
+    mutationFn: ({ emailId, receiveEventMail }: { emailId: string; receiveEventMail: boolean }) =>
+      userAccountApi.updateAdditionalEmail(emailId, { receiveEventMail }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['user-profile'] });
     },
@@ -202,7 +211,7 @@ export const useUpdateAdditionalEmail = () => {
 export const useResendVerification = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (email: string) => userAccountApi.resendAdditionalEmailVerification(email),
+    mutationFn: (emailId: string) => userAccountApi.resendAdditionalEmailVerification(emailId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['user-profile'] });
     },

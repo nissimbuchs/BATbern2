@@ -7,7 +7,7 @@
 # method + path, no line numbers): a NEW finding fails, and so does a baselined one that is gone
 # (STALE). Policy: docs/architecture/coding-standards.md, section "API conventions lint".
 #
-# Only these six rules: no `extends: spectral:oas` (the recommended ruleset is out of scope).
+# Only these seven rules: no `extends: spectral:oas` (the recommended ruleset is out of scope).
 # Every rule reports one finding per operation (spectral-functions/apiConventions.js).
 # Applies to the public specs docs/api/*.openapi.yml (not `_shared.openapi.yml`, which holds
 # components only, and not a future docs/api/internal/).
@@ -41,7 +41,9 @@ rules:
   # The list below is a detector that tells a verb from a sub-resource noun, not a permission list:
   # no action name is allowed by being on or off it. The right verb for the right action.
   # Contents: the Story 17.4 set (first block) plus every verb segment found in the specs on
-  # 2026-11-07. Deliberately not listed: `search` (ADR-013 section 3), `get-or-create`
+  # 2026-11-07. Story 4.10 removed `invite` and `self-nominate` from the specs (the collection
+  # `speaker-nominations` replaced the latter); both stay here as detectors. `send-invitation`
+  # stays in use in the action shape `POST /speakers/{speakerId}/send-invitation`. Deliberately not listed: `search` (ADR-013 section 3), `get-or-create`
   # (ADR-013 section 2), `vote` (ADR-013 toggle), and nouns such as `status`, `schedule`, `roles`.
   # An `.ext` suffix is ignored (`export.docx` counts as `export`).
   # Every baselined finding has an owner in web-frontend/scripts/api-lint-owners.txt.
@@ -79,7 +81,6 @@ rules:
           - confirm
           - deregister
           - download
-          - enroll-stakeholders
           - export
           - invite
           - issue-invitation-credentials
@@ -162,3 +163,19 @@ rules:
       function: apiConventions
       functionOptions:
         check: personal-data
+
+  # One speaker key (Story 4.10, ADR-003 amendment): a speaker of an event is its speaker pool
+  # entry, an owned child addressed as /events/{eventCode}/speakers/{speakerId} with
+  # `format: uuid`, loaded scoped to the event. Flagged: another parameter in that position
+  # (`{username}`), a speakerId without `format: uuid`, and a second speaker collection
+  # (`speaker-pool`, `speakers/pool`). Literal sub-collections (`review-queue`, `status-summary`)
+  # and a session's speaker (`/sessions/{slug}/speakers/{username}`) are not this key.
+  speaker-path-key:
+    description: One speaker key {speakerId} (uuid) under /events/{eventCode}/speakers (Story 4.10).
+    message: '{{error}}'
+    severity: error
+    given: $.paths[*]
+    then:
+      function: apiConventions
+      functionOptions:
+        check: speaker-key

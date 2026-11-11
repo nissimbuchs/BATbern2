@@ -1,0 +1,34 @@
+meta {
+  name: The old create paths are gone (batch_registrations)
+  type: http
+  seq: 10
+}
+
+post {
+  url: {{baseUrl}}/events/batch_registrations
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+body:json {
+  {
+    "participantEmail": "{{participantsImportEmail}}",
+    "firstName": "Bruno",
+    "lastName": "Importtest",
+    "registrations": [{ "eventCode": "{{participantsEventCode}}", "status": "ATTENDED" }]
+  }
+}
+
+tests {
+  test("404 or 405, no handler", function() {
+    expect([404, 405]).to.include(res.getStatus());
+  });
+}
+
+docs {
+  Story 4.10c: breaking, no alias. enroll-stakeholders is checked by 11.
+}

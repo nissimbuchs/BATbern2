@@ -70,8 +70,9 @@ public class SpeakerOutreachController implements SpeakerOutreachApi {
         log.debug("POST /api/v1/events/{}/speakers/{}/outreach - Record outreach attempt",
                 eventCode, speakerId);
 
-        // Get organizer username from JWT authentication context
-        String organizerUsername = securityContextHelper.getCurrentUserEmail();
+        // The organizer's username (ADR-003), not the e-mail address: until Story 4.10 this read
+        // getCurrentUserEmail(), so the audit column organizer_username held a personal address.
+        String organizerUsername = securityContextHelper.getCurrentUsername();
         log.debug("Organizer username from JWT: {}", organizerUsername);
 
         // Convert OffsetDateTime to Instant (DTO uses OffsetDateTime, service uses Instant)
@@ -82,6 +83,7 @@ public class SpeakerOutreachController implements SpeakerOutreachApi {
 
         // Call service layer
         OutreachHistory outreach = outreachService.recordOutreach(
+                eventCode,
                 speakerId,
                 contactDate,
                 contactMethod,
@@ -117,7 +119,7 @@ public class SpeakerOutreachController implements SpeakerOutreachApi {
                 eventCode, speakerId);
 
         // Call service layer
-        List<OutreachHistory> history = outreachService.getOutreachHistory(speakerId);
+        List<OutreachHistory> history = outreachService.getOutreachHistory(eventCode, speakerId);
 
         // Convert domain entities to response DTOs
         List<OutreachHistoryResponse> responses = history.stream()

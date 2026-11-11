@@ -147,7 +147,7 @@ test.describe('Cross-auth byte-identity — organizer on-behalf vs. speaker self
       // that name a real ACCEPTED speaker in this environment whose Cognito JWT is the
       // one in SPEAKER_AUTH_TOKEN. The speaker-portal eventCode in the path resolves
       // the speaker pool entry server-side via SpeakerPortalAuthorizationService.
-      const seedA = await organizerCtx.post(`/api/v1/events/${eventCode}/speakers/pool`, {
+      const seedA = await organizerCtx.post(`/api/v1/events/${eventCode}/speakers`, {
         data: { speakerName: 'Byte Identity Speaker A' },
       });
       expect(seedA.status(), 'seed speaker A').toBe(201);
@@ -156,6 +156,15 @@ test.describe('Cross-auth byte-identity — organizer on-behalf vs. speaker self
       // Move Speaker A through IDENTIFIED → CONTACTED → READY (via /promote) → INVITED → ACCEPTED
       // so the /content endpoint accepts the submission. The shared
       // `ContentSubmissionService.submit()` requires ACCEPTED or CONTENT_SUBMITTED.
+      // Story 4.10: the organizer UI's golden path. Before, this promoted from IDENTIFIED (409:
+      // promote is valid from CONTACTED only) and invited through the test-only
+      // `POST /speakers/invite` with a body it did not accept; both are fixed here.
+      const contactRes = await organizerCtx.put(
+        `/api/v1/events/${eventCode}/speakers/${speakerAId}/status`,
+        { data: { newStatus: 'CONTACTED', reason: 'E2E byte-identity setup' } }
+      );
+      expect(contactRes.ok(), `contacted: ${contactRes.status()}`).toBeTruthy();
+
       const promoteRes = await organizerCtx.post(
         `/api/v1/events/${eventCode}/speakers/${speakerAId}/promote`,
         {
@@ -169,13 +178,21 @@ test.describe('Cross-auth byte-identity — organizer on-behalf vs. speaker self
           },
         }
       );
-      // Tolerate 200, 201, or 204 — the exact status varies by service version.
-      expect(promoteRes.ok(), `promote: ${promoteRes.status()}`).toBeTruthy();
+      expect(promoteRes.status(), 'promote').toBe(200);
 
-      const inviteRes = await organizerCtx.post(`/api/v1/events/${eventCode}/speakers/invite`, {
-        data: { speakerIds: [speakerAId] },
-      });
-      expect(inviteRes.ok(), `invite: ${inviteRes.status()}`).toBeTruthy();
+      // Send the invitation by the pool entry id (Story 4.10: the only speaker key). The address
+      // is on the reserved domain e2e.batbern.invalid: the answer is still 200 and the speaker
+      // INVITED, but SES is never asked (EmailService refuses the reserved recipient, the
+      // invitation mail service swallows that). Pinned by SpeakerCrossEventScopingIntegrationTest
+      // #should_inviteWithoutMail_when_speakerAddressIsOnReservedDomain.
+      const responseDeadline = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+        .toISOString()
+        .slice(0, 10);
+      const inviteRes = await organizerCtx.post(
+        `/api/v1/events/${eventCode}/speakers/${speakerAId}/send-invitation`,
+        { data: { responseDeadline, locale: 'en' } }
+      );
+      expect(inviteRes.status(), 'send-invitation').toBe(200);
 
       // Move to ACCEPTED via the status endpoint (organizer marking the on-behalf RSVP).
       const acceptRes = await organizerCtx.put(

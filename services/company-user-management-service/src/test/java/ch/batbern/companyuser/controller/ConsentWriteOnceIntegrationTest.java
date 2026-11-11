@@ -29,7 +29,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * Story 12.11 (AC4): write-once ToS/Privacy consent semantics on PUT /api/v1/users/me.
+ * Story 12.11 (AC4): write-once ToS/Privacy consent semantics on PATCH /api/v1/users/{username} (the own profile, Story 4.10).
  *
  * <ul>
  *   <li>{@code termsAccepted=true} + no consent on record → server stamps
@@ -78,7 +78,7 @@ class ConsentWriteOnceIntegrationTest extends AbstractIntegrationTest {
     void should_setTermsAcceptedAtOnce_when_firstAccept() throws Exception {
         Instant before = Instant.now().minus(2, ChronoUnit.SECONDS);
 
-        mockMvc.perform(patch("/api/v1/users/me")
+        mockMvc.perform(patch("/api/v1/users/{username}", USERNAME)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"termsAccepted\": true}"))
                 .andExpect(status().isOk())
@@ -102,7 +102,7 @@ class ConsentWriteOnceIntegrationTest extends AbstractIntegrationTest {
         Instant original = Instant.parse("2026-01-15T10:00:00Z");
         presetConsent(original);
 
-        mockMvc.perform(patch("/api/v1/users/me")
+        mockMvc.perform(patch("/api/v1/users/{username}", USERNAME)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"termsAccepted\": true}"))
                 .andExpect(status().isOk());
@@ -118,14 +118,14 @@ class ConsentWriteOnceIntegrationTest extends AbstractIntegrationTest {
         presetConsent(original);
 
         // termsAccepted=false must not clear or change recorded consent
-        mockMvc.perform(patch("/api/v1/users/me")
+        mockMvc.perform(patch("/api/v1/users/{username}", USERNAME)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"termsAccepted\": false}"))
                 .andExpect(status().isOk());
         assertThat(loadConsent()).isEqualTo(original);
 
         // an unrelated profile update (termsAccepted absent) must not touch consent
-        mockMvc.perform(patch("/api/v1/users/me")
+        mockMvc.perform(patch("/api/v1/users/{username}", USERNAME)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"bio\": \"Updated bio\"}"))
                 .andExpect(status().isOk());
@@ -133,7 +133,7 @@ class ConsentWriteOnceIntegrationTest extends AbstractIntegrationTest {
 
         // termsAccepted=false on a consent-less user must not set consent either
         presetConsent(null);
-        mockMvc.perform(patch("/api/v1/users/me")
+        mockMvc.perform(patch("/api/v1/users/{username}", USERNAME)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"termsAccepted\": false}"))
                 .andExpect(status().isOk());

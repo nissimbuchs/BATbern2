@@ -1,0 +1,32 @@
+meta {
+  name: Cleanup — find the subscriber 01 created
+  type: http
+  seq: 98
+}
+
+get {
+  url: {{baseUrl}}/newsletter/subscribers?search={{newsletterEmail}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("exactly one row for the synthetic address, stored lower-cased", function() {
+    const rows = res.getBody().data.filter(r => r.email === bru.getVar("newsletterEmail").toLowerCase());
+    expect(rows.length).to.equal(1);
+    expect(rows[0].source).to.equal("explicit");
+    bru.setVar("newsletterSubscriberId", rows[0].id);
+  });
+}
+
+docs {
+  Story 4.10c: proves 01 stored the subscriber, and finds its id for 99.
+}

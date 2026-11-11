@@ -19,6 +19,9 @@
  *     when the canvas hadn't loaded. Rewritten to wait for `blob-canvas` (deterministic on dev,
  *     where BATbern57 is mirrored with sessions) then assert both controls unconditionally.
  *
+ * Partner ghosts (Epic 17, entry 8): `ghost-partner` groups and their `ghost-company-logo` image
+ *     carry testids; the partner topics are loaded by the browser from partner-coordination.
+ *
  * Read-only / public-organizer surface (no mutation) → all `@gate`. BATbern57 is a real
  * archived event mirrored locally (same fixture the presentation `@gate` uses).
  */
@@ -65,6 +68,18 @@ test.describe('Blob Topic Selector — Canvas Page (Story 10.4)', { tag: '@gate'
     await expect(page.getByTestId('blob-canvas')).toBeVisible({ timeout: 30_000 });
     await expect(page.getByTestId('fit-all-button')).toBeVisible();
     await expect(page.getByTestId('snap-to-active-button')).toBeVisible();
+  });
+
+  test('should_renderPartnerGhostWithLogo_when_partnerTopicsLoaded', async ({ page }) => {
+    // Epic 17, entry 8: the browser loads the partner topics from partner-coordination
+    // (/partners/topics, logos from /partners?include=company) and their clusters from EMS
+    // (/topics/classifications); EMS no longer calls partner-coordination. The mirrored data has
+    // partner topics of companies with logos (e.g. aity, sbb).
+    await expect(page.getByTestId('blob-canvas')).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByTestId('ghost-partner').first()).toBeAttached({ timeout: 15_000 });
+    const logo = page.getByTestId('ghost-company-logo').first();
+    await expect(logo).toBeAttached();
+    await expect(logo).toHaveAttribute('href', /^https?:\/\/.+/);
   });
 
   test('should_showBackButton_topLeft', async ({ page }) => {

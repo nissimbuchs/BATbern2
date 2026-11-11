@@ -173,10 +173,31 @@ export const resendConfirmationEmail = async (
   );
 };
 
+export type AddParticipantsRequest = components['schemas']['AddParticipantsRequest'];
+export type AddParticipantsResponse = components['schemas']['AddParticipantsResponse'];
+export type ParticipantImportPerson = components['schemas']['ParticipantImportPerson'];
+export type ParticipantImportResult = components['schemas']['ParticipantImportResult'];
+
+/**
+ * The one create of participants (Story 4.10c): `POST /events/{eventCode}/participants` with
+ * exactly one mode, `username` (+ `force`, `notify`), `people` or `stakeholders: true`.
+ * Organizer only. The helpers below build each mode's body.
+ */
+const postParticipants = async (
+  eventCode: string,
+  body: AddParticipantsRequest
+): Promise<AddParticipantsResponse> => {
+  const response = await apiClient.post<AddParticipantsResponse>(
+    `/events/${eventCode}/participants`,
+    body
+  );
+  return response.data;
+};
+
 /**
  * Enroll all organizers and partners as confirmed participants for an existing event.
  *
- * ORGANIZER only. Idempotent — already-registered users are counted as skipped.
+ * ORGANIZER only. Idempotent — already-registered users are counted as skipped. No mail.
  *
  * @param eventCode - Event code
  * @returns Summary of enrolled and skipped counts
@@ -184,10 +205,8 @@ export const resendConfirmationEmail = async (
 export const enrollStakeholders = async (
   eventCode: string
 ): Promise<{ enrolled: number; skipped: number }> => {
-  const response = await apiClient.post<{ enrolled: number; skipped: number }>(
-    `/events/${eventCode}/enroll-stakeholders`
-  );
-  return response.data;
+  const data = await postParticipants(eventCode, { stakeholders: true });
+  return { enrolled: data.enrolled ?? 0, skipped: data.skipped ?? 0 };
 };
 
 /**
@@ -203,32 +222,49 @@ export const enrollStakeholders = async (
 export const addParticipant = async (
   eventCode: string,
   params: { username: string; force?: boolean; notify?: boolean }
-): Promise<{ registrationCode: string; status: string; attendeeUsername: string }> => {
-  const response = await apiClient.post<{
-    registrationCode: string;
-    status: string;
-    attendeeUsername: string;
-  }>(`/events/${eventCode}/participants`, {
+): Promise<AddParticipantsResponse> =>
+  postParticipants(eventCode, {
     username: params.username,
     force: params.force ?? false,
     notify: params.notify ?? true,
   });
-  return response.data;
-};
-
-export type AttendeeRegistration = components['schemas']['Registration'];
 
 /**
- * All registrations of one attendee across events (organizer view of a user).
- * Errors are passed through.
+ * Historical import for one event: at most 100 people with their status at that event. Each
+ * person is looked up or created by e-mail (no login); already registered ones are skipped. No
+ * mail. One failing person does not stop the others (`results[i].outcome === 'FAILED'`).
+ */
+export const importParticipants = async (
+  eventCode: string,
+  people: ParticipantImportPerson[]
+): Promise<AddParticipantsResponse> => postParticipants(eventCode, { people });
+
+export type AttendeeRegistration = components['schemas']['Registration'];
+type RegistrationPage = components['schemas']['RegistrationPage'];
+
+/** Page size for an attendee's history: the spec maximum of `GET /registrations`. */
+const ATTENDEE_HISTORY_PAGE_SIZE = 100;
+
+/**
+ * All registrations of one attendee across events, newest event first (organizer view of a user).
+ * `GET /registrations?filter={"attendeeUsername":…}` (Story 4.10b; was `GET /events/registrations`
+ * with the username in a header). The list is paginated: this reads every page at the spec
+ * maximum, so a long-time attendee's history is complete. Errors are passed through.
  *
- * @param username - the attendee, sent in the `X-Attendee-Username` header
+ * @param username - the attendee
  */
 export const getRegistrationsForAttendee = async (
   username: string
 ): Promise<AttendeeRegistration[]> => {
-  const response = await apiClient.get<AttendeeRegistration[]>('/events/registrations', {
-    headers: { 'X-Attendee-Username': username },
-  });
-  return response.data;
+  const filter = JSON.stringify({ attendeeUsername: username });
+  const all: AttendeeRegistration[] = [];
+  for (let page = 1; ; page++) {
+    const response = await apiClient.get<RegistrationPage>('/registrations', {
+      params: { filter, page, limit: ATTENDEE_HISTORY_PAGE_SIZE },
+    });
+    all.push(...response.data.data);
+    if (!response.data.pagination.hasNext) {
+      return all;
+    }
+  }
 };

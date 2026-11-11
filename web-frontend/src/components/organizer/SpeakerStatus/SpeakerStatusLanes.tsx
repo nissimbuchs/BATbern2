@@ -819,7 +819,7 @@ const SpeakerCard: React.FC<SpeakerCardProps> = ({
 
     try {
       await sendInvitationMutation.mutateAsync({
-        username: speakerForInvite.id,
+        speakerId: speakerForInvite.id,
         options: { responseDeadline },
       });
       setSnackbarMessage(t('organizer:speakerCard.inviteSent'));

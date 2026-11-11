@@ -55,8 +55,6 @@ tags:
     description: Profile picture upload and management
   - name: GDPR Compliance
     description: GDPR-compliant data export and deletion
-  - name: Domain Integration
-    description: Domain service integration endpoints
   - name: User Administration
     description: Admin Cognito↔DB reconciliation and sync-status (Story 1.2.5)
   - name: Profile Merge
@@ -333,64 +331,6 @@ paths:
                     termsAcceptedAt: null
         '401':
           $ref: '#/components/responses/Unauthorized'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-      security:
-        - BearerAuth: []
-
-    patch:
-      tags:
-        - User Management
-      summary: Partially update current user profile
-      description: |
-        Partially update the profile of the currently authenticated user.
-
-        **Acceptance Criteria**: AC2
-
-        Similar to PUT but allows partial updates.
-
-      operationId: patchCurrentUser
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UpdateUserRequest'
-      responses:
-        '200':
-          description: User updated successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UserResponse'
-              examples:
-                default:
-                  summary: captured from the local anonymized database (same schema as a GET)
-                  value:
-                    id: hugo.muster
-                    hasCognitoAccount: true
-                    email: hugo.muster@example.com
-                    firstName: Hugo
-                    lastName: Muster
-                    bio: Software architect with a focus on APIs.
-                    roles:
-                      - ORGANIZER
-                    active: true
-                    createdAt: "2026-02-22T12:54:23.442285Z"
-                    updatedAt: "2026-11-08T14:43:13.089114Z"
-                    termsAcceptedAt: "2026-02-22T12:54:23.442285Z"
-                    additionalEmails: []
-                    company: null
-                    companyId: null
-                    lastLoginAt: null
-                    profilePictureUrl: null
-                    settings: null
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '409':
-          $ref: '#/components/responses/Conflict'
         '500':
           $ref: '#/components/responses/InternalServerError'
       security:
@@ -1873,15 +1813,23 @@ paths:
       security:
         - BearerAuth: []
 
-    put:
+    patch:
       tags:
         - User Management
-      summary: Update a user's profile by username (Organizer/Admin)
+      summary: Partially update a user's profile
       description: |
-        Full update of any user's profile by an organizer/admin.
+        Partial update of a user's profile; only the fields present change (ADR-013 §1).
+        One endpoint for self-service and for organizers (Story 4.10, replaces
+        `PATCH /users/me` and `PUT /users/{username}`).
 
-        **Authorization**: ORGANIZER or ADMIN role required
-      operationId: updateUserByUsername
+        **Authorization**: the user themself (`username` is the caller's own), or ORGANIZER /
+        ADMIN for any user; anyone else gets 403.
+
+        **Consent**: `termsAccepted` is the user's own consent (Story 12.11, write-once). It is
+        accepted only on the caller's own profile; sending it for another user is 403.
+
+        **Audit**: the `UserUpdatedEvent` records the caller's username as the actor.
+      operationId: patchUser
       parameters:
         - name: username
           in: path
@@ -1934,6 +1882,25 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+        '409':
+          description: |
+            `EMAIL_DUPLICATE`: the new `email` is already another user's address
+            (case-insensitive, one address per profile). Nothing is changed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                emailDuplicate:
+                  value:
+                    timestamp: "2026-11-11T08:15:00Z"
+                    path: /api/v1/users/hugo.muster
+                    status: 409
+                    error: Conflict
+                    errorCode: EMAIL_DUPLICATE
+                    message: Email is already registered for another user
+                    correlationId: 3f2b9c1e-6a4d-4e8f-9b7a-2c5d1e0f4a6b
+                    severity: LOW
         '500':
           $ref: '#/components/responses/InternalServerError'
       security:
@@ -2229,6 +2196,7 @@ paths:
                 default:
                   summary: generated from the schema and captured sub-values
                   value:
+                    id: 7c9e6679-7425-40de-944b-e07fc1f90ae7
                     email: ines.vorlage@example.com
                     label: Hostpoint shared
                     createdAt: "2026-05-22T10:00:00Z"
@@ -2258,7 +2226,7 @@ paths:
       security:
         - BearerAuth: []
 
-  /users/me/additional-emails/{email}:
+  /users/me/additional-emails/{emailId}:
     patch:
       tags:
         - User Account
@@ -2268,13 +2236,16 @@ paths:
         confirmed address can receive copies (409 `NOT_VERIFIED` otherwise).
       operationId: updateAdditionalEmail
       parameters:
-        - name: email
+        - name: emailId
           in: path
           required: true
-          description: URL-encoded email address, case-insensitive.
+          description: |
+            The `id` of one of the caller's additional addresses (`AdditionalEmail.id` in
+            `GET /users/me`). Another user's or an unknown id answers 404. The address itself
+            never goes in the path (ADR-003 amendment 2026-11).
           schema:
             type: string
-            format: email
+            format: uuid
       requestBody:
         required: true
         content:
@@ -2292,6 +2263,7 @@ paths:
                 default:
                   summary: generated from the schema and captured sub-values
                   value:
+                    id: 7c9e6679-7425-40de-944b-e07fc1f90ae7
                     email: ines.vorlage@example.com
                     label: Hostpoint shared
                     createdAt: "2026-05-22T10:00:00Z"
@@ -2300,7 +2272,7 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
-          description: No matching additional email on the caller's profile.
+          description: No additional email with this id on the caller's profile.
           content:
             application/json:
               schema:
@@ -2323,23 +2295,23 @@ paths:
         by this endpoint.
       operationId: deleteAdditionalEmail
       parameters:
-        - name: email
+        - name: emailId
           in: path
           required: true
           description: |
-            URL-encoded email address. Case-insensitive match against the caller's
-            additional emails.
+            The `id` of one of the caller's additional addresses (`AdditionalEmail.id` in
+            `GET /users/me`). Another user's or an unknown id answers 404. The address itself
+            never goes in the path (ADR-003 amendment 2026-11).
           schema:
             type: string
-            format: email
-          example: info@batbern.ch
+            format: uuid
       responses:
         '204':
           description: Additional email removed
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
-          description: No matching additional email on the caller's profile.
+          description: No additional email with this id on the caller's profile.
           content:
             application/json:
               schema:
@@ -2349,7 +2321,7 @@ paths:
       security:
         - BearerAuth: []
 
-  /users/me/additional-emails/{email}/make-primary:
+  /users/me/additional-emails/{emailId}/make-primary:
     post:
       tags:
         - User Account
@@ -2360,20 +2332,23 @@ paths:
         address follow. Linked Google sign-ins stay.
       operationId: makeAdditionalEmailPrimary
       parameters:
-        - name: email
+        - name: emailId
           in: path
           required: true
-          description: URL-encoded email address, case-insensitive.
+          description: |
+            The `id` of one of the caller's additional addresses (`AdditionalEmail.id` in
+            `GET /users/me`). Another user's or an unknown id answers 404. The address itself
+            never goes in the path (ADR-003 amendment 2026-11).
           schema:
             type: string
-            format: email
+            format: uuid
       responses:
         '204':
           description: The address is now the primary address
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
-          description: No matching additional email on the caller's profile.
+          description: No additional email with this id on the caller's profile.
           content:
             application/json:
               schema:
@@ -2389,7 +2364,7 @@ paths:
       security:
         - BearerAuth: []
 
-  /users/me/additional-emails/{email}/resend-verification:
+  /users/me/additional-emails/{emailId}/resend-verification:
     post:
       tags:
         - User Account
@@ -2401,23 +2376,23 @@ paths:
         regenerated on each call (stateless HMAC JWT, 48h TTL).
       operationId: resendAdditionalEmailVerification
       parameters:
-        - name: email
+        - name: emailId
           in: path
           required: true
           description: |
-            URL-encoded email address. Case-insensitive match against the caller's
-            additional emails.
+            The `id` of one of the caller's additional addresses (`AdditionalEmail.id` in
+            `GET /users/me`). Another user's or an unknown id answers 404. The address itself
+            never goes in the path (ADR-003 amendment 2026-11).
           schema:
             type: string
-            format: email
-          example: info@batbern.ch
+            format: uuid
       responses:
         '204':
           description: A fresh verification email was dispatched.
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
-          description: No matching additional email on the caller's profile.
+          description: No additional email with this id on the caller's profile.
           content:
             application/json:
               schema:
@@ -2425,6 +2400,15 @@ paths:
         '409':
           description: |
             The email is already verified. Error code: `ALREADY_VERIFIED`.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: |
+            The address is on a reserved domain (RFC 2606/6761, e.g. `.invalid`) that never receives
+            mail, for example one stored before addresses were validated. `details.code` is
+            `RESERVED_DOMAIN`, `details.domain` names the domain; the address itself is not echoed.
           content:
             application/json:
               schema:
@@ -2645,145 +2629,25 @@ paths:
       security:
         - BearerAuth: []
 
-  /users/me/picture:
-    delete:
-      tags:
-        - Profile Picture
-      summary: Remove own profile picture
-      description: |
-        Remove the authenticated user's own profile picture.
-
-        **Acceptance Criteria**: AC13
-
-        Self-service counterpart to `DELETE /users/{username}/picture` (admin). Resolves the
-        caller from the bearer token; idempotent in effect (clears the picture references).
-      operationId: removeOwnProfilePicture
-      responses:
-        '204':
-          description: Profile picture removed successfully
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-      security:
-        - BearerAuth: []
-
-  /users/me/picture/presigned-url:
-    post:
-      tags:
-        - Profile Picture
-      summary: Request presigned URL for profile picture upload
-      description: |
-        Generate presigned S3 upload URL for current user's profile picture.
-
-        **Acceptance Criteria**: AC10
-
-        **File Constraints**:
-        - Max size: 5 MB
-        - Allowed formats: PNG, JPG, JPEG, SVG
-        - Recommended dimensions: 400x400 to 1000x1000 pixels
-
-        **Upload Process**:
-        1. Client calls this endpoint to get presigned URL
-        2. Client uploads directly to S3 using presigned URL
-        3. Client calls /users/me/picture/confirm with file ID and extension
-
-      operationId: requestProfilePictureUploadUrl
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ProfilePictureUploadRequest'
-      responses:
-        '200':
-          description: Presigned upload URL generated successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PresignedUploadUrl'
-              examples:
-                default:
-                  summary: generated from the schema and captured sub-values
-                  value:
-                    uploadUrl: https://s3.eu-central-1.amazonaws.com/bucket/...
-                    fileId: f3e8d1a4-5b2c-4d6e-8a9b-1c2d3e4f5a6b
-                    s3Key: profile-pictures/2025/john.doe/profile-f3e8d1a4.jpg
-                    fileExtension: jpg
-                    expiresInMinutes: 15
-                    requiredHeaders:
-                      Content-Type: image/jpeg
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-      security:
-        - BearerAuth: []
-
-  /users/me/picture/confirm:
-    post:
-      tags:
-        - Profile Picture
-      summary: Confirm profile picture upload completion
-      description: |
-        Confirm that profile picture has been uploaded to S3 and associate with user.
-
-        **Acceptance Criteria**: AC10
-
-        Must be called after successful upload to presigned URL.
-
-      operationId: confirmProfilePictureUpload
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ProfilePictureUploadConfirmRequest'
-      responses:
-        '200':
-          description: Upload confirmed successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProfilePictureUploadConfirmResponse'
-              examples:
-                default:
-                  summary: generated from the schema and captured sub-values
-                  value:
-                    profilePictureUrl: https://cdn.batbern.ch/profile-pictures/2025/john.doe/profile-f3e8d1a4.jpg
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-      security:
-        - BearerAuth: []
-
   /users/{username}/picture/presigned-url:
     post:
       tags:
         - Profile Picture
-      summary: Request presigned URL for user profile picture upload (Admin)
+      summary: Request presigned URL for a profile picture upload
       description: |
-        Admin endpoint to generate presigned S3 upload URL for a specific user's profile picture.
+        Generate a presigned S3 upload URL for a user's profile picture. One endpoint for
+        self-service and for organizers (Story 4.10, replaces `/users/me/picture/presigned-url`).
 
-        **Authorization**: ORGANIZER role required
+        **Authorization**: the user themself, or ORGANIZER for any user; anyone else gets 403.
 
         **File Constraints**:
         - Max size: 5 MB
         - Allowed formats: PNG, JPG, JPEG, SVG
 
         **Upload Process**:
-        1. Admin calls this endpoint to get presigned URL
-        2. Admin uploads directly to S3 using presigned URL
-        3. Admin calls /users/{username}/picture/confirm with file ID and extension
+        1. Client calls this endpoint to get presigned URL
+        2. Client uploads directly to S3 using presigned URL
+        3. Client calls /users/{username}/picture/confirm with file ID and extension
 
       operationId: requestProfilePictureUploadUrlForUser
       parameters:
@@ -2836,11 +2700,12 @@ paths:
     post:
       tags:
         - Profile Picture
-      summary: Confirm user profile picture upload completion (Admin)
+      summary: Confirm a profile picture upload
       description: |
-        Admin endpoint to confirm that profile picture has been uploaded to S3 for a specific user.
+        Confirm that a profile picture has been uploaded to S3 and associate it with the user
+        (Story 4.10, replaces `/users/me/picture/confirm`).
 
-        **Authorization**: ORGANIZER role required
+        **Authorization**: the user themself, or ORGANIZER for any user; anyone else gets 403.
 
         Must be called after successful upload to presigned URL.
 
@@ -2889,11 +2754,11 @@ paths:
     delete:
       tags:
         - Profile Picture
-      summary: Remove user profile picture (Admin)
+      summary: Remove a profile picture
       description: |
-        Admin endpoint to remove profile picture for a specific user.
+        Remove a user's profile picture (Story 4.10, replaces `DELETE /users/me/picture`).
 
-        **Authorization**: ORGANIZER role required
+        **Authorization**: the user themself, or ORGANIZER for any user; anyone else gets 403.
 
         Clears profile picture URL and S3 key from user entity.
 
@@ -2910,266 +2775,6 @@ paths:
       responses:
         '204':
           description: Profile picture removed successfully
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-      security:
-        - BearerAuth: []
-
-  /users/provision:
-    post:
-      tags:
-        - Domain Integration
-      summary: Provision a user with a role (Story 11.C.2 — AR13)
-      description: |
-        Idempotent endpoint for the canonical "create User + grant role" flow used by the
-        Speaker Workflow Service (`SpeakerWorkflowService.transition()` at CONTACTED → READY).
-
-        **ADR-009**: Decision 3 — Cognito provisioning. Cognito wiring is split across two
-        endpoints per Story 11.E.2's Resolved Q#1 Variant B:
-
-        - **READY (this endpoint)**: `AdminCreateUser` (silent shell, `MessageAction=SUPPRESS`)
-          creates the Cognito user in `FORCE_CHANGE_PASSWORD` state. The temporary password
-          passed to Cognito is internal-only and is **NOT** returned in the response.
-        - **INVITED (sibling endpoint `/users/{username}/issue-invitation-credentials`)**:
-          `AdminGetUser` + conditional `AdminSetUserPassword(Permanent=false)` issues the
-          fresh temporary password embedded in the invitation email.
-
-        SPEAKER role is granted via a row insert into PostgreSQL `user_roles` per ADR-001 —
-        NOT via `AdminAddUserToGroup` (no Cognito groups exist; see Story 11.E.1 Resolved Q#1).
-
-        **Behaviour**:
-        - If User exists by email (case-insensitive lookup, matches `getOrCreateUser`):
-          grants the requested role if not already held; returns existing `username` and `created=false`.
-        - If User does not exist: creates User row, grants role, returns generated `username` and
-          `created=true`. The username is auto-generated from email per the existing
-          `getOrCreateUser` policy.
-        - **Idempotent**: re-calling for an already-provisioned user is a no-op and returns
-          the same `username` with `created=false`. The `role_assignments` UNIQUE constraint
-          backs the idempotency guarantee at the DB layer.
-
-        **Authorization**: ORGANIZER or ADMIN (service-to-service call from event-management-service
-        propagates the ORGANIZER JWT per `microservices-http-clients.md`).
-
-        **Performance**: <200ms (P95)
-
-      operationId: provisionUserWithRole
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ProvisionUserRequest'
-            examples:
-              speakerProvisioning:
-                summary: Provision a speaker at CONTACTED → READY
-                value:
-                  email: jane.smith@example.com
-                  firstName: Jane
-                  lastName: Smith
-                  role: SPEAKER
-      responses:
-        '200':
-          description: User provisioned (created or already existed)
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProvisionUserResponse'
-              examples:
-                created:
-                  summary: New user created and SPEAKER role granted
-                  value:
-                    username: jane.smith
-                    created: true
-                alreadyExisted:
-                  summary: User existed; role granted if missing
-                  value:
-                    username: jane.smith
-                    created: false
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-        '502':
-          description: |
-            Cognito upstream error. Story 11.E.2 wired `AdminCreateUser` (silent) at READY,
-            so a transient Cognito 5xx, throttle, or network failure during the call is
-            mapped to `CognitoOperationException` → 502 here. Caller should retry; the
-            provisioning is idempotent.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-      security:
-        - BearerAuth: []
-
-  /users/{username}/issue-invitation-credentials:
-    post:
-      tags:
-        - Domain Integration
-      summary: Issue (or skip) Cognito temp credentials at invitation time (Story 11.E.2 — AR15/FR9)
-      description: |
-        Service-to-service endpoint called by `SpeakerWorkflowService.runInvitedHook` at
-        READY → INVITED. Delegates to Cognito's `AdminGetUser` + conditional
-        `AdminSetUserPassword(Permanent=false)` to mint a fresh temporary password (when
-        the user is `FORCE_CHANGE_PASSWORD` / `RESET_REQUIRED` / `UNCONFIRMED`) or to
-        confirm that the existing password remains valid (when the user is `CONFIRMED`).
-
-        **Per Resolved Q#1 Variant B + Q#4** of Story 11.E.2: credential issuance is
-        deliberately decoupled from `/users/provision` (which only runs the silent
-        `AdminCreateUser` shell). The two-endpoint design avoids storing the temp password
-        anywhere between READY and INVITED.
-
-        **Idempotent**: repeated calls are safe. `FRESH_TEMP_PASSWORD` branch overwrites the
-        previous temp password (only the most recently issued one is valid). `USE_EXISTING_PASSWORD`
-        branch is a pure read.
-
-        **Authorization**: ORGANIZER or ADMIN (service-to-service call from
-        event-management-service propagates the ORGANIZER JWT).
-
-        **Performance**: <300ms (P95)
-
-      operationId: issueInvitationCredentials
-      parameters:
-        - name: username
-          in: path
-          required: true
-          description: Target user's username (Story 1.16.2)
-          schema:
-            type: string
-            pattern: '^[a-z]+\.[a-z]+(\.[0-9]+)?$'
-            example: jane.smith
-      responses:
-        '200':
-          description: Credentials issued or confirmed existing
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/InvitationCredentialsResponse'
-              examples:
-                freshTempPassword:
-                  summary: User is FORCE_CHANGE_PASSWORD — fresh temp password issued
-                  value:
-                    temporaryPassword: "Tk7!aB2@nx9pQ4#z"
-                    action: FRESH_TEMP_PASSWORD
-                useExistingPassword:
-                  summary: User is CONFIRMED — keep using current password
-                  value:
-                    temporaryPassword: null
-                    action: USE_EXISTING_PASSWORD
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '422':
-          description: |
-            Cognito user is in a state that requires operator intervention (ARCHIVED,
-            COMPROMISED, UNKNOWN). EMS should NOT silently retry.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '502':
-          description: |
-            Upstream Cognito Admin SDK call failed. EMS should treat this as a transient
-            upstream error (retry after a brief backoff) and abort the INVITED transition.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-      security:
-        - BearerAuth: []
-
-  /users/{username}/profile:
-    patch:
-      tags:
-        - User Management
-      summary: Patch user profile fields (bio, profilePictureUrl) (Story 11.C.2 — AR14)
-      description: |
-        Narrow profile-patch endpoint scoped to `bio` and `profilePictureUrl`. Used by the
-        consolidated `ContentSubmissionService` when an organizer (on behalf) or a speaker
-        (self) submits content that includes a CV blurb or a portrait.
-
-        **ADR-009 Decision 2 + ADR-007**: `bio` and `profilePictureUrl` live on the User
-        entity (single source of truth). This endpoint overwrites the global values — there
-        is no per-event snapshot.
-
-        **Authorization**: ORGANIZER, ADMIN, or SPEAKER. If the principal has role SPEAKER but
-        **not** ORGANIZER/ADMIN, the service enforces `currentUsername == pathVariable.username`
-        and returns 403 otherwise. Prevents a SPEAKER from patching another speaker's profile.
-
-        **Validation**: At least one of `bio` or `profilePictureUrl` must be non-null. Null
-        fields are left unchanged.
-
-      operationId: patchUserProfile
-      parameters:
-        - name: username
-          in: path
-          required: true
-          description: Target user's username (Story 1.16.2)
-          schema:
-            type: string
-            pattern: '^[a-z]+\.[a-z]+(\.[0-9]+)?$'
-            example: jane.smith
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/PatchUserProfileRequest'
-            examples:
-              fullPatch:
-                summary: Update bio and profile picture
-                value:
-                  bio: "Experienced security architect with 15 years in the industry."
-                  profilePictureUrl: "https://cdn.batbern.ch/users/jane.smith.jpg"
-              bioOnly:
-                summary: Update bio only
-                value:
-                  bio: "Updated bio for the next event."
-      responses:
-        '200':
-          description: Profile patched successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UserResponse'
-              examples:
-                patchedSpeaker:
-                  summary: Speaker profile after a bio and portrait patch
-                  value:
-                    id: jane.smith
-                    email: jane.smith@example.com
-                    firstName: Jane
-                    lastName: Smith
-                    bio: "Experienced security architect with 15 years in the industry."
-                    profilePictureUrl: "https://cdn.batbern.ch/users/jane.smith.jpg"
-                    roles: [SPEAKER]
-                    active: true
-                    createdAt: 2025-01-15T10:00:00Z
-                    updatedAt: 2025-01-20T14:30:00Z
-                    additionalEmails: []
-                    company: null
-                    companyId: null
-                    hasCognitoAccount: true
-                    lastLoginAt: null
-                    settings: null
-                    termsAcceptedAt: null
-        '400':
-          $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -3883,12 +3488,20 @@ components:
       type: object
       description: Story 10.32 — one additional email address registered on a user profile.
       required:
+        - id
         - email
         - createdAt
         - label
         - verifiedAt
         - receiveEventMail
       properties:
+        id:
+          type: string
+          format: uuid
+          description: |
+            Story 4.10d — the key of this address in the `…/additional-emails/{emailId}` operations.
+            Making an address primary replaces the rows, so the ids change; read them again.
+          example: 7c9e6679-7425-40de-944b-e07fc1f90ae7
         email:
           type: string
           format: idn-email
@@ -4173,6 +3786,7 @@ components:
         bio:
           type: string
           maxLength: 5000
+          description: A blank value clears the bio (stored and returned as null).
         companyId:
           type: string
           description: Company name (unique identifier, alphanumeric only)
@@ -4279,7 +3893,9 @@ components:
       type: object
       description: |
         Request to provision a User with a role (Story 11.C.2 — AR13).
-        Used by SpeakerWorkflowService.transition() at CONTACTED → READY.
+        Used by SpeakerWorkflowService.transition() at CONTACTED → READY, through the internal
+        `POST /internal/users/provision` (docs/api/internal/cums-internal.openapi.yml; no public
+        operation uses this schema since Epic 17 entry 6).
       additionalProperties: false
       required:
         - email
@@ -4315,9 +3931,8 @@ components:
         role:
           type: string
           description: |
-            Role to grant. **Non-ADMIN callers may only grant SPEAKER via this endpoint.**
-            ADMIN callers may grant any role. Server returns 400 if a non-ADMIN caller
-            requests a non-SPEAKER role.
+            Role to grant. `POST /internal/users/provision` grants SPEAKER only and answers 400
+            for any other value, whoever calls.
           enum: [ORGANIZER, SPEAKER, PARTNER, ATTENDEE]
           example: SPEAKER
 
@@ -4326,7 +3941,7 @@ components:
       description: |
         Response from the user-provisioning endpoint. Story 11.E.2 (Resolved Q#1 Variant B)
         removed the `temporaryPassword` field — credential issuance is owned by the sibling
-        `/users/{username}/issue-invitation-credentials` endpoint, which is called at
+        `/internal/users/{username}/issue-invitation-credentials` endpoint, which is called at
         READY → INVITED rather than at CONTACTED → READY.
       required:
         - username
@@ -4348,7 +3963,7 @@ components:
     InvitationCredentialsResponse:
       type: object
       description: |
-        Response from `/users/{username}/issue-invitation-credentials` (Story 11.E.2 — AR15/FR9).
+        Response from `/internal/users/{username}/issue-invitation-credentials` (Story 11.E.2 — AR15/FR9).
         Determines whether the invitation email renders the "temporary password" block or the
         "use your existing password" block.
       required:
@@ -4427,7 +4042,10 @@ components:
           example: Doe
         companyId:
           type: string
-          description: Company name (unique identifier) - Story 1.16.2. Optional for anonymous event registration.
+          nullable: true
+          description: |
+            Company name (unique identifier) - Story 1.16.2. Optional for anonymous event registration;
+            missing or `null` means no company (EMS sends `null` when a speaker is invited without one).
           example: Swiss IT Solutions AG
         createIfMissing:
           type: boolean

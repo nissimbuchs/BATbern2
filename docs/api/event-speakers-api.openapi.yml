@@ -30,7 +30,7 @@ tags:
 - name: Speaker Outreach
   description: Speaker outreach tracking and history (Story 5.3)
 paths:
-  /events/{eventCode}/speakers/pool:
+  /events/{eventCode}/speakers:
     post:
       tags:
       - Event Actions
@@ -97,6 +97,7 @@ paths:
                     submittedTitle: Event-driven architecture in practice
                     submittedAbstract: A field report on migrating a monolith to an event-driven core.
                     isSlotAssigned: true
+                    remindersDisabled: false
         '400':
           description: 'Validation error. Two paths to this status:
 
@@ -119,7 +120,7 @@ paths:
                   value:
                     message: Speaker name is required
                     timestamp: '2025-12-13T10:00:00Z'
-                    path: /api/v1/events/BATbern56/speakers/pool
+                    path: /api/v1/events/BATbern56/speakers
                     status: 400
                     error: Bad Request
                 unknownField:
@@ -127,7 +128,7 @@ paths:
                   value:
                     message: Unknown field 'email' is not permitted on this endpoint; use POST /speakers/{speakerId}/promote to provision a speaker with an email
                     timestamp: '2025-12-13T10:00:00Z'
-                    path: /api/v1/events/BATbern56/speakers/pool
+                    path: /api/v1/events/BATbern56/speakers
                     status: 400
                     error: Bad Request
         '404':
@@ -139,7 +140,7 @@ paths:
               example:
                 message: 'Event not found: BATbern56'
                 timestamp: '2025-12-13T10:00:00Z'
-                path: /api/v1/events/BATbern56/speakers/pool
+                path: /api/v1/events/BATbern56/speakers
                 status: 404
                 error: Not Found
         '403':
@@ -201,12 +202,12 @@ paths:
           $ref: '#/components/responses/InternalServerError'
       security:
       - BearerAuth: []
-  /events/{eventCode}/speakers/self-nominate:
+  /events/{eventCode}/speaker-nominations:
     post:
       tags:
       - Speaker Self-Nomination
       summary: Attendee self-nominates as a speaker ("I Could Speak on That")
-      description: "A logged-in attendee raises their hand with a proposed talk once the event's topic\nis set + published, feeding the speaker pipeline from the floor.\n\n**Story**: 7.2 - \"I Could Speak on That\"\n**Authorization**: Requires ATTENDEE role (login-gated end-to-end)\n**Rate Limiting**: Applied at API Gateway level\n\n**Business Rules**:\n- The event's topic must be set (`topicCode != null`) AND the event must be\n  published (`publishedAt != null` or `currentPublishedPhase != 'none'`) — else 409.\n- The nomination lands as a `speaker_pool` row at the `IDENTIFIED` default, tagged\n  `source = 'self_nomination'` with `proposedByUsername` = the caller's username.\n  **No** Cognito user, SPEAKER role, or session is created here — provisioning stays\n  organizer-only at promote-to-READY.\n- Identity (speaker name + company) is auto-filled from the attendee's profile; the\n  body carries only the proposed talk. Unknown body fields are rejected (400).\n- At most **one** self-nomination per attendee per event — a second attempt returns 409.\n"
+      description: "A logged-in attendee raises their hand with a proposed talk once the event's topic\nis set + published, feeding the speaker pipeline from the floor.\n\n**Story**: 7.2 - \"I Could Speak on That\"\n**Authorization**: Requires ATTENDEE role (login-gated end-to-end)\n**Rate Limiting**: Applied at API Gateway level\n\n**Business Rules**:\n- The event's topic must be set (`topicCode != null`) AND the event must be\n  published (`publishedAt != null` or `currentPublishedPhase != 'none'`) — else 409.\n- The nomination lands as a `speaker_pool` row at the `IDENTIFIED` default, tagged\n  `source = 'self_nomination'` with `proposedByUsername` = the caller's username.\n  **No** Cognito user, SPEAKER role, or session is created here — provisioning stays\n  organizer-only at promote-to-READY.\n- Identity (speaker name + company) is auto-filled from the attendee's profile; the\n  body carries only the proposed talk. Unknown body fields are rejected (400).\n- At most **one** self-nomination per attendee per event — a second attempt returns 409.\n\n**Story 4.10**: a nomination is its own collection, `speaker-nominations` (it was\n`POST /speakers/self-nominate`). `POST /events/{eventCode}/speakers` is the organizer's create,\nwith another role and body.\n"
       operationId: selfNominateSpeaker
       parameters:
       - name: eventCode
@@ -268,6 +269,7 @@ paths:
                     submittedTitle: Event-driven architecture in practice
                     submittedAbstract: A field report on migrating a monolith to an event-driven core.
                     isSlotAssigned: true
+                    remindersDisabled: false
         '400':
           description: Validation error (missing sessionTitle/abstract, or an unknown field)
           content:
@@ -321,11 +323,11 @@ paths:
           $ref: '#/components/responses/InternalServerError'
       security:
       - BearerAuth: []
-  /events/{eventCode}/speakers/pool/{speakerId}:
+  /events/{eventCode}/speakers/{speakerId}:
     patch:
       tags:
       - Event Actions
-      summary: Patch a speaker pool entry (organizer assignment / notes)
+      summary: Patch a speaker pool entry (organizer assignment, notes, reminders)
       description: 'Partial update of a speaker pool entry. Only fields named in
 
         `PatchSpeakerPoolRequest` may be sent; any other field (notably `email`)
@@ -342,6 +344,15 @@ paths:
         contract error.
 
         **Authorization**: Requires ORGANIZER role.
+
+
+        **Story 4.10**: one speaker key, `{speakerId}`, under `/events/{eventCode}/speakers`
+
+        (it was `/speakers/pool/{speakerId}`); the entry is loaded scoped to the event, so
+
+        another event''s entry is 404. `remindersDisabled` replaces the former
+
+        `PATCH /speaker-pool/{speakerPoolId}/reminders`.
 
         '
       operationId: patchSpeakerPoolEntry
@@ -411,6 +422,7 @@ paths:
                     submittedTitle: Event-driven architecture in practice
                     submittedAbstract: A field report on migrating a monolith to an event-driven core.
                     isSlotAssigned: true
+                    remindersDisabled: false
         '400':
           description: 'Validation error — typically because the request body contains a
 
@@ -427,7 +439,7 @@ paths:
                   value:
                     message: Unknown field 'email' is not permitted on this endpoint; use POST /speakers/{speakerId}/promote to attach an email
                     timestamp: '2026-05-16T10:00:00Z'
-                    path: /api/v1/events/BATbern56/speakers/pool/550e8400-e29b-41d4-a716-446655440000
+                    path: /api/v1/events/BATbern56/speakers/550e8400-e29b-41d4-a716-446655440000
                     status: 400
                     error: Bad Request
         '401':
@@ -506,7 +518,7 @@ paths:
       tags:
       - Speaker Status
       summary: Promote a CONTACTED speaker to READY (provisions User + SPEAKER role)
-      description: "Drives the `CONTACTED → READY` workflow transition for a speaker in the event pool.\n\n**Story**: 11.D.1 — Unified Speaker Workflow Refactor / Phase D\n**ADR**: ADR-009 §0.2 — `CONTACTED → READY` is the User-provisioning gate\n**Authorization**: Requires ORGANIZER role\n**Same-state behaviour**: Re-promoting an already-READY speaker returns\n  `409 Conflict` with `details.code = INVALID_PROMOTION_STATE` and\n  `details.currentState = READY`. Promote is only valid from CONTACTED;\n  subsequent identity changes go through a dedicated organizer action\n  (not this endpoint).\n\n**Side effects on success**:\n  - Workflow state transitions `CONTACTED → READY` via\n    `SpeakerWorkflowService.transition(...)` (the sole status writer).\n  - `UserApiClient.provisionUserWithRole(...)` is called: a User row is created if\n    none exists for the email; SPEAKER role is granted (idempotent).\n  - A `Session` + `PRIMARY_SPEAKER` `session_users` row is provisioned with the\n    canonical username (Story 11.E.8). The legacy `speaker_pool.username` and\n    `speaker_pool.email` columns were dropped in Story 11.E.9 (Flyway V103); the\n    response's `username` / `email` are now overlay-derived via\n    `PrimarySpeakerResolver.applyOverlay(...)`.\n  - `speaker_status_history` row is inserted (previous_status=contacted,\n    new_status=ready, changed_by_username=organizer).\n  - `SpeakerWorkflowStateChangeEvent` and `SpeakerPromotedToReadyEvent` are published.\n\n**Why a dedicated endpoint?** `POST /speakers/pool` rejects `email` (AR23); the\nonly path that attaches an email + provisions an identity is this endpoint.\n`PUT /speakers/{speakerId}/status` with `newStatus=READY` also returns 400 with\ncode `READY_REQUIRES_PROMOTE_ENDPOINT` — promotion MUST go through this path.\n"
+      description: "Drives the `CONTACTED → READY` workflow transition for a speaker in the event pool.\n\n**Story**: 11.D.1 — Unified Speaker Workflow Refactor / Phase D\n**ADR**: ADR-009 §0.2 — `CONTACTED → READY` is the User-provisioning gate\n**Authorization**: Requires ORGANIZER role\n**Same-state behaviour**: Re-promoting an already-READY speaker returns\n  `409 Conflict` with `details.code = INVALID_PROMOTION_STATE` and\n  `details.currentState = READY`. Promote is only valid from CONTACTED;\n  subsequent identity changes go through a dedicated organizer action\n  (not this endpoint).\n\n**Side effects on success**:\n  - Workflow state transitions `CONTACTED → READY` via\n    `SpeakerWorkflowService.transition(...)` (the sole status writer).\n  - `UserApiClient.provisionUserWithRole(...)` is called: a User row is created if\n    none exists for the email; SPEAKER role is granted (idempotent).\n  - A `Session` + `PRIMARY_SPEAKER` `session_users` row is provisioned with the\n    canonical username (Story 11.E.8). The legacy `speaker_pool.username` and\n    `speaker_pool.email` columns were dropped in Story 11.E.9 (Flyway V103); the\n    response's `username` / `email` are now overlay-derived via\n    `PrimarySpeakerResolver.applyOverlay(...)`.\n  - `speaker_status_history` row is inserted (previous_status=contacted,\n    new_status=ready, changed_by_username=organizer).\n  - `SpeakerWorkflowStateChangeEvent` and `SpeakerPromotedToReadyEvent` are published.\n\n**Why a dedicated endpoint?** `POST /events/{eventCode}/speakers` rejects `email` (AR23); the\nonly path that attaches an email + provisions an identity is this endpoint.\n`PUT /speakers/{speakerId}/status` with `newStatus=READY` also returns 400 with\ncode `READY_REQUIRES_PROMOTE_ENDPOINT` — promotion MUST go through this path.\n"
       operationId: promoteSpeakerToReady
       parameters:
       - name: eventCode
@@ -580,6 +592,7 @@ paths:
                     submittedTitle: Event-driven architecture in practice
                     submittedAbstract: A field report on migrating a monolith to an event-driven core.
                     isSlotAssigned: true
+                    remindersDisabled: false
         '400':
           description: 'Validation error. Triggered by: missing/blank/malformed email, body fields
 
@@ -974,7 +987,7 @@ paths:
       - Speaker Status
       summary: Get quality-review queue (Story 5.5 AC11)
       description: "Speakers with CONTENT_SUBMITTED status, oldest submission first. Returns the
-        same SpeakerPoolResponse shape as GET /speakers/pool (API-consolidation Phase 7:
+        same SpeakerPoolResponse shape as GET /events/{eventCode}/speakers (API-consolidation Phase 7:
         replaced the prior raw-entity return)."
       operationId: getReviewQueue
       parameters:
@@ -1066,111 +1079,12 @@ paths:
             application/json:
               schema:
                 $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
-  /events/{eventCode}/speakers/invite:
-    post:
-      tags:
-      - Speaker Invitation
-      summary: Invite a speaker to an event
-      description: 'Create a SpeakerPool entry for a speaker and optionally auto-create
-
-        a User account if one doesn''t exist.
-
-
-        **Story**: 6.1b - Speaker Invitation System
-
-        **Acceptance Criteria**: AC1 (invite), AC2 (auto-create user), AC7 (idempotency)
-
-        **Authorization**: Requires ORGANIZER role
-
-
-        **Business Rules**:
-
-        - If the speaker email already exists in the pool for this event, returns existing entry (idempotent)
-
-        - Auto-creates a User via UserApiClient if no user exists for the email
-
-        - Speaker starts in IDENTIFIED status
-
-        - Cognito account is NOT created for speakers initially
-
-
-        **Performance**: <300ms (P95)
-
-        '
-      operationId: inviteSpeaker
-      parameters:
-      - name: eventCode
-        in: path
-        description: Event code
-        required: true
-        schema:
-          type: string
-          example: batbern-2026-spring
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/InviteSpeakerRequest'
-      responses:
-        '201':
-          description: Speaker invited successfully (new entry created)
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/InviteSpeakerResponse'
-              examples:
-                default:
-                  summary: generated from the schema and captured sub-values
-                  value:
-                    speakerPoolId: 123e4567-e89b-12d3-a456-426614174000
-                    username: jane.smith
-                    email: elena.vorlage@example.com
-                    speakerName: David Vorlage
-                    status: IDENTIFIED
-                    created: true
-                    userCreated: true
-                    createdAt: "2026-01-15 10:00:00+00:00"
-        '200':
-          description: Speaker already exists in pool (idempotent return)
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/InviteSpeakerResponse'
-              examples:
-                default:
-                  summary: generated from the schema and captured sub-values
-                  value:
-                    speakerPoolId: 123e4567-e89b-12d3-a456-426614174000
-                    username: jane.smith
-                    email: elena.vorlage@example.com
-                    speakerName: David Vorlage
-                    status: IDENTIFIED
-                    created: true
-                    userCreated: true
-                    createdAt: "2026-01-15 10:00:00+00:00"
-        '400':
-          description: Validation error
-          content:
-            application/json:
-              schema:
-                $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
-        '404':
-          description: Event not found
-          content:
-            application/json:
-              schema:
-                $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
-        '403':
-          $ref: '#/components/responses/Forbidden'
-      security:
-      - BearerAuth: []
-  /events/{eventCode}/speakers/{username}/send-invitation:
+  /events/{eventCode}/speakers/{speakerId}/send-invitation:
     post:
       tags:
       - Speaker Invitation
       summary: Send invitation email to a speaker
-      description: "Send or resend a personalized Cognito-flow invitation email containing a login URL\nand (for first-time speakers) a temporary password. Story 11.F.1 retired magic-link\ntokens; speakers now sign in via Cognito and the portal is gated by\n@PreAuthorize(\"hasRole('SPEAKER')\").\n\n**Story**: 6.1b - Speaker Invitation System (updated by 11.E.2 / 11.F.1)\n**Acceptance Criteria**: AC3 (email), AC4 (i18n), AC6 (domain events)\n**Authorization**: Requires ORGANIZER role\n\n**Business Rules**:\n- Speaker must exist in the pool for this event\n- Transitions speaker status to INVITED\n- CUMS sibling endpoint `POST /users/{username}/issue-invitation-credentials`\n  mints a Cognito temporary password when needed (FRESH_TEMP_PASSWORD action),\n  otherwise the email signals the speaker to reuse their existing password.\n- Publishes SpeakerInvitationSentEvent domain event\n- Records outreach history and status transition history\n- Email sent asynchronously; failure does not block the response\n\n**Performance**: <300ms (P95)\n"
+      description: "Send or resend a personalized Cognito-flow invitation email containing a login URL\nand (for first-time speakers) a temporary password. Story 11.F.1 retired magic-link\ntokens; speakers now sign in via Cognito and the portal is gated by\n@PreAuthorize(\"hasRole('SPEAKER')\").\n\n**Story**: 6.1b - Speaker Invitation System (updated by 11.E.2 / 11.F.1)\n**Acceptance Criteria**: AC3 (email), AC4 (i18n), AC6 (domain events)\n**Authorization**: Requires ORGANIZER role\n\n**Business Rules**:\n- Speaker must exist in the pool for this event\n- Transitions speaker status to INVITED\n- CUMS sibling endpoint `POST /internal/users/{username}/issue-invitation-credentials`\n  mints a Cognito temporary password when needed (FRESH_TEMP_PASSWORD action),\n  otherwise the email signals the speaker to reuse their existing password.\n- Publishes SpeakerInvitationSentEvent domain event\n- Records outreach history and status transition history\n- Email sent asynchronously; failure does not block the response\n\n**Performance**: <300ms (P95)\n"
       operationId: sendSpeakerInvitation
       parameters:
       - name: eventCode
@@ -1180,13 +1094,14 @@ paths:
         schema:
           type: string
           example: batbern-2026-spring
-      - name: username
+      - name: speakerId
         in: path
-        description: Speaker's username or UUID (for brainstormed speakers)
+        description: The speaker pool entry (Story 4.10, one speaker key; it used to take a username or a UUID). Loaded scoped to the event, another event's entry is 404.
         required: true
         schema:
           type: string
-          example: john.doe
+          format: uuid
+          example: 550e8400-e29b-41d4-a716-446655440000
       requestBody:
         required: true
         content:
@@ -1699,55 +1614,6 @@ paths:
       security:
       - BearerAuth: []
 
-  /events/{eventCode}/speaker-pool/{speakerPoolId}/reminders:
-    patch:
-      tags:
-        - Speaker Reminders
-      summary: Toggle the reminders-disabled flag for a speaker (Story 6.5 AC6)
-      description: 'ORGANIZER role.'
-      operationId: updateRemindersDisabled
-      parameters:
-        - name: eventCode
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: speakerPoolId
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UpdateRemindersDisabledRequest'
-      responses:
-        '200':
-          description: Flag updated
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/RemindersDisabledResponse'
-              examples:
-                default:
-                  summary: generated from the schema and captured sub-values
-                  value:
-                    speakerPoolId: 3f2b8c1e-5d4a-4e6b-9a7c-1b2d3e4f5a6b
-                    remindersDisabled: true
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-      security:
-      - BearerAuth: []
-
 components:
   parameters:
     SpeakerPortalEventCode:
@@ -1862,7 +1728,7 @@ components:
           example: Met at KubeCon 2024. Very enthusiastic about BATbern. Follow up next week.
     PatchSpeakerPoolRequest:
       type: object
-      description: 'Partial-update body for `PATCH /events/{eventCode}/speakers/pool/{speakerId}`
+      description: 'Partial-update body for `PATCH /events/{eventCode}/speakers/{speakerId}`
 
         (Story 11.D.1 AR23; extended by Epic 11 bug fix 2026-05-18 to support inline
 
@@ -1909,6 +1775,12 @@ components:
           type: string
           description: Free-text notes about the speaker (nullable to clear).
           example: Followed up via LinkedIn 2026-05-12 — interested but needs date confirmation.
+        remindersDisabled:
+          type: boolean
+          description: 'Story 6.5 AC6: true stops the automated deadline reminders for this speaker.
+            Story 4.10 folded the former `PATCH /speaker-pool/{speakerPoolId}/reminders` in here
+            (ADR-013 §1: no per-attribute endpoint).'
+          example: true
     PromoteSpeakerRequest:
       type: object
       description: 'Request body for `POST /speakers/{speakerId}/promote` (Story 11.D.1; tightened by
@@ -2289,6 +2161,7 @@ components:
       - status
       - createdAt
       - updatedAt
+      - remindersDisabled
       - company
       - companyDisplayName
       - expertise
@@ -2318,6 +2191,11 @@ components:
       - submittedAbstract
       - isSlotAssigned
       properties:
+        remindersDisabled:
+          type: boolean
+          description: 'Story 6.5 AC6: the automated deadline reminders are off for this speaker
+            (set with `PATCH /events/{eventCode}/speakers/{speakerId}`).'
+          example: false
         id:
           type: string
           format: uuid
@@ -2637,114 +2515,6 @@ components:
           format: date-time
           description: Timestamp of last update
           example: 2025-12-14 14:35:00+00:00
-    InviteSpeakerRequest:
-      type: object
-      description: 'Request to invite a speaker to an event.
-
-        Story 6.1b - AC1: Speaker Invitation
-
-        '
-      required:
-      - email
-      properties:
-        email:
-          type: string
-          format: idn-email
-          # One email rule everywhere (#1102): ASCII local part (SES has no SMTPUTF8), any domain.
-          # Source of truth: shared-kernel EmailAddresses.OPENAPI_PATTERN.
-          pattern: '^[A-Za-z0-9!#$%&''*+/=?^_`{|}~-]+(\.[A-Za-z0-9!#$%&''*+/=?^_`{|}~-]+)*@[^\s@.]+(\.[^\s@.]+)+$'
-          maxLength: 254
-          description: Speaker's email address
-          example: jane.smith@example.com
-        firstName:
-          type: string
-          nullable: true
-          description: Speaker's first name (used for user creation if not found)
-          example: Jane
-        lastName:
-          type: string
-          nullable: true
-          description: Speaker's last name (used for user creation if not found)
-          example: Smith
-        company:
-          type: string
-          nullable: true
-          description: Speaker's company name
-          example: Tech Corp AG
-        sessionId:
-          type: string
-          format: uuid
-          nullable: true
-          description: Session to assign speaker to (optional)
-          example: 550e8400-e29b-41d4-a716-446655440000
-        notes:
-          type: string
-          nullable: true
-          description: Notes about the speaker
-          example: Expert in cloud architecture
-    InviteSpeakerResponse:
-      type: object
-      description: 'Response for a speaker invitation.
-
-        Story 6.1b - AC1, AC7: Speaker Invitation with idempotency
-
-        '
-      required:
-      - speakerPoolId
-      - email
-      - speakerName
-      - status
-      - created
-      - createdAt
-      - username
-      - userCreated
-      properties:
-        speakerPoolId:
-          type: string
-          format: uuid
-          description: UUID of the SpeakerPool entry
-          example: 123e4567-e89b-12d3-a456-426614174000
-        username:
-          type: string
-          nullable: true
-          description: Speaker's username
-          example: jane.smith
-        email:
-          type: string
-          format: idn-email
-          description: Speaker's email address
-          example: jane.smith@example.com
-        speakerName:
-          type: string
-          description: Display name of the speaker
-          example: Jane Smith
-        status:
-          type: string
-          enum:
-          - IDENTIFIED
-          - CONTACTED
-          - READY
-          - INVITED
-          - ACCEPTED
-          - CONTENT_SUBMITTED
-          - QUALITY_REVIEWED
-          - DECLINED
-          description: 'Current workflow status — the 8 ADR-009 §0.1 states, serialized as the
-            UPPER_CASE SpeakerWorkflowState enum name.'
-          example: IDENTIFIED
-        created:
-          type: boolean
-          description: True if newly created, false if existing (idempotent return)
-          example: true
-        userCreated:
-          type: boolean
-          description: True if a new User account was created
-          example: true
-        createdAt:
-          type: string
-          format: date-time
-          description: When the SpeakerPool entry was created
-          example: 2026-01-15 10:00:00+00:00
     SendInvitationRequest:
       type: object
       description: "Request to send/resend an invitation email to a speaker.\nStory 6.1b - AC3 (updated by 11.E.2 / 11.F.1): Invitation Email\n\nThe email includes:\n- Cognito login URL + temporary password (FRESH_TEMP_PASSWORD)\n  OR existing-password reminder (USE_EXISTING_PASSWORD)\n- Event details, deadlines, and session info\n"
@@ -3165,23 +2935,6 @@ components:
         uploadedAt:
           type: string
           format: date-time
-    UpdateRemindersDisabledRequest:
-      type: object
-      required:
-        - remindersDisabled
-      properties:
-        remindersDisabled:
-          type: boolean
-    RemindersDisabledResponse:
-      type: object
-      required:
-        - speakerPoolId
-        - remindersDisabled
-      properties:
-        speakerPoolId:
-          type: string
-        remindersDisabled:
-          type: boolean
   responses:
     Conflict:
       description: Conflict - the speaker has already responded

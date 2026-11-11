@@ -1,0 +1,38 @@
+meta {
+  name: Posttest cleanup — sweep the notify user (@batbern-test.ch)
+  type: http
+  seq: 101
+}
+
+post {
+  url: {{baseUrl}}/admin/test-fixtures/cums/cleanup
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "entityType": "users_by_email",
+    "prefix": "@batbern-test.ch"
+  }
+}
+
+tests {
+  test("posttest cleanup accepted (200) or gracefully missing (404)", function() {
+    expect([200, 204, 404]).to.include(res.getStatus());
+  });
+}
+
+docs {
+  Story 4.10c: 01 creates a user under @batbern-test.ch (the notify case); 99b sweeps the
+  @e2e.batbern.invalid one.
+}

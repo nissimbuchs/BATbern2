@@ -39,7 +39,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 @Import({TestSecurityConfig.class, TestAwsConfig.class})
-@DisplayName("Removed EMS endpoints (Stories 17.1, 4.9b)")
+@DisplayName("Removed EMS endpoints (Stories 17.1, 4.9b, 4.10)")
 class RemovedEndpointsIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
@@ -47,7 +47,8 @@ class RemovedEndpointsIntegrationTest extends AbstractIntegrationTest {
 
     @ParameterizedTest(name = "{0} {1} -> {2}")
     @CsvSource({
-        "POST, /api/v1/events/BATbern999/speakers/invite-batch,                              404",
+        // Since Story 4.10 the literal falls on /speakers/{speakerId}, which has no POST: 405.
+        "POST, /api/v1/events/BATbern999/speakers/invite-batch,                              405",
         "POST, /api/v1/admin/backfill-speaker-names,                                         404",
         "POST, /api/v1/events/BATbern999/slides-online/send,                                 404",
         "POST, /api/v1/events/BATbern999/sessions/some-session/materials/upload-from-url,    405",
@@ -60,6 +61,15 @@ class RemovedEndpointsIntegrationTest extends AbstractIntegrationTest {
         "GET,  /api/v1/events/BATbern999/publish/schedule,                                   404",
         "GET,  /api/v1/events/BATbern999/publish/status,                                     404",
         "POST, /api/v1/events/BATbern999/workflow/transition,                                404",
+        // Story 4.10: one speaker key {speakerId} under /speakers, no aliases. "pool", "invite" and
+        // "self-nominate" now fall on the /speakers/{speakerId} template, which has no GET or POST.
+        "GET,    /api/v1/events/BATbern999/speakers/pool,                                    405",
+        "POST,   /api/v1/events/BATbern999/speakers/pool,                                    405",
+        "PATCH,  /api/v1/events/BATbern999/speakers/pool/00000000-0000-0000-0000-000000000001, 404",
+        "DELETE, /api/v1/events/BATbern999/speakers/pool/00000000-0000-0000-0000-000000000001, 404",
+        "PATCH,  /api/v1/events/BATbern999/speaker-pool/00000000-0000-0000-0000-000000000001/reminders, 404",
+        "POST,   /api/v1/events/BATbern999/speakers/invite,                                  405",
+        "POST,   /api/v1/events/BATbern999/speakers/self-nominate,                           405",
     })
     @DisplayName("should_returnNoOperation_when_removedOperationIsCalled")
     void should_returnNoOperation_when_removedOperationIsCalled(String method, String path, int expected)
@@ -72,6 +82,21 @@ class RemovedEndpointsIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(expected == 404
                         ? jsonPath("$.message").value(startsWith("No endpoint " + method + " "))
                         : status().is(expected));
+    }
+
+    @Test
+    @DisplayName("should_reject_when_sendInvitationNamesAUsername")
+    void should_reject_when_sendInvitationNamesAUsername() throws Exception {
+        // Story 4.10: send-invitation takes the pool entry id only; a username in the slot (which
+        // it used to accept) fails the UUID conversion, 404 "Invalid ID format", before any lookup
+        // or mail.
+        mockMvc.perform(request(HttpMethod.POST,
+                                "/api/v1/events/BATbern999/speakers/hongan.nguyen/send-invitation")
+                        .with(user("anna.organizer").roles("ORGANIZER"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"responseDeadline\": \"2099-01-01\"}"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value("Invalid ID format"));
     }
 
     @Test

@@ -13,10 +13,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpMethod;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.transaction.annotation.Transactional;
 
-import static org.hamcrest.Matchers.anyOf;
-import static org.hamcrest.Matchers.is;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.request;
@@ -29,7 +26,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 @SpringBootTest
 @AutoConfigureMockMvc
-@Transactional
 @Import({TestSecurityConfig.class, TestAwsConfig.class})
 @DisplayName("Organizer-only EMS endpoints")
 class OrganizerOnlyEndpointsIntegrationTest extends AbstractIntegrationTest {
@@ -42,12 +38,12 @@ class OrganizerOnlyEndpointsIntegrationTest extends AbstractIntegrationTest {
         "ATTENDEE, DELETE, /api/v1/events/BATbern999",
         "PARTNER,  DELETE, /api/v1/events/BATbern999",
         "SPEAKER,  DELETE, /api/v1/events/BATbern999/sessions/some-session",
-        "ATTENDEE, DELETE, /api/v1/events/BATbern999/speakers/pool/00000000-0000-0000-0000-000000000001",
-        "PARTNER,  GET,    /api/v1/events/BATbern999/speakers/pool",
+        "ATTENDEE, DELETE, /api/v1/events/BATbern999/speakers/00000000-0000-0000-0000-000000000001",
+        "PARTNER,  GET,    /api/v1/events/BATbern999/speakers",
         "ATTENDEE, POST,   /api/v1/events/BATbern999/phases/agenda/publish",
         "PARTNER,  POST,   /api/v1/events/BATbern999/phases/agenda/unpublish",
         "SPEAKER,  GET,    /api/v1/events/BATbern999/publishing",
-        "PARTNER,  GET,    /api/v1/notifications?username=anna.organizer",
+        "PARTNER,  GET,    /api/v1/notifications",
         "ATTENDEE, DELETE, /api/v1/notifications/00000000-0000-0000-0000-000000000001",
         "SPEAKER,  GET,    /api/v1/admin/settings/some-key",
     })
@@ -61,19 +57,19 @@ class OrganizerOnlyEndpointsIntegrationTest extends AbstractIntegrationTest {
     @Test
     @DisplayName("should_return403_when_nonOrganizerListsAnotherUsersRegistrations")
     void should_return403_when_nonOrganizerListsAnotherUsersRegistrations() throws Exception {
-        mockMvc.perform(get("/api/v1/events/registrations")
-                        .header("X-Attendee-Username", "anna.organizer")
+        mockMvc.perform(get("/api/v1/registrations")
+                        .param("filter", "{\"attendeeUsername\":\"anna.organizer\"}")
                         .with(user("someone").roles("ATTENDEE")))
                 .andExpect(status().isForbidden());
     }
 
     @Test
-    @DisplayName("should_rejectAnonymous_when_listingAUsersRegistrations")
-    void should_rejectAnonymous_when_listingAUsersRegistrations() throws Exception {
-        // GET /api/v1/events/* is public for event pages; this one must not be. The test chain
-        // answers an anonymous caller with 403, production with 401: both are a refusal.
-        mockMvc.perform(get("/api/v1/events/registrations").header("X-Attendee-Username", "anna.organizer"))
-                .andExpect(status().is(anyOf(is(401), is(403))));
+    @DisplayName("should_return401_when_anonymousListsAUsersRegistrations")
+    void should_return401_when_anonymousListsAUsersRegistrations() throws Exception {
+        // Story 4.10b: the list left /events (no GHSA-qhqv literal matcher any more); outside the
+        // public matchers, the production chain answers an anonymous caller 401.
+        mockMvc.perform(get("/api/v1/registrations").param("filter", "{\"attendeeUsername\":\"anna.organizer\"}"))
+                .andExpect(status().isUnauthorized());
     }
 
     @Test

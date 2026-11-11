@@ -1,0 +1,27 @@
+meta {
+  name: The old verb paths are gone (PUT /notifications/{id}/read)
+  type: http
+  seq: 8
+}
+
+put {
+  url: {{baseUrl}}/notifications/00000000-0000-4000-8000-000000000001/read
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+tests {
+  test("404, no handler", function() {
+    expect(res.getStatus()).to.equal(404);
+  });
+}
+
+docs {
+  Story 4.10b, breaking, no aliases: PUT …/{id}/read, PUT /notifications/batch-read,
+  DELETE /notifications/batch-delete and GET /notifications/history are removed. The statuses
+  of each are pinned by NotificationControllerIntegrationTest.
+}

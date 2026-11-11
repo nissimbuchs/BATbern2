@@ -5,9 +5,11 @@ import ch.batbern.partners.client.user.dto.UserResponse;
 import java.util.List;
 
 /**
- * Client interface for communicating with the User Service API.
+ * Client of the User Service's internal API ({@code /internal/users}, cums-internal spec).
  *
- * Uses generated DTO from users-api.openapi.yml for type safety.
+ * Uses generated DTO from users-api.openapi.yml for type safety (the internal operations answer
+ * the same {@code UserResponse}). The caller's own profile is {@code getUserByUsername} of the
+ * JWT's {@code custom:username} (6b; {@code GET /users/me} before).
  */
 public interface UserServiceClient {
 
@@ -27,17 +29,8 @@ public interface UserServiceClient {
     UserResponse getUserProfile(String username);
 
     /**
-     * Get the currently authenticated user's own profile.
-     * Calls GET /users/me — accessible to any authenticated user regardless of role.
-     *
-     * @return current user's profile including companyId
-     * @throws ch.batbern.partners.exception.UserServiceException if API communication fails
-     */
-    UserResponse getCurrentUserProfile();
-
-    /**
      * List all users belonging to a company with the given role.
-     * Calls GET /users?company={companyName}&role={role}&limit=100.
+     * Calls GET /internal/users?company={companyName}&role={role}, every page.
      *
      * Used by contacts tab: find all PARTNER users for a given company.
      *
@@ -49,7 +42,7 @@ public interface UserServiceClient {
 
     /**
      * List all users with the given role across all companies.
-     * Calls GET /users?role={role}&limit=100.
+     * Calls GET /internal/users?role={role}, every page.
      *
      * Used for calendar invite email collection: get all PARTNER users globally.
      *

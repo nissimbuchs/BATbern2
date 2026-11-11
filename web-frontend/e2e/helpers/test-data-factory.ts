@@ -151,7 +151,7 @@ const ONE_BY_ONE_PNG_BASE64 =
  * In-memory PNG upload payload for Playwright `setInputFiles`. Returns the canonical
  * `bruno-test-<ts>.png` filename + a real PNG buffer so the photo-upload `@smoke` exercises
  * the genuine ADR-002 3-phase S3 flow without needing a fixture file on disk. Uploads have
- * no prefix-sweep path, so the spec tears down by explicit `DELETE /users/me/picture`.
+ * no prefix-sweep path, so the spec tears down by explicit `DELETE /users/{own username}/picture`.
  */
 export function uploadPngFile(): { name: string; mimeType: string; buffer: Buffer } {
   return {

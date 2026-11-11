@@ -43,7 +43,7 @@ import { useParticipantBatchImport } from '../../../hooks/useParticipantBatchImp
 import { useUserList } from '../../../hooks/useUserManagement/useUserList';
 import {
   parseParticipantCsv,
-  convertParticipantToRegistrationRequest,
+  convertParticipantToImportRow,
   constructUsername,
 } from '../../../utils/participantImportUtils';
 import type {
@@ -96,18 +96,17 @@ export function ParticipantBatchImportModal({
 
           // Convert to preview candidates with constructed usernames
           const previewCands: ParticipantImportCandidate[] = participants.map((p) => {
-            const requests = convertParticipantToRegistrationRequest(p);
-            const eventCodes = requests.registrations.map((r) => r.eventCode);
-            const username = constructUsername(requests.firstName, requests.lastName);
+            const row = convertParticipantToImportRow(p);
+            const username = constructUsername(row.firstName, row.lastName);
 
             return {
-              firstName: requests.firstName,
-              lastName: requests.lastName,
-              email: requests.participantEmail,
+              firstName: row.firstName,
+              lastName: row.lastName,
+              email: row.email,
               username,
-              eventCount: eventCodes.length,
-              eventCodes, // Add event codes array for display
-              isSyntheticEmail: requests.participantEmail.endsWith('@batbern.ch'),
+              eventCount: row.eventCodes.length,
+              eventCodes: row.eventCodes, // Add event codes array for display
+              isSyntheticEmail: row.email.endsWith('@batbern.ch'),
               importStatus: 'pending',
               isExisting: undefined, // Will be set after checking existing users
             };
@@ -166,9 +165,9 @@ export function ParticipantBatchImportModal({
       try {
         const content = e.target?.result as string;
         const participants = parseParticipantCsv(content);
-        const requests = participants.map(convertParticipantToRegistrationRequest);
+        const rows = participants.map(convertParticipantToImportRow);
 
-        const result = await importCandidates(requests, (current, total) => {
+        const result = await importCandidates(rows, (current, total) => {
           setProgress((current / total) * 100);
         });
 

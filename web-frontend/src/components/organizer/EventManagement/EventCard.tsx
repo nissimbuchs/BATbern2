@@ -61,8 +61,9 @@ export const EventCard: React.FC<EventCardProps> = ({ event, onEdit, onCardClick
   const workflowLabel = getWorkflowStateLabel(workflowState, t);
   const workflowStep = getWorkflowStepNumber(workflowState);
   const capacity = eventUI.capacity || event.venueCapacity || 0;
-  const attendeePercentage =
-    capacity > 0 ? Math.round((event.currentAttendeeCount / capacity) * 100) : 0;
+  // Absent when the server has no count yet; its default is 0.
+  const attendeeCount = event.currentAttendeeCount ?? 0;
+  const attendeePercentage = capacity > 0 ? Math.round((attendeeCount / capacity) * 100) : 0;
 
   const locale = i18n.language === 'de' ? de : enUS;
   const eventDate = eventUI.eventDate || event.date;
@@ -155,7 +156,7 @@ export const EventCard: React.FC<EventCardProps> = ({ event, onEdit, onCardClick
               variant="body2"
               color={attendeePercentage === 100 ? 'error' : 'text.secondary'}
             >
-              {event.currentAttendeeCount}/{capacity} ({attendeePercentage}% full)
+              {attendeeCount}/{capacity} ({attendeePercentage}% full)
             </Typography>
           </Stack>
         </Stack>

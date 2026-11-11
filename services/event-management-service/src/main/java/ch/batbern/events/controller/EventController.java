@@ -8,11 +8,8 @@ import ch.batbern.events.domain.Logo;
 import ch.batbern.events.domain.Registration;
 import ch.batbern.events.dto.CreateEventRequest;
 import ch.batbern.events.dto.CreateRegistrationResponse;
-import ch.batbern.events.registrations.dto.generated.BatchRegistrationRequest;
-import ch.batbern.events.registrations.dto.generated.BatchRegistrationResponse;
 import ch.batbern.events.registrations.dto.generated.ConfirmRegistration200Response;
 import ch.batbern.events.registrations.dto.generated.CreateRegistrationRequest;
-import ch.batbern.events.registrations.dto.generated.EnrollStakeholdersResponse;
 import ch.batbern.events.registrations.dto.generated.MyRegistrationResponse;
 import ch.batbern.events.registrations.dto.generated.ResendConfirmationResponse;
 import ch.batbern.events.registrations.dto.generated.UpdateRegistrationStatusRequest;
@@ -29,9 +26,7 @@ import ch.batbern.events.core.api.generated.PublicEventsApi;
 import ch.batbern.events.core.dto.generated.EventDetail;
 import ch.batbern.events.core.dto.generated.ListEvents200Response;
 import ch.batbern.events.analytics.api.generated.EventReportingApi;
-import ch.batbern.events.analytics.dto.generated.AttendanceSummaryDTO;
 import ch.batbern.events.analytics.dto.generated.EventAnalytics;
-import ch.batbern.events.dto.AttendanceSummaryProjection;
 import ch.batbern.events.event.EventCreatedEvent;
 import ch.batbern.events.event.EventUpdatedEvent;
 import ch.batbern.events.exception.BusinessValidationException;
@@ -58,7 +53,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
-import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 import java.util.Set;
@@ -81,7 +75,6 @@ import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.beans.factory.annotation.Value;
@@ -1706,33 +1699,6 @@ public class EventController implements EventsApi, EventReportingApi, PublicEven
     }
 
     /**
-     * Enroll all organizers and partners as confirmed participants for an existing event.
-     *
-     * POST /api/v1/events/{eventCode}/enroll-stakeholders
-     *
-     * Organizer-only action intended for events that predate the auto-enrollment feature.
-     * Idempotent: already-registered users are counted as skipped, not re-enrolled.
-     * Returns counts of enrolled and skipped users.
-     */
-    @PostMapping("/events/{eventCode}/enroll-stakeholders")
-    @PreAuthorize("hasRole('ORGANIZER')")
-    @Operation(
-            summary = "Enroll Stakeholders",
-            description = "Bulk-enroll all organizers and partners as confirmed participants. "
-                    + "Idempotent — already-registered users are skipped. Requires ORGANIZER role."
-    )
-    public ResponseEntity<EnrollStakeholdersResponse> enrollStakeholders(@PathVariable String eventCode) {
-        log.info("POST /api/v1/events/{}/enroll-stakeholders", eventCode);
-        ch.batbern.events.domain.Event event = eventRepository.findByEventCode(eventCode)
-                .orElseThrow(() -> new EventNotFoundException("Event not found: " + eventCode));
-        ch.batbern.events.service.RegistrationService.EnrollmentSummary result =
-                registrationService.enrollStakeholders(event);
-        return ResponseEntity.ok(new EnrollStakeholdersResponse()
-                .enrolled(result.enrolled())
-                .skipped(result.skipped()));
-    }
-
-    /**
      * Get Event Analytics (AC13)
      *
      * GET /api/v1/events/{id}/analytics?metrics=attendance,registrations,engagement&timeframe=start,end
@@ -2093,105 +2059,6 @@ public class EventController implements EventsApi, EventReportingApi, PublicEven
     }
 
     /**
-     * List User Registrations - Story BAT-15
-     *
-     * GET /api/v1/events/registrations (X-Attendee-Username header)
-     *
-     * @param attendeeUsername Username to list registrations for (passed as header to avoid URL exposure)
-     * @return List of registrations enriched with event data
-     */
-    @GetMapping("/events/registrations")
-    @Operation(
-            summary = "List User Registrations",
-            description = "Retrieve all registrations for a specific user across all events"
-    )
-    @PreAuthorize("hasRole('ORGANIZER')")
-    public ResponseEntity<List<RegistrationResponse>> listUserRegistrations(
-            @RequestHeader("X-Attendee-Username") String attendeeUsername) {
-        log.debug("GET /api/v1/events/registrations for user={}", attendeeUsername);
-
-        // Fetch registrations for this user
-        List<Registration> registrations = registrationRepository.findByAttendeeUsername(attendeeUsername);
-
-        // Fetch all events in one query to avoid N+1 (collect unique event IDs)
-        Set<UUID> eventIds = registrations.stream()
-                .map(Registration::getEventId)
-                .collect(Collectors.toSet());
-
-        Map<UUID, Event> eventsMap = eventRepository.findAllById(eventIds).stream()
-                .collect(Collectors.toMap(Event::getId, e -> e));
-
-        // Enrich each registration with event data
-        List<RegistrationResponse> responses = registrations.stream()
-                .map(reg -> {
-                    // Get event from map (avoids N+1)
-                    Event event = eventsMap.get(reg.getEventId());
-                    if (event != null) {
-                        reg.setEventCode(event.getEventCode()); // Set transient field
-                    }
-
-                    // Enrich with user data
-                    RegistrationResponse response = registrationService.enrichRegistrationWithUserData(reg);
-
-                    // Add event details to response
-                    if (event != null) {
-                        response.setEventTitle(event.getTitle());
-                        response.setEventDate(event.getDate() != null
-                                ? event.getDate().toString() : null);
-                    }
-
-                    return response;
-                })
-                .collect(Collectors.toList());
-
-        return ResponseEntity.ok(responses);
-    }
-
-    /**
-     * Create Batch Registrations - Story BAT-14
-     *
-     * POST /api/v1/events/batch_registrations
-     *
-     * Creates multiple event registrations for a single participant in a single transaction.
-     * Designed for historical data migration where participants attended multiple events.
-     *
-     * Features:
-     * - Creates or retrieves user by email (anonymous users with cognitoSync=false)
-     * - Creates registrations for all specified events
-     * - Idempotent: Skips duplicate registrations without error
-     * - Partial success: Some registrations may succeed while others fail
-     * - Transactional: All-or-nothing for database operations
-     *
-     * Authorization: Requires ORGANIZER role
-     *
-     * @param request Batch registration request with participant data and event list
-     * @return Batch registration response with detailed success/failure information
-     */
-    @PostMapping("/events/batch_registrations")
-    @PreAuthorize("hasRole('ORGANIZER')")
-    @Operation(
-            summary = "Create Batch Event Registrations",
-            description = "Create multiple event registrations for a single participant. "
-                    + "Designed for historical data migration. Returns partial success details. "
-                    + "Requires ORGANIZER role."
-    )
-    public ResponseEntity<BatchRegistrationResponse> createBatchRegistrations(
-            @Valid @RequestBody BatchRegistrationRequest request) {
-        log.debug("POST /api/v1/events/batch_registrations - Participant: {}, Events: {}",
-                LoggingUtils.maskEmail(request.getParticipantEmail()), request.getRegistrations().size());
-
-        BatchRegistrationResponse response = registrationService.createBatchRegistrations(request);
-
-        log.info("Batch registration completed - User: {}, Total: {}, Successful: {}, Failed: {}",
-                response.getUsername(),
-                response.getTotalRegistrations(),
-                response.getSuccessfulRegistrations(),
-                response.getFailedRegistrations().size());
-
-        return ResponseEntity.ok(response);
-    }
-
-    /**
      * Confirm Event Registration - Email Confirmation Flow
      *
      * POST /api/v1/events/{eventCode}/registrations/confirm?token={JWT}
@@ -2483,53 +2350,4 @@ public class EventController implements EventsApi, EventReportingApi, PublicEven
 
     // Speaker-pool (brainstorming) endpoints moved to EventSpeakerPoolController (Phase 7:
     // implements the generated EventActionsApi). See that class + the api-consolidation plan.
-
-    // ================================
-    // Partner Analytics Endpoints (Story 8.1: Partner Attendance Dashboard)
-    // ================================
-
-    /**
-     * Get attendance summary per event for a given company.
-     * Story 8.1: Partner Attendance Dashboard - AC1, AC2, AC5, AC6
-     *
-     * GET /api/v1/events/attendance-summary?companyName={name}&fromYear={year}
-     *
-     * Server-to-server endpoint: called by partner-coordination-service.
-     * Returns one row per event with total and company-specific attendee counts.
-     * Isolation is enforced at partner-coordination-service level (PARTNER sees only own company).
-     *
-     * @param companyName Company identifier (ADR-003 meaningful ID)
-     * @param fromYear    Earliest year to include (defaults to current year - 5)
-     * @return List of attendance summaries ordered by event date descending
-     */
-    @Override
-    @PreAuthorize("hasRole('PARTNER') or hasRole('ORGANIZER')")
-    public ResponseEntity<List<AttendanceSummaryDTO>> getAttendanceSummary(
-            String companyName,
-            Integer fromYear) {
-
-        log.debug("GET /api/v1/events/attendance-summary - companyName: {}, fromYear: {}",
-                companyName, fromYear);
-
-        int resolvedFromYear = (fromYear != null) ? fromYear : (LocalDate.now().getYear() - 5);
-        Instant fromDate = LocalDate.of(resolvedFromYear, 1, 1)
-                .atStartOfDay(ZoneId.of("UTC"))
-                .toInstant();
-
-        List<AttendanceSummaryDTO> result = registrationRepository.findAttendanceSummary(companyName, fromDate)
-                .stream()
-                .map(EventController::toAttendanceSummaryDTO)
-                .toList();
-
-        return ResponseEntity.ok(result);
-    }
-
-    private static AttendanceSummaryDTO toAttendanceSummaryDTO(AttendanceSummaryProjection p) {
-        return new AttendanceSummaryDTO()
-                .eventCode(p.eventCode())
-                .eventTitle(p.eventTitle())
-                .eventDate(p.eventDate() != null ? p.eventDate().atOffset(ZoneOffset.UTC) : null)
-                .totalAttendees(p.totalAttendees())
-                .companyAttendees(p.companyAttendees());
-    }
 }

@@ -203,8 +203,8 @@ export const createUser = async (data: CreateUserFormData): Promise<User> => {
 };
 
 /**
- * Update user profile (name, bio, company)
- * For admin/organizer to update any user's profile
+ * Update user profile (name, bio, company): `PATCH /users/{username}` (Story 4.10; the PUT twin
+ * is gone). Organizers and admins may update any user's profile; only the fields given change.
  */
 export interface UpdateUserData {
   firstName?: string;
@@ -214,7 +214,7 @@ export interface UpdateUserData {
 }
 
 export const updateUser = async (username: string, data: UpdateUserData): Promise<User> => {
-  const response = await apiClient.put<User>(`${USER_API_PATH}/${username}`, data);
+  const response = await apiClient.patch<User>(`${USER_API_PATH}/${username}`, data);
   return response.data;
 };
 

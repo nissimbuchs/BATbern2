@@ -1,0 +1,38 @@
+meta {
+  name: GET /newsletter/my-subscriptions — one entry per address, primary first
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{baseUrl}}/newsletter/my-subscriptions
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("primary first, each entry with state and language", function() {
+    const addresses = res.getBody().addresses;
+    expect(addresses.length).to.be.greaterThan(0);
+    expect(addresses[0].primary).to.equal(true);
+    addresses.forEach(a => {
+      expect(a.subscribed).to.be.a("boolean");
+      expect(a).to.have.property("language");
+    });
+    bru.setVar("newsletterPrimary", addresses[0].email);
+    bru.setVar("newsletterPrimarySubscribed", addresses[0].subscribed);
+  });
+}
+
+docs {
+  Story 4.10c: the one self-service read (/newsletter/my-subscription is gone).
+  06 and 07 flip the primary address and put it back.
+}

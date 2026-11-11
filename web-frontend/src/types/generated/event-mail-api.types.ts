@@ -548,7 +548,7 @@ export interface components {
        * @default TEMPLATE
        * @enum {string}
        */
-      contentSource: 'TEMPLATE' | 'OWN_TEXT';
+      contentSource?: 'TEMPLATE' | 'OWN_TEXT';
       /** @description The template. For SPEAKERS null means automatic (each speaker's tier); for NEWSLETTER null means the default newsletter template. */
       templateKey?: string | null;
       /**
@@ -556,17 +556,17 @@ export interface components {
        * @default de
        * @enum {string}
        */
-      locale: 'de' | 'en';
+      locale?: 'de' | 'en';
       /**
        * @description Preview, and the rendering a test send uses.
        * @default 0
        */
-      recipientIndex: number;
+      recipientIndex?: number;
       /**
        * @description NEWSLETTER only. Prefix "Reminder:".
        * @default false
        */
-      newsletterReminder: boolean;
+      newsletterReminder?: boolean;
       /**
        * @description SPEAKERS only, required in automatic mode. RESPONSE targets INVITED speakers, CONTENT targets ACCEPTED speakers without content.
        * @enum {string|null}
@@ -588,7 +588,7 @@ export interface components {
        * @description REGISTRANTS with OWN_TEXT only. Send although a mail with the same subject already went to this event's registrants (409 ALREADY_SENT otherwise).
        * @default false
        */
-      confirmResend: boolean;
+      confirmResend?: boolean;
     };
     MailAlreadySent: {
       /** Format: date-time */

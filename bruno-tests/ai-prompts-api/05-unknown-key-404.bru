@@ -1,0 +1,21 @@
+meta {
+  name: Unknown prompt key answers 404
+  type: http
+  seq: 5
+}
+
+delete {
+  url: {{baseUrl}}/ai-prompts/no_such_prompt/override
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+tests {
+  test("404", function() {
+    expect(res.getStatus()).to.equal(404);
+  });
+}

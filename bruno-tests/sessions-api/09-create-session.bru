@@ -37,7 +37,7 @@ tests {
   });
 
   test("should return created session with sessionSlug (Story 1.16.2: uses meaningful IDs)", function() {
-    const session = res.getBody();
+    const session = res.getBody().session; // 4.10b: single mode answers { session }
     expect(session.sessionSlug).to.be.a('string');
     expect(session.sessionSlug).to.match(/^[a-z0-9]+(-[a-z0-9]+)*$/);
     expect(session.title).to.equal('Opening Keynote');
@@ -46,11 +46,16 @@ tests {
   });
 
   test("should verify no UUID id field (Story 1.16.2)", function() {
-    const session = res.getBody();
+    const session = res.getBody().session; // 4.10b: single mode answers { session }
     expect(session.id).to.be.undefined;
   });
 
   test("should save session slug", function() {
-    bru.setVar("createdSessionSlug", res.getBody().sessionSlug);
+    bru.setVar("createdSessionSlug", res.getBody().session.sessionSlug);
   });
+}
+
+docs {
+  Story 4.10b: POST /events/{eventCode}/sessions has two modes (single, imports); the single
+  mode answers 201 with the session wrapped as { session }.
 }

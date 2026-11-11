@@ -1,29 +1,25 @@
 package ch.batbern.events.controller;
 
 import ch.batbern.shared.test.AbstractIntegrationTest;
-import ch.batbern.events.client.UserApiClient;
+import ch.batbern.events.config.CumsContractHarness;
 import ch.batbern.events.config.TestAwsConfig;
 import ch.batbern.events.config.TestSecurityConfig;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Session;
 import ch.batbern.events.core.dto.generated.EventType;
-import ch.batbern.events.dto.generated.users.UserResponse;
-import ch.batbern.events.exception.UserNotFoundException;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.events.repository.SessionUserRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
-
-import static org.mockito.Mockito.when;
 
 import java.time.Instant;
 import java.util.HashMap;
@@ -60,18 +56,22 @@ public class SessionSpeakerControllerIntegrationTest extends AbstractIntegration
     @Autowired
     private SessionUserRepository sessionUserRepository;
 
-    @MockitoBean
-    private UserApiClient userApiClient;
+    /** CUMS at the wire (Story 17.0b2), in place of the former UserApiClient mock (Epic 17 entry 6). */
+    @Autowired
+    private CumsContractHarness cums;
 
     @Autowired
     private ObjectMapper objectMapper;
 
     private Event testEvent;
     private Session testSession;
-    private UserResponse testUser1;
-    private UserResponse testUser2;
     private String eventCode;
     private String sessionSlug;
+
+    @AfterEach
+    void resetCums() {
+        cums.reset();
+    }
 
     @BeforeEach
     void setUp() {
@@ -111,36 +111,13 @@ public class SessionSpeakerControllerIntegrationTest extends AbstractIntegration
                 .build();
         testSession = sessionRepository.save(testSession);
 
-        // Create test user DTOs (not persisted - fetched via API)
-        testUser1 = new UserResponse()
-                .id("john.doe")
-                .email("john@example.com")
-                .firstName("John")
-                .lastName("Doe")
-                .companyId("GoogleZH")
-                .profilePictureUrl(java.net.URI.create("https://example.com/john.jpg"))
-                .active(true);
-
-        testUser2 = new UserResponse()
-                .id("jane.smith")
-                .email("jane@example.com")
-                .firstName("Jane")
-                .lastName("Smith")
-                .companyId("MicrosoftBE")
-                .profilePictureUrl(java.net.URI.create("https://example.com/jane.jpg"))
-                .active(true);
-
-        // Mock UserApiClient responses
-        when(userApiClient.getUserByUsername("john.doe")).thenReturn(testUser1);
-        when(userApiClient.getUserByUsername("jane.smith")).thenReturn(testUser2);
-        when(userApiClient.getUserByUsername("invalid.user"))
-                .thenThrow(new UserNotFoundException("invalid.user"));
-        when(userApiClient.getUserByUsername("non.existent"))
-                .thenThrow(new UserNotFoundException("non.existent"));
-        when(userApiClient.validateUserExists("john.doe")).thenReturn(true);
-        when(userApiClient.validateUserExists("jane.smith")).thenReturn(true);
-        when(userApiClient.validateUserExists("invalid.user")).thenReturn(false);
-        when(userApiClient.validateUserExists("non.existent")).thenReturn(false);
+        // The users live in CUMS (not persisted here), read through the real UserApiClient
+        cums.reset();
+        cums.user("john.doe", CumsContractHarness.userJson("john.doe", "John", "Doe", "john@example.com", "GoogleZH"));
+        cums.user("jane.smith",
+                CumsContractHarness.userJson("jane.smith", "Jane", "Smith", "jane@example.com", "MicrosoftBE"));
+        cums.unknownUser("invalid.user");
+        cums.unknownUser("non.existent");
     }
 
     @Test

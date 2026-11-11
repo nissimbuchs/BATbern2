@@ -42,6 +42,27 @@ Only items that are not live yet. Everything else is listed under its release be
 
 ### Unreleased — after BATbern60
 
+**Improvement — No e-mail address in links, one get-or-create shape (4.10d)**:
+- ✅ Changing, removing, confirming again or making primary one of your further e-mail addresses no longer puts the address in the web address, so it does not end up in server logs or the browser history. Nothing changes on the page.
+- ⚠️ API, breaking for scripts: the four operations on one further address take its `id` from `GET /api/v1/users/me` (`additionalEmails[].id`): `PATCH`, `DELETE /api/v1/users/me/additional-emails/{emailId}`, `POST …/{emailId}/make-primary`, `POST …/{emailId}/resend-verification` (was the URL-encoded address; that now answers 400). Making an address primary gives the addresses new ids. Get-or-create of a company is `POST /api/v1/companies/get-or-create` (was `POST /companies:get-or-create`, now 404) and answers 201 when it created the company, 200 when it found it.
+
+**Improvement — Own notifications only, fewer verb paths (4.10b)**:
+- ✅ Notifications are each organizer's own: marking read, deleting, the list and the unread count only reach the signed-in organizer's notifications. Before, an organizer could read, mark and delete another organizer's notifications by their ID.
+- ✅ A user's event history (organizer view of a user) lists every event, also for people with a long history; it is read page by page.
+- ⚠️ API, breaking for scripts: `PATCH /api/v1/notifications/{id}` and `PATCH /api/v1/notifications` with `status: READ` mark notifications read (was `PUT …/{id}/read`, `…/batch-read`); `GET /notifications` and `/count` take no `username`; `DELETE /notifications/batch-delete` and `GET /notifications/history` are gone. The AI prompt reset is `DELETE /api/v1/ai-prompts/{key}/override` (was `POST …/reset`). The session import is `POST /api/v1/events/{eventCode}/sessions` with `imports` (was `…/sessions/batch-import`), and a single create answers `{session}`. Event types are `/api/v1/event-types` (was `/events/types`), the homepage photos `GET /api/v1/public/event-photos` (was `/events/recent-photos`), a user's event history `GET /api/v1/registrations?filter={"attendeeUsername":…}` (was `GET /events/registrations` with a header).
+
+**Improvement — Participants and newsletter, one way each (4.10c)**:
+- ✅ The participant CSV import (Administration → Import data) sends each event's people together. A person who attended several events shows **Success** only when every event worked, otherwise the events that failed and why. One person that cannot be imported no longer stops the others.
+- ✅ Account settings show the newsletter per address, like the profile page. Before, the switch there covered the login address only.
+- ✅ A signed-in visitor who receives the newsletter on any of their addresses no longer sees the subscribe form on the homepage.
+- ⚠️ API, breaking for scripts: participants are created only with `POST /api/v1/events/{eventCode}/participants` and exactly one of `username` (single add), `people` (import of up to 100 people for that event) or `stakeholders: true`; `POST /events/batch_registrations` and `…/enroll-stakeholders` are gone. Subscribing is `POST /api/v1/newsletter/subscribers` (was `/newsletter/subscribe`); a user's newsletter is `GET`/`PATCH /api/v1/newsletter/my-subscriptions` per address; `/newsletter/my-subscription` and the PUT are gone.
+
+**Improvement — One address per profile, picture and speaker (4.10)**:
+- ✅ A speaker of one event can no longer be read or changed through another event's page or link. Before, most speaker actions (status, review, outreach, history, content) checked only the speaker's ID, so an organizer working in one event could act on a speaker of another one by mistake.
+- ✅ Outreach notes record the organizer's user name. Before, they recorded the organizer's e-mail address (notes written before keep it).
+- ✅ The profile page saves with the user name read from the profile, so the first save after the first sign-in works as well.
+- ⚠️ API, breaking for scripts: a profile is `PATCH /api/v1/users/{username}` and its picture `/api/v1/users/{username}/picture*`, for the user themself and for organizers; `PATCH /users/me`, `PUT /users/{username}` and `/users/me/picture*` are gone. A speaker is `/api/v1/events/{eventCode}/speakers/{speakerId}` (the pool entry ID); `…/speakers/pool*`, `…/speaker-pool/{id}/reminders` (now the field `remindersDisabled` of the PATCH), `…/speakers/invite` and `…/speakers/{username}/send-invitation` are gone; a self-nomination is `POST …/speaker-nominations`.
+
 **Improvement — Auto-publish schedule per event, one way to change the event state (4.9b)**:
 - ✅ The Publishing tab has an **Auto-publish schedule**: speakers and agenda can each be switched off for one event, and the number of days before the event changed (1 to 365). The daily job follows it. Before, the job always published 30 and 14 days before, whatever was set.
 - ✅ The phase timeline shows the scheduled auto-publish date of each phase from that schedule.

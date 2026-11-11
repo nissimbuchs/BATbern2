@@ -39,7 +39,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.within;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
@@ -122,7 +121,7 @@ class ResponseTimestampsIntegrationTest extends AbstractIntegrationTest {
     @Test
     @WithMockUser(username = USERNAME)
     void should_returnStoredUpdatedAt_when_currentUserPatched() throws Exception {
-        JsonNode body = call(patch("/api/v1/users/me"), "{\"bio\": \"Neue Bio\"}");
+        JsonNode body = call(patch("/api/v1/users/{username}", USERNAME), "{\"bio\": \"Neue Bio\"}");
 
         assertUserUpdatedAt(body);
     }
@@ -130,15 +129,14 @@ class ResponseTimestampsIntegrationTest extends AbstractIntegrationTest {
     @Test
     @WithMockUser(username = "test.organizer", roles = {"ORGANIZER"})
     void should_returnStoredUpdatedAt_when_organizerUpdatesUser() throws Exception {
-        JsonNode body = call(put("/api/v1/users/{username}", USERNAME), "{\"firstName\": \"Hông Thị\"}");
+        JsonNode body = call(patch("/api/v1/users/{username}", USERNAME), "{\"firstName\": \"Hông Thị\"}");
 
         assertUserUpdatedAt(body);
     }
 
     @Test
-    @WithMockUser(username = "test.organizer", roles = {"ORGANIZER"})
     void should_returnStoredUpdatedAt_when_userProfilePatched() throws Exception {
-        JsonNode body = call(patch("/api/v1/users/{username}/profile", USERNAME), "{\"bio\": \"Neue Bio\"}");
+        JsonNode body = call(patch("/internal/users/{username}/profile", USERNAME), "{\"bio\": \"Neue Bio\"}");
 
         assertUserUpdatedAt(body);
     }

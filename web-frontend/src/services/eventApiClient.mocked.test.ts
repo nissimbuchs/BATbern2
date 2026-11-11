@@ -420,29 +420,7 @@ describe('EventApiClient — mocked', () => {
     });
   });
 
-  describe('getRecentEventPhotos', () => {
-    it('should return recent photos with default params', async () => {
-      const mockPhotos = [{ id: 'photo-1' }];
-      mockApiClient.get.mockResolvedValue({ data: mockPhotos });
-
-      const result = await eventApiClient.getRecentEventPhotos();
-
-      expect(mockApiClient.get).toHaveBeenCalledWith('/events/recent-photos', {
-        params: { limit: 20, lastNEvents: 5 },
-      });
-      expect(result).toEqual(mockPhotos);
-    });
-
-    it('should pass custom limit and lastNEvents', async () => {
-      mockApiClient.get.mockResolvedValue({ data: [] });
-
-      await eventApiClient.getRecentEventPhotos(10, 3);
-
-      expect(mockApiClient.get).toHaveBeenCalledWith('/events/recent-photos', {
-        params: { limit: 10, lastNEvents: 3 },
-      });
-    });
-  });
+  // getRecentEventPhotos: useRecentEventPhotos.test.ts, on the MSW harness (Story 4.10b).
 
   // ── Event Teaser Images (Story 10.22) ─────────────────────────────────────────
 

@@ -112,18 +112,20 @@ const mapQnaNotificationFrequency = (freq?: string): 'LIVE' | 'DAILY' | 'OFF' =>
 };
 
 /**
- * Update user profile (firstName, lastName, email, bio, companyId, termsAccepted)
- * Only sends fields that the backend accepts per UpdateUserRequest schema
- * Note: Backend implements PUT, not PATCH
+ * Update a user's profile (firstName, lastName, email, bio, companyId, termsAccepted).
+ * Story 4.10: one `PATCH /users/{username}` for self-service and organizers; only the fields
+ * given change. Pass the username of the hydrated user (`/users/me`), never one from the token.
+ * `termsAccepted` is accepted only on the caller's own profile (403 otherwise).
  */
 export const updateUserProfile = async (
+  username: string,
   updates: Partial<User> & {
     /** Story 12.11: write-once ToS/Privacy consent — server stamps the timestamp. */
     termsAccepted?: boolean;
   }
 ): Promise<User> => {
   // Backend only accepts: firstName, lastName, email, bio, companyId, termsAccepted
-  // Filter out any other fields to avoid 500 errors
+  // (UpdateUserRequest); other fields of the view model are not sent.
   const allowedFields: Partial<User> & { termsAccepted?: boolean } = {};
 
   if (updates.firstName !== undefined) allowedFields.firstName = updates.firstName;
@@ -135,7 +137,10 @@ export const updateUserProfile = async (
   // silently dropped and consent could never be recorded.
   if (updates.termsAccepted !== undefined) allowedFields.termsAccepted = updates.termsAccepted;
 
-  const response = await apiClient.patch(`${USER_API_PATH}/me`, allowedFields);
+  const response = await apiClient.patch(
+    `${USER_API_PATH}/${encodeURIComponent(username)}`,
+    allowedFields
+  );
 
   // Transform response back to expected format
   const data = response.data;
@@ -197,23 +202,27 @@ export const updateUserSettings = async (
 const lower = <T extends string>(value: T | undefined): Lowercase<T> | undefined =>
   value === undefined ? undefined : (value.toLowerCase() as Lowercase<T>);
 
-/**
- * Remove profile picture
- */
-export const removeProfilePicture = async (): Promise<void> => {
-  await apiClient.delete(`${USER_API_PATH}/me/picture`);
-};
+// Profile Picture Upload Service (ADR-002 3-phase pattern). Story 4.10: one set,
+// `/users/{username}/picture*`, for the user themself and for organizers.
 
-// Profile Picture Upload Service (ADR-002 3-phase pattern)
+/**
+ * Remove a user's profile picture (the user themself or an organizer).
+ */
+export const removeProfilePicture = async (username: string): Promise<void> => {
+  await apiClient.delete(`${USER_API_PATH}/${encodeURIComponent(username)}/picture`);
+};
 
 /**
  * Phase 1: Request presigned URL for S3 upload (profile picture)
  */
 export const requestPresignedUrl = async (
+  username: string,
   request: ProfilePictureUploadRequest
 ): Promise<LogoUploadResponse> => {
-  // For profile pictures, use /users/me/picture/presigned-url
-  const response = await apiClient.post(`${USER_API_PATH}/me/picture/presigned-url`, request);
+  const response = await apiClient.post(
+    `${USER_API_PATH}/${encodeURIComponent(username)}/picture/presigned-url`,
+    request
+  );
   const data = response.data;
 
   // Map backend response fields to frontend type
@@ -269,23 +278,25 @@ export const uploadToS3 = async (
 };
 
 /**
- * Phase 3: Confirm upload completion (profile picture)
+ * Phase 3: Confirm upload completion (profile picture); the backend associates the picture.
  */
 export const confirmUpload = async (
+  username: string,
   uploadId: string,
   request: LogoConfirmRequest
 ): Promise<LogoConfirmResponse> => {
-  // For profile pictures, backend expects: fileId, fileExtension, checksum (optional)
-  const response = await apiClient.post(`${USER_API_PATH}/me/picture/confirm`, {
-    fileId: uploadId, // Backend uses 'fileId' not 'uploadId'
-    fileExtension: request.fileExtension,
-    checksum: request.checksum,
-  });
+  // Backend expects: fileId, fileExtension, checksum (optional)
+  const response = await apiClient.post(
+    `${USER_API_PATH}/${encodeURIComponent(username)}/picture/confirm`,
+    {
+      fileId: uploadId, // Backend uses 'fileId' not 'uploadId'
+      fileExtension: request.fileExtension,
+      checksum: request.checksum,
+    }
+  );
   const data = response.data;
 
-  // Map backend response to frontend type
-  // Backend returns: profilePictureUrl
-  // Frontend expects: cloudFrontUrl
+  // Backend returns profilePictureUrl; the frontend type calls it cloudFrontUrl
   return {
     uploadId: uploadId,
     status: 'CONFIRMED',
@@ -294,14 +305,15 @@ export const confirmUpload = async (
 };
 
 /**
- * Complete 3-phase upload workflow
+ * Complete 3-phase upload workflow for a user's profile picture; returns the CDN URL.
  */
 export const uploadProfilePicture = async (
+  username: string,
   file: File,
   onProgress?: (progress: number) => void
 ): Promise<string> => {
   // Phase 1: Request presigned URL
-  const uploadResponse = await requestPresignedUrl({
+  const uploadResponse = await requestPresignedUrl(username, {
     fileName: file.name,
     fileSize: file.size,
     mimeType: file.type,
@@ -311,9 +323,8 @@ export const uploadProfilePicture = async (
   await uploadToS3(uploadResponse.presignedUrl, file, onProgress);
 
   // Phase 3: Confirm upload
-  // Backend automatically associates the picture with user during confirmation
   const fileExtension = file.name.split('.').pop() || 'jpg';
-  const confirmResponse = await confirmUpload(uploadResponse.uploadId, {
+  const confirmResponse = await confirmUpload(username, uploadResponse.uploadId, {
     fileExtension,
     checksum: '',
   });
@@ -352,10 +363,11 @@ export const addAdditionalEmail = async (
 };
 
 /**
- * Story 10.32 — remove an additional email from the caller's profile.
+ * Story 10.32 — remove an additional email from the caller's profile. Story 4.10d: by its `id`
+ * (`AdditionalEmail.id`), the address never goes in the path.
  */
-export const deleteAdditionalEmail = async (email: string): Promise<void> => {
-  await apiClient.delete(`${USER_API_PATH}/me/additional-emails/${encodeURIComponent(email)}`);
+export const deleteAdditionalEmail = async (emailId: string): Promise<void> => {
+  await apiClient.delete(`${USER_API_PATH}/me/additional-emails/${emailId}`);
 };
 
 /**
@@ -363,11 +375,11 @@ export const deleteAdditionalEmail = async (email: string): Promise<void> => {
  * 409 `NOT_VERIFIED` when switching it on for an unconfirmed address.
  */
 export const updateAdditionalEmail = async (
-  email: string,
+  emailId: string,
   payload: { receiveEventMail: boolean }
 ): Promise<AdditionalEmail> => {
   const response = await apiClient.patch<AdditionalEmail>(
-    `${USER_API_PATH}/me/additional-emails/${encodeURIComponent(email)}`,
+    `${USER_API_PATH}/me/additional-emails/${emailId}`,
     payload
   );
   return response.data;
@@ -421,10 +433,8 @@ export const confirmAdditionalEmailVerification = async (
  * Additional-email verification (v2) — resend the verification email for one of
  * the caller's own (unverified) additional emails. 204 on success.
  */
-export const resendAdditionalEmailVerification = async (email: string): Promise<void> => {
-  await apiClient.post(
-    `${USER_API_PATH}/me/additional-emails/${encodeURIComponent(email)}/resend-verification`
-  );
+export const resendAdditionalEmailVerification = async (emailId: string): Promise<void> => {
+  await apiClient.post(`${USER_API_PATH}/me/additional-emails/${emailId}/resend-verification`);
 };
 
 // =====================================================================
@@ -470,12 +480,11 @@ export const requestProfileMerge = async (candidateId: string, note?: string): P
 
 /**
  * #1244 step 2: a confirmed additional address becomes the primary (login) address; the old primary
- * stays as a confirmed additional address. 409 `NOT_VERIFIED` / `EMAIL_HAS_OTHER_LOGIN`.
+ * stays as a confirmed additional address under a new `id` (re-read `GET /users/me`).
+ * 409 `NOT_VERIFIED` / `EMAIL_HAS_OTHER_LOGIN`.
  */
-export const makeAdditionalEmailPrimary = async (email: string): Promise<void> => {
-  await apiClient.post(
-    `${USER_API_PATH}/me/additional-emails/${encodeURIComponent(email)}/make-primary`
-  );
+export const makeAdditionalEmailPrimary = async (emailId: string): Promise<void> => {
+  await apiClient.post(`${USER_API_PATH}/me/additional-emails/${emailId}/make-primary`);
 };
 
 /**
@@ -510,84 +519,4 @@ export const getMyOpenCompanyLogoRequest = async (): Promise<CompanyLogoRequestV
     `${USER_API_PATH}/me/company-logo-requests/open`
   );
   return response.status === 204 || !response.data ? null : response.data;
-};
-
-// Admin endpoints for uploading profile pictures for other users
-
-/**
- * Phase 1 (Admin): Request presigned URL for S3 upload for a specific user
- */
-export const requestPresignedUrlForUser = async (
-  username: string,
-  request: ProfilePictureUploadRequest
-): Promise<LogoUploadResponse> => {
-  const response = await apiClient.post(
-    `${USER_API_PATH}/${username}/picture/presigned-url`,
-    request
-  );
-  const data = response.data;
-
-  return {
-    uploadId: data.fileId,
-    presignedUrl: data.uploadUrl,
-    s3Key: data.s3Key,
-    expiresAt: new Date(Date.now() + (data.expiresInMinutes || 15) * 60 * 1000).toISOString(),
-  };
-};
-
-/**
- * Phase 3 (Admin): Confirm upload completion for a specific user
- */
-export const confirmUploadForUser = async (
-  username: string,
-  uploadId: string,
-  request: LogoConfirmRequest
-): Promise<LogoConfirmResponse> => {
-  const response = await apiClient.post(`${USER_API_PATH}/${username}/picture/confirm`, {
-    fileId: uploadId,
-    fileExtension: request.fileExtension,
-    checksum: request.checksum,
-  });
-  const data = response.data;
-
-  return {
-    uploadId: uploadId,
-    status: 'CONFIRMED',
-    cloudFrontUrl: data.profilePictureUrl,
-  };
-};
-
-/**
- * Complete 3-phase upload workflow for a specific user (Admin)
- */
-export const uploadProfilePictureForUser = async (
-  username: string,
-  file: File,
-  onProgress?: (progress: number) => void
-): Promise<string> => {
-  // Phase 1: Request presigned URL
-  const uploadResponse = await requestPresignedUrlForUser(username, {
-    fileName: file.name,
-    fileSize: file.size,
-    mimeType: file.type,
-  });
-
-  // Phase 2: Upload to S3
-  await uploadToS3(uploadResponse.presignedUrl, file, onProgress);
-
-  // Phase 3: Confirm upload
-  const fileExtension = file.name.split('.').pop() || 'jpg';
-  const confirmResponse = await confirmUploadForUser(username, uploadResponse.uploadId, {
-    fileExtension,
-    checksum: '',
-  });
-
-  return confirmResponse.cloudFrontUrl;
-};
-
-/**
- * Remove a specific user's profile picture (Admin).
- */
-export const removeProfilePictureForUser = async (username: string): Promise<void> => {
-  await apiClient.delete(`${USER_API_PATH}/${username}/picture`);
 };

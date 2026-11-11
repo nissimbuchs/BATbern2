@@ -27,7 +27,7 @@ public class TurnstileProperties {
 
     /**
      * List of METHOD:path patterns to protect.
-     * Example: POST:/api/v1/newsletter/subscribe, POST:/api/v1/events/{code}/registrations
+     * Example: POST:/api/v1/newsletter/subscribers, POST:/api/v1/events/{code}/registrations
      * Supports AntPathMatcher wildcards (e.g. events/&#42;/registrations).
      */
     private List<String> protectedEndpoints;

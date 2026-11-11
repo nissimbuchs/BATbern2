@@ -159,6 +159,16 @@ public interface RegistrationRepository
     List<Registration> findByAttendeeUsername(String attendeeUsername);
 
     /**
+     * One attendee's registrations, newest event first, the registration id breaking ties (#1131).
+     * Story 4.10b: {@code GET /registrations?filter={"attendeeUsername":…}}.
+     */
+    @Query(value = "SELECT r FROM Registration r, Event e WHERE e.id = r.eventId "
+            + "AND r.attendeeUsername = :username ORDER BY e.date DESC, r.id ASC",
+            countQuery = "SELECT COUNT(r) FROM Registration r WHERE r.attendeeUsername = :username")
+    Page<Registration> findPageByAttendeeUsernameNewestEventFirst(
+            @Param("username") String attendeeUsername, Pageable pageable);
+
+    /**
      * Count total registrations for a specific event
      * Used to display accurate registration counts on event cards and analytics
      *

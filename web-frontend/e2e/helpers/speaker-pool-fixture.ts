@@ -60,7 +60,7 @@ export function readSpeakerIdentity(): SpeakerIdentity | undefined {
   }
 }
 
-/** A pool entry as returned by GET /speakers/pool (the fields the golden path needs). */
+/** A pool entry as returned by GET /events/{eventCode}/speakers (the fields the golden path needs). */
 export interface PoolEntry {
   id: string;
   speakerName?: string;
@@ -74,7 +74,7 @@ export interface PoolEntry {
  * allowed; the mutations stay in the UI). Statuses are UPPER_CASE-normalised. Requires a token.
  */
 export async function listPool(token: string, eventCode: string): Promise<PoolEntry[]> {
-  const res = await fetch(`${API_BASE_URL}/api/v1/events/${eventCode}/speakers/pool`, {
+  const res = await fetch(`${API_BASE_URL}/api/v1/events/${eventCode}/speakers`, {
     headers: { Authorization: `Bearer ${token}` },
   });
   if (!res.ok) {
@@ -90,7 +90,7 @@ export async function listPool(token: string, eventCode: string): Promise<PoolEn
 
 /** Add a placeholder (IDENTIFIED) speaker to the event's pool. Returns the server speaker id. */
 export async function seedSpeaker(token: string, eventCode: string, name: string): Promise<string> {
-  const res = await fetch(`${API_BASE_URL}/api/v1/events/${eventCode}/speakers/pool`, {
+  const res = await fetch(`${API_BASE_URL}/api/v1/events/${eventCode}/speakers`, {
     method: 'POST',
     headers: authHeaders(token),
     body: JSON.stringify({ speakerName: name }),
@@ -196,7 +196,7 @@ export async function getSpeakerStatus(
   eventCode: string,
   speakerId: string
 ): Promise<string | undefined> {
-  const res = await fetch(`${API_BASE_URL}/api/v1/events/${eventCode}/speakers/pool`, {
+  const res = await fetch(`${API_BASE_URL}/api/v1/events/${eventCode}/speakers`, {
     headers: { Authorization: `Bearer ${token}` },
   });
   if (!res.ok) {

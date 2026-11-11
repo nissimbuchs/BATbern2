@@ -85,6 +85,7 @@ public class UserResponseMapper {
      */
     public static AdditionalEmail mapAdditionalEmailToDto(UserAdditionalEmail row) {
         AdditionalEmail dto = new AdditionalEmail();
+        dto.setId(row.getId());
         dto.setEmail(row.getEmail());
         dto.setLabel(row.getLabel());
         dto.setCreatedAt(row.getCreatedAt() != null

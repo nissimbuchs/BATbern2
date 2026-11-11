@@ -1,0 +1,44 @@
+meta {
+  name: The old address path is gone (400, 4.10d)
+  type: http
+  seq: 17
+}
+
+patch {
+  url: {{baseUrl}}/users/me/additional-emails/bruno-test-gone%40e2e.batbern.invalid
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "receiveEventMail": false
+  }
+}
+
+assert {
+  res.status: eq 400
+}
+
+tests {
+  test("an address in the path is no id: 400, no alias", function() {
+    expect(res.getStatus()).to.equal(400);
+  });
+}
+
+docs {
+  Story 4.10d, breaking without aliases: the four operations of
+  /users/me/additional-emails/{email} take the row id now. An address in that segment is no
+  UUID, so CUMS answers 400 (pinned in UserAdditionalEmailsIntegrationTest). The address is an
+  invented one under the reserved .invalid domain, no row of anyone.
+}

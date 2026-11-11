@@ -1,0 +1,30 @@
+meta {
+  name: Old /events/types path serves no event types (4.10b)
+  type: http
+  seq: 11
+}
+
+get {
+  url: {{baseUrl}}/events/types
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+tests {
+  test("should answer 400: 'types' is read as an event code now and fails its pattern", function() {
+    expect(res.getStatus()).to.equal(400);
+  });
+
+  test("should not return an event type list", function() {
+    expect(Array.isArray(res.getBody())).to.equal(false);
+  });
+}
+
+docs {
+  Story 4.10b, breaking, no alias: GET /events/types falls on GET /events/{eventCode}, which
+  rejects "types" by its pattern (400, pinned). Read-only, safe on every environment.
+}

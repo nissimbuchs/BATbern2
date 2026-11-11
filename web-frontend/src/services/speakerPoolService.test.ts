@@ -144,6 +144,17 @@ describe('speakerPoolService', () => {
       expect(result.assignedOrganizerId).toBe('carla.muster');
     });
 
+    it('sets the reminders switch through the same PATCH (Story 4.10)', async () => {
+      api.on('patchSpeakerPoolEntry', () => aSpeakerPoolEntry({ remindersDisabled: true }));
+
+      const result = await speakerPoolService.patchSpeakerPool(EVENT, POOL_ID, {
+        remindersDisabled: true,
+      });
+
+      expect(api.calls('patchSpeakerPoolEntry')[0].body).toEqual({ remindersDisabled: true });
+      expect(result.remindersDisabled).toBe(true);
+    });
+
     it('sends only the fields that change', async () => {
       await speakerPoolService.patchSpeakerPool(EVENT, POOL_ID, { notes: 'Only notes' });
 
@@ -178,16 +189,17 @@ describe('speakerPoolService', () => {
       };
       api.on('sendSpeakerInvitation', () => sent);
 
-      const result = await speakerPoolService.sendInvitation(EVENT, 'jane.smith', options);
+      const result = await speakerPoolService.sendInvitation(EVENT, POOL_ID, options);
 
       const [call] = api.calls('sendSpeakerInvitation');
-      expect(call.params.username).toBe('jane.smith');
+      // Story 4.10: keyed by the pool entry id, never by a username.
+      expect(call.params.speakerId).toBe(POOL_ID);
       expect(call.body).toEqual(options);
       expect(result).toEqual(sent);
     });
 
     it('sends an empty body without options', async () => {
-      await speakerPoolService.sendInvitation(EVENT, 'jane.smith');
+      await speakerPoolService.sendInvitation(EVENT, POOL_ID);
 
       expect(api.calls('sendSpeakerInvitation')[0].body).toEqual({});
     });
@@ -195,7 +207,7 @@ describe('speakerPoolService', () => {
     it('passes a 409 (already invited) on to the caller', async () => {
       api.on('sendSpeakerInvitation', () => problem(409, 'Speaker already invited'));
 
-      expect(await statusOf(speakerPoolService.sendInvitation(EVENT, 'jane.smith'))).toBe(409);
+      expect(await statusOf(speakerPoolService.sendInvitation(EVENT, POOL_ID))).toBe(409);
     });
   });
 });

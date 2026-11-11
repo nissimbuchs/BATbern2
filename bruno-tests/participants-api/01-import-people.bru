@@ -1,0 +1,58 @@
+meta {
+  name: Import mode — two people, one attended, one cancelled; no mail
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/events/{{participantsEventCode}}/participants
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+body:json {
+  {
+    "people": [
+      {
+        "email": "{{participantsImportEmail}}",
+        "firstName": "Bruno",
+        "lastName": "Importtest",
+        "status": "ATTENDED"
+      },
+      {
+        "email": "{{participantsNotifyEmail}}",
+        "firstName": "Bruno",
+        "lastName": "Notifytest",
+        "status": "CANCELLED"
+      }
+    ]
+  }
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("both people registered, one result each, in request order", function() {
+    const body = res.getBody();
+    expect(body.enrolled).to.equal(2);
+    expect(body.skipped).to.equal(0);
+    expect(body.failed).to.equal(0);
+    expect(body.results.map(r => r.outcome)).to.eql(["REGISTERED", "REGISTERED"]);
+    expect(body.registrationCode).to.equal(undefined);
+    bru.setVar("participantsNotifyUsername", body.results[1].username);
+    bru.setVar("participantsImportUsername", body.results[0].username);
+  });
+}
+
+docs {
+  Story 4.10c: the historical import is the people mode of
+  POST /events/{eventCode}/participants (formerly POST /events/batch_registrations,
+  per participant). Users are looked up or created by e-mail without a login.
+  The second person is imported as CANCELLED so 04 can add them for real.
+}

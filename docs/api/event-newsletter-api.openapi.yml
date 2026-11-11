@@ -314,34 +314,6 @@ paths:
           $ref: '#/components/responses/NotFound'
       security:
       - BearerAuth: []
-  /newsletter/subscribe:
-    post:
-      tags:
-      - Newsletter
-      summary: Subscribe to BATbern newsletter (public)
-      operationId: subscribeNewsletter
-      security: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/NewsletterSubscribeRequest'
-      responses:
-        '200':
-          description: Successfully subscribed
-        '409':
-          description: Email already actively subscribed
-          content:
-            application/json:
-              schema:
-                $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
-        '400':
-          description: Invalid email address
-          content:
-            application/json:
-              schema:
-                $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
   /newsletter/unsubscribe/verify:
     get:
       tags:
@@ -392,53 +364,6 @@ paths:
           description: Successfully unsubscribed
         '404':
           description: Token not found
-  /newsletter/my-subscription:
-    get:
-      tags:
-      - Newsletter
-      summary: Get authenticated user's subscription status
-      operationId: getMyNewsletterSubscription
-      responses:
-        '200':
-          description: Subscription status
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/NewsletterSubscriptionStatusResponse'
-              examples:
-                default:
-                  summary: captured from the local anonymized database
-                  value:
-                    subscribed: true
-                    email: hugo.muster@example.com
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-    patch:
-      tags:
-      - Newsletter
-      summary: Update authenticated user's subscription
-      operationId: patchMyNewsletterSubscription
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/PatchNewsletterSubscriptionRequest'
-      responses:
-        '200':
-          description: Subscription updated
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/NewsletterSubscriptionStatusResponse'
-              examples:
-                default:
-                  summary: captured from the local anonymized database (same schema as a GET)
-                  value:
-                    subscribed: true
-                    email: hugo.muster@example.com
-        '401':
-          $ref: '#/components/responses/Unauthorized'
   /newsletter/my-subscriptions:
     get:
       tags:
@@ -446,7 +371,9 @@ paths:
       summary: The authenticated user's newsletter state per address (#1244)
       description: |
         One entry per address of the caller: the primary address first, then every confirmed
-        additional address. Unconfirmed addresses are not listed.
+        additional address. Unconfirmed addresses are not listed. After them, any address still
+        subscribed under the caller's username that is no longer one of theirs (`primary: false`),
+        so it can be unsubscribed.
       operationId: getMyNewsletterSubscriptions
       responses:
         '200':
@@ -463,22 +390,37 @@ paths:
                       - email: hugo.muster@example.com
                         primary: true
                         subscribed: true
+                        language: de
         '401':
           $ref: '#/components/responses/Unauthorized'
-    put:
+    patch:
       tags:
       - Newsletter
-      summary: Subscribe or unsubscribe one of the authenticated user's addresses (#1244)
+      summary: Change the newsletter state of one of the authenticated user's addresses (#1244, 4.10c)
       description: |
-        Changes only the given address; the others stay as they are. The address must be the
-        caller's primary or a confirmed additional address (403 otherwise).
-      operationId: putMyNewsletterSubscription
+        Partial: only the given address changes, and of it only the fields present (`subscribed`,
+        `language`); the other addresses stay as they are. The address must be the caller's
+        primary or a confirmed additional address. An address still subscribed under the
+        caller's username that is no longer one of theirs (listed by the GET) may only be
+        unsubscribed (`subscribed: false`). Anything else answers 403. No mail is sent.
+      operationId: patchMyNewsletterSubscriptions
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/PutMyNewsletterSubscriptionRequest'
+              $ref: '#/components/schemas/PatchMyNewsletterSubscriptionRequest'
+            examples:
+              unsubscribe:
+                summary: Unsubscribe one address
+                value:
+                  email: hugo.muster@example.com
+                  subscribed: false
+              language:
+                summary: Change only the language
+                value:
+                  email: hugo.muster@example.com
+                  language: en
       responses:
         '200':
           description: Subscription state per address after the change
@@ -494,11 +436,65 @@ paths:
                       - email: hugo.muster@example.com
                         primary: true
                         subscribed: true
+                        language: de
+        '400':
+          description: Invalid address or language
+          content:
+            application/json:
+              schema:
+                $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
   /newsletter/subscribers:
+    post:
+      tags:
+      - Newsletter
+      summary: Subscribe an address to the BATbern newsletter (public)
+      description: |
+        Anonymous, the website's subscribe form (Story 10.7, path since 4.10c). When Turnstile is
+        on, the gateway checks the Cloudflare token in the `X-Turnstile-Token` header: an invalid
+        token answers 403, a missing one is let through (fail-open, Story 10.31 AC2, for blocked
+        widgets). The gateway allows 5 anonymous calls per client IP in 5 minutes (429). A
+        previously unsubscribed address is reactivated. No mail is sent: there is no confirmation
+        (double opt-in is the owner's decision, #1288). The other operations of this collection
+        are the organizer's.
+      operationId: createNewsletterSubscriber
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewsletterSubscribeRequest'
+            example:
+              email: hugo.muster@example.com
+              firstName: Hugo
+              language: de
+      responses:
+        '200':
+          description: Subscribed (new or reactivated); no body
+        '400':
+          description: Invalid or reserved address
+          content:
+            application/json:
+              schema:
+                $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+        '403':
+          description: Turnstile token invalid (gateway)
+          content:
+            application/json:
+              schema:
+                $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+        '409':
+          description: Address already actively subscribed
+          content:
+            application/json:
+              schema:
+                $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+        '429':
+          description: Too many subscribe calls from this client (gateway)
     get:
       tags:
       - Newsletter
@@ -811,17 +807,6 @@ components:
       properties:
         token:
           type: string
-    NewsletterSubscriptionStatusResponse:
-      type: object
-      required:
-      - subscribed
-      - email
-      properties:
-        subscribed:
-          type: boolean
-        email:
-          nullable: true
-          type: string
     SubscriberResponse:
       type: object
       required:
@@ -1023,6 +1008,7 @@ components:
       - email
       - primary
       - subscribed
+      - language
       properties:
         email:
           type: string
@@ -1032,11 +1018,15 @@ components:
           description: The account's primary address.
         subscribed:
           type: boolean
-    PutMyNewsletterSubscriptionRequest:
+        language:
+          type: string
+          nullable: true
+          description: Newsletter language of this address; null when it has never been subscribed.
+    PatchMyNewsletterSubscriptionRequest:
       type: object
+      description: The address to change, and only the fields to change (partial, 4.10c).
       required:
       - email
-      - subscribed
       properties:
         email:
           type: string
@@ -1047,23 +1037,13 @@ components:
           maxLength: 254
         subscribed:
           type: boolean
+          description: Subscribe (true) or unsubscribe (false) this address; absent = unchanged.
         language:
           type: string
-          nullable: true
-          default: de
-          description: Preferred newsletter language when subscribing; defaults to 'de'.
-    PatchNewsletterSubscriptionRequest:
-      type: object
-      required:
-      - subscribed
-      properties:
-        subscribed:
-          type: boolean
-        language:
-          type: string
-          nullable: true
-          default: de
-          description: Preferred newsletter language; defaults to 'de' when omitted.
+          enum:
+          - de
+          - en
+          description: Newsletter language of this address; absent = unchanged (a new subscription gets `de`).
   responses:
     BadRequest:
       description: Bad request - validation error

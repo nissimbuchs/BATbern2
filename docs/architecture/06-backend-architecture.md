@@ -132,16 +132,22 @@ Main `permitAll` entries of the event-management chain
 | `GET /api/v1/events/current` | Apple Watch app only. Retirement tracked in #1070 |
 | `GET /api/v1/events`, `/api/v1/events/{code}` | Event list and detail. Sessions and speakers are returned to organizers only |
 | `GET /api/v1/events/{code}/sessions`, `/sessions/{slug}`, `/sessions/{slug}/speakers` | Filtered by `PublicSessionVisibilityPolicy` for non-organizers |
+| `GET /api/v1/event-types` (exact), `GET /api/v1/public/event-photos` (exact) | Event format definitions and the homepage photo strip (Story 4.10b, moved from `/events/types`, `/events/recent-photos`) |
 | `GET .../sessions/{slug}/qna`, `.../materials/{id}/download`, `/events/{code}/photos`, `/events/{code}/live-timing` | Public reads for Q&A archive, materials, photos, presenter screen |
 | `POST /api/v1/events/{code}/registrations`, `.../registrations/confirm`, `GET .../registrations/{code}` | Anonymous registration; the code or the token is the credential |
-| `POST /api/v1/newsletter/subscribe`, `/newsletter/unsubscribe`, `GET /newsletter/unsubscribe/verify` | Newsletter |
+| `POST /api/v1/newsletter/subscribers` (exact path), `/newsletter/unsubscribe`, `GET /newsletter/unsubscribe/verify` | Newsletter (subscribe since Story 4.10c; the rest of `/newsletter/subscribers` is the organizer's) |
 | `GET/POST /api/v1/registrations/deregister*` | Token-based self-service deregistration |
 | `GET/POST /api/v1/events/{code}/thanks`, `GET /api/v1/thanks/featured` | Thank the organizers |
 | `/internal/**` | Service-to-service only; the gateway denies it (below) |
 
-Literal organizer paths that the wildcards would match (`/events/attendance-summary`,
-`/events/registrations`, `/sessions/unassigned`, `/sessions/conflicts`) are declared
-`authenticated()` before the public wildcards (GHSA-qhqv).
+Literal organizer paths that the wildcards would match (`/sessions/unassigned`,
+`/sessions/conflicts`) are declared `authenticated()` before the public wildcards (GHSA-qhqv).
+Story 4.10b moved the other literals out of the `{eventCode}` namespace instead of guarding them:
+an attendee's history is `GET /registrations?filter={"attendeeUsername":…}` (organizer,
+paginated), the event formats are `/event-types[/{type}]` (only the list is public, by exact
+path) and the homepage photo strip is `GET /public/event-photos` (public, exact path; the
+gateway routes this one `/public` path to EMS). The partner attendance summary, once `/events/attendance-summary` here, is
+`GET /internal/events/attendance-summary` since Epic 17 6b (ems-internal, called by PCS).
 
 #### Public Events read model (2026-10-07)
 
@@ -229,7 +235,7 @@ public SecurityFilterChain filterChain(HttpSecurity http, JwtAuthenticationConve
         .authorizeHttpRequests(auth -> auth
             .requestMatchers("/actuator/health", "/actuator/info").permitAll()
             // organizer literals before the public wildcards (GHSA-qhqv)
-            .requestMatchers(HttpMethod.GET, "/api/v1/events/attendance-summary", ...).authenticated()
+            .requestMatchers(HttpMethod.GET, "/api/v1/events/*/sessions/unassigned", ...).authenticated()
             .requestMatchers(HttpMethod.GET, "/api/v1/events/*").permitAll()
             // ... further public reads and token-credentialed writes ...
             .requestMatchers("/internal/**").permitAll()   // the gateway denies it
@@ -266,7 +272,7 @@ Speakers are full Cognito users with the SPEAKER role. Provisioning is wired int
 
 **Provisioning lifecycle (Story 11.E.2 two-endpoint design — Resolved Q#1 Variant B):**
 
-1. **`CONTACTED → READY` transition** (`SpeakerWorkflowService.transition()` side-effect hook): the backend calls `UserApiClient.provisionUserWithRole(email, firstName, lastName, SPEAKER)`. The company-user-management-service performs, in order:
+1. **`CONTACTED → READY` transition** (`SpeakerWorkflowService.transition()` side-effect hook): the backend calls `UserApiClient.provisionUserWithRole(email, firstName, lastName, SPEAKER)`, which is CUMS `POST /internal/users/provision` (VPC-only, ADR-016; the organizer's JWT is forwarded when there is one, else CUMS records `system:ems-speaker-workflow`; the operation grants SPEAKER only). The company-user-management-service performs, in order:
    1. `cognito-idp:AdminCreateUser` with `MessageAction=SUPPRESS` and a **throwaway** temporary password. The user is created in Cognito with status `FORCE_CHANGE_PASSWORD`.
    2. SPEAKER role grant in `role_assignments` (database — NOT Cognito groups, per CLAUDE.md "Authentication & Roles").
    3. `INSERT INTO user_profiles` (idempotent on existing user).
@@ -274,7 +280,7 @@ Speakers are full Cognito users with the SPEAKER role. Provisioning is wired int
 
    Re-calling `provisionUserWithRole` for an already-provisioned user is idempotent and skips the Cognito call entirely (the Cognito user already exists).
 
-2. **`READY → INVITED` transition**: EMS's `runInvitedHook` calls the new sibling endpoint **`POST /api/v1/users/{username}/issue-invitation-credentials`**. CUMS branches on the Cognito user's current status (via `AdminGetUser`):
+2. **`READY → INVITED` transition**: EMS's `runInvitedHook` calls the sibling endpoint **`POST /internal/users/{username}/issue-invitation-credentials`** (internal since Epic 17 entry 6). CUMS branches on the Cognito user's current status (via `AdminGetUser`):
    - `FORCE_CHANGE_PASSWORD` / `RESET_REQUIRED` / `UNCONFIRMED` → generate a fresh temp password, call `AdminSetUserPassword(Permanent=false)`, return `{ action: "FRESH_TEMP_PASSWORD", temporaryPassword: "..." }`.
    - `CONFIRMED` → no Cognito mutation; return `{ action: "USE_EXISTING_PASSWORD", temporaryPassword: null }`.
    - `ARCHIVED` / `COMPROMISED` → return HTTP 422 (`UnprocessableInvitationStateException`).
@@ -294,6 +300,28 @@ Speakers are full Cognito users with the SPEAKER role. Provisioning is wired int
 **No Lambda triggers are required.** Standard Cognito invitation flow covers the entire path — no `DefineAuthChallenge` / `CreateAuthChallenge` / `VerifyAuthChallengeResponse` Lambdas; no Custom Auth flow.
 
 See `06b-user-lifecycle-sync.md` ("Pattern N: Speaker Provisioning at CONTACTED → READY") for the cross-service sequence diagram.
+
+### Speaker addressing (Story 4.10)
+
+A speaker of an event is its speaker pool entry, an owned child of the event (ADR-003 amendment:
+no username before READY). It has one key and one collection:
+`/events/{eventCode}/speakers` (list, organizer create) and `/events/{eventCode}/speakers/{speakerId}`
+(`PATCH`, `DELETE`, and the sub-resources `promote`, `status`, `status/history`, `content`,
+`review`, `outreach`, `send-invitation`, `abstract-analysis`), `speakerId` the pool entry UUID.
+`speakers/pool`, `speaker-pool/{id}/reminders`, `speakers/{username}/send-invitation` and the
+test-only `speakers/invite` are gone, without aliases; the reminders switch is the
+`remindersDisabled` field of the entry PATCH; an attendee's self-nomination is
+`POST /events/{eventCode}/speaker-nominations`. The Spectral rule `speaker-path-key` holds the key.
+
+Every operation loads the entry through `SpeakerPoolLookup.inEvent(eventCode, speakerId)`
+(`findByIdAndEventId`): another event's id is 404 and nothing changes on that event, no history
+row and no mail (`SpeakerCrossEventScopingIntegrationTest`, one case per operation). Until 4.10
+most of them loaded by bare id, so status, review, outreach and the reads of another event's
+speaker went through this event's path. A session's speaker (`/sessions/{slug}/speakers/{username}`)
+is a user's assignment to a session, keyed by username, and not this key.
+
+The outreach record names the organizer by username (`organizer_username`); before 4.10 the
+controller wrote the e-mail address there. Rows written before keep the address.
 
 ## Error Handling Strategy
 
@@ -334,7 +362,7 @@ interface ErrorResponse {
   errorCode?: string;       // ErrorCode name where the exception carries one
   message: string;
   correlationId: string;
-  severity: string;         // EMS uses LOW, MEDIUM, HIGH, CRITICAL (one handler writes WARNING)
+  severity: string;         // LOW, MEDIUM, HIGH or CRITICAL in every service (ErrorResponseSeverityValuesTest)
   details?: Record<string, unknown>;
   stackTrace?: string;      // dev and staging profiles only
 }
@@ -1285,9 +1313,13 @@ Every template-based mail in event-management renders the same way:
   `GET /public/settings/presentation` (`PublicSettingsController`, next to
   `/public/settings/features`); without a stored value it answers the former CUMS defaults. The
   value moved from the CUMS table `presentation_settings` with EMS V152, which copies the row (a
-  no-op where the table does not exist, an existing key is kept). The table stays, unread, so an
-  old CUMS image can start mid-deploy or after a rollback; a follow-up migration drops it one
-  release later.
+  no-op where the table does not exist, an existing key is kept). The table stayed, unread, for one
+  release so an old CUMS image could start mid-deploy or after a rollback; CUMS V29 dropped it.
+- **A user's profile and picture** are one CUMS set, `PATCH /users/{username}` and
+  `/users/{username}/picture*` (Story 4.10; the `/users/me` twins and `PUT /users/{username}` are
+  gone). The ownership rule is `@userOwnership.isCurrentUser(#username)` next to the role rule:
+  the user themself, or ORGANIZER/ADMIN (pictures: ORGANIZER). Consent (`termsAccepted`) is self
+  only. `GET /users/me` stays the self read and the login bootstrap.
 - **A user's settings** are one CUMS resource, `GET`/`PATCH /users/me/settings`
   (`UserSettingsService`): display, notifications and privacy in one object, partial update.
   Storage stays the two embeddables on `user_profiles`. EMS reads language, Q&A frequency and
@@ -1302,7 +1334,9 @@ fails the creation) calls `RegistrationService.enrollStakeholders`: every user w
 PARTNER role gets a `confirmed` registration without confirmation mail, capacity check or waitlist,
 marked in `metadata` with `AUTO_REGISTERED_FROM_KEY` so it does not count as a real attendee for the
 event delete guard. The capacity count (`registered` + `confirmed`) does include these rows.
-`POST /events/{eventCode}/enroll-stakeholders` (ORGANIZER) repeats it idempotently for older events.
+`POST /events/{eventCode}/participants` with `{"stakeholders": true}` (ORGANIZER) repeats it idempotently for
+older events (Story 4.10c: the one participants create, next to the single add by `username` and the
+historical import by `people`; only the single add with `notify` sends mail).
 
 ## Task Activation
 

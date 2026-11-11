@@ -1,0 +1,45 @@
+meta {
+  name: Import mode — the same people again are skipped (idempotent)
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/events/{{participantsEventCode}}/participants
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+body:json {
+  {
+    "people": [
+      {
+        "email": "{{participantsImportEmail}}",
+        "firstName": "Bruno",
+        "lastName": "Importtest",
+        "status": "ATTENDED"
+      }
+    ]
+  }
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("already registered, so skipped", function() {
+    const body = res.getBody();
+    expect(body.enrolled).to.equal(0);
+    expect(body.skipped).to.equal(1);
+    expect(body.results[0].outcome).to.equal("SKIPPED");
+  });
+}
+
+docs {
+  Story 4.10c: an existing registration is not touched; the response says SKIPPED.
+}

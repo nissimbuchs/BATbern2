@@ -27,13 +27,13 @@ class InMemoryRateLimitStorageTest {
     void should_allowUpToLimit_thenBlock() {
         for (int i = 0; i < 5; i++) {
             assertThat(storage.tryAcquireForPath("203.0.113.1", "POST",
-                    "/api/v1/newsletter/subscribe", 5, Duration.ofMinutes(5)))
+                    "/api/v1/newsletter/subscribers", 5, Duration.ofMinutes(5)))
                     .as("call %d of 5", i + 1)
                     .isTrue();
         }
         // 6th call → blocked
         assertThat(storage.tryAcquireForPath("203.0.113.1", "POST",
-                "/api/v1/newsletter/subscribe", 5, Duration.ofMinutes(5))).isFalse();
+                "/api/v1/newsletter/subscribers", 5, Duration.ofMinutes(5))).isFalse();
     }
 
     @Test
@@ -42,14 +42,14 @@ class InMemoryRateLimitStorageTest {
         // IP-A burns the limit
         for (int i = 0; i < 5; i++) {
             storage.tryAcquireForPath("203.0.113.1", "POST",
-                    "/api/v1/newsletter/subscribe", 5, Duration.ofMinutes(5));
+                    "/api/v1/newsletter/subscribers", 5, Duration.ofMinutes(5));
         }
         assertThat(storage.tryAcquireForPath("203.0.113.1", "POST",
-                "/api/v1/newsletter/subscribe", 5, Duration.ofMinutes(5))).isFalse();
+                "/api/v1/newsletter/subscribers", 5, Duration.ofMinutes(5))).isFalse();
 
         // IP-B is unaffected
         assertThat(storage.tryAcquireForPath("203.0.113.2", "POST",
-                "/api/v1/newsletter/subscribe", 5, Duration.ofMinutes(5))).isTrue();
+                "/api/v1/newsletter/subscribers", 5, Duration.ofMinutes(5))).isTrue();
     }
 
     @Test
@@ -57,10 +57,10 @@ class InMemoryRateLimitStorageTest {
     void should_isolateCountersPerPath() {
         for (int i = 0; i < 5; i++) {
             storage.tryAcquireForPath("203.0.113.1", "POST",
-                    "/api/v1/newsletter/subscribe", 5, Duration.ofMinutes(5));
+                    "/api/v1/newsletter/subscribers", 5, Duration.ofMinutes(5));
         }
         assertThat(storage.tryAcquireForPath("203.0.113.1", "POST",
-                "/api/v1/newsletter/subscribe", 5, Duration.ofMinutes(5))).isFalse();
+                "/api/v1/newsletter/subscribers", 5, Duration.ofMinutes(5))).isFalse();
 
         // Different path → fresh counter
         assertThat(storage.tryAcquireForPath("203.0.113.1", "POST",
@@ -101,10 +101,10 @@ class InMemoryRateLimitStorageTest {
     void should_clearPathCounters_when_clearAll() {
         for (int i = 0; i < 5; i++) {
             storage.tryAcquireForPath("203.0.113.1", "POST",
-                    "/api/v1/newsletter/subscribe", 5, Duration.ofMinutes(5));
+                    "/api/v1/newsletter/subscribers", 5, Duration.ofMinutes(5));
         }
         storage.clearAll();
         assertThat(storage.tryAcquireForPath("203.0.113.1", "POST",
-                "/api/v1/newsletter/subscribe", 5, Duration.ofMinutes(5))).isTrue();
+                "/api/v1/newsletter/subscribers", 5, Duration.ofMinutes(5))).isTrue();
     }
 }

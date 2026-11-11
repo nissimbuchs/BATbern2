@@ -37,6 +37,7 @@ export const RULES = [
   'no-personal-data-path-param',
   'no-verb-segment',
   'path-kebab-case',
+  'speaker-path-key',
   'uuid-path-param',
 ] as const;
 export type Rule = (typeof RULES)[number];

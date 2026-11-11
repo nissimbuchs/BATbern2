@@ -54,6 +54,7 @@ public class SpeakerPoolService {
     private final SecurityContextHelper securityContextHelper;
     private final PrimarySpeakerResolver primarySpeakerResolver;
     private final SpeakerPoolMapper speakerPoolMapper;
+    private final SpeakerPoolLookup speakerPoolLookup;
 
     public SpeakerPoolService(SpeakerPoolRepository speakerPoolRepository,
                               EventRepository eventRepository,
@@ -65,7 +66,8 @@ public class SpeakerPoolService {
                               ApplicationEventPublisher eventPublisher,
                               SecurityContextHelper securityContextHelper,
                               PrimarySpeakerResolver primarySpeakerResolver,
-                              SpeakerPoolMapper speakerPoolMapper) {
+                              SpeakerPoolMapper speakerPoolMapper,
+                              SpeakerPoolLookup speakerPoolLookup) {
         this.speakerPoolRepository = speakerPoolRepository;
         this.eventRepository = eventRepository;
         this.sessionContentHistoryRepository = sessionContentHistoryRepository;
@@ -77,6 +79,7 @@ public class SpeakerPoolService {
         this.securityContextHelper = securityContextHelper;
         this.primarySpeakerResolver = primarySpeakerResolver;
         this.speakerPoolMapper = speakerPoolMapper;
+        this.speakerPoolLookup = speakerPoolLookup;
     }
 
     /**
@@ -438,18 +441,10 @@ public class SpeakerPoolService {
      * @return the updated speaker pool response
      */
     @Transactional
-    public SpeakerPoolResponse patchEntry(String eventCode, String speakerId,
+    public SpeakerPoolResponse patchEntry(String eventCode, java.util.UUID speakerId,
                                           PatchSpeakerPoolRequest request) {
-        ch.batbern.events.domain.Event event = eventRepository.findByEventCode(eventCode)
-                .orElseThrow(() -> new ch.batbern.events.exception.EventNotFoundException(
-                        "Event not found: " + eventCode));
-
-        SpeakerPool speakerPool = speakerPoolRepository.findById(java.util.UUID.fromString(speakerId))
-                .orElseThrow(() -> new IllegalArgumentException("Speaker pool entry not found: " + speakerId));
-
-        if (!speakerPool.getEventId().equals(event.getId())) {
-            throw new IllegalArgumentException("Speaker does not belong to event: " + eventCode);
-        }
+        // Scoped to the event in the path (ADR-003, Story 4.10): another event's entry is 404.
+        SpeakerPool speakerPool = speakerPoolLookup.inEvent(eventCode, speakerId);
 
         if (request.getSpeakerName() != null) {
             String trimmed = request.getSpeakerName().trim();
@@ -470,6 +465,10 @@ public class SpeakerPoolService {
         if (request.getNotes() != null) {
             speakerPool.setNotes(request.getNotes());
         }
+        // Story 6.5 AC6, folded into the PATCH by Story 4.10 (ADR-013 §1, no per-attribute endpoint).
+        if (request.getRemindersDisabled() != null) {
+            speakerPool.setRemindersDisabled(request.getRemindersDisabled());
+        }
 
         // Flush so that @PreUpdate has set updatedAt before the response is built in this transaction
         // (event-speakers-api requires it; without the flush the response kept the previous value).
@@ -487,23 +486,12 @@ public class SpeakerPoolService {
      * @param eventCode the event code
      * @param speakerId the speaker pool entry ID
      * @throws EventNotFoundException if event not found
-     * @throws IllegalArgumentException if speaker not found
+     * @throws ch.batbern.shared.exception.NotFoundException if the speaker is not in that event
      */
     @Transactional
-    public void deleteSpeakerFromPool(String eventCode, String speakerId) {
-        // Validate event exists
-        Event event = eventRepository.findByEventCode(eventCode)
-                .orElseThrow(() -> new EventNotFoundException("Event not found: " + eventCode));
-
-        // Validate speaker exists and belongs to this event
-        java.util.UUID speakerUuid = java.util.UUID.fromString(speakerId);
-        SpeakerPool speakerPool = speakerPoolRepository.findById(speakerUuid)
-                .orElseThrow(() -> new IllegalArgumentException("Speaker not found in pool: " + speakerId));
-
-        // Verify speaker belongs to this event
-        if (!speakerPool.getEventId().equals(event.getId())) {
-            throw new IllegalArgumentException("Speaker does not belong to event: " + eventCode);
-        }
+    public void deleteSpeakerFromPool(String eventCode, java.util.UUID speakerId) {
+        // Scoped to the event in the path (ADR-003, Story 4.10): another event's entry is 404.
+        SpeakerPool speakerPool = speakerPoolLookup.inEvent(eventCode, speakerId);
 
         // Delete speaker from pool
         speakerPoolRepository.delete(speakerPool);

@@ -1,0 +1,45 @@
+meta {
+  name: Attendee history across events (GET /registrations, 4.10b)
+  type: http
+  seq: 12
+}
+
+get {
+  url: {{baseUrl}}/registrations?filter=%7B%22attendeeUsername%22%3A%22{{participantsImportUsername}}%22%7D&page=1&limit=25
+  body: none
+  auth: bearer
+}
+
+params:query {
+  ~filter: {"attendeeUsername":"{{participantsImportUsername}}"}
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("the imported person's registration at the fixture event, paginated", function() {
+    const body = res.getBody();
+    expect(body.pagination.page).to.equal(1);
+    expect(body.pagination.limit).to.equal(25);
+    expect(body.data.length).to.be.greaterThan(0);
+    body.data.forEach(r => expect(r.attendeeUsername).to.equal(bru.getVar("participantsImportUsername")));
+    const here = body.data.find(r => r.eventCode === bru.getVar("participantsEventCode"));
+    expect(here, "registration at the fixture event").to.be.an("object");
+    expect(here.status).to.equal("ATTENDED");
+    expect(here.eventTitle).to.be.a("string");
+  });
+}
+
+docs {
+  Story 4.10b: the organizer's view of a user's event history moved from
+  GET /events/registrations (username in the X-Attendee-Username header, a literal under
+  /events) to GET /registrations with filter={"attendeeUsername": ...}, paginated (ADR-013 §6).
+  The filter is percent-encoded in the url line; the params:query twin is disabled (~) so
+  Bruno does not send it twice (raw braces would be dropped). Read-only.
+}

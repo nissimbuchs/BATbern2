@@ -206,9 +206,11 @@ class ContractServerTest {
 
     @Test
     void should_validateRequestBody_againstUsersSpec() {
+        // The body schema is users-api's PatchUserProfileRequest, reached through the internal spec's
+        // $ref (the operation moved to /internal in Epic 17 entry 6).
         server.close();
-        server = ContractServer.bindTo(restTemplate, USERS);
-        server.expect(PATCH, "/api/v1/users/{username}/profile").respondWith(HttpStatus.OK, """
+        server = ContractServer.bindTo(restTemplate, CUMS_INTERNAL);
+        server.expect(PATCH, "/internal/users/{username}/profile").respondWith(HttpStatus.OK, """
                 {"id": "jane.smith", "email": "jane.smith@example.com", "firstName": "Jane", "lastName": "Smith",
                  "bio": "x", "roles": ["SPEAKER"], "active": true, "hasCognitoAccount": true, "companyId": null,
                  "profilePictureUrl": null, "lastLoginAt": null, "termsAcceptedAt": null, "company": null,
@@ -218,7 +220,7 @@ class ContractServerTest {
         headers.setBearerAuth("t");
         headers.set("Content-Type", "application/json");
 
-        assertThatThrownBy(() -> restTemplate.exchange(BASE + "/api/v1/users/jane.smith/profile", PATCH,
+        assertThatThrownBy(() -> restTemplate.exchange(BASE + "/internal/users/jane.smith/profile", PATCH,
                 new HttpEntity<>(Map.of("bio", 7), headers), String.class))
                 .isInstanceOf(AssertionError.class)
                 .hasMessageContaining("bio");
@@ -419,8 +421,10 @@ class ContractServerTest {
                  "attendeeLastName": null, "attendeeEmail": null, "attendeeCompany": null, "waitlistPosition": null,
                  "registrationDate": null, "createdAt": null, "updatedAt": null}""";
 
-        assertThat(registrations.validateResponse("GET", "/api/v1/events/registrations", 200,
-                "[" + registration + "]")).isEmpty();
+        assertThat(registrations.validateResponse("GET", "/api/v1/registrations", 200,
+                "{\"data\": [" + registration + "], \"pagination\": {\"page\": 1, \"limit\": 25, "
+                        + "\"totalItems\": 1, \"totalPages\": 1, \"hasNext\": false, \"hasPrev\": false}}"))
+                .isEmpty();
 
         // MailMessageSummary.participantStatus: nullable enum without null in its list; the
         // spec example of the page carries it as null
@@ -440,9 +444,11 @@ class ContractServerTest {
     @Test
     @DisplayName("nullable: true in a 3.1 spec admits null")
     void should_honourNullableKeyword_in31Spec() {
-        OpenApiContract users = OpenApiContract.load(USERS);
+        // InvitationCredentialsResponse.temporaryPassword (users-api, nullable: true), through the
+        // 3.1 internal spec's $ref since the operation moved there (Epic 17 entry 6)
+        OpenApiContract users = OpenApiContract.load(CUMS_INTERNAL);
 
-        assertThat(users.validateResponse("POST", "/api/v1/users/x/issue-invitation-credentials", 200,
+        assertThat(users.validateResponse("POST", "/internal/users/x/issue-invitation-credentials", 200,
                 "{\"temporaryPassword\": null, \"action\": \"USE_EXISTING_PASSWORD\"}")).isEmpty();
     }
 
@@ -499,7 +505,8 @@ class ContractServerTest {
     @DisplayName("format: idn-email checks the mailbox shape and accepts the reserved .example TLD (4.9b)")
     void should_acceptIdnAddressUnderReservedTld_andRejectNonAddress() {
         OpenApiContract users = OpenApiContract.load(USERS);
-        String additional = "{\"email\": \"%s\", \"label\": null, \"createdAt\": \"2026-05-22T10:00:00Z\", "
+        String additional = "{\"id\": \"7c9e6679-7425-40de-944b-e07fc1f90ae7\", \"email\": \"%s\", "
+                + "\"label\": null, \"createdAt\": \"2026-05-22T10:00:00Z\", "
                 + "\"verifiedAt\": null, \"receiveEventMail\": false}";
 
         // The 17.0d IDN person: Apache Commons' TLD list alone rejected it (no .example TLD)

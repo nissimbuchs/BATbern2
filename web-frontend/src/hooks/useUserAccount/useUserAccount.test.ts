@@ -179,8 +179,8 @@ describe('saving settings', () => {
 });
 
 describe('profile and picture', () => {
-  it('useUpdateUserProfile PATCHes /users/me and invalidates profile and user lists', async () => {
-    api.on('patchCurrentUser', ({ body }) => ({
+  it('useUpdateUserProfile PATCHes /users/{username} and invalidates profile and user lists', async () => {
+    api.on('patchUser', ({ body }) => ({
       ...user,
       firstName: body?.firstName ?? user.firstName,
     }));
@@ -188,10 +188,14 @@ describe('profile and picture', () => {
     const { result } = renderHook(() => useUpdateUserProfile(), { wrapper });
 
     await act(async () => {
-      await result.current.mutateAsync({ firstName: 'Matthias' });
+      await result.current.mutateAsync({
+        username: 'matthias.keller',
+        updates: { firstName: 'Matthias' },
+      });
     });
 
-    expect(api.calls('patchCurrentUser')[0].body).toEqual({ firstName: 'Matthias' });
+    expect(api.calls('patchUser')[0].params).toEqual({ username: 'matthias.keller' });
+    expect(api.calls('patchUser')[0].body).toEqual({ firstName: 'Matthias' });
     expect(invalidate).toHaveBeenCalledWith({ queryKey: ['user-profile'] });
     expect(invalidate).toHaveBeenCalledWith({ queryKey: ['users'] });
   });
@@ -204,7 +208,7 @@ describe('profile and picture', () => {
         return new HttpResponse(null, { status: 200 });
       })
     );
-    api.on('requestProfilePictureUploadUrl', () => ({
+    api.on('requestProfilePictureUploadUrlForUser', () => ({
       uploadUrl: 'https://bucket.example/upload',
       fileId: 'file-1',
       s3Key: 'users/matthias.keller/p.png',
@@ -212,7 +216,7 @@ describe('profile and picture', () => {
       expiresInMinutes: 15,
       requiredHeaders: { 'Content-Type': 'image/png' },
     }));
-    api.on('confirmProfilePictureUpload', () => ({
+    api.on('confirmProfilePictureUploadForUser', () => ({
       profilePictureUrl: 'https://cdn.example.com/p.png',
     }));
     const { result } = renderHook(() => useUploadProfilePicture(), { wrapper });
@@ -220,22 +224,30 @@ describe('profile and picture', () => {
     let url: string | undefined;
     await act(async () => {
       url = await result.current.mutateAsync({
+        username: 'matthias.keller',
         file: new File(['content'], 'avatar.png', { type: 'image/png' }),
       });
     });
 
     expect(url).toBe('https://cdn.example.com/p.png');
     expect(s3Puts).toEqual(['image/png']);
-    expect(api.calls('confirmProfilePictureUpload')[0].body).toMatchObject({ fileId: 'file-1' });
+    expect(api.calls('confirmProfilePictureUploadForUser')[0].params).toEqual({
+      username: 'matthias.keller',
+    });
+    expect(api.calls('confirmProfilePictureUploadForUser')[0].body).toMatchObject({
+      fileId: 'file-1',
+    });
   });
 
-  it('useRemoveProfilePicture deletes the own picture', async () => {
+  it('useRemoveProfilePicture deletes the picture of the given user', async () => {
     const { result } = renderHook(() => useRemoveProfilePicture(), { wrapper });
 
     await act(async () => {
-      await result.current.mutateAsync();
+      await result.current.mutateAsync('matthias.keller');
     });
 
-    expect(api.calls('removeOwnProfilePicture')).toHaveLength(1);
+    expect(api.calls('removeProfilePictureForUser')[0].params).toEqual({
+      username: 'matthias.keller',
+    });
   });
 });

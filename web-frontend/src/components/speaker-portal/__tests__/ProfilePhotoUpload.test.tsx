@@ -17,27 +17,62 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { http, HttpResponse } from 'msw';
+import { api } from '@/test/msw/api';
+import { server } from '@/test/msw/server';
 import ProfilePhotoUpload from '../ProfilePhotoUpload';
 
-// Code review 2026-05-18 (D1): mock the CUMS user-picture upload helper. The old
-// speakerPortalService.uploadProfilePhoto pointed at the deleted speaker-portal /profile
-// endpoints; the component now calls userAccountApi.uploadProfilePicture, which returns
-// { uploadId, cloudFrontUrl } from /api/v1/users/me/picture/*.
-vi.mock('@/services/api/userAccountApi', () => ({
-  uploadProfilePicture: vi.fn(),
-}));
+// Story 4.10: on the MSW harness (touch rule). The real userAccountApi runs the 3-phase upload:
+// POST /users/{username}/picture/presigned-url, PUT to the presigned S3 URL (another host, its
+// own handler), POST /users/{username}/picture/confirm.
+const USERNAME = 'hong.an';
+const S3_URL = 'https://bucket.example/profile-upload';
 
-import { uploadProfilePicture } from '@/services/api/userAccountApi';
+/** S3 answers `status` (200: stored); `hang` never answers, so the upload stays in progress. */
+const s3 = (behaviour: 'ok' | 'fail' | 'hang' | Array<'ok' | 'fail'>) => {
+  const queue = Array.isArray(behaviour) ? [...behaviour] : null;
+  server.use(
+    http.put(S3_URL, () => {
+      const next = queue ? (queue.shift() ?? 'ok') : behaviour;
+      if (next === 'hang') return new Promise<Response>(() => {});
+      return new HttpResponse(null, { status: next === 'fail' ? 500 : 200 });
+    })
+  );
+};
 
-const mockUploadProfilePhoto = vi.mocked(uploadProfilePicture);
+const presigned = () =>
+  api.on('requestProfilePictureUploadUrlForUser', () => ({
+    uploadUrl: S3_URL,
+    fileId: 'file-1',
+    s3Key: `profile-pictures/2026/${USERNAME}/profile-file-1.jpg`,
+    fileExtension: 'jpg',
+    expiresInMinutes: 15,
+    requiredHeaders: { 'Content-Type': 'image/jpeg' },
+  }));
 
-const mockSuccess = (cloudFrontUrl: string) =>
-  mockUploadProfilePhoto.mockResolvedValue(cloudFrontUrl);
+const mockSuccess = (cloudFrontUrl: string) => {
+  presigned();
+  s3('ok');
+  api.on('confirmProfilePictureUploadForUser', () => ({ profilePictureUrl: cloudFrontUrl }));
+};
+
+const mockPending = () => {
+  presigned();
+  s3('hang');
+};
+
+const mockFailure = () => {
+  presigned();
+  s3('fail');
+};
+
+const uploadsRequested = () => api.calls('requestProfilePictureUploadUrlForUser');
 
 describe('ProfilePhotoUpload Component', () => {
   // Code review 2026-05-18 (D1): the eventCode prop was removed — profile photo lives on
   // User (CUMS), not per-event.
   const defaultProps = {
+    username: USERNAME,
     currentPhotoUrl: null as string | null,
     onPhotoUploaded: vi.fn(),
     onError: vi.fn(),
@@ -106,7 +141,17 @@ describe('ProfilePhotoUpload Component', () => {
       await user.upload(input, file);
 
       await waitFor(() => {
-        expect(mockUploadProfilePhoto).toHaveBeenCalledWith(file, expect.any(Function));
+        expect(uploadsRequested()).toHaveLength(1);
+      });
+      expect(uploadsRequested()[0].params).toEqual({ username: USERNAME });
+      expect(uploadsRequested()[0].body).toMatchObject({
+        fileName: file.name,
+        mimeType: 'image/jpeg',
+      });
+      await waitFor(() => {
+        expect(api.calls('confirmProfilePictureUploadForUser')[0]?.params).toEqual({
+          username: USERNAME,
+        });
       });
     });
 
@@ -123,7 +168,7 @@ describe('ProfilePhotoUpload Component', () => {
       await user.upload(input, file);
 
       await waitFor(() => {
-        expect(mockUploadProfilePhoto).toHaveBeenCalled();
+        expect(uploadsRequested()).toHaveLength(1);
       });
     });
 
@@ -150,7 +195,7 @@ describe('ProfilePhotoUpload Component', () => {
           expect.objectContaining({ type: 'INVALID_FILE_TYPE' })
         );
       });
-      expect(mockUploadProfilePhoto).not.toHaveBeenCalled();
+      expect(uploadsRequested()).toHaveLength(0);
     });
 
     it('should_acceptSvgFiles_when_svgProvided', async () => {
@@ -166,7 +211,7 @@ describe('ProfilePhotoUpload Component', () => {
       await user.upload(input, file);
 
       await waitFor(() => {
-        expect(mockUploadProfilePhoto).toHaveBeenCalled();
+        expect(uploadsRequested()).toHaveLength(1);
       });
     });
 
@@ -191,7 +236,7 @@ describe('ProfilePhotoUpload Component', () => {
         );
       });
 
-      expect(mockUploadProfilePhoto).not.toHaveBeenCalled();
+      expect(uploadsRequested()).toHaveLength(0);
     });
 
     it('should_rejectPDFFiles_when_pdfProvided', async () => {
@@ -211,7 +256,7 @@ describe('ProfilePhotoUpload Component', () => {
         expect(defaultProps.onError).toHaveBeenCalled();
       });
 
-      expect(mockUploadProfilePhoto).not.toHaveBeenCalled();
+      expect(uploadsRequested()).toHaveLength(0);
     });
   });
 
@@ -233,7 +278,7 @@ describe('ProfilePhotoUpload Component', () => {
       await user.upload(input, file);
 
       await waitFor(() => {
-        expect(mockUploadProfilePhoto).toHaveBeenCalled();
+        expect(uploadsRequested()).toHaveLength(1);
       });
     });
 
@@ -258,7 +303,7 @@ describe('ProfilePhotoUpload Component', () => {
         );
       });
 
-      expect(mockUploadProfilePhoto).not.toHaveBeenCalled();
+      expect(uploadsRequested()).toHaveLength(0);
     });
   });
 
@@ -267,7 +312,7 @@ describe('ProfilePhotoUpload Component', () => {
   describe('Image Preview (AC7.5)', () => {
     it('should_displayPreview_when_fileSelected', async () => {
       const user = userEvent.setup();
-      mockUploadProfilePhoto.mockImplementation(() => new Promise(() => {})); // Never resolves
+      mockPending();
 
       render(<ProfilePhotoUpload {...defaultProps} />);
 
@@ -296,7 +341,7 @@ describe('ProfilePhotoUpload Component', () => {
       const user = userEvent.setup();
 
       // Mock upload that stays pending
-      mockUploadProfilePhoto.mockImplementation(() => new Promise(() => {}));
+      mockPending();
 
       render(<ProfilePhotoUpload {...defaultProps} />);
 
@@ -315,7 +360,7 @@ describe('ProfilePhotoUpload Component', () => {
       const user = userEvent.setup();
 
       // Mock upload that stays pending
-      mockUploadProfilePhoto.mockImplementation(() => new Promise(() => {}));
+      mockPending();
 
       // Mock URL.createObjectURL
       const mockObjectUrl = 'blob:http://localhost/preview-123';
@@ -338,7 +383,7 @@ describe('ProfilePhotoUpload Component', () => {
 
     it('should_displayUploadingText_when_uploading', async () => {
       const user = userEvent.setup();
-      mockUploadProfilePhoto.mockImplementation(() => new Promise(() => {}));
+      mockPending();
 
       render(<ProfilePhotoUpload {...defaultProps} />);
 
@@ -422,7 +467,7 @@ describe('ProfilePhotoUpload Component', () => {
   describe('Error Handling', () => {
     it('should_callOnError_when_uploadFails', async () => {
       const user = userEvent.setup();
-      mockUploadProfilePhoto.mockRejectedValue(new Error('Upload failed'));
+      mockFailure();
 
       render(<ProfilePhotoUpload {...defaultProps} />);
 
@@ -443,7 +488,7 @@ describe('ProfilePhotoUpload Component', () => {
 
     it('should_displayErrorMessage_when_uploadFails', async () => {
       const user = userEvent.setup();
-      mockUploadProfilePhoto.mockRejectedValue(new Error('Network error'));
+      mockFailure();
 
       render(<ProfilePhotoUpload {...defaultProps} />);
 
@@ -461,10 +506,9 @@ describe('ProfilePhotoUpload Component', () => {
     it('should_resetState_when_retryAfterError', async () => {
       const user = userEvent.setup();
 
-      // First upload fails
-      mockUploadProfilePhoto.mockRejectedValueOnce(new Error('First upload failed'));
-      // Second upload succeeds
-      mockUploadProfilePhoto.mockResolvedValueOnce('https://cdn.batbern.ch/new-photo.jpg');
+      // First upload fails at S3, the second succeeds
+      mockSuccess('https://cdn.batbern.ch/new-photo.jpg');
+      s3(['fail', 'ok']);
 
       render(<ProfilePhotoUpload {...defaultProps} />);
 
@@ -547,7 +591,7 @@ describe('ProfilePhotoUpload Component', () => {
 
     it('should_announceUploadStatus_when_uploading', async () => {
       const user = userEvent.setup();
-      mockUploadProfilePhoto.mockImplementation(() => new Promise(() => {}));
+      mockPending();
 
       // Mock URL.createObjectURL
       const mockObjectUrl = 'blob:http://localhost/preview-123';

@@ -29,15 +29,20 @@ body:json {
 
 assert {
   res.status: eq 201
-  res.body.sessionSlug: isDefined
+  res.body.session.sessionSlug: isDefined
 }
 
 tests {
   test("should create session for content submission tests - Story 6.3 Setup", function() {
     expect(res.getStatus()).to.equal(201);
-    const session = res.getBody();
+    const session = res.getBody().session; // 4.10b: single mode answers { session }
     expect(session.sessionSlug).to.be.a('string');
     bru.setVar("contentTestSessionSlug", session.sessionSlug);
     bru.setVar("contentTestSessionTitle", session.title);
   });
+}
+
+docs {
+  Story 4.10b: POST /events/{eventCode}/sessions has two modes (single, imports); the single
+  mode answers 201 with the session wrapped as { session }.
 }

@@ -14,6 +14,7 @@ import ch.batbern.events.repository.RegistrationRepository;
 import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.shared.test.AbstractIntegrationTest;
 import ch.batbern.shared.types.EventWorkflowState;
+import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -24,39 +25,36 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 import java.util.UUID;
 
 import static ch.batbern.shared.test.contract.ProviderContract.assertExamplesMatchSchema;
 import static ch.batbern.shared.test.contract.ProviderContract.assertResponseMatchesSpec;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * Provider half of the S2S contract (Story 17.0b1): the EMS operation PCS calls on the public API
- * ({@code EventManagementClientImpl.getAttendanceSummary}) runs through the real controller and must
- * match the spec PCS's contract test answers from; the spec examples must match the same schema.
- * PCS reads the event schedule from {@code /internal/events/{eventCode}/schedule} (17.0 deferred
- * work), no longer from the public {@code GET /api/v1/events/{eventCode}?include=sessions}.
- *
- * <p>Story 17.0b2: the same for every {@code /internal} operation in
- * {@code docs/api/internal/ems-internal.openapi.yml} (callers: CUMS merge and Mail Center clients,
- * PCS {@code HttpOutboundMailRecorder}).
+ * Provider half of the S2S contract (Stories 17.0b1, 17.0b2): every {@code /internal} operation in
+ * {@code docs/api/internal/ems-internal.openapi.yml} runs through the real controller and must match
+ * the spec its consumers' contract tests answer from; the spec examples must match the same schema.
+ * Callers: CUMS merge and Mail Center clients, PCS {@code HttpOutboundMailRecorder} and
+ * {@code EventManagementClientImpl} (event schedule since the 17.0 deferred work, attendance summary
+ * since Epic 17 6b). EMS serves no public operation to another service any more.
  */
 @Import({TestSecurityConfig.class, TestAwsConfig.class})
 @DisplayName("EMS honours the S2S contract PCS is tested against")
 class S2sProviderContractIntegrationTest extends AbstractIntegrationTest {
 
-    private static final String ANALYTICS = "docs/api/event-analytics-api.openapi.yml";
     private static final String EMS_INTERNAL = "docs/api/internal/ems-internal.openapi.yml";
     private static final String MERGE_SOURCE = "contract.source";
     private static final String MERGE_TARGET = "contract.target";
@@ -119,29 +117,13 @@ class S2sProviderContractIntegrationTest extends AbstractIntegrationTest {
         });
     }
 
-    @Test
-    void should_haveValidExamples_forConsumedOperations() {
-        assertExamplesMatchSchema(ANALYTICS, "GET", "/api/v1/events/attendance-summary");
-    }
-
-    @Test
-    @WithMockUser(username = "partner.contract", roles = "PARTNER")
-    void attendanceSummary_matchesSpec() throws Exception {
-        MvcResult result = mockMvc.perform(get("/api/v1/events/attendance-summary")
-                        .param("companyName", "ContractCo").param("fromYear", "2026"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$[?(@.eventCode == '" + CODE + "')].companyAttendees").value(1))
-                .andReturn();
-
-        assertResponseMatchesSpec(ANALYTICS, result);
-    }
-
     // ------------------------------------------------------------------ /internal (Story 17.0b2)
 
     @ParameterizedTest(name = "{0} {1}")
     @CsvSource({
         "GET,  /internal/users/merge-preview",
         "GET,  /internal/events/{eventCode}/schedule",
+        "GET,  /internal/events/attendance-summary",
         "POST, /internal/users/merge",
         "POST, /internal/users/primary-email",
         "POST, /internal/mails",
@@ -163,6 +145,23 @@ class S2sProviderContractIntegrationTest extends AbstractIntegrationTest {
 
     private static MockHttpServletRequestBuilder postJson(String path, String json, Object... vars) {
         return post(path, vars).contentType(MediaType.APPLICATION_JSON).content(json);
+    }
+
+    @ParameterizedTest(name = "forwarded JWT: {0}")
+    @CsvSource({"true", "false"})
+    @DisplayName("attendance summary (PCS partner dashboard, 6b), with and without the user's JWT")
+    void attendanceSummary_matchesSpec(boolean user) throws Exception {
+        MockHttpServletRequestBuilder request = get("/internal/events/attendance-summary")
+                .param("companyName", "ContractCo").param("fromYear", "2026");
+        if (user) {
+            request.with(jwt().jwt(j -> j.claim("custom:username", "partner.contract")
+                    .claim("custom:role", "PARTNER")));
+        }
+        MvcResult result = internal(request, 200);
+        List<Number> attendees = JsonPath.read(result.getResponse().getContentAsString(),
+                "$[?(@.eventCode == '" + CODE + "')].companyAttendees");
+        assertThat(attendees).singleElement().satisfies(n -> assertThat(n.longValue()).isEqualTo(1L));
+        internal(get("/internal/events/attendance-summary"), 400);
     }
 
     @Test

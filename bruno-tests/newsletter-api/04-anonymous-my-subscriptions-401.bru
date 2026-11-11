@@ -1,0 +1,19 @@
+meta {
+  name: Anonymous GET /newsletter/my-subscriptions answers 401
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{baseUrl}}/newsletter/my-subscriptions
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 401
+}
+
+docs {
+  Story 4.10c: self-service needs a login.
+}

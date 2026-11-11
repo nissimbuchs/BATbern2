@@ -244,7 +244,7 @@ describe('useSendInvitation', () => {
 
     await act(async () => {
       await result.current.mutateAsync({
-        username: 'alice.smith',
+        speakerId: POOL_ID,
         options: {
           responseDeadline: '2026-12-15T00:00:00Z',
           contentDeadline: '2027-01-15T00:00:00Z',
@@ -253,7 +253,7 @@ describe('useSendInvitation', () => {
     });
 
     const [call] = api.calls('sendSpeakerInvitation');
-    expect(call.params.username).toBe('alice.smith');
+    expect(call.params.speakerId).toBe(POOL_ID);
     expect(call.body).toEqual({
       responseDeadline: '2026-12-15T00:00:00Z',
       contentDeadline: '2027-01-15T00:00:00Z',
@@ -267,7 +267,7 @@ describe('useSendInvitation', () => {
     const { result } = renderHook(() => useSendInvitation(EVENT), { wrapper: wrapper(qc) });
 
     await act(async () => {
-      await result.current.mutateAsync({ username: 'alice.smith' });
+      await result.current.mutateAsync({ speakerId: POOL_ID });
     });
 
     expect(api.calls('sendSpeakerInvitation')[0].body).toEqual({});
@@ -278,7 +278,7 @@ describe('useSendInvitation', () => {
     const { result } = renderHook(() => useSendInvitation(EVENT), { wrapper: wrapper(qc) });
 
     await act(async () => {
-      await result.current.mutateAsync({ username: 'alice.smith' }).catch(() => {});
+      await result.current.mutateAsync({ speakerId: POOL_ID }).catch(() => {});
     });
 
     await waitFor(() => expect(result.current.isError).toBe(true));

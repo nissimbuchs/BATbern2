@@ -5,10 +5,8 @@ import ch.batbern.events.newsletter.api.generated.NewsletterApi;
 import ch.batbern.events.newsletter.dto.generated.ListNewsletterSubscribers200Response;
 import ch.batbern.events.newsletter.dto.generated.MyNewsletterSubscriptionsResponse;
 import ch.batbern.events.newsletter.dto.generated.NewsletterSubscribeRequest;
-import ch.batbern.events.newsletter.dto.generated.NewsletterSubscriptionStatusResponse;
 import ch.batbern.events.newsletter.dto.generated.NewsletterUnsubscribeRequest;
-import ch.batbern.events.newsletter.dto.generated.PatchNewsletterSubscriptionRequest;
-import ch.batbern.events.newsletter.dto.generated.PutMyNewsletterSubscriptionRequest;
+import ch.batbern.events.newsletter.dto.generated.PatchMyNewsletterSubscriptionRequest;
 import ch.batbern.events.newsletter.dto.generated.SubscriberResponse;
 import ch.batbern.events.newsletter.dto.generated.VerifyUnsubscribeToken200Response;
 import ch.batbern.events.security.SecurityContextHelper;
@@ -40,8 +38,9 @@ import java.util.UUID;
  * Implements the generated {@link NewsletterApi} contract (event-newsletter-api.openapi.yml),
  * so verb/path/validation annotations are inherited from the interface (Phase 7 — ADR-006).
  *
- * <p>Public endpoints (no auth): subscribe, unsubscribe verify/confirm.
- * Authenticated: my-subscription get/patch.
+ * <p>Public endpoints (no auth): subscribe ({@code POST /newsletter/subscribers}, Turnstile and
+ * rate limit at the gateway), unsubscribe verify/confirm.
+ * Authenticated: {@code /newsletter/my-subscriptions} GET and PATCH, per address (4.10c).
  * ORGANIZER-only: subscriber management. Sending, preview and retry are the Mail Center composer's
  * ({@code /events/{eventCode}/mails}, Story 16.8; the old endpoints went with 16.8c).
  */
@@ -57,10 +56,13 @@ public class NewsletterController implements NewsletterApi {
 
     // ── Public endpoints ──────────────────────────────────────────────────────
 
-    /** AC2: Subscribe to the newsletter (no auth). 200 on success, 409 if already subscribed. */
+    /**
+     * AC2: Subscribe to the newsletter (no auth), {@code POST /newsletter/subscribers} since 4.10c.
+     * 200 on success, 409 if already subscribed, 400 for a reserved domain. Sends no mail.
+     */
     @Override
     @PreAuthorize("permitAll()")
-    public ResponseEntity<Void> subscribeNewsletter(NewsletterSubscribeRequest request) {
+    public ResponseEntity<Void> createNewsletterSubscriber(NewsletterSubscribeRequest request) {
         log.info("Newsletter subscribe request for email: {}", LoggingUtils.maskEmail(request.getEmail()));
         subscriberService.subscribe(
                 request.getEmail(),
@@ -96,36 +98,38 @@ public class NewsletterController implements NewsletterApi {
 
     // ── Authenticated user endpoints ──────────────────────────────────────────
 
-    /** AC7: Get authenticated user's subscription status. */
-    @Override
-    @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<NewsletterSubscriptionStatusResponse> getMyNewsletterSubscription() {
-        String username = securityContextHelper.getCurrentUsername();
-        String email = securityContextHelper.getCurrentUserEmail();
-        return ResponseEntity.ok(subscriberService.getMySubscription(username, email));
-    }
-
-    /** #1244: the caller's newsletter state per address (primary first, then confirmed ones). */
+    /**
+     * #1244, 4.10c: the caller's newsletter state per address: primary first, then confirmed
+     * ones, then addresses still subscribed under the username that are no longer theirs.
+     */
     @Override
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<MyNewsletterSubscriptionsResponse> getMyNewsletterSubscriptions() {
         return ResponseEntity.ok(myAddressSubscriptions(securityContextHelper.getCurrentUsername()));
     }
 
-    /** #1244: subscribe or unsubscribe one address; only the caller's primary or confirmed ones. */
+    /**
+     * 4.10c: change one address, only the fields present. Allowed for the caller's primary or a
+     * confirmed address; a stale address (still subscribed under the username, no longer the
+     * caller's) may only be unsubscribed. Anything else is 403 and changes nothing.
+     */
     @Override
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<MyNewsletterSubscriptionsResponse> putMyNewsletterSubscription(
-            PutMyNewsletterSubscriptionRequest request) {
+    public ResponseEntity<MyNewsletterSubscriptionsResponse> patchMyNewsletterSubscriptions(
+            PatchMyNewsletterSubscriptionRequest request) {
         String username = securityContextHelper.getCurrentUsername();
         String email = request.getEmail() == null ? "" : request.getEmail().trim().toLowerCase(Locale.ROOT);
-        if (!myAddresses(username).contains(email)) {
+        boolean mine = myAddresses(username).contains(email);
+        boolean staleUnsubscribe = !mine
+                && Boolean.FALSE.equals(request.getSubscribed())
+                && request.getLanguage() == null
+                && subscriberService.staleAddresses(username, List.of()).contains(email);
+        if (!mine && !staleUnsubscribe) {
             log.warn("Newsletter change refused: {} is not an address of {}", LoggingUtils.maskEmail(email), username);
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
-        String language = request.getLanguage() != null ? request.getLanguage() : "de";
-        subscriberService.setAddressSubscription(username, email, Boolean.TRUE.equals(request.getSubscribed()),
-                language);
+        subscriberService.patchAddressSubscription(username, email, request.getSubscribed(),
+                request.getLanguage() != null ? request.getLanguage().getValue() : null);
         return ResponseEntity.ok(myAddressSubscriptions(username));
     }
 
@@ -145,20 +149,8 @@ public class NewsletterController implements NewsletterApi {
         List<String> addresses = myAddresses(username);
         String primary = addresses.isEmpty() ? null : addresses.get(0);
         return MyNewsletterSubscriptionsResponse.builder()
-                .addresses(subscriberService.addressSubscriptions(addresses, primary))
+                .addresses(subscriberService.addressSubscriptions(username, addresses, primary))
                 .build();
-    }
-
-    /** AC7: Update authenticated user's subscription status. */
-    @Override
-    @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<NewsletterSubscriptionStatusResponse> patchMyNewsletterSubscription(
-            PatchNewsletterSubscriptionRequest request) {
-        String username = securityContextHelper.getCurrentUsername();
-        String email = securityContextHelper.getCurrentUserEmail();
-        boolean subscribed = Boolean.TRUE.equals(request.getSubscribed());
-        String language = request.getLanguage() != null ? request.getLanguage() : "de";
-        return ResponseEntity.ok(subscriberService.patchMySubscription(username, email, subscribed, language));
     }
 
     // ── Organizer endpoints ───────────────────────────────────────────────────

@@ -75,7 +75,7 @@ The platform includes an in-house newsletter system that replaced the previous M
 
 ### Subscription
 
-- **Account-free subscribe** — community members subscribe via a public `POST /api/v1/newsletter/subscribe` endpoint (no login). Re-subscribing a previously unsubscribed email reactivates the existing record.
+- **Account-free subscribe** — community members subscribe via the public `POST /api/v1/newsletter/subscribers` endpoint (no login, no confirmation mail; Story 4.10c moved it from `/newsletter/subscribe`). Re-subscribing a previously unsubscribed email reactivates the existing record.
 - **Account settings** — logged-in users manage their subscription from the BATbern account settings page.
 - **Registration opt-in** — subscriptions can also originate from event registration, tracked via a `source` field (`explicit` / `registration` / `account`).
 - **Bot protection** — the public subscribe form is protected by Cloudflare Turnstile (Story 10.31) at the API gateway.

@@ -1,7 +1,6 @@
 package ch.batbern.partners.controller;
 
-import ch.batbern.partners.client.UserServiceClient;
-import ch.batbern.partners.client.user.dto.UserResponse;
+import ch.batbern.partners.config.CumsInternalUsers;
 import ch.batbern.partners.config.TestAwsConfig;
 import ch.batbern.partners.config.TestSecurityConfig;
 import ch.batbern.partners.domain.Partner;
@@ -12,11 +11,11 @@ import ch.batbern.shared.test.contract.ContractServer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.cache.CacheManager;
 import org.springframework.http.HttpMethod;
@@ -25,9 +24,11 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.client.ExpectedCount;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.Map;
@@ -37,7 +38,7 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.hasKey;
 import static org.hamcrest.Matchers.not;
-import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -67,28 +68,29 @@ class PartnerControllerIntegrationTest extends AbstractIntegrationTest {
     @Autowired
     private ObjectMapper objectMapper;
 
-    @MockitoBean
-    private UserServiceClient userServiceClient;
-
     @Autowired
     private RestTemplate restTemplate;
 
     @Autowired
     private CacheManager cacheManager;
 
-    /** CUMS behind the real CompanyServiceClient, per companies-api and cums-internal (17.0b1, 17.17). */
+    /**
+     * CUMS behind the real CompanyServiceClient and UserServiceClient, per cums-internal (17.0b1,
+     * 17.17; the company read is {@code /internal/companies/{name}} since 6b).
+     */
     private ContractServer cums;
+
+    /** The {@code /internal/users/{username}} lookup ({@code /partners/me}, ownership checks). */
+    private CumsInternalUsers users;
 
     @BeforeEach
     void setUp() {
         partnerRepository.deleteAll();
         cacheManager.getCacheNames().forEach(name -> cacheManager.getCache(name).clear());
 
-        // @WithMockUser callers carry no JWT to forward, hence ignoringMissingAuthorization.
-        cums = ContractServer.bindTo(restTemplate, "docs/api/companies-api.openapi.yml",
-                        "docs/api/internal/cums-internal.openapi.yml")
-                .ignoringMissingAuthorization();
-        cums.expect(HttpMethod.GET, "/api/v1/companies/{name}").times(ExpectedCount.manyTimes())
+        cums = ContractServer.bindTo(restTemplate, CumsInternalUsers.CUMS_INTERNAL);
+        users = CumsInternalUsers.answerOn(cums);
+        cums.expect(HttpMethod.GET, "/internal/companies/{name}").times(ExpectedCount.manyTimes())
                 .respondWith(HttpStatus.OK, """
                         {"name": "GoogleZH", "displayName": "Google Zurich", "isVerified": true,
                          "createdAt": "2025-01-15T10:00:00Z", "updatedAt": "2025-01-15T10:00:00Z", "createdBy": "lead.organizer"}""");
@@ -484,18 +486,56 @@ class PartnerControllerIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @org.springframework.security.test.context.support.WithMockUser(roles = "PARTNER")
+    @WithMockUser(username = "partner.user", roles = "PARTNER")
     void should_returnTypedCompanyName_when_getMyPartnerCompanyCalledByPartner() throws Exception {
-        // Given: the user-service resolves the current user's companyId
-        UserResponse user = new UserResponse();
-        user.setId("partner.user");
-        user.setCompanyId("GoogleZH");
-        when(userServiceClient.getCurrentUserProfile()).thenReturn(user);
+        // Given: CUMS /internal/users/{username} knows the caller's company (6b: no /users/me)
+        users.put("partner.user", "partner.user", "GoogleZH");
 
         // When/Then: typed MyPartnerCompanyResponse (no raw Map)
         mockMvc.perform(get("/api/v1/partners/me"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.companyName").value("GoogleZH"));
+    }
+
+    @Test
+    @DisplayName("6b: /partners/me reads the caller by the JWT's custom:username, not by its subject")
+    void should_resolveCompany_byCustomUsernameClaim_withForwardedJwt() throws Exception {
+        users.put("partner.jwt", "partner.jwt", "MicrosoftZH");
+
+        mockMvc.perform(get("/api/v1/partners/me")
+                        .with(jwt().jwt(j -> j.tokenValue("partner-jwt").subject("6f1c-cognito-sub")
+                                        .claim("custom:username", "partner.jwt")
+                                        .expiresAt(Instant.now().plusSeconds(3600)))
+                                .authorities(new SimpleGrantedAuthority("ROLE_PARTNER"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.companyName").value("MicrosoftZH"));
+    }
+
+    @Test
+    @WithMockUser(username = "partner.nocompany", roles = "PARTNER")
+    void should_return404_when_partnerHasNoCompany() throws Exception {
+        users.put("partner.nocompany", "partner.nocompany", null);
+
+        mockMvc.perform(get("/api/v1/partners/me"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value(containsString("not linked to any partner company")));
+    }
+
+    @Test
+    @DisplayName("a token without custom:username falls back to the subject, which CUMS does not know: not linked")
+    void should_return404_when_tokenHasNoUsernameClaim() throws Exception {
+        // Positive control: the same lookup with the claim resolves (registry answers that name only).
+        users.put("partner.claim", "partner.claim", "GoogleZH");
+        mockMvc.perform(get("/api/v1/partners/me")
+                        .with(jwt().jwt(j -> j.subject("partner.claim-sub").claim("custom:username", "partner.claim"))
+                                .authorities(new SimpleGrantedAuthority("ROLE_PARTNER"))))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/v1/partners/me")
+                        .with(jwt().jwt(j -> j.subject("partner.claim-sub"))
+                                .authorities(new SimpleGrantedAuthority("ROLE_PARTNER"))))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value(containsString("not linked to any partner company")));
     }
 
     @Test
@@ -714,19 +754,13 @@ class PartnerControllerIntegrationTest extends AbstractIntegrationTest {
     }
 
     /**
-     * Stub the User Service so `include=contacts` would return a real contact IF the caller
-     * were entitled to it. Without this the Mockito default (empty list) makes every
-     * "contacts must be empty" assertion pass vacuously — it would still pass with the
-     * unauthenticated leak fully intact.
+     * CUMS answers `include=contacts` with a real contact IF the caller were entitled to it.
+     * Without this an empty contact list would make every "contacts must be empty" assertion
+     * pass vacuously — it would still pass with the unauthenticated leak fully intact.
      */
     private void stubOneContactFor(String companyName) {
-        UserResponse contact = new UserResponse();
-        contact.setId("partner." + companyName.toLowerCase());
-        contact.setEmail("contact@example.com");
-        contact.setFirstName("Ada");
-        contact.setLastName("Lovelace");
-        when(userServiceClient.getUsersByCompanyAndRole(companyName, "PARTNER"))
-                .thenReturn(java.util.List.of(contact));
+        CumsInternalUsers.partnerContacts(cums, companyName,
+                CumsInternalUsers.user("ada.lovelace", companyName, "Ada", "Lovelace"));
     }
 
     // ═══════════════════════════════════════════════════════════════════════════

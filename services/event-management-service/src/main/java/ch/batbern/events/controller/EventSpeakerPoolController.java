@@ -25,6 +25,11 @@ import java.util.UUID;
  * needs the typed-event-response + lazy-loaded session-materials story first).
  *
  * Story 5.2 (AC9-13): Speaker Pool Management.
+ *
+ * <p>Story 4.10: one speaker key, {@code {speakerId}}, under {@code /events/{eventCode}/speakers}
+ * (it was {@code /speakers/pool} and {@code /speaker-pool/{speakerPoolId}}); every operation
+ * loads the entry scoped to the event (404 for another event's id). The reminders switch is a
+ * field of the PATCH ({@code remindersDisabled}), not its own endpoint.
  */
 @RestController
 @RequestMapping("/api/v1")
@@ -33,7 +38,7 @@ public class EventSpeakerPoolController implements EventActionsApi {
 
     private final SpeakerPoolService speakerPoolService;
 
-    /** GET /api/v1/events/{eventCode}/speakers/pool — list potential speakers being brainstormed. */
+    /** GET /api/v1/events/{eventCode}/speakers — list potential speakers being brainstormed. */
     @Override
     @PreAuthorize("hasRole('ORGANIZER')")
     public ResponseEntity<List<SpeakerPoolResponse>> getSpeakerPool(String eventCode) {
@@ -41,7 +46,7 @@ public class EventSpeakerPoolController implements EventActionsApi {
         return ResponseEntity.ok(speakerPoolService.getSpeakerPoolForEvent(eventCode));
     }
 
-    /** POST /api/v1/events/{eventCode}/speakers/pool — add a potential speaker during brainstorming. */
+    /** POST /api/v1/events/{eventCode}/speakers — add a potential speaker during brainstorming. */
     @Override
     @PreAuthorize("hasRole('ORGANIZER')")
     public ResponseEntity<SpeakerPoolResponse> addSpeakerToPool(
@@ -51,18 +56,18 @@ public class EventSpeakerPoolController implements EventActionsApi {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    /** DELETE /api/v1/events/{eventCode}/speakers/pool/{speakerId} — remove a pool entry. */
+    /** DELETE /api/v1/events/{eventCode}/speakers/{speakerId} — remove a pool entry. */
     @Override
     @PreAuthorize("hasRole('ORGANIZER')")
     public ResponseEntity<Void> deleteSpeakerFromPool(String eventCode, UUID speakerId) {
-        // GlobalExceptionHandler: EventNotFoundException → 404, IllegalArgumentException → 404 (not found).
-        speakerPoolService.deleteSpeakerFromPool(eventCode, speakerId.toString());
+        // GlobalExceptionHandler: EventNotFoundException → 404, an entry not in this event → 404.
+        speakerPoolService.deleteSpeakerFromPool(eventCode, speakerId);
         return ResponseEntity.noContent().build();
     }
 
     /**
-     * PATCH /api/v1/events/{eventCode}/speakers/pool/{speakerId} — partial update (assigned organizer,
-     * notes, brainstorm metadata). Story 11.D.1 (AR23): email may NOT be updated here (use promote);
+     * PATCH /api/v1/events/{eventCode}/speakers/{speakerId} — partial update (assigned organizer,
+     * notes, brainstorm metadata, reminders switch). Story 11.D.1 (AR23): email may NOT be updated here (use promote);
      * unknown fields → 400 (additionalProperties:false on the request schema).
      */
     @Override
@@ -70,7 +75,7 @@ public class EventSpeakerPoolController implements EventActionsApi {
     public ResponseEntity<SpeakerPoolResponse> patchSpeakerPoolEntry(
             String eventCode, UUID speakerId, PatchSpeakerPoolRequest patchSpeakerPoolRequest) {
         SpeakerPoolResponse response = speakerPoolService.patchEntry(
-                eventCode, speakerId.toString(), patchSpeakerPoolRequest);
+                eventCode, speakerId, patchSpeakerPoolRequest);
         return ResponseEntity.ok(response);
     }
 }

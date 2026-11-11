@@ -1,31 +1,30 @@
 package ch.batbern.partners.controller;
 
-import ch.batbern.partners.client.UserServiceClient;
-import ch.batbern.partners.client.user.dto.UserResponse;
+import ch.batbern.partners.config.CumsInternalUsers;
 import ch.batbern.partners.config.TestAwsConfig;
 import ch.batbern.partners.config.TestSecurityConfig;
 import ch.batbern.partners.domain.Partner;
 import ch.batbern.partners.domain.PartnershipLevel;
 import ch.batbern.partners.repository.PartnerRepository;
-import ch.batbern.partners.security.SecurityContextHelper;
 import ch.batbern.shared.test.AbstractIntegrationTest;
+import ch.batbern.shared.test.contract.ContractServer;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.cache.CacheManager;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
-import java.util.List;
 
 import static org.hamcrest.Matchers.hasSize;
-import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -36,6 +35,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * Contacts are derived from the User Service: any user with PARTNER role
  * and matching companyId is automatically a contact of that company.
  * No explicit add/remove management is needed.
+ *
+ * CUMS answers through the real {@code UserServiceClient}, per cums-internal ({@link CumsInternalUsers};
+ * before 6b a {@code UserServiceClient} and a {@code SecurityContextHelper} mock).
  */
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -50,11 +52,14 @@ class PartnerContactControllerIntegrationTest extends AbstractIntegrationTest {
     @Autowired
     private PartnerRepository partnerRepository;
 
-    @MockitoBean
-    private UserServiceClient userServiceClient;
+    @Autowired
+    private RestTemplate restTemplate;
 
-    @MockitoBean
-    private SecurityContextHelper securityContextHelper;
+    @Autowired
+    private CacheManager cacheManager;
+
+    private ContractServer cums;
+    private CumsInternalUsers users;
 
     private Partner testPartner;
 
@@ -67,22 +72,22 @@ class PartnerContactControllerIntegrationTest extends AbstractIntegrationTest {
         testPartner.setPartnershipEndDate(LocalDate.now().plusMonths(6));
         testPartner = partnerRepository.save(testPartner);
 
-        when(securityContextHelper.getCurrentUsername()).thenReturn("test.user");
+        cacheManager.getCacheNames().forEach(name -> cacheManager.getCache(name).clear());
+        cums = ContractServer.bindTo(restTemplate, CumsInternalUsers.CUMS_INTERNAL);
+        users = CumsInternalUsers.answerOn(cums);
+    }
+
+    @AfterEach
+    void releaseCums() {
+        cums.close();
     }
 
     @Test
     @DisplayName("should return contacts from User Service when company has PARTNER users")
     @WithMockUser(username = "organizer.user", roles = "ORGANIZER")
     void should_returnContactsFromUserService_when_companyHasPartnerUsers() throws Exception {
-        UserResponse john = new UserResponse();
-        john.setId("john.doe");
-        john.setEmail("john.doe@example.com");
-        john.setFirstName("John");
-        john.setLastName("Doe");
-        john.setProfilePictureUrl(java.net.URI.create("https://example.com/john.jpg"));
-
-        when(userServiceClient.getUsersByCompanyAndRole("GoogleZH", "PARTNER"))
-                .thenReturn(List.of(john));
+        CumsInternalUsers.partnerContacts(cums, "GoogleZH", CumsInternalUsers.user("john.doe", "GoogleZH", "John", "Doe")
+                .replace("\"profilePictureUrl\": null", "\"profilePictureUrl\": \"https://example.com/john.jpg\""));
 
         mockMvc.perform(get("/api/v1/partners/{companyName}/contacts", "GoogleZH"))
                 .andExpect(status().isOk())
@@ -98,8 +103,9 @@ class PartnerContactControllerIntegrationTest extends AbstractIntegrationTest {
     @DisplayName("should return empty list when no PARTNER users for company")
     @WithMockUser(username = "organizer.user", roles = "ORGANIZER")
     void should_returnEmptyList_when_noPartnerUsersForCompany() throws Exception {
-        when(userServiceClient.getUsersByCompanyAndRole("GoogleZH", "PARTNER"))
-                .thenReturn(List.of());
+        // CUMS knows a partner user of another company only: the company filter must hold.
+        CumsInternalUsers.partnerContacts(cums, "MicrosoftZH", CumsInternalUsers.user("mia.muster", "MicrosoftZH",
+                "Mia", "Muster"));
 
         mockMvc.perform(get("/api/v1/partners/{companyName}/contacts", "GoogleZH"))
                 .andExpect(status().isOk())
@@ -135,11 +141,7 @@ class PartnerContactControllerIntegrationTest extends AbstractIntegrationTest {
     @DisplayName("#961: should return 403 when a partner requests another company's contacts")
     @WithMockUser(username = "partner.other", roles = "PARTNER")
     void should_return403_when_partnerRequestsAnotherCompanysContacts() throws Exception {
-        UserResponse other = new UserResponse();
-        other.setId("partner.other");
-        other.setCompanyId("MicrosoftZH");
-        when(userServiceClient.getUserByUsername("partner.other")).thenReturn(other);
-        when(securityContextHelper.getCurrentUsername()).thenReturn("partner.other");
+        users.put("partner.other", "partner.other", "MicrosoftZH");
 
         mockMvc.perform(get("/api/v1/partners/{companyName}/contacts", "GoogleZH"))
                 .andExpect(status().isForbidden());
@@ -149,16 +151,13 @@ class PartnerContactControllerIntegrationTest extends AbstractIntegrationTest {
     @DisplayName("#961: a partner may still read their OWN company's contacts")
     @WithMockUser(username = "partner.google", roles = "PARTNER")
     void should_allowOwnCompany_when_partnerRequestsOwnContacts() throws Exception {
-        UserResponse self = new UserResponse();
-        self.setId("partner.google");
-        self.setCompanyId("GoogleZH");
-        when(userServiceClient.getUserByUsername("partner.google")).thenReturn(self);
-        when(securityContextHelper.getCurrentUsername()).thenReturn("partner.google");
-        when(userServiceClient.getUsersByCompanyAndRole("GoogleZH", "PARTNER"))
-                .thenReturn(List.of(self));
+        users.put("partner.google", "partner.google", "GoogleZH");
+        CumsInternalUsers.partnerContacts(cums, "GoogleZH", CumsInternalUsers.user("partner.google", "GoogleZH",
+                "Test", "User"));
 
         mockMvc.perform(get("/api/v1/partners/{companyName}/contacts", "GoogleZH"))
-                .andExpect(status().isOk());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].username").value("partner.google"));
     }
 
 }

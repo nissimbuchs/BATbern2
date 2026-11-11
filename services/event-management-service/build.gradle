@@ -329,7 +329,10 @@ task openApiGenerateRegistrations(type: org.openapitools.generator.gradle.plugin
 
     schemaMappings = [
         'ErrorResponse': 'ch.batbern.shared.dto.ErrorResponse',
-        'PaginationMetadata': 'ch.batbern.shared.api.PaginationMetadata'
+        'PaginationMetadata': 'ch.batbern.shared.api.PaginationMetadata',
+        // Story 4.10b: GET /registrations (ParticipantsApi) answers the hand-written
+        // RegistrationResponse, which is the wire shape of the spec's Registration.
+        'Registration': 'ch.batbern.events.dto.RegistrationResponse'
     ]
 }
 

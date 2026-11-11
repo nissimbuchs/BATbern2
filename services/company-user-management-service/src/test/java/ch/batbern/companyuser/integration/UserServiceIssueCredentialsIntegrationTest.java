@@ -66,7 +66,7 @@ class UserServiceIssueCredentialsIntegrationTest extends AbstractIntegrationTest
 
         cognito.givenLogin(u.getEmail(), UserStatusType.FORCE_CHANGE_PASSWORD);
 
-        InvitationCredentialsResponse response = userService.issueInvitationCredentials(u.getUsername());
+        InvitationCredentialsResponse response = userService.issueInvitationCredentials(u.getUsername(), "system:test");
 
         assertThat(response.getAction())
                 .isEqualTo(InvitationCredentialsResponse.ActionEnum.FRESH_TEMP_PASSWORD);
@@ -86,7 +86,7 @@ class UserServiceIssueCredentialsIntegrationTest extends AbstractIntegrationTest
 
         cognito.givenLogin(u.getEmail(), UserStatusType.CONFIRMED);
 
-        InvitationCredentialsResponse response = userService.issueInvitationCredentials(u.getUsername());
+        InvitationCredentialsResponse response = userService.issueInvitationCredentials(u.getUsername(), "system:test");
 
         assertThat(response.getAction())
                 .isEqualTo(InvitationCredentialsResponse.ActionEnum.USE_EXISTING_PASSWORD);
@@ -105,7 +105,7 @@ class UserServiceIssueCredentialsIntegrationTest extends AbstractIntegrationTest
 
         cognito.givenLogin(u.getEmail(), UserStatusType.UNCONFIRMED);
 
-        InvitationCredentialsResponse response = userService.issueInvitationCredentials(u.getUsername());
+        InvitationCredentialsResponse response = userService.issueInvitationCredentials(u.getUsername(), "system:test");
 
         assertThat(response.getAction())
                 .isEqualTo(InvitationCredentialsResponse.ActionEnum.FRESH_TEMP_PASSWORD);
@@ -121,7 +121,7 @@ class UserServiceIssueCredentialsIntegrationTest extends AbstractIntegrationTest
 
         cognito.givenLogin(u.getEmail(), UserStatusType.ARCHIVED);
 
-        assertThatThrownBy(() -> userService.issueInvitationCredentials(u.getUsername()))
+        assertThatThrownBy(() -> userService.issueInvitationCredentials(u.getUsername(), "system:test"))
                 .isInstanceOf(UnprocessableInvitationStateException.class)
                 .hasMessageContaining("ARCHIVED")
                 .hasMessageContaining("operator intervention");
@@ -138,7 +138,7 @@ class UserServiceIssueCredentialsIntegrationTest extends AbstractIntegrationTest
         User u = seedSpeaker("speaker.missing", "speaker.missing@example.com");
         assertThat(cognito.login(u.getEmail())).isEmpty();
 
-        InvitationCredentialsResponse response = userService.issueInvitationCredentials(u.getUsername());
+        InvitationCredentialsResponse response = userService.issueInvitationCredentials(u.getUsername(), "system:test");
 
         assertThat(response.getAction())
                 .isEqualTo(InvitationCredentialsResponse.ActionEnum.FRESH_TEMP_PASSWORD);

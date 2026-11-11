@@ -28,8 +28,8 @@ import java.util.UUID;
  * method bodies.
  * <p>
  * Mixed auth: public GET endpoints + ORGANIZER-only write endpoints.
- * Note: /events/recent-photos (static) is registered before /events/{eventCode}/photos
- * (path variable) — Spring MVC resolves static segments first, so no conflict.
+ * The homepage sample is {@code GET /public/event-photos} (Story 4.10b; it was
+ * {@code /events/recent-photos}, a literal in the {@code {eventCode}} namespace).
  */
 @RestController
 @RequestMapping("/api/v1")
@@ -42,6 +42,7 @@ public class EventPhotoController implements EventPhotosApi {
 
     /**
      * Public: recent photos from last N events (homepage marquee). AC5.
+     * GET /api/v1/public/event-photos
      */
     @Override
     public ResponseEntity<List<EventPhotoResponse>> getRecentEventPhotos(Integer limit, Integer lastNEvents) {

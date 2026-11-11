@@ -1,0 +1,56 @@
+meta {
+  name: Classify Topics
+  type: http
+  seq: 35
+}
+
+post {
+  url: {{baseUrl}}/topics/classifications
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+body:json {
+  {
+    "topics": ["AI in Operations", "Zero Trust", "Workplace Psychology"]
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.classifications: isDefined
+}
+
+tests {
+  test("should return 200 for an organizer", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("should return one classification per title, in request order", function() {
+    const classifications = res.getBody().classifications;
+    expect(classifications).to.be.an('array').with.lengthOf(3);
+    expect(classifications.map(c => c.topic)).to.deep.equal(
+      ["AI in Operations", "Zero Trust", "Workplace Psychology"]);
+    expect(classifications.map(c => c.cluster)).to.deep.equal(
+      ["AI_ML", "SECURITY", "BUSINESS_OTHER"]);
+  });
+
+  test("should carry score and related past events per title", function() {
+    const [ai, zeroTrust, other] = res.getBody().classifications;
+    expect(ai.similarityScore).to.equal(0.85);
+    expect(ai.relatedPastEventNumbers).to.include(56);
+    expect(zeroTrust.relatedPastEventNumbers).to.include(57);
+    expect(other.similarityScore).to.equal(0.5);
+    expect(other.relatedPastEventNumbers).to.be.an('array').that.is.empty;
+  });
+}
+
+docs {
+  Epic 17, entry 8: POST /topics/classifications classifies the partner topic titles the blob
+  topic canvas loads from partner-coordination itself (EMS no longer calls partner-coordination,
+  ADR-016). Read-only: nothing is stored, no mail is sent, so it is safe against any environment.
+}

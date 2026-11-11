@@ -12,9 +12,8 @@ import ch.batbern.events.dto.generated.users.ProvisionUserResponse;
 import ch.batbern.events.dto.generated.users.UserResponse;
 import ch.batbern.events.exception.UserNotFoundException;
 import ch.batbern.events.exception.UserServiceException;
+import ch.batbern.shared.security.S2sHeaders;
 import ch.batbern.shared.utils.LoggingUtils;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.type.CollectionType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -26,8 +25,6 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpServerErrorException;
@@ -44,14 +41,14 @@ import java.net.URI;
 /**
  * Implementation of UserApiClient using Spring RestTemplate.
  *
- * Communicates with the User Management Service REST API to retrieve user data.
- * Replaces direct database access to user_profiles table.
+ * <p>Every call goes to the CUMS internal API ({@code /internal/**},
+ * {@code docs/api/internal/cums-internal.openapi.yml}), never to the public {@code /api/v1} API
+ * (ADR-016 decision 2, Epic 17 entry 6). Every call carries the headers of {@link S2sHeaders}: the
+ * user's JWT when a user is signed in, none otherwise (scheduler, SQS listener, anonymous
+ * registration); a call must and does work either way.
  *
- * Features:
- * - JWT token propagation from incoming requests
- * - Aggressive caching (15min TTL) for performance
- * - Fail-fast error handling
- * - Comprehensive logging
+ * <p>Reads are cached 15 min per key in {@code userApiCache}. CUMS's internal answers do not depend
+ * on the caller, so a result cached for one user is right for every other.
  */
 @Component
 @RequiredArgsConstructor
@@ -62,15 +59,12 @@ public class UserApiClientImpl implements UserApiClient {
     public static final String EMAIL_LINKED_TO_ACCOUNT = "EMAIL_LINKED_TO_ACCOUNT";
 
     /**
-     * CUMS internal user API: VPC-only, not routed by the gateway, no JWT. User reads go here
-     * because the public {@code /api/v1/users} directory is organizer-only and these results are
-     * cached per username for every caller, so they must not depend on whose request triggered
-     * them.
+     * CUMS internal user API: VPC-only, not routed by the gateway; a forwarded JWT is optional and
+     * never changes the answer, so results are safe to cache per username for every caller.
      */
     private static final String INTERNAL_USERS_PATH = "/internal/users";
 
     private final RestTemplate restTemplate;
-    private final ObjectMapper objectMapper;
     private final CacheManager cacheManager;
 
     @Value("${user-service.base-url}")
@@ -89,7 +83,7 @@ public class UserApiClientImpl implements UserApiClient {
     @Override
     @Cacheable(value = "userApiCache", key = "#username")
     public UserResponse getUserByUsername(String username) {
-        // Early guard: an empty/null username yields the URL "/api/v1/users/" which
+        // Early guard: an empty/null username yields the URL "/internal/users/" which
         // returns a 500 from User Management (route mismatch). This caused the
         // 2026-05-18 attendee-registration outage when pre-token-generation Lambda
         // fell back to an empty `custom:username` claim and the JWT carried that
@@ -105,7 +99,7 @@ public class UserApiClientImpl implements UserApiClient {
         URI url = internalUserUri(username, null);
 
         try {
-            HttpHeaders headers = new HttpHeaders();
+            HttpHeaders headers = S2sHeaders.forCurrentUser();
             HttpEntity<Void> request = new HttpEntity<>(headers);
 
             ResponseEntity<UserResponse> response = restTemplate.exchange(
@@ -158,29 +152,6 @@ public class UserApiClientImpl implements UserApiClient {
     }
 
     /**
-     * Check if a user exists by username.
-     *
-     * Cached for 15 minutes to minimize API calls.
-     *
-     * @param username User's username
-     * @return true if user exists, false otherwise
-     * @throws UserServiceException if API communication fails
-     */
-    @Override
-    @Cacheable(value = "userApiCache", key = "#username", unless = "#result == false")
-    public boolean validateUserExists(String username) {
-        log.debug("Validating user exists: {}", username);
-
-        try {
-            getUserByUsername(username);
-            return true;
-        } catch (UserNotFoundException e) {
-            log.debug("User does not exist: {}", username);
-            return false;
-        }
-    }
-
-    /**
      * Get or create user profile (ADR-005: Anonymous Event Registration).
      *
      * Used for anonymous event registration where users register without creating a Cognito account.
@@ -203,7 +174,7 @@ public class UserApiClientImpl implements UserApiClient {
         String url = userServiceBaseUrl + INTERNAL_USERS_PATH + "/get-or-create";
 
         try {
-            HttpHeaders headers = new HttpHeaders();
+            HttpHeaders headers = S2sHeaders.forCurrentUser();
             HttpEntity<GetOrCreateUserRequest> httpRequest = new HttpEntity<>(request, headers);
 
             ResponseEntity<GetOrCreateUserResponse> response = restTemplate.exchange(
@@ -270,12 +241,12 @@ public class UserApiClientImpl implements UserApiClient {
     public ch.batbern.events.notification.UserPreferences getPreferences(String username) {
         log.debug("Fetching preferences for username: {}", username);
 
-        // #1146: the internal read carries the notification settings (VPC-only, no JWT, like
-        // getPreferredLanguage); Story 4.9 merged them into the one `settings` include.
+        // #1146: the internal read carries the notification settings (like getPreferredLanguage);
+        // Story 4.9 merged them into the one `settings` include.
         URI url = internalUserUri(username, "settings");
 
         try {
-            HttpEntity<Void> request = new HttpEntity<>(new HttpHeaders());
+            HttpEntity<Void> request = new HttpEntity<>(S2sHeaders.forCurrentUser());
 
             ResponseEntity<UserResponse> response = restTemplate.exchange(
                     url,
@@ -364,7 +335,7 @@ public class UserApiClientImpl implements UserApiClient {
         URI url = internalUserUri(username, "settings");
 
         try {
-            HttpHeaders headers = new HttpHeaders();
+            HttpHeaders headers = S2sHeaders.forCurrentUser();
             HttpEntity<Void> request = new HttpEntity<>(headers);
 
             ResponseEntity<UserResponse> response = restTemplate.exchange(
@@ -409,7 +380,7 @@ public class UserApiClientImpl implements UserApiClient {
         URI url = internalUserUri(username, "settings");
 
         try {
-            HttpHeaders headers = new HttpHeaders();
+            HttpHeaders headers = S2sHeaders.forCurrentUser();
             HttpEntity<Void> request = new HttpEntity<>(headers);
 
             ResponseEntity<UserResponse> response = restTemplate.exchange(
@@ -471,10 +442,10 @@ public class UserApiClientImpl implements UserApiClient {
         log.debug("Provisioning user (Story 11.C.2): email={}, role={}",
                 LoggingUtils.maskEmail(request.getEmail()), request.getRole());
 
-        String url = userServiceBaseUrl + "/api/v1/users/provision";
+        String url = userServiceBaseUrl + INTERNAL_USERS_PATH + "/provision";
 
         try {
-            HttpHeaders headers = createHeadersWithJwtToken();
+            HttpHeaders headers = S2sHeaders.forCurrentUser();
             headers.set("Content-Type", "application/json");
             HttpEntity<ProvisionUserRequest> httpRequest = new HttpEntity<>(request, headers);
 
@@ -546,10 +517,10 @@ public class UserApiClientImpl implements UserApiClient {
     public UserResponse patchUserProfile(String username, PatchUserProfileRequest request) {
         log.debug("Patching user profile (Story 11.C.2) for username: {}", username);
 
-        URI url = cumsUri("/api/v1/users/{username}/profile", username);
+        URI url = cumsUri(INTERNAL_USERS_PATH + "/{username}/profile", username);
 
         try {
-            HttpHeaders headers = createHeadersWithJwtToken();
+            HttpHeaders headers = S2sHeaders.forCurrentUser();
             headers.set("Content-Type", "application/json");
             HttpEntity<PatchUserProfileRequest> httpRequest = new HttpEntity<>(request, headers);
 
@@ -614,10 +585,10 @@ public class UserApiClientImpl implements UserApiClient {
     public InvitationCredentialsResponse issueInvitationCredentials(String username) {
         log.debug("Issuing invitation credentials (Story 11.E.2) for username: {}", username);
 
-        URI url = cumsUri("/api/v1/users/{username}/issue-invitation-credentials", username);
+        URI url = cumsUri(INTERNAL_USERS_PATH + "/{username}/issue-invitation-credentials", username);
 
         try {
-            HttpHeaders headers = createHeadersWithJwtToken();
+            HttpHeaders headers = S2sHeaders.forCurrentUser();
             headers.set("Content-Type", "application/json");
             HttpEntity<Void> httpRequest = new HttpEntity<>(headers);
 
@@ -742,7 +713,7 @@ public class UserApiClientImpl implements UserApiClient {
         log.debug("Fetching {} users", label);
         java.util.List<UserResponse> users = new java.util.ArrayList<>();
         try {
-            HttpEntity<Void> request = new HttpEntity<>(new HttpHeaders());
+            HttpEntity<Void> request = new HttpEntity<>(S2sHeaders.forCurrentUser());
             for (int page = 1; page <= MAX_PAGES; page++) {
                 Map<String, Object> vars = new HashMap<>();
                 vars.put("role", role);
@@ -795,66 +766,28 @@ public class UserApiClientImpl implements UserApiClient {
         }
     }
 
-    /**
-     * Get all companies (basic info) from company-user-management-service.
-     * Story 10.20: AC1 — companies[] list in legacy BAT export envelope.
-     */
     @Override
-    public java.util.List<CompanyBasicDto> getAllCompanies() {
-        log.debug("Fetching all companies for legacy export");
-
+    public List<String> getEmailOwners(String email) {
+        if (email == null || email.isBlank()) {
+            return List.of();
+        }
+        // Strict encoding: a plus address (success+x@...) must not arrive as a space.
+        URI url = UriComponentsBuilder.fromUriString(userServiceBaseUrl + "/internal/email-owners")
+                .queryParam("email", "{email}").encode().buildAndExpand(email.trim()).toUri();
         try {
-            HttpHeaders headers = createHeadersWithJwtToken();
-            HttpEntity<Void> request = new HttpEntity<>(headers);
-            CollectionType listType = objectMapper.getTypeFactory()
-                    .constructCollectionType(java.util.List.class, CompanyBasicDto.class);
-            java.util.List<CompanyBasicDto> companies = new java.util.ArrayList<>();
-
-            // Page by page within the companies-api limit (max 100); limit=1000 was rejected (#825)
-            for (int page = 1; page <= MAX_PAGES; page++) {
-                String url = userServiceBaseUrl + "/api/v1/companies?page=" + page + "&limit=" + MAX_PAGE_SIZE;
-                String body = restTemplate.exchange(url, HttpMethod.GET, request, String.class).getBody();
-                if (body == null || body.isBlank()) {
-                    break;
-                }
-
-                // Parse paginated response: { "data": [...], "pagination": {...} }
-                com.fasterxml.jackson.databind.JsonNode root = objectMapper.readTree(body);
-                com.fasterxml.jackson.databind.JsonNode dataNode = root.path("data");
-                if (dataNode.isMissingNode() || !dataNode.isArray()) {
-                    break;
-                }
-                companies.addAll(objectMapper.convertValue(dataNode, listType));
-                if (!root.path("pagination").path("hasNext").asBoolean(false)) {
-                    break;
-                }
-            }
-
-            log.debug("Successfully fetched {} companies", companies.size());
-            return companies;
-
-        } catch (HttpClientErrorException e) {
-            log.warn("Client error fetching companies (non-fatal for export): {} - {}",
-                    e.getStatusCode(), e.getMessage());
-            return java.util.List.of();
-
-        } catch (HttpServerErrorException e) {
-            log.warn("Server error fetching companies (non-fatal for export): {} - {}",
-                    e.getStatusCode(), e.getMessage());
-            return java.util.List.of();
-
-        } catch (ResourceAccessException e) {
-            log.warn("Network error fetching companies (non-fatal for export): {}", e.getMessage());
-            return java.util.List.of();
-
-        } catch (Exception e) {
-            log.warn("Unexpected error fetching companies (non-fatal for export): {}", e.getMessage());
-            return java.util.List.of();
+            ResponseEntity<String[]> response = restTemplate.exchange(
+                    url, HttpMethod.GET, new HttpEntity<>(S2sHeaders.forCurrentUser()), String[].class);
+            String[] owners = response.getBody();
+            return owners == null ? List.of() : List.of(owners);
+        } catch (RestClientException e) {
+            // Best effort: the caller falls back to the address match alone, as before #1183.
+            log.warn("Email owner lookup failed: {}", e.getMessage());
+            return List.of();
         }
     }
 
     /**
-     * Resolve a single company slug to its display name via {@code GET /companies/{slug}}.
+     * Resolve a single company slug to its display name via {@code GET /internal/companies/{name}}.
      * Cached per slug for 15 min in {@code userApiCache}.
      *
      * <p>Returns the company's {@code displayName} when set, falling back to {@code name}.
@@ -867,26 +800,6 @@ public class UserApiClientImpl implements UserApiClient {
      * SpEL — an empty Optional would cause {@code #result.isEmpty()} to NPE.
      */
     @Override
-    public List<String> getEmailOwners(String email) {
-        if (email == null || email.isBlank()) {
-            return List.of();
-        }
-        // Strict encoding: a plus address (success+x@...) must not arrive as a space.
-        URI url = UriComponentsBuilder.fromUriString(userServiceBaseUrl + "/internal/email-owners")
-                .queryParam("email", "{email}").encode().buildAndExpand(email.trim()).toUri();
-        try {
-            ResponseEntity<String[]> response = restTemplate.exchange(
-                    url, HttpMethod.GET, new HttpEntity<>(new HttpHeaders()), String[].class);
-            String[] owners = response.getBody();
-            return owners == null ? List.of() : List.of(owners);
-        } catch (RestClientException e) {
-            // Best effort: the caller falls back to the address match alone, as before #1183.
-            log.warn("Email owner lookup failed: {}", e.getMessage());
-            return List.of();
-        }
-    }
-
-    @Override
     @Cacheable(value = "userApiCache",
             key = "'company:' + #companySlug",
             unless = "#result == null")
@@ -894,9 +807,9 @@ public class UserApiClientImpl implements UserApiClient {
         if (companySlug == null || companySlug.isBlank()) {
             return null;
         }
-        URI url = cumsUri("/api/v1/companies/{name}", companySlug);
+        URI url = cumsUri("/internal/companies/{name}", companySlug);
         try {
-            HttpHeaders headers = createHeadersWithJwtToken();
+            HttpHeaders headers = S2sHeaders.forCurrentUser();
             HttpEntity<Void> request = new HttpEntity<>(headers);
             ResponseEntity<CompanyBasicDto> response = restTemplate.exchange(
                     url, HttpMethod.GET, request, CompanyBasicDto.class);
@@ -925,45 +838,5 @@ public class UserApiClientImpl implements UserApiClient {
             log.warn("Unexpected error fetching company {}: {}", companySlug, e.getMessage());
             return null;
         }
-    }
-
-    /**
-     * Create HTTP headers with JWT token propagated from SecurityContext.
-     *
-     * Extracts the JWT token from the current security context and adds it
-     * to the Authorization header for service-to-service communication.
-     *
-     * @return HttpHeaders with Authorization Bearer token
-     */
-    private HttpHeaders createHeadersWithJwtToken() {
-        HttpHeaders headers = new HttpHeaders();
-
-        // No Authentication at all is normal on listener and scheduler threads (e.g. the SQS
-        // forwarding listener): nothing to propagate, and no WARN per call (#1139).
-        if (SecurityContextHolder.getContext().getAuthentication() == null) {
-            log.debug("No authentication in SecurityContext; calling User Management without JWT");
-            return headers;
-        }
-
-        try {
-            Object principal = SecurityContextHolder.getContext()
-                    .getAuthentication()
-                    .getPrincipal();
-
-            if (principal instanceof Jwt jwt) {
-                String token = jwt.getTokenValue();
-                headers.set("Authorization", "Bearer " + token);
-                log.trace("JWT token propagated to User Management Service");
-            } else {
-                log.warn("No JWT token found in SecurityContext, principal type: {}",
-                        principal != null ? principal.getClass().getSimpleName() : "null");
-            }
-
-        } catch (Exception e) {
-            log.warn("Failed to extract JWT token from SecurityContext: {}", e.getMessage());
-            // Continue without token - let the User Management Service handle authorization
-        }
-
-        return headers;
     }
 }

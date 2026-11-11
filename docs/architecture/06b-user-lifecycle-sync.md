@@ -247,7 +247,7 @@ sequenceDiagram
     Org->>EMS: POST /api/v1/events/{code}/speakers/{id}/promote<br/>email, firstName?, lastName?
     EMS->>EMS: PreAuthorize hasRole ORGANIZER, status must be CONTACTED
     EMS->>EMS: SpeakerWorkflowService.transition to READY
-    EMS->>CUMS: POST /api/v1/users/provision<br/>email, names, role SPEAKER
+    EMS->>CUMS: POST /internal/users/provision<br/>email, names, role SPEAKER, organizer JWT if any
     CUMS->>DB: findByEmailIgnoreCase
     alt user exists
         CUMS->>DB: addRole SPEAKER, idempotent
@@ -264,7 +264,7 @@ sequenceDiagram
 
     Note over Org,DB: Later, READY to INVITED
     Org->>EMS: invite speaker
-    EMS->>CUMS: POST /api/v1/users/{username}/issue-invitation-credentials
+    EMS->>CUMS: POST /internal/users/{username}/issue-invitation-credentials
     CUMS->>Cognito: AdminGetUser status
     alt FORCE_CHANGE_PASSWORD or RESET_REQUIRED
         CUMS->>Cognito: AdminSetUserPassword Permanent false, fresh temp password
@@ -276,9 +276,12 @@ sequenceDiagram
 ```
 
 **Steps performed by `UserService.provisionUserWithRole(...)` in `company-user-management-service`**
-(called by EMS `UserApiClient.provisionUserWithRole` → `POST /api/v1/users/provision`):
+(called by EMS `UserApiClient.provisionUserWithRole` → `POST /internal/users/provision`, VPC-only since
+Epic 17 entry 6; EMS forwards the organizer's JWT when there is one, and CUMS records that user or
+`system:ems-speaker-workflow` as `createdBy`):
 
-1. **Whitelist**: a non-ADMIN caller may only grant `SPEAKER`.
+1. **SPEAKER only**: any other role answers 400, whoever calls (no ADMIN branch; `/internal`
+   authorizes by operation, ADR-016).
 2. **Look up by lower-cased email.** If the user exists, grant the role (idempotent) and call
    `adminCreateUserSilently`, which is a no-op when the Cognito user exists and otherwise creates the
    missing shell and re-links the new `sub` into `user_profiles`. Returns `created=false`.
@@ -992,7 +995,7 @@ explicitly accept.
 migration V17). `NULL` = no consent on record. The nullable timestamp doubles as audit
 record + gate flag. There is deliberately **no newsletter column** — newsletter consent
 lives exclusively in the EMS `newsletter_subscribers` table (Story 10.7) via
-`GET/PATCH /api/v1/newsletter/my-subscription`.
+`GET/PATCH /api/v1/newsletter/my-subscriptions`, per address (Story 4.10c).
 
 **Who stamps consent, where**:
 - **Native self-registration** (PostConfirmation, Pattern 1): the RegistrationStep2 ToS
@@ -1003,9 +1006,12 @@ lives exclusively in the EMS `newsletter_subscribers` table (Story 10.7) via
   `Google_` username prefix (fallback, case-insensitive) — `isFederatedSignIn()` in
   `post-confirmation.ts`. Leaves `terms_accepted_at` NULL: Google sign-in is NOT consent.
   JIT provisioning (Pattern 1b) likewise leaves it NULL.
-- **Explicit acceptance**: `PUT /api/v1/users/me { "termsAccepted": true }` — WRITE-ONCE,
-  server clock (`UserService.updateCurrentUser`); `false`/absent never changes recorded
-  consent; consent can never be revoked through the API.
+- **Explicit acceptance**: `PATCH /api/v1/users/{own username} { "termsAccepted": true }`
+  (Story 4.10; the username comes from `GET /users/me`) — WRITE-ONCE, server clock
+  (`UserService.updateUser`); `false`/absent never changes recorded consent; consent can never
+  be revoked through the API, and only the user themself may give it (for another user, even
+  an organizer, 403). A first token without `custom:username` still owns the profile: the
+  ownership rule falls back to the user whose `cognito_user_id` is the token subject.
 - **Backfill (V17)**: rows with a Cognito account created before the SSO go-live cutoff
   `2026-06-04 16:00:00+00` got `terms_accepted_at = created_at`. The cutoff is the
   discriminator because `cognito_user_id` stores the **sub UUID for ALL users** (federated
@@ -1047,7 +1053,7 @@ sequenceDiagram
     CUMS->>DB: cap check, global uniqueness check
     CUMS->>DB: INSERT row, verified_at NULL
     CUMS->>SES: verification mail with signed link, 48 h
-    Note over U,CUMS: resend: POST /users/me/additional-emails/{email}/resend-verification
+    Note over U,CUMS: resend: POST /users/me/additional-emails/{emailId}/resend-verification
     SES-->>P: user opens link ?token=
     P->>CUMS: GET /api/v1/users/additional-emails/verify?token=, no JWT
     CUMS-->>P: masked email + verified flag, no state change
@@ -1058,6 +1064,13 @@ sequenceDiagram
 
 The GET/POST split exists because mail scanners prefetch links with GET; only the explicit POST
 verifies.
+
+**One address by its id (Story 4.10d).** The operations on one address (PATCH, DELETE,
+`make-primary`, `resend-verification`) are keyed by `{emailId}`, the row id that `GET /users/me`
+lists as `AdditionalEmail.id`, never by the address: it must not land in access logs, browser
+history or caches (ADR-003 amendment). CUMS loads the row scoped to the caller
+(`UserAdditionalEmailRepository.findByIdAndUser`): another user's or an unknown id answers 404 and
+changes nothing. The old `{email}` paths answer 400.
 
 Where the addresses are used (checked 2026-11-04):
 
@@ -1075,21 +1088,24 @@ flowchart LR
 **Event mails and the newsletter per address (#1244, owner decision 2026-11-07).** Event mails go
 to the primary address. A confirmed additional address gets a copy only when its owner switched
 `receive_event_mail` on (CUMS V24, default off, also for existing rows; `PATCH
-/users/me/additional-emails/{email}`, 409 `NOT_VERIFIED` for an unconfirmed address). EMS decides in
+/users/me/additional-emails/{emailId}`, 409 `NOT_VERIFIED` for an unconfirmed address). EMS decides in
 one place, `EventMailCopies.of(UserResponse)`. Until #1244 every additional address got a CC, confirmed
-or not. The newsletter is one `newsletter_subscribers` row per address (#1143); `GET/PUT
-/newsletter/my-subscriptions` lists and changes it per address, for the primary and the confirmed
-additional addresses only (403 otherwise). Participants manage all of this on `/profile` (tabs
+or not. The newsletter is one `newsletter_subscribers` row per address (#1143); `GET/PATCH
+/newsletter/my-subscriptions` lists and changes it per address (PATCH partial: `subscribed`,
+`language`), for the primary and the confirmed additional addresses only (403 otherwise). An address
+still subscribed under the username that is no longer the user's is listed too and may only be
+unsubscribed (Story 4.10c; the old single-address `/newsletter/my-subscription` is gone). Participants manage all of this on `/profile` (tabs
 "Einwilligung & Newsletter" and "E-Mail-Adressen"); organizers keep the Account settings.
 
 **Changing the primary address (#1244 step 2).** A confirmed additional address can become the primary
-(login) address: `POST /users/me/additional-emails/{email}/make-primary` (`isAuthenticated`, 204; 404
-for an address that is not the caller's, 409 `NOT_VERIFIED`, 409 `EMAIL_HAS_OTHER_LOGIN`). Order in
+(login) address: `POST /users/me/additional-emails/{emailId}/make-primary` (`isAuthenticated`, 204; 404
+for an id that is not one of the caller's addresses, 409 `NOT_VERIFIED`, 409 `EMAIL_HAS_OTHER_LOGIN`). Order in
 `PrimaryEmailService`: Cognito first (`changeLoginEmail`: `email` and `email_verified = true`; the pool
 signs in by email, the `sub` and linked Google identities stay), then the swap in
 `user_profiles` / `user_additional_emails` with explicit flushes (global uniqueness; Hibernate flushes
 inserts before deletes); if the DB step fails, the login is moved back. The old primary stays as a
-confirmed additional address. EMS `POST /internal/users/primary-email` moves upcoming registrations
+confirmed additional address, as a new row under a new id (the chosen row is deleted), so the client
+reads the ids again. EMS `POST /internal/users/primary-email` moves upcoming registrations
 (event today or later) made under the old address, because deregistration, slides and
 `-participants@` read `registrations.attendee_email`. The UI refreshes the session afterwards, since
 the ID token carries the old address until then. `EMAIL_HAS_OTHER_LOGIN` means another account logs

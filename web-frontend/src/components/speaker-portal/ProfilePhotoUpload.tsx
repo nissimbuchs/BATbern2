@@ -19,8 +19,8 @@ import { useTranslation } from 'react-i18next';
 import { Upload, X, AlertCircle } from 'lucide-react';
 import { BATbernLoader } from '@components/shared/BATbernLoader';
 // Code review 2026-05-18 (D1): photo upload moved from the deleted speaker-portal endpoints
-// to the CUMS /api/v1/users/me/picture/* endpoints. The eventCode prop is gone — profile
-// photo lives on User, not per-event.
+// to the CUMS user-picture endpoints, since Story 4.10 /api/v1/users/{username}/picture/*. The
+// eventCode prop is gone — profile photo lives on User, not per-event.
 import { uploadProfilePicture } from '@/services/api/userAccountApi';
 
 // Constants
@@ -31,6 +31,8 @@ const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB (AC7.4)
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/svg+xml'];
 
 interface ProfilePhotoUploadProps {
+  /** Username whose picture is uploaded (the hydrated user's, Story 4.10) */
+  username: string;
   /** Current profile photo URL (null if none) */
   currentPhotoUrl: string | null | undefined;
   /** Callback when photo is successfully uploaded */
@@ -44,6 +46,7 @@ interface ProfilePhotoUploadProps {
  * Uses presigned URL pattern for direct S3 upload via the CUMS user-picture endpoints.
  */
 const ProfilePhotoUpload = ({
+  username,
   currentPhotoUrl,
   onPhotoUploaded,
   onError,
@@ -125,7 +128,7 @@ const ProfilePhotoUpload = ({
       try {
         // Upload using CUMS user-picture endpoints (3-phase presigned URL flow). Returns the
         // CDN URL string directly.
-        const uploadedUrl = await uploadProfilePicture(file, (progress) =>
+        const uploadedUrl = await uploadProfilePicture(username, file, (progress) =>
           setUploadProgress(progress)
         );
 
@@ -147,7 +150,7 @@ const ProfilePhotoUpload = ({
         onError({ type: 'UPLOAD_FAILED', message: errorMsg });
       }
     },
-    [validateFile, onPhotoUploaded, onError]
+    [username, validateFile, onPhotoUploaded, onError]
   );
 
   /**

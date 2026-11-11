@@ -7,11 +7,7 @@ import ch.batbern.events.forwarding.EmailForwardingProperties;
 import ch.batbern.events.forwarding.ForwardingModeratorReplyAddress;
 import ch.batbern.events.mailcenter.render.ModeratorReplyAddress;
 import ch.batbern.events.mailcenter.render.MailPipelines;
-import ch.batbern.events.repository.EventRepository;
-import ch.batbern.events.repository.SessionContentHistoryRepository;
 import ch.batbern.events.repository.SessionRepository;
-import ch.batbern.events.repository.SpeakerPoolRepository;
-import ch.batbern.shared.mail.MailTrigger;
 import ch.batbern.shared.service.EmailService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -32,25 +28,20 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
- * Story 16.0 AC1: the speaker mails without their own unit test (tiered reminder, quality-review
- * revision request) carry Reply-To {@code batbern{N}-moderator@}. Invitation and acceptance are
- * covered in their own test classes.
+ * Speaker reminder variables (Story 16.5 AC12). The Story 16.0 AC1 Reply-To cases left this mock
+ * test in Story 4.10 (touch rule): the tiered reminder's moderator Reply-To is asserted on the
+ * SesRecorder in ManualSpeakerReminderIntegrationTest, the quality-review revision request's in
+ * SpeakerCrossEventScopingIntegrationTest.
  */
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
-@DisplayName("Speaker mails reply to the moderator")
+@DisplayName("Speaker reminder variables")
 class SpeakerModeratorReplyToTest {
-
-    private static final String MODERATOR = "batbern60-moderator@batbern.ch";
 
     @Mock
     private EmailService emailService;
@@ -59,15 +50,7 @@ class SpeakerModeratorReplyToTest {
     @Mock
     private PrimarySpeakerResolver primarySpeakerResolver;
     @Mock
-    private EventRepository eventRepository;
-    @Mock
-    private SpeakerPoolRepository speakerPoolRepository;
-    @Mock
     private SessionRepository sessionRepository;
-    @Mock
-    private SessionContentHistoryRepository sessionContentHistoryRepository;
-    @Mock
-    private SpeakerWorkflowService speakerWorkflowService;
 
     private final ModeratorReplyAddress moderatorReplyAddress =
             new ForwardingModeratorReplyAddress(new EmailForwardingProperties(false, null, null, null, null, 0));
@@ -91,34 +74,6 @@ class SpeakerModeratorReplyToTest {
         when(emailTemplateService.findByKeyAndLocale(anyString(), anyString())).thenReturn(Optional.empty());
         when(emailTemplateService.resolveSubject(anyString(), anyString())).thenReturn(Optional.empty());
         when(emailService.replaceVariables(anyString(), anyMap())).thenAnswer(inv -> inv.getArgument(0));
-    }
-
-    @Test
-    @DisplayName("should_replyToModeratorAlias_when_tieredReminderSent")
-    void should_replyToModeratorAlias_when_tieredReminderSent() {
-        SpeakerReminderEmailService service = new SpeakerReminderEmailService(
-                emailService, MailPipelines.over(emailService, emailTemplateService), primarySpeakerResolver,
-                moderatorReplyAddress, mock(SessionRepository.class));
-        ReflectionTestUtils.setField(service, "baseUrl", "https://batbern.ch");
-
-        service.sendReminderEmail(speaker, event, "RESPONSE", "TIER_1", LocalDate.now().plusDays(7),
-                Locale.ENGLISH, MailTrigger.system());
-
-        verify(emailService).sendHtmlEmail(any(), eq("speaker@example.com"), anyList(), anyString(), anyString(), eq(MODERATOR));
-    }
-
-    @Test
-    @DisplayName("should_replyToModeratorAlias_when_qualityReviewRequestsRevision")
-    void should_replyToModeratorAlias_when_qualityReviewRequestsRevision() {
-        QualityReviewService service = new QualityReviewService(eventRepository, speakerPoolRepository,
-                sessionRepository, sessionContentHistoryRepository, emailService, speakerWorkflowService,
-                primarySpeakerResolver, moderatorReplyAddress);
-        when(speakerPoolRepository.findById(speaker.getId())).thenReturn(Optional.of(speaker));
-        when(eventRepository.findById(event.getId())).thenReturn(Optional.of(event));
-
-        service.rejectContent(speaker.getId().toString(), "Please shorten the abstract", "organizer");
-
-        verify(emailService).sendHtmlEmail(any(), eq("speaker@example.com"), anyList(), anyString(), anyString(), eq(MODERATOR));
     }
 
     @Test

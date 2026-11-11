@@ -51,7 +51,7 @@ script:post-response {
     bru.setVar("originalBio", user.bio || "");
     bru.setVar("originalProfilePictureUrl", user.profilePictureUrl || "");
 
-    // Gate for the destructive 03 → 03b pair. PATCH /users/me rejects a blank firstName or
+    // Gate for the destructive 03 → 03b pair. PATCH /users/{username} rejects a blank firstName or
     // lastName with 400, so a profile whose name is already blank CANNOT be restored: 03
     // would set it to "Updated"/"User" and 03b's restore would 400, permanently renaming a
     // real account. On staging — which IS production — that account is a live organizer.

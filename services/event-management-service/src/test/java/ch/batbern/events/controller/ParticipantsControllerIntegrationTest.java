@@ -1,6 +1,6 @@
 package ch.batbern.events.controller;
 
-import ch.batbern.events.client.UserApiClient;
+import ch.batbern.events.config.CumsContractHarness;
 import ch.batbern.events.config.TestAwsConfig;
 import ch.batbern.events.config.TestSecurityConfig;
 import ch.batbern.events.domain.Event;
@@ -8,42 +8,45 @@ import ch.batbern.events.domain.Registration;
 import ch.batbern.events.domain.Session;
 import ch.batbern.events.domain.SessionUser;
 import ch.batbern.events.core.dto.generated.EventType;
-import ch.batbern.events.dto.generated.users.AdditionalEmail;
-import ch.batbern.events.dto.generated.users.UserResponse;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.RegistrationRepository;
 import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.events.repository.SessionUserRepository;
 import ch.batbern.shared.test.AbstractIntegrationTest;
+import ch.batbern.shared.test.contract.ContractServer.Call;
+import ch.batbern.shared.test.contract.ContractServer.Reply;
+import ch.batbern.shared.test.mail.SesRecorder;
 import ch.batbern.shared.types.EventWorkflowState;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.io.ByteArrayInputStream;
 import java.time.Instant;
-import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.springframework.http.HttpMethod.POST;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -52,12 +55,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * Integration tests for {@link ParticipantsController}: XLSX participants export and
- * per-event distribution-list resolution.
+ * Integration tests for {@link ParticipantsController}: the one participants create (Story 4.10c:
+ * single add, historical import, stakeholders), the badge exports and the per-event distribution
+ * lists.
  *
- * <p>Spec: {@code _bmad-output/implementation-artifacts/spec-auto-participant-email-aliases-excel-export.md}.
+ * <p>Production chain, CUMS as the {@link CumsContractHarness} and SES as the {@link SesRecorder}
+ * (no own-code mocks). Not {@code @Transactional}: the import saves each person on its own, so
+ * the test cleans up its events in {@code @AfterEach}.
  */
-@Transactional
 @Import({TestSecurityConfig.class, TestAwsConfig.class})
 class ParticipantsControllerIntegrationTest extends AbstractIntegrationTest {
 
@@ -71,27 +76,29 @@ class ParticipantsControllerIntegrationTest extends AbstractIntegrationTest {
     private SessionUserRepository sessionUserRepository;
     @Autowired
     private RegistrationRepository registrationRepository;
-
-    @MockitoBean
-    private UserApiClient userApiClient;
-
-    @MockitoBean
-    private ch.batbern.events.service.RegistrationEmailService registrationEmailService;
-
-    @MockitoBean
-    private ch.batbern.events.service.WaitlistPromotionEmailService waitlistPromotionEmailService;
+    @Autowired
+    private CumsContractHarness cums;
+    @Autowired
+    private SesRecorder sesRecorder;
+    @Autowired
+    private JdbcTemplate jdbc;
+    @Autowired
+    private ObjectMapper objectMapper;
 
     private static final String EVENT_CODE = "BATbern1999";
+    private static final String FULL_EVENT_CODE = "BATbern1998";
     private static final String ORGANIZER_USERNAME = "organizer.alice";
+    /** The positive control's attendee: an AWS mailbox-simulator address, so it may receive mail. */
+    private static final String CONTROL = "pia.control";
+    private static final String CONTROL_MAIL = "success+pia.control@simulator.amazonses.com";
 
     private Event event;
 
     @BeforeEach
     void setUp() {
-        registrationRepository.deleteAll();
-        sessionUserRepository.deleteAll();
-        sessionRepository.deleteAll();
-        eventRepository.deleteAll();
+        cleanUp();
+        cums.reset();
+        sesRecorder.reset();
 
         event = Event.builder()
                 .eventCode(EVENT_CODE)
@@ -108,17 +115,24 @@ class ParticipantsControllerIntegrationTest extends AbstractIntegrationTest {
                 .build();
         event = eventRepository.save(event);
 
-        when(userApiClient.getOrganizerUsernames()).thenReturn(List.of(ORGANIZER_USERNAME));
-        when(userApiClient.getCompanyDisplayName("acme")).thenReturn("Acme AG");
-        when(userApiClient.getUserByUsername(anyString())).thenAnswer(inv -> {
-            String u = inv.getArgument(0);
-            return new UserResponse()
-                    .id(u)
-                    .firstName(u.contains(".") ? u.substring(0, u.indexOf(".")) : u)
-                    .lastName(u.contains(".") ? u.substring(u.indexOf(".") + 1) : "User")
-                    .email(u + "@batbern.ch")
-                    .companyId("acme");
-        });
+        cums.usersWithRole("ORGANIZER", ORGANIZER_USERNAME);
+        cums.user(CONTROL, "Pia", "Control", CONTROL_MAIL);
+    }
+
+    @AfterEach
+    void tearDown() {
+        cleanUp();
+        cums.reset();
+    }
+
+    /** Deletes this class's events and everything under them (the test commits). */
+    private void cleanUp() {
+        String events = "SELECT id FROM events WHERE event_code IN ('" + EVENT_CODE + "', '" + FULL_EVENT_CODE + "')";
+        jdbc.update("DELETE FROM registrations WHERE event_id IN (" + events + ")");
+        jdbc.update("DELETE FROM session_users WHERE session_id IN (SELECT id FROM sessions WHERE event_id IN ("
+                + events + "))");
+        jdbc.update("DELETE FROM sessions WHERE event_id IN (" + events + ")");
+        jdbc.update("DELETE FROM events WHERE event_code IN (?, ?)", EVENT_CODE, FULL_EVENT_CODE);
     }
 
     // ---- F3: XLSX export ----
@@ -223,18 +237,13 @@ class ParticipantsControllerIntegrationTest extends AbstractIntegrationTest {
     void should_return200_when_organizerGetsSpeakersList() throws Exception {
         seedScheduledSession("speaker.bob");
 
-        // UserApiClient stub for additionalEmails fan-out
-        when(userApiClient.getUserByUsername("speaker.bob")).thenReturn(
-                new UserResponse()
-                        .id("speaker.bob")
-                        .firstName("Speaker")
-                        .lastName("Bob")
-                        .email("bob@example.com")
-                        .addAdditionalEmailsItem(
-                                // #1244: a copy only to a confirmed address with the copy switched on
-                                new AdditionalEmail().email("bob.work@example.com").createdAt(OffsetDateTime.now())
-                                        .verifiedAt(OffsetDateTime.now())
-                                        .receiveEventMail(true)));
+        // #1244: a copy only to a confirmed address with the copy switched on
+        cums.user("speaker.bob", """
+                {"firstName": "Speaker", "lastName": "Bob", "email": "bob@example.com",
+                 "additionalEmails": [{"id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+                   "email": "bob.work@example.com", "label": null,
+                   "createdAt": "2026-01-10T10:00:00Z", "verifiedAt": "2026-01-10T10:05:00Z",
+                   "receiveEventMail": true}]}""");
 
         mockMvc.perform(get("/api/v1/events/{eventCode}/distribution-list/{kind}",
                         EVENT_CODE, "speakers"))
@@ -249,12 +258,7 @@ class ParticipantsControllerIntegrationTest extends AbstractIntegrationTest {
     @DisplayName("Organizer GET /distribution-list/moderator → 200 with organizer email")
     @WithMockUser(username = ORGANIZER_USERNAME, roles = {"ORGANIZER"})
     void should_return200_when_organizerGetsModeratorList() throws Exception {
-        when(userApiClient.getUserByUsername(ORGANIZER_USERNAME)).thenReturn(
-                new UserResponse()
-                        .id(ORGANIZER_USERNAME)
-                        .firstName("Alice")
-                        .lastName("Organizer")
-                        .email("alice@batbern.ch"));
+        cums.user(ORGANIZER_USERNAME, "Alice", "Organizer", "alice@batbern.ch");
 
         mockMvc.perform(get("/api/v1/events/{eventCode}/distribution-list/{kind}",
                         EVENT_CODE, "moderator"))
@@ -322,27 +326,61 @@ class ParticipantsControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isForbidden());
     }
 
-    // ---- Add participant (organizer) ----
+    // ---- POST /participants: single add (Story 4.10c mode username) ----
 
     @Test
-    @DisplayName("Organizer POST /participants → 201 confirmed, real attendee (no programmatic marker)")
+    @DisplayName("Single add with notify → 201 confirmed, real attendee, exactly one organizer-added mail")
     @WithMockUser(username = ORGANIZER_USERNAME, roles = {"ORGANIZER"})
-    void should_add_confirmed_realAttendee_when_organizerAddsParticipant() throws Exception {
+    void should_addConfirmedAndSendOneMail_when_singleAddWithNotify() throws Exception {
+        String jane = "success+jane.doe@simulator.amazonses.com";
+        cums.user("jane.doe", "Jane", "Doe", jane);
+
+        // notify omitted → defaults true.
         mockMvc.perform(post("/api/v1/events/{eventCode}/participants", EVENT_CODE)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"username\":\"jane.doe\",\"notify\":false}"))
+                        .content("{\"username\":\"jane.doe\"}"))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.status").value("confirmed"))
-                .andExpect(jsonPath("$.attendeeUsername").value("jane.doe"));
+                .andExpect(jsonPath("$.attendeeUsername").value("jane.doe"))
+                .andExpect(jsonPath("$.registrationCode").isNotEmpty())
+                .andExpect(jsonPath("$.enrolled").doesNotExist())
+                .andExpect(jsonPath("$.results").doesNotExist());
 
         Registration reg = registrationRepository
                 .findByEventIdAndAttendeeUsername(event.getId(), "jane.doe").orElseThrow();
         assertThat(reg.getStatus()).isEqualTo("confirmed");
         assertThat(reg.isProgrammatic()).isFalse(); // real attendee — counts for capacity + delete-guard
+        assertThat(reg.getMetadata()).containsEntry("addedByOrganizer", ORGANIZER_USERNAME);
+
+        sesRecorder.awaitAsyncSends();
+        assertThat(sesRecorder.mails()).singleElement().satisfies(mail -> {
+            assertThat(mail.isAddressedTo(jane)).isTrue();
+            // the organizer-added confirmation, not the waitlist promotion
+            assertThat(mail.subject()).startsWith("Registration confirmed");
+        });
     }
 
     @Test
-    @DisplayName("Organizer POST /participants for an already-active registrant → 409")
+    @DisplayName("Single add with notify=false → 201 and no mail; the notify add next to it sends one")
+    @WithMockUser(username = ORGANIZER_USERNAME, roles = {"ORGANIZER"})
+    void should_sendNoMail_when_singleAddIsSilent() throws Exception {
+        cums.user("jane.doe", "Jane", "Doe", "success+jane.doe@simulator.amazonses.com");
+        addControlWithNotify();
+
+        mockMvc.perform(post("/api/v1/events/{eventCode}/participants", EVENT_CODE)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"username\":\"jane.doe\",\"notify\":false}"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.status").value("confirmed"));
+
+        sesRecorder.awaitAsyncSends();
+        assertThat(sesRecorder.mailsTo(CONTROL_MAIL)).hasSize(1);
+        assertThat(sesRecorder.mailsTo("success+jane.doe@simulator.amazonses.com")).isEmpty();
+        assertThat(sesRecorder.mails()).hasSize(1);
+    }
+
+    @Test
+    @DisplayName("Single add for an already-active registrant → 409")
     @WithMockUser(username = ORGANIZER_USERNAME, roles = {"ORGANIZER"})
     void should_return409_when_userAlreadyRegistered() throws Exception {
         seedRegistration("jane.doe", "registered");
@@ -353,7 +391,7 @@ class ParticipantsControllerIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @DisplayName("Organizer POST /participants replaces a cancelled registration → 201 confirmed")
+    @DisplayName("Single add replaces a cancelled registration → 201 confirmed")
     @WithMockUser(username = ORGANIZER_USERNAME, roles = {"ORGANIZER"})
     void should_replaceCancelled_when_organizerAddsParticipant() throws Exception {
         seedRegistration("jane.doe", "cancelled");
@@ -365,11 +403,11 @@ class ParticipantsControllerIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @DisplayName("Organizer POST /participants on a full event → 409 capacity_exceeded; force=true → 201")
+    @DisplayName("Single add on a full event → 409 capacity_exceeded; force=true → 201")
     @WithMockUser(username = ORGANIZER_USERNAME, roles = {"ORGANIZER"})
     void should_respectCapacity_unlessForced() throws Exception {
         Event full = eventRepository.save(Event.builder()
-                .eventCode("BATbern1998").eventNumber(1998).title("Full Event")
+                .eventCode(FULL_EVENT_CODE).eventNumber(1998).title("Full Event")
                 .eventType(EventType.EVENING).date(Instant.now().plus(30, ChronoUnit.DAYS))
                 .registrationDeadline(Instant.now().plus(20, ChronoUnit.DAYS))
                 .venueName("V").venueAddress("Bern").venueCapacity(1).registrationCapacity(1)
@@ -382,14 +420,14 @@ class ParticipantsControllerIntegrationTest extends AbstractIntegrationTest {
                 .attendeeEmail("first@batbern.ch").status("confirmed").registrationDate(Instant.now()).build());
 
         // Without force → 409 with details.code = capacity_exceeded.
-        mockMvc.perform(post("/api/v1/events/{eventCode}/participants", "BATbern1998")
+        mockMvc.perform(post("/api/v1/events/{eventCode}/participants", FULL_EVENT_CODE)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"username\":\"jane.doe\",\"notify\":false}"))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.details.code").value("capacity_exceeded"));
 
         // With force → 201 over capacity.
-        mockMvc.perform(post("/api/v1/events/{eventCode}/participants", "BATbern1998")
+        mockMvc.perform(post("/api/v1/events/{eventCode}/participants", FULL_EVENT_CODE)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"username\":\"jane.doe\",\"force\":true,\"notify\":false}"))
                 .andExpect(status().isCreated())
@@ -397,31 +435,7 @@ class ParticipantsControllerIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @DisplayName("notify=true sends the organizer-added confirmation, NOT the waitlist-promotion email")
-    @WithMockUser(username = ORGANIZER_USERNAME, roles = {"ORGANIZER"})
-    void should_sendOrganizerAddedConfirmation_not_waitlist_when_notify() throws Exception {
-        // notify omitted → defaults true.
-        mockMvc.perform(post("/api/v1/events/{eventCode}/participants", EVENT_CODE)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"username\":\"jane.doe\"}"))
-                .andExpect(status().isCreated());
-
-        verify(registrationEmailService).sendOrganizerAddedConfirmation(any(), any(), any(), any());
-        verify(waitlistPromotionEmailService, never()).sendPromotionEmail(any());
-    }
-
-    @Test
-    @DisplayName("Non-organizer POST /participants → 403")
-    @WithMockUser(username = "joe.user", roles = {"ATTENDEE"})
-    void should_return403_when_nonOrganizerAddsParticipant() throws Exception {
-        mockMvc.perform(post("/api/v1/events/{eventCode}/participants", EVENT_CODE)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"username\":\"jane.doe\"}"))
-                .andExpect(status().isForbidden());
-    }
-
-    @Test
-    @DisplayName("Organizer POST /participants for unknown event → 404")
+    @DisplayName("Single add for an unknown event → 404")
     @WithMockUser(username = ORGANIZER_USERNAME, roles = {"ORGANIZER"})
     void should_return404_when_unknownEventOnAddParticipant() throws Exception {
         mockMvc.perform(post("/api/v1/events/{eventCode}/participants", "BATbern99999")
@@ -431,15 +445,280 @@ class ParticipantsControllerIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @DisplayName("Organizer POST /participants for unknown user → 404")
+    @DisplayName("Single add for an unknown user → 404, nothing stored")
     @WithMockUser(username = ORGANIZER_USERNAME, roles = {"ORGANIZER"})
     void should_return404_when_unknownUserOnAddParticipant() throws Exception {
-        when(userApiClient.getUserByUsername(eq("ghost.user")))
-                .thenThrow(new ch.batbern.events.exception.UserNotFoundException("ghost.user"));
+        cums.unknownUser("ghost.user");
         mockMvc.perform(post("/api/v1/events/{eventCode}/participants", EVENT_CODE)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"username\":\"ghost.user\"}"))
                 .andExpect(status().isNotFound());
+        assertThat(registrationRepository.findByEventIdAndAttendeeUsername(event.getId(), "ghost.user")).isEmpty();
+    }
+
+    // ---- POST /participants: historical import (mode people) ----
+
+    @Test
+    @DisplayName("Import → 200 per person: new registered, existing skipped, one failing person keeps the others; no mail")
+    @WithMockUser(username = ORGANIZER_USERNAME, roles = {"ORGANIZER"})
+    void should_importPerPerson_when_peopleGiven() throws Exception {
+        List<String> getOrCreateEmails = new ArrayList<>();
+        cums.answer(POST, "/internal/users/get-or-create", call -> {
+            JsonNode body = readTree(call);
+            String email = body.get("email").asText();
+            getOrCreateEmails.add(email);
+            assertThat(body.get("cognitoSync").asBoolean()).isFalse(); // ADR-005: no login
+            if (email.startsWith("linked.")) {
+                return new Reply(HttpStatus.CONFLICT, """
+                        {"timestamp": "2026-11-08T10:00:00Z", "path": "/internal/users/get-or-create",
+                         "status": 409, "error": "Conflict", "errorCode": "EMAIL_LINKED_TO_ACCOUNT",
+                         "message": "This email is linked to an existing account, please sign in",
+                         "severity": "LOW"}""");
+            }
+            if (email.startsWith("broken.")) {
+                // A CUMS failure other than the linked address: the caller gets a generic reason.
+                return new Reply(HttpStatus.BAD_REQUEST, """
+                        {"timestamp": "2026-11-08T10:00:00Z", "path": "/internal/users/get-or-create",
+                         "status": 400, "error": "Bad Request", "message": "internal detail: column x violates y",
+                         "severity": "LOW"}""");
+            }
+            String username = email.substring(0, email.indexOf('@')).toLowerCase(Locale.ROOT);
+            if (username.equals("hugo.muster")) {
+                // An existing user: CUMS answers their own profile, which the registration copies.
+                return Reply.ok("{\"username\": \"hugo.muster\", \"created\": false, \"companyUpdated\": false, "
+                        + "\"cognitoUserId\": null, \"user\": " + CumsContractHarness.userJson("hugo.muster",
+                        "Hugo", "Muster-Profil", "hugo.profil@example.com", "profilag") + "}");
+            }
+            return Reply.ok(getOrCreateReply(username, body));
+        });
+        seedRegistration("ines.muster", "attended"); // already there → skipped
+        addControlWithNotify();
+
+        String body = """
+                {"people": [
+                  {"email": "hugo.muster@example.com", "firstName": "Hugo", "lastName": "Müster",
+                   "companyId": "musterag", "status": "ATTENDED"},
+                  {"email": "linked.person@example.com", "firstName": "Linked", "lastName": "Person",
+                   "status": "ATTENDED"},
+                  {"email": "ines.muster@example.com", "firstName": "Ines", "lastName": "Muster",
+                   "status": "ATTENDED"},
+                  {"email": "otto.cancel@example.com", "firstName": "Otto", "lastName": "Cancel",
+                   "status": "CANCELLED"},
+                  {"email": "blank.name@example.com", "firstName": " ", "lastName": "Blank",
+                   "status": "ATTENDED"},
+                  {"email": "not-an-email", "firstName": "No", "lastName": "Mail", "status": "ATTENDED"},
+                  {"email": "jürg@example.ch", "firstName": "Jürg", "lastName": "Umlaut", "status": "ATTENDED"},
+                  {"email": "wait.list@example.com", "firstName": "Wait", "lastName": "List",
+                   "status": "WAITLIST"},
+                  {"email": "broken.cums@example.com", "firstName": "Broken", "lastName": "Cums",
+                   "status": "ATTENDED"}
+                ]}""";
+        mockMvc.perform(post("/api/v1/events/{eventCode}/participants", EVENT_CODE)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.enrolled").value(2))
+                .andExpect(jsonPath("$.skipped").value(1))
+                .andExpect(jsonPath("$.failed").value(6))
+                .andExpect(jsonPath("$.registrationCode").doesNotExist())
+                .andExpect(jsonPath("$.results[0].outcome").value("REGISTERED"))
+                .andExpect(jsonPath("$.results[0].username").value("hugo.muster"))
+                .andExpect(jsonPath("$.results[1].outcome").value("FAILED"))
+                .andExpect(jsonPath("$.results[1].email").value("linked.person@example.com"))
+                .andExpect(jsonPath("$.results[1].reason").value(
+                        "This e-mail is linked to an existing account; add that user by name instead"))
+                .andExpect(jsonPath("$.results[1].username").doesNotExist())
+                .andExpect(jsonPath("$.results[2].outcome").value("SKIPPED"))
+                .andExpect(jsonPath("$.results[3].outcome").value("REGISTERED"))
+                // Invalid people fail alone, with the rule as reason; the valid ones above stay.
+                .andExpect(jsonPath("$.results[4].outcome").value("FAILED"))
+                .andExpect(jsonPath("$.results[4].reason").value(
+                        "First and last name are required (at most 100 characters)"))
+                .andExpect(jsonPath("$.results[5].outcome").value("FAILED"))
+                .andExpect(jsonPath("$.results[5].reason").value("Invalid e-mail address"))
+                .andExpect(jsonPath("$.results[6].reason").value("Invalid e-mail address"))
+                .andExpect(jsonPath("$.results[7].reason").value(
+                        "Status must be REGISTERED, ATTENDED or CANCELLED"))
+                // Any other failure: a generic reason, the details stay in the log.
+                .andExpect(jsonPath("$.results[8].outcome").value("FAILED"))
+                .andExpect(jsonPath("$.results[8].reason").value("Could not register this person"));
+
+        // Invalid people never reach CUMS.
+        assertThat(getOrCreateEmails).containsExactly("hugo.muster@example.com", "linked.person@example.com",
+                "ines.muster@example.com", "otto.cancel@example.com", "broken.cums@example.com");
+        Registration hugo = registrationRepository
+                .findByEventIdAndAttendeeUsername(event.getId(), "hugo.muster").orElseThrow();
+        assertThat(hugo.getStatus()).isEqualTo("attended");
+        // The cache fields are the profile CUMS returned, not the CSV row (as on every creation path).
+        assertThat(hugo.getAttendeeFirstName()).isEqualTo("Hugo");
+        assertThat(hugo.getAttendeeLastName()).isEqualTo("Muster-Profil");
+        assertThat(hugo.getAttendeeEmail()).isEqualTo("hugo.profil@example.com");
+        assertThat(hugo.getAttendeeCompanyId()).isEqualTo("profilag");
+        assertThat(registrationRepository.countByEventId(event.getId())).isEqualTo(4); // control, hugo, ines, otto
+        assertThat(registrationRepository.findByEventIdAndAttendeeUsername(event.getId(), "otto.cancel")
+                .orElseThrow().getStatus()).isEqualTo("cancelled");
+        assertThat(registrationRepository.findByEventIdAndAttendeeUsername(event.getId(), "ines.muster")
+                .orElseThrow().getStatus()).isEqualTo("attended"); // untouched
+
+        sesRecorder.awaitAsyncSends();
+        assertThat(sesRecorder.mailsTo(CONTROL_MAIL)).hasSize(1);
+        assertThat(sesRecorder.mails()).hasSize(1);
+    }
+
+    @Test
+    @DisplayName("Import of the same people twice → second call skips everyone (idempotent)")
+    @WithMockUser(username = ORGANIZER_USERNAME, roles = {"ORGANIZER"})
+    void should_skipEveryone_when_importRepeated() throws Exception {
+        cums.answer(POST, "/internal/users/get-or-create", call -> {
+            JsonNode body = readTree(call);
+            String email = body.get("email").asText();
+            return Reply.ok(getOrCreateReply(email.substring(0, email.indexOf('@')), body));
+        });
+        String body = """
+                {"people": [{"email": "hugo.muster@example.com", "firstName": "Hugo", "lastName": "Muster",
+                             "status": "ATTENDED"}]}""";
+        mockMvc.perform(post("/api/v1/events/{eventCode}/participants", EVENT_CODE)
+                        .contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.enrolled").value(1));
+        mockMvc.perform(post("/api/v1/events/{eventCode}/participants", EVENT_CODE)
+                        .contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.enrolled").value(0))
+                .andExpect(jsonPath("$.skipped").value(1));
+    }
+
+    // ---- POST /participants: stakeholders ----
+
+    @Test
+    @DisplayName("Stakeholders → 200 {enrolled, skipped}, idempotent, no mail")
+    @WithMockUser(username = ORGANIZER_USERNAME, roles = {"ORGANIZER"})
+    void should_enrolStakeholders_when_stakeholdersTrue() throws Exception {
+        cums.usersWithRole("ORGANIZER", ORGANIZER_USERNAME, "organizer.bert");
+        cums.usersWithRole("PARTNER", "partner.paula");
+        seedRegistration("organizer.bert", "confirmed"); // already there → skipped
+        addControlWithNotify();
+
+        mockMvc.perform(post("/api/v1/events/{eventCode}/participants", EVENT_CODE)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"stakeholders\":true}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.enrolled").value(2))
+                .andExpect(jsonPath("$.skipped").value(1))
+                .andExpect(jsonPath("$.results").doesNotExist())
+                .andExpect(jsonPath("$.registrationCode").doesNotExist());
+
+        assertThat(registrationRepository.findByEventIdAndAttendeeUsername(event.getId(), "partner.paula"))
+                .get().extracting(Registration::getStatus).isEqualTo("confirmed");
+
+        mockMvc.perform(post("/api/v1/events/{eventCode}/participants", EVENT_CODE)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"stakeholders\":true}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.enrolled").value(0))
+                .andExpect(jsonPath("$.skipped").value(3));
+
+        sesRecorder.awaitAsyncSends();
+        assertThat(sesRecorder.mailsTo(CONTROL_MAIL)).hasSize(1);
+        assertThat(sesRecorder.mails()).hasSize(1);
+    }
+
+    // ---- POST /participants: mode errors and access ----
+
+    @ParameterizedTest(name = "{0}")
+    @ValueSource(strings = {
+        "{}",
+        "{\"username\":\"jane.doe\",\"stakeholders\":true}",
+        "{\"username\":\"jane.doe\",\"people\":[{\"email\":\"a.b@example.com\",\"firstName\":\"A\",\"lastName\":\"B\",\"status\":\"ATTENDED\"}]}",
+        "{\"stakeholders\":true,\"people\":[{\"email\":\"a.b@example.com\",\"firstName\":\"A\",\"lastName\":\"B\",\"status\":\"ATTENDED\"}]}",
+        "{\"stakeholders\":false}",
+        "{\"stakeholders\":true,\"notify\":false}",
+        "{\"people\":[]}",
+        "{\"username\":\"\"}"
+    })
+    @DisplayName("Mode error → 400, nothing stored")
+    @WithMockUser(username = ORGANIZER_USERNAME, roles = {"ORGANIZER"})
+    void should_return400_when_modeIsNotExactlyOne(String body) throws Exception {
+        mockMvc.perform(post("/api/v1/events/{eventCode}/participants", EVENT_CODE)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isBadRequest());
+        assertThat(registrationRepository.countByEventId(event.getId())).isZero();
+    }
+
+    @Test
+    @DisplayName("More than 100 people → 400, nothing stored")
+    @WithMockUser(username = ORGANIZER_USERNAME, roles = {"ORGANIZER"})
+    void should_return400_when_moreThan100People() throws Exception {
+        StringBuilder people = new StringBuilder();
+        for (int i = 0; i < 101; i++) {
+            people.append(i == 0 ? "" : ",").append("{\"email\":\"p").append(i)
+                    .append(".x@example.com\",\"firstName\":\"P\",\"lastName\":\"X\",\"status\":\"ATTENDED\"}");
+        }
+        mockMvc.perform(post("/api/v1/events/{eventCode}/participants", EVENT_CODE)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"people\":[" + people + "]}"))
+                .andExpect(status().isBadRequest());
+        assertThat(registrationRepository.countByEventId(event.getId())).isZero();
+    }
+
+    @Test
+    @DisplayName("Attendee POST /participants → 403 in every mode")
+    @WithMockUser(username = "joe.user", roles = {"ATTENDEE"})
+    void should_return403_when_nonOrganizerAddsParticipant() throws Exception {
+        for (String body : List.of("{\"username\":\"jane.doe\"}", "{\"stakeholders\":true}")) {
+            mockMvc.perform(post("/api/v1/events/{eventCode}/participants", EVENT_CODE)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(body))
+                    .andExpect(status().isForbidden());
+        }
+    }
+
+    @Test
+    @DisplayName("Anonymous POST /participants → 401")
+    void should_return401_when_anonymousAddsParticipant() throws Exception {
+        mockMvc.perform(post("/api/v1/events/{eventCode}/participants", EVENT_CODE)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"stakeholders\":true}"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @DisplayName("The old create paths are gone: batch_registrations and enroll-stakeholders → 404/405")
+    @WithMockUser(username = ORGANIZER_USERNAME, roles = {"ORGANIZER"})
+    void should_notServe_oldCreatePaths() throws Exception {
+        int batch = mockMvc.perform(post("/api/v1/events/batch_registrations")
+                        .contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andReturn().getResponse().getStatus();
+        int enrol = mockMvc.perform(post("/api/v1/events/{eventCode}/enroll-stakeholders", EVENT_CODE))
+                .andReturn().getResponse().getStatus();
+        assertThat(Set.of(batch, enrol)).allMatch(code -> code == 404 || code == 405);
+        assertThat(registrationRepository.countByEventId(event.getId())).isZero();
+    }
+
+    /** Positive control: a notify add whose mail must arrive, next to an absence assertion. */
+    private void addControlWithNotify() throws Exception {
+        mockMvc.perform(post("/api/v1/events/{eventCode}/participants", EVENT_CODE)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"username\":\"" + CONTROL + "\",\"notify\":true}"))
+                .andExpect(status().isCreated());
+    }
+
+    private JsonNode readTree(Call call) {
+        try {
+            return objectMapper.readTree(call.body());
+        } catch (Exception e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    /** A {@code GetOrCreateUserResponse} for this username, with a complete user. */
+    private String getOrCreateReply(String username, JsonNode request) {
+        String user = CumsContractHarness.userJson(username, request.get("firstName").asText(),
+                request.get("lastName").asText(), request.get("email").asText(),
+                request.hasNonNull("companyId") ? request.get("companyId").asText() : null);
+        return "{\"username\": \"" + username + "\", \"created\": true, \"companyUpdated\": false, "
+                + "\"cognitoUserId\": null, \"user\": " + user + "}";
     }
 
     // ---- helpers ----

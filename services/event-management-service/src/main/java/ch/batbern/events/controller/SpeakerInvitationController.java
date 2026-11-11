@@ -1,35 +1,32 @@
 package ch.batbern.events.controller;
 
-import ch.batbern.shared.utils.LoggingUtils;
+import ch.batbern.events.service.SpeakerInvitationService;
 import ch.batbern.events.speakers.api.generated.SpeakerInvitationApi;
-import ch.batbern.events.speakers.dto.generated.InviteSpeakerRequest;
-import ch.batbern.events.speakers.dto.generated.InviteSpeakerResponse;
 import ch.batbern.events.speakers.dto.generated.SendInvitationRequest;
 import ch.batbern.events.speakers.dto.generated.SendInvitationResponse;
-import ch.batbern.events.service.SpeakerInvitationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.UUID;
+
 /**
- * REST Controller for speaker invitation management.
- * Story 6.1b: Speaker Invitation System
- *
- * Provides endpoints for:
- * - Inviting speakers to events
- * - Sending/resending invitation emails
- *
- * All endpoints require ORGANIZER role.
+ * REST Controller for speaker invitation emails.
+ * Story 6.1b: Speaker Invitation System. All endpoints require ORGANIZER role.
  *
  * <p>API-consolidation Phase 7 (2026-06-28): implements the generated
  * {@link SpeakerInvitationApi} (1:1 with the event-speakers `SpeakerInvitation` tag).
  * Paths + @Valid @RequestBody binding are inherited from the interface; the class
  * carries only the `/api/v1` prefix, and the overrides keep the method-level
  * {@code @PreAuthorize}.
+ *
+ * <p>Story 4.10: the speaker is addressed by its pool entry id ({@code {speakerId}}, one speaker
+ * key under {@code /events/{eventCode}/speakers}). The test-only {@code POST /speakers/invite}
+ * is gone: a speaker enters the pool with {@code POST /events/{eventCode}/speakers} and is
+ * provisioned at promote.
  */
 @RestController
 @RequestMapping("/api/v1")
@@ -40,29 +37,8 @@ public class SpeakerInvitationController implements SpeakerInvitationApi {
     private final SpeakerInvitationService speakerInvitationService;
 
     /**
-     * Invite a speaker to an event.
-     * AC1: Creates SpeakerPool entry
-     * AC2: Auto-creates User if needed
-     *
-     * @return 201 Created with speaker details if new, 200 OK if existing
-     */
-    @Override
-    @PreAuthorize("hasRole('ORGANIZER')")
-    public ResponseEntity<InviteSpeakerResponse> inviteSpeaker(
-            String eventCode, InviteSpeakerRequest inviteSpeakerRequest) {
-        log.info("POST /api/v1/events/{}/speakers/invite - email: {}",
-                eventCode, LoggingUtils.maskEmail(inviteSpeakerRequest.getEmail()));
-
-        InviteSpeakerResponse response = speakerInvitationService.inviteSpeaker(eventCode, inviteSpeakerRequest);
-
-        // Return 201 if newly created, 200 if existing (idempotency)
-        HttpStatus status = Boolean.TRUE.equals(response.getCreated()) ? HttpStatus.CREATED : HttpStatus.OK;
-        return ResponseEntity.status(status).body(response);
-    }
-
-    /**
      * Send invitation email to a speaker.
-     * AC3: Sends personalized email with magic links
+     * AC3: Sends personalized email with the Cognito login
      * AC6: Publishes SpeakerInvitationSentEvent
      *
      * @return 200 OK with updated speaker details
@@ -70,11 +46,11 @@ public class SpeakerInvitationController implements SpeakerInvitationApi {
     @Override
     @PreAuthorize("hasRole('ORGANIZER')")
     public ResponseEntity<SendInvitationResponse> sendSpeakerInvitation(
-            String eventCode, String username, SendInvitationRequest sendInvitationRequest) {
-        log.info("POST /api/v1/events/{}/speakers/{}/send-invitation", eventCode, username);
+            String eventCode, UUID speakerId, SendInvitationRequest sendInvitationRequest) {
+        log.info("POST /api/v1/events/{}/speakers/{}/send-invitation", eventCode, speakerId);
 
         SendInvitationResponse response = speakerInvitationService.sendInvitation(
-                eventCode, username, sendInvitationRequest);
+                eventCode, speakerId, sendInvitationRequest);
 
         return ResponseEntity.ok(response);
     }

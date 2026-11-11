@@ -11,18 +11,14 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import EventParticipantsTab from './EventParticipantsTab';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { eventApiClient } from '@/services/eventApiClient';
-import { enrollStakeholders } from '@/services/api/eventRegistrationService';
+import { api } from '@/test/msw/api';
+import { anEvent } from '@/test/fixtures/events';
 
 // Mock EventParticipantList component
 vi.mock('./EventParticipantList', () => ({
   default: ({ eventCode }: { eventCode: string }) => (
     <div data-testid="participant-list">List for {eventCode}</div>
   ),
-}));
-
-// Enrol organizers & partners moved here from the Overview (Epic 14 FR25).
-vi.mock('@/services/api/eventRegistrationService', () => ({
-  enrollStakeholders: vi.fn().mockResolvedValue({ enrolled: 3, skipped: 1 }),
 }));
 
 // Mock translation
@@ -40,24 +36,15 @@ vi.mock('@/services/eventApiClient', () => ({
   },
 }));
 
-const mockEvent = {
+// A wire-shaped event (src/test/fixtures), with the fields these tests read.
+const mockEvent = anEvent({
   eventCode: 'BAT-2024-01',
   eventNumber: 123,
   title: 'Test Event',
-  subtitle: 'Test Subtitle',
-  date: '2024-06-15T18:00:00Z',
-  registrationDeadline: '2024-06-10T23:59:59Z',
-  venueName: 'Test Venue',
-  venueAddress: 'Test Address',
   venueCapacity: 200,
   organizerUsername: 'admin',
-  currentWorkflowState: 'DRAFT' as const,
-  workflowHistory: [],
-  registrationCount: 0,
-  attendanceCount: 0,
-  createdAt: '2024-01-01T00:00:00Z',
-  updatedAt: '2024-01-01T00:00:00Z',
-};
+  workflowState: 'CREATED',
+});
 
 const renderWithProviders = (ui: React.ReactElement) => {
   const queryClient = new QueryClient({
@@ -171,12 +158,20 @@ describe('EventParticipantsTab Component', () => {
       expect(screen.getByTestId('enroll-stakeholders-button')).toBeInTheDocument();
     });
 
-    it('calls enrollStakeholders with the event code when clicked', async () => {
+    it('posts stakeholders: true to the participants create when clicked (Story 4.10c)', async () => {
+      // Enrol organizers & partners moved here from the Overview (Epic 14 FR25); the real
+      // service runs against the MSW harness.
+      api.on('addParticipants', () => ({ enrolled: 3, skipped: 1 }));
       const user = userEvent.setup();
-      renderWithProviders(<EventParticipantsTab event={mockEvent} />);
+      renderWithProviders(
+        <EventParticipantsTab event={{ ...mockEvent, eventCode: 'BATbern73' }} />
+      );
 
       await user.click(screen.getByTestId('enroll-stakeholders-button'));
-      await waitFor(() => expect(enrollStakeholders).toHaveBeenCalledWith('BAT-2024-01'));
+      await waitFor(() => expect(api.calls('addParticipants')).toHaveLength(1));
+      const [call] = api.calls('addParticipants');
+      expect(call.params.eventCode).toBe('BATbern73');
+      expect(call.body).toEqual({ stakeholders: true });
     });
 
     it('no longer renders the separate waitlist accordion (folded into the list filter)', () => {

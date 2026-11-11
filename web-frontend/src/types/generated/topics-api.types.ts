@@ -146,6 +146,36 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/topics/classifications': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Classify a batch of topic titles into BATbern clusters
+     * @description Classify each title into a BATbern cluster, with the similarity score and the related past
+     *     event numbers, exactly as `POST /events/{eventCode}/topic-similarity` does for one topic.
+     *     The blob topic selector canvas sends the titles of the partner topics it loads from
+     *     partner-coordination (`GET /partners/topics`), so it can place them by cluster (Epic 17,
+     *     entry 8: EMS no longer calls partner-coordination for the canvas). Nothing is stored.
+     *
+     *     `classifications` holds one entry per title, in request order (duplicates included).
+     *     At most 500 titles per call: local dev holds 38 topic suggestions (2026-11-11), the canvas
+     *     sends each unique title once and splits a longer list into several calls.
+     *
+     *     **Authorization**: ORGANIZER role required; any other role gets 403.
+     */
+    post: operations['classifyTopics'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/events/{eventCode}/topics': {
     parameters: {
       query?: never;
@@ -205,9 +235,13 @@ export interface paths {
     };
     /**
      * Bootstrap data for the blob topic selector canvas
-     * @description Return all data needed to bootstrap the blob topic selector canvas in one call:
-     *     partner topics (green blobs), past events (red stars), organizer backlog (ghost blobs),
-     *     and AI-generated trending topics (gold shimmer ghosts).
+     * @description Return the EMS data the blob topic selector canvas starts from: past events (red stars),
+     *     organizer backlog (ghost blobs) and AI-generated trending topics (gold shimmer ghosts).
+     *     The partner topics (green blobs) are not part of it: the canvas loads them from
+     *     partner-coordination itself (`GET /partners/topics`, logos from
+     *     `GET /partners?include=company`) and classifies their titles with
+     *     `POST /topics/classifications` (Epic 17, entry 8; ADR-016: EMS does not call
+     *     partner-coordination).
      *
      *     **Story 10.4** (AC29–31). Each source degrades gracefully to an empty list on failure.
      *     The eventCode path segment is contextual only.
@@ -260,37 +294,60 @@ export interface components {
        */
       relatedPastEventNumbers: number[];
     };
-    /** @description Aggregated bootstrap data for the blob topic selector canvas (Story 10.4 AC29–31) */
+    /** @description Topic titles to classify (blob topic selector canvas, partner topics) */
+    TopicClassificationRequest: {
+      /**
+       * @description Titles to classify, at most 500 (local dev holds 38 topic suggestions, 2026-11-11). A
+       *     title must contain a non-blank character; a blank title answers 400.
+       * @example [
+       *       "AI in Operations",
+       *       "Zero Trust"
+       *     ]
+       */
+      topics: string[];
+    };
+    /** @description One classification per requested title, in request order */
+    TopicClassificationResponse: {
+      classifications: components['schemas']['TopicClassification'][];
+    };
+    /** @description Cluster affinity of one title, as `TopicSimilarityResponse` gives it for one topic */
+    TopicClassification: {
+      /**
+       * @description The title as sent
+       * @example AI in Operations
+       */
+      topic: string;
+      /**
+       * @description BATbern cluster name (e.g. AI_ML, SECURITY, CLOUD_INFRA, BUSINESS_OTHER)
+       * @example AI_ML
+       */
+      cluster: string;
+      /**
+       * Format: double
+       * @description 0.85 for a keyword match, 0.50 for BUSINESS_OTHER
+       * @example 0.85
+       */
+      similarityScore: number;
+      /**
+       * @description BATbern event numbers in the same cluster (empty for BUSINESS_OTHER)
+       * @example [
+       *       40,
+       *       44,
+       *       49,
+       *       56,
+       *       58
+       *     ]
+       */
+      relatedPastEventNumbers: number[];
+    };
+    /** @description EMS bootstrap data for the blob topic selector canvas (Story 10.4 AC29–31); partner topics come from partner-coordination */
     TopicSessionDataResponse: {
-      /** @description Partner topics grouped by company (green blobs) */
-      partnerTopics: components['schemas']['PartnerTopicGroup'][];
       /** @description Past BATbern events with cluster classification (red star blobs) */
       pastEvents: components['schemas']['PastEventEntry'][];
       /** @description Available topics from the organizer's backlog (ghost blobs) */
       organizerBacklog: components['schemas']['BacklogItem'][];
       /** @description AI-generated trending IT topics (gold shimmer ghost blobs) */
       trendingTopics: string[];
-    };
-    /** @description Partner topic suggestions grouped by company */
-    PartnerTopicGroup: {
-      /** @description Partner company name */
-      companyName: string;
-      /** @description Company logo URL (may be null when not available) */
-      logoUrl: string | null;
-      topics: components['schemas']['TopicEntry'][];
-    };
-    /** @description A single partner topic suggestion enriched with cluster, votes, and date */
-    TopicEntry: {
-      title: string;
-      /** @description BatbernCluster name the topic was classified into */
-      cluster: string;
-      /** @description Number of partner votes cast on this topic suggestion */
-      voteCount: number;
-      /**
-       * Format: date-time
-       * @description When the topic was first submitted (recency proxy for attraction strength)
-       */
-      createdAt: string;
     };
     /** @description An available topic from the organizer's backlog (ghost blob) */
     BacklogItem: {
@@ -831,6 +888,33 @@ export interface operations {
           };
         };
       };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+    };
+  };
+  classifyTopics: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['TopicClassificationRequest'];
+      };
+    };
+    responses: {
+      /** @description One classification per title, in request order */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['TopicClassificationResponse'];
+        };
+      };
+      400: components['responses']['BadRequest'];
       401: components['responses']['Unauthorized'];
       403: components['responses']['Forbidden'];
     };

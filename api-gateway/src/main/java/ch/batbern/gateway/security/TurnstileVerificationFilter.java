@@ -30,7 +30,7 @@ import java.util.Map;
  * TurnstileVerificationFilter intercepts protected endpoints and validates
  * Cloudflare Turnstile tokens before allowing requests through.
  *
- * AC1: Intercepts POST /api/v1/newsletter/subscribe and POST /api/v1/events/{code}/registrations
+ * AC1: Intercepts POST /api/v1/newsletter/subscribers and POST /api/v1/events/{code}/registrations
  * AC2: Missing X-Turnstile-Token -&gt; fail-open (widget may be blocked by ad blocker/firewall)
  * AC3: Invalid token -&gt; 403 with turnstile_failed
  * AC4: Cloudflare unreachable -&gt; fail-open (log warning, let through)
@@ -85,7 +85,8 @@ public class TurnstileVerificationFilter implements Filter {
 
         // AC2: If no token present, fail-open — widget may be blocked by ad blocker or
         // corporate firewall. Registration requires email confirmation, which acts as a
-        // secondary bot filter.
+        // secondary bot filter; the newsletter subscribe has none (#1288) and relies on the
+        // per-IP rate limit (RateLimiter).
         String token = httpRequest.getHeader("X-Turnstile-Token");
         if (token == null || token.isBlank()) {
             log.debug("Turnstile token missing for {} {} — failing open", httpRequest.getMethod(),

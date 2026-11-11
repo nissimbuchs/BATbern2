@@ -6,30 +6,55 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { I18nextProvider } from 'react-i18next';
 import i18n from '@/i18n/config';
 import { EventsParticipatedTable } from './EventsParticipatedTable';
-import MockAdapter from 'axios-mock-adapter';
-import apiClient from '@/services/api/apiClient';
+import { HttpResponse } from 'msw';
+import { api } from '@/test/msw/api';
+import type { AttendeeRegistration } from '@/services/api/eventRegistrationService';
 
-// HTTP is stubbed at the boundary: the real service and apiClient run.
-let http: MockAdapter;
+// HTTP is answered by the MSW harness (spec-checked): the real service and apiClient run.
+
+const registration = (
+  eventCode: string,
+  eventTitle: string,
+  eventDate: string,
+  status: AttendeeRegistration['status']
+): AttendeeRegistration => ({
+  registrationCode: `${eventCode}-reg-A1B2C3`,
+  eventCode,
+  eventTitle,
+  eventDate,
+  attendeeUsername: 'alice.smith',
+  attendeeFirstName: 'Alice',
+  attendeeLastName: 'Smith',
+  attendeeEmail: 'alice.smith@example.com',
+  attendeeCompany: null,
+  status,
+  waitlistPosition: null,
+  registrationDate: '2026-02-10T18:00:00Z',
+  createdAt: null,
+  updatedAt: null,
+});
 
 const mockRegistrations = [
-  {
-    eventCode: 'BATbern56',
-    eventTitle: 'Resilient Systems',
-    eventDate: '2026-03-10T18:00:00Z',
-    status: 'ATTENDED',
-  },
-  {
-    eventCode: 'BATbern57',
-    eventTitle: 'Zero Trust',
-    eventDate: '2026-05-20T18:00:00Z',
-    status: 'REGISTERED',
-  },
+  registration('BATbern56', 'Resilient Systems', '2026-03-10T18:00:00Z', 'ATTENDED'),
+  registration('BATbern57', 'Zero Trust', '2026-05-20T18:00:00Z', 'REGISTERED'),
 ];
+
+const answerWith = (data: AttendeeRegistration[]) =>
+  api.on('listUserRegistrations', () => ({
+    data,
+    pagination: {
+      page: 1,
+      limit: 100,
+      totalItems: data.length,
+      totalPages: 1,
+      hasNext: false,
+      hasPrev: false,
+    },
+  }));
 
 const renderTable = () =>
   render(
@@ -63,13 +88,11 @@ describe('EventsParticipatedTable', () => {
   const originalMatchMedia = window.matchMedia;
 
   beforeEach(() => {
-    http = new MockAdapter(apiClient);
-    http.onGet('/events/registrations').reply(200, mockRegistrations);
+    answerWith(mockRegistrations);
     installMatchMediaForWidth(1280);
   });
 
   afterEach(() => {
-    http.restore();
     vi.clearAllMocks();
     window.matchMedia = originalMatchMedia;
   });
@@ -82,7 +105,8 @@ describe('EventsParticipatedTable', () => {
     expect(screen.queryByTestId('events-participated-cards')).not.toBeInTheDocument();
     expect(screen.getByText('BATbern56')).toBeInTheDocument();
     expect(screen.getByText('Resilient Systems')).toBeInTheDocument();
-    expect(http.history.get[0].headers?.['X-Attendee-Username']).toBe('alice.smith');
+    const [call] = api.calls('listUserRegistrations');
+    expect(JSON.parse(call.query.get('filter') ?? '')).toEqual({ attendeeUsername: 'alice.smith' });
   });
 
   it('should_renderCards_when_mobileViewport', async () => {
@@ -104,8 +128,7 @@ describe('EventsParticipatedTable', () => {
   });
 
   it('should_showLoadError_when_requestFails', async () => {
-    http.reset();
-    http.onGet('/events/registrations').reply(500, { message: 'boom' });
+    api.on('listUserRegistrations', () => HttpResponse.json({ message: 'boom' }, { status: 500 }));
     renderTable();
 
     expect(
@@ -114,8 +137,7 @@ describe('EventsParticipatedTable', () => {
   });
 
   it('should_showEmptyState_when_noParticipations', async () => {
-    http.reset();
-    http.onGet('/events/registrations').reply(200, []);
+    answerWith([]);
     installMatchMediaForWidth(375);
     renderTable();
 

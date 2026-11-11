@@ -61,6 +61,74 @@ most common EMS shape (speakers review/promote, registrations promote, mails ret
   there next to the timing rule (422 `PublishValidationError` listing every reason).
 - Lint: `no-verb-segment` 43 to 39 findings, owner group T1 removed.
 
+**Story 4.10 (2026-11, API conventions II, breaking, no aliases)** removed twins and second keys:
+
+- **Profile and picture:** one set, `PATCH /users/{username}` and `/users/{username}/picture*`,
+  for the user themself and for organizers (`@userOwnership.isCurrentUser(#username)` next to the
+  role rule). `PATCH /users/me`, `PUT /users/{username}` (§1: PUT without a required-field body)
+  and the `/users/me/picture*` twins are gone. `GET /users/me` stays the self read (§4) and the
+  login bootstrap: a first token may lack `custom:username`, so the client takes the username for
+  the write from it. Consent (`termsAccepted`) is the user's own: for another user it is 403.
+- **Speakers:** one key `{speakerId}` under `/events/{eventCode}/speakers` (ADR-003 amendment),
+  held by the Spectral rule `speaker-path-key`; the reminders switch is a field of the entry
+  PATCH (§1, no per-attribute endpoint); the test-only `POST /speakers/invite` is gone; an
+  attendee's self-nomination is its own collection, `POST /events/{eventCode}/speaker-nominations`
+  (`POST /speakers` is the organizer's create, with another role and body).
+- Lint: baseline 104 to 101 entries, owner groups G08, G09 and G11 removed, the 12 `{speakerId}`
+  operations accepted one by one in X1. Participants and newsletter self-service follow in 4.10c.
+
+**Story 4.10c (2026-11, API conventions II b, breaking, no aliases)** gave participants and the
+newsletter one operation per intent:
+
+- **Participants:** one create, `POST /events/{eventCode}/participants`, with exactly one mode:
+  `username` (+ `force`, `notify`; 201), `people` (historical import of up to 100 people for this
+  event; 200 with a result per person, each saved on its own) or `stakeholders: true` (200). The
+  mode is checked by the service (400), not by `oneOf`. `POST /events/batch_registrations` (a
+  create beside the collection, per participant) and `POST /events/{eventCode}/enroll-stakeholders`
+  are gone. Only the single add with `notify` sends mail.
+- **Newsletter self-service:** one resource per address, `GET` and `PATCH
+  /newsletter/my-subscriptions` (PATCH partial: `subscribed`, `language`); the single-address
+  `/newsletter/my-subscription` and the PUT without a replacement contract (§1) are gone.
+- **Subscribe** is a create on the collection, `POST /newsletter/subscribers` (was the verb path
+  `POST /newsletter/subscribe`), public by exact path in the gateway and EMS; Turnstile and the
+  per-IP rate limit moved with it. It still sends no mail (double opt-in: #1288).
+- Lint: baseline 101 to 98 entries, owner groups G06 and G10 removed.
+
+**Story 4.10b (2026-11, API conventions III part 1, EMS, breaking, no aliases)** gave the last EMS
+verb paths their §1 shape and moved the literals out of the `{eventCode}` namespace:
+
+- **Notifications** are the caller's own: `GET /notifications` and `/count` take no username, and a
+  notification is loaded scoped to its recipient (another user's id answers 404, or is ignored in a
+  list). Marking read is a field change, `PATCH /notifications/{id}` and `PATCH /notifications`
+  (`notificationIds`, `status: READ`); `PUT …/{id}/read`, `PUT …/batch-read`, the unused
+  `DELETE …/batch-delete` and the history read `GET …/history` (any user's by `?username=`) are gone.
+- **AI prompts:** the reset to the default text is the removal of the organizer's override,
+  `DELETE /ai-prompts/{promptKey}/override` (was `POST …/reset`).
+- **Sessions:** the legacy import is a mode of the one create, `POST /events/{eventCode}/sessions`
+  with `imports` (at most 100; 200 with counts and a result per item), as in 4.10c; the single mode
+  answers 201 `{session}`. `POST …/sessions/batch-import` is gone. `POST …/sessions/structural`
+  stays: it generates the structural sessions of the agenda, a job over the collection (X9 class).
+- **Out of `/events`:** `/event-types[/{type}]` (only the list is public), `GET /public/event-photos`
+  (the homepage sample, the §4 anonymous variant) and `GET /registrations?filter={"attendeeUsername":…}`
+  (an attendee's history, organizer, paginated; it left `EventController` for
+  `ParticipantsController`, and the username left the `X-Attendee-Username` header). The GHSA-qhqv
+  matcher for `/events/registrations` went with it.
+- Lint: baseline 97 to 88 entries, owner group N5 removed, N6 reduced to the CUMS line under N9 and
+  N8 handed to 10d (the CUMS part: the additional-email key and companies get-or-create).
+
+**Story 4.10d (2026-11, API conventions III part 2, CUMS, breaking, no aliases)** removed the last
+two CUMS findings of 4.10b:
+
+- **get-or-create (§2):** `POST /companies/get-or-create` replaces the colon form
+  `POST /companies:get-or-create` and answers 201 when it creates the company, 200 when it returns an
+  existing one. The colon path answers 404. No service calls it (EMS uses
+  `/internal/users/get-or-create`), so the frontend was the only client.
+- **Additional e-mail key:** the four operations on one of the caller's additional addresses take
+  `{emailId}`, the row id, loaded scoped to the caller, instead of the address (ADR-003 amendment,
+  "natural key is personal data"). The old `{email}` paths answer 400.
+- Lint: baseline 88 to 87 entries (5 findings gone, the 4 `{emailId}` operations accepted in X3);
+  `no-personal-data-path-param` and `path-kebab-case` report 0; owner groups N8 and N9 removed.
+
 ## Context
 
 BATbern has ~13 OpenAPI specs across five services. An audit during the
@@ -90,8 +158,8 @@ governed per-story rather than by a written rule. The result is drift:
    by Story 4.9b, below. The partner domain mixes action-PATCH (`/status`), boolean-in-PATCH
    (`isActive`), action-POST (`/send-invite`), and POST/DELETE toggle (`/vote`).
 
-4. **Convention drift between sibling specs.** get-or-create is `:get-or-create` (colon,
-   companies) vs `/get-or-create` (slash, users). List filtering is JSON:API `filter`/`sort`
+4. **Convention drift between sibling specs.** get-or-create was `:get-or-create` (colon,
+   companies) vs `/get-or-create` (slash, users); fixed by Story 4.10d. List filtering is JSON:API `filter`/`sort`
    in some specs and ad-hoc `role`/`company`/`sortBy`/`sortDir` in others — and `listUsers`
    / `listNewsletterSubscribers` carry **both** vocabularies at once.
 
@@ -215,8 +283,8 @@ offset-pagination contract that nothing implements).
 ## Reference patterns (the org standard, by example)
 
 - **PUT-as-full-replace vs PATCH-as-partial:** `events-api` `/events/{eventCode}`.
-- **POST-create + PATCH-update split:** `events-api` speaker-pool
-  (`addSpeakerToPool` / `patchSpeakerPoolEntry`).
+- **POST-create + PATCH-update split:** `event-speakers-api`
+  (`addSpeakerToPool` / `patchSpeakerPoolEntry`, `/events/{eventCode}/speakers[/{speakerId}]`).
 - **Action sub-resources:** EMS speaker `…/confirm`, `…/decline`, `…/promote`; EMS event
   `…/transition`, `…/phases/{phase}/publish` (4.9b); CUMS `…/verify`, `…/roles`.
 - **Idempotent toggle:** `partner-topics-api` `POST`/`DELETE /partners/topics/{id}/vote`.

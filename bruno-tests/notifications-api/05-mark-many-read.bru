@@ -1,0 +1,37 @@
+meta {
+  name: Mark many read (PATCH /notifications); an unknown id is ignored
+  type: http
+  seq: 5
+}
+
+patch {
+  url: {{baseUrl}}/notifications
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+body:json {
+  {
+    "notificationIds": ["{{notifId}}", "00000000-0000-4000-8000-000000000001"],
+    "status": "READ"
+  }
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("only the caller's notification is counted", function() {
+    expect(res.getBody().markedCount).to.equal(1);
+  });
+}
+
+docs {
+  Story 4.10b: replaces PUT /notifications/batch-read. Ids that are not the caller's (here one
+  that does not exist) are ignored.
+}

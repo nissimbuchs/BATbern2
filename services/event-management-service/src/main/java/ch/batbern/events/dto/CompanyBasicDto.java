@@ -5,9 +5,9 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * Minimal company representation for cross-service calls.
- * Story 10.20: Used by UserApiClient.getAllCompanies() to deserialize
- * the company-user-management-service GET /api/v1/companies response.
+ * The part of a CUMS company EMS reads: {@code UserApiClient.getCompanyDisplayName} deserializes
+ * the {@code CompanyResponse} of CUMS {@code GET /internal/companies/{name}} into it (Epic 17
+ * entry 6; unknown properties are ignored).
  */
 @Data
 @NoArgsConstructor

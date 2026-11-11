@@ -2,15 +2,18 @@ package ch.batbern.events.service;
 
 import ch.batbern.events.domain.Session;
 import ch.batbern.events.mapper.SessionMapper;
+import ch.batbern.events.sessions.dto.generated.CreateSessionRequest;
 import ch.batbern.events.sessions.dto.generated.MaterialsStatus;
 import ch.batbern.events.sessions.dto.generated.SessionMaterialResponse;
 import ch.batbern.events.sessions.dto.generated.SessionResponse;
 import ch.batbern.events.sessions.dto.generated.SessionSpeaker;
+import ch.batbern.shared.exception.ValidationException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -95,5 +98,46 @@ public class SessionService {
     @Transactional(readOnly = true)
     public SessionResponse toSessionResponse(Session session, String eventCode) {
         return toSessionResponse(session, eventCode, true);
+    }
+
+    /**
+     * The mode of a create (Story 4.10b): {@code true} for an import, {@code false} for a single
+     * session whose required fields are all there; anything else is a 400.
+     */
+    public boolean isImport(CreateSessionRequest request) {
+        boolean anySingleField = request.getTitle() != null || request.getDescription() != null
+                || request.getSessionType() != null || request.getStartTime() != null
+                || request.getEndTime() != null || request.getRoom() != null
+                || request.getCapacity() != null || request.getLanguage() != null;
+        boolean importMode = request.getImports() != null;
+        if (importMode == anySingleField) {
+            throw new ValidationException(importMode
+                    ? "Give either the session fields or imports, not both"
+                    : "Give the session fields (title, sessionType, startTime, endTime) or imports");
+        }
+        if (importMode) {
+            int items = request.getImports().size();
+            if (items < 1 || items > 100) {
+                throw new ValidationException("imports must hold 1 to 100 sessions, got " + items);
+            }
+            return true;
+        }
+        List<String> missing = new ArrayList<>();
+        if (request.getTitle() == null || request.getTitle().isBlank()) {
+            missing.add("title");
+        }
+        if (request.getSessionType() == null) {
+            missing.add("sessionType");
+        }
+        if (request.getStartTime() == null) {
+            missing.add("startTime");
+        }
+        if (request.getEndTime() == null) {
+            missing.add("endTime");
+        }
+        if (!missing.isEmpty()) {
+            throw new ValidationException("Missing required session fields: " + String.join(", ", missing));
+        }
+        return false;
     }
 }

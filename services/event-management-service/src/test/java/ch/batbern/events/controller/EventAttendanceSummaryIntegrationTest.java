@@ -14,22 +14,30 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
-import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.web.servlet.request.RequestPostProcessor;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.not;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * Integration tests for GET /api/v1/events/attendance-summary
- * Story 8.1: Partner Attendance Dashboard - AC1, AC2, AC5, AC6
+ * Integration tests for {@code GET /internal/events/attendance-summary} (ems-internal, Epic 17 6b;
+ * the public {@code GET /api/v1/events/attendance-summary} before). Story 8.1: Partner Attendance
+ * Dashboard - AC1, AC2, AC5. The role check (AC6) lives on PCS {@code PartnerAnalyticsController};
+ * this operation answers with and without a forwarded JWT.
  *
  * Uses Testcontainers PostgreSQL for production parity.
  */
@@ -46,7 +54,9 @@ class EventAttendanceSummaryIntegrationTest extends AbstractIntegrationTest {
     @Autowired
     private RegistrationRepository registrationRepository;
 
+    private static final String PATH = "/internal/events/attendance-summary";
     private static final String COMPANY_GOOGLE = "GoogleZH";
+    private static final String COMPANY_DEFAULT_WINDOW = "WindowCo";
     private static final String COMPANY_OTHER = "OtherCo";
     private static final Instant EVENT_2024 = LocalDate.of(2024, 6, 15)
             .atStartOfDay(ZoneId.of("UTC")).toInstant();
@@ -108,17 +118,18 @@ class EventAttendanceSummaryIntegrationTest extends AbstractIntegrationTest {
     // ── AC1: Returns correct per-event attendance breakdown ──────────────────
 
     @Test
-    @DisplayName("should return attendance summary with correct counts for company")
-    @WithMockUser(roles = {"PARTNER"})
+    @DisplayName("should return attendance summary with correct counts for company, with the forwarded JWT")
     void should_returnAttendanceSummary_with_correctCounts() throws Exception {
-        int currentYear = LocalDate.now().getYear();
-        // Use fromYear=2024 to get only event2024
-        mockMvc.perform(get("/api/v1/events/attendance-summary")
+        // fromYear=2024 gets only event2024
+        mockMvc.perform(get(PATH)
+                        .with(partnerJwt())
                         .param("companyName", COMPANY_GOOGLE)
                         .param("fromYear", "2024"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(1)))
                 .andExpect(jsonPath("$[0].eventCode").value("BATbern142"))
+                .andExpect(jsonPath("$[0].eventTitle").value("BATbern 2024"))
+                .andExpect(jsonPath("$[0].eventDate").value("2024-06-15T00:00:00Z"))
                 .andExpect(jsonPath("$[0].totalAttendees").value(4))   // 3 GoogleZH + 1 OtherCo confirmed
                 .andExpect(jsonPath("$[0].companyAttendees").value(3)); // Only 3 confirmed GoogleZH
     }
@@ -126,75 +137,116 @@ class EventAttendanceSummaryIntegrationTest extends AbstractIntegrationTest {
     // ── AC2: fromYear filtering ──────────────────────────────────────────────
 
     @Test
-    @DisplayName("should include all events when fromYear covers full history")
-    @WithMockUser(roles = {"ORGANIZER"})
+    @DisplayName("should include all events, newest first, when fromYear covers full history")
     void should_includeAllEvents_when_fromYearIsOld() throws Exception {
-        mockMvc.perform(get("/api/v1/events/attendance-summary")
+        mockMvc.perform(get(PATH)
                         .param("companyName", COMPANY_GOOGLE)
                         .param("fromYear", "2019"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(2)));
+                .andExpect(jsonPath("$", hasSize(2)))
+                .andExpect(jsonPath("$[0].eventCode").value("BATbern142"))
+                .andExpect(jsonPath("$[1].eventCode").value("BATbern100"))
+                .andExpect(jsonPath("$[1].companyAttendees").value(1));
     }
 
     @Test
-    @DisplayName("should exclude old events with default 5-year window")
-    @WithMockUser(roles = {"PARTNER"})
-    void should_excludeOldEvents_with_default5YearWindow() throws Exception {
-        // Default fromYear = current year - 5. Event 2020 may or may not be included
-        // depending on test run year. Use explicit fromYear = current year - 4 to be precise.
-        int fromYear = LocalDate.now().getYear() - 4;
-        mockMvc.perform(get("/api/v1/events/attendance-summary")
-                        .param("companyName", COMPANY_GOOGLE)
-                        .param("fromYear", String.valueOf(fromYear)))
+    @DisplayName("without fromYear: from 1 January of the current year minus 5 (UTC)")
+    void should_useFiveYearWindow_when_fromYearMissing() throws Exception {
+        int firstYear = LocalDate.now(ZoneOffset.UTC).getYear() - 5;
+        Event inside = saveEvent("BATbern9101", 9101,
+                LocalDate.of(firstYear, 1, 1).atStartOfDay(ZoneOffset.UTC).toInstant());
+        Event outside = saveEvent("BATbern9100", 9100,
+                LocalDate.of(firstYear - 1, 12, 31).atTime(23, 0).toInstant(ZoneOffset.UTC));
+        saveConfirmedReg(inside, "henry.ford", COMPANY_DEFAULT_WINDOW);
+        saveConfirmedReg(outside, "iris.west", COMPANY_DEFAULT_WINDOW);
+
+        // Positive control: with an explicit earlier fromYear both events are there.
+        mockMvc.perform(get(PATH)
+                        .param("companyName", COMPANY_DEFAULT_WINDOW)
+                        .param("fromYear", String.valueOf(firstYear - 1)))
                 .andExpect(status().isOk())
-                // event2024 (2024) is within range; event2020 (2020) is excluded
-                .andExpect(jsonPath("$", hasSize(1)))
-                .andExpect(jsonPath("$[0].eventCode").value("BATbern142"));
+                .andExpect(jsonPath("$[*].eventCode",
+                        hasItems("BATbern9101", "BATbern9100")));
+
+        mockMvc.perform(get(PATH).param("companyName", COMPANY_DEFAULT_WINDOW))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[*].eventCode", hasItem("BATbern9101")))
+                .andExpect(jsonPath("$[*].eventCode", not(hasItem("BATbern9100"))));
     }
 
     // ── AC5: Only confirmed registrations counted ────────────────────────────
 
     @Test
     @DisplayName("should count only confirmed registrations, not cancelled")
-    @WithMockUser(roles = {"PARTNER"})
     void should_countOnlyConfirmedRegistrations() throws Exception {
-        mockMvc.perform(get("/api/v1/events/attendance-summary")
+        mockMvc.perform(get(PATH)
                         .param("companyName", COMPANY_GOOGLE)
                         .param("fromYear", "2024"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].companyAttendees").value(3)); // cancelled one excluded
     }
 
-    // ── AC6: Authorization ───────────────────────────────────────────────────
+    // ── Authorized by operation (ADR-016 decision 3) ─────────────────────────
 
     @Test
-    @DisplayName("should return 401 when unauthenticated")
-    void should_return401_when_unauthenticated() throws Exception {
-        mockMvc.perform(get("/api/v1/events/attendance-summary")
-                        .param("companyName", COMPANY_GOOGLE))
-                .andExpect(status().isUnauthorized());
+    @DisplayName("anonymous (scheduler, async, no user): the same answer as with a user JWT")
+    void should_answerTheSame_withAndWithoutJwt() throws Exception {
+        String anonymous = mockMvc.perform(get(PATH)
+                        .param("companyName", COMPANY_GOOGLE)
+                        .param("fromYear", "2019"))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        String signedIn = mockMvc.perform(get(PATH)
+                        .with(partnerJwt())
+                        .param("companyName", COMPANY_GOOGLE)
+                        .param("fromYear", "2019"))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+
+        assertThat(signedIn).isEqualTo(anonymous).contains("BATbern142");
     }
 
     @Test
-    @DisplayName("should return 403 when user has ATTENDEE role only")
-    @WithMockUser(roles = {"ATTENDEE"})
-    void should_return403_when_attendeeRole() throws Exception {
-        mockMvc.perform(get("/api/v1/events/attendance-summary")
-                        .param("companyName", COMPANY_GOOGLE))
-                .andExpect(status().isForbidden());
-    }
-
-    @Test
-    @DisplayName("should return 200 for ORGANIZER role")
-    @WithMockUser(roles = {"ORGANIZER"})
-    void should_return200_for_organizerRole() throws Exception {
-        mockMvc.perform(get("/api/v1/events/attendance-summary")
+    @DisplayName("an attendee's forwarded JWT is no reason to refuse: the role check is PCS's")
+    void should_notCheckTheRole_ofTheForwardedUser() throws Exception {
+        mockMvc.perform(get(PATH)
+                        .with(jwt().jwt(j -> j.claim("custom:username", "some.attendee")
+                                .claim("custom:role", "ATTENDEE")))
                         .param("companyName", COMPANY_GOOGLE)
                         .param("fromYear", "2024"))
-                .andExpect(status().isOk());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(1)));
+    }
+
+    @Test
+    @DisplayName("companyName missing: 400")
+    void should_return400_when_companyNameMissing() throws Exception {
+        mockMvc.perform(get(PATH))
+                .andExpect(status().isBadRequest());
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
+
+    private static RequestPostProcessor partnerJwt() {
+        return jwt().jwt(j -> j.claim("custom:username", "partner.google").claim("custom:role", "PARTNER"));
+    }
+
+    private Event saveEvent(String code, int number, Instant date) {
+        return eventRepository.save(Event.builder()
+                .eventCode(code)
+                .title("BATbern " + number)
+                .eventNumber(number)
+                .date(date)
+                .registrationDeadline(date.minusSeconds(86400))
+                .venueName("Venue C")
+                .venueAddress("Bern")
+                .venueCapacity(200)
+                .organizerUsername("organizer")
+                .currentAttendeeCount(0)
+                .eventType(EventType.EVENING)
+                .workflowState(EventWorkflowState.EVENT_COMPLETED)
+                .build());
+    }
 
     private void saveConfirmedReg(Event event, String username, String companyId) {
         registrationRepository.save(Registration.builder()

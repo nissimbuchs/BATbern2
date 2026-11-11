@@ -37,6 +37,7 @@ import ch.batbern.companyuser.repository.UserAdditionalEmailRepository;
 import ch.batbern.companyuser.repository.UserRepository;
 import ch.batbern.companyuser.specification.UserSpecification;
 import ch.batbern.companyuser.security.SecurityContextHelper;
+import ch.batbern.companyuser.security.UserOwnership;
 import ch.batbern.shared.api.DeterministicPaging;
 import ch.batbern.shared.events.DomainEventPublisher;
 import ch.batbern.shared.service.SlugGenerationService;
@@ -54,12 +55,14 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 
 /**
  * UserService - Core business logic for user management
@@ -71,12 +74,19 @@ import java.util.Set;
 @Slf4j
 public class UserService {
 
+    /**
+     * The system actor of {@code POST /internal/users/get-or-create} without a forwarded JWT (EMS
+     * anonymous registration, speaker invitation from a job): {@code system:ems-get-or-create}.
+     */
+    public static final String GET_OR_CREATE_JOB = "ems-get-or-create";
+
     private final UserRepository userRepository;
     private final UserAdditionalEmailRepository additionalEmailRepository;
     private final CognitoIntegrationService cognitoService;
     private final DomainEventPublisher eventPublisher;
     private final UserSearchService searchService;
     private final SecurityContextHelper securityContext;
+    private final UserOwnership userOwnership;
     private final SlugGenerationService slugService;
     private final UserResponseMapper responseMapper;
     private final CompanyService companyService;
@@ -127,19 +137,28 @@ public class UserService {
     }
 
     /**
-     * Update current authenticated user
-     * Story 1.16.2: Uses username from SecurityContext for lookup
-     * ADR-003: Use username for user identification, not UUID
-     * AC2: Cognito sync on update
+     * Partially update a user's profile: {@code PATCH /users/{username}} (Story 4.10, one endpoint
+     * for self-service and organizers; the controller's {@code @PreAuthorize} admits the user
+     * themself or ORGANIZER/ADMIN). Only the fields present change.
+     *
+     * <p>{@code termsAccepted} is the user's own consent (Story 12.11, write-once): accepted only on
+     * the caller's own profile, for anyone else it is 403. The {@link UserUpdatedEvent} records the
+     * caller's username as the actor (it used to be the Cognito subject for organizer edits).
+     *
+     * @param username username of the user to update (ADR-003)
+     * @param request  the fields to change
+     * @return the updated profile
      */
-    public UserResponse updateCurrentUser(UpdateUserRequest request) {
-        log.info("Updating current user profile");
-        String username = securityContext.getCurrentUsername();  // Returns username (custom:username claim from JWT)
+    public UserResponse updateUser(String username, UpdateUserRequest request) {
+        boolean self = userOwnership.isCurrentUser(username);
+        if (request.getTermsAccepted() != null && !self) {
+            throw new AccessDeniedException("Consent can only be given by the user themself");
+        }
+        log.info("Updating user {} ({})", username, self ? "self" : "organizer/admin");
 
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new UserNotFoundException(username));
 
-        // Update fields
         if (request.getFirstName() != null) {
             user.setFirstName(request.getFirstName());
         }
@@ -150,7 +169,9 @@ public class UserService {
             user.setEmail(request.getEmail());
         }
         if (request.getBio() != null) {
-            user.setBio(request.getBio());
+            // A blank bio clears it (NULL, as before it was first set), so "no bio" has one form
+            // and a client can put back exactly what it found (Story 4.10).
+            user.setBio(request.getBio().isBlank() ? null : request.getBio());
         }
         if (request.getCompanyId() != null) {
             user.setCompanyId(request.getCompanyId());
@@ -165,13 +186,9 @@ public class UserService {
         // Flush so that @PreUpdate has set updatedAt before the response is built in this transaction.
         User updatedUser = userRepository.saveAndFlush(user);
 
-        // NOTE: Cognito sync removed - DB is source of truth for user data
-        // Cognito is only used for authentication (JWT tokens)
-
-        // Invalidate search cache
+        // DB is the source of truth for user data; Cognito is only used for authentication.
         searchService.invalidateCache();
 
-        // Publish domain event (Story 1.16.2: String IDs)
         java.util.Map<String, Object> updatedFields = new java.util.HashMap<>();
         if (request.getFirstName() != null) {
             updatedFields.put("firstName", request.getFirstName());
@@ -189,81 +206,14 @@ public class UserService {
             updatedFields.put("companyId", request.getCompanyId());
         }
 
-        UserUpdatedEvent event = new UserUpdatedEvent(
-            updatedUser.getUsername(),  // aggregateId = username
-            updatedFields,
-            null,  // previousValues: not tracked
-            updatedUser.getUsername()  // userId = username (who performed the update)
-        );
-        eventPublisher.publish(event);
-
-        log.info("User updated successfully: {}", updatedUser.getUsername());
-        return responseMapper.mapToResponse(updatedUser);
-    }
-
-    /**
-     * Update user profile by username (for organizer/admin)
-     * Allows admins/organizers to update any user's profile
-     *
-     * @param username Username of user to update
-     * @param request Update request with validation
-     * @return Updated user profile
-     */
-    public UserResponse updateUserByUsername(String username, UpdateUserRequest request) {
-        log.info("Updating user {} by admin/organizer", username);
-
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new UserNotFoundException(username));
-
-        // Update fields
-        if (request.getFirstName() != null) {
-            user.setFirstName(request.getFirstName());
-        }
-        if (request.getLastName() != null) {
-            user.setLastName(request.getLastName());
-        }
-        if (request.getEmail() != null) {
-            user.setEmail(request.getEmail());
-        }
-        if (request.getBio() != null) {
-            user.setBio(request.getBio());
-        }
-        if (request.getCompanyId() != null) {
-            user.setCompanyId(request.getCompanyId());
-        }
-
-        // Flush so that @PreUpdate has set updatedAt before the response is built in this transaction.
-        User updatedUser = userRepository.saveAndFlush(user);
-
-        // Invalidate search cache
-        searchService.invalidateCache();
-
-        // Publish domain event
-        java.util.Map<String, Object> updatedFields = new java.util.HashMap<>();
-        if (request.getFirstName() != null) {
-            updatedFields.put("firstName", request.getFirstName());
-        }
-        if (request.getLastName() != null) {
-            updatedFields.put("lastName", request.getLastName());
-        }
-        if (request.getEmail() != null) {
-            updatedFields.put("email", request.getEmail());
-        }
-        if (request.getBio() != null) {
-            updatedFields.put("bio", request.getBio());
-        }
-        if (request.getCompanyId() != null) {
-            updatedFields.put("companyId", request.getCompanyId());
-        }
-
-        // Get current user performing the update
-        String updatedBy = securityContext.getCurrentUserId();
+        // The actor is a username (ADR-003): the user themself, or the organizer/admin who edited.
+        String updatedBy = self ? updatedUser.getUsername() : securityContext.getCurrentUsername();
 
         UserUpdatedEvent event = new UserUpdatedEvent(
             updatedUser.getUsername(),  // aggregateId = username
             updatedFields,
             null,  // previousValues: not tracked
-            updatedBy  // userId = admin/organizer who performed the update
+            updatedBy
         );
         eventPublisher.publish(event);
 
@@ -498,7 +448,7 @@ public class UserService {
                 throw new EmailLinkedToAccountException(request.getEmail());
             }
             log.info("Creating new user: {}", LoggingUtils.maskEmail(request.getEmail()));
-            User newUser = createNewUser(request);
+            User newUser = createNewUser(request, securityContext.actorOr(GET_OR_CREATE_JOB));
             return new GetOrCreateUserResponse()
                     .username(newUser.getUsername())
                     .created(true)
@@ -549,9 +499,10 @@ public class UserService {
     /**
      * Provision a User with a role (idempotent).
      *
-     * <p>Story 11.C.2 (AR13). Used by
-     * {@link ch.batbern.events.service.SpeakerWorkflowService#transition} at the
-     * CONTACTED → READY hook (called via {@code UserApiClient.provisionUserWithRole}).
+     * <p>Story 11.C.2 (AR13). Used by EMS {@code SpeakerWorkflowService.transition} at the
+     * CONTACTED → READY hook, through {@code POST /internal/users/provision} (Epic 17 entry 6).
+     * The operation grants SPEAKER only: it authorizes by operation, not by the caller's role
+     * (ADR-016 decision 3), so any other role answers 400.
      *
      * <p>Behaviour:
      * <ul>
@@ -580,11 +531,13 @@ public class UserService {
      * workflow transition aborts at CONTACTED → READY (no partial state).
      *
      * @param request username (optional), email (required), firstName, lastName, role (required)
+     * @param actor   who acted: the forwarded user's username, else {@code system:<job>}; recorded
+     *                as {@code createdBy} of a new user
      * @return canonical username + {@code created} flag
-     * @throws UserValidationException if email or role is missing/invalid
+     * @throws UserValidationException if email or role is missing/invalid, or the role is not SPEAKER
      */
     @Counted(value = "users.provisioning", description = "Count of user provisioning calls (Story 11.C.2)")
-    public ProvisionUserResponse provisionUserWithRole(ProvisionUserRequest request) {
+    public ProvisionUserResponse provisionUserWithRole(ProvisionUserRequest request, String actor) {
         if (request.getEmail() == null || request.getEmail().isBlank()) {
             throw new UserValidationException("email", "Email is required for user provisioning");
         }
@@ -593,22 +546,20 @@ public class UserService {
         }
         Role roleToGrant = parseRole(request.getRole().getValue());
 
-        // P0 (review patch): role-grant whitelist. A non-ADMIN caller (ORGANIZER) must not be able to
-        // grant arbitrary roles via this endpoint — Epic 11 only needs SPEAKER. Anything else is a 403
-        // unless the caller is ADMIN.
-        if (!securityContext.hasRole("ADMIN") && roleToGrant != Role.SPEAKER) {
+        // The operation grants SPEAKER only (Epic 17 entry 6): /internal authorizes by operation,
+        // never by the caller's role (ADR-016), so there is no ADMIN branch any more.
+        if (roleToGrant != Role.SPEAKER) {
             throw new UserValidationException(
                     "role",
-                    "Non-ADMIN callers may only provision the SPEAKER role via /users/provision (got "
-                            + roleToGrant + ")");
+                    "/internal/users/provision grants the SPEAKER role only (got " + roleToGrant + ")");
         }
 
         // P1 (review patch): normalize email to lowercase for both lookup AND persist so
         // "Jane@x.com" and "jane@x.com" resolve to the same User row. Idempotency claim now holds.
         String normalizedEmail = request.getEmail().trim().toLowerCase();
 
-        log.info("Provisioning user (Story 11.C.2): email={}, role={}",
-                LoggingUtils.maskEmail(normalizedEmail), roleToGrant);
+        log.info("Provisioning user (Story 11.C.2): email={}, role={}, actor={}",
+                LoggingUtils.maskEmail(normalizedEmail), roleToGrant, actor);
 
         // 1. Look up existing user by email (case-insensitive). Matches the getOrCreateUser contract.
         Optional<User> existingUser = userRepository.findByEmailIgnoreCase(normalizedEmail);
@@ -682,7 +633,7 @@ public class UserService {
 
         User created;
         try {
-            created = createNewUser(createRequest);
+            created = createNewUser(createRequest, actor);
         } catch (DataIntegrityViolationException e) {
             // P1 (review patch): another caller raced us to createNewUser for the same email
             // and won. The email UNIQUE constraint fired. Treat as idempotent: re-fetch and
@@ -748,7 +699,7 @@ public class UserService {
      *
      * <p>Story 11.E.2 (AC2 — Resolved Q#1 Variant B + Q#4). Called by EMS's
      * {@code SpeakerWorkflowService.runInvitedHook} via the sibling
-     * {@code POST /api/v1/users/{username}/issue-invitation-credentials} endpoint.
+     * {@code POST /internal/users/{username}/issue-invitation-credentials} endpoint.
      *
      * <p>Branches on the Cognito user's current status:
      * <ul>
@@ -776,6 +727,7 @@ public class UserService {
      * document the external-mutation invariant in code comments.
      *
      * @param username target user's username (must exist in PostgreSQL)
+     * @param actor    who acted: the forwarded user's username, else {@code system:<job>} (logged)
      * @return action discriminator + fresh temp password (or null)
      * @throws UserNotFoundException                   if {@code username} is not in CUMS
      * @throws UnprocessableInvitationStateException   if Cognito reports a status that needs operator intervention
@@ -784,8 +736,8 @@ public class UserService {
     // path below (Cognito user missing → create + re-link DB) needs write access to
     // user_profiles.cognito_user_id; readOnly would silently reject the update.
     @Transactional
-    public InvitationCredentialsResponse issueInvitationCredentials(String username) {
-        log.info("issueInvitationCredentials (Story 11.E.2): username={}", username);
+    public InvitationCredentialsResponse issueInvitationCredentials(String username, String actor) {
+        log.info("issueInvitationCredentials (Story 11.E.2): username={}, actor={}", username, actor);
 
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new UserNotFoundException(username));
@@ -895,11 +847,13 @@ public class UserService {
      *
      * @param username target user's username
      * @param request  bio (nullable) + profilePictureUrl (nullable); ≥1 must be non-null
+     * @param actor    who acted: the forwarded user's username, else {@code system:<job>}; recorded
+     *                 as {@code updatedBy} of the {@link UserUpdatedEvent}
      * @return updated {@link UserResponse}
      * @throws UserNotFoundException   if the username does not exist
      * @throws UserValidationException if both fields are null (no-op patches rejected)
      */
-    public UserResponse patchUserProfile(String username, PatchUserProfileRequest request) {
+    public UserResponse patchUserProfile(String username, PatchUserProfileRequest request, String actor) {
         if (request == null
                 || (request.getBio() == null && request.getProfilePictureUrl() == null)) {
             throw new UserValidationException(
@@ -919,7 +873,7 @@ public class UserService {
                     "At least one of 'bio' or 'profilePictureUrl' must be non-blank");
         }
 
-        log.info("Patching user profile (Story 11.C.2): username={}", username);
+        log.info("Patching user profile (Story 11.C.2): username={}, actor={}", username, actor);
 
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new UserNotFoundException(username));
@@ -934,7 +888,7 @@ public class UserService {
         // Flush so that @PreUpdate has set updatedAt before the response is built in this transaction.
         User saved = userRepository.saveAndFlush(user);
 
-        // Invalidate user-search caches (matches updateUserByUsername behaviour).
+        // Invalidate user-search caches (matches updateUser behaviour).
         searchService.invalidateCache();
 
         // Publish a UserUpdatedEvent so downstream listeners can refresh their view.
@@ -949,7 +903,7 @@ public class UserService {
                 saved.getUsername(),
                 updatedFields,
                 null,
-                getAuditUsername());
+                actor);
         eventPublisher.publish(event);
 
         log.info("User profile patched: username={}, fields={}", saved.getUsername(), updatedFields.keySet());
@@ -1022,7 +976,7 @@ public class UserService {
      * Create new user with username generation
      * Story 1.16.2: Generate username using SlugGenerationService
      */
-    private User createNewUser(GetOrCreateUserRequest request) {
+    private User createNewUser(GetOrCreateUserRequest request, String createdByUsername) {
         // No Cognito login here: request.cognitoSync has no effect. A login comes from the sign-up page
         // (the PreTokenGeneration Lambda then fills cognitoUserId) or from issue-credentials.
         // Story 1.16.2: Generate username from first/last name
@@ -1050,9 +1004,7 @@ public class UserService {
 
         User savedUser = userRepository.save(user);
 
-        // Publish domain event (Story 1.16.2: String IDs)
-        // Note: For create, get the current user performing the action
-        String createdByUsername = getAuditUsername();
+        // Publish domain event (Story 1.16.2: String IDs); createdBy is the caller's actor
         UserCreatedEvent event = new UserCreatedEvent(
             savedUser.getUsername(),  // aggregateId = username
             savedUser.getEmail(),
@@ -1249,21 +1201,15 @@ public class UserService {
      * Additional-email verification (v2) — resend the verification email for one of
      * the caller's own additional emails.
      *
-     * @throws AdditionalEmailNotFoundException        if the email is not on the caller's profile (404)
+     * @throws AdditionalEmailNotFoundException        if the id is not one of the caller's (404)
      * @throws AdditionalEmailAlreadyVerifiedException if the email is already verified (409)
      */
-    public void resendVerification(String email) {
-        String username = securityContext.getCurrentUsername();
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new UserNotFoundException("Current user profile not found", true));
-
-        String emailNormalized = email.trim().toLowerCase(Locale.ROOT);
-        UserAdditionalEmail row = additionalEmailRepository
-                .findByUserAndEmailIgnoreCase(user, emailNormalized)
-                .orElseThrow(() -> new AdditionalEmailNotFoundException(emailNormalized));
+    public void resendVerification(UUID emailId) {
+        User user = currentUserProfile();
+        UserAdditionalEmail row = ownAdditionalEmail(emailId, user);
 
         if (row.getVerifiedAt() != null) {
-            throw new AdditionalEmailAlreadyVerifiedException(emailNormalized);
+            throw new AdditionalEmailAlreadyVerifiedException(row.getEmail());
         }
 
         String token = verificationTokenService.generateToken(row.getId(), row.getEmail());
@@ -1272,7 +1218,23 @@ public class UserService {
 
         log.info("ADDITIONAL_EMAIL_VERIFICATION_RESENT user={} email={}",
                 LoggingUtils.maskEmail(user.getEmail()),
-                LoggingUtils.maskEmail(emailNormalized));
+                LoggingUtils.maskEmail(row.getEmail()));
+    }
+
+    /**
+     * Story 4.10d: one of the caller's additional emails by its id, loaded scoped to the caller.
+     *
+     * @throws AdditionalEmailNotFoundException another user's or an unknown id (404)
+     */
+    private UserAdditionalEmail ownAdditionalEmail(UUID emailId, User user) {
+        return additionalEmailRepository.findByIdAndUser(emailId, user)
+                .orElseThrow(() -> new AdditionalEmailNotFoundException(emailId));
+    }
+
+    private User currentUserProfile() {
+        String username = securityContext.getCurrentUsername();
+        return userRepository.findByUsername(username)
+                .orElseThrow(() -> new UserNotFoundException("Current user profile not found", true));
     }
 
     /**
@@ -1286,7 +1248,7 @@ public class UserService {
     @Transactional(readOnly = true)
     public AdditionalEmailVerificationCheckResponse checkVerificationToken(String token) {
         Claims claims = parseVerificationToken(token);
-        java.util.UUID rowId = verificationTokenService.getAdditionalEmailId(claims);
+        UUID rowId = verificationTokenService.getAdditionalEmailId(claims);
         String claimEmail = verificationTokenService.getEmail(claims);
 
         // The check path does not 404 on a missing row — it reports the token's
@@ -1315,7 +1277,7 @@ public class UserService {
     @Transactional
     public AdditionalEmailVerificationConfirmResponse confirmVerificationToken(String token) {
         Claims claims = parseVerificationToken(token);
-        java.util.UUID rowId = verificationTokenService.getAdditionalEmailId(claims);
+        UUID rowId = verificationTokenService.getAdditionalEmailId(claims);
         String claimEmail = verificationTokenService.getEmail(claims);
 
         UserAdditionalEmail row = additionalEmailRepository.findById(rowId)
@@ -1357,41 +1319,29 @@ public class UserService {
      * #1244 — switch the copy of event mails for one of the caller's additional addresses.
      * Switching it on needs a confirmed address; switching it off always works.
      */
-    public AdditionalEmail updateAdditionalEmail(String email, UpdateAdditionalEmailRequest request) {
-        String username = securityContext.getCurrentUsername();
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new UserNotFoundException("Current user profile not found", true));
-
-        String emailNormalized = email.trim().toLowerCase(Locale.ROOT);
-        UserAdditionalEmail row = additionalEmailRepository
-                .findByUserAndEmailIgnoreCase(user, emailNormalized)
-                .orElseThrow(() -> new AdditionalEmailNotFoundException(emailNormalized));
+    public AdditionalEmail updateAdditionalEmail(UUID emailId, UpdateAdditionalEmailRequest request) {
+        User user = currentUserProfile();
+        UserAdditionalEmail row = ownAdditionalEmail(emailId, user);
 
         boolean receive = Boolean.TRUE.equals(request.getReceiveEventMail());
         if (receive && row.getVerifiedAt() == null) {
-            throw new AdditionalEmailNotVerifiedException(emailNormalized);
+            throw new AdditionalEmailNotVerifiedException(row.getEmail());
         }
         row.setReceiveEventMail(receive);
         additionalEmailRepository.save(row);
 
         log.info("ADDITIONAL_EMAIL_EVENT_MAIL_COPY user={} email={} receive={}",
-                LoggingUtils.maskEmail(user.getEmail()), LoggingUtils.maskEmail(emailNormalized), receive);
+                LoggingUtils.maskEmail(user.getEmail()), LoggingUtils.maskEmail(row.getEmail()), receive);
         return UserResponseMapper.mapAdditionalEmailToDto(row);
     }
 
     /**
      * Story 10.32 — remove an additional email from the caller's profile.
      */
-    public void deleteAdditionalEmail(String email) {
-        String username = securityContext.getCurrentUsername();
+    public void deleteAdditionalEmail(UUID emailId) {
         // P2-7: see note above.
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new UserNotFoundException("Current user profile not found", true));
-
-        String emailNormalized = email.trim().toLowerCase(Locale.ROOT);
-        UserAdditionalEmail row = additionalEmailRepository
-                .findByUserAndEmailIgnoreCase(user, emailNormalized)
-                .orElseThrow(() -> new AdditionalEmailNotFoundException(emailNormalized));
+        User user = currentUserProfile();
+        UserAdditionalEmail row = ownAdditionalEmail(emailId, user);
 
         // P2-9 fix: delete the row directly via the repository rather than
         // routing through the aggregate's orphanRemoval collection. The User
@@ -1404,7 +1354,7 @@ public class UserService {
 
         log.info("ADDITIONAL_EMAIL_REMOVED user={} email={}",
                 LoggingUtils.maskEmail(user.getEmail()),
-                LoggingUtils.maskEmail(emailNormalized));
+                LoggingUtils.maskEmail(row.getEmail()));
     }
 
 }

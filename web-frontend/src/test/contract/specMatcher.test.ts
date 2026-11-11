@@ -137,9 +137,11 @@ describe('specMatcher', () => {
 });
 
 describe('specMatcher on the real docs/api (smoke)', () => {
-  it('loads more than 300 operations', () => {
+  it('loads the public operations (a floor, not a count)', () => {
     const real = loadSpecIndex(join(here, '..', '..', '..', '..', 'docs', 'api'));
-    expect(real.operations.length).toBeGreaterThan(290);
+    // 287 on 2026-11-11 after Story 4.10c folded batch_registrations, enroll-stakeholders and
+    // the /newsletter/my-subscription pair into their collections.
+    expect(real.operations.length).toBeGreaterThan(280);
     expect(matchOperation(real, 'GET', '/users/me').ok).toBe(true);
   });
 });

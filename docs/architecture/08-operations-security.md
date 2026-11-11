@@ -250,6 +250,11 @@ Two rules the 2026-10-28 review (GHSA-qhqv) added:
   `sessions/unassigned` and `sessions/conflicts`. Method security still answered 403, so nothing
   leaked, but the first wall was missing. Gateway and EMS now name those paths `authenticated()`
   before the wildcards. When adding an endpoint under a public wildcard, add it there as well.
+  (The attendance summary left the public API in Epic 17 6b: it is `/internal/events/attendance-summary`,
+  and neither the gateway nor EMS lists the public path any more. Story 4.10b moved the
+  attendee history to `GET /registrations?filter=…`, so `/events/registrations` is no longer
+  listed either: it is read as an event code now. The better fix is no literal under
+  `/events` at all; the lint rule `no-literal-under-events` keeps new ones out.)
 
 The weekly ZAP API scan covered 13 of 19 specs (users, topics, partner meetings, tasks,
 notifications and app settings were missing). `scripts/ci/check-zap-spec-coverage.py` now fails

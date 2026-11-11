@@ -19,6 +19,11 @@
  *                   without a format (an unformatted UUID such as `uploadId`)
  *   personal-data   no path parameter is named `email` or ends in `Email` (case-insensitive):
  *                   personal data never goes in a path (ADR-003 amendment)
+ *   speaker-key     one speaker key (Story 4.10): a path parameter directly after
+ *                   `/events/{eventCode}/speakers/` is `{speakerId}` with `format: uuid` (the
+ *                   speaker pool entry, an owned child of its event), and there is no second
+ *                   speaker collection (`speaker-pool`, `speakers/pool`). A session's speaker
+ *                   (`/sessions/{slug}/speakers/{username}`) is a user's assignment, not this key.
  */
 const METHODS = ['get', 'put', 'post', 'patch', 'delete', 'head', 'options'];
 const KEBAB = /^[a-z0-9]+(-[a-z0-9]+)*(\.[a-z0-9]+)?$/;
@@ -101,6 +106,32 @@ function personalDataParams(item, operation) {
     .map((p) => p.name);
 }
 
+/** Story 4.10: the speaker key under `/events/{eventCode}/speakers/`, or null when it holds. */
+function speakerKeyViolation(path, item, operation) {
+  const segments = path.split('/').filter((s) => s.length > 0);
+  const problems = [];
+  if (segments.includes('speaker-pool')) problems.push('second speaker collection `speaker-pool`');
+  segments.forEach((s, i) => {
+    if (s === 'speakers' && segments[i + 1] === 'pool') {
+      problems.push('second speaker collection `speakers/pool`');
+    }
+  });
+  const isEventSpeakers =
+    segments[0] === 'events' && isParam(segments[1] || '') && segments[2] === 'speakers';
+  const key = segments[3];
+  if (isEventSpeakers && key && isParam(key)) {
+    const name = key.slice(1, -1);
+    const param = pathParams(item, operation).find((p) => p.name === name);
+    const format = param && param.schema ? param.schema.format : undefined;
+    if (name !== 'speakerId' || format !== 'uuid') {
+      problems.push(`speaker key ${key} (expected {speakerId}, format: uuid)`);
+    }
+  }
+  return problems.length
+    ? `one speaker key under /events/{eventCode}/speakers (Story 4.10): ${problems.join('; ')}`
+    : null;
+}
+
 export default function apiConventions(item, options, context) {
   if (!item || typeof item !== 'object') return [];
   const path = context.path[context.path.length - 1];
@@ -116,6 +147,8 @@ export default function apiConventions(item, options, context) {
       if (names.length) {
         message = `UUID path parameter(s): ${names.join(', ')} (allowed only per the ADR-003 2026-11 amendment)`;
       }
+    } else if (check === 'speaker-key') {
+      message = speakerKeyViolation(path, item, operation);
     } else if (check === 'personal-data') {
       const names = personalDataParams(item, operation);
       if (names.length) {

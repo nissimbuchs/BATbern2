@@ -172,7 +172,7 @@ class SpeakerPortalService {
   // deleted the backend SpeakerPortalProfileController + SpeakerProfileService, which left
   // these client methods pointing at non-existent routes. The new direction (PM decision
   // 2026-05-18): profile editing uses the CUMS user endpoints in @/services/api/userAccountApi
-  // (`GET/PUT /api/v1/users/me`, `POST /api/v1/users/me/picture/presigned-url`, etc.) since
+  // (`GET /api/v1/users/me`, `PATCH /api/v1/users/{username}`, `/users/{username}/picture/*`) since
   // every speaker is a User. The speaker-portal namespace no longer carries a /profile resource.
 
   // ==========================================================================

@@ -1,0 +1,37 @@
+meta {
+  name: Restore the exact captured prompt text
+  type: http
+  seq: 99
+}
+
+put {
+  url: {{baseUrl}}/ai-prompts/event_description
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+body:json {
+  {
+    "promptText": "set by the pre-request script"
+  }
+}
+
+script:pre-request {
+  req.setBody({ promptText: bru.getVar("aiPromptOriginalText") });
+}
+
+tests {
+  test("the captured text is back", function() {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().promptText).to.equal(bru.getVar("aiPromptOriginalText"));
+  });
+}
+
+docs {
+  Story 4.10b: writes back the text 01 read, byte for byte (the body is set from the captured
+  variable, so quotes and newlines in the prompt survive).
+}

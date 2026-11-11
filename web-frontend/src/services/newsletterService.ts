@@ -9,19 +9,17 @@ import type { components } from '@/types/generated/event-newsletter-api.types';
 
 type Schemas = components['schemas'];
 
-/**
- * `language` has a spec default (`de`), so the generated type makes it required (openapi-typescript
- * reads a default as always present); on a request it may be omitted and the server applies it.
- */
-export type NewsletterSubscribeRequest = Omit<Schemas['NewsletterSubscribeRequest'], 'language'> &
-  Partial<Pick<Schemas['NewsletterSubscribeRequest'], 'language'>>;
+/** `language` may be omitted; the server applies its default (`de`). */
+export type NewsletterSubscribeRequest = Schemas['NewsletterSubscribeRequest'];
 export type NewsletterUnsubscribeRequest = Schemas['NewsletterUnsubscribeRequest'];
-export type NewsletterSubscriptionStatusResponse = Schemas['NewsletterSubscriptionStatusResponse'];
 /** #1244: newsletter state of one of the authenticated user's addresses. */
 export type NewsletterAddressSubscription = Schemas['NewsletterAddressSubscription'];
 export type MyNewsletterSubscriptionsResponse = Schemas['MyNewsletterSubscriptionsResponse'];
+/** 4.10c: the address to change and only the fields to change. */
+export type PatchMyNewsletterSubscriptionRequest = Schemas['PatchMyNewsletterSubscriptionRequest'];
 
-/** Subscribe an email to the newsletter (no auth required). Returns 409 if already subscribed.
+/** Subscribe an email to the newsletter (no auth required): `POST /newsletter/subscribers`
+ *  (Story 4.10c). Returns 409 if already subscribed. Sends no mail.
  *  @param turnstileToken Optional Cloudflare Turnstile token (AC8, Story 10.31). Passed via
  *  X-Turnstile-Token header when present.
  */
@@ -29,7 +27,7 @@ export async function subscribe(
   request: NewsletterSubscribeRequest,
   turnstileToken?: string | null
 ): Promise<void> {
-  await apiClient.post('/newsletter/subscribe', request, {
+  await apiClient.post('/newsletter/subscribers', request, {
     headers: turnstileToken ? { 'X-Turnstile-Token': turnstileToken } : {},
   });
 }
@@ -47,26 +45,6 @@ export async function unsubscribeByToken(token: string): Promise<void> {
   await apiClient.post('/newsletter/unsubscribe', { token });
 }
 
-/** Get newsletter subscription status for the authenticated user. */
-export async function getMySubscription(): Promise<NewsletterSubscriptionStatusResponse> {
-  const response = await apiClient.get<NewsletterSubscriptionStatusResponse>(
-    '/newsletter/my-subscription'
-  );
-  return response.data;
-}
-
-/** Update newsletter subscription status for the authenticated user. */
-export async function patchMySubscription(
-  subscribed: boolean,
-  language?: string
-): Promise<NewsletterSubscriptionStatusResponse> {
-  const response = await apiClient.patch<NewsletterSubscriptionStatusResponse>(
-    '/newsletter/my-subscription',
-    { subscribed, ...(language ? { language } : {}) }
-  );
-  return response.data;
-}
-
 /** #1244: the authenticated user's newsletter state per address (primary first). */
 export async function getMySubscriptions(): Promise<MyNewsletterSubscriptionsResponse> {
   const response = await apiClient.get<MyNewsletterSubscriptionsResponse>(
@@ -75,15 +53,16 @@ export async function getMySubscriptions(): Promise<MyNewsletterSubscriptionsRes
   return response.data;
 }
 
-/** #1244: subscribe or unsubscribe one of the authenticated user's addresses. */
-export async function putMySubscription(
-  email: string,
-  subscribed: boolean,
-  language?: string
+/**
+ * 4.10c: change one of the authenticated user's addresses, only the fields given (`subscribed`,
+ * `language`). 403 when the address is not the user's.
+ */
+export async function patchMySubscription(
+  request: PatchMyNewsletterSubscriptionRequest
 ): Promise<MyNewsletterSubscriptionsResponse> {
-  const response = await apiClient.put<MyNewsletterSubscriptionsResponse>(
+  const response = await apiClient.patch<MyNewsletterSubscriptionsResponse>(
     '/newsletter/my-subscriptions',
-    { email, subscribed, ...(language ? { language } : {}) }
+    request
   );
   return response.data;
 }

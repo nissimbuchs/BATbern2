@@ -12,9 +12,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -30,8 +30,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  *
  * <p>Covers AC1/AC7: upcoming/past split, cancelled excluded, attribution by the authenticated
  * username, anonymous rejection, empty state.
+ *
+ * <p>Every test commits; the events of this class (BATbern970 to 977) and their registrations are
+ * removed before and after each test.
  */
-@Transactional
 class AttendeeDashboardIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
@@ -47,19 +49,30 @@ class AttendeeDashboardIntegrationTest extends AbstractIntegrationTest {
     @Autowired
     private CumsContractHarness cums;
 
+    @Autowired
+    private JdbcTemplate jdbc;
+
     private static final String ATTENDEE = "jane.attendee";
     private static final String OTHER = "bob.other";
 
     @AfterEach
-    void resetCums() {
+    void tearDown() {
         cums.reset();
+        removeOwnEvents();
     }
 
     @BeforeEach
     void setUp() {
         cums.reset();
-        registrationRepository.deleteAll();
-        eventRepository.deleteAll();
+        removeOwnEvents();
+    }
+
+    private static final String OWN_EVENTS = "event_code IN ('BATbern970', 'BATbern971', 'BATbern972', "
+            + "'BATbern973', 'BATbern974', 'BATbern975', 'BATbern976', 'BATbern977')";
+
+    private void removeOwnEvents() {
+        jdbc.update("DELETE FROM registrations WHERE event_id IN (SELECT id FROM events WHERE " + OWN_EVENTS + ")");
+        jdbc.update("DELETE FROM events WHERE " + OWN_EVENTS);
     }
 
     @Test
@@ -139,8 +152,10 @@ class AttendeeDashboardIntegrationTest extends AbstractIntegrationTest {
                 {"id": "%s", "email": "jane@private.example.com", "firstName": "Jane", "lastName": "Müller",
                  "roles": ["ATTENDEE"], "createdAt": "2025-01-15T10:00:00Z", "updatedAt": "2025-01-15T10:00:00Z",
                  "additionalEmails": [
-                   {"email": "%s", "createdAt": "2025-01-15T10:00:00Z", "verifiedAt": "2025-01-16T10:00:00Z"},
-                   {"email": "%s", "createdAt": "2025-01-15T10:00:00Z", "verifiedAt": null}]}"""
+                   {"id": "6b0e2a4c-1d3f-4e5a-8b7c-9d0e1f2a3b5a", "email": "%s",
+                    "createdAt": "2025-01-15T10:00:00Z", "verifiedAt": "2025-01-16T10:00:00Z"},
+                   {"id": "6b0e2a4c-1d3f-4e5a-8b7c-9d0e1f2a3b5b", "email": "%s",
+                    "createdAt": "2025-01-15T10:00:00Z", "verifiedAt": null}]}"""
                 .formatted(ATTENDEE, verified, unverified));
     }
 

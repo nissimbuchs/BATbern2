@@ -741,8 +741,11 @@ POST   /api/users/{id}/promote     Promote user role
 POST   /api/users/{id}/demote      Demote user role
 GET    /api/users/{id}/data-export Export user's personal data (GDPR)
 GET    /api/users/me               Current user (includes additionalEmails)
-POST   /api/users/me/additional-emails        Add an additional email alias
-DELETE /api/users/me/additional-emails/{email} Remove an additional email alias
+POST   /api/users/me/additional-emails          Add an additional email alias
+PATCH  /api/users/me/additional-emails/{emailId} Change one (copy of event mails)
+DELETE /api/users/me/additional-emails/{emailId} Remove an additional email alias
+POST   /api/users/me/additional-emails/{emailId}/make-primary        Make a confirmed one the primary (login) address
+POST   /api/users/me/additional-emails/{emailId}/resend-verification Send the confirmation link again
 ```
 
 See [API Documentation](../../api/) for complete specifications.

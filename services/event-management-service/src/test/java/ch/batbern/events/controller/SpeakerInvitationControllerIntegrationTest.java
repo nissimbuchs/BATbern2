@@ -1,22 +1,22 @@
 package ch.batbern.events.controller;
 
 import ch.batbern.shared.test.AbstractIntegrationTest;
-import ch.batbern.events.client.UserApiClient;
+import ch.batbern.events.config.CumsContractHarness;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.SpeakerPool;
-import ch.batbern.events.dto.generated.users.GetOrCreateUserRequest;
-import ch.batbern.events.dto.generated.users.GetOrCreateUserResponse;
-import ch.batbern.events.dto.generated.users.InvitationCredentialsResponse;
+import ch.batbern.shared.test.contract.ContractServer.Reply;
 import ch.batbern.events.repository.EventRepository;
+import ch.batbern.events.repository.OutreachHistoryRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
+import ch.batbern.events.repository.SpeakerStatusHistoryRepository;
 import ch.batbern.shared.types.EventWorkflowState;
 import ch.batbern.shared.types.SpeakerWorkflowState;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,13 +24,13 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 import static org.hamcrest.Matchers.is;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.springframework.http.HttpMethod.POST;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -39,11 +39,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * Integration tests for SpeakerInvitationController
  * Story 6.1b: Speaker Invitation System
  *
- * Tests REST endpoints:
- * - POST /api/v1/events/{eventCode}/speakers/invite
- * - POST /api/v1/events/{eventCode}/speakers/{username}/send-invitation
+ * Tests REST endpoint:
+ * - POST /api/v1/events/{eventCode}/speakers/{speakerId}/send-invitation (Story 4.10: keyed by the
+ *   pool entry id; it took a username or a UUID. The test-only POST /speakers/invite is gone, its
+ *   cases live on as pool add + promote in SpeakerPoolWorkflowIntegrationTest.)
  *
- * Uses real PostgreSQL (Testcontainers), mocks UserApiClient; mail goes to the test SES recorder.
+ * Uses real PostgreSQL (Testcontainers) and the real UserApiClient against CUMS at the wire
+ * ({@link CumsContractHarness}; Epic 17 entry 6 replaced the client mock); mail goes to the test SES
+ * recorder.
  */
 @Transactional
 class SpeakerInvitationControllerIntegrationTest extends AbstractIntegrationTest {
@@ -66,16 +69,42 @@ class SpeakerInvitationControllerIntegrationTest extends AbstractIntegrationTest
     @Autowired
     private ch.batbern.events.repository.SessionUserRepository sessionUserRepository;
 
-    @MockitoBean
-    private UserApiClient userApiClient;
+    @Autowired
+    private CumsContractHarness cums;
+
+    @Autowired
+    private SpeakerStatusHistoryRepository statusHistoryRepository;
+
+    @Autowired
+    private OutreachHistoryRepository outreachHistoryRepository;
 
     private Event testEvent;
     private final String testEventCode = "batbern-2026-spring";
     private final String testEmail = "success+speaker@simulator.amazonses.com";
     private final String testUsername = "speaker.test";
 
+    private static final String GET_OR_CREATE = "/internal/users/get-or-create";
+    private static final String CREDENTIALS = "/internal/users/{username}/issue-invitation-credentials";
+
+    /** CUMS's get-or-create answer for {@link #testUsername}. */
+    private Reply getOrCreateAnswer(boolean created) throws Exception {
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("username", testUsername);
+        body.put("created", created);
+        body.put("companyUpdated", false);
+        body.put("cognitoUserId", null);
+        body.put("user", objectMapper.readValue(CumsContractHarness.userJson(
+                testUsername, "Test", "Speaker", testEmail, null), Object.class));
+        return Reply.ok(objectMapper.writeValueAsString(body));
+    }
+
+    @AfterEach
+    void resetCums() {
+        cums.reset();
+    }
+
     @BeforeEach
-    void setUp() {
+    void setUp() throws Exception {
         // Clean up in correct order (FK constraints)
         speakerPoolRepository.deleteAll();
         eventRepository.deleteAll();
@@ -98,28 +127,13 @@ class SpeakerInvitationControllerIntegrationTest extends AbstractIntegrationTest
                 .build();
         testEvent = eventRepository.save(testEvent);
 
-        // Mock UserApiClient to return a valid response
-        GetOrCreateUserResponse userResponse = new GetOrCreateUserResponse();
-        userResponse.setUsername(testUsername);
-        userResponse.setCreated(true);
-        when(userApiClient.getOrCreateUser(any(GetOrCreateUserRequest.class)))
-                .thenReturn(userResponse);
-
-        // Story 11.E.9: sendInvitation resolves the recipient email via
-        // PrimarySpeakerResolver → UserApiClient.getUserByUsername (the pool.email
-        // column is gone). Stub the lookup so the email-resolution step doesn't 500.
-        ch.batbern.events.dto.generated.users.UserResponse userProfile =
-                new ch.batbern.events.dto.generated.users.UserResponse();
-        userProfile.setId(testUsername);
-        userProfile.setEmail(testEmail);
-        userProfile.setFirstName("Test");
-        userProfile.setLastName("Speaker");
-        org.mockito.Mockito.lenient().when(userApiClient.getUserByUsername(testUsername))
-                .thenReturn(userProfile);
-        // Filler speakers in slot-capacity tests get arbitrary usernames; stub any() as a
-        // safe default so the resolver doesn't 500 for them.
-        org.mockito.Mockito.lenient().when(userApiClient.getUserByUsername(anyString()))
-                .thenReturn(userProfile);
+        // CUMS answers get-or-create with the test speaker. Story 11.E.9: sendInvitation resolves the
+        // recipient email via PrimarySpeakerResolver -> UserApiClient.getUserByUsername; the harness
+        // answers the test speaker with its address and any other (filler) username with a default.
+        cums.reset();
+        Reply created = getOrCreateAnswer(true);
+        cums.answer(POST, GET_OR_CREATE, call -> created);
+        cums.user(testUsername, "Test", "Speaker", testEmail);
     }
 
     /**
@@ -149,144 +163,6 @@ class SpeakerInvitationControllerIntegrationTest extends AbstractIntegrationTest
         speakerPoolRepository.save(speaker);
     }
 
-    // ==================== AC1: Single Invitation Tests ====================
-
-    /**
-     * Test 1.1: Should create speaker pool entry when valid request
-     * AC1: POST /events/{eventCode}/speakers/invite creates SpeakerPool
-     */
-    @Test
-    @WithMockUser(username = "organizer.test", roles = {"ORGANIZER"})
-    void should_createSpeakerPool_when_validInviteRequest() throws Exception {
-        mockMvc.perform(post("/api/v1/events/{eventCode}/speakers/invite", testEventCode)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                            {
-                                "email": "%s",
-                                "firstName": "John",
-                                "lastName": "Speaker",
-                                "company": "Swiss Tech AG"
-                            }
-                            """.formatted(testEmail)))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.speakerPoolId").exists())
-                .andExpect(jsonPath("$.username", is(testUsername)))
-                .andExpect(jsonPath("$.email", is(testEmail)))
-                .andExpect(jsonPath("$.speakerName", is("John Speaker")))
-                .andExpect(jsonPath("$.status", is("IDENTIFIED")))
-                .andExpect(jsonPath("$.created", is(true)))
-                .andExpect(jsonPath("$.userCreated", is(true)));
-
-        // Verify UserApiClient was called
-        verify(userApiClient).getOrCreateUser(any(GetOrCreateUserRequest.class));
-    }
-
-    /**
-     * Test 1.2: inviteSpeaker is no longer idempotent at IDENTIFIED.
-     *
-     * <p>Story 11.E.9: the email-based idempotency check was removed when
-     * speaker_pool.email column was dropped. Multiple pool rows for the same
-     * email/user at the brainstorm stage are now acceptable per the documented
-     * brainstorm UX. Always creates a new pool row.
-     */
-    @Test
-    @WithMockUser(username = "organizer.test", roles = {"ORGANIZER"})
-    void should_alwaysCreateNewEntry_when_emailReinvited() throws Exception {
-        // Given - existing speaker pool entry with the same email
-        SpeakerPool existingSpeaker = SpeakerPool.builder()
-                .eventId(testEvent.getId())
-                .speakerName("Existing Speaker")
-                .status(SpeakerWorkflowState.CONTACTED)
-                .createdAt(Instant.now())
-                .updatedAt(Instant.now())
-                .build();
-        speakerPoolRepository.save(existingSpeaker);
-
-        // Story 11.E.9: re-inviting the same email creates another pool row.
-        ch.batbern.events.dto.generated.users.GetOrCreateUserResponse userResp =
-                new ch.batbern.events.dto.generated.users.GetOrCreateUserResponse();
-        userResp.setUsername(testUsername);
-        userResp.setCreated(false);
-        when(userApiClient.getOrCreateUser(any(GetOrCreateUserRequest.class))).thenReturn(userResp);
-
-        mockMvc.perform(post("/api/v1/events/{eventCode}/speakers/invite", testEventCode)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                            {
-                                "email": "%s",
-                                "firstName": "John",
-                                "lastName": "Speaker"
-                            }
-                            """.formatted(testEmail)))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.status", is("IDENTIFIED")));
-    }
-
-    /**
-     * Test 1.3: Should return 404 when event not found
-     */
-    @Test
-    @WithMockUser(username = "organizer.test", roles = {"ORGANIZER"})
-    void should_return404_when_eventNotFound() throws Exception {
-        mockMvc.perform(post("/api/v1/events/{eventCode}/speakers/invite", "non-existent-event")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                            {
-                                "email": "%s"
-                            }
-                            """.formatted(testEmail)))
-                .andExpect(status().isNotFound());
-    }
-
-    /**
-     * Test 1.4: Should return 400 when email missing
-     */
-    @Test
-    @WithMockUser(username = "organizer.test", roles = {"ORGANIZER"})
-    void should_return400_when_emailMissing() throws Exception {
-        mockMvc.perform(post("/api/v1/events/{eventCode}/speakers/invite", testEventCode)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                            {
-                                "firstName": "John",
-                                "lastName": "Speaker"
-                            }
-                            """))
-                .andExpect(status().isBadRequest());
-    }
-
-    /**
-     * Test 1.5: Should return 400 when email invalid
-     */
-    @Test
-    @WithMockUser(username = "organizer.test", roles = {"ORGANIZER"})
-    void should_return400_when_emailInvalid() throws Exception {
-        mockMvc.perform(post("/api/v1/events/{eventCode}/speakers/invite", testEventCode)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                            {
-                                "email": "not-a-valid-email"
-                            }
-                            """))
-                .andExpect(status().isBadRequest());
-    }
-
-    /**
-     * Test 1.6: Should return 403 when not organizer role
-     */
-    @Test
-    @WithMockUser(username = "speaker.test", roles = {"SPEAKER"})
-    void should_return403_when_notOrganizer() throws Exception {
-        mockMvc.perform(post("/api/v1/events/{eventCode}/speakers/invite", testEventCode)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                            {
-                                "email": "%s"
-                            }
-                            """.formatted(testEmail)))
-                .andExpect(status().isForbidden());
-    }
-
     // ==================== AC3: Send Invitation Tests ====================
 
     /**
@@ -312,20 +188,15 @@ class SpeakerInvitationControllerIntegrationTest extends AbstractIntegrationTest
         // primary session_users row so the lookup resolves.
         seedPrimarySessionUser(speaker, testUsername);
 
-        // Story 11.E.2 review patch (P8 / B10): stub the new sibling endpoint that the
-        // INVITED hook now calls. Without this stub the mock would return null and the
-        // email-rendering path would silently no-op the temp-password block.
-        InvitationCredentialsResponse credentialsResponse = new InvitationCredentialsResponse()
-                .action(InvitationCredentialsResponse.ActionEnum.FRESH_TEMP_PASSWORD)
-                .temporaryPassword("TestTemp123!abcde");
-        when(userApiClient.issueInvitationCredentials(testUsername))
-                .thenReturn(credentialsResponse);
+        // Story 11.E.2: the INVITED hook asks CUMS for the invitation credentials
+        cums.answer(POST, CREDENTIALS, call -> Reply.ok(
+                "{\"temporaryPassword\": \"TestTemp123!abcde\", \"action\": \"FRESH_TEMP_PASSWORD\"}"));
 
         LocalDate responseDeadline = LocalDate.now().plusDays(14);
 
         // When/Then
-        mockMvc.perform(post("/api/v1/events/{eventCode}/speakers/{username}/send-invitation",
-                        testEventCode, testUsername)
+        mockMvc.perform(post("/api/v1/events/{eventCode}/speakers/{speakerId}/send-invitation",
+                        testEventCode, speaker.getId())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                             {
@@ -335,14 +206,26 @@ class SpeakerInvitationControllerIntegrationTest extends AbstractIntegrationTest
                             """.formatted(responseDeadline)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status", is("INVITED")))
+                .andExpect(jsonPath("$.username", is(testUsername)))
                 .andExpect(jsonPath("$.invitedAt").exists())
                 .andExpect(jsonPath("$.responseDeadline", is(responseDeadline.toString())));
 
         // Story 11.E.2 review patch (P8 / B10 / E12): the pre-11.E.2 magic-link token
         // assertion is gone, but the test must still verify the new Cognito-flow wiring
-        // happened — verify the CUMS sibling endpoint was called exactly once with the
-        // expected username so a future no-op'd runInvitedHook fails this test.
-        verify(userApiClient).issueInvitationCredentials(testUsername);
+        // happened — the CUMS sibling endpoint was called exactly once with the expected
+        // username, so a future no-op'd runInvitedHook fails this test.
+        assertThat(cums.calls(POST, CREDENTIALS)).singleElement()
+                .satisfies(call -> assertThat(call.pathVariables()).containsEntry("username", testUsername));
+
+        // Story 4.10 (moved from the deleted SpeakerInvitationServiceTest, off its mocks): the
+        // status history and the outreach row name the organizer, the response the speaker's
+        // username (resolved from session_users, not the path, which is the pool id now).
+        assertThat(statusHistoryRepository.findBySpeakerPoolIdOrderByChangedAtDesc(speaker.getId()))
+                .extracting(h -> h.getNewStatus(), h -> h.getChangedByUsername())
+                .contains(tuple(SpeakerWorkflowState.INVITED, "organizer.test"));
+        assertThat(outreachHistoryRepository.findBySpeakerPoolId(speaker.getId()))
+                .extracting(o -> o.getOrganizerUsername())
+                .containsExactly("organizer.test");
 
         // The invitation mail itself is sent @Async and resolves the speaker from session_users on
         // its own thread, which cannot see this class's uncommitted test transaction. Its content
@@ -355,8 +238,8 @@ class SpeakerInvitationControllerIntegrationTest extends AbstractIntegrationTest
     @Test
     @WithMockUser(username = "organizer.test", roles = {"ORGANIZER"})
     void should_return404_when_speakerNotFound() throws Exception {
-        mockMvc.perform(post("/api/v1/events/{eventCode}/speakers/{username}/send-invitation",
-                        testEventCode, "non-existent-speaker")
+        mockMvc.perform(post("/api/v1/events/{eventCode}/speakers/{speakerId}/send-invitation",
+                        testEventCode, java.util.UUID.randomUUID())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                             {
@@ -382,8 +265,8 @@ class SpeakerInvitationControllerIntegrationTest extends AbstractIntegrationTest
                 .build();
         speakerPoolRepository.save(speaker);
 
-        mockMvc.perform(post("/api/v1/events/{eventCode}/speakers/{username}/send-invitation",
-                        testEventCode, testUsername)
+        mockMvc.perform(post("/api/v1/events/{eventCode}/speakers/{speakerId}/send-invitation",
+                        testEventCode, speaker.getId())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                             {
@@ -428,8 +311,8 @@ class SpeakerInvitationControllerIntegrationTest extends AbstractIntegrationTest
 
         LocalDate responseDeadline = LocalDate.now().plusDays(14);
 
-        mockMvc.perform(post("/api/v1/events/{eventCode}/speakers/{username}/send-invitation",
-                        testEventCode, testUsername)
+        mockMvc.perform(post("/api/v1/events/{eventCode}/speakers/{speakerId}/send-invitation",
+                        testEventCode, candidate.getId())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -487,8 +370,8 @@ class SpeakerInvitationControllerIntegrationTest extends AbstractIntegrationTest
 
         LocalDate responseDeadline = LocalDate.now().plusDays(14);
 
-        mockMvc.perform(post("/api/v1/events/{eventCode}/speakers/{username}/send-invitation",
-                        testEventCode, testUsername)
+        mockMvc.perform(post("/api/v1/events/{eventCode}/speakers/{speakerId}/send-invitation",
+                        testEventCode, candidate.getId())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -499,36 +382,5 @@ class SpeakerInvitationControllerIntegrationTest extends AbstractIntegrationTest
                 .andExpect(jsonPath("$.details.code", is("SLOT_CAPACITY_REACHED")))
                 .andExpect(jsonPath("$.details.acceptedCount", is(half)))
                 .andExpect(jsonPath("$.details.invitedCount", is(half)));
-    }
-
-    // ==================== AC2: User Auto-Creation Tests ====================
-
-    /**
-     * Test 2.1: Should call UserApiClient with correct parameters
-     * AC2: Auto-creates User via UserApiClient
-     */
-    @Test
-    @WithMockUser(username = "organizer.test", roles = {"ORGANIZER"})
-    void should_callUserApiClient_when_invitingNewSpeaker() throws Exception {
-        mockMvc.perform(post("/api/v1/events/{eventCode}/speakers/invite", testEventCode)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                            {
-                                "email": "new.speaker@example.com",
-                                "firstName": "New",
-                                "lastName": "Speaker",
-                                "company": "Test Company"
-                            }
-                            """))
-                .andExpect(status().isCreated());
-
-        // Verify correct parameters passed to UserApiClient
-        verify(userApiClient).getOrCreateUser(argThat(request ->
-                request.getEmail().equals("new.speaker@example.com")
-                && request.getFirstName().equals("New")
-                && request.getLastName().equals("Speaker")
-                && request.getCompanyId().equals("Test Company")
-                && !request.getCognitoSync() // Should be false for speakers
-        ));
     }
 }

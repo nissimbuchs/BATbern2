@@ -4,8 +4,10 @@ import ch.batbern.partners.client.UserServiceClient;
 import ch.batbern.partners.client.user.dto.UserResponse;
 import ch.batbern.partners.dto.generated.PartnerContactResponse;
 import ch.batbern.partners.exception.PartnerNotFoundException;
+import ch.batbern.partners.exception.UserNotFoundException;
 import ch.batbern.partners.exception.UserServiceException;
 import ch.batbern.partners.repository.PartnerRepository;
+import ch.batbern.partners.security.SecurityContextHelper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -29,23 +31,36 @@ public class PartnerContactService {
 
     private final PartnerRepository partnerRepository;
     private final UserServiceClient userServiceClient;
+    private final SecurityContextHelper securityContextHelper;
 
     /**
      * Resolve the partner company name for the currently authenticated user.
      *
-     * Looks up the user's own profile via the User Service and returns their companyId.
-     * Any user with the PARTNER role is automatically a contact of their company.
+     * Reads the user's own profile from the User Service's internal API by the JWT's
+     * {@code custom:username} ({@code GET /internal/users/{username}}, cached 15 minutes, as the
+     * ownership check in {@code PartnerSecurityService} does) and returns its companyId. Any user with
+     * the PARTNER role is automatically a contact of their company. Before 6b this called the public
+     * {@code GET /api/v1/users/me}.
+     *
+     * <p>A token without {@code custom:username} (the pre-token Lambda sets it on every production
+     * token) falls back to the Cognito subject, which names no CUMS user: such a caller is "not
+     * linked", as the ownership check treats it.
      *
      * @return company name (ADR-003 identifier) from the user's own profile
-     * @throws PartnerNotFoundException if the user has no company linked
+     * @throws PartnerNotFoundException if the user is unknown to the User Service or has no company linked
      */
     @Transactional(readOnly = true)
     public String resolveCurrentUserCompanyName() {
-        UserResponse user = userServiceClient.getCurrentUserProfile();
+        String username = securityContextHelper.getCurrentUsername();
+        UserResponse user;
+        try {
+            user = userServiceClient.getUserByUsername(username);
+        } catch (UserNotFoundException e) {
+            throw new PartnerNotFoundException("User '" + username + "' is not linked to any partner company");
+        }
         String companyId = user != null ? user.getCompanyId() : null;
 
         if (companyId == null || companyId.isBlank()) {
-            String username = (user != null && user.getId() != null) ? user.getId() : "unknown";
             throw new PartnerNotFoundException("User '" + username + "' is not linked to any partner company");
         }
         return companyId;

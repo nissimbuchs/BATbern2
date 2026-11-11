@@ -13,8 +13,6 @@ import {
   cancelRegistration,
   deleteRegistration,
   promoteFromWaitlist,
-  enrollStakeholders,
-  getRegistrationsForAttendee,
 } from './eventRegistrationService';
 import type { EventParticipant, RegistrationStatus } from '@/types/eventParticipant.types';
 
@@ -499,55 +497,5 @@ describe('eventRegistrationService', () => {
       await expect(promoteFromWaitlist(eventCode, registrationCode)).rejects.toThrow();
     });
   });
-
-  describe('enrollStakeholders', () => {
-    const eventCode = 'BAT-2024-01';
-
-    it('should enroll stakeholders and return summary', async () => {
-      mockAxios
-        .onPost(`/events/${eventCode}/enroll-stakeholders`)
-        .reply(200, { enrolled: 5, skipped: 2 });
-
-      const result = await enrollStakeholders(eventCode);
-
-      expect(result).toEqual({ enrolled: 5, skipped: 2 });
-    });
-
-    it('should handle idempotent call where all are already enrolled', async () => {
-      mockAxios
-        .onPost(`/events/${eventCode}/enroll-stakeholders`)
-        .reply(200, { enrolled: 0, skipped: 7 });
-
-      const result = await enrollStakeholders(eventCode);
-
-      expect(result.enrolled).toBe(0);
-      expect(result.skipped).toBe(7);
-    });
-
-    it('should throw error on API failure', async () => {
-      mockAxios
-        .onPost(`/events/${eventCode}/enroll-stakeholders`)
-        .reply(500, { message: 'Internal server error' });
-
-      await expect(enrollStakeholders(eventCode)).rejects.toThrow();
-    });
-  });
-
-  describe('getRegistrationsForAttendee', () => {
-    it('should_sendAttendeeHeader_when_called', async () => {
-      const registrations = [{ eventCode: 'BATbern56', status: 'ATTENDED' }];
-      mockAxios.onGet('/events/registrations').reply(200, registrations);
-
-      await expect(getRegistrationsForAttendee('alice.smith')).resolves.toEqual(registrations);
-      expect(mockAxios.history.get[0].headers?.['X-Attendee-Username']).toBe('alice.smith');
-    });
-
-    it('should_passErrorThrough_when_requestFails', async () => {
-      mockAxios.onGet('/events/registrations').reply(500, { message: 'boom' });
-
-      await expect(getRegistrationsForAttendee('alice.smith')).rejects.toMatchObject({
-        response: { status: 500 },
-      });
-    });
-  });
+  // getRegistrationsForAttendee: eventRegistrationService.attendeeHistory.test.ts (MSW, 4.10b).
 });
