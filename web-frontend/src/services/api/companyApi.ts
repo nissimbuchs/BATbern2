@@ -183,7 +183,8 @@ class CompanyApiClient {
    */
   async getOrCreateCompany(displayName: string): Promise<Company> {
     try {
-      const response = await apiClient.post<Company>(`${COMPANY_API_PATH}:get-or-create`, {
+      // Story 4.10d: slash form, 201 when created, 200 when found (ADR-013 §2)
+      const response = await apiClient.post<Company>(`${COMPANY_API_PATH}/get-or-create`, {
         displayName,
       });
       return response.data;

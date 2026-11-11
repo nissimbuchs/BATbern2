@@ -17,7 +17,15 @@ import type { AdditionalEmail, UserPreferencesView } from '@/types/userAccount.t
 /** The en text of a userManagement key, as the screen renders it. */
 const en = (key: string) => i18n.t(key, { ns: 'userManagement', lng: 'en' });
 
+// Story 4.10d: an address is addressed by its id, never by the address itself
+const ids = new Map<string, string>();
+const idOf = (email: string): string => {
+  if (!ids.has(email)) ids.set(email, crypto.randomUUID());
+  return ids.get(email)!;
+};
+
 const address = (email: string, over: Partial<AdditionalEmail> = {}): AdditionalEmail => ({
+  id: idOf(email),
   email,
   label: null,
   createdAt: '2026-05-22T10:00:00Z',
@@ -103,7 +111,9 @@ describe('UserSettingsTab — Story 10.32 additional emails section', () => {
     fireEvent.click(screen.getByTestId('additional-email-delete-confirm'));
 
     await waitFor(() => expect(api.calls('deleteAdditionalEmail')).toHaveLength(1));
-    expect(api.calls('deleteAdditionalEmail')[0].params).toEqual({ email: 'box@example.com' });
+    expect(api.calls('deleteAdditionalEmail')[0].params).toEqual({
+      emailId: idOf('box@example.com'),
+    });
   });
 
   test('should NOT delete when Cancel is clicked in the confirmation dialog', async () => {
@@ -140,7 +150,7 @@ describe('UserSettingsTab — Story 10.32 additional emails section', () => {
 
     await waitFor(() => expect(api.calls('resendAdditionalEmailVerification')).toHaveLength(1));
     expect(api.calls('resendAdditionalEmailVerification')[0].params).toEqual({
-      email: 'box@example.com',
+      emailId: idOf('box@example.com'),
     });
     expect(
       await screen.findByText(en('settings.account.additionalEmailResendSuccess'))
@@ -159,7 +169,7 @@ describe('UserSettingsTab — Story 10.32 additional emails section', () => {
 
     await waitFor(() => expect(api.calls('updateAdditionalEmail')).toHaveLength(1));
     const [call] = api.calls('updateAdditionalEmail');
-    expect(call.params).toEqual({ email: 'box@example.com' });
+    expect(call.params).toEqual({ emailId: idOf('box@example.com') });
     expect(call.body).toEqual({ receiveEventMail: true });
   });
 });

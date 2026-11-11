@@ -363,10 +363,11 @@ export const addAdditionalEmail = async (
 };
 
 /**
- * Story 10.32 — remove an additional email from the caller's profile.
+ * Story 10.32 — remove an additional email from the caller's profile. Story 4.10d: by its `id`
+ * (`AdditionalEmail.id`), the address never goes in the path.
  */
-export const deleteAdditionalEmail = async (email: string): Promise<void> => {
-  await apiClient.delete(`${USER_API_PATH}/me/additional-emails/${encodeURIComponent(email)}`);
+export const deleteAdditionalEmail = async (emailId: string): Promise<void> => {
+  await apiClient.delete(`${USER_API_PATH}/me/additional-emails/${emailId}`);
 };
 
 /**
@@ -374,11 +375,11 @@ export const deleteAdditionalEmail = async (email: string): Promise<void> => {
  * 409 `NOT_VERIFIED` when switching it on for an unconfirmed address.
  */
 export const updateAdditionalEmail = async (
-  email: string,
+  emailId: string,
   payload: { receiveEventMail: boolean }
 ): Promise<AdditionalEmail> => {
   const response = await apiClient.patch<AdditionalEmail>(
-    `${USER_API_PATH}/me/additional-emails/${encodeURIComponent(email)}`,
+    `${USER_API_PATH}/me/additional-emails/${emailId}`,
     payload
   );
   return response.data;
@@ -432,10 +433,8 @@ export const confirmAdditionalEmailVerification = async (
  * Additional-email verification (v2) — resend the verification email for one of
  * the caller's own (unverified) additional emails. 204 on success.
  */
-export const resendAdditionalEmailVerification = async (email: string): Promise<void> => {
-  await apiClient.post(
-    `${USER_API_PATH}/me/additional-emails/${encodeURIComponent(email)}/resend-verification`
-  );
+export const resendAdditionalEmailVerification = async (emailId: string): Promise<void> => {
+  await apiClient.post(`${USER_API_PATH}/me/additional-emails/${emailId}/resend-verification`);
 };
 
 // =====================================================================
@@ -481,12 +480,11 @@ export const requestProfileMerge = async (candidateId: string, note?: string): P
 
 /**
  * #1244 step 2: a confirmed additional address becomes the primary (login) address; the old primary
- * stays as a confirmed additional address. 409 `NOT_VERIFIED` / `EMAIL_HAS_OTHER_LOGIN`.
+ * stays as a confirmed additional address under a new `id` (re-read `GET /users/me`).
+ * 409 `NOT_VERIFIED` / `EMAIL_HAS_OTHER_LOGIN`.
  */
-export const makeAdditionalEmailPrimary = async (email: string): Promise<void> => {
-  await apiClient.post(
-    `${USER_API_PATH}/me/additional-emails/${encodeURIComponent(email)}/make-primary`
-  );
+export const makeAdditionalEmailPrimary = async (emailId: string): Promise<void> => {
+  await apiClient.post(`${USER_API_PATH}/me/additional-emails/${emailId}/make-primary`);
 };
 
 /**

@@ -231,6 +231,7 @@ describe('ProfilePage — Story 12.11 role-neutral profile with tabs', () => {
       profile({
         additionalEmails: [
           {
+            id: '3b1f6c2e-8a4d-4f5e-9c7b-1a2b3c4d5e6f',
             email: 'private@example.com',
             label: null,
             createdAt: '2026-11-01T10:00:00Z',

@@ -110,7 +110,8 @@ function AdditionalEmailsSection({ additionalEmails }: { additionalEmails: Addit
   // Story 10.32 (P3-1, P3-8 from 2026-05-22 review): the confirm prompt is a
   // MUI Dialog rather than `window.confirm()` so it inherits the design system,
   // is screen-reader friendly, and identifies which email is being removed.
-  const [pendingDelete, setPendingDelete] = useState<string | null>(null);
+  // Story 4.10d: the operations take the address's id; the dialog names the address.
+  const [pendingDelete, setPendingDelete] = useState<AdditionalEmail | null>(null);
 
   const atLimit = additionalEmails.length >= ADDITIONAL_EMAILS_LIMIT;
 
@@ -168,8 +169,8 @@ function AdditionalEmailsSection({ additionalEmails }: { additionalEmails: Addit
     }
   }
 
-  function requestDelete(email: string) {
-    setPendingDelete(email);
+  function requestDelete(entry: AdditionalEmail) {
+    setPendingDelete(entry);
   }
 
   function cancelDelete() {
@@ -177,13 +178,13 @@ function AdditionalEmailsSection({ additionalEmails }: { additionalEmails: Addit
   }
 
   async function confirmDelete() {
-    const email = pendingDelete;
+    const entry = pendingDelete;
     setPendingDelete(null);
-    if (!email) {
+    if (!entry) {
       return;
     }
     try {
-      await deleteMutation.mutateAsync(email);
+      await deleteMutation.mutateAsync(entry.id);
       setToast({
         message: t('settings.account.additionalEmailRemoved'),
         severity: 'success',
@@ -207,7 +208,7 @@ function AdditionalEmailsSection({ additionalEmails }: { additionalEmails: Addit
     }
   }
 
-  async function handleResend(email: string) {
+  async function handleResend(emailId: string) {
     // MUI <Link component="button"> does not reliably honour the `disabled` prop, so a
     // rapid double-click could fire two resend requests (and two emails). Guard the
     // handler explicitly while a resend is in flight.
@@ -215,7 +216,7 @@ function AdditionalEmailsSection({ additionalEmails }: { additionalEmails: Addit
       return;
     }
     try {
-      await resendMutation.mutateAsync(email);
+      await resendMutation.mutateAsync(emailId);
       setToast({
         message: t('settings.account.additionalEmailResendSuccess'),
         severity: 'success',
@@ -259,7 +260,7 @@ function AdditionalEmailsSection({ additionalEmails }: { additionalEmails: Addit
                   aria-label={t('settings.account.additionalEmailDeleteAriaLabel', {
                     email: entry.email,
                   })}
-                  onClick={() => requestDelete(entry.email)}
+                  onClick={() => requestDelete(entry)}
                   disabled={deleteMutation.isPending || pendingDelete !== null}
                 >
                   <DeleteIcon fontSize="small" />
@@ -288,7 +289,7 @@ function AdditionalEmailsSection({ additionalEmails }: { additionalEmails: Addit
                             email: entry.email,
                           })}
                           aria-disabled={resendMutation.isPending}
-                          onClick={() => handleResend(entry.email)}
+                          onClick={() => handleResend(entry.id)}
                           sx={{
                             pointerEvents: resendMutation.isPending ? 'none' : 'auto',
                             opacity: resendMutation.isPending ? 0.5 : 1,
@@ -326,7 +327,7 @@ function AdditionalEmailsSection({ additionalEmails }: { additionalEmails: Addit
                             disabled={updateEmailMutation.isPending}
                             onChange={(e) =>
                               updateEmailMutation.mutate({
-                                email: entry.email,
+                                emailId: entry.id,
                                 receiveEventMail: e.target.checked,
                               })
                             }
@@ -414,7 +415,9 @@ function AdditionalEmailsSection({ additionalEmails }: { additionalEmails: Addit
         </DialogTitle>
         <DialogContent>
           <DialogContentText id="additional-email-delete-confirm-description">
-            {t('settings.account.additionalEmailRemoveConfirm', { email: pendingDelete ?? '' })}
+            {t('settings.account.additionalEmailRemoveConfirm', {
+              email: pendingDelete?.email ?? '',
+            })}
           </DialogContentText>
         </DialogContent>
         <DialogActions>

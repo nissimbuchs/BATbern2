@@ -124,8 +124,9 @@ export function ProfileEmailAddresses({
     },
   });
 
+  // Story 4.10d: the operations take the address's id; the address never goes in the path
   const remove = useMutation({
-    mutationFn: (email: string) => deleteAdditionalEmail(email),
+    mutationFn: (address: AdditionalEmail) => deleteAdditionalEmail(address.id),
     onSuccess: () => {
       setConfirmRemove(null);
       refresh();
@@ -133,18 +134,19 @@ export function ProfileEmailAddresses({
   });
 
   const copy = useMutation({
-    mutationFn: ({ email, receive }: { email: string; receive: boolean }) =>
-      updateAdditionalEmail(email, { receiveEventMail: receive }),
+    mutationFn: ({ address, receive }: { address: AdditionalEmail; receive: boolean }) =>
+      updateAdditionalEmail(address.id, { receiveEventMail: receive }),
     onSuccess: refresh,
   });
 
   const resend = useMutation({
-    mutationFn: (email: string) => resendAdditionalEmailVerification(email),
-    onSuccess: (_data, email) => setResent((r) => ({ ...r, [email]: true })),
+    mutationFn: (address: AdditionalEmail) => resendAdditionalEmailVerification(address.id),
+    onSuccess: (_data, address) => setResent((r) => ({ ...r, [address.email]: true })),
   });
 
   const makePrimary = useMutation({
-    mutationFn: (email: string) => makeAdditionalEmailPrimary(email),
+    // the ids change afterwards (the rows are replaced); refresh() reads them again
+    mutationFn: (address: AdditionalEmail) => makeAdditionalEmailPrimary(address.id),
     onSuccess: async () => {
       setConfirmPrimary(null);
       setPrimaryDone(true);
@@ -157,9 +159,9 @@ export function ProfileEmailAddresses({
       }
       refresh();
     },
-    onError: (err, email) => {
+    onError: (err, address) => {
       setConfirmPrimary(null);
-      setMergeCandidate(errorCode(err) === 'EMAIL_HAS_OTHER_LOGIN' ? email : null);
+      setMergeCandidate(errorCode(err) === 'EMAIL_HAS_OTHER_LOGIN' ? address.email : null);
     },
   });
 
@@ -204,7 +206,7 @@ export function ProfileEmailAddresses({
                       variant="outline"
                       className="text-red-400 border-red-800"
                       disabled={remove.isPending}
-                      onClick={() => remove.mutate(a.email)}
+                      onClick={() => remove.mutate(a)}
                       data-testid={`email-remove-confirm-${a.email}`}
                     >
                       {t('profile.emails.removeConfirm')}
@@ -254,7 +256,7 @@ export function ProfileEmailAddresses({
                       type="button"
                       className="underline text-zinc-300"
                       disabled={resend.isPending}
-                      onClick={() => resend.mutate(a.email)}
+                      onClick={() => resend.mutate(a)}
                       data-testid={`email-resend-${a.email}`}
                     >
                       {t('profile.emails.resend')}
@@ -275,7 +277,7 @@ export function ProfileEmailAddresses({
                     <Button
                       size="sm"
                       disabled={makePrimary.isPending}
-                      onClick={() => makePrimary.mutate(a.email)}
+                      onClick={() => makePrimary.mutate(a)}
                       data-testid={`email-make-primary-confirm-${a.email}`}
                     >
                       {t('profile.emails.makePrimaryConfirm')}
@@ -286,7 +288,7 @@ export function ProfileEmailAddresses({
                   </div>
                 </div>
               )}
-              {makePrimary.isError && makePrimary.variables === a.email && (
+              {makePrimary.isError && makePrimary.variables?.id === a.id && (
                 <p
                   className="text-sm text-red-400"
                   data-testid={`email-make-primary-error-${a.email}`}
@@ -306,7 +308,7 @@ export function ProfileEmailAddresses({
                   className="h-4 w-4"
                   checked={!!a.receiveEventMail && confirmed}
                   disabled={!confirmed || copy.isPending}
-                  onChange={(e) => copy.mutate({ email: a.email, receive: e.target.checked })}
+                  onChange={(e) => copy.mutate({ address: a, receive: e.target.checked })}
                   data-testid={`event-copy-${a.email}`}
                 />
                 {t('profile.emails.eventCopy')}

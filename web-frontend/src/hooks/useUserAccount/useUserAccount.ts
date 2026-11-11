@@ -182,7 +182,7 @@ export const useAddAdditionalEmail = () => {
 export const useDeleteAdditionalEmail = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (email: string) => userAccountApi.deleteAdditionalEmail(email),
+    mutationFn: (emailId: string) => userAccountApi.deleteAdditionalEmail(emailId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['user-profile'] });
     },
@@ -195,8 +195,8 @@ export const useDeleteAdditionalEmail = () => {
 export const useUpdateAdditionalEmail = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ email, receiveEventMail }: { email: string; receiveEventMail: boolean }) =>
-      userAccountApi.updateAdditionalEmail(email, { receiveEventMail }),
+    mutationFn: ({ emailId, receiveEventMail }: { emailId: string; receiveEventMail: boolean }) =>
+      userAccountApi.updateAdditionalEmail(emailId, { receiveEventMail }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['user-profile'] });
     },
@@ -211,7 +211,7 @@ export const useUpdateAdditionalEmail = () => {
 export const useResendVerification = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (email: string) => userAccountApi.resendAdditionalEmailVerification(email),
+    mutationFn: (emailId: string) => userAccountApi.resendAdditionalEmailVerification(emailId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['user-profile'] });
     },
