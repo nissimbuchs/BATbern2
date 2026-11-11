@@ -142,6 +142,22 @@ mappings:
     docs:
       - "docs/architecture/06-backend-architecture.md"
       - "docs/architecture/06b-user-lifecycle-sync.md"
+      - "docs/architecture/module-map.md"
+  - source_pattern: "services/company-user-management-service/src/main/java/ch/batbern/companyuser/service/PrimaryEmailService.java"
+    docs:
+      - "docs/architecture/06-backend-architecture.md"
+      - "docs/architecture/06b-user-lifecycle-sync.md"
+      - "docs/architecture/module-map.md"
+  - source_pattern: "services/company-user-management-service/src/main/java/ch/batbern/companyuser/client/UserReferenceContract.java"
+    docs:
+      - "docs/architecture/06-backend-architecture.md"
+      - "docs/architecture/06b-user-lifecycle-sync.md"
+      - "docs/architecture/module-map.md"
+  - source_pattern: "services/company-user-management-service/src/main/java/ch/batbern/companyuser/client/HttpUserReferenceContract.java"
+    docs:
+      - "docs/architecture/06-backend-architecture.md"
+      - "docs/architecture/06b-user-lifecycle-sync.md"
+      - "docs/architecture/module-map.md"
   # The topic canvas composes partner-coordination and EMS data in the browser (entry 8) instead of
   # EMS calling partner-coordination; moving it back would reopen the EMS→PCS edge.
   - source_pattern: "web-frontend/src/services/blobTopicService.ts"

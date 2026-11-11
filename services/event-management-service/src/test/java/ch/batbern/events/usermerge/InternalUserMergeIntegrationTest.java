@@ -177,6 +177,9 @@ class InternalUserMergeIntegrationTest extends AbstractIntegrationTest {
 
         assertThat(again.path("moved").path("registrations.attendee_username").asInt()).isZero();
         assertThat(count("registrations", "attendee_username", TARGET)).isEqualTo(1);
+        // the repeat (a later holder failed, CUMS runs the merge again) writes no second, empty log row
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM user_merge_log WHERE source_username = ?"
+                + " AND target_username = ?", Integer.class, SOURCE, TARGET)).isEqualTo(1);
     }
 
     @Test

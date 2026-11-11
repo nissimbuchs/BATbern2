@@ -98,8 +98,8 @@ public class ProfileMergeRequestService {
         mergeService.merge(request.getRequesterUsername(), request.getSourceUsername(), organizer, "ORGANIZER",
                 false);
         decide(request, ProfileMergeRequest.Status.APPROVED, organizer, null);
-        // After the merge, nothing may roll this transaction back: event-management has already
-        // moved its rows. The mail is best effort; the conversation is closed after the commit.
+        // After the merge, nothing may roll this transaction back: the holders of the user-reference
+        // contract have already moved their rows. The mail is best effort; the conversation is closed after the commit.
         User requester = requester(request);
         afterDecision(request,
                 () -> emailService.sendApproved(requester.getEmail(), requester.getFirstName(), locale(requester)));

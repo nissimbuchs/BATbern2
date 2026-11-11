@@ -98,14 +98,45 @@ public final class ContractCalls {
     public <T> List<T> postForAnswers(String path, Object body, Class<T> type, Object... uriVariables) {
         List<T> answers = new ArrayList<>();
         for (String implementer : implementers) {
-            URI uri = UriComponentsBuilder.fromUriString(implementer + path).encode().buildAndExpand(uriVariables)
-                    .toUri();
-            HttpHeaders headers = S2sHeaders.forCurrentUser();
-            headers.setContentType(MediaType.APPLICATION_JSON);
-            answers.add(call(implementer, HttpMethod.POST, () ->
-                    restTemplate.exchange(uri, HttpMethod.POST, new HttpEntity<>(body, headers), type).getBody()));
+            answers.add(postTo(implementer, path, body, type, uriVariables));
         }
         return answers;
+    }
+
+    private <T> T postTo(String implementer, String path, Object body, Class<T> type, Object... uriVariables) {
+        URI uri = UriComponentsBuilder.fromUriString(implementer + path).encode().buildAndExpand(uriVariables)
+                .toUri();
+        HttpHeaders headers = S2sHeaders.forCurrentUser();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        return call(implementer, HttpMethod.POST, () ->
+                restTemplate.exchange(uri, HttpMethod.POST, new HttpEntity<>(body, headers), type).getBody());
+    }
+
+    /**
+     * {@code POST}s {@code body} to {@code path} at every implementer, also after one failed: for a
+     * notice every implementer must get (a new primary address, for instance). Each failure is
+     * logged; after the last implementer one {@link ContractCallFailedException} names every
+     * implementer that failed (the first failure as its cause, the others suppressed).
+     */
+    public void postToEvery(String path, Object body, Object... uriVariables) {
+        List<String> failed = new ArrayList<>();
+        List<RuntimeException> failures = new ArrayList<>();
+        for (String implementer : implementers) {
+            try {
+                postTo(implementer, path, body, Void.class, uriVariables);
+            } catch (ContractCallFailedException | ContractRefusedException e) {
+                log.warn("CONTRACT_CALL not delivered contract={} implementer={} path={} reason={}", name,
+                        implementer, path, e.getMessage());
+                failed.add(implementer);
+                failures.add(e);
+            }
+        }
+        if (!failures.isEmpty()) {
+            ContractCallFailedException all = new ContractCallFailedException(name, String.join(", ", failed),
+                    failures.get(0));
+            failures.stream().skip(1).forEach(all::addSuppressed);
+            throw all;
+        }
     }
 
     /** {@code GET}s {@code path} at every implementer; the answers in implementer order. */

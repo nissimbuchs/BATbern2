@@ -274,7 +274,7 @@ class UserMergeIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     @WithMockUser(username = "orga.nizer", roles = "ORGANIZER")
-    @DisplayName("C: a holder does not answer: the source profile stays, 502; earlier holders' part is idempotent")
+    @DisplayName("C: a holder does not answer: the source profile stays, 502; repeated with both holders up, it completes")
     void merge_holderDown_keepsSource() throws Exception {
         expectPreviews();
         holders.expect(POST, MERGE).atHost(HOLDER_A).respondWithExample();
@@ -288,6 +288,22 @@ class UserMergeIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.errorCode").value("MERGE_EVENT_SERVICE_FAILED"));
         holders.verify();
         assertThat(userRepository.findByUsername("anna.muster")).isPresent();
+
+        // Both holders up again: the same merge completes (holder A's part is idempotent, moves nothing more).
+        holders.reset();
+        expectPreviews();
+        holders.expect(POST, MERGE).atHost(HOLDER_A).respondWithExample("nothingHeld");
+        holders.expect(POST, MERGE).atHost(HOLDER_B).respondWith(HttpStatus.OK, """
+                {"moved": {"partner_notes.author_username": 1}, "removed": {}}""");
+
+        mockMvc.perform(post("/api/v1/users/anna.muster.2/merge").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"sourceUsername\": \"anna.muster\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.moved['partner_notes.author_username']").value(1));
+        holders.verify();
+        entityManager.flush();
+        entityManager.clear();
+        assertThat(userRepository.findByUsername("anna.muster")).isEmpty();
     }
 
     @Test

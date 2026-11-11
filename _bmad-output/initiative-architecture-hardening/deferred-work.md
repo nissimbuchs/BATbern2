@@ -97,3 +97,6 @@
 - source_plan: `_bmad-output/initiative-architecture-hardening/tickets/epic-one-service-direction/tickets/story-ems-pulls-mail-center-requests-from-cums-plan.md`
   summary: A merge or logo filing that fails after EMS already committed the Mail Center conversation (read timeout, CUMS commit failure) leaves an orphan OPEN conversation whose decision buttons 404.
   evidence: CUMS calls the contract inside its transaction, EMS commits separately; inherited from the pre-November push (9d10da27). Fix options: a compensating "withdrawn" call on rollback, or an outbox (ruled out by the owner on 2026-11-11). Rare: needs EMS up but slower than the 10 s read timeout.
+- source_plan: `_bmad-output/initiative-architecture-hardening/tickets/epic-one-service-direction/tickets/story-cums-owns-the-user-reference-merge-contract-ems-and-pcs-impl-plan.md`
+  summary: PCS writes no merge log, so a profile merge cannot be undone by hand for topic_suggestions.suggested_by, partner_notes.author_username and partner_meetings.created_by.
+  evidence: EMS's user_merge_log records only EMS rows; PCS `usermerge` updates in place. Production volume small (43 topic suggestions, 2 notes, 2 meetings on 2026-11-11). Options: a PCS merge log table, or the holder returns moved row ids that CUMS stores.

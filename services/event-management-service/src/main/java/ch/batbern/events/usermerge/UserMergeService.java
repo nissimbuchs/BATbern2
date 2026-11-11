@@ -147,6 +147,22 @@ public class UserMergeService {
             movedCounts.put(m.name(), keys.size());
         }
 
+        // A repeat (a later holder failed, the merge runs again) moves nothing here; its log row exists.
+        boolean nothingMoved = removedRows.isEmpty() && movedCounts.values().stream().allMatch(n -> n == 0);
+        boolean logged = nothingMoved && Boolean.TRUE.equals(jdbc.queryForObject("SELECT EXISTS (SELECT 1 FROM "
+                + "user_merge_log WHERE source_username = :source AND target_username = :target)", p, Boolean.class));
+        if (!logged) {
+            insertLog(p, performedBy, trigger, moved, removedRows, sourceProfile);
+        }
+
+        evictCaches();
+        log.info("USER_MERGE source={} target={} trigger={} moved={} removed={} logged={}",
+                source, target, trigger, movedCounts, removed, !logged);
+        return new Result(movedCounts, removed);
+    }
+
+    private void insertLog(MapSqlParameterSource p, String performedBy, String trigger, Map<String, Object> moved,
+            List<Map<String, Object>> removedRows, Object sourceProfile) {
         jdbc.update("INSERT INTO user_merge_log (source_username, target_username, performed_by, trigger, moved, "
                 + "removed_rows, source_profile) VALUES (:source, :target, :by, :trigger, CAST(:moved AS jsonb), "
                 + "CAST(:removed AS jsonb), CAST(:profile AS jsonb))",
@@ -156,11 +172,6 @@ public class UserMergeService {
                                 .map(r -> "{\"table\": " + json(r.get("table")) + ", \"row\": " + r.get("row") + "}")
                                 .toList()) + "]")
                         .addValue("profile", sourceProfile == null ? null : json(sourceProfile)));
-
-        evictCaches();
-        log.info("USER_MERGE source={} target={} trigger={} moved={} removed={}",
-                source, target, trigger, movedCounts, removed);
-        return new Result(movedCounts, removed);
     }
 
     private void removeRows(String table, String sql, MapSqlParameterSource p,

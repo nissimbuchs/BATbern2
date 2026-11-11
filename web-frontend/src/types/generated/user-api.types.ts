@@ -402,8 +402,8 @@ export interface paths {
      *     #1244 step 3: when the link came from `POST /users/me/account-merges` (the other profile has
      *     its own login), that login is disabled first, the profile is merged with its addresses as
      *     confirmed addresses of the caller, and the login is deleted. If the merge fails the login is
-     *     enabled again (502 when event-management did not answer); if it cannot be disabled nothing
-     *     is merged.
+     *     enabled again (502 `MERGE_EVENT_SERVICE_FAILED` when a holder of the user-reference contract
+     *     did not answer); if it cannot be disabled nothing is merged.
      */
     post: operations['confirmProfileClaim'];
     delete?: never;
@@ -2728,6 +2728,15 @@ export interface operations {
       403: components['responses']['Forbidden'];
       409: components['responses']['Conflict'];
       500: components['responses']['InternalServerError'];
+      /** @description A holder of the user-reference contract did not complete its part; the earlier profile stays */
+      502: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
     };
   };
   requestProfileMerge: {

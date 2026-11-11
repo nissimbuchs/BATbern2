@@ -164,6 +164,17 @@ class HttpUserReferenceContractTest {
     }
 
     @Test
+    @DisplayName("no holder configured: preview and merge fail instead of a merge that would orphan every row")
+    void should_refusePreviewAndMerge_when_noHolderIsConfigured() {
+        HttpUserReferenceContract none = new HttpUserReferenceContract(new RestTemplateBuilder().build(), List.of());
+
+        assertThatThrownBy(() -> none.preview("anna.meier.2", "anna.meier"))
+                .isInstanceOf(MergeCallFailedException.class).hasMessageContaining("no holder");
+        assertThatThrownBy(() -> none.merge(mergeCall()))
+                .isInstanceOf(MergeCallFailedException.class).hasMessageContaining("no holder");
+    }
+
+    @Test
     void should_reportPrimaryEmailChange_toEveryHolder() {
         holders.expect(POST, PRIMARY_EMAIL).atHost(A).andExpect(r -> {
             noJwt(r);
@@ -178,8 +189,22 @@ class HttpUserReferenceContractTest {
     }
 
     @Test
+    @DisplayName("primary email: a holder that is down does not keep the next one from being told")
+    void should_tellEveryHolder_when_anEarlierHolderIsDown() {
+        holders.expect(POST, PRIMARY_EMAIL).atHost(A).respondWith(request -> {
+            throw new ConnectException("connection refused");
+        });
+        holders.expect(POST, PRIMARY_EMAIL).atHost(B).respondWithExample("nothingHeld");
+
+        assertThatThrownBy(() -> contract.primaryEmailChanged("anna.meier", "a@example.com", "b@example.com"))
+                .isInstanceOf(MergeCallFailedException.class).hasMessageContaining(A);
+        holders.verify();
+    }
+
+    @Test
     void should_failCall_when_primaryEmailRefused() {
         holders.expect(POST, PRIMARY_EMAIL).atHost(A).respondWithStatus(HttpStatus.BAD_REQUEST);
+        holders.expect(POST, PRIMARY_EMAIL).atHost(B).respondWithExample("nothingHeld");
 
         assertThatThrownBy(() -> contract.primaryEmailChanged("anna.meier", "a@example.com", "b@example.com"))
                 .isInstanceOf(MergeCallFailedException.class);

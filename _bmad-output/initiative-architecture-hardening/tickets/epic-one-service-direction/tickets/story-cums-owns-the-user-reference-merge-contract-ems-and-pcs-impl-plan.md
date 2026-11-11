@@ -3,14 +3,14 @@ title: 'CUMS owns the user-reference merge contract, EMS and PCS implement it'
 type: 'refactor'
 ticket: '7b'
 created: '2026-11-11'
-status: 'built'
+status: 'in-review'
 baseline_revision: 'c295ff4242945bf5aa5cc22c9c783b84e5712661'
 route: 'full'
 route_source: 'auto'
 risk: 'high'
-review: ''
-review_source: ''
-lenses_ran: []
+review: 'quick'
+review_source: 'pinned'
+lenses_ran: ['quick']
 review_loop_iteration: 0
 context:
   - '{project-root}/_bmad-output/initiative-architecture-hardening/tickets/epic-one-service-direction/tickets/story-ems-pulls-mail-center-requests-from-cums-plan.md'
@@ -70,6 +70,19 @@ Approved by the owner 2026-11-11 ("B for all": this plan is already the upstream
 - Given local dev, when a primary email changes, then an upcoming registration moves at once.
 - Given the CUMS, EMS and PCS suites, then they pass and the CUMS archunit store is empty.
 
+Pass 1 (quick lens), 2026-11-11: 0 high, 2 medium, 6 low, 0 false.
+
+| # | Finding | Verdict | Route | Evidence / action |
+|---|---------|---------|-------|-------------------|
+| 1 | Primary-email stops at the first failing holder, later holders never told | low | patch | Verified (`postForAnswers` throws at first failure). Fix: call every holder, collect failures. |
+| 2 | AC 2 not run end to end on local dev | low | reject | Verified, but make-primary moves a login in the shared Cognito pool, which serves production; EMS's endpoint was run directly and `PrimaryEmailIntegrationTest` covers the CUMS path. Stated in the morning summary. |
+| 3 | `check:api-types` result not recorded | low | (verification) | Run by the orchestrator after the patch commit. |
+| 4 | A retry after a later holder failed writes a second `user_merge_log` row; PCS keeps no undo record | medium | patch + defer | Verified (EMS insert not idempotent). Patch: skip an empty repeat. PCS undo record deferred (deferred-work entry). |
+| 5 | users-api profile-claims/confirm text names EMS and lacks the 502; `ProfileMergeRequestService` comment names EMS | low | patch | Verified at the cited lines. |
+| 6 | An empty holder list lets a merge delete the source and orphan rows | medium | patch | Verified: only a WARN at construction. Fix: refuse the merge with 502 when no holder is configured. |
+| 7 | Doc-drift mappings miss the contract caller and `PrimaryEmailService` | low | patch | Verified. |
+| 8 | CUMS has no test that the retry after a holder failure completes | low | patch | Verified. Add the repeat to the holder-down test. |
+
 ## Design Notes
 
 **Architecture note.** Modules: CUMS `client`, `service`, config; EMS `usermerge`; PCS new `usermerge`; web-frontend locales. New dependency: none. New endpoints: `/internal/user-references/{preview,merge,primary-email}` on EMS (renamed from `/internal/users/merge-preview|merge|primary-email`, which cannot stay: their spec belongs to EMS, the contract to CUMS) and on PCS (new). Reused: `S2sHeaders`, `ContractServer`, provider contract test, the EMS merge logic. Deviation: none; ADR-016 decision 5 as amended 2026-11-11.
@@ -106,3 +119,4 @@ Built 2026-11-11 on `feature/17-7b-user-reference-contract`, committed locally, 
 - **Verification (2026-11-11).** shared-kernel 652, CUMS 981, EMS 2774, PCS 287 tests, 0 failures; checkstyle main+test of the four modules; `lint:api-internal`, `lint:api`, `check:i18n-keys`, `check:s2s-client-urls`, `check:api-paths`, ratchet (after `--update`, 2 lines fell), `type-check`, UserManagement Vitest (16 files, 134) green. `check:api-types` run after the commit.
 - **Local dev, 21:38 UTC.** CUMS, EMS, PCS restarted on the new build; old EMS path answers 404. Two login-less profiles `mergeseven.test` / `.test.2` with an upcoming BATbern61 registration, a partner note and a topic suggestion under the source (SQL). Preview through the gateway as `batbern.organizer`: `registrations.attendee_username` 1, `topic_suggestions.suggested_by` 1, `partner_notes.author_username` 1, canMerge. Merge: same three moved, source deleted, all three rows on the target, `user_merge_log` row ORGANIZER. PCS stopped: merge of a third profile -> 502, source kept (the preview already failed); PCS restarted, same merge succeeded. Primary email: `POST /internal/user-references/primary-email` on EMS moved the BATbern61 registration at once (`updated` 1), PCS answered 0. Make-primary itself not run on local dev: it needs a logged-in profile and would move a login in the shared Cognito pool; covered by `PrimaryEmailIntegrationTest`. Test rows removed afterwards.
 
+- **Review fixes (2026-11-11).** `ContractCalls.postToEvery` (every implementer called, each failure logged, one `ContractCallFailedException` at the end) used for primary-email, so a down EMS no longer keeps PCS from being told; EMS writes no second `user_merge_log` row on a repeat that moves nothing; preview and merge fail (502) when no holder is configured; `UserMergeIntegrationTest` repeats the failed merge with both holders up and it completes; users-api confirm text names the holders and declares its 502 (types regenerated); `ProfileMergeRequestService` comment; doc-drift mappings for the CUMS contract caller and `PrimaryEmailService`. Tests run: `ContractCallsTest` (12), `HttpUserReferenceContractTest` (11), `UserMergeIntegrationTest` (16), `PrimaryEmailIntegrationTest` (6), EMS `InternalUserMergeIntegrationTest` (8), checkstyle of the three modules; all green.

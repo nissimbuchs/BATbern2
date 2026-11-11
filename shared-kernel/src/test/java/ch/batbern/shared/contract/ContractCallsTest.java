@@ -128,6 +128,32 @@ class ContractCallsTest {
     }
 
     @Test
+    void should_postToEvery_evenAfterAFailure_andReportEveryFailedImplementer() {
+        server.expect(requestTo(A + "/internal/things")).andRespond(request -> {
+            throw new IOException("connection refused");
+        });
+        server.expect(requestTo(B + "/internal/things")).andExpect(method(HttpMethod.POST))
+                .andRespond(withStatus(HttpStatus.NO_CONTENT));
+
+        assertThatThrownBy(() -> calls(A, B).postToEvery("/internal/things", Map.of("by", "x")))
+                .isInstanceOfSatisfying(ContractCallFailedException.class, e -> {
+                    assertThat(e.implementer()).isEqualTo(A);
+                    assertThat(e.getCause()).isInstanceOf(ContractCallFailedException.class);
+                });
+        server.verify();
+    }
+
+    @Test
+    void should_postToEvery_withoutException_whenAllTakeIt() {
+        server.expect(requestTo(A + "/internal/things")).andRespond(withStatus(HttpStatus.NO_CONTENT));
+        server.expect(requestTo(B + "/internal/things")).andRespond(withStatus(HttpStatus.NO_CONTENT));
+
+        calls(A, B).postToEvery("/internal/things", Map.of());
+
+        server.verify();
+    }
+
+    @Test
     void should_translate409_toRefusal_withTheImplementersMessage_andStop() {
         server.expect(requestTo(A + "/internal/things")).andRespond(withStatus(HttpStatus.CONFLICT)
                 .contentType(MediaType.APPLICATION_JSON).body("{\"message\":\"blocked by talk\"}"));

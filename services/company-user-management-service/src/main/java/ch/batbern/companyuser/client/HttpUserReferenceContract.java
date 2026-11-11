@@ -60,6 +60,7 @@ public class HttpUserReferenceContract implements UserReferenceContract {
 
     @Override
     public List<Preview> preview(String sourceUsername, String targetUsername) {
+        requireHolders();
         List<String> answers = call(() -> calls.get("/internal/user-references/preview?source={source}&target={target}",
                 Map.of("source", sourceUsername, "target", targetUsername), String.class));
         List<Preview> previews = new ArrayList<>();
@@ -73,6 +74,7 @@ public class HttpUserReferenceContract implements UserReferenceContract {
 
     @Override
     public List<Result> merge(MergeCall call) {
+        requireHolders();
         Map<String, Object> request = new LinkedHashMap<>();
         request.put("sourceUsername", call.sourceUsername());
         request.put("targetUsername", call.targetUsername());
@@ -95,7 +97,22 @@ public class HttpUserReferenceContract implements UserReferenceContract {
         request.put("username", username);
         request.put("oldEmail", oldEmail);
         request.put("newEmail", newEmail);
-        call(() -> calls.postForAnswers("/internal/user-references/primary-email", request, String.class));
+        // Every holder is told, also when an earlier one failed; the failures come back as one.
+        call(() -> {
+            calls.postToEvery("/internal/user-references/primary-email", request);
+            return null;
+        });
+    }
+
+    /**
+     * Without a holder a merge would delete the source and leave every row naming it behind: a
+     * misconfiguration, so preview and merge fail (502) instead of going nowhere.
+     */
+    private void requireHolders() {
+        if (calls.implementers().isEmpty()) {
+            throw new MergeCallFailedException("contract " + NAME + ": no holder configured ("
+                    + ContractCalls.PROPERTY_PREFIX + NAME + ".implementers)", null);
+        }
     }
 
     private static <T> T call(Supplier<T> call) {
