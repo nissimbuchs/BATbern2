@@ -3,7 +3,7 @@ title: 'Refactor sweep'
 type: 'refactor'
 ticket: 'sweep'
 created: '2026-11-11'
-status: 'in-review'
+status: 'built'
 baseline_revision: '92abe9cbdd3e13c098ad1add4cb57648843c9fe8'
 route: 'full'
 route_source: 'auto'
@@ -37,7 +37,7 @@ Owner go 2026-11-11 (overnight queue 7b → 8b → sweep → PR; decide with a r
 | Scenario | Input / State | Expected Output / Behavior | Error Handling |
 |----------|--------------|---------------------------|----------------|
 | Filing rolls back after open | open delivered, CUMS transaction rolls back (commit failure, later failure) | EMS receives decision `WITHDRAWN`, conversation DONE by `system:mail-center-request` | a failed withdrawal is logged ERROR + counted |
-| Filing fails before open | EMS refused or unreachable | nothing to withdraw, no call | — |
+| Filing fails before or at open | EMS refused or unreachable | WITHDRAWN sent anyway; an implementer without the conversation answers 204 (decided by agent under owner's go 2026-11-11, review pass 1 #1: an earlier implementer may already have opened) | a failed withdrawal is logged ERROR + counted |
 | Withdrawn conversation gets a reply later | requester answers | conversation reopens (existing inbound rule) | — |
 | PCS merge | rows moved | one `partner_user_merge_log` row with source, target, moved row ids per column | — |
 | PCS merge repeated, nothing moved | second run | no second log row | — |
