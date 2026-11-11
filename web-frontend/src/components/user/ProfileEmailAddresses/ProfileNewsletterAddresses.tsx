@@ -5,12 +5,13 @@
  */
 
 import { useTranslation } from 'react-i18next';
-import { useMySubscriptions, usePutMySubscription } from '@/hooks/useNewsletter/useNewsletter';
+import { useMySubscriptions, usePatchMySubscription } from '@/hooks/useNewsletter/useNewsletter';
 
 export function ProfileNewsletterAddresses() {
   const { t, i18n } = useTranslation('common');
   const { data, isLoading } = useMySubscriptions();
-  const put = usePutMySubscription();
+  const patch = usePatchMySubscription();
+  // Only a new subscription takes the UI language; an existing one keeps its own (PATCH partial).
   const language = i18n.language?.startsWith('de') ? 'de' : 'en';
 
   if (isLoading) {
@@ -26,9 +27,13 @@ export function ProfileNewsletterAddresses() {
               type="checkbox"
               className="h-4 w-4"
               checked={a.subscribed}
-              disabled={put.isPending}
+              disabled={patch.isPending}
               onChange={(e) =>
-                put.mutate({ email: a.email, subscribed: e.target.checked, language })
+                patch.mutate(
+                  e.target.checked && a.language === null
+                    ? { email: a.email, subscribed: true, language }
+                    : { email: a.email, subscribed: e.target.checked }
+                )
               }
               data-testid={`newsletter-address-${a.email}`}
             />

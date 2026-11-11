@@ -249,6 +249,39 @@ describe('UserSettingsTab — Story 15.7 Q&A notification frequency', () => {
   });
 });
 
+describe('UserSettingsTab — newsletter per address (Story 4.10c)', () => {
+  const gotoNotifications = () =>
+    fireEvent.click(screen.getByRole('tab', { name: en('settings.tabs.notifications') }));
+
+  test('should show one switch per address and PATCH only the clicked one', async () => {
+    api.on('getMyNewsletterSubscriptions', () => ({
+      addresses: [
+        { email: 'anna.coordinator@example.com', primary: true, subscribed: true, language: 'de' },
+        { email: 'anna.private@example.com', primary: false, subscribed: false, language: null },
+      ],
+    }));
+    renderTab([]);
+    gotoNotifications();
+
+    const primary = await screen.findByTestId(
+      'newsletter-subscribe-toggle-anna.coordinator@example.com'
+    );
+    expect(primary.querySelector('input')).toBeChecked();
+    fireEvent.click(
+      screen
+        .getByTestId('newsletter-subscribe-toggle-anna.coordinator@example.com')
+        .querySelector('input')!
+    );
+
+    await waitFor(() => expect(api.calls('patchMyNewsletterSubscriptions')).toHaveLength(1));
+    // An existing subscription keeps its language: only the field that changes is sent.
+    expect(api.calls('patchMyNewsletterSubscriptions')[0].body).toEqual({
+      email: 'anna.coordinator@example.com',
+      subscribed: false,
+    });
+  });
+});
+
 /**
  * Deterministic matchMedia mock keyed on a simulated viewport width so
  * useBreakpoints().isMobile (down('md')) flips between icon-only and labelled

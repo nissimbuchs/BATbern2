@@ -3,8 +3,8 @@
  *
  * The real apiClient sends each call; the harness checks it against
  * `docs/api/event-newsletter-api.openapi.yml` and answers with the spec example or an override.
- * Covered: subscribe, verifyUnsubscribeToken, unsubscribeByToken, getMySubscription,
- * patchMySubscription.
+ * Covered: subscribe (POST /newsletter/subscribers since 4.10c), verifyUnsubscribeToken,
+ * unsubscribeByToken, getMySubscriptions, patchMySubscription (per address, partial).
  */
 import { describe, it, expect } from 'vitest';
 import { HttpResponse } from 'msw';
@@ -13,7 +13,7 @@ import {
   subscribe,
   verifyUnsubscribeToken,
   unsubscribeByToken,
-  getMySubscription,
+  getMySubscriptions,
   patchMySubscription,
 } from './newsletterService';
 
@@ -40,10 +40,10 @@ const statusOf = (promise: Promise<unknown>) =>
 
 describe('newsletterService', () => {
   describe('subscribe', () => {
-    it('POSTs the request to /newsletter/subscribe without a Turnstile header', async () => {
+    it('POSTs the request to /newsletter/subscribers without a Turnstile header', async () => {
       await subscribe({ email: 'alice@example.com', firstName: 'Alice', language: 'de' });
 
-      const [call] = api.calls('subscribeNewsletter');
+      const [call] = api.calls('createNewsletterSubscriber');
       expect(call.body).toEqual({ email: 'alice@example.com', firstName: 'Alice', language: 'de' });
       expect(call.request.headers.get('X-Turnstile-Token')).toBeNull();
     });
@@ -51,7 +51,7 @@ describe('newsletterService', () => {
     it('sends the X-Turnstile-Token header when a token is given (Story 10.31, AC8)', async () => {
       await subscribe({ email: 'alice@example.com' }, 'cf-token-xyz');
 
-      const [call] = api.calls('subscribeNewsletter');
+      const [call] = api.calls('createNewsletterSubscriber');
       expect(call.request.headers.get('X-Turnstile-Token')).toBe('cf-token-xyz');
     });
 
@@ -59,12 +59,12 @@ describe('newsletterService', () => {
       await subscribe({ email: 'alice@example.com' }, null);
 
       expect(
-        api.calls('subscribeNewsletter')[0].request.headers.get('X-Turnstile-Token')
+        api.calls('createNewsletterSubscriber')[0].request.headers.get('X-Turnstile-Token')
       ).toBeNull();
     });
 
     it('rejects with 409 when the address is already subscribed', async () => {
-      api.on('subscribeNewsletter', () => problem(409));
+      api.on('createNewsletterSubscriber', () => problem(409));
 
       expect(await statusOf(subscribe({ email: 'dup@example.com' }))).toBe(409);
     });
@@ -109,44 +109,41 @@ describe('newsletterService', () => {
     });
   });
 
-  describe('getMySubscription', () => {
-    it('returns the subscription status of the signed-in user', async () => {
-      api.on('getMyNewsletterSubscription', () => ({
-        subscribed: true,
-        email: 'alice@example.com',
-      }));
+  const addresses = {
+    addresses: [
+      { email: 'alice@example.com', primary: true, subscribed: false, language: 'de' },
+      { email: 'alice.work@example.com', primary: false, subscribed: true, language: 'en' },
+    ],
+  };
 
-      expect(await getMySubscription()).toEqual({ subscribed: true, email: 'alice@example.com' });
-      expect(api.calls('getMyNewsletterSubscription')).toHaveLength(1);
-    });
+  describe('getMySubscriptions', () => {
+    it('returns the state per address of the signed-in user', async () => {
+      api.on('getMyNewsletterSubscriptions', () => addresses);
 
-    it('returns an unsubscribed status', async () => {
-      api.on('getMyNewsletterSubscription', () => ({ subscribed: false, email: null }));
-
-      expect((await getMySubscription()).subscribed).toBe(false);
+      expect(await getMySubscriptions()).toEqual(addresses);
+      expect(api.calls('getMyNewsletterSubscriptions')).toHaveLength(1);
     });
   });
 
   describe('patchMySubscription', () => {
-    it('PATCHes subscribed and language and returns the new status', async () => {
-      api.on('patchMyNewsletterSubscription', () => ({
-        subscribed: true,
-        email: 'alice@example.com',
-      }));
+    it('PATCHes one address with only the given fields and returns the new state', async () => {
+      api.on('patchMyNewsletterSubscriptions', () => addresses);
 
-      const result = await patchMySubscription(true, 'de');
+      const result = await patchMySubscription({ email: 'alice.work@example.com', language: 'en' });
 
-      expect(api.calls('patchMyNewsletterSubscription')[0].body).toEqual({
-        subscribed: true,
-        language: 'de',
+      expect(api.calls('patchMyNewsletterSubscriptions')[0].body).toEqual({
+        email: 'alice.work@example.com',
+        language: 'en',
       });
-      expect(result).toEqual({ subscribed: true, email: 'alice@example.com' });
+      expect(result).toEqual(addresses);
     });
 
-    it('PATCHes without language when none is given', async () => {
-      await patchMySubscription(false);
+    it("rejects with 403 when the address is not the user's", async () => {
+      api.on('patchMyNewsletterSubscriptions', () => problem(403));
 
-      expect(api.calls('patchMyNewsletterSubscription')[0].body).toEqual({ subscribed: false });
+      expect(
+        await statusOf(patchMySubscription({ email: 'someone@example.com', subscribed: false }))
+      ).toBe(403);
     });
   });
 });

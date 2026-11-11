@@ -3,8 +3,9 @@
  *
  * The hooks run their real service and apiClient; the harness checks every request against
  * `docs/api/event-newsletter-api.openapi.yml` and answers with the spec example or an override.
- * Covered: useNewsletterSubscribe (and the my-subscription refresh), useVerifyUnsubscribeToken
- * (enabled guard), useUnsubscribeByToken, useMySubscription, usePatchMySubscription (cache update).
+ * Covered: useNewsletterSubscribe (and the my-subscriptions refresh), useVerifyUnsubscribeToken
+ * (enabled guard), useUnsubscribeByToken, useMySubscriptions, usePatchMySubscription (cache
+ * update). Per address since 4.10c.
  */
 import { describe, it, expect, beforeEach } from 'vitest';
 import { renderHook, waitFor, act } from '@testing-library/react';
@@ -17,7 +18,7 @@ import {
   useNewsletterSubscribe,
   useVerifyUnsubscribeToken,
   useUnsubscribeByToken,
-  useMySubscription,
+  useMySubscriptions,
   usePatchMySubscription,
 } from './useNewsletter';
 
@@ -50,23 +51,23 @@ beforeEach(() => {
 });
 
 describe('useNewsletterSubscribe', () => {
-  it('subscribes and marks the cached my-subscription stale (#818)', async () => {
-    qc.setQueryData(NEWSLETTER_QUERY_KEYS.mySubscription, { subscribed: false, email: null });
+  it('subscribes and marks the cached my-subscriptions stale (#818)', async () => {
+    qc.setQueryData(NEWSLETTER_QUERY_KEYS.mySubscriptions, { addresses: [] });
     const { result } = renderHook(() => useNewsletterSubscribe(), { wrapper: wrapper(qc) });
 
     await act(async () => {
       await result.current.mutateAsync({ request: { email: 'alice@example.com', language: 'de' } });
     });
 
-    expect(api.calls('subscribeNewsletter')[0].body).toEqual({
+    expect(api.calls('createNewsletterSubscriber')[0].body).toEqual({
       email: 'alice@example.com',
       language: 'de',
     });
-    expect(qc.getQueryState(NEWSLETTER_QUERY_KEYS.mySubscription)?.isInvalidated).toBe(true);
+    expect(qc.getQueryState(NEWSLETTER_QUERY_KEYS.mySubscriptions)?.isInvalidated).toBe(true);
   });
 
   it('is in error when the server refuses (409)', async () => {
-    api.on('subscribeNewsletter', () => problem(409));
+    api.on('createNewsletterSubscriber', () => problem(409));
     const { result } = renderHook(() => useNewsletterSubscribe(), { wrapper: wrapper(qc) });
 
     await act(async () => {
@@ -111,50 +112,51 @@ describe('useUnsubscribeByToken', () => {
   });
 });
 
-describe('useMySubscription', () => {
-  it('returns the subscription status', async () => {
-    api.on('getMyNewsletterSubscription', () => ({ subscribed: true, email: 'alice@example.com' }));
+const addresses = {
+  addresses: [{ email: 'alice@example.com', primary: true, subscribed: true, language: 'de' }],
+};
 
-    const { result } = renderHook(() => useMySubscription(), { wrapper: wrapper(qc) });
+describe('useMySubscriptions', () => {
+  it('returns the state per address', async () => {
+    api.on('getMyNewsletterSubscriptions', () => addresses);
+
+    const { result } = renderHook(() => useMySubscriptions(), { wrapper: wrapper(qc) });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data?.subscribed).toBe(true);
+    expect(result.current.data?.addresses[0].subscribed).toBe(true);
   });
 
   it('is in error when the server answers 401', async () => {
-    api.on('getMyNewsletterSubscription', () => problem(401));
+    api.on('getMyNewsletterSubscriptions', () => problem(401));
 
-    const { result } = renderHook(() => useMySubscription(), { wrapper: wrapper(qc) });
+    const { result } = renderHook(() => useMySubscriptions(), { wrapper: wrapper(qc) });
 
     await waitFor(() => expect(result.current.isError).toBe(true));
   });
 
   it('sends nothing when disabled', () => {
-    renderHook(() => useMySubscription({ enabled: false }), { wrapper: wrapper(qc) });
+    renderHook(() => useMySubscriptions({ enabled: false }), { wrapper: wrapper(qc) });
 
-    expect(api.calls('getMyNewsletterSubscription')).toHaveLength(0);
+    expect(api.calls('getMyNewsletterSubscriptions')).toHaveLength(0);
   });
 });
 
 describe('usePatchMySubscription', () => {
-  it('patches and puts the answer into the my-subscription cache', async () => {
-    api.on('patchMyNewsletterSubscription', () => ({
-      subscribed: false,
-      email: 'alice@example.com',
-    }));
+  it('patches one address and puts the answer into the my-subscriptions cache', async () => {
+    const after = {
+      addresses: [{ email: 'alice@example.com', primary: true, subscribed: false, language: 'de' }],
+    };
+    api.on('patchMyNewsletterSubscriptions', () => after);
     const { result } = renderHook(() => usePatchMySubscription(), { wrapper: wrapper(qc) });
 
     await act(async () => {
-      await result.current.mutateAsync({ subscribed: false, language: 'en' });
+      await result.current.mutateAsync({ email: 'alice@example.com', subscribed: false });
     });
 
-    expect(api.calls('patchMyNewsletterSubscription')[0].body).toEqual({
-      subscribed: false,
-      language: 'en',
-    });
-    expect(qc.getQueryData(NEWSLETTER_QUERY_KEYS.mySubscription)).toEqual({
-      subscribed: false,
+    expect(api.calls('patchMyNewsletterSubscriptions')[0].body).toEqual({
       email: 'alice@example.com',
+      subscribed: false,
     });
+    expect(qc.getQueryData(NEWSLETTER_QUERY_KEYS.mySubscriptions)).toEqual(after);
   });
 });

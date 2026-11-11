@@ -1,330 +1,131 @@
 /**
- * NewsletterSubscribeWidget Tests (Story 10.7 — AC4, AC12; Story 10.31 — AC8, AC10, AC12)
+ * NewsletterSubscribeWidget Tests (Story 10.7 — AC4, AC12; Story 10.31 — AC10; Story 4.10c)
+ *
+ * The real widget, hooks, service and apiClient against the MSW harness (4.10c moved it off the
+ * hook mocks): subscribing posts to `POST /newsletter/subscribers` (`createNewsletterSubscriber`),
+ * a signed-in visitor's state comes from `GET /newsletter/my-subscriptions`. Auth state comes
+ * from the real AuthContext (`renderWithAuth`). Without runtime config Turnstile is off, so
+ * `getToken()` answers null and no header is sent; the header itself is covered by
+ * newsletterService.test.ts.
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { describe, it, expect } from 'vitest';
+import { screen, fireEvent, waitFor } from '@testing-library/react';
+import { HttpResponse } from 'msw';
+import { api } from '@/test/msw/api';
+import { renderWithAuth, signedInAs, signedOut } from '@/test/auth';
 import { NewsletterSubscribeWidget } from '../NewsletterSubscribeWidget';
 
-// Mock the newsletter hook
-// #818: the widget consults the caller's own subscription state, so useAuth is now in its
-// module graph. This file stubs axios without a `.create`, which useAuth's graph needs at import
-// time — mock the hook itself rather than widening the axios stub.
-const mockUseAuth = vi.fn(() => ({ isAuthenticated: false }));
-const mockUseMySubscription = vi.fn((_o?: { enabled?: boolean }) => ({ data: undefined }));
-vi.mock('@/hooks/useAuth/useAuth', () => ({ useAuth: () => mockUseAuth() }));
-
-vi.mock('@/hooks/useNewsletter/useNewsletter', () => ({
-  useNewsletterSubscribe: vi.fn(),
-  useMySubscription: (o?: { enabled?: boolean }) => mockUseMySubscription(o),
-}));
-
-// Mock useTurnstile
-vi.mock('@/hooks/useTurnstile', () => ({
-  useTurnstile: vi.fn(),
-}));
-
-// Mock axios so axios.isAxiosError works in tests
-vi.mock('axios', () => ({
-  default: {
-    isAxiosError: (e: unknown): boolean =>
-      typeof e === 'object' &&
-      e !== null &&
-      (e as { isAxiosError?: boolean }).isAxiosError === true,
-  },
-  isAxiosError: (e: unknown): boolean =>
-    typeof e === 'object' && e !== null && (e as { isAxiosError?: boolean }).isAxiosError === true,
-}));
-
-// Mock react-i18next
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string, opts?: Record<string, unknown>) => {
-      const map: Record<string, string> = {
-        'newsletter.widget.title': 'Stay updated with BATbern',
-        'newsletter.widget.placeholder': 'your@email.com',
-        'newsletter.widget.button': 'Subscribe',
-        'newsletter.widget.success': 'Thank you! You are now subscribed.',
-        'newsletter.widget.alreadySubscribed': 'You are already subscribed.',
-        'newsletter.widget.error': 'Something went wrong. Please try again.',
-        'newsletter.widget.emailInvalid': 'Please enter a valid email address.',
-      };
-      if (opts) {
-        return map[key]?.replace(/\{\{(\w+)\}\}/g, (_, k: string) => String(opts[k] ?? '')) ?? key;
-      }
-      return map[key] ?? key;
+const problem = (status: number, extra: Record<string, unknown> = {}) =>
+  HttpResponse.json(
+    {
+      timestamp: '2026-11-11T10:00:00Z',
+      path: '/api/v1/newsletter/subscribers',
+      status,
+      error: 'x',
+      message: 'x',
+      ...extra,
     },
-  }),
-}));
-
-import { useNewsletterSubscribe } from '@/hooks/useNewsletter/useNewsletter';
-import { useTurnstile } from '@/hooks/useTurnstile';
-
-const mockUseTurnstile = vi.mocked(useTurnstile);
-
-function defaultTurnstileMock() {
-  const mockGetToken = vi.fn().mockResolvedValue(null);
-  const mockResetWidget = vi.fn();
-  mockUseTurnstile.mockReturnValue({
-    getToken: mockGetToken,
-    resetWidget: mockResetWidget,
-    widgetRef: { current: null },
-  });
-  return { mockGetToken, mockResetWidget };
-}
-
-function renderWidget() {
-  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  return render(
-    <QueryClientProvider client={queryClient}>
-      <NewsletterSubscribeWidget />
-    </QueryClientProvider>
+    { status }
   );
+
+function submit(email: string) {
+  fireEvent.change(screen.getByPlaceholderText('your@email.com'), { target: { value: email } });
+  fireEvent.click(screen.getByRole('button', { name: 'Subscribe' }));
 }
 
 describe('NewsletterSubscribeWidget', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
   it('renders title, email input, and subscribe button', () => {
-    const mockMutate = vi.fn();
-    vi.mocked(useNewsletterSubscribe).mockReturnValue({
-      mutate: mockMutate,
-      isPending: false,
-    } as ReturnType<typeof useNewsletterSubscribe>);
-    defaultTurnstileMock();
-
-    renderWidget();
+    renderWithAuth(<NewsletterSubscribeWidget />, { auth: signedOut() });
 
     expect(screen.getByText('Stay updated with BATbern')).toBeInTheDocument();
     expect(screen.getByPlaceholderText('your@email.com')).toBeInTheDocument();
-    expect(screen.getByText('Subscribe')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Subscribe' })).toBeInTheDocument();
   });
 
-  it('shows email validation error for invalid email', async () => {
-    const mockMutate = vi.fn();
-    vi.mocked(useNewsletterSubscribe).mockReturnValue({
-      mutate: mockMutate,
-      isPending: false,
-    } as ReturnType<typeof useNewsletterSubscribe>);
-    defaultTurnstileMock();
+  it('shows email validation error for invalid email and sends nothing', async () => {
+    renderWithAuth(<NewsletterSubscribeWidget />, { auth: signedOut() });
 
-    renderWidget();
+    submit('invalid-email');
 
-    fireEvent.change(screen.getByPlaceholderText('your@email.com'), {
-      target: { value: 'invalid-email' },
-    });
-    fireEvent.click(screen.getByText('Subscribe'));
-
-    await waitFor(() => {
-      expect(screen.getByText('Please enter a valid email address.')).toBeInTheDocument();
-    });
-    expect(mockMutate).not.toHaveBeenCalled();
+    expect(await screen.findByText('Please enter a valid email address.')).toBeInTheDocument();
+    expect(api.calls('createNewsletterSubscriber')).toHaveLength(0);
   });
 
-  it('sends X-Turnstile-Token header when token returned (AC8)', async () => {
-    const mockGetToken = vi.fn().mockResolvedValue('test-turnstile-token');
-    mockUseTurnstile.mockReturnValue({
-      getToken: mockGetToken,
-      resetWidget: vi.fn(),
-      widgetRef: { current: null },
-    });
+  it('posts the address to /newsletter/subscribers without a Turnstile header when it is off', async () => {
+    renderWithAuth(<NewsletterSubscribeWidget />, { auth: signedOut() });
 
-    let capturedVars: unknown;
-    const mockMutate = vi.fn((vars) => {
-      capturedVars = vars;
-    });
-    vi.mocked(useNewsletterSubscribe).mockReturnValue({
-      mutate: mockMutate,
-      isPending: false,
-    } as ReturnType<typeof useNewsletterSubscribe>);
+    submit('test@example.com');
 
-    renderWidget();
-
-    fireEvent.change(screen.getByPlaceholderText('your@email.com'), {
-      target: { value: 'test@example.com' },
-    });
-    fireEvent.click(screen.getByText('Subscribe'));
-
-    await waitFor(() => {
-      expect(mockMutate).toHaveBeenCalled();
-    });
-
-    expect((capturedVars as { turnstileToken: string }).turnstileToken).toBe(
-      'test-turnstile-token'
-    );
-    expect((capturedVars as { request: { email: string } }).request.email).toBe('test@example.com');
-  });
-
-  it('sends null turnstileToken when disabled (AC5)', async () => {
-    const { mockGetToken } = defaultTurnstileMock(); // returns null
-
-    let capturedVars: unknown;
-    const mockMutate = vi.fn((vars) => {
-      capturedVars = vars;
-    });
-    vi.mocked(useNewsletterSubscribe).mockReturnValue({
-      mutate: mockMutate,
-      isPending: false,
-    } as ReturnType<typeof useNewsletterSubscribe>);
-
-    renderWidget();
-
-    fireEvent.change(screen.getByPlaceholderText('your@email.com'), {
-      target: { value: 'test@example.com' },
-    });
-    fireEvent.click(screen.getByText('Subscribe'));
-
-    await waitFor(() => {
-      expect(mockMutate).toHaveBeenCalled();
-    });
-
-    expect(mockGetToken).toHaveBeenCalled();
-    expect((capturedVars as { turnstileToken: null }).turnstileToken).toBeNull();
-  });
-
-  it('shows success state after successful subscription', async () => {
-    let onSuccessCallback: (() => void) | undefined;
-    const mockMutate = vi.fn((_data, options?: { onSuccess?: () => void }) => {
-      onSuccessCallback = options?.onSuccess;
-    });
-    vi.mocked(useNewsletterSubscribe).mockReturnValue({
-      mutate: mockMutate,
-      isPending: false,
-    } as ReturnType<typeof useNewsletterSubscribe>);
-    defaultTurnstileMock();
-
-    renderWidget();
-
-    fireEvent.change(screen.getByPlaceholderText('your@email.com'), {
-      target: { value: 'test@example.com' },
-    });
-    fireEvent.click(screen.getByText('Subscribe'));
-
-    await waitFor(() => expect(mockMutate).toHaveBeenCalled());
-    onSuccessCallback?.();
-
-    await waitFor(() => {
-      expect(screen.getByText('Thank you! You are now subscribed.')).toBeInTheDocument();
-    });
+    expect(await screen.findByText('Thank you! You are now subscribed.')).toBeInTheDocument();
+    const [call] = api.calls('createNewsletterSubscriber');
+    expect(call.body).toEqual({ email: 'test@example.com' });
+    expect(call.request.headers.get('X-Turnstile-Token')).toBeNull();
   });
 
   it('shows already-subscribed message on 409 response', async () => {
-    const axiosError = { isAxiosError: true, response: { status: 409 } };
-    let onErrorCallback: ((e: unknown) => void) | undefined;
-    const mockMutate = vi.fn((_data, options?: { onError?: (e: unknown) => void }) => {
-      onErrorCallback = options?.onError;
-    });
-    vi.mocked(useNewsletterSubscribe).mockReturnValue({
-      mutate: mockMutate,
-      isPending: false,
-    } as ReturnType<typeof useNewsletterSubscribe>);
-    defaultTurnstileMock();
+    api.on('createNewsletterSubscriber', () => problem(409));
+    renderWithAuth(<NewsletterSubscribeWidget />, { auth: signedOut() });
 
-    renderWidget();
+    submit('existing@example.com');
 
-    fireEvent.change(screen.getByPlaceholderText('your@email.com'), {
-      target: { value: 'existing@example.com' },
-    });
-    fireEvent.click(screen.getByText('Subscribe'));
-    await waitFor(() => expect(mockMutate).toHaveBeenCalled());
-    onErrorCallback?.(axiosError);
-
-    await waitFor(() => {
-      expect(screen.getByText('You are already subscribed.')).toBeInTheDocument();
-    });
+    expect(await screen.findByText('You are already subscribed.')).toBeInTheDocument();
   });
 
-  it('calls resetWidget and shows error on 403 turnstile_failed (AC10)', async () => {
-    const turnstileError = {
-      isAxiosError: true,
-      response: { status: 403, data: { error: 'turnstile_failed' } },
-    };
-    let onErrorCallback: ((e: unknown) => void) | undefined;
-    const mockMutate = vi.fn((_data, options?: { onError?: (e: unknown) => void }) => {
-      onErrorCallback = options?.onError;
-    });
-    vi.mocked(useNewsletterSubscribe).mockReturnValue({
-      mutate: mockMutate,
-      isPending: false,
-    } as ReturnType<typeof useNewsletterSubscribe>);
-    const { mockResetWidget } = defaultTurnstileMock();
+  it('shows the error on 403 turnstile_failed (AC10)', async () => {
+    api.on('createNewsletterSubscriber', () => problem(403, { error: 'turnstile_failed' }));
+    renderWithAuth(<NewsletterSubscribeWidget />, { auth: signedOut() });
 
-    renderWidget();
+    submit('test@example.com');
 
-    fireEvent.change(screen.getByPlaceholderText('your@email.com'), {
-      target: { value: 'test@example.com' },
-    });
-    fireEvent.click(screen.getByText('Subscribe'));
-    await waitFor(() => expect(mockMutate).toHaveBeenCalled());
-    onErrorCallback?.(turnstileError);
-
-    await waitFor(() => {
-      expect(screen.getByText('Something went wrong. Please try again.')).toBeInTheDocument();
-    });
-    expect(mockResetWidget).toHaveBeenCalled();
+    expect(await screen.findByText('Something went wrong. Please try again.')).toBeInTheDocument();
   });
 
-  it('shows generic error message on non-409 error', async () => {
-    const genericError = new Error('Network error');
-    let onErrorCallback: ((e: unknown) => void) | undefined;
-    const mockMutate = vi.fn((_data, options?: { onError?: (e: unknown) => void }) => {
-      onErrorCallback = options?.onError;
-    });
-    vi.mocked(useNewsletterSubscribe).mockReturnValue({
-      mutate: mockMutate,
-      isPending: false,
-    } as ReturnType<typeof useNewsletterSubscribe>);
-    defaultTurnstileMock();
+  it('shows generic error message on a network error', async () => {
+    api.on('createNewsletterSubscriber', () => HttpResponse.error());
+    renderWithAuth(<NewsletterSubscribeWidget />, { auth: signedOut() });
 
-    renderWidget();
+    submit('test@example.com');
 
-    fireEvent.change(screen.getByPlaceholderText('your@email.com'), {
-      target: { value: 'test@example.com' },
-    });
-    fireEvent.click(screen.getByText('Subscribe'));
-    await waitFor(() => expect(mockMutate).toHaveBeenCalled());
-    onErrorCallback?.(genericError);
-
-    await waitFor(() => {
-      expect(screen.getByText('Something went wrong. Please try again.')).toBeInTheDocument();
-    });
+    expect(await screen.findByText('Something went wrong. Please try again.')).toBeInTheDocument();
   });
 
   // ── #818 defect 2: already-subscribed users were still shown the form ──────────────
-  //
-  // The widget could only learn 'already-subscribed' by SUBMITTING and having the server say
-  // so. It now consults the caller's own subscription state first.
   describe('#818 — existing subscription state', () => {
     it('should_hideTheForm_when_authenticatedUserIsAlreadySubscribed', async () => {
-      mockUseAuth.mockReturnValue({ isAuthenticated: true });
-      mockUseMySubscription.mockReturnValue({ data: { subscribed: true } });
+      api.on('getMyNewsletterSubscriptions', () => ({
+        addresses: [
+          { email: 'me@example.com', primary: true, subscribed: false, language: null },
+          { email: 'me.work@example.com', primary: false, subscribed: true, language: 'de' },
+        ],
+      }));
+      renderWithAuth(<NewsletterSubscribeWidget />, { auth: signedInAs('attendee') });
 
-      renderWidget();
-
-      await waitFor(() => {
-        expect(screen.queryByRole('button', { name: /subscribe/i })).not.toBeInTheDocument();
-      });
+      expect(await screen.findByText('You are already subscribed.')).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Subscribe' })).not.toBeInTheDocument();
     });
 
     it('should_showTheForm_when_authenticatedUserIsNotSubscribed', async () => {
-      mockUseAuth.mockReturnValue({ isAuthenticated: true });
-      mockUseMySubscription.mockReturnValue({ data: { subscribed: false } });
+      api.on('getMyNewsletterSubscriptions', () => ({
+        addresses: [{ email: 'me@example.com', primary: true, subscribed: false, language: null }],
+      }));
+      renderWithAuth(<NewsletterSubscribeWidget />, { auth: signedInAs('attendee') });
 
-      renderWidget();
-
-      expect(await screen.findByRole('button', { name: /subscribe/i })).toBeInTheDocument();
+      await waitFor(() => expect(api.calls('getMyNewsletterSubscriptions')).toHaveLength(1));
+      expect(screen.getByRole('button', { name: 'Subscribe' })).toBeInTheDocument();
     });
 
     it('should_notQueryTheAuthenticatedEndpoint_when_visitorIsAnonymous', async () => {
-      mockUseAuth.mockReturnValue({ isAuthenticated: false });
+      const { rerenderWithAuth } = renderWithAuth(<NewsletterSubscribeWidget />, {
+        auth: signedOut(),
+      });
 
-      renderWidget();
-
-      expect(await screen.findByRole('button', { name: /subscribe/i })).toBeInTheDocument();
+      expect(await screen.findByRole('button', { name: 'Subscribe' })).toBeInTheDocument();
       // Querying it anonymously would fire a guaranteed 401 on every public page view.
-      expect(mockUseMySubscription).toHaveBeenCalledWith({ enabled: false });
+      expect(api.calls('getMyNewsletterSubscriptions')).toHaveLength(0);
+
+      // Positive control: the same widget, signed in, does ask.
+      rerenderWithAuth(<NewsletterSubscribeWidget />, signedInAs('attendee'));
+      await waitFor(() => expect(api.calls('getMyNewsletterSubscriptions')).toHaveLength(1));
     });
   });
 });

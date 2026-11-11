@@ -15,11 +15,10 @@ import * as newsletterService from '@/services/newsletterService';
 import type {
   MyNewsletterSubscriptionsResponse,
   NewsletterSubscribeRequest,
-  NewsletterSubscriptionStatusResponse,
+  PatchMyNewsletterSubscriptionRequest,
 } from '@/services/newsletterService';
 
 export const NEWSLETTER_QUERY_KEYS = {
-  mySubscription: ['newsletter', 'my-subscription'] as const,
   mySubscriptions: ['newsletter', 'my-subscriptions'] as const,
 };
 
@@ -38,13 +37,13 @@ export function useNewsletterSubscribe(): UseMutationResult<
   return useMutation({
     mutationFn: ({ request, turnstileToken }) =>
       newsletterService.subscribe(request, turnstileToken),
-    // #818 defect 1: subscribing while logged in was not reflected on My Profile -> Consent.
-    // This is the PUBLIC subscribe endpoint and it had no onSuccess at all, so the
-    // `mySubscription` query that ProfilePage reads kept serving its cached "not subscribed"
-    // answer for the full 5-minute staleTime. Invalidate rather than setQueryData: this
-    // endpoint returns void, so the authoritative state has to be re-fetched.
+    // #818 defect 1: subscribing while logged in was not reflected on My Profile. This is the
+    // PUBLIC subscribe endpoint and it had no onSuccess at all, so the per-address query that
+    // the profile reads kept serving its cached "not subscribed" answer for the full 5-minute
+    // staleTime. Invalidate rather than setQueryData: this endpoint returns void, so the
+    // authoritative state has to be re-fetched.
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: NEWSLETTER_QUERY_KEYS.mySubscription });
+      queryClient.invalidateQueries({ queryKey: NEWSLETTER_QUERY_KEYS.mySubscriptions });
     },
   });
 }
@@ -68,60 +67,33 @@ export function useUnsubscribeByToken(): UseMutationResult<void, Error, string> 
   });
 }
 
-/** Get authenticated user's subscription status. */
-export function useMySubscription(options?: {
+/**
+ * #1244: the authenticated user's newsletter state per address. `enabled` lets the public
+ * NewsletterSubscribeWidget pass `isAuthenticated`: the endpoint requires auth, and querying it
+ * for anonymous visitors would fire a guaranteed 401 on every public page view (#818).
+ */
+export function useMySubscriptions(options?: {
   enabled?: boolean;
-}): UseQueryResult<NewsletterSubscriptionStatusResponse, Error> {
-  return useQuery({
-    queryKey: NEWSLETTER_QUERY_KEYS.mySubscription,
-    queryFn: newsletterService.getMySubscription,
-    staleTime: 5 * 60 * 1000,
-    // Defaults to enabled so existing callers (ProfilePage) are unchanged. The public
-    // NewsletterSubscribeWidget passes `enabled: isAuthenticated` because this endpoint requires
-    // auth — querying it for anonymous visitors would fire a guaranteed 401 on every public page
-    // view (#818).
-    enabled: options?.enabled ?? true,
-  });
-}
-
-/** Toggle authenticated user subscription. */
-export function usePatchMySubscription(): UseMutationResult<
-  NewsletterSubscriptionStatusResponse,
-  Error,
-  { subscribed: boolean; language?: string }
-> {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: ({ subscribed, language }) =>
-      newsletterService.patchMySubscription(subscribed, language),
-    onSuccess: (data) => {
-      queryClient.setQueryData(NEWSLETTER_QUERY_KEYS.mySubscription, data);
-    },
-  });
-}
-
-/** #1244: the authenticated user's newsletter state per address. */
-export function useMySubscriptions(): UseQueryResult<MyNewsletterSubscriptionsResponse, Error> {
+}): UseQueryResult<MyNewsletterSubscriptionsResponse, Error> {
   return useQuery({
     queryKey: NEWSLETTER_QUERY_KEYS.mySubscriptions,
     queryFn: newsletterService.getMySubscriptions,
     staleTime: 5 * 60 * 1000,
+    enabled: options?.enabled ?? true,
   });
 }
 
-/** #1244: subscribe or unsubscribe one address of the authenticated user. */
-export function usePutMySubscription(): UseMutationResult<
+/** 4.10c: change one address of the authenticated user, only the fields given. */
+export function usePatchMySubscription(): UseMutationResult<
   MyNewsletterSubscriptionsResponse,
   Error,
-  { email: string; subscribed: boolean; language?: string }
+  PatchMyNewsletterSubscriptionRequest
 > {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ email, subscribed, language }) =>
-      newsletterService.putMySubscription(email, subscribed, language),
+    mutationFn: newsletterService.patchMySubscription,
     onSuccess: (data) => {
       queryClient.setQueryData(NEWSLETTER_QUERY_KEYS.mySubscriptions, data);
-      queryClient.invalidateQueries({ queryKey: NEWSLETTER_QUERY_KEYS.mySubscription });
     },
   });
 }

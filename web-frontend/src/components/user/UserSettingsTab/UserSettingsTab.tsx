@@ -54,7 +54,7 @@ import {
 } from '@/hooks/useUserAccount/useUserAccount';
 import { useTranslation } from 'react-i18next';
 import { EarlierProfilesSection } from '@/components/user/EarlierProfilesSection/EarlierProfilesSection';
-import { useMySubscription, usePatchMySubscription } from '@/hooks/useNewsletter/useNewsletter';
+import { useMySubscriptions, usePatchMySubscription } from '@/hooks/useNewsletter/useNewsletter';
 
 const ADDITIONAL_EMAILS_LIMIT = 5;
 const TOAST_AUTO_DISMISS_MS = 5000;
@@ -435,15 +435,23 @@ function AdditionalEmailsSection({ additionalEmails }: { additionalEmails: Addit
   );
 }
 
-/** Newsletter subscription toggle section for authenticated users (Story 10.7 — AC7). */
+/**
+ * Newsletter per address for the signed-in user (Story 10.7 AC7; per address since 4.10c, like
+ * the profile page): one switch for the primary and each confirmed additional address.
+ */
 function NewsletterSection() {
-  const { data: status, isLoading } = useMySubscription();
+  const { data, isLoading } = useMySubscriptions();
   const patchMutation = usePatchMySubscription();
   const { t, i18n } = useTranslation('userManagement');
 
-  function handleToggle(checked: boolean) {
+  function handleToggle(email: string, checked: boolean, hasLanguage: boolean) {
+    // Only a new subscription takes the UI language; an existing one keeps its own.
     const language = i18n.language?.startsWith('de') ? 'de' : 'en';
-    patchMutation.mutate({ subscribed: checked, language });
+    patchMutation.mutate(
+      checked && !hasLanguage
+        ? { email, subscribed: true, language }
+        : { email, subscribed: checked }
+    );
   }
 
   if (isLoading) {
@@ -451,28 +459,30 @@ function NewsletterSection() {
   }
 
   return (
-    <Box>
+    <Box data-testid="newsletter-settings-section">
       <Typography variant="subtitle1" gutterBottom>
         {t('settings.newsletter.title')}
       </Typography>
-      <FormControlLabel
-        control={
-          <Switch
-            checked={status?.subscribed ?? false}
-            onChange={(e) => handleToggle(e.target.checked)}
-            disabled={patchMutation.isPending}
-            data-testid="newsletter-subscribe-toggle"
-          />
-        }
-        label={
-          <Box>
-            <Typography variant="body2">{t('settings.newsletter.subscribe')}</Typography>
-            <Typography variant="caption" color="text.secondary">
-              {t('settings.newsletter.description')}
-            </Typography>
-          </Box>
-        }
-      />
+      <Typography variant="caption" color="text.secondary" component="p" sx={{ mb: 1 }}>
+        {t('settings.newsletter.description')}
+      </Typography>
+      {(data?.addresses ?? []).map((address) => (
+        <FormControlLabel
+          key={address.email}
+          sx={{ display: 'flex' }}
+          control={
+            <Switch
+              checked={address.subscribed}
+              onChange={(e) =>
+                handleToggle(address.email, e.target.checked, address.language !== null)
+              }
+              disabled={patchMutation.isPending}
+              data-testid={`newsletter-subscribe-toggle-${address.email}`}
+            />
+          }
+          label={<Typography variant="body2">{address.email}</Typography>}
+        />
+      ))}
     </Box>
   );
 }

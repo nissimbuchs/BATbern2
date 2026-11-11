@@ -64,7 +64,9 @@ describe('ProfilePage — Story 12.11 role-neutral profile with tabs', () => {
       createdBy: 'anna.keller',
     }));
     api.on('getMyNewsletterSubscriptions', () => ({
-      addresses: [{ email: 'matthias.keller@example.com', primary: true, subscribed: false }],
+      addresses: [
+        { email: 'matthias.keller@example.com', primary: true, subscribed: false, language: null },
+      ],
     }));
   });
 
@@ -202,8 +204,10 @@ describe('ProfilePage — Story 12.11 role-neutral profile with tabs', () => {
   });
 
   it('should_subscribeOneAddress_when_newsletterCheckboxClicked', async () => {
-    api.on('putMyNewsletterSubscription', () => ({
-      addresses: [{ email: 'matthias.keller@example.com', primary: true, subscribed: true }],
+    api.on('patchMyNewsletterSubscriptions', () => ({
+      addresses: [
+        { email: 'matthias.keller@example.com', primary: true, subscribed: true, language: 'en' },
+      ],
     }));
     const user = userEvent.setup();
 
@@ -212,9 +216,9 @@ describe('ProfilePage — Story 12.11 role-neutral profile with tabs', () => {
     await user.click(await screen.findByTestId('consent-tab'));
     await user.click(await screen.findByTestId('newsletter-address-matthias.keller@example.com'));
 
-    await waitFor(() => expect(api.calls('putMyNewsletterSubscription')).toHaveLength(1));
+    await waitFor(() => expect(api.calls('patchMyNewsletterSubscriptions')).toHaveLength(1));
     // #1244: EMS newsletter per address — NOT a user profile field
-    expect(api.calls('putMyNewsletterSubscription')[0].body).toEqual({
+    expect(api.calls('patchMyNewsletterSubscriptions')[0].body).toEqual({
       email: 'matthias.keller@example.com',
       subscribed: true,
       language: 'en',
