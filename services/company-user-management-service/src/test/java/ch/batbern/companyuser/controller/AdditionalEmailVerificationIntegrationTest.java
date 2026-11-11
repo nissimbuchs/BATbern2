@@ -9,6 +9,7 @@ import ch.batbern.companyuser.repository.UserRepository;
 import ch.batbern.companyuser.service.AdditionalEmailVerificationTokenService;
 import ch.batbern.shared.test.mail.SesRecorder;
 import ch.batbern.shared.test.AbstractIntegrationTest;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -17,9 +18,9 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.HashSet;
@@ -37,14 +38,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * flow: send-on-add, resend, GET-check, POST-confirm. Covers the spec's full
  * I/O &amp; Edge-Case Matrix.
  *
- * <p>{@link EmailService} is mocked via {@link TestAwsConfig} ({@code @Primary}).
- * Each test resets the mock and stubs {@code replaceVariables} to call the real
- * implementation so the captured HTML body contains the rendered token link. No
- * real outbound email is ever sent.
+ * <p>The real {@code EmailService} runs into the {@link SesRecorder}; no real outbound email is
+ * ever sent. Story 4.10d: resend addresses the row by its {@code id}, loaded scoped to the caller.
+ * Every test commits; {@code @AfterEach} removes the profiles (their addresses cascade).
  */
 @SpringBootTest
 @AutoConfigureMockMvc
-@Transactional
 @Import(TestAwsConfig.class)
 @DisplayName("Additional-email verification (v2) — endpoints")
 class AdditionalEmailVerificationIntegrationTest extends AbstractIntegrationTest {
@@ -70,14 +69,15 @@ class AdditionalEmailVerificationIntegrationTest extends AbstractIntegrationTest
     @Autowired
     private AdditionalEmailVerificationTokenService tokenService;
 
-    @jakarta.persistence.PersistenceContext
-    private jakarta.persistence.EntityManager entityManager;
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
 
     private User caller;
     private User other;
 
     @BeforeEach
     void setUp() {
+        removeProfiles();
         sesRecorder.reset();
 
         caller = userRepository.save(User.builder()
@@ -97,6 +97,16 @@ class AdditionalEmailVerificationIntegrationTest extends AbstractIntegrationTest
                 .cognitoUserId("mary.smith")
                 .roles(new HashSet<>(Set.of(Role.ATTENDEE)))
                 .build());
+    }
+
+    @AfterEach
+    void tearDown() {
+        removeProfiles();
+    }
+
+    private void removeProfiles() {
+        jdbcTemplate.update("DELETE FROM user_profiles WHERE username IN "
+                + "('john.doe', 'mary.smith', 'hans.mueller', 'pierre.dupont')");
     }
 
     // ---------------------- add → sends verification email ----------------------
@@ -262,12 +272,7 @@ class AdditionalEmailVerificationIntegrationTest extends AbstractIntegrationTest
         String token = tokenService.generateToken(row.getId(), row.getEmail());
         UUID deletedId = row.getId();
 
-        // Detach everything first so the still-managed caller.additionalEmails
-        // collection cannot cascade-re-persist the row we are about to delete.
-        entityManager.clear();
         additionalEmailRepository.deleteById(deletedId);
-        additionalEmailRepository.flush();
-        entityManager.clear();
 
         mockMvc.perform(post("/api/v1/users/additional-emails/verify")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -286,15 +291,8 @@ class AdditionalEmailVerificationIntegrationTest extends AbstractIntegrationTest
         String staleToken = tokenService.generateToken(original.getId(), original.getEmail());
         UUID originalId = original.getId();
 
-        // Detach first so the managed caller.additionalEmails collection cannot
-        // cascade-re-persist the deleted row, then delete + flush the removal so the
-        // re-insert below does not collide on the LOWER(email) unique index.
-        entityManager.clear();
         additionalEmailRepository.deleteById(originalId);
-        additionalEmailRepository.flush();
-        entityManager.clear();
 
-        caller = userRepository.findByUsername("john.doe").orElseThrow();
         UserAdditionalEmail readded = persistAdditional(caller, BOX, null);
         assertThat(readded.getId()).isNotEqualTo(originalId);
 
@@ -317,17 +315,22 @@ class AdditionalEmailVerificationIntegrationTest extends AbstractIntegrationTest
 
     // ---------------------- resend ----------------------
 
+    private String resendPath(Object emailId) {
+        return "/api/v1/users/me/additional-emails/" + emailId + "/resend-verification";
+    }
+
     @Test
     @WithMockUser(username = "john.doe")
     @DisplayName("should_return204AndSendEmail_when_resendForUnverifiedOwnEmail")
     void should_return204AndSendEmail_when_resendForUnverifiedOwnEmail() throws Exception {
-        persistAdditional(caller, BOX, null);
+        UserAdditionalEmail row = persistAdditional(caller, BOX, null);
 
-        mockMvc.perform(post("/api/v1/users/me/additional-emails/{email}/resend-verification",
-                        BOX))
+        mockMvc.perform(post(resendPath(row.getId())))
                 .andExpect(status().isNoContent());
 
-        assertThat(sesRecorder.single().to()).containsExactly(BOX);
+        SesRecorder.RecordedMail mail = sesRecorder.single();
+        assertThat(mail.to()).containsExactly(BOX);
+        assertThat(mail.html()).contains("/verify-email?token=");
     }
 
     @Test
@@ -335,10 +338,21 @@ class AdditionalEmailVerificationIntegrationTest extends AbstractIntegrationTest
     @DisplayName("should_return404_when_resendForEmailNotOwned")
     void should_return404_when_resendForEmailNotOwned() throws Exception {
         // belongs to mary.smith, not john.doe
-        persistAdditional(other, SHARED, null);
+        UserAdditionalEmail foreign = persistAdditional(other, SHARED, null);
 
-        mockMvc.perform(post("/api/v1/users/me/additional-emails/{email}/resend-verification",
-                        SHARED))
+        mockMvc.perform(post(resendPath(foreign.getId())))
+                .andExpect(status().isNotFound());
+
+        assertThat(sesRecorder.mails()).isEmpty();
+    }
+
+    @Test
+    @WithMockUser(username = "john.doe")
+    @DisplayName("4.10d: should_return404_when_resendForUnknownId")
+    void should_return404_when_resendForUnknownId() throws Exception {
+        persistAdditional(caller, BOX, null);
+
+        mockMvc.perform(post(resendPath(UUID.randomUUID())))
                 .andExpect(status().isNotFound());
 
         assertThat(sesRecorder.mails()).isEmpty();
@@ -348,10 +362,9 @@ class AdditionalEmailVerificationIntegrationTest extends AbstractIntegrationTest
     @WithMockUser(username = "john.doe")
     @DisplayName("should_return409AlreadyVerified_when_resendForVerifiedEmail")
     void should_return409AlreadyVerified_when_resendForVerifiedEmail() throws Exception {
-        persistAdditional(caller, BOX, Instant.now());
+        UserAdditionalEmail row = persistAdditional(caller, BOX, Instant.now());
 
-        mockMvc.perform(post("/api/v1/users/me/additional-emails/{email}/resend-verification",
-                        BOX))
+        mockMvc.perform(post(resendPath(row.getId())))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.errorCode").value("ALREADY_VERIFIED"));
 
@@ -361,24 +374,34 @@ class AdditionalEmailVerificationIntegrationTest extends AbstractIntegrationTest
     @Test
     @DisplayName("should_return401_when_resendNotAuthenticated")
     void should_return401_when_resendNotAuthenticated() throws Exception {
-        mockMvc.perform(post("/api/v1/users/me/additional-emails/{email}/resend-verification",
-                        BOX))
+        UserAdditionalEmail row = persistAdditional(caller, BOX, null);
+
+        mockMvc.perform(post(resendPath(row.getId())))
                 .andExpect(status().isUnauthorized());
+
+        assertThat(sesRecorder.mails()).isEmpty();
+    }
+
+    @Test
+    @WithMockUser(username = "john.doe")
+    @DisplayName("4.10d: the old address path is gone (400, the segment is no id), no mail")
+    void should_return400_when_resendAddressedByEmail() throws Exception {
+        persistAdditional(caller, BOX, null);
+
+        mockMvc.perform(post(resendPath(BOX)))
+                .andExpect(status().isBadRequest());
+
+        assertThat(sesRecorder.mails()).isEmpty();
     }
 
     // ---------------------- helpers ----------------------
 
     private UserAdditionalEmail persistAdditional(User owner, String email, Instant verifiedAt) {
-        UserAdditionalEmail row = UserAdditionalEmail.builder()
+        return additionalEmailRepository.saveAndFlush(UserAdditionalEmail.builder()
+                .user(owner)
                 .email(email)
                 .createdAt(Instant.now())
                 .verifiedAt(verifiedAt)
-                .build();
-        owner.addAdditionalEmail(row);
-        userRepository.save(owner);
-        userRepository.flush();
-        // Re-fetch so the generated UUID id is reliably populated on the returned
-        // instance (the builder-created reference may not carry it back).
-        return additionalEmailRepository.findByUserAndEmailIgnoreCase(owner, email).orElseThrow();
+                .build());
     }
 }

@@ -505,7 +505,8 @@ class ContractServerTest {
     @DisplayName("format: idn-email checks the mailbox shape and accepts the reserved .example TLD (4.9b)")
     void should_acceptIdnAddressUnderReservedTld_andRejectNonAddress() {
         OpenApiContract users = OpenApiContract.load(USERS);
-        String additional = "{\"email\": \"%s\", \"label\": null, \"createdAt\": \"2026-05-22T10:00:00Z\", "
+        String additional = "{\"id\": \"7c9e6679-7425-40de-944b-e07fc1f90ae7\", \"email\": \"%s\", "
+                + "\"label\": null, \"createdAt\": \"2026-05-22T10:00:00Z\", "
                 + "\"verifiedAt\": null, \"receiveEventMail\": false}";
 
         // The 17.0d IDN person: Apache Commons' TLD list alone rejected it (no .example TLD)

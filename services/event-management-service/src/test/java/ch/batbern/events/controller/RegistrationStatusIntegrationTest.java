@@ -3,6 +3,7 @@ package ch.batbern.events.controller;
 import ch.batbern.events.dto.generated.users.AdditionalEmail;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.UUID;
 import ch.batbern.shared.test.AbstractIntegrationTest;
 import ch.batbern.shared.types.EventWorkflowState;
 import ch.batbern.events.client.UserApiClient;
@@ -293,9 +294,9 @@ class RegistrationStatusIntegrationTest extends AbstractIntegrationTest {
         lenient().when(userApiClient.getUserByUsername(username)).thenReturn(new UserResponse()
                 .id(username).email(primary)
                 .additionalEmails(List.of(
-                        new AdditionalEmail().email(verified)
+                        new AdditionalEmail().id(UUID.randomUUID()).email(verified)
                                 .verifiedAt(OffsetDateTime.now()),
-                        new AdditionalEmail().email(unverified))));
+                        new AdditionalEmail().id(UUID.randomUUID()).email(unverified))));
     }
 
     @Test

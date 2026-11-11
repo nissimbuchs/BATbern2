@@ -139,8 +139,10 @@ class AttendeeDashboardIntegrationTest extends AbstractIntegrationTest {
                 {"id": "%s", "email": "jane@private.example.com", "firstName": "Jane", "lastName": "Müller",
                  "roles": ["ATTENDEE"], "createdAt": "2025-01-15T10:00:00Z", "updatedAt": "2025-01-15T10:00:00Z",
                  "additionalEmails": [
-                   {"email": "%s", "createdAt": "2025-01-15T10:00:00Z", "verifiedAt": "2025-01-16T10:00:00Z"},
-                   {"email": "%s", "createdAt": "2025-01-15T10:00:00Z", "verifiedAt": null}]}"""
+                   {"id": "6b0e2a4c-1d3f-4e5a-8b7c-9d0e1f2a3b5a", "email": "%s",
+                    "createdAt": "2025-01-15T10:00:00Z", "verifiedAt": "2025-01-16T10:00:00Z"},
+                   {"id": "6b0e2a4c-1d3f-4e5a-8b7c-9d0e1f2a3b5b", "email": "%s",
+                    "createdAt": "2025-01-15T10:00:00Z", "verifiedAt": null}]}"""
                 .formatted(ATTENDEE, verified, unverified));
     }
 

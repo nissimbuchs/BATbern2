@@ -62,6 +62,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 
 /**
  * UserService - Core business logic for user management
@@ -1200,21 +1201,15 @@ public class UserService {
      * Additional-email verification (v2) — resend the verification email for one of
      * the caller's own additional emails.
      *
-     * @throws AdditionalEmailNotFoundException        if the email is not on the caller's profile (404)
+     * @throws AdditionalEmailNotFoundException        if the id is not one of the caller's (404)
      * @throws AdditionalEmailAlreadyVerifiedException if the email is already verified (409)
      */
-    public void resendVerification(String email) {
-        String username = securityContext.getCurrentUsername();
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new UserNotFoundException("Current user profile not found", true));
-
-        String emailNormalized = email.trim().toLowerCase(Locale.ROOT);
-        UserAdditionalEmail row = additionalEmailRepository
-                .findByUserAndEmailIgnoreCase(user, emailNormalized)
-                .orElseThrow(() -> new AdditionalEmailNotFoundException(emailNormalized));
+    public void resendVerification(UUID emailId) {
+        User user = currentUserProfile();
+        UserAdditionalEmail row = ownAdditionalEmail(emailId, user);
 
         if (row.getVerifiedAt() != null) {
-            throw new AdditionalEmailAlreadyVerifiedException(emailNormalized);
+            throw new AdditionalEmailAlreadyVerifiedException(row.getEmail());
         }
 
         String token = verificationTokenService.generateToken(row.getId(), row.getEmail());
@@ -1223,7 +1218,23 @@ public class UserService {
 
         log.info("ADDITIONAL_EMAIL_VERIFICATION_RESENT user={} email={}",
                 LoggingUtils.maskEmail(user.getEmail()),
-                LoggingUtils.maskEmail(emailNormalized));
+                LoggingUtils.maskEmail(row.getEmail()));
+    }
+
+    /**
+     * Story 4.10d: one of the caller's additional emails by its id, loaded scoped to the caller.
+     *
+     * @throws AdditionalEmailNotFoundException another user's or an unknown id (404)
+     */
+    private UserAdditionalEmail ownAdditionalEmail(UUID emailId, User user) {
+        return additionalEmailRepository.findByIdAndUser(emailId, user)
+                .orElseThrow(() -> new AdditionalEmailNotFoundException(emailId));
+    }
+
+    private User currentUserProfile() {
+        String username = securityContext.getCurrentUsername();
+        return userRepository.findByUsername(username)
+                .orElseThrow(() -> new UserNotFoundException("Current user profile not found", true));
     }
 
     /**
@@ -1237,7 +1248,7 @@ public class UserService {
     @Transactional(readOnly = true)
     public AdditionalEmailVerificationCheckResponse checkVerificationToken(String token) {
         Claims claims = parseVerificationToken(token);
-        java.util.UUID rowId = verificationTokenService.getAdditionalEmailId(claims);
+        UUID rowId = verificationTokenService.getAdditionalEmailId(claims);
         String claimEmail = verificationTokenService.getEmail(claims);
 
         // The check path does not 404 on a missing row — it reports the token's
@@ -1266,7 +1277,7 @@ public class UserService {
     @Transactional
     public AdditionalEmailVerificationConfirmResponse confirmVerificationToken(String token) {
         Claims claims = parseVerificationToken(token);
-        java.util.UUID rowId = verificationTokenService.getAdditionalEmailId(claims);
+        UUID rowId = verificationTokenService.getAdditionalEmailId(claims);
         String claimEmail = verificationTokenService.getEmail(claims);
 
         UserAdditionalEmail row = additionalEmailRepository.findById(rowId)
@@ -1308,41 +1319,29 @@ public class UserService {
      * #1244 — switch the copy of event mails for one of the caller's additional addresses.
      * Switching it on needs a confirmed address; switching it off always works.
      */
-    public AdditionalEmail updateAdditionalEmail(String email, UpdateAdditionalEmailRequest request) {
-        String username = securityContext.getCurrentUsername();
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new UserNotFoundException("Current user profile not found", true));
-
-        String emailNormalized = email.trim().toLowerCase(Locale.ROOT);
-        UserAdditionalEmail row = additionalEmailRepository
-                .findByUserAndEmailIgnoreCase(user, emailNormalized)
-                .orElseThrow(() -> new AdditionalEmailNotFoundException(emailNormalized));
+    public AdditionalEmail updateAdditionalEmail(UUID emailId, UpdateAdditionalEmailRequest request) {
+        User user = currentUserProfile();
+        UserAdditionalEmail row = ownAdditionalEmail(emailId, user);
 
         boolean receive = Boolean.TRUE.equals(request.getReceiveEventMail());
         if (receive && row.getVerifiedAt() == null) {
-            throw new AdditionalEmailNotVerifiedException(emailNormalized);
+            throw new AdditionalEmailNotVerifiedException(row.getEmail());
         }
         row.setReceiveEventMail(receive);
         additionalEmailRepository.save(row);
 
         log.info("ADDITIONAL_EMAIL_EVENT_MAIL_COPY user={} email={} receive={}",
-                LoggingUtils.maskEmail(user.getEmail()), LoggingUtils.maskEmail(emailNormalized), receive);
+                LoggingUtils.maskEmail(user.getEmail()), LoggingUtils.maskEmail(row.getEmail()), receive);
         return UserResponseMapper.mapAdditionalEmailToDto(row);
     }
 
     /**
      * Story 10.32 — remove an additional email from the caller's profile.
      */
-    public void deleteAdditionalEmail(String email) {
-        String username = securityContext.getCurrentUsername();
+    public void deleteAdditionalEmail(UUID emailId) {
         // P2-7: see note above.
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new UserNotFoundException("Current user profile not found", true));
-
-        String emailNormalized = email.trim().toLowerCase(Locale.ROOT);
-        UserAdditionalEmail row = additionalEmailRepository
-                .findByUserAndEmailIgnoreCase(user, emailNormalized)
-                .orElseThrow(() -> new AdditionalEmailNotFoundException(emailNormalized));
+        User user = currentUserProfile();
+        UserAdditionalEmail row = ownAdditionalEmail(emailId, user);
 
         // P2-9 fix: delete the row directly via the repository rather than
         // routing through the aggregate's orphanRemoval collection. The User
@@ -1355,7 +1354,7 @@ public class UserService {
 
         log.info("ADDITIONAL_EMAIL_REMOVED user={} email={}",
                 LoggingUtils.maskEmail(user.getEmail()),
-                LoggingUtils.maskEmail(emailNormalized));
+                LoggingUtils.maskEmail(row.getEmail()));
     }
 
 }

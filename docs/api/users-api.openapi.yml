@@ -2196,6 +2196,7 @@ paths:
                 default:
                   summary: generated from the schema and captured sub-values
                   value:
+                    id: 7c9e6679-7425-40de-944b-e07fc1f90ae7
                     email: ines.vorlage@example.com
                     label: Hostpoint shared
                     createdAt: "2026-05-22T10:00:00Z"
@@ -2225,7 +2226,7 @@ paths:
       security:
         - BearerAuth: []
 
-  /users/me/additional-emails/{email}:
+  /users/me/additional-emails/{emailId}:
     patch:
       tags:
         - User Account
@@ -2235,13 +2236,16 @@ paths:
         confirmed address can receive copies (409 `NOT_VERIFIED` otherwise).
       operationId: updateAdditionalEmail
       parameters:
-        - name: email
+        - name: emailId
           in: path
           required: true
-          description: URL-encoded email address, case-insensitive.
+          description: |
+            The `id` of one of the caller's additional addresses (`AdditionalEmail.id` in
+            `GET /users/me`). Another user's or an unknown id answers 404. The address itself
+            never goes in the path (ADR-003 amendment 2026-11).
           schema:
             type: string
-            format: email
+            format: uuid
       requestBody:
         required: true
         content:
@@ -2259,6 +2263,7 @@ paths:
                 default:
                   summary: generated from the schema and captured sub-values
                   value:
+                    id: 7c9e6679-7425-40de-944b-e07fc1f90ae7
                     email: ines.vorlage@example.com
                     label: Hostpoint shared
                     createdAt: "2026-05-22T10:00:00Z"
@@ -2267,7 +2272,7 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
-          description: No matching additional email on the caller's profile.
+          description: No additional email with this id on the caller's profile.
           content:
             application/json:
               schema:
@@ -2290,23 +2295,23 @@ paths:
         by this endpoint.
       operationId: deleteAdditionalEmail
       parameters:
-        - name: email
+        - name: emailId
           in: path
           required: true
           description: |
-            URL-encoded email address. Case-insensitive match against the caller's
-            additional emails.
+            The `id` of one of the caller's additional addresses (`AdditionalEmail.id` in
+            `GET /users/me`). Another user's or an unknown id answers 404. The address itself
+            never goes in the path (ADR-003 amendment 2026-11).
           schema:
             type: string
-            format: email
-          example: info@batbern.ch
+            format: uuid
       responses:
         '204':
           description: Additional email removed
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
-          description: No matching additional email on the caller's profile.
+          description: No additional email with this id on the caller's profile.
           content:
             application/json:
               schema:
@@ -2316,7 +2321,7 @@ paths:
       security:
         - BearerAuth: []
 
-  /users/me/additional-emails/{email}/make-primary:
+  /users/me/additional-emails/{emailId}/make-primary:
     post:
       tags:
         - User Account
@@ -2327,20 +2332,23 @@ paths:
         address follow. Linked Google sign-ins stay.
       operationId: makeAdditionalEmailPrimary
       parameters:
-        - name: email
+        - name: emailId
           in: path
           required: true
-          description: URL-encoded email address, case-insensitive.
+          description: |
+            The `id` of one of the caller's additional addresses (`AdditionalEmail.id` in
+            `GET /users/me`). Another user's or an unknown id answers 404. The address itself
+            never goes in the path (ADR-003 amendment 2026-11).
           schema:
             type: string
-            format: email
+            format: uuid
       responses:
         '204':
           description: The address is now the primary address
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
-          description: No matching additional email on the caller's profile.
+          description: No additional email with this id on the caller's profile.
           content:
             application/json:
               schema:
@@ -2356,7 +2364,7 @@ paths:
       security:
         - BearerAuth: []
 
-  /users/me/additional-emails/{email}/resend-verification:
+  /users/me/additional-emails/{emailId}/resend-verification:
     post:
       tags:
         - User Account
@@ -2368,23 +2376,23 @@ paths:
         regenerated on each call (stateless HMAC JWT, 48h TTL).
       operationId: resendAdditionalEmailVerification
       parameters:
-        - name: email
+        - name: emailId
           in: path
           required: true
           description: |
-            URL-encoded email address. Case-insensitive match against the caller's
-            additional emails.
+            The `id` of one of the caller's additional addresses (`AdditionalEmail.id` in
+            `GET /users/me`). Another user's or an unknown id answers 404. The address itself
+            never goes in the path (ADR-003 amendment 2026-11).
           schema:
             type: string
-            format: email
-          example: info@batbern.ch
+            format: uuid
       responses:
         '204':
           description: A fresh verification email was dispatched.
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
-          description: No matching additional email on the caller's profile.
+          description: No additional email with this id on the caller's profile.
           content:
             application/json:
               schema:
@@ -3471,12 +3479,20 @@ components:
       type: object
       description: Story 10.32 — one additional email address registered on a user profile.
       required:
+        - id
         - email
         - createdAt
         - label
         - verifiedAt
         - receiveEventMail
       properties:
+        id:
+          type: string
+          format: uuid
+          description: |
+            Story 4.10d — the key of this address in the `…/additional-emails/{emailId}` operations.
+            Making an address primary replaces the rows, so the ids change; read them again.
+          example: 7c9e6679-7425-40de-944b-e07fc1f90ae7
         email:
           type: string
           format: idn-email

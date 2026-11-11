@@ -240,7 +240,8 @@ class ParticipantsControllerIntegrationTest extends AbstractIntegrationTest {
         // #1244: a copy only to a confirmed address with the copy switched on
         cums.user("speaker.bob", """
                 {"firstName": "Speaker", "lastName": "Bob", "email": "bob@example.com",
-                 "additionalEmails": [{"email": "bob.work@example.com", "label": null,
+                 "additionalEmails": [{"id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+                   "email": "bob.work@example.com", "label": null,
                    "createdAt": "2026-01-10T10:00:00Z", "verifiedAt": "2026-01-10T10:05:00Z",
                    "receiveEventMail": true}]}""");
 

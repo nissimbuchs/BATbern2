@@ -376,7 +376,7 @@ class GlobalMailCenterIntegrationTest extends AbstractIntegrationTest {
     @DisplayName("16.10 AC1/AC2: a user's mail by every address, sent and received; others, newsletters and tests not")
     void should_listParticipantMail_when_userHasSeveralAddresses() throws Exception {
         when(userApiClient.getUserByUsername("anna.example")).thenReturn(new UserResponse().id("anna.example")
-                .email(ANNA).additionalEmails(List.of(new AdditionalEmail().email(ANNA_EXTRA.toUpperCase()))));
+                .email(ANNA).additionalEmails(List.of(new AdditionalEmail().id(UUID.randomUUID()).email(ANNA_EXTRA.toUpperCase()))));
         UUID toPrimary = outbound(EVENT_A + "-1", EVENT_A, "REGISTRANTS", now.minus(5, ChronoUnit.HOURS), ANNA);
         jdbc.update("UPDATE mail_recipient SET status = 'DELIVERED' WHERE mail_message_id = ?", toPrimary);
         outbound(EVENT_B + "-1", EVENT_B, "SPEAKERS", now.minus(4, ChronoUnit.HOURS), ANNA_EXTRA);

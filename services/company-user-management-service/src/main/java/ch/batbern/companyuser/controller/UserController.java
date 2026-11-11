@@ -54,6 +54,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.net.URI;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * REST Controller for User Management.
@@ -320,8 +321,8 @@ public class UserController implements UserManagementApi, UserAccountApi, Profil
      */
     @Override
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<Void> makeAdditionalEmailPrimary(String email) {
-        primaryEmailService.makePrimary(email);
+    public ResponseEntity<Void> makeAdditionalEmailPrimary(UUID emailId) {
+        primaryEmailService.makePrimary(emailId);
         return ResponseEntity.noContent().build();
     }
 
@@ -331,25 +332,23 @@ public class UserController implements UserManagementApi, UserAccountApi, Profil
      */
     @Override
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<AdditionalEmail> updateAdditionalEmail(String email,
+    public ResponseEntity<AdditionalEmail> updateAdditionalEmail(UUID emailId,
             UpdateAdditionalEmailRequest updateAdditionalEmailRequest) {
-        return ResponseEntity.ok(userService.updateAdditionalEmail(email, updateAdditionalEmailRequest));
+        return ResponseEntity.ok(userService.updateAdditionalEmail(emailId, updateAdditionalEmailRequest));
     }
 
     /**
-     * Story 10.32 — Remove an additional email from the caller's profile. Under Spring Boot 3's
-     * {@code PathPatternParser} the {@code {email}} segment captures the full address (incl. the
-     * trailing {@code .com}) without the legacy {@code :.+} regex. Frontend callers MUST
-     * {@code encodeURIComponent} the email — see {@code userAccountApi.ts}.
+     * Story 10.32 — Remove an additional email from the caller's profile. Keyed by the row id since
+     * Story 4.10d (the address never goes in the path); another user's id is 404.
      */
     @Override
     @Timed(value = "users.additionalEmails.delete",
             description = "Time to remove an additional email from the current user",
             percentiles = {0.5, 0.95, 0.99})
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<Void> deleteAdditionalEmail(String email) {
+    public ResponseEntity<Void> deleteAdditionalEmail(UUID emailId) {
         log.info("Removing additional email for current user");
-        userService.deleteAdditionalEmail(email);
+        userService.deleteAdditionalEmail(emailId);
         return ResponseEntity.noContent().build();
     }
 
@@ -363,9 +362,9 @@ public class UserController implements UserManagementApi, UserAccountApi, Profil
             description = "Time to resend an additional-email verification email",
             percentiles = {0.5, 0.95, 0.99})
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<Void> resendAdditionalEmailVerification(String email) {
+    public ResponseEntity<Void> resendAdditionalEmailVerification(UUID emailId) {
         log.info("Resending additional-email verification for current user");
-        userService.resendVerification(email);
+        userService.resendVerification(emailId);
         return ResponseEntity.noContent().build();
     }
 

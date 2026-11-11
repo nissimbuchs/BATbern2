@@ -283,9 +283,10 @@ public class NewsletterControllerIntegrationTest extends AbstractIntegrationTest
                 {"id": "%s", "email": "Dora@Batbern-Test.ch", "firstName": "Dora", "lastName": "Meier",
                  "roles": ["ATTENDEE"], "createdAt": "2025-01-15T10:00:00Z", "updatedAt": "2025-01-15T10:00:00Z",
                  "additionalEmails": [
-                   {"email": "dora.private@batbern-test.ch", "createdAt": "2025-01-15T10:00:00Z",
-                    "verifiedAt": "2025-01-16T10:00:00Z"},
-                   {"email": "dora.pending@batbern-test.ch", "createdAt": "2025-01-15T10:00:00Z"}]}"""
+                   {"id": "6b0e2a4c-1d3f-4e5a-8b7c-9d0e1f2a3b4c", "email": "dora.private@batbern-test.ch",
+                    "createdAt": "2025-01-15T10:00:00Z", "verifiedAt": "2025-01-16T10:00:00Z"},
+                   {"id": "6b0e2a4c-1d3f-4e5a-8b7c-9d0e1f2a3b4d", "email": "dora.pending@batbern-test.ch",
+                    "createdAt": "2025-01-15T10:00:00Z"}]}"""
                 .formatted(DORA));
     }
 

@@ -814,7 +814,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/users/me/additional-emails/{email}': {
+  '/users/me/additional-emails/{emailId}': {
     parameters: {
       query?: never;
       header?: never;
@@ -841,7 +841,7 @@ export interface paths {
     patch: operations['updateAdditionalEmail'];
     trace?: never;
   };
-  '/users/me/additional-emails/{email}/make-primary': {
+  '/users/me/additional-emails/{emailId}/make-primary': {
     parameters: {
       query?: never;
       header?: never;
@@ -863,7 +863,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/users/me/additional-emails/{email}/resend-verification': {
+  '/users/me/additional-emails/{emailId}/resend-verification': {
     parameters: {
       query?: never;
       header?: never;
@@ -1439,6 +1439,13 @@ export interface components {
     };
     /** @description Story 10.32 — one additional email address registered on a user profile. */
     AdditionalEmail: {
+      /**
+       * Format: uuid
+       * @description Story 4.10d — the key of this address in the `…/additional-emails/{emailId}` operations.
+       *     Making an address primary replaces the rows, so the ids change; read them again.
+       * @example 7c9e6679-7425-40de-944b-e07fc1f90ae7
+       */
+      id: string;
       /**
        * Format: idn-email
        * @example info@batbern.ch
@@ -3246,11 +3253,11 @@ export interface operations {
       header?: never;
       path: {
         /**
-         * @description URL-encoded email address. Case-insensitive match against the caller's
-         *     additional emails.
-         * @example info@batbern.ch
+         * @description The `id` of one of the caller's additional addresses (`AdditionalEmail.id` in
+         *     `GET /users/me`). Another user's or an unknown id answers 404. The address itself
+         *     never goes in the path (ADR-003 amendment 2026-11).
          */
-        email: string;
+        emailId: string;
       };
       cookie?: never;
     };
@@ -3264,7 +3271,7 @@ export interface operations {
         content?: never;
       };
       401: components['responses']['Unauthorized'];
-      /** @description No matching additional email on the caller's profile. */
+      /** @description No additional email with this id on the caller's profile. */
       404: {
         headers: {
           [name: string]: unknown;
@@ -3281,8 +3288,12 @@ export interface operations {
       query?: never;
       header?: never;
       path: {
-        /** @description URL-encoded email address, case-insensitive. */
-        email: string;
+        /**
+         * @description The `id` of one of the caller's additional addresses (`AdditionalEmail.id` in
+         *     `GET /users/me`). Another user's or an unknown id answers 404. The address itself
+         *     never goes in the path (ADR-003 amendment 2026-11).
+         */
+        emailId: string;
       };
       cookie?: never;
     };
@@ -3302,7 +3313,7 @@ export interface operations {
         };
       };
       401: components['responses']['Unauthorized'];
-      /** @description No matching additional email on the caller's profile. */
+      /** @description No additional email with this id on the caller's profile. */
       404: {
         headers: {
           [name: string]: unknown;
@@ -3327,8 +3338,12 @@ export interface operations {
       query?: never;
       header?: never;
       path: {
-        /** @description URL-encoded email address, case-insensitive. */
-        email: string;
+        /**
+         * @description The `id` of one of the caller's additional addresses (`AdditionalEmail.id` in
+         *     `GET /users/me`). Another user's or an unknown id answers 404. The address itself
+         *     never goes in the path (ADR-003 amendment 2026-11).
+         */
+        emailId: string;
       };
       cookie?: never;
     };
@@ -3342,7 +3357,7 @@ export interface operations {
         content?: never;
       };
       401: components['responses']['Unauthorized'];
-      /** @description No matching additional email on the caller's profile. */
+      /** @description No additional email with this id on the caller's profile. */
       404: {
         headers: {
           [name: string]: unknown;
@@ -3371,11 +3386,11 @@ export interface operations {
       header?: never;
       path: {
         /**
-         * @description URL-encoded email address. Case-insensitive match against the caller's
-         *     additional emails.
-         * @example info@batbern.ch
+         * @description The `id` of one of the caller's additional addresses (`AdditionalEmail.id` in
+         *     `GET /users/me`). Another user's or an unknown id answers 404. The address itself
+         *     never goes in the path (ADR-003 amendment 2026-11).
          */
-        email: string;
+        emailId: string;
       };
       cookie?: never;
     };
@@ -3389,7 +3404,7 @@ export interface operations {
         content?: never;
       };
       401: components['responses']['Unauthorized'];
-      /** @description No matching additional email on the caller's profile. */
+      /** @description No additional email with this id on the caller's profile. */
       404: {
         headers: {
           [name: string]: unknown;

@@ -7,6 +7,7 @@ import ch.batbern.companyuser.domain.UserAdditionalEmail;
 import ch.batbern.companyuser.repository.UserAdditionalEmailRepository;
 import ch.batbern.companyuser.repository.UserRepository;
 import ch.batbern.shared.test.AbstractIntegrationTest;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -15,15 +16,17 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.UUID;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -41,10 +44,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * "duplicate vs another user's additional email" case). Cap is overridden to 3
  * via {@link TestPropertySource} so the limit-reached test runs in 4 POSTs
  * instead of 6.
+ *
+ * <p>Story 4.10d: one address is addressed by its {@code id} ({@code {emailId}}), loaded scoped to
+ * the caller; the address never goes in the path. Every test commits, {@code @AfterEach} removes
+ * the two profiles (their addresses go with them, {@code ON DELETE CASCADE}).
  */
 @SpringBootTest
 @AutoConfigureMockMvc
-@Transactional
 @Import(TestAwsConfig.class)
 @TestPropertySource(properties = "batbern.user.additional-emails.max=3")
 @DisplayName("Story 10.32 — UserController additional-emails endpoints")
@@ -59,14 +65,16 @@ class UserAdditionalEmailsIntegrationTest extends AbstractIntegrationTest {
     @Autowired
     private UserAdditionalEmailRepository additionalEmailRepository;
 
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+
     private User caller;
     private User other;
+    private UUID sharedId;
 
     @BeforeEach
     void setUp() {
-        // Test class is @Transactional — each method rolls back. The explicit
-        // deleteAll() calls were redundant (and wasteful) for that reason.
-        // Removed in review 2026-05-22 finding P2-3.
+        removeProfiles();
         caller = userRepository.save(User.builder()
                 .username("john.doe")
                 .email("john.doe@example.com")
@@ -85,13 +93,36 @@ class UserAdditionalEmailsIntegrationTest extends AbstractIntegrationTest {
                 .roles(new HashSet<>(Set.of(Role.ATTENDEE)))
                 .build());
 
-        // Attach one additional email to the OTHER user — used by the
-        // cross-user duplicate test.
-        UserAdditionalEmail otherAdditional = UserAdditionalEmail.builder()
-                .email("shared@example.com")
-                .build();
-        other.addAdditionalEmail(otherAdditional);
-        userRepository.save(other);
+        // One additional email of the OTHER user — used by the cross-user duplicate test and as
+        // the foreign id.
+        sharedId = persistAddress(other, "shared@example.com", true);
+    }
+
+    @AfterEach
+    void tearDown() {
+        removeProfiles();
+    }
+
+    private void removeProfiles() {
+        jdbcTemplate.update("DELETE FROM user_profiles WHERE username IN ('john.doe', 'mary.smith')");
+    }
+
+    private UUID persistAddress(User owner, String email, boolean verified) {
+        return additionalEmailRepository.saveAndFlush(UserAdditionalEmail.builder()
+                .user(owner)
+                .email(email)
+                .createdAt(Instant.now())
+                .verifiedAt(verified ? Instant.now() : null)
+                .build()).getId();
+    }
+
+    private UUID idOf(String email) {
+        return jdbcTemplate.queryForObject(
+                "SELECT id FROM user_additional_emails WHERE email = ?", UUID.class, email);
+    }
+
+    private boolean stored(String email) {
+        return additionalEmailRepository.existsByEmailIgnoreCase(email);
     }
 
     // -------------------------- happy path --------------------------
@@ -109,6 +140,7 @@ class UserAdditionalEmailsIntegrationTest extends AbstractIntegrationTest {
                             }
                             """))
                 .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.id").value(org.hamcrest.Matchers.matchesPattern("^[0-9a-f-]{36}$")))
                 .andExpect(jsonPath("$.email").value("info@batbern.ch"))
                 .andExpect(jsonPath("$.label").value("Hostpoint shared"))
                 .andExpect(jsonPath("$.createdAt").exists())
@@ -140,6 +172,7 @@ class UserAdditionalEmailsIntegrationTest extends AbstractIntegrationTest {
         mockMvc.perform(get("/api/v1/users/me"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.additionalEmails", hasSize(1)))
+                .andExpect(jsonPath("$.additionalEmails[0].id").value(idOf("work@example.com").toString()))
                 .andExpect(jsonPath("$.additionalEmails[0].email").value("work@example.com"));
     }
 
@@ -250,33 +283,25 @@ class UserAdditionalEmailsIntegrationTest extends AbstractIntegrationTest {
                 .content("{ \"email\": \"box@example.com\" }"))
                 .andExpect(status().isCreated());
 
-        mockMvc.perform(delete("/api/v1/users/me/additional-emails/{email}", "box@example.com"))
+        mockMvc.perform(delete("/api/v1/users/me/additional-emails/{emailId}", idOf("box@example.com")))
                 .andExpect(status().isNoContent());
 
         mockMvc.perform(get("/api/v1/users/me"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.additionalEmails", hasSize(0)));
+        assertThat(stored("box@example.com")).isFalse();
     }
 
     @Test
     @WithMockUser(username = "john.doe")
-    @DisplayName("should_return204_when_deleteCaseInsensitive")
-    void should_return204_when_deleteCaseInsensitive() throws Exception {
-        mockMvc.perform(post("/api/v1/users/me/additional-emails")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("{ \"email\": \"info@example.com\" }"))
-                .andExpect(status().isCreated());
+    @DisplayName("should_return404_when_deleteUnknownId")
+    void should_return404_when_deleteUnknownId() throws Exception {
+        persistAddress(caller, "keep@example.com", false);
 
-        mockMvc.perform(delete("/api/v1/users/me/additional-emails/{email}", "INFO@example.com"))
-                .andExpect(status().isNoContent());
-    }
-
-    @Test
-    @WithMockUser(username = "john.doe")
-    @DisplayName("should_return404_when_deleteUnknown")
-    void should_return404_when_deleteUnknown() throws Exception {
-        mockMvc.perform(delete("/api/v1/users/me/additional-emails/{email}", "nothing@example.com"))
-                .andExpect(status().isNotFound());
+        mockMvc.perform(delete("/api/v1/users/me/additional-emails/{emailId}", UUID.randomUUID()))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.errorCode").value("ADDITIONAL_EMAIL_NOT_FOUND"));
+        assertThat(stored("keep@example.com")).isTrue();
     }
 
     @Test
@@ -285,14 +310,32 @@ class UserAdditionalEmailsIntegrationTest extends AbstractIntegrationTest {
     void should_return404_when_deleteForeignAdditional() throws Exception {
         // shared@example.com belongs to mary.smith, not john.doe — must 404 for
         // john.doe (and never accidentally delete from mary's profile).
-        mockMvc.perform(delete("/api/v1/users/me/additional-emails/{email}", "shared@example.com"))
+        mockMvc.perform(delete("/api/v1/users/me/additional-emails/{emailId}", sharedId))
                 .andExpect(status().isNotFound());
 
         // Mary still owns it.
-        var mary = userRepository.findByUsername("mary.smith").orElseThrow();
-        org.assertj.core.api.Assertions.assertThat(mary.getAdditionalEmails())
-                .extracting(UserAdditionalEmail::getEmail)
-                .containsExactly("shared@example.com");
+        assertThat(jdbcTemplate.queryForObject("SELECT u.username FROM user_additional_emails a "
+                + "JOIN user_profiles u ON u.id = a.user_id WHERE a.id = ?", String.class, sharedId))
+                .isEqualTo("mary.smith");
+    }
+
+    @Test
+    @DisplayName("should_return401_when_deleteAnonymously")
+    void should_return401_when_deleteAnonymously() throws Exception {
+        mockMvc.perform(delete("/api/v1/users/me/additional-emails/{emailId}", sharedId))
+                .andExpect(status().isUnauthorized());
+        assertThat(stored("shared@example.com")).isTrue();
+    }
+
+    @Test
+    @WithMockUser(username = "john.doe")
+    @DisplayName("4.10d: the old address path is gone (400, the segment is no id), nothing removed")
+    void should_return400_when_deleteByAddress() throws Exception {
+        persistAddress(caller, "box@example.com", false);
+
+        mockMvc.perform(delete("/api/v1/users/me/additional-emails/{email}", "box@example.com"))
+                .andExpect(status().isBadRequest());
+        assertThat(stored("box@example.com")).isTrue();
     }
 
     @Test
@@ -305,42 +348,24 @@ class UserAdditionalEmailsIntegrationTest extends AbstractIntegrationTest {
         // emails become orphaned rows that still satisfy the global LOWER(email)
         // unique index, permanently blocking other users from registering the
         // same address.
-        UserAdditionalEmail row1 = UserAdditionalEmail.builder()
-                .email("cascade-1@example.com")
-                .build();
-        UserAdditionalEmail row2 = UserAdditionalEmail.builder()
-                .email("cascade-2@example.com")
-                .build();
-        caller.addAdditionalEmail(row1);
-        caller.addAdditionalEmail(row2);
-        userRepository.save(caller);
-        userRepository.flush();
+        persistAddress(caller, "cascade-1@example.com", false);
+        persistAddress(caller, "cascade-2@example.com", false);
 
-        org.assertj.core.api.Assertions.assertThat(
+        assertThat(
                 additionalEmailRepository.findAll())
                 .extracting(UserAdditionalEmail::getEmail)
                 .contains("cascade-1@example.com", "cascade-2@example.com");
 
-        userRepository.delete(caller);
-        userRepository.flush();
+        jdbcTemplate.update("DELETE FROM user_profiles WHERE id = ?", caller.getId());
 
         // The additional-emails rows for the deleted user must be gone.
-        org.assertj.core.api.Assertions.assertThat(
+        assertThat(
                 additionalEmailRepository.findAll())
                 .extracting(UserAdditionalEmail::getEmail)
                 .doesNotContain("cascade-1@example.com", "cascade-2@example.com");
     }
 
     // ------------------- #1244: copy of event mails -------------------
-
-    private void addOwnAddress(String email, boolean verified) {
-        UserAdditionalEmail row = UserAdditionalEmail.builder()
-                .email(email)
-                .verifiedAt(verified ? Instant.now() : null)
-                .build();
-        caller.addAdditionalEmail(row);
-        userRepository.saveAndFlush(caller);
-    }
 
     @Test
     @WithMockUser(username = "john.doe")
@@ -357,12 +382,13 @@ class UserAdditionalEmailsIntegrationTest extends AbstractIntegrationTest {
     @WithMockUser(username = "john.doe")
     @DisplayName("#1244: a confirmed own address can switch the copy of event mails on and off")
     void should_toggleReceiveEventMail_when_ownAddressConfirmed() throws Exception {
-        addOwnAddress("private@example.com", true);
+        UUID id = persistAddress(caller, "private@example.com", true);
 
-        mockMvc.perform(patch("/api/v1/users/me/additional-emails/Private@Example.com")
+        mockMvc.perform(patch("/api/v1/users/me/additional-emails/{emailId}", id)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{ \"receiveEventMail\": true }"))
                 .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(id.toString()))
                 .andExpect(jsonPath("$.email").value("private@example.com"))
                 .andExpect(jsonPath("$.receiveEventMail").value(true));
 
@@ -370,42 +396,72 @@ class UserAdditionalEmailsIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.additionalEmails[0].receiveEventMail").value(true));
 
-        mockMvc.perform(patch("/api/v1/users/me/additional-emails/private@example.com")
+        mockMvc.perform(patch("/api/v1/users/me/additional-emails/{emailId}", id)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{ \"receiveEventMail\": false }"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.receiveEventMail").value(false));
+        assertThat(additionalEmailRepository.findById(id)).get()
+                .extracting(UserAdditionalEmail::isReceiveEventMail).isEqualTo(false);
     }
 
     @Test
     @WithMockUser(username = "john.doe")
     @DisplayName("#1244: an unconfirmed address cannot receive copies (409 NOT_VERIFIED)")
     void should_return409_when_switchingOnCopyForUnconfirmedAddress() throws Exception {
-        addOwnAddress("pending@example.com", false);
+        UUID id = persistAddress(caller, "pending@example.com", false);
 
-        mockMvc.perform(patch("/api/v1/users/me/additional-emails/pending@example.com")
+        mockMvc.perform(patch("/api/v1/users/me/additional-emails/{emailId}", id)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{ \"receiveEventMail\": true }"))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.errorCode").value("NOT_VERIFIED"));
+        assertThat(additionalEmailRepository.findById(id)).get()
+                .extracting(UserAdditionalEmail::isReceiveEventMail).isEqualTo(false);
     }
 
     @Test
     @WithMockUser(username = "john.doe")
-    @DisplayName("#1244: another user's address is not found (404)")
+    @DisplayName("#1244: another user's address is not found (404), its setting unchanged")
     void should_return404_when_switchingCopyForSomeoneElsesAddress() throws Exception {
-        mockMvc.perform(patch("/api/v1/users/me/additional-emails/shared@example.com")
+        mockMvc.perform(patch("/api/v1/users/me/additional-emails/{emailId}", sharedId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{ \"receiveEventMail\": true }"))
+                .andExpect(status().isNotFound());
+        assertThat(additionalEmailRepository.findById(sharedId)).get()
+                .extracting(UserAdditionalEmail::isReceiveEventMail).isEqualTo(false);
+    }
+
+    @Test
+    @WithMockUser(username = "john.doe")
+    @DisplayName("4.10d: an unknown id is not found (404)")
+    void should_return404_when_switchingCopyForUnknownId() throws Exception {
+        mockMvc.perform(patch("/api/v1/users/me/additional-emails/{emailId}", UUID.randomUUID())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{ \"receiveEventMail\": false }"))
                 .andExpect(status().isNotFound());
     }
 
     @Test
     @DisplayName("#1244: switching the copy needs a login (401)")
     void should_return401_when_switchingCopyAnonymously() throws Exception {
-        mockMvc.perform(patch("/api/v1/users/me/additional-emails/private@example.com")
+        mockMvc.perform(patch("/api/v1/users/me/additional-emails/{emailId}", sharedId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{ \"receiveEventMail\": true }"))
                 .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @WithMockUser(username = "john.doe")
+    @DisplayName("4.10d: the old address path is gone (400, the segment is no id), setting unchanged")
+    void should_return400_when_patchingByAddress() throws Exception {
+        UUID id = persistAddress(caller, "private@example.com", true);
+
+        mockMvc.perform(patch("/api/v1/users/me/additional-emails/{email}", "private@example.com")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{ \"receiveEventMail\": true }"))
+                .andExpect(status().isBadRequest());
+        assertThat(additionalEmailRepository.findById(id)).get()
+                .extracting(UserAdditionalEmail::isReceiveEventMail).isEqualTo(false);
     }
 }
