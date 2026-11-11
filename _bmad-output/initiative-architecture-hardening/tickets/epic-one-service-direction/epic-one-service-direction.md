@@ -14,7 +14,7 @@ risk: high
 
 ## Description
 
-Takes machine calls out of the public API and removes the two cycles. The public S2S calls (10 call sites on 2026-11-10, see Notes) move to `/internal` behind one shared-kernel token helper, and the machine-only operations leave the public specs (17.6: entries 6, 6b). CUMS owns a user-reference merge contract that EMS and PCS implement, and EMS pulls merge requests, logo requests and primary-email changes from a CUMS feed instead of being pushed (17.7: entries 7, 7b). EMS stops calling PCS: the frontend loads partner topics itself, and PCS pulls calendar RSVPs from an EMS feed (17.8: entries 8, 8b). ADR-016 is the rule.
+Takes machine calls out of the public API and removes the two cycles. The public S2S calls (10 call sites on 2026-11-10, see Notes) move to `/internal` behind one shared-kernel token helper, and the machine-only operations leave the public specs (17.6: entries 6, 6b). CUMS owns a user-reference merge contract that EMS and PCS implement, EMS pulls merge and logo requests from a CUMS feed instead of being pushed, and primary-email changes stay a synchronous push inside that contract (17.7: entries 7, 7b; owner 2026-11-11). EMS stops calling PCS: the frontend loads partner topics itself, and PCS pulls calendar RSVPs from an EMS feed (17.8: entries 8, 8b). ADR-016 is the rule.
 
 ## Outcome
 
