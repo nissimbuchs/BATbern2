@@ -42,6 +42,10 @@ Only items that are not live yet. Everything else is listed under its release be
 
 ### Unreleased — after BATbern60
 
+**Improvement — Calendar answers to partner meetings (Epic 17, entry 8b)**:
+- ✅ No visible change: when a partner accepts or declines a partner meeting invite in the calendar, the answer still shows in the meeting's RSVP list at once. Internally the event service now hands it on through a contract it owns instead of calling the partner service by name.
+- ✅ When the partner service does not answer, the incoming mail is still processed; the answer is not recorded and the operators see an error (as before, now also counted).
+
 **Improvement — Profile merge reaches partner data (Epic 17, entry 7b)**:
 - ✅ Merging two profiles now also moves the partner topics a person suggested, the partner notes they wrote and the partner meetings they created to the remaining profile. Before, those kept the name of the deleted profile. The merge preview lists them (topic suggestions, partner notes, partner meetings).
 - ✅ A merge that one service refuses (both profiles lead a different talk at one event) is refused before anything moves. When a service does not answer, the merge fails as before (the earlier profile stays) and can simply be repeated.

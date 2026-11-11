@@ -5,6 +5,7 @@ import ch.batbern.partners.config.TestSecurityConfig;
 import ch.batbern.partners.domain.MeetingType;
 import ch.batbern.partners.domain.PartnerMeeting;
 import ch.batbern.partners.repository.PartnerMeetingRepository;
+import ch.batbern.partners.repository.PartnerMeetingRsvpRepository;
 import ch.batbern.shared.test.AbstractIntegrationTest;
 import ch.batbern.shared.test.contract.OpenApiContract;
 import org.junit.jupiter.api.AfterEach;
@@ -33,29 +34,32 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * Provider half of the S2S contract (Story 17.0b2): the one PCS operation EMS calls,
- * {@code POST /internal/partner-meetings/rsvps} (EMS {@code PartnerMeetingRsvpClientImpl}), runs
- * through the real controller and must match {@code docs/api/internal/pcs-internal.openapi.yml},
- * the spec EMS's contract test answers from.
+ * Provider half of the contracts partner-coordination implements (ADR-016 decision 5). PCS serves
+ * no internal operation of its own ({@code docs/api/internal/pcs-internal.openapi.yml} has no path):
+ * every call into it is a contract its upstream owns, checked here against the owner's spec, the
+ * spec the owner's contract caller is tested against.
  *
- * <p>PCS also implements the user-reference contract CUMS owns (Epic 17 entry 7b): those operations
- * are checked against {@code docs/api/internal/cums-internal.openapi.yml}, the spec the CUMS
- * contract caller is tested against.
+ * <ul>
+ *   <li>The calendar reply contract EMS owns (Epic 17 entry 8b): {@code POST /internal/calendar-replies}
+ *       in {@code docs/api/internal/ems-internal.openapi.yml} (EMS {@code HttpCalendarReplyContract}).
+ *       It replaced {@code POST /internal/partner-meetings/rsvps} (Story 17.0b2).</li>
+ *   <li>The user-reference contract CUMS owns (Epic 17 entry 7b): {@code /internal/user-references/*}
+ *       in {@code docs/api/internal/cums-internal.openapi.yml}.</li>
+ * </ul>
  *
  * <p>Until Epic 17 entry 8 this class also proved the two public reads EMS's
  * {@code PartnerApiClientImpl} made for the topic canvas; the canvas now loads them in the browser
  * and EMS calls no public PCS operation.
  */
 @Import({TestSecurityConfig.class, TestAwsConfig.class})
-@DisplayName("PCS honours the S2S contract EMS is tested against")
+@DisplayName("PCS honours the contracts its upstreams own")
 class S2sProviderContractIntegrationTest extends AbstractIntegrationTest {
 
-    private static final String PCS_INTERNAL = "docs/api/internal/pcs-internal.openapi.yml";
-    private static final String RSVPS = "/internal/partner-meetings/rsvps";
+    private static final String EMS_INTERNAL = "docs/api/internal/ems-internal.openapi.yml";
+    private static final String CALENDAR_REPLIES = "/internal/calendar-replies";
     private static final String CUMS_INTERNAL = "docs/api/internal/cums-internal.openapi.yml";
     private static final String MERGE_SOURCE = "contract7b.source";
     private static final String MERGE_TARGET = "contract7b.target";
@@ -65,48 +69,65 @@ class S2sProviderContractIntegrationTest extends AbstractIntegrationTest {
     @Autowired
     private PartnerMeetingRepository meetingRepository;
     @Autowired
+    private PartnerMeetingRsvpRepository rsvpRepository;
+    @Autowired
     private JdbcTemplate jdbc;
 
     @AfterEach
     void cleanUp() {
-        meetingRepository.findAll().stream().filter(m -> "contract-0b2".equals(m.getCreatedBy()))
+        meetingRepository.findAll().stream().filter(m -> "contract-8b".equals(m.getCreatedBy()))
                 .forEach(meetingRepository::delete);
         jdbc.update("DELETE FROM topic_suggestions WHERE suggested_by IN (?, ?)", MERGE_SOURCE, MERGE_TARGET);
     }
 
     @Test
-    void should_haveValidExamples_forInternalOperations() {
-        assertExamplesMatchSchema(PCS_INTERNAL, "POST", RSVPS);
+    void should_haveValidExamples_forContractOperations() {
+        assertExamplesMatchSchema(EMS_INTERNAL, "POST", CALENDAR_REPLIES);
     }
 
-    private MvcResult rsvp(String json, int expectedStatus) throws Exception {
-        MvcResult result = mockMvc.perform(post(RSVPS).contentType(MediaType.APPLICATION_JSON).content(json))
-                .andExpect(status().is(expectedStatus)).andReturn();
-        assertResponseMatchesSpec(PCS_INTERNAL, result);
+    // ------------------------------------------------------------------ contract owned by EMS (entry 8b)
+
+    /** A calendar reply as EMS sends it: valid against the EMS spec, answered as that spec says. */
+    private MvcResult calendarReply(String body, boolean user, int expectedStatus) throws Exception {
+        assertThat(OpenApiContract.load(EMS_INTERNAL).validateRequest("POST", CALENDAR_REPLIES, Map.of(),
+                Map.of("Content-Type", List.of("application/json")), body)).as("a valid contract request").isEmpty();
+        MockHttpServletRequestBuilder request = post(CALENDAR_REPLIES).contentType(MediaType.APPLICATION_JSON)
+                .content(body);
+        if (user) {
+            request.with(jwt().jwt(j -> j.claim("custom:username", "organizer.alice")
+                    .claim("custom:role", "ORGANIZER")));
+        }
+        MvcResult result = mockMvc.perform(request).andExpect(status().is(expectedStatus)).andReturn();
+        assertResponseMatchesSpec(EMS_INTERNAL, result);
         return result;
     }
 
-    @Test
-    @DisplayName("POST /internal/partner-meetings/rsvps: 200 recorded, 400 unknown partStat, 404 unknown meeting")
-    void recordRsvp_matchesSpec() throws Exception {
+    @ParameterizedTest(name = "forwarded JWT: {0}")
+    @CsvSource({"true", "false"})
+    @DisplayName("calendar reply contract: 204 recorded at once, 400 unknown partStat, 404 unknown meeting")
+    void calendarReplyContract_matchesEmsSpec(boolean user) throws Exception {
         UUID meeting = meetingRepository.save(PartnerMeeting.builder()
                 .eventCode("BATbern9017").meetingType(MeetingType.SPRING).meetingDate(LocalDate.of(2026, 5, 14))
                 .startTime(LocalTime.of(12, 0)).endTime(LocalTime.of(14, 0)).location("Kursaal")
-                .createdBy("contract-0b2").build()).getId();
+                .createdBy("contract-8b").build()).getId();
         String body = """
                 {"meetingId": "%s", "attendeeEmail": "Partner.Contact@Example.com", "partStat": "%s"}""";
 
-        MvcResult recorded = rsvp(body.formatted(meeting, "accepted"), 200);
-        // Unknown partStat: 400 without a body, a known deviation from the spec's 400 (see the
-        // spec's description; Story 17.6), so status only. EMS's client discards any 4xx.
-        mockMvc.perform(post(RSVPS).contentType(MediaType.APPLICATION_JSON).content(body.formatted(meeting, "MAYBE")))
-                .andExpect(status().isBadRequest())
-                .andExpect(content().string(""));
-        rsvp("{\"attendeeEmail\": \"partner.contact@example.com\", \"partStat\": \"ACCEPTED\"}", 400);
-        rsvp(body.formatted(UUID.randomUUID(), "DECLINED"), 404);
+        calendarReply(body.formatted(meeting, "ACCEPTED"), user, 204);
+        assertThat(rsvpRepository.findByMeetingIdAndAttendeeEmailIgnoreCase(meeting, "partner.contact@example.com"))
+                .get().extracting(r -> r.getStatus().name()).isEqualTo("ACCEPTED");
+        calendarReply(body.formatted(meeting, "DECLINED"), user, 204);
+        assertThat(rsvpRepository.findByMeetingIdAndAttendeeEmailIgnoreCase(meeting, "partner.contact@example.com"))
+                .get().extracting(r -> r.getStatus().name()).isEqualTo("DECLINED");
 
-        assertThat(recorded.getResponse().getContentAsString())
-                .containsPattern("\"status\"\\s*:\\s*\"ACCEPTED\"").contains("partner.contact@example.com");
+        MvcResult unknownPartStat = calendarReply(body.formatted(meeting, "NEEDS-ACTION"), user, 400);
+        assertThat(unknownPartStat.getResponse().getContentAsString()).contains("Unknown partStat: NEEDS-ACTION");
+        calendarReply(body.formatted(UUID.randomUUID(), "DECLINED"), user, 404);
+        // A body the contract rejects (meetingId missing) is a 400 too, with the shared ErrorResponse
+        MvcResult invalid = mockMvc.perform(post(CALENDAR_REPLIES).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"attendeeEmail\": \"partner.contact@example.com\", \"partStat\": \"ACCEPTED\"}"))
+                .andExpect(status().isBadRequest()).andReturn();
+        assertResponseMatchesSpec(EMS_INTERNAL, invalid);
     }
 
     // ------------------------------------------------------------------ contract owned by CUMS (entry 7b)

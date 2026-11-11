@@ -11,7 +11,8 @@ import lombok.NoArgsConstructor;
 import java.util.UUID;
 
 /**
- * Request body for the internal RSVP recording endpoint — Story 10.27 (AC6).
+ * Request body of the calendar reply contract event-management owns ({@code CalendarReply} in
+ * {@code docs/api/internal/ems-internal.openapi.yml}, Epic 17 entry 8b; Story 10.27 AC6).
  */
 @Data
 @NoArgsConstructor
@@ -20,7 +21,7 @@ public class RecordRsvpRequest {
     @NotNull
     private UUID meetingId;
 
-    /** The #1102 rule (ASCII local part, any domain), as pcs-internal and the generated DTOs. */
+    /** The #1102 rule (ASCII local part, any domain), as the contract spec and the generated DTOs. */
     @NotBlank
     @Pattern(regexp = EmailAddresses.OPENAPI_PATTERN)
     @Size(max = 255)

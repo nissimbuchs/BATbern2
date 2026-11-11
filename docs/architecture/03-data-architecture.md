@@ -625,7 +625,8 @@ erDiagram
 
 - **Meetings and RSVPs:** invitations are ICS mails; `invite_sequence` increments with every
   re-send so calendar clients update the existing entry. Calendar replies arrive by mail at EMS,
-  which reports them to PCS through `/internal/partner-meetings/rsvps`.
+  which hands them at once to the calendar reply contract it owns, `POST /internal/calendar-replies`
+  (implemented by PCS, Epic 17 entry 8b; until then `/internal/partner-meetings/rsvps`).
 - **`partner_meeting_attendance`** (V2) has no JPA entity in PCS and is touched only by the
   test-fixture cleanup. Treat it as unused.
 - **Topics:** `topic_suggestions` and `topic_votes` were recreated in V4 with company names instead

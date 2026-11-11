@@ -75,7 +75,9 @@ measured how they call each other on develop `e7f76baf`:
   are idempotent, so repeating the merge completes it). A primary-address change stands and a
   holder that missed it is logged as a WARN. Where it reports an action already committed, the action stands and the failure is
   logged as an ERROR and counted: a Mail Center request decision (`mailcenter.request_contract.failures`;
-  the conversation then stays open until an organizer closes it). Accepted by the owner 2026-11-11
+  the conversation then stays open until an organizer closes it) and a calendar reply
+  (`forwarding.calendar_reply_contract.failures`; the RSVP is then not recorded, inbound processing
+  goes on). Accepted by the owner 2026-11-11
   for CUMS and EMS, which are almost never down.
 - `/internal` trusts the network boundary. If that ever stops holding, service authentication comes
   back as a new decision.
@@ -100,9 +102,10 @@ measured how they call each other on develop `e7f76baf`:
   (`EXPIRY_MARGIN`) is not forwarded: the receiver would answer 401 even on `/internal`, and an
   `@Async` task may outlive the token; the call then goes out as a system call. Users: EMS
   `UserApiClientImpl` (entry 6); PCS `UserServiceClientImpl`, `CompanyServiceClientImpl`,
-  `EventManagementClientImpl` and `HttpOutboundMailRecorder` (6b). Exception until its entry
-  moves it: EMS `PartnerMeetingRsvpClientImpl` (no headers, owner 8b). EMS `PartnerApiClientImpl`
-  (own `createHeadersWithJwtToken`) was deleted by entry 8.
+  `EventManagementClientImpl` and `HttpOutboundMailRecorder` (6b); every contract caller through
+  `ContractCalls`. No exception left: EMS `PartnerApiClientImpl` (own `createHeadersWithJwtToken`)
+  was deleted by entry 8, `PartnerMeetingRsvpClientImpl` (no headers) by 8b (2026-11-11), replaced
+  by the calendar reply contract caller `HttpCalendarReplyContract`.
 - `docs/architecture/module-map.md` carries these rules into every agent workflow.
 
 ## Related

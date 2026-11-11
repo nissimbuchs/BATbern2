@@ -273,7 +273,8 @@ PR #1147 (merged 2026-10-27) settled where each check lives:
   gateway (helper `EndpointAuthorizationGuard` in the `shared-kernel` test fixtures) fails the build
   for any write handler without `@PreAuthorize` and checks that `@EnableMethodSecurity` is on.
 - **Service-to-service reads** go to VPC-only `/internal/**` endpoints without a JWT (for example
-  CUMS `/internal/users`, partner-coordination `/internal/partner-meetings/rsvps`). The gateway
+  CUMS `/internal/users`, partner-coordination `/internal/partner-meetings/rsvps`, since Epic 17
+  entry 8b `/internal/calendar-replies`). The gateway
   does not route them. Callers no longer forward the end user's token.
   **Superseded 2026-11-07 by ADR-016:** callers forward the user's JWT when there is one and never
   require it; `/internal` authorizes by operation. (The clients had kept forwarding it all along.)

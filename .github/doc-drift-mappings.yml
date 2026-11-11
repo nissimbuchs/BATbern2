@@ -128,6 +128,21 @@ mappings:
     docs:
       - "docs/architecture/module-map.md"
       - "docs/architecture/ADR-016-service-directions-and-service-to-service-calls.md"
+  # Epic 17 entry 8b: the calendar reply contract EMS owns (caller) and PCS implements.
+  - source_pattern: "services/event-management-service/src/main/java/ch/batbern/events/forwarding/CalendarReplyContract.java"
+    docs:
+      - "docs/architecture/06-backend-architecture.md"
+      - "docs/architecture/module-map.md"
+      - "docs/architecture/ADR-016-service-directions-and-service-to-service-calls.md"
+  - source_pattern: "services/event-management-service/src/main/java/ch/batbern/events/forwarding/HttpCalendarReplyContract.java"
+    docs:
+      - "docs/architecture/06-backend-architecture.md"
+      - "docs/architecture/module-map.md"
+      - "docs/architecture/ADR-016-service-directions-and-service-to-service-calls.md"
+  - source_pattern: "services/partner-coordination-service/src/main/java/ch/batbern/partners/controller/InternalRsvpController.java"
+    docs:
+      - "docs/architecture/06-backend-architecture.md"
+      - "docs/architecture/03-data-architecture.md"
   # Epic 17 entry 7b: the holders of the CUMS-owned user-reference contract (profile merge, primary address).
   - source_pattern: "services/event-management-service/src/main/java/ch/batbern/events/usermerge/"
     docs:

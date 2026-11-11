@@ -26,7 +26,8 @@ flowchart LR
     GW -->|"/internal/** denyAll"| X["403"]
     EMS <-->|"/internal/** no JWT,<br/>Service Connect inside the VPC"| CUMS
     PCS -->|"/internal/users"| CUMS
-    PCS <-->|"/internal/mails, /internal/partner-meetings/rsvps"| EMS
+    PCS -->|"/internal/mails"| EMS
+    EMS -->|"/internal/calendar-replies<br/>(contract EMS owns)"| PCS
     EMS --> DB[("PostgreSQL<br/>one database, per-service tables")]
     CUMS --> DB
     PCS --> DB
@@ -194,18 +195,27 @@ the VPC through Service Connect. Callers forward the user's JWT when there is on
 |---|---|---|
 | `GET /internal/users/{username}[?include=…]` | Company-User Management | EMS user lookups (incl. preferred language, Q&A cadence), PCS contact enrichment, gateway `is_active` gate |
 | `GET /internal/users?role=&company=&page=&limit=` | Company-User Management | EMS organizer/partner lists, PCS partner contacts by company and users by role |
-| `POST /internal/partner-meetings/rsvps` | Partner Coordination | EMS inbound iCal REPLY handling |
 | `POST /internal/mails` | Event Management | PCS records its partner meeting invites and cancellations in "What went out" (Story 16.9) |
 | `POST /internal/users/get-or-create` | Company-User Management | EMS anonymous registration and speaker provisioning (ADR-005) |
 | `GET /internal/email-owners?email=` | Company-User Management | EMS by-email deregistration across a person's profiles (#1183) |
 | `GET /internal/user-references/preview`, `POST /internal/user-references/merge`, `POST /internal/user-references/primary-email` | Event Management and Partner Coordination (implement the CUMS contract) | CUMS profile merge (#1183 C/D, below) and primary-address change (#1244); Epic 17 entry 7b |
 | `POST /internal/mail-center-requests`, `POST /internal/mail-center-requests/{requestId}/decision` | Event Management (implements the CUMS contract) | CUMS opens and closes the Mail Center conversation of a merge or logo request (#1237, #1246; Epic 17 entry 7, below) |
+| `POST /internal/calendar-replies` | Partner Coordination (implements the EMS contract) | EMS inbound iMIP REPLY to a partner meeting invite (Story 10.27; Epic 17 entry 8b, below); replaced `POST /internal/partner-meetings/rsvps` |
 
 The Mail Center request and user-reference operations are **contracts CUMS owns** (ADR-016
 decisions 4 and 5): specified in `cums-internal.openapi.yml`, called through shared-kernel
 `ContractCalls` at every implementer listed in `batbern.contracts.mail-center-requests.implementers`
 (EMS) and `batbern.contracts.user-references.implementers` (EMS, PCS); CUMS names no downstream class.
 These two contracts are CUMS's only calls to a downstream service.
+
+The calendar reply operation is a **contract EMS owns** (Epic 17 entry 8b): specified in
+`ems-internal.openapi.yml`, called by `forwarding/InboundEmailRouter` through
+`forwarding/HttpCalendarReplyContract` (shared-kernel `ContractCalls`) at every implementer in
+`batbern.contracts.calendar-replies.implementers` (PCS). It is EMS's only call to a downstream
+service; EMS names no PCS class. An iMIP REPLY whose UID is `<meetingId>@batbern.ch` is recorded at
+once as that attendee's RSVP. The call never fails inbound processing: an unknown meeting (404) or a
+PARTSTAT other than ACCEPTED, DECLINED or TENTATIVE (400) is logged as a WARN, any other failure as an
+ERROR and counted (`forwarding.calendar_reply_contract.failures`); the reply is then lost, as before.
 
 Every operation above is specified in `docs/api/internal/` (`cums-`, `ems-`, `pcs-internal.openapi.yml`,
 Story 17.0b2) and contract-tested on both sides; the public tooling does not read that folder.

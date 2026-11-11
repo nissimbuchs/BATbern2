@@ -1,31 +1,41 @@
 package ch.batbern.events.forwarding;
 
-import ch.batbern.events.client.PartnerMeetingRsvpClient;
 import ch.batbern.events.service.DeregistrationService;
 import ch.batbern.events.service.InboundEmailConfirmationEmailService;
 import ch.batbern.events.service.InboundEmailRateLimiter;
 import ch.batbern.events.service.NewsletterSubscriberService;
 import ch.batbern.events.service.RegistrationService;
+import ch.batbern.shared.test.contract.ContractServer;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.boot.restclient.RestTemplateBuilder;
+import org.springframework.http.HttpStatus;
+import org.springframework.mock.http.client.MockClientHttpRequest;
+import org.springframework.web.client.RestTemplate;
 
-import java.util.UUID;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
+import static org.springframework.http.HttpMethod.POST;
 
 /**
  * Unit tests for InboundEmailRouter (Story 10.17 — AC3, AC4, AC5, AC6).
+ *
+ * <p>iMIP replies go through the real {@link HttpCalendarReplyContract} to a {@link ContractServer}
+ * answering from the calendar reply contract EMS owns (Epic 17 entry 8b): each test checks what
+ * the implementer received, or that nothing went out.
  */
 @ExtendWith(MockitoExtension.class)
 class InboundEmailRouterTest {
@@ -43,18 +53,27 @@ class InboundEmailRouterTest {
     private InboundEmailRateLimiter rateLimiter;
 
     @Mock
-    private PartnerMeetingRsvpClient partnerMeetingRsvpClient;
-
-    @Mock
     private DeregistrationService deregistrationService;
 
-    @InjectMocks
+    private ContractServer calendarReplyImplementer;
     private InboundEmailRouter router;
 
     @BeforeEach
-    void allowAll() {
+    void setUp() {
         // Default: allow all senders — individual tests override for rate-limit scenarios
         when(rateLimiter.isAllowed(any())).thenReturn(true);
+        RestTemplate restTemplate = new RestTemplateBuilder().build();
+        calendarReplyImplementer = ContractServer.bindTo(restTemplate, HttpCalendarReplyContractTest.EMS_INTERNAL);
+        router = new InboundEmailRouter(newsletterSubscriberService, registrationService, confirmationEmailService,
+                rateLimiter, new HttpCalendarReplyContract(restTemplate, List.of("http://implementer:8080"),
+                        new SimpleMeterRegistry()), deregistrationService);
+    }
+
+    @AfterEach
+    void tearDown() {
+        // Fails a test in which the router called the contract without an expectation
+        calendarReplyImplementer.verify();
+        calendarReplyImplementer.close();
     }
 
     // ─── Unsubscribe routing ────────────────────────────────────────────────────
@@ -277,21 +296,31 @@ class InboundEmailRouterTest {
                 registrationService, confirmationEmailService);
     }
 
-    // ─── T13.1: routeIcsReply with valid UID → client called ─────────────────
+    // ─── T13.1: routeIcsReply with valid UID → the contract carries the reply ──
 
     @Test
-    void routeIcsReply_withValidUid_callsRecordRsvp() {
-        UUID meetingId = UUID.fromString("11111111-1111-1111-1111-111111111111");
-        String uid = meetingId + "@batbern.ch";
+    void routeIcsReply_withValidUid_postsTheReplyToTheContract() {
+        calendarReplyImplementer.expect(POST, "/internal/calendar-replies")
+                .andExpect(r -> assertThat(((MockClientHttpRequest) r).getBodyAsString()).isEqualTo(
+                        "{\"meetingId\":\"11111111-1111-1111-1111-111111111111\","
+                                + "\"attendeeEmail\":\"alice@partner.com\",\"partStat\":\"ACCEPTED\"}"))
+                .respondWithStatus(HttpStatus.NO_CONTENT);
         InboundEmailRouter.IcsReply reply = new InboundEmailRouter.IcsReply(
-                uid, "alice@partner.com", "ACCEPTED");
+                "11111111-1111-1111-1111-111111111111@batbern.ch", "alice@partner.com", "ACCEPTED");
 
         router.routeIcsReply(reply);
-
-        verify(partnerMeetingRsvpClient).recordRsvp(meetingId, "alice@partner.com", "ACCEPTED");
     }
 
-    // ─── T13.2: UID does not end with @batbern.ch → WARN, client NOT called ──
+    @Test
+    void routeIcsReply_whenTheImplementerKnowsNoSuchMeeting_completes() {
+        calendarReplyImplementer.expect(POST, "/internal/calendar-replies").respondWithExample(HttpStatus.NOT_FOUND);
+        InboundEmailRouter.IcsReply reply = new InboundEmailRouter.IcsReply(
+                "11111111-1111-1111-1111-111111111111@batbern.ch", "alice@partner.com", "DECLINED");
+
+        router.routeIcsReply(reply);
+    }
+
+    // ─── T13.2: UID does not end with @batbern.ch → WARN, nothing called ──────
 
     @Test
     void routeIcsReply_withWrongUidDomain_discardsGracefully() {
@@ -300,11 +329,9 @@ class InboundEmailRouterTest {
                 "alice@partner.com", "ACCEPTED");
 
         router.routeIcsReply(reply);
-
-        verifyNoInteractions(partnerMeetingRsvpClient);
     }
 
-    // ─── T13.3: UID prefix is not a valid UUID → WARN, client NOT called ──────
+    // ─── T13.3: UID prefix is not a valid UUID → WARN, nothing called ─────────
 
     @Test
     void routeIcsReply_withMalformedUuidInUid_discardsGracefully() {
@@ -312,11 +339,9 @@ class InboundEmailRouterTest {
                 "not-a-uuid@batbern.ch", "alice@partner.com", "ACCEPTED");
 
         router.routeIcsReply(reply);
-
-        verifyNoInteractions(partnerMeetingRsvpClient);
     }
 
-    // ─── T13.4: rate limiter blocks → client NOT called ──────────────────────
+    // ─── T13.4: rate limiter blocks → nothing called ─────────────────────────
 
     @Test
     void routeIcsReply_whenRateLimitExceeded_discardsGracefully() {
@@ -326,7 +351,5 @@ class InboundEmailRouterTest {
                 "spammer@partner.com", "ACCEPTED");
 
         router.routeIcsReply(reply);
-
-        verifyNoInteractions(partnerMeetingRsvpClient);
     }
 }

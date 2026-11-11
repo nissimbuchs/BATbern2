@@ -1,6 +1,5 @@
 package ch.batbern.events.forwarding;
 
-import ch.batbern.events.client.PartnerMeetingRsvpClient;
 import ch.batbern.events.service.DeregistrationService;
 import ch.batbern.events.service.InboundEmailConfirmationEmailService;
 import ch.batbern.events.service.InboundEmailRateLimiter;
@@ -46,7 +45,7 @@ public class InboundEmailRouter {
     private final RegistrationService registrationService;
     private final InboundEmailConfirmationEmailService confirmationEmailService;
     private final InboundEmailRateLimiter rateLimiter;
-    private final PartnerMeetingRsvpClient partnerMeetingRsvpClient;
+    private final CalendarReplyContract calendarReplies;
     private final DeregistrationService deregistrationService;
 
     /**
@@ -160,13 +159,13 @@ public class InboundEmailRouter {
     }
 
     /**
-     * Route an iCal REPLY to the partner meeting RSVP service — Story 10.27 (AC4).
+     * Route an iCal REPLY to the calendar reply contract — Story 10.27 (AC4), Epic 17 entry 8b.
      *
      * <ol>
      *   <li>Rate limit check on attendee email</li>
      *   <li>Validate UID ends with {@code @batbern.ch}</li>
      *   <li>Parse UUID from UID prefix</li>
-     *   <li>Call {@link PartnerMeetingRsvpClient#recordRsvp}</li>
+     *   <li>Hand it to {@link CalendarReplyContract#replied}, which never throws</li>
      * </ol>
      *
      * @param reply parsed iCal REPLY data
@@ -194,11 +193,8 @@ public class InboundEmailRouter {
             return;
         }
 
-        // 4. Record RSVP
-        partnerMeetingRsvpClient.recordRsvp(meetingId, reply.attendeeEmail(), reply.partStat());
-        log.info("Recorded iCal RSVP: meetingId={}, emailPrefix={}, status={}",
-                meetingId, reply.attendeeEmail().substring(0, Math.min(5, reply.attendeeEmail().length())),
-                reply.partStat());
+        // 4. Hand the reply to every implementer of the contract (logs the outcome itself)
+        calendarReplies.replied(new CalendarReplyContract.Reply(meetingId, reply.attendeeEmail(), reply.partStat()));
     }
 
     /**

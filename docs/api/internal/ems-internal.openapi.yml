@@ -5,12 +5,20 @@ info:
   description: |
     Service-to-service operations of event-management under `/internal/**` (Story 17.0b2).
     Caller: partner-coordination (`HttpOutboundMailRecorder`,
-    `EventManagementClientImpl.getEventSummary` and `.getAttendanceSummary`).
+    `EventManagementClientImpl.getEventSummary` and `.getAttendanceSummary`), except for the
+    operations tagged `contract` (below).
 
     event-management also implements contracts CUMS owns (ADR-016 decisions 4 and 5); those
     operations are specified in `cums-internal.openapi.yml`, not here: the Mail Center request
     contract (`/internal/mail-center-requests`) and the user-reference contract
     (`/internal/user-references/*`, formerly `/internal/users/merge-preview|merge|primary-email`).
+
+    Contracts owned by event-management (ADR-016 decision 4): an operation tagged `contract` is not
+    served by event-management. event-management calls it, and every service listed in its
+    configuration under `batbern.contracts.<name>.implementers` serves it (shared-kernel
+    `ContractCalls`); event-management names no implementing service in code. Epic 17 entry 8b:
+    the calendar reply contract (`/internal/calendar-replies`, `calendar-replies`), implemented by
+    partner-coordination.
 
     Not a public API: the API gateway does not route `/internal/**` and denies it explicitly; the
     services reach it inside the VPC through Service Connect. The JWT is optional (ADR-016 decision
@@ -174,8 +182,91 @@ paths:
               schema:
                 $ref: '../_shared.openapi.yml#/components/schemas/ErrorResponse'
 
+  /internal/calendar-replies:
+    post:
+      tags: [contract]
+      operationId: recordCalendarReply
+      summary: 'Contract: an attendee answered a calendar invite (iMIP REPLY)'
+      description: |
+        Calendar reply contract (Epic 17 entry 8b, ADR-016 decision 4), owned by event-management
+        and served by each implementer in `batbern.contracts.calendar-replies.implementers` (today
+        partner-coordination). event-management calls it from the inbound mail processor when an
+        iMIP REPLY arrives whose UID is `<meetingId>@batbern.ch` (Story 10.27): the implementer
+        records the attendee's answer to that meeting at once, one answer per meeting and address
+        (the address compared case-insensitively; a later answer replaces the earlier one).
+
+        A meeting the implementer does not know answers 404, a `partStat` other than ACCEPTED,
+        DECLINED or TENTATIVE answers 400; event-management logs either as a WARN. Any other
+        failure (no answer, 5xx) is logged as an ERROR and counted
+        (`forwarding.calendar_reply_contract.failures`). Inbound processing never fails because of
+        this call. The call carries no JWT (the SQS listener has no user) and needs none.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CalendarReply'
+            example:
+              meetingId: 4b1f5a2e-6d3c-4f8a-9a51-0c8e7d2b1f00
+              attendeeEmail: anna.meier@example.com
+              partStat: ACCEPTED
+      responses:
+        '204':
+          description: The answer is recorded
+        '400':
+          description: Invalid request body, or a `partStat` the implementer does not record
+          content:
+            application/json:
+              schema:
+                $ref: '../_shared.openapi.yml#/components/schemas/ErrorResponse'
+              example:
+                timestamp: '2026-11-11T10:00:00Z'
+                path: /internal/calendar-replies
+                status: 400
+                error: Bad Request
+                message: 'Unknown partStat: NEEDS-ACTION'
+        '404':
+          description: The implementer has no meeting with this id
+          content:
+            application/json:
+              schema:
+                $ref: '../_shared.openapi.yml#/components/schemas/ErrorResponse'
+              example:
+                timestamp: '2026-11-11T10:00:00Z'
+                path: /internal/calendar-replies
+                status: 404
+                error: Not Found
+                message: 'Partner meeting not found: 4b1f5a2e-6d3c-4f8a-9a51-0c8e7d2b1f00'
+
 components:
   schemas:
+    CalendarReply:
+      type: object
+      description: >-
+        One attendee's answer to a calendar invite, from an iMIP REPLY (RFC 5546). Implemented by
+        the hand-written DTO `ch.batbern.partners.dto.RecordRsvpRequest` in partner-coordination.
+      required: [meetingId, attendeeEmail, partStat]
+      properties:
+        meetingId:
+          type: string
+          format: uuid
+          description: The invite's UID without `@batbern.ch`.
+        attendeeEmail:
+          type: string
+          format: idn-email
+          minLength: 1
+          maxLength: 255
+          description: The ATTENDEE address of the reply.
+          # One email rule everywhere (#1102): ASCII local part (SES has no SMTPUTF8), any domain.
+          # Source of truth: shared-kernel EmailAddresses.OPENAPI_PATTERN.
+          pattern: '^[A-Za-z0-9!#$%&''*+/=?^_`{|}~-]+(\.[A-Za-z0-9!#$%&''*+/=?^_`{|}~-]+)*@[^\s@.]+(\.[^\s@.]+)+$'
+        partStat:
+          type: string
+          minLength: 1
+          description: |
+            iCal PARTSTAT as the reply carries it (event-management sends it upper-case). Recorded:
+            ACCEPTED, DECLINED, TENTATIVE (matched case-insensitively); any other value answers 400.
+
     AttendanceSummary:
       type: object
       required: [eventCode, eventTitle, eventDate, totalAttendees, companyAttendees]

@@ -39,7 +39,6 @@ be-mock-s2s-client	services/event-management-service/src/test/java/ch/batbern/ev
 be-mock-s2s-client	services/event-management-service/src/test/java/ch/batbern/events/controller/SpeakerPromoteControllerIntegrationTest.java	1
 be-mock-s2s-client	services/event-management-service/src/test/java/ch/batbern/events/forwarding/EmailForwardingServiceTest.java	1
 be-mock-s2s-client	services/event-management-service/src/test/java/ch/batbern/events/forwarding/ForwardingRecipientResolverTest.java	1
-be-mock-s2s-client	services/event-management-service/src/test/java/ch/batbern/events/forwarding/InboundEmailRouterTest.java	1
 be-mock-s2s-client	services/event-management-service/src/test/java/ch/batbern/events/mailcenter/ConversationServiceAssignmentTest.java	1
 be-mock-s2s-client	services/event-management-service/src/test/java/ch/batbern/events/mailcenter/MailComposerControllerIntegrationTest.java	1
 be-mock-s2s-client	services/event-management-service/src/test/java/ch/batbern/events/mailcenter/MailComposerSendIntegrationTest.java	1

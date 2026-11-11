@@ -6,7 +6,6 @@ import ch.batbern.partners.domain.MeetingType;
 import ch.batbern.partners.domain.PartnerMeeting;
 import ch.batbern.partners.repository.PartnerMeetingRepository;
 import ch.batbern.shared.test.AbstractIntegrationTest;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -16,7 +15,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
@@ -25,7 +23,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -34,7 +31,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 /**
  * Integration tests for Partner Meeting RSVP API — Story 10.27.
- * Tests cover AC5 (table), AC6 (internal endpoint), AC7 (GET RSVP list).
+ * Tests cover AC5 (table), AC6 (the calendar reply contract EMS calls, Epic 17 entry 8b), AC7 (GET
+ * RSVP list).
  *
  * Uses AbstractIntegrationTest (PostgreSQL Testcontainer).
  */
@@ -44,7 +42,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Import({TestSecurityConfig.class, TestAwsConfig.class})
 class PartnerMeetingRsvpControllerIntegrationTest extends AbstractIntegrationTest {
 
-    static final String INTERNAL_BASE = "/internal/partner-meetings/rsvps";
+    /** The calendar reply contract EMS owns (Epic 17 entry 8b), implemented here. */
+    static final String INTERNAL_BASE = "/internal/calendar-replies";
     static final String API_BASE = "/api/v1/partner-meetings";
 
     @Autowired
@@ -75,16 +74,20 @@ class PartnerMeetingRsvpControllerIntegrationTest extends AbstractIntegrationTes
     // ─── AC6: Internal upsert endpoint ────────────────────────────────────────
 
     @Test
-    void should_return200_when_validRsvpPosted() throws Exception {
+    void should_recordAtOnce_when_validReplyPosted() throws Exception {
         Map<String, Object> req = rsvpRequest(savedMeetingId, "alice@partner.com", "ACCEPTED");
 
         mockMvc.perform(post(INTERNAL_BASE)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(get(API_BASE + "/" + savedMeetingId + "/rsvps")
+                        .with(user("organizer").roles("ORGANIZER")))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.attendeeEmail").value("alice@partner.com"))
-                .andExpect(jsonPath("$.status").value("ACCEPTED"))
-                .andExpect(jsonPath("$.respondedAt").exists());
+                .andExpect(jsonPath("$.rsvps[0].attendeeEmail").value("alice@partner.com"))
+                .andExpect(jsonPath("$.rsvps[0].status").value("ACCEPTED"))
+                .andExpect(jsonPath("$.rsvps[0].respondedAt").exists());
     }
 
     @Test
@@ -94,18 +97,14 @@ class PartnerMeetingRsvpControllerIntegrationTest extends AbstractIntegrationTes
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(
                                 rsvpRequest(savedMeetingId, "alice@partner.com", "ACCEPTED"))))
-                .andExpect(status().isOk());
+                .andExpect(status().isNoContent());
 
         // Second: TENTATIVE — should update, not create duplicate
-        MvcResult result = mockMvc.perform(post(INTERNAL_BASE)
+        mockMvc.perform(post(INTERNAL_BASE)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(
                                 rsvpRequest(savedMeetingId, "alice@partner.com", "TENTATIVE"))))
-                .andExpect(status().isOk())
-                .andReturn();
-
-        JsonNode json = objectMapper.readTree(result.getResponse().getContentAsString());
-        assertThat(json.get("status").asText()).isEqualTo("TENTATIVE");
+                .andExpect(status().isNoContent());
 
         // Verify only one record in the GET response
         mockMvc.perform(get(API_BASE + "/" + savedMeetingId + "/rsvps")
@@ -122,13 +121,13 @@ class PartnerMeetingRsvpControllerIntegrationTest extends AbstractIntegrationTes
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(
                                 rsvpRequest(savedMeetingId, "Alice@Partner.com", "ACCEPTED"))))
-                .andExpect(status().isOk());
+                .andExpect(status().isNoContent());
 
         mockMvc.perform(post(INTERNAL_BASE)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(
                                 rsvpRequest(savedMeetingId, "alice@partner.com", "DECLINED"))))
-                .andExpect(status().isOk());
+                .andExpect(status().isNoContent());
 
         mockMvc.perform(get(API_BASE + "/" + savedMeetingId + "/rsvps")
                         .with(user("organizer").roles("ORGANIZER")))
@@ -160,14 +159,17 @@ class PartnerMeetingRsvpControllerIntegrationTest extends AbstractIntegrationTes
 
     @Test
     void should_acceptIdnDomain_when_attendeeEmailFollowsTheRule() throws Exception {
-        // 4.9b: the #1102 rule (ASCII local part, any domain), as pcs-internal says
+        // 4.9b: the #1102 rule (ASCII local part, any domain), as the contract spec (ems-internal) says
         Map<String, Object> req = rsvpRequest(savedMeetingId, "juerg.brunner@bücherstube.example", "ACCEPTED");
 
         mockMvc.perform(post(INTERNAL_BASE)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.attendeeEmail").value("juerg.brunner@bücherstube.example"));
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(get(API_BASE + "/" + savedMeetingId + "/rsvps")
+                        .with(user("organizer").roles("ORGANIZER")))
+                .andExpect(jsonPath("$.rsvps[0].attendeeEmail").value("juerg.brunner@bücherstube.example"));
     }
 
     @Test
@@ -189,13 +191,13 @@ class PartnerMeetingRsvpControllerIntegrationTest extends AbstractIntegrationTes
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(
                                 rsvpRequest(savedMeetingId, "alice@partner.com", "ACCEPTED"))))
-                .andExpect(status().isOk());
+                .andExpect(status().isNoContent());
 
         mockMvc.perform(post(INTERNAL_BASE)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(
                                 rsvpRequest(savedMeetingId, "bob@partner.com", "DECLINED"))))
-                .andExpect(status().isOk());
+                .andExpect(status().isNoContent());
 
         mockMvc.perform(get(API_BASE + "/" + savedMeetingId + "/rsvps")
                         .with(user("organizer").roles("ORGANIZER")))
