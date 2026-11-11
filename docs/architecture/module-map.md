@@ -6,21 +6,19 @@ breaks it in 100 known places (measured 2026-11-07). Do not add new ones.
 ## Services: who may call whom
 
 CUMS (identity) is upstream of all. EMS (event) is upstream of PCS (partners).
-- Calls go downstream→upstream, to `/internal/**` only, never through the public API.
+- Calls go downstream→upstream (or through a contract the upstream owns, below), to `/internal/**`
+  only, never through the public API.
 - Forward the user's JWT when there is one: the receiver records who acted and checks ownership.
   Never require it: schedulers, SQS listeners and anonymous flows have none (`system:<job>`).
   `/internal` authorizes by operation, never by the user's role. Build the headers of every S2S
   call with shared-kernel `S2sHeaders.forCurrentUser()`; no client writes its own token code.
-- Downstream must react to an upstream change? It pulls an `/internal` feed (`?since=cursor`,
-  ShedLock job). No event bus.
-- Only allowed upstream→downstream call: the CUMS profile merge (`/internal/users/merge*`).
-  It also carries primary-email changes (owner 2026-11-11, synchronous on purpose).
-  Existing exception, CUMS→EMS: `/internal/users/primary-email` (entry 7b moves it into the
-  user-reference contract). Do not add another. The Mail Center requests are pulled since entry 7
-  (2026-11-11): EMS `MailCenterRequestFeedJob` reads CUMS `GET /internal/mail-center-requests`,
-  the model for every new feed (cursor in EMS `feed_cursors`).
+- Downstream must react to an upstream change? The upstream calls it through an `/internal`
+  contract it owns (its spec, implementers listed in its configuration, no downstream named in
+  code). No polling, no event bus (ADR-016 decision 4, owner 2026-11-11). Contracts: CUMS
+  user-references (preview, merge, primary-email; EMS and PCS implement), CUMS Mail Center requests
+  (EMS implements), EMS calendar replies (PCS implements). Do not call downstream any other way.
 - Every `/internal` operation is specified in `docs/api/internal/<provider>-internal.openapi.yml`
-  (17.0b2) and contract-tested on both sides (`ContractServer`, provider
+  (17.0b2; a contract in its owner's spec) and contract-tested on both sides (`ContractServer`, provider
   `S2sProviderContractIntegrationTest`). A new `/internal` endpoint or call extends that spec first.
 
 ## EMS modules: dependencies point down only, never sideways

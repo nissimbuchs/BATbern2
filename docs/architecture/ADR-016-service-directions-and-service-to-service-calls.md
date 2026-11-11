@@ -25,8 +25,9 @@ measured how they call each other on develop `e7f76baf`:
 
 ## Decision
 
-1. **Direction.** CUMS is upstream of every service. EMS is upstream of PCS. A service calls only
-   upstream.
+1. **Direction.** CUMS is upstream of every service. EMS is upstream of PCS. A service depends only
+   on upstream services: it calls an upstream service's `/internal` operations, and calls downstream
+   only through a contract it owns itself (decision 4).
 2. **Transport.** Service-to-service calls go to `/internal/**`, never to the public API. The Spring
    gateway denies `/internal/**` (ADR-008), so these endpoints are reachable only inside the VPC.
    A public endpoint is never widened to serve a machine caller.
@@ -35,17 +36,23 @@ measured how they call each other on develop `e7f76baf`:
    anonymous flow) must succeed and is recorded as `system:<job>`. `/internal` endpoints authorize by
    operation, never by the user's role; the role check stays on the public endpoint where the user
    entered.
-4. **No event bus. Pull feeds instead.** When a downstream service must react to an upstream change,
-   it pulls an `/internal` feed (`?since=<cursor>`) from a ShedLock-guarded job. No new infrastructure,
-   ordered and replayable. The EventBridge bus and its publishers are removed; in-process Spring
-   events stay.
-5. **The one upstream→downstream call: profile merge.** A merge must be synchronous: a holder can
-   refuse it and must deliver preview counts. It becomes a contract owned by CUMS,
-   `/internal/user-references/preview|merge`, implemented by every service that stores usernames
-   (EMS, and PCS, which stores usernames but is not covered today) and listed in CUMS configuration.
-   CUMS depends on its own contract, not on EMS by name. Amendment 2026-11-11 (owner): a primary-email change is a second
-   operation of that contract, `/internal/user-references/primary-email`, also synchronous, because
-   a registration mail must not go to the old address while a feed waits for its next poll. No other upstream→downstream call is allowed.
+4. **No event bus, no polling. Contracts owned by the upstream service.** When a downstream service
+   must react to an upstream change, the upstream service calls it synchronously through an
+   `/internal` contract it owns: specified in the upstream's internal spec, implemented by each
+   downstream that needs it, the implementers listed in the upstream's configuration. The upstream
+   names no downstream service in code; it depends on its own contract (dependency inversion).
+   Amendment 2026-11-11 (owner): replaces the pull feeds first written here ("`?since=<cursor>` from a
+   ShedLock job"). Polling adds constant traffic that almost always finds nothing, a delay of up to
+   one interval, and a job, cursor table and lock per feed; CUMS and EMS are almost never down, so a
+   synchronous call with no outbox and no retry job is accepted. The EventBridge bus and its
+   publishers stay removed; in-process Spring events stay.
+5. **Contracts that exist.** Owned by CUMS: the user-reference contract
+   `/internal/user-references/preview|merge|primary-email`, implemented by every service that
+   stores usernames (EMS, PCS); synchronous because a holder can refuse a merge and must deliver
+   preview counts, and because a registration mail must not go to the old address (primary email,
+   owner 2026-11-11). Owned by CUMS: the Mail Center request contract (merge and logo requests
+   opened and decided), implemented by EMS. Owned by EMS: the calendar reply contract (iMIP RSVP
+   replies), implemented by PCS. A new upstream→downstream need gets its own contract the same way.
 6. **Direct table reads across services** (the services share one PostgreSQL database) are not a
    substitute for `/internal` calls. The existing ones are listed for the database review; no new ones.
 
@@ -58,20 +65,18 @@ measured how they call each other on develop `e7f76baf`:
 - Removing the bus deletes a failure mode (circuit breaker, retries) that bought nothing.
 
 **Costs**
-- Migration work: 12 client URLs and 4 endpoints move to `/internal` (Epic 17, story 17.6), the merge
-  contract and the Mail Center pull replace two CUMS→EMS calls (17.7; the Mail Center pull is live
-  since entry 7, 2026-11-11: EMS reads `GET /internal/mail-center-requests` every minute, so filing a
-  request no longer fails while EMS is down, and a lost close is picked up by the next poll), EMS→PCS
-  is reversed (17.8;
-  the topic canvas edge is gone since entry 8, 2026-11-11: the browser reads the partner topics from
-  PCS itself; the calendar RSVPs follow in 8b).
-- Pull feeds add latency up to the poll interval. Acceptable for RSVPs and merge requests; anything
-  needing an immediate reaction stays a synchronous upstream call.
+- Migration work: 12 client URLs and 4 endpoints move to `/internal` (Epic 17, story 17.6); the
+  CUMS→EMS calls become the two CUMS-owned contracts (17.7, entries 7 and 7b); EMS→PCS becomes the
+  topic canvas reading PCS itself (17.8, entry 8, live 2026-11-11) and the EMS-owned calendar reply
+  contract (8b).
+- A contract call fails while its implementer is down: the action that triggered it fails with it
+  (as before 2026-11). Accepted by the owner 2026-11-11 for CUMS and EMS, which are almost never down.
 - `/internal` trusts the network boundary. If that ever stops holding, service authentication comes
   back as a new decision.
 
 ## Enforcement
-- ArchUnit in every service: no new client package toward a downstream service (story 17.5).
+- ArchUnit in every service: no class that names a downstream service (`*EventManagement*Client*`,
+  `*Partner*Client*`; story 17.5). Contract callers are named after the contract.
 - OpenAPI lint: no `/internal` path in a public spec (story 17.4).
 - S2S client URL guard: no string literal in a service's `client` package contains `/api/v1`
   (`web-frontend/scripts/check-s2s-client-urls.ts`, CI job `test-ratchet`; Epic 17 entry 6,
