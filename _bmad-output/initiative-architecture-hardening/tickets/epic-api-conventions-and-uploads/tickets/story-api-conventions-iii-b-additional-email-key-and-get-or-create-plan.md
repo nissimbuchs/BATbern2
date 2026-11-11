@@ -3,14 +3,14 @@ title: 'API conventions III b: additional-email key and get-or-create (breaking)
 type: 'refactor'
 ticket: '10d'
 created: '2026-11-11'
-status: 'in-progress'
+status: 'built'
 baseline_revision: 'bade6e7cac19713d14d8df8cddad382c6e954984'
 route: 'full'
 route_source: 'auto'
 risk: 'high'
-review: ''
-review_source: ''
-lenses_ran: []
+review: 'quick'
+review_source: 'pinned'
+lenses_ran: ['quick']
 review_loop_iteration: 0
 context:
   - '{project-root}/docs/architecture/coding-standards.md'
@@ -109,6 +109,18 @@ context:
 
 ## Review Triage Log
 
+Pass 1 (quick lens), 2026-11-11: 0 high, 3 medium, 4 low, 0 false.
+
+| # | Finding | Verdict | Route | Evidence / action |
+|---|---------|---------|-------|-------------------|
+| 1 | Touched tests keep own-code `userApiClient` mocks and class-level `@Transactional` (RegistrationStatus, GlobalMailCenter, AttendeeDashboard, CompanyController ITs) | medium | patch | Touch rule; move the touched cases to `CumsContractHarness` / committing tests. |
+| 2 | Resend-verification to a reserved-domain address answers 500 (no handler for `ReservedEmailRecipientException` in CUMS) | medium | patch | Pre-existing, found here; owner rule "fix what you find": 422 like EMS, test first, own commit. |
+| 3 | `company-get-or-create-api/01` key is always `brunotestco1`, colliding with `companies-api/01` | medium | patch | Unique 12-character key per run. |
+| 4 | Copied `docs {}` text wrong in the new collection's 00 and 99 | low | patch | Direct correction. |
+| 5 | ADR-003 amendment table row does not carry the EMS acceptance | low | patch | Direct correction. |
+| 6 | User guide lists 2 of the 4 `{emailId}` operations | low | patch | Direct correction. |
+| 7 | Spec says get-or-create never suffixes, code still calls `ensureUniqueCompanyName` | low | patch | Remove the dead call. |
+
 ## Design Notes
 
 **Architecture note.**
@@ -140,3 +152,5 @@ Make-primary deletes the chosen row and inserts a new row for the old primary, s
 **Manual checks:**
 - After `timeout 600 make dev-native-restart-service SERVICE=company-user-management` (and `api-gateway`): walk the local-dev AC; no make-primary click on a confirmed address.
 
+
+Final verification 2026-11-11 after the review patches (6b45d887, 59ad1c70, 2ebf4887): shared-kernel, CUMS, EMS, PCS and gateway suites green; lint:api (87), lint:api-internal, check:api-types, type-check, check:s2s-client-urls, Vitest 5878 passed, test ratchet (578) and API paths green. Local dev before the patches: Bruno users-api 41/41, companies-api 12/12, company-get-or-create-api 5/5, Playwright additional-emails green.
