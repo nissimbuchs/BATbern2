@@ -29,11 +29,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * Integration tests for SpeakerReminderController - Story 6.5.
+ * The reminders switch - Story 6.5 AC6.
  *
- * Tests the reminders toggle endpoint against real PostgreSQL via Testcontainers. The manual
- * reminder send moved to the Mail Center composer (Story 16.8c, speakers audience). Not
- * {@code @Transactional}: the class removes its own rows.
+ * <p>Story 4.10 folded the former {@code PATCH /speaker-pool/{id}/reminders} into the entry PATCH,
+ * {@code PATCH /events/{eventCode}/speakers/{speakerId}} with {@code remindersDisabled} (ADR-013
+ * §1: no per-attribute endpoint). Real PostgreSQL via Testcontainers. The manual reminder send
+ * moved to the Mail Center composer (Story 16.8c, speakers audience). Not {@code @Transactional}:
+ * the class removes its own rows.
  */
 class SpeakerReminderControllerIntegrationTest extends AbstractIntegrationTest {
 
@@ -63,7 +65,8 @@ class SpeakerReminderControllerIntegrationTest extends AbstractIntegrationTest {
 
     @BeforeEach
     void setUp() {
-        eventCode = "BATbernTest" + System.currentTimeMillis();
+        // The speaker paths take the real event code shape (^BATbern[0-9]+$).
+        eventCode = "BATbern" + (900_000 + System.currentTimeMillis() % 100_000);
 
         testEvent = Event.builder()
                 .eventCode(eventCode)
@@ -102,7 +105,7 @@ class SpeakerReminderControllerIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Nested
-    @DisplayName("PATCH /api/v1/events/{eventCode}/speaker-pool/{id}/reminders")
+    @DisplayName("PATCH /api/v1/events/{eventCode}/speakers/{speakerId} {remindersDisabled}")
     class UpdateRemindersDisabled {
 
         @Test
@@ -113,7 +116,7 @@ class SpeakerReminderControllerIntegrationTest extends AbstractIntegrationTest {
                     {"remindersDisabled": true}
                     """;
 
-            mockMvc.perform(patch("/api/v1/events/{eventCode}/speaker-pool/{id}/reminders",
+            mockMvc.perform(patch("/api/v1/events/{eventCode}/speakers/{speakerId}",
                             eventCode, invitedSpeaker.getId())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(body))
@@ -136,12 +139,47 @@ class SpeakerReminderControllerIntegrationTest extends AbstractIntegrationTest {
                     {"remindersDisabled": false}
                     """;
 
-            mockMvc.perform(patch("/api/v1/events/{eventCode}/speaker-pool/{id}/reminders",
+            mockMvc.perform(patch("/api/v1/events/{eventCode}/speakers/{speakerId}",
                             eventCode, invitedSpeaker.getId())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(body))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.remindersDisabled", is(false)));
+
+            assertThat(speakerPoolRepository.findById(invitedSpeaker.getId()).orElseThrow()
+                    .getRemindersDisabled()).isFalse();
+        }
+
+        @Test
+        @DisplayName("should leave the switch alone when the PATCH does not name it")
+        @WithMockUser(username = "organizer1", roles = {"ORGANIZER"})
+        void shouldKeepSwitch_whenFieldAbsent() throws Exception {
+            invitedSpeaker.setRemindersDisabled(true);
+            speakerPoolRepository.save(invitedSpeaker);
+
+            mockMvc.perform(patch("/api/v1/events/{eventCode}/speakers/{speakerId}",
+                            eventCode, invitedSpeaker.getId())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"notes\": \"Rückruf am Montag\"}"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.remindersDisabled", is(true)));
+
+            assertThat(speakerPoolRepository.findById(invitedSpeaker.getId()).orElseThrow()
+                    .getRemindersDisabled()).isTrue();
+        }
+
+        @Test
+        @DisplayName("the former per-attribute endpoint is gone")
+        @WithMockUser(username = "organizer1", roles = {"ORGANIZER"})
+        void shouldNotServeFormerRemindersPath() throws Exception {
+            mockMvc.perform(patch("/api/v1/events/{eventCode}/speaker-pool/{id}/reminders",
+                            eventCode, invitedSpeaker.getId())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"remindersDisabled\": true}"))
+                    .andExpect(status().isNotFound());
+
+            assertThat(speakerPoolRepository.findById(invitedSpeaker.getId()).orElseThrow()
+                    .getRemindersDisabled()).isFalse();
         }
 
         @Test
@@ -152,7 +190,7 @@ class SpeakerReminderControllerIntegrationTest extends AbstractIntegrationTest {
                     {"remindersDisabled": true}
                     """;
 
-            mockMvc.perform(patch("/api/v1/events/{eventCode}/speaker-pool/{id}/reminders",
+            mockMvc.perform(patch("/api/v1/events/{eventCode}/speakers/{speakerId}",
                             eventCode, invitedSpeaker.getId())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(body))

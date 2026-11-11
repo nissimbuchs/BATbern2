@@ -868,7 +868,7 @@ test('organizer can create and publish event', async ({ page }) => {
 
 `npm run lint:api` (in `web-frontend/`, `make lint-api`, CI `frontend-static` in the required
 `build-frontend` check) runs Spectral with the repo ruleset `docs/api/.spectral.yaml` over the
-public specs `docs/api/*.openapi.yml` (not `_shared.openapi.yml`). Six rules, one finding per
+public specs `docs/api/*.openapi.yml` (not `_shared.openapi.yml`). Seven rules, one finding per
 operation (Story 17.4):
 
 | Rule | Fails on | Source |
@@ -879,6 +879,7 @@ operation (Story 17.4):
 | `no-literal-under-events` | a literal directly under `/events/` (`/events/current`): it shares the namespace of `{eventCode}` | ADR-013 |
 | `uuid-path-param` | a path parameter with `format: uuid`, or a string named `id` / `*Id` without a format (`uploadId`); an operation parameter replaces the path-level one of the same name. Not seen: a UUID under another name without a format | ADR-003 amendment 2026-11 |
 | `no-personal-data-path-param` | a path parameter named `email` or ending in `Email`, case-insensitive (`/users/me/additional-emails/{email}`); path-level and operation-level parameters as for `uuid-path-param`. Personal data never goes in a path | ADR-003 amendment 2026-11 |
+| `speaker-path-key` | under `/events/{eventCode}/speakers/`, a path parameter that is not `{speakerId}` with `format: uuid` (`/speakers/{username}/send-invitation`), and a second speaker collection literal (`speaker-pool`, `speakers/pool`). Literal sub-collections (`review-queue`) and a session's speaker (`/sessions/{slug}/speakers/{username}`) pass | ADR-003 amendment, Story 4.10 |
 
 **Baseline policy.** Existing violations are listed in `web-frontend/scripts/api-lint-baseline.txt`
 (rule, spec file, method, path; no line numbers). The lint fails on a NEW finding and on a STALE one

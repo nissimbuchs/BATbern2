@@ -1,11 +1,11 @@
 meta {
-  name: Invite Speaker (Story 6.1b)
+  name: Add Speaker to the Pool (Story 5.2; was POST /speakers/invite until Story 4.10)
   type: http
   seq: 1
 }
 
 post {
-  url: {{baseUrl}}/events/{{speakerPortalTestEventCode}}/speakers/invite
+  url: {{baseUrl}}/events/{{speakerPortalTestEventCode}}/speakers
   body: json
   auth: bearer
 }
@@ -15,45 +15,38 @@ auth:bearer {
 }
 
 script:pre-request {
-  // PR 11: firstName=Bruno, lastName=Test makes the auto-generated username match the
-  // CUMS USERS cleanup regex `^bruno\.test\.?$`. Same convention as speaker-pool-api
-  // tests 38, 45–47. Stable email per run keeps test 01b's promote idempotent against
-  // CUMS getOrCreateUser.
+  // PR 11: firstName=Bruno, lastName=Test makes the username generated at promote (01b) match
+  // the CUMS USERS cleanup regex `^bruno\.test\.?$`. Same convention as speaker-pool-api tests
+  // 38, 45–47. The e-mail is captured here and attached at promote (01b): the pool add rejects
+  // an e-mail (AR23).
   bru.setVar("inviteSpeakerEmail", "bruno-test-portal-" + Date.now() + "@e2e.batbern.invalid");
 }
 
 body:json {
   {
-    "email": "{{inviteSpeakerEmail}}",
-    "firstName": "Bruno",
-    "lastName": "Test",
+    "speakerName": "Bruno Test",
     "company": "Test Company AG",
     "notes": "Software Architecture, Cloud Computing"
   }
 }
 
 assert {
-  res.status: in [200, 201]
-  res.body.username: isDefined
-  res.body.speakerPoolId: isDefined
+  res.status: eq 201
+  res.body.id: isDefined
 }
 
 tests {
-  test("should invite speaker successfully - Story 6.1b AC1", function() {
-    const status = res.getStatus();
-    expect(status === 200 || status === 201).to.be.true;
-  });
-
-  test("should return speaker details with username - Story 6.1b AC2", function() {
+  test("adds the speaker to the pool at IDENTIFIED", function() {
+    expect(res.getStatus()).to.equal(201);
     const body = res.getBody();
-    expect(body.username).to.be.a('string');
-    expect(body.speakerPoolId).to.be.a('string');
-    bru.setVar("invitedSpeakerUsername", body.username);
-    bru.setVar("invitedSpeakerPoolId", body.speakerPoolId);
+    expect(body.status).to.equal('IDENTIFIED');
+    bru.setVar("invitedSpeakerPoolId", body.id);
   });
+}
 
-  test("should set workflow state to IDENTIFIED or INVITED - Story 6.1b AC3", function() {
-    const body = res.getBody();
-    expect(['IDENTIFIED', 'INVITED']).to.include(body.status);
-  });
+docs {
+  Story 4.10 removed the test-only POST /events/{eventCode}/speakers/invite (no UI caller).
+  The collection now takes the organizer UI's golden path: pool add (here), CONTACTED (01a),
+  promote with the e-mail (01b, provisions the user and the username), send-invitation by the
+  pool entry id (02).
 }

@@ -59,17 +59,15 @@ class SpeakerCrossEventScopingIntegrationTest extends AbstractIntegrationTest {
     private static final String OTHER_SPEAKER_EMAIL = "success+hongan@simulator.amazonses.com";
 
     /** Paths of every speaker operation keyed by {@code {speakerId}}. */
-    static final String SPEAKER = "/api/v1/events/{code}/speakers/{id}";
-    static final String ENTRY = "/api/v1/events/{code}/speakers/pool/{id}";
-    static final String REMINDERS = "/api/v1/events/{code}/speaker-pool/{id}/reminders";
-    static final String PROMOTE = SPEAKER + "/promote";
-    static final String STATUS = SPEAKER + "/status";
-    static final String STATUS_HISTORY = SPEAKER + "/status/history";
-    static final String CONTENT = SPEAKER + "/content";
-    static final String REVIEW = SPEAKER + "/review";
-    static final String OUTREACH = SPEAKER + "/outreach";
-    static final String SEND_INVITATION = SPEAKER + "/send-invitation";
-    static final String ABSTRACT_ANALYSIS = SPEAKER + "/abstract-analysis";
+    static final String ENTRY = "/api/v1/events/{code}/speakers/{id}";
+    static final String PROMOTE = ENTRY + "/promote";
+    static final String STATUS = ENTRY + "/status";
+    static final String STATUS_HISTORY = ENTRY + "/status/history";
+    static final String CONTENT = ENTRY + "/content";
+    static final String REVIEW = ENTRY + "/review";
+    static final String OUTREACH = ENTRY + "/outreach";
+    static final String SEND_INVITATION = ENTRY + "/send-invitation";
+    static final String ABSTRACT_ANALYSIS = ENTRY + "/abstract-analysis";
 
     @Autowired
     private MockMvc mockMvc;
@@ -207,8 +205,7 @@ class SpeakerCrossEventScopingIntegrationTest extends AbstractIntegrationTest {
     static Stream<Arguments> speakerOperations() {
         return Stream.of(
                 Arguments.of("PATCH entry", HttpMethod.PATCH, ENTRY,
-                        "{\"notes\": \"Changed through another event\"}"),
-                Arguments.of("reminders", HttpMethod.PATCH, REMINDERS, "{\"remindersDisabled\": true}"),
+                        "{\"notes\": \"Changed through another event\", \"remindersDisabled\": true}"),
                 Arguments.of("DELETE entry", HttpMethod.DELETE, ENTRY, null),
                 Arguments.of("promote", HttpMethod.POST, PROMOTE,
                         "{\"email\": \"success+promoted@simulator.amazonses.com\", "
@@ -255,10 +252,7 @@ class SpeakerCrossEventScopingIntegrationTest extends AbstractIntegrationTest {
         // Positive control for the 404s above: the same requests reach the entry through its own
         // event, so the 404 comes from the scoping, not from the request.
         mockMvc.perform(call(HttpMethod.PATCH, ENTRY, OTHER_EVENT, otherSpeaker.getId(),
-                        "{\"notes\": \"Changed through its own event\"}"))
-                .andExpect(status().isOk());
-        mockMvc.perform(call(HttpMethod.PATCH, REMINDERS, OTHER_EVENT, otherSpeaker.getId(),
-                        "{\"remindersDisabled\": true}"))
+                        "{\"notes\": \"Changed through its own event\", \"remindersDisabled\": true}"))
                 .andExpect(status().isOk());
         mockMvc.perform(call(HttpMethod.GET, OUTREACH, OTHER_EVENT, otherSpeaker.getId(), null))
                 .andExpect(status().isOk());

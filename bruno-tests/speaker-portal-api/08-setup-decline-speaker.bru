@@ -5,7 +5,7 @@ meta {
 }
 
 post {
-  url: {{baseUrl}}/events/{{speakerPortalTestEventCode}}/speakers/invite
+  url: {{baseUrl}}/events/{{speakerPortalTestEventCode}}/speakers
   body: json
   auth: bearer
 }
@@ -16,30 +16,30 @@ auth:bearer {
 
 script:pre-request {
   // PR 11: firstName=Bruno, lastName=Test convention for CUMS cleanup-regex match.
-  // Capture the email so 08b-promote can re-use it (CUMS getOrCreateUser is idempotent
-  // on email).
+  // Capture the email so 08b-promote attaches it (the pool add rejects an e-mail, AR23).
   bru.setVar("declineSpeakerEmail", "bruno-test-decline-" + Date.now() + "@e2e.batbern.invalid");
 }
 
 body:json {
   {
-    "email": "{{declineSpeakerEmail}}",
-    "firstName": "Bruno",
-    "lastName": "Test",
+    "speakerName": "Bruno Test",
     "company": "Test Decline AG"
   }
 }
 
 script:post-response {
-  if (res.getStatus() === 200 || res.getStatus() === 201) {
-    bru.setVar("declineSpeakerUsername", res.getBody().username);
-    bru.setVar("declineSpeakerPoolId", res.getBody().speakerPoolId);
+  if (res.getStatus() === 201) {
+    bru.setVar("declineSpeakerPoolId", res.getBody().id);
   }
 }
 
 tests {
   test("should create speaker for decline test", function() {
-    const status = res.getStatus();
-    expect(status === 200 || status === 201).to.be.true;
+    expect(res.getStatus()).to.equal(201);
   });
+}
+
+docs {
+  Story 4.10: pool add instead of the removed POST /speakers/invite; the username is set by
+  the promote in 08b, the invitation (09) goes by the pool entry id.
 }

@@ -21,7 +21,8 @@ export type SpeakerWorkflowState = components['schemas']['SpeakerPoolResponse'][
 // API-consolidation Phase 7 (2026-06-28): SpeakerPoolEntry is now the OpenAPI-generated
 // SpeakerPoolResponse (event-speakers-api). The former hand-written interface and the
 // generated schema had drifted: 4 dead fields (isPublishable, contentStatus,
-// materialCloudFrontUrl, remindersDisabled) + the borderline materialFileName were trimmed
+// materialCloudFrontUrl, remindersDisabled) + the borderline materialFileName were trimmed.
+// Story 4.10 put `remindersDisabled` back on the wire (set with the entry PATCH)
 // (FE reads materialFileName off content/speaker-portal types, never off the pool entry),
 // and the status enum was corrected from the stale 11-value set to the 8 ADR-009 states.
 export type SpeakerPoolEntry = components['schemas']['SpeakerPoolResponse'];

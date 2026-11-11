@@ -644,12 +644,24 @@ through this parent's path.
 Database rules above are unchanged. Five nested cases were checked on 2026-11-07 and all scope
 correctly; a scoping test per nested resource makes this a rule rather than a habit.
 
+**Speakers (Story 4.10, 2026-11-10).** A speaker of an event has one key: `{speakerId}`, the speaker
+pool entry UUID, under `/events/{eventCode}/speakers` (the owned-child case above). The other keys
+are gone: `/speakers/pool/{speakerId}`, `/speaker-pool/{speakerPoolId}`, and a username or UUID in
+`/speakers/{username}/send-invitation`. The Spectral rule `speaker-path-key` fails a different
+parameter in that position, a `speakerId` without `format: uuid`, and a second collection literal.
+The 2026-11-07 check above had missed the speakers: most speaker operations loaded the entry by
+bare id, so another event's speaker could be read and changed (status, review, outreach) through
+this event's path. Every one now loads through `SpeakerPoolLookup` (`findByIdAndEventId`), and
+`SpeakerCrossEventScopingIntegrationTest` proves it per operation (404, nothing changed, no mail).
+The 12 operations are accepted one by one in the lint owner file (group X1).
+
 ## Revision History
 
 | Date | Version | Changes | Author |
 |------|---------|---------|--------|
 | 2025-11-02 | 1.0 | Initial ADR creation | Winston (Architect Agent) |
 | 2026-11-07 | 1.2 | Amendment: when a UUID in a path is allowed (owner decision after the 2026-11 review) | Winston (Architect Agent) |
+| 2026-11-10 | 1.3 | Amendment: one speaker key `{speakerId}`, scoped loads proven per operation (Story 4.10) | Claude Code |
 | 2025-11-08 | 1.1 | **CRITICAL CLARIFICATION**: Added comprehensive "Microservice Isolation Rules" section with 5 rules and decision tree. Made it crystal clear that cross-service references MUST use meaningful IDs (companyName, username, eventCode), NOT UUIDs. Updated database layer description to distinguish within-service vs. cross-service references. | Claude Code |
 
 ---

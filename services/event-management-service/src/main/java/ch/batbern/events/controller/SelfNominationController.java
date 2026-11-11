@@ -31,6 +31,10 @@ import org.springframework.web.bind.annotation.RestController;
  * {@link SpeakerSelfNominationApi} (re-tagged out of the Event Actions grab-bag into a 1:1
  * tag). The path + {@code @Valid @RequestBody} binding are inherited from the interface; the
  * class carries only the {@code /api/v1} prefix, and the override keeps the {@code @PreAuthorize}.
+ *
+ * <p>Story 4.10: the path is {@code POST /events/{eventCode}/speaker-nominations}, a collection of
+ * its own (it was {@code /speakers/self-nominate}, a verb segment). {@code POST /speakers} is the
+ * organizer's create, with another role and body.
  */
 @RestController
 @RequestMapping("/api/v1")

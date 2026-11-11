@@ -208,6 +208,86 @@ paths:
       responses:
         '200':
           description: ok
+  # speaker-path-key (Story 4.10): a username where the speaker key goes
+  /events/{eventCode}/speakers/{username}/send-invitation:
+    post:
+      operationId: sendInvitationByUsername
+      parameters:
+        - $ref: '#/components/parameters/EventCode'
+        - name: username
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ok
+  # speaker-path-key: the second speaker collection literal (also a uuid-path-param finding)
+  /events/{eventCode}/speaker-pool/{speakerPoolId}/reminders:
+    patch:
+      operationId: patchReminders
+      parameters:
+        - $ref: '#/components/parameters/EventCode'
+        - name: speakerPoolId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: ok
+  # speaker-path-key: the `speakers/pool` literal
+  /events/{eventCode}/speakers/pool:
+    get:
+      operationId: listSpeakerPool
+      parameters:
+        - $ref: '#/components/parameters/EventCode'
+      responses:
+        '200':
+          description: ok
+  # Clean for speaker-path-key: {speakerId} as uuid (a uuid-path-param finding, the owned-child
+  # case the owner accepts per operation), a literal sub-collection, a session's speaker
+  /events/{eventCode}/speakers/{speakerId}/promote:
+    post:
+      operationId: promoteSpeaker
+      parameters:
+        - $ref: '#/components/parameters/EventCode'
+        - name: speakerId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: ok
+  /events/{eventCode}/speakers/review-queue:
+    get:
+      operationId: getReviewQueue
+      parameters:
+        - $ref: '#/components/parameters/EventCode'
+      responses:
+        '200':
+          description: ok
+  /events/{eventCode}/sessions/{sessionSlug}/speakers/{username}:
+    delete:
+      operationId: removeSessionSpeaker
+      parameters:
+        - $ref: '#/components/parameters/EventCode'
+        - name: sessionSlug
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: username
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: ok
 components:
   parameters:
     EventCode:

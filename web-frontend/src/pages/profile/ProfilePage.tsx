@@ -496,6 +496,7 @@ const ProfilePage = () => {
 
                   <Button
                     onClick={handleSubmit}
+                    data-testid="profile-save-button"
                     disabled={updateMutation.isPending || companyResolving || !hasUnsavedChanges}
                     className="w-full sm:w-auto"
                   >

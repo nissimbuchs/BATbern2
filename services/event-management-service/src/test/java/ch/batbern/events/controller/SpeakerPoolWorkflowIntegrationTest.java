@@ -83,7 +83,7 @@ class SpeakerPoolWorkflowIntegrationTest extends AbstractIntegrationTest {
         request.put("company", "Tech Corp");
         request.put("expertise", "Cloud Architecture, Kubernetes");
 
-        mockMvc.perform(post("/api/v1/events/{eventCode}/speakers/pool", event.getEventCode())
+        mockMvc.perform(post("/api/v1/events/{eventCode}/speakers", event.getEventCode())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
                 // Then: Request is successful
@@ -111,7 +111,7 @@ class SpeakerPoolWorkflowIntegrationTest extends AbstractIntegrationTest {
         request.put("expertise", "Cloud Architecture");
 
         // Then: Returns 400 Bad Request
-        mockMvc.perform(post("/api/v1/events/{eventCode}/speakers/pool", event.getEventCode())
+        mockMvc.perform(post("/api/v1/events/{eventCode}/speakers", event.getEventCode())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
@@ -121,7 +121,7 @@ class SpeakerPoolWorkflowIntegrationTest extends AbstractIntegrationTest {
     // ==================== Story 11.D.1 (AR23) Tests: email rejected on /pool ====================
 
     /**
-     * Story 11.D.1 (AR23): {@code POST /speakers/pool} rejects {@code email} field.
+     * Story 11.D.1 (AR23): {@code POST /speakers} rejects {@code email} field.
      * Speakers added via this endpoint stay in IDENTIFIED/CONTACTED per ADR-009 §0.2;
      * email is captured via {@code POST /speakers/{speakerId}/promote} only.
      */
@@ -133,14 +133,14 @@ class SpeakerPoolWorkflowIntegrationTest extends AbstractIntegrationTest {
         request.put("speakerName", "Jane Smith");
         request.put("email", "jane@example.com");
 
-        mockMvc.perform(post("/api/v1/events/{eventCode}/speakers/pool", event.getEventCode())
+        mockMvc.perform(post("/api/v1/events/{eventCode}/speakers", event.getEventCode())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest());
     }
 
     /**
-     * Story 11.D.1 (AR23): {@code PATCH /speakers/pool/{speakerId}} rejects {@code email}.
+     * Story 11.D.1 (AR23): {@code PATCH /speakers/{speakerId}} rejects {@code email}.
      * Email belongs to the User aggregate (CUMS), not the pool entry; the {@code /promote}
      * endpoint is the only path that may carry an email payload. Regression guard for
      * {@code @JsonIgnoreProperties(ignoreUnknown = false)} on {@code PatchSpeakerPoolRequest}.
@@ -155,7 +155,7 @@ class SpeakerPoolWorkflowIntegrationTest extends AbstractIntegrationTest {
         create.put("company", "Tech Corp");
         create.put("expertise", "Cloud Architecture");
         String createdJson = mockMvc.perform(
-                        post("/api/v1/events/{eventCode}/speakers/pool", event.getEventCode())
+                        post("/api/v1/events/{eventCode}/speakers", event.getEventCode())
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(create)))
                 .andExpect(status().isCreated())
@@ -166,7 +166,7 @@ class SpeakerPoolWorkflowIntegrationTest extends AbstractIntegrationTest {
         patch.put("notes", "follow up");
         patch.put("email", "jane@example.com");
 
-        mockMvc.perform(patch("/api/v1/events/{eventCode}/speakers/pool/{speakerId}",
+        mockMvc.perform(patch("/api/v1/events/{eventCode}/speakers/{speakerId}",
                         event.getEventCode(), speakerId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(patch)))
@@ -183,7 +183,7 @@ class SpeakerPoolWorkflowIntegrationTest extends AbstractIntegrationTest {
     void should_returnNewUpdatedAt_when_speakerPoolEntryPatched() throws Exception {
         Event event = createTestEvent("BATbern56", EventWorkflowState.TOPIC_SELECTION);
         String createdJson = mockMvc.perform(
-                        post("/api/v1/events/{eventCode}/speakers/pool", event.getEventCode())
+                        post("/api/v1/events/{eventCode}/speakers", event.getEventCode())
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(Map.of("speakerName", "Hông Ân"))))
                 .andExpect(status().isCreated())
@@ -191,7 +191,7 @@ class SpeakerPoolWorkflowIntegrationTest extends AbstractIntegrationTest {
         JsonNode created = objectMapper.readTree(createdJson);
         Instant insertedAt = OffsetDateTime.parse(created.get("updatedAt").asText()).toInstant();
 
-        String patchedJson = mockMvc.perform(patch("/api/v1/events/{eventCode}/speakers/pool/{speakerId}",
+        String patchedJson = mockMvc.perform(patch("/api/v1/events/{eventCode}/speakers/{speakerId}",
                         event.getEventCode(), created.get("id").asText())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(Map.of("notes", "follow up"))))
@@ -225,7 +225,7 @@ class SpeakerPoolWorkflowIntegrationTest extends AbstractIntegrationTest {
         request.put("expertise", "Cloud Architecture");
         request.put("notes", "Met at KubeCon 2024. Very enthusiastic about BATbern. Follow up next week.");
 
-        mockMvc.perform(post("/api/v1/events/{eventCode}/speakers/pool", event.getEventCode())
+        mockMvc.perform(post("/api/v1/events/{eventCode}/speakers", event.getEventCode())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
                 // Then: Notes are saved
@@ -253,7 +253,7 @@ class SpeakerPoolWorkflowIntegrationTest extends AbstractIntegrationTest {
         request.put("expertise", "Cloud Architecture");
         request.put("assignedOrganizerId", "alice.mueller");
 
-        mockMvc.perform(post("/api/v1/events/{eventCode}/speakers/pool", event.getEventCode())
+        mockMvc.perform(post("/api/v1/events/{eventCode}/speakers", event.getEventCode())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
                 // Then: Assignment is recorded
@@ -278,7 +278,7 @@ class SpeakerPoolWorkflowIntegrationTest extends AbstractIntegrationTest {
         request.put("company", "Tech Corp");
         request.put("expertise", "Cloud Architecture");
 
-        mockMvc.perform(post("/api/v1/events/{eventCode}/speakers/pool", event.getEventCode())
+        mockMvc.perform(post("/api/v1/events/{eventCode}/speakers", event.getEventCode())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
                 // Then: Request succeeds, assignedOrganizerId is null
@@ -305,7 +305,7 @@ class SpeakerPoolWorkflowIntegrationTest extends AbstractIntegrationTest {
         request.put("company", "Tech Corp");
         request.put("expertise", "Cloud Architecture");
 
-        mockMvc.perform(post("/api/v1/events/{eventCode}/speakers/pool", event.getEventCode())
+        mockMvc.perform(post("/api/v1/events/{eventCode}/speakers", event.getEventCode())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
                 // Then: Status is 'IDENTIFIED'
@@ -333,7 +333,7 @@ class SpeakerPoolWorkflowIntegrationTest extends AbstractIntegrationTest {
 
         // Then: Returns 404 Not Found. Pattern-conforming but non-existent code — a malformed
         // code (e.g. INVALID999) now fails the interface eventCode @Pattern → 400 (Phase 7 wiring).
-        mockMvc.perform(post("/api/v1/events/{eventCode}/speakers/pool", "BATbern888")
+        mockMvc.perform(post("/api/v1/events/{eventCode}/speakers", "BATbern888")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isNotFound());
@@ -361,12 +361,12 @@ class SpeakerPoolWorkflowIntegrationTest extends AbstractIntegrationTest {
         request2.put("company", "DevOps Inc");
         request2.put("expertise", "CI/CD, Docker");
 
-        mockMvc.perform(post("/api/v1/events/{eventCode}/speakers/pool", event.getEventCode())
+        mockMvc.perform(post("/api/v1/events/{eventCode}/speakers", event.getEventCode())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request1)))
                 .andExpect(status().isCreated());
 
-        mockMvc.perform(post("/api/v1/events/{eventCode}/speakers/pool", event.getEventCode())
+        mockMvc.perform(post("/api/v1/events/{eventCode}/speakers", event.getEventCode())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request2)))
                 .andExpect(status().isCreated());
@@ -398,18 +398,18 @@ class SpeakerPoolWorkflowIntegrationTest extends AbstractIntegrationTest {
         speaker2.put("company", "Dev Inc");
         speaker2.put("expertise", "Security");
 
-        mockMvc.perform(post("/api/v1/events/{eventCode}/speakers/pool", event.getEventCode())
+        mockMvc.perform(post("/api/v1/events/{eventCode}/speakers", event.getEventCode())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(speaker1)))
                 .andExpect(status().isCreated());
 
-        mockMvc.perform(post("/api/v1/events/{eventCode}/speakers/pool", event.getEventCode())
+        mockMvc.perform(post("/api/v1/events/{eventCode}/speakers", event.getEventCode())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(speaker2)))
                 .andExpect(status().isCreated());
 
         // When: Get speaker pool
-        mockMvc.perform(get("/api/v1/events/{eventCode}/speakers/pool", event.getEventCode()))
+        mockMvc.perform(get("/api/v1/events/{eventCode}/speakers", event.getEventCode()))
                 // Then: Returns list with both speakers
                 .andDo(print())
                 .andExpect(status().isOk())
@@ -430,7 +430,7 @@ class SpeakerPoolWorkflowIntegrationTest extends AbstractIntegrationTest {
         Event event = createTestEvent("BATbern56", EventWorkflowState.SPEAKER_IDENTIFICATION);
 
         // When: Get speaker pool
-        mockMvc.perform(get("/api/v1/events/{eventCode}/speakers/pool", event.getEventCode()))
+        mockMvc.perform(get("/api/v1/events/{eventCode}/speakers", event.getEventCode()))
                 // Then: Returns empty list
                 .andDo(print())
                 .andExpect(status().isOk())

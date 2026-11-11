@@ -49,8 +49,9 @@ test.describe('Profile page · Story 12.11', { tag: '@gate' }, () => {
     await page.getByTestId('consent-tab').click();
     await expect(page.getByTestId('consent-accepted-on')).toBeVisible();
     await expect(page.getByTestId('consent-checkbox')).not.toBeVisible();
-    // Newsletter toggle present (EMS newsletter_subscribers self-service).
-    await expect(page.getByTestId('newsletter-toggle')).toBeVisible();
+    // Newsletter section present (EMS newsletter_subscribers self-service; #1244 replaced the
+    // single toggle with one checkbox per address, the old `newsletter-toggle` id is gone).
+    await expect(page.getByTestId('newsletter-section')).toBeVisible();
   });
 
   test('should_redirectOldSpeakerPortalProfilePath_when_visited', async ({ page }) => {
@@ -72,7 +73,8 @@ test.describe('Profile page · Story 12.11', { tag: '@gate' }, () => {
       const patch = page.waitForRequest(
         (req) => req.method() === 'PATCH' && /\/api\/v1\/users\/[^/?]+$/.test(req.url())
       );
-      await page.getByRole('button', { name: 'Save Changes' }).click();
+      // By test id: the organizer's profile language is German, the label is not "Save Changes".
+      await page.getByTestId('profile-save-button').click();
       const request = await patch;
       expect(new URL(request.url()).pathname).toBe(
         `/api/v1/users/${encodeURIComponent(before.username)}`

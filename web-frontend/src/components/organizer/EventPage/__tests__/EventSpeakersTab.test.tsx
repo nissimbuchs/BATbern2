@@ -2,7 +2,7 @@
  * EventSpeakersTab Component Tests (Story 5.6 · Epic 14 Phase C 14.C.1/14.C.4/14.C.5)
  *
  * The real tree runs against the MSW harness (17.0c2): `GET /events/{code}/speakers/status-summary`,
- * `GET /events/{code}/speakers/pool`, `GET /events/{code}?include=sessions`, and in the Slots
+ * `GET /events/{code}/speakers`, `GET /events/{code}?include=sessions`, and in the Slots
  * sub-view `GET /events/{code}/sessions/unassigned` + `GET /events/{code}/timetable`. Every child
  * (kanban lanes, sessions table, slot assignment, drawers) is the real one, with en i18n. Covers the
  * Pool/Agenda/Slots sub-view contract, the agenda "needs a slot" summary + jump, and the in-tab

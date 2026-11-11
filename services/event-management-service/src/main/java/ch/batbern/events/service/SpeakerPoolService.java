@@ -465,6 +465,10 @@ public class SpeakerPoolService {
         if (request.getNotes() != null) {
             speakerPool.setNotes(request.getNotes());
         }
+        // Story 6.5 AC6, folded into the PATCH by Story 4.10 (ADR-013 §1, no per-attribute endpoint).
+        if (request.getRemindersDisabled() != null) {
+            speakerPool.setRemindersDisabled(request.getRemindersDisabled());
+        }
 
         // Flush so that @PreUpdate has set updatedAt before the response is built in this transaction
         // (event-speakers-api requires it; without the flush the response kept the previous value).

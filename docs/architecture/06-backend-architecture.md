@@ -295,6 +295,28 @@ Speakers are full Cognito users with the SPEAKER role. Provisioning is wired int
 
 See `06b-user-lifecycle-sync.md` ("Pattern N: Speaker Provisioning at CONTACTED → READY") for the cross-service sequence diagram.
 
+### Speaker addressing (Story 4.10)
+
+A speaker of an event is its speaker pool entry, an owned child of the event (ADR-003 amendment:
+no username before READY). It has one key and one collection:
+`/events/{eventCode}/speakers` (list, organizer create) and `/events/{eventCode}/speakers/{speakerId}`
+(`PATCH`, `DELETE`, and the sub-resources `promote`, `status`, `status/history`, `content`,
+`review`, `outreach`, `send-invitation`, `abstract-analysis`), `speakerId` the pool entry UUID.
+`speakers/pool`, `speaker-pool/{id}/reminders`, `speakers/{username}/send-invitation` and the
+test-only `speakers/invite` are gone, without aliases; the reminders switch is the
+`remindersDisabled` field of the entry PATCH; an attendee's self-nomination is
+`POST /events/{eventCode}/speaker-nominations`. The Spectral rule `speaker-path-key` holds the key.
+
+Every operation loads the entry through `SpeakerPoolLookup.inEvent(eventCode, speakerId)`
+(`findByIdAndEventId`): another event's id is 404 and nothing changes on that event, no history
+row and no mail (`SpeakerCrossEventScopingIntegrationTest`, one case per operation). Until 4.10
+most of them loaded by bare id, so status, review, outreach and the reads of another event's
+speaker went through this event's path. A session's speaker (`/sessions/{slug}/speakers/{username}`)
+is a user's assignment to a session, keyed by username, and not this key.
+
+The outreach record names the organizer by username (`organizer_username`); before 4.10 the
+controller wrote the e-mail address there. Rows written before keep the address.
+
 ## Error Handling Strategy
 
 ### Error Flow
@@ -1287,6 +1309,11 @@ Every template-based mail in event-management renders the same way:
   value moved from the CUMS table `presentation_settings` with EMS V152, which copies the row (a
   no-op where the table does not exist, an existing key is kept). The table stayed, unread, for one
   release so an old CUMS image could start mid-deploy or after a rollback; CUMS V29 dropped it.
+- **A user's profile and picture** are one CUMS set, `PATCH /users/{username}` and
+  `/users/{username}/picture*` (Story 4.10; the `/users/me` twins and `PUT /users/{username}` are
+  gone). The ownership rule is `@userOwnership.isCurrentUser(#username)` next to the role rule:
+  the user themself, or ORGANIZER/ADMIN (pictures: ORGANIZER). Consent (`termsAccepted`) is self
+  only. `GET /users/me` stays the self read and the login bootstrap.
 - **A user's settings** are one CUMS resource, `GET`/`PATCH /users/me/settings`
   (`UserSettingsService`): display, notifications and privacy in one object, partial update.
   Storage stays the two embeddables on `user_profiles`. EMS reads language, Q&A frequency and

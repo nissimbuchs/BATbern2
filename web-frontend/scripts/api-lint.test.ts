@@ -1,5 +1,5 @@
 /**
- * Story 17.4: the OpenAPI convention lint. Runs the real Spectral CLI with the repo ruleset
+ * Story 17.4: the OpenAPI convention lint (Story 4.10 added `speaker-path-key`). Runs the real Spectral CLI with the repo ruleset
  * (`docs/api/.spectral.yaml`) over the fixture specs in `scripts/__fixtures__/api-lint/specs`
  * (excluded from Vitest and Prettier: read by Spectral, never run).
  */
@@ -42,6 +42,11 @@ const VERB_AFTER_LITERAL = `no-verb-segment\t${FIXTURE}\tPOST /users/me/profile-
 const VERB_ON_COLLECTION = `no-verb-segment\t${FIXTURE}\tPOST /users/provision`;
 const READ_VERB = `no-verb-segment\t${FIXTURE}\tGET /events/{eventCode}/attachments/{index}/download`;
 const PERSONAL_DATA = `no-personal-data-path-param\t${FIXTURE}\tDELETE /users/me/additional-emails/{email}`;
+const SPEAKER_BY_USERNAME = `speaker-path-key\t${FIXTURE}\tPOST /events/{eventCode}/speakers/{username}/send-invitation`;
+const SPEAKER_POOL_LITERAL = `speaker-path-key\t${FIXTURE}\tPATCH /events/{eventCode}/speaker-pool/{speakerPoolId}/reminders`;
+const SPEAKERS_POOL_LITERAL = `speaker-path-key\t${FIXTURE}\tGET /events/{eventCode}/speakers/pool`;
+const UUID_SPEAKER_POOL = `uuid-path-param\t${FIXTURE}\tPATCH /events/{eventCode}/speaker-pool/{speakerPoolId}/reminders`;
+const UUID_SPEAKER = `uuid-path-param\t${FIXTURE}\tPOST /events/{eventCode}/speakers/{speakerId}/promote`;
 const ALL = [
   KEBAB,
   VERB,
@@ -57,6 +62,11 @@ const ALL = [
   UUID_DELETE,
   UUID_UNFORMATTED,
   UUID_INHERITED,
+  SPEAKER_BY_USERNAME,
+  SPEAKER_POOL_LITERAL,
+  SPEAKERS_POOL_LITERAL,
+  UUID_SPEAKER_POOL,
+  UUID_SPEAKER,
 ];
 
 const baselineOf = (keys: string[]) => keys.join('\n') + '\n';
@@ -109,6 +119,21 @@ describe('rule details', () => {
     expect(keys.some((k) => k.includes('/users/me/merge'))).toBe(false);
   });
 
+  it('keys a speaker by {speakerId} (uuid) under /events/{eventCode}/speakers, one collection', () => {
+    const byKey = new Map(findings.map((f) => [findingKey(f), f.message]));
+    expect(byKey.get(SPEAKER_BY_USERNAME)).toContain('{username}');
+    expect(byKey.get(SPEAKER_POOL_LITERAL)).toContain('speaker-pool');
+    expect(byKey.get(SPEAKERS_POOL_LITERAL)).toContain('speakers/pool');
+    const speakerKeyFindings = findings
+      .filter((f) => f.rule === 'speaker-path-key')
+      .map((f) => f.path);
+    expect(speakerKeyFindings).not.toContain('/events/{eventCode}/speakers/{speakerId}/promote');
+    expect(speakerKeyFindings).not.toContain('/events/{eventCode}/speakers/review-queue');
+    expect(speakerKeyFindings).not.toContain(
+      '/events/{eventCode}/sessions/{sessionSlug}/speakers/{username}'
+    );
+  });
+
   it.each([
     ['a verb after a literal', VERB_AFTER_LITERAL],
     ['a verb with another method than POST', VERB],
@@ -126,7 +151,7 @@ describe('compare', () => {
     expect(result.problems).toEqual([]);
     expect(result.exitCode).toBe(0);
     expect(result.summary).toBe(
-      'API lint: 14 finding(s): no-internal-path 1, no-literal-under-events 1, no-personal-data-path-param 1, no-verb-segment 6, path-kebab-case 1, uuid-path-param 4.'
+      'API lint: 19 finding(s): no-internal-path 1, no-literal-under-events 1, no-personal-data-path-param 1, no-verb-segment 6, path-kebab-case 1, speaker-path-key 3, uuid-path-param 6.'
     );
   });
 
@@ -140,6 +165,8 @@ describe('compare', () => {
     ['uuid', UUID_GET],
     ['personal data in a path', PERSONAL_DATA],
     ['unformatted string *Id', UUID_UNFORMATTED],
+    ['a username as the speaker key', SPEAKER_BY_USERNAME],
+    ['a second speaker collection', SPEAKER_POOL_LITERAL],
   ])('fails on a NEW finding: %s', (_name, key) => {
     const result = compare(findings, baselineOf(ALL.filter((k) => k !== key)));
     expect(result.exitCode).toBe(1);

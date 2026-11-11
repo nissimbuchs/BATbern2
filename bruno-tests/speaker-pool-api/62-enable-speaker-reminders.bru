@@ -5,7 +5,7 @@ meta {
 }
 
 patch {
-  url: {{baseUrl}}/events/{{createdEventCode}}/speaker-pool/{{createdSpeakerPoolId}}/reminders
+  url: {{baseUrl}}/events/{{createdEventCode}}/speakers/{{createdSpeakerPoolId}}
   body: json
   auth: bearer
 }
@@ -33,6 +33,13 @@ tests {
   test("should confirm reminders re-enabled - Story 6.5 AC6", function() {
     const body = res.getBody();
     expect(body.remindersDisabled).to.be.false;
-    expect(body.speakerPoolId).to.equal(bru.getVar("createdSpeakerPoolId"));
+    expect(body.id).to.equal(bru.getVar("createdSpeakerPoolId"));
   });
+}
+
+docs {
+  Story 4.10: the reminders switch is a field of the entry PATCH,
+  PATCH /events/{eventCode}/speakers/{speakerId} with remindersDisabled (ADR-013 section 1:
+  no per-attribute endpoint). The former PATCH /speaker-pool/{speakerPoolId}/reminders is gone.
+  The answer is the whole pool entry, so the stored switch is read back from it.
 }

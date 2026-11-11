@@ -5,7 +5,7 @@ meta {
 }
 
 post {
-  url: {{baseUrl}}/events/{{slotCapacityEventCode}}/speakers/{{slotCapacityCandidateUsername}}/send-invitation
+  url: {{baseUrl}}/events/{{slotCapacityEventCode}}/speakers/{{slotCapacityCandidateSpeakerPoolId}}/send-invitation
   body: json
   auth: bearer
 }

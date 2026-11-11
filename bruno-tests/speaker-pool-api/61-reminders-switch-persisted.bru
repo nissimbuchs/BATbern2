@@ -1,0 +1,32 @@
+meta {
+  name: Reminders switch is stored (Story 6.5 AC6, Story 4.10)
+  type: http
+  seq: 61
+}
+
+get {
+  url: {{baseUrl}}/events/{{createdEventCode}}/speakers
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("the entry read back from the pool carries remindersDisabled = true (set by 60)", function() {
+    const entry = res.getBody().find((s) => s.id === bru.getVar("createdSpeakerPoolId"));
+    expect(entry, "the speaker of 35 is in the pool").to.exist;
+    expect(entry.remindersDisabled).to.equal(true);
+  });
+}
+
+docs {
+  Story 4.10: 60 sets the switch through the entry PATCH; this reads the pool again, so the
+  value is the stored one and not just the PATCH answer. 62 switches it back.
+}

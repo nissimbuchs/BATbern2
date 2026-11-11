@@ -661,7 +661,7 @@ public class SpeakerStatusControllerIntegrationTest extends AbstractIntegrationT
 
     /**
      * Story 11.B.3 AC7: the derived flag isSlotAssigned is exposed on SpeakerPoolResponse —
-     * verify via the existing GET /events/{code}/speakers/pool endpoint. Speaker is
+     * verify via the existing GET /events/{code}/speakers endpoint. Speaker is
      * QUALITY_REVIEWED with session.start_time set → isSlotAssigned: true.
      *
      * <p>API-consolidation Phase 7 (2026-06-28): the redundant isPublishable flag was trimmed
@@ -676,8 +676,8 @@ public class SpeakerStatusControllerIntegrationTest extends AbstractIntegrationT
         testSession.setStartTime(java.time.Instant.now().plusSeconds(86400));
         sessionRepository.save(testSession);
 
-        // When: GET /api/v1/events/{code}/speakers/pool
-        mockMvc.perform(get("/api/v1/events/{code}/speakers/pool", TEST_EVENT_CODE)
+        // When: GET /api/v1/events/{code}/speakers
+        mockMvc.perform(get("/api/v1/events/{code}/speakers", TEST_EVENT_CODE)
                         .with(user(ORGANIZER_USERNAME).roles("ORGANIZER")))
                 .andDo(print())
                 .andExpect(status().isOk())
@@ -699,7 +699,7 @@ public class SpeakerStatusControllerIntegrationTest extends AbstractIntegrationT
         testSession.setStartTime(null);
         sessionRepository.save(testSession);
 
-        mockMvc.perform(get("/api/v1/events/{code}/speakers/pool", TEST_EVENT_CODE)
+        mockMvc.perform(get("/api/v1/events/{code}/speakers", TEST_EVENT_CODE)
                         .with(user(ORGANIZER_USERNAME).roles("ORGANIZER")))
                 .andDo(print())
                 .andExpect(status().isOk())

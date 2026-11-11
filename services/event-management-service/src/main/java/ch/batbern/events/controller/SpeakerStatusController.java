@@ -224,7 +224,7 @@ public class SpeakerStatusController implements SpeakerStatusApi {
     /**
      * Get quality-review queue (Story 5.5 AC11). API-consolidation Phase 7: maps the
      * CONTENT_SUBMITTED pool entries to {@link SpeakerPoolResponse} (the same shape as
-     * GET /speakers/pool), replacing the prior raw-entity return.
+     * GET /events/{eventCode}/speakers), replacing the prior raw-entity return.
      */
     @Override
     @PreAuthorize("hasRole('ORGANIZER')")

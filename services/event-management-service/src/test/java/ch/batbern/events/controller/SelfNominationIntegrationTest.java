@@ -49,7 +49,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 /**
  * Integration tests for attendee speaker self-nomination —
- * {@code POST /api/v1/events/{eventCode}/speakers/self-nominate} (Story 7.2 "I Could Speak on That").
+ * {@code POST /api/v1/events/{eventCode}/speaker-nominations} (Story 7.2 "I Could Speak on That").
  *
  * <p>Covers AC1–AC6, AC8: create-at-IDENTIFIED with source tagging + profile-auto-filled name,
  * the no-provisioning guarantee, the topic/published guard (409), the one-per-event rule (409),
@@ -155,7 +155,7 @@ class SelfNominationIntegrationTest extends AbstractIntegrationTest {
     void should_create_at_IDENTIFIED_with_source_and_autofilled_identity() throws Exception {
         Event event = saveEvent(EVENT_CODE, "cloud-native", /* publishedAt */ true, "topic");
 
-        String json = mockMvc.perform(post("/api/v1/events/{eventCode}/speakers/self-nominate", EVENT_CODE)
+        String json = mockMvc.perform(post("/api/v1/events/{eventCode}/speaker-nominations", EVENT_CODE)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(BODY))
                 .andExpect(status().isCreated())
@@ -200,7 +200,7 @@ class SelfNominationIntegrationTest extends AbstractIntegrationTest {
         when(userApiClient.getUserByUsername(ATTENDEE))
                 .thenThrow(new ch.batbern.events.exception.UserServiceException("CUMS down"));
 
-        mockMvc.perform(post("/api/v1/events/{eventCode}/speakers/self-nominate", EVENT_CODE)
+        mockMvc.perform(post("/api/v1/events/{eventCode}/speaker-nominations", EVENT_CODE)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(BODY))
                 .andExpect(status().isCreated())
@@ -215,7 +215,7 @@ class SelfNominationIntegrationTest extends AbstractIntegrationTest {
     void should_reject_when_topicNotSet() throws Exception {
         saveEvent(EVENT_CODE, /* topicCode */ null, true, "topic");
 
-        mockMvc.perform(post("/api/v1/events/{eventCode}/speakers/self-nominate", EVENT_CODE)
+        mockMvc.perform(post("/api/v1/events/{eventCode}/speaker-nominations", EVENT_CODE)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(BODY))
                 .andExpect(status().isConflict())
@@ -230,7 +230,7 @@ class SelfNominationIntegrationTest extends AbstractIntegrationTest {
     void should_reject_when_notPublished() throws Exception {
         saveEvent(EVENT_CODE, "cloud-native", /* publishedAt */ false, "none");
 
-        mockMvc.perform(post("/api/v1/events/{eventCode}/speakers/self-nominate", EVENT_CODE)
+        mockMvc.perform(post("/api/v1/events/{eventCode}/speaker-nominations", EVENT_CODE)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(BODY))
                 .andExpect(status().isConflict())
@@ -247,7 +247,7 @@ class SelfNominationIntegrationTest extends AbstractIntegrationTest {
         // self-nomination is no longer open (only the TOPIC phase is the window).
         saveEvent(EVENT_CODE, "cloud-native", /* publishedAt */ true, "speakers");
 
-        mockMvc.perform(post("/api/v1/events/{eventCode}/speakers/self-nominate", EVENT_CODE)
+        mockMvc.perform(post("/api/v1/events/{eventCode}/speaker-nominations", EVENT_CODE)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(BODY))
                 .andExpect(status().isConflict())
@@ -264,11 +264,11 @@ class SelfNominationIntegrationTest extends AbstractIntegrationTest {
     void should_reject_when_duplicate() throws Exception {
         saveEvent(EVENT_CODE, "cloud-native", true, "topic");
 
-        mockMvc.perform(post("/api/v1/events/{eventCode}/speakers/self-nominate", EVENT_CODE)
+        mockMvc.perform(post("/api/v1/events/{eventCode}/speaker-nominations", EVENT_CODE)
                         .contentType(MediaType.APPLICATION_JSON).content(BODY))
                 .andExpect(status().isCreated());
 
-        mockMvc.perform(post("/api/v1/events/{eventCode}/speakers/self-nominate", EVENT_CODE)
+        mockMvc.perform(post("/api/v1/events/{eventCode}/speaker-nominations", EVENT_CODE)
                         .contentType(MediaType.APPLICATION_JSON).content(BODY))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.details.code", is("DUPLICATE_SELF_NOMINATION")));
@@ -284,7 +284,7 @@ class SelfNominationIntegrationTest extends AbstractIntegrationTest {
         saveEvent(EVENT_CODE, "cloud-native", true, "topic");
 
         // The production chain answers 401 before the controller (17.0b3).
-        mockMvc.perform(post("/api/v1/events/{eventCode}/speakers/self-nominate", EVENT_CODE)
+        mockMvc.perform(post("/api/v1/events/{eventCode}/speaker-nominations", EVENT_CODE)
                         .contentType(MediaType.APPLICATION_JSON).content(BODY))
                 .andExpect(status().isUnauthorized());
 
@@ -297,7 +297,7 @@ class SelfNominationIntegrationTest extends AbstractIntegrationTest {
     void should_reject_nonAttendeeRole() throws Exception {
         saveEvent(EVENT_CODE, "cloud-native", true, "topic");
 
-        mockMvc.perform(post("/api/v1/events/{eventCode}/speakers/self-nominate", EVENT_CODE)
+        mockMvc.perform(post("/api/v1/events/{eventCode}/speaker-nominations", EVENT_CODE)
                         .contentType(MediaType.APPLICATION_JSON).content(BODY))
                 .andExpect(status().isForbidden());
     }
@@ -310,7 +310,7 @@ class SelfNominationIntegrationTest extends AbstractIntegrationTest {
     void should_reject_when_unknownField() throws Exception {
         saveEvent(EVENT_CODE, "cloud-native", true, "topic");
 
-        mockMvc.perform(post("/api/v1/events/{eventCode}/speakers/self-nominate", EVENT_CODE)
+        mockMvc.perform(post("/api/v1/events/{eventCode}/speaker-nominations", EVENT_CODE)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 { "sessionTitle": "x", "abstract": "y", "speakerName": "Spoofed Name" }
@@ -326,7 +326,7 @@ class SelfNominationIntegrationTest extends AbstractIntegrationTest {
     void should_reject_when_sessionTitleMissing() throws Exception {
         saveEvent(EVENT_CODE, "cloud-native", true, "topic");
 
-        mockMvc.perform(post("/api/v1/events/{eventCode}/speakers/self-nominate", EVENT_CODE)
+        mockMvc.perform(post("/api/v1/events/{eventCode}/speaker-nominations", EVENT_CODE)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{ \"abstract\": \"only an abstract\" }"))
                 .andExpect(status().isBadRequest());
@@ -336,7 +336,7 @@ class SelfNominationIntegrationTest extends AbstractIntegrationTest {
     @WithMockUser(username = ATTENDEE, roles = {"ATTENDEE"})
     @DisplayName("AC4: event not found → 404")
     void should_return404_when_eventMissing() throws Exception {
-        mockMvc.perform(post("/api/v1/events/{eventCode}/speakers/self-nominate", "BATbern999")
+        mockMvc.perform(post("/api/v1/events/{eventCode}/speaker-nominations", "BATbern999")
                         .contentType(MediaType.APPLICATION_JSON).content(BODY))
                 .andExpect(status().isNotFound());
     }
@@ -349,7 +349,7 @@ class SelfNominationIntegrationTest extends AbstractIntegrationTest {
         saveEvent(EVENT_CODE, "cloud-native", true, "topic");
 
         // 1) Attendee self-nominates (IDENTIFIED).
-        String json = mockMvc.perform(post("/api/v1/events/{eventCode}/speakers/self-nominate", EVENT_CODE)
+        String json = mockMvc.perform(post("/api/v1/events/{eventCode}/speaker-nominations", EVENT_CODE)
                         .contentType(MediaType.APPLICATION_JSON).content(BODY)
                         .with(org.springframework.security.test.web.servlet.request
                                 .SecurityMockMvcRequestPostProcessors.user(ATTENDEE).roles("ATTENDEE")))

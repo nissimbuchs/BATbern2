@@ -61,6 +61,8 @@ public class SpeakerPoolMapper {
         response.setStatus(toStatusEnum(pool.getStatus()));
         response.setSessionId(pool.getSessionId());
         response.setNotes(pool.getNotes());
+        // Story 6.5 AC6 / Story 4.10: the reminders switch, set with the entry PATCH.
+        response.setRemindersDisabled(Boolean.TRUE.equals(pool.getRemindersDisabled()));
         response.setCreatedAt(toOffset(pool.getCreatedAt()));
         response.setUpdatedAt(toOffset(pool.getUpdatedAt()));
 

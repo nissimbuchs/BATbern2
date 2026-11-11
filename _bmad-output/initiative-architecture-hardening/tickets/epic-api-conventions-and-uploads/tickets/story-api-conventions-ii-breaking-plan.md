@@ -109,18 +109,18 @@ context:
 ## Tasks & Acceptance
 
 **Execution:**
-- [ ] Record counts at the start: Spectral baseline, ratchet, ArchUnit stores, s2s, type copies, i18n.
-- [ ] (a) Spec first. RED ITs: own allowed, other 403, organizer allowed, consent for another user 403, old paths 404/405. Then CUMS ownership bean, controller and merged service. Then frontend services and callers on the MSW harness. Then Bruno `users-api`, the Playwright profile and photo specs and the helpers. Commit.
-- [ ] (b) RED first: one cross-event IT per speaker operation (another event's pool id → 404, the other event unchanged, `SesRecorder` empty for send-invitation). Then the `findByIdAndEventId` fixes. Commit.
-- [ ] (b) Spec renames and folds, then EMS controllers. Remove `invite` and move its tests to pool add + promote. Add `speaker-nominations`. Fold reminders into PATCH. Then frontend services and callers, Bruno 35-62 and speaker-portal, and the Playwright speaker specs and fixture. Commit.
-- [ ] (b) Spectral rule `speaker-path-key`: a path parameter directly after `/events/{eventCode}/speakers/` is `{speakerId}` (uuid), and there is no `speaker-pool` or `speakers/pool` literal. Add red fixtures in `api-lint.test.ts` first (`{username}` and `speaker-pool` both fail).
-- [ ] Lint:
+- [x] Record counts at the start: Spectral baseline, ratchet, ArchUnit stores, s2s, type copies, i18n.
+- [x] (a) Spec first. RED ITs: own allowed, other 403, organizer allowed, consent for another user 403, old paths 404/405. Then CUMS ownership bean, controller and merged service. Then frontend services and callers on the MSW harness. Then Bruno `users-api`, the Playwright profile and photo specs and the helpers. Commit.
+- [x] (b) RED first: one cross-event IT per speaker operation (another event's pool id → 404, the other event unchanged, `SesRecorder` empty for send-invitation). Then the `findByIdAndEventId` fixes. Commit.
+- [x] (b) Spec renames and folds, then EMS controllers. Remove `invite` and move its tests to pool add + promote. Add `speaker-nominations`. Fold reminders into PATCH. Then frontend services and callers, Bruno 35-62 and speaker-portal, and the Playwright speaker specs and fixture. Commit.
+- [x] (b) Spectral rule `speaker-path-key`: a path parameter directly after `/events/{eventCode}/speakers/` is `{speakerId}` (uuid), and there is no `speaker-pool` or `speakers/pool` literal. Add red fixtures in `api-lint.test.ts` first (`{username}` and `speaker-pool` both fail).
+- [x] Lint:
   - Run `--update`.
   - Remove G08, G09 and G11.
   - Add the 12 `{speakerId}` operations to X1 by exact operation (accepted owned-child class), each backed by its cross-event IT.
   - Update the `.spectral.yaml` verb comments.
   - Regenerate types and update the ratchet baselines (they may only shrink).
-- [ ] Docs: ADR-013 note for 4.10, ADR-003 amendment (key `{speakerId}` and the scoping tests), the speaker section of `06-backend-architecture.md`, and the doc-drift-mapped docs.
+- [x] Docs: ADR-013 note for 4.10, ADR-003 amendment (key `{speakerId}` and the scoping tests), the speaker section of `06-backend-architecture.md`, and the doc-drift-mapped docs.
 
 **Acceptance Criteria:**
 - Given the specs, when `npm run lint:api` runs, then the baseline has 101 entries (104 − 3: G09 2, G11 1). The 12 `{speakerId}` lines are owned by X1, G08, G09 and G11 are gone, nothing is UNOWNED or STALE, and the speaker rule fails fixtures that use `{username}` or `speaker-pool`.
@@ -131,6 +131,42 @@ context:
 - After deploy (owner): the old paths answer 404/405 in production, and the access-control DAST passes.
 
 ## Implementation Notes
+
+Built 2026-11-11 on `feature/17-overnight-2026-11-10` (agent, owner's blanket go).
+
+- **Old self paths answer 403/400, not 404/405.** `PATCH /users/me` and `/users/me/picture*` now
+  fall on the `/users/{username}` templates with the username `me`. `@PreAuthorize` runs first: a
+  non-organizer gets 403 (`me` is nobody), an organizer passes it and fails the username pattern,
+  400. `me` can never be a username (`chk_username_format`), nothing changes; the ITs pin both.
+  `PUT /users/{username}` is 405. Speaker side: `speakers/pool`, `speakers/invite` and
+  `speakers/self-nominate` fall on `/speakers/{speakerId}` (no GET/POST): 405; `speakers/pool/{id}`
+  and `speaker-pool/{id}/reminders` 404; a username in `send-invitation` 404 "Invalid ID format"
+  (EMS maps the UUID conversion to 404).
+- **Ownership with a token without `custom:username`.** The bean also accepts the user whose
+  `cognito_user_id` is the token subject (the fallback `GET /users/me` uses), so the first-login
+  consent save keeps working; IT case `should_updateOwnProfile_when_tokenHasNoUsernameClaimButOwnSubject`.
+- **Consent for another user** is 403 for any non-null `termsAccepted`.
+- **`remindersDisabled`** went onto `SpeakerPoolResponse` (required: the one mapper always sets it),
+  so a reload shows the stored switch; Bruno `speaker-pool-api/61` reads it back.
+- **Defects fixed on the way:** outreach stored the organizer's e-mail as `organizer_username`
+  (controller read the email claim; rows written before keep it, owner decides on a data fix);
+  `SlotAssignmentService` was dead (no caller) and loaded unscoped, removed;
+  `e2e/user-account/profile-management.spec.ts` restored the bio with `PUT /users/me`, which never
+  existed, and swallowed the error; the byte-identity spec promoted from IDENTIFIED and called
+  `/speakers/invite` with a body it did not take.
+- **Tests moved off own-code mocks (touch rule):** `ProfilePage.test`, `ProfilePhotoUpload.test`,
+  `useUpdateUser.test` onto MSW; `useSendInvitation.test`, `__tests__/speakerPoolService.test`,
+  `SpeakerInvitationServiceTest`, `userAccountApi.picture.test` removed (covered by the MSW/IT
+  suites); profile-update unit tests in `UserServiceTest` replaced by `UserProfileOwnershipIntegrationTest`.
+- **Playwright `organizer/profile-page`** (resumed run, 02:20): two failures not caused by the
+  4.10 paths, fixed. The tabs test looked for `newsletter-toggle`, which #1244 replaced with one
+  checkbox per address (now `newsletter-section`); the bio test clicked "Save Changes" while the
+  organizer's profile language is German (the save button got `data-testid="profile-save-button"`).
+  `speaker-onbehalf-vs-self-byte-identity` skips by design on local dev (no primed ACCEPTED speaker
+  seed, `E2E_SPEAKER_EVENT_CODE` unset), so its changed setup is type-checked, not run.
+- **Local build pitfall:** the OpenAPI generator does not clean its output directory and the
+  Gradle build cache stored a stale `SpeakerRemindersApi`; regenerate with `--rerun` after removing
+  an operation or tag.
 
 ## Plan Change Log
 

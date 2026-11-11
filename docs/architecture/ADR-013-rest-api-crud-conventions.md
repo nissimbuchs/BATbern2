@@ -61,6 +61,22 @@ most common EMS shape (speakers review/promote, registrations promote, mails ret
   there next to the timing rule (422 `PublishValidationError` listing every reason).
 - Lint: `no-verb-segment` 43 to 39 findings, owner group T1 removed.
 
+**Story 4.10 (2026-11, API conventions II, breaking, no aliases)** removed twins and second keys:
+
+- **Profile and picture:** one set, `PATCH /users/{username}` and `/users/{username}/picture*`,
+  for the user themself and for organizers (`@userOwnership.isCurrentUser(#username)` next to the
+  role rule). `PATCH /users/me`, `PUT /users/{username}` (§1: PUT without a required-field body)
+  and the `/users/me/picture*` twins are gone. `GET /users/me` stays the self read (§4) and the
+  login bootstrap: a first token may lack `custom:username`, so the client takes the username for
+  the write from it. Consent (`termsAccepted`) is the user's own: for another user it is 403.
+- **Speakers:** one key `{speakerId}` under `/events/{eventCode}/speakers` (ADR-003 amendment),
+  held by the Spectral rule `speaker-path-key`; the reminders switch is a field of the entry
+  PATCH (§1, no per-attribute endpoint); the test-only `POST /speakers/invite` is gone; an
+  attendee's self-nomination is its own collection, `POST /events/{eventCode}/speaker-nominations`
+  (`POST /speakers` is the organizer's create, with another role and body).
+- Lint: baseline 104 to 101 entries, owner groups G08, G09 and G11 removed, the 12 `{speakerId}`
+  operations accepted one by one in X1. Participants and newsletter self-service follow in 4.10c.
+
 ## Context
 
 BATbern has ~13 OpenAPI specs across five services. An audit during the
@@ -215,8 +231,8 @@ offset-pagination contract that nothing implements).
 ## Reference patterns (the org standard, by example)
 
 - **PUT-as-full-replace vs PATCH-as-partial:** `events-api` `/events/{eventCode}`.
-- **POST-create + PATCH-update split:** `events-api` speaker-pool
-  (`addSpeakerToPool` / `patchSpeakerPoolEntry`).
+- **POST-create + PATCH-update split:** `event-speakers-api`
+  (`addSpeakerToPool` / `patchSpeakerPoolEntry`, `/events/{eventCode}/speakers[/{speakerId}]`).
 - **Action sub-resources:** EMS speaker `…/confirm`, `…/decline`, `…/promote`; EMS event
   `…/transition`, `…/phases/{phase}/publish` (4.9b); CUMS `…/verify`, `…/roles`.
 - **Idempotent toggle:** `partner-topics-api` `POST`/`DELETE /partners/topics/{id}/vote`.

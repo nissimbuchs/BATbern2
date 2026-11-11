@@ -29,7 +29,9 @@ function strings(value: unknown): string[] {
 describe('spec examples (MSW harness defaults)', () => {
   it('reads all public specs (positive control)', () => {
     expect(operations.length).toBeGreaterThan(290);
-    expect(jsonResponses.length).toBeGreaterThan(250);
+    // 249 on 2026-11-11: Story 4.10 removed seven JSON 2xx responses (the /users/me twins,
+    // speakers/invite, the reminders endpoint). A floor, not a count.
+    expect(jsonResponses.length).toBeGreaterThan(240);
   });
 
   it('every JSON 2xx response has an example', () => {

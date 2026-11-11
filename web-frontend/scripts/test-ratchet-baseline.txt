@@ -73,7 +73,6 @@ be-mock-s2s-client	services/event-management-service/src/test/java/ch/batbern/ev
 be-mock-s2s-client	services/event-management-service/src/test/java/ch/batbern/events/service/SessionUserServiceTest.java	1
 be-mock-s2s-client	services/event-management-service/src/test/java/ch/batbern/events/service/SpeakerAutoRegistrationServiceTest.java	1
 be-mock-s2s-client	services/event-management-service/src/test/java/ch/batbern/events/service/SpeakerDashboardServiceTest.java	1
-be-mock-s2s-client	services/event-management-service/src/test/java/ch/batbern/events/service/SpeakerInvitationServiceTest.java	1
 be-mock-s2s-client	services/event-management-service/src/test/java/ch/batbern/events/service/SpeakerPoolServiceTest.java	1
 be-mock-s2s-client	services/event-management-service/src/test/java/ch/batbern/events/service/SpeakerReminderServiceTest.java	1
 be-mock-s2s-client	services/event-management-service/src/test/java/ch/batbern/events/service/SpeakerWorkflowServiceTest.java	1
@@ -540,7 +539,6 @@ fe-mock-services	web-frontend/src/features/profile/WatchPairingSection.test.tsx	
 fe-mock-services	web-frontend/src/hooks/__tests__/useCurrentEvent.test.tsx	1
 fe-mock-services	web-frontend/src/hooks/__tests__/useInfiniteEvents.test.tsx	1
 fe-mock-services	web-frontend/src/hooks/__tests__/usePublicOrganizers.test.ts	1
-fe-mock-services	web-frontend/src/hooks/__tests__/useSendInvitation.test.tsx	1
 fe-mock-services	web-frontend/src/hooks/useAiPrompts.test.ts	1
 fe-mock-services	web-frontend/src/hooks/useAnalytics.test.ts	1
 fe-mock-services	web-frontend/src/hooks/useAuth/useAuth.test.tsx	1
@@ -595,7 +593,6 @@ fe-mock-services	web-frontend/src/pages/public/__tests__/RegistrationPage.test.t
 fe-mock-services	web-frontend/src/pages/speaker-portal/__tests__/ContentSubmissionPage.test.tsx	1
 fe-mock-services	web-frontend/src/pages/speaker-portal/__tests__/InvitationResponsePage.test.tsx	1
 fe-mock-services	web-frontend/src/services/__tests__/publicOrganizerService.test.ts	1
-fe-mock-services	web-frontend/src/services/__tests__/speakerPoolService.test.ts	1
 fe-mock-services	web-frontend/src/services/aiPromptService.test.ts	1
 fe-mock-services	web-frontend/src/services/analyticsService.test.ts	1
 fe-mock-services	web-frontend/src/services/api/__tests__/watchPairingApi.test.ts	1

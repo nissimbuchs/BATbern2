@@ -241,7 +241,7 @@ export const EventSpeakersTab: React.FC<EventSpeakersTabProps> = ({ eventCode })
 
     try {
       const result = await sendInvitationMutation.mutateAsync({
-        username: speaker.id,
+        speakerId: speaker.id,
         options: { responseDeadline },
       });
       setInviteSnackbar({

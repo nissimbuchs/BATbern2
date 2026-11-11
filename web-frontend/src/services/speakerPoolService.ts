@@ -3,8 +3,9 @@
  *
  * HTTP client for Speaker Pool Management APIs
  * Features:
- * - Add speaker to event pool (POST /api/v1/events/{eventCode}/speakers/pool)
- * - Get speaker pool for event (GET /api/v1/events/{eventCode}/speakers/pool)
+ * - Add speaker to event pool (POST /api/v1/events/{eventCode}/speakers)
+ * - Get speaker pool for event (GET /api/v1/events/{eventCode}/speakers)
+ * Story 4.10: one speaker key, the pool entry id `{speakerId}`, under /events/{eventCode}/speakers.
  * - JWT authentication via interceptors
  * - Error handling with correlation IDs
  */
@@ -42,7 +43,7 @@ class SpeakerPoolService {
     request: AddSpeakerToPoolRequest
   ): Promise<SpeakerPoolResponse> {
     const response = await apiClient.post<SpeakerPoolResponse>(
-      `${EVENTS_API_PATH}/${eventCode}/speakers/pool`,
+      `${EVENTS_API_PATH}/${eventCode}/speakers`,
       request
     );
 
@@ -58,7 +59,7 @@ class SpeakerPoolService {
    */
   async getSpeakerPool(eventCode: string): Promise<SpeakerPoolEntry[]> {
     const response = await apiClient.get<SpeakerPoolEntry[]>(
-      `${EVENTS_API_PATH}/${eventCode}/speakers/pool`
+      `${EVENTS_API_PATH}/${eventCode}/speakers`
     );
 
     return response.data;
@@ -72,11 +73,12 @@ class SpeakerPoolService {
    * @throws Error if event or speaker not found, or unauthorized
    */
   async deleteSpeakerFromPool(eventCode: string, speakerId: string): Promise<void> {
-    await apiClient.delete(`${EVENTS_API_PATH}/${eventCode}/speakers/pool/${speakerId}`);
+    await apiClient.delete(`${EVENTS_API_PATH}/${eventCode}/speakers/${speakerId}`);
   }
 
   /**
-   * Partial update of a speaker pool entry (e.g. reassign organizer, update notes/email).
+   * Partial update of a speaker pool entry (reassign organizer, notes, brainstorm metadata,
+   * the reminders switch `remindersDisabled`).
    */
   async patchSpeakerPool(
     eventCode: string,
@@ -84,7 +86,7 @@ class SpeakerPoolService {
     request: PatchSpeakerPoolRequest
   ): Promise<SpeakerPoolResponse> {
     const response = await apiClient.patch<SpeakerPoolResponse>(
-      `${EVENTS_API_PATH}/${eventCode}/speakers/pool/${speakerId}`,
+      `${EVENTS_API_PATH}/${eventCode}/speakers/${speakerId}`,
       request
     );
     return response.data;
@@ -124,22 +126,21 @@ class SpeakerPoolService {
   /**
    * Send invitation to speaker (Story 6.1c)
    *
-   * Transitions speaker from IDENTIFIED to INVITED state and sends invitation email
-   * with magic link for speaker portal access.
+   * Transitions speaker from READY to INVITED and sends the invitation email.
    *
    * @param eventCode Event code (e.g., "BATbern56")
-   * @param username Speaker UUID or username
-   * @param options Optional invitation options (deadline, personal message)
-   * @returns Response with magic link token, new state, and email sent to
+   * @param speakerId Speaker pool entry id (Story 4.10: the only speaker key; no username)
+   * @param options Optional invitation options (deadline, locale)
+   * @returns Response with the new state and the address the mail went to
    * @throws Error if speaker not found, already invited, or in invalid state
    */
   async sendInvitation(
     eventCode: string,
-    username: string,
+    speakerId: string,
     options?: SendInvitationRequest
   ): Promise<SendInvitationResponse> {
     const response = await apiClient.post<SendInvitationResponse>(
-      `${EVENTS_API_PATH}/${eventCode}/speakers/${username}/send-invitation`,
+      `${EVENTS_API_PATH}/${eventCode}/speakers/${speakerId}/send-invitation`,
       options || {}
     );
 

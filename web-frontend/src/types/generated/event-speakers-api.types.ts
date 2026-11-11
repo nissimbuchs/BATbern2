@@ -4,7 +4,7 @@
  */
 
 export interface paths {
-  '/events/{eventCode}/speakers/pool': {
+  '/events/{eventCode}/speakers': {
     parameters: {
       query?: never;
       header?: never;
@@ -52,7 +52,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/events/{eventCode}/speakers/self-nominate': {
+  '/events/{eventCode}/speaker-nominations': {
     parameters: {
       query?: never;
       header?: never;
@@ -80,6 +80,10 @@ export interface paths {
      *     - Identity (speaker name + company) is auto-filled from the attendee's profile; the
      *       body carries only the proposed talk. Unknown body fields are rejected (400).
      *     - At most **one** self-nomination per attendee per event — a second attempt returns 409.
+     *
+     *     **Story 4.10**: a nomination is its own collection, `speaker-nominations` (it was
+     *     `POST /speakers/self-nominate`). `POST /events/{eventCode}/speakers` is the organizer's create,
+     *     with another role and body.
      */
     post: operations['selfNominateSpeaker'];
     delete?: never;
@@ -88,7 +92,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/events/{eventCode}/speakers/pool/{speakerId}': {
+  '/events/{eventCode}/speakers/{speakerId}': {
     parameters: {
       query?: never;
       header?: never;
@@ -116,7 +120,7 @@ export interface paths {
     options?: never;
     head?: never;
     /**
-     * Patch a speaker pool entry (organizer assignment / notes)
+     * Patch a speaker pool entry (organizer assignment, notes, reminders)
      * @description Partial update of a speaker pool entry. Only fields named in
      *     `PatchSpeakerPoolRequest` may be sent; any other field (notably `email`)
      *     is rejected with HTTP 400 (`additionalProperties: false` +
@@ -126,6 +130,11 @@ export interface paths {
      *     `POST /speakers/{speakerId}/promote`. Sending `email` here is a
      *     contract error.
      *     **Authorization**: Requires ORGANIZER role.
+     *
+     *     **Story 4.10**: one speaker key, `{speakerId}`, under `/events/{eventCode}/speakers`
+     *     (it was `/speakers/pool/{speakerId}`); the entry is loaded scoped to the event, so
+     *     another event's entry is 404. `remindersDisabled` replaces the former
+     *     `PATCH /speaker-pool/{speakerPoolId}/reminders`.
      */
     patch: operations['patchSpeakerPoolEntry'];
     trace?: never;
@@ -166,7 +175,7 @@ export interface paths {
      *         new_status=ready, changed_by_username=organizer).
      *       - `SpeakerWorkflowStateChangeEvent` and `SpeakerPromotedToReadyEvent` are published.
      *
-     *     **Why a dedicated endpoint?** `POST /speakers/pool` rejects `email` (AR23); the
+     *     **Why a dedicated endpoint?** `POST /events/{eventCode}/speakers` rejects `email` (AR23); the
      *     only path that attaches an email + provisions an identity is this endpoint.
      *     `PUT /speakers/{speakerId}/status` with `newStatus=READY` also returns 400 with
      *     code `READY_REQUIRES_PROMOTE_ENDPOINT` — promotion MUST go through this path.
@@ -271,7 +280,7 @@ export interface paths {
     };
     /**
      * Get quality-review queue (Story 5.5 AC11)
-     * @description Speakers with CONTENT_SUBMITTED status, oldest submission first. Returns the same SpeakerPoolResponse shape as GET /speakers/pool (API-consolidation Phase 7: replaced the prior raw-entity return).
+     * @description Speakers with CONTENT_SUBMITTED status, oldest submission first. Returns the same SpeakerPoolResponse shape as GET /events/{eventCode}/speakers (API-consolidation Phase 7: replaced the prior raw-entity return).
      */
     get: operations['getReviewQueue'];
     put?: never;
@@ -302,40 +311,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/events/{eventCode}/speakers/invite': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Invite a speaker to an event
-     * @description Create a SpeakerPool entry for a speaker and optionally auto-create
-     *     a User account if one doesn't exist.
-     *
-     *     **Story**: 6.1b - Speaker Invitation System
-     *     **Acceptance Criteria**: AC1 (invite), AC2 (auto-create user), AC7 (idempotency)
-     *     **Authorization**: Requires ORGANIZER role
-     *
-     *     **Business Rules**:
-     *     - If the speaker email already exists in the pool for this event, returns existing entry (idempotent)
-     *     - Auto-creates a User via UserApiClient if no user exists for the email
-     *     - Speaker starts in IDENTIFIED status
-     *     - Cognito account is NOT created for speakers initially
-     *
-     *     **Performance**: <300ms (P95)
-     */
-    post: operations['inviteSpeaker'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/events/{eventCode}/speakers/{username}/send-invitation': {
+  '/events/{eventCode}/speakers/{speakerId}/send-invitation': {
     parameters: {
       query?: never;
       header?: never;
@@ -556,26 +532,6 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/events/{eventCode}/speaker-pool/{speakerPoolId}/reminders': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    /**
-     * Toggle the reminders-disabled flag for a speaker (Story 6.5 AC6)
-     * @description ORGANIZER role.
-     */
-    patch: operations['updateRemindersDisabled'];
-    trace?: never;
-  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -658,7 +614,7 @@ export interface components {
       notes?: string;
     };
     /**
-     * @description Partial-update body for `PATCH /events/{eventCode}/speakers/pool/{speakerId}`
+     * @description Partial-update body for `PATCH /events/{eventCode}/speakers/{speakerId}`
      *     (Story 11.D.1 AR23; extended by Epic 11 bug fix 2026-05-18 to support inline
      *     edits of the brainstorm-level metadata `speakerName` / `company` / `expertise`).
      *     All fields are optional — only non-null fields are applied to the entry.
@@ -693,6 +649,11 @@ export interface components {
        * @example Followed up via LinkedIn 2026-05-12 — interested but needs date confirmation.
        */
       notes?: string;
+      /**
+       * @description Story 6.5 AC6: true stops the automated deadline reminders for this speaker. Story 4.10 folded the former `PATCH /speaker-pool/{speakerPoolId}/reminders` in here (ADR-013 §1: no per-attribute endpoint).
+       * @example true
+       */
+      remindersDisabled?: boolean;
     };
     /**
      * @description Request body for `POST /speakers/{speakerId}/promote` (Story 11.D.1; tightened by
@@ -912,6 +873,11 @@ export interface components {
      *     Story 5.2 - AC9-13: Speaker Pool Management
      */
     SpeakerPoolResponse: {
+      /**
+       * @description Story 6.5 AC6: the automated deadline reminders are off for this speaker (set with `PATCH /events/{eventCode}/speakers/{speakerId}`).
+       * @example false
+       */
+      remindersDisabled: boolean;
       /**
        * Format: uuid
        * @description Unique identifier for the speaker pool entry
@@ -1190,102 +1156,6 @@ export interface components {
       updatedAt: string;
     };
     /**
-     * @description Request to invite a speaker to an event.
-     *     Story 6.1b - AC1: Speaker Invitation
-     */
-    InviteSpeakerRequest: {
-      /**
-       * Format: idn-email
-       * @description Speaker's email address
-       * @example jane.smith@example.com
-       */
-      email: string;
-      /**
-       * @description Speaker's first name (used for user creation if not found)
-       * @example Jane
-       */
-      firstName?: string | null;
-      /**
-       * @description Speaker's last name (used for user creation if not found)
-       * @example Smith
-       */
-      lastName?: string | null;
-      /**
-       * @description Speaker's company name
-       * @example Tech Corp AG
-       */
-      company?: string | null;
-      /**
-       * Format: uuid
-       * @description Session to assign speaker to (optional)
-       * @example 550e8400-e29b-41d4-a716-446655440000
-       */
-      sessionId?: string | null;
-      /**
-       * @description Notes about the speaker
-       * @example Expert in cloud architecture
-       */
-      notes?: string | null;
-    };
-    /**
-     * @description Response for a speaker invitation.
-     *     Story 6.1b - AC1, AC7: Speaker Invitation with idempotency
-     */
-    InviteSpeakerResponse: {
-      /**
-       * Format: uuid
-       * @description UUID of the SpeakerPool entry
-       * @example 123e4567-e89b-12d3-a456-426614174000
-       */
-      speakerPoolId: string;
-      /**
-       * @description Speaker's username
-       * @example jane.smith
-       */
-      username: string | null;
-      /**
-       * Format: idn-email
-       * @description Speaker's email address
-       * @example jane.smith@example.com
-       */
-      email: string;
-      /**
-       * @description Display name of the speaker
-       * @example Jane Smith
-       */
-      speakerName: string;
-      /**
-       * @description Current workflow status — the 8 ADR-009 §0.1 states, serialized as the UPPER_CASE SpeakerWorkflowState enum name.
-       * @example IDENTIFIED
-       * @enum {string}
-       */
-      status:
-        | 'IDENTIFIED'
-        | 'CONTACTED'
-        | 'READY'
-        | 'INVITED'
-        | 'ACCEPTED'
-        | 'CONTENT_SUBMITTED'
-        | 'QUALITY_REVIEWED'
-        | 'DECLINED';
-      /**
-       * @description True if newly created, false if existing (idempotent return)
-       * @example true
-       */
-      created: boolean;
-      /**
-       * @description True if a new User account was created
-       * @example true
-       */
-      userCreated: boolean;
-      /**
-       * Format: date-time
-       * @description When the SpeakerPool entry was created
-       * @example 2026-01-15 10:00:00+00:00
-       */
-      createdAt: string;
-    };
-    /**
      * @description Request to send/resend an invitation email to a speaker.
      *     Story 6.1b - AC3 (updated by 11.E.2 / 11.F.1): Invitation Email
      *
@@ -1517,13 +1387,6 @@ export interface components {
       /** Format: date-time */
       uploadedAt?: string;
     };
-    UpdateRemindersDisabledRequest: {
-      remindersDisabled: boolean;
-    };
-    RemindersDisabledResponse: {
-      speakerPoolId: string;
-      remindersDisabled: boolean;
-    };
     /**
      * @description Standard error envelope returned on every 4xx/5xx response across all services.
      *     Flat shape (NOT nested under `error`). Backed by
@@ -1731,7 +1594,7 @@ export interface operations {
            * @example {
            *       "message": "Event not found: BATbern56",
            *       "timestamp": "2025-12-13T10:00:00Z",
-           *       "path": "/api/v1/events/BATbern56/speakers/pool",
+           *       "path": "/api/v1/events/BATbern56/speakers",
            *       "status": 404,
            *       "error": "Not Found"
            *     }
@@ -2333,61 +2196,6 @@ export interface operations {
       };
     };
   };
-  inviteSpeaker: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Event code */
-        eventCode: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['InviteSpeakerRequest'];
-      };
-    };
-    responses: {
-      /** @description Speaker already exists in pool (idempotent return) */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['InviteSpeakerResponse'];
-        };
-      };
-      /** @description Speaker invited successfully (new entry created) */
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['InviteSpeakerResponse'];
-        };
-      };
-      /** @description Validation error */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['ErrorResponse'];
-        };
-      };
-      403: components['responses']['Forbidden'];
-      /** @description Event not found */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['ErrorResponse'];
-        };
-      };
-    };
-  };
   sendSpeakerInvitation: {
     parameters: {
       query?: never;
@@ -2395,8 +2203,8 @@ export interface operations {
       path: {
         /** @description Event code */
         eventCode: string;
-        /** @description Speaker's username or UUID (for brainstormed speakers) */
-        username: string;
+        /** @description The speaker pool entry (Story 4.10, one speaker key; it used to take a username or a UUID). Loaded scoped to the event, another event's entry is 404. */
+        speakerId: string;
       };
       cookie?: never;
     };
@@ -2731,37 +2539,6 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['SpeakerMaterialConfirmResponse'];
-        };
-      };
-      400: components['responses']['BadRequest'];
-      401: components['responses']['Unauthorized'];
-      403: components['responses']['Forbidden'];
-      404: components['responses']['NotFound'];
-    };
-  };
-  updateRemindersDisabled: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        eventCode: string;
-        speakerPoolId: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['UpdateRemindersDisabledRequest'];
-      };
-    };
-    responses: {
-      /** @description Flag updated */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['RemindersDisabledResponse'];
         };
       };
       400: components['responses']['BadRequest'];

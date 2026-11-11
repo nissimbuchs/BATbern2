@@ -130,7 +130,7 @@ class EmsProductionSecurityFilterChainTest {
         "GET,    /api/v1/admin/settings/email-forwarding.support-contacts",
         "PUT,    /api/v1/admin/settings/presentation",
         "GET,    /api/v1/speaker-portal/profile",
-        "GET,    /api/v1/events/BATbern60/speakers/pool",
+        "GET,    /api/v1/events/BATbern60/speakers",
         "POST,   /api/v1/events",
         "PUT,    /api/v1/events/BATbern60",
         "DELETE, /api/v1/events/BATbern60",

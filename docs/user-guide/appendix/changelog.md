@@ -42,6 +42,12 @@ Only items that are not live yet. Everything else is listed under its release be
 
 ### Unreleased — after BATbern60
 
+**Improvement — One address per profile, picture and speaker (4.10)**:
+- ✅ A speaker of one event can no longer be read or changed through another event's page or link. Before, most speaker actions (status, review, outreach, history, content) checked only the speaker's ID, so an organizer working in one event could act on a speaker of another one by mistake.
+- ✅ Outreach notes record the organizer's user name. Before, they recorded the organizer's e-mail address (notes written before keep it).
+- ✅ The profile page saves with the user name read from the profile, so the first save after the first sign-in works as well.
+- ⚠️ API, breaking for scripts: a profile is `PATCH /api/v1/users/{username}` and its picture `/api/v1/users/{username}/picture*`, for the user themself and for organizers; `PATCH /users/me`, `PUT /users/{username}` and `/users/me/picture*` are gone. A speaker is `/api/v1/events/{eventCode}/speakers/{speakerId}` (the pool entry ID); `…/speakers/pool*`, `…/speaker-pool/{id}/reminders` (now the field `remindersDisabled` of the PATCH), `…/speakers/invite` and `…/speakers/{username}/send-invitation` are gone; a self-nomination is `POST …/speaker-nominations`.
+
 **Improvement — Auto-publish schedule per event, one way to change the event state (4.9b)**:
 - ✅ The Publishing tab has an **Auto-publish schedule**: speakers and agenda can each be switched off for one event, and the number of days before the event changed (1 to 365). The daily job follows it. Before, the job always published 30 and 14 days before, whatever was set.
 - ✅ The phase timeline shows the scheduled auto-publish date of each phase from that schedule.
