@@ -349,7 +349,7 @@ flowchart TB
         SESX["SES"]
         OAIX["OpenAI"]
         CUMSX["CUMS /internal, UserApiClient"]
-        PCSX["PCS, PartnerApiClient,<br/>PartnerMeetingRsvpClient"]
+        PCSX["PCS /internal,<br/>PartnerMeetingRsvpClient"]
     end
 
     C1 --> S1 & S4

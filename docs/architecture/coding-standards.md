@@ -472,10 +472,9 @@ JWT needs an `expiresAt`). An IT whose code calls a peer service binds the harne
 the context's `RestTemplate` bean in `@BeforeEach` instead of a `@MockitoBean` of the client, and
 calls `close()` in `@AfterEach` (the bean is shared by the cached context);
 `.ignoringMissingAuthorization()` is allowed there only because a `@WithMockUser` caller has no JWT
-to forward; it applies only to a binding of a public spec, which requires a JWT. Since 6b two are
-left, both EMS bindings of partners-api (owner: entry 8): `TopicSessionDataControllerIntegrationTest`
-and `CumsContractHarnessTest`; the internal specs (EMS `CumsContractHarness`, every PCS binding)
-require none. Each provider proves its side in `S2sProviderContractIntegrationTest` (CUMS, EMS, PCS):
+to forward; it applies only to a binding of a public spec, which requires a JWT. None is left since
+entry 8 (2026-11-11): no service calls a public spec any more, and the internal specs (EMS
+`CumsContractHarness`, every PCS binding) require no JWT. Each provider proves its side in `S2sProviderContractIntegrationTest` (CUMS, EMS, PCS):
 every consumed operation runs through the real controller and `ProviderContract` checks the
 response, and the examples, against the same spec. A spec without a usable example for a consumed
 operation gets one. How the harness reads `null`, `format: time` and the e-mail formats (as the

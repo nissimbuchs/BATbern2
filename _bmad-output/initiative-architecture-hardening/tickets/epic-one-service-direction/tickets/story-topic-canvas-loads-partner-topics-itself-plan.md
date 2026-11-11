@@ -63,19 +63,19 @@ context:
 ## Tasks & Acceptance
 
 **Execution:**
-- [ ] `docs/api/topics-api.openapi.yml` -- add `POST /topics/classifications` (`classifyTopics`, tag "Topic Classifications", ORGANIZER, 200, 400/401/403, example): request `topics: string[]` (`minItems: 1`, `maxItems` set and stated from a local-dev count of partner topics, items `minLength: 1`); response `classifications[]` in request order. Remove `partnerTopics`, `PartnerTopicGroup`, `TopicEntry`; fix the description. `npm run generate:api-types`.
-- [ ] EMS `TopicClassificationController` (new) + service method -- per title `TopicSimilarityService.getSimilarity`, `@PreAuthorize("hasRole('ORGANIZER')")`. Integration test: organizer 200 with clusters in order, speaker 403, empty / blank 400, anonymous 401.
-- [ ] EMS `TopicSessionDataService` -- no `PartnerApiClient`, no `partnerTopics`; delete `PartnerApiClient`, `PartnerApiClientImpl`, `PartnerApiClientImplContractTest`.
-- [ ] `TopicSessionDataControllerIntegrationTest` -- no PCS binding; touch rule: no class `@Transactional`, no `TrendingTopicsService` mock (no API key in tests gives `FALLBACK_TOPICS`, or `OpenAiTestServer`); assert `partnerTopics` absent.
-- [ ] `CumsContractHarnessTest` -- rebind the `onlyFor` case to an internal spec that outlives 8b (`ems-internal` `/internal/events/{eventCode}/schedule`), no `ignoringMissingAuthorization`.
-- [ ] PCS `S2sProviderContractIntegrationTest` -- delete the EMS-only public blocks, javadoc names only the RSVP contract.
-- [ ] Frontend `partnerApi.ts` -- `listPartnerLogos()`: `GET /partners?include=company&size=200` → `Record<companyName, logoUrl>`.
-- [ ] Frontend `blobTopicService.ts` -- `getSessionData` composes EMS session data ‖ `getTopics()` ‖ logos, then `classifyTopics` (unique titles), groups as the deleted Java did; degradation per matrix. `classifyTopics` lives here.
-- [ ] Frontend tests -- `useTopicSessionData.test.tsx` (new, MSW `api.on`): grouping, "Unknown", logo/null, clusters, each failure row; `blobTopicService.test.ts` onto the MSW harness (ratchet line goes).
-- [ ] Playwright `blob-topic-selector.spec.ts` -- assert a partner ghost blob with logo renders on BATbern57 (testid on ghost-partner node if missing).
-- [ ] `bruno-tests/event-topics-api/35-classify-topics.bru` -- organizer 200 + order; comments in `docs { }`.
-- [ ] Gates -- `check:s2s-client-urls -- --update` (0 lines), remove owner S2; `check:test-ratchet -- --update`; EMS store refreshes on the suite run; `ems-module-deps.py` `OVR`: `TopicSessionDataService`, `TopicSessionDataController` → `topics_ai` (canvas classes, misread by "Session").
-- [ ] Docs -- module-map Gates (guard 0, EMS `*Partner*Client*` 2 owner 8b), ADR-016 L60/72/80, coding-standards (no `ignoringMissingAuthorization` binding left), system overview, doc-drift mappings.
+- [x] `docs/api/topics-api.openapi.yml` -- add `POST /topics/classifications` (`classifyTopics`, tag "Topic Classifications", ORGANIZER, 200, 400/401/403, example): request `topics: string[]` (`minItems: 1`, `maxItems` set and stated from a local-dev count of partner topics, items `minLength: 1`); response `classifications[]` in request order. Remove `partnerTopics`, `PartnerTopicGroup`, `TopicEntry`; fix the description. `npm run generate:api-types`.
+- [x] EMS `TopicClassificationController` (new) + service method -- per title `TopicSimilarityService.getSimilarity`, `@PreAuthorize("hasRole('ORGANIZER')")`. Integration test: organizer 200 with clusters in order, speaker 403, empty / blank 400, anonymous 401.
+- [x] EMS `TopicSessionDataService` -- no `PartnerApiClient`, no `partnerTopics`; delete `PartnerApiClient`, `PartnerApiClientImpl`, `PartnerApiClientImplContractTest`.
+- [x] `TopicSessionDataControllerIntegrationTest` -- no PCS binding; touch rule: no class `@Transactional`, no `TrendingTopicsService` mock (no API key in tests gives `FALLBACK_TOPICS`, or `OpenAiTestServer`); assert `partnerTopics` absent.
+- [x] `CumsContractHarnessTest` -- rebind the `onlyFor` case to an internal spec that outlives 8b (`ems-internal` `/internal/events/{eventCode}/schedule`), no `ignoringMissingAuthorization`.
+- [x] PCS `S2sProviderContractIntegrationTest` -- delete the EMS-only public blocks, javadoc names only the RSVP contract.
+- [x] Frontend `partnerApi.ts` -- `listPartnerLogos()`: `GET /partners?include=company&size=200` → `Record<companyName, logoUrl>`.
+- [x] Frontend `blobTopicService.ts` -- `getSessionData` composes EMS session data ‖ `getTopics()` ‖ logos, then `classifyTopics` (unique titles), groups as the deleted Java did; degradation per matrix. `classifyTopics` lives here.
+- [x] Frontend tests -- `useTopicSessionData.test.tsx` (new, MSW `api.on`): grouping, "Unknown", logo/null, clusters, each failure row; `blobTopicService.test.ts` onto the MSW harness (ratchet line goes).
+- [x] Playwright `blob-topic-selector.spec.ts` -- assert a partner ghost blob with logo renders on BATbern57 (testid on ghost-partner node if missing).
+- [x] `bruno-tests/event-topics-api/35-classify-topics.bru` -- organizer 200 + order; comments in `docs { }`.
+- [x] Gates -- `check:s2s-client-urls -- --update` (0 lines), remove owner S2; `check:test-ratchet -- --update`; EMS store refreshes on the suite run; `ems-module-deps.py` `OVR`: `TopicSessionDataService`, `TopicSessionDataController` → `topics_ai` (canvas classes, misread by "Session").
+- [x] Docs -- module-map Gates (guard 0, EMS `*Partner*Client*` 2 owner 8b), ADR-016 L60/72/80, coding-standards (no `ignoringMissingAuthorization` binding left), system overview, doc-drift mappings.
 
 **Acceptance Criteria:**
 - Given local dev, when an organizer opens `/organizer/events/BATbern57/topic-blob`, then partner topics appear with logos and clusters as before, the browser calls PCS `/partners/topics`, `/partners?include=company…` and EMS `/topics/classifications`, and the EMS log shows no `/api/v1/partners`.
@@ -85,6 +85,48 @@ context:
 - Given `npm run lint:api` and `make check-frontend-api-paths` (17.3), then both pass, baseline still 97.
 
 ## Implementation Notes
+
+Built 2026-11-11 on `feature/17-overnight-2026-11-10` (baseline `afb664ae`).
+
+- **Spec.** `POST /topics/classifications` (`classifyTopics`, tag "Topic Classifications"):
+  `topics` 1..500 items, each `minLength: 1`, `maxLength: 255` (the `topic_suggestions.title`
+  column). `maxItems: 500` from a local-dev count: 38 topic suggestions (35 PARTNER over 8
+  companies, 3 COMMUNITY without company). Blank titles ("   ") pass `minLength`, so
+  `TopicSimilarityService.classifyAll` refuses them with `ValidationException` → 400. Example
+  computed by the running service (SECURITY relates 16, 27, 38, 48, 57). `partnerTopics`,
+  `PartnerTopicGroup`, `TopicEntry` removed.
+- **Frontend.** `blobTopicService.getSessionData` = EMS session data ‖ (`getTopics` → classify unique
+  non-blank titles ‖ `listPartnerLogos`). Above 500 titles `classifyTopics` splits into several
+  calls. `PartnerTopicEntry.logoUrl` typed `string | null` (it was null at runtime before).
+  Deviation, minor: groups come in first-appearance order of the PCS list (sorted by votes);
+  before they came in Java `HashMap` order, i.e. unspecified. The 20-company cap now keeps the
+  companies with the most-voted topics first.
+- **Testids.** Ghost groups carry `data-testid` = node type (`ghost-partner` etc.), the logo image
+  `ghost-company-logo`.
+- **Module scripts** (from `services/event-management-service/src/main/java/ch/batbern/events`):
+  - before (`afb664ae`): deps platform 35, sessions 77, topics_ai 26; target ALLOWED 52,
+    VIOLATING EDGES 28, refs 96, `sessions->topics_ai` 5 (`TopicSessionDataService`).
+  - after, raw (no `OVR` change): deps platform 33, sessions 77, topics_ai 27 (new
+    `TopicClassificationController`); target 52 / 28 / 96, `sessions->topics_ai` 5 unchanged.
+  - after, with `OVR` (`TopicSessionDataService`, `TopicSessionDataController` → `topics_ai`):
+    deps platform 33, sessions 75, topics_ai 29; target ALLOWED 52, VIOLATING EDGES 27, refs 91,
+    `sessions->topics_ai` gone. Other edges unchanged (only example ordering differs).
+- **Gates measured.** s2s guard 2 → 0 lines, owner group S2 removed; EMS store `98b035c9` 4 → 2
+  lines (only `PartnerMeetingRsvpClient*`), refreshed by the suite run; ratchet
+  `be-mock-in-process` 33 → 32, `be-transactional-it` 117 → 116, `fe-mock-services` 167 → 166;
+  `rg ignoringMissingAuthorization services/` no match; `lint:api` 97.
+- **PCS provider test.** With the public blocks gone, the partner/topic seed, the CUMS binding and
+  the cache clearing were dead and were removed; the RSVP contract stays.
+- **Verification run.** EMS `test` BUILD SUCCESSFUL (2727 passed, 0 failed); PCS `test` BUILD
+  SUCCESSFUL (281 passed); Vitest 460 files, 5915 passed; `lint:api` (97), `type-check`, `lint`,
+  `check:s2s-client-urls` (0), `check:test-ratchet`, `make check-frontend-api-paths` (276/276) exit
+  0; `check:api-types` passes once the regenerated types are committed. Local dev after restarting
+  event-management: Bruno `35-classify-topics.bru` 3/3; Playwright `blob-topic-selector.spec.ts` 9
+  passed (incl. the new partner ghost + logo test); gateway log shows the browser calling
+  `/partners/topics`, `/partners?include=company&size=200` and `/topics/classifications`;
+  `/tmp/batbern-1-event-management.log` has no partners call since the restart.
+- Not done by hand: the manual DevTools click-through (covered by the Playwright run and the
+  gateway log).
 
 ## Plan Change Log
 
