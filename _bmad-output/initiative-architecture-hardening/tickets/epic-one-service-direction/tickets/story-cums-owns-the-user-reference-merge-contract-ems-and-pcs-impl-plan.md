@@ -1,0 +1,91 @@
+---
+title: 'CUMS owns the user-reference merge contract, EMS and PCS implement it'
+type: 'refactor'
+ticket: '7b'
+created: '2026-11-11'
+status: 'ready-for-dev'
+baseline_revision: ''
+route: 'full'
+route_source: 'auto'
+risk: 'high'
+review: ''
+review_source: ''
+lenses_ran: []
+review_loop_iteration: 0
+context:
+  - '{project-root}/_bmad-output/initiative-architecture-hardening/tickets/epic-one-service-direction/tickets/story-ems-pulls-mail-center-requests-from-cums-plan.md'
+---
+
+<frozen-after-approval reason="human-owned intent — do not modify unless human renegotiates">
+
+## Intent
+
+Approved by the owner 2026-11-11 ("B for all": this plan is already the upstream-owned contract pattern).
+
+**Problem:** CUMS calls EMS by name (`EventManagementUserMergeClient`: merge preview, merge, primary-email), the last CUMS→EMS edge, and PCS is not part of a merge at all: after a merge, PCS rows (topic suggestions, partner notes, partner meetings) still name a username that no longer exists.
+
+**Approach:** CUMS specifies `/internal/user-references/{preview,merge,primary-email}` in `cums-internal.openapi.yml` as its own contract. The holders are listed in CUMS configuration and called through one CUMS client on `S2sHeaders` that names no service. EMS moves its `usermerge` endpoints onto the contract; PCS implements it for its three username columns (the ticket's fourth, `partner_contacts.username`, is gone: PCS V6 dropped the table; production has the three). The EMS-named client pair goes. Before PCS joins, a read-only production query counts PCS rows that already name a former merge source.
+
+## Boundaries & Constraints
+
+**Always:** Branch `feature/17-7b-user-reference-contract` (from 3.7), commit locally, no push or PR without owner go. Local dev only for verification; the production query is read-only, counts only, and runs only with the owner's go. One heavy job at a time on rack. Spec first. Tests on real PostgreSQL; holders at the wire via `ContractServer`; no own-code mocks in touched tests. New migrations only. Public `users-api` shape unchanged (holder counts join the flat `table.column` maps). New i18n labels in all 10 locales.
+
+**Never:** No change to `mailcenter.notify-instead-of-forward`, no real mail. No production data change in this story without a separate owner decision. No new upstream→downstream call besides the contract.
+
+## I/O & Edge-Case Matrix
+
+| Scenario | Input / State | Expected Output / Behavior | Error Handling |
+|----------|--------------|---------------------------|----------------|
+| Preview | two profiles, rows in EMS and PCS | `moves` lists EMS and PCS `table.column` counts | — |
+| Merge | as above | every holder rewrites the source username; CUMS deletes the source | — |
+| Holder refuses | EMS preview has a blocker | merge refused (409 `BLOCKED`) before any holder merges | — |
+| Holder down | PCS unreachable | merge fails (502 as today), the profile step does not run; a retry is idempotent | WARN |
+| Primary email | make-primary | EMS moves upcoming registrations at once (synchronous); PCS answers with nothing to move | failure as today |
+
+</frozen-after-approval>
+
+## Code Map
+
+- CUMS `client/EventManagementUserMergeClient.java`, `HttpEventManagementUserMergeClient.java` (+ `EventManagementContract`, `HttpEventManagementUserMergeClientContractTest`) -- replace by `client/UserReferenceContract.java` (+ `HttpUserReferenceContract`) on shared-kernel `ContractCalls` (built in the 7 rework): one call per configured holder, same timeouts, 409 → `MergeBlockedException`, else `MergeCallFailedException`.
+- CUMS `service/UserMergeService.java:56-141` -- preview sums all holders' maps; merge first previews all holders (any blocker → refuse), then merges each. `service/PrimaryEmailService.java:73` -- calls every holder.
+- CUMS `application.yml:107` -- add `batbern.contracts.user-references.implementers` (EMS and PCS base URLs).
+- CUMS `archunit_store/e75ed5e2-…` -- 2 lines, must end empty.
+- EMS `usermerge/InternalUserMergeController.java`, `UserMergeService.java` -- paths become `/internal/user-references/*`; logic unchanged; `InternalUserMergeIntegrationTest` follows.
+- PCS new `usermerge/` (controller + service, JDBC): `topic_suggestions.suggested_by`, `partner_notes.author_username`, `partner_meetings.created_by`; no unique constraint on them, so no conflicts or blockers; PCS writes no merge log (EMS's `user_merge_log` is the record).
+- `docs/api/internal/cums-internal.openapi.yml` (contract), `ems-internal.openapi.yml` (3 operations out); EMS and PCS `S2sProviderContractIntegrationTest` validate against the cums contract.
+- Frontend `MergeProfileDialog.tsx:145` labels by table: add `merge.tables.{topic_suggestions,partner_notes,partner_meetings}` in 10 locales.
+
+## Tasks & Acceptance
+
+**Execution:**
+- [ ] Specs: contract in `cums-internal`, removal in `ems-internal`; regenerate types if touched.
+- [ ] CUMS: `UserReferenceContract` + config; `UserMergeService`, `PrimaryEmailService`; delete the EMS client pair; `UserMergeIntegrationTest` with two `ContractServer` holders, one refusing; contract test per operation.
+- [ ] EMS: move the three endpoints; provider contract test entries.
+- [ ] PCS: `usermerge` controller + service + integration test (preview, merge, idempotent rerun); provider contract test entries; `EndpointAuthorizationGuardTest` stays green.
+- [ ] Frontend: 4 labels × 10 locales; `MergeProfileDialog.test.tsx` covers a PCS key.
+- [ ] Docs: ADR-016 decision 5 (done), `module-map.md` (one upstream→downstream call: `/internal/user-references/*`; CUMS store count gone), `06-backend-architecture.md`, `06b-user-lifecycle-sync.md`, changelog, doc-drift mappings.
+
+**Acceptance Criteria:**
+- Given local dev and two profiles with EMS and PCS rows, when an organizer previews and merges, then the preview lists EMS and PCS counts and PCS rows carry the target username afterwards.
+- Given local dev, when a primary email changes, then an upcoming registration moves at once.
+- Given the CUMS, EMS and PCS suites, then they pass and the CUMS archunit store is empty.
+
+## Design Notes
+
+**Architecture note.** Modules: CUMS `client`, `service`, config; EMS `usermerge`; PCS new `usermerge`; web-frontend locales. New dependency: none. New endpoints: `/internal/user-references/{preview,merge,primary-email}` on EMS (renamed from `/internal/users/merge-preview|merge|primary-email`, which cannot stay: their spec belongs to EMS, the contract to CUMS) and on PCS (new). Reused: `S2sHeaders`, `ContractServer`, provider contract test, the EMS merge logic. Deviation: none; ADR-016 decision 5 as amended 2026-11-11.
+
+Merge order: preview all holders, refuse on any blocker, then merge each. A holder failing mid-way leaves earlier holders merged and the source profile in place; every holder merge is idempotent, so the retry completes it. Same guarantee as today with one holder.
+
+**Production query (owner go 2026-11-11, run by agent, read-only transaction, counts only).** PCS rows naming a `user_merge_log.source_username` (267 merges, 2026-11-04 to 2026-11-08): `topic_suggestions.suggested_by` 0 (of 43), `partner_notes.author_username` 0 (of 2), `partner_meetings.created_by` 0 (of 2). No repair needed. `partner_contacts` does not exist in production (PCS V6).
+
+**Epic 17 rule (C15).** Start (`820c6803`): CUMS archunit store 2 lines (end 0); `ServiceDirectionTest` holds no other CUMS line. Also fixed: PCS rows orphaned by merges.
+
+## Verification
+
+**Commands:**
+- `./gradlew :services:company-user-management-service:test`, then EMS, then PCS (`--max-workers=4`, one at a time) -- green.
+- `cd web-frontend && npx vitest run src/components/organizer/UserManagement --maxWorkers=4 && npm run type-check && npm run check:api-types` -- green.
+- `make check-test-ratchet` -- no RAISED line.
+
+**Manual checks:**
+- Local dev: merge preview and merge of two test profiles with a PCS partner note; make-primary on a profile with an upcoming registration.

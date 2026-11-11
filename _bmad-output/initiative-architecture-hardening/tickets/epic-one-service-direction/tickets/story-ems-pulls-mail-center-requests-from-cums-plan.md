@@ -1,17 +1,17 @@
 ---
-title: 'EMS pulls Mail Center requests from CUMS'
+title: 'CUMS calls the Mail Center through a contract it owns'
 type: 'refactor'
 ticket: '7'
 created: '2026-11-11'
-status: 'built'
-baseline_revision: '9d10da27cb011b4a8604cb0c016cd11080483ca8'
+status: 'in-progress'
+baseline_revision: '7815a9c20e392fd560c58839432be70e883ad8e3'
 route: 'full'
 route_source: 'auto'
 risk: 'high'
-review: 'quick'
-review_source: 'pinned'
-lenses_ran: ['quick']
-review_loop_iteration: 0
+review: ''
+review_source: ''
+lenses_ran: []
+review_loop_iteration: 1
 context: ['{project-root}/docs/architecture/ADR-016-service-directions-and-service-to-service-calls.md']
 ---
 
@@ -19,69 +19,60 @@ context: ['{project-root}/docs/architecture/ADR-016-service-directions-and-servi
 
 ## Intent
 
-**Problem:** CUMS pushes merge and logo requests to EMS (`/internal/mail-center/{merge,logo}-requests[/{id}/done]`), an upstream→downstream call ADR-016 forbids. A failed open rolls back the user's request (502), and a failed close is logged and lost, so the conversation stays OPEN for good.
+**Problem:** CUMS pushed merge and logo requests to EMS by name (`EventManagementMailCenterClient`). The first build replaced that with a pull feed polled every minute; the owner rejected polling on 2026-11-11 (constant idle traffic, delay, a job, cursor and lock per feed).
 
-**Approach:** CUMS exposes `GET /internal/mail-center-requests?since=<cursor>&limit=` over both request tables, ordered by a change cursor. An EMS ShedLock job pulls it every minute, opens or closes the conversations through the existing `RequestConversations`, and stores its cursor. The push endpoints, the CUMS client pair and the 502 paths are deleted.
+**Approach:** CUMS owns a Mail Center request contract in `cums-internal.openapi.yml`, implemented by EMS and called synchronously through one CUMS caller that names no service; the implementers are listed in CUMS configuration (ADR-016 decision 4 as amended). The feed, its migrations and the job go. Owner decision 2026-11-11 ("B for all"), which approves this rework.
 
 ## Boundaries & Constraints
 
-**Always:** the feed is in `cums-internal.openapi.yml` and contract-tested on both sides (`ContractServer`/`CumsContractHarness`, CUMS `S2sProviderContractIntegrationTest`); the EMS client uses `S2sHeaders.forCurrentUser()` (no JWT from the job); processing is idempotent (open finds an existing conversation by `keyOf`, close skips DONE); new migrations only (CUMS V30, EMS V153); the job is registered in `AutomaticTriggerAudienceGuardTest` as "no mail"; tests follow the fidelity rules (CUMS request ITs lose their `@MockitoBean` of the client).
+**Always:** Shared-kernel `ContractCalls` (headers from `S2sHeaders.forCurrentUser()`, one call per configured implementer, error translation) is the one way a service calls a contract it owns; 7b and 8b reuse it. Contract in `cums-internal.openapi.yml`, tested on both sides (`ContractServer` in CUMS, EMS `S2sProviderContractIntegrationTest` against the cums spec). Opening stays inside the filing transaction: an implementer that does not answer fails the filing (502, request not stored), as before 2026-11. Deciding calls after commit; a failure is logged ERROR (`mailcenter.request_contract.failures` counter) and does not undo the decision; deciding in the Mail Center already closes the conversation itself. Keep the first build's fixes: `RequestConversations` close guard (`last_inbound_at <= decidedAt`) and group-id link, close-at-once in `ConversationDetail`, null requester tolerated. No-op `.sql` deletions: CUMS V30 and EMS V153 were never deployed; delete them and clean the local dev DB by hand.
 
-**Never:** touch the primary-email push (`EventManagementUserMergeClient`, `/internal/users/primary-email`, `PrimaryEmailService`; owner 2026-11-11, moves in 7b); send mail from the job; edit V23/V25/V28; change what the organizer sees in a conversation (subject, requester, note).
+**Never:** touch the primary-email push (7b); send mail; edit an applied migration; change what the organizer sees in a conversation.
 
 ## I/O & Edge-Case Matrix
 
 | Scenario | Input / State | Expected Output / Behavior | Error Handling |
 |---|---|---|---|
-| New request | OPEN merge or logo row, not yet pulled | next poll opens a conversation with today's subject, requester name/email, note | — |
-| Decided | APPROVED/DECLINED row with an open conversation | next poll sets it DONE, `updated_by` = `decidedBy` | — |
-| Opened and decided within one poll | decided row, no conversation | opened, then closed in the same pass (audit kept) | — |
-| Old decided row on first poll | decided before the Mail Center, no conversation | not opened (no history backfill) | skip |
-| Replay | cursor moved back, rows re-read | no duplicate conversation, no status change | idempotent |
-| Concurrent commit | row committed with an older change time than the cursor | still delivered | settle window (Design Notes) |
-| CUMS down | feed call fails | cursor unchanged, error logged + metric, next poll retries | no exception escapes the job |
-| User files request while EMS down | POST merge/logo request | 201, no 502 | — |
+| New request | user files a merge or logo request | conversation open in the Mail Center at once, same subject, requester, note | — |
+| Implementer down at filing | EMS not reachable | 502, request not stored, user can retry | as before 2026-11 |
+| Decided | approve or decline | conversation DONE, `updated_by` = decider | — |
+| Decided, requester replied after the decision | inbound mail newer than the decision | stays OPEN | — |
+| Implementer down at decision | EMS not reachable | decision stands; ERROR + counter | logged |
+| Repeated call | same open or decision twice | no duplicate, no change | idempotent |
 
 </frozen-after-approval>
 
 ## Code Map
 
-- CUMS `client/EventManagementMailCenterClient.java`, `client/HttpEventManagementMailCenterClient.java` -- delete (sync push, 502 on open, lossy close).
-- CUMS `service/ProfileMergeRequestService.java` L73, L122-134; `service/CompanyLogoRequestService.java` L89, L142-155 -- drop the open/close calls; build the subject in the feed mapper instead (same text).
-- CUMS `controller/UserMergeController.java` L224-229, `CompanyLogoRequestController.java` L99-103 -- remove the `MailCenterCallFailedException` → 502 branches.
-- CUMS tables `profile_merge_requests` (V23), `company_logo_requests` (V25): no change column. V30 adds `changed_at timestamptz NOT NULL`, backfilled `coalesce(decided_at, created_at)`, set by a trigger to `clock_timestamp()` on insert and on status/decision update; index `(changed_at, id)` on each.
-- CUMS `controller/InternalCompanyController.java` (GET with params pattern), `SecurityConfig` L81/L130 permit `/internal/**` -- new `InternalMailCenterRequestController` + feed service/repository query (UNION of both tables).
-- `docs/api/internal/cums-internal.openapi.yml` (`/internal/email-owners` L212-240 as pattern) -- add the feed; `ems-internal.openapi.yml` L312-427, schemas ~L651-694, header L8 -- remove the 4 push operations.
-- `docs/api/users-api.openapi.yml` L1409, L1450 -- remove the logo 502 and its text; regenerate `web-frontend/src/types/generated/user-api.types.ts` (no frontend caller).
-- EMS `mailcenter/InternalRequestConversationController.java` -- delete; `mailcenter/RequestConversations.java` (`open` 65-86, `close` 89-94) -- keep, called by the new job.
-- EMS `client/impl/UserApiClientImpl.java` `getEmailOwners` L770-788 -- query pattern; new client `mailcenter/MailCenterRequestFeedClient` (mail center module, not `client/`, so the request handling stays in L6).
-- EMS `mailcenter/inbound/MailMessageRetentionScheduler.java` L41-47 -- ShedLock/cron pattern; `config/ShedLockConfig.java`.
-- EMS test `config/CumsContractHarness.java` `ANSWERABLE` L77-82, `defaults()` L120 -- add the feed with a default empty page, so every IT context tolerates the job.
-- Tests to rewrite: CUMS `ProfileMergeRequestIntegrationTest`, `CompanyLogoRequestIntegrationTest` (remove client mocks and 502 cases; assert the feed), delete `HttpEventManagementMailCenterClientContractTest`; EMS `InternalMergeRequestIntegrationTest`, `InternalLogoRequestIntegrationTest` → one `MailCenterRequestFeedJobIntegrationTest`; EMS `S2sProviderContractIntegrationTest` L130-133, L270-283 -- remove; CUMS `S2sProviderContractIntegrationTest` `@CsvSource` L96-106 -- add.
-- `mailcenter/AutomaticTriggerAudienceGuardTest.java` L42-76 -- register the job.
-- CUMS archunit store `e75ed5e2-...` lines 1, 3 -- drop out on the run; `docs/architecture/module-map.md` L17-20, L63-67 -- mail-center exception gone, CUMS store 4 → 2.
+- Restore from `9d10da27` and rename: CUMS `client/EventManagementMailCenterClient` + `HttpEventManagementMailCenterClient` → `client/MailCenterRequestContract` (interface, named after the contract) + `HttpMailCenterRequestContract` on `ContractCalls`; the open/close call sites in `ProfileMergeRequestService`, `CompanyLogoRequestService` and the 502 branches in `UserMergeController`, `CompanyLogoRequestController` as they were, the close moved after commit (`TransactionSynchronization` or the controller after the service returns).
+- EMS `mailcenter/InternalRequestConversationController` (restore, paths `POST /internal/mail-center-requests` (kind in body) and `POST /internal/mail-center-requests/{requestId}/decision`), calling the current `RequestConversations`.
+- Delete: CUMS `MailCenterRequestFeedService`, `InternalMailCenterRequestController`, `V30__mail_center_request_feed_cursor.sql`, feed ITs; EMS `MailCenterRequestFeedClient`, `MailCenterRequestFeedJob`, `V153__feed_cursors.sql`, their tests, the feed default in `CumsContractHarness`, the job entry in `AutomaticTriggerAudienceGuardTest`, the cron property in test properties.
+- New shared-kernel `ch.batbern.shared.contract.ContractCalls` (+ unit test): `List<String> implementers` from `batbern.contracts.<name>.implementers`, `post(path, body)` / `get(path, uriVariables, type)` per implementer, 409 → `ContractRefusedException(message)`, other failure → `ContractCallFailedException(implementer, cause)`.
+- CUMS `application.yml`: `batbern.contracts.mail-center-requests.implementers: ${EVENT_MANAGEMENT_SERVICE_URL:http://event-management:8080}`; test yml points at the `ContractServer`.
+- Specs: `cums-internal` replaces the feed with the two contract operations; `users-api` texts back to "opened/closed at once"; user guide `event-mail.md`, changelog, doc-drift mapping follow.
 
 ## Tasks & Acceptance
 
 **Execution:**
-- [x] `services/company-user-management-service/src/main/resources/db/migration/V30__mail_center_request_feed_cursor.sql` -- `changed_at`, trigger, backfill, indexes -- cursor without editing V23/V25.
-- [x] `docs/api/internal/cums-internal.openapi.yml` -- `GET /internal/mail-center-requests` (`since` opaque string, optional; `limit` 1-200, default 100), item `{kind: MERGE|LOGO, requestId, status, requesterName, requesterEmail (idn-email), subject, note (nullable), decidedBy (nullable), changedAt}`, page `{items, nextCursor}`, examples -- contract first.
-- [x] CUMS feed controller/service/repository -- settle window, keyset `(changed_at, id) > cursor`, requester name/email from the user profile -- the feed.
-- [x] CUMS services, controllers, client pair -- remove push, 502 branches and the subject builders' push use -- CUMS no longer names EMS for requests.
-- [x] `services/event-management-service/src/main/resources/db/migration/V153__feed_cursors.sql` -- `feed_cursors(feed varchar PRIMARY KEY, cursor text NOT NULL, updated_at timestamptz NOT NULL)` -- reused by 8b's pattern.
-- [x] EMS `mailcenter/MailCenterRequestFeedClient`, `mailcenter/MailCenterRequestFeedJob` (`@Scheduled(cron="${batbern.mail-center-request-feed.cron:0 * * * * *}")`, `@SchedulerLock`, loop pages until empty, per item open/close, save cursor after each page, catch-all with log + Micrometer counter `mailcenter.request_feed.failures`) -- the pull.
-- [x] EMS: delete `InternalRequestConversationController`, the 4 ems-internal operations and their schemas; update `RequestConversations` only if the job needs a combined open-then-close; `AutomaticTriggerAudienceGuardTest` entry.
-- [x] `docs/api/users-api.openapi.yml`, generated types -- remove the 502.
-- [x] Tests (fidelity rules): CUMS feed IT (order, settle window, cursor resume, limit, both kinds, decided fields) and provider contract; CUMS request ITs on the real path, asserting the feed row instead of a mocked client; EMS client contract test (with and without JWT); EMS job IT on `CumsContractHarness`: open, close, open+close in one pass, old decided skipped, replay idempotent, cursor resume, CUMS 500 leaves the cursor.
-- [x] `docs/architecture/module-map.md`, `ADR-016` costs line, `docs/architecture/06-backend-architecture.md` (Mail Center requests section, per doc-drift mappings) -- docs in the same commit.
+- [ ] Spec `cums-internal`: contract operations (MailCenterRequestOpened, MailCenterRequestDecided), feed removed.
+- [ ] shared-kernel `ContractCalls` + tests.
+- [ ] CUMS: contract caller, services, controllers, config; delete feed + V30; ITs (`ProfileMergeRequestIntegrationTest`, `CompanyLogoRequestIntegrationTest`) assert what the `ContractServer` received, and the 502 at filing; contract test.
+- [ ] EMS: controller restored on new paths; delete feed client, job, V153 and their tests; provider contract test against the cums spec; ratchet baseline.
+- [ ] Docs as in Code Map; ADR-016 cost line states open fails, decision logs.
+- [ ] Local dev DB: drop V30/V153 objects and their `flyway_schema_history_*` rows.
 
 **Acceptance Criteria:**
-- Given a running local dev, when a user files a profile-merge request and an organizer files nothing else, then the request shows in the Mail Center within about 1.5 minutes, and after the organizer approves it in CUMS the conversation turns DONE within the same delay.
-- Given the same for a company logo request, then the same holds.
-- Given a primary-email change on local dev, when it is saved, then an upcoming registration shows the new address at once (push unchanged).
-- Given the CUMS and EMS full suites, when they run, then the CUMS archunit store holds only the 2 user-merge lines and `ems-internal.openapi.yml` has no `/internal/mail-center/` path.
+- Given local dev, when a test user files a merge and a logo request, then both conversations are in the Mail Center at once; when an organizer declines them outside the Mail Center, then both are DONE at once.
+- Given EMS stopped on local dev, when a merge request is filed, then the user gets the error and no request is stored.
+- Given the CUMS and EMS suites, then they pass, the CUMS store has 2 lines (user-merge pair, 7b), and no feed class, job or migration remains.
+
+## Plan Change Log
+
+- 2026-11-11, owner decision (not a review finding): polling rejected, alternative B (upstream-owned push contract) chosen for 7, 7b and 8b. Amended: intent, boundaries, matrix, code map, tasks, design. Avoids: a job, cursor table and lock per feed, one-minute delay, idle traffic. KEEP: `RequestConversations` close guard and group-id link, `ConversationDetail` close-at-once and its MSW test, LEFT-JOIN lesson (an open without an address is skipped, a decision always applies), the docs cleanups of the first build.
 
 ## Implementation Notes
+
+First build (pull feed), superseded by the 2026-11-11 rework; kept as history.
 
 Built 2026-11-11 on `feature/17-3-7-mailcenter-request-feed`, no commit, no push.
 
@@ -100,7 +91,6 @@ Built 2026-11-11 on `feature/17-3-7-mailcenter-request-feed`, no commit, no push
 - Local dev (AC 1, 2), 2026-11-11 18:49-18:52 UTC. V30 and V153 applied on restart. First poll: cursor stored, no history opened. The two OPEN rows (merge and logo) were inserted by SQL, because neither test account has a merge candidate or a company; the trigger, feed, job and `RequestConversations` ran unchanged. Both conversations opened 33 s after insert, with the subject and requester as before. Declined through the API as organizer (`POST /users/merge-requests/{id}/decline`, `/users/company-logo-requests/{id}/decline`): both DONE 51 s later, `updated_by` = the organizer. Test rows removed afterwards.
 - AC 3 (primary-email push, unchanged code): not run on local dev, where make-primary needs the production Cognito pool. Covered by the existing integration tests, which pass. The close-at-once from the Mail Center is covered by `ConversationDetail.decision.test.tsx`, not by a browser run.
 
-## Plan Change Log
 
 ## Review Triage Log
 
@@ -118,21 +108,16 @@ Pass 1 (quick lens), 2026-11-11: 0 high, 3 medium, 4 low, 0 false.
 
 ## Design Notes
 
-**Architecture note.** Modules: CUMS request services, controllers, new internal feed; EMS mail center (L6) job and client, `RequestConversations`. New dependency: EMS mail center → CUMS `/internal` (downstream→upstream, allowed); CUMS→EMS mail-center edge removed. New endpoint: `GET /internal/mail-center-requests` (nearest: `GET /internal/email-owners`, a lookup by addresses, not a change feed; no existing feed to extend). Reused: `RequestConversations`, `S2sHeaders`, `CumsContractHarness`, ShedLock. Deviation: the feed client lives in `mailcenter/`, not `client/`, because only the mail center uses it (module map L6 placement beats the generic package).
+**Architecture note.** Modules: shared-kernel `contract`; CUMS `client` (contract caller), request services and controllers; EMS mail center (`InternalRequestConversationController`, `RequestConversations`). New dependency: CUMS → its own contract (no EMS name), EMS → none. Endpoints: `POST /internal/mail-center-requests` and `.../{requestId}/decision` on EMS, owned by CUMS's spec; nearest existing are the 4 removed `/internal/mail-center/{merge,logo}-requests` operations, merged into two by putting the kind in the body. Reused: `RequestConversations`, `S2sHeaders`, `ContractServer`, provider contract test. Deviation: none (ADR-016 decision 4 as amended 2026-11-11).
 
-**Cursor and settle window.** Wall-clock `changed_at` can commit out of order. The feed returns only rows with `changed_at <= clock_timestamp() - interval '30 seconds'` (request transactions are short), and the cursor is the opaque `(changed_at, id)` of the last item. Worst-case delay: one cron minute + 30 s. A sequence would have the same commit-order gap; this is simpler and testable with a settle of 0 in tests via property.
-
-**First poll.** With no `feed_cursors` row, the job seeds the cursor just before the oldest OPEN request's `changed_at` (or at now minus the settle window when none is open). Open requests are picked up; decided history before that point was handled by the old push and is not backfilled. From then on, a decided item without a conversation (opened and decided within one poll) is opened, then closed, so the audit stays.
-
-**Epic 17 rule (C15).** Fixed here: the reverse-direction client pair, the user-facing 502 on an internal outage, the lost close. Sizes at start (`9d10da27`): CUMS archunit store 4 lines, end 2. EMS store unchanged (its lines belong to 8b and 17.15). Spectral baseline unchanged (internal spec is not linted by it). Module scripts re-run before and after; the mail-center edge count recorded.
+**Epic 17 rule (C15).** Start (`7815a9c2`): CUMS store 2 lines (user-merge pair, 7b), EMS store unchanged; the first build already took the mail-center pair out. End: same store sizes, plus 2 migrations, 4 feed classes and a job fewer than the first build.
 
 ## Verification
 
-**Commands:** (rack: one heavy job at a time, never two Gradle/Vitest/Playwright runs or a commit hook in parallel; logs to `~/.cache/batbern-test-logs/v37/`; `./gradlew --stop` at the end; no push, no PR)
-- `set -o pipefail; ./gradlew --max-workers=4 :services:company-user-management-service:test 2>&1 | tee ~/.cache/batbern-test-logs/v37/cums.log` -- expected: BUILD SUCCESSFUL, store file 2 lines.
-- `set -o pipefail; ./gradlew --max-workers=4 :services:event-management-service:test 2>&1 | tee ~/.cache/batbern-test-logs/v37/ems.log` -- expected: BUILD SUCCESSFUL.
-- `cd web-frontend && npm run check:api-types && npm run lint:api-internal && npm run lint:api && cd .. && make check-test-ratchet` -- expected: all pass (ratchet STALE → `--update` and commit).
-- `python3 scripts/architecture/ems-module-deps.py` and `ems-module-target.py` per their usage, before and after -- recorded in Implementation Notes.
+**Commands:** (one heavy job at a time; logs `~/.cache/batbern-test-logs/v37b/`; `./gradlew --stop` at the end; no push, no PR)
+- `set -o pipefail; ./gradlew --max-workers=4 :shared-kernel:test :services:company-user-management-service:test 2>&1 | tee …/cums.log` -- BUILD SUCCESSFUL.
+- `set -o pipefail; ./gradlew --max-workers=4 :services:event-management-service:test 2>&1 | tee …/ems.log` -- BUILD SUCCESSFUL.
+- `cd web-frontend && npm run check:api-types && npm run lint:api-internal && npm run lint:api && cd .. && make check-test-ratchet` -- pass.
 
 **Manual checks:**
-- Local dev (`make dev-native-up`, default one-minute cron): file a merge request and a logo request as a test user, see both in the Mail Center within ~1.5 min, decide both, see them DONE; change a primary e-mail, see the registration move at once. Mail only in `/dev/mails`.
+- Local dev: as in the ACs. Mail only in `/dev/mails`.
