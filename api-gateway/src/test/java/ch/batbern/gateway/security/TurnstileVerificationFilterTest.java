@@ -44,7 +44,7 @@ class TurnstileVerificationFilterTest {
         properties.setSecretKey("test-secret");
         properties.setSiteKey("test-site-key");
         properties.setProtectedEndpoints(List.of(
-            "POST:/api/v1/newsletter/subscribe",
+            "POST:/api/v1/newsletter/subscribers",
             "POST:/api/v1/events/*/registrations"
         ));
         filter = new TurnstileVerificationFilter(properties, restTemplate);
@@ -55,7 +55,7 @@ class TurnstileVerificationFilterTest {
     void disabled_passesAllRequestsThrough() throws Exception {
         properties.setEnabled(false);
 
-        MockHttpServletRequest request = new MockHttpServletRequest("POST", "/api/v1/newsletter/subscribe");
+        MockHttpServletRequest request = new MockHttpServletRequest("POST", "/api/v1/newsletter/subscribers");
         MockHttpServletResponse response = new MockHttpServletResponse();
         MockFilterChain chain = new MockFilterChain();
 
@@ -82,14 +82,32 @@ class TurnstileVerificationFilterTest {
         verify(restTemplate, never()).postForObject(anyString(), any(), any());
     }
 
+    @Test
+    void enabled_organizerPathBelowTheSubscribeCollection_isNotProtected() throws Exception {
+        // 4.10c: only POST /newsletter/subscribers itself (exact path) is the public subscribe.
+        properties.setEnabled(true);
+
+        MockHttpServletRequest request = new MockHttpServletRequest("POST",
+            "/api/v1/newsletter/subscribers/00000000-0000-0000-0000-000000000001/unsubscribe");
+        request.addHeader("X-Turnstile-Token", "would-be-invalid");
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        MockFilterChain chain = new MockFilterChain();
+
+        filter.doFilter(request, response, chain);
+
+        assertThat(chain.getRequest()).isNotNull();
+        verify(restTemplate, never()).postForObject(anyString(), any(), any());
+    }
+
     // ------------------------------------------------------------------ AC2 (fail-open on missing token)
     @Test
     void missingToken_failsOpen() throws Exception {
         // Widget may be blocked by ad blocker or corporate firewall — fail open so legitimate
-        // users are not locked out. Email confirmation acts as a secondary bot filter.
+        // users are not locked out. (Registration has an email confirmation behind it; the
+        // newsletter subscribe has none, #1288, and relies on the per-IP rate limit.)
         properties.setEnabled(true);
 
-        MockHttpServletRequest request = new MockHttpServletRequest("POST", "/api/v1/newsletter/subscribe");
+        MockHttpServletRequest request = new MockHttpServletRequest("POST", "/api/v1/newsletter/subscribers");
         MockHttpServletResponse response = new MockHttpServletResponse();
         MockFilterChain chain = new MockFilterChain();
 
@@ -109,7 +127,7 @@ class TurnstileVerificationFilterTest {
         when(restTemplate.postForObject(anyString(), any(HttpEntity.class), eq(Map.class)))
             .thenReturn(Map.of("success", true));
 
-        MockHttpServletRequest request = new MockHttpServletRequest("POST", "/api/v1/newsletter/subscribe");
+        MockHttpServletRequest request = new MockHttpServletRequest("POST", "/api/v1/newsletter/subscribers");
         request.addHeader("X-Turnstile-Token", "valid-token");
         MockHttpServletResponse response = new MockHttpServletResponse();
         MockFilterChain chain = new MockFilterChain();
@@ -129,7 +147,7 @@ class TurnstileVerificationFilterTest {
         when(restTemplate.postForObject(anyString(), any(HttpEntity.class), eq(Map.class)))
             .thenReturn(Map.of("success", false, "error-codes", List.of("invalid-input-response")));
 
-        MockHttpServletRequest request = new MockHttpServletRequest("POST", "/api/v1/newsletter/subscribe");
+        MockHttpServletRequest request = new MockHttpServletRequest("POST", "/api/v1/newsletter/subscribers");
         request.addHeader("X-Turnstile-Token", "invalid-token");
         MockHttpServletResponse response = new MockHttpServletResponse();
         MockFilterChain chain = new MockFilterChain();
@@ -154,7 +172,7 @@ class TurnstileVerificationFilterTest {
         when(restTemplate.postForObject(anyString(), any(HttpEntity.class), eq(Map.class)))
             .thenThrow(new ResourceAccessException("Connection refused"));
 
-        MockHttpServletRequest request = new MockHttpServletRequest("POST", "/api/v1/newsletter/subscribe");
+        MockHttpServletRequest request = new MockHttpServletRequest("POST", "/api/v1/newsletter/subscribers");
         request.addHeader("X-Turnstile-Token", "some-token");
         MockHttpServletResponse response = new MockHttpServletResponse();
         MockFilterChain chain = new MockFilterChain();
@@ -192,7 +210,7 @@ class TurnstileVerificationFilterTest {
     void optionsRequest_skippedRegardlessOfProtectedEndpoint() throws Exception {
         properties.setEnabled(true);
 
-        MockHttpServletRequest request = new MockHttpServletRequest("OPTIONS", "/api/v1/newsletter/subscribe");
+        MockHttpServletRequest request = new MockHttpServletRequest("OPTIONS", "/api/v1/newsletter/subscribers");
         MockHttpServletResponse response = new MockHttpServletResponse();
         MockFilterChain chain = new MockFilterChain();
 

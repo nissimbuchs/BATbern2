@@ -127,7 +127,7 @@
 # refuse traffic by design:
 #
 #   POST /api/v1/events/*/registrations            ≤ 5 req / 5 min per IP
-#   POST /api/v1/newsletter/subscribe              ≤ 5 req / 5 min per IP
+#   POST /api/v1/newsletter/subscribers            ≤ 5 req / 5 min per IP
 #   POST /api/v1/registrations/deregister/by-email ≤ 3 req / 5 min per IP
 #
 # Beyond those limits the gateway returns 429 (rate-limit). Independently, any

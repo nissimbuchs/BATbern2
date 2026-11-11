@@ -3,7 +3,6 @@ package ch.batbern.events.service;
 import ch.batbern.shared.utils.LoggingUtils;
 import ch.batbern.events.domain.NewsletterSubscriber;
 import ch.batbern.events.newsletter.dto.generated.NewsletterAddressSubscription;
-import ch.batbern.events.newsletter.dto.generated.NewsletterSubscriptionStatusResponse;
 import ch.batbern.events.newsletter.dto.generated.SubscriberResponse;
 import ch.batbern.events.exception.DuplicateSubscriberException;
 import ch.batbern.events.exception.ReservedEmailDomainException;
@@ -19,6 +18,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
 import java.util.NoSuchElementException;
@@ -169,118 +170,88 @@ public class NewsletterSubscriberService {
     }
 
     /**
-     * Get subscription status for an authenticated user.
-     * Looks up by username first, then falls back to email.
+     * #1244, 4.10c — the newsletter state of each given address, in the given order (primary
+     * first), then every address still subscribed under this username that is not among them
+     * (a stale row: the address left the account), so the user can still unsubscribe it.
      *
-     * @param username cognito username
-     * @param email    user's email address
+     * @param username  the caller
+     * @param addresses lower-cased addresses of the caller
+     * @param primary   the primary address, or {@code null}
      */
     @Transactional(readOnly = true)
-    public NewsletterSubscriptionStatusResponse getMySubscription(String username, String email) {
-        // A user may have one row per address (#1143): subscribed if any of them is active,
-        // and report the active address.
-        List<NewsletterSubscriber> byUsername = subscriberRepository.findAllByUsername(username);
-        if (!byUsername.isEmpty()) {
-            NewsletterSubscriber sub = byUsername.stream()
-                    .filter(s -> s.getUnsubscribedAt() == null)
-                    .findFirst()
-                    .orElse(byUsername.get(0));
-            return NewsletterSubscriptionStatusResponse.builder()
-                    .subscribed(sub.getUnsubscribedAt() == null)
-                    .email(sub.getEmail())
-                    .build();
+    public List<NewsletterAddressSubscription> addressSubscriptions(String username, List<String> addresses,
+                                                                    String primary) {
+        List<NewsletterAddressSubscription> result = new ArrayList<>();
+        for (String address : addresses) {
+            Optional<NewsletterSubscriber> row = subscriberRepository.findByEmailIgnoreCase(address);
+            result.add(NewsletterAddressSubscription.builder()
+                    .email(address)
+                    .primary(address.equals(primary))
+                    .subscribed(row.map(s -> s.getUnsubscribedAt() == null).orElse(false))
+                    .language(row.map(NewsletterSubscriber::getLanguage).orElse(null))
+                    .build());
         }
-        // Fallback: look up by email
-        Optional<NewsletterSubscriber> byEmail = subscriberRepository.findByEmailIgnoreCase(email);
-        if (byEmail.isPresent()) {
-            NewsletterSubscriber sub = byEmail.get();
-            return NewsletterSubscriptionStatusResponse.builder()
-                    .subscribed(sub.getUnsubscribedAt() == null)
-                    .email(sub.getEmail())
-                    .build();
+        for (NewsletterSubscriber stale : staleRows(username, addresses)) {
+            result.add(NewsletterAddressSubscription.builder()
+                    .email(stale.getEmail())
+                    .primary(false)
+                    .subscribed(true)
+                    .language(stale.getLanguage())
+                    .build());
         }
-        return NewsletterSubscriptionStatusResponse.builder()
-                .subscribed(false)
-                .build();
+        return result;
     }
 
-    /**
-     * Update subscription status for an authenticated user.
-     *
-     * @param username  cognito username
-     * @param email     user's email address
-     * @param subscribed desired subscription state
-     * @param language  language preference (used when subscribing)
-     */
-    @Transactional
-    public NewsletterSubscriptionStatusResponse patchMySubscription(String username, String email,
-                                                                    boolean subscribed, String language) {
-        if (subscribed) {
-            // Subscribe — may reactivate or create (409 is suppressed here since it is a
-            // settings toggle: silently ignore if already active)
-            try {
-                subscribe(email, null, language, "account", username);
-            } catch (DuplicateSubscriberException e) {
-                // Already active — idempotent for authenticated users
-                log.debug("Authenticated user {} is already subscribed, ignoring", username);
-            }
-        } else {
-            // Unsubscribe every address of this user (#1143), or fall back to the email lookup
-            List<NewsletterSubscriber> subs = subscriberRepository.findAllByUsername(username);
-            if (subs.isEmpty()) {
-                subs = subscriberRepository.findByEmailIgnoreCase(email).map(List::of).orElse(List.of());
-            }
-            Instant now = Instant.now();
-            subs.stream()
-                    .filter(s -> s.getUnsubscribedAt() == null)
-                    .forEach(s -> {
-                        s.setUnsubscribedAt(now);
-                        subscriberRepository.save(s);
-                        log.info("Authenticated user {} unsubscribed from newsletter", username);
-                    });
-        }
-        return getMySubscription(username, email);
-    }
-
-    /**
-     * #1244 — the newsletter state of each given address, in the given order (primary first).
-     *
-     * @param addresses lower-cased addresses of one person
-     */
+    /** Active rows of this username whose address is not one of {@code own} (lower-cased). */
     @Transactional(readOnly = true)
-    public List<NewsletterAddressSubscription> addressSubscriptions(List<String> addresses, String primary) {
-        return addresses.stream()
-                .map(address -> NewsletterAddressSubscription.builder()
-                        .email(address)
-                        .primary(address.equals(primary))
-                        .subscribed(subscriberRepository.findByEmailIgnoreCase(address)
-                                .map(s -> s.getUnsubscribedAt() == null)
-                                .orElse(false))
-                        .build())
+    public List<String> staleAddresses(String username, Collection<String> own) {
+        return staleRows(username, own).stream().map(NewsletterSubscriber::getEmail).toList();
+    }
+
+    private List<NewsletterSubscriber> staleRows(String username, Collection<String> own) {
+        if (username == null) {
+            return List.of();
+        }
+        return subscriberRepository.findAllByUsername(username).stream()
+                .filter(s -> s.getUnsubscribedAt() == null)
+                .filter(s -> !own.contains(s.getEmail().toLowerCase(Locale.ROOT)))
                 .toList();
     }
 
     /**
-     * #1244 — subscribe or unsubscribe exactly one address of an authenticated user; the
-     * caller has checked that the address is theirs. Other addresses stay as they are.
+     * 4.10c — change exactly one address of an authenticated user, only the fields given; the
+     * caller has checked that the address may be changed. Other addresses stay as they are.
+     *
+     * @param subscribed {@code true} subscribe (or reactivate), {@code false} unsubscribe,
+     *                   {@code null} unchanged
+     * @param language   {@code de} / {@code en}, or {@code null} unchanged (a new subscription
+     *                   gets {@code de})
      */
     @Transactional
-    public void setAddressSubscription(String username, String email, boolean subscribed, String language) {
-        if (subscribed) {
+    public void patchAddressSubscription(String username, String email, Boolean subscribed, String language) {
+        if (Boolean.TRUE.equals(subscribed)) {
             try {
                 subscribe(email, null, language, "account", username);
             } catch (DuplicateSubscriberException e) {
                 log.debug("Address of {} already subscribed, ignoring", username);
             }
-            return;
+        } else if (Boolean.FALSE.equals(subscribed)) {
+            subscriberRepository.findByEmailIgnoreCase(email)
+                    .filter(s -> s.getUnsubscribedAt() == null)
+                    .ifPresent(s -> {
+                        s.setUnsubscribedAt(Instant.now());
+                        subscriberRepository.save(s);
+                        log.info("Authenticated user {} unsubscribed one address from the newsletter", username);
+                    });
         }
-        subscriberRepository.findByEmailIgnoreCase(email)
-                .filter(s -> s.getUnsubscribedAt() == null)
-                .ifPresent(s -> {
-                    s.setUnsubscribedAt(Instant.now());
-                    subscriberRepository.save(s);
-                    log.info("Authenticated user {} unsubscribed one address from the newsletter", username);
-                });
+        if (language != null) {
+            subscriberRepository.findByEmailIgnoreCase(email)
+                    .filter(s -> !language.equals(s.getLanguage()))
+                    .ifPresent(s -> {
+                        s.setLanguage(language);
+                        subscriberRepository.save(s);
+                    });
+        }
     }
 
     /** Returns total count of active (non-unsubscribed, non-suppressed) subscribers. */

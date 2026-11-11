@@ -290,8 +290,10 @@ public class SecurityConfig {
                         // were removed in Story 11.F.1; the leftover permitAll for validate-token,
                         // respond and dashboard followed with GHSA-qhqv.
 
-                        // Story 10.7: Newsletter public endpoints (subscribe + token-based unsubscribe)
-                        .requestMatchers(HttpMethod.POST, "/api/v1/newsletter/subscribe").permitAll()
+                        // Story 10.7: Newsletter public endpoints (subscribe + token-based unsubscribe).
+                        // 4.10c: subscribing is POST on the collection; exact path, so the organizer's
+                        // /newsletter/subscribers/{id}/* and the GET list stay authenticated.
+                        .requestMatchers(HttpMethod.POST, "/api/v1/newsletter/subscribers").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/newsletter/unsubscribe/verify").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/newsletter/unsubscribe").permitAll()
 
