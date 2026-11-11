@@ -13,7 +13,6 @@ import {
   cancelRegistration,
   deleteRegistration,
   promoteFromWaitlist,
-  getRegistrationsForAttendee,
 } from './eventRegistrationService';
 import type { EventParticipant, RegistrationStatus } from '@/types/eventParticipant.types';
 
@@ -498,22 +497,5 @@ describe('eventRegistrationService', () => {
       await expect(promoteFromWaitlist(eventCode, registrationCode)).rejects.toThrow();
     });
   });
-
-  describe('getRegistrationsForAttendee', () => {
-    it('should_sendAttendeeHeader_when_called', async () => {
-      const registrations = [{ eventCode: 'BATbern56', status: 'ATTENDED' }];
-      mockAxios.onGet('/events/registrations').reply(200, registrations);
-
-      await expect(getRegistrationsForAttendee('alice.smith')).resolves.toEqual(registrations);
-      expect(mockAxios.history.get[0].headers?.['X-Attendee-Username']).toBe('alice.smith');
-    });
-
-    it('should_passErrorThrough_when_requestFails', async () => {
-      mockAxios.onGet('/events/registrations').reply(500, { message: 'boom' });
-
-      await expect(getRegistrationsForAttendee('alice.smith')).rejects.toMatchObject({
-        response: { status: 500 },
-      });
-    });
-  });
+  // getRegistrationsForAttendee: eventRegistrationService.attendeeHistory.test.ts (MSW, 4.10b).
 });

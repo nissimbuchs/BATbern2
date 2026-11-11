@@ -1,0 +1,28 @@
+meta {
+  name: List Event Types — anonymous (4.10b)
+  type: http
+  seq: 10
+}
+
+get {
+  url: {{baseUrl}}/event-types
+  body: none
+  auth: none
+}
+
+tests {
+  test("should return 200 without a token", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("should return the three event types", function() {
+    const types = res.getBody().map(c => c.type);
+    expect(types).to.include.members(["FULL_DAY", "AFTERNOON", "EVENING"]);
+  });
+}
+
+docs {
+  Story 4.10b: the event format definitions moved from /events/types (a literal in the
+  {eventCode} namespace) to /event-types, and the list is public by exact path in the gateway
+  and EMS (scripts/ci/access-control-public.txt). Read-only, safe on every environment.
+}

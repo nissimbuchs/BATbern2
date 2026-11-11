@@ -1,0 +1,32 @@
+meta {
+  name: Homepage photos — anonymous (GET /public/event-photos, 4.10b)
+  type: http
+  seq: 38
+}
+
+get {
+  url: {{baseUrl}}/public/event-photos?limit=20&lastNEvents=5
+  body: none
+  auth: none
+}
+
+tests {
+  test("200 without a token", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("a list of photos with their event code and display URL", function() {
+    const body = res.getBody();
+    expect(body).to.be.an("array");
+    body.forEach(p => {
+      expect(p.eventCode).to.match(/^BATbern[0-9]+$/);
+      expect(p.displayUrl).to.be.a("string");
+    });
+  });
+}
+
+docs {
+  Story 4.10b: the homepage photo strip moved from /events/recent-photos (a literal in the
+  {eventCode} namespace) to /public/event-photos, public by exact path in the gateway (route
+  to EMS) and EMS. Read-only, safe on every environment.
+}

@@ -12,8 +12,11 @@ export interface paths {
       cookie?: never;
     };
     /**
-     * List notifications for a user (paginated, 1-based)
-     * @description **Security**: ORGANIZER role required; any other role gets 403.
+     * List the caller's notifications (paginated, 1-based)
+     * @description The caller's own notifications (the recipient is the signed-in organizer; there is no
+     *     parameter to read another user's inbox, Story 4.10b).
+     *
+     *     **Security**: ORGANIZER role required; any other role gets 403.
      */
     get: operations['listNotifications'];
     put?: never;
@@ -21,7 +24,15 @@ export interface paths {
     delete?: never;
     options?: never;
     head?: never;
-    patch?: never;
+    /**
+     * Mark several of the caller's notifications read
+     * @description Changes the status of several of the caller's notifications at once. Ids that are not
+     *     the caller's (or do not exist) are ignored and left unchanged; `markedCount` counts the
+     *     caller's notifications that were changed (Story 4.10b, replaces `PUT /notifications/batch-read`).
+     *
+     *     **Security**: ORGANIZER role required; any other role gets 403.
+     */
+    patch: operations['updateNotifications'];
     trace?: never;
   };
   '/notifications/count': {
@@ -32,70 +43,12 @@ export interface paths {
       cookie?: never;
     };
     /**
-     * Count notifications by status (defaults to UNREAD)
-     * @description **Security**: ORGANIZER role required; any other role gets 403.
+     * Count the caller's notifications by status (defaults to UNREAD)
+     * @description Counts the caller's own notifications by status.
+     *
+     *     **Security**: ORGANIZER role required; any other role gets 403.
      */
     get: operations['getUnreadCount'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/notifications/{id}/read': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    /**
-     * Mark a single notification as read
-     * @description **Security**: ORGANIZER role required; any other role gets 403.
-     */
-    put: operations['markAsRead'];
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/notifications/batch-read': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    /**
-     * Mark multiple notifications as read
-     * @description **Security**: ORGANIZER role required; any other role gets 403.
-     */
-    put: operations['batchMarkAsRead'];
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/notifications/history': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Delivery history for a user by channel
-     * @description **Security**: ORGANIZER role required; any other role gets 403.
-     */
-    get: operations['getDeliveryHistory'];
     put?: never;
     post?: never;
     delete?: never;
@@ -108,40 +61,31 @@ export interface paths {
     parameters: {
       query?: never;
       header?: never;
-      path?: never;
+      path: {
+        id: string;
+      };
       cookie?: never;
     };
     get?: never;
     put?: never;
     post?: never;
     /**
-     * Delete a single notification
-     * @description **Security**: ORGANIZER role required; any other role gets 403.
+     * Delete one of the caller's notifications
+     * @description Deletes one of the caller's notifications. Another user's notification answers 404 and is kept.
+     *
+     *     **Security**: ORGANIZER role required; any other role gets 403.
      */
     delete: operations['deleteNotification'];
     options?: never;
     head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/notifications/batch-delete': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    post?: never;
     /**
-     * Delete multiple notifications
-     * @description **Security**: ORGANIZER role required; any other role gets 403.
+     * Mark one of the caller's notifications read
+     * @description Changes the status of one of the caller's notifications (Story 4.10b, replaces
+     *     `PUT /notifications/{id}/read`). Another user's notification answers 404 and stays unchanged.
+     *
+     *     **Security**: ORGANIZER role required; any other role gets 403.
      */
-    delete: operations['batchDelete'];
-    options?: never;
-    head?: never;
-    patch?: never;
+    patch: operations['updateNotification'];
     trace?: never;
   };
 }
@@ -200,8 +144,17 @@ export interface components {
     DeleteNotificationResponse: {
       success: boolean;
     };
-    BatchOperationRequest: {
+    /**
+     * @description The status a notification can be set to by its recipient. Only READ today.
+     * @enum {string}
+     */
+    NotificationStatusChange: 'READ';
+    UpdateNotificationRequest: {
+      status: components['schemas']['NotificationStatusChange'];
+    };
+    UpdateNotificationsRequest: {
       notificationIds: string[];
+      status: components['schemas']['NotificationStatusChange'];
     };
   };
   responses: never;
@@ -214,8 +167,7 @@ export type $defs = Record<string, never>;
 export interface operations {
   listNotifications: {
     parameters: {
-      query: {
-        username: string;
+      query?: {
         /** @description Optional status filter (e.g. UNREAD, READ). Case-insensitive. */
         status?: string;
         /** @description 1-based page number (default 1) */
@@ -247,10 +199,47 @@ export interface operations {
       };
     };
   };
+  updateNotifications: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpdateNotificationsRequest'];
+      };
+    };
+    responses: {
+      /** @description Notifications marked as read */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['MarkAsReadResponse'];
+        };
+      };
+      /** @description Invalid body (missing ids or status) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Forbidden (ORGANIZER role required) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
   getUnreadCount: {
     parameters: {
-      query: {
-        username: string;
+      query?: {
         status?: string;
       };
       header?: never;
@@ -266,104 +255,6 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['NotificationCountResponse'];
-        };
-      };
-      /** @description Forbidden (ORGANIZER role required) */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  markAsRead: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Notification marked as read */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['MarkAsReadResponse'];
-        };
-      };
-      /** @description Forbidden (ORGANIZER role required) */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Notification not found */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  batchMarkAsRead: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['BatchOperationRequest'];
-      };
-    };
-    responses: {
-      /** @description Notifications marked as read */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['MarkAsReadResponse'];
-        };
-      };
-      /** @description Forbidden (ORGANIZER role required) */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  getDeliveryHistory: {
-    parameters: {
-      query: {
-        username: string;
-        /** @description Delivery channel (e.g. EMAIL, IN_APP). Case-insensitive. */
-        channel: string;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Notification delivery history (newest first) */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['NotificationResponse'][];
         };
       };
       /** @description Forbidden (ORGANIZER role required) */
@@ -402,7 +293,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Notification not found */
+      /** @description No notification of the caller with this id */
       404: {
         headers: {
           [name: string]: unknown;
@@ -411,30 +302,46 @@ export interface operations {
       };
     };
   };
-  batchDelete: {
+  updateNotification: {
     parameters: {
       query?: never;
       header?: never;
-      path?: never;
+      path: {
+        id: string;
+      };
       cookie?: never;
     };
     requestBody: {
       content: {
-        'application/json': components['schemas']['BatchOperationRequest'];
+        'application/json': components['schemas']['UpdateNotificationRequest'];
       };
     };
     responses: {
-      /** @description Notifications deleted */
+      /** @description Notification marked as read */
       200: {
         headers: {
           [name: string]: unknown;
         };
         content: {
-          'application/json': components['schemas']['DeleteNotificationResponse'];
+          'application/json': components['schemas']['MarkAsReadResponse'];
         };
+      };
+      /** @description Invalid body (missing or unsupported status) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
       };
       /** @description Forbidden (ORGANIZER role required) */
       403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No notification of the caller with this id */
+      404: {
         headers: {
           [name: string]: unknown;
         };

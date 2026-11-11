@@ -1,0 +1,57 @@
+meta {
+  name: Fixture — create the event the session import tests act on
+  type: http
+  seq: 0
+}
+
+post {
+  url: {{baseUrl}}/events
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+script:pre-request {
+  const now = Date.now();
+  const eventNumber = 10000 + Math.floor(Math.random() * 90000); // reserved test range, swept by 99
+  const dayMs = 24 * 60 * 60 * 1000;
+  bru.setVar("sessionImportTimestamp", now);
+  bru.setVar("sessionImportEventNumber", eventNumber);
+  bru.setVar("sessionImportEventDate", new Date(now + 60 * dayMs).toISOString());
+  bru.setVar("sessionImportRegDeadline", new Date(now + 53 * dayMs).toISOString());
+}
+
+body:json {
+  {
+    "title": "BRUNO-TEST-SESSION-IMPORT {{sessionImportTimestamp}}",
+    "eventNumber": {{sessionImportEventNumber}},
+    "date": "{{sessionImportEventDate}}",
+    "registrationDeadline": "{{sessionImportRegDeadline}}",
+    "venueName": "Bruno Test Venue",
+    "venueAddress": "Test Address 7, 3000 Bern",
+    "venueCapacity": 100,
+    "organizerUsername": "{{organizerUsername}}",
+    "description": "Parent event for session import tests (Story 4.10b)",
+    "eventType": "EVENING"
+  }
+}
+
+assert {
+  res.status: eq 201
+  res.body.eventCode: isDefined
+}
+
+tests {
+  test("sessionImportEventCode set for the collection", function() {
+    bru.setVar("sessionImportEventCode", res.getBody().eventCode);
+  });
+}
+
+docs {
+  Story 4.10b: dev-only collection (dev_only_collections in scripts/ci/run-bruno-tests.sh).
+  It imports two synthetic sessions (no speakers, no PDF, so no CDN fetch and no mail) into its
+  own fixture event. 98/99 delete the event; the sessions cascade (V2).
+}

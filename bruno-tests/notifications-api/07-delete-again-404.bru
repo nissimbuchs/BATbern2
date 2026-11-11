@@ -1,0 +1,21 @@
+meta {
+  name: Deleting it again answers 404
+  type: http
+  seq: 7
+}
+
+delete {
+  url: {{baseUrl}}/notifications/{{notifId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+tests {
+  test("404: gone", function() {
+    expect(res.getStatus()).to.equal(404);
+  });
+}

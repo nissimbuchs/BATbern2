@@ -1,0 +1,25 @@
+meta {
+  name: The old reset verb path is gone
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{baseUrl}}/ai-prompts/event_description/reset
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+tests {
+  test("404, no handler", function() {
+    expect(res.getStatus()).to.equal(404);
+  });
+}
+
+docs {
+  Story 4.10b, breaking, no alias.
+}

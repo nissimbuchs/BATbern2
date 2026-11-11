@@ -78,14 +78,14 @@ afterEach(() => {
 
 describe('sessionApiClient.batchImportSessions', () => {
   it('should_postSessions_when_batchImportRequested', async () => {
-    api.on('batchImportSessions', () => result);
+    api.on('createSession', () => result, { status: 200 });
 
     const imported = await sessionApiClient.batchImportSessions(EVENT, sessions);
 
     expect(imported).toEqual(result);
-    const [call] = api.calls('batchImportSessions');
+    const [call] = api.calls('createSession');
     expect(call.params).toEqual({ eventCode: EVENT });
-    expect(call.body).toEqual(sessions);
+    expect(call.body).toEqual({ imports: sessions });
   });
 
   it('should_allowTwoMinutes_when_batchImportRequested', async () => {
@@ -119,16 +119,56 @@ describe('sessionApiClient.batchImportSessions', () => {
     );
   });
 
-  it('should_postEmptyList_when_noSessions', async () => {
-    const empty = { ...result, totalProcessed: 0, successfullyCreated: 0, details: [] };
-    api.on('batchImportSessions', () => empty);
+  it('should_sendNothing_when_noSessions', async () => {
+    // The server refuses an empty `imports` (400); there is nothing to import, so nothing is sent.
+    await expect(sessionApiClient.batchImportSessions(EVENT, [])).resolves.toEqual({
+      totalProcessed: 0,
+      successfullyCreated: 0,
+      updated: 0,
+      skipped: 0,
+      failed: 0,
+      details: [],
+    });
+    expect(api.calls('createSession')).toHaveLength(0);
+  });
 
-    await expect(sessionApiClient.batchImportSessions(EVENT, [])).resolves.toEqual(empty);
-    expect(api.calls('batchImportSessions')[0].body).toEqual([]);
+  it('should_sendChunksOf100AndSumThem_when_moreThan100Sessions', async () => {
+    const many: BatchImportSessionRequest[] = Array.from({ length: 101 }, (_, i) => ({
+      title: `Session ${i + 1}`,
+      bat: 142,
+    }));
+    api.on(
+      'createSession',
+      ({ body }) => {
+        const items = body?.imports ?? [];
+        return {
+          totalProcessed: items.length,
+          successfullyCreated: items.length,
+          updated: 0,
+          skipped: 0,
+          failed: 0,
+          details: items.map((item) => ({
+            title: item.title,
+            status: 'success' as const,
+            message: 'Created',
+            sessionSlug: null,
+          })),
+        };
+      },
+      { status: 200 }
+    );
+
+    const imported = await sessionApiClient.batchImportSessions(EVENT, many);
+
+    const calls = api.calls('createSession');
+    expect(calls.map((c) => c.body?.imports?.length)).toEqual([100, 1]);
+    expect(imported.totalProcessed).toBe(101);
+    expect(imported.details).toHaveLength(101);
+    expect(imported.details[100].title).toBe('Session 101');
   });
 
   it('should_throwServerMessage_when_responseHasMessage', async () => {
-    api.on('batchImportSessions', () =>
+    api.on('createSession', () =>
       problem(400, { error: 'Bad Request', message: 'Sessions already exist' })
     );
 
@@ -138,7 +178,7 @@ describe('sessionApiClient.batchImportSessions', () => {
   });
 
   it('should_throwErrorField_when_noMessage', async () => {
-    api.on('batchImportSessions', () => problem(400, { error: 'Invalid event code' }));
+    api.on('createSession', () => problem(400, { error: 'Invalid event code' }));
 
     await expect(sessionApiClient.batchImportSessions(EVENT, sessions)).rejects.toEqual(
       new Error('Invalid event code')
@@ -146,7 +186,7 @@ describe('sessionApiClient.batchImportSessions', () => {
   });
 
   it('should_appendCorrelationId_when_headerPresent', async () => {
-    api.on('batchImportSessions', () =>
+    api.on('createSession', () =>
       problem(500, { error: 'Internal Server Error', message: 'Server error' }, 'abc-123')
     );
 
@@ -156,7 +196,7 @@ describe('sessionApiClient.batchImportSessions', () => {
   });
 
   it('should_throwAxiosMessage_when_networkFails', async () => {
-    api.on('batchImportSessions', () => HttpResponse.error());
+    api.on('createSession', () => HttpResponse.error());
 
     await expect(sessionApiClient.batchImportSessions(EVENT, sessions)).rejects.toEqual(
       new Error('Network Error')

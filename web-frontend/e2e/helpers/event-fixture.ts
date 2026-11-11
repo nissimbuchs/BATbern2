@@ -305,7 +305,7 @@ export async function getWorkflowState(token: string, eventCode: string): Promis
  * The slot-assignment page consumes "unassigned" (placeholder) sessions: non-structural
  * sessions with `startTime IS NULL`. In the real product these are born timing-less via the
  * speaker workflow. But the REST `POST /events/{code}/sessions` endpoint REQUIRES startTime/
- * endTime (`CreateSessionRequest` `@NotNull`), so a session cannot be created timing-less
+ * endTime in its single mode (checked by the service, 400), so a session cannot be created timing-less
  * directly. We reproduce the unassigned state deterministically WITHOUT a cron-driven workflow
  * walk: create each session WITH throwaway timing, then `DELETE /sessions/timing` to clear ALL
  * timings — leaving them unassigned (they then appear in `GET /sessions/unassigned` and the
@@ -325,10 +325,12 @@ export interface SlotSession {
   title: string;
 }
 
-/** Shape of the session-creation response we read the server-generated slug from. */
+/**
+ * Shape of the session-creation response we read the server-generated slug from: the single
+ * mode answers `{ session }` (Story 4.10b).
+ */
 interface SessionCreateResponse {
-  sessionSlug?: string;
-  title?: string;
+  session?: { sessionSlug?: string; title?: string };
 }
 
 /**
@@ -368,12 +370,13 @@ export async function addUnassignedSessions(
       );
     }
     const data = (await res.json()) as SessionCreateResponse;
-    if (!data.sessionSlug) {
+    const sessionSlug = data.session?.sessionSlug;
+    if (!sessionSlug) {
       throw new Error(
-        `[event-fixture] create session response had no sessionSlug: ${JSON.stringify(data)}`
+        `[event-fixture] create session response had no session.sessionSlug: ${JSON.stringify(data)}`
       );
     }
-    sessions.push({ sessionSlug: data.sessionSlug, title });
+    sessions.push({ sessionSlug, title });
   }
 
   // Clear ALL timings → every session above becomes unassigned (startTime IS NULL).
@@ -419,7 +422,7 @@ export async function getUnassignedSessionCount(token: string, eventCode: string
  * tightened to 3 in staging — which deterministically broke the golden path's phase 6).
  */
 export async function getEventTypeMaxSlots(token: string, type: string): Promise<number> {
-  const res = await fetch(`${API_BASE_URL}/api/v1/events/types/${type}`, {
+  const res = await fetch(`${API_BASE_URL}/api/v1/event-types/${type}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
   if (!res.ok) {

@@ -4,14 +4,17 @@
  */
 
 export interface paths {
-  '/events/recent-photos': {
+  '/public/event-photos': {
     parameters: {
       query?: never;
       header?: never;
       path?: never;
       cookie?: never;
     };
-    /** Recent photos from last N events (homepage use) */
+    /**
+     * Recent photos from last N events (homepage use)
+     * @description Anonymous read for the homepage photo strip: a random sample of the photos of the last N events (Story 4.10b moved it from `/events/recent-photos`, a literal that shared the namespace of `{eventCode}`; ADR-013 §4 anonymous read variant).
+     */
     get: operations['getRecentEventPhotos'];
     put?: never;
     post?: never;

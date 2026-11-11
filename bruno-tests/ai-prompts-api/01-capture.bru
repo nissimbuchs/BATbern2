@@ -1,0 +1,35 @@
+meta {
+  name: Capture the event_description prompt
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/ai-prompts/event_description
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("prompt captured for the restore in 99", function() {
+    const body = res.getBody();
+    expect(body.promptText).to.be.a("string");
+    expect(body.defaultText).to.be.a("string");
+    bru.setVar("aiPromptOriginalText", body.promptText);
+    bru.setVar("aiPromptDefaultText", body.defaultText);
+  });
+}
+
+docs {
+  Story 4.10b: dev-only collection (dev_only_collections in scripts/ci/run-bruno-tests.sh).
+  The prompts are global settings: the collection sets an override, deletes it, and 99 writes
+  the exact captured text back. Never on staging (production).
+}

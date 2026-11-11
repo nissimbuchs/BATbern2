@@ -33,7 +33,7 @@ vars:pre-request {
 
 assert {
   res.status: eq 201
-  res.body.sessionSlug: isDefined
+  res.body.session.sessionSlug: isDefined
 }
 
 tests {
@@ -42,12 +42,17 @@ tests {
   });
 
   test("should create session with sessionSlug (Story 1.16.2: use sessionSlug as identifier)", function() {
-    const session = res.getBody();
+    const session = res.getBody().session; // 4.10b: single mode answers { session }
     expect(session.sessionSlug).to.be.a('string');
     expect(session.title).to.include('Session for Speaker Tests');
   });
 
   test("should save sessionSlug for speaker tests (Story 1.16.2)", function() {
-    bru.setVar("createdSessionSlug", res.getBody().sessionSlug);
+    bru.setVar("createdSessionSlug", res.getBody().session.sessionSlug);
   });
+}
+
+docs {
+  Story 4.10b: POST /events/{eventCode}/sessions has two modes (single, imports); the single
+  mode answers 201 with the session wrapped as { session }.
 }

@@ -123,12 +123,20 @@ export interface paths {
     get: operations['listSessions'];
     put?: never;
     /**
-     * Create session
-     * @description Create a new session for the event.
+     * Create sessions of the event (organizer); one session or a historical import
+     * @description The one way to create sessions of an event (Story 4.10b, ADR-013 §1; replaces
+     *     `POST /events/{eventCode}/sessions/batch-import`). The body carries **exactly one** of two
+     *     modes; none, both, an empty `imports` list or more than 100 items answer `400`.
      *
-     *     **Acceptance Criteria**: AC10
-     *     **Story**: 1.16.2 - Uses eventCode (meaningful ID) instead of UUID
+     *     - **Single** (`201`, `{session}`): the session fields `title`, `sessionType`, `startTime`
+     *       and `endTime` (all four required in this mode) plus the optional `description`, `room`,
+     *       `capacity` and `language`.
+     *     - **Import** (`imports`, `200`): up to 100 sessions from the legacy sessions.json
+     *       (historical data migration). Duplicates by (event, title) are skipped, speakers are
+     *       assigned by `speakerId` → username, times follow sequential slots; one failing item does
+     *       not stop the others. The response carries the counts and a result per item.
      *
+     *     The response carries the fields of its mode only.
      *
      *     **Security**: ORGANIZER role required; any other role gets 403.
      */
@@ -381,39 +389,6 @@ export interface paths {
      *     If `overwrite=true`, deletes existing structural sessions and recreates them.
      */
     post: operations['generateStructuralSessions'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/events/{eventCode}/sessions/batch-import': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Batch import sessions from legacy JSON
-     * @description Import multiple sessions from sessions.json with speaker assignments.
-     *
-     *     **Features**:
-     *     - Duplicate detection by (event_id, title)
-     *     - Automatic speaker assignment via speakerId → username matching
-     *     - Sequential 45-minute time slot calculation
-     *     - Graceful error handling for missing speakers
-     *
-     *     **Note**: This endpoint is designed for historical data migration from
-     *     the legacy BATspa application. For normal session creation, use the
-     *     POST /events/{eventCode}/sessions endpoint.
-     *
-     *
-     *     **Security**: ORGANIZER role required; any other role gets 403.
-     */
-    post: operations['batchImportSessions'];
     delete?: never;
     options?: never;
     head?: never;
@@ -1175,36 +1150,6 @@ export interface components {
        */
       speakerId?: string;
     };
-    /** @description Result of batch import operation with success/skip/fail counts. */
-    BatchImportSessionResult: {
-      /**
-       * @description Total sessions processed
-       * @example 3
-       */
-      totalProcessed: number;
-      /**
-       * @description Successfully created sessions
-       * @example 2
-       */
-      successfullyCreated: number;
-      /**
-       * @description Existing sessions updated (e.g. materials added to a duplicate)
-       * @example 0
-       */
-      updated: number;
-      /**
-       * @description Skipped sessions (duplicates)
-       * @example 1
-       */
-      skipped: number;
-      /**
-       * @description Failed imports
-       * @example 0
-       */
-      failed: number;
-      /** @description Detailed results per session */
-      details: components['schemas']['SessionImportDetail'][];
-    };
     /** @description Detail for a single session import result. */
     SessionImportDetail: {
       /**
@@ -1229,25 +1174,43 @@ export interface components {
        */
       sessionSlug: string | null;
     };
-    /** @description Create a fully-defined session. title, sessionType, startTime and endTime are all required (the deployed controller rejects a request missing any of them with 400). */
+    /** @description Create sessions of an event, in exactly one mode (checked by the service, 400 otherwise; Story 4.10b). Single: the session fields, where title, sessionType, startTime and endTime are required. Import: `imports` only, 1 to 100 items. */
     CreateSessionRequest: {
-      title: string;
+      title?: string;
       description?: string;
-      sessionType: components['schemas']['SessionType'];
+      sessionType?: components['schemas']['SessionType'];
       /**
        * Format: date-time
        * @description Session start time (ISO-8601).
        */
-      startTime: string;
+      startTime?: string;
       /**
        * Format: date-time
        * @description Session end time (ISO-8601).
        */
-      endTime: string;
+      endTime?: string;
       room?: string;
       capacity?: number;
-      /** @default de */
+      /** @description Single mode; `de` when absent. */
       language?: string;
+      /** @description Import mode; sessions from the legacy sessions.json. */
+      imports?: components['schemas']['BatchImportSessionRequest'][];
+    };
+    /** @description Result of POST /events/{eventCode}/sessions; carries the fields of its mode only. Single (201): `session`. Import (200): the counts and `details`. */
+    CreateSessionResponse: {
+      session?: components['schemas']['SessionResponse'];
+      /** @description Import mode; items processed */
+      totalProcessed?: number;
+      /** @description Import mode; sessions created */
+      successfullyCreated?: number;
+      /** @description Import mode; existing sessions updated (e.g. materials added to a duplicate) */
+      updated?: number;
+      /** @description Import mode; skipped items (duplicates) */
+      skipped?: number;
+      /** @description Import mode; failed items */
+      failed?: number;
+      /** @description Import mode; result per item */
+      details?: components['schemas']['SessionImportDetail'][];
     };
     /**
      * @description Partial session update (PATCH). Only the provided fields are changed.
@@ -1889,13 +1852,22 @@ export interface operations {
       };
     };
     responses: {
-      /** @description Session created successfully */
+      /** @description Import mode (`imports`) processed (may include skipped or failed items) */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CreateSessionResponse'];
+        };
+      };
+      /** @description Single mode; the session was created */
       201: {
         headers: {
           [name: string]: unknown;
         };
         content: {
-          'application/json': components['schemas']['SessionResponse'];
+          'application/json': components['schemas']['CreateSessionResponse'];
         };
       };
       400: components['responses']['BadRequest'];
@@ -2285,99 +2257,6 @@ export interface operations {
           'application/json': components['schemas']['ErrorResponse'];
         };
       };
-    };
-  };
-  batchImportSessions: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Event code in format BATbern{number} */
-        eventCode: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        /**
-         * @example [
-         *       {
-         *         "bat": 142,
-         *         "title": "User Interface Design",
-         *         "abstract": "Discussion on modern UI patterns",
-         *         "pdf": "BAT142_UI_Design.pdf",
-         *         "referenten": [
-         *           {
-         *             "name": "Anna Muster, Die Mobiliar",
-         *             "bio": "Expert in UI design",
-         *             "company": "mobiliar",
-         *             "portrait": "anna.muster.jpg",
-         *             "speakerId": "anna.muster"
-         *           }
-         *         ]
-         *       }
-         *     ]
-         */
-        'application/json': components['schemas']['BatchImportSessionRequest'][];
-      };
-    };
-    responses: {
-      /** @description Import completed (may include skipped/failed sessions) */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          /**
-           * @example {
-           *       "totalProcessed": 3,
-           *       "successfullyCreated": 2,
-           *       "updated": 0,
-           *       "skipped": 1,
-           *       "failed": 0,
-           *       "details": [
-           *         {
-           *           "title": "User Interface Design",
-           *           "status": "success",
-           *           "message": "Session created successfully",
-           *           "sessionSlug": "user-interface-design-abc123"
-           *         },
-           *         {
-           *           "title": "Backend Architecture",
-           *           "status": "skipped",
-           *           "message": "Session already exists with title 'Backend Architecture'",
-           *           "sessionSlug": null
-           *         },
-           *         {
-           *           "title": "Database Design",
-           *           "status": "success",
-           *           "message": "Session created successfully",
-           *           "sessionSlug": "database-design-def456"
-           *         }
-           *       ]
-           *     }
-           */
-          'application/json': components['schemas']['BatchImportSessionResult'];
-        };
-      };
-      400: components['responses']['BadRequest'];
-      /** @description Forbidden (ORGANIZER role required) */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Event not found */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['ErrorResponse'];
-        };
-      };
-      500: components['responses']['InternalServerError'];
     };
   };
   getSession: {

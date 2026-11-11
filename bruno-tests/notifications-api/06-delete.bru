@@ -1,0 +1,22 @@
+meta {
+  name: Delete the notification
+  type: http
+  seq: 6
+}
+
+delete {
+  url: {{baseUrl}}/notifications/{{notifId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+tests {
+  test("200 success", function() {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().success).to.equal(true);
+  });
+}

@@ -68,11 +68,9 @@ export const EventManagementDashboard: React.FC = () => {
     isLoading: isLoadingNotifications,
     refetch: refetchNotifications,
   } = useNotifications(
-    {
-      username: user?.username || '',
-      status: 'UNREAD', // UNREAD status = in-app unread notifications
-    },
-    { page: 1, limit: 10 }
+    { status: 'UNREAD' }, // UNREAD status = in-app unread notifications (the caller's own, 4.10b)
+    { page: 1, limit: 10 },
+    { enabled: !!user }
   );
 
   // Real-time WebSocket notifications (Story BAT-7)

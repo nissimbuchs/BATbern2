@@ -5,7 +5,7 @@ meta {
 }
 
 get {
-  url: {{baseUrl}}/events/types/FULL_DAY
+  url: {{baseUrl}}/event-types/FULL_DAY
   body: none
   auth: bearer
 }
@@ -35,6 +35,6 @@ tests {
 
 docs {
   PR 2a: single-type fetch smoke test. Confirms the parameterized
-  /events/types/{type} route resolves FULL_DAY and returns a config
+  /event-types/{type} route resolves FULL_DAY and returns a config
   that passes the OpenAPI-documented validation invariants.
 }

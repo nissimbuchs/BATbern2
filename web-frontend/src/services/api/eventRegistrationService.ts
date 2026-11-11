@@ -240,18 +240,31 @@ export const importParticipants = async (
 ): Promise<AddParticipantsResponse> => postParticipants(eventCode, { people });
 
 export type AttendeeRegistration = components['schemas']['Registration'];
+type RegistrationPage = components['schemas']['RegistrationPage'];
+
+/** Page size for an attendee's history: the spec maximum of `GET /registrations`. */
+const ATTENDEE_HISTORY_PAGE_SIZE = 100;
 
 /**
- * All registrations of one attendee across events (organizer view of a user).
- * Errors are passed through.
+ * All registrations of one attendee across events, newest event first (organizer view of a user).
+ * `GET /registrations?filter={"attendeeUsername":…}` (Story 4.10b; was `GET /events/registrations`
+ * with the username in a header). The list is paginated: this reads every page at the spec
+ * maximum, so a long-time attendee's history is complete. Errors are passed through.
  *
- * @param username - the attendee, sent in the `X-Attendee-Username` header
+ * @param username - the attendee
  */
 export const getRegistrationsForAttendee = async (
   username: string
 ): Promise<AttendeeRegistration[]> => {
-  const response = await apiClient.get<AttendeeRegistration[]>('/events/registrations', {
-    headers: { 'X-Attendee-Username': username },
-  });
-  return response.data;
+  const filter = JSON.stringify({ attendeeUsername: username });
+  const all: AttendeeRegistration[] = [];
+  for (let page = 1; ; page++) {
+    const response = await apiClient.get<RegistrationPage>('/registrations', {
+      params: { filter, page, limit: ATTENDEE_HISTORY_PAGE_SIZE },
+    });
+    all.push(...response.data.data);
+    if (!response.data.pagination.hasNext) {
+      return all;
+    }
+  }
 };

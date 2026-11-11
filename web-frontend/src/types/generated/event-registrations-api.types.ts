@@ -421,7 +421,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/events/registrations': {
+  '/registrations': {
     parameters: {
       query?: never;
       header?: never;
@@ -429,13 +429,15 @@ export interface paths {
       cookie?: never;
     };
     /**
-     * List user registrations across all events
-     * @description Retrieve all event registrations for a specific user.
-     *     Used by user detail page to show participation history.
+     * List one attendee's registrations across all events (organizer)
+     * @description All registrations of one attendee, newest event first, with the event's code, title and
+     *     date. Used by the organizer's user detail page (participation history).
      *
-     *     **Story**: BAT-15 - Integration - Participant Batch Import
-     *     **Security**: Requires authentication
-     *
+     *     `filter` is required and names the attendee: `{"attendeeUsername":"anna.muster"}`
+     *     (JSON:API-style vocabulary, ADR-013 §3). A missing filter, another field or another
+     *     operator answers `400`. Story 4.10b moved this list from `GET /events/registrations` (a
+     *     literal under `/events` that shared the namespace of `{eventCode}`) and the username from a
+     *     header into the filter.
      *
      *     **Security**: ORGANIZER role required; any other role gets 403.
      */
@@ -582,6 +584,11 @@ export interface components {
       /** @description Lowercase, deduplicated email addresses. */
       emails: string[];
     };
+    /** @description A page of registrations (ADR-013 §6 pagination). */
+    RegistrationPage: {
+      data: components['schemas']['Registration'][];
+      pagination: components['schemas']['PaginationMetadata'];
+    };
     /**
      * @description A registration as EMS returns it (`RegistrationResponse`): the registration, its event, and the attendee from user_profiles (ADR-004, ADR-006). No endpoint returns it to an anonymous caller (the public lookup by code was removed 2026-11-09).
      *     Anonymous users are in user_profiles too (cognito_user_id = NULL).
@@ -598,11 +605,11 @@ export interface components {
        * @example BATbern25
        */
       eventCode: string;
-      /** @description Event title. Set by `listUserRegistrations`; null elsewhere. */
+      /** @description Event title. Set by `listUserRegistrations` (`GET /registrations`); null elsewhere. */
       eventTitle: string | null;
       /**
        * Format: date-time
-       * @description Event date. Set by `listUserRegistrations`; null elsewhere.
+       * @description Event date. Set by `listUserRegistrations` (`GET /registrations`); null elsewhere.
        */
       eventDate: string | null;
       /**
@@ -1607,61 +1614,30 @@ export interface operations {
   };
   listUserRegistrations: {
     parameters: {
-      query?: never;
-      header: {
-        /** @description Username to filter registrations (passed as header to avoid sensitive data in URL) */
-        'X-Attendee-Username': string;
+      query: {
+        /** @description JSON filter naming the attendee, `{"attendeeUsername":"<username>"}`. */
+        filter: string;
+        /** @description Page number, 1-indexed. */
+        page?: number;
+        /** @description Items per page. */
+        limit?: number;
       };
+      header?: never;
       path?: never;
       cookie?: never;
     };
     requestBody?: never;
     responses: {
-      /** @description User registrations retrieved successfully */
+      /** @description The attendee's registrations, newest event first */
       200: {
         headers: {
           [name: string]: unknown;
         };
         content: {
-          /**
-           * @example [
-           *       {
-           *         "registrationCode": "BATbern142-reg-K7M2Q9",
-           *         "eventCode": "BATbern34",
-           *         "attendeeUsername": "anna.muster",
-           *         "eventTitle": "Cloud Native Architecture",
-           *         "eventDate": "2023-03-15T18:00:00Z",
-           *         "status": "ATTENDED",
-           *         "registrationDate": "2023-02-01T10:30:00Z",
-           *         "attendeeCompany": null,
-           *         "attendeeEmail": null,
-           *         "attendeeFirstName": null,
-           *         "attendeeLastName": null,
-           *         "createdAt": null,
-           *         "updatedAt": null,
-           *         "waitlistPosition": null
-           *       },
-           *       {
-           *         "registrationCode": "BATbern142-reg-P4T8W1",
-           *         "eventCode": "BATbern36",
-           *         "attendeeUsername": "anna.muster",
-           *         "eventTitle": "Microservices Patterns",
-           *         "eventDate": "2023-05-20T18:00:00Z",
-           *         "status": "ATTENDED",
-           *         "registrationDate": "2023-04-10T14:20:00Z",
-           *         "attendeeCompany": null,
-           *         "attendeeEmail": null,
-           *         "attendeeFirstName": null,
-           *         "attendeeLastName": null,
-           *         "createdAt": null,
-           *         "updatedAt": null,
-           *         "waitlistPosition": null
-           *       }
-           *     ]
-           */
-          'application/json': components['schemas']['Registration'][];
+          'application/json': components['schemas']['RegistrationPage'];
         };
       };
+      400: components['responses']['BadRequest'];
       401: components['responses']['Unauthorized'];
       /** @description Forbidden (ORGANIZER role required) */
       403: {

@@ -1,0 +1,35 @@
+meta {
+  name: Both modes in one body answer 400
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/events/{{sessionImportEventCode}}/sessions
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+body:json {
+  {
+    "title": "BRUNO-TEST both modes",
+    "sessionType": "keynote",
+    "startTime": "2030-01-01T18:00:00Z",
+    "endTime": "2030-01-01T19:00:00Z",
+    "imports": [{ "bat": 1, "title": "x" }]
+  }
+}
+
+tests {
+  test("400", function() {
+    expect(res.getStatus()).to.equal(400);
+  });
+}
+
+docs {
+  Story 4.10b: exactly one mode per request, checked by the service.
+}

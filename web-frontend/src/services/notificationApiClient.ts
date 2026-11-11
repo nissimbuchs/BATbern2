@@ -5,8 +5,9 @@
  *
  * HTTP client for Notification Service APIs (Event Management Service)
  * Features:
- * - Fetch notifications for organizers
- * - Mark notifications as read
+ * - Fetch the signed-in organizer's notifications (the server scopes every call to the caller,
+ *   Story 4.10b: there is no username parameter)
+ * - Mark notifications as read (PATCH, status READ)
  * - Delete notifications
  * - Get unread count
  * - notifications created from domain events
@@ -20,6 +21,8 @@ import type {
   NotificationFilters,
   MarkAsReadResponse,
   DeleteNotificationResponse,
+  UpdateNotificationRequest,
+  UpdateNotificationsRequest,
 } from '@/types/notification';
 
 // API base path for notification endpoints
@@ -32,23 +35,19 @@ const NOTIFICATION_API_PATH = '/notifications';
  */
 class NotificationApiClient {
   /**
-   * Get paginated list of notifications with optional filters
+   * Get a page of the caller's notifications, optionally by status
    */
   async getNotifications(
-    filters: NotificationFilters,
+    filters: NotificationFilters = {},
     pagination: { page?: number; limit?: number } = {}
   ): Promise<NotificationPage> {
     try {
       const params = new URLSearchParams();
-      params.append('username', filters.username);
       params.append('page', (pagination.page || 1).toString());
       params.append('limit', (pagination.limit || 20).toString());
 
       if (filters.status) {
         params.append('status', filters.status);
-      }
-      if (filters.eventCode) {
-        params.append('eventCode', filters.eventCode);
       }
 
       const response = await apiClient.get<NotificationPage>(
@@ -78,12 +77,11 @@ class NotificationApiClient {
   }
 
   /**
-   * Get unread notification count for user
+   * Get the caller's unread notification count
    */
-  async getUnreadCount(username: string): Promise<number> {
+  async getUnreadCount(): Promise<number> {
     try {
       const params = new URLSearchParams();
-      params.append('username', username);
       params.append('status', 'UNREAD'); // In-app notifications have status UNREAD
 
       const response = await apiClient.get<NotificationCountResponse>(
@@ -101,8 +99,9 @@ class NotificationApiClient {
    */
   async markAsRead(notificationId: string): Promise<MarkAsReadResponse> {
     try {
-      const response = await apiClient.put<MarkAsReadResponse>(
-        `${NOTIFICATION_API_PATH}/${notificationId}/read`
+      const response = await apiClient.patch<MarkAsReadResponse>(
+        `${NOTIFICATION_API_PATH}/${notificationId}`,
+        { status: 'READ' } satisfies UpdateNotificationRequest
       );
 
       return response.data;
@@ -116,10 +115,10 @@ class NotificationApiClient {
    */
   async batchMarkAsRead(notificationIds: string[]): Promise<MarkAsReadResponse> {
     try {
-      const response = await apiClient.put<MarkAsReadResponse>(
-        `${NOTIFICATION_API_PATH}/batch-read`,
-        { notificationIds }
-      );
+      const response = await apiClient.patch<MarkAsReadResponse>(NOTIFICATION_API_PATH, {
+        notificationIds,
+        status: 'READ',
+      } satisfies UpdateNotificationsRequest);
 
       return response.data;
     } catch (error) {
@@ -134,22 +133,6 @@ class NotificationApiClient {
     try {
       const response = await apiClient.delete<DeleteNotificationResponse>(
         `${NOTIFICATION_API_PATH}/${notificationId}`
-      );
-
-      return response.data;
-    } catch (error) {
-      throw this.transformError(error);
-    }
-  }
-
-  /**
-   * Delete multiple notifications (batch)
-   */
-  async batchDelete(notificationIds: string[]): Promise<DeleteNotificationResponse> {
-    try {
-      const response = await apiClient.delete<DeleteNotificationResponse>(
-        `${NOTIFICATION_API_PATH}/batch-delete`,
-        { data: { notificationIds } }
       );
 
       return response.data;

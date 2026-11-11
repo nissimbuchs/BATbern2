@@ -54,7 +54,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/ai-prompts/{promptKey}/reset': {
+  '/ai-prompts/{promptKey}/override': {
     parameters: {
       query?: never;
       header?: never;
@@ -63,14 +63,14 @@ export interface paths {
     };
     get?: never;
     put?: never;
+    post?: never;
     /**
-     * Reset an AI prompt to its default text
-     * @description Copies the original default prompt text back to prompt_text.
+     * Remove the organizer's override of an AI prompt (back to its default text)
+     * @description The prompt text an organizer set with PUT is an override of the default text. Deleting the override copies the default text back to prompt_text (Story 4.10b, replaces `POST /ai-prompts/{promptKey}/reset`). Idempotent: a prompt without an override answers the same.
      *
      *     **Authorization**: ORGANIZER role required.
      */
-    post: operations['resetAiPrompt'];
-    delete?: never;
+    delete: operations['deleteAiPromptOverride'];
     options?: never;
     head?: never;
     patch?: never;
@@ -413,7 +413,7 @@ export interface operations {
       404: components['responses']['NotFound'];
     };
   };
-  resetAiPrompt: {
+  deleteAiPromptOverride: {
     parameters: {
       query?: never;
       header?: never;
@@ -424,7 +424,7 @@ export interface operations {
     };
     requestBody?: never;
     responses: {
-      /** @description Prompt after reset */
+      /** @description Prompt after its override is removed (promptText equals defaultText) */
       200: {
         headers: {
           [name: string]: unknown;

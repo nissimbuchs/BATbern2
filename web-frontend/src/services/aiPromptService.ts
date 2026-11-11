@@ -34,7 +34,11 @@ export const updateAiPrompt = async (
   return response.data;
 };
 
-export const resetAiPrompt = async (promptKey: string): Promise<AiPromptResponse> => {
-  const response = await apiClient.post<AiPromptResponse>(`/ai-prompts/${promptKey}/reset`);
+/**
+ * Removes the organizer's override of a prompt, so its text is the default again
+ * (`DELETE /ai-prompts/{promptKey}/override`, Story 4.10b; was `POST …/reset`).
+ */
+export const deleteAiPromptOverride = async (promptKey: string): Promise<AiPromptResponse> => {
+  const response = await apiClient.delete<AiPromptResponse>(`/ai-prompts/${promptKey}/override`);
   return response.data;
 };

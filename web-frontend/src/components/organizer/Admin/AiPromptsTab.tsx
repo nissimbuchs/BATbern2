@@ -94,13 +94,14 @@ const PromptCard: React.FC<PromptCardProps> = ({ prompt }) => {
 
   return (
     <>
-      <Card variant="outlined" sx={{ mb: 3 }}>
+      <Card variant="outlined" sx={{ mb: 3 }} data-testid={`ai-prompt-card-${prompt.promptKey}`}>
         <CardContent>
           <Typography variant="h6" gutterBottom>
             {prompt.displayName}
           </Typography>
 
           <textarea
+            data-testid={`ai-prompt-text-${prompt.promptKey}`}
             value={text}
             onChange={(e) => setText(e.target.value)}
             disabled={isBusy}
@@ -131,6 +132,7 @@ const PromptCard: React.FC<PromptCardProps> = ({ prompt }) => {
               size="small"
               disabled={isBusy}
               onClick={() => setResetDialogOpen(true)}
+              data-testid={`ai-prompt-reset-${prompt.promptKey}`}
             >
               {t('admin.aiPrompts.resetToDefault')}
             </Button>
@@ -139,6 +141,7 @@ const PromptCard: React.FC<PromptCardProps> = ({ prompt }) => {
               size="small"
               disabled={!isDirty || isBusy}
               onClick={handleSave}
+              data-testid={`ai-prompt-save-${prompt.promptKey}`}
             >
               {updateMutation.isPending ? (
                 <CircularProgress size={16} />
@@ -164,7 +167,12 @@ const PromptCard: React.FC<PromptCardProps> = ({ prompt }) => {
           <Button onClick={() => setResetDialogOpen(false)}>
             {t('admin.aiPrompts.resetDialogCancel')}
           </Button>
-          <Button onClick={handleReset} color="warning" variant="contained">
+          <Button
+            onClick={handleReset}
+            color="warning"
+            variant="contained"
+            data-testid="ai-prompt-reset-confirm"
+          >
             {t('admin.aiPrompts.resetDialogConfirm')}
           </Button>
         </DialogActions>

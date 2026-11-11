@@ -356,7 +356,12 @@ export const SessionBatchImportModal: React.FC<SessionBatchImportModalProps> = (
           {importResult ? t('actions.close') : t('session.batchImport.cancelButton')}
         </Button>
         {!importResult && displayCandidates.length > 0 && (
-          <Button variant="contained" onClick={handleImport} disabled={isImporting}>
+          <Button
+            variant="contained"
+            onClick={handleImport}
+            disabled={isImporting}
+            data-testid="session-import-submit"
+          >
             {isImporting
               ? t('session.batchImport.status.importing')
               : t('session.batchImport.importButtonWithCount', {

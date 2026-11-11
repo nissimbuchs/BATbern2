@@ -3,8 +3,8 @@
  *
  * The client runs with the real apiClient, so the errors are the ones real axios raises: an HTTP
  * error reaches the caller as an `Error` with the server's message (else axios' own) and the
- * correlation id when the response carries one. The success paths are still covered by
- * `notificationApiClient.test.ts`, which mocks apiClient.
+ * correlation id when the response carries one. The success paths are in
+ * `notificationApiClient.test.ts`, also on the harness.
  */
 
 import { describe, it, expect } from 'vitest';
@@ -17,12 +17,11 @@ const ID = '3f2a9c1e-7b4d-4e8a-9c0f-1a2b3c4d5e6f';
 
 /** Every method of the client, with the operation it calls. */
 const methods = [
-  ['listNotifications', () => notificationApiClient.getNotifications({ username: 'hong.an' })],
-  ['getUnreadCount', () => notificationApiClient.getUnreadCount('hong.an')],
-  ['markAsRead', () => notificationApiClient.markAsRead(ID)],
-  ['batchMarkAsRead', () => notificationApiClient.batchMarkAsRead([ID])],
+  ['listNotifications', () => notificationApiClient.getNotifications()],
+  ['getUnreadCount', () => notificationApiClient.getUnreadCount()],
+  ['updateNotification', () => notificationApiClient.markAsRead(ID)],
+  ['updateNotifications', () => notificationApiClient.batchMarkAsRead([ID])],
   ['deleteNotification', () => notificationApiClient.deleteNotification(ID)],
-  ['batchDelete', () => notificationApiClient.batchDelete([ID])],
 ] as const;
 
 /** Resolves to what `promise` rejected with; fails the test when it resolves. */
@@ -51,7 +50,7 @@ describe('notificationApiClient errors', () => {
   });
 
   it('should_keepMessage_when_noCorrelationId', async () => {
-    api.on('markAsRead', () =>
+    api.on('updateNotification', () =>
       HttpResponse.json(
         { status: 404, error: 'Not Found', message: 'Notification not found' },
         { status: 404 }

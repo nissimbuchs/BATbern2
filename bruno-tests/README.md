@@ -156,7 +156,7 @@ same check on the PR (`scripts/ci/test-bruno-collection-guard.sh`). To check loc
 | List | Runs on | Directories |
 |------|---------|-------------|
 | `collections` | every environment, **including staging = production** | `admin-cleanup-api` (first), `file-upload-api`, `companies-api`, `users-api`, `tasks-api`, `event-types-api`, `event-topics-api`, `events-crud-api`, `events`, `sessions-api`, `speaker-pool-api`, `event-full-workflow-api`, `partners-api`, `partner-meetings-api` |
-| `dev_only_collections` | development / local / test only | `speaker-portal-api`: needs the `@Profile("dev/local/test")`-gated E2E token endpoint |
+| `dev_only_collections` | development / local / test only | `speaker-portal-api`: needs the `@Profile("dev/local/test")`-gated E2E token endpoint; `event-publishing-api`, `participants-api`, `newsletter-api` (they publish, write registrations or subscribe); `notifications-api`, `ai-prompts-api`, `session-import-api` (Story 4.10b: they change notifications, a global prompt or sessions) |
 | `excluded_collections` | never | `environments`: Bruno environment files, selected via `--env`, not requests |
 
 A directory goes into `collections` only if every file in it is safe against production:

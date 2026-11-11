@@ -80,16 +80,13 @@ export interface NotificationPage {
 
 export type NotificationCountResponse = components['schemas']['NotificationCountResponse'];
 
-export interface MarkAsReadRequest {
-  notificationIds?: string[];
-}
+export type UpdateNotificationRequest = components['schemas']['UpdateNotificationRequest'];
+export type UpdateNotificationsRequest = components['schemas']['UpdateNotificationsRequest'];
 
 export type MarkAsReadResponse = components['schemas']['MarkAsReadResponse'];
 export type DeleteNotificationResponse = components['schemas']['DeleteNotificationResponse'];
 
+/** Filters of the caller's inbox (the server scopes it to the signed-in user, Story 4.10b). */
 export interface NotificationFilters {
-  username: string;
   status?: 'PENDING' | 'SENT' | 'READ' | 'FAILED' | 'UNREAD';
-  eventCode?: string;
-  notificationType?: NotificationType;
 }

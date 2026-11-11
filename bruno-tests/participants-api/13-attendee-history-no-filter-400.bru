@@ -1,0 +1,26 @@
+meta {
+  name: Attendee history without filter is refused (400, 4.10b)
+  type: http
+  seq: 13
+}
+
+get {
+  url: {{baseUrl}}/registrations
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+tests {
+  test("400: the filter naming the attendee is required", function() {
+    expect(res.getStatus()).to.equal(400);
+  });
+}
+
+docs {
+  Story 4.10b: GET /registrations lists one attendee's registrations; without
+  filter={"attendeeUsername": ...} there is nothing to list. Read-only.
+}

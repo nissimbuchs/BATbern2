@@ -5,12 +5,7 @@
 # the story or issue that removes it, or an accepted exception with its reason. A PR that
 # grows the baseline states why and adds the owner group.
 # Format: <rule> TAB <spec file> TAB <METHOD> <path>, sorted.
-no-literal-under-events	event-media-api.openapi.yml	GET /events/recent-photos
-no-literal-under-events	event-registrations-api.openapi.yml	GET /events/registrations
 no-literal-under-events	events-core-api.openapi.yml	GET /events/current
-no-literal-under-events	events-core-api.openapi.yml	GET /events/types
-no-literal-under-events	events-core-api.openapi.yml	GET /events/types/{type}
-no-literal-under-events	events-core-api.openapi.yml	PUT /events/types/{type}
 no-personal-data-path-param	users-api.openapi.yml	DELETE /users/me/additional-emails/{email}
 no-personal-data-path-param	users-api.openapi.yml	PATCH /users/me/additional-emails/{email}
 no-personal-data-path-param	users-api.openapi.yml	POST /users/me/additional-emails/{email}/make-primary
@@ -23,9 +18,6 @@ no-verb-segment	event-mail-api.openapi.yml	POST /events/{eventCode}/mails/previe
 no-verb-segment	event-media-api.openapi.yml	POST /events/{eventCode}/photos/confirm
 no-verb-segment	event-newsletter-api.openapi.yml	GET /newsletter/unsubscribe/verify
 no-verb-segment	event-newsletter-api.openapi.yml	POST /newsletter/unsubscribe
-no-verb-segment	event-notifications-api.openapi.yml	DELETE /notifications/batch-delete
-no-verb-segment	event-notifications-api.openapi.yml	PUT /notifications/batch-read
-no-verb-segment	event-notifications-api.openapi.yml	PUT /notifications/{id}/read
 no-verb-segment	event-registrations-api.openapi.yml	GET /events/{eventCode}/participants/export.docx
 no-verb-segment	event-registrations-api.openapi.yml	GET /events/{eventCode}/participants/export.xlsx
 no-verb-segment	event-registrations-api.openapi.yml	GET /registrations/deregister/verify
@@ -34,7 +26,6 @@ no-verb-segment	event-registrations-api.openapi.yml	POST /registrations/deregist
 no-verb-segment	event-registrations-api.openapi.yml	POST /registrations/deregister/by-email
 no-verb-segment	event-sessions-api.openapi.yml	GET /events/{eventCode}/sessions/{sessionSlug}/materials/{materialId}/download
 no-verb-segment	event-sessions-api.openapi.yml	POST /events/{eventCode}/sessions/auto-assign
-no-verb-segment	event-sessions-api.openapi.yml	POST /events/{eventCode}/sessions/batch-import
 no-verb-segment	event-speakers-api.openapi.yml	POST /speaker-portal/events/{eventCode}/content/submit
 no-verb-segment	event-speakers-api.openapi.yml	POST /speaker-portal/events/{eventCode}/materials/confirm
 no-verb-segment	events-core-api.openapi.yml	POST /events/{eventCode}/teaser-images/confirm
@@ -61,7 +52,7 @@ uuid-path-param	event-newsletter-api.openapi.yml	POST /newsletter/subscribers/{i
 uuid-path-param	event-newsletter-api.openapi.yml	POST /newsletter/subscribers/{id}/unsubscribe
 uuid-path-param	event-newsletter-api.openapi.yml	POST /newsletter/subscribers/{id}/unsuppress
 uuid-path-param	event-notifications-api.openapi.yml	DELETE /notifications/{id}
-uuid-path-param	event-notifications-api.openapi.yml	PUT /notifications/{id}/read
+uuid-path-param	event-notifications-api.openapi.yml	PATCH /notifications/{id}
 uuid-path-param	event-sessions-api.openapi.yml	DELETE /events/{eventCode}/sessions/{sessionSlug}/materials/{materialId}
 uuid-path-param	event-sessions-api.openapi.yml	DELETE /events/{eventCode}/sessions/{sessionSlug}/qna/posts/{postId}
 uuid-path-param	event-sessions-api.openapi.yml	GET /events/{eventCode}/sessions/{sessionSlug}/materials/{materialId}/download

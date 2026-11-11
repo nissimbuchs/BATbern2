@@ -33,8 +33,10 @@ describe('spec examples (MSW harness defaults)', () => {
     // 245 on 2026-11-11: Story 4.10 removed seven JSON 2xx responses (the /users/me twins,
     // speakers/invite, the reminders endpoint), 4.10c four (batch_registrations,
     // enroll-stakeholders, the /newsletter/my-subscription pair) and added the participants
-    // 200; 3.6b moved GET /events/attendance-summary to /internal (245). A floor, not a count.
-    expect(jsonResponses.length).toBeGreaterThan(244);
+    // 200; 3.6b moved GET /events/attendance-summary to /internal (245). Story 4.10b removed the
+    // notification history and batch-delete and folded the verb paths into PATCH (244). A
+    // floor, not a count.
+    expect(jsonResponses.length).toBeGreaterThan(243);
   });
 
   it('every JSON 2xx response has an example', () => {

@@ -1,0 +1,31 @@
+meta {
+  name: Set an override (PUT /ai-prompts/{key})
+  type: http
+  seq: 2
+}
+
+put {
+  url: {{baseUrl}}/ai-prompts/event_description
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+body:json {
+  {
+    "promptText": "BRUNO-TEST override: Schreibe über Brünnimann"
+  }
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("the override is stored", function() {
+    expect(res.getBody().promptText).to.equal("BRUNO-TEST override: Schreibe über Brünnimann");
+  });
+}

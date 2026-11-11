@@ -10,7 +10,9 @@
  * - useBatchMarkAsRead: Batch mark as read mutation
  * - useDeleteNotification: Delete notification mutation
  *
- * Fetches the notifications that in-process domain events created
+ * Fetches the signed-in organizer's notifications that in-process domain events created. The
+ * server scopes every call to the caller (Story 4.10b), so the hooks take no username; pass
+ * `enabled: false` until there is a signed-in user.
  */
 
 import {
@@ -36,12 +38,12 @@ import type {
  * useNotifications - Fetch paginated list of notifications
  * Cache: 2 minutes (notifications are volatile)
  *
- * @param filters - Username (required) and optional status/eventCode filters
+ * @param filters - Optional status filter
  * @param pagination - Page number and limit
- * @param options - React Query options
+ * @param options - React Query options (`enabled: false` while nobody is signed in)
  */
 export const useNotifications = (
-  filters: NotificationFilters,
+  filters: NotificationFilters = {},
   pagination: { page?: number; limit?: number } = {},
   options?: { enabled?: boolean }
 ): UseQueryResult<NotificationPage, Error> => {
@@ -49,7 +51,7 @@ export const useNotifications = (
     queryKey: ['notifications', filters, pagination],
     queryFn: () => notificationApiClient.getNotifications(filters, pagination),
     staleTime: 2 * 60 * 1000, // 2 minutes
-    enabled: options?.enabled !== false && !!filters.username,
+    enabled: options?.enabled !== false,
   });
 };
 
@@ -57,18 +59,14 @@ export const useNotifications = (
  * useUnreadCount - Fetch unread notification count
  * Cache: 1 minute (count changes frequently)
  *
- * @param username - Username of the user
- * @param options - React Query options
+ * @param options - React Query options (`enabled: false` while nobody is signed in)
  */
-export const useUnreadCount = (
-  username: string | undefined,
-  options?: { enabled?: boolean }
-): UseQueryResult<number, Error> => {
+export const useUnreadCount = (options?: { enabled?: boolean }): UseQueryResult<number, Error> => {
   return useQuery({
-    queryKey: ['notifications', 'unread-count', username],
-    queryFn: () => notificationApiClient.getUnreadCount(username!),
+    queryKey: ['notifications', 'unread-count'],
+    queryFn: () => notificationApiClient.getUnreadCount(),
     staleTime: 1 * 60 * 1000, // 1 minute
-    enabled: options?.enabled !== false && !!username,
+    enabled: options?.enabled !== false,
   });
 };
 
@@ -131,27 +129,6 @@ export const useDeleteNotification = (): UseMutationResult<
   return useMutation({
     mutationFn: (notificationId: string) =>
       notificationApiClient.deleteNotification(notificationId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['notifications'] });
-    },
-  });
-};
-
-/**
- * useBatchDeleteNotifications - Delete multiple notifications
- *
- * Automatically invalidates notification queries on success
- */
-export const useBatchDeleteNotifications = (): UseMutationResult<
-  DeleteNotificationResponse,
-  Error,
-  string[],
-  unknown
-> => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (notificationIds: string[]) => notificationApiClient.batchDelete(notificationIds),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
     },

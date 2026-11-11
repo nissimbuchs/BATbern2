@@ -1,0 +1,26 @@
+meta {
+  name: Count the caller's unread notifications
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/notifications/count
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+tests {
+  test("200 with a count of at least the fixture notification", function() {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().count).to.be.greaterThan(0);
+  });
+}
+
+docs {
+  Story 4.10b: the count is the caller's own, without a username parameter.
+}

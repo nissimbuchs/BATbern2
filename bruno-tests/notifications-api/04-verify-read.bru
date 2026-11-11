@@ -1,0 +1,24 @@
+meta {
+  name: The notification is read after a reload
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{baseUrl}}/notifications?status=READ&page=1&limit=100
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+tests {
+  test("the marked notification is in the READ list", function() {
+    expect(res.getStatus()).to.equal(200);
+    const found = res.getBody().data.find(n => n.id === bru.getVar("notifId"));
+    expect(found, "marked notification").to.be.an("object");
+    expect(found.readAt).to.be.a("string");
+  });
+}

@@ -1,142 +1,75 @@
 /**
- * aiPromptService Tests
- *
- * Coverage for AI Prompt Management Service:
- * - listAiPrompts: GET /ai-prompts
- * - getAiPrompt: GET /ai-prompts/:key
- * - updateAiPrompt: PUT /ai-prompts/:key
- * - resetAiPrompt: POST /ai-prompts/:key/reset
+ * aiPromptService on the MSW harness (Story 4.10b, Epic 17 test fidelity): the real apiClient
+ * runs and every request is checked against event-ai-api. The reset is the delete of the
+ * override, `DELETE /ai-prompts/{promptKey}/override` (was `POST …/reset`).
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { listAiPrompts, getAiPrompt, updateAiPrompt, resetAiPrompt } from './aiPromptService';
+import { describe, it, expect } from 'vitest';
+import { HttpResponse } from 'msw';
+import { api } from '@/test/msw/api';
+import {
+  listAiPrompts,
+  getAiPrompt,
+  updateAiPrompt,
+  deleteAiPromptOverride,
+  type AiPromptResponse,
+} from './aiPromptService';
 
-vi.mock('@/services/api/apiClient', () => ({
-  default: {
-    get: vi.fn(),
-    put: vi.fn(),
-    post: vi.fn(),
-  },
-}));
-
-import apiClient from '@/services/api/apiClient';
-
-const mockGet = vi.mocked(apiClient.get);
-const mockPut = vi.mocked(apiClient.put);
-const mockPost = vi.mocked(apiClient.post);
-
-const PROMPT_DESCRIPTION = {
+const prompt = (overrides: Partial<AiPromptResponse> = {}): AiPromptResponse => ({
   promptKey: 'event_description',
-  promptText: 'Describe the event in detail.',
-};
-const PROMPT_THEME = { promptKey: 'theme_image', promptText: 'Generate a theme image.' };
-const PROMPT_QUALITY = { promptKey: 'abstract_quality', promptText: 'Review abstract quality.' };
+  displayName: 'Event Description',
+  promptText: 'Schreibe über Brünnimann’s Vortrag',
+  defaultText: 'Write a German event description',
+  updatedAt: '2026-11-10T08:00:00Z',
+  ...overrides,
+});
 
 describe('aiPromptService', () => {
-  beforeEach(() => vi.clearAllMocks());
+  it('should_listPrompts', async () => {
+    api.on('listAiPrompts', () => [prompt(), prompt({ promptKey: 'theme_image' })]);
 
-  describe('listAiPrompts', () => {
-    it('should GET /ai-prompts and return array of prompts', async () => {
-      const prompts = [PROMPT_DESCRIPTION, PROMPT_THEME, PROMPT_QUALITY];
-      mockGet.mockResolvedValue({ data: prompts });
+    const prompts = await listAiPrompts();
 
-      const result = await listAiPrompts();
+    expect(prompts.map((p) => p.promptKey)).toEqual(['event_description', 'theme_image']);
+  });
 
-      expect(mockGet).toHaveBeenCalledWith('/ai-prompts');
-      expect(result).toEqual(prompts);
-    });
+  it('should_getOnePromptByKey', async () => {
+    api.on('getAiPrompt', ({ params }) => prompt({ promptKey: params.promptKey }));
 
-    it('should return empty array when no prompts exist', async () => {
-      mockGet.mockResolvedValue({ data: [] });
-
-      const result = await listAiPrompts();
-
-      expect(result).toEqual([]);
-    });
-
-    it('should propagate errors from apiClient', async () => {
-      mockGet.mockRejectedValue(new Error('Forbidden'));
-
-      await expect(listAiPrompts()).rejects.toThrow('Forbidden');
+    await expect(getAiPrompt('abstract_quality')).resolves.toMatchObject({
+      promptKey: 'abstract_quality',
     });
   });
 
-  describe('getAiPrompt', () => {
-    it('should GET /ai-prompts/:key and return single prompt', async () => {
-      mockGet.mockResolvedValue({ data: PROMPT_DESCRIPTION });
+  it('should_putThePromptText_when_updating', async () => {
+    api.on('updateAiPrompt', ({ body }) => prompt({ promptText: body?.promptText }));
 
-      const result = await getAiPrompt('event_description');
+    const updated = await updateAiPrompt('event_description', 'Neuer Text für O’Neill');
 
-      expect(mockGet).toHaveBeenCalledWith('/ai-prompts/event_description');
-      expect(result).toEqual(PROMPT_DESCRIPTION);
-    });
-
-    it('should construct correct URL for theme_image key', async () => {
-      mockGet.mockResolvedValue({ data: PROMPT_THEME });
-
-      await getAiPrompt('theme_image');
-
-      expect(mockGet).toHaveBeenCalledWith('/ai-prompts/theme_image');
-    });
-
-    it('should propagate 404 errors', async () => {
-      mockGet.mockRejectedValue(new Error('Not found'));
-
-      await expect(getAiPrompt('nonexistent_key')).rejects.toThrow('Not found');
-    });
+    expect(api.calls('updateAiPrompt')[0].body).toEqual({ promptText: 'Neuer Text für O’Neill' });
+    expect(updated.promptText).toBe('Neuer Text für O’Neill');
   });
 
-  describe('updateAiPrompt', () => {
-    it('should PUT /ai-prompts/:key with promptText body', async () => {
-      const updated = { ...PROMPT_DESCRIPTION, promptText: 'Updated description text.' };
-      mockPut.mockResolvedValue({ data: updated });
+  it('should_deleteTheOverride_when_resettingToDefault', async () => {
+    api.on('deleteAiPromptOverride', () =>
+      prompt({ promptText: 'Write a German event description' })
+    );
 
-      const result = await updateAiPrompt('event_description', 'Updated description text.');
+    const reset = await deleteAiPromptOverride('event_description');
 
-      expect(mockPut).toHaveBeenCalledWith('/ai-prompts/event_description', {
-        promptText: 'Updated description text.',
-      });
-      expect(result).toEqual(updated);
-    });
-
-    it('should pass the exact promptText to the request body', async () => {
-      const longText = 'A'.repeat(500);
-      mockPut.mockResolvedValue({ data: { promptKey: 'theme_image', promptText: longText } });
-
-      await updateAiPrompt('theme_image', longText);
-
-      expect(mockPut).toHaveBeenCalledWith('/ai-prompts/theme_image', { promptText: longText });
-    });
-
-    it('should propagate validation errors', async () => {
-      mockPut.mockRejectedValue(new Error('Invalid prompt text'));
-
-      await expect(updateAiPrompt('event_description', '')).rejects.toThrow('Invalid prompt text');
-    });
+    const [call] = api.calls('deleteAiPromptOverride');
+    expect(call.method).toBe('DELETE');
+    expect(call.params.promptKey).toBe('event_description');
+    expect(reset.promptText).toBe(reset.defaultText);
   });
 
-  describe('resetAiPrompt', () => {
-    it('should POST /ai-prompts/:key/reset and return reset prompt', async () => {
-      mockPost.mockResolvedValue({ data: PROMPT_DESCRIPTION });
+  it('should_rejectWithTheHttpError_when_promptIsUnknown', async () => {
+    api.on('deleteAiPromptOverride', () =>
+      HttpResponse.json({ message: 'not found' }, { status: 404 })
+    );
 
-      const result = await resetAiPrompt('event_description');
-
-      expect(mockPost).toHaveBeenCalledWith('/ai-prompts/event_description/reset');
-      expect(result).toEqual(PROMPT_DESCRIPTION);
-    });
-
-    it('should construct correct URL for abstract_quality key', async () => {
-      mockPost.mockResolvedValue({ data: PROMPT_QUALITY });
-
-      await resetAiPrompt('abstract_quality');
-
-      expect(mockPost).toHaveBeenCalledWith('/ai-prompts/abstract_quality/reset');
-    });
-
-    it('should propagate server errors', async () => {
-      mockPost.mockRejectedValue(new Error('Internal server error'));
-
-      await expect(resetAiPrompt('event_description')).rejects.toThrow('Internal server error');
+    await expect(deleteAiPromptOverride('no_such_prompt')).rejects.toMatchObject({
+      response: { status: 404 },
     });
   });
 });

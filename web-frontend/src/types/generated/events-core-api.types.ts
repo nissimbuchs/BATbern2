@@ -431,7 +431,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/events/types': {
+  '/event-types': {
     parameters: {
       query?: never;
       header?: never;
@@ -449,6 +449,8 @@ export interface paths {
      *     This endpoint returns cached configurations (Caffeine cache, 1 hour TTL).
      *
      *     **Performance**: <50ms (P95) - cached response
+     *
+     *     Public: the format definitions hold no data about people (Story 4.10b moved them from `/events/types`, a literal that shared the namespace of `{eventCode}`).
      */
     get: operations['listEventTypes'];
     put?: never;
@@ -459,7 +461,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/events/types/{type}': {
+  '/event-types/{type}': {
     parameters: {
       query?: never;
       header?: never;

@@ -46,6 +46,7 @@ tests {
     expect(body.results.map(r => r.outcome)).to.eql(["REGISTERED", "REGISTERED"]);
     expect(body.registrationCode).to.equal(undefined);
     bru.setVar("participantsNotifyUsername", body.results[1].username);
+    bru.setVar("participantsImportUsername", body.results[0].username);
   });
 }
 

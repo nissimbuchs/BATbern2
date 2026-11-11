@@ -310,9 +310,10 @@ describe('EventManagementDashboard Component', () => {
         within(section).getByText('Assigned speaker outreach for BATbern61')
       ).toBeInTheDocument();
 
-      // The signed-in organizer's first ten unread notifications.
+      // The signed-in organizer's first ten unread notifications; the server scopes the inbox to
+      // the caller, so no username is sent (Story 4.10b).
       const query = api.calls('listNotifications')[0].query;
-      expect(query.get('username')).toBe(ORGANIZER);
+      expect(query.has('username')).toBe(false);
       expect(query.get('status')).toBe('UNREAD');
       expect(query.get('page')).toBe('1');
       expect(query.get('limit')).toBe('10');

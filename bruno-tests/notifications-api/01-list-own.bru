@@ -1,0 +1,41 @@
+meta {
+  name: List the caller's notifications (no username, 4.10b)
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/notifications?page=1&limit=100
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+script:pre-request {
+  // The listener is @Async: give it time to write the notification of 00.
+  await bru.sleep(4000);
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("the caller's inbox holds a notification of the fixture event", function() {
+    const body = res.getBody();
+    expect(body.pagination.page).to.equal(1);
+    const own = body.data.filter(n => n.eventCode === bru.getVar("notifEventCode"));
+    expect(own.length, "notification of the fixture event").to.be.greaterThan(0);
+    const recipients = new Set(body.data.map(n => n.recipientUsername));
+    expect(recipients.size, "one recipient: the caller").to.equal(1);
+    bru.setVar("notifId", own[0].id);
+  });
+}
+
+docs {
+  Story 4.10b: GET /notifications has no username parameter any more; the server returns the
+  signed-in organizer's notifications only.
+}

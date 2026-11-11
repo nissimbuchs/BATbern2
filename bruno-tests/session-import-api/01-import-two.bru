@@ -1,0 +1,52 @@
+meta {
+  name: Import two sessions (POST /events/{eventCode}/sessions with imports)
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/events/{{sessionImportEventCode}}/sessions
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+body:json {
+  {
+    "imports": []
+  }
+}
+
+script:pre-request {
+  const bat = Number(bru.getVar("sessionImportEventNumber"));
+  req.setBody({
+    imports: [
+      { bat, title: "BRUNO-TEST Import: Brünnimann über Resilienz", abstract: "Synthetisch", referenten: [] },
+      { bat, title: "BRUNO-TEST Import: O’Neill zu Plattformen", abstract: "Synthetisch", referenten: [] }
+    ]
+  });
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("both created, a result per item, no single-mode session", function() {
+    const body = res.getBody();
+    expect(body.totalProcessed).to.equal(2);
+    expect(body.successfullyCreated).to.equal(2);
+    expect(body.skipped).to.equal(0);
+    expect(body.details.map(d => d.status)).to.eql(["success", "success"]);
+    expect(body.session).to.equal(undefined);
+  });
+}
+
+docs {
+  Story 4.10b: the import is the imports mode of the session create (was
+  POST /events/{eventCode}/sessions/batch-import). The body is set by the pre-request script
+  from the fixture's event number (the items name their event by number).
+}

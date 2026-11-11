@@ -1,0 +1,60 @@
+meta {
+  name: Fixture — create the event the notifications tests act on
+  type: http
+  seq: 0
+}
+
+post {
+  url: {{baseUrl}}/events
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+script:pre-request {
+  const now = Date.now();
+  const eventNumber = 10000 + Math.floor(Math.random() * 90000); // reserved test range, swept by 99
+  const dayMs = 24 * 60 * 60 * 1000;
+  bru.setVar("notifTimestamp", now);
+  bru.setVar("notifEventNumber", eventNumber);
+  bru.setVar("notifEventDate", new Date(now + 60 * dayMs).toISOString());
+  bru.setVar("notifRegDeadline", new Date(now + 53 * dayMs).toISOString());
+}
+
+body:json {
+  {
+    "title": "BRUNO-TEST-NOTIFICATIONS {{notifTimestamp}}",
+    "eventNumber": {{notifEventNumber}},
+    "date": "{{notifEventDate}}",
+    "registrationDeadline": "{{notifRegDeadline}}",
+    "venueName": "Bruno Test Venue",
+    "venueAddress": "Test Address 7, 3000 Bern",
+    "venueCapacity": 100,
+    "organizerUsername": "{{organizerUsername}}",
+    "description": "Parent event for notifications tests (Story 4.10b)",
+    "eventType": "EVENING"
+  }
+}
+
+assert {
+  res.status: eq 201
+  res.body.eventCode: isDefined
+}
+
+tests {
+  test("notifEventCode set for the collection", function() {
+    bru.setVar("notifEventCode", res.getBody().eventCode);
+  });
+}
+
+docs {
+  Story 4.10b: dev-only collection (dev_only_collections in scripts/ci/run-bruno-tests.sh).
+  Creating an event publishes EventCreatedEvent, and the @Async OrganizerNotificationListener
+  gives every organizer an in-app notification for it; the collection then lists, marks and
+  deletes the caller's own one. It writes notifications, so it never runs on staging
+  (production). It sends no mail. Another organizer's id answering 404 needs a second
+  organizer and is covered by NotificationControllerIntegrationTest.
+}

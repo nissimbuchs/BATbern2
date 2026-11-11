@@ -447,12 +447,12 @@ class EventApiClient {
     }
   }
 
+  /** Homepage photo strip, anonymous (`GET /public/event-photos`, Story 4.10b). */
   async getRecentEventPhotos(limit = 20, lastNEvents = 5): Promise<EventPhotoResponse[]> {
     try {
-      const response = await apiClient.get<EventPhotoResponse[]>(
-        `${EVENT_API_PATH}/recent-photos`,
-        { params: { limit, lastNEvents } }
-      );
+      const response = await apiClient.get<EventPhotoResponse[]>('/public/event-photos', {
+        params: { limit, lastNEvents },
+      });
       return response.data;
     } catch (error) {
       throw this.transformError(error);
