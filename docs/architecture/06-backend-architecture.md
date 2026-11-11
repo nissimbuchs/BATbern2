@@ -187,7 +187,8 @@ a Watch release has switched to `/public/events/current` (#1070).
 Service-to-service reads that must not depend on the end user use a separate path prefix,
 `/internal/**`, outside the public `/api/v1` contract. The API gateway has no route for it and
 denies it explicitly (`SecurityConfig`: `/internal/**` → `denyAll`), so it is reachable only inside
-the VPC through Service Connect. Callers send **no** JWT.
+the VPC through Service Connect. Callers forward the user's JWT when there is one
+(`S2sHeaders.forCurrentUser()`) and never require it (ADR-016 decision 3).
 
 | Pattern | Service | Callers |
 |---|---|---|
@@ -198,11 +199,13 @@ the VPC through Service Connect. Callers send **no** JWT.
 | `POST /internal/users/get-or-create` | Company-User Management | EMS anonymous registration and speaker provisioning (ADR-005) |
 | `GET /internal/email-owners?email=` | Company-User Management | EMS by-email deregistration across a person's profiles (#1183) |
 | `GET /internal/users/merge-preview`, `POST /internal/users/merge`, `POST /internal/users/primary-email` | Event Management | CUMS profile merge (#1183 C/D, below) and primary-address change (#1244) |
-| `GET /internal/mail-center-requests?since=&limit=` | Company-User Management | EMS `MailCenterRequestFeedJob`: the change feed of merge and logo requests (#1237, #1246; Epic 17 entry 7) |
+| `POST /internal/mail-center-requests`, `POST /internal/mail-center-requests/{requestId}/decision` | Event Management (implements the CUMS contract) | CUMS opens and closes the Mail Center conversation of a merge or logo request (#1237, #1246; Epic 17 entry 7, below) |
 
-The CUMS→EMS call other than the merge itself (`primary-email`) is an upstream→downstream exception to
-the module map, owned by entry 7b; no new one is added. The Mail Center requests went the other way
-until entry 7 (`POST /internal/mail-center/*`, deleted).
+The Mail Center request operations are a **contract CUMS owns** (ADR-016 decision 4): specified in
+`cums-internal.openapi.yml`, called through shared-kernel `ContractCalls` at every implementer listed
+in `batbern.contracts.mail-center-requests.implementers` (today EMS); CUMS names no EMS class. The
+other CUMS→EMS calls (`users/merge*`, `primary-email`) still name EMS until entry 7b moves them into
+the user-reference contract; no new one is added.
 
 Every operation above is specified in `docs/api/internal/` (`cums-`, `ems-`, `pcs-internal.openapi.yml`,
 Story 17.0b2) and contract-tested on both sides; the public tooling does not read that folder.
@@ -671,47 +674,45 @@ The organizers decide in the Mail Center; company edits themselves stay `ORGANIZ
   URL, the new upload id and URL, optional note, status OPEN / APPROVED / DECLINED, decided by/at,
   optional reason. One OPEN request per person and company (partial unique index, 409
   `LOGO_REQUEST_OPEN`); the company is the one on the caller's profile (409 `NO_COMPANY`).
-- **Mail Center.** EMS pulls the request from the CUMS feed (see "Mail Center requests (Epic 17
-  entry 7)" below) and opens its conversation (`RequestConversations` kind LOGO,
-  `mail_conversation.logo_request_id`, EMS V146): an OPEN conversation without event, audience
-  SYSTEM. Filing the request does not depend on EMS (until entry 7 it answered 502
-  `LOGO_REQUEST_NOT_DELIVERED` when EMS was down).
+- **Mail Center.** In the same transaction CUMS calls the Mail Center request contract (see "Mail
+  Center requests (Epic 17 entry 7)" below); EMS opens the conversation (`RequestConversations` kind
+  LOGO, `mail_conversation.logo_request_id`, EMS V146): an OPEN conversation without event, audience
+  SYSTEM. If EMS does not answer, nothing is stored (502 `LOGO_REQUEST_NOT_DELIVERED`); the client
+  uploads again on retry, because the association has already moved the temporary S3 object.
 - **Decision** (`ORGANIZER`). `POST /users/company-logo-requests/{id}/approve` copies the logo to the
   company's final key (`logos/{year}/companies/{name}/logo-{uploadId}.{ext}`) and sets it through
   `CompanyService.applyRequestedLogo` (cache invalidation, `CompanyUpdatedEvent`, like an organizer
   edit). `.../decline {reason?}` changes nothing on the company. Either way the requester is mailed
   at the primary address (`company-logo-approved|declined-{de,en}`, the reason block only when given),
-  best effort after the decision; the conversation turns DONE on the next poll of the feed.
+  best effort, and the conversation is closed after the commit (contract `.../decision`).
   The request's own copy of the logo stays, so the decided conversation still shows both logos.
 
 ## Mail Center requests (Epic 17 entry 7)
 
 Merge requests (#1237) and company logo requests (#1246) live in CUMS; their conversations live in
-the EMS Mail Center. EMS pulls them (ADR-016 decision 4), CUMS never calls EMS for them.
+the EMS Mail Center. CUMS tells the Mail Center through a contract it owns (ADR-016 decision 4,
+amended 2026-11-11: no polling): `POST /internal/mail-center-requests` (opened) and
+`POST /internal/mail-center-requests/{requestId}/decision` (decided), specified in
+`cums-internal.openapi.yml`.
 
-- **Feed.** CUMS `GET /internal/mail-center-requests?since=<cursor>&limit=` (`cums-internal.openapi.yml`,
-  `MailCenterRequestFeedService`) returns both tables in the order `(changed_at, id)`. `changed_at`
-  (CUMS V30) is set by a trigger to `clock_timestamp()` when a row is created or its status or
-  decision changes. Each item carries kind, request id, status, the requester's current name and
-  primary address, the conversation subject (the German text organizers see), note, `decidedBy`.
-  The cursor is opaque (the last item's pair) and comes back as `nextCursor`, also on an empty page.
-- **Settle window.** A row is delivered only once its `changed_at` is 30 s old
-  (`batbern.mail-center-request-feed.settle-seconds`, 0 in tests), so a transaction that commits
-  after a later one cannot fall behind a cursor already handed out.
-- **First poll.** Without `since`, the feed starts just before the oldest OPEN request (now, when none
-  is open): open requests arrive, decided history does not.
-- **Job.** EMS `MailCenterRequestFeedJob` (cron `batbern.mail-center-request-feed.cron`, default every
-  minute, ShedLock, off in tests) pages until a page is not full and calls `RequestConversations`:
-  open when the request has no conversation yet and an address is known (a request whose requester
-  profile is gone comes with name and address null), then close for a decided one with
-  `updated_by` = `decidedBy`. A conversation that existed before the pass closes only when no mail
-  came in after the decision (`last_inbound_at <= changedAt`): a requester's answer reopened it, and
-  a decision read again (replay, first poll) must not close it. A request decided before any poll
-  saw it is opened, then closed, so the record stays. Deciding in the Mail Center sets the
-  conversation DONE at once (`PATCH /conversations/{key}`); the feed only catches up. The cursor (`feed_cursors`, EMS V153) is saved after each page. A
-  failure (CUMS down, a bad item) stops the run with the cursor unchanged, logs
-  `MAIL_CENTER_REQUEST_FEED failed` at ERROR and counts `mailcenter.request_feed.failures`; the next
-  poll retries. The job sends no mail. Delay: up to one minute plus the settle window.
+- **Caller.** CUMS `client/MailCenterRequestContract` (`HttpMailCenterRequestContract`) on
+  shared-kernel `ContractCalls`: one call per implementer in
+  `batbern.contracts.mail-center-requests.implementers` (`EVENT_MANAGEMENT_SERVICE_URL`), headers
+  from `S2sHeaders.forCurrentUser()` (the user's JWT when there is one), 2 s connect, 10 s read.
+- **Opened.** Inside the filing transaction, after the row is stored. An implementer that does not
+  answer fails the filing: 502 `MERGE_REQUEST_NOT_DELIVERED` or `LOGO_REQUEST_NOT_DELIVERED`, the row
+  is rolled back, the person can send again. The body carries kind, request id, the requester's name
+  and primary address, the subject (the German text organizers see) and the note.
+- **Decided.** After the decision commits (`MailCenterRequestDecisions`, a transaction
+  synchronization), with kind, status, `decidedBy` and `decidedAt`. A failure is logged as ERROR
+  (`MAIL_CENTER_REQUEST decision not delivered`) and counted (`mailcenter.request_contract.failures`);
+  it does not undo the decision, and the conversation stays OPEN until an organizer sets it Done.
+  Deciding in the Mail Center sets the conversation DONE itself (`PATCH /conversations/{key}`).
+- **Implementer.** EMS `InternalRequestConversationController` calls `RequestConversations`: open is
+  idempotent (a second call changes nothing; an opening mail stored but never linked is linked by its
+  group id); the decision sets DONE with `updated_by` = `decidedBy`, unless a mail came in after
+  `decidedAt` (`last_inbound_at`), so a requester's late answer keeps the conversation open. A
+  decision for a request without a conversation is ignored.
 
 ## Profile Merge (#1183 C/D)
 
@@ -720,11 +721,11 @@ profile) are merged: the source is folded into the target and deleted. CUMS deci
 orchestrates; EMS moves its own rows through an internal endpoint and keeps the undo log.
 
 **Merge requests (#1237).** When the person cannot read the earlier profile's mailbox, CUMS stores a
-`profile_merge_requests` row and EMS opens a Mail Center conversation for it from the request feed
-(`RequestConversations` kind MERGE, `mail_conversation.merge_request_id`; see "Mail Center requests
-(Epic 17 entry 7)" above). The organizer approves or declines in that conversation (CUMS
-`/users/merge-requests/{id}/approve|decline`); approval runs the same merge with
-`carryAddresses = false`, and the conversation turns DONE on the next poll. Details:
+`profile_merge_requests` row and EMS opens a Mail Center conversation for it through the Mail Center
+request contract (`RequestConversations` kind MERGE, `mail_conversation.merge_request_id`; see "Mail
+Center requests (Epic 17 entry 7)" above). The organizer approves or declines in that conversation
+(CUMS `/users/merge-requests/{id}/approve|decline`); approval runs the same merge with
+`carryAddresses = false`, and the conversation is closed after the commit. Details:
 `06b-user-lifecycle-sync.md`.
 
 ```mermaid

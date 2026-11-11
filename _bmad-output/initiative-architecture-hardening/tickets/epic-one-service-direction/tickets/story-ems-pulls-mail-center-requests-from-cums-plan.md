@@ -3,14 +3,14 @@ title: 'CUMS calls the Mail Center through a contract it owns'
 type: 'refactor'
 ticket: '7'
 created: '2026-11-11'
-status: 'in-progress'
+status: 'built'
 baseline_revision: '7815a9c20e392fd560c58839432be70e883ad8e3'
 route: 'full'
 route_source: 'auto'
 risk: 'high'
-review: ''
-review_source: ''
-lenses_ran: []
+review: 'quick'
+review_source: 'pinned'
+lenses_ran: ['quick']
 review_loop_iteration: 1
 context: ['{project-root}/docs/architecture/ADR-016-service-directions-and-service-to-service-calls.md']
 ---
@@ -54,12 +54,12 @@ context: ['{project-root}/docs/architecture/ADR-016-service-directions-and-servi
 ## Tasks & Acceptance
 
 **Execution:**
-- [ ] Spec `cums-internal`: contract operations (MailCenterRequestOpened, MailCenterRequestDecided), feed removed.
-- [ ] shared-kernel `ContractCalls` + tests.
-- [ ] CUMS: contract caller, services, controllers, config; delete feed + V30; ITs (`ProfileMergeRequestIntegrationTest`, `CompanyLogoRequestIntegrationTest`) assert what the `ContractServer` received, and the 502 at filing; contract test.
-- [ ] EMS: controller restored on new paths; delete feed client, job, V153 and their tests; provider contract test against the cums spec; ratchet baseline.
-- [ ] Docs as in Code Map; ADR-016 cost line states open fails, decision logs.
-- [ ] Local dev DB: drop V30/V153 objects and their `flyway_schema_history_*` rows.
+- [x] Spec `cums-internal`: contract operations (MailCenterRequestOpened, MailCenterRequestDecided), feed removed.
+- [x] shared-kernel `ContractCalls` + tests.
+- [x] CUMS: contract caller, services, controllers, config; delete feed + V30; ITs (`ProfileMergeRequestIntegrationTest`, `CompanyLogoRequestIntegrationTest`) assert what the `ContractServer` received, and the 502 at filing; contract test.
+- [x] EMS: controller restored on new paths; delete feed client, job, V153 and their tests; provider contract test against the cums spec; ratchet baseline.
+- [x] Docs as in Code Map; ADR-016 cost line states open fails, decision logs.
+- [x] Local dev DB: drop V30/V153 objects and their `flyway_schema_history_*` rows.
 
 **Acceptance Criteria:**
 - Given local dev, when a test user files a merge and a logo request, then both conversations are in the Mail Center at once; when an organizer declines them outside the Mail Center, then both are DONE at once.
@@ -71,6 +71,18 @@ context: ['{project-root}/docs/architecture/ADR-016-service-directions-and-servi
 - 2026-11-11, owner decision (not a review finding): polling rejected, alternative B (upstream-owned push contract) chosen for 7, 7b and 8b. Amended: intent, boundaries, matrix, code map, tasks, design. Avoids: a job, cursor table and lock per feed, one-minute delay, idle traffic. KEEP: `RequestConversations` close guard and group-id link, `ConversationDetail` close-at-once and its MSW test, LEFT-JOIN lesson (an open without an address is skipped, a decision always applies), the docs cleanups of the first build.
 
 ## Implementation Notes
+
+Rework (contract), built 2026-11-11 on `feature/17-7b-user-reference-contract`, not committed, no push, no PR. Not reviewed yet.
+
+- **Contract** in `cums-internal.openapi.yml`: `POST /internal/mail-center-requests` (`MailCenterRequestOpened`: kind, requestId, requesterName nullable, requesterEmail with the #1102 pattern, subject, note) and `POST /internal/mail-center-requests/{requestId}/decision` (`MailCenterRequestDecided`: kind, status, decidedBy, decidedAt), both 204/400, tagged `contract`. `decidedAt` carries the close guard (`last_inbound_at <= decidedAt`) over to the push.
+- **shared-kernel `ContractCalls`** (+ `ContractRefusedException`, `ContractCallFailedException`): implementers bound with Spring `Binder` (YAML list or comma-separated, trailing `/` dropped, none when unset), `post(path, body, uriVariables...)` and `get(path, uriVariables, type)` per implementer in order, stop at the first failure, headers from `S2sHeaders.forCurrentUser()`. Unit test `ContractCallsTest` (8).
+- **CUMS.** `client/MailCenterRequestContract` + `HttpMailCenterRequestContract` (2 s / 10 s, maps both contract exceptions to `MailCenterCallFailedException`, so `UserMergeController` keeps one 502 handler and 7b can map refusals to 409 there without a clash). Open inside the filing transaction as at `9d10da27`; the decision goes through `service/MailCenterRequestDecisions` (transaction synchronization `afterCommit`, ERROR `MAIL_CENTER_REQUEST decision not delivered` + counter `mailcenter.request_contract.failures`), called from `decide(...)` in both services. Controllers' 502 handlers restored unchanged. Config `batbern.contracts.mail-center-requests.implementers: ${EVENT_MANAGEMENT_SERVICE_URL:...}`; test yml `http://mail-center-contract.invalid` (unbound call fails as 502).
+- **CUMS tests.** `ProfileMergeRequestIntegrationTest` and `CompanyLogoRequestIntegrationTest` no longer `@Transactional` (the decision is after commit), rows removed by SQL before and after each test; the `ContractServer` (`client/MailCenterContract`) asserts every open and decision body, plus new: merge 502 at filing, decision failure keeps the decision and raises the counter. `HttpMailCenterRequestContractTest` (5). Ratchet `be-transactional-it` fell by 2, baseline updated. Feed IT, feed service, controller and V30 deleted; `S2sProviderContractIntegrationTest` and `application-test.yml` back to `9d10da27` plus the contract property.
+- **EMS.** `InternalRequestConversationController` on the two contract paths (kind enum in body, 204); `RequestConversations.close` now always takes `decidedAt` (null branch and unused `exists` removed). `InternalRequestConversationIntegrationTest` (11): open, IDN, Unicode local part 400, idempotent open, unlinked link, close with decider and idempotent, reply after decision stays open, decision without conversation, invalid 400. Provider test runs both operations against the cums spec with and without a forwarded JWT, request bodies validated against the spec first. Feed client, job, V153 and their tests deleted; `CumsContractHarness`, `AutomaticTriggerAudienceGuardTest`, `application-test.properties` back to `9d10da27`.
+- **users-api.** Texts back to "opened at once / closed after the commit"; 502 restored on the logo request and added on the merge request (the controller always answered it, the spec never said so); types regenerated.
+- **Docs.** `06-backend-architecture.md` (internal table, logo section, "Mail Center requests" rewritten), `06b` row E, `module-map.md` (`ContractCalls`), ADR-016 (cost line: open fails, decision logs; enforcement line for `ContractCalls`), changelog entry replaced, `event-mail.md` back to `9d10da27`, doc-drift mappings for `shared/contract/` and the EMS controller, `ConversationDetail` comments. Not touched: `docs/prd/epic-17-architecture-hardening.md` entry 7 still describes the pull feed (not in the Code Map).
+- **Verification (2026-11-11).** shared-kernel 649 and CUMS 974 tests, EMS 2776, 0 failures; checkstyle main+test of the three modules; `lint:api`, `lint:api-internal`, `check:s2s-client-urls`, `check:api-paths`, ratchet, `type-check`, communications Vitest (112) green; `check:api-types` passes once the regenerated types are committed. CUMS archunit store 2 lines (user-merge pair, 7b).
+- **Local dev.** V30 and V153 objects and their history rows dropped by hand; CUMS and EMS restarted on the new build (Flyway up to date at 29 / 152). AC 1, 21:03 UTC: as `batbern.speaker` (company set to `5dev` and a login-less "Batbern Speaker" candidate added for the test; a real logo upload through presigned URL, MinIO and confirm), merge and logo request filed through the gateway: both conversations OPEN in the same second, subject and requester as before. Declined as `batbern.organizer` through the API: both DONE within 60 ms, `updated_by` = the organizer. AC 2: EMS stopped, merge request filed: 502 `MERGE_REQUEST_NOT_DELIVERED`, 0 rows. Test rows, the candidate, the company link and the MinIO objects removed afterwards; EMS restarted.
 
 First build (pull feed), superseded by the 2026-11-11 rework; kept as history.
 
@@ -105,6 +117,17 @@ Pass 1 (quick lens), 2026-11-11: 0 high, 3 medium, 4 low, 0 false.
 | 5 | users-api approve/decline descriptions (L1235, L1551) still say the conversation is closed at once | low | patch | Verified. Align text with the pull (closed by the Mail Center, see 6). |
 | 6 | After a decision in the Mail Center the conversation stays OPEN in the lists until the next poll | medium | patch | Verified: `ProfileMergeRequestPanel`/`CompanyLogoRequestPanel` `settle` only refetches; `ConversationDetail` L113/L120 `onDecided` only refetches. The existing conversation PATCH (`save({status})`, L136) can set DONE right away; the feed close stays the backstop for decisions made elsewhere. |
 | 7 | ACs 1-3 have no recorded local-dev evidence | low | (verification) | Verified. Not a code fix: run after the patches, recorded in Implementation Notes. |
+
+Pass 2 (quick lens, contract rework), 2026-11-11: 0 high, 1 medium, 4 low, 0 false.
+
+| # | Finding | Verdict | Route | Evidence / action |
+|---|---------|---------|-------|-------------------|
+| 1 | A filing that fails after EMS committed the open (read timeout, CUMS commit failure) leaves an OPEN conversation for a request that does not exist; a retry opens a second one | medium | defer | Verified: `opened` runs inside the CUMS transaction, EMS commits on its own. Same as the pre-November push (`9d10da27`), so not caused by this change; needs a compensating call or an outbox, which the owner ruled out for now. Deferred-work entry written. |
+| 2 | `ContractCalls.post` stops at the first failing implementer, so a decision does not reach later implementers | low | reject | Verified, but this contract has exactly one implementer; stop-at-first is what open and 7b's merge need. Revisit when a contract gets a second best-effort implementer. |
+| 3 | An empty implementer list makes calls silently do nothing | low | patch | Verified (`filter(!isEmpty)`, no log). Fix: WARN at construction. |
+| 4 | The CUMS example check has no rows for the two contract operations | low | patch | Verified: `should_haveValidExamples_forInternalOperations` rows. Fix: add the rows. |
+| 5 | 06-backend still says callers send no JWT | low | patch | Verified at ~L189. Fix: sentence follows ADR-016 decision 3. |
+| 6 | Implementation Notes say the PRD was not touched; the PRD edit also covers 17.8 and 7b's query result | low | reject | The fix is editing this plan; the PRD edit is the orchestrator's owner-decision change (committed with the decision docs), and the query result is recorded in the 7b plan. |
 
 ## Design Notes
 

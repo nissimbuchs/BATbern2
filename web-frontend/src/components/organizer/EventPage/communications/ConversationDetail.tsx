@@ -93,8 +93,8 @@ export const ConversationDetail: React.FC<ConversationDetailProps> = ({ conversa
     setToggled(Object.fromEntries(newestFirst.map(({ message }) => [message.mailKey, true])));
   const save = (change: Parameters<typeof patch.mutate>[0]['patch']) =>
     patch.mutate({ key: conversationKey, patch: change });
-  // Epic 17 entry 7: the decision closes the conversation at once; the request feed would close
-  // it only on its next poll, and until then the lists would still show it open.
+  // Epic 17 entry 7: the decision closes the conversation here as well. CUMS also closes it through
+  // the Mail Center request contract after the commit, but a failure there leaves it open.
   const decided = () => {
     save({ status: 'DONE' });
     void query.refetch();

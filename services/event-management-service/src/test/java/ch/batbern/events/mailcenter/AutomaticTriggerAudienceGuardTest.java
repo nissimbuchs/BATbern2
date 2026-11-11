@@ -53,8 +53,6 @@ class AutomaticTriggerAudienceGuardTest {
             Map.entry("InboundEmailListenerService#handleS3Notification",
                     "answers the one person who wrote, or tells organizers"),
             Map.entry("MailDeliveryStatusListener#onMessage", "no mail: delivery status"),
-            Map.entry("MailCenterRequestFeedJob#poll",
-                    "no mail: opens and closes Mail Center conversations of CUMS merge and logo requests"),
             Map.entry("MailMessageRetentionScheduler#purgeExpired", "no mail: deletes old mail records"),
             Map.entry("NewsletterEmailService#recoverOrphanedSends",
                     "finishes a newsletter an organizer already sent, after a restart"),

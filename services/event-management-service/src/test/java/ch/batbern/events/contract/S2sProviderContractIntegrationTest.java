@@ -7,11 +7,13 @@ import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Registration;
 import ch.batbern.events.domain.Session;
 import ch.batbern.events.entity.EventAgendaConfig;
+import ch.batbern.events.mailcenter.RequestConversations;
 import ch.batbern.events.repository.EventAgendaConfigRepository;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.RegistrationRepository;
 import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.shared.test.AbstractIntegrationTest;
+import ch.batbern.shared.test.contract.OpenApiContract;
 import ch.batbern.shared.types.EventWorkflowState;
 import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.AfterEach;
@@ -31,6 +33,7 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import static ch.batbern.shared.test.contract.ProviderContract.assertExamplesMatchSchema;
@@ -46,15 +49,22 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * Provider half of the S2S contract (Stories 17.0b1, 17.0b2): every {@code /internal} operation in
  * {@code docs/api/internal/ems-internal.openapi.yml} runs through the real controller and must match
  * the spec its consumers' contract tests answer from; the spec examples must match the same schema.
- * Callers: the CUMS merge client (the Mail Center requests are pulled since Epic 17 entry 7), PCS
- * {@code HttpOutboundMailRecorder} and {@code EventManagementClientImpl} (event schedule since the 17.0 deferred work, attendance summary
+ * Callers: the CUMS merge client, PCS {@code HttpOutboundMailRecorder} and
+ * {@code EventManagementClientImpl} (event schedule since the 17.0 deferred work, attendance summary
  * since Epic 17 6b). EMS serves no public operation to another service any more.
+ *
+ * <p>EMS also implements the Mail Center request contract CUMS owns (Epic 17 entry 7): those
+ * operations are checked against {@code docs/api/internal/cums-internal.openapi.yml}, the spec the
+ * CUMS contract caller is tested against.
  */
 @Import({TestSecurityConfig.class, TestAwsConfig.class})
 @DisplayName("EMS honours the S2S contract PCS is tested against")
 class S2sProviderContractIntegrationTest extends AbstractIntegrationTest {
 
     private static final String EMS_INTERNAL = "docs/api/internal/ems-internal.openapi.yml";
+    private static final String CUMS_INTERNAL = "docs/api/internal/cums-internal.openapi.yml";
+    private static final UUID MERGE_REQUEST = UUID.fromString("7a1c0000-0000-4000-8000-0000000b2001");
+    private static final UUID LOGO_REQUEST = UUID.fromString("7a1c0000-0000-4000-8000-0000000b2002");
     private static final String MERGE_SOURCE = "contract.source";
     private static final String MERGE_TARGET = "contract.target";
     private static final String MAIL_GROUP = "contract-0b2_BATbern9017_partner-meeting-invite";
@@ -101,6 +111,11 @@ class S2sProviderContractIntegrationTest extends AbstractIntegrationTest {
         jdbc.update("DELETE FROM user_merge_log WHERE source_username = ?", MERGE_SOURCE);
         jdbc.update("DELETE FROM session_users WHERE username IN (?, ?)", MERGE_SOURCE, MERGE_TARGET);
         jdbc.update("DELETE FROM mail_message WHERE send_group_id = ?", MAIL_GROUP);
+        jdbc.update("DELETE FROM mail_conversation WHERE merge_request_id = ? OR logo_request_id = ?",
+                MERGE_REQUEST, LOGO_REQUEST);
+        jdbc.update("DELETE FROM mail_message WHERE send_group_id IN (?, ?)",
+                RequestConversations.Kind.MERGE.groupId(MERGE_REQUEST),
+                RequestConversations.Kind.LOGO.groupId(LOGO_REQUEST));
         eventRepository.findByEventCode(CODE).ifPresent(e -> {
             agendaConfigRepository.findByEventId(e.getId()).ifPresent(agendaConfigRepository::delete);
             registrationRepository.deleteAll(registrationRepository.findByEventId(e.getId()));
@@ -253,5 +268,51 @@ class S2sProviderContractIntegrationTest extends AbstractIntegrationTest {
                  "failureReason": null}""".formatted(MAIL_GROUP, CODE)), 202);
         internal(postJson("/internal/mails", """
                 {"sendGroupId": "%s", "audience": "SPEAKERS", "to": "a@example.com"}""".formatted(MAIL_GROUP)), 400);
+    }
+
+    // ------------------------------------------------------------------ contract owned by CUMS (entry 7)
+
+    /** A contract request CUMS would send: valid against the CUMS spec, answered as that spec says. */
+    private void contractCall(String path, String body, int expectedStatus, Object... vars) throws Exception {
+        String concrete = vars.length == 0 ? path : path.replace("{requestId}", vars[0].toString());
+        List<String> errors = OpenApiContract.load(CUMS_INTERNAL).validateRequest("POST", concrete, Map.of(),
+                Map.of("Content-Type", List.of("application/json")), body);
+        if (expectedStatus < 300) {
+            assertThat(errors).as("a valid contract request").isEmpty();
+        }
+        MvcResult result = mockMvc.perform(postJson(path, body, vars)).andExpect(status().is(expectedStatus))
+                .andReturn();
+        assertResponseMatchesSpec(CUMS_INTERNAL, result);
+    }
+
+    @ParameterizedTest(name = "forwarded JWT: {0}")
+    @CsvSource({"true", "false"})
+    @DisplayName("Mail Center request contract: opened and decided, as CUMS calls them, with and without the user's JWT")
+    void mailCenterRequestContract_matchesCumsSpec(boolean user) throws Exception {
+        String opened = """
+                {"kind": "%s", "requestId": "%s", "requesterName": "Anna Meier",
+                 "requesterEmail": "anna.meier@example.com", "subject": "Profil zusammenführen: Anna Meier",
+                 "note": null}""";
+        String decided = """
+                {"kind": "%s", "status": "APPROVED", "decidedBy": "organizer.alice",
+                 "decidedAt": "%s"}""";
+        if (user) {
+            mockMvc.perform(postJson("/internal/mail-center-requests", opened.formatted("MERGE", MERGE_REQUEST))
+                            .with(jwt().jwt(j -> j.claim("custom:username", "anna.meier")
+                                    .claim("custom:role", "ATTENDEE"))))
+                    .andExpect(status().isNoContent());
+        }
+        contractCall("/internal/mail-center-requests", opened.formatted("MERGE", MERGE_REQUEST), 204);
+        contractCall("/internal/mail-center-requests", opened.formatted("LOGO", LOGO_REQUEST), 204);
+        contractCall("/internal/mail-center-requests/{requestId}/decision",
+                decided.formatted("MERGE", Instant.now()), 204, MERGE_REQUEST);
+        contractCall("/internal/mail-center-requests/{requestId}/decision",
+                decided.formatted("LOGO", Instant.now()), 204, LOGO_REQUEST);
+        contractCall("/internal/mail-center-requests", "{\"requestId\": \"%s\"}".formatted(MERGE_REQUEST), 400);
+        contractCall("/internal/mail-center-requests/{requestId}/decision", "{\"kind\": \"MERGE\"}", 400,
+                MERGE_REQUEST);
+
+        assertThat(jdbc.queryForList("SELECT status FROM mail_conversation WHERE merge_request_id = ?"
+                + " OR logo_request_id = ?", String.class, MERGE_REQUEST, LOGO_REQUEST)).containsExactly("DONE", "DONE");
     }
 }

@@ -1,5 +1,6 @@
 package ch.batbern.companyuser.service;
 
+import ch.batbern.companyuser.client.MailCenterRequestContract;
 import ch.batbern.companyuser.domain.ProfileMergeRequest;
 import ch.batbern.companyuser.domain.User;
 import ch.batbern.companyuser.exception.UserNotFoundException;
@@ -37,6 +38,8 @@ public class ProfileMergeRequestService {
     private final ProfileMergeRequestRepository requests;
     private final UserRepository userRepository;
     private final UserMergeService mergeService;
+    private final MailCenterRequestContract mailCenter;
+    private final MailCenterRequestDecisions mailCenterDecisions;
     private final ProfileMergeRequestEmailService emailService;
     private final SecurityContextHelper securityContext;
 
@@ -44,8 +47,8 @@ public class ProfileMergeRequestService {
     }
 
     /**
-     * The caller asks to merge one of their candidates. Event-management's Mail Center picks the
-     * request up from the feed ({@link MailCenterRequestFeedService}) and opens its conversation.
+     * The caller asks to merge one of their candidates; the Mail Center request contract opens the
+     * conversation within this transaction, so a request is never stored without it.
      */
     @Transactional
     public ProfileMergeRequest request(UUID candidateId, String note) {
@@ -69,6 +72,10 @@ public class ProfileMergeRequestService {
                 .status(ProfileMergeRequest.Status.OPEN)
                 .createdAt(Instant.now())
                 .build());
+        User caller = pair.caller();
+        String name = (nullToEmpty(caller.getFirstName()) + " " + nullToEmpty(caller.getLastName())).trim();
+        mailCenter.opened(new MailCenterRequestContract.Opened(MailCenterRequestContract.Kind.MERGE, saved.getId(),
+                name, caller.getEmail(), "Profil zusammenführen: " + name, trimmedNote));
         log.info("PROFILE_MERGE_REQUESTED id={} requester={} source={}", saved.getId(), requester, source);
         return saved;
     }
@@ -92,8 +99,7 @@ public class ProfileMergeRequestService {
                 false);
         decide(request, ProfileMergeRequest.Status.APPROVED, organizer, null);
         // After the merge, nothing may roll this transaction back: event-management has already
-        // moved its rows. The mail is best effort; the Mail Center closes the conversation from
-        // the feed.
+        // moved its rows. The mail is best effort; the conversation is closed after the commit.
         User requester = requester(request);
         afterDecision(request,
                 () -> emailService.sendApproved(requester.getEmail(), requester.getFirstName(), locale(requester)));
@@ -131,6 +137,8 @@ public class ProfileMergeRequestService {
         request.setDecidedAt(Instant.now());
         request.setReason(reason);
         requests.saveAndFlush(request);
+        mailCenterDecisions.afterCommit(MailCenterRequestContract.Kind.MERGE, request.getId(), status.name(), by,
+                request.getDecidedAt());
     }
 
     private ProfileMergeRequest openRequest(UUID id) {
@@ -156,6 +164,10 @@ public class ProfileMergeRequestService {
             return user.getPreferences().getLanguage().toLowerCase(Locale.ROOT).startsWith("de") ? "de" : "en";
         }
         return "de";
+    }
+
+    private static String nullToEmpty(String s) {
+        return s == null ? "" : s;
     }
 
     /** 409 with an error code: MERGE_REQUEST_OPEN, MERGE_REQUEST_DECLINED or MERGE_REQUEST_DECIDED. */

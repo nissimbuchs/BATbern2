@@ -421,6 +421,8 @@ export interface paths {
      *     Center. The candidate must be one of `GET /users/me/profile-claims` (else 404). At most one
      *     open request per profile pair (409 `MERGE_REQUEST_OPEN`); a declined pair can be asked again
      *     after 30 days (409 `MERGE_REQUEST_DECLINED`). The old address is not added to the profile.
+     *     The request opens a conversation in the Mail Center at once (502
+     *     `MERGE_REQUEST_NOT_DELIVERED` when that fails; nothing is stored then).
      */
     post: operations['requestProfileMerge'];
     delete?: never;
@@ -464,9 +466,9 @@ export interface paths {
      * @description #1237. Runs the organizer merge (the requester's login profile is the target, the profile
      *     without login the source), logged in `user_merge_log`. The same rules as an organizer
      *     merge apply: 409 when two different talks at the same event block it. The requester is
-     *     mailed at their current address, and the Mail Center closes the conversation: at once when
-     *     the decision is made in the conversation, otherwise on its next poll of the request feed
-     *     (about a minute).
+     *     mailed at their current address and the conversation in the Mail Center is closed at once,
+     *     after the commit (Mail Center request contract; a failure there is logged and does not undo
+     *     the decision).
      */
     post: operations['approveProfileMergeRequest'];
     delete?: never;
@@ -487,8 +489,7 @@ export interface paths {
     /**
      * Decline a profile merge request with a reason (organizers)
      * @description #1237. The reason is mailed to the requester at their current address. The pair is not
-     *     offered for a new request for 30 days. The Mail Center closes the conversation as on
-     *     approval.
+     *     offered for a new request for 30 days. The conversation is closed as on approval.
      */
     post: operations['declineProfileMergeRequest'];
     delete?: never;
@@ -512,9 +513,9 @@ export interface paths {
      *     upload, `/logos/{uploadId}/confirm`); this call hands the confirmed upload over. The
      *     request is for the company on the caller's profile (409 `NO_COMPANY` without one). At most
      *     one open request per person and company (409 `LOGO_REQUEST_OPEN`). An unknown or
-     *     unconfirmed upload is 400 `LOGO_NOT_READY`. The upload is kept until the decision. The Mail
-     *     Center picks the request up within about a minute and opens its conversation; filing it
-     *     does not depend on event-management.
+     *     unconfirmed upload is 400 `LOGO_NOT_READY`. The upload is kept until the decision, and the
+     *     request opens a conversation in the Mail Center at once (502 `LOGO_REQUEST_NOT_DELIVERED`
+     *     when that fails; nothing is stored then).
      */
     post: operations['createCompanyLogoRequest'];
     delete?: never;
@@ -575,9 +576,9 @@ export interface paths {
     /**
      * Accept a logo request; the company gets the new logo (organizers)
      * @description #1246. Sets the logo as an organizer edit would. The requester is mailed at their primary
-     *     address, and the Mail Center closes the conversation: at once when the decision is made in
-     *     the conversation, otherwise on its next poll of the request feed (about a minute). 409
-     *     `LOGO_REQUEST_DECIDED` when already decided.
+     *     address and the conversation in the Mail Center is closed at once, after the commit (a
+     *     failure there is logged and does not undo the decision). 409 `LOGO_REQUEST_DECIDED` when
+     *     already decided.
      */
     post: operations['approveCompanyLogoRequest'];
     delete?: never;
@@ -598,7 +599,7 @@ export interface paths {
     /**
      * Decline a logo request, with an optional reason (organizers)
      * @description #1246. The requester is mailed, with the reason when one is given. The logo stays. The
-     *     person may ask again. The Mail Center closes the conversation as on acceptance. 409
+     *     person may ask again. The conversation is closed as on acceptance. 409
      *     `LOGO_REQUEST_DECIDED` when already decided.
      */
     post: operations['declineCompanyLogoRequest'];
@@ -2740,6 +2741,15 @@ export interface operations {
       404: components['responses']['NotFound'];
       409: components['responses']['Conflict'];
       500: components['responses']['InternalServerError'];
+      /** @description The Mail Center did not take the request; nothing was stored */
+      502: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
     };
   };
   getProfileMergeRequest: {
@@ -2853,6 +2863,15 @@ export interface operations {
       401: components['responses']['Unauthorized'];
       409: components['responses']['Conflict'];
       500: components['responses']['InternalServerError'];
+      /** @description The Mail Center did not take the request; nothing was stored */
+      502: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
     };
   };
   getMyOpenCompanyLogoRequest: {

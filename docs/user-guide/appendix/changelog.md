@@ -42,10 +42,10 @@ Only items that are not live yet. Everything else is listed under its release be
 
 ### Unreleased — after BATbern60
 
-**Improvement — Merge and logo requests reach the Mail Center on their own (Epic 17, entry 7)**:
-- ✅ Sending a profile merge request or a new company logo no longer fails with "could not be passed to the organizers" when the Mail Center is briefly unavailable. The request is stored and shows in the Mail Center within about a minute and a half.
-- ✅ A decided request's conversation always turns Done. Before, it stayed open when the Mail Center did not answer at the moment of the decision.
-- ⚠️ API: `POST /api/v1/users/me/company-logo-requests` no longer answers 502 `LOGO_REQUEST_NOT_DELIVERED`, and the merge request no longer answers 502 `MERGE_REQUEST_NOT_DELIVERED`.
+**Improvement — Merge and logo requests in the Mail Center (Epic 17, entry 7)**:
+- ✅ No visible change for people sending a request: it still shows in the Mail Center at once, and sending fails with "could not be passed to the organizers" (nothing stored, send again) when the Mail Center is unavailable.
+- ✅ A decision is now passed to the Mail Center only once it is saved. If the Mail Center does not take it, the decision stands, the operators see an error, and the conversation stays open until an organizer sets it to Done.
+- ⚠️ API: `POST /api/v1/users/me/profile-claims/merge-requests` now documents its 502 `MERGE_REQUEST_NOT_DELIVERED` (it always answered it).
 
 **Improvement — No e-mail address in links, one get-or-create shape (4.10d)**:
 - ✅ Changing, removing, confirming again or making primary one of your further e-mail addresses no longer puts the address in the web address, so it does not end up in server logs or the browser history. Nothing changes on the page.

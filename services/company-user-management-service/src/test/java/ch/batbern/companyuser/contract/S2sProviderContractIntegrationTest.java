@@ -18,7 +18,6 @@ import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
@@ -43,10 +42,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * {@code docs/api/internal/cums-internal.openapi.yml} runs through the real controller, and its
  * response must match the spec the consumers' {@code ContractServer} answers from; the spec
  * examples those consumers receive must match the same schema. Consumers: EMS
- * {@code UserApiClientImpl} and {@code MailCenterRequestFeedClient} (Epic 17 entry 7), PCS
- * {@code UserServiceClientImpl} and {@code CompanyServiceClientImpl}, and the gateway's
- * {@code GatewayUserStatusClient}. Epic 17 entry 6 added the three speaker writes and the company
- * read, each run with a forwarded JWT and without any (ADR-016 decision 3).
+ * {@code UserApiClientImpl}, PCS {@code UserServiceClientImpl} and {@code CompanyServiceClientImpl},
+ * and the gateway's {@code GatewayUserStatusClient}. Epic 17 entry 6 added the three speaker writes
+ * and the company read, each run with a forwarded JWT and without any (ADR-016 decision 3).
  *
  * <p>No service calls a public CUMS operation any more: EMS since Epic 17 entry 6, PCS since 6b
  * (its company read and its {@code /users/me} moved to {@code /internal/companies/{name}} and
@@ -69,8 +67,6 @@ class S2sProviderContractIntegrationTest extends AbstractIntegrationTest {
     private CompanyRepository companyRepository;
     @Autowired
     private InMemoryCognito cognito;
-    @Autowired
-    private JdbcTemplate jdbc;
 
     @BeforeEach
     void seed() {
@@ -89,8 +85,6 @@ class S2sProviderContractIntegrationTest extends AbstractIntegrationTest {
 
     @AfterEach
     void cleanUp() {
-        jdbc.update("DELETE FROM profile_merge_requests WHERE requester_username = ?", SPEAKER);
-        jdbc.update("DELETE FROM company_logo_requests WHERE requester_username = ?", SPEAKER);
         userRepository.findByUsername(SPEAKER).ifPresent(userRepository::delete);
         userRepository.findByEmailIgnoreCase("contract.new@example.com").ifPresent(userRepository::delete);
         companyRepository.findByName(COMPANY).ifPresent(companyRepository::delete);
@@ -109,7 +103,8 @@ class S2sProviderContractIntegrationTest extends AbstractIntegrationTest {
         "PATCH, /internal/users/{username}/profile",
         "POST, /internal/users/{username}/issue-invitation-credentials",
         "GET,  /internal/companies/{name}",
-        "GET,  /internal/mail-center-requests",
+        "POST, /internal/mail-center-requests",
+        "POST, /internal/mail-center-requests/{requestId}/decision",
     })
     @DisplayName("internal spec examples match their schema")
     void should_haveValidExamples_forInternalOperations(String method, String path) {
@@ -225,27 +220,6 @@ class S2sProviderContractIntegrationTest extends AbstractIntegrationTest {
 
         internal(withUser(post("/internal/users/" + SPEAKER + "/issue-invitation-credentials"), user), 200);
         internal(withUser(post("/internal/users/ghost.user/issue-invitation-credentials"), user), 404);
-    }
-
-    @ParameterizedTest(name = "forwarded JWT: {0}")
-    @CsvSource({"true", "false"})
-    @DisplayName("Epic 17 entry 7: the Mail Center request feed, as EMS pulls it (no JWT from the job)")
-    void internalMailCenterRequests_matchesSpec(boolean user) throws Exception {
-        jdbc.update("INSERT INTO profile_merge_requests (requester_username, source_username, note)"
-                + " VALUES (?, 'contract.old', 'Bis 2024 bei Firma X')", SPEAKER);
-        jdbc.update("INSERT INTO company_logo_requests (requester_username, company_name, new_logo_upload_id,"
-                + " new_logo_url, status, decided_by, decided_at) VALUES (?, ?, 'up-contract',"
-                + " 'https://cdn.batbern.ch/logos/requests/up-contract/logo.png', 'APPROVED', 'organizer.alice', now())",
-                SPEAKER, COMPANY);
-
-        MvcResult first = internal(withUser(get("/internal/mail-center-requests"), user), 200);
-        String cursor = JsonPath.read(first.getResponse().getContentAsString(), "$.nextCursor");
-        internal(withUser(get("/internal/mail-center-requests").param("since", cursor).param("limit", "1"), user),
-                200);
-        internal(withUser(get("/internal/mail-center-requests").param("since", "not-a-cursor"), user), 400);
-
-        assertThat(first.getResponse().getContentAsString()).contains("Profil zusammenführen: Contract Speaker")
-                .contains("Neues Logo für Contract Co AG: Contract Speaker");
     }
 
     @ParameterizedTest(name = "forwarded JWT: {0}")

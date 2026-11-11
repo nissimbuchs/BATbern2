@@ -69,8 +69,12 @@ measured how they call each other on develop `e7f76baf`:
   CUMS→EMS calls become the two CUMS-owned contracts (17.7, entries 7 and 7b); EMS→PCS becomes the
   topic canvas reading PCS itself (17.8, entry 8, live 2026-11-11) and the EMS-owned calendar reply
   contract (8b).
-- A contract call fails while its implementer is down: the action that triggered it fails with it
-  (as before 2026-11). Accepted by the owner 2026-11-11 for CUMS and EMS, which are almost never down.
+- A contract call fails while its implementer is down. Where the call is part of the action, the
+  action fails with it (as before 2026-11): filing a merge or logo request answers 502 and stores
+  nothing. Where it reports an action already committed, the action stands and the failure is
+  logged as an ERROR and counted: a Mail Center request decision (`mailcenter.request_contract.failures`;
+  the conversation then stays open until an organizer closes it). Accepted by the owner 2026-11-11
+  for CUMS and EMS, which are almost never down.
 - `/internal` trusts the network boundary. If that ever stops holding, service authentication comes
   back as a new decision.
 
@@ -84,6 +88,10 @@ measured how they call each other on develop `e7f76baf`:
   CUMS and EMS over `/internal` only), 0 since entry 8 (2026-11-11: EMS `PartnerApiClientImpl`
   deleted; the topic canvas loads the partner topics from PCS in the browser and has EMS classify
   them with `POST /topics/classifications`).
+- One caller for decision 4: shared-kernel `ContractCalls` calls a contract its service owns at every
+  implementer in `batbern.contracts.<name>.implementers`, with the headers below; 409 becomes
+  `ContractRefusedException`, any other failure `ContractCallFailedException` (entry 7; 7b and 8b
+  reuse it).
 - One header helper for decision 3: shared-kernel `S2sHeaders.forCurrentUser()` forwards the
   user's JWT when there is one and sends none otherwise; CUMS records the forwarded
   `custom:username`, else `system:<job>` (Epic 17 entry 6). A token that expires within 60 s

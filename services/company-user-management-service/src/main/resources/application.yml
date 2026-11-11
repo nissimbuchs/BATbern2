@@ -107,6 +107,12 @@ event-management-service:
   base-url: ${EVENT_MANAGEMENT_SERVICE_URL:http://event-management:8080}
 
 batbern:
+  # Contracts CUMS owns (ADR-016 decision 4): the base URLs of the services that implement each
+  # one, comma-separated. CUMS names none of them in code (shared-kernel ContractCalls).
+  contracts:
+    # Epic 17 entry 7: open and close the Mail Center conversation of merge and logo requests.
+    mail-center-requests:
+      implementers: ${EVENT_MANAGEMENT_SERVICE_URL:http://event-management:8080}
   user:
     additional-emails:
       verification:

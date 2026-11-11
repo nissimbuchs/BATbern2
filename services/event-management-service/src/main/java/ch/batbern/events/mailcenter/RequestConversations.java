@@ -21,8 +21,8 @@ import java.util.UUID;
  * {@code logo_request_id}). It opens with one inbound message from the requester (an intro and their
  * note), has no event and the audience SYSTEM, and carries the request id so the Mail Center shows
  * the request with its decision buttons. Answering in it mails the requester like any conversation.
- * Both operations are idempotent. {@link MailCenterRequestFeedJob} calls them
- * from company-user-management's request feed; CUMS no longer calls event-management for them.
+ * Both operations are idempotent. Company-user-management calls them through the Mail Center
+ * request contract it owns ({@link InternalRequestConversationController}).
  */
 @Component
 @RequiredArgsConstructor
@@ -97,24 +97,18 @@ public class RequestConversations {
         return key;
     }
 
-    /** True when the request has its conversation. */
-    public boolean exists(Kind kind, UUID requestId) {
-        return keyOf(kind, requestId) != null;
-    }
-
     /**
-     * Marks the conversation DONE; nothing happens when there is none. With {@code decidedAt}, only
-     * when no mail came in after the decision: a requester who answered after it reopened the
-     * conversation, and a decision read again (replay, first poll) must not close it over that
-     * answer. {@code null} closes regardless (a conversation opened for an already decided request).
+     * Marks the conversation DONE, with the decider as last editor; nothing happens when there is
+     * none. Only when no mail came in after {@code decidedAt}: a requester who answered after the
+     * decision reopened the conversation, and a decision delivered again must not close it over
+     * that answer.
      */
     public void close(Kind kind, UUID requestId, String decidedBy, Instant decidedAt) {
         int updated = jdbc.update("UPDATE mail_conversation SET status = 'DONE', updated_at = now(), updated_by = :by"
                 + " WHERE " + kind.column + " = :id AND status <> 'DONE'"
-                + " AND (CAST(:decidedAt AS TIMESTAMPTZ) IS NULL OR last_inbound_at IS NULL"
-                + " OR last_inbound_at <= CAST(:decidedAt AS TIMESTAMPTZ))",
+                + " AND (last_inbound_at IS NULL OR last_inbound_at <= :decidedAt)",
                 new MapSqlParameterSource("id", requestId).addValue("by", decidedBy)
-                        .addValue("decidedAt", decidedAt == null ? null : Timestamp.from(decidedAt)));
+                        .addValue("decidedAt", Timestamp.from(decidedAt)));
         log.info("REQUEST_CONVERSATION closed kind={} request={} updated={}", kind, requestId, updated);
     }
 

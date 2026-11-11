@@ -1,5 +1,6 @@
 package ch.batbern.companyuser.service;
 
+import ch.batbern.companyuser.client.MailCenterRequestContract;
 import ch.batbern.companyuser.domain.Company;
 import ch.batbern.companyuser.domain.CompanyLogoRequest;
 import ch.batbern.companyuser.domain.Logo;
@@ -44,6 +45,8 @@ public class CompanyLogoRequestService {
     private final LogoRepository logoRepository;
     private final GenericLogoService logoService;
     private final CompanyService companyService;
+    private final MailCenterRequestContract mailCenter;
+    private final MailCenterRequestDecisions mailCenterDecisions;
     private final CompanyLogoRequestEmailService emailService;
     private final SecurityContextHelper securityContext;
 
@@ -52,8 +55,8 @@ public class CompanyLogoRequestService {
     }
 
     /**
-     * The caller asks for a new logo of their company. Event-management's Mail Center picks the
-     * request up from the feed ({@link MailCenterRequestFeedService}) and opens its conversation.
+     * The caller asks for a new logo of their company; the Mail Center request contract opens the
+     * conversation within this transaction, so a request is never stored without it.
      */
     @Transactional
     public Details request(String logoUploadId, String note) {
@@ -85,6 +88,10 @@ public class CompanyLogoRequestService {
                 .status(CompanyLogoRequest.Status.OPEN)
                 .createdAt(Instant.now())
                 .build());
+
+        String name = fullName(caller);
+        mailCenter.opened(new MailCenterRequestContract.Opened(MailCenterRequestContract.Kind.LOGO, saved.getId(),
+                name, caller.getEmail(), "Neues Logo für " + displayName(company) + ": " + name, trimmedNote));
         log.info("COMPANY_LOGO_REQUESTED id={} requester={} company={}", saved.getId(), caller.getUsername(),
                 companyName);
         return new Details(saved, caller, company);
@@ -151,6 +158,8 @@ public class CompanyLogoRequestService {
         request.setDecidedAt(Instant.now());
         request.setReason(reason);
         requests.saveAndFlush(request);
+        mailCenterDecisions.afterCommit(MailCenterRequestContract.Kind.LOGO, request.getId(), status.name(), by,
+                request.getDecidedAt());
     }
 
     private Details details(CompanyLogoRequest request) {

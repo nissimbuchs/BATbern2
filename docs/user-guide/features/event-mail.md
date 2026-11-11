@@ -206,9 +206,6 @@ disappears at zero and refreshes every minute.
   logo side by side and the person's note, with **Logo übernehmen** (the company gets the new logo) and
   **Ablehnen** (the reason is optional). The person gets a mail either way and the conversation is set
   to Done. See [Companies](../entity-management/companies.md).
-- Both kinds of request appear in the Mail Center within about a minute and a half after the person
-  sends them, and a decided one turns Done within the same time. Sending a request no longer fails
-  when the Mail Center is briefly unavailable; it shows up once it is back.
 - **No event:** mail to `info@`, `events@` or `support@` that belongs to no event. **Assign to event**
   beside a row puts the conversation and all its mails on that event: it then shows in that event's
   "Needs an answer". Choosing "(no event)" takes it off again. Inside any conversation the **Event**

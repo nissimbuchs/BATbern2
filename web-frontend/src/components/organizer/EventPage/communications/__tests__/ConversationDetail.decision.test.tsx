@@ -1,6 +1,6 @@
 /**
- * Deciding a merge request in the Mail Center closes its conversation at once
- * (PATCH status DONE), instead of leaving it open in the lists until the request feed's next poll.
+ * Deciding a merge request in the Mail Center closes its conversation at once (PATCH status DONE),
+ * also when CUMS's call of the Mail Center request contract after the decision fails.
  * Real hooks and services on the MSW harness; only the user is given (`renderWithAuth`).
  */
 import { describe, it, expect } from 'vitest';

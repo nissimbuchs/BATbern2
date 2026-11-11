@@ -13,8 +13,9 @@ CUMS (identity) is upstream of all. EMS (event) is upstream of PCS (partners).
   `/internal` authorizes by operation, never by the user's role. Build the headers of every S2S
   call with shared-kernel `S2sHeaders.forCurrentUser()`; no client writes its own token code.
 - Downstream must react to an upstream change? The upstream calls it through an `/internal`
-  contract it owns (its spec, implementers listed in its configuration, no downstream named in
-  code). No polling, no event bus (ADR-016 decision 4, owner 2026-11-11). Contracts: CUMS
+  contract it owns (its spec, implementers listed in its configuration under
+  `batbern.contracts.<name>.implementers`, called through shared-kernel `ContractCalls`, no
+  downstream named in code). No polling, no event bus (ADR-016 decision 4, owner 2026-11-11). Contracts: CUMS
   user-references (preview, merge, primary-email; EMS and PCS implement), CUMS Mail Center requests
   (EMS implements), EMS calendar replies (PCS implements). Do not call downstream any other way.
 - Every `/internal` operation is specified in `docs/api/internal/<provider>-internal.openapi.yml`

@@ -118,8 +118,13 @@ mappings:
     docs:
       - "docs/architecture/module-map.md"
       - "docs/architecture/ADR-016-service-directions-and-service-to-service-calls.md"
-  # Epic 17 entry 7: the Mail Center's pull of CUMS requests sits in the mail center module, not client/.
-  - source_pattern: "services/event-management-service/src/main/java/ch/batbern/events/mailcenter/MailCenterRequestFeed"
+  # Epic 17 entry 7: contracts a service owns (ADR-016 decision 4) are called through one shared caller.
+  - source_pattern: "shared-kernel/src/main/java/ch/batbern/shared/contract/"
+    docs:
+      - "docs/architecture/module-map.md"
+      - "docs/architecture/ADR-016-service-directions-and-service-to-service-calls.md"
+  # Epic 17 entry 7: EMS implements the CUMS-owned Mail Center request contract in the mail center module.
+  - source_pattern: "services/event-management-service/src/main/java/ch/batbern/events/mailcenter/InternalRequestConversationController"
     docs:
       - "docs/architecture/module-map.md"
       - "docs/architecture/ADR-016-service-directions-and-service-to-service-calls.md"
