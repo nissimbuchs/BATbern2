@@ -154,7 +154,8 @@ public final class OpenApiContract {
     /**
      * The number of path variables of the template that serves {@code method path}, or empty
      * when the spec has no such operation. Lets a caller holding several specs pick the most
-     * specific match ({@code /events/registrations} over {@code /events/{eventCode}}).
+     * specific match (a literal {@code /events/archive} of one spec over {@code /events/{eventCode}}
+     * of another; see {@code ResponseConformanceTest}, docs/api has no such pair since Story 4.10b).
      */
     OptionalInt operationVariables(String method, String path) {
         return route(path)

@@ -15,8 +15,8 @@ auth:bearer {
 }
 
 tests {
-  test("should answer 4xx: 'types' is read as an event code now", function() {
-    expect(res.getStatus()).to.be.within(400, 499);
+  test("should answer 400: 'types' is read as an event code now and fails its pattern", function() {
+    expect(res.getStatus()).to.equal(400);
   });
 
   test("should not return an event type list", function() {
@@ -26,5 +26,5 @@ tests {
 
 docs {
   Story 4.10b, breaking, no alias: GET /events/types falls on GET /events/{eventCode}, which
-  rejects "types" (pattern) or finds no event. Read-only, safe on every environment.
+  rejects "types" by its pattern (400, pinned). Read-only, safe on every environment.
 }

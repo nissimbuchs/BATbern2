@@ -1,9 +1,9 @@
 /**
  * Notification hooks (Story BAT-7) on the MSW harness (Story 4.10b, Epic 17 test fidelity): the
  * real notificationApiClient and apiClient run, the requests are checked against the spec. The
- * server scopes every call to the signed-in organizer, so the hooks take no username; a screen
- * passes `enabled: false` until somebody is signed in. Each mutation is checked by its effect on
- * the cache: read, mutate, read again.
+ * server scopes every call to the signed-in organizer, so the hooks send no username; the
+ * signed-in username (real AuthContext, `AuthTestProvider`) is part of the query keys. Each
+ * mutation is checked by its effect on the cache: read, mutate, read again.
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
@@ -12,6 +12,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { HttpResponse } from 'msw';
 import React from 'react';
 import { api } from '@/test/msw/api';
+import { AuthTestProvider, signedInAs, signedOut } from '@/test/auth';
+import type { UseAuthReturn } from '@/contexts/AuthContext';
 import type { components } from '@/types/generated/event-notifications-api.types';
 import {
   useNotifications,
@@ -48,15 +50,22 @@ const notification = (id: string, status: string): NotificationResponse => ({
 /** An inbox the mutations change, as the server would. */
 let inbox: NotificationResponse[];
 
+let auth: UseAuthReturn;
+
 const createWrapper =
   (qc: QueryClient) =>
   ({ children }: { children: React.ReactNode }) =>
-    React.createElement(QueryClientProvider, { client: qc }, children);
+    React.createElement(
+      QueryClientProvider,
+      { client: qc },
+      React.createElement(AuthTestProvider, { auth, children })
+    );
 
 let qc: QueryClient;
 
 beforeEach(() => {
   qc = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
+  auth = signedInAs('organizer', { username: 'anna.keller' });
   inbox = [notification(ID, 'UNREAD'), notification(ID_2, 'UNREAD')];
   api.on('listNotifications', ({ query }) => {
     const status = query.get('status');
@@ -123,6 +132,43 @@ describe('useNotifications', () => {
 
     await waitFor(() => expect(result.current.isError).toBe(true));
     expect(result.current.error?.message).toBe('Notification store down');
+  });
+});
+
+describe('a second user in the same tab', () => {
+  it('should_notFetch_when_nobodyIsSignedIn', () => {
+    auth = signedOut();
+    renderHook(() => ({ list: useNotifications(), count: useUnreadCount() }), {
+      wrapper: createWrapper(qc),
+    });
+
+    expect(api.calls('listNotifications')).toHaveLength(0);
+    expect(api.calls('getUnreadCount')).toHaveLength(0);
+  });
+
+  it('should_neverShowTheFirstUsersInbox_when_anotherUserSignsIn', async () => {
+    // Anna's inbox is cached (2 unread); she signs out and Hông Ân signs in, whose inbox is empty.
+    // A cache that keeps unused data (default gcTime), as the app's does.
+    qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const first = renderHook(() => ({ list: useNotifications(), count: useUnreadCount() }), {
+      wrapper: createWrapper(qc),
+    });
+    await waitFor(() => expect(first.result.current.count.data).toBe(2));
+    first.unmount();
+    // Positive control: Anna's count is still in the cache.
+    expect(qc.getQueryData(['notifications', 'unread-count', 'anna.keller'])).toBe(2);
+
+    inbox = [];
+    auth = signedInAs('organizer', { username: 'hongan.nguyen' });
+    const second = renderHook(() => ({ list: useNotifications(), count: useUnreadCount() }), {
+      wrapper: createWrapper(qc),
+    });
+
+    // Never Anna's cached values: nothing before the fetch, then Hông Ân's own.
+    expect(second.result.current.list.data).toBeUndefined();
+    expect(second.result.current.count.data).toBeUndefined();
+    await waitFor(() => expect(second.result.current.count.data).toBe(0));
+    expect(second.result.current.list.data?.data).toEqual([]);
   });
 });
 

@@ -43,7 +43,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.time.Instant;
 import java.time.OffsetDateTime;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -199,8 +198,9 @@ public class SessionController implements SessionsApi {
      * POST /api/v1/events/{eventCode}/sessions
      *
      * <p>Exactly one mode per request (as the participants create of Story 4.10c): the single
-     * session fields, or {@code imports}. None, both, or a single create without its four required
-     * fields answer 400. Single answers 201 {@code {session}}, import 200 with counts and details.
+     * session fields, or {@code imports}; {@link SessionService#isImport} checks it. None, both, or a
+     * single create without its four required fields answer 400. Single answers 201
+     * {@code {session}}, import 200 with counts and details.
      */
     @Override
     @CacheEvict(value = CacheConfig.EVENT_WITH_INCLUDES_CACHE, allEntries = true)
@@ -209,7 +209,7 @@ public class SessionController implements SessionsApi {
             String eventCode,
             CreateSessionRequest createSessionRequest) {
 
-        if (isImport(createSessionRequest)) {
+        if (sessionService.isImport(createSessionRequest)) {
             return ResponseEntity.ok(
                     sessionBatchImportService.importSessions(eventCode, createSessionRequest.getImports()));
         }
@@ -247,47 +247,6 @@ public class SessionController implements SessionsApi {
         SessionResponse response = sessionService.toSessionResponse(savedSession, eventCode);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(new CreateSessionResponse().session(response));
-    }
-
-    /**
-     * The mode of a create (Story 4.10b): {@code true} for an import, {@code false} for a single
-     * session whose required fields are all there; anything else is a 400.
-     */
-    private static boolean isImport(CreateSessionRequest request) {
-        boolean anySingleField = request.getTitle() != null || request.getDescription() != null
-                || request.getSessionType() != null || request.getStartTime() != null
-                || request.getEndTime() != null || request.getRoom() != null
-                || request.getCapacity() != null || request.getLanguage() != null;
-        boolean importMode = request.getImports() != null;
-        if (importMode == anySingleField) {
-            throw new ValidationException(importMode
-                    ? "Give either the session fields or imports, not both"
-                    : "Give the session fields (title, sessionType, startTime, endTime) or imports");
-        }
-        if (importMode) {
-            int items = request.getImports().size();
-            if (items < 1 || items > 100) {
-                throw new ValidationException("imports must hold 1 to 100 sessions, got " + items);
-            }
-            return true;
-        }
-        List<String> missing = new ArrayList<>();
-        if (request.getTitle() == null || request.getTitle().isBlank()) {
-            missing.add("title");
-        }
-        if (request.getSessionType() == null) {
-            missing.add("sessionType");
-        }
-        if (request.getStartTime() == null) {
-            missing.add("startTime");
-        }
-        if (request.getEndTime() == null) {
-            missing.add("endTime");
-        }
-        if (!missing.isEmpty()) {
-            throw new ValidationException("Missing required session fields: " + String.join(", ", missing));
-        }
-        return false;
     }
 
     /**

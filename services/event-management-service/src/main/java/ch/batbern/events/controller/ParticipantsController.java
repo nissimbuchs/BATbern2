@@ -14,6 +14,7 @@ import ch.batbern.events.service.DistributionListService;
 import ch.batbern.events.service.ParticipantsDocxExportService;
 import ch.batbern.events.service.ParticipantsExportService;
 import ch.batbern.events.service.RegistrationService;
+import ch.batbern.shared.api.DeterministicPaging;
 import ch.batbern.shared.api.FilterCriteria;
 import ch.batbern.shared.api.FilterOperator;
 import ch.batbern.shared.api.FilterParser;
@@ -26,7 +27,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.core.io.Resource;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
@@ -152,7 +152,7 @@ public class ParticipantsController implements ParticipantsApi {
         String attendeeUsername = attendeeUsernameFrom(filter);
         PaginationParams params = PaginationUtils.parseParams(page, limit != null ? limit : 25);
         Page<RegistrationResponse> result = registrationService.listForAttendee(
-                attendeeUsername, PageRequest.of(params.getPage() - 1, params.getLimit()));
+                attendeeUsername, DeterministicPaging.orderedByQuery(params.getPage() - 1, params.getLimit()));
 
         return ResponseEntity.ok(new RegistrationPage()
                 .data(result.getContent())

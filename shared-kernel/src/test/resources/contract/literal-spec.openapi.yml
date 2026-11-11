@@ -1,0 +1,17 @@
+openapi: 3.0.3
+info:
+  title: Test fixture (literal), ResponseConformanceTest owner rule
+  version: 1.0.0
+servers:
+- url: http://localhost:8080/api/v1
+paths:
+  /events/archive:
+    get:
+      operationId: get_literal
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: object

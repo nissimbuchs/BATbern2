@@ -102,11 +102,10 @@ class RecentEventPhotosIntegrationTest extends AbstractIntegrationTest {
     @Test
     @DisplayName("should_notServeHomepagePhotos_when_oldPathIsCalled")
     void should_notServeHomepagePhotos_when_oldPathIsCalled() throws Exception {
-        // Story 4.10b, no alias: "recent-photos" is now read as an event code. It fails the
-        // event-code pattern of GET /events/{eventCode} (400) or finds no event (404); either way
-        // no photo list comes back.
+        // Story 4.10b, no alias: "recent-photos" is now read as an event code and fails the
+        // event-code pattern of GET /events/{eventCode}: 400, no photo list.
         mockMvc.perform(get("/api/v1/events/recent-photos"))
-                .andExpect(status().is4xxClientError())
+                .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$[0]").doesNotExist());
     }
 

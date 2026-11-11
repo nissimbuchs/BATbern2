@@ -161,10 +161,10 @@ class UserRegistrationsListIntegrationTest extends AbstractIntegrationTest {
     @DisplayName("should_notListRegistrations_when_oldPathIsCalled")
     void should_notListRegistrations_when_oldPathIsCalled() throws Exception {
         // Story 4.10b, no alias: "registrations" is now read as an event code (GET
-        // /events/{eventCode}), which fails its pattern or finds no event.
+        // /events/{eventCode}) and fails its pattern: 400.
         mockMvc.perform(get("/api/v1/events/registrations").header("X-Attendee-Username", HONG_AN)
                         .with(organizer()))
-                .andExpect(status().is4xxClientError())
+                .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.data").doesNotExist());
     }
 

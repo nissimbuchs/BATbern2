@@ -421,8 +421,10 @@ class ContractServerTest {
                  "attendeeLastName": null, "attendeeEmail": null, "attendeeCompany": null, "waitlistPosition": null,
                  "registrationDate": null, "createdAt": null, "updatedAt": null}""";
 
-        assertThat(registrations.validateResponse("GET", "/api/v1/events/registrations", 200,
-                "[" + registration + "]")).isEmpty();
+        assertThat(registrations.validateResponse("GET", "/api/v1/registrations", 200,
+                "{\"data\": [" + registration + "], \"pagination\": {\"page\": 1, \"limit\": 25, "
+                        + "\"totalItems\": 1, \"totalPages\": 1, \"hasNext\": false, \"hasPrev\": false}}"))
+                .isEmpty();
 
         // MailMessageSummary.participantStatus: nullable enum without null in its list; the
         // spec example of the page carries it as null

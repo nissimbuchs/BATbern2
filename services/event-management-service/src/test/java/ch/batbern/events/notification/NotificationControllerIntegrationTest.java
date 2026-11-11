@@ -16,6 +16,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
+import java.time.Instant;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -198,6 +199,33 @@ class NotificationControllerIntegrationTest extends AbstractIntegrationTest {
         assertThat(reload(annaSecond).getStatus()).isEqualTo("READ");
         assertThat(reload(hongAnsOwn).getStatus()).isEqualTo("UNREAD");
         assertThat(reload(hongAnsOwn).getReadAt()).isNull();
+    }
+
+    @Test
+    @DisplayName("should_countAndChangeOnlyUnread_when_anIdIsAlreadyRead")
+    void should_countAndChangeOnlyUnread_when_anIdIsAlreadyRead() throws Exception {
+        Instant readBefore = Instant.parse("2026-11-01T08:00:00Z");
+        Notification alreadyRead = reload(annaRead);
+        alreadyRead.setReadAt(readBefore);
+        notificationRepository.save(alreadyRead);
+
+        String body = """
+                {"notificationIds": ["%s", "%s"], "status": "READ"}
+                """.formatted(annaFirst, annaRead);
+        mockMvc.perform(patch("/api/v1/notifications").with(organizer(ANNA))
+                        .contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.markedCount").value(1));
+
+        assertThat(reload(annaFirst).getStatus()).isEqualTo("READ");
+        assertThat(reload(annaRead).getReadAt()).isEqualTo(readBefore);
+
+        // One already read: nothing marked, readAt kept.
+        mockMvc.perform(patch("/api/v1/notifications/{id}", annaRead).with(organizer(ANNA))
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"status\":\"READ\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.markedCount").value(0));
+        assertThat(reload(annaRead).getReadAt()).isEqualTo(readBefore);
     }
 
     @Test

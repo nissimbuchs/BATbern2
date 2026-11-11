@@ -11,7 +11,7 @@ import { afterEach, describe, it, expect } from 'vitest';
 import { HttpResponse } from 'msw';
 import { api } from '@/test/msw/api';
 import apiClient from '@/services/api/apiClient';
-import { sessionApiClient } from './sessionService';
+import { sessionApiClient, SessionImportError } from './sessionService';
 import type {
   BatchImportSessionRequest,
   SessionBatchImportResult,
@@ -165,6 +165,50 @@ describe('sessionApiClient.batchImportSessions', () => {
     expect(imported.totalProcessed).toBe(101);
     expect(imported.details).toHaveLength(101);
     expect(imported.details[100].title).toBe('Session 101');
+  });
+
+  it('should_raiseTheSavedTotals_when_aLaterChunkFails', async () => {
+    const many: BatchImportSessionRequest[] = Array.from({ length: 101 }, (_, i) => ({
+      title: `Session ${i + 1}`,
+      bat: 142,
+    }));
+    api.on(
+      'createSession',
+      ({ body }) => {
+        const items = body?.imports ?? [];
+        if (items.length === 1) {
+          return problem(500, { error: 'Internal Server Error', message: 'Import failed' });
+        }
+        return {
+          totalProcessed: items.length,
+          successfullyCreated: items.length,
+          updated: 0,
+          skipped: 0,
+          failed: 0,
+          details: items.map((item) => ({
+            title: item.title,
+            status: 'success' as const,
+            message: 'Created',
+            sessionSlug: null,
+          })),
+        };
+      },
+      { status: 200 }
+    );
+
+    const error = await sessionApiClient.batchImportSessions(EVENT, many).then(
+      () => {
+        throw new Error('expected a rejection');
+      },
+      (e: unknown) => e
+    );
+
+    expect(api.calls('createSession')).toHaveLength(2);
+    expect(error).toBeInstanceOf(SessionImportError);
+    const partial = (error as SessionImportError).partial;
+    expect((error as SessionImportError).message).toBe('Import failed');
+    expect(partial.successfullyCreated).toBe(100);
+    expect(partial.details).toHaveLength(100);
   });
 
   it('should_throwServerMessage_when_responseHasMessage', async () => {

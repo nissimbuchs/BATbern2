@@ -26,6 +26,21 @@ const SESSION_API_PATH = '/events';
 export const IMPORT_CHUNK = 100;
 
 /**
+ * A batch import that failed after earlier chunks were saved: `partial` holds what the server
+ * saved before the failure (its `details` are the first `partial.details.length` items, in
+ * order), so the caller can show it. The message is that of the failed request.
+ */
+export class SessionImportError extends Error {
+  constructor(
+    message: string,
+    readonly partial: SessionBatchImportResult
+  ) {
+    super(message);
+    this.name = 'SessionImportError';
+  }
+}
+
+/**
  * Session API Client Class
  *
  * Handles all HTTP requests to the Session Management APIs
@@ -37,7 +52,8 @@ class SessionApiClient {
    * POST /api/v1/events/{eventCode}/sessions with `{ imports }` (Story 4.10b: the import is a mode
    * of the session create; was `POST …/sessions/batch-import`). The server takes at most
    * {@link IMPORT_CHUNK} items per request, so a longer list goes in several requests whose
-   * results are summed. An empty list sends nothing.
+   * results are summed. An empty list sends nothing. When a later chunk fails, the earlier ones
+   * are saved already: the error is a {@link SessionImportError} carrying their totals.
    *
    * @param eventCode - Event code (e.g., "BATbern142")
    * @param sessions - Array of session import requests
@@ -76,7 +92,11 @@ class SessionApiClient {
       }
       return total;
     } catch (error) {
-      throw this.transformError(error);
+      const transformed = this.transformError(error);
+      if (total.details.length > 0) {
+        throw new SessionImportError(transformed.message, total);
+      }
+      throw transformed;
     }
   }
 

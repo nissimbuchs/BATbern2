@@ -388,14 +388,14 @@ class EventTypeControllerIntegrationTest extends AbstractIntegrationTest {
     @Test
     @WithMockUser(username = "john.doe", roles = {"ORGANIZER"})
     void should_notServeEventTypes_when_oldPathIsCalled() throws Exception {
-        // Story 4.10b, no alias: "types" is now read as an event code (GET /events/{eventCode}),
-        // which fails its pattern or finds no event; PUT /events/types/{type} has no handler.
+        // Story 4.10b, no alias: "types" is now read as an event code (GET /events/{eventCode}) and
+        // fails its pattern (400); PUT /events/types/{type} has no handler (404).
         mockMvc.perform(get("/api/v1/events/types"))
-                .andExpect(status().is4xxClientError())
+                .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$[0].type").doesNotExist());
         mockMvc.perform(put("/api/v1/events/types/{type}", EventType.FULL_DAY)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{}"))
-                .andExpect(status().is4xxClientError());
+                .andExpect(status().isNotFound());
     }
 }

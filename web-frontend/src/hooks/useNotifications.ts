@@ -11,9 +11,14 @@
  * - useDeleteNotification: Delete notification mutation
  *
  * Fetches the signed-in organizer's notifications that in-process domain events created. The
- * server scopes every call to the caller (Story 4.10b), so the hooks take no username; pass
- * `enabled: false` until there is a signed-in user.
+ * server scopes every call to the caller (Story 4.10b), so the hooks send no username. The
+ * signed-in username is part of the query keys, so one user's cache is never shown to the next
+ * user in the same tab (sign-out also clears the cache, AuthProvider); without a signed-in user
+ * nothing is fetched.
  */
+
+/** The signed-in username, or undefined outside an AuthProvider or when signed out. */
+const useSignedInUsername = (): string | undefined => useContext(AuthContext)?.user?.username;
 
 import {
   useQuery,
@@ -22,6 +27,8 @@ import {
   type UseQueryResult,
   type UseMutationResult,
 } from '@tanstack/react-query';
+import { useContext } from 'react';
+import { AuthContext } from '@/contexts/AuthContext';
 import { notificationApiClient } from '@/services/notificationApiClient';
 import type {
   NotificationPage,
@@ -47,11 +54,12 @@ export const useNotifications = (
   pagination: { page?: number; limit?: number } = {},
   options?: { enabled?: boolean }
 ): UseQueryResult<NotificationPage, Error> => {
+  const username = useSignedInUsername();
   return useQuery({
-    queryKey: ['notifications', filters, pagination],
+    queryKey: ['notifications', username, filters, pagination],
     queryFn: () => notificationApiClient.getNotifications(filters, pagination),
     staleTime: 2 * 60 * 1000, // 2 minutes
-    enabled: options?.enabled !== false,
+    enabled: options?.enabled !== false && !!username,
   });
 };
 
@@ -62,11 +70,12 @@ export const useNotifications = (
  * @param options - React Query options (`enabled: false` while nobody is signed in)
  */
 export const useUnreadCount = (options?: { enabled?: boolean }): UseQueryResult<number, Error> => {
+  const username = useSignedInUsername();
   return useQuery({
-    queryKey: ['notifications', 'unread-count'],
+    queryKey: ['notifications', 'unread-count', username],
     queryFn: () => notificationApiClient.getUnreadCount(),
     staleTime: 1 * 60 * 1000, // 1 minute
-    enabled: options?.enabled !== false,
+    enabled: options?.enabled !== false && !!username,
   });
 };
 

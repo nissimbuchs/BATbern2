@@ -104,12 +104,12 @@ public class NotificationController implements NotificationsApi {
                 .orElseThrow(() -> new EntityNotFoundException("Notification not found"));
 
         Instant now = Instant.now();
-        markRead(notification, now);
+        int marked = markRead(notification, now) ? 1 : 0;
         notificationRepository.save(notification);
 
         return ResponseEntity.ok(new MarkAsReadResponse()
                 .success(true)
-                .markedCount(1)
+                .markedCount(marked)
                 .updatedAt(now.atOffset(ZoneOffset.UTC)));
     }
 
@@ -119,19 +119,26 @@ public class NotificationController implements NotificationsApi {
                 request.getNotificationIds(), securityContextHelper.getCurrentUsername());
 
         Instant now = Instant.now();
-        notifications.forEach(n -> markRead(n, now));
-        notificationRepository.saveAll(notifications);
+        List<Notification> changed = notifications.stream().filter(n -> markRead(n, now)).toList();
+        notificationRepository.saveAll(changed);
 
         return ResponseEntity.ok(new MarkAsReadResponse()
                 .success(true)
-                .markedCount(notifications.size())
+                .markedCount(changed.size())
                 .updatedAt(now.atOffset(ZoneOffset.UTC)));
     }
 
-    /** The only status change the spec allows today ({@code NotificationStatusChange} = READ). */
-    private static void markRead(Notification notification, Instant now) {
+    /**
+     * The only status change the spec allows today ({@code NotificationStatusChange} = READ).
+     * A notification already read keeps its {@code readAt}; returns whether it changed.
+     */
+    private static boolean markRead(Notification notification, Instant now) {
+        if ("READ".equals(notification.getStatus())) {
+            return false;
+        }
         notification.setStatus("READ");
         notification.setReadAt(now);
+        return true;
     }
 
     @Override

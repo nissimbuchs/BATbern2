@@ -1,0 +1,23 @@
+openapi: 3.0.3
+info:
+  title: Test fixture (template), ResponseConformanceTest owner rule
+  version: 1.0.0
+servers:
+- url: http://localhost:8080/api/v1
+paths:
+  /events/{eventCode}:
+    get:
+      operationId: get_template
+      parameters:
+      - name: eventCode
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: object

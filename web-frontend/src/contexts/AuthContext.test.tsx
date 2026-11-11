@@ -8,6 +8,7 @@
 import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, waitFor, act } from '@testing-library/react';
 import React from 'react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from './AuthContext';
 import { ConfigContext } from './createConfigContext';
 import type { AppConfig } from '@/config/runtime-config';
@@ -493,6 +494,28 @@ describe('AuthContext — Multi-Role Support (Story 9.5)', () => {
 
       expect(outcome).toEqual({ kind: 'failed' });
       expect(result.current.isAuthenticated).toBe(false);
+    });
+  });
+
+  describe('Story 4.10b — sign-out clears the query cache', () => {
+    test('the next user in the tab finds no cached data of the one who signed out', async () => {
+      mockMultiRoleUser(['organizer']);
+      const queryClient = new QueryClient();
+      const withQueries = ({ children }: { children: React.ReactNode }) => (
+        <QueryClientProvider client={queryClient}>{wrapper({ children })}</QueryClientProvider>
+      );
+      const { result } = renderHook(() => useAuth(), { wrapper: withQueries });
+      await waitFor(() => expect(result.current.isAuthenticated).toBe(true));
+      queryClient.setQueryData(['notifications', 'unread-count', 'test.user'], 3);
+      // Positive control: the signed-in user's data is cached.
+      expect(queryClient.getQueryCache().getAll()).toHaveLength(1);
+
+      await act(async () => {
+        await result.current.signOut();
+      });
+
+      expect(result.current.isAuthenticated).toBe(false);
+      expect(queryClient.getQueryCache().getAll()).toHaveLength(0);
     });
   });
 });

@@ -522,8 +522,10 @@ which registers `ResponseConformance` (shared-kernel test fixtures, `ch.batbern.
 as an `alwaysDo` handler on the auto-configured `MockMvc`; the validator is the S2S harness's
 (`OpenApiContract` with `GeneratedCodeSemantics`), there is no second one. A request of a path no
 own spec has (actuator, dev endpoints), a non-2xx answer, an empty body and non-JSON bodies (CSV,
-ICS, XLSX) are not checked. Where several specs match, the most specific template wins
-(`/events/{eventCode}/sessions/unassigned` over `/events/{eventCode}/sessions/{sessionSlug}`).
+ICS, XLSX) are not checked. Where several specs match, the most specific template wins (a literal
+`/events/archive` of one spec over `/events/{eventCode}` of another; since Story 4.10b no pair of
+`docs/api` specs overlaps like that, and `ResponseConformanceTest` shows the rule on two fixture
+specs).
 
 A violation fails the request that produced it, inside its test, with the validator's message and
 the body: fix the response (production code), the spec, or the test data that the spec rejects. A

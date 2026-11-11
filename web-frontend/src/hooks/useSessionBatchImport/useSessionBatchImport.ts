@@ -13,7 +13,7 @@
 
 import { useState, useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { sessionApiClient } from '@/services/sessionService';
+import { sessionApiClient, SessionImportError } from '@/services/sessionService';
 import type {
   SessionImportCandidate,
   SessionBatchImportResult,
@@ -121,33 +121,7 @@ export function useSessionBatchImport(
 
           // Make batch import API call
           const importResult = await sessionApiClient.batchImportSessions(eventCode, batchPayload);
-
-          // Update overall result
-          result.totalProcessed += importResult.totalProcessed;
-          result.successfullyCreated += importResult.successfullyCreated;
-          result.updated += importResult.updated || 0;
-          result.skipped += importResult.skipped;
-          result.failed += importResult.failed;
-          result.details.push(...importResult.details);
-
-          // Update candidate statuses based on API response
-          importResult.details.forEach((detail: SessionImportDetail, detailIndex: number) => {
-            const candidateIndex = indices[detailIndex];
-            if (candidateIndex !== undefined) {
-              const status =
-                detail.status === 'success'
-                  ? 'success'
-                  : detail.status === 'updated'
-                    ? 'updated'
-                    : detail.status === 'skipped'
-                      ? 'skipped'
-                      : 'error';
-              updateCandidate(candidateIndex, {
-                importStatus: status,
-                errorMessage: detail.status === 'failed' ? detail.message : undefined,
-              });
-            }
-          });
+          applySaved(importResult, indices);
 
           // Update progress
           setCurrentIndex((prev) => prev + eventCandidates.length);
@@ -156,17 +130,27 @@ export function useSessionBatchImport(
           // Handle batch import errors (e.g., event not found, network error)
           const errorMessage = error instanceof Error ? error.message : 'Unknown error';
 
-          // Mark all sessions in this batch as failed
-          updateMultipleCandidates(indices, {
+          // Chunks saved before the failure (Story 4.10b): count them and show their status;
+          // only the items after them failed.
+          const saved = error instanceof SessionImportError ? error.partial : null;
+          if (saved) {
+            applySaved(saved, indices);
+          }
+          const savedCount = saved?.details.length ?? 0;
+          const failedIndices = indices.slice(savedCount);
+          const failedCandidates = eventCandidates.slice(savedCount);
+
+          // Mark the remaining sessions of this batch as failed
+          updateMultipleCandidates(failedIndices, {
             importStatus: 'error',
             errorMessage: errorMessage,
           });
 
-          result.failed += eventCandidates.length;
-          result.totalProcessed += eventCandidates.length;
+          result.failed += failedCandidates.length;
+          result.totalProcessed += failedCandidates.length;
 
-          // Add error details for each session
-          eventCandidates.forEach((candidate) => {
+          // Add error details for each failed session
+          failedCandidates.forEach((candidate) => {
             result.details.push({
               title: candidate.source.title,
               status: 'failed',
@@ -188,6 +172,35 @@ export function useSessionBatchImport(
       onComplete?.(result);
 
       return result;
+
+      /** Adds what the server saved to the totals and sets the status of those candidates. */
+      function applySaved(importResult: SessionBatchImportResult, indices: number[]) {
+        result.totalProcessed += importResult.totalProcessed;
+        result.successfullyCreated += importResult.successfullyCreated;
+        result.updated += importResult.updated || 0;
+        result.skipped += importResult.skipped;
+        result.failed += importResult.failed;
+        result.details.push(...importResult.details);
+
+        // Update candidate statuses based on API response
+        importResult.details.forEach((detail: SessionImportDetail, detailIndex: number) => {
+          const candidateIndex = indices[detailIndex];
+          if (candidateIndex !== undefined) {
+            const status =
+              detail.status === 'success'
+                ? 'success'
+                : detail.status === 'updated'
+                  ? 'updated'
+                  : detail.status === 'skipped'
+                    ? 'skipped'
+                    : 'error';
+            updateCandidate(candidateIndex, {
+              importStatus: status,
+              errorMessage: detail.status === 'failed' ? detail.message : undefined,
+            });
+          }
+        });
+      }
     },
     [
       queryClient,
