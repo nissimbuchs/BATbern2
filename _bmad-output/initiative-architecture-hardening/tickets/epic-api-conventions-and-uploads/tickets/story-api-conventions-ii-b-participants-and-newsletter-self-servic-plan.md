@@ -3,14 +3,14 @@ title: 'API conventions II b (breaking): one participants create, newsletter sel
 type: 'refactor'
 ticket: '10c'
 created: '2026-11-11'
-status: 'in-progress'
+status: 'built'
 baseline_revision: 'f5052221721ec37cf91cdf13dd25d56064f953cc'
 route: 'full'
 route_source: 'auto'
 risk: 'high'
-review: ''
-review_source: ''
-lenses_ran: []
+review: 'quick'
+review_source: 'pinned'
+lenses_ran: ['quick']
 review_loop_iteration: 0
 context:
   - '{project-root}/docs/architecture/coding-standards.md'
@@ -56,6 +56,9 @@ context:
 
 **Decisions (2026-11-11, decided by agent under owner's blanket go):**
 - Subscribe keeps today's behaviour: no confirmation mail (the code has none). A test pins that no mail is sent; the note in `scripts/ci/access-control-public.txt` is corrected. Double opt-in is the owner's decision, filed as #1288.
+
+- Review pass 1 (intent gaps settled here): a subscribe **without** a Turnstile token still passes (the gateway filter fails open on a missing token by design, Story 10.31 AC2, for blocked widgets); only an invalid token is refused. This keeps today's behaviour as decided above; the after-deploy check expects 403 for an invalid token, not for a missing one. Tightening it belongs with #1288.
+- The old `POST /newsletter/subscribe` answers 401 to an anonymous probe (its `permitAll` is gone in both chains); the after-deploy check probes the old paths with an organizer token and expects 404/405.
 
 </frozen-after-approval>
 
@@ -117,6 +120,19 @@ context:
 
 ## Review Triage Log
 
+Pass 1 (quick lens), 2026-11-11: 0 high, 5 medium, 3 low, 0 false (2 intent gaps settled as Decisions).
+
+| # | Finding | Verdict | Route | Evidence / action |
+|---|---------|---------|-------|-------------------|
+| 1 | One invalid CSV person (empty name, address failing the pattern) fails the whole chunk with 400 | medium | patch | Per-person constraints sit in the request schema; the hook marks the chunk failed. Validate per person in the service, report FAILED with a reason, keep the others. |
+| 2 | `importParticipant` writes the registration's search fields from the CSV, not from the CUMS user | medium | patch | Every other creation path in `RegistrationService` uses the returned user. |
+| 3 | 100 sequential CUMS calls per request may exceed the 30 s frontend timeout | medium | patch | Not measured; smaller chunks remove the risk without a new mechanism. |
+| 4 | `ParticipantImportResult.reason` returns raw exception messages (SQL, constraint text) | medium | patch | Curated reason for known failures, generic text otherwise, details in the log. |
+| 5 | Missing Turnstile token is not refused (AC) | medium | intent_gap → settled | Decision in the frozen block; comment on #1288. |
+| 6 | Anonymous probe of the old subscribe path gets 401, not 404/405 | low | intent_gap → settled | Decision in the frozen block. |
+| 7 | `.spectral.yaml` still allows the `enroll-stakeholders` verb | low | patch | Direct deletion. |
+| 8 | i18n key `settings.newsletter.subscribe` unused after the rewrite | low | patch | Remove from all locales. |
+
 ## Design Notes
 
 **Architecture note.**
@@ -150,3 +166,5 @@ context:
 **Manual checks:**
 - After restarting `event-management` and `api-gateway`: walk the AC on local dev; old paths 404/405 through the gateway; `/dev/mails` holds only the organizer-added mail.
 
+
+Final verification 2026-11-11 after the review patches (ffcfa08c): shared-kernel, CUMS, EMS, PCS and gateway suites green; lint:api (98), lint:api-internal, check:api-types, type-check, check:s2s-client-urls, Vitest 459 files / 5906 passed, test ratchet and API paths green. Local dev before the patches: Bruno participants-api 16/16, newsletter-api 12/12, Playwright 20 passed; the patched import path is covered by its IT. After deploy: old paths 404/405 with an organizer token, invalid Turnstile token 403, access-control DAST; owner: #1288.
