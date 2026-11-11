@@ -76,7 +76,7 @@ class CompanyServiceTest {
     @BeforeEach
     void setUp() {
         companyService = new CompanyService(companyRepository, logoRepository, eventPublisher, searchService,
-                securityContextHelper, genericLogoService, slugService);
+                securityContextHelper, genericLogoService, slugService, new CompanyInserter(companyRepository));
 
         // Story 1.16.2: the company name (key) is the identifier, a slug since 2026-11-09
         companyName = "testcompany";

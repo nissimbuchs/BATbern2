@@ -20,6 +20,7 @@ import ch.batbern.shared.exception.ValidationException;
 import ch.batbern.shared.service.SlugGenerationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -51,6 +52,7 @@ public class CompanyService {
     private final SecurityContextHelper securityContextHelper;
     private final GenericLogoService genericLogoService;
     private final SlugGenerationService slugService;
+    private final CompanyInserter companyInserter;
 
     /**
      * Creates a new company with validation
@@ -208,7 +210,17 @@ public class CompanyService {
                 .createdBy(currentUsername != null ? currentUsername : "anonymous")
                 .build();
 
-        Company savedCompany = companyRepository.save(company);
+        Company savedCompany;
+        try {
+            savedCompany = companyInserter.insert(company);
+        } catch (DataIntegrityViolationException e) {
+            // A concurrent get-or-create of the same name committed between the read above and this
+            // insert (unique companies.name). The insert ran in its own transaction, so this one can
+            // still read: return that company, as get-or-create is idempotent (200, not created).
+            Company concurrent = companyRepository.findByName(companyName).orElseThrow(() -> e);
+            log.info("Company {} created concurrently; returning it", companyName);
+            return new Resolved(concurrent, false);
+        }
 
         // Publish domain event
         CompanyCreatedEvent event = new CompanyCreatedEvent(
