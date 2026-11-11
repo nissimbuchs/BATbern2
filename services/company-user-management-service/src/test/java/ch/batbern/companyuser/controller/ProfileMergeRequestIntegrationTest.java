@@ -1,8 +1,9 @@
 package ch.batbern.companyuser.controller;
 
-import ch.batbern.companyuser.client.EventManagementUserMergeClient;
 import ch.batbern.companyuser.client.HttpMailCenterRequestContract;
+import ch.batbern.companyuser.client.HttpUserReferenceContract;
 import ch.batbern.companyuser.client.MailCenterContract;
+import ch.batbern.companyuser.client.UserReferenceHolders;
 import ch.batbern.companyuser.config.TestAwsConfig;
 import ch.batbern.companyuser.domain.ProfileMergeRequest;
 import ch.batbern.companyuser.domain.User;
@@ -22,7 +23,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -32,7 +32,6 @@ import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.mock.http.client.MockClientHttpRequest;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.client.ExpectedCount;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -40,17 +39,14 @@ import java.net.ConnectException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static ch.batbern.companyuser.client.UserReferenceHolders.HOLDER_A;
+import static ch.batbern.companyuser.client.UserReferenceHolders.HOLDER_B;
+import static org.springframework.http.HttpMethod.GET;
 import static org.springframework.http.HttpMethod.POST;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -60,10 +56,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 /**
  * #1237: claiming an earlier profile without access to its old address. The person asks, any
- * organizer approves or declines in the Mail Center. The merge in event-management is mocked here
- * and tested there (it moves to the user-reference contract in Epic 17 entry 7b). The Mail Center
- * conversation goes through the real contract caller, answered at the wire by the
- * {@link ContractServer} on the Mail Center request contract (Epic 17 entry 7).
+ * organizer approves or declines in the Mail Center. The merge and the Mail Center conversation go
+ * through the real contract callers, answered at the wire by {@link ContractServer}s on the
+ * user-reference contract (two holders, Epic 17 entry 7b) and the Mail Center request contract
+ * (Epic 17 entry 7). Without an expectation a holder call fails the test.
  *
  * <p>Not {@code @Transactional}: the decision reaches the contract after the commit. Every test
  * commits; {@code @BeforeEach} and {@code @AfterEach} remove the rows.
@@ -88,8 +84,9 @@ class ProfileMergeRequestIntegrationTest extends AbstractIntegrationTest {
     private static final String OLD_ADDRESS = "success+anna.oldcompany@simulator.amazonses.com";
     @Autowired
     private ObjectMapper objectMapper;
-    @MockitoBean
-    private EventManagementUserMergeClient eventManagement;
+    /** The real contract caller; the holders answer through the contract harness at the wire. */
+    @Autowired
+    private HttpUserReferenceContract userReferenceContract;
     /** The real contract caller; the implementer answers through the contract harness at the wire. */
     @Autowired
     private HttpMailCenterRequestContract mailCenterContract;
@@ -99,6 +96,7 @@ class ProfileMergeRequestIntegrationTest extends AbstractIntegrationTest {
     private MeterRegistry meterRegistry;
 
     private ContractServer mailCenter;
+    private ContractServer holders;
     /** The id of the request filed last; the decision is expected for it. */
     private String filed;
 
@@ -110,10 +108,7 @@ class ProfileMergeRequestIntegrationTest extends AbstractIntegrationTest {
         removeRows();
         sesRecorder.reset();
         mailCenter = MailCenterContract.bindTo(mailCenterContract);
-        when(eventManagement.preview(anyString(), anyString())).thenReturn(new EventManagementUserMergeClient.Preview(
-                Map.of("registrations.attendee_username", 3), Map.of(), List.of()));
-        when(eventManagement.merge(any())).thenReturn(new EventManagementUserMergeClient.Result(
-                Map.of("registrations.attendee_username", 3), Map.of()));
+        holders = UserReferenceHolders.bindTo(userReferenceContract);
         userRepository.save(User.builder().username("orga.nizer").email("orga@example.com")
                 .firstName("Orga").lastName("Nizer").cognitoUserId("cog-orga")
                 .roles(new HashSet<>(Set.of(Role.ORGANIZER))).build());
@@ -131,6 +126,7 @@ class ProfileMergeRequestIntegrationTest extends AbstractIntegrationTest {
     @AfterEach
     void tearDown() {
         mailCenter.close();
+        holders.close();
         removeRows();
     }
 
@@ -167,6 +163,22 @@ class ProfileMergeRequestIntegrationTest extends AbstractIntegrationTest {
     private void expectNoDecision() {
         mailCenter.expect(POST, MailCenterContract.DECIDED).times(ExpectedCount.never())
                 .respondWithStatus(HttpStatus.NO_CONTENT);
+    }
+
+    /** Both holders preview: the first holds 3 registrations, the second nothing. */
+    private void expectPreviews() {
+        holders.expect(GET, UserReferenceHolders.PREVIEW).atHost(HOLDER_A).respondWith(HttpStatus.OK, """
+                {"moves": {"registrations.attendee_username": 3}, "conflicts": {}, "blockers": []}""");
+        holders.expect(GET, UserReferenceHolders.PREVIEW).atHost(HOLDER_B).respondWithExample("nothingHeld");
+    }
+
+    /** Both holders merge; the first holder's request body is recorded. */
+    private void expectMerges(StringBuilder body) {
+        holders.expect(POST, UserReferenceHolders.MERGE).atHost(HOLDER_A)
+                .andExpect(r -> body.append(((MockClientHttpRequest) r).getBodyAsString()))
+                .respondWith(HttpStatus.OK, """
+                        {"moved": {"registrations.attendee_username": 3}, "removed": {}}""");
+        holders.expect(POST, UserReferenceHolders.MERGE).atHost(HOLDER_B).respondWithExample("nothingHeld");
     }
 
     private String request(String note) throws Exception {
@@ -292,7 +304,6 @@ class ProfileMergeRequestIntegrationTest extends AbstractIntegrationTest {
         mockMvc.perform(post("/api/v1/users/merge-requests/{id}/decline", id).with(requester())
                         .contentType(MediaType.APPLICATION_JSON).content("{\"reason\":\"no\"}"))
                 .andExpect(status().isForbidden());
-        verify(eventManagement, never()).merge(any());
         mailCenter.verify();
     }
 
@@ -300,6 +311,7 @@ class ProfileMergeRequestIntegrationTest extends AbstractIntegrationTest {
     @DisplayName("an organizer sees the note and both profiles with what would move")
     void get_showsPreview() throws Exception {
         expectOpened();
+        expectPreviews();
         String id = request("Firma X bis 2024");
 
         mockMvc.perform(get("/api/v1/users/merge-requests/{id}", id).with(organizer()))
@@ -311,6 +323,7 @@ class ProfileMergeRequestIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.preview.source.email").value(OLD_ADDRESS))
                 .andExpect(jsonPath("$.preview.moves['registrations.attendee_username']").value(3))
                 .andExpect(jsonPath("$.preview.canMerge").value(true));
+        holders.verify();
     }
 
     @Test
@@ -318,6 +331,9 @@ class ProfileMergeRequestIntegrationTest extends AbstractIntegrationTest {
     void approve_mergesWithoutOldAddresses() throws Exception {
         expectOpened();
         expectDecided("APPROVED");
+        expectPreviews();
+        StringBuilder merged = new StringBuilder();
+        expectMerges(merged);
         String id = request(null);
 
         mockMvc.perform(post("/api/v1/users/merge-requests/{id}/approve", id).with(organizer()))
@@ -325,13 +341,12 @@ class ProfileMergeRequestIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.status").value("APPROVED"))
                 .andExpect(jsonPath("$.decidedBy").value("orga.nizer"));
 
-        ArgumentCaptor<EventManagementUserMergeClient.MergeCall> call =
-                ArgumentCaptor.forClass(EventManagementUserMergeClient.MergeCall.class);
-        verify(eventManagement).merge(call.capture());
-        assertThat(call.getValue().sourceUsername()).isEqualTo("anna.muster");
-        assertThat(call.getValue().targetUsername()).isEqualTo("anna.muster.2");
-        assertThat(call.getValue().performedBy()).isEqualTo("orga.nizer");
-        assertThat(call.getValue().sourceProfile()).containsEntry("email", OLD_ADDRESS);
+        holders.verify();
+        JsonNode call = objectMapper.readTree(merged.toString());
+        assertThat(call.path("sourceUsername").asText()).isEqualTo("anna.muster");
+        assertThat(call.path("targetUsername").asText()).isEqualTo("anna.muster.2");
+        assertThat(call.path("performedBy").asText()).isEqualTo("orga.nizer");
+        assertThat(call.path("sourceProfile").path("email").asText()).isEqualTo(OLD_ADDRESS);
 
         assertThat(userRepository.findByUsername("anna.muster")).isEmpty();
         assertThat(jdbc.queryForObject("SELECT count(*) FROM user_additional_emails e JOIN user_profiles u"
@@ -358,7 +373,6 @@ class ProfileMergeRequestIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.status").value("DECLINED"))
                 .andExpect(jsonPath("$.reason").value("Die Anmeldungen gehören zu einer anderen Person."));
 
-        verify(eventManagement, never()).merge(any());
         assertThat(sesRecorder.single().to()).containsExactly(REQUESTER);
         assertThat(sesRecorder.single().html()).contains("Die Anmeldungen geh");
         mailCenter.verify();

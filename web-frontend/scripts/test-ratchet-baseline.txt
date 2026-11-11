@@ -30,8 +30,6 @@ be-mock-in-process	services/event-management-service/src/test/java/ch/batbern/ev
 be-mock-in-process	services/event-management-service/src/test/java/ch/batbern/events/watch/WatchSessionServiceIntegrationTest.java	1
 be-mock-s2s-client	api-gateway/src/test/java/ch/batbern/gateway/integration/AccountActiveGateIntegrationTest.java	1
 be-mock-s2s-client	api-gateway/src/test/java/ch/batbern/gateway/security/AccountActiveFilterTest.java	1
-be-mock-s2s-client	services/company-user-management-service/src/test/java/ch/batbern/companyuser/controller/ProfileMergeRequestIntegrationTest.java	1
-be-mock-s2s-client	services/company-user-management-service/src/test/java/ch/batbern/companyuser/controller/UserMergeIntegrationTest.java	1
 be-mock-s2s-client	services/event-management-service/src/test/java/ch/batbern/events/controller/AnonymousRegistrationE2EIntegrationTest.java	1
 be-mock-s2s-client	services/event-management-service/src/test/java/ch/batbern/events/controller/EventControllerIntegrationTest.java	1
 be-mock-s2s-client	services/event-management-service/src/test/java/ch/batbern/events/controller/RegistrationCapacityIntegrationTest.java	1

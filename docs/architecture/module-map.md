@@ -16,7 +16,8 @@ CUMS (identity) is upstream of all. EMS (event) is upstream of PCS (partners).
   contract it owns (its spec, implementers listed in its configuration under
   `batbern.contracts.<name>.implementers`, called through shared-kernel `ContractCalls`, no
   downstream named in code). No polling, no event bus (ADR-016 decision 4, owner 2026-11-11). Contracts: CUMS
-  user-references (preview, merge, primary-email; EMS and PCS implement), CUMS Mail Center requests
+  user-references (`/internal/user-references/{preview,merge,primary-email}`, EMS and PCS
+  implement; a new service that stores usernames implements it too), CUMS Mail Center requests
   (EMS implements), EMS calendar replies (PCS implements). Do not call downstream any other way.
 - Every `/internal` operation is specified in `docs/api/internal/<provider>-internal.openapi.yml`
   (17.0b2; a contract in its owner's spec) and contract-tested on both sides (`ContractServer`, provider
@@ -63,10 +64,10 @@ CUMS (identity) is upstream of all. EMS (event) is upstream of PCS (partners).
   to accept a new one.
 - Left frozen after 17.5 (each with its owner): mail core 2 lines, `MailPipeline` using
   `compose.MailRenderer` and `PlaceholderScanner` (17.15); EMS `*Partner*Client*` 2,
-  `PartnerMeetingRsvpClient(Impl)` (8b; entry 8 deleted `PartnerApiClient(Impl)`); CUMS
-  clients 2, `EventManagementUserMergeClient` and its implementation (7b; entry 7 deleted the
-  Mail Center client pair). Mail center wall, watch, usermerge, notification: 0 (the mail center
-  wall since 16.8c moved `OwnText` to mail core).
+  `PartnerMeetingRsvpClient(Impl)` (8b; entry 8 deleted `PartnerApiClient(Impl)`). CUMS
+  clients: 0 (entry 7 deleted the Mail Center client pair, 7b the user-merge pair; CUMS calls
+  downstream only through its two contracts). Mail center wall, watch, usermerge, notification: 0
+  (the mail center wall since 16.8c moved `OwnText` to mail core).
 
 ## Reuse before you build
 

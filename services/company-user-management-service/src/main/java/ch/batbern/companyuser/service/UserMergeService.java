@@ -1,6 +1,6 @@
 package ch.batbern.companyuser.service;
 
-import ch.batbern.companyuser.client.EventManagementUserMergeClient;
+import ch.batbern.companyuser.client.UserReferenceContract;
 import ch.batbern.shared.types.Role;
 import ch.batbern.companyuser.domain.User;
 import ch.batbern.companyuser.domain.UserAdditionalEmail;
@@ -30,13 +30,16 @@ import java.util.stream.Collectors;
  * <p>Order, so a failure leaves nothing half done that a retry cannot finish:
  * <ol>
  *   <li>both profiles are locked and checked (the source must have no login);</li>
- *   <li>event-management moves its rows and logs the merge, with a snapshot of the source profile
- *       ({@link EventManagementUserMergeClient}); it commits on its own;</li>
+ *   <li>every holder of the user-reference contract previews the merge
+ *       ({@link UserReferenceContract}); a blocker at any holder refuses the merge before any holder
+ *       moves a row;</li>
+ *   <li>every holder moves its rows, in configured order, each in a transaction of its own
+ *       (event-management also logs the merge, with a snapshot of the source profile);</li>
  *   <li>here: roles, activity, watch pairings and addresses move to the target, the source is
  *       deleted, and its addresses become verified additional addresses of the target.</li>
  * </ol>
- * If step 3 fails, the source still exists and owns nothing in event-management; running the merge
- * again finishes it (event-management's part is idempotent).
+ * If a holder or step 4 fails, the source still exists; earlier holders have moved their rows, and
+ * running the merge again finishes it (every holder's part is idempotent).
  *
  * <p>The source must have no login: a profile with a Cognito user is somebody's account, and deleting
  * it would lock that person out. A login profile is always the target. Two login profiles of one person
@@ -53,10 +56,11 @@ public class UserMergeService {
     public static final String BLOCKED = "BLOCKED";
 
     private final UserRepository userRepository;
-    private final EventManagementUserMergeClient eventManagement;
+    private final UserReferenceContract holders;
     private final JdbcTemplate jdbc;
 
-    public record Preview(User target, User source, EventManagementUserMergeClient.Preview events,
+    /** {@code holders}: the previews of all holders, summed ({@code table.column} keys do not overlap). */
+    public record Preview(User target, User source, UserReferenceContract.Preview holders,
             List<String> reasons) {
         public boolean canMerge() {
             return reasons.isEmpty();
@@ -72,10 +76,10 @@ public class UserMergeService {
         User target = load(targetUsername);
         User source = load(sourceUsername);
         List<String> reasons = new ArrayList<>(profileReasons(target, source));
-        EventManagementUserMergeClient.Preview events = target.getId().equals(source.getId())
-                ? new EventManagementUserMergeClient.Preview(Map.of(), Map.of(), List.of())
-                : eventManagement.preview(source.getUsername(), target.getUsername());
-        if (!events.blockers().isEmpty()) {
+        UserReferenceContract.Preview held = target.getId().equals(source.getId())
+                ? new UserReferenceContract.Preview(Map.of(), Map.of(), List.of())
+                : sum(holders.preview(source.getUsername(), target.getUsername()));
+        if (!held.blockers().isEmpty()) {
             reasons.add(BLOCKED);
         }
         // touch the lazy collections for the controller's mapping
@@ -83,7 +87,7 @@ public class UserMergeService {
         source.getRoles().size();
         target.getAdditionalEmails().size();
         source.getAdditionalEmails().size();
-        return new Preview(target, source, events, reasons);
+        return new Preview(target, source, held, reasons);
     }
 
     /**
@@ -136,9 +140,12 @@ public class UserMergeService {
         Set<Role> sourceRoles = Set.copyOf(source.getRoles());
         Map<String, Object> snapshot = snapshot(source, sourceRoles, sourceAddresses);
 
-        EventManagementUserMergeClient.MergeCall call = new EventManagementUserMergeClient.MergeCall(
+        if (!sum(holders.preview(source.getUsername(), target.getUsername())).blockers().isEmpty()) {
+            throw new MergeNotAllowedException(List.of(BLOCKED));
+        }
+        UserReferenceContract.MergeCall call = new UserReferenceContract.MergeCall(
                 source.getUsername(), target.getUsername(), performedBy, trigger, snapshot);
-        EventManagementUserMergeClient.Result events = eventManagement.merge(call);
+        List<UserReferenceContract.Result> moved = holders.merge(call);
 
         target.getRoles().addAll(sourceRoles);
         if (target.getCompanyId() == null) {
@@ -170,7 +177,25 @@ public class UserMergeService {
 
         log.info("USER_MERGE profile source={} target={} trigger={} by={}", source.getUsername(),
                 target.getUsername(), trigger, performedBy);
-        return new Result(target.getUsername(), source.getUsername(), events.moved(), events.removed());
+        return new Result(target.getUsername(), source.getUsername(),
+                sumCounts(moved.stream().map(UserReferenceContract.Result::moved).toList()),
+                sumCounts(moved.stream().map(UserReferenceContract.Result::removed).toList()));
+    }
+
+    /** All holders' previews as one: counts added per key, blockers in holder order. */
+    static UserReferenceContract.Preview sum(List<UserReferenceContract.Preview> previews) {
+        List<String> blockers = new ArrayList<>();
+        previews.forEach(p -> blockers.addAll(p.blockers()));
+        return new UserReferenceContract.Preview(
+                sumCounts(previews.stream().map(UserReferenceContract.Preview::moves).toList()),
+                sumCounts(previews.stream().map(UserReferenceContract.Preview::conflicts).toList()),
+                List.copyOf(blockers));
+    }
+
+    private static Map<String, Integer> sumCounts(List<Map<String, Integer>> counts) {
+        Map<String, Integer> sum = new LinkedHashMap<>();
+        counts.forEach(c -> c.forEach((key, n) -> sum.merge(key, n, Integer::sum)));
+        return sum;
     }
 
     private static void addAddress(User target, Set<String> held, String email, String label, Instant verifiedAt) {

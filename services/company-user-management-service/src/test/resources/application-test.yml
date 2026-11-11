@@ -52,3 +52,7 @@ batbern:
   contracts:
     mail-center-requests:
       implementers: http://mail-center-contract.invalid
+    # Epic 17 entry 7b: two holders, answered by the ContractServer bound to
+    # HttpUserReferenceContract (UserReferenceHolders), told apart by host.
+    user-references:
+      implementers: http://holder-a.invalid,http://holder-b.invalid

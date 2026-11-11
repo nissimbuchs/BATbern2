@@ -1105,9 +1105,11 @@ signs in by email, the `sub` and linked Google identities stay), then the swap i
 `user_profiles` / `user_additional_emails` with explicit flushes (global uniqueness; Hibernate flushes
 inserts before deletes); if the DB step fails, the login is moved back. The old primary stays as a
 confirmed additional address, as a new row under a new id (the chosen row is deleted), so the client
-reads the ids again. EMS `POST /internal/users/primary-email` moves upcoming registrations
-(event today or later) made under the old address, because deregistration, slides and
-`-participants@` read `registrations.attendee_email`. The UI refreshes the session afterwards, since
+reads the ids again. Then every holder of the user-reference contract is told
+(`POST /internal/user-references/primary-email`, best effort, WARN on failure): EMS moves upcoming
+registrations (event today or later) made under the old address at once, because deregistration,
+slides and `-participants@` read `registrations.attendee_email`; PCS keeps nothing by address and
+answers `updated: 0`. The UI refreshes the session afterwards, since
 the ID token carries the old address until then. `EMAIL_HAS_OTHER_LOGIN` means another account logs
 in with that address: the page then offers the account merge below.
 
@@ -1176,24 +1178,32 @@ Measured on production 2026-11-07: 257 / 24 / 22 pairs for the three rules, 24 w
   The login profile is always the target; the organizer dialog offers to swap the direction. Two login
   profiles are merged only by the person themselves after proving both mailboxes (row F,
   `mergeLoginAccount`, the one path that accepts a source with a login; the snapshot records `hadLogin`).
-- **Order**: lock both profiles → event-management moves its rows (`POST /internal/users/merge`, Service
-  Connect, no JWT) and commits → company-user-management moves roles, `activity_history`,
+- **Order**: lock both profiles → every holder of the user-reference contract CUMS owns (Epic 17 entry 7b,
+  `batbern.contracts.user-references.implementers`: event-management, partner-coordination) previews the
+  merge, and a blocker at any holder refuses it (409 `MERGE_NOT_ALLOWED`, reason `BLOCKED`) before any
+  row moves → each holder moves its rows (`POST /internal/user-references/merge`, Service Connect, the
+  user's JWT forwarded when there is one) and commits on its own → company-user-management moves roles, `activity_history`,
   `watch_pairings`, `role_assignments.granted_by`, fills an empty company and bio, deletes the source and
   adds its address (verified, label "merged profile") and its additional addresses to the target, except an
   import placeholder (`vorname.nachname@batbern.ch`), which reaches nobody and stays only in the merge log.
-  Until 2026-11-08 placeholders were carried too; the 48 such rows were deleted by hand that day. If the
-  second step fails, the source still exists and owns nothing in event-management; running the merge again
-  finishes it (event-management's part is idempotent).
+  Until 2026-11-08 placeholders were carried too; the 48 such rows were deleted by hand that day. If a
+  holder or the last step fails (502), the source still exists and earlier holders have moved their rows;
+  running the merge again finishes it (every holder's part is idempotent).
 - **What moves in event-management** (`UserMergeService` there): registrations, speaker slots
   (`session_users`), speaker arrivals, notifications, Q&A posts and notifications, talk proposals, content
   submissions, organizer thanks, live-timing presence, newsletter rows. **Not moved**: audit columns
   (`created_by`, `changed_by_username`, …) and organizer columns; a source without login never acted as
-  organizer. Partner topic suggestions live in partner-coordination and are made by partner logins.
+  organizer.
+- **What moves in partner-coordination** (`UserReferenceService`, since Epic 17 entry 7b): who suggested
+  a topic (`topic_suggestions.suggested_by`), who wrote a partner note (`partner_notes.author_username`),
+  who created a partner meeting (`partner_meetings.created_by`). No unique key, so no collision and no
+  blocker; no log of its own. Before 7b these rows kept the merged-away username; a read-only production
+  count on 2026-11-11 found none naming a former merge source (0 of 43, 0 of 2, 0 of 2).
 - **Collisions**: same session, same event (arrivals, proposals, thanks) → the source row goes. Two
   registrations for one event → the better one stays (attended, confirmed, registered, waitlist, cancelled;
   the target's on a tie), because every `my-registration` lookup expects one row.
-- **Refused**: both lead a different talk at the same event (409 `MERGE_BLOCKED`); the organizer removes
-  one first.
+- **Refused**: both lead a different talk at the same event (409 `MERGE_NOT_ALLOWED` with reason
+  `BLOCKED`, or `MERGE_BLOCKED` if it arises between preview and merge); the organizer removes one first.
 - **Undo** is by hand, from `user_merge_log` (event-management, V144): the moved row keys per column, every
   removed row in full, and the deleted source profile with its roles and addresses.
 - **Requests (E, #1237)**: the mail to the old address is the ownership proof in D; without it a human

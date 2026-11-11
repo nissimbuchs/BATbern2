@@ -248,6 +248,7 @@ public final class ContractServer implements AutoCloseable {
         private final HttpMethod method;
         private final String path;
         private final Map<String, String> queryParams = new LinkedHashMap<>();
+        private String host;
         private ExpectedCount count = ExpectedCount.once();
         private Consumer<ClientHttpRequest> check = r -> { };
 
@@ -260,6 +261,15 @@ public final class ContractServer implements AutoCloseable {
         /** Also match on a query parameter value (for paged calls with one answer per page). */
         public Expectation withQueryParam(String name, String value) {
             queryParams.put(name, value);
+            return this;
+        }
+
+        /**
+         * Also match on the host, for a contract with several implementers configured on one
+         * {@code RestTemplate} (each implementer answers its own call).
+         */
+        public Expectation atHost(String expectedHost) {
+            this.host = expectedHost;
             return this;
         }
 
@@ -372,6 +382,9 @@ public final class ContractServer implements AutoCloseable {
             RequestMatcher matcher = request -> {
                 if (!request.getMethod().equals(method) || !pathMatches(request.getURI())) {
                     throw new AssertionError("not " + method + " " + path);
+                }
+                if (host != null && !host.equals(request.getURI().getHost())) {
+                    throw new AssertionError("not at host " + host);
                 }
                 Map<String, List<String>> actual = UriComponentsBuilder.fromUri(request.getURI()).build()
                         .getQueryParams();

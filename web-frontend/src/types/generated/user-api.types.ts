@@ -225,7 +225,8 @@ export interface paths {
     /**
      * Preview merging another profile into this one (Organizer)
      * @description #1183 C. Shows both profiles and what a merge of `source` into `{username}` would move:
-     *     rows per table, rows that collide (same event, same session) and blockers. Changes nothing.
+     *     rows per table, rows that collide (same event, same session) and blockers, summed over every
+     *     service that stores usernames (event-management, partner-coordination). Changes nothing.
      *
      *     `canMerge` is false, with the reasons in `reasons`, when the source has a login (merge in
      *     the other direction instead), both have a login, they are the same profile, or a blocker
@@ -255,11 +256,17 @@ export interface paths {
      * Merge another profile into this one (Organizer)
      * @description #1183 C. Moves the source's registrations, speaker slots, history, roles and addresses to
      *     `{username}`, adds the source's address as a verified additional address, and deletes the
-     *     source profile. Where both hold a registration for the same event, the better one stays
-     *     (attended, confirmed, registered, waitlist, no_show, cancelled). Every moved and removed row is
-     *     logged in `user_merge_log` (event-management) so a merge can be undone by hand.
+     *     source profile. Every service that stores usernames moves its rows (the user-reference
+     *     contract, Epic 17 entry 7b: event-management, and partner-coordination's topic suggestions,
+     *     partner notes and partner meetings); `moved` and `removed` list them all by `table.column`.
+     *     Where both hold a registration for the same event, the better one stays (attended,
+     *     confirmed, registered, waitlist, no_show, cancelled). Every moved and removed row of
+     *     event-management is logged in `user_merge_log` so a merge can be undone by hand.
      *
-     *     Refused with 409 `MERGE_NOT_ALLOWED` when the preview's `canMerge` is false.
+     *     Refused with 409 `MERGE_NOT_ALLOWED` when the preview's `canMerge` is false; a blocker found
+     *     by any service refuses the merge before any service moves a row. 502
+     *     `MERGE_EVENT_SERVICE_FAILED` when a service does not answer; the source profile stays and
+     *     repeating the merge completes it.
      *
      *     **Authorization**: ORGANIZER role required
      */
@@ -2543,6 +2550,15 @@ export interface operations {
       404: components['responses']['NotFound'];
       409: components['responses']['Conflict'];
       500: components['responses']['InternalServerError'];
+      /** @description A service holding usernames did not complete its part; the source profile stays */
+      502: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
     };
   };
   listProfileClaimCandidates: {

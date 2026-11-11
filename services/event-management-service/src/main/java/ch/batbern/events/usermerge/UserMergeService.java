@@ -21,15 +21,16 @@ import java.util.Map;
 
 /**
  * #1183 C/D: moves everything event-management holds under one username to another, because both
- * profiles belong to the same person. company-user-management decides that and calls this through
- * {@code POST /internal/users/merge}; it deletes the source profile afterwards.
+ * profiles belong to the same person. company-user-management decides that and calls every holder of
+ * its user-reference contract, this one through {@code POST /internal/user-references/merge}; it
+ * deletes the source profile after all holders answered.
  *
  * <p>What moves: the person's own rows (registrations, speaker slots, arrivals, notifications, Q&A,
  * proposals, thanks, newsletter rows). What does not: audit columns that record
  * who did something at the time ({@code created_by}, {@code changed_by_username}, ...), and organizer
  * columns, since the source of a merge never has a login and so never acted as organizer. Partner
- * topic suggestions live in partner-coordination and are made by partner logins, so they never
- * belong to a source either.
+ * topic suggestions, notes and meetings live in partner-coordination, which moves them itself as
+ * another holder of the same contract.
  *
  * <p>Where the target already holds a row with the same key (the same session, the same event), the
  * source row is removed. Registrations are the exception: the better one stays (attended, then

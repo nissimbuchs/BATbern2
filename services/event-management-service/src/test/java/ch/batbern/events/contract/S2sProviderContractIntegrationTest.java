@@ -49,13 +49,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * Provider half of the S2S contract (Stories 17.0b1, 17.0b2): every {@code /internal} operation in
  * {@code docs/api/internal/ems-internal.openapi.yml} runs through the real controller and must match
  * the spec its consumers' contract tests answer from; the spec examples must match the same schema.
- * Callers: the CUMS merge client, PCS {@code HttpOutboundMailRecorder} and
- * {@code EventManagementClientImpl} (event schedule since the 17.0 deferred work, attendance summary
- * since Epic 17 6b). EMS serves no public operation to another service any more.
+ * Callers: PCS {@code HttpOutboundMailRecorder} and {@code EventManagementClientImpl} (event
+ * schedule since the 17.0 deferred work, attendance summary since Epic 17 6b). EMS serves no public
+ * operation to another service any more.
  *
- * <p>EMS also implements the Mail Center request contract CUMS owns (Epic 17 entry 7): those
- * operations are checked against {@code docs/api/internal/cums-internal.openapi.yml}, the spec the
- * CUMS contract caller is tested against.
+ * <p>EMS also implements two contracts CUMS owns, the Mail Center request contract (Epic 17 entry 7)
+ * and the user-reference contract (entry 7b): those operations are checked against
+ * {@code docs/api/internal/cums-internal.openapi.yml}, the spec the CUMS contract callers are tested
+ * against.
  */
 @Import({TestSecurityConfig.class, TestAwsConfig.class})
 @DisplayName("EMS honours the S2S contract PCS is tested against")
@@ -128,11 +129,8 @@ class S2sProviderContractIntegrationTest extends AbstractIntegrationTest {
 
     @ParameterizedTest(name = "{0} {1}")
     @CsvSource({
-        "GET,  /internal/users/merge-preview",
         "GET,  /internal/events/{eventCode}/schedule",
         "GET,  /internal/events/attendance-summary",
-        "POST, /internal/users/merge",
-        "POST, /internal/users/primary-email",
         "POST, /internal/mails",
     })
     @DisplayName("internal spec examples match their schema")
@@ -221,44 +219,6 @@ class S2sProviderContractIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void mergePreview_andMerge_andPrimaryEmail_matchSpec() throws Exception {
-        internal(get("/internal/users/merge-preview").param("source", MERGE_SOURCE).param("target", MERGE_TARGET),
-                200);
-        internal(get("/internal/users/merge-preview").param("source", MERGE_TARGET).param("target", MERGE_TARGET),
-                400);
-        internal(get("/internal/users/merge-preview").param("source", MERGE_SOURCE), 400);
-        internal(postJson("/internal/users/merge", """
-                {"sourceUsername": "%s", "targetUsername": "%s", "performedBy": "organizer.alice",
-                 "trigger": "ORGANIZER", "sourceProfile": {"email": "contract.source@example.com"}}"""
-                .formatted(MERGE_SOURCE, MERGE_TARGET)), 200);
-        internal(postJson("/internal/users/primary-email", """
-                {"username": "%s", "oldEmail": "old@example.com", "newEmail": "new@example.com"}"""
-                .formatted(MERGE_TARGET)), 200);
-    }
-
-    @Test
-    @DisplayName("merge with both profiles leading a talk at one event: 409 MERGE_BLOCKED, as the spec says")
-    void mergeBlocked_matchesSpec() throws Exception {
-        Event event = eventRepository.findByEventCode(CODE).orElseThrow();
-        UUID own = sessionRepository.findByEventId(event.getId()).get(0).getId();
-        UUID other = sessionRepository.save(Session.builder()
-                .eventId(event.getId()).eventCode(CODE).sessionSlug("contract-second")
-                .title("Second talk").sessionType("presentation")
-                .startTime(DATE.plus(1, ChronoUnit.HOURS)).endTime(DATE.plus(2, ChronoUnit.HOURS))
-                .build()).getId();
-        String slot = "INSERT INTO session_users (id, session_id, username, speaker_role) "
-                + "VALUES (?, ?, ?, 'primary_speaker')";
-        jdbc.update(slot, UUID.randomUUID(), own, MERGE_SOURCE);
-        jdbc.update(slot, UUID.randomUUID(), other, MERGE_TARGET);
-
-        MvcResult result = internal(postJson("/internal/users/merge", """
-                {"sourceUsername": "%s", "targetUsername": "%s", "performedBy": "organizer.alice",
-                 "trigger": "ORGANIZER"}""".formatted(MERGE_SOURCE, MERGE_TARGET)), 409);
-
-        assertThat(result.getResponse().getContentAsString()).contains("MERGE_BLOCKED").contains(CODE);
-    }
-
-    @Test
     void recordMail_matchesSpec() throws Exception {
         internal(postJson("/internal/mails", """
                 {"sendGroupId": "%s", "eventCode": "%s", "audience": "PARTNERS",
@@ -273,7 +233,7 @@ class S2sProviderContractIntegrationTest extends AbstractIntegrationTest {
     // ------------------------------------------------------------------ contract owned by CUMS (entry 7)
 
     /** A contract request CUMS would send: valid against the CUMS spec, answered as that spec says. */
-    private void contractCall(String path, String body, int expectedStatus, Object... vars) throws Exception {
+    private MvcResult contractCall(String path, String body, int expectedStatus, Object... vars) throws Exception {
         String concrete = vars.length == 0 ? path : path.replace("{requestId}", vars[0].toString());
         List<String> errors = OpenApiContract.load(CUMS_INTERNAL).validateRequest("POST", concrete, Map.of(),
                 Map.of("Content-Type", List.of("application/json")), body);
@@ -283,6 +243,80 @@ class S2sProviderContractIntegrationTest extends AbstractIntegrationTest {
         MvcResult result = mockMvc.perform(postJson(path, body, vars)).andExpect(status().is(expectedStatus))
                 .andReturn();
         assertResponseMatchesSpec(CUMS_INTERNAL, result);
+        return result;
+    }
+
+    /** The user-reference preview as CUMS calls it ({@code source} / {@code target} null: left out). */
+    private MvcResult contractGet(String source, String target, int expectedStatus) throws Exception {
+        Map<String, List<String>> query = new java.util.LinkedHashMap<>();
+        MockHttpServletRequestBuilder request = get("/internal/user-references/preview");
+        if (source != null) {
+            query.put("source", List.of(source));
+            request.param("source", source);
+        }
+        if (target != null) {
+            query.put("target", List.of(target));
+            request.param("target", target);
+        }
+        if (expectedStatus < 300) {
+            assertThat(OpenApiContract.load(CUMS_INTERNAL).validateRequest("GET",
+                    "/internal/user-references/preview", query, Map.of(), null)).as("a valid contract request").isEmpty();
+        }
+        MvcResult result = mockMvc.perform(request).andExpect(status().is(expectedStatus)).andReturn();
+        assertResponseMatchesSpec(CUMS_INTERNAL, result);
+        return result;
+    }
+
+    @ParameterizedTest(name = "forwarded JWT: {0}")
+    @CsvSource({"true", "false"})
+    @DisplayName("user-reference contract: preview, merge and primary email, as CUMS calls them, with and without the user's JWT")
+    void userReferenceContract_matchesCumsSpec(boolean user) throws Exception {
+        if (user) {
+            mockMvc.perform(get("/internal/user-references/preview").param("source", MERGE_SOURCE)
+                            .param("target", MERGE_TARGET)
+                            .with(jwt().jwt(j -> j.claim("custom:username", "organizer.alice")
+                                    .claim("custom:role", "ORGANIZER"))))
+                    .andExpect(status().isOk());
+        }
+        contractGet(MERGE_SOURCE, MERGE_TARGET, 200);
+        contractGet(MERGE_TARGET, MERGE_TARGET, 400);
+        contractGet(MERGE_SOURCE, null, 400);
+        contractCall("/internal/user-references/merge", """
+                {"sourceUsername": "%s", "targetUsername": "%s", "performedBy": "organizer.alice",
+                 "trigger": "ORGANIZER", "sourceProfile": {"email": "contract.source@example.com"}}"""
+                .formatted(MERGE_SOURCE, MERGE_TARGET), 200);
+        contractCall("/internal/user-references/merge", """
+                {"sourceUsername": "%s", "targetUsername": "%s", "performedBy": "organizer.alice",
+                 "trigger": "SELF_CLAIM", "sourceProfile": null}""".formatted(MERGE_SOURCE, MERGE_TARGET), 200);
+        contractCall("/internal/user-references/merge", "{\"sourceUsername\": \"x\"}", 400);
+        contractCall("/internal/user-references/primary-email", """
+                {"username": "%s", "oldEmail": "old@example.com", "newEmail": "new@example.com"}"""
+                .formatted(MERGE_TARGET), 200);
+        contractCall("/internal/user-references/primary-email", "{\"username\": \"x\"}", 400);
+    }
+
+    @Test
+    @DisplayName("merge with both profiles leading a talk at one event: 409 MERGE_BLOCKED, as the CUMS contract says")
+    void mergeBlocked_matchesSpec() throws Exception {
+        Event event = eventRepository.findByEventCode(CODE).orElseThrow();
+        UUID own = sessionRepository.findByEventId(event.getId()).get(0).getId();
+        UUID other = sessionRepository.save(Session.builder()
+                .eventId(event.getId()).eventCode(CODE).sessionSlug("contract-second")
+                .title("Second talk").sessionType("presentation")
+                .startTime(DATE.plus(1, ChronoUnit.HOURS)).endTime(DATE.plus(2, ChronoUnit.HOURS))
+                .build()).getId();
+        String slot = "INSERT INTO session_users (id, session_id, username, speaker_role) "
+                + "VALUES (?, ?, ?, 'primary_speaker')";
+        jdbc.update(slot, UUID.randomUUID(), own, MERGE_SOURCE);
+        jdbc.update(slot, UUID.randomUUID(), other, MERGE_TARGET);
+
+        MvcResult preview = contractGet(MERGE_SOURCE, MERGE_TARGET, 200);
+        assertThat(preview.getResponse().getContentAsString()).contains(CODE);
+        MvcResult result = contractCall("/internal/user-references/merge", """
+                {"sourceUsername": "%s", "targetUsername": "%s", "performedBy": "organizer.alice",
+                 "trigger": "ORGANIZER"}""".formatted(MERGE_SOURCE, MERGE_TARGET), 409);
+
+        assertThat(result.getResponse().getContentAsString()).contains("MERGE_BLOCKED").contains(CODE);
     }
 
     @ParameterizedTest(name = "forwarded JWT: {0}")

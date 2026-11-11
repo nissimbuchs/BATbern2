@@ -409,7 +409,7 @@ flowchart TB
         B1["CompanyService, GenericLogoService<br/>ADR-002 upload states"]
         B2["UserService, RoleService<br/>minimum two organizers"]
         B3["JITUserProvisioningInterceptor,<br/>FederatedAvatarImportInterceptor"]
-        B4["UserMergeService<br/>calls EMS /internal/users/merge"]
+        B4["UserMergeService<br/>calls every holder /internal/user-references/*"]
         B5["LogoCleanupService, UserReconciliationService,<br/>CognitoConfirmationResendJob, WatchPairingCleanupService"]
     end
     DB[("PostgreSQL<br/>CUMS tables")]

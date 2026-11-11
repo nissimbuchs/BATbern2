@@ -55,7 +55,12 @@ const summary = (username: string, hasLogin: boolean) => ({
 const preview = (canMerge: boolean, reasons: string[] = []) => ({
   target: summary('anna.muster.2', true),
   source: summary('anna.muster', false),
-  moves: { 'registrations.attendee_username': 3, 'notifications.recipient_username': 0 },
+  // every holder of the user-reference contract reports its own table.column counts (Epic 17 7b)
+  moves: {
+    'registrations.attendee_username': 3,
+    'notifications.recipient_username': 0,
+    'partner_notes.author_username': 2,
+  },
   conflicts: { registrations: 1 },
   blockers: [],
   canMerge,
@@ -99,7 +104,11 @@ describe('MergeProfileDialog (#1183 C)', () => {
     expect(await screen.findByTestId('merge-source')).toHaveTextContent('anna.muster');
     expect(api.getUserMergePreview).toHaveBeenCalledWith('anna.muster.2', 'anna.muster');
     // rows with 0 are not listed
-    expect(screen.getByTestId('merge-moves').querySelectorAll('li')).toHaveLength(1);
+    expect(screen.getByTestId('merge-moves').querySelectorAll('li')).toHaveLength(2);
+    // a partner-coordination table has its own label, not the raw table name
+    const notesLabel = i18n.t('merge.tables.partner_notes', { ns: 'userManagement' });
+    expect(notesLabel).not.toBe('partner_notes');
+    expect(screen.getByTestId('merge-moves')).toHaveTextContent(`${notesLabel}: 2`);
     expect(screen.getByTestId('merge-conflicts')).toBeInTheDocument();
 
     await userEvent.click(screen.getByTestId('merge-confirm'));

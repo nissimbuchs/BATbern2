@@ -189,6 +189,21 @@ class ContractServerTest {
     }
 
     @Test
+    @DisplayName("atHost: two implementers of one contract on one RestTemplate each answer their own call")
+    void should_matchOnHost_when_twoImplementersAnswerDifferently() {
+        server.expect(GET, "/api/v1/companies").atHost("holder-b").respondWith(HttpStatus.OK, """
+                {"data": [], "pagination": {"page": 1, "limit": 100, "totalItems": 0, "totalPages": 0,
+                 "hasNext": false, "hasPrev": false}}""");
+        server.expect(GET, "/api/v1/companies").atHost("holder-a").respondWithExample();
+
+        assertThat(restTemplate.exchange("http://holder-a/api/v1/companies?limit=100", GET, withJwt(), String.class)
+                .getBody()).contains("\"pagination\"").doesNotContain("\"totalItems\": 0");
+        assertThat(restTemplate.exchange("http://holder-b/api/v1/companies?limit=100", GET, withJwt(), String.class)
+                .getBody()).contains("\"totalItems\": 0");
+        server.verify();
+    }
+
+    @Test
     void should_matchDecodedQueryValue_when_valueHasSpace() {
         server.expect(GET, "/api/v1/companies").withQueryParam("sort", "-createdAt name").respondWithExample();
 

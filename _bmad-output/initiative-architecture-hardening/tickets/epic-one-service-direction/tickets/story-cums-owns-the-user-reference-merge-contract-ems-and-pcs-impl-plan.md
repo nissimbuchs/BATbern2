@@ -3,8 +3,8 @@ title: 'CUMS owns the user-reference merge contract, EMS and PCS implement it'
 type: 'refactor'
 ticket: '7b'
 created: '2026-11-11'
-status: 'ready-for-dev'
-baseline_revision: ''
+status: 'built'
+baseline_revision: 'c295ff4242945bf5aa5cc22c9c783b84e5712661'
 route: 'full'
 route_source: 'auto'
 risk: 'high'
@@ -58,12 +58,12 @@ Approved by the owner 2026-11-11 ("B for all": this plan is already the upstream
 ## Tasks & Acceptance
 
 **Execution:**
-- [ ] Specs: contract in `cums-internal`, removal in `ems-internal`; regenerate types if touched.
-- [ ] CUMS: `UserReferenceContract` + config; `UserMergeService`, `PrimaryEmailService`; delete the EMS client pair; `UserMergeIntegrationTest` with two `ContractServer` holders, one refusing; contract test per operation.
-- [ ] EMS: move the three endpoints; provider contract test entries.
-- [ ] PCS: `usermerge` controller + service + integration test (preview, merge, idempotent rerun); provider contract test entries; `EndpointAuthorizationGuardTest` stays green.
-- [ ] Frontend: 4 labels × 10 locales; `MergeProfileDialog.test.tsx` covers a PCS key.
-- [ ] Docs: ADR-016 decision 5 (done), `module-map.md` (one upstream→downstream call: `/internal/user-references/*`; CUMS store count gone), `06-backend-architecture.md`, `06b-user-lifecycle-sync.md`, changelog, doc-drift mappings.
+- [x] Specs: contract in `cums-internal`, removal in `ems-internal`; regenerate types if touched.
+- [x] CUMS: `UserReferenceContract` + config; `UserMergeService`, `PrimaryEmailService`; delete the EMS client pair; `UserMergeIntegrationTest` with two `ContractServer` holders, one refusing; contract test per operation.
+- [x] EMS: move the three endpoints; provider contract test entries.
+- [x] PCS: `usermerge` controller + service + integration test (preview, merge, idempotent rerun); provider contract test entries; `EndpointAuthorizationGuardTest` stays green.
+- [x] Frontend: 4 labels × 10 locales; `MergeProfileDialog.test.tsx` covers a PCS key.
+- [x] Docs: ADR-016 decision 5 (done), `module-map.md` (one upstream→downstream call: `/internal/user-references/*`; CUMS store count gone), `06-backend-architecture.md`, `06b-user-lifecycle-sync.md`, changelog, doc-drift mappings.
 
 **Acceptance Criteria:**
 - Given local dev and two profiles with EMS and PCS rows, when an organizer previews and merges, then the preview lists EMS and PCS counts and PCS rows carry the target username afterwards.
@@ -89,3 +89,20 @@ Merge order: preview all holders, refuse on any blocker, then merge each. A hold
 
 **Manual checks:**
 - Local dev: merge preview and merge of two test profiles with a PCS partner note; make-primary on a profile with an upcoming registration.
+
+## Implementation Notes
+
+Built 2026-11-11 on `feature/17-7b-user-reference-contract`, committed locally, no push, no PR. Not reviewed yet.
+
+- **Contract** in `cums-internal.openapi.yml`, tagged `contract`: `GET /internal/user-references/preview` (`UserReferencePreview`), `POST .../merge` (`UserReferenceMerge` -> `UserReferenceMergeResult`, 409 `UserReferenceError` MERGE_BLOCKED), `POST .../primary-email` (`UserPrimaryEmailChange` -> `{updated}`), each with a `nothingHeld` example. The three operations and their six schemas are gone from `ems-internal`; its description points at the cums spec. `.spectral.yaml` comment example updated.
+- **shared-kernel.** `ContractCalls.postForAnswers(path, body, type, uriVariables...)` returns every implementer's answer (merge needs per-holder counts); `post` delegates to it. `ContractServer.Expectation.atHost(host)` so one `RestTemplate` with two implementers can be answered per holder. Tests: `ContractCallsTest` +1, `ContractServerTest` +1.
+- **CUMS.** `client/UserReferenceContract` + `HttpUserReferenceContract` (2 s / 30 s as before; 409 -> `MergeBlockedException`, other failures -> `MergeCallFailedException`). `UserMergeService`: preview sums all holders (`sum`, counts added per key, blockers concatenated); merge previews all holders first and refuses with `MergeNotAllowedException(BLOCKED)` (409 `MERGE_NOT_ALLOWED`, reason `BLOCKED`, as the users-api text already said) before any holder merges, then merges each and sums `moved`/`removed`. Before, a blocked merge got 409 `MERGE_BLOCKED` from EMS; a holder that refuses between preview and merge still gets that. `PrimaryEmailService` tells every holder (best effort, WARN as before). 502 message no longer says "Event data". Config `batbern.contracts.user-references.implementers: ${EVENT_MANAGEMENT_SERVICE_URL...},${PARTNER_COORDINATION_SERVICE_URL...}`; `event-management-service.base-url` removed (no other user); `docker-compose.yml` passes the PCS URL to CUMS. Production needs no infra change: `http://partner-coordination:8080` is the Service Connect name, ingress 8080 from the VPC CIDR.
+- **CUMS tests.** EMS-named client pair, `EventManagementContract` and its contract test deleted; `HttpUserReferenceContractTest` (9) and `UserReferenceHolders` helper. `UserMergeIntegrationTest` and `ProfileMergeRequestIntegrationTest` lost their `@MockitoBean` (ratchet `be-mock-s2s-client` -2, baseline updated) and answer two holders at the wire; new test: a holder blocker refuses before any merge; holder down -> 502, source stays. `AccountMergeIntegrationTest`, `PrimaryEmailIntegrationTest` on the new caller. Provider example rows for the three operations. Archunit store `e75ed5e2-...` now empty (0 bytes).
+- **EMS.** `InternalUserMergeController` paths -> `/internal/user-references/*`, logic unchanged; `InternalUserMergeIntegrationTest` follows. Provider test: the user-reference operations run against the cums spec with and without a forwarded JWT, requests validated against the spec first; the 409 test moved to the contract section.
+- **PCS.** New `usermerge/UserReferenceService` (JDBC, three columns, no conflicts or blockers, no log, idempotent) and `InternalUserReferenceController` (primary-email answers `updated: 0`; `/internal/**` is exempt in `EndpointAuthorizationGuardTest` like the RSVP endpoint). `UserReferenceIntegrationTest` (4: preview, merge + idempotent rerun, same-username 400, primary email). Provider test against the cums spec, with and without JWT.
+- **users-api.** Merge and preview texts name all holders; merge documents its 502 `MERGE_EVENT_SERVICE_FAILED` (always answered, never declared). Types regenerated.
+- **Frontend.** `merge.tables.{topic_suggestions,partner_notes,partner_meetings}` in 10 locales (three keys: the ticket's fourth, `partner_contacts`, no longer exists). `MergeProfileDialog.test.tsx` checks a PCS key's label.
+- **Docs.** `module-map.md` (contract paths, CUMS clients 0), `06-backend-architecture.md` (internal table, contracts paragraph, merge section and sequence diagram), `06b` (order, PCS moves, primary email, 409 code, production count), `01-system-overview.md` diagram label, ADR-016 cost line (merge 502, primary email WARN), changelog, doc-drift mappings for EMS and PCS `usermerge` and CUMS `UserMergeService`. Not touched: `docs/prd/epic-17-architecture-hardening.md`.
+- **Verification (2026-11-11).** shared-kernel 652, CUMS 981, EMS 2774, PCS 287 tests, 0 failures; checkstyle main+test of the four modules; `lint:api-internal`, `lint:api`, `check:i18n-keys`, `check:s2s-client-urls`, `check:api-paths`, ratchet (after `--update`, 2 lines fell), `type-check`, UserManagement Vitest (16 files, 134) green. `check:api-types` run after the commit.
+- **Local dev, 21:38 UTC.** CUMS, EMS, PCS restarted on the new build; old EMS path answers 404. Two login-less profiles `mergeseven.test` / `.test.2` with an upcoming BATbern61 registration, a partner note and a topic suggestion under the source (SQL). Preview through the gateway as `batbern.organizer`: `registrations.attendee_username` 1, `topic_suggestions.suggested_by` 1, `partner_notes.author_username` 1, canMerge. Merge: same three moved, source deleted, all three rows on the target, `user_merge_log` row ORGANIZER. PCS stopped: merge of a third profile -> 502, source kept (the preview already failed); PCS restarted, same merge succeeded. Primary email: `POST /internal/user-references/primary-email` on EMS moved the BATbern61 registration at once (`updated` 1), PCS answered 0. Make-primary itself not run on local dev: it needs a logged-in profile and would move a login in the shared Cognito pool; covered by `PrimaryEmailIntegrationTest`. Test rows removed afterwards.
+

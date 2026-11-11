@@ -88,14 +88,24 @@ public final class ContractCalls {
      * and encoded.
      */
     public void post(String path, Object body, Object... uriVariables) {
+        postForAnswers(path, body, Void.class, uriVariables);
+    }
+
+    /**
+     * As {@link #post(String, Object, Object...)}, and returns every implementer's answer body in
+     * implementer order (a merge that reports what each implementer moved, for instance).
+     */
+    public <T> List<T> postForAnswers(String path, Object body, Class<T> type, Object... uriVariables) {
+        List<T> answers = new ArrayList<>();
         for (String implementer : implementers) {
             URI uri = UriComponentsBuilder.fromUriString(implementer + path).encode().buildAndExpand(uriVariables)
                     .toUri();
             HttpHeaders headers = S2sHeaders.forCurrentUser();
             headers.setContentType(MediaType.APPLICATION_JSON);
-            call(implementer, HttpMethod.POST, () ->
-                    restTemplate.exchange(uri, HttpMethod.POST, new HttpEntity<>(body, headers), Void.class));
+            answers.add(call(implementer, HttpMethod.POST, () ->
+                    restTemplate.exchange(uri, HttpMethod.POST, new HttpEntity<>(body, headers), type).getBody()));
         }
+        return answers;
     }
 
     /** {@code GET}s {@code path} at every implementer; the answers in implementer order. */

@@ -198,14 +198,14 @@ the VPC through Service Connect. Callers forward the user's JWT when there is on
 | `POST /internal/mails` | Event Management | PCS records its partner meeting invites and cancellations in "What went out" (Story 16.9) |
 | `POST /internal/users/get-or-create` | Company-User Management | EMS anonymous registration and speaker provisioning (ADR-005) |
 | `GET /internal/email-owners?email=` | Company-User Management | EMS by-email deregistration across a person's profiles (#1183) |
-| `GET /internal/users/merge-preview`, `POST /internal/users/merge`, `POST /internal/users/primary-email` | Event Management | CUMS profile merge (#1183 C/D, below) and primary-address change (#1244) |
+| `GET /internal/user-references/preview`, `POST /internal/user-references/merge`, `POST /internal/user-references/primary-email` | Event Management and Partner Coordination (implement the CUMS contract) | CUMS profile merge (#1183 C/D, below) and primary-address change (#1244); Epic 17 entry 7b |
 | `POST /internal/mail-center-requests`, `POST /internal/mail-center-requests/{requestId}/decision` | Event Management (implements the CUMS contract) | CUMS opens and closes the Mail Center conversation of a merge or logo request (#1237, #1246; Epic 17 entry 7, below) |
 
-The Mail Center request operations are a **contract CUMS owns** (ADR-016 decision 4): specified in
-`cums-internal.openapi.yml`, called through shared-kernel `ContractCalls` at every implementer listed
-in `batbern.contracts.mail-center-requests.implementers` (today EMS); CUMS names no EMS class. The
-other CUMS→EMS calls (`users/merge*`, `primary-email`) still name EMS until entry 7b moves them into
-the user-reference contract; no new one is added.
+The Mail Center request and user-reference operations are **contracts CUMS owns** (ADR-016
+decisions 4 and 5): specified in `cums-internal.openapi.yml`, called through shared-kernel
+`ContractCalls` at every implementer listed in `batbern.contracts.mail-center-requests.implementers`
+(EMS) and `batbern.contracts.user-references.implementers` (EMS, PCS); CUMS names no downstream class.
+These two contracts are CUMS's only calls to a downstream service.
 
 Every operation above is specified in `docs/api/internal/` (`cums-`, `ems-`, `pcs-internal.openapi.yml`,
 Story 17.0b2) and contract-tested on both sides; the public tooling does not read that folder.
@@ -718,7 +718,9 @@ amended 2026-11-11: no polling): `POST /internal/mail-center-requests` (opened) 
 
 Two profiles of one person (an imported or guest profile without login, and the person's login
 profile) are merged: the source is folded into the target and deleted. CUMS decides and
-orchestrates; EMS moves its own rows through an internal endpoint and keeps the undo log.
+orchestrates; every service that stores usernames (a holder: EMS, PCS) moves its own rows through
+the user-reference contract CUMS owns (Epic 17 entry 7b, `UserReferenceContract`), and EMS keeps the
+undo log.
 
 **Merge requests (#1237).** When the person cannot read the earlier profile's mailbox, CUMS stores a
 `profile_merge_requests` row and EMS opens a Mail Center conversation for it through the Mail Center
@@ -738,10 +740,11 @@ sequenceDiagram
     participant EMS as EMS InternalUserMergeController
     participant EUS as EMS UserMergeService
     participant LOG as user_merge_log V144
+    participant PCS as PCS UserReferenceService
 
     alt organizer
         Org->>UMC: GET /users/{target}/merge-preview?source=
-        UMC->>UMS: preview: profile checks + EMS GET /internal/users/merge-preview
+        UMC->>UMS: preview: profile checks + GET /internal/user-references/preview at every holder, summed
         Org->>UMC: POST /users/{target}/merge - ORGANIZER
         UMC->>UMS: merge, trigger ORGANIZER
     else self-claim
@@ -752,19 +755,29 @@ sequenceDiagram
         PCL->>UMS: merge, trigger SELF_CLAIM
     end
     UMS->>UMS: lock both profiles, refuse SAME_PROFILE, SOURCE_HAS_LOGIN, BOTH_HAVE_LOGIN
-    UMS->>EMS: POST /internal/users/merge with a snapshot of the source profile, no JWT
+    UMS->>EMS: GET /internal/user-references/preview (every holder; a blocker refuses the merge)
+    UMS->>PCS: GET /internal/user-references/preview
+    UMS->>EMS: POST /internal/user-references/merge with a snapshot of the source profile
     EMS->>EUS: move rows from source to target username
     EUS->>EUS: same key at the target: keep the better registration, remove the other row
     EUS->>LOG: moved keys, removed rows in full, source snapshot
     EUS-->>UMS: moved and removed counts, own commit
+    UMS->>PCS: POST /internal/user-references/merge
+    PCS-->>UMS: topic_suggestions, partner_notes, partner_meetings moved, own commit
     UMS->>UMS: roles, activity, watch pairings to the target, delete the source
     UMS->>UMS: source addresses become verified additional emails of the target
 ```
 
-- **Refused with 409** in EMS when both lead a different talk at the same event; an organizer has to
-  resolve that first.
-- **Order makes retries safe.** EMS commits first and is idempotent. If the CUMS step fails, the
-  source still exists and owns nothing in EMS; running the merge again finishes it.
+- **Refused with 409** (`MERGE_NOT_ALLOWED`, reason `BLOCKED`) when a holder's preview names a
+  blocker (EMS: both lead a different talk at the same event), before any holder moves a row; an
+  organizer has to resolve that first. A holder that still refuses at merge time answers 409
+  (`MERGE_BLOCKED`).
+- **Order makes retries safe.** Holders merge in configured order, each in its own transaction and
+  idempotently. If a later holder or the CUMS step fails (502), the source still exists, earlier
+  holders have moved their rows, and running the merge again finishes it.
+- **What PCS moves** (`UserReferenceService.COLUMNS`): `topic_suggestions.suggested_by`,
+  `partner_notes.author_username`, `partner_meetings.created_by`. None is part of a unique key, so
+  PCS never conflicts or blocks; it writes no log of its own.
 - **What EMS moves** (`UserMergeService.MOVES`): registrations, session_users, speaker_arrivals,
   session_qna_notification, live_timing_presence, session_proposals, organizer_thanks,
   notifications, session_qna_post, session_content_history, newsletter_subscribers. Audit columns

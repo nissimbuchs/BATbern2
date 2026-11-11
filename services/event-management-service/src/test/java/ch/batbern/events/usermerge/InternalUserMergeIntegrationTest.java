@@ -138,12 +138,12 @@ class InternalUserMergeIntegrationTest extends AbstractIntegrationTest {
         insertSessionUser(insertSession(eventA, "talk-one"), SOURCE, "primary_speaker");
         insertSessionUser(insertSession(eventA, "talk-two"), TARGET, "primary_speaker");
 
-        String preview = mockMvc.perform(get("/internal/users/merge-preview")
+        String preview = mockMvc.perform(get("/internal/user-references/preview")
                         .param("source", SOURCE).param("target", TARGET))
                 .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
         assertThat(objectMapper.readTree(preview).path("blockers").toString()).contains("BATbern9801");
 
-        mockMvc.perform(post("/internal/users/merge").contentType(MediaType.APPLICATION_JSON)
+        mockMvc.perform(post("/internal/user-references/merge").contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request())))
                 .andExpect(status().isConflict());
         assertThat(count("session_users", "username", SOURCE)).isEqualTo(1);
@@ -156,7 +156,7 @@ class InternalUserMergeIntegrationTest extends AbstractIntegrationTest {
         insertRegistration(eventA, TARGET, "confirmed");
         insertRegistration(eventB, SOURCE, "attended");
 
-        String body = mockMvc.perform(get("/internal/users/merge-preview")
+        String body = mockMvc.perform(get("/internal/user-references/preview")
                         .param("source", SOURCE).param("target", TARGET))
                 .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
 
@@ -184,13 +184,13 @@ class InternalUserMergeIntegrationTest extends AbstractIntegrationTest {
     void merge_sameUser_isRefused() throws Exception {
         Map<String, Object> body = request();
         body.put("targetUsername", SOURCE);
-        mockMvc.perform(post("/internal/users/merge").contentType(MediaType.APPLICATION_JSON)
+        mockMvc.perform(post("/internal/user-references/merge").contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(body)))
                 .andExpect(status().isBadRequest());
     }
 
     private JsonNode merge() throws Exception {
-        String body = mockMvc.perform(post("/internal/users/merge").contentType(MediaType.APPLICATION_JSON)
+        String body = mockMvc.perform(post("/internal/user-references/merge").contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request())))
                 .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
         return objectMapper.readTree(body);
@@ -220,7 +220,7 @@ class InternalUserMergeIntegrationTest extends AbstractIntegrationTest {
                 + "'organizer1', 'evening', 'created', NOW(), NOW())", pastEvent);
         UUID past = insertRegistration(pastEvent, SOURCE, "attended");
 
-        mockMvc.perform(post("/internal/users/primary-email").contentType(MediaType.APPLICATION_JSON)
+        mockMvc.perform(post("/internal/user-references/primary-email").contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(Map.of("username", SOURCE,
                                 "oldEmail", "Merge.Source@example.com", "newEmail", "private@example.com"))))
                 .andExpect(status().isOk())

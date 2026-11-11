@@ -22,6 +22,9 @@ info:
     `batbern.contracts.<name>.implementers` serves it (shared-kernel `ContractCalls`). CUMS names
     no implementing service in code. Epic 17 entry 7: the Mail Center request contract
     (`/internal/mail-center-requests`, `mail-center-requests`), implemented by event-management.
+    Epic 17 entry 7b: the user-reference contract (`/internal/user-references/*`,
+    `user-references`), implemented by every service that stores usernames (event-management,
+    partner-coordination).
 
     Epic 17 entry 6 (17.6 part A) moved the three machine-only writes of users-api here (provision,
     profile patch, invitation credentials) and added the single company read. Paths are full paths
@@ -346,6 +349,177 @@ paths:
                 error: Bad Request
                 errorCode: VALIDATION_ERROR
                 message: decidedBy must not be blank
+
+  /internal/user-references/preview:
+    get:
+      tags: [contract]
+      operationId: previewUserReferenceMerge
+      summary: 'Contract: what a profile merge would move at this holder (#1183)'
+      description: |
+        User-reference contract (Epic 17 entry 7b, ADR-016 decision 5), owned by CUMS and served by
+        each holder in `batbern.contracts.user-references.implementers` (today event-management and
+        partner-coordination). A holder is a service that stores usernames. CUMS sums the answers of
+        all holders into the public merge preview (`users-api` `UserMergePreview`): `moves` and
+        `conflicts` keyed `table.column` and by table, `blockers` from any holder. Changes nothing.
+        Before a merge CUMS asks every holder; a blocker at any holder refuses the merge before any
+        holder moves a row.
+      parameters:
+        - name: source
+          in: query
+          required: true
+          description: Username of the profile that disappears.
+          schema:
+            type: string
+          example: anna.meier.2
+        - name: target
+          in: query
+          required: true
+          description: Username of the profile that stays.
+          schema:
+            type: string
+          example: anna.meier
+      responses:
+        '200':
+          description: What this holder would move
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserReferencePreview'
+              examples:
+                clean:
+                  value:
+                    moves: {registrations.attendee_username: 2, session_users.username: 1}
+                    conflicts: {}
+                    blockers: []
+                blocked:
+                  value:
+                    moves: {registrations.attendee_username: 1, session_users.username: 1}
+                    conflicts: {registrations: 1}
+                    blockers: [BATbern58]
+                nothingHeld:
+                  value:
+                    moves: {}
+                    conflicts: {}
+                    blockers: []
+        '400':
+          description: |
+            Source and target are the same username (`UserReferenceError`), or `source` / `target`
+            missing (the shared `ErrorResponse`)
+          content:
+            application/json:
+              schema:
+                # anyOf, not oneOf: a UserReferenceError body ({error, message}) is also a valid
+                # ErrorResponse (no required fields), so oneOf would reject every UserReferenceError.
+                anyOf:
+                  - $ref: '#/components/schemas/UserReferenceError'
+                  - $ref: '../_shared.openapi.yml#/components/schemas/ErrorResponse'
+              example:
+                error: INVALID_MERGE
+                message: Source and target must be two different usernames
+
+  /internal/user-references/merge:
+    post:
+      tags: [contract]
+      operationId: mergeUserReferences
+      summary: 'Contract: move every row of one username to another at this holder (#1183)'
+      description: |
+        User-reference contract (Epic 17 entry 7b). CUMS calls every holder in configured order,
+        after every holder's preview came back without a blocker, and deletes the source profile
+        only when all holders answered. Each holder rewrites the source username to the target in
+        one transaction of its own. Idempotent: a second call finds nothing left to move, so a merge
+        that failed at a later holder is completed by running it again. event-management keeps the
+        merge log (`user_merge_log`, with `sourceProfile` for an undo); other holders keep none.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserReferenceMerge'
+            example:
+              sourceUsername: anna.meier.2
+              targetUsername: anna.meier
+              performedBy: organizer.alice
+              trigger: ORGANIZER
+              sourceProfile: {email: anna.private@example.com, firstName: Anna, lastName: Meier}
+      responses:
+        '200':
+          description: What this holder moved and removed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserReferenceMergeResult'
+              examples:
+                merged:
+                  value:
+                    moved: {registrations.attendee_username: 2, session_users.username: 1}
+                    removed: {registrations.attendee_username: 1}
+                nothingHeld:
+                  value:
+                    moved: {}
+                    removed: {}
+        '400':
+          description: Invalid request (validation, or source equals target)
+          content:
+            application/json:
+              schema:
+                # anyOf, not oneOf: see the preview's 400.
+                anyOf:
+                  - $ref: '#/components/schemas/UserReferenceError'
+                  - $ref: '../_shared.openapi.yml#/components/schemas/ErrorResponse'
+        '409':
+          description: The holder refuses the merge (both profiles lead a different talk at one event); nothing was moved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserReferenceError'
+              example:
+                error: MERGE_BLOCKED
+                message: 'Both profiles lead a different talk at BATbern58'
+
+  /internal/user-references/primary-email:
+    post:
+      tags: [contract]
+      operationId: userPrimaryEmailChanged
+      summary: "Contract: a person's primary address changed (#1244)"
+      description: |
+        User-reference contract (Epic 17 entry 7b). CUMS calls every holder after the new primary
+        address is stored (best effort: a failure is logged as a WARN and does not undo the change).
+        A holder moves what it keeps under the old address and should follow it (event-management:
+        upcoming registrations). A holder that keeps nothing by address answers `updated: 0`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserPrimaryEmailChange'
+            example:
+              username: anna.meier
+              oldEmail: anna.old@example.com
+              newEmail: anna.meier@example.com
+      responses:
+        '200':
+          description: Number of rows this holder moved to the new address
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [updated]
+                properties:
+                  updated:
+                    type: integer
+                    minimum: 0
+                additionalProperties: false
+              examples:
+                twoUpdated:
+                  value: {updated: 2}
+                nothingHeld:
+                  value: {updated: 0}
+        '400':
+          description: Invalid request body
+          content:
+            application/json:
+              schema:
+                $ref: '../_shared.openapi.yml#/components/schemas/ErrorResponse'
 
   /internal/companies:
     get:
@@ -742,6 +916,92 @@ paths:
 
 components:
   schemas:
+    UserReferenceCounts:
+      type: object
+      description: Row count per table (`moves`, `moved` and `removed` keyed `table.column`, `conflicts` by table).
+      additionalProperties:
+        type: integer
+        minimum: 0
+
+    UserReferencePreview:
+      type: object
+      required: [moves, conflicts, blockers]
+      properties:
+        moves:
+          $ref: '#/components/schemas/UserReferenceCounts'
+        conflicts:
+          $ref: '#/components/schemas/UserReferenceCounts'
+        blockers:
+          type: array
+          description: Why this holder refuses the merge (event-management - event codes at which both lead a different talk).
+          items:
+            type: string
+      additionalProperties: false
+
+    UserReferenceMergeResult:
+      type: object
+      required: [moved, removed]
+      properties:
+        moved:
+          $ref: '#/components/schemas/UserReferenceCounts'
+        removed:
+          $ref: '#/components/schemas/UserReferenceCounts'
+      additionalProperties: false
+
+    UserReferenceError:
+      type: object
+      description: Error body of the merge operations (holder-local handler, not the shared ErrorResponse).
+      required: [error, message]
+      properties:
+        error:
+          type: string
+          enum: [MERGE_BLOCKED, INVALID_MERGE]
+        message:
+          type: string
+      additionalProperties: false
+
+    UserReferenceMerge:
+      type: object
+      required: [sourceUsername, targetUsername, performedBy, trigger]
+      properties:
+        sourceUsername:
+          type: string
+          minLength: 1
+          maxLength: 100
+        targetUsername:
+          type: string
+          minLength: 1
+          maxLength: 100
+        performedBy:
+          type: string
+          minLength: 1
+          maxLength: 100
+        trigger:
+          type: string
+          enum: [ORGANIZER, SELF_CLAIM]
+        sourceProfile:
+          nullable: true
+          type: object
+          description: Snapshot of the source profile, for a holder that logs the merge (event-management).
+          additionalProperties: true
+
+    UserPrimaryEmailChange:
+      type: object
+      required: [username, oldEmail, newEmail]
+      properties:
+        username:
+          type: string
+          minLength: 1
+          maxLength: 100
+        oldEmail:
+          type: string
+          minLength: 1
+          maxLength: 255
+        newEmail:
+          type: string
+          minLength: 1
+          maxLength: 255
+
     MailCenterRequestOpened:
       type: object
       required: [kind, requestId, requesterEmail, subject]

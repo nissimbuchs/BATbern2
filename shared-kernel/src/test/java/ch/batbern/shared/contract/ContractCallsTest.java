@@ -114,6 +114,20 @@ class ContractCallsTest {
     }
 
     @Test
+    void should_returnEveryAnswer_ofAPost_inImplementerOrder() {
+        server.expect(requestTo(A + "/internal/things")).andExpect(method(HttpMethod.POST))
+                .andExpect(content().json("{\"by\":\"x\"}"))
+                .andRespond(withSuccess("{\"moved\":1}", MediaType.APPLICATION_JSON));
+        server.expect(requestTo(B + "/internal/things")).andExpect(method(HttpMethod.POST))
+                .andRespond(withSuccess("{\"moved\":2}", MediaType.APPLICATION_JSON));
+
+        List<String> answers = calls(A, B).postForAnswers("/internal/things", Map.of("by", "x"), String.class);
+
+        assertThat(answers).containsExactly("{\"moved\":1}", "{\"moved\":2}");
+        server.verify();
+    }
+
+    @Test
     void should_translate409_toRefusal_withTheImplementersMessage_andStop() {
         server.expect(requestTo(A + "/internal/things")).andRespond(withStatus(HttpStatus.CONFLICT)
                 .contentType(MediaType.APPLICATION_JSON).body("{\"message\":\"blocked by talk\"}"));

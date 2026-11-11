@@ -42,6 +42,11 @@ Only items that are not live yet. Everything else is listed under its release be
 
 ### Unreleased — after BATbern60
 
+**Improvement — Profile merge reaches partner data (Epic 17, entry 7b)**:
+- ✅ Merging two profiles now also moves the partner topics a person suggested, the partner notes they wrote and the partner meetings they created to the remaining profile. Before, those kept the name of the deleted profile. The merge preview lists them (topic suggestions, partner notes, partner meetings).
+- ✅ A merge that one service refuses (both profiles lead a different talk at one event) is refused before anything moves. When a service does not answer, the merge fails as before (the earlier profile stays) and can simply be repeated.
+- ⚠️ API: `POST /api/v1/users/{username}/merge` refuses a blocked merge with 409 `MERGE_NOT_ALLOWED` (reason `BLOCKED`) and documents its 502 `MERGE_EVENT_SERVICE_FAILED` (it always answered it).
+
 **Improvement — Merge and logo requests in the Mail Center (Epic 17, entry 7)**:
 - ✅ No visible change for people sending a request: it still shows in the Mail Center at once, and sending fails with "could not be passed to the organizers" (nothing stored, send again) when the Mail Center is unavailable.
 - ✅ A decision is now passed to the Mail Center only once it is saved. If the Mail Center does not take it, the decision stands, the operators see an error, and the conversation stays open until an organizer sets it to Done.

@@ -363,7 +363,10 @@
       "notifications": "Notifications",
       "session_qna_post": "Q&A posts",
       "session_content_history": "Content submissions",
-      "newsletter_subscribers": "Newsletter subscriptions"
+      "newsletter_subscribers": "Newsletter subscriptions",
+      "topic_suggestions": "Propostas da temas",
+      "partner_notes": "Notizias da partenaris",
+      "partner_meetings": "Sentupadas da partenaris"
     }
   },
   "claim": {
