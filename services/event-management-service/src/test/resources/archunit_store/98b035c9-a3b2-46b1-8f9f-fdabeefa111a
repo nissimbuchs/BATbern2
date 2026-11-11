@@ -1,4 +1,2 @@
-Class <ch.batbern.events.client.PartnerApiClient> is a client toward partner-coordination, which is downstream of EMS (ADR-016)
 Class <ch.batbern.events.client.PartnerMeetingRsvpClient> is a client toward partner-coordination, which is downstream of EMS (ADR-016)
-Class <ch.batbern.events.client.impl.PartnerApiClientImpl> is a client toward partner-coordination, which is downstream of EMS (ADR-016)
 Class <ch.batbern.events.client.impl.PartnerMeetingRsvpClientImpl> is a client toward partner-coordination, which is downstream of EMS (ADR-016)

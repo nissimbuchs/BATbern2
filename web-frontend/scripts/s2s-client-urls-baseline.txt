@@ -4,5 +4,3 @@
 # Existing call sites only. Every line has exactly one owner group in web-frontend/scripts/s2s-client-urls-owners.txt:
 # the story that moves or deletes the call, or an accepted exception with its reason.
 # Format: <file> TAB <URL literal>, sorted, one line per occurrence.
-services/event-management-service/src/main/java/ch/batbern/events/client/impl/PartnerApiClientImpl.java	/api/v1/partners/topics
-services/event-management-service/src/main/java/ch/batbern/events/client/impl/PartnerApiClientImpl.java	/api/v1/partners?include=company&size=200

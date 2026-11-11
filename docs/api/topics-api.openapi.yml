@@ -38,6 +38,8 @@ tags:
     description: Blob topic selector cluster classification (Story 10.4)
   - name: Topic Session Data
     description: Blob topic selector canvas bootstrap data (Story 10.4)
+  - name: Topic Classifications
+    description: Batch cluster classification of topic titles for the blob topic selector canvas
 
 paths:
   /topics:
@@ -474,6 +476,73 @@ paths:
         '403':
           $ref: '#/components/responses/Forbidden'
 
+  /topics/classifications:
+    post:
+      tags:
+        - Topic Classifications
+      summary: Classify a batch of topic titles into BATbern clusters
+      description: |
+        Classify each title into a BATbern cluster, with the similarity score and the related past
+        event numbers, exactly as `POST /events/{eventCode}/topic-similarity` does for one topic.
+        The blob topic selector canvas sends the titles of the partner topics it loads from
+        partner-coordination (`GET /partners/topics`), so it can place them by cluster (Epic 17,
+        entry 8: EMS no longer calls partner-coordination for the canvas). Nothing is stored.
+
+        `classifications` holds one entry per title, in request order (duplicates included).
+        At most 500 titles per call: local dev holds 38 topic suggestions (2026-11-11), the canvas
+        sends each unique title once and splits a longer list into several calls.
+
+        **Authorization**: ORGANIZER role required; any other role gets 403.
+      operationId: classifyTopics
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TopicClassificationRequest'
+            examples:
+              default:
+                value:
+                  topics:
+                    - AI in Operations
+                    - Zero Trust
+      responses:
+        '200':
+          description: One classification per title, in request order
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TopicClassificationResponse'
+              examples:
+                default:
+                  summary: computed by the local service for the request example
+                  value:
+                    classifications:
+                      - topic: AI in Operations
+                        cluster: AI_ML
+                        similarityScore: 0.85
+                        relatedPastEventNumbers:
+                          - 40
+                          - 44
+                          - 49
+                          - 56
+                          - 58
+                      - topic: Zero Trust
+                        cluster: SECURITY
+                        similarityScore: 0.85
+                        relatedPastEventNumbers:
+                          - 16
+                          - 27
+                          - 38
+                          - 48
+                          - 57
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
   /events/{eventCode}/topics:
     post:
       tags:
@@ -584,9 +653,13 @@ paths:
         - Topic Session Data
       summary: Bootstrap data for the blob topic selector canvas
       description: |
-        Return all data needed to bootstrap the blob topic selector canvas in one call:
-        partner topics (green blobs), past events (red stars), organizer backlog (ghost blobs),
-        and AI-generated trending topics (gold shimmer ghosts).
+        Return the EMS data the blob topic selector canvas starts from: past events (red stars),
+        organizer backlog (ghost blobs) and AI-generated trending topics (gold shimmer ghosts).
+        The partner topics (green blobs) are not part of it: the canvas loads them from
+        partner-coordination itself (`GET /partners/topics`, logos from
+        `GET /partners?include=company`) and classifies their titles with
+        `POST /topics/classifications` (Epic 17, entry 8; ADR-016: EMS does not call
+        partner-coordination).
 
         **Story 10.4** (AC29–31). Each source degrades gracefully to an empty list on failure.
         The eventCode path segment is contextual only.
@@ -612,29 +685,6 @@ paths:
                 default:
                   summary: captured from the local anonymized database
                   value:
-                    partnerTopics:
-                      - companyName: aity
-                        logoUrl: https://cdn.batbern.ch/logos/2025/companies/aity/logo-8bb778ae-b829-4d85-be30-de4f36c2f44a.svg
-                        topics:
-                          - title: Cloud-Readiness
-                            cluster: CLOUD_INFRA
-                            voteCount: 0
-                            createdAt: "2025-11-07T13:00:00Z"
-                          - title: RZ-Strategie
-                            cluster: BUSINESS_OTHER
-                            voteCount: 0
-                            createdAt: "2025-11-07T13:00:00Z"
-                      - companyName: sbb
-                        logoUrl: https://cdn.batbern.ch/logos/2026/companies/sbb/logo-cd57008b-9bc9-413a-af56-1286708f717b.svg
-                        topics:
-                          - title: "Security: Zerotrust"
-                            cluster: SECURITY
-                            voteCount: 0
-                            createdAt: "2025-11-07T13:00:00Z"
-                          - title: Impact AI für SW Engineers
-                            cluster: AI_ML
-                            voteCount: 0
-                            createdAt: "2025-11-07T13:00:00Z"
                     pastEvents:
                       - eventNumber: 1
                         topicName: GUI Frameworks
@@ -693,20 +743,71 @@ components:
           items:
             type: integer
           example: [40, 44, 49, 56, 58]
+    TopicClassificationRequest:
+      type: object
+      description: Topic titles to classify (blob topic selector canvas, partner topics)
+      required:
+        - topics
+      properties:
+        topics:
+          type: array
+          minItems: 1
+          maxItems: 500
+          description: |
+            Titles to classify, at most 500 (local dev holds 38 topic suggestions, 2026-11-11). A
+            title must contain a non-blank character; a blank title answers 400.
+          items:
+            type: string
+            minLength: 1
+            maxLength: 255
+            description: Free-form topic title (partner topic titles are at most 255 characters)
+          example: ['AI in Operations', 'Zero Trust']
+    TopicClassificationResponse:
+      type: object
+      description: One classification per requested title, in request order
+      required:
+        - classifications
+      properties:
+        classifications:
+          type: array
+          items:
+            $ref: '#/components/schemas/TopicClassification'
+    TopicClassification:
+      type: object
+      description: Cluster affinity of one title, as `TopicSimilarityResponse` gives it for one topic
+      required:
+        - topic
+        - cluster
+        - similarityScore
+        - relatedPastEventNumbers
+      properties:
+        topic:
+          type: string
+          description: The title as sent
+          example: 'AI in Operations'
+        cluster:
+          type: string
+          description: BATbern cluster name (e.g. AI_ML, SECURITY, CLOUD_INFRA, BUSINESS_OTHER)
+          example: 'AI_ML'
+        similarityScore:
+          type: number
+          format: double
+          description: 0.85 for a keyword match, 0.50 for BUSINESS_OTHER
+          example: 0.85
+        relatedPastEventNumbers:
+          type: array
+          description: BATbern event numbers in the same cluster (empty for BUSINESS_OTHER)
+          items:
+            type: integer
+          example: [40, 44, 49, 56, 58]
     TopicSessionDataResponse:
       type: object
-      description: Aggregated bootstrap data for the blob topic selector canvas (Story 10.4 AC29–31)
+      description: EMS bootstrap data for the blob topic selector canvas (Story 10.4 AC29–31); partner topics come from partner-coordination
       required:
-        - partnerTopics
         - pastEvents
         - organizerBacklog
         - trendingTopics
       properties:
-        partnerTopics:
-          type: array
-          description: Partner topics grouped by company (green blobs)
-          items:
-            $ref: '#/components/schemas/PartnerTopicGroup'
         pastEvents:
           type: array
           description: Past BATbern events with cluster classification (red star blobs)
@@ -722,46 +823,6 @@ components:
           description: AI-generated trending IT topics (gold shimmer ghost blobs)
           items:
             type: string
-    PartnerTopicGroup:
-      type: object
-      description: Partner topic suggestions grouped by company
-      required:
-        - companyName
-        - topics
-        - logoUrl
-      properties:
-        companyName:
-          type: string
-          description: Partner company name
-        logoUrl:
-          nullable: true
-          type: string
-          description: Company logo URL (may be null when not available)
-        topics:
-          type: array
-          items:
-            $ref: '#/components/schemas/TopicEntry'
-    TopicEntry:
-      type: object
-      description: A single partner topic suggestion enriched with cluster, votes, and date
-      required:
-        - title
-        - cluster
-        - voteCount
-        - createdAt
-      properties:
-        title:
-          type: string
-        cluster:
-          type: string
-          description: BatbernCluster name the topic was classified into
-        voteCount:
-          type: integer
-          description: Number of partner votes cast on this topic suggestion
-        createdAt:
-          type: string
-          format: date-time
-          description: When the topic was first submitted (recency proxy for attraction strength)
     BacklogItem:
       type: object
       description: An available topic from the organizer's backlog (ghost blob)

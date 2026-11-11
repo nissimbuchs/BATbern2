@@ -71,14 +71,16 @@ class CumsContractHarnessTest {
     @Test
     @DisplayName("a per-test ContractServer routed with onlyFor leaves CUMS calls on the harness")
     void should_keepCums_when_testRoutesOnlyItsOwnProvider() {
-        try (ContractServer pcs = ContractServer.bindTo(restTemplate, "docs/api/partners-api.openapi.yml")
-                .onlyFor(uri -> !uri.toString().startsWith(CUMS)).ignoringMissingAuthorization()) {
-            pcs.expect(GET, "/api/v1/partners/topics").respondWithExample();
+        // Any provider spec other than CUMS will do; ems-internal needs no JWT, so no
+        // missing-authorization exemption (Epic 17, entry 8 removed the last partners-api binding).
+        try (ContractServer other = ContractServer.bindTo(restTemplate, "docs/api/internal/ems-internal.openapi.yml")
+                .onlyFor(uri -> !uri.toString().startsWith(CUMS))) {
+            other.expect(GET, "/internal/events/{eventCode}/schedule").respondWithExample("agendaPublished");
 
-            assertThat(restTemplate.getForObject("http://pcs.test/api/v1/partners/topics", String.class))
-                    .isNotBlank();
+            assertThat(restTemplate.getForObject("http://ems.test/internal/events/BATbern142/schedule", String.class))
+                    .contains("BATbern142");
             assertThat(client.getUserByUsername("anna.meier").getEmail()).isEqualTo("anna.meier@test.com");
-            pcs.verify();
+            other.verify();
         }
     }
 }

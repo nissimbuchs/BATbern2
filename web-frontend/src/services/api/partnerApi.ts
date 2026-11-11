@@ -126,6 +126,25 @@ export const listPublicPartners = async (): Promise<PartnerListResponse> => {
   return response.data;
 };
 
+/**
+ * Company logos of all partners, keyed by company name (the blob topic canvas puts them on the
+ * partner topics; Epic 17, entry 8). One page of 200, as EMS read it before: a company without a
+ * logo is left out. Errors are passed through; the caller decides how to degrade.
+ */
+export const listPartnerLogos = async (): Promise<Record<string, string>> => {
+  const response = await apiClient.get<PartnerListResponse>(PARTNER_API_PATH, {
+    params: { include: 'company', size: 200 },
+  });
+  const logos: Record<string, string> = {};
+  for (const partner of response.data.data) {
+    const logoUrl = partner.company?.logoUrl;
+    if (partner.companyName && logoUrl) {
+      logos[partner.companyName] = logoUrl;
+    }
+  }
+  return logos;
+};
+
 export type MyPartnerCompanyResponse = components['schemas']['MyPartnerCompanyResponse'];
 
 /**

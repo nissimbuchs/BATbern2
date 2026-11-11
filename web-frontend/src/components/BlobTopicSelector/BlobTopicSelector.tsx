@@ -1158,7 +1158,8 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
               ? 'rgba(144, 238, 144, 0.8)'
               : 'rgba(255, 215, 0, 0.8)';
         const fillOpacity = node.type === 'ghost-backlog' ? 0.25 : 0.3;
-        group.attr('class', 'node-group ghost-group');
+        // data-testid: ghost-backlog | ghost-partner | ghost-trend (Playwright, Epic 17 entry 8)
+        group.attr('class', 'node-group ghost-group').attr('data-testid', node.type);
         group
           .append('circle')
           .attr('class', 'blob-shape')
@@ -1200,6 +1201,7 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
           group
             .append('image')
             .attr('class', 'ghost-company-logo')
+            .attr('data-testid', 'ghost-company-logo')
             .attr('href', ghost.logoUrl)
             .attr('width', imgSize)
             .attr('height', imgSize)

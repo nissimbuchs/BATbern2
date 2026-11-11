@@ -1,101 +1,109 @@
 /**
  * blobTopicService Tests
  *
- * Coverage for:
- * - getSessionData: GET /events/{eventCode}/topic-session-data
+ * The real service and apiClient run against the MSW harness (Epic 17 test fidelity): every
+ * request is checked against the specs and the assertions read what went over the wire.
+ * getSessionData's composition of the partner topics is covered with the hook in
+ * `components/BlobTopicSelector/useTopicSessionData.test.tsx`.
+ *
+ * - classifyTopics: POST /topics/classifications, split above the spec's maxItems
  * - getSimilarity: POST /events/{eventCode}/topic-similarity with topic body
  * - acceptTopic: PATCH /events/{eventCode} with topicCode and topicSelectionNote
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
+import { HttpResponse } from 'msw';
+import { api } from '@/test/msw/api';
+import { blobTopicService, MAX_CLASSIFY_TITLES } from './blobTopicService';
 
-vi.mock('@/services/api/apiClient', () => ({
-  default: {
-    get: vi.fn(),
-    post: vi.fn(),
-    patch: vi.fn(),
-  },
-}));
+const problem = { error: 'X', message: 'boom', status: 500, timestamp: '2026-11-11T00:00:00Z' };
 
-import apiClient from '@/services/api/apiClient';
-import { blobTopicService } from './blobTopicService';
+describe('blobTopicService.classifyTopics', () => {
+  it('should POST the titles and return the classifications in order', async () => {
+    const result = await blobTopicService.classifyTopics(['AI in Operations', 'Zero Trust']);
 
-const mockGet = vi.mocked(apiClient.get);
-const mockPost = vi.mocked(apiClient.post);
-const mockPatch = vi.mocked(apiClient.patch);
-
-beforeEach(() => {
-  vi.clearAllMocks();
-});
-
-describe('blobTopicService.getSessionData', () => {
-  it('should GET /events/{eventCode}/topic-session-data and return data', async () => {
-    const sessionData = { topics: ['Cloud', 'AI'], currentTopic: 'Cloud' };
-    mockGet.mockResolvedValue({ data: sessionData });
-
-    const result = await blobTopicService.getSessionData('BAT142');
-
-    expect(mockGet).toHaveBeenCalledWith('/events/BAT142/topic-session-data');
-    expect(result).toEqual(sessionData);
+    expect(api.calls('classifyTopics')[0].body).toEqual({
+      topics: ['AI in Operations', 'Zero Trust'],
+    });
+    // The spec example answers for exactly this request.
+    expect(result.map((c) => [c.topic, c.cluster])).toEqual([
+      ['AI in Operations', 'AI_ML'],
+      ['Zero Trust', 'SECURITY'],
+    ]);
   });
 
-  it('should propagate errors from apiClient', async () => {
-    mockGet.mockRejectedValue(new Error('Not found'));
+  it('should split a list longer than maxItems into several calls and keep the order', async () => {
+    api.on('classifyTopics', ({ body }) => ({
+      classifications: (body?.topics ?? []).map((topic) => ({
+        topic,
+        cluster: 'BUSINESS_OTHER',
+        similarityScore: 0.5,
+        relatedPastEventNumbers: [],
+      })),
+    }));
+    const titles = Array.from({ length: MAX_CLASSIFY_TITLES + 1 }, (_, i) => `Topic ${i}`);
 
-    await expect(blobTopicService.getSessionData('BAT142')).rejects.toThrow('Not found');
+    const result = await blobTopicService.classifyTopics(titles);
+
+    const calls = api.calls('classifyTopics');
+    expect(calls.map((c) => c.body?.topics.length)).toEqual([MAX_CLASSIFY_TITLES, 1]);
+    expect(result.map((c) => c.topic)).toEqual(titles);
+  });
+
+  it('should propagate errors', async () => {
+    api.on('classifyTopics', () => HttpResponse.json(problem, { status: 500 }));
+
+    await expect(blobTopicService.classifyTopics(['Zero Trust'])).rejects.toBeTruthy();
   });
 });
 
 describe('blobTopicService.getSimilarity', () => {
   it('should POST /events/{eventCode}/topic-similarity with topic body and return data', async () => {
-    const similarity = { score: 0.85, relatedTopics: ['Machine Learning'] };
-    mockPost.mockResolvedValue({ data: similarity });
+    const result = await blobTopicService.getSimilarity('BATbern142', 'Artificial Intelligence');
 
-    const result = await blobTopicService.getSimilarity('BAT142', 'Artificial Intelligence');
-
-    expect(mockPost).toHaveBeenCalledWith('/events/BAT142/topic-similarity', {
-      topic: 'Artificial Intelligence',
-    });
-    expect(result).toEqual(similarity);
+    const [call] = api.calls('getTopicSimilarity');
+    expect(call.params.eventCode).toBe('BATbern142');
+    expect(call.body).toEqual({ topic: 'Artificial Intelligence' });
+    expect(result.cluster).toBe('AI_ML');
   });
 
-  it('should propagate errors from apiClient', async () => {
-    mockPost.mockRejectedValue(new Error('Service unavailable'));
+  it('should propagate errors', async () => {
+    api.on('getTopicSimilarity', () => HttpResponse.json(problem, { status: 500 }));
 
-    await expect(blobTopicService.getSimilarity('BAT142', 'Cloud')).rejects.toThrow(
-      'Service unavailable'
-    );
+    await expect(blobTopicService.getSimilarity('BATbern142', 'Cloud')).rejects.toBeTruthy();
   });
 });
 
 describe('blobTopicService.acceptTopic', () => {
   it('should PATCH /events/{eventCode} with topicCode and topicSelectionNote', async () => {
-    mockPatch.mockResolvedValue({});
+    await blobTopicService.acceptTopic(
+      'BATbern142',
+      'topic-cloud-native',
+      'Great fit for the event'
+    );
 
-    await blobTopicService.acceptTopic('BAT142', 'topic-cloud-native', 'Great fit for the event');
-
-    expect(mockPatch).toHaveBeenCalledWith('/events/BAT142', {
+    const [call] = api.calls('patchEvent');
+    expect(call.params.eventCode).toBe('BATbern142');
+    expect(call.body).toEqual({
       topicCode: 'topic-cloud-native',
       topicSelectionNote: 'Great fit for the event',
     });
   });
 
   it('should accept an empty note', async () => {
-    mockPatch.mockResolvedValue({});
+    await blobTopicService.acceptTopic('BATbern142', 'topic-arch', '');
 
-    await blobTopicService.acceptTopic('BAT142', 'topic-arch', '');
-
-    expect(mockPatch).toHaveBeenCalledWith('/events/BAT142', {
+    expect(api.calls('patchEvent')[0].body).toEqual({
       topicCode: 'topic-arch',
       topicSelectionNote: '',
     });
   });
 
-  it('should propagate errors from apiClient', async () => {
-    mockPatch.mockRejectedValue(new Error('Forbidden'));
+  it('should propagate errors', async () => {
+    api.on('patchEvent', () => HttpResponse.json(problem, { status: 403 }));
 
-    await expect(blobTopicService.acceptTopic('BAT142', 'topic-x', 'note')).rejects.toThrow(
-      'Forbidden'
-    );
+    await expect(
+      blobTopicService.acceptTopic('BATbern142', 'topic-x', 'note')
+    ).rejects.toBeTruthy();
   });
 });

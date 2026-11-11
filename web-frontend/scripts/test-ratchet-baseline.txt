@@ -10,7 +10,6 @@ be-mock-in-process	services/event-management-service/src/test/java/ch/batbern/ev
 be-mock-in-process	services/event-management-service/src/test/java/ch/batbern/events/controller/PublicSessionVisibilityIntegrationTest.java	1
 be-mock-in-process	services/event-management-service/src/test/java/ch/batbern/events/controller/RegistrationControllerIntegrationTest.java	1
 be-mock-in-process	services/event-management-service/src/test/java/ch/batbern/events/controller/SessionQnaIntegrationTest.java	1
-be-mock-in-process	services/event-management-service/src/test/java/ch/batbern/events/controller/TopicSessionDataControllerIntegrationTest.java	1
 be-mock-in-process	services/event-management-service/src/test/java/ch/batbern/events/forwarding/CalendarDeclineServiceIntegrationTest.java	1
 be-mock-in-process	services/event-management-service/src/test/java/ch/batbern/events/integration/SpeakerAutoRegistrationIntegrationTest.java	3
 be-mock-in-process	services/event-management-service/src/test/java/ch/batbern/events/mailcenter/GlobalMailCenterIntegrationTest.java	1
@@ -144,7 +143,6 @@ be-transactional-it	services/event-management-service/src/test/java/ch/batbern/e
 be-transactional-it	services/event-management-service/src/test/java/ch/batbern/events/controller/TaskTemplateControllerIntegrationTest.java	1
 be-transactional-it	services/event-management-service/src/test/java/ch/batbern/events/controller/TopicControllerIntegrationTest.java	1
 be-transactional-it	services/event-management-service/src/test/java/ch/batbern/events/controller/TopicSelectionWorkflowIntegrationTest.java	1
-be-transactional-it	services/event-management-service/src/test/java/ch/batbern/events/controller/TopicSessionDataControllerIntegrationTest.java	1
 be-transactional-it	services/event-management-service/src/test/java/ch/batbern/events/controller/TopicSimilarityControllerIntegrationTest.java	1
 be-transactional-it	services/event-management-service/src/test/java/ch/batbern/events/integration/SpeakerAutoRegistrationIntegrationTest.java	1
 be-transactional-it	services/event-management-service/src/test/java/ch/batbern/events/integration/TestFixtureCleanupControllerIntegrationTest.java	1
@@ -588,7 +586,6 @@ fe-mock-services	web-frontend/src/services/api/partnerMeetingsApi.test.ts	3
 fe-mock-services	web-frontend/src/services/api/partnerNotesApi.test.ts	1
 fe-mock-services	web-frontend/src/services/api/partnerTopicsApi.test.ts	4
 fe-mock-services	web-frontend/src/services/api/watchPairingApi.test.ts	1
-fe-mock-services	web-frontend/src/services/blobTopicService.test.ts	1
 fe-mock-services	web-frontend/src/services/deregistrationService.test.ts	1
 fe-mock-services	web-frontend/src/services/emailTemplateService.test.ts	1
 fe-mock-services	web-frontend/src/services/eventApiClient.mocked.test.ts	1

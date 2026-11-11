@@ -1,12 +1,9 @@
 package ch.batbern.events.service;
 
-import ch.batbern.events.client.PartnerApiClient;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Topic;
 import ch.batbern.events.dto.generated.topics.BacklogItem;
-import ch.batbern.events.dto.generated.topics.PartnerTopicGroup;
 import ch.batbern.events.dto.generated.topics.PastEventEntry;
-import ch.batbern.events.dto.generated.topics.TopicEntry;
 import ch.batbern.events.dto.generated.topics.TopicSessionDataResponse;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.TopicRepository;
@@ -16,17 +13,18 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.ZoneOffset;
 import java.util.List;
 
 /**
  * Aggregates all data needed to bootstrap the blob topic selector canvas (Story 10.4 AC: 29–31).
  *
- * Four data sources:
- * 1. partnerTopics — cross-service call to partner-coordination-service
- * 2. pastEvents    — EMS events table, enriched with cluster from BatbernTopicClusterService
- * 3. organizerBacklog — EMS topics table, status=AVAILABLE (stalenessScore >= 83)
- * 4. trendingTopics — OpenAI chat model (AiConfig), 1-hour in-process cache
+ * Three data sources:
+ * 1. pastEvents    — EMS events table, enriched with cluster from BatbernTopicClusterService
+ * 2. organizerBacklog — EMS topics table, status=AVAILABLE (stalenessScore >= 83)
+ * 3. trendingTopics — OpenAI chat model (AiConfig), 1-hour in-process cache
+ *
+ * The partner topics are not aggregated here: the canvas loads them from partner-coordination
+ * and classifies them with {@code POST /topics/classifications} (Epic 17, entry 8; ADR-016).
  */
 @Service
 @RequiredArgsConstructor
@@ -37,7 +35,6 @@ public class TopicSessionDataService {
     private static final int AVAILABLE_STALENESS_THRESHOLD = 83;
     private static final int BACKLOG_LIMIT = 50;
 
-    private final PartnerApiClient partnerApiClient;
     private final BatbernTopicClusterService clusterService;
     private final TrendingTopicsService trendingTopicsService;
     private final StalenessScoreService stalenessScoreService;
@@ -54,13 +51,11 @@ public class TopicSessionDataService {
     public TopicSessionDataResponse getSessionData(String eventCode) {
         log.debug("Building topic session data for event={}", eventCode);
 
-        List<PartnerTopicGroup> partnerTopics = fetchPartnerTopics();
         List<PastEventEntry> pastEvents = fetchPastEvents();
         List<BacklogItem> organizerBacklog = fetchOrganizerBacklog();
         List<String> trendingTopics = fetchTrendingTopics();
 
         return TopicSessionDataResponse.builder()
-                .partnerTopics(partnerTopics)
                 .pastEvents(pastEvents)
                 .organizerBacklog(organizerBacklog)
                 .trendingTopics(trendingTopics)
@@ -68,31 +63,6 @@ public class TopicSessionDataService {
     }
 
     // ==================== Private aggregation methods ====================
-
-    private List<PartnerTopicGroup> fetchPartnerTopics() {
-        try {
-            return partnerApiClient.getPartnerTopics().stream()
-                    .map(g -> {
-                        List<TopicEntry> entries = g.topics().stream()
-                                .map(t -> TopicEntry.builder()
-                                        .title(t.title())
-                                        .cluster(clusterService.matchCluster(t.title()).name())
-                                        .voteCount(t.voteCount())
-                                        .createdAt(t.createdAt().atOffset(ZoneOffset.UTC))
-                                        .build())
-                                .toList();
-                        return PartnerTopicGroup.builder()
-                                .companyName(g.companyName())
-                                .logoUrl(g.logoUrl())
-                                .topics(entries)
-                                .build();
-                    })
-                    .toList();
-        } catch (Exception e) {
-            log.warn("Failed to fetch partner topics: {}", e.getMessage());
-            return List.of();
-        }
-    }
 
     private List<PastEventEntry> fetchPastEvents() {
         try {
