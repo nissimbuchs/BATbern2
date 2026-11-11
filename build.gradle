@@ -126,7 +126,7 @@ configure(subprojects.findAll { it.path.startsWith(':services:') }) {
             implementation 'org.springframework.boot:spring-boot-flyway'
             
             // OpenAPI/Swagger
-            implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.3'
+            implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:3.2.0'
             implementation 'io.swagger.core.v3:swagger-annotations:2.2.20'
             implementation 'jakarta.validation:jakarta.validation-api'
             implementation 'jakarta.annotation:jakarta.annotation-api'
