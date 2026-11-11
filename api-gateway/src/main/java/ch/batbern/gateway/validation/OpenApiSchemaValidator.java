@@ -36,8 +36,6 @@ public class OpenApiSchemaValidator {
                 // Simple validation - check for required fields based on endpoint
                 if (request.getRequestURI().contains("/events/create")) {
                     return body.contains("title") && body.contains("date");
-                } else if (request.getRequestURI().contains("/speakers/invite")) {
-                    return body.contains("email") && body.contains("name");
                 }
             } catch (Exception e) {
                 log.error("Error validating request content", e);
@@ -54,17 +52,9 @@ public class OpenApiSchemaValidator {
         // Mock validation errors for testing
         if (request.getContentLength() > 0) {
             try {
-                byte[] content = request.getInputStream().readAllBytes();
-                String body = new String(content);
-
-                if (request.getRequestURI().contains("/speakers/invite")) {
-                    if (!body.contains("email") || body.contains("invalid-email")) {
-                        errors.put("email", "Invalid email format");
-                    }
-                    if (!body.contains("name")) {
-                        errors.put("name", "Name is required");
-                    }
-                }
+                // The body must be readable; the field rules of the former /speakers/invite are gone
+                // with that endpoint (Story 4.10).
+                request.getInputStream().readAllBytes();
             } catch (Exception e) {
                 errors.put("general", "Error parsing request body");
             }

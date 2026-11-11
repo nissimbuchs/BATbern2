@@ -292,6 +292,25 @@ public class GlobalExceptionHandler {
             return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
         }
 
+        // Story 4.10: PATCH /users/{username} with an address that is another profile's
+        // (user_profiles_email_key, and uq_user_profiles_email_lower case-insensitively) is the
+        // caller's conflict, not a 500.
+        if (causeMessage.contains("user_profiles_email_key")
+                || causeMessage.contains("uq_user_profiles_email_lower")) {
+            log.warn("Profile email duplicate (DB-level): {}", LoggingUtils.maskEmailsIn(ex.getMessage()));
+            ErrorResponse error = ErrorResponse.builder()
+                    .timestamp(Instant.now())
+                    .path(request.getRequestURI())
+                    .status(HttpStatus.CONFLICT.value())
+                    .error("Conflict")
+                    .errorCode("EMAIL_DUPLICATE")
+                    .message("Email is already registered for another user")
+                    .correlationId(CorrelationIdGenerator.current())
+                    .severity("LOW")
+                    .build();
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+        }
+
         // A NUL byte in the input fails here too (SQLState 22021): the client's fault, not ours.
         Optional<ClientErrorClassifier.ClientError> clientError = ClientErrorClassifier.classify(ex);
         if (clientError.isPresent()) {

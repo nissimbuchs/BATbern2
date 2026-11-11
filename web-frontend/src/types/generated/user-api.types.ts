@@ -1624,6 +1624,7 @@ export interface components {
       lastName?: string;
       /** Format: idn-email */
       email?: string;
+      /** @description A blank value clears the bio (stored and returned as null). */
       bio?: string;
       /**
        * @description Company name (unique identifier, alphanumeric only)
@@ -3094,6 +3095,18 @@ export interface operations {
       401: components['responses']['Unauthorized'];
       403: components['responses']['Forbidden'];
       404: components['responses']['NotFound'];
+      /**
+       * @description `EMAIL_DUPLICATE`: the new `email` is already another user's address
+       *     (case-insensitive, one address per profile). Nothing is changed.
+       */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
       500: components['responses']['InternalServerError'];
     };
   };

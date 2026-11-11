@@ -1,51 +1,33 @@
 package ch.batbern.events.service;
 
 import ch.batbern.events.domain.Event;
-import ch.batbern.events.domain.Session;
-import ch.batbern.events.domain.SessionContentVersion;
-import ch.batbern.events.domain.SpeakerPool;
-import ch.batbern.events.domain.SpeakerStatusHistory;
-import ch.batbern.events.speakers.dto.generated.SpeakerStatusResponse;
-import ch.batbern.events.speakers.dto.generated.StatusHistoryItem;
 import ch.batbern.events.speakers.dto.generated.StatusSummaryResponse;
-import ch.batbern.events.speakers.dto.generated.UpdateStatusRequest;
 import ch.batbern.events.entity.EventAgendaConfig;
 import ch.batbern.events.core.dto.generated.EventType;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SessionContentHistoryRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
 import ch.batbern.events.repository.SpeakerStatusHistoryRepository;
-import ch.batbern.events.service.workflow.TransitionPayload;
-import ch.batbern.events.service.workflow.TransitionResult;
 import ch.batbern.shared.exception.NotFoundException;
-import ch.batbern.shared.types.SpeakerWorkflowState;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 /**
  * Unit Tests for SpeakerStatusService (Story 11.B.2 — delegates to SpeakerWorkflowService.transition).
  *
- * <p>The status-mutation tests assert delegation; the history/summary tests cover the
- * read paths which remain in this service.
+ * <p>The status summary. The status update and the history moved to the production setup in
+ * Story 4.10 (SpeakerStatusControllerIntegrationTest, SpeakerCrossEventScopingIntegrationTest).
  */
 @ExtendWith(MockitoExtension.class)
 public class SpeakerStatusServiceTest {
@@ -83,95 +65,6 @@ public class SpeakerStatusServiceTest {
         );
     }
 
-    /** The speaker pool entry exists in the event of the path (Story 4.10: loaded scoped). */
-    private void givenSpeakerInEvent(String eventCode, SpeakerPool speaker) {
-        Event event = new Event();
-        event.setId(speaker.getEventId());
-        event.setEventCode(eventCode);
-        when(eventRepository.findByEventCode(eventCode)).thenReturn(Optional.of(event));
-        when(speakerPoolRepository.findByIdAndEventId(speaker.getId(), speaker.getEventId()))
-                .thenReturn(Optional.of(speaker));
-    }
-
-    @Test
-    @DisplayName("Should delegate to SpeakerWorkflowService.transition() when updating status")
-    void should_delegateToTransition_when_updatingStatus() {
-        String eventCode = "BATbern998";
-        UUID eventId = UUID.randomUUID();
-        UUID speakerId = UUID.randomUUID();
-        String organizerUsername = "organizer";
-
-        UpdateStatusRequest request = new UpdateStatusRequest();
-        request.setNewStatus(SpeakerWorkflowState.CONTACTED);
-        request.setReason("Initial contact");
-
-        Event event = new Event();
-        event.setId(eventId);
-        event.setEventCode(eventCode);
-
-        SpeakerStatusHistory historyRow = new SpeakerStatusHistory();
-        historyRow.setSpeakerPoolId(speakerId);
-        historyRow.setEventId(eventId);
-        historyRow.setPreviousStatus(SpeakerWorkflowState.IDENTIFIED);
-        historyRow.setNewStatus(SpeakerWorkflowState.CONTACTED);
-        historyRow.setChangedByUsername(organizerUsername);
-        historyRow.setChangeReason("Initial contact");
-
-        SpeakerPool speaker = new SpeakerPool();
-        speaker.setId(speakerId);
-        speaker.setEventId(eventId);
-
-        givenSpeakerInEvent(eventCode, speaker);
-        when(speakerWorkflowService.transition(
-                eq(speakerId),
-                eq(SpeakerWorkflowState.CONTACTED),
-                anyString(),
-                any(TransitionPayload.class)))
-                .thenReturn(new TransitionResult(speaker, historyRow));
-        when(eventRepository.findById(eventId)).thenReturn(Optional.of(event));
-
-        SpeakerStatusResponse response = service.updateStatus(eventCode, speakerId, organizerUsername, request);
-
-        assertThat(response).isNotNull();
-        assertThat(response.getSpeakerId()).isEqualTo(speakerId);
-        assertThat(response.getEventCode()).isEqualTo(eventCode);
-        assertThat(response.getCurrentStatus()).isEqualTo(SpeakerWorkflowState.CONTACTED);
-        assertThat(response.getPreviousStatus()).isEqualTo(SpeakerWorkflowState.IDENTIFIED);
-        assertThat(response.getChangedByUsername()).isEqualTo(organizerUsername);
-
-        ArgumentCaptor<String> actorCaptor = ArgumentCaptor.forClass(String.class);
-        ArgumentCaptor<TransitionPayload> payloadCaptor = ArgumentCaptor.forClass(TransitionPayload.class);
-        verify(speakerWorkflowService).transition(
-                eq(speakerId), eq(SpeakerWorkflowState.CONTACTED),
-                actorCaptor.capture(), payloadCaptor.capture());
-        assertThat(actorCaptor.getValue()).isEqualTo(organizerUsername);
-        assertThat(payloadCaptor.getValue().reason()).isEqualTo("Initial contact");
-    }
-
-    @Test
-    @DisplayName("Should throw NotFoundException when speaker not found")
-    void should_throwNotFoundException_when_speakerNotFound() {
-        String eventCode = "BATbern998";
-        UUID speakerId = UUID.randomUUID();
-        String organizerUsername = "organizer";
-
-        UpdateStatusRequest request = new UpdateStatusRequest();
-        request.setNewStatus(SpeakerWorkflowState.CONTACTED);
-        request.setReason("Initial contact");
-
-        Event event = new Event();
-        event.setId(UUID.randomUUID());
-        event.setEventCode(eventCode);
-        when(eventRepository.findByEventCode(eventCode)).thenReturn(Optional.of(event));
-        // An entry of another event, or none at all: not found in this event.
-        when(speakerPoolRepository.findByIdAndEventId(speakerId, event.getId())).thenReturn(Optional.empty());
-
-        assertThatThrownBy(() -> service.updateStatus(eventCode, speakerId, organizerUsername, request))
-                .isInstanceOf(NotFoundException.class)
-                .hasMessageContaining("Speaker pool entry not found in " + eventCode);
-        verifyNoInteractions(speakerWorkflowService);
-    }
-
     @Test
     @DisplayName("Should calculate acceptance rate when getting status summary")
     void should_calculateAcceptanceRate_when_gettingStatusSummary() {
@@ -203,106 +96,5 @@ public class SpeakerStatusServiceTest {
         assertThatThrownBy(() -> service.getStatusSummary(eventCode))
                 .isInstanceOf(NotFoundException.class)
                 .hasMessageContaining("Event not found");
-    }
-
-    @Test
-    @DisplayName("Should get status history when valid speaker ID provided")
-    void should_getStatusHistory_when_validSpeakerIdProvided() {
-        String eventCode = "BATbern998";
-        UUID eventId = UUID.randomUUID();
-        UUID speakerId = UUID.randomUUID();
-
-        SpeakerStatusHistory history = new SpeakerStatusHistory();
-        history.setSpeakerPoolId(speakerId);
-        history.setEventId(eventId);
-        history.setPreviousStatus(SpeakerWorkflowState.IDENTIFIED);
-        history.setNewStatus(SpeakerWorkflowState.CONTACTED);
-
-        SpeakerPool speaker = new SpeakerPool();
-        speaker.setId(speakerId);
-        speaker.setEventId(eventId);
-        givenSpeakerInEvent(eventCode, speaker);
-        when(repository.findBySpeakerPoolIdOrderByChangedAtDesc(speakerId))
-                .thenReturn(List.of(history));
-
-        var result = service.getStatusHistory(eventCode, speakerId);
-
-        assertThat(result).isNotNull().hasSize(1);
-        assertThat(result.get(0).getNewStatus()).isEqualTo(SpeakerWorkflowState.CONTACTED);
-    }
-
-    @Test
-    @DisplayName("Should interleave content-rejection events from session_content_history")
-    void should_interleaveContentRejections_when_buildingHistory() {
-        // Repro: organizer rejects an abstract via /review (ADR-009: no state transition →
-        // nothing in speaker_status_history); the rejection feedback must still appear in
-        // the drawer's History tab. Sources from session_content_history.reviewer_feedback.
-        String eventCode = "BATbern59";
-        UUID speakerId = UUID.randomUUID();
-        UUID sessionId = UUID.randomUUID();
-        java.time.Instant earlier = java.time.Instant.parse("2026-05-26T18:00:00Z");
-        java.time.Instant later = java.time.Instant.parse("2026-05-26T18:21:24Z");
-
-        SpeakerStatusHistory statusRow = new SpeakerStatusHistory();
-        statusRow.setSpeakerPoolId(speakerId);
-        statusRow.setPreviousStatus(SpeakerWorkflowState.ACCEPTED);
-        statusRow.setNewStatus(SpeakerWorkflowState.CONTENT_SUBMITTED);
-        statusRow.setChangedByUsername("speaker.jane");
-        statusRow.setChangedAt(earlier);
-
-        SpeakerPool pool = new SpeakerPool();
-        pool.setId(speakerId);
-        pool.setEventId(UUID.randomUUID());
-        pool.setSessionId(sessionId);
-
-        SessionContentVersion rejection = new SessionContentVersion();
-        rejection.setId(UUID.randomUUID());
-        Session session = new Session();
-        session.setId(sessionId);
-        rejection.setSession(session);
-        rejection.setReviewerFeedback("Please remove vendor pitch from intro");
-        rejection.setReviewedBy("nissim.buchs");
-        rejection.setReviewedAt(later);
-
-        when(repository.findBySpeakerPoolIdOrderByChangedAtDesc(speakerId)).thenReturn(List.of(statusRow));
-        givenSpeakerInEvent(eventCode, pool);
-        when(sessionContentHistoryRepository.findRejectedBySessionIdOrderByReviewedAtDesc(sessionId))
-                .thenReturn(List.of(rejection));
-
-        var result = service.getStatusHistory(eventCode, speakerId);
-
-        assertThat(result).hasSize(2);
-        // Newest first → rejection at 18:21, status change at 18:00
-        assertThat(result.get(0).getKind()).isEqualTo(StatusHistoryItem.KindEnum.CONTENT_REJECTED);
-        assertThat(result.get(0).getChangeReason()).isEqualTo("Please remove vendor pitch from intro");
-        assertThat(result.get(0).getChangedByUsername()).isEqualTo("nissim.buchs");
-        assertThat(result.get(0).getPreviousStatus()).isNull();
-        assertThat(result.get(0).getNewStatus()).isNull();
-        assertThat(result.get(1).getKind()).isEqualTo(StatusHistoryItem.KindEnum.STATUS_CHANGE);
-        assertThat(result.get(1).getNewStatus()).isEqualTo(SpeakerWorkflowState.CONTENT_SUBMITTED);
-    }
-
-    @Test
-    @DisplayName("Should return empty list when no history found (Epic 11 bug fix 2026-05-19)")
-    void should_returnEmptyList_when_noHistoryFound() {
-        // Empty history is a legitimate state for any speaker that has not yet
-        // transitioned — e.g. fresh IDENTIFIED brainstorm entries, or transitions
-        // written with TransitionPayload.suppressHistoryRow=true. The drawer's
-        // unified history feed interprets 404 as "session expired" and shows a
-        // generic load-error toast; an empty list renders the "no entries yet"
-        // empty state instead.
-        String eventCode = "BATbern998";
-        UUID speakerId = UUID.randomUUID();
-        SpeakerPool speaker = new SpeakerPool();
-        speaker.setId(speakerId);
-        speaker.setEventId(UUID.randomUUID());
-        givenSpeakerInEvent(eventCode, speaker);
-
-        when(repository.findBySpeakerPoolIdOrderByChangedAtDesc(speakerId))
-                .thenReturn(new ArrayList<>());
-
-        var result = service.getStatusHistory(eventCode, speakerId);
-
-        assertThat(result).isEmpty();
     }
 }

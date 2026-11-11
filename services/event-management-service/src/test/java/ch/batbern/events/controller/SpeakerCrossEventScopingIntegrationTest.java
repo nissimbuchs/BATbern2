@@ -247,24 +247,118 @@ class SpeakerCrossEventScopingIntegrationTest extends AbstractIntegrationTest {
         assertThat(sesRecorder.mails()).isEmpty();
     }
 
+    /**
+     * Every operation of {@link #speakerOperations()} again, through the entry's own event: the
+     * status the entry needs for it, the expected answer and the effect to check. Positive control
+     * for each 404 above, so a wrong path template (Spring's 404) cannot pass as scoping.
+     */
+    static Stream<Arguments> ownEventOperations() {
+        return Stream.of(
+                Arguments.of("PATCH entry", HttpMethod.PATCH, ENTRY,
+                        "{\"notes\": \"Changed through its own event\", \"remindersDisabled\": true}",
+                        "ready", 200, "patched"),
+                Arguments.of("DELETE entry", HttpMethod.DELETE, ENTRY, null, "ready", 204, "deleted"),
+                Arguments.of("promote", HttpMethod.POST, PROMOTE,
+                        "{\"email\": \"" + OTHER_SPEAKER_EMAIL + "\", "
+                                + "\"firstName\": \"Hông Ân\", \"lastName\": \"Nguyễn\"}",
+                        "contacted", 200, "promoted"),
+                Arguments.of("status", HttpMethod.PUT, STATUS,
+                        "{\"newStatus\": \"DECLINED\", \"reason\": \"Changed through its own event\"}",
+                        "ready", 200, "declined"),
+                Arguments.of("status history", HttpMethod.GET, STATUS_HISTORY, null, "ready", 200, "read"),
+                Arguments.of("content GET", HttpMethod.GET, CONTENT, null, "ready", 200, "read"),
+                Arguments.of("content POST", HttpMethod.POST, CONTENT,
+                        "{\"presentationTitle\": \"Own title\", "
+                                + "\"presentationAbstract\": \"Own abstract\"}",
+                        "accepted", 201, "contentSubmitted"),
+                Arguments.of("review", HttpMethod.POST, REVIEW,
+                        "{\"action\": \"REJECT\", \"feedback\": \"Please shorten the abstract\"}",
+                        "content_submitted", 204, "revisionMail"),
+                Arguments.of("outreach GET", HttpMethod.GET, OUTREACH, null, "ready", 200, "read"),
+                Arguments.of("outreach POST", HttpMethod.POST, OUTREACH,
+                        "{\"contactDate\": \"2026-11-10T10:00:00Z\", \"contactMethod\": \"email\", "
+                                + "\"notes\": \"Called through its own event\"}",
+                        "ready", 201, "outreach"),
+                Arguments.of("send-invitation", HttpMethod.POST, SEND_INVITATION,
+                        "{\"responseDeadline\": \"" + responseDeadline() + "\", \"locale\": \"de\"}",
+                        "ready", 200, "invited"),
+                // AI is off in this context: the entry was found and the request reached the AI
+                // service (503). The answered analysis is AiAssistControllerIntegrationTest's.
+                Arguments.of("abstract-analysis", HttpMethod.POST, ABSTRACT_ANALYSIS, null, "ready", 503, "read"));
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("ownEventOperations")
+    void should_actOnTheEntry_when_pathNamesItsOwnEvent(String operation, HttpMethod method, String path,
+            String body, String givenStatus, int expectedStatus, String effect) throws Exception {
+        jdbcTemplate.update("UPDATE speaker_pool SET status = ? WHERE id = ?", givenStatus, otherSpeaker.getId());
+        cums.answer(HttpMethod.POST, "/internal/users/provision", call -> Reply.ok(
+                "{\"username\": \"" + OTHER_SPEAKER_USERNAME + "\", \"created\": false}"));
+        Map<String, Object> before = snapshot();
+
+        mockMvc.perform(call(method, path, OTHER_EVENT, otherSpeaker.getId(), body))
+                .andExpect(status().is(expectedStatus));
+
+        sesRecorder.awaitAsyncSends();
+        if ("deleted".equals(effect)) {
+            assertThat(jdbcTemplate.queryForObject("SELECT count(*) FROM speaker_pool WHERE id = ?",
+                    Long.class, otherSpeaker.getId())).isZero();
+            return;
+        }
+        Map<String, Object> after = snapshot();
+        switch (effect) {
+            case "read" -> {
+                assertThat(after).isEqualTo(before);
+                assertThat(sesRecorder.mails()).isEmpty();
+            }
+            case "patched" -> {
+                assertThat(after.get("notes")).isEqualTo("Changed through its own event");
+                assertThat(after.get("reminders_disabled")).isEqualTo(true);
+            }
+            case "promoted" -> assertThat(after.get("status")).isEqualTo("ready");
+            case "declined" -> {
+                assertThat(after.get("status")).isEqualTo("declined");
+                assertThat((Long) after.get("history")).isEqualTo((Long) before.get("history") + 1);
+            }
+            case "contentSubmitted" -> {
+                assertThat(after.get("status")).isEqualTo("content_submitted");
+                assertThat((Long) after.get("content")).isGreaterThan((Long) before.get("content"));
+            }
+            case "revisionMail" -> {
+                // Story 16.0 AC1 (moved off the mock test SpeakerModeratorReplyToTest): the revision
+                // request reaches the speaker and the answer goes to the event's moderator alias.
+                assertThat(after.get("status")).isEqualTo("content_submitted");
+                assertThat(sesRecorder.mailsTo(OTHER_SPEAKER_EMAIL)).singleElement().satisfies(mail ->
+                        assertThat(mail.replyTo()).singleElement().asString()
+                                .startsWith("batbern9602-moderator@"));
+            }
+            case "outreach" -> assertThat((Long) after.get("outreach"))
+                    .isEqualTo((Long) before.get("outreach") + 1);
+            case "invited" -> {
+                assertThat(after.get("status")).isEqualTo("invited");
+                assertThat(sesRecorder.mailsTo(OTHER_SPEAKER_EMAIL)).hasSize(1);
+            }
+            default -> throw new IllegalArgumentException(effect);
+        }
+    }
+
+    /**
+     * The e2e byte-identity setup invites a speaker whose address is on the reserved domain
+     * {@code e2e.batbern.invalid} (Story 4.10 review). The invitation still answers 200 and the
+     * speaker is INVITED, but SES is never asked: the reserved-domain wall refuses the send and
+     * the invitation mail service swallows it (a mail failure does not block the transition).
+     * So the setup passes in production without sending real mail.
+     */
     @Test
-    void should_actOnTheEntry_when_pathNamesItsOwnEvent() throws Exception {
-        // Positive control for the 404s above: the same requests reach the entry through its own
-        // event, so the 404 comes from the scoping, not from the request.
-        mockMvc.perform(call(HttpMethod.PATCH, ENTRY, OTHER_EVENT, otherSpeaker.getId(),
-                        "{\"notes\": \"Changed through its own event\", \"remindersDisabled\": true}"))
-                .andExpect(status().isOk());
-        mockMvc.perform(call(HttpMethod.GET, OUTREACH, OTHER_EVENT, otherSpeaker.getId(), null))
-                .andExpect(status().isOk());
+    void should_inviteWithoutMail_when_speakerAddressIsOnReservedDomain() throws Exception {
+        cums.user(OTHER_SPEAKER_USERNAME, "Hông Ân", "Nguyễn", "byte-identity-a@e2e.batbern.invalid");
+
         mockMvc.perform(call(HttpMethod.POST, SEND_INVITATION, OTHER_EVENT, otherSpeaker.getId(),
-                        "{\"responseDeadline\": \"" + responseDeadline() + "\", \"locale\": \"de\"}"))
+                        "{\"responseDeadline\": \"" + responseDeadline() + "\", \"locale\": \"en\"}"))
                 .andExpect(status().isOk());
 
         sesRecorder.awaitAsyncSends();
-        Map<String, Object> after = snapshot();
-        assertThat(after.get("notes")).isEqualTo("Changed through its own event");
-        assertThat(after.get("reminders_disabled")).isEqualTo(true);
-        assertThat(after.get("status")).isEqualTo("invited");
-        assertThat(sesRecorder.mailsTo(OTHER_SPEAKER_EMAIL)).hasSize(1);
+        assertThat(snapshot().get("status")).isEqualTo("invited");
+        assertThat(sesRecorder.mails()).isEmpty();
     }
 }

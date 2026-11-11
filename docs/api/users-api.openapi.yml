@@ -1882,6 +1882,25 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+        '409':
+          description: |
+            `EMAIL_DUPLICATE`: the new `email` is already another user's address
+            (case-insensitive, one address per profile). Nothing is changed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                emailDuplicate:
+                  value:
+                    timestamp: "2026-11-11T08:15:00Z"
+                    path: /api/v1/users/hugo.muster
+                    status: 409
+                    error: Conflict
+                    errorCode: EMAIL_DUPLICATE
+                    message: Email is already registered for another user
+                    correlationId: 3f2b9c1e-6a4d-4e8f-9b7a-2c5d1e0f4a6b
+                    severity: LOW
         '500':
           $ref: '#/components/responses/InternalServerError'
       security:
@@ -3742,6 +3761,7 @@ components:
         bio:
           type: string
           maxLength: 5000
+          description: A blank value clears the bio (stored and returned as null).
         companyId:
           type: string
           description: Company name (unique identifier, alphanumeric only)

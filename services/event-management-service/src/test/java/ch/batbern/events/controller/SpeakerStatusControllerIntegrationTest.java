@@ -759,4 +759,58 @@ public class SpeakerStatusControllerIntegrationTest extends AbstractIntegrationT
                 .isEqualTo("Abstract needs more focus on lessons learned.");
         org.assertj.core.api.Assertions.assertThat(version.getContentAbstract()).isEmpty();
     }
+
+    /**
+     * Epic 11 bug fix 2026-05-19 (moved off the mock test SpeakerStatusServiceTest, Story 4.10):
+     * a speaker that has not transitioned yet has an empty history, not a 404 (the drawer reads a
+     * 404 as an expired session).
+     */
+    @Test
+    @DisplayName("Should return an empty history when the speaker has not transitioned yet")
+    void should_returnEmptyHistory_when_noTransitionYet() throws Exception {
+        mockMvc.perform(get("/api/v1/events/{code}/speakers/{speakerId}/status/history",
+                        TEST_EVENT_CODE, testSpeaker.getId().toString())
+                        .with(user(ORGANIZER_USERNAME).roles("ORGANIZER")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(0)));
+    }
+
+    /**
+     * ADR-009 (moved off the mock test SpeakerStatusServiceTest, Story 4.10): a content rejection
+     * is no state transition, so it has no speaker_status_history row; the history still shows it,
+     * from session_content_history, next to the status changes.
+     */
+    @Test
+    @DisplayName("Should interleave a content rejection with the status changes in the history")
+    void should_interleaveContentRejection_when_historyRead() throws Exception {
+        mockMvc.perform(put("/api/v1/events/{code}/speakers/{speakerId}/status",
+                        TEST_EVENT_CODE, testSpeaker.getId().toString())
+                        .with(user(ORGANIZER_USERNAME).roles("ORGANIZER"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"newStatus\": \"CONTACTED\", \"reason\": \"First call\"}"))
+                .andExpect(status().isOk());
+        testSpeaker = speakerPoolRepository.findById(testSpeaker.getId()).orElseThrow();
+        testSpeaker.setStatus(ch.batbern.shared.types.SpeakerWorkflowState.CONTENT_SUBMITTED);
+        speakerPoolRepository.save(testSpeaker);
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                        .post("/api/v1/events/{code}/speakers/{speakerId}/review",
+                                TEST_EVENT_CODE, testSpeaker.getId().toString())
+                        .with(user(ORGANIZER_USERNAME).roles("ORGANIZER"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"action\": \"REJECT\", \"feedback\": \"Please remove the vendor pitch\"}"))
+                .andExpect(status().isNoContent());
+        sessionContentHistoryRepository.flush();
+
+        mockMvc.perform(get("/api/v1/events/{code}/speakers/{speakerId}/status/history",
+                        TEST_EVENT_CODE, testSpeaker.getId().toString())
+                        .with(user(ORGANIZER_USERNAME).roles("ORGANIZER")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(2)))
+                .andExpect(jsonPath("$[?(@.kind == 'CONTENT_REJECTED')].changeReason",
+                        org.hamcrest.Matchers.contains("Please remove the vendor pitch")))
+                .andExpect(jsonPath("$[?(@.kind == 'CONTENT_REJECTED')].changedByUsername",
+                        org.hamcrest.Matchers.contains(ORGANIZER_USERNAME)))
+                .andExpect(jsonPath("$[?(@.kind == 'STATUS_CHANGE')].newStatus",
+                        org.hamcrest.Matchers.contains("CONTACTED")));
+    }
 }

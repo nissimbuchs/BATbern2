@@ -109,6 +109,7 @@ responses:
   '400': validation error
   '403': not the user and not an organizer/admin, or consent for another user
   '404': user not found
+  '409': EMAIL_DUPLICATE, the new email is already another user's address (user_profiles_email_key / uq_user_profiles_email_lower)
 ```
 
 `GET /api/v1/users/me` stays the self read (the login bootstrap): the frontend takes the

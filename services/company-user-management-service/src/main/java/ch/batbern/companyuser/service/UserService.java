@@ -168,7 +168,9 @@ public class UserService {
             user.setEmail(request.getEmail());
         }
         if (request.getBio() != null) {
-            user.setBio(request.getBio());
+            // A blank bio clears it (NULL, as before it was first set), so "no bio" has one form
+            // and a client can put back exactly what it found (Story 4.10).
+            user.setBio(request.getBio().isBlank() ? null : request.getBio());
         }
         if (request.getCompanyId() != null) {
             user.setCompanyId(request.getCompanyId());
@@ -885,7 +887,7 @@ public class UserService {
         // Flush so that @PreUpdate has set updatedAt before the response is built in this transaction.
         User saved = userRepository.saveAndFlush(user);
 
-        // Invalidate user-search caches (matches updateUserByUsername behaviour).
+        // Invalidate user-search caches (matches updateUser behaviour).
         searchService.invalidateCache();
 
         // Publish a UserUpdatedEvent so downstream listeners can refresh their view.

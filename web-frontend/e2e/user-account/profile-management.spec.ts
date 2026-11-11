@@ -24,7 +24,7 @@ import { readOrganizerToken } from '../helpers/user-fixture';
 const API_URL = process.env.E2E_API_URL || 'http://localhost:8000';
 
 /** The own username and bio, read where the app reads them: GET /users/me. */
-async function getOwnProfile(token: string): Promise<{ username: string; bio: string }> {
+async function getOwnProfile(token: string): Promise<{ username: string; bio: string | null }> {
   const res = await fetch(`${API_URL}/api/v1/users/me`, {
     headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
   });
@@ -32,7 +32,8 @@ async function getOwnProfile(token: string): Promise<{ username: string; bio: st
     throw new Error(`GET /users/me answered ${res.status}; cannot capture the bio to restore`);
   }
   const data = (await res.json()) as { id: string; bio?: string | null };
-  return { username: data.id, bio: data.bio ?? '' };
+  // "" is read as null: a blank bio is stored as NULL since Story 4.10 (rows from before may hold "").
+  return { username: data.id, bio: data.bio?.trim() ? data.bio : null };
 }
 
 /**
@@ -40,14 +41,21 @@ async function getOwnProfile(token: string): Promise<{ username: string; bio: st
  * Until then this restore sent PUT /users/me, which never existed, and swallowed the error: the
  * bio was never put back. It now fails loudly when the restore does not take.
  */
-async function setOwnBio(token: string, username: string, bio: string): Promise<void> {
+async function setOwnBio(token: string, username: string, bio: string | null): Promise<void> {
+  // A blank bio clears it to NULL (PATCH /users/{username}), so "" puts back a NULL bio exactly.
   const res = await fetch(`${API_URL}/api/v1/users/${encodeURIComponent(username)}`, {
     method: 'PATCH',
     headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ bio }),
+    body: JSON.stringify({ bio: bio ?? '' }),
   });
   if (res.status !== 200) {
     throw new Error(`PATCH /users/${username} answered ${res.status}; the bio was not restored`);
+  }
+  const after = await getOwnProfile(token);
+  if (after.bio !== bio) {
+    throw new Error(
+      `the bio was restored as ${JSON.stringify(after.bio)}, not ${JSON.stringify(bio)}`
+    );
   }
 }
 
@@ -58,7 +66,7 @@ test.describe('Profile Management', { tag: '@gate' }, () => {
 
   let token: string;
   let ownUsername: string;
-  let originalBio: string;
+  let originalBio: string | null;
 
   test.beforeAll(async () => {
     token = readOrganizerToken();

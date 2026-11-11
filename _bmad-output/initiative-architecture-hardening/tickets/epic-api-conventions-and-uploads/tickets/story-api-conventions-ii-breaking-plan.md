@@ -3,14 +3,14 @@ title: 'API conventions II (breaking): me/username twins for profile and picture
 type: 'refactor'
 ticket: '10'
 created: '2026-11-10'
-status: 'in-progress'
+status: 'in-review'
 baseline_revision: 'ac006ac1ac2902b492c581a48b8d110cd1874993'
 route: 'full'
 route_source: 'auto'
 risk: 'high'
-review: ''
-review_source: ''
-lenses_ran: []
+review: 'quick'
+review_source: 'pinned'
+lenses_ran: ['quick']
 review_loop_iteration: 0
 context:
   - '{project-root}/docs/architecture/coding-standards.md'
@@ -31,6 +31,8 @@ context:
 - **`GET /users/me` stays.** It is ADR-013 §4's self read and the login bootstrap; JIT first login and local-dev Pattern N cannot guarantee `custom:username`. `GET /users/{username}` stays organizer/admin, so the two are not twins.
 - **Session speaker assignments keep `{username}`** (`/sessions/{sessionSlug}/speakers/{username}`): they are a user's assignment to a session, and a username crosses to CUMS. They are outside the speaker key rule.
 - **Speaker key `{speakerId}`** = speaker-pool UUID: the ADR-003 case table lists pool entries as an owned child ("no username before READY"). `POST /speakers/invite` is removed (no UI caller); self-nomination becomes `POST /events/{eventCode}/speaker-nominations`.
+
+- **Old self paths (review pass 1, intent gap settled here):** `PATCH /users/me` and `/users/me/picture*` now fall on the `/users/{username}` templates with `username = me`; they answer 403 (non-organizer) or 400 (organizer, path pattern), not 404/405. Accepted: `me` can never be a username (`chk_username_format`), so nothing is reachable, and a special 404 would add a filter for no gain. The post-deploy check accepts 403/400 for these paths and 404/405 for the others.
 
 ## Boundaries & Constraints
 
@@ -168,9 +170,35 @@ Built 2026-11-11 on `feature/17-overnight-2026-11-10` (agent, owner's blanket go
   Gradle build cache stored a stale `SpeakerRemindersApi`; regenerate with `--rerun` after removing
   an operation or tag.
 
+- **Review fixes (2026-11-11, 02:40):** the cross-event IT got an own-event positive control
+  per operation (12, with the expected effect) and a reserved-recipient invitation case (200,
+  INVITED, no SES call: settles the byte-identity setup in production). The touched mock cases of
+  `SpeakerStatusServiceTest` (updateStatus, getStatusHistory) and `SpeakerModeratorReplyToTest`
+  (`verify(emailService)`) moved onto the production setup: status IT (empty history, interleaved
+  rejection) and Reply-To asserted on the `SesRecorder` (cross-event IT review case,
+  `ManualSpeakerReminderIntegrationTest`). The ratchet does not count those two files (repository
+  and `EmailService` mocks), so it did not move. `PATCH /users/{username}` with another user's
+  address answered 500 (the 409 declared on `PATCH /users/me` never held): now 409
+  `EMAIL_DUPLICATE`, declared with an example. A blank bio is stored as NULL, so the e2e specs
+  restore a NULL bio exactly.
+
 ## Plan Change Log
 
 ## Review Triage Log
+
+Pass 1 (quick lens), 2026-11-11: 0 high, 6 medium, 2 low, 1 maybe-false, 0 false.
+
+| # | Finding | Verdict | Route | Evidence / action |
+|---|---------|---------|-------|-------------------|
+| 1 | Old self paths answer 403/400, frozen matrix says 404/405 | medium | intent_gap → settled | Decided under the owner's blanket go (Decisions, frozen block): `me` is never a username; no code change; post-deploy check updated. |
+| 2 | Outreach rows written before keep an e-mail in `organizer_username`; no issue filed | medium | defer | Pre-existing data; production data change is the owner's. Filed #1287 with options and recommendation. |
+| 3 | Touch rule: `SpeakerStatusServiceTest`, `SpeakerModeratorReplyToTest` (`verify(emailService)`), `SpeakerPoolServiceTest` keep own-code mocks | medium | patch | Methods changed by this diff; coding-standards forbids `verify(emailService)`. |
+| 4 | Cross-event IT: positive control covers 3 of 12 operations, a wrong template would also 404 | medium | patch | Add the own-event positive case per operation. |
+| 5 | `PATCH /users/{username}` lost its 409 (e-mail collision) | medium | patch | `uq_user_profiles_email_lower` + `GlobalExceptionHandler` 409; restore in spec and docs. |
+| 6 | Stale references to removed operations (gateway validator `/speakers/invite`, comments, OPENAPI-CODEGEN.md, disabled Bruno 54) | low | patch | Direct corrections (C15). |
+| 7 | `examples.test.ts` floor loosened to > 240 though 249 measured | low | patch | Tighten to > 248. |
+| 8 | Playwright restores a NULL bio as `""` on the shared organizer account (runs against production) | medium | patch | Restore the exact prior value (null stays null). |
+| 9 | byte-identity spec calls `send-invitation` for an `@e2e.batbern.invalid` address and expects 200; the reserved-domain guard may refuse it in production | maybe-false | patch (settle) | A post-deploy gate failure rolls the deploy back; settle by reading the send path and its IT, adjust the spec or setup if it would fail. |
 
 ## Design Notes
 

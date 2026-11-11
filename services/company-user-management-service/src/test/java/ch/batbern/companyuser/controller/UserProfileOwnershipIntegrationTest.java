@@ -163,6 +163,35 @@ class UserProfileOwnershipIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
+    @WithMockUser(username = SPEAKER, roles = "SPEAKER")
+    void should_clearBioToNull_when_blankBioSent() throws Exception {
+        // A client restores "no bio" by sending "" (the e2e specs do, on shared accounts): it is
+        // stored as NULL, the form a profile had before its first bio, not as "".
+        mockMvc.perform(patch("/api/v1/users/{username}", SPEAKER)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"bio\": \"\"}"))
+                .andExpect(status().isOk());
+
+        assertThat(jdbcTemplate.queryForObject("SELECT bio IS NULL FROM user_profiles WHERE username = ?",
+                Boolean.class, SPEAKER)).isTrue();
+    }
+
+    @Test
+    @WithMockUser(username = ORGANIZER, roles = "ORGANIZER")
+    void should_return409_when_emailIsAnotherUsersAddress() throws Exception {
+        // uq_user_profiles_email_lower: one address, one profile (case-insensitive). The 409 was
+        // declared on the removed PATCH /users/me and must hold on PATCH /users/{username}.
+        mockMvc.perform(patch("/api/v1/users/{username}", OTHER)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"email\": \"John.Doe@Example.com\"}"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.errorCode").value("EMAIL_DUPLICATE"));
+
+        assertThat(stored(OTHER).getEmail()).isEqualTo(OTHER + "@example.com");
+        assertThat(applicationEvents.stream(UserUpdatedEvent.class)).isEmpty();
+    }
+
+    @Test
     @WithMockUser(username = ORGANIZER, roles = "ORGANIZER")
     void should_updateAnotherProfile_when_organizerPatches() throws Exception {
         mockMvc.perform(patch("/api/v1/users/{username}", OTHER)

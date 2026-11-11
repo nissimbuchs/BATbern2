@@ -180,7 +180,11 @@ test.describe('Cross-auth byte-identity — organizer on-behalf vs. speaker self
       );
       expect(promoteRes.status(), 'promote').toBe(200);
 
-      // Send the invitation by the pool entry id (Story 4.10: the only speaker key).
+      // Send the invitation by the pool entry id (Story 4.10: the only speaker key). The address
+      // is on the reserved domain e2e.batbern.invalid: the answer is still 200 and the speaker
+      // INVITED, but SES is never asked (EmailService refuses the reserved recipient, the
+      // invitation mail service swallows that). Pinned by SpeakerCrossEventScopingIntegrationTest
+      // #should_inviteWithoutMail_when_speakerAddressIsOnReservedDomain.
       const responseDeadline = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
         .toISOString()
         .slice(0, 10);
