@@ -66,7 +66,20 @@ after = [10, "10c"]
 hitl = false
 risk = "high"
 references = ["docs/architecture/ADR-013-rest-api-crud-conventions.md", "docs/architecture/ADR-003-meaningful-identifiers-public-apis.md#amendment-2026-11-uuids-in-paths"]
-notes = ["2026-11-10: also after 10c, which moves participant operations out of EventController and changes event-registrations-api, where 10b moves GET /events/registrations.", "Owner 2026-11-08: additional-emails {email} in a path is a real ADR-003 violation (personal data in a path); DELETE /users/me/additional-emails/{email} has the same problem and is in scope.", "Owner 2026-11-08 (17.4 follow-up): the new Spectral rule no-personal-data-path-param reports 4 lines on /users/me/additional-emails/{email} (DELETE, PATCH, POST make-primary, POST resend-verification), all owned by 10b; the story ends when that rule reports none."]
+notes = ["2026-11-11: split, decided by agent under owner's blanket go: 10b keeps the EMS items (notifications incl. per-caller scoping, ai-prompts reset, session import, event types, recent photos, registrations list); the additional-email key and companies get-or-create (CUMS) are entry 10d.", "2026-11-10: also after 10c, which moves participant operations out of EventController and changes event-registrations-api, where 10b moves GET /events/registrations.", "Owner 2026-11-08: additional-emails {email} in a path is a real ADR-003 violation (personal data in a path); DELETE /users/me/additional-emails/{email} has the same problem and is in scope.", "Owner 2026-11-08 (17.4 follow-up): the new Spectral rule no-personal-data-path-param reports 4 lines on /users/me/additional-emails/{email} (DELETE, PATCH, POST make-primary, POST resend-verification), all owned by 10b; the story ends when that rule reports none."]
+
+[[entry]]
+id = "10d"
+type = "story"
+title = "API conventions III b: additional-email key and get-or-create (breaking)"
+description = "Split from 10b on 2026-11-11. Additional e-mails: PATCH, DELETE, make-primary and resend-verification move from /users/me/additional-emails/{email} to {emailId} (the existing user_additional_emails.id UUID, V16; no migration; AdditionalEmail gains id). The verification link is unaffected (/verify-email?token=). /companies:get-or-create becomes POST /companies/get-or-create, 200 existing / 201 created (ADR-013 section 2). Owns N8 (4 lines) and the path-kebab-case companies line; 4 uuid-path-param lines go to exception X3 (natural key is personal data). Make-primary moves a real Cognito login on local dev (production pool): its happy path is tested only in the integration test with Cognito at the boundary; Bruno and Playwright cover only non-mutating cases (unverified 409, unknown or foreign id 404)."
+verify = "no path in users-api.openapi.yml carries an e-mail address and no-personal-data-path-param reports none; the Spectral baseline loses N8 and the companies line (88 to 87 entries, the 4 {emailId} lines under X3); get-or-create answers 201 when it creates and 200 when it finds; the old operations answer 404 in production; integration tests per new operation; Bruno users-api and companies-api and Playwright user-settings-additional-emails pass on local dev."
+covers = ["R23"]
+after = ["10b"]
+hitl = false
+risk = "high"
+references = ["docs/architecture/ADR-013-rest-api-crud-conventions.md", "docs/architecture/ADR-003-meaningful-identifiers-public-apis.md#amendment-2026-11-uuids-in-paths"]
+notes = ["Split from 10b on 2026-11-11, decided by agent under owner's blanket go (scope above one session)."]
 
 [[entry]]
 id = 11
@@ -88,7 +101,7 @@ title = "Upload purpose profile-picture"
 description = "Second purpose on the 17.11 contract, in CUMS: profile pictures (own and, for organizers, another user's) and picture URLs from the speaker batch import go through /uploads/profile-picture and /import; the old picture presign, confirm and upload-from-url operations are removed with their frontend callers, Bruno and Playwright. Builds on the one picture endpoint set 17.10 leaves; after 10b, which changes the same UserController and users-api spec. Baseline lines owned: no-verb-segment users-api POST /users/{username}/picture/confirm; no-verb-segment users-api POST /users/{username}/profile-picture/upload-from-url."
 verify = "The 2 cited baseline lines are gone and npm run lint:api passes with a baseline 2 lines smaller (no line added beyond those 17.11 accepted for /uploads/{purpose}); the old picture presign, confirm and upload-from-url operations answer 404 in production; the 17.3 contract check passes; CUMS integration tests (own allowed, other user 403, organizer allowed) and Playwright on a profile picture change pass, and a speaker batch import with a picture URL shows the picture."
 covers = ["R22"]
-after = ["10b", 11]
+after = ["10b", "10d", 11]
 hitl = false
 risk = "medium"
 references = ["docs/architecture/ADR-002-generic-file-upload-service.md"]

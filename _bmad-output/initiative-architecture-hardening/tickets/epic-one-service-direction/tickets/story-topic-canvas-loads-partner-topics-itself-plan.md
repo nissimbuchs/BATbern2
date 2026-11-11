@@ -3,14 +3,14 @@ title: 'Topic canvas loads partner topics itself'
 type: 'refactor'
 ticket: '8'
 created: '2026-11-11'
-status: 'in-progress'
+status: 'built'
 baseline_revision: '4c44601a4d0c2db5ccd57bb95b6a61310422f140'
 route: 'full'
 route_source: 'auto'
 risk: 'medium'
-review: ''
-review_source: ''
-lenses_ran: []
+review: 'quick'
+review_source: 'pinned'
+lenses_ran: ['quick']
 review_loop_iteration: 0
 context:
   - '{project-root}/docs/architecture/ADR-016-service-directions-and-service-to-service-calls.md'
@@ -44,6 +44,8 @@ context:
 
 **Decisions (2026-11-11, decided by agent under owner's blanket go):**
 - Partner topics without a company keep appearing as the group "Unknown" without a logo, as before (the ticket says "as before"). Whether community topics belong on the canvas is a product question for later, not this story.
+
+- Review pass 1: partner groups now come in the order of the PCS list (by votes), so the 20-company cap keeps the most-voted companies. The old order came from a Java `HashMap` and was unspecified; accepted as the defined replacement of an undefined order, not a change of what the canvas shows.
 
 </frozen-after-approval>
 
@@ -132,6 +134,14 @@ Built 2026-11-11 on `feature/17-overnight-2026-11-10` (baseline `afb664ae`).
 
 ## Review Triage Log
 
+Pass 1 (quick lens), 2026-11-11: 0 high, 2 medium, 1 low, 0 false.
+
+| # | Finding | Verdict | Route | Evidence / action |
+|---|---------|---------|-------|-------------------|
+| 1 | `{"topics":[null]}` passes `@Size` and NPEs in `classifyAll` → 500 instead of 400 | medium | patch | Reject null elements as 400; IT case. |
+| 2 | Company order change touches the frozen "20-company cap" line; Design Notes say no deviation | medium | intent_gap → settled | Decision added to the frozen block: HashMap order was unspecified, vote order replaces it. |
+| 3 | `blobTopicService.test` asserts the recorded order of concurrent chunk requests | low | patch | Compare sorted chunk sizes; result order stays asserted. |
+
 ## Design Notes
 
 **Architecture note.** Modules: EMS topics (controller, `TopicSessionDataService`), EMS L0 client package (2 classes deleted), web-frontend services. Edge removed: EMS→PCS (canvas); new edges: browser→PCS (existing public reads, PARTNER/ORGANIZER and permitAll) and browser→EMS. New endpoint `POST /topics/classifications`; nearest `POST /events/{eventCode}/topic-similarity` cannot be extended: one topic per body and response, and changing a staying public op is epic 4. POST, not GET: up to hundreds of titles exceed the 8 KB header cap; 200, nothing is stored; `classifications` is a noun under `/topics`, no Spectral rule fires. Reused: `TopicSimilarityService`, MSW harness. Deviation: none.
@@ -150,3 +160,5 @@ Built 2026-11-11 on `feature/17-overnight-2026-11-10` (baseline `afb664ae`).
 
 **Manual checks:**
 - Restart `event-management`; as organizer open the BATbern57 canvas: partner ghost blobs with logos (anonymized data: e.g. aity, sbb), clusters as before; DevTools shows the three calls; `/tmp/batbern-1-event-management.log` has no PCS call.
+
+Final verification 2026-11-11 after the review patches (d1d85bdc): shared-kernel, CUMS, EMS, PCS and gateway suites green; lint:api (97), lint:api-internal, check:api-types, type-check, check:s2s-client-urls (0), Vitest 5915 passed, test ratchet and API paths green. Local dev before the patches: Bruno 3/3, Playwright blob-topic-selector 9 passed; the gateway log shows the three browser calls, the EMS log no PCS call.
