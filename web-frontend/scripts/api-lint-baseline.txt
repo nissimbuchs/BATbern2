@@ -8,7 +8,6 @@
 no-literal-under-events	event-analytics-api.openapi.yml	GET /events/attendance-summary
 no-literal-under-events	event-media-api.openapi.yml	GET /events/recent-photos
 no-literal-under-events	event-registrations-api.openapi.yml	GET /events/registrations
-no-literal-under-events	event-registrations-api.openapi.yml	POST /events/batch_registrations
 no-literal-under-events	events-core-api.openapi.yml	GET /events/current
 no-literal-under-events	events-core-api.openapi.yml	GET /events/types
 no-literal-under-events	events-core-api.openapi.yml	GET /events/types/{type}
@@ -24,7 +23,6 @@ no-verb-segment	event-mail-api.openapi.yml	GET /conversations/{conversationKey}/
 no-verb-segment	event-mail-api.openapi.yml	POST /events/{eventCode}/mails/preview
 no-verb-segment	event-media-api.openapi.yml	POST /events/{eventCode}/photos/confirm
 no-verb-segment	event-newsletter-api.openapi.yml	GET /newsletter/unsubscribe/verify
-no-verb-segment	event-newsletter-api.openapi.yml	POST /newsletter/subscribe
 no-verb-segment	event-newsletter-api.openapi.yml	POST /newsletter/unsubscribe
 no-verb-segment	event-notifications-api.openapi.yml	DELETE /notifications/batch-delete
 no-verb-segment	event-notifications-api.openapi.yml	PUT /notifications/batch-read
@@ -53,7 +51,6 @@ no-verb-segment	users-api.openapi.yml	POST /users/{username}/profile-picture/upl
 no-verb-segment	users-api.openapi.yml	POST /watch/authenticate
 no-verb-segment	users-api.openapi.yml	POST /watch/pair
 path-kebab-case	companies-api.openapi.yml	POST /companies:get-or-create
-path-kebab-case	event-registrations-api.openapi.yml	POST /events/batch_registrations
 uuid-path-param	companies-api.openapi.yml	DELETE /logos/{uploadId}
 uuid-path-param	companies-api.openapi.yml	POST /logos/{uploadId}/confirm
 uuid-path-param	event-ai-api.openapi.yml	GET /events/{eventCode}/ai/theme-image/jobs/{jobId}

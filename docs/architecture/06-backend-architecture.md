@@ -134,7 +134,7 @@ Main `permitAll` entries of the event-management chain
 | `GET /api/v1/events/{code}/sessions`, `/sessions/{slug}`, `/sessions/{slug}/speakers` | Filtered by `PublicSessionVisibilityPolicy` for non-organizers |
 | `GET .../sessions/{slug}/qna`, `.../materials/{id}/download`, `/events/{code}/photos`, `/events/{code}/live-timing` | Public reads for Q&A archive, materials, photos, presenter screen |
 | `POST /api/v1/events/{code}/registrations`, `.../registrations/confirm`, `GET .../registrations/{code}` | Anonymous registration; the code or the token is the credential |
-| `POST /api/v1/newsletter/subscribe`, `/newsletter/unsubscribe`, `GET /newsletter/unsubscribe/verify` | Newsletter |
+| `POST /api/v1/newsletter/subscribers` (exact path), `/newsletter/unsubscribe`, `GET /newsletter/unsubscribe/verify` | Newsletter (subscribe since Story 4.10c; the rest of `/newsletter/subscribers` is the organizer's) |
 | `GET/POST /api/v1/registrations/deregister*` | Token-based self-service deregistration |
 | `GET/POST /api/v1/events/{code}/thanks`, `GET /api/v1/thanks/featured` | Thank the organizers |
 | `/internal/**` | Service-to-service only; the gateway denies it (below) |
@@ -1328,7 +1328,9 @@ fails the creation) calls `RegistrationService.enrollStakeholders`: every user w
 PARTNER role gets a `confirmed` registration without confirmation mail, capacity check or waitlist,
 marked in `metadata` with `AUTO_REGISTERED_FROM_KEY` so it does not count as a real attendee for the
 event delete guard. The capacity count (`registered` + `confirmed`) does include these rows.
-`POST /events/{eventCode}/enroll-stakeholders` (ORGANIZER) repeats it idempotently for older events.
+`POST /events/{eventCode}/participants` with `{"stakeholders": true}` (ORGANIZER) repeats it idempotently for
+older events (Story 4.10c: the one participants create, next to the single add by `username` and the
+historical import by `people`; only the single add with `notify` sends mail).
 
 ## Task Activation
 

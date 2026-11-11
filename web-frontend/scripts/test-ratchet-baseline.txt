@@ -7,7 +7,6 @@ be-mock-in-process	services/company-user-management-service/src/test/java/ch/bat
 be-mock-in-process	services/event-management-service/src/test/java/ch/batbern/events/controller/DeregistrationControllerIntegrationTest.java	3
 be-mock-in-process	services/event-management-service/src/test/java/ch/batbern/events/controller/EventControllerIntegrationTest.java	1
 be-mock-in-process	services/event-management-service/src/test/java/ch/batbern/events/controller/EventPhotoControllerIntegrationTest.java	1
-be-mock-in-process	services/event-management-service/src/test/java/ch/batbern/events/controller/ParticipantsControllerIntegrationTest.java	2
 be-mock-in-process	services/event-management-service/src/test/java/ch/batbern/events/controller/PublicSessionVisibilityIntegrationTest.java	1
 be-mock-in-process	services/event-management-service/src/test/java/ch/batbern/events/controller/RegistrationControllerIntegrationTest.java	1
 be-mock-in-process	services/event-management-service/src/test/java/ch/batbern/events/controller/SessionQnaIntegrationTest.java	1
@@ -37,9 +36,7 @@ be-mock-s2s-client	services/company-user-management-service/src/test/java/ch/bat
 be-mock-s2s-client	services/company-user-management-service/src/test/java/ch/batbern/companyuser/controller/ProfileMergeRequestIntegrationTest.java	2
 be-mock-s2s-client	services/company-user-management-service/src/test/java/ch/batbern/companyuser/controller/UserMergeIntegrationTest.java	1
 be-mock-s2s-client	services/event-management-service/src/test/java/ch/batbern/events/controller/AnonymousRegistrationE2EIntegrationTest.java	1
-be-mock-s2s-client	services/event-management-service/src/test/java/ch/batbern/events/controller/BatchRegistrationContractIntegrationTest.java	1
 be-mock-s2s-client	services/event-management-service/src/test/java/ch/batbern/events/controller/EventControllerIntegrationTest.java	1
-be-mock-s2s-client	services/event-management-service/src/test/java/ch/batbern/events/controller/ParticipantsControllerIntegrationTest.java	1
 be-mock-s2s-client	services/event-management-service/src/test/java/ch/batbern/events/controller/RegistrationCapacityIntegrationTest.java	1
 be-mock-s2s-client	services/event-management-service/src/test/java/ch/batbern/events/controller/RegistrationControllerIntegrationTest.java	1
 be-mock-s2s-client	services/event-management-service/src/test/java/ch/batbern/events/controller/RegistrationStatusIntegrationTest.java	1
@@ -68,7 +65,6 @@ be-mock-s2s-client	services/event-management-service/src/test/java/ch/batbern/ev
 be-mock-s2s-client	services/event-management-service/src/test/java/ch/batbern/events/service/QnaNotificationServiceIntegrationTest.java	1
 be-mock-s2s-client	services/event-management-service/src/test/java/ch/batbern/events/service/RegistrationResendServiceTest.java	1
 be-mock-s2s-client	services/event-management-service/src/test/java/ch/batbern/events/service/RegistrationServiceAuthenticatedTest.java	1
-be-mock-s2s-client	services/event-management-service/src/test/java/ch/batbern/events/service/RegistrationServiceBatchTest.java	1
 be-mock-s2s-client	services/event-management-service/src/test/java/ch/batbern/events/service/RegistrationServiceConfirmationTest.java	1
 be-mock-s2s-client	services/event-management-service/src/test/java/ch/batbern/events/service/SessionUserServiceTest.java	1
 be-mock-s2s-client	services/event-management-service/src/test/java/ch/batbern/events/service/SpeakerAutoRegistrationServiceTest.java	1
@@ -119,7 +115,6 @@ be-transactional-it	services/event-management-service/src/test/java/ch/batbern/e
 be-transactional-it	services/event-management-service/src/test/java/ch/batbern/events/controller/AnonymousRegistrationE2EIntegrationTest.java	1
 be-transactional-it	services/event-management-service/src/test/java/ch/batbern/events/controller/ArchiveBrowsingIntegrationTest.java	1
 be-transactional-it	services/event-management-service/src/test/java/ch/batbern/events/controller/AttendeeDashboardIntegrationTest.java	1
-be-transactional-it	services/event-management-service/src/test/java/ch/batbern/events/controller/BatchRegistrationContractIntegrationTest.java	1
 be-transactional-it	services/event-management-service/src/test/java/ch/batbern/events/controller/DeregistrationControllerIntegrationTest.java	1
 be-transactional-it	services/event-management-service/src/test/java/ch/batbern/events/controller/EmailTemplateControllerIntegrationTest.java	1
 be-transactional-it	services/event-management-service/src/test/java/ch/batbern/events/controller/EventAttendanceSummaryIntegrationTest.java	1
@@ -130,9 +125,7 @@ be-transactional-it	services/event-management-service/src/test/java/ch/batbern/e
 be-transactional-it	services/event-management-service/src/test/java/ch/batbern/events/controller/FeaturedThanksIntegrationTest.java	1
 be-transactional-it	services/event-management-service/src/test/java/ch/batbern/events/controller/GlobalSessionControllerIntegrationTest.java	1
 be-transactional-it	services/event-management-service/src/test/java/ch/batbern/events/controller/MagicLinkEndpointsRemovedIntegrationTest.java	1
-be-transactional-it	services/event-management-service/src/test/java/ch/batbern/events/controller/NewsletterControllerIntegrationTest.java	1
 be-transactional-it	services/event-management-service/src/test/java/ch/batbern/events/controller/OrganizerThanksIntegrationTest.java	1
-be-transactional-it	services/event-management-service/src/test/java/ch/batbern/events/controller/ParticipantsControllerIntegrationTest.java	1
 be-transactional-it	services/event-management-service/src/test/java/ch/batbern/events/controller/PublicSessionVisibilityIntegrationTest.java	1
 be-transactional-it	services/event-management-service/src/test/java/ch/batbern/events/controller/PublishingEngineControllerIntegrationTest.java	1
 be-transactional-it	services/event-management-service/src/test/java/ch/batbern/events/controller/RegistrationCapacityIntegrationTest.java	1
@@ -341,7 +334,6 @@ fe-mock-hooks	web-frontend/src/components/public/Navigation/__tests__/ThankOrgan
 fe-mock-hooks	web-frontend/src/components/public/PublicLayout.test.tsx	1
 fe-mock-hooks	web-frontend/src/components/public/Registration/__tests__/RegistrationWizard.test.tsx	4
 fe-mock-hooks	web-frontend/src/components/public/Testimonials/__tests__/TestimonialSection.test.tsx	3
-fe-mock-hooks	web-frontend/src/components/public/__tests__/NewsletterSubscribeWidget.test.tsx	3
 fe-mock-hooks	web-frontend/src/components/public/__tests__/UpcomingEventsSection.test.tsx	2
 fe-mock-hooks	web-frontend/src/components/shared/Company/CompanyBatchImportModal.test.tsx	1
 fe-mock-hooks	web-frontend/src/components/shared/Company/__tests__/Accessibility.test.tsx	4
@@ -449,7 +441,6 @@ fe-mock-i18n	web-frontend/src/components/public/__tests__/DeregistrationEntry.te
 fe-mock-i18n	web-frontend/src/components/public/__tests__/EventCard.test.tsx	1
 fe-mock-i18n	web-frontend/src/components/public/__tests__/FilterSheet.test.tsx	1
 fe-mock-i18n	web-frontend/src/components/public/__tests__/FilterSidebar.test.tsx	1
-fe-mock-i18n	web-frontend/src/components/public/__tests__/NewsletterSubscribeWidget.test.tsx	1
 fe-mock-i18n	web-frontend/src/components/public/__tests__/UpcomingEventsSection.test.tsx	1
 fe-mock-i18n	web-frontend/src/components/shared/Company/CompanyBatchImportModal.test.tsx	1
 fe-mock-i18n	web-frontend/src/components/shared/Company/CompanyCard.test.tsx	1
@@ -460,7 +451,6 @@ fe-mock-i18n	web-frontend/src/components/shared/Navigation/AppHeader.test.tsx	1
 fe-mock-i18n	web-frontend/src/components/shared/Navigation/NavigationMenu.test.tsx	1
 fe-mock-i18n	web-frontend/src/components/user/CompanyLogoRequest/__tests__/CompanyLogoSection.test.tsx	1
 fe-mock-i18n	web-frontend/src/components/user/ProfileEmailAddresses/__tests__/ProfileEmailAddresses.test.tsx	1
-fe-mock-i18n	web-frontend/src/components/user/ProfileEmailAddresses/__tests__/ProfileNewsletterAddresses.test.tsx	1
 fe-mock-i18n	web-frontend/src/hooks/useRegistration/useRegistration.test.ts	1
 fe-mock-i18n	web-frontend/src/pages/PartnerCompanyPage.test.tsx	1
 fe-mock-i18n	web-frontend/src/pages/attendee/__tests__/AttendeeDashboardPage.test.tsx	1
@@ -487,8 +477,7 @@ fe-mock-services	web-frontend/src/components/organizer/Admin/TaskTemplatesTab.te
 fe-mock-services	web-frontend/src/components/organizer/EventManagement/__tests__/EventForm.test.tsx	1
 fe-mock-services	web-frontend/src/components/organizer/EventManagement/__tests__/WorkflowProgressBar.5.1a.test.tsx	1
 fe-mock-services	web-frontend/src/components/organizer/EventPage/EventParticipantList.test.tsx	1
-fe-mock-services	web-frontend/src/components/organizer/EventPage/EventParticipantsTab.test.tsx	2
-fe-mock-services	web-frontend/src/components/organizer/EventPage/__tests__/AddParticipantDialog.test.tsx	1
+fe-mock-services	web-frontend/src/components/organizer/EventPage/EventParticipantsTab.test.tsx	1
 fe-mock-services	web-frontend/src/components/organizer/EventPage/__tests__/EventCommunicationsContainer.test.tsx	1
 fe-mock-services	web-frontend/src/components/organizer/EventPage/__tests__/EventInfoTab.test.tsx	1
 fe-mock-services	web-frontend/src/components/organizer/EventPage/__tests__/EventSettingsTab.test.tsx	1
@@ -534,7 +523,6 @@ fe-mock-services	web-frontend/src/components/shared/Navigation/NavigationMenu.te
 fe-mock-services	web-frontend/src/components/speaker-portal/__tests__/PresentationUpload.test.tsx	1
 fe-mock-services	web-frontend/src/components/user/EarlierProfilesSection/EarlierProfilesSection.test.tsx	1
 fe-mock-services	web-frontend/src/components/user/ProfileEmailAddresses/__tests__/ProfileEmailAddresses.test.tsx	2
-fe-mock-services	web-frontend/src/components/user/ProfileEmailAddresses/__tests__/ProfileNewsletterAddresses.test.tsx	1
 fe-mock-services	web-frontend/src/features/profile/WatchPairingSection.test.tsx	1
 fe-mock-services	web-frontend/src/hooks/__tests__/useCurrentEvent.test.tsx	1
 fe-mock-services	web-frontend/src/hooks/__tests__/useInfiniteEvents.test.tsx	1
@@ -598,7 +586,6 @@ fe-mock-services	web-frontend/src/services/analyticsService.test.ts	1
 fe-mock-services	web-frontend/src/services/api/__tests__/watchPairingApi.test.ts	1
 fe-mock-services	web-frontend/src/services/api/apiClient.test.ts	1
 fe-mock-services	web-frontend/src/services/api/companyApi.test.ts	1
-fe-mock-services	web-frontend/src/services/api/eventApi.test.ts	1
 fe-mock-services	web-frontend/src/services/api/newsletterApi.test.ts	3
 fe-mock-services	web-frontend/src/services/api/partnerAnalyticsApi.test.ts	1
 fe-mock-services	web-frontend/src/services/api/partnerMeetingsApi.test.ts	3

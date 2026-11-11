@@ -42,6 +42,12 @@ Only items that are not live yet. Everything else is listed under its release be
 
 ### Unreleased — after BATbern60
 
+**Improvement — Participants and newsletter, one way each (4.10c)**:
+- ✅ The participant CSV import (Administration → Import data) sends each event's people together. A person who attended several events shows **Success** only when every event worked, otherwise the events that failed and why. One person that cannot be imported no longer stops the others.
+- ✅ Account settings show the newsletter per address, like the profile page. Before, the switch there covered the login address only.
+- ✅ A signed-in visitor who receives the newsletter on any of their addresses no longer sees the subscribe form on the homepage.
+- ⚠️ API, breaking for scripts: participants are created only with `POST /api/v1/events/{eventCode}/participants` and exactly one of `username` (single add), `people` (import of up to 100 people for that event) or `stakeholders: true`; `POST /events/batch_registrations` and `…/enroll-stakeholders` are gone. Subscribing is `POST /api/v1/newsletter/subscribers` (was `/newsletter/subscribe`); a user's newsletter is `GET`/`PATCH /api/v1/newsletter/my-subscriptions` per address; `/newsletter/my-subscription` and the PUT are gone.
+
 **Improvement — One address per profile, picture and speaker (4.10)**:
 - ✅ A speaker of one event can no longer be read or changed through another event's page or link. Before, most speaker actions (status, review, outreach, history, content) checked only the speaker's ID, so an organizer working in one event could act on a speaker of another one by mistake.
 - ✅ Outreach notes record the organizer's user name. Before, they recorded the organizer's e-mail address (notes written before keep it).

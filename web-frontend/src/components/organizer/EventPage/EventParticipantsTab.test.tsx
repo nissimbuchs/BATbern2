@@ -12,6 +12,7 @@ import EventParticipantsTab from './EventParticipantsTab';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { eventApiClient } from '@/services/eventApiClient';
 import { api } from '@/test/msw/api';
+import { anEvent } from '@/test/fixtures/events';
 
 // Mock EventParticipantList component
 vi.mock('./EventParticipantList', () => ({
@@ -35,24 +36,15 @@ vi.mock('@/services/eventApiClient', () => ({
   },
 }));
 
-const mockEvent = {
+// A wire-shaped event (src/test/fixtures), with the fields these tests read.
+const mockEvent = anEvent({
   eventCode: 'BAT-2024-01',
   eventNumber: 123,
   title: 'Test Event',
-  subtitle: 'Test Subtitle',
-  date: '2024-06-15T18:00:00Z',
-  registrationDeadline: '2024-06-10T23:59:59Z',
-  venueName: 'Test Venue',
-  venueAddress: 'Test Address',
   venueCapacity: 200,
   organizerUsername: 'admin',
-  currentWorkflowState: 'DRAFT' as const,
-  workflowHistory: [],
-  registrationCount: 0,
-  attendanceCount: 0,
-  createdAt: '2024-01-01T00:00:00Z',
-  updatedAt: '2024-01-01T00:00:00Z',
-};
+  workflowState: 'CREATED',
+});
 
 const renderWithProviders = (ui: React.ReactElement) => {
   const queryClient = new QueryClient({

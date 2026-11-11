@@ -77,6 +77,23 @@ most common EMS shape (speakers review/promote, registrations promote, mails ret
 - Lint: baseline 104 to 101 entries, owner groups G08, G09 and G11 removed, the 12 `{speakerId}`
   operations accepted one by one in X1. Participants and newsletter self-service follow in 4.10c.
 
+**Story 4.10c (2026-11, API conventions II b, breaking, no aliases)** gave participants and the
+newsletter one operation per intent:
+
+- **Participants:** one create, `POST /events/{eventCode}/participants`, with exactly one mode:
+  `username` (+ `force`, `notify`; 201), `people` (historical import of up to 100 people for this
+  event; 200 with a result per person, each saved on its own) or `stakeholders: true` (200). The
+  mode is checked by the service (400), not by `oneOf`. `POST /events/batch_registrations` (a
+  create beside the collection, per participant) and `POST /events/{eventCode}/enroll-stakeholders`
+  are gone. Only the single add with `notify` sends mail.
+- **Newsletter self-service:** one resource per address, `GET` and `PATCH
+  /newsletter/my-subscriptions` (PATCH partial: `subscribed`, `language`); the single-address
+  `/newsletter/my-subscription` and the PUT without a replacement contract (§1) are gone.
+- **Subscribe** is a create on the collection, `POST /newsletter/subscribers` (was the verb path
+  `POST /newsletter/subscribe`), public by exact path in the gateway and EMS; Turnstile and the
+  per-IP rate limit moved with it. It still sends no mail (double opt-in: #1288).
+- Lint: baseline 101 to 98 entries, owner groups G06 and G10 removed.
+
 ## Context
 
 BATbern has ~13 OpenAPI specs across five services. An audit during the

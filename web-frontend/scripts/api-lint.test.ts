@@ -269,8 +269,6 @@ describe('the committed baseline', () => {
     expect(errors).toEqual([]);
     const keys = entries.map((e) => `${e.rule} ${e.method} ${e.path}`);
     for (const expected of [
-      'path-kebab-case POST /events/batch_registrations',
-      'no-literal-under-events POST /events/batch_registrations',
       'no-verb-segment POST /events/{eventCode}/mails/preview',
       'no-verb-segment POST /speaker-portal/events/{eventCode}/content/submit',
       'no-verb-segment POST /logos/upload-from-url',

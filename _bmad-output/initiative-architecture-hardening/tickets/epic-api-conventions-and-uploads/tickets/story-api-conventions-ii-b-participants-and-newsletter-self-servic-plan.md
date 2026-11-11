@@ -91,6 +91,28 @@ context:
 
 ## Implementation Notes
 
+- **Participants response:** one schema `AddParticipantsResponse` for 201 and 200 with
+  `@JsonInclude(NON_NULL)` (`x-class-extra-annotation`, precedent in analytics/sessions/core), so
+  each mode carries only its fields and the response conformance gate needs no nullable noise.
+  `operationId` is `addParticipants` (was `addParticipant`).
+- **Import isolation:** `RegistrationService.importParticipants` has no outer transaction; each
+  person is `saveAndFlush`ed on its own and a `RuntimeException` (CUMS 409, DB) becomes `FAILED`.
+  The realistic failure is CUMS; a DB error after OSIV is not re-tested.
+- **Mode rule details:** `force`/`notify` outside the single add are a 400 too; `username` has
+  `minLength: 1`.
+- **Newsletter:** subscribe is `createNewsletterSubscriber`, the PATCH `patchMyNewsletterSubscriptions`.
+  Stale rows (subscribed under the username, address no longer the user's) are listed only while
+  subscribed and accept only `subscribed: false` (no language change), so they disappear once
+  unsubscribed. `NewsletterAddressSubscription` gained `language` (required, nullable).
+- **Turnstile:** the matrix and AC say a missing token is refused; the gateway filter fails open
+  on a missing token by design (Story 10.31 AC2), and "Subscribe keeps today's behaviour". Not
+  changed; the spec, the filter comment and `access-control-public.txt` now say what happens. The
+  after-deploy AC "without a Turnstile token is refused" therefore does not hold; an invalid token
+  is refused (403). Changing to fail-closed is the owner's call (with #1288).
+- **Frontend:** `ParticipantBatchImportModal.test.tsx` still mocks the hook for its display
+  states (ratchet unchanged for it); the new `ParticipantBatchImportModal.import.test.tsx` runs
+  the real modal, hook and service on MSW. `UserSettingsTab` got the per-address switches.
+
 ## Plan Change Log
 
 ## Review Triage Log

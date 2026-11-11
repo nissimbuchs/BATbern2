@@ -18,7 +18,6 @@
     "src/components/organizer/EventManagement/__tests__/WorkflowProgressBar.5.1a.test.tsx",
     "src/components/organizer/EventPage/EventParticipantFilters.test.tsx",
     "src/components/organizer/EventPage/EventParticipantList.test.tsx",
-    "src/components/organizer/EventPage/EventParticipantsTab.test.tsx",
     "src/components/organizer/EventTypeConfigurationForm/EventTypeConfigurationForm.test.tsx",
     "src/components/organizer/EventTypeSelector/EventTypeSelector.test.tsx",
     "src/components/organizer/NewsletterSubscribers/__tests__/NewsletterSubscriberFilters.test.tsx",

@@ -995,7 +995,7 @@ explicitly accept.
 migration V17). `NULL` = no consent on record. The nullable timestamp doubles as audit
 record + gate flag. There is deliberately **no newsletter column** — newsletter consent
 lives exclusively in the EMS `newsletter_subscribers` table (Story 10.7) via
-`GET/PATCH /api/v1/newsletter/my-subscription`.
+`GET/PATCH /api/v1/newsletter/my-subscriptions`, per address (Story 4.10c).
 
 **Who stamps consent, where**:
 - **Native self-registration** (PostConfirmation, Pattern 1): the RegistrationStep2 ToS
@@ -1083,9 +1083,11 @@ to the primary address. A confirmed additional address gets a copy only when its
 `receive_event_mail` on (CUMS V24, default off, also for existing rows; `PATCH
 /users/me/additional-emails/{email}`, 409 `NOT_VERIFIED` for an unconfirmed address). EMS decides in
 one place, `EventMailCopies.of(UserResponse)`. Until #1244 every additional address got a CC, confirmed
-or not. The newsletter is one `newsletter_subscribers` row per address (#1143); `GET/PUT
-/newsletter/my-subscriptions` lists and changes it per address, for the primary and the confirmed
-additional addresses only (403 otherwise). Participants manage all of this on `/profile` (tabs
+or not. The newsletter is one `newsletter_subscribers` row per address (#1143); `GET/PATCH
+/newsletter/my-subscriptions` lists and changes it per address (PATCH partial: `subscribed`,
+`language`), for the primary and the confirmed additional addresses only (403 otherwise). An address
+still subscribed under the username that is no longer the user's is listed too and may only be
+unsubscribed (Story 4.10c; the old single-address `/newsletter/my-subscription` is gone). Participants manage all of this on `/profile` (tabs
 "Einwilligung & Newsletter" and "E-Mail-Adressen"); organizers keep the Account settings.
 
 **Changing the primary address (#1244 step 2).** A confirmed additional address can become the primary
