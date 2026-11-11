@@ -4,8 +4,9 @@ info:
   version: 1.0.0
   description: |
     Service-to-service operations of company-user-management under `/internal/**` (Story 17.0b2).
-    Callers: event-management (`UserApiClientImpl`), partner-coordination (`UserServiceClientImpl`,
-    `CompanyServiceClientImpl`) and the API gateway (`GatewayUserStatusClient`).
+    Callers: event-management (`UserApiClientImpl`, `MailCenterRequestFeedClient`),
+    partner-coordination (`UserServiceClientImpl`, `CompanyServiceClientImpl`) and the API gateway
+    (`GatewayUserStatusClient`).
 
     Not a public API: the API gateway does not route `/internal/**` and denies it explicitly; the
     services reach it inside the VPC through Service Connect. The JWT is optional (ADR-016 decision
@@ -16,6 +17,9 @@ info:
     (frontend path check, type generation, API similarity, ZAP coverage, access-control probe,
     `lint:api`) does not read `docs/api/internal/`; `npm run lint:api-internal` lints it with the
     reduced ruleset `docs/api/internal/.spectral.yaml`.
+
+    Epic 17 entry 7 added the Mail Center request feed (`/internal/mail-center-requests`), which
+    event-management pulls instead of CUMS pushing the requests to it (ADR-016 decision 4).
 
     Epic 17 entry 6 (17.6 part A) moved the three machine-only writes of users-api here (provision,
     profile patch, invitation credentials) and added the single company read. Paths are full paths
@@ -237,6 +241,91 @@ paths:
                   value: [anna.meier]
                 none:
                   value: []
+
+  /internal/mail-center-requests:
+    get:
+      operationId: getMailCenterRequests
+      summary: Change feed of merge and logo requests
+      description: |
+        Epic 17 entry 7 (ADR-016 decision 4): profile merge requests (#1237) and company logo
+        requests (#1246) in the order they were created or decided, `(changedAt, requestId)`.
+        Event-management's Mail Center pulls it every minute (`MailCenterRequestFeedClient`, ShedLock
+        job `MailCenterRequestFeedJob`, no JWT) and opens the conversation of an OPEN request, or
+        closes the one of a decided request. CUMS no longer calls event-management for them.
+
+        `since` is the `nextCursor` of the previous page, sent back unchanged; the caller stores
+        it and never reads it. Without `since` the feed starts just before the oldest OPEN request
+        (or now when none is open): decided history is not delivered. A row is held back until it
+        is 30 s old, so a transaction that commits late cannot land behind a cursor already handed
+        out. A page with fewer than `limit` items is the end for now; its `nextCursor` is where
+        the next poll starts. Requester name and address are the profile's at the time of the
+        read; a request whose requester profile is gone is not delivered. A read; it records
+        nobody.
+      parameters:
+        - name: since
+          in: query
+          required: false
+          description: The `nextCursor` of the previous page; omitted on the first poll.
+          schema:
+            type: string
+            maxLength: 200
+          example: MjAyNi0xMS0xMVQwOTo1OTozMC4xMjM0NTZafDJmNmQ4YzFhLTViN2UtNGMzZC05YTBmLTFlMmQzYzRiNWE2OQ
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 100
+          example: 100
+      responses:
+        '200':
+          description: The next items, possibly none, and the cursor to continue from
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MailCenterRequestPage'
+              examples:
+                openAndDecided:
+                  value:
+                    items:
+                      - kind: MERGE
+                        requestId: 2f6d8c1a-5b7e-4c3d-9a0f-1e2d3c4b5a69
+                        status: OPEN
+                        requesterName: Anna Meier
+                        requesterEmail: anna.meier@example.com
+                        subject: 'Profil zusammenführen: Anna Meier'
+                        note: Ich war bis 2024 bei Firma X.
+                        decidedBy: null
+                        changedAt: '2026-11-11T09:59:30.123456Z'
+                      - kind: LOGO
+                        requestId: 7a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d
+                        status: APPROVED
+                        requesterName: Anna Meier
+                        requesterEmail: anna.meier@example.com
+                        subject: 'Neues Logo für Swiss IT Solutions AG: Anna Meier'
+                        note: null
+                        decidedBy: organizer.alice
+                        changedAt: '2026-11-11T10:00:05.654321Z'
+                    nextCursor: MjAyNi0xMS0xMVQxMDowMDowNS42NTQzMjFafDdhMWIyYzNkLTRlNWYtNGE2Yi04YzdkLTllMGYxYTJiM2M0ZA
+                empty:
+                  value:
+                    items: []
+                    nextCursor: MjAyNi0xMS0xMVQxMDowMDowNS42NTQzMjFafDdhMWIyYzNkLTRlNWYtNGE2Yi04YzdkLTllMGYxYTJiM2M0ZA
+        '400':
+          description: Unreadable cursor, or a limit outside 1 to 200
+          content:
+            application/json:
+              schema:
+                $ref: '../_shared.openapi.yml#/components/schemas/ErrorResponse'
+              example:
+                timestamp: '2026-11-11T10:00:00Z'
+                path: /internal/mail-center-requests
+                status: 400
+                error: Bad Request
+                errorCode: VALIDATION_ERROR
+                message: Unknown cursor
 
   /internal/companies:
     get:
@@ -630,3 +719,66 @@ paths:
                 error: Not Found
                 message: 'Company not found: ghost'
                 severity: LOW
+
+components:
+  schemas:
+    MailCenterRequestPage:
+      type: object
+      required: [items, nextCursor]
+      properties:
+        items:
+          type: array
+          maxItems: 200
+          items:
+            $ref: '#/components/schemas/MailCenterRequest'
+        nextCursor:
+          type: string
+          minLength: 1
+          maxLength: 200
+          description: Opaque; send it back as `since`.
+      additionalProperties: false
+
+    MailCenterRequest:
+      type: object
+      required: [kind, requestId, status, requesterName, requesterEmail, subject, note, decidedBy, changedAt]
+      properties:
+        kind:
+          type: string
+          enum: [MERGE, LOGO]
+          description: MERGE a profile merge request (#1237), LOGO a company logo request (#1246).
+        requestId:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [OPEN, APPROVED, DECLINED]
+        requesterName:
+          type: string
+          maxLength: 255
+          description: First and last name of the requester's profile; empty when both are empty.
+        requesterEmail:
+          type: string
+          format: idn-email
+          minLength: 1
+          maxLength: 320
+          description: The requester's primary address, where answers in the conversation go.
+        subject:
+          type: string
+          minLength: 1
+          maxLength: 500
+          description: The conversation subject, in German as the organizers see it.
+        note:
+          nullable: true
+          type: string
+          maxLength: 500
+          description: The requester's note.
+        decidedBy:
+          nullable: true
+          type: string
+          maxLength: 100
+          description: Username of the organizer who decided; null while OPEN.
+        changedAt:
+          type: string
+          format: date-time
+          description: When the request was created or decided.
+      additionalProperties: false

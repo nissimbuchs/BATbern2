@@ -4,8 +4,8 @@ info:
   version: 1.0.0
   description: |
     Service-to-service operations of event-management under `/internal/**` (Story 17.0b2).
-    Callers: company-user-management (`HttpEventManagementUserMergeClient`,
-    `HttpEventManagementMailCenterClient`) and partner-coordination (`HttpOutboundMailRecorder`,
+    Callers: company-user-management (`HttpEventManagementUserMergeClient`) and
+    partner-coordination (`HttpOutboundMailRecorder`,
     `EventManagementClientImpl.getEventSummary` and `.getAttendanceSummary`).
 
     Not a public API: the API gateway does not route `/internal/**` and denies it explicitly; the
@@ -309,131 +309,7 @@ paths:
               schema:
                 $ref: '../_shared.openapi.yml#/components/schemas/ErrorResponse'
 
-  /internal/mail-center/merge-requests:
-    post:
-      operationId: openMergeRequestConversation
-      summary: Open the Mail Center conversation of a profile merge request (#1237)
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/OpenRequestConversation'
-            example:
-              requestId: 2f6d8c1a-5b7e-4c3d-9a0f-1e2d3c4b5a69
-              requesterName: Anna Meier
-              requesterEmail: anna.meier@example.com
-              subject: Merge my two profiles
-              note: I registered twice.
-      responses:
-        '200':
-          description: The conversation key
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ConversationKey'
-              examples:
-                opened:
-                  value: {conversationKey: 'c-8f3a2b1c'}
-        '400':
-          description: Invalid request body
-          content:
-            application/json:
-              schema:
-                $ref: '../_shared.openapi.yml#/components/schemas/ErrorResponse'
-
-  /internal/mail-center/merge-requests/{requestId}/done:
-    post:
-      operationId: closeMergeRequestConversation
-      summary: Close the conversation of a decided merge request (#1237)
-      parameters:
-        - $ref: '#/components/parameters/RequestId'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/DoneRequest'
-            example:
-              decidedBy: organizer.alice
-      responses:
-        '204':
-          description: Closed
-        '400':
-          description: Invalid request body or request id
-          content:
-            application/json:
-              schema:
-                $ref: '../_shared.openapi.yml#/components/schemas/ErrorResponse'
-
-  /internal/mail-center/logo-requests:
-    post:
-      operationId: openLogoRequestConversation
-      summary: Open the Mail Center conversation of a company logo request (#1246)
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/OpenRequestConversation'
-            example:
-              requestId: 7a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d
-              requesterName: Anna Meier
-              requesterEmail: anna.meier@example.com
-              subject: New logo for Swiss IT Solutions AG
-      responses:
-        '200':
-          description: The conversation key
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ConversationKey'
-              examples:
-                opened:
-                  value: {conversationKey: 'c-5d4e3f2a'}
-        '400':
-          description: Invalid request body
-          content:
-            application/json:
-              schema:
-                $ref: '../_shared.openapi.yml#/components/schemas/ErrorResponse'
-
-  /internal/mail-center/logo-requests/{requestId}/done:
-    post:
-      operationId: closeLogoRequestConversation
-      summary: Close the conversation of a decided logo request (#1246)
-      parameters:
-        - $ref: '#/components/parameters/RequestId'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/DoneRequest'
-            example:
-              decidedBy: organizer.alice
-      responses:
-        '204':
-          description: Closed
-        '400':
-          description: Invalid request body or request id
-          content:
-            application/json:
-              schema:
-                $ref: '../_shared.openapi.yml#/components/schemas/ErrorResponse'
-
 components:
-  parameters:
-    RequestId:
-      name: requestId
-      in: path
-      required: true
-      description: Id of the merge or logo request in company-user-management.
-      schema:
-        type: string
-        format: uuid
-      example: 2f6d8c1a-5b7e-4c3d-9a0f-1e2d3c4b5a69
-
   schemas:
     AttendanceSummary:
       type: object
@@ -647,48 +523,3 @@ components:
           nullable: true
           type: string
           maxLength: 500
-
-    OpenRequestConversation:
-      type: object
-      required: [requestId, requesterEmail, subject]
-      properties:
-        requestId:
-          type: string
-          format: uuid
-        requesterName:
-          nullable: true
-          type: string
-          maxLength: 255
-        requesterEmail:
-          type: string
-          format: idn-email
-          minLength: 1
-          maxLength: 320
-          # One email rule everywhere (#1102): ASCII local part (SES has no SMTPUTF8), any domain.
-          # Source of truth: shared-kernel EmailAddresses.OPENAPI_PATTERN.
-          pattern: '^[A-Za-z0-9!#$%&''*+/=?^_`{|}~-]+(\.[A-Za-z0-9!#$%&''*+/=?^_`{|}~-]+)*@[^\s@.]+(\.[^\s@.]+)+$'
-        subject:
-          type: string
-          minLength: 1
-          maxLength: 500
-        note:
-          nullable: true
-          type: string
-          maxLength: 500
-
-    DoneRequest:
-      type: object
-      required: [decidedBy]
-      properties:
-        decidedBy:
-          type: string
-          minLength: 1
-          maxLength: 100
-
-    ConversationKey:
-      type: object
-      required: [conversationKey]
-      properties:
-        conversationKey:
-          type: string
-      additionalProperties: false

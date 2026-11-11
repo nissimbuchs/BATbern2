@@ -1,6 +1,5 @@
 package ch.batbern.companyuser.service;
 
-import ch.batbern.companyuser.client.EventManagementMailCenterClient;
 import ch.batbern.companyuser.domain.ProfileMergeRequest;
 import ch.batbern.companyuser.domain.User;
 import ch.batbern.companyuser.exception.UserNotFoundException;
@@ -38,14 +37,16 @@ public class ProfileMergeRequestService {
     private final ProfileMergeRequestRepository requests;
     private final UserRepository userRepository;
     private final UserMergeService mergeService;
-    private final EventManagementMailCenterClient mailCenter;
     private final ProfileMergeRequestEmailService emailService;
     private final SecurityContextHelper securityContext;
 
     public record Decided(ProfileMergeRequest request, UserMergeService.Preview preview) {
     }
 
-    /** The caller asks to merge one of their candidates; opens the Mail Center conversation. */
+    /**
+     * The caller asks to merge one of their candidates. Event-management's Mail Center picks the
+     * request up from the feed ({@link MailCenterRequestFeedService}) and opens its conversation.
+     */
     @Transactional
     public ProfileMergeRequest request(UUID candidateId, String note) {
         ProfileClaimService.ClaimPair pair = claimService.pair(candidateId);
@@ -68,10 +69,6 @@ public class ProfileMergeRequestService {
                 .status(ProfileMergeRequest.Status.OPEN)
                 .createdAt(Instant.now())
                 .build());
-        User caller = pair.caller();
-        String name = (nullToEmpty(caller.getFirstName()) + " " + nullToEmpty(caller.getLastName())).trim();
-        mailCenter.openMergeRequest(new EventManagementMailCenterClient.OpenRequest(saved.getId(), name,
-                caller.getEmail(), "Profil zusammenführen: " + name, trimmedNote));
         log.info("PROFILE_MERGE_REQUESTED id={} requester={} source={}", saved.getId(), requester, source);
         return saved;
     }
@@ -95,9 +92,10 @@ public class ProfileMergeRequestService {
                 false);
         decide(request, ProfileMergeRequest.Status.APPROVED, organizer, null);
         // After the merge, nothing may roll this transaction back: event-management has already
-        // moved its rows. The mail and closing the conversation are best effort.
+        // moved its rows. The mail is best effort; the Mail Center closes the conversation from
+        // the feed.
         User requester = requester(request);
-        afterDecision(request, organizer,
+        afterDecision(request,
                 () -> emailService.sendApproved(requester.getEmail(), requester.getFirstName(), locale(requester)));
         log.info("PROFILE_MERGE_REQUEST_APPROVED id={} by={}", id, organizer);
         return request;
@@ -113,23 +111,17 @@ public class ProfileMergeRequestService {
         String organizer = securityContext.getCurrentUsername();
         decide(request, ProfileMergeRequest.Status.DECLINED, organizer, reason.trim());
         User requester = requester(request);
-        afterDecision(request, organizer, () -> emailService.sendDeclined(requester.getEmail(),
+        afterDecision(request, () -> emailService.sendDeclined(requester.getEmail(),
                 requester.getFirstName(), locale(requester), reason.trim()));
         log.info("PROFILE_MERGE_REQUEST_DECLINED id={} by={}", id, organizer);
         return request;
     }
 
-    private void afterDecision(ProfileMergeRequest request, String organizer, Runnable mail) {
+    private void afterDecision(ProfileMergeRequest request, Runnable mail) {
         try {
             mail.run();
         } catch (RuntimeException e) {
             log.warn("PROFILE_MERGE_REQUEST mail failed id={} cause={}", request.getId(), e.getClass().getSimpleName());
-        }
-        try {
-            mailCenter.closeMergeRequest(request.getId(), organizer);
-        } catch (RuntimeException e) {
-            log.warn("PROFILE_MERGE_REQUEST conversation not closed id={} cause={}", request.getId(),
-                    e.getClass().getSimpleName());
         }
     }
 
@@ -164,10 +156,6 @@ public class ProfileMergeRequestService {
             return user.getPreferences().getLanguage().toLowerCase(Locale.ROOT).startsWith("de") ? "de" : "en";
         }
         return "de";
-    }
-
-    private static String nullToEmpty(String s) {
-        return s == null ? "" : s;
     }
 
     /** 409 with an error code: MERGE_REQUEST_OPEN, MERGE_REQUEST_DECLINED or MERGE_REQUEST_DECIDED. */

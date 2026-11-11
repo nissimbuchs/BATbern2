@@ -1,6 +1,5 @@
 package ch.batbern.companyuser.controller;
 
-import ch.batbern.companyuser.client.EventManagementMailCenterClient;
 import ch.batbern.companyuser.client.EventManagementUserMergeClient;
 import ch.batbern.companyuser.config.TestAwsConfig;
 import ch.batbern.companyuser.domain.ProfileMergeRequest;
@@ -52,8 +51,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 /**
  * #1237: claiming an earlier profile without access to its old address. The person asks, any
- * organizer approves or declines in the Mail Center. event-management's parts (the merge and the
- * conversation) are mocked here and tested in their own service.
+ * organizer approves or declines in the Mail Center. The merge in event-management is mocked here
+ * and tested there (it moves to the user-reference contract in Epic 17 entry 7b); the Mail Center
+ * conversation is no call any more: event-management pulls the request from
+ * {@code GET /internal/mail-center-requests} (Epic 17 entry 7), asserted here on the real feed.
  */
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -78,8 +79,6 @@ class ProfileMergeRequestIntegrationTest extends AbstractIntegrationTest {
     private ObjectMapper objectMapper;
     @MockitoBean
     private EventManagementUserMergeClient eventManagement;
-    @MockitoBean
-    private EventManagementMailCenterClient mailCenter;
     @PersistenceContext
     private EntityManager entityManager;
 
@@ -122,7 +121,7 @@ class ProfileMergeRequestIntegrationTest extends AbstractIntegrationTest {
     // ---------------------------------------------------------------- the person asks
 
     @Test
-    @DisplayName("a request is stored once and opens a Mail Center conversation; no mail goes to the old address")
+    @DisplayName("a request is stored once and is in the Mail Center feed; no mail goes to the old address")
     void request_opensConversation() throws Exception {
         String id = request("Ich war bis 2024 bei Firma X.");
 
@@ -132,12 +131,15 @@ class ProfileMergeRequestIntegrationTest extends AbstractIntegrationTest {
         assertThat(stored.getSourceUsername()).isEqualTo("anna.muster");
         assertThat(stored.getNote()).isEqualTo("Ich war bis 2024 bei Firma X.");
 
-        ArgumentCaptor<EventManagementMailCenterClient.OpenRequest> open =
-                ArgumentCaptor.forClass(EventManagementMailCenterClient.OpenRequest.class);
-        verify(mailCenter).openMergeRequest(open.capture());
-        assertThat(open.getValue().requestId()).isEqualTo(UUID.fromString(id));
-        assertThat(open.getValue().requesterEmail()).isEqualTo(REQUESTER);
-        assertThat(open.getValue().note()).isEqualTo("Ich war bis 2024 bei Firma X.");
+        JsonNode item = feedItem(null, id);
+        assertThat(item).as("the request is in the Mail Center feed").isNotNull();
+        assertThat(item.path("kind").asText()).isEqualTo("MERGE");
+        assertThat(item.path("status").asText()).isEqualTo("OPEN");
+        assertThat(item.path("requesterName").asText()).isEqualTo("Anna Muster");
+        assertThat(item.path("requesterEmail").asText()).isEqualTo(REQUESTER);
+        assertThat(item.path("subject").asText()).isEqualTo("Profil zusammenführen: Anna Muster");
+        assertThat(item.path("note").asText()).isEqualTo("Ich war bis 2024 bei Firma X.");
+        assertThat(item.path("decidedBy").isNull()).isTrue();
         assertThat(sesRecorder.mailsTo(OLD_ADDRESS)).isEmpty();
     }
 
@@ -185,7 +187,6 @@ class ProfileMergeRequestIntegrationTest extends AbstractIntegrationTest {
                         .content("{\"candidateId\":\"" + guest.getId() + "\"}"))
                 .andExpect(status().isNotFound());
         assertThat(requestRepository.findAll()).isEmpty();
-        verify(mailCenter, never()).openMergeRequest(any());
     }
 
     // ---------------------------------------------------------------- the organizers decide
@@ -220,9 +221,10 @@ class ProfileMergeRequestIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @DisplayName("approve merges, adds none of the old addresses, mails the requester, closes the conversation")
+    @DisplayName("approve merges, adds none of the old addresses, mails the requester, feeds the decision")
     void approve_mergesWithoutOldAddresses() throws Exception {
         String id = request(null);
+        String afterOpen = feedCursorAfter(id);
 
         mockMvc.perform(post("/api/v1/users/merge-requests/{id}/approve", id).with(organizer()))
                 .andExpect(status().isOk())
@@ -244,13 +246,14 @@ class ProfileMergeRequestIntegrationTest extends AbstractIntegrationTest {
         assertThat(target.getAdditionalEmails()).isEmpty();
         assertThat(sesRecorder.mailsTo(REQUESTER)).hasSize(1);
         assertThat(sesRecorder.mailsTo(OLD_ADDRESS)).isEmpty();
-        verify(mailCenter).closeMergeRequest(UUID.fromString(id), "orga.nizer");
+        assertDecidedInFeed(afterOpen, id, "APPROVED");
     }
 
     @Test
-    @DisplayName("decline needs a reason, mails it to the requester and closes the conversation; no merge")
+    @DisplayName("decline needs a reason, mails it to the requester and feeds the decision; no merge")
     void decline_mailsReason() throws Exception {
         String id = request(null);
+        String afterOpen = feedCursorAfter(id);
 
         mockMvc.perform(post("/api/v1/users/merge-requests/{id}/decline", id).with(organizer())
                         .contentType(MediaType.APPLICATION_JSON).content("{\"reason\":\"   \"}"))
@@ -265,7 +268,7 @@ class ProfileMergeRequestIntegrationTest extends AbstractIntegrationTest {
         verify(eventManagement, never()).merge(any());
         assertThat(sesRecorder.single().to()).containsExactly(REQUESTER);
         assertThat(sesRecorder.single().html()).contains("Die Anmeldungen geh");
-        verify(mailCenter).closeMergeRequest(UUID.fromString(id), "orga.nizer");
+        assertDecidedInFeed(afterOpen, id, "DECLINED");
         assertThat(userRepository.findByUsername("anna.muster")).isPresent();
     }
 
@@ -283,6 +286,40 @@ class ProfileMergeRequestIntegrationTest extends AbstractIntegrationTest {
     }
 
     // ---------------------------------------------------------------- helpers
+
+    /** The request's item in the Mail Center feed after {@code since} (from the start when null). */
+    private JsonNode feedItem(String since, String id) throws Exception {
+        for (JsonNode item : feed(since).path("items")) {
+            if (id.equals(item.path("requestId").asText())) {
+                return item;
+            }
+        }
+        return null;
+    }
+
+    private JsonNode feed(String since) throws Exception {
+        var request = get("/internal/mail-center-requests").param("limit", "200");
+        if (since != null) {
+            request.param("since", since);
+        }
+        return objectMapper.readTree(mockMvc.perform(request).andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString());
+    }
+
+    /** The cursor of the page that delivered the OPEN request, as event-management stores it. */
+    private String feedCursorAfter(String id) throws Exception {
+        JsonNode page = feed(null);
+        assertThat(page.path("items").findValuesAsText("requestId")).contains(id);
+        return page.path("nextCursor").asText();
+    }
+
+    /** The decision reaches the Mail Center as the next change of the request, with the organizer. */
+    private void assertDecidedInFeed(String since, String id, String status) throws Exception {
+        JsonNode item = feedItem(since, id);
+        assertThat(item).as("the decision is in the feed after the open request").isNotNull();
+        assertThat(item.path("status").asText()).isEqualTo(status);
+        assertThat(item.path("decidedBy").asText()).isEqualTo("orga.nizer");
+    }
 
     private static RequestPostProcessor requester() {
         return user("anna.muster.2").roles("ATTENDEE");

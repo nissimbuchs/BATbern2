@@ -1,7 +1,6 @@
 package ch.batbern.companyuser.controller;
 
 import ch.batbern.companyuser.api.generated.CompanyLogoRequestsApi;
-import ch.batbern.companyuser.client.EventManagementMailCenterClient;
 import ch.batbern.companyuser.domain.CompanyLogoRequest;
 import ch.batbern.companyuser.dto.generated.CompanyLogoRequestCreate;
 import ch.batbern.companyuser.dto.generated.CompanyLogoRequestDecline;
@@ -94,13 +93,6 @@ public class CompanyLogoRequestController implements CompanyLogoRequestsApi {
     public ResponseEntity<ErrorResponse> notReady(CompanyLogoRequestService.LogoNotReadyException e,
             HttpServletRequest request) {
         return error(HttpStatus.BAD_REQUEST, "LOGO_NOT_READY", e.getMessage(), request);
-    }
-
-    @ExceptionHandler(EventManagementMailCenterClient.MailCenterCallFailedException.class)
-    public ResponseEntity<ErrorResponse> mailCenterFailed(
-            EventManagementMailCenterClient.MailCenterCallFailedException e, HttpServletRequest request) {
-        return error(HttpStatus.BAD_GATEWAY, "LOGO_REQUEST_NOT_DELIVERED",
-                "The request could not be passed to the organizers; nothing was stored. Try again.", request);
     }
 
     private static ResponseEntity<ErrorResponse> error(HttpStatus status, String code, String message,

@@ -59,7 +59,10 @@ measured how they call each other on develop `e7f76baf`:
 
 **Costs**
 - Migration work: 12 client URLs and 4 endpoints move to `/internal` (Epic 17, story 17.6), the merge
-  contract and the Mail Center pull replace two CUMS→EMS calls (17.7), EMS→PCS is reversed (17.8;
+  contract and the Mail Center pull replace two CUMS→EMS calls (17.7; the Mail Center pull is live
+  since entry 7, 2026-11-11: EMS reads `GET /internal/mail-center-requests` every minute, so filing a
+  request no longer fails while EMS is down, and a lost close is picked up by the next poll), EMS→PCS
+  is reversed (17.8;
   the topic canvas edge is gone since entry 8, 2026-11-11: the browser reads the partner topics from
   PCS itself; the calendar RSVPs follow in 8b).
 - Pull feeds add latency up to the poll interval. Acceptable for RSVPs and merge requests; anything

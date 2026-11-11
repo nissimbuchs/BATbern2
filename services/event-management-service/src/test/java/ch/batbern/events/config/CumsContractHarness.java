@@ -46,6 +46,10 @@ import static org.springframework.http.HttpMethod.GET;
  *   <li>{@code GET /internal/email-owners}: none, or those registered with {@link #emailOwners}</li>
  *   <li>{@code GET /internal/companies/{name}}: 404, so the client's display name falls back to the
  *       slug, as the Mockito default ({@code null}) did</li>
+ *   <li>{@code GET /internal/mail-center-requests} (Epic 17 entry 7): an empty page whose
+ *       {@code nextCursor} is the {@code since} sent, or {@link #EMPTY_FEED_CURSOR} without one, so
+ *       every context tolerates {@code MailCenterRequestFeedJob}; a test of the job registers its
+ *       pages with {@link #answer(HttpMethod, String, Function)}</li>
  * </ul>
  * Every other operation (get-or-create, provision, profile patch, invitation credentials) has no
  * default: a test of such a flow registers its answer with
@@ -79,7 +83,11 @@ public final class CumsContractHarness implements AutoCloseable {
             "POST /internal/users/provision",
             "PATCH /internal/users/{username}/profile",
             "POST /internal/users/{username}/issue-invitation-credentials",
-            "GET /internal/companies/{name}");
+            "GET /internal/companies/{name}",
+            "GET /internal/mail-center-requests");
+
+    /** The default page of the Mail Center request feed: nothing new, cursor unchanged. */
+    public static final String EMPTY_FEED_CURSOR = "aGFybmVzcw";
 
     /** CUMS usernames: lower-case first and last name, optional numeric suffix (DB check). */
     private static final String USERNAME = "^[a-z]+\\.[a-z]+(\\.[0-9]+)?$";
@@ -119,6 +127,9 @@ public final class CumsContractHarness implements AutoCloseable {
     /** Default answers, restored by {@link #reset()}. */
     private void defaults() {
         answers.put("GET /internal/companies/{name}", call -> new Reply(HttpStatus.NOT_FOUND, null));
+        answers.put("GET /internal/mail-center-requests", call -> Reply.ok(
+                "{\"items\": [], \"nextCursor\": \"" + (call.queryParam("since") == null
+                        ? EMPTY_FEED_CURSOR : call.queryParam("since")) + "\"}"));
     }
 
     /**

@@ -118,6 +118,11 @@ mappings:
     docs:
       - "docs/architecture/module-map.md"
       - "docs/architecture/ADR-016-service-directions-and-service-to-service-calls.md"
+  # Epic 17 entry 7: the Mail Center's pull of CUMS requests sits in the mail center module, not client/.
+  - source_pattern: "services/event-management-service/src/main/java/ch/batbern/events/mailcenter/MailCenterRequestFeed"
+    docs:
+      - "docs/architecture/module-map.md"
+      - "docs/architecture/ADR-016-service-directions-and-service-to-service-calls.md"
   # The topic canvas composes partner-coordination and EMS data in the browser (entry 8) instead of
   # EMS calling partner-coordination; moving it back would reopen the EMS→PCS edge.
   - source_pattern: "web-frontend/src/services/blobTopicService.ts"

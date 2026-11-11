@@ -42,6 +42,11 @@ Only items that are not live yet. Everything else is listed under its release be
 
 ### Unreleased — after BATbern60
 
+**Improvement — Merge and logo requests reach the Mail Center on their own (Epic 17, entry 7)**:
+- ✅ Sending a profile merge request or a new company logo no longer fails with "could not be passed to the organizers" when the Mail Center is briefly unavailable. The request is stored and shows in the Mail Center within about a minute and a half.
+- ✅ A decided request's conversation always turns Done. Before, it stayed open when the Mail Center did not answer at the moment of the decision.
+- ⚠️ API: `POST /api/v1/users/me/company-logo-requests` no longer answers 502 `LOGO_REQUEST_NOT_DELIVERED`, and the merge request no longer answers 502 `MERGE_REQUEST_NOT_DELIVERED`.
+
 **Improvement — No e-mail address in links, one get-or-create shape (4.10d)**:
 - ✅ Changing, removing, confirming again or making primary one of your further e-mail addresses no longer puts the address in the web address, so it does not end up in server logs or the browser history. Nothing changes on the page.
 - ⚠️ API, breaking for scripts: the four operations on one further address take its `id` from `GET /api/v1/users/me` (`additionalEmails[].id`): `PATCH`, `DELETE /api/v1/users/me/additional-emails/{emailId}`, `POST …/{emailId}/make-primary`, `POST …/{emailId}/resend-verification` (was the URL-encoded address; that now answers 400). Making an address primary gives the addresses new ids. Get-or-create of a company is `POST /api/v1/companies/get-or-create` (was `POST /companies:get-or-create`, now 404) and answers 201 when it created the company, 200 when it found it.

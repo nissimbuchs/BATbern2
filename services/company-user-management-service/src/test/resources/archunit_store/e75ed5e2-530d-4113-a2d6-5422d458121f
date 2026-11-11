@@ -1,4 +1,2 @@
-Class <ch.batbern.companyuser.client.EventManagementMailCenterClient> is a client toward a service downstream of CUMS (ADR-016)
 Class <ch.batbern.companyuser.client.EventManagementUserMergeClient> is a client toward a service downstream of CUMS (ADR-016)
-Class <ch.batbern.companyuser.client.HttpEventManagementMailCenterClient> is a client toward a service downstream of CUMS (ADR-016)
 Class <ch.batbern.companyuser.client.HttpEventManagementUserMergeClient> is a client toward a service downstream of CUMS (ADR-016)

@@ -198,10 +198,11 @@ the VPC through Service Connect. Callers send **no** JWT.
 | `POST /internal/users/get-or-create` | Company-User Management | EMS anonymous registration and speaker provisioning (ADR-005) |
 | `GET /internal/email-owners?email=` | Company-User Management | EMS by-email deregistration across a person's profiles (#1183) |
 | `GET /internal/users/merge-preview`, `POST /internal/users/merge`, `POST /internal/users/primary-email` | Event Management | CUMS profile merge (#1183 C/D, below) and primary-address change (#1244) |
-| `POST /internal/mail-center/{merge,logo}-requests[/{requestId}/done]` | Event Management | CUMS opens and closes the Mail Center conversation of a merge or logo request (#1237, #1246) |
+| `GET /internal/mail-center-requests?since=&limit=` | Company-User Management | EMS `MailCenterRequestFeedJob`: the change feed of merge and logo requests (#1237, #1246; Epic 17 entry 7) |
 
-The CUMS→EMS calls other than the merge itself (`primary-email`, `mail-center/*`) are upstream→downstream
-exceptions to the module map, owned by Story 17.7 (request pull); no new one is added.
+The CUMS→EMS call other than the merge itself (`primary-email`) is an upstream→downstream exception to
+the module map, owned by entry 7b; no new one is added. The Mail Center requests went the other way
+until entry 7 (`POST /internal/mail-center/*`, deleted).
 
 Every operation above is specified in `docs/api/internal/` (`cums-`, `ems-`, `pcs-internal.openapi.yml`,
 Story 17.0b2) and contract-tested on both sides; the public tooling does not read that folder.
@@ -670,18 +671,43 @@ The organizers decide in the Mail Center; company edits themselves stay `ORGANIZ
   URL, the new upload id and URL, optional note, status OPEN / APPROVED / DECLINED, decided by/at,
   optional reason. One OPEN request per person and company (partial unique index, 409
   `LOGO_REQUEST_OPEN`); the company is the one on the caller's profile (409 `NO_COMPANY`).
-- **Mail Center.** In the same transaction CUMS calls EMS `POST /internal/mail-center/logo-requests`
-  (`RequestConversations` kind LOGO, `mail_conversation.logo_request_id`, EMS V146): an OPEN
-  conversation without event, audience SYSTEM. If EMS does not answer, nothing is stored (502
-  `LOGO_REQUEST_NOT_DELIVERED`); the client uploads again on retry, because the association has
-  already moved the temporary S3 object.
+- **Mail Center.** EMS pulls the request from the CUMS feed (see "Mail Center requests (Epic 17
+  entry 7)" below) and opens its conversation (`RequestConversations` kind LOGO,
+  `mail_conversation.logo_request_id`, EMS V146): an OPEN conversation without event, audience
+  SYSTEM. Filing the request does not depend on EMS (until entry 7 it answered 502
+  `LOGO_REQUEST_NOT_DELIVERED` when EMS was down).
 - **Decision** (`ORGANIZER`). `POST /users/company-logo-requests/{id}/approve` copies the logo to the
   company's final key (`logos/{year}/companies/{name}/logo-{uploadId}.{ext}`) and sets it through
   `CompanyService.applyRequestedLogo` (cache invalidation, `CompanyUpdatedEvent`, like an organizer
   edit). `.../decline {reason?}` changes nothing on the company. Either way the requester is mailed
-  at the primary address (`company-logo-approved|declined-{de,en}`, the reason block only when given)
-  and the conversation is closed (`.../done`). Mail and close are best effort after the decision.
+  at the primary address (`company-logo-approved|declined-{de,en}`, the reason block only when given),
+  best effort after the decision; the conversation turns DONE on the next poll of the feed.
   The request's own copy of the logo stays, so the decided conversation still shows both logos.
+
+## Mail Center requests (Epic 17 entry 7)
+
+Merge requests (#1237) and company logo requests (#1246) live in CUMS; their conversations live in
+the EMS Mail Center. EMS pulls them (ADR-016 decision 4), CUMS never calls EMS for them.
+
+- **Feed.** CUMS `GET /internal/mail-center-requests?since=<cursor>&limit=` (`cums-internal.openapi.yml`,
+  `MailCenterRequestFeedService`) returns both tables in the order `(changed_at, id)`. `changed_at`
+  (CUMS V30) is set by a trigger to `clock_timestamp()` when a row is created or its status or
+  decision changes. Each item carries kind, request id, status, the requester's current name and
+  primary address, the conversation subject (the German text organizers see), note, `decidedBy`.
+  The cursor is opaque (the last item's pair) and comes back as `nextCursor`, also on an empty page.
+- **Settle window.** A row is delivered only once its `changed_at` is 30 s old
+  (`batbern.mail-center-request-feed.settle-seconds`, 0 in tests), so a transaction that commits
+  after a later one cannot fall behind a cursor already handed out.
+- **First poll.** Without `since`, the feed starts just before the oldest OPEN request (now, when none
+  is open): open requests arrive, decided history does not.
+- **Job.** EMS `MailCenterRequestFeedJob` (cron `batbern.mail-center-request-feed.cron`, default every
+  minute, ShedLock, off in tests) pages until a page is not full and calls `RequestConversations`:
+  open for every item (idempotent, finds the conversation by request id), then close for a decided
+  one with `updated_by` = `decidedBy`. A request decided before any poll saw it is opened, then
+  closed, so the record stays. The cursor (`feed_cursors`, EMS V153) is saved after each page. A
+  failure (CUMS down, a bad item) stops the run with the cursor unchanged, logs
+  `MAIL_CENTER_REQUEST_FEED failed` at ERROR and counts `mailcenter.request_feed.failures`; the next
+  poll retries. The job sends no mail. Delay: up to one minute plus the settle window.
 
 ## Profile Merge (#1183 C/D)
 
@@ -690,11 +716,12 @@ profile) are merged: the source is folded into the target and deleted. CUMS deci
 orchestrates; EMS moves its own rows through an internal endpoint and keeps the undo log.
 
 **Merge requests (#1237).** When the person cannot read the earlier profile's mailbox, CUMS stores a
-`profile_merge_requests` row and EMS opens a Mail Center conversation for it
-(`RequestConversations` kind MERGE, `POST /internal/mail-center/merge-requests`, `mail_conversation.merge_request_id`).
-The organizer approves or declines in that conversation (CUMS `/users/merge-requests/{id}/approve|decline`);
-approval runs the same merge with `carryAddresses = false`, then CUMS closes the conversation
-(`.../{id}/done`). Details: `06b-user-lifecycle-sync.md`.
+`profile_merge_requests` row and EMS opens a Mail Center conversation for it from the request feed
+(`RequestConversations` kind MERGE, `mail_conversation.merge_request_id`; see "Mail Center requests
+(Epic 17 entry 7)" above). The organizer approves or declines in that conversation (CUMS
+`/users/merge-requests/{id}/approve|decline`); approval runs the same merge with
+`carryAddresses = false`, and the conversation turns DONE on the next poll. Details:
+`06b-user-lifecycle-sync.md`.
 
 ```mermaid
 sequenceDiagram

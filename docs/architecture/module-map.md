@@ -15,9 +15,10 @@ CUMS (identity) is upstream of all. EMS (event) is upstream of PCS (partners).
   ShedLock job). No event bus.
 - Only allowed upstream→downstream call: the CUMS profile merge (`/internal/users/merge*`).
   It also carries primary-email changes (owner 2026-11-11, synchronous on purpose).
-  Existing exceptions, CUMS→EMS: `/internal/mail-center/{merge,logo}-requests[/{id}/done]`
-  (Epic 17 entry 7 replaces them with a pull feed) and `/internal/users/primary-email` (entry 7b
-  moves it into the user-reference contract). Do not add another.
+  Existing exception, CUMS→EMS: `/internal/users/primary-email` (entry 7b moves it into the
+  user-reference contract). Do not add another. The Mail Center requests are pulled since entry 7
+  (2026-11-11): EMS `MailCenterRequestFeedJob` reads CUMS `GET /internal/mail-center-requests`,
+  the model for every new feed (cursor in EMS `feed_cursors`).
 - Every `/internal` operation is specified in `docs/api/internal/<provider>-internal.openapi.yml`
   (17.0b2) and contract-tested on both sides (`ContractServer`, provider
   `S2sProviderContractIntegrationTest`). A new `/internal` endpoint or call extends that spec first.
@@ -64,7 +65,8 @@ CUMS (identity) is upstream of all. EMS (event) is upstream of PCS (partners).
 - Left frozen after 17.5 (each with its owner): mail core 2 lines, `MailPipeline` using
   `compose.MailRenderer` and `PlaceholderScanner` (17.15); EMS `*Partner*Client*` 2,
   `PartnerMeetingRsvpClient(Impl)` (8b; entry 8 deleted `PartnerApiClient(Impl)`); CUMS
-  clients 4 (17.6, 17.7). Mail center wall, watch, usermerge, notification: 0 (the mail center
+  clients 2, `EventManagementUserMergeClient` and its implementation (7b; entry 7 deleted the
+  Mail Center client pair). Mail center wall, watch, usermerge, notification: 0 (the mail center
   wall since 16.8c moved `OwnText` to mail core).
 
 ## Reuse before you build

@@ -509,9 +509,9 @@ export interface paths {
      *     upload, `/logos/{uploadId}/confirm`); this call hands the confirmed upload over. The
      *     request is for the company on the caller's profile (409 `NO_COMPANY` without one). At most
      *     one open request per person and company (409 `LOGO_REQUEST_OPEN`). An unknown or
-     *     unconfirmed upload is 400 `LOGO_NOT_READY`. The upload is kept until the decision, and the
-     *     request opens a conversation in the Mail Center (502 `LOGO_REQUEST_NOT_DELIVERED` when that
-     *     fails; nothing is stored then).
+     *     unconfirmed upload is 400 `LOGO_NOT_READY`. The upload is kept until the decision. The Mail
+     *     Center picks the request up within about a minute and opens its conversation; filing it
+     *     does not depend on event-management.
      */
     post: operations['createCompanyLogoRequest'];
     delete?: never;
@@ -2847,15 +2847,6 @@ export interface operations {
       401: components['responses']['Unauthorized'];
       409: components['responses']['Conflict'];
       500: components['responses']['InternalServerError'];
-      /** @description The Mail Center did not take the request; nothing was stored */
-      502: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['ErrorResponse'];
-        };
-      };
     };
   };
   getMyOpenCompanyLogoRequest: {

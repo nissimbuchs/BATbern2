@@ -3,7 +3,7 @@ title: 'EMS pulls Mail Center requests from CUMS'
 type: 'refactor'
 ticket: '7'
 created: '2026-11-11'
-status: 'ready-for-dev'
+status: 'in-progress'
 baseline_revision: '9d10da27cb011b4a8604cb0c016cd11080483ca8'
 route: 'full'
 route_source: 'auto'
@@ -64,16 +64,16 @@ context: ['{project-root}/docs/architecture/ADR-016-service-directions-and-servi
 ## Tasks & Acceptance
 
 **Execution:**
-- [ ] `services/company-user-management-service/src/main/resources/db/migration/V30__mail_center_request_feed_cursor.sql` -- `changed_at`, trigger, backfill, indexes -- cursor without editing V23/V25.
-- [ ] `docs/api/internal/cums-internal.openapi.yml` -- `GET /internal/mail-center-requests` (`since` opaque string, optional; `limit` 1-200, default 100), item `{kind: MERGE|LOGO, requestId, status, requesterName, requesterEmail (idn-email), subject, note (nullable), decidedBy (nullable), changedAt}`, page `{items, nextCursor}`, examples -- contract first.
-- [ ] CUMS feed controller/service/repository -- settle window, keyset `(changed_at, id) > cursor`, requester name/email from the user profile -- the feed.
-- [ ] CUMS services, controllers, client pair -- remove push, 502 branches and the subject builders' push use -- CUMS no longer names EMS for requests.
-- [ ] `services/event-management-service/src/main/resources/db/migration/V153__feed_cursors.sql` -- `feed_cursors(feed varchar PRIMARY KEY, cursor text NOT NULL, updated_at timestamptz NOT NULL)` -- reused by 8b's pattern.
-- [ ] EMS `mailcenter/MailCenterRequestFeedClient`, `mailcenter/MailCenterRequestFeedJob` (`@Scheduled(cron="${batbern.mail-center-request-feed.cron:0 * * * * *}")`, `@SchedulerLock`, loop pages until empty, per item open/close, save cursor after each page, catch-all with log + Micrometer counter `mailcenter.request_feed.failures`) -- the pull.
-- [ ] EMS: delete `InternalRequestConversationController`, the 4 ems-internal operations and their schemas; update `RequestConversations` only if the job needs a combined open-then-close; `AutomaticTriggerAudienceGuardTest` entry.
-- [ ] `docs/api/users-api.openapi.yml`, generated types -- remove the 502.
-- [ ] Tests (fidelity rules): CUMS feed IT (order, settle window, cursor resume, limit, both kinds, decided fields) and provider contract; CUMS request ITs on the real path, asserting the feed row instead of a mocked client; EMS client contract test (with and without JWT); EMS job IT on `CumsContractHarness`: open, close, open+close in one pass, old decided skipped, replay idempotent, cursor resume, CUMS 500 leaves the cursor.
-- [ ] `docs/architecture/module-map.md`, `ADR-016` costs line, `docs/architecture/06-backend-architecture.md` (Mail Center requests section, per doc-drift mappings) -- docs in the same commit.
+- [x] `services/company-user-management-service/src/main/resources/db/migration/V30__mail_center_request_feed_cursor.sql` -- `changed_at`, trigger, backfill, indexes -- cursor without editing V23/V25.
+- [x] `docs/api/internal/cums-internal.openapi.yml` -- `GET /internal/mail-center-requests` (`since` opaque string, optional; `limit` 1-200, default 100), item `{kind: MERGE|LOGO, requestId, status, requesterName, requesterEmail (idn-email), subject, note (nullable), decidedBy (nullable), changedAt}`, page `{items, nextCursor}`, examples -- contract first.
+- [x] CUMS feed controller/service/repository -- settle window, keyset `(changed_at, id) > cursor`, requester name/email from the user profile -- the feed.
+- [x] CUMS services, controllers, client pair -- remove push, 502 branches and the subject builders' push use -- CUMS no longer names EMS for requests.
+- [x] `services/event-management-service/src/main/resources/db/migration/V153__feed_cursors.sql` -- `feed_cursors(feed varchar PRIMARY KEY, cursor text NOT NULL, updated_at timestamptz NOT NULL)` -- reused by 8b's pattern.
+- [x] EMS `mailcenter/MailCenterRequestFeedClient`, `mailcenter/MailCenterRequestFeedJob` (`@Scheduled(cron="${batbern.mail-center-request-feed.cron:0 * * * * *}")`, `@SchedulerLock`, loop pages until empty, per item open/close, save cursor after each page, catch-all with log + Micrometer counter `mailcenter.request_feed.failures`) -- the pull.
+- [x] EMS: delete `InternalRequestConversationController`, the 4 ems-internal operations and their schemas; update `RequestConversations` only if the job needs a combined open-then-close; `AutomaticTriggerAudienceGuardTest` entry.
+- [x] `docs/api/users-api.openapi.yml`, generated types -- remove the 502.
+- [x] Tests (fidelity rules): CUMS feed IT (order, settle window, cursor resume, limit, both kinds, decided fields) and provider contract; CUMS request ITs on the real path, asserting the feed row instead of a mocked client; EMS client contract test (with and without JWT); EMS job IT on `CumsContractHarness`: open, close, open+close in one pass, old decided skipped, replay idempotent, cursor resume, CUMS 500 leaves the cursor.
+- [x] `docs/architecture/module-map.md`, `ADR-016` costs line, `docs/architecture/06-backend-architecture.md` (Mail Center requests section, per doc-drift mappings) -- docs in the same commit.
 
 **Acceptance Criteria:**
 - Given a running local dev, when a user files a profile-merge request and an organizer files nothing else, then the request shows in the Mail Center within about 1.5 minutes, and after the organizer approves it in CUMS the conversation turns DONE within the same delay.
@@ -82,6 +82,18 @@ context: ['{project-root}/docs/architecture/ADR-016-service-directions-and-servi
 - Given the CUMS and EMS full suites, when they run, then the CUMS archunit store holds only the 2 user-merge lines and `ems-internal.openapi.yml` has no `/internal/mail-center/` path.
 
 ## Implementation Notes
+
+Built 2026-11-11 on `feature/17-3-7-mailcenter-request-feed`, no commit, no push.
+
+- **Seed lives in CUMS.** The first poll sends no `since`; CUMS starts the feed just before the oldest OPEN request (now minus the settle window when none is open) and always returns a `nextCursor`, also on an empty page. "Old decided row on first poll" is therefore tested in the CUMS feed IT (`firstPoll_startsAtOldestOpen`, `firstPoll_withoutOpenRequest_startsNow`); the EMS job IT checks that the first call carries no `since` and that the start cursor is stored.
+- **Job.** `MailCenterRequestFeedJob.poll()` (cron, ShedLock `lockAtLeastFor` PT10S) calls `pull()`, which the IT calls directly. Every item goes through `RequestConversations.open` (idempotent); a decided one then through `close`. `RequestConversations` unchanged. A page shorter than 100 ends the run; at most 50 pages per run. Any exception (CUMS down, a bad item) stops the run with the cursor of the last completed page, ERROR log `MAIL_CENTER_REQUEST_FEED failed` and counter `mailcenter.request_feed.failures`. A poison item would therefore block the feed with an ERROR every minute instead of being skipped silently (deliberate, nothing is lost).
+- **Cron off in tests** (`batbern.mail-center-request-feed.cron=-` in EMS `application-test.properties`, like the Q&A digest): every cached context would otherwise write the shared `feed_cursors` row. The harness still answers the feed with an empty page by default.
+- **CUMS 500 in the job IT** is simulated by the harness answer throwing `HttpServerErrorException` 500 (what `RestTemplate` throws for a real 500); the spec declares no 500.
+- **CUMS settle window** `batbern.mail-center-request-feed.settle-seconds` (default 30, 0 in `application-test.yml`).
+- **Feed IT not `@Transactional`** (test ratchet `be-transactional-it`): rows commit and are deleted by id; the one test that closes every open request runs in a rolled-back `TransactionTemplate`.
+- **Module scripts** (`ems-module-deps.py`, `ems-module-target.py`), before and after: mail center 96 → 97 classes (controller out, client and job in), violating edges 27 / refs 91 unchanged, mail-center outgoing edges unchanged. CUMS archunit store 4 → 2 lines (the user-merge pair).
+- **Extra docs:** user guide `event-mail.md` (delay of about 1.5 min), changelog entry, doc-drift mapping for `mailcenter/MailCenterRequestFeed*`.
+- **Ratchet:** `be-mock-s2s-client` fell by 2 (CUMS request ITs), baseline updated.
 
 ## Plan Change Log
 
@@ -99,7 +111,7 @@ context: ['{project-root}/docs/architecture/ADR-016-service-directions-and-servi
 
 ## Verification
 
-**Commands:**
+**Commands:** (rack: one heavy job at a time, never two Gradle/Vitest/Playwright runs or a commit hook in parallel; logs to `~/.cache/batbern-test-logs/v37/`; `./gradlew --stop` at the end; no push, no PR)
 - `set -o pipefail; ./gradlew --max-workers=4 :services:company-user-management-service:test 2>&1 | tee ~/.cache/batbern-test-logs/v37/cums.log` -- expected: BUILD SUCCESSFUL, store file 2 lines.
 - `set -o pipefail; ./gradlew --max-workers=4 :services:event-management-service:test 2>&1 | tee ~/.cache/batbern-test-logs/v37/ems.log` -- expected: BUILD SUCCESSFUL.
 - `cd web-frontend && npm run check:api-types && npm run lint:api-internal && npm run lint:api && cd .. && make check-test-ratchet` -- expected: all pass (ratchet STALE → `--update` and commit).

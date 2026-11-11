@@ -19,7 +19,8 @@ import java.util.UUID;
  * {@code logo_request_id}). It opens with one inbound message from the requester (an intro and their
  * note), has no event and the audience SYSTEM, and carries the request id so the Mail Center shows
  * the request with its decision buttons. Answering in it mails the requester like any conversation.
- * Both operations are idempotent.
+ * Both operations are idempotent. Since Epic 17 entry 7 {@link MailCenterRequestFeedJob} calls them
+ * from company-user-management's request feed; CUMS no longer calls event-management for them.
  */
 @Component
 @RequiredArgsConstructor

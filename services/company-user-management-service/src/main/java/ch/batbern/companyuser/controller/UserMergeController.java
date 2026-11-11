@@ -1,7 +1,6 @@
 package ch.batbern.companyuser.controller;
 
 import ch.batbern.companyuser.api.generated.ProfileMergeApi;
-import ch.batbern.companyuser.client.EventManagementMailCenterClient;
 import ch.batbern.companyuser.client.EventManagementUserMergeClient;
 import ch.batbern.companyuser.domain.ProfileMergeRequest;
 import ch.batbern.companyuser.domain.User;
@@ -219,13 +218,6 @@ public class UserMergeController implements ProfileMergeApi {
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ErrorResponse> badRequest(IllegalArgumentException e, HttpServletRequest request) {
         return error(HttpStatus.BAD_REQUEST, "VALIDATION_ERROR", e.getMessage(), request, null);
-    }
-
-    @ExceptionHandler(EventManagementMailCenterClient.MailCenterCallFailedException.class)
-    public ResponseEntity<ErrorResponse> mailCenterFailed(
-            EventManagementMailCenterClient.MailCenterCallFailedException e, HttpServletRequest request) {
-        return error(HttpStatus.BAD_GATEWAY, "MERGE_REQUEST_NOT_DELIVERED",
-                "The request could not be passed to the organizers; nothing was stored. Try again.", request, null);
     }
 
     private static UserMergeProfileSummary summary(User u) {

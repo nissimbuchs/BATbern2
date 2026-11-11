@@ -7,7 +7,6 @@ import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Registration;
 import ch.batbern.events.domain.Session;
 import ch.batbern.events.entity.EventAgendaConfig;
-import ch.batbern.events.mailcenter.RequestConversations;
 import ch.batbern.events.repository.EventAgendaConfigRepository;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.RegistrationRepository;
@@ -47,8 +46,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * Provider half of the S2S contract (Stories 17.0b1, 17.0b2): every {@code /internal} operation in
  * {@code docs/api/internal/ems-internal.openapi.yml} runs through the real controller and must match
  * the spec its consumers' contract tests answer from; the spec examples must match the same schema.
- * Callers: CUMS merge and Mail Center clients, PCS {@code HttpOutboundMailRecorder} and
- * {@code EventManagementClientImpl} (event schedule since the 17.0 deferred work, attendance summary
+ * Callers: the CUMS merge client (the Mail Center requests are pulled since Epic 17 entry 7), PCS
+ * {@code HttpOutboundMailRecorder} and {@code EventManagementClientImpl} (event schedule since the 17.0 deferred work, attendance summary
  * since Epic 17 6b). EMS serves no public operation to another service any more.
  */
 @Import({TestSecurityConfig.class, TestAwsConfig.class})
@@ -58,8 +57,6 @@ class S2sProviderContractIntegrationTest extends AbstractIntegrationTest {
     private static final String EMS_INTERNAL = "docs/api/internal/ems-internal.openapi.yml";
     private static final String MERGE_SOURCE = "contract.source";
     private static final String MERGE_TARGET = "contract.target";
-    private static final UUID MERGE_REQUEST = UUID.fromString("7a1c0000-0000-4000-8000-0000000b2001");
-    private static final UUID LOGO_REQUEST = UUID.fromString("7a1c0000-0000-4000-8000-0000000b2002");
     private static final String MAIL_GROUP = "contract-0b2_BATbern9017_partner-meeting-invite";
     private static final String CODE = "BATbern9017";
     private static final Instant DATE = Instant.parse("2026-06-11T16:00:00Z");
@@ -104,11 +101,6 @@ class S2sProviderContractIntegrationTest extends AbstractIntegrationTest {
         jdbc.update("DELETE FROM user_merge_log WHERE source_username = ?", MERGE_SOURCE);
         jdbc.update("DELETE FROM session_users WHERE username IN (?, ?)", MERGE_SOURCE, MERGE_TARGET);
         jdbc.update("DELETE FROM mail_message WHERE send_group_id = ?", MAIL_GROUP);
-        jdbc.update("DELETE FROM mail_conversation WHERE merge_request_id = ? OR logo_request_id = ?",
-                MERGE_REQUEST, LOGO_REQUEST);
-        jdbc.update("DELETE FROM mail_message WHERE send_group_id IN (?, ?)",
-                RequestConversations.Kind.MERGE.groupId(MERGE_REQUEST),
-                RequestConversations.Kind.LOGO.groupId(LOGO_REQUEST));
         eventRepository.findByEventCode(CODE).ifPresent(e -> {
             agendaConfigRepository.findByEventId(e.getId()).ifPresent(agendaConfigRepository::delete);
             registrationRepository.deleteAll(registrationRepository.findByEventId(e.getId()));
@@ -127,10 +119,6 @@ class S2sProviderContractIntegrationTest extends AbstractIntegrationTest {
         "POST, /internal/users/merge",
         "POST, /internal/users/primary-email",
         "POST, /internal/mails",
-        "POST, /internal/mail-center/merge-requests",
-        "POST, /internal/mail-center/merge-requests/{requestId}/done",
-        "POST, /internal/mail-center/logo-requests",
-        "POST, /internal/mail-center/logo-requests/{requestId}/done",
     })
     @DisplayName("internal spec examples match their schema")
     void should_haveValidExamples_forInternalOperations(String method, String path) {
@@ -265,20 +253,5 @@ class S2sProviderContractIntegrationTest extends AbstractIntegrationTest {
                  "failureReason": null}""".formatted(MAIL_GROUP, CODE)), 202);
         internal(postJson("/internal/mails", """
                 {"sendGroupId": "%s", "audience": "SPEAKERS", "to": "a@example.com"}""".formatted(MAIL_GROUP)), 400);
-    }
-
-    @Test
-    void requestConversations_openAndClose_matchSpec() throws Exception {
-        String open = """
-                {"requestId": "%s", "requesterName": "Anna Meier", "requesterEmail": "anna.meier@example.com",
-                 "subject": "Contract request", "note": null}""";
-        internal(postJson("/internal/mail-center/merge-requests", open.formatted(MERGE_REQUEST)), 200);
-        internal(postJson("/internal/mail-center/merge-requests/{id}/done", "{\"decidedBy\": \"organizer.alice\"}",
-                MERGE_REQUEST), 204);
-        internal(postJson("/internal/mail-center/logo-requests", open.formatted(LOGO_REQUEST)), 200);
-        internal(postJson("/internal/mail-center/logo-requests/{id}/done", "{\"decidedBy\": \"organizer.alice\"}",
-                LOGO_REQUEST), 204);
-        internal(postJson("/internal/mail-center/merge-requests", "{\"requestId\": \"%s\"}".formatted(MERGE_REQUEST)),
-                400);
     }
 }
