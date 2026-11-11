@@ -306,7 +306,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/companies:get-or-create': {
+  '/companies/get-or-create': {
     parameters: {
       query?: never;
       header?: never;
@@ -317,21 +317,23 @@ export interface paths {
     put?: never;
     /**
      * Get or create company by display name
-     * @description Gets an existing company or creates a new one from a display name.
+     * @description Gets an existing company or creates a new one from a display name (ADR-013 §2: 201 when
+     *     created, 200 when an existing company is returned).
      *
      *     **ADR-003**: Uses slug generation to create meaningful company name (ID) from display name.
      *
-     *     **Story**: Anonymous user registration (ADR-005) - allows creating companies during anonymous registration.
-     *
-     *     **Idempotency**: Safe to call multiple times - returns existing company if name slug already exists.
+     *     **Idempotency**: Safe to call multiple times - returns the existing company if the
+     *     generated name already exists.
      *
      *     **Slug Generation**:
      *     - Converts display name to lowercase alphanumeric slug (max 12 chars)
-     *     - Example: "Test Co" → "testco", "Müller & Partners AG" → "muellerpart"
+     *     - Example: "Test Co" → "testco", "Müller & Partners AG" → "muellerpartn"
      *     - Handles German characters: ä→ae, ö→oe, ü→ue, ß→ss
-     *     - Adds numeric suffix if slug collision occurs (e.g., "testco-2")
+     *     - Names are letters and digits only; a display name whose generated name exists returns
+     *       that company (200), it never gets a suffix
      *
-     *     **Authentication**: Supports both authenticated and anonymous contexts
+     *     **Authentication**: any signed-in user (401 without a login). Story 4.10d moved it from the
+     *     retired colon form `POST /companies:get-or-create`.
      *
      *     **Events Published**: CompanyCreatedEvent (only if new company created)
      *
@@ -1071,7 +1073,7 @@ export interface operations {
       };
     };
     responses: {
-      /** @description Company retrieved or created successfully */
+      /** @description An existing company with this generated name is returned */
       200: {
         headers: {
           [name: string]: unknown;
@@ -1080,7 +1082,17 @@ export interface operations {
           'application/json': components['schemas']['CompanyResponse'];
         };
       };
+      /** @description A new company was created */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CompanyResponse'];
+        };
+      };
       400: components['responses']['BadRequest'];
+      401: components['responses']['Unauthorized'];
       500: components['responses']['InternalServerError'];
     };
   };

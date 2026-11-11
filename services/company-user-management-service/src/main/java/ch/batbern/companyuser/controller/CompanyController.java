@@ -32,8 +32,8 @@ import java.util.List;
  * {@code @RequestMapping("/api/v1")} supplies the version prefix the interface paths omit
  * (e.g. interface {@code /companies} → {@code /api/v1/companies}). This also folds in the
  * former {@code CompanyGetOrCreateController}: the generated {@code getOrCreateCompany}
- * mapping ({@code /companies:get-or-create}) combines with the {@code /api/v1} prefix to the
- * correct colon-adjacent path, so no separate controller is needed.
+ * mapping ({@code /companies/get-or-create}, Story 4.10d) combines with the {@code /api/v1} prefix,
+ * so no separate controller is needed.
  *
  * <p>Method-level {@code @PreAuthorize} stays on the implementation (the generated interface
  * carries no security); behaviour matches the pre-wiring controller exactly.
@@ -84,14 +84,16 @@ public class CompanyController implements CompaniesApi, CompanySearchApi, Compan
 
     /**
      * Idempotently resolve a display name to an existing company (matched by generated slug)
-     * or create a new one. Authenticated-only. (Former CompanyGetOrCreateController.)
+     * or create a new one. Authenticated-only. ADR-013 §2 (Story 4.10d): 201 when created,
+     * 200 when found.
      */
     @Override
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<CompanyResponse> getOrCreateCompany(GetOrCreateCompanyRequest getOrCreateCompanyRequest) {
         String displayName = getOrCreateCompanyRequest.getDisplayName();
         log.info("Get-or-create company for display name: {}", displayName);
-        return ResponseEntity.ok(companyService.getOrCreateCompanyResponse(displayName));
+        CompanyService.GetOrCreateResult result = companyService.getOrCreateCompanyResponse(displayName);
+        return ResponseEntity.status(result.created() ? HttpStatus.CREATED : HttpStatus.OK).body(result.company());
     }
 
     /**

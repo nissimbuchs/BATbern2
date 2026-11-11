@@ -744,27 +744,29 @@ paths:
       security:
         - BearerAuth: []
 
-  /companies:get-or-create:
+  /companies/get-or-create:
     post:
       tags:
         - Companies
       summary: Get or create company by display name
       description: |
-        Gets an existing company or creates a new one from a display name.
+        Gets an existing company or creates a new one from a display name (ADR-013 §2: 201 when
+        created, 200 when an existing company is returned).
 
         **ADR-003**: Uses slug generation to create meaningful company name (ID) from display name.
 
-        **Story**: Anonymous user registration (ADR-005) - allows creating companies during anonymous registration.
-
-        **Idempotency**: Safe to call multiple times - returns existing company if name slug already exists.
+        **Idempotency**: Safe to call multiple times - returns the existing company if the
+        generated name already exists.
 
         **Slug Generation**:
         - Converts display name to lowercase alphanumeric slug (max 12 chars)
-        - Example: "Test Co" → "testco", "Müller & Partners AG" → "muellerpart"
+        - Example: "Test Co" → "testco", "Müller & Partners AG" → "muellerpartn"
         - Handles German characters: ä→ae, ö→oe, ü→ue, ß→ss
-        - Adds numeric suffix if slug collision occurs (e.g., "testco-2")
+        - Names are letters and digits only; a display name whose generated name exists returns
+          that company (200), it never gets a suffix
 
-        **Authentication**: Supports both authenticated and anonymous contexts
+        **Authentication**: any signed-in user (401 without a login). Story 4.10d moved it from the
+        retired colon form `POST /companies:get-or-create`.
 
         **Events Published**: CompanyCreatedEvent (only if new company created)
 
@@ -788,7 +790,7 @@ paths:
                   displayName: Müller & Söhne AG
       responses:
         '200':
-          description: Company retrieved or created successfully
+          description: An existing company with this generated name is returned
           content:
             application/json:
               schema:
@@ -803,6 +805,13 @@ paths:
                     createdAt: 2025-01-01T10:00:00Z
                     updatedAt: 2025-01-01T10:00:00Z
                     createdBy: john.doe
+        '201':
+          description: A new company was created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompanyResponse'
+              examples:
                 newCompany:
                   summary: New company created
                   value:
@@ -814,8 +823,12 @@ paths:
                     createdBy: "john.doe"
         '400':
           $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
         '500':
           $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
 
   # Logo upload endpoints removed - Story 1.16.3: Generic File Upload Service
   # Use the generic file upload API instead:

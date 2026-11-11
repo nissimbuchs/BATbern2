@@ -149,26 +149,39 @@ public class CompanyService {
     }
 
     /**
-     * Get existing company or create new one from display name, returning the
-     * API response DTO. Thin wrapper over {@link #getOrCreateCompany(String)} for
-     * the {@code POST /companies:get-or-create} endpoint.
+     * Story 4.10d: the result of {@code POST /companies/get-or-create}, with whether the company was
+     * created (201) or found (200), ADR-013 §2.
+     */
+    public record GetOrCreateResult(CompanyResponse company, boolean created) {
+    }
+
+    /**
+     * Get existing company or create new one from display name, returning the API response DTO
+     * and whether it was created, for the {@code POST /companies/get-or-create} endpoint.
      *
      * @param displayName Full company display name (e.g., "Test Co")
-     * @return Existing or newly created company as a response DTO
+     * @return Existing or newly created company as a response DTO, with the created flag
      */
-    public CompanyResponse getOrCreateCompanyResponse(String displayName) {
-        return mapToResponse(getOrCreateCompany(displayName));
+    public GetOrCreateResult getOrCreateCompanyResponse(String displayName) {
+        Resolved resolved = resolveOrCreate(displayName);
+        return new GetOrCreateResult(mapToResponse(resolved.company()), resolved.created());
     }
 
     /**
      * Get existing company or create new one from display name.
      * ADR-003: Uses display name to generate meaningful company name (slug).
-     * Used for anonymous user registration where company might not exist yet.
      *
      * @param displayName Full company display name (e.g., "Test Co")
      * @return Existing or newly created company
      */
     public Company getOrCreateCompany(String displayName) {
+        return resolveOrCreate(displayName).company();
+    }
+
+    private record Resolved(Company company, boolean created) {
+    }
+
+    private Resolved resolveOrCreate(String displayName) {
         log.debug("Get-or-create company for display name: {}", displayName);
 
         // Generate company name (slug) from display name
@@ -181,7 +194,7 @@ public class CompanyService {
 
         if (existing.isPresent()) {
             log.debug("Company found by name: {}", finalCompanyName);
-            return existing.get();
+            return new Resolved(existing.get(), false);
         }
 
         // Ensure unique name with a numeric suffix within 12 characters if needed
@@ -218,7 +231,7 @@ public class CompanyService {
         log.info("Company created: {} (name: {}, display: {})",
                  savedCompany.getId(), savedCompany.getName(), savedCompany.getDisplayName());
 
-        return savedCompany;
+        return new Resolved(savedCompany, true);
     }
 
     /**
