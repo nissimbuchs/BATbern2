@@ -74,8 +74,11 @@ measured how they call each other on develop `e7f76baf`:
   user's JWT when there is one and sends none otherwise; CUMS records the forwarded
   `custom:username`, else `system:<job>` (Epic 17 entry 6). A token that expires within 60 s
   (`EXPIRY_MARGIN`) is not forwarded: the receiver would answer 401 even on `/internal`, and an
-  `@Async` task may outlive the token; the call then goes out as a system call. Every EMS and PCS
-  client uses it, PCS's `HttpOutboundMailRecorder` included (6b).
+  `@Async` task may outlive the token; the call then goes out as a system call. Users: EMS
+  `UserApiClientImpl` (entry 6); PCS `UserServiceClientImpl`, `CompanyServiceClientImpl`,
+  `EventManagementClientImpl` and `HttpOutboundMailRecorder` (6b). Exceptions until their entry
+  moves them: EMS `PartnerApiClientImpl` (own `createHeadersWithJwtToken`, owner 8) and
+  `PartnerMeetingRsvpClientImpl` (no headers, owner 8b).
 - `docs/architecture/module-map.md` carries these rules into every agent workflow.
 
 ## Related

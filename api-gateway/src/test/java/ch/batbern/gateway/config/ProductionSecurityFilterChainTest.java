@@ -97,7 +97,6 @@ class ProductionSecurityFilterChainTest {
 
     @ParameterizedTest
     @ValueSource(strings = {
-        "/api/v1/events/attendance-summary",
         "/api/v1/events/registrations",
         "/api/v1/events/BATbern60/sessions/unassigned",
         "/api/v1/events/BATbern60/sessions/conflicts"

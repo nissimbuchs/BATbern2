@@ -14,6 +14,7 @@ import ch.batbern.events.repository.RegistrationRepository;
 import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.shared.test.AbstractIntegrationTest;
 import ch.batbern.shared.types.EventWorkflowState;
+import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -30,6 +31,7 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 import java.util.UUID;
 
 import static ch.batbern.shared.test.contract.ProviderContract.assertExamplesMatchSchema;
@@ -155,10 +157,10 @@ class S2sProviderContractIntegrationTest extends AbstractIntegrationTest {
             request.with(jwt().jwt(j -> j.claim("custom:username", "partner.contract")
                     .claim("custom:role", "PARTNER")));
         }
-        internal(request, 200);
-        mockMvc.perform(get("/internal/events/attendance-summary")
-                        .param("companyName", "ContractCo").param("fromYear", "2026"))
-                .andExpect(jsonPath("$[?(@.eventCode == '" + CODE + "')].companyAttendees").value(1));
+        MvcResult result = internal(request, 200);
+        List<Number> attendees = JsonPath.read(result.getResponse().getContentAsString(),
+                "$[?(@.eventCode == '" + CODE + "')].companyAttendees");
+        assertThat(attendees).singleElement().satisfies(n -> assertThat(n.longValue()).isEqualTo(1L));
         internal(get("/internal/events/attendance-summary"), 400);
     }
 

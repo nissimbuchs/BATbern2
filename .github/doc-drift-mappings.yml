@@ -106,6 +106,18 @@ mappings:
     docs:
       - "docs/architecture/module-map.md"
       - "docs/architecture/ADR-016-service-directions-and-service-to-service-calls.md"
+  - source_pattern: "services/company-user-management-service/src/main/java/ch/batbern/companyuser/client/"
+    docs:
+      - "docs/architecture/module-map.md"
+      - "docs/architecture/ADR-016-service-directions-and-service-to-service-calls.md"
+  - source_pattern: "services/partner-coordination-service/src/main/java/ch/batbern/partners/mail/HttpOutboundMailRecorder.java"
+    docs:
+      - "docs/architecture/module-map.md"
+      - "docs/architecture/ADR-016-service-directions-and-service-to-service-calls.md"
+  - source_pattern: "api-gateway/src/main/java/ch/batbern/gateway/client/GatewayUserStatusClient.java"
+    docs:
+      - "docs/architecture/module-map.md"
+      - "docs/architecture/ADR-016-service-directions-and-service-to-service-calls.md"
   - source_pattern: "docs/api/internal/"
     docs:
       - "docs/architecture/module-map.md"

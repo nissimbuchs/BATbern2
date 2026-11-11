@@ -5,7 +5,9 @@ import ch.batbern.shared.test.contract.ContractServer.Reply;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.web.client.ExpectedCount;
 
+import java.util.Collections;
 import java.util.Map;
+import java.util.WeakHashMap;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static org.springframework.http.HttpMethod.GET;
@@ -56,16 +58,27 @@ public final class CumsInternalUsers {
         return this;
     }
 
+    /** Partner contacts per bound server, then per company (see {@link #partnerContacts}). */
+    private static final Map<ContractServer, Map<String, String[]>> CONTACTS =
+            Collections.synchronizedMap(new WeakHashMap<>());
+
     /**
      * {@code GET /internal/users?company=...&role=PARTNER} (every page call of
      * {@code getUsersByCompanyAndRole}) answers one page with {@code users} (from {@link #user}) for
-     * {@code company}, and an empty page for any other company. Replaces a stubbed
+     * {@code company}, and an empty page for a company nobody registered. Call it once per company
+     * on the same server: one expectation per server answers by the {@code company} parameter, so
+     * a later call adds a company instead of shadowing the first. Replaces a stubbed
      * {@code UserServiceClient.getUsersByCompanyAndRole}.
      */
     public static void partnerContacts(ContractServer server, String company, String... users) {
-        server.expect(GET, "/internal/users").times(ExpectedCount.manyTimes())
-                .respondPerRequest(call -> Reply.ok(company.equals(call.queryParam("company"))
-                        ? page(users) : page()));
+        Map<String, String[]> byCompany = CONTACTS.computeIfAbsent(server, s -> {
+            Map<String, String[]> companies = new ConcurrentHashMap<>();
+            s.expect(GET, "/internal/users").times(ExpectedCount.manyTimes())
+                    .respondPerRequest(call -> Reply.ok(page(companies.getOrDefault(
+                            String.valueOf(call.queryParam("company")), new String[0]))));
+            return companies;
+        });
+        byCompany.put(company, users);
     }
 
     /** One {@code UserResponse} of the cums-internal spec: a PARTNER {@code id} of {@code companyId}. */

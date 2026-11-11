@@ -3,14 +3,14 @@ title: 'PCS calls CUMS and EMS over /internal'
 type: 'refactor'
 ticket: '6b'
 created: '2026-11-11'
-status: 'in-progress'
+status: 'in-review'
 baseline_revision: 'e0bbba970de03b5bcb9cac599dbe041f44d3d77c'
 route: 'full'
 route_source: 'auto'
 risk: 'medium'
-review: ''
-review_source: ''
-lenses_ran: []
+review: 'quick'
+review_source: 'pinned'
+lenses_ran: ['quick']
 review_loop_iteration: 0
 context:
   - '{project-root}/docs/architecture/ADR-016-service-directions-and-service-to-service-calls.md'
@@ -91,11 +91,24 @@ context:
 - `ResponseConformanceTest` (shared-kernel) used `/events/attendance-summary` as its "most specific template" case; it now uses `/events/registrations` (registrations-api over core). Javadoc and coding-standards follow.
 - Also moved: PCS `ProductionChainIntegrationTest` and the PCS provider `S2sProviderContractIntegrationTest` (they bound companies-api for the company read). Touch rule also took `PartnerPerformanceTest` off its `UserServiceClient` mock (`CumsInternalUsers.partnerContacts`). Ratchet: `be-mock-s2s-client` 50 → 47, `be-mock-in-process` 34 → 33. No `ignoringMissingAuthorization` left in PCS.
 - Not changed: the gateway's GHSA-qhqv matcher still lists `/api/v1/events/attendance-summary` (anonymous gets 401 there; harmless, out of scope). EMS no longer lists it: with a token the old path reaches `GET /events/{eventCode}` and answers 400 (validated code), measured on local dev.
-- Local dev (2026-11-11, as `batbern.partner`): `/partners/me` 200 `sbb`; dashboard 200 (22 rows); XLSX export 200; contacts 200; other company's dashboard 403; PCS log shows `GET :8002/internal/events/attendance-summary` 200, `:8001/internal/users/batbern.partner`, `:8001/internal/companies/sbb`, no `/users/me` or `/api/v1/companies`; CUMS log shows the forwarded JWT on `/internal/users/batbern.partner`. The EMS local log does not log request paths at its level, so the EMS-side line is the PCS client log. Old public path: anonymous 401 (gateway), partner 400; gateway `/internal/events/attendance-summary` 403. Not compared row-for-row against pre-change output (same repository query).
+- Local dev (2026-11-11, as `batbern.partner`): `/partners/me` 200 `sbb`; dashboard 200 (22 rows); XLSX export 200; contacts 200; other company's dashboard 403; PCS log shows `GET :8002/internal/events/attendance-summary` 200, `:8001/internal/users/batbern.partner`, `:8001/internal/companies/sbb`, no `/users/me` or `/api/v1/companies`; CUMS log shows the forwarded JWT on `/internal/users/batbern.partner`. CUMS log for the company read (`GET /api/v1/partners/sbb?include=company` as the partner, 200): `2026-11-11T04:37:12.705+01 Securing GET /internal/companies/sbb` / `04:37:12.784+01 Secured GET /internal/companies/sbb` (first seen 04:30:26). The EMS local log does not log request paths at its level, so the EMS-side line is the PCS client log. Old public path: anonymous 401 (gateway), partner 400; gateway `/internal/events/attendance-summary` 403. Not compared row-for-row against pre-change output (same repository query).
 
 ## Plan Change Log
 
 ## Review Triage Log
+
+Pass 1 (quick lens + orchestrator), 2026-11-11: 0 high, 3 medium, 5 low, 0 false.
+
+| # | Finding | Verdict | Route | Evidence / action |
+|---|---------|---------|-------|-------------------|
+| 1 | ADR-016 claims every EMS client uses `S2sHeaders`; `PartnerApiClientImpl`, `PartnerMeetingRsvpClientImpl` do not | medium | patch | Name PCS + EMS `UserApiClientImpl`, list the EMS exceptions with owners 8 and 8b. |
+| 2 | coding-standards says one `ignoringMissingAuthorization` binding left; `CumsContractHarnessTest` is a second | low | patch | Correct the count. |
+| 3 | AC1: EMS-side evidence and "same data as before" inferred | medium | patch | Data assertion on the EMS internal endpoint in the with-JWT case (see 6) is the EMS-side evidence; the query is unchanged. |
+| 4 | AC2: CUMS log shows `/internal/users/…` but `/internal/companies/{name}` only via PCS log | low | patch | Re-check on local dev, record the CUMS log line. |
+| 5 | doc-drift mapping misses CUMS `client/`, PCS `HttpOutboundMailRecorder`, gateway `GatewayUserStatusClient` | low | patch | Audit the class: map every S2S client. |
+| 6 | EMS provider test: with-JWT case never checks the data | medium | patch | Assert the data on the same response for both cases. |
+| 7 | `CumsInternalUsers.partnerContacts` `manyTimes()` expectation shadows a second company | low | patch | Match by the company parameter, or document the single-use limit. |
+| 8 | Gateway still lists the removed `/api/v1/events/attendance-summary` as authenticated-only (orchestrator) | low | patch | Dead matcher (C15). |
 
 ## Design Notes
 

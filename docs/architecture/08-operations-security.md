@@ -251,7 +251,7 @@ Two rules the 2026-10-28 review (GHSA-qhqv) added:
   leaked, but the first wall was missing. Gateway and EMS now name those paths `authenticated()`
   before the wildcards. When adding an endpoint under a public wildcard, add it there as well.
   (The attendance summary left the public API in Epic 17 6b: it is `/internal/events/attendance-summary`,
-  and EMS no longer lists the public path.)
+  and neither the gateway nor EMS lists the public path any more.)
 
 The weekly ZAP API scan covered 13 of 19 specs (users, topics, partner meetings, tasks,
 notifications and app settings were missing). `scripts/ci/check-zap-spec-coverage.py` now fails

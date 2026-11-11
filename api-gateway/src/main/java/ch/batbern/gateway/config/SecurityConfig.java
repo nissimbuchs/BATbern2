@@ -214,8 +214,7 @@ public class SecurityConfig {
 
                         // GHSA-qhqv: organizer endpoints whose literal segment the public wildcards
                         // below would otherwise match as an event code or session slug.
-                        .requestMatchers(HttpMethod.GET, "/api/v1/events/attendance-summary",
-                                "/api/v1/events/registrations",
+                        .requestMatchers(HttpMethod.GET, "/api/v1/events/registrations",
                                 "/api/v1/events/*/sessions/unassigned",
                                 "/api/v1/events/*/sessions/conflicts").authenticated()
 
