@@ -102,7 +102,7 @@ Protective and cheap first, then decoupling, then restructuring.
 | 17.3c | Gate against hand-written copies of generated API types (ADR-006) | 17.3b | gate + dev |
 | *16.8c* | *Mail Center consolidation (stays in Epic 16)* | *17.1* | *dev* |
 | 17.6 | Service-to-service calls via `/internal` | 17.4, 17.3c, **17.0a, 17.0b** | dev |
-| 17.7 | User-reference contract and request pull | 17.6 | dev |
+| 17.7 | User-reference contract and request contract | 17.6 | dev |
 | 17.8 | EMS↔PCS direction | 17.6 | dev |
 | 17.9 | API conventions I (breaking) | 17.4, **17.0c, 17.0d** | dev |
 | 17.10 | API conventions II (breaking) | 17.9 | dev |
@@ -467,7 +467,7 @@ deviations: none.
 
 ---
 
-### Story 17.7 — User-reference contract and request pull
+### Story 17.7 — User-reference contract and request contract
 
 **As** the owner, **I want** CUMS to own the profile-merge contract and stop pushing into EMS,
 **so that** CUMS no longer depends on EMS by name and every service that stores usernames takes part
@@ -476,27 +476,27 @@ in a merge.
 **Scope:**
 - CUMS defines `/internal/user-references/preview` and `/merge`. Holders are listed in CUMS
   configuration. EMS implements it (replaces the current internal merge endpoints), PCS implements it
-  for `topic_suggestions.suggested_by`, notes `author_username`, meetings `created_by` and
-  `partner_contacts.username`.
-- The Mail Center pulls open and closed requests from CUMS with a ShedLock job, for **both** request
-  kinds that CUMS pushes today: merge requests and company logo requests (#1246 added the second;
-  `HttpEventManagementMailCenterClient`). Drop `/internal/mail-center/merge-requests*` and
-  `/internal/mail-center/logo-requests*`.
+  for `topic_suggestions.suggested_by`, notes `author_username` and meetings `created_by`
+  (`partner_contacts` was dropped by PCS V6).
+- CUMS owns a Mail Center request contract (a request opened, decided), implemented by EMS and called
+  synchronously, for **both** request kinds: merge requests and company logo requests (#1246). No
+  polling (owner 2026-11-11, ADR-016 decision 4 amended). Drop `/internal/mail-center/merge-requests*`
+  and `/internal/mail-center/logo-requests*` and `HttpEventManagementMailCenterClient`.
 - Before PCS joins: query production read-only for PCS rows referencing a username that was a merge
-  source. The review believes there are none; record the result.
+  source. The review believes there are none; record the result. Result 2026-11-11: 0 in all three.
 
 **Architecture note (draft):** modules: CUMS usermerge and requests, EMS usermerge and mail center
-(L6), PCS (new usermerge holder) · new dependencies: EMS→CUMS feed (upstream, allowed); CUMS→holders
-via its own contract (the one allowed upstream→downstream call, ADR-016 §5) · endpoints:
-`/internal/user-references/*` new, nearest: `/internal/users/merge*`; CUMS request feed new, nearest:
-none; 4 `/internal/mail-center/*` removed · reused: ShedLock, `RequestConversations` · deviations: none.
+(L6), PCS (new usermerge holder) · new dependencies: CUMS→holders and CUMS→Mail Center, each via a contract
+CUMS owns (ADR-016 §4, §5) · endpoints:
+`/internal/user-references/*` new, nearest: `/internal/users/merge*`; Mail Center request contract new, nearest:
+the 4 `/internal/mail-center/*`, removed · reused: `RequestConversations` · deviations: none.
 
 **Acceptance criteria:**
 1. A merge preview shows counts from EMS and PCS; a merge rewrites PCS usernames. Guard: integration
    test per holder plus a CUMS test with two configured holders, one refusing.
 2. CUMS has no class referencing EMS by name. Guard: 17.5 ArchUnit rule, frozen store shrinks.
-3. A new merge request and a new logo request appear in the Mail Center within one poll interval,
-   and close when decided. Guard: EMS integration test against a stubbed feed; local-dev check.
+3. A new merge request and a new logo request appear in the Mail Center at once and close when
+   decided. Guard: CUMS contract test against `ContractServer`, EMS provider test; local-dev check.
 4. The 4 `/internal/mail-center/*-requests*` endpoints and their CUMS client are gone.
 
 ---
@@ -510,21 +510,21 @@ says.
 - Topic canvas: the frontend loads partner topics from `/partners/topics` itself. EMS keeps the
   cluster classification and offers a batch classify endpoint. `TopicSessionDataService` drops its
   PCS call.
-- Calendar RSVPs from partner meeting invites: `InboundEmailRouter` stores them in EMS and exposes an
-  `/internal` RSVP feed (`?since=cursor`). PCS pulls it with a ShedLock job (add ShedLock to PCS).
+- Calendar RSVPs from partner meeting invites: EMS owns a calendar reply contract that
+  `InboundEmailRouter` calls synchronously; PCS implements it. No polling (owner 2026-11-11).
 - PCS→EMS (event summary, attendance-summary) stays, via `/internal` after 17.6.
 
 **Architecture note (draft):** modules: EMS topics (L3), mail center inbound (L6); PCS meetings;
-frontend topic canvas · new dependencies: PCS→EMS feed (upstream, allowed); frontend→PCS read ·
-endpoints: EMS `/internal` RSVP feed new, nearest: none; batch classify, nearest: current classify
-call · reused: ShedLock, `InboundEmailRouter` · deviations: none.
+frontend topic canvas · new dependencies: EMS→PCS via a contract EMS owns; frontend→PCS read ·
+endpoints: calendar reply contract, nearest: PCS `POST /internal/partner-meetings/rsvps`, replaced; batch classify, nearest: current classify
+call · reused: `InboundEmailRouter`, `ContractCalls` · deviations: none.
 
 **Acceptance criteria:**
 1. EMS has no PCS client. Guard: 17.5 ArchUnit rule, frozen store shrinks to zero for EMS→PCS.
 2. The topic canvas shows partner topics with clusters as before. Guard: Vitest for the hook,
    Playwright on the canvas.
-3. A calendar accept/decline reaches the PCS meeting within one poll interval. Guard: PCS integration
-   test against a stubbed feed, EMS feed integration test, local-dev check with a sample iMIP reply.
+3. A calendar accept/decline reaches the PCS meeting at once. Guard: EMS contract test against
+   `ContractServer`, PCS provider test, local-dev check with a sample iMIP reply.
 
 ---
 
