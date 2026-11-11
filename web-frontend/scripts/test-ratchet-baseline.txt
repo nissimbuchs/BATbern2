@@ -44,7 +44,6 @@ be-mock-s2s-client	services/event-management-service/src/test/java/ch/batbern/ev
 be-mock-s2s-client	services/event-management-service/src/test/java/ch/batbern/events/forwarding/ForwardingRecipientResolverTest.java	1
 be-mock-s2s-client	services/event-management-service/src/test/java/ch/batbern/events/forwarding/InboundEmailRouterTest.java	1
 be-mock-s2s-client	services/event-management-service/src/test/java/ch/batbern/events/mailcenter/ConversationServiceAssignmentTest.java	1
-be-mock-s2s-client	services/event-management-service/src/test/java/ch/batbern/events/mailcenter/GlobalMailCenterIntegrationTest.java	1
 be-mock-s2s-client	services/event-management-service/src/test/java/ch/batbern/events/mailcenter/MailComposerControllerIntegrationTest.java	1
 be-mock-s2s-client	services/event-management-service/src/test/java/ch/batbern/events/mailcenter/MailComposerSendIntegrationTest.java	1
 be-mock-s2s-client	services/event-management-service/src/test/java/ch/batbern/events/mailcenter/MailConversationControllerIntegrationTest.java	1
@@ -106,7 +105,6 @@ be-transactional-it	services/event-management-service/src/test/java/ch/batbern/e
 be-transactional-it	services/event-management-service/src/test/java/ch/batbern/events/controller/AnalyticsControllerIntegrationTest.java	1
 be-transactional-it	services/event-management-service/src/test/java/ch/batbern/events/controller/AnonymousRegistrationE2EIntegrationTest.java	1
 be-transactional-it	services/event-management-service/src/test/java/ch/batbern/events/controller/ArchiveBrowsingIntegrationTest.java	1
-be-transactional-it	services/event-management-service/src/test/java/ch/batbern/events/controller/AttendeeDashboardIntegrationTest.java	1
 be-transactional-it	services/event-management-service/src/test/java/ch/batbern/events/controller/DeregistrationControllerIntegrationTest.java	1
 be-transactional-it	services/event-management-service/src/test/java/ch/batbern/events/controller/EmailTemplateControllerIntegrationTest.java	1
 be-transactional-it	services/event-management-service/src/test/java/ch/batbern/events/controller/EventAttendanceSummaryIntegrationTest.java	1

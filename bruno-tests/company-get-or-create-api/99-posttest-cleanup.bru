@@ -41,12 +41,8 @@ tests {
 }
 
 docs {
-  Audit-pass addition (PR 4, plan §B3): unconditional posttest cleanup.
-  Runs AFTER every other test in this collection regardless of pass/fail —
-  the 12-delete-company test should already have removed the one row created
-  in this run, but if any test between 01 and 12 crashed without cleanup,
-  this sweep catches the leftover.
-
-  Status assertion is `oneOf([200, 204, 404])` so a missing cleanup endpoint
-  never fails the collection.
+  Posttest sweep of company-get-or-create-api (Story 4.10d): removes every company whose key starts
+  with BRUNOTESTCO (ignoring case) after the collection, so a company left by an aborted run
+  cannot turn the 201 of 01 into a 200. Dev-only collection; a 404 (endpoint missing) is tolerated
+  so the sweep never fails the run.
 }

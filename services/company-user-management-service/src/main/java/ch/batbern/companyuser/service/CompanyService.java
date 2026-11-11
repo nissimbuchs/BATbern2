@@ -188,17 +188,13 @@ public class CompanyService {
         // "Test Co" → "testco" (max 12 chars, alphanumeric only)
         String companyName = slugService.generateCompanyName(displayName);
 
-        // Try to find by generated name first
-        String finalCompanyName = companyName;
-        Optional<Company> existing = companyRepository.findByName(finalCompanyName);
+        // The generated name is the key: an existing company with it is returned, never suffixed
+        Optional<Company> existing = companyRepository.findByName(companyName);
 
         if (existing.isPresent()) {
-            log.debug("Company found by name: {}", finalCompanyName);
+            log.debug("Company found by name: {}", companyName);
             return new Resolved(existing.get(), false);
         }
-
-        // Ensure unique name with a numeric suffix within 12 characters if needed
-        companyName = slugService.ensureUniqueCompanyName(companyName, companyRepository::existsByName);
 
         // Create new company
         log.info("Creating new company: {} (display: {})", companyName, displayName);

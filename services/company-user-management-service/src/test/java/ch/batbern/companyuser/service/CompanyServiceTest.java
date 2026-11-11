@@ -659,41 +659,6 @@ class CompanyServiceTest {
     }
 
     @Test
-    @DisplayName("Test 4.28: should_addNumericSuffix_when_slugCollisionOccurs")
-    void should_addNumericSuffix_when_slugCollisionOccurs() {
-        // Given
-        String displayName = "Test Co";
-        String expectedSlug = "testco";
-        String collisionSlug = "testco2"; // within 12 letters/digits, not "testco-2"
-        when(securityContextHelper.getCurrentUsername()).thenReturn("test.user");
-        when(companyRepository.findByName(expectedSlug)).thenReturn(Optional.empty());
-        when(companyRepository.existsByName(expectedSlug)).thenReturn(true);
-        when(companyRepository.save(any(Company.class))).thenAnswer(invocation -> {
-            Company company = invocation.getArgument(0);
-            return Company.builder()
-                    .id(UUID.randomUUID())
-                    .name(company.getName())
-                    .displayName(company.getDisplayName())
-                    .isVerified(false)
-                    .createdBy(company.getCreatedBy())
-                    .createdAt(Instant.now())
-                    .updatedAt(Instant.now())
-                    .build();
-        });
-
-        // When
-        Company result = companyService.getOrCreateCompany(displayName);
-
-        // Then
-        assertThat(result).isNotNull();
-        assertThat(result.getName()).isEqualTo(collisionSlug);
-        assertThat(result.getDisplayName()).isEqualTo(displayName);
-        verify(companyRepository).save(argThat(company ->
-            company.getName().equals(collisionSlug)
-        ));
-    }
-
-    @Test
     @DisplayName("Test 4.29: should_setAnonymousCreator_when_noUserContext")
     void should_setAnonymousCreator_when_noUserContext() {
         // Given

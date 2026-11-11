@@ -41,9 +41,8 @@ tests {
 }
 
 docs {
-  Audit-pass addition (PR 4, plan §B3): unconditional pretest cleanup.
-  Runs BEFORE every other test in this collection to ensure a clean slate.
-  Status assertion is `oneOf([200, 204, 404])` so this never fails the run —
-  if the cleanup endpoint isn't deployed yet (e.g. against pre-PR-1 staging),
-  the 404 is fine and the rest of the collection still runs.
+  Pretest sweep of company-get-or-create-api (Story 4.10d): removes every company whose key starts
+  with BRUNOTESTCO (ignoring case) before the collection, so a company left by an aborted run
+  cannot turn the 201 of 01 into a 200. Dev-only collection; a 404 (endpoint missing) is tolerated
+  so the sweep never fails the run.
 }

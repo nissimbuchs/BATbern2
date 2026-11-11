@@ -1,13 +1,10 @@
 package ch.batbern.events.mailcenter;
 
-import ch.batbern.events.client.UserApiClient;
+import ch.batbern.events.config.CumsContractHarness;
 import ch.batbern.events.config.TestAwsConfig;
 import ch.batbern.events.config.TestSecurityConfig;
 import ch.batbern.events.core.dto.generated.EventType;
 import ch.batbern.events.domain.Event;
-import ch.batbern.events.dto.generated.users.AdditionalEmail;
-import ch.batbern.events.dto.generated.users.UserResponse;
-import ch.batbern.events.exception.UserNotFoundException;
 import ch.batbern.events.forwarding.EmailForwardingService;
 import ch.batbern.events.forwarding.ForwardingDirectory;
 import ch.batbern.events.mailcenter.inbound.InboundMailCenter;
@@ -33,7 +30,6 @@ import java.nio.charset.StandardCharsets;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -85,8 +81,9 @@ class GlobalMailCenterIntegrationTest extends AbstractIntegrationTest {
     private JdbcTemplate jdbc;
     @MockitoBean
     private ForwardingDirectory directory;
-    @MockitoBean
-    private UserApiClient userApiClient;
+    /** CUMS behind the real UserApiClient; the user responses are checked against the spec. */
+    @Autowired
+    private CumsContractHarness cums;
 
     private final Instant now = Instant.now().truncatedTo(ChronoUnit.SECONDS);
 
@@ -98,11 +95,13 @@ class GlobalMailCenterIntegrationTest extends AbstractIntegrationTest {
         event(EVENT_A, 931);
         event(EVENT_B, 932);
         when(directory.organizerEmails()).thenReturn(Set.of("organizer-mail@example.com"));
-        when(userApiClient.getOrganizerUsernames()).thenReturn(List.of("lead.organizer"));
+        cums.reset();
+        cums.usersWithRole("ORGANIZER", "lead.organizer");
     }
 
     @AfterEach
     void tearDown() {
+        cums.reset();
         jdbc.update("DELETE FROM mail_message WHERE event_code IN (?, ?) OR event_code IS NULL OR direction = 'IN'",
                 EVENT_A, EVENT_B);
         jdbc.update("DELETE FROM mail_conversation");
@@ -375,8 +374,9 @@ class GlobalMailCenterIntegrationTest extends AbstractIntegrationTest {
     @Test
     @DisplayName("16.10 AC1/AC2: a user's mail by every address, sent and received; others, newsletters and tests not")
     void should_listParticipantMail_when_userHasSeveralAddresses() throws Exception {
-        when(userApiClient.getUserByUsername("anna.example")).thenReturn(new UserResponse().id("anna.example")
-                .email(ANNA).additionalEmails(List.of(new AdditionalEmail().id(UUID.randomUUID()).email(ANNA_EXTRA.toUpperCase()))));
+        cums.user("anna.example", """
+                {"email": "%s", "additionalEmails": [{"id": "6b0e2a4c-1d3f-4e5a-8b7c-9d0e1f2a3b7a",
+                 "email": "%s", "createdAt": "2025-01-15T10:00:00Z"}]}""".formatted(ANNA, ANNA_EXTRA.toUpperCase()));
         UUID toPrimary = outbound(EVENT_A + "-1", EVENT_A, "REGISTRANTS", now.minus(5, ChronoUnit.HOURS), ANNA);
         jdbc.update("UPDATE mail_recipient SET status = 'DELIVERED' WHERE mail_message_id = ?", toPrimary);
         outbound(EVENT_B + "-1", EVENT_B, "SPEAKERS", now.minus(4, ChronoUnit.HOURS), ANNA_EXTRA);
@@ -401,11 +401,10 @@ class GlobalMailCenterIntegrationTest extends AbstractIntegrationTest {
     @Test
     @DisplayName("16.10 AC3/AC4: a partner's mail by its PARTNER contacts; both filters 400; unknown 404")
     void should_listCompanyMail_when_partnerContactsExist() throws Exception {
-        when(userApiClient.getUsersByCompany("ExampleAG", "PARTNER")).thenReturn(List.of(
-                new UserResponse().id("bob.example").email(BOB)));
-        when(userApiClient.getUsersByCompany("NoSuchCo", "PARTNER")).thenReturn(List.of());
-        when(userApiClient.getCompanyDisplayName("NoSuchCo")).thenReturn(null);
-        when(userApiClient.getUserByUsername("ghost")).thenThrow(new UserNotFoundException("ghost"));
+        cums.user("bob.example", "Bob", "Example", BOB);
+        cums.usersOfCompany("ExampleAG", "PARTNER", "bob.example");
+        // NoSuchCo: no PARTNER users and no company (the harness answers 404 for its display name)
+        cums.unknownUser("ghost");
         outbound(EVENT_A + "-1", EVENT_A, "PARTNERS", now.minus(5, ChronoUnit.HOURS), BOB);
         outbound(EVENT_A + "-2", EVENT_A, "PARTNERS", now.minus(4, ChronoUnit.HOURS), ANNA);
 

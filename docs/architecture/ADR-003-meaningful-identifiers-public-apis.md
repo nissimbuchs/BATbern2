@@ -637,7 +637,7 @@ through this parent's path.
 |---|---|---|
 | Owned child under its parent | event photos, teaser images, thank-you notes, Q&A posts, session materials, partner notes, newsletter sends, watch pairing, speaker-pool entries (no username before READY) | allowed |
 | Transient technical handle | `uploadId`, `jobId`, merge or logo `requestId` | allowed |
-| Natural key is personal data | newsletter subscribers, a user's additional e-mail addresses (the key would be an e-mail address, which must not appear in URLs or logs) | UUID required |
+| Natural key is personal data | newsletter subscribers, a user's additional e-mail addresses (the key would be an e-mail address, which must not appear in URLs or logs; `AdditionalEmail.id` also reaches EMS in the internal user response, where it is neither stored nor used: accepted, Story 4.10d) | UUID required |
 | Unnamed top-level aggregate | tasks, task templates, partner meetings, topic suggestions, own notifications | allowed |
 | Child outside its parent | the former `POST /speakers/{speakerId}/ai/analyze-abstract` | not allowed: nested under the event since Story 4.9 (`POST /events/{eventCode}/speakers/{speakerId}/abstract-analysis`, loaded with `findByIdAndEventId`) |
 
