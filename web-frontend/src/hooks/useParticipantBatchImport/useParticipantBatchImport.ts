@@ -1,23 +1,87 @@
 /**
  * Business logic hook for participant batch import
  *
- * Processes batch registration requests in parallel batches of 10 with:
- * - Progress tracking (one callback per batch)
- * - Rate limiting (100 ms pause between batches)
- * - Real-time status updates
- * - Error handling
+ * The CSV holds one row per person with the events they attended; the API takes the people of
+ * one event at a time (Story 4.10c, `POST /events/{eventCode}/participants` with `people`, at
+ * most 100 per call). The hook regroups the rows per event, sends each event's people in chunks
+ * of 100, one request after the other, and aggregates each person's status over their events:
+ * - success: every event registered or already there (skipped)
+ * - error: at least one event failed (the message names how many and why)
+ *
+ * Sequential on purpose: one person in two events would otherwise be created twice at once.
  */
 
 import { useState, useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { batchRegisterParticipant } from '../../services/api/eventApi';
+import { importParticipants } from '../../services/api/eventRegistrationService';
 import { constructUsername } from '../../utils/participantImportUtils';
 import { isAxiosError } from 'axios';
 import type {
   ParticipantImportCandidate,
   ParticipantBatchImportResult,
-  BatchRegistrationRequest,
+  ParticipantImportRow,
+  ParticipantImportPerson,
 } from '../../types/participantImport.types';
+
+/** The API's limit of people per call. */
+export const PEOPLE_PER_REQUEST = 100;
+
+/** One request: up to 100 people of one event, with the index of each in the candidate list. */
+interface EventChunk {
+  eventCode: string;
+  people: ParticipantImportPerson[];
+  candidateIndexes: number[];
+}
+
+/** Per candidate: events still to do, events failed, and the first reason. */
+interface CandidateProgress {
+  pending: number;
+  failed: number;
+  reason?: string;
+}
+
+/** Regroup person rows into per-event chunks of at most 100 people, events in first-seen order. */
+export function chunkPerEvent(rows: ParticipantImportRow[]): EventChunk[] {
+  const byEvent = new Map<string, { people: ParticipantImportPerson[]; indexes: number[] }>();
+  rows.forEach((row, index) => {
+    for (const eventCode of row.eventCodes) {
+      const group = byEvent.get(eventCode) ?? { people: [], indexes: [] };
+      group.people.push({
+        email: row.email,
+        firstName: row.firstName,
+        lastName: row.lastName,
+        ...(row.companyId ? { companyId: row.companyId } : {}),
+        status: 'ATTENDED',
+      });
+      group.indexes.push(index);
+      byEvent.set(eventCode, group);
+    }
+  });
+  const chunks: EventChunk[] = [];
+  byEvent.forEach((group, eventCode) => {
+    for (let i = 0; i < group.people.length; i += PEOPLE_PER_REQUEST) {
+      chunks.push({
+        eventCode,
+        people: group.people.slice(i, i + PEOPLE_PER_REQUEST),
+        candidateIndexes: group.indexes.slice(i, i + PEOPLE_PER_REQUEST),
+      });
+    }
+  });
+  return chunks;
+}
+
+function errorMessageOf(error: unknown): string {
+  if (isAxiosError(error)) {
+    if (error.response) {
+      return error.response.data?.message || error.response.statusText;
+    }
+    if (error.request) {
+      return 'No response from server';
+    }
+    return error.message;
+  }
+  return error instanceof Error ? error.message : 'Unknown error';
+}
 
 /**
  * Hook for managing participant batch import
@@ -28,9 +92,6 @@ export function useParticipantBatchImport() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [candidates, setCandidates] = useState<ParticipantImportCandidate[]>([]);
 
-  /**
-   * Update a specific candidate's status
-   */
   const updateCandidate = useCallback(
     (index: number, updates: Partial<ParticipantImportCandidate>) => {
       setCandidates((prev) =>
@@ -41,122 +102,104 @@ export function useParticipantBatchImport() {
   );
 
   /**
-   * Import candidates in parallel batches with progress tracking
+   * Import the rows event by event.
    *
-   * Performance optimization: Processes participants in batches of 10 concurrent requests
-   * instead of sequentially. This reduces import time by ~10x.
-   *
-   * Example: 200 participants
-   * - Sequential: 200 × 100ms = 20+ seconds
-   * - Parallel (10 concurrent): 20 batches × 100ms = 2+ seconds
+   * @param rows one row per person with the events they attended
+   * @param onProgress called after each request with (requests done, requests total)
    */
   const importCandidates = useCallback(
     async (
-      requests: BatchRegistrationRequest[],
+      rows: ParticipantImportRow[],
       onProgress?: (current: number, total: number) => void
     ): Promise<ParticipantBatchImportResult> => {
       setIsImporting(true);
 
-      // Create initial candidates
-      const initialCandidates: ParticipantImportCandidate[] = requests.map((req) => ({
-        firstName: req.firstName,
-        lastName: req.lastName,
-        email: req.participantEmail,
-        username: constructUsername(req.firstName, req.lastName),
-        eventCount: req.registrations.length,
-        isSyntheticEmail: req.participantEmail.endsWith('@batbern.ch'),
-        importStatus: 'pending',
-      }));
-      setCandidates(initialCandidates);
+      setCandidates(
+        rows.map((row) => ({
+          firstName: row.firstName,
+          lastName: row.lastName,
+          email: row.email,
+          username: constructUsername(row.firstName, row.lastName),
+          eventCount: row.eventCodes.length,
+          eventCodes: row.eventCodes,
+          isSyntheticEmail: row.email.endsWith('@batbern.ch'),
+          importStatus: 'pending',
+        }))
+      );
       setCurrentIndex(0);
 
+      const progress: CandidateProgress[] = rows.map((row) => ({
+        pending: row.eventCodes.length,
+        failed: 0,
+      }));
       const result: ParticipantBatchImportResult = {
-        total: requests.length,
+        total: rows.length,
         success: 0,
         failed: 0,
         skipped: 0,
       };
 
-      // Parallel batch processing (10 concurrent requests per batch)
-      const BATCH_SIZE = 10;
-      const batches: BatchRegistrationRequest[][] = [];
-
-      // Split requests into batches
-      for (let i = 0; i < requests.length; i += BATCH_SIZE) {
-        batches.push(requests.slice(i, i + BATCH_SIZE));
-      }
-
-      // Process each batch in parallel
-      let processedCount = 0;
-
-      for (const batch of batches) {
-        // Process all requests in this batch concurrently
-        const batchPromises = batch.map(async (request, batchIndex) => {
-          const globalIndex = processedCount + batchIndex;
-
-          updateCandidate(globalIndex, { importStatus: 'importing' });
-
-          try {
-            const data = await batchRegisterParticipant(request);
-
-            if (data.failedRegistrations && data.failedRegistrations.length > 0) {
-              // Partial success
-              const errorMsg = `${data.successfulRegistrations}/${data.totalRegistrations} registrations succeeded`;
-              updateCandidate(globalIndex, {
-                importStatus: 'success',
-                errorMessage: errorMsg,
-              });
-            } else {
-              // Full success
-              updateCandidate(globalIndex, { importStatus: 'success' });
-            }
-
-            return { success: true, index: globalIndex };
-          } catch (error) {
-            let errorMessage = 'Unknown error';
-
-            if (isAxiosError(error)) {
-              if (error.response) {
-                errorMessage = error.response.data?.message || error.response.statusText;
-              } else if (error.request) {
-                errorMessage = 'No response from server';
-              } else {
-                errorMessage = error.message;
-              }
-            } else if (error instanceof Error) {
-              errorMessage = error.message;
-            }
-
-            updateCandidate(globalIndex, {
-              importStatus: 'error',
-              errorMessage,
-            });
-
-            return { success: false, index: globalIndex };
-          }
-        });
-
-        // Wait for all requests in this batch to complete
-        const batchResults = await Promise.all(batchPromises);
-
-        // Update result counts
-        batchResults.forEach((batchResult) => {
-          if (batchResult.success) {
-            result.success++;
-          } else {
-            result.failed++;
-          }
-        });
-
-        processedCount += batch.length;
-        setCurrentIndex(processedCount - 1);
-        onProgress?.(processedCount, requests.length);
-
-        // Rate limiting between batches: 100ms delay
-        // This allows 10 batches/second = 100 requests/second max throughput
-        if (processedCount < requests.length) {
-          await new Promise((resolve) => setTimeout(resolve, 100));
+      const settle = (index: number) => {
+        const p = progress[index];
+        if (p.pending > 0) {
+          return;
         }
+        const events = rows[index].eventCodes.length;
+        if (p.failed > 0) {
+          result.failed++;
+          updateCandidate(index, {
+            importStatus: 'error',
+            errorMessage: `${p.failed}/${events} events failed: ${p.reason ?? 'Unknown error'}`,
+          });
+        } else {
+          result.success++;
+          updateCandidate(index, { importStatus: 'success', errorMessage: undefined });
+        }
+      };
+
+      // A person without events has nothing to import.
+      rows.forEach((row, index) => {
+        if (row.eventCodes.length === 0) {
+          result.skipped++;
+          updateCandidate(index, { importStatus: 'skipped' });
+        }
+      });
+
+      const chunks = chunkPerEvent(rows);
+      for (let c = 0; c < chunks.length; c++) {
+        const chunk = chunks[c];
+        chunk.candidateIndexes.forEach((index) => {
+          if (progress[index].pending > 0) {
+            updateCandidate(index, { importStatus: 'importing' });
+          }
+        });
+
+        try {
+          const data = await importParticipants(chunk.eventCode, chunk.people);
+          (data.results ?? []).forEach((personResult, i) => {
+            const index = chunk.candidateIndexes[i];
+            if (index === undefined) {
+              return;
+            }
+            if (personResult.outcome === 'FAILED') {
+              progress[index].failed++;
+              progress[index].reason ??= `${chunk.eventCode}: ${personResult.reason ?? 'failed'}`;
+            }
+          });
+        } catch (error) {
+          const message = `${chunk.eventCode}: ${errorMessageOf(error)}`;
+          chunk.candidateIndexes.forEach((index) => {
+            progress[index].failed++;
+            progress[index].reason ??= message;
+          });
+        }
+
+        chunk.candidateIndexes.forEach((index) => {
+          progress[index].pending--;
+          settle(index);
+        });
+        setCurrentIndex(c);
+        onProgress?.(c + 1, chunks.length);
       }
 
       // Invalidate cache to refresh user/registration data

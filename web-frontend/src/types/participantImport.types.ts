@@ -92,9 +92,20 @@ export interface CsvParseResult {
 }
 
 /**
- * Re-export API types for convenience
+ * One CSV person ready to import: the frontend model the import hook regroups per event (Story
+ * 4.10c). Not a wire shape: the API takes the people of one event at a time
+ * (`ParticipantImportPerson`, `POST /events/{eventCode}/participants`).
  */
-export type BatchRegistrationRequest = components['schemas']['BatchRegistrationRequest'];
-export type BatchRegistrationResponse = components['schemas']['BatchRegistrationResponse'];
-export type BatchRegistrationItem = components['schemas']['BatchRegistrationItem'];
-export type FailedRegistration = components['schemas']['FailedRegistration'];
+export interface ParticipantImportRow {
+  /** Real or synthetic (`@batbern.ch`) address */
+  email: string;
+  firstName: string;
+  lastName: string;
+  /** Company identifier (company name); optional */
+  companyId?: string;
+  /** The events the person attended (e.g. ["BATbern1", "BATbern25"]) */
+  eventCodes: string[];
+}
+
+export type ParticipantImportPerson = components['schemas']['ParticipantImportPerson'];
+export type ParticipantImportResult = components['schemas']['ParticipantImportResult'];

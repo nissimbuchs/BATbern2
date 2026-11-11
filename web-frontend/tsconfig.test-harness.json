@@ -94,7 +94,6 @@
     "src/pages/public/__tests__/VerifyAdditionalEmailPage.test.tsx",
     "src/pages/public/registrationView.test.ts",
     "src/services/api/companyApi.test.ts",
-    "src/services/api/eventApi.test.ts",
     "src/services/api/newsletterApi.test.ts",
     "src/services/api/partnerNotesApi.test.ts",
     "src/services/api/userManagementApi.test.ts",

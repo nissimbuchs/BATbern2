@@ -4,11 +4,7 @@
  */
 
 import Papa from 'papaparse';
-import type {
-  SourceParticipant,
-  BatchRegistrationRequest,
-  BatchRegistrationItem,
-} from '../types/participantImport.types';
+import type { SourceParticipant, ParticipantImportRow } from '../types/participantImport.types';
 
 /**
  * Parse participant CSV file
@@ -130,34 +126,26 @@ export function extractEventParticipation(participant: SourceParticipant): strin
 }
 
 /**
- * Convert source participant to batch registration request
+ * Convert a source participant to an import row
  *
- * Creates API request payload from parsed CSV participant
- * Generates synthetic email if BestMail is missing
+ * Generates a synthetic email if BestMail is missing. The import hook regroups the rows per event.
  *
  * @param participant - Source participant from CSV
- * @returns Batch registration request for API
+ * @returns The person with the events they attended
  */
-export function convertParticipantToRegistrationRequest(
+export function convertParticipantToImportRow(
   participant: SourceParticipant
-): BatchRegistrationRequest {
+): ParticipantImportRow {
   // Use provided email or generate synthetic one
   const email =
     participant.BestMail?.trim() ||
     generateSyntheticEmail(participant.FirstName, participant.LastName);
 
-  const eventCodes = extractEventParticipation(participant);
-
-  const registrations: BatchRegistrationItem[] = eventCodes.map((eventCode) => ({
-    eventCode,
-    status: 'ATTENDED',
-  }));
-
   return {
-    participantEmail: email,
+    email,
     firstName: participant.FirstName,
     lastName: participant.LastName,
     companyId: participant.companyKey?.trim() || undefined, // Story 3.2: Include company from CSV
-    registrations,
+    eventCodes: extractEventParticipation(participant),
   };
 }
