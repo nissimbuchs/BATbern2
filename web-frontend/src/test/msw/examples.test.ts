@@ -28,13 +28,13 @@ function strings(value: unknown): string[] {
 
 describe('spec examples (MSW harness defaults)', () => {
   it('reads all public specs (positive control)', () => {
-    // 287 operations on 2026-11-11 after Story 4.10c (four create/self-service twins folded).
+    // 286 operations on 2026-11-11 after Story 4.10c (four create/self-service twins folded) and 3.6b.
     expect(operations.length).toBeGreaterThan(280);
-    // 246 on 2026-11-11: Story 4.10 removed seven JSON 2xx responses (the /users/me twins,
+    // 245 on 2026-11-11: Story 4.10 removed seven JSON 2xx responses (the /users/me twins,
     // speakers/invite, the reminders endpoint), 4.10c four (batch_registrations,
     // enroll-stakeholders, the /newsletter/my-subscription pair) and added the participants
-    // 200. A floor, not a count.
-    expect(jsonResponses.length).toBeGreaterThan(245);
+    // 200; 3.6b moved GET /events/attendance-summary to /internal (245). A floor, not a count.
+    expect(jsonResponses.length).toBeGreaterThan(244);
   });
 
   it('every JSON 2xx response has an example', () => {

@@ -3,7 +3,7 @@ title: 'PCS calls CUMS and EMS over /internal'
 type: 'refactor'
 ticket: '6b'
 created: '2026-11-11'
-status: 'in-review'
+status: 'built'
 baseline_revision: 'e0bbba970de03b5bcb9cac599dbe041f44d3d77c'
 route: 'full'
 route_source: 'auto'
@@ -125,3 +125,5 @@ Pass 1 (quick lens + orchestrator), 2026-11-11: 0 high, 3 medium, 5 low, 0 false
 
 **Manual checks:**
 - Local dev: restart `partner-coordination`, `event-management`, `company-user-management`. As PARTNER: dashboard, XLSX export, `/partners/me`, contacts page work; `/tmp/batbern-1-partner-coordination.log` and the EMS/CUMS logs show the `/internal` paths only. `GET /api/v1/events/attendance-summary` through the gateway: record the code.
+
+Final verification 2026-11-11 after the review patches (05f35f11): shared-kernel, CUMS, EMS, PCS and gateway suites green; lint:api (97), lint:api-internal, check:api-types, type-check, check:s2s-client-urls (2), test ratchet, API paths green; Vitest 5905 passed and 1 failed: the MSW examples floor (245 JSON 2xx responses after attendance-summary left the public spec), adjusted to > 244 and re-run green. Local dev: partner dashboard, export, contacts, /partners/me through /internal (PCS and CUMS logs). After deploy: old path not 200, access-control DAST.
