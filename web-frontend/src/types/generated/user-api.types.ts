@@ -1772,7 +1772,7 @@ export interface components {
        *     `action = "FRESH_TEMP_PASSWORD"`; null when `action = "USE_EXISTING_PASSWORD"`.
        *     Never persisted at rest in CUMS or EMS; the caller embeds it once in the
        *     invitation email and discards it from memory.
-       * @example Tk7!aB2@nx9pQ4#z
+       * @example example-temp-password
        */
       temporaryPassword: string | null;
       /**

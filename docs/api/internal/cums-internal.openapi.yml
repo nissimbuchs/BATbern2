@@ -550,7 +550,7 @@ paths:
               examples:
                 freshTempPassword:
                   value:
-                    temporaryPassword: 'Tk7!aB2@nx9pQ4#z'
+                    temporaryPassword: 'example-temp-password'
                     action: FRESH_TEMP_PASSWORD
                 useExistingPassword:
                   value:
