@@ -1,0 +1,54 @@
+meta {
+  name: Get-or-create returns the existing company (200, 4.10d)
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/companies/get-or-create
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "displayName": "{{testCompanyName}}"
+  }
+}
+
+script:pre-request {
+  if (!bru.getVar("testCompanyName")) {
+    throw new Error("Precondition: runtime var `testCompanyName` is unset. Run 01-create-company first.");
+  }
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("an existing company is returned with 200, not created again", function() {
+    expect(res.getStatus()).to.equal(200);
+    const body = res.getBody();
+    expect(body.name).to.equal(bru.getVar("testCompanyName"));
+    expect(body.displayName).to.equal("Bruno Test Co");
+  });
+}
+
+docs {
+  Story 4.10d (ADR-013 §2): POST /companies/get-or-create answers 200 when it returns an
+  existing company. The display name is the key of the company created by 01, so its generated
+  name is that key and nothing is created. This collection runs against production after every
+  deploy, so it never creates a company through get-or-create: the 201 case runs in the
+  dev-only collection company-get-or-create-api and in CompanyGetOrCreateIntegrationTest.
+}

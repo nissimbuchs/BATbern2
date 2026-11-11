@@ -876,12 +876,12 @@ operation (Story 17.4):
 
 | Rule | Fails on | Source |
 |---|---|---|
-| `path-kebab-case` | a literal path segment that is not kebab-case (`speakerSlots`, `batch_registrations`, `companies:get-or-create`); an `.ext` suffix is allowed, path parameters are exempt | ADR-013, naming table above |
+| `path-kebab-case` | a literal path segment that is not kebab-case (`speakerSlots`, `batch_registrations`, the former `companies:get-or-create` until Story 4.10d); an `.ext` suffix is allowed, path parameters are exempt | ADR-013, naming table above |
 | `no-verb-segment` | a verb outside the ADR-013 §1 action shape `POST /{id}/{verb}` (the verb is the last segment of a POST, directly after a parameter or `me`: `POST /companies/{name}/verify`, `POST /users/me/merge` pass). Flagged: a verb after a literal (`POST /users/me/profile-claims/confirm`), with another method (`PUT /tasks/{taskId}/complete`), on a collection (`POST /users/provision`), followed by a parameter or qualifier (`POST /registrations/deregister/by-email`); for a read only the last segment counts (`GET …/download` fails, `GET …/workflow/status` passes). The verb list in the ruleset only tells a verb from a sub-resource noun; it allows nothing. `search`, `get-or-create`, `vote` are not on it | ADR-013 |
 | `no-internal-path` | a path under `/internal` in a public spec | ADR-016 |
 | `no-literal-under-events` | a literal directly under `/events/` (`/events/current`): it shares the namespace of `{eventCode}` | ADR-013 |
 | `uuid-path-param` | a path parameter with `format: uuid`, or a string named `id` / `*Id` without a format (`uploadId`); an operation parameter replaces the path-level one of the same name. Not seen: a UUID under another name without a format | ADR-003 amendment 2026-11 |
-| `no-personal-data-path-param` | a path parameter named `email` or ending in `Email`, case-insensitive (`/users/me/additional-emails/{email}`); path-level and operation-level parameters as for `uuid-path-param`. Personal data never goes in a path | ADR-003 amendment 2026-11 |
+| `no-personal-data-path-param` | a path parameter named `email` or ending in `Email`, case-insensitive (the former `/users/me/additional-emails/{email}`, keyed by `{emailId}` since Story 4.10d); path-level and operation-level parameters as for `uuid-path-param`. Personal data never goes in a path | ADR-003 amendment 2026-11 |
 | `speaker-path-key` | under `/events/{eventCode}/speakers/`, a path parameter that is not `{speakerId}` with `format: uuid` (`/speakers/{username}/send-invitation`), and a second speaker collection literal (`speaker-pool`, `speakers/pool`). Literal sub-collections (`review-queue`) and a session's speaker (`/sessions/{slug}/speakers/{username}`) pass | ADR-003 amendment, Story 4.10 |
 
 **Baseline policy.** Existing violations are listed in `web-frontend/scripts/api-lint-baseline.txt`

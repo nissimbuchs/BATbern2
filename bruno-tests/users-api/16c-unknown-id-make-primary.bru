@@ -1,0 +1,35 @@
+meta {
+  name: Make Primary with an unknown id (4.10d)
+  type: http
+  seq: 16
+}
+
+post {
+  url: {{baseUrl}}/users/me/additional-emails/00000000-0000-4000-8000-000000000000/make-primary
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Accept: application/json
+}
+
+assert {
+  res.status: eq 404
+}
+
+tests {
+  test("an id that is none of the caller's addresses: 404", function() {
+    expect(res.getStatus()).to.equal(404);
+  });
+}
+
+docs {
+  Story 4.10d: the id is loaded scoped to the caller; an unknown id answers 404 and nothing
+  changes (no Cognito call).
+}

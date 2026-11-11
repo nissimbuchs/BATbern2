@@ -29,6 +29,7 @@ body:json {
 
 assert {
   res.status: eq 201
+  res.body.id: isDefined
   res.body.email: isDefined
   res.body.createdAt: isDefined
 }
@@ -36,7 +37,8 @@ assert {
 script:post-response {
   if (res.getStatus() === 201) {
     bru.setVar("additionalEmail", res.getBody().email);
-    console.log("Created additional email:", res.getBody().email);
+    bru.setVar("additionalEmailId", res.getBody().id);
+    console.log("Created additional email:", res.getBody().email, res.getBody().id);
   }
 }
 
@@ -48,6 +50,10 @@ tests {
   test("should echo email normalised to lowercase", function() {
     const body = res.getBody();
     expect(body.email).to.equal(body.email.toLowerCase());
+  });
+
+  test("should carry the id that keys the address (4.10d)", function() {
+    expect(res.getBody().id).to.match(/^[0-9a-f-]{36}$/);
   });
 
   test("should set createdAt on the response", function() {

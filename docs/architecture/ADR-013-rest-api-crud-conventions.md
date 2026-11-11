@@ -116,6 +116,19 @@ verb paths their §1 shape and moved the literals out of the `{eventCode}` names
 - Lint: baseline 97 to 88 entries, owner group N5 removed, N6 reduced to the CUMS line under N9 and
   N8 handed to 10d (the CUMS part: the additional-email key and companies get-or-create).
 
+**Story 4.10d (2026-11, API conventions III part 2, CUMS, breaking, no aliases)** removed the last
+two CUMS findings of 4.10b:
+
+- **get-or-create (§2):** `POST /companies/get-or-create` replaces the colon form
+  `POST /companies:get-or-create` and answers 201 when it creates the company, 200 when it returns an
+  existing one. The colon path answers 404. No service calls it (EMS uses
+  `/internal/users/get-or-create`), so the frontend was the only client.
+- **Additional e-mail key:** the four operations on one of the caller's additional addresses take
+  `{emailId}`, the row id, loaded scoped to the caller, instead of the address (ADR-003 amendment,
+  "natural key is personal data"). The old `{email}` paths answer 400.
+- Lint: baseline 88 to 87 entries (5 findings gone, the 4 `{emailId}` operations accepted in X3);
+  `no-personal-data-path-param` and `path-kebab-case` report 0; owner groups N8 and N9 removed.
+
 ## Context
 
 BATbern has ~13 OpenAPI specs across five services. An audit during the
@@ -145,8 +158,8 @@ governed per-story rather than by a written rule. The result is drift:
    by Story 4.9b, below. The partner domain mixes action-PATCH (`/status`), boolean-in-PATCH
    (`isActive`), action-POST (`/send-invite`), and POST/DELETE toggle (`/vote`).
 
-4. **Convention drift between sibling specs.** get-or-create is `:get-or-create` (colon,
-   companies) vs `/get-or-create` (slash, users). List filtering is JSON:API `filter`/`sort`
+4. **Convention drift between sibling specs.** get-or-create was `:get-or-create` (colon,
+   companies) vs `/get-or-create` (slash, users); fixed by Story 4.10d. List filtering is JSON:API `filter`/`sort`
    in some specs and ad-hoc `role`/`company`/`sortBy`/`sortDir` in others — and `listUsers`
    / `listNewsletterSubscribers` carry **both** vocabularies at once.
 

@@ -6,10 +6,6 @@
 # grows the baseline states why and adds the owner group.
 # Format: <rule> TAB <spec file> TAB <METHOD> <path>, sorted.
 no-literal-under-events	events-core-api.openapi.yml	GET /events/current
-no-personal-data-path-param	users-api.openapi.yml	DELETE /users/me/additional-emails/{email}
-no-personal-data-path-param	users-api.openapi.yml	PATCH /users/me/additional-emails/{email}
-no-personal-data-path-param	users-api.openapi.yml	POST /users/me/additional-emails/{email}/make-primary
-no-personal-data-path-param	users-api.openapi.yml	POST /users/me/additional-emails/{email}/resend-verification
 no-verb-segment	companies-api.openapi.yml	POST /logos/cleanup/trigger
 no-verb-segment	companies-api.openapi.yml	POST /logos/upload-from-url
 no-verb-segment	event-ai-api.openapi.yml	POST /events/{eventCode}/ai/theme-image/apply
@@ -40,7 +36,6 @@ no-verb-segment	users-api.openapi.yml	POST /users/{username}/picture/confirm
 no-verb-segment	users-api.openapi.yml	POST /users/{username}/profile-picture/upload-from-url
 no-verb-segment	users-api.openapi.yml	POST /watch/authenticate
 no-verb-segment	users-api.openapi.yml	POST /watch/pair
-path-kebab-case	companies-api.openapi.yml	POST /companies:get-or-create
 uuid-path-param	companies-api.openapi.yml	DELETE /logos/{uploadId}
 uuid-path-param	companies-api.openapi.yml	POST /logos/{uploadId}/confirm
 uuid-path-param	event-ai-api.openapi.yml	GET /events/{eventCode}/ai/theme-image/jobs/{jobId}
@@ -86,10 +81,14 @@ uuid-path-param	partners-api.openapi.yml	PATCH /partners/topics/{topicId}
 uuid-path-param	partners-api.openapi.yml	PATCH /partners/topics/{topicId}/status
 uuid-path-param	partners-api.openapi.yml	PATCH /partners/{companyName}/notes/{noteId}
 uuid-path-param	partners-api.openapi.yml	POST /partners/topics/{topicId}/vote
+uuid-path-param	users-api.openapi.yml	DELETE /users/me/additional-emails/{emailId}
 uuid-path-param	users-api.openapi.yml	DELETE /users/{username}/watch-pairing/{watchId}
 uuid-path-param	users-api.openapi.yml	GET /users/company-logo-requests/{requestId}
 uuid-path-param	users-api.openapi.yml	GET /users/merge-requests/{requestId}
+uuid-path-param	users-api.openapi.yml	PATCH /users/me/additional-emails/{emailId}
 uuid-path-param	users-api.openapi.yml	POST /users/company-logo-requests/{requestId}/approve
 uuid-path-param	users-api.openapi.yml	POST /users/company-logo-requests/{requestId}/decline
+uuid-path-param	users-api.openapi.yml	POST /users/me/additional-emails/{emailId}/make-primary
+uuid-path-param	users-api.openapi.yml	POST /users/me/additional-emails/{emailId}/resend-verification
 uuid-path-param	users-api.openapi.yml	POST /users/merge-requests/{requestId}/approve
 uuid-path-param	users-api.openapi.yml	POST /users/merge-requests/{requestId}/decline

@@ -74,13 +74,13 @@ context:
 ## Tasks & Acceptance
 
 **Execution:**
-- [ ] Record the start sizes (Design Notes).
-- [ ] Additional e-mails: spec first (4 ops on `{emailId}` `format: uuid`, `AdditionalEmail.id` required, every example). RED ITs on the production chain: per op own / foreign / unknown / anonymous, unverified 409s, old `{email}` paths pinned; make-primary happy path with `InMemoryCognito`. Then repository `findByIdAndUser`, service and controller; move touched ITs off class-level `@Transactional`. Fix the shared-kernel sample, EMS fixtures, gateway examples. Commit.
-- [ ] Get-or-create: spec (slash path, 201 and 200, correct description), RED IT (201 new, 200 existing with no duplicate row, 400, 401, old path pinned), then service result with a created flag and the controller. Commit.
-- [ ] Frontend: regenerate types; services, hooks and both components call by `a.id` (test ids and React keys may stay on the address); `ProfileEmailAddresses.test` onto MSW (drops 2 `fe-mock-services` entries and the i18n mock); `companyApi.ts` new path. Commit.
-- [ ] Bruno: `15` stores `additionalEmailId`; `17-delete` uses it; new `16a` PATCH `receiveEventMail:false` 200, `16b` make-primary on the unverified row 409, `16c` unknown id 404 on make-primary and resend, `16d` partner token on the organizer's id 404. `companies-api`: new get-or-create request with a display name whose slug starts `brunotestco` (pretest sweep removes it): 201, repeat 200, then DELETE. Prose in `docs {}`.
-- [ ] Playwright: cleanup deletes by id from `GET /users/me`; add API checks on the added (unverified) row: make-primary 409, unknown id 404.
-- [ ] Lint `--update`: N8 and N9 gone, X3 regex extended by the 4 `{emailId}` operations; ratchet `--update` (shrink only). Docs: ADR-013 note for 10d, ADR-003 amendment table (additional e-mails under "natural key is personal data"), coding-standards L879/L884 examples, `06b-user-lifecycle-sync.md` L1056-1094, `user-guide/entity-management/users.md` L745, doc-drift mapped docs. Commit.
+- [x] Record the start sizes (Design Notes).
+- [x] Additional e-mails: spec first (4 ops on `{emailId}` `format: uuid`, `AdditionalEmail.id` required, every example). RED ITs on the production chain: per op own / foreign / unknown / anonymous, unverified 409s, old `{email}` paths pinned; make-primary happy path with `InMemoryCognito`. Then repository `findByIdAndUser`, service and controller; move touched ITs off class-level `@Transactional`. Fix the shared-kernel sample, EMS fixtures, gateway examples. Commit.
+- [x] Get-or-create: spec (slash path, 201 and 200, correct description), RED IT (201 new, 200 existing with no duplicate row, 400, 401, old path pinned), then service result with a created flag and the controller. Commit.
+- [x] Frontend: regenerate types; services, hooks and both components call by `a.id` (test ids and React keys may stay on the address); `ProfileEmailAddresses.test` onto MSW (drops 2 `fe-mock-services` entries and the i18n mock); `companyApi.ts` new path. Commit.
+- [x] Bruno: `15` stores `additionalEmailId`; `17-delete` uses it; new `16a` PATCH `receiveEventMail:false` 200, `16b` make-primary on the unverified row 409, `16c` unknown id 404 on make-primary and resend, `16d` partner token on the organizer's id 404. `companies-api`: new get-or-create request with a display name whose slug starts `brunotestco` (pretest sweep removes it): 201, repeat 200, then DELETE. Prose in `docs {}`.
+- [x] Playwright: cleanup deletes by id from `GET /users/me`; add API checks on the added (unverified) row: make-primary 409, unknown id 404.
+- [x] Lint `--update`: N8 and N9 gone, X3 regex extended by the 4 `{emailId}` operations; ratchet `--update` (shrink only). Docs: ADR-013 note for 10d, ADR-003 amendment table (additional e-mails under "natural key is personal data"), coding-standards L879/L884 examples, `06b-user-lifecycle-sync.md` L1056-1094, `user-guide/entity-management/users.md` L745, doc-drift mapped docs. Commit.
 
 **Acceptance Criteria:**
 - Given the specs, when `npm run lint:api` runs, then the baseline holds 87 entries, `no-personal-data-path-param` and `path-kebab-case` report 0, the 4 `{emailId}` lines sit under X3, and nothing is UNOWNED or STALE.
@@ -90,6 +90,20 @@ context:
 - After deploy (owner): the old paths answer their pinned status in production.
 
 ## Implementation Notes
+
+- Start sizes as in Design Notes (measured at `bade6e7c`: baseline 88, ratchet 585). End: baseline 87,
+  ratchet 580 (the three additional-email ITs off class-level `@Transactional`, ProfileEmailAddresses.test
+  off 2 service mocks and the i18n stub).
+- Measured old-path statuses: the 4 `{email}` operations answer 400 (MethodArgumentTypeMismatch, no
+  UUID), `POST /companies:get-or-create` 404; pinned in the ITs, the PATCH one also in Bruno
+  `users-api/17a`.
+- Get-or-create ITs left the class-level `@Transactional` CompanyControllerIntegrationTest for a new
+  committing CompanyGetOrCreateIntegrationTest; the rest of that file keeps its baseline entry.
+- Bruno 201 case: per the frozen decision, in the new dev-only collection `company-get-or-create-api`
+  (registered in `run-bruno-tests.sh`); `companies-api/02a` checks only the 200 of the company 01 created.
+- Found, not fixed (pre-existing, test-only shape): resend-verification to a reserved-domain address
+  (`*.invalid`) answers 500, because the synchronous send throws `ReservedEmailRecipientException`
+  unhandled (the add path swallows it). Real addresses are not affected.
 
 ## Plan Change Log
 

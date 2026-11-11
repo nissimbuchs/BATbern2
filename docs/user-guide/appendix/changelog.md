@@ -42,6 +42,10 @@ Only items that are not live yet. Everything else is listed under its release be
 
 ### Unreleased — after BATbern60
 
+**Improvement — No e-mail address in links, one get-or-create shape (4.10d)**:
+- ✅ Changing, removing, confirming again or making primary one of your further e-mail addresses no longer puts the address in the web address, so it does not end up in server logs or the browser history. Nothing changes on the page.
+- ⚠️ API, breaking for scripts: the four operations on one further address take its `id` from `GET /api/v1/users/me` (`additionalEmails[].id`): `PATCH`, `DELETE /api/v1/users/me/additional-emails/{emailId}`, `POST …/{emailId}/make-primary`, `POST …/{emailId}/resend-verification` (was the URL-encoded address; that now answers 400). Making an address primary gives the addresses new ids. Get-or-create of a company is `POST /api/v1/companies/get-or-create` (was `POST /companies:get-or-create`, now 404) and answers 201 when it created the company, 200 when it found it.
+
 **Improvement — Own notifications only, fewer verb paths (4.10b)**:
 - ✅ Notifications are each organizer's own: marking read, deleting, the list and the unread count only reach the signed-in organizer's notifications. Before, an organizer could read, mark and delete another organizer's notifications by their ID.
 - ✅ A user's event history (organizer view of a user) lists every event, also for people with a long history; it is read page by page.

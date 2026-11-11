@@ -75,18 +75,15 @@ be-mock-s2s-client	services/partner-coordination-service/src/test/java/ch/batber
 be-mock-s2s-client	services/partner-coordination-service/src/test/java/ch/batbern/partners/controller/PartnerMeetingInviteFailureIntegrationTest.java	1
 be-mock-s2s-client	services/partner-coordination-service/src/test/java/ch/batbern/partners/service/PartnerServiceTest.java	1
 be-transactional-it	services/company-user-management-service/src/test/java/ch/batbern/companyuser/controller/AccountMergeIntegrationTest.java	1
-be-transactional-it	services/company-user-management-service/src/test/java/ch/batbern/companyuser/controller/AdditionalEmailVerificationIntegrationTest.java	1
 be-transactional-it	services/company-user-management-service/src/test/java/ch/batbern/companyuser/controller/CompanyLogoRequestIntegrationTest.java	1
 be-transactional-it	services/company-user-management-service/src/test/java/ch/batbern/companyuser/controller/ConsentWriteOnceIntegrationTest.java	1
 be-transactional-it	services/company-user-management-service/src/test/java/ch/batbern/companyuser/controller/DuplicateCandidatesIntegrationTest.java	1
 be-transactional-it	services/company-user-management-service/src/test/java/ch/batbern/companyuser/controller/HealthControllerIntegrationTest.java	1
 be-transactional-it	services/company-user-management-service/src/test/java/ch/batbern/companyuser/controller/InternalUserControllerIntegrationTest.java	1
 be-transactional-it	services/company-user-management-service/src/test/java/ch/batbern/companyuser/controller/LogoControllerTest.java	1
-be-transactional-it	services/company-user-management-service/src/test/java/ch/batbern/companyuser/controller/PrimaryEmailIntegrationTest.java	1
 be-transactional-it	services/company-user-management-service/src/test/java/ch/batbern/companyuser/controller/ProfileMergeRequestIntegrationTest.java	1
 be-transactional-it	services/company-user-management-service/src/test/java/ch/batbern/companyuser/controller/PublicOrganizerControllerIntegrationTest.java	1
 be-transactional-it	services/company-user-management-service/src/test/java/ch/batbern/companyuser/controller/PublicUserControllerIntegrationTest.java	1
-be-transactional-it	services/company-user-management-service/src/test/java/ch/batbern/companyuser/controller/UserAdditionalEmailsIntegrationTest.java	1
 be-transactional-it	services/company-user-management-service/src/test/java/ch/batbern/companyuser/controller/UserMergeIntegrationTest.java	1
 be-transactional-it	services/company-user-management-service/src/test/java/ch/batbern/companyuser/integration/AdditionalEndpointsIntegrationTest.java	1
 be-transactional-it	services/company-user-management-service/src/test/java/ch/batbern/companyuser/integration/AuthenticationIntegrationTest.java	1
@@ -438,7 +435,6 @@ fe-mock-i18n	web-frontend/src/components/shared/Layout/ResponsiveLayout.test.tsx
 fe-mock-i18n	web-frontend/src/components/shared/Navigation/AppHeader.test.tsx	1
 fe-mock-i18n	web-frontend/src/components/shared/Navigation/NavigationMenu.test.tsx	1
 fe-mock-i18n	web-frontend/src/components/user/CompanyLogoRequest/__tests__/CompanyLogoSection.test.tsx	1
-fe-mock-i18n	web-frontend/src/components/user/ProfileEmailAddresses/__tests__/ProfileEmailAddresses.test.tsx	1
 fe-mock-i18n	web-frontend/src/hooks/useRegistration/useRegistration.test.ts	1
 fe-mock-i18n	web-frontend/src/pages/PartnerCompanyPage.test.tsx	1
 fe-mock-i18n	web-frontend/src/pages/attendee/__tests__/AttendeeDashboardPage.test.tsx	1
@@ -510,7 +506,6 @@ fe-mock-services	web-frontend/src/components/shared/Navigation/MobileDrawer.test
 fe-mock-services	web-frontend/src/components/shared/Navigation/NavigationMenu.test.tsx	1
 fe-mock-services	web-frontend/src/components/speaker-portal/__tests__/PresentationUpload.test.tsx	1
 fe-mock-services	web-frontend/src/components/user/EarlierProfilesSection/EarlierProfilesSection.test.tsx	1
-fe-mock-services	web-frontend/src/components/user/ProfileEmailAddresses/__tests__/ProfileEmailAddresses.test.tsx	2
 fe-mock-services	web-frontend/src/features/profile/WatchPairingSection.test.tsx	1
 fe-mock-services	web-frontend/src/hooks/__tests__/useCurrentEvent.test.tsx	1
 fe-mock-services	web-frontend/src/hooks/__tests__/useInfiniteEvents.test.tsx	1

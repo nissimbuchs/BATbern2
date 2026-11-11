@@ -1053,7 +1053,7 @@ sequenceDiagram
     CUMS->>DB: cap check, global uniqueness check
     CUMS->>DB: INSERT row, verified_at NULL
     CUMS->>SES: verification mail with signed link, 48 h
-    Note over U,CUMS: resend: POST /users/me/additional-emails/{email}/resend-verification
+    Note over U,CUMS: resend: POST /users/me/additional-emails/{emailId}/resend-verification
     SES-->>P: user opens link ?token=
     P->>CUMS: GET /api/v1/users/additional-emails/verify?token=, no JWT
     CUMS-->>P: masked email + verified flag, no state change
@@ -1064,6 +1064,13 @@ sequenceDiagram
 
 The GET/POST split exists because mail scanners prefetch links with GET; only the explicit POST
 verifies.
+
+**One address by its id (Story 4.10d).** The operations on one address (PATCH, DELETE,
+`make-primary`, `resend-verification`) are keyed by `{emailId}`, the row id that `GET /users/me`
+lists as `AdditionalEmail.id`, never by the address: it must not land in access logs, browser
+history or caches (ADR-003 amendment). CUMS loads the row scoped to the caller
+(`UserAdditionalEmailRepository.findByIdAndUser`): another user's or an unknown id answers 404 and
+changes nothing. The old `{email}` paths answer 400.
 
 Where the addresses are used (checked 2026-11-04):
 
@@ -1081,7 +1088,7 @@ flowchart LR
 **Event mails and the newsletter per address (#1244, owner decision 2026-11-07).** Event mails go
 to the primary address. A confirmed additional address gets a copy only when its owner switched
 `receive_event_mail` on (CUMS V24, default off, also for existing rows; `PATCH
-/users/me/additional-emails/{email}`, 409 `NOT_VERIFIED` for an unconfirmed address). EMS decides in
+/users/me/additional-emails/{emailId}`, 409 `NOT_VERIFIED` for an unconfirmed address). EMS decides in
 one place, `EventMailCopies.of(UserResponse)`. Until #1244 every additional address got a CC, confirmed
 or not. The newsletter is one `newsletter_subscribers` row per address (#1143); `GET/PATCH
 /newsletter/my-subscriptions` lists and changes it per address (PATCH partial: `subscribed`,
@@ -1091,13 +1098,14 @@ unsubscribed (Story 4.10c; the old single-address `/newsletter/my-subscription` 
 "Einwilligung & Newsletter" and "E-Mail-Adressen"); organizers keep the Account settings.
 
 **Changing the primary address (#1244 step 2).** A confirmed additional address can become the primary
-(login) address: `POST /users/me/additional-emails/{email}/make-primary` (`isAuthenticated`, 204; 404
-for an address that is not the caller's, 409 `NOT_VERIFIED`, 409 `EMAIL_HAS_OTHER_LOGIN`). Order in
+(login) address: `POST /users/me/additional-emails/{emailId}/make-primary` (`isAuthenticated`, 204; 404
+for an id that is not one of the caller's addresses, 409 `NOT_VERIFIED`, 409 `EMAIL_HAS_OTHER_LOGIN`). Order in
 `PrimaryEmailService`: Cognito first (`changeLoginEmail`: `email` and `email_verified = true`; the pool
 signs in by email, the `sub` and linked Google identities stay), then the swap in
 `user_profiles` / `user_additional_emails` with explicit flushes (global uniqueness; Hibernate flushes
 inserts before deletes); if the DB step fails, the login is moved back. The old primary stays as a
-confirmed additional address. EMS `POST /internal/users/primary-email` moves upcoming registrations
+confirmed additional address, as a new row under a new id (the chosen row is deleted), so the client
+reads the ids again. EMS `POST /internal/users/primary-email` moves upcoming registrations
 (event today or later) made under the old address, because deregistration, slides and
 `-participants@` read `registrations.attendee_email`. The UI refreshes the session afterwards, since
 the ID token carries the old address until then. `EMAIL_HAS_OTHER_LOGIN` means another account logs

@@ -1,0 +1,51 @@
+meta {
+  name: Partner cannot change the organizer's additional email (4.10d)
+  type: http
+  seq: 16
+}
+
+patch {
+  url: {{baseUrl}}/users/me/additional-emails/{{additionalEmailId}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{partnerAuthToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "receiveEventMail": false
+  }
+}
+
+script:pre-request {
+  if (!bru.getVar("additionalEmailId")) {
+    throw new Error("Precondition: runtime var `additionalEmailId` is unset. Run test 15 (add-additional-email) first.");
+  }
+}
+
+tests {
+  test("another user's id is not the caller's: 404", function() {
+    // 401 is tolerated when no partner token is loaded in the env (CI fallback). Never 200.
+    expect([401, 404]).to.include(res.getStatus());
+  });
+
+  test("response carries no address", function() {
+    const body = res.getBody() || {};
+    expect(body.email).to.be.undefined;
+  });
+}
+
+docs {
+  Story 4.10d: the partner token addresses the organizer's row (test 15) by its id. The row is
+  loaded scoped to the caller, so it is 404 for anyone else. The body only switches the copy
+  OFF, harmless even if the scope were broken.
+}

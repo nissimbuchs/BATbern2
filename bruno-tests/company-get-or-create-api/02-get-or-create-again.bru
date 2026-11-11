@@ -1,0 +1,48 @@
+meta {
+  name: Get-or-create with the same name returns it (200, 4.10d)
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/companies/get-or-create
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "displayName": "{{getOrCreateDisplayName}}"
+  }
+}
+
+script:pre-request {
+  if (!bru.getVar("getOrCreateCompanyName")) {
+    throw new Error("Precondition: runtime var `getOrCreateCompanyName` is unset. Run 01 first.");
+  }
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("the same display name again: 200, the same company", function() {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().name).to.equal(bru.getVar("getOrCreateCompanyName"));
+  });
+}
+
+docs {
+  Story 4.10d: a repeat finds the company by its generated name and creates no second one.
+}

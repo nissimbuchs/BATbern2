@@ -1,0 +1,61 @@
+meta {
+  name: Get-or-create creates a new company (201, 4.10d)
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/companies/get-or-create
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Accept: application/json
+  Content-Type: application/json
+}
+
+script:pre-request {
+  const displayName = "BRUNOTESTCO" + Date.now();
+  bru.setVar("getOrCreateDisplayName", displayName);
+  req.setBody({ displayName });
+}
+
+body:json {
+  {
+    "displayName": "set by the pre-request script"
+  }
+}
+
+script:post-response {
+  if (res.getStatus() === 201) {
+    bru.setVar("getOrCreateCompanyName", res.getBody().name);
+  }
+}
+
+assert {
+  res.status: eq 201
+}
+
+tests {
+  test("a new display name creates the company: 201", function() {
+    expect(res.getStatus()).to.equal(201);
+  });
+
+  test("the key is the generated name (letters and digits, the BRUNOTESTCO prefix)", function() {
+    const body = res.getBody();
+    expect(body.name).to.match(/^brunotestco[0-9]*$/);
+    expect(body.displayName).to.equal(bru.getVar("getOrCreateDisplayName"));
+  });
+}
+
+docs {
+  Story 4.10d (ADR-013 §2): 201 when get-or-create creates the company. Dev-only collection:
+  it creates a company, which must never happen against production. The display name starts
+  BRUNOTESTCO, so the pretest and posttest sweeps (prefix BRUNOTESTCO, ignoring case) remove it.
+}

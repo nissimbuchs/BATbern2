@@ -1,0 +1,33 @@
+meta {
+  name: Delete the company created by get-or-create
+  type: http
+  seq: 3
+}
+
+delete {
+  url: {{baseUrl}}/companies/{{getOrCreateCompanyName}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+}
+
+assert {
+  res.status: eq 204
+}
+
+tests {
+  test("the company created in 01 is removed", function() {
+    expect(res.getStatus()).to.equal(204);
+  });
+}
+
+docs {
+  Removes the company of 01 right away; the posttest sweep is the backstop.
+}
