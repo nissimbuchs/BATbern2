@@ -94,6 +94,28 @@ newsletter one operation per intent:
   per-IP rate limit moved with it. It still sends no mail (double opt-in: #1288).
 - Lint: baseline 101 to 98 entries, owner groups G06 and G10 removed.
 
+**Story 4.10b (2026-11, API conventions III part 1, EMS, breaking, no aliases)** gave the last EMS
+verb paths their §1 shape and moved the literals out of the `{eventCode}` namespace:
+
+- **Notifications** are the caller's own: `GET /notifications` and `/count` take no username, and a
+  notification is loaded scoped to its recipient (another user's id answers 404, or is ignored in a
+  list). Marking read is a field change, `PATCH /notifications/{id}` and `PATCH /notifications`
+  (`notificationIds`, `status: READ`); `PUT …/{id}/read`, `PUT …/batch-read`, the unused
+  `DELETE …/batch-delete` and the history read `GET …/history` (any user's by `?username=`) are gone.
+- **AI prompts:** the reset to the default text is the removal of the organizer's override,
+  `DELETE /ai-prompts/{promptKey}/override` (was `POST …/reset`).
+- **Sessions:** the legacy import is a mode of the one create, `POST /events/{eventCode}/sessions`
+  with `imports` (at most 100; 200 with counts and a result per item), as in 4.10c; the single mode
+  answers 201 `{session}`. `POST …/sessions/batch-import` is gone. `POST …/sessions/structural`
+  stays: it generates the structural sessions of the agenda, a job over the collection (X9 class).
+- **Out of `/events`:** `/event-types[/{type}]` (only the list is public), `GET /public/event-photos`
+  (the homepage sample, the §4 anonymous variant) and `GET /registrations?filter={"attendeeUsername":…}`
+  (an attendee's history, organizer, paginated; it left `EventController` for
+  `ParticipantsController`, and the username left the `X-Attendee-Username` header). The GHSA-qhqv
+  matcher for `/events/registrations` went with it.
+- Lint: baseline 97 to 88 entries, owner group N5 removed, N6 reduced to the CUMS line under N9 and
+  N8 handed to 10d (the CUMS part: the additional-email key and companies get-or-create).
+
 ## Context
 
 BATbern has ~13 OpenAPI specs across five services. An audit during the

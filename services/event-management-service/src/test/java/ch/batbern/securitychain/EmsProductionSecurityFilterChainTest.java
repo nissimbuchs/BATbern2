@@ -95,7 +95,8 @@ class EmsProductionSecurityFilterChainTest {
         "GET,  /api/v1/events/BATbern60/sessions/keynote/materials/m1/download",
         "GET,  /api/v1/events/BATbern60/live-timing",
         "GET,  /api/v1/events/BATbern60/photos",
-        "GET,  /api/v1/events/recent-photos",
+        "GET,  /api/v1/public/event-photos",
+        "GET,  /api/v1/event-types",
         "GET,  /api/v1/events/_global/teaser-images",
         "GET,  /api/v1/topics",
         "POST, /api/v1/events/BATbern60/registrations",
@@ -143,8 +144,13 @@ class EmsProductionSecurityFilterChainTest {
         "POST,   /api/v1/topics",
         "PATCH,  /api/v1/events/BATbern60/thanks/t1",
         "POST,   /api/v1/events/BATbern60/live-timing/actions",
+        // 4.10b: the list left /events; event types: only the list is public, by exact path
+        "GET,    /api/v1/registrations",
+        "GET,    /api/v1/event-types/EVENING",
+        "PUT,    /api/v1/event-types/EVENING",
+        "PATCH,  /api/v1/notifications",
+        "GET,    /api/v1/public/event-photos/x",
         // GHSA-qhqv: organizer paths the public GET wildcards would match as event code / slug
-        "GET,    /api/v1/events/registrations",
         "GET,    /api/v1/events/BATbern60/sessions/unassigned",
         "GET,    /api/v1/events/BATbern60/sessions/conflicts"
     })

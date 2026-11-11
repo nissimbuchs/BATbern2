@@ -12,8 +12,8 @@
 GET    /events                                   # event list (archive, upcoming dates); public projection
 GET    /events/current                           # homepage and Watch: the current event
 GET    /events/{eventCode}                       # event page; public projection
-GET    /events/types                             # event format definitions (slot lengths), no data about people
-GET    /events/recent-photos                     # homepage photo strip
+GET    /event-types                              # event format definitions (slot lengths), no data about people
+GET    /public/event-photos                      # homepage photo strip
 GET    /events/{eventCode}/photos                # event photo gallery
 GET    /events/{eventCode}/sessions              # programme
 GET    /events/{eventCode}/sessions/{sessionSlug}  # talk page

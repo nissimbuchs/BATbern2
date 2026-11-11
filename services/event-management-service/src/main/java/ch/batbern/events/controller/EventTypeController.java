@@ -21,12 +21,12 @@ import java.util.List;
  * Contract-first approach (ADR-006) ensures API consistency.
  *
  * Endpoints:
- * - GET /api/v1/events/types - List all event types (AC1)
- * - GET /api/v1/events/types/{type} - Get specific event type (AC2)
- * - PUT /api/v1/events/types/{type} - Update event type config (AC3, AC8, ORGANIZER only)
+ * - GET /api/v1/event-types - List all event types (AC1)
+ * - GET /api/v1/event-types/{type} - Get specific event type (AC2)
+ * - PUT /api/v1/event-types/{type} - Update event type config (AC3, AC8, ORGANIZER only)
  *
  * Authorization:
- * - GET endpoints: Any authenticated role
+ * - GET /event-types: public (Story 4.10b); GET /event-types/{type}: any authenticated role
  * - PUT endpoint: ORGANIZER role only (@PreAuthorize)
  *
  * Caching:
@@ -42,21 +42,21 @@ public class EventTypeController implements EventTypesApi {
     private final EventTypeService eventTypeService;
 
     /**
-     * GET /api/v1/events/types
+     * GET /api/v1/event-types
      * List all event type configurations.
      *
      * @return 200 OK with list of event type configurations
      */
     @Override
     public ResponseEntity<List<EventSlotConfigurationResponse>> listEventTypes() {
-        log.debug("GET /api/v1/events/types - List all event types");
+        log.debug("GET /api/v1/event-types - List all event types");
         List<EventSlotConfigurationResponse> eventTypes = eventTypeService.getAllEventTypes();
         log.debug("Returning {} event types", eventTypes.size());
         return ResponseEntity.ok(eventTypes);
     }
 
     /**
-     * GET /api/v1/events/types/{type}
+     * GET /api/v1/event-types/{type}
      * Get specific event type configuration.
      *
      * @param type EventType enum (FULL_DAY, AFTERNOON, EVENING)
@@ -65,13 +65,13 @@ public class EventTypeController implements EventTypesApi {
      */
     @Override
     public ResponseEntity<EventSlotConfigurationResponse> getEventType(EventType type) {
-        log.debug("GET /api/v1/events/types/{} - Get event type configuration", type);
+        log.debug("GET /api/v1/event-types/{} - Get event type configuration", type);
         EventSlotConfigurationResponse config = eventTypeService.getEventType(type);
         return ResponseEntity.ok(config);
     }
 
     /**
-     * PUT /api/v1/events/types/{type}
+     * PUT /api/v1/event-types/{type}
      * Update event type configuration (ORGANIZER only).
      *
      * @param type EventType enum
@@ -86,7 +86,7 @@ public class EventTypeController implements EventTypesApi {
     public ResponseEntity<EventSlotConfigurationResponse> updateEventType(
             EventType type,
             UpdateEventSlotConfigurationRequest updateRequest) {
-        log.debug("PUT /api/v1/events/types/{} - Update event type configuration", type);
+        log.debug("PUT /api/v1/event-types/{} - Update event type configuration", type);
         EventSlotConfigurationResponse updatedConfig = eventTypeService.updateEventType(type, updateRequest);
         log.info("Successfully updated event type configuration: {}", type);
         return ResponseEntity.ok(updatedConfig);

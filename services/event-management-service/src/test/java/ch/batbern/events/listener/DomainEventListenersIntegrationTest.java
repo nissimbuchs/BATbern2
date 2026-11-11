@@ -27,6 +27,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Pageable;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -244,9 +245,9 @@ class DomainEventListenersIntegrationTest extends AbstractIntegrationTest {
     // ------ helpers ------
 
     private List<Notification> organizerNotifications(String code) {
-        return notificationRepository.findByRecipientUsernameAndChannelOrderByCreatedAtDesc(ORGANIZER, "IN_APP")
+        return notificationRepository.findByRecipientUsername(ORGANIZER, Pageable.unpaged())
                 .stream()
-                .filter(n -> code.equals(n.getEventCode()))
+                .filter(n -> "IN_APP".equals(n.getChannel()) && code.equals(n.getEventCode()))
                 .toList();
     }
 

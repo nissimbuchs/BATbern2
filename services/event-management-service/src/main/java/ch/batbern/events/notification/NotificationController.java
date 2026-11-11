@@ -1,13 +1,15 @@
 package ch.batbern.events.notification;
 
 import ch.batbern.events.notifications.api.generated.NotificationsApi;
-import ch.batbern.events.notifications.dto.generated.BatchOperationRequest;
 import ch.batbern.events.notifications.dto.generated.DeleteNotificationResponse;
 import ch.batbern.events.notifications.dto.generated.MarkAsReadResponse;
 import ch.batbern.events.notifications.dto.generated.NotificationCountResponse;
 import ch.batbern.events.notifications.dto.generated.NotificationPagination;
 import ch.batbern.events.notifications.dto.generated.NotificationResponse;
 import ch.batbern.events.notifications.dto.generated.NotificationsResponse;
+import ch.batbern.events.notifications.dto.generated.UpdateNotificationRequest;
+import ch.batbern.events.notifications.dto.generated.UpdateNotificationsRequest;
+import ch.batbern.events.security.SecurityContextHelper;
 import ch.batbern.shared.api.DeterministicPaging;
 import ch.batbern.shared.api.PaginationParams;
 import ch.batbern.shared.api.PaginationUtils;
@@ -34,9 +36,12 @@ import java.util.stream.Collectors;
  *
  * <p>Contract-first: implements the generated {@link NotificationsApi} (spec
  * {@code event-notifications-api.openapi.yml}). Endpoints (under {@code /api/v1}):
- * {@code GET /notifications}, {@code GET /notifications/count}, {@code PUT /notifications/{id}/read},
- * {@code PUT /notifications/batch-read}, {@code GET /notifications/history},
- * {@code DELETE /notifications/{id}}, {@code DELETE /notifications/batch-delete}.
+ * {@code GET} and {@code PATCH /notifications}, {@code GET /notifications/count},
+ * {@code PATCH} and {@code DELETE /notifications/{id}}.
+ *
+ * <p>Story 4.10b: every operation works on the caller's own notifications. The recipient is the
+ * signed-in user, never a parameter; a notification of another user is loaded scoped to the caller
+ * and therefore answers 404 (one) or is ignored (many).
  */
 @PreAuthorize("hasRole('ORGANIZER')")
 @RestController
@@ -45,10 +50,10 @@ import java.util.stream.Collectors;
 public class NotificationController implements NotificationsApi {
 
     private final NotificationRepository notificationRepository;
+    private final SecurityContextHelper securityContextHelper;
 
     @Override
     public ResponseEntity<NotificationsResponse> listNotifications(
-            String username,
             String status,
             Integer page,
             Integer limit
@@ -60,6 +65,7 @@ public class NotificationController implements NotificationsApi {
 
         // Convert to 0-based for Spring Pageable
         // id breaks createdAt ties (#1131)
+        String username = securityContextHelper.getCurrentUsername();
         Pageable pageable = DeterministicPaging.pageRequest(pageNum - 1, pageSize, Sort.by("createdAt").descending());
 
         Page<Notification> notifications = status != null
@@ -82,10 +88,8 @@ public class NotificationController implements NotificationsApi {
     }
 
     @Override
-    public ResponseEntity<NotificationCountResponse> getUnreadCount(
-            String username,
-            String status
-    ) {
+    public ResponseEntity<NotificationCountResponse> getUnreadCount(String status) {
+        String username = securityContextHelper.getCurrentUsername();
         long count = status != null && !status.isEmpty()
                 ? notificationRepository.countByRecipientUsernameAndStatus(username, status.toUpperCase())
                 : notificationRepository.countByRecipientUsernameAndStatus(username, "UNREAD");
@@ -94,13 +98,13 @@ public class NotificationController implements NotificationsApi {
     }
 
     @Override
-    public ResponseEntity<MarkAsReadResponse> markAsRead(UUID id) {
-        Notification notification = notificationRepository.findById(id)
+    public ResponseEntity<MarkAsReadResponse> updateNotification(UUID id, UpdateNotificationRequest request) {
+        Notification notification = notificationRepository
+                .findByIdAndRecipientUsername(id, securityContextHelper.getCurrentUsername())
                 .orElseThrow(() -> new EntityNotFoundException("Notification not found"));
 
         Instant now = Instant.now();
-        notification.setStatus("READ");
-        notification.setReadAt(now);
+        markRead(notification, now);
         notificationRepository.save(notification);
 
         return ResponseEntity.ok(new MarkAsReadResponse()
@@ -110,15 +114,12 @@ public class NotificationController implements NotificationsApi {
     }
 
     @Override
-    public ResponseEntity<MarkAsReadResponse> batchMarkAsRead(BatchOperationRequest request) {
-        List<Notification> notifications = notificationRepository.findAllById(request.getNotificationIds());
+    public ResponseEntity<MarkAsReadResponse> updateNotifications(UpdateNotificationsRequest request) {
+        List<Notification> notifications = notificationRepository.findAllByIdInAndRecipientUsername(
+                request.getNotificationIds(), securityContextHelper.getCurrentUsername());
 
         Instant now = Instant.now();
-        notifications.forEach(n -> {
-            n.setStatus("READ");
-            n.setReadAt(now);
-        });
-
+        notifications.forEach(n -> markRead(n, now));
         notificationRepository.saveAll(notifications);
 
         return ResponseEntity.ok(new MarkAsReadResponse()
@@ -127,34 +128,19 @@ public class NotificationController implements NotificationsApi {
                 .updatedAt(now.atOffset(ZoneOffset.UTC)));
     }
 
-    @Override
-    public ResponseEntity<List<NotificationResponse>> getDeliveryHistory(
-            String username,
-            String channel
-    ) {
-        List<NotificationResponse> history = notificationRepository
-                .findByRecipientUsernameAndChannelOrderByCreatedAtDesc(username, channel.toUpperCase())
-                .stream()
-                .map(NotificationMapper::toResponse)
-                .toList();
-
-        return ResponseEntity.ok(history);
+    /** The only status change the spec allows today ({@code NotificationStatusChange} = READ). */
+    private static void markRead(Notification notification, Instant now) {
+        notification.setStatus("READ");
+        notification.setReadAt(now);
     }
 
     @Override
     public ResponseEntity<DeleteNotificationResponse> deleteNotification(UUID id) {
-        if (!notificationRepository.existsById(id)) {
-            throw new EntityNotFoundException("Notification not found");
-        }
+        Notification notification = notificationRepository
+                .findByIdAndRecipientUsername(id, securityContextHelper.getCurrentUsername())
+                .orElseThrow(() -> new EntityNotFoundException("Notification not found"));
 
-        notificationRepository.deleteById(id);
-
-        return ResponseEntity.ok(new DeleteNotificationResponse().success(true));
-    }
-
-    @Override
-    public ResponseEntity<DeleteNotificationResponse> batchDelete(BatchOperationRequest request) {
-        notificationRepository.deleteAllById(request.getNotificationIds());
+        notificationRepository.delete(notification);
 
         return ResponseEntity.ok(new DeleteNotificationResponse().success(true));
     }

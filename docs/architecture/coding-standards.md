@@ -523,7 +523,7 @@ as an `alwaysDo` handler on the auto-configured `MockMvc`; the validator is the 
 (`OpenApiContract` with `GeneratedCodeSemantics`), there is no second one. A request of a path no
 own spec has (actuator, dev endpoints), a non-2xx answer, an empty body and non-JSON bodies (CSV,
 ICS, XLSX) are not checked. Where several specs match, the most specific template wins
-(`/events/registrations` over `/events/{eventCode}`).
+(`/events/{eventCode}/sessions/unassigned` over `/events/{eventCode}/sessions/{sessionSlug}`).
 
 A violation fails the request that produced it, inside its test, with the validator's message and
 the body: fix the response (production code), the spec, or the test data that the spec rejects. A

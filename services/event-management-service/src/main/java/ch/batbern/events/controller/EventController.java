@@ -75,7 +75,6 @@ import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.beans.factory.annotation.Value;
@@ -2057,61 +2056,6 @@ public class EventController implements EventsApi, EventReportingApi, PublicEven
                 .build();
 
         return ResponseEntity.ok(response);
-    }
-
-    /**
-     * List User Registrations - Story BAT-15
-     *
-     * GET /api/v1/events/registrations (X-Attendee-Username header)
-     *
-     * @param attendeeUsername Username to list registrations for (passed as header to avoid URL exposure)
-     * @return List of registrations enriched with event data
-     */
-    @GetMapping("/events/registrations")
-    @Operation(
-            summary = "List User Registrations",
-            description = "Retrieve all registrations for a specific user across all events"
-    )
-    @PreAuthorize("hasRole('ORGANIZER')")
-    public ResponseEntity<List<RegistrationResponse>> listUserRegistrations(
-            @RequestHeader("X-Attendee-Username") String attendeeUsername) {
-        log.debug("GET /api/v1/events/registrations for user={}", attendeeUsername);
-
-        // Fetch registrations for this user
-        List<Registration> registrations = registrationRepository.findByAttendeeUsername(attendeeUsername);
-
-        // Fetch all events in one query to avoid N+1 (collect unique event IDs)
-        Set<UUID> eventIds = registrations.stream()
-                .map(Registration::getEventId)
-                .collect(Collectors.toSet());
-
-        Map<UUID, Event> eventsMap = eventRepository.findAllById(eventIds).stream()
-                .collect(Collectors.toMap(Event::getId, e -> e));
-
-        // Enrich each registration with event data
-        List<RegistrationResponse> responses = registrations.stream()
-                .map(reg -> {
-                    // Get event from map (avoids N+1)
-                    Event event = eventsMap.get(reg.getEventId());
-                    if (event != null) {
-                        reg.setEventCode(event.getEventCode()); // Set transient field
-                    }
-
-                    // Enrich with user data
-                    RegistrationResponse response = registrationService.enrichRegistrationWithUserData(reg);
-
-                    // Add event details to response
-                    if (event != null) {
-                        response.setEventTitle(event.getTitle());
-                        response.setEventDate(event.getDate() != null
-                                ? event.getDate().toString() : null);
-                    }
-
-                    return response;
-                })
-                .collect(Collectors.toList());
-
-        return ResponseEntity.ok(responses);
     }
 
     /**

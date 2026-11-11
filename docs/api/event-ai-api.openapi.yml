@@ -204,18 +204,21 @@ paths:
           $ref: '#/components/responses/NotFound'
       security:
       - BearerAuth: []
-  /ai-prompts/{promptKey}/reset:
-    post:
+  /ai-prompts/{promptKey}/override:
+    delete:
       tags:
       - AI Prompts
-      summary: Reset an AI prompt to its default text
-      description: 'Copies the original default prompt text back to prompt_text.
+      summary: Remove the organizer's override of an AI prompt (back to its default text)
+      description: 'The prompt text an organizer set with PUT is an override of the default text.
+        Deleting the override copies the default text back to prompt_text (Story 4.10b, replaces
+        `POST /ai-prompts/{promptKey}/reset`). Idempotent: a prompt without an override answers the
+        same.
 
 
         **Authorization**: ORGANIZER role required.
 
         '
-      operationId: resetAiPrompt
+      operationId: deleteAiPromptOverride
       parameters:
       - name: promptKey
         in: path
@@ -224,7 +227,7 @@ paths:
           type: string
       responses:
         '200':
-          description: Prompt after reset
+          description: Prompt after its override is removed (promptText equals defaultText)
           content:
             application/json:
               schema:

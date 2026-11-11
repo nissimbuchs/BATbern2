@@ -26,11 +26,14 @@ tags:
 - name: Materials Upload
   description: Speaker material upload via presigned URLs
 paths:
-  /events/recent-photos:
+  /public/event-photos:
     get:
       tags:
       - Event Photos
       summary: Recent photos from last N events (homepage use)
+      description: 'Anonymous read for the homepage photo strip: a random sample of the photos of
+        the last N events (Story 4.10b moved it from `/events/recent-photos`, a literal that shared
+        the namespace of `{eventCode}`; ADR-013 §4 anonymous read variant).'
       operationId: getRecentEventPhotos
       security: []
       parameters:

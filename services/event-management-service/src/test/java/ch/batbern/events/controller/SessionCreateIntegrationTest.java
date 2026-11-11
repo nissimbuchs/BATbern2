@@ -17,28 +17,37 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * Integration Tests for Session Batch Import
+ * Integration tests for the session create, {@code POST /events/{eventCode}/sessions} (Story 4.10b):
+ * one session, or the historical import (formerly {@code POST …/sessions/batch-import}), exactly one
+ * mode per request.
  *
- * Test Scenarios:
+ * Import scenarios:
  * - Import sessions with valid JSON data
  * - Skip duplicate sessions (same event + title)
  * - Assign speakers by matching speakerId to username
@@ -46,14 +55,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * - Calculate sequential 45-minute time slots
  * - Handle missing speakers gracefully
  *
- * TDD Workflow: RED Phase - These tests will fail until implementation is complete
- *
- * Uses Testcontainers PostgreSQL for production parity.
+ * Uses Testcontainers PostgreSQL for production parity. Data is committed and the test event (its
+ * sessions and speakers cascade) is removed before and after each test, no class-level
+ * {@code @Transactional} (Test fidelity rules).
  */
-@Transactional
 @WithMockUser(username = "test.organizer", roles = "ORGANIZER")
 @Import({TestSecurityConfig.class, TestAwsConfig.class})
-public class SessionBatchImportIntegrationTest extends AbstractIntegrationTest {
+class SessionCreateIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
     private MockMvc mockMvc;
@@ -70,6 +78,9 @@ public class SessionBatchImportIntegrationTest extends AbstractIntegrationTest {
     @Autowired
     private ObjectMapper objectMapper;
 
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+
     /** CUMS behind the real UserApiClient (Story 17.0b2). */
     @Autowired
     private CumsContractHarness cums;
@@ -82,10 +93,7 @@ public class SessionBatchImportIntegrationTest extends AbstractIntegrationTest {
     void setUp() {
         cums.reset();
 
-        // Clean database
-        sessionUserRepository.deleteAll();
-        sessionRepository.deleteAll();
-        eventRepository.deleteAll();
+        deleteTestEvent();
 
         // CUMS answers for the speakers
         mockUserApiClient();
@@ -124,8 +132,19 @@ public class SessionBatchImportIntegrationTest extends AbstractIntegrationTest {
     }
 
     @AfterEach
-    void resetCums() {
+    void cleanUp() {
         cums.reset();
+        deleteTestEvent();
+    }
+
+    /** Sessions, their speakers and materials cascade from the event (V2, V7, V41). */
+    private void deleteTestEvent() {
+        jdbcTemplate.update("DELETE FROM events WHERE event_code = ?", TEST_EVENT_CODE);
+    }
+
+    /** The import-mode body: the legacy items under {@code imports}. */
+    private static String imports(String items) {
+        return "{\"imports\": " + items + "}";
     }
 
     @Test
@@ -162,9 +181,9 @@ public class SessionBatchImportIntegrationTest extends AbstractIntegrationTest {
                 """;
 
         // When: POST batch import
-        mockMvc.perform(post("/api/v1/events/{eventCode}/sessions/batch-import", TEST_EVENT_CODE)
+        mockMvc.perform(post("/api/v1/events/{eventCode}/sessions", TEST_EVENT_CODE)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(requestBody))
+                        .content(imports(requestBody)))
                 // Then: Expect 200 OK with import results
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.totalProcessed").value(2))
@@ -240,9 +259,9 @@ public class SessionBatchImportIntegrationTest extends AbstractIntegrationTest {
                 """;
 
         // When: POST batch import
-        mockMvc.perform(post("/api/v1/events/{eventCode}/sessions/batch-import", TEST_EVENT_CODE)
+        mockMvc.perform(post("/api/v1/events/{eventCode}/sessions", TEST_EVENT_CODE)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(requestBody))
+                        .content(imports(requestBody)))
                 // Then: Expect session skipped
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.totalProcessed").value(1))
@@ -282,9 +301,9 @@ public class SessionBatchImportIntegrationTest extends AbstractIntegrationTest {
                 """;
 
         // When: POST batch import
-        mockMvc.perform(post("/api/v1/events/{eventCode}/sessions/batch-import", TEST_EVENT_CODE)
+        mockMvc.perform(post("/api/v1/events/{eventCode}/sessions", TEST_EVENT_CODE)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(requestBody))
+                        .content(imports(requestBody)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.successfullyCreated").value(1));
 
@@ -316,9 +335,9 @@ public class SessionBatchImportIntegrationTest extends AbstractIntegrationTest {
                 """;
 
         // When: POST batch import
-        mockMvc.perform(post("/api/v1/events/{eventCode}/sessions/batch-import", TEST_EVENT_CODE)
+        mockMvc.perform(post("/api/v1/events/{eventCode}/sessions", TEST_EVENT_CODE)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(requestBody))
+                        .content(imports(requestBody)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.successfullyCreated").value(1));
 
@@ -374,9 +393,9 @@ public class SessionBatchImportIntegrationTest extends AbstractIntegrationTest {
                 """;
 
         // When: POST batch import
-        mockMvc.perform(post("/api/v1/events/{eventCode}/sessions/batch-import", TEST_EVENT_CODE)
+        mockMvc.perform(post("/api/v1/events/{eventCode}/sessions", TEST_EVENT_CODE)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(requestBody))
+                        .content(imports(requestBody)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.successfullyCreated").value(3));
 
@@ -421,9 +440,9 @@ public class SessionBatchImportIntegrationTest extends AbstractIntegrationTest {
                 """;
 
         // When: POST batch import
-        mockMvc.perform(post("/api/v1/events/{eventCode}/sessions/batch-import", TEST_EVENT_CODE)
+        mockMvc.perform(post("/api/v1/events/{eventCode}/sessions", TEST_EVENT_CODE)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(requestBody))
+                        .content(imports(requestBody)))
                 // Then: Session still created successfully (graceful degradation)
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.successfullyCreated").value(1))
@@ -453,10 +472,126 @@ public class SessionBatchImportIntegrationTest extends AbstractIntegrationTest {
                 """;
 
         // When: POST batch import with non-existent event code
-        mockMvc.perform(post("/api/v1/events/{eventCode}/sessions/batch-import", "BATbern999")
+        mockMvc.perform(post("/api/v1/events/{eventCode}/sessions", "BATbern999")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(requestBody))
+                        .content(imports(requestBody)))
                 // Then: Expect 404 Not Found
                 .andExpect(status().isNotFound());
+    }
+
+    // ── Single mode (moved from EventControllerIntegrationTest, Story 4.10b: 201 {session}) ──
+
+    @Test
+    @DisplayName("should_createSession_when_singleFieldsGiven")
+    void should_createSession_when_singleFieldsGiven() throws Exception {
+        String body = """
+                {
+                    "title": "Keynote: Brünnimann über KI",
+                    "description": "Opening keynote session",
+                    "startTime": "2024-12-15T18:30:00Z",
+                    "endTime": "2024-12-15T19:30:00Z",
+                    "sessionType": "keynote"
+                }
+                """;
+
+        String created = mockMvc.perform(post("/api/v1/events/{eventCode}/sessions", TEST_EVENT_CODE)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.session.sessionSlug").exists())
+                .andExpect(jsonPath("$.session.title").value("Keynote: Brünnimann über KI"))
+                .andExpect(jsonPath("$.session.sessionType").value("keynote"))
+                .andExpect(jsonPath("$.session.language").value("de"))
+                .andExpect(jsonPath("$.totalProcessed").doesNotExist())
+                .andReturn().getResponse().getContentAsString();
+
+        String slug = objectMapper.readTree(created).get("session").get("sessionSlug").asText();
+        Session stored = sessionRepository.findBySessionSlug(slug).orElseThrow();
+        assertThat(stored.getEventId()).isEqualTo(testEvent.getId());
+        assertThat(stored.getStartTime()).isEqualTo(Instant.parse("2024-12-15T18:30:00Z"));
+    }
+
+    @Test
+    @DisplayName("should_updateAndDeleteSession_when_createdThroughSingleMode")
+    void should_updateAndDeleteSession_when_createdThroughSingleMode() throws Exception {
+        String created = mockMvc.perform(post("/api/v1/events/{eventCode}/sessions", TEST_EVENT_CODE)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"title": "Workshop: Hands-on ML", "sessionType": "workshop",
+                                 "startTime": "2024-12-15T19:00:00Z", "endTime": "2024-12-15T20:00:00Z"}
+                                """))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        String slug = objectMapper.readTree(created).get("session").get("sessionSlug").asText();
+
+        mockMvc.perform(patch("/api/v1/events/{eventCode}/sessions/{slug}", TEST_EVENT_CODE, slug)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"title\": \"Workshop: Advanced ML\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.sessionSlug").value(slug))
+                .andExpect(jsonPath("$.title").value("Workshop: Advanced ML"));
+
+        mockMvc.perform(delete("/api/v1/events/{eventCode}/sessions/{slug}", TEST_EVENT_CODE, slug))
+                .andExpect(status().isNoContent());
+        assertThat(sessionRepository.findBySessionSlug(slug)).isEmpty();
+    }
+
+    // ── Mode errors (Story 4.10b): exactly one mode, nothing is written otherwise ──
+
+    @ParameterizedTest(name = "{0}")
+    @CsvSource(delimiter = '|', value = {
+        "no mode               | {}",
+        "both modes            | {\"title\": \"T\", \"sessionType\": \"keynote\", \"startTime\": \"2024-12-15T18:00:00Z\", \"endTime\": \"2024-12-15T19:00:00Z\", \"imports\": [{\"bat\": 142, \"title\": \"X\"}]}",
+        "single without times  | {\"title\": \"Only a title\"}",
+        "blank title           | {\"title\": \"\", \"sessionType\": \"keynote\", \"startTime\": \"2024-12-15T18:00:00Z\", \"endTime\": \"2024-12-15T19:00:00Z\"}",
+        "empty imports         | {\"imports\": []}",
+    })
+    @DisplayName("should_return400AndCreateNothing_when_modeIsInvalid")
+    void should_return400AndCreateNothing_when_modeIsInvalid(String scenario, String body) throws Exception {
+        mockMvc.perform(post("/api/v1/events/{eventCode}/sessions", TEST_EVENT_CODE)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isBadRequest());
+
+        assertThat(sessionRepository.findByEventId(testEvent.getId())).isEmpty();
+    }
+
+    @Test
+    @DisplayName("should_return400_when_moreThan100ItemsAreImported")
+    void should_return400_when_moreThan100ItemsAreImported() throws Exception {
+        String items = IntStream.rangeClosed(1, 101)
+                .mapToObj(i -> "{\"bat\": 142, \"title\": \"Session " + i + "\"}")
+                .collect(Collectors.joining(",", "[", "]"));
+
+        mockMvc.perform(post("/api/v1/events/{eventCode}/sessions", TEST_EVENT_CODE)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(imports(items)))
+                .andExpect(status().isBadRequest());
+
+        assertThat(sessionRepository.findByEventId(testEvent.getId())).isEmpty();
+    }
+
+    @Test
+    @DisplayName("should_return403_when_speakerCreatesSession")
+    void should_return403_when_speakerCreatesSession() throws Exception {
+        mockMvc.perform(post("/api/v1/events/{eventCode}/sessions", TEST_EVENT_CODE)
+                        .with(user("hongan.nguyen").roles("SPEAKER"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(imports("[{\"bat\": 142, \"title\": \"X\"}]")))
+                .andExpect(status().isForbidden());
+
+        assertThat(sessionRepository.findByEventId(testEvent.getId())).isEmpty();
+    }
+
+    @Test
+    @DisplayName("should_answer405_when_oldBatchImportPathIsCalled")
+    void should_answer405_when_oldBatchImportPathIsCalled() throws Exception {
+        // Story 4.10b, no alias: "batch-import" now falls on /sessions/{sessionSlug}, which has no POST.
+        mockMvc.perform(post("/api/v1/events/{eventCode}/sessions/batch-import", TEST_EVENT_CODE)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("[{\"bat\": 142, \"title\": \"X\"}]"))
+                .andExpect(status().isMethodNotAllowed());
+
+        assertThat(sessionRepository.findByEventId(testEvent.getId())).isEmpty();
     }
 }

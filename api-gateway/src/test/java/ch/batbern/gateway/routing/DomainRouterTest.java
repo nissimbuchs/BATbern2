@@ -72,6 +72,16 @@ class DomainRouterTest {
                 .isEqualTo("company-user-management-service");
     }
 
+    @Test
+    @DisplayName("should_routeHomepagePhotosToEms_when_publicEventPhotosCalled")
+    void should_routeHomepagePhotosToEms_when_publicEventPhotosCalled() {
+        // Story 4.10b: the one /public/event-photos path is EMS; other /public paths stay CUMS.
+        assertThat(domainRouter.determineTargetService("/api/v1/public/event-photos?limit=20"))
+                .isEqualTo("event-management-service");
+        assertThat(domainRouter.determineTargetService("/api/v1/public/event-photos/x"))
+                .isEqualTo("company-user-management-service");
+    }
+
     // Regression: /api/v1/event-types must route to EMS. There was NO route for it
     // (it doesn't match the /api/v1/events prefix — the hyphen breaks it), so the
     // gateway threw RoutingException → 500. The event-types-api Bruno suite had been

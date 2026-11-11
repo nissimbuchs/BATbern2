@@ -190,9 +190,15 @@ sequenceDiagram
         L->>DB: INSERT channel IN_APP, status UNREAD, type = event type, priority from type name
         L->>L: pushNotificationViaWebSocket, failure only logged
     end
-    UI->>DB: GET /api/v1/notifications via NotificationController, React Query staleTime 1 min
-    UI->>DB: PUT /notifications/id/read or batch-read, DELETE or batch-delete
+    UI->>DB: GET /api/v1/notifications (the caller's own) via NotificationController, React Query staleTime 1 min
+    UI->>DB: PATCH /notifications/id or /notifications with status READ, DELETE /notifications/id
 ```
+
+Every operation is scoped to the caller (Story 4.10b): the recipient is the signed-in organizer,
+never a parameter. A notification of another user is loaded with `findByIdAndRecipientUsername`
+and answers 404 (one) or is ignored (many, `findAllByIdInAndRecipientUsername`). The verb paths
+(`PUT …/{id}/read`, `batch-read`), `DELETE /notifications/batch-delete` and the history read
+`GET /notifications/history` (which read anyone's notifications by `?username=`) are gone.
 
 Events are deleted with their notifications (`EventController`, `deleteByEventCode`); archiving
 an event marks its unread rows `READ` (`dismissNotificationsForEvent`, Story 10.18).

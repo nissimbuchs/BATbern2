@@ -42,6 +42,11 @@ Only items that are not live yet. Everything else is listed under its release be
 
 ### Unreleased — after BATbern60
 
+**Improvement — Own notifications only, fewer verb paths (4.10b)**:
+- ✅ Notifications are each organizer's own: marking read, deleting, the list and the unread count only reach the signed-in organizer's notifications. Before, an organizer could read, mark and delete another organizer's notifications by their ID.
+- ✅ A user's event history (organizer view of a user) lists every event, also for people with a long history; it is read page by page.
+- ⚠️ API, breaking for scripts: `PATCH /api/v1/notifications/{id}` and `PATCH /api/v1/notifications` with `status: READ` mark notifications read (was `PUT …/{id}/read`, `…/batch-read`); `GET /notifications` and `/count` take no `username`; `DELETE /notifications/batch-delete` and `GET /notifications/history` are gone. The AI prompt reset is `DELETE /api/v1/ai-prompts/{key}/override` (was `POST …/reset`). The session import is `POST /api/v1/events/{eventCode}/sessions` with `imports` (was `…/sessions/batch-import`), and a single create answers `{session}`. Event types are `/api/v1/event-types` (was `/events/types`), the homepage photos `GET /api/v1/public/event-photos` (was `/events/recent-photos`), a user's event history `GET /api/v1/registrations?filter={"attendeeUsername":…}` (was `GET /events/registrations` with a header).
+
 **Improvement — Participants and newsletter, one way each (4.10c)**:
 - ✅ The participant CSV import (Administration → Import data) sends each event's people together. A person who attended several events shows **Success** only when every event worked, otherwise the events that failed and why. One person that cannot be imported no longer stops the others.
 - ✅ Account settings show the newsletter per address, like the profile page. Before, the switch there covered the login address only.

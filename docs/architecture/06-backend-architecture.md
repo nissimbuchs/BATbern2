@@ -132,6 +132,7 @@ Main `permitAll` entries of the event-management chain
 | `GET /api/v1/events/current` | Apple Watch app only. Retirement tracked in #1070 |
 | `GET /api/v1/events`, `/api/v1/events/{code}` | Event list and detail. Sessions and speakers are returned to organizers only |
 | `GET /api/v1/events/{code}/sessions`, `/sessions/{slug}`, `/sessions/{slug}/speakers` | Filtered by `PublicSessionVisibilityPolicy` for non-organizers |
+| `GET /api/v1/event-types` (exact), `GET /api/v1/public/event-photos` (exact) | Event format definitions and the homepage photo strip (Story 4.10b, moved from `/events/types`, `/events/recent-photos`) |
 | `GET .../sessions/{slug}/qna`, `.../materials/{id}/download`, `/events/{code}/photos`, `/events/{code}/live-timing` | Public reads for Q&A archive, materials, photos, presenter screen |
 | `POST /api/v1/events/{code}/registrations`, `.../registrations/confirm`, `GET .../registrations/{code}` | Anonymous registration; the code or the token is the credential |
 | `POST /api/v1/newsletter/subscribers` (exact path), `/newsletter/unsubscribe`, `GET /newsletter/unsubscribe/verify` | Newsletter (subscribe since Story 4.10c; the rest of `/newsletter/subscribers` is the organizer's) |
@@ -139,9 +140,13 @@ Main `permitAll` entries of the event-management chain
 | `GET/POST /api/v1/events/{code}/thanks`, `GET /api/v1/thanks/featured` | Thank the organizers |
 | `/internal/**` | Service-to-service only; the gateway denies it (below) |
 
-Literal organizer paths that the wildcards would match (`/events/registrations`,
-`/sessions/unassigned`, `/sessions/conflicts`) are declared `authenticated()` before the public
-wildcards (GHSA-qhqv). The partner attendance summary, once `/events/attendance-summary` here, is
+Literal organizer paths that the wildcards would match (`/sessions/unassigned`,
+`/sessions/conflicts`) are declared `authenticated()` before the public wildcards (GHSA-qhqv).
+Story 4.10b moved the other literals out of the `{eventCode}` namespace instead of guarding them:
+an attendee's history is `GET /registrations?filter={"attendeeUsername":…}` (organizer,
+paginated), the event formats are `/event-types[/{type}]` (only the list is public, by exact
+path) and the homepage photo strip is `GET /public/event-photos` (public, exact path; the
+gateway routes this one `/public` path to EMS). The partner attendance summary, once `/events/attendance-summary` here, is
 `GET /internal/events/attendance-summary` since Epic 17 6b (ems-internal, called by PCS).
 
 #### Public Events read model (2026-10-07)
@@ -230,7 +235,7 @@ public SecurityFilterChain filterChain(HttpSecurity http, JwtAuthenticationConve
         .authorizeHttpRequests(auth -> auth
             .requestMatchers("/actuator/health", "/actuator/info").permitAll()
             // organizer literals before the public wildcards (GHSA-qhqv)
-            .requestMatchers(HttpMethod.GET, "/api/v1/events/registrations", ...).authenticated()
+            .requestMatchers(HttpMethod.GET, "/api/v1/events/*/sessions/unassigned", ...).authenticated()
             .requestMatchers(HttpMethod.GET, "/api/v1/events/*").permitAll()
             // ... further public reads and token-credentialed writes ...
             .requestMatchers("/internal/**").permitAll()   // the gateway denies it

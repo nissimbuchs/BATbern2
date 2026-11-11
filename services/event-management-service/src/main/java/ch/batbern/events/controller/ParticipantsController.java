@@ -6,17 +6,27 @@ import ch.batbern.events.registrations.api.generated.ParticipantsApi;
 import ch.batbern.events.registrations.dto.generated.AddParticipantsRequest;
 import ch.batbern.events.registrations.dto.generated.AddParticipantsResponse;
 import ch.batbern.events.registrations.dto.generated.DistributionListResponse;
+import ch.batbern.events.registrations.dto.generated.RegistrationPage;
+import ch.batbern.events.dto.RegistrationResponse;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.security.SecurityContextHelper;
 import ch.batbern.events.service.DistributionListService;
 import ch.batbern.events.service.ParticipantsDocxExportService;
 import ch.batbern.events.service.ParticipantsExportService;
 import ch.batbern.events.service.RegistrationService;
+import ch.batbern.shared.api.FilterCriteria;
+import ch.batbern.shared.api.FilterOperator;
+import ch.batbern.shared.api.FilterParser;
+import ch.batbern.shared.api.PaginationMetadata;
+import ch.batbern.shared.api.PaginationParams;
+import ch.batbern.shared.api.PaginationUtils;
 import ch.batbern.shared.exception.NotFoundException;
 import ch.batbern.shared.exception.ValidationException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.ByteArrayResource;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.core.io.Resource;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
@@ -129,6 +139,44 @@ public class ParticipantsController implements ParticipantsApi {
                         .skipped(result.skipped()));
             }
         };
+    }
+
+    /**
+     * One attendee's registrations across all events, newest event first (Story 4.10b, moved from
+     * {@code EventController}'s {@code GET /events/registrations} with the username in a header).
+     * {@code filter} must be exactly {@code {"attendeeUsername": "<username>"}}; anything else 400.
+     */
+    @Override
+    @PreAuthorize("hasRole('ORGANIZER')")
+    public ResponseEntity<RegistrationPage> listUserRegistrations(String filter, Integer page, Integer limit) {
+        String attendeeUsername = attendeeUsernameFrom(filter);
+        PaginationParams params = PaginationUtils.parseParams(page, limit != null ? limit : 25);
+        Page<RegistrationResponse> result = registrationService.listForAttendee(
+                attendeeUsername, PageRequest.of(params.getPage() - 1, params.getLimit()));
+
+        return ResponseEntity.ok(new RegistrationPage()
+                .data(result.getContent())
+                .pagination(PaginationMetadata.builder()
+                        .page(params.getPage())
+                        .limit(params.getLimit())
+                        .totalItems(result.getTotalElements())
+                        .totalPages(result.getTotalPages())
+                        .hasNext(result.hasNext())
+                        .hasPrev(result.hasPrevious())
+                        .build()));
+    }
+
+    /** The one filter {@code GET /registrations} accepts: {@code {"attendeeUsername": "<username>"}}. */
+    private static String attendeeUsernameFrom(String filter) {
+        FilterCriteria criteria = FilterParser.parse(filter);
+        if (criteria == null
+                || criteria.getOperator() != FilterOperator.EQUALS
+                || !"attendeeUsername".equals(criteria.getField())
+                || !(criteria.getValue() instanceof String username)
+                || username.isBlank()) {
+            throw new ValidationException("filter must be {\"attendeeUsername\": \"<username>\"}");
+        }
+        return username;
     }
 
     private enum Mode { SINGLE, PEOPLE, STAKEHOLDERS }

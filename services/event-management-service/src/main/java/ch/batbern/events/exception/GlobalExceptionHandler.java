@@ -1451,7 +1451,7 @@ public class GlobalExceptionHandler {
 
     /**
      * Returns 405 Method Not Allowed when a URI matches a registered route but the HTTP verb
-     * doesn't (e.g. POST /events/types when only GET is mapped). Without this explicit handler
+     * doesn't (e.g. POST /event-types when only GET is mapped). Without this explicit handler
      * Spring raises {@code HttpRequestMethodNotSupportedException}, which falls through to the
      * catch-all {@code @ExceptionHandler(Exception.class)} below and gets translated into a 500 —
      * the same class of gotcha as the {@code MethodArgumentNotValidException} rule in

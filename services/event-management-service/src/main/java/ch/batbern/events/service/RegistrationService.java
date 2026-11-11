@@ -23,6 +23,8 @@ import ch.batbern.events.exception.RegistrationClosedException;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.RegistrationRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -40,6 +42,7 @@ import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * Service for Registration business logic
@@ -224,6 +227,38 @@ public class RegistrationService {
         // Email will be sent after token generation in controller layer
 
         return saved;
+    }
+
+    /**
+     * One attendee's registrations across all events, newest event first, each enriched with its
+     * event (code, title, date) and the attendee from CUMS. Story 4.10b, moved from
+     * {@code EventController} ({@code GET /registrations?filter=…}); the events of a page are
+     * loaded in one query.
+     */
+    @Transactional(readOnly = true)
+    public Page<RegistrationResponse> listForAttendee(
+            String attendeeUsername, Pageable pageable) {
+        Page<Registration> page =
+                registrationRepository.findPageByAttendeeUsernameNewestEventFirst(attendeeUsername, pageable);
+
+        Set<UUID> eventIds = page.getContent().stream()
+                .map(Registration::getEventId)
+                .collect(Collectors.toSet());
+        Map<UUID, Event> events = new HashMap<>();
+        eventRepository.findAllById(eventIds).forEach(e -> events.put(e.getId(), e));
+
+        return page.map(registration -> {
+            Event event = events.get(registration.getEventId());
+            if (event != null) {
+                registration.setEventCode(event.getEventCode()); // transient field
+            }
+            RegistrationResponse response = enrichRegistrationWithUserData(registration);
+            if (event != null) {
+                response.setEventTitle(event.getTitle());
+                response.setEventDate(event.getDate() != null ? event.getDate().toString() : null);
+            }
+            return response;
+        });
     }
 
     /**

@@ -1458,7 +1458,7 @@ paths:
           $ref: '#/components/responses/InternalServerError'
       security:
       - BearerAuth: []
-  /events/types:
+  /event-types:
     get:
       tags:
       - Event Types
@@ -1477,6 +1477,10 @@ paths:
 
 
         **Performance**: <50ms (P95) - cached response
+
+
+        Public: the format definitions hold no data about people (Story 4.10b moved them from
+        `/events/types`, a literal that shared the namespace of `{eventCode}`).
 
         '
       operationId: listEventTypes
@@ -1543,9 +1547,8 @@ paths:
                 moderationStartDuration: 5
         '500':
           $ref: '#/components/responses/InternalServerError'
-      security:
-      - BearerAuth: []
-  /events/types/{type}:
+      security: []
+  /event-types/{type}:
     get:
       tags:
       - Event Types

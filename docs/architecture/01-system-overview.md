@@ -474,7 +474,7 @@ admin settings.
 **Key interfaces** (all under `/api/v1`): `/events`, `/events/{eventCode}/workflow`,
 `/events/{eventCode}/sessions`, `/events/{eventCode}/speaker-pool`, `/events/{eventCode}/speakers`,
 `/events/{eventCode}/registrations`, `/events/{eventCode}/tasks`, `/events/{eventCode}/live-timing`,
-`/events/{eventCode}/qna`, `/events/{eventCode}/thanks`, `/events/types`, `/topics`, `/tasks`,
+`/events/{eventCode}/qna`, `/events/{eventCode}/thanks`, `/event-types`, `/topics`, `/tasks`,
 `/speaker-portal/**`, `/attendee-portal/**`, `/registrations`, `/newsletter`, `/email-templates`,
 `/conversations`, `/mails`, `/ai/**`, `/analytics`, `/thanks`, `/notifications`, `/watch/**`,
 `/public/events`, `/admin/**`. Exact contracts: `docs/api/*.openapi.yml` and

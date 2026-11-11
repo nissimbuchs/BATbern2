@@ -81,8 +81,7 @@ public class SecurityConfig {
 
                 // GHSA-qhqv: organizer endpoints whose literal segment the public wildcards
                 // below would otherwise match as an event code or session slug.
-                .requestMatchers(HttpMethod.GET, "/api/v1/events/registrations",
-                        "/api/v1/events/*/sessions/unassigned",
+                .requestMatchers(HttpMethod.GET, "/api/v1/events/*/sessions/unassigned",
                         "/api/v1/events/*/sessions/conflicts").authenticated()
 
                 // Story 4.1.3: Public event discovery endpoints
@@ -100,7 +99,12 @@ public class SecurityConfig {
 
                 // Story 10.21: Public event photo endpoints (AC4, AC5)
                 .requestMatchers(HttpMethod.GET, "/api/v1/events/*/photos").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/v1/events/recent-photos").permitAll()
+                // Story 4.10b: homepage photo strip, anonymous read variant outside /events (was
+                // /events/recent-photos, a literal in the {eventCode} namespace). Exact path.
+                .requestMatchers(HttpMethod.GET, "/api/v1/public/event-photos").permitAll()
+                // Story 4.10b: event format definitions (was /events/types). Exact path: the
+                // /event-types/{type} read and PUT stay authenticated.
+                .requestMatchers(HttpMethod.GET, "/api/v1/event-types").permitAll()
 
                 // Story 4.2 (BAT-109): Public archive browsing endpoint
                 .requestMatchers(HttpMethod.GET, "/api/v1/events").permitAll()

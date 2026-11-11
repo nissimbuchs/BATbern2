@@ -6,7 +6,7 @@ import ch.batbern.events.domain.Session;
 import ch.batbern.events.domain.SessionUser;
 import ch.batbern.events.domain.SessionUser.SpeakerRole;
 import ch.batbern.events.sessions.dto.generated.BatchImportSessionRequest;
-import ch.batbern.events.sessions.dto.generated.BatchImportSessionResult;
+import ch.batbern.events.sessions.dto.generated.CreateSessionResponse;
 import ch.batbern.events.sessions.dto.generated.LegacySpeaker;
 import ch.batbern.events.sessions.dto.generated.SessionImportDetail;
 import ch.batbern.events.sessions.dto.generated.SessionImportDetail.StatusEnum;
@@ -61,10 +61,10 @@ public class SessionBatchImportService {
      *
      * @param eventCode Event code (e.g., "BATbern142")
      * @param requests List of session import requests
-     * @return BatchImportSessionResult with statistics and details
+     * @return the import-mode response of POST /events/{eventCode}/sessions (counts and details)
      */
     @Transactional
-    public BatchImportSessionResult importSessions(String eventCode, List<BatchImportSessionRequest> requests) {
+    public CreateSessionResponse importSessions(String eventCode, List<BatchImportSessionRequest> requests) {
         log.info("Starting batch import of {} sessions for event {}", requests.size(), eventCode);
 
         // Find the event
@@ -113,7 +113,7 @@ public class SessionBatchImportService {
         log.info("Batch import completed: {} success, {} updated, {} skipped, {} failed",
                 successCount, updatedCount, skippedCount, failedCount);
 
-        return BatchImportSessionResult.builder()
+        return CreateSessionResponse.builder()
                 .totalProcessed(requests.size())
                 .successfullyCreated(successCount)
                 .updated(updatedCount)

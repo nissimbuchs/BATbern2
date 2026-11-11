@@ -2,8 +2,8 @@ openapi: 3.0.3
 info:
   title: BATbern Event Notifications API
   version: 1.0.0
-  description: 'In-app notification management — listing, read-state, delivery history, deletion,
-    and unread counts (Story BAT-7).
+  description: 'In-app notification management of the caller''s own inbox — listing, read-state,
+    deletion, and unread counts (Story BAT-7; scoped to the caller since Story 4.10b).
 
 
     Authored during the API consolidation adversarial-review follow-up (2026-06-30) to bring the
@@ -25,22 +25,20 @@ security:
 - BearerAuth: []
 tags:
 - name: Notifications
-  description: In-app notification inbox — list, read-state, history, deletion, counts (Story BAT-7)
+  description: In-app notification inbox of the caller — list, read-state, deletion, counts (Story BAT-7)
 paths:
   /notifications:
     get:
       description: |
+        The caller's own notifications (the recipient is the signed-in organizer; there is no
+        parameter to read another user's inbox, Story 4.10b).
+
         **Security**: ORGANIZER role required; any other role gets 403.
       tags:
       - Notifications
       operationId: listNotifications
-      summary: List notifications for a user (paginated, 1-based)
+      summary: List the caller's notifications (paginated, 1-based)
       parameters:
-      - name: username
-        in: query
-        required: true
-        schema:
-          type: string
       - name: status
         in: query
         required: false
@@ -78,20 +76,60 @@ paths:
                       limit: 2
                       totalItems: 0
                       totalPages: 0
+    patch:
+      description: |
+        Changes the status of several of the caller's notifications at once. Ids that are not
+        the caller's (or do not exist) are ignored and left unchanged; `markedCount` counts the
+        caller's notifications that were changed (Story 4.10b, replaces `PUT /notifications/batch-read`).
+
+        **Security**: ORGANIZER role required; any other role gets 403.
+      tags:
+      - Notifications
+      operationId: updateNotifications
+      summary: Mark several of the caller's notifications read
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateNotificationsRequest'
+            examples:
+              default:
+                summary: mark two notifications read
+                value:
+                  notificationIds:
+                  - 3f2a9c1e-7b4d-4e8a-9c0f-1a2b3c4d5e6f
+                  - 8d1e2f3a-4b5c-4d6e-8f70-112233445566
+                  status: READ
+      responses:
+        '400':
+          description: Invalid body (missing ids or status)
+        '403':
+          description: Forbidden (ORGANIZER role required)
+        '200':
+          description: Notifications marked as read
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MarkAsReadResponse'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    success: true
+                    markedCount: 2
+                    updatedAt: "2026-05-14T16:00:00Z"
   /notifications/count:
     get:
       description: |
+        Counts the caller's own notifications by status.
+
         **Security**: ORGANIZER role required; any other role gets 403.
       tags:
       - Notifications
       operationId: getUnreadCount
-      summary: Count notifications by status (defaults to UNREAD)
+      summary: Count the caller's notifications by status (defaults to UNREAD)
       parameters:
-      - name: username
-        in: query
-        required: true
-        schema:
-          type: string
       - name: status
         in: query
         required: false
@@ -112,22 +150,38 @@ paths:
                   summary: captured from the local anonymized database
                   value:
                     count: 0
-  /notifications/{id}/read:
-    put:
+  /notifications/{id}:
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    patch:
       description: |
+        Changes the status of one of the caller's notifications (Story 4.10b, replaces
+        `PUT /notifications/{id}/read`). Another user's notification answers 404 and stays unchanged.
+
         **Security**: ORGANIZER role required; any other role gets 403.
       tags:
       - Notifications
-      operationId: markAsRead
-      summary: Mark a single notification as read
-      parameters:
-      - name: id
-        in: path
+      operationId: updateNotification
+      summary: Mark one of the caller's notifications read
+      requestBody:
         required: true
-        schema:
-          type: string
-          format: uuid
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateNotificationRequest'
+            examples:
+              default:
+                summary: mark read
+                value:
+                  status: READ
       responses:
+        '400':
+          description: Invalid body (missing or unsupported status)
         '403':
           description: Forbidden (ORGANIZER role required)
         '200':
@@ -144,88 +198,16 @@ paths:
                     markedCount: 1
                     updatedAt: "2026-05-14T16:00:00Z"
         '404':
-          description: Notification not found
-  /notifications/batch-read:
-    put:
-      description: |
-        **Security**: ORGANIZER role required; any other role gets 403.
-      tags:
-      - Notifications
-      operationId: batchMarkAsRead
-      summary: Mark multiple notifications as read
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/BatchOperationRequest'
-      responses:
-        '403':
-          description: Forbidden (ORGANIZER role required)
-        '200':
-          description: Notifications marked as read
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MarkAsReadResponse'
-              examples:
-                default:
-                  summary: generated from the schema and captured sub-values
-                  value:
-                    success: true
-                    markedCount: 1
-                    updatedAt: "2026-05-14T16:00:00Z"
-  /notifications/history:
-    get:
-      description: |
-        **Security**: ORGANIZER role required; any other role gets 403.
-      tags:
-      - Notifications
-      operationId: getDeliveryHistory
-      summary: Delivery history for a user by channel
-      parameters:
-      - name: username
-        in: query
-        required: true
-        schema:
-          type: string
-      - name: channel
-        in: query
-        required: true
-        schema:
-          type: string
-        description: Delivery channel (e.g. EMAIL, IN_APP). Case-insensitive.
-      responses:
-        '403':
-          description: Forbidden (ORGANIZER role required)
-        '200':
-          description: Notification delivery history (newest first)
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/NotificationResponse'
-              examples:
-                default:
-                  summary: captured from the local anonymized database
-                  value:
-                    []
-  /notifications/{id}:
+          description: No notification of the caller with this id
     delete:
       description: |
+        Deletes one of the caller's notifications. Another user's notification answers 404 and is kept.
+
         **Security**: ORGANIZER role required; any other role gets 403.
       tags:
       - Notifications
       operationId: deleteNotification
-      summary: Delete a single notification
-      parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
+      summary: Delete one of the caller's notifications
       responses:
         '403':
           description: Forbidden (ORGANIZER role required)
@@ -241,35 +223,7 @@ paths:
                   value:
                     success: true
         '404':
-          description: Notification not found
-  /notifications/batch-delete:
-    delete:
-      description: |
-        **Security**: ORGANIZER role required; any other role gets 403.
-      tags:
-      - Notifications
-      operationId: batchDelete
-      summary: Delete multiple notifications
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/BatchOperationRequest'
-      responses:
-        '403':
-          description: Forbidden (ORGANIZER role required)
-        '200':
-          description: Notifications deleted
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/DeleteNotificationResponse'
-              examples:
-                default:
-                  summary: generated from the schema and captured sub-values
-                  value:
-                    success: true
+          description: No notification of the caller with this id
 components:
   schemas:
     NotificationResponse:
@@ -401,16 +355,33 @@ components:
       properties:
         success:
           type: boolean
-    BatchOperationRequest:
+    NotificationStatusChange:
+      type: string
+      description: The status a notification can be set to by its recipient. Only READ today.
+      enum:
+      - READ
+    UpdateNotificationRequest:
+      type: object
+      required:
+      - status
+      properties:
+        status:
+          $ref: '#/components/schemas/NotificationStatusChange'
+    UpdateNotificationsRequest:
       type: object
       required:
       - notificationIds
+      - status
       properties:
         notificationIds:
           type: array
+          minItems: 1
+          maxItems: 500
           items:
             type: string
             format: uuid
+        status:
+          $ref: '#/components/schemas/NotificationStatusChange'
   securitySchemes:
     BearerAuth:
       type: http

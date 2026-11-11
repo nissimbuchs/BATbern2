@@ -1138,74 +1138,99 @@ paths:
                   summary: generated from the schema and captured sub-values
                   value:
                     message: Sample text for the API example.
-  /events/registrations:
+  /registrations:
     get:
       tags:
-      - Registrations
-      summary: List user registrations across all events
-      description: 'Retrieve all event registrations for a specific user.
+      - Participants
+      summary: List one attendee's registrations across all events (organizer)
+      description: |
+        All registrations of one attendee, newest event first, with the event's code, title and
+        date. Used by the organizer's user detail page (participation history).
 
-        Used by user detail page to show participation history.
+        `filter` is required and names the attendee: `{"attendeeUsername":"anna.muster"}`
+        (JSON:API-style vocabulary, ADR-013 §3). A missing filter, another field or another
+        operator answers `400`. Story 4.10b moved this list from `GET /events/registrations` (a
+        literal under `/events` that shared the namespace of `{eventCode}`) and the username from a
+        header into the filter.
 
-
-        **Story**: BAT-15 - Integration - Participant Batch Import
-
-        **Security**: Requires authentication
-
-
-
-        **Security**: ORGANIZER role required; any other role gets 403.'
+        **Security**: ORGANIZER role required; any other role gets 403.
       operationId: listUserRegistrations
       security:
       - BearerAuth: []
       parameters:
-      - name: X-Attendee-Username
-        in: header
-        description: Username to filter registrations (passed as header to avoid sensitive data in URL)
+      - name: filter
+        in: query
         required: true
+        description: 'JSON filter naming the attendee, `{"attendeeUsername":"<username>"}`.'
         schema:
           type: string
-          example: a.roethlisberger
+          example: '{"attendeeUsername":"anna.muster"}'
+      - name: page
+        in: query
+        description: Page number, 1-indexed.
+        schema:
+          type: integer
+          minimum: 1
+          default: 1
+      - name: limit
+        in: query
+        description: Items per page.
+        schema:
+          type: integer
+          minimum: 1
+          default: 25
+          maximum: 100
       responses:
         '403':
           description: Forbidden (ORGANIZER role required)
         '200':
-          description: User registrations retrieved successfully
+          description: The attendee's registrations, newest event first
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Registration'
-              example:
-              - registrationCode: BATbern142-reg-K7M2Q9
-                eventCode: BATbern34
-                attendeeUsername: anna.muster
-                eventTitle: Cloud Native Architecture
-                eventDate: '2023-03-15T18:00:00Z'
-                status: ATTENDED
-                registrationDate: '2023-02-01T10:30:00Z'
-                attendeeCompany: null
-                attendeeEmail: null
-                attendeeFirstName: null
-                attendeeLastName: null
-                createdAt: null
-                updatedAt: null
-                waitlistPosition: null
-              - registrationCode: BATbern142-reg-P4T8W1
-                eventCode: BATbern36
-                attendeeUsername: anna.muster
-                eventTitle: Microservices Patterns
-                eventDate: '2023-05-20T18:00:00Z'
-                status: ATTENDED
-                registrationDate: '2023-04-10T14:20:00Z'
-                attendeeCompany: null
-                attendeeEmail: null
-                attendeeFirstName: null
-                attendeeLastName: null
-                createdAt: null
-                updatedAt: null
-                waitlistPosition: null
+                $ref: '#/components/schemas/RegistrationPage'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    data:
+                    - registrationCode: BATbern142-reg-K7M2Q9
+                      eventCode: BATbern36
+                      attendeeUsername: anna.muster
+                      eventTitle: Microservices Patterns
+                      eventDate: '2023-05-20T18:00:00Z'
+                      status: ATTENDED
+                      registrationDate: '2023-04-10T14:20:00Z'
+                      attendeeCompany: null
+                      attendeeEmail: null
+                      attendeeFirstName: null
+                      attendeeLastName: null
+                      createdAt: null
+                      updatedAt: null
+                      waitlistPosition: null
+                    - registrationCode: BATbern142-reg-P4T8W1
+                      eventCode: BATbern34
+                      attendeeUsername: anna.muster
+                      eventTitle: Cloud Native Architecture
+                      eventDate: '2023-03-15T18:00:00Z'
+                      status: ATTENDED
+                      registrationDate: '2023-02-01T10:30:00Z'
+                      attendeeCompany: null
+                      attendeeEmail: null
+                      attendeeFirstName: null
+                      attendeeLastName: null
+                      createdAt: null
+                      updatedAt: null
+                      waitlistPosition: null
+                    pagination:
+                      page: 1
+                      limit: 25
+                      totalItems: 2
+                      totalPages: 1
+                      hasNext: false
+                      hasPrev: false
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '500':
@@ -1409,6 +1434,19 @@ components:
           items:
             type: string
             example: alice@example.com
+    RegistrationPage:
+      type: object
+      description: A page of registrations (ADR-013 §6 pagination).
+      required:
+      - data
+      - pagination
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Registration'
+        pagination:
+          $ref: ./_shared.openapi.yml#/components/schemas/PaginationMetadata
     Registration:
       type: object
       description: 'A registration as EMS returns it (`RegistrationResponse`): the registration, its
@@ -1449,12 +1487,12 @@ components:
         eventTitle:
           type: string
           nullable: true
-          description: Event title. Set by `listUserRegistrations`; null elsewhere.
+          description: Event title. Set by `listUserRegistrations` (`GET /registrations`); null elsewhere.
         eventDate:
           type: string
           format: date-time
           nullable: true
-          description: Event date. Set by `listUserRegistrations`; null elsewhere.
+          description: Event date. Set by `listUserRegistrations` (`GET /registrations`); null elsewhere.
         attendeeUsername:
           type: string
           pattern: ^[a-z]+\.[a-z]+(\.[0-9]+)?$

@@ -91,6 +91,7 @@ public class DomainRouter {
                 || cleanPath.startsWith("/api/v1/ai") // Story 10.16: AI content generation
                 || cleanPath.equals("/api/v1/public/settings/features") // Story 10.16: Feature flags
                 || cleanPath.equals("/api/v1/public/settings/presentation") // Story 4.9: moved from CUMS
+                || cleanPath.equals("/api/v1/public/event-photos") // Story 4.10b: homepage photo strip
                 || cleanPath.equals("/api/v1/public/events") // Public Events read model (website)
                 || cleanPath.startsWith("/api/v1/public/events/")) {
             return "event-management-service";
