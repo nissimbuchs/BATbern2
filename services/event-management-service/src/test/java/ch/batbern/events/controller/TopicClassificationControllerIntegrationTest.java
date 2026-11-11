@@ -82,6 +82,14 @@ class TopicClassificationControllerIntegrationTest extends AbstractIntegrationTe
     }
 
     @Test
+    @DisplayName("null title: 400, not 500")
+    @WithMockUser(username = "test.organizer", roles = {"ORGANIZER"})
+    void should_return400_when_titleNull() throws Exception {
+        classify("{\"topics\": [null]}").andExpect(status().isBadRequest());
+        classify("{\"topics\": [\"Zero Trust\", null]}").andExpect(status().isBadRequest());
+    }
+
+    @Test
     @DisplayName("more than 500 titles: 400")
     @WithMockUser(username = "test.organizer", roles = {"ORGANIZER"})
     void should_return400_when_overMaxItems() throws Exception {

@@ -46,7 +46,11 @@ describe('blobTopicService.classifyTopics', () => {
     const result = await blobTopicService.classifyTopics(titles);
 
     const calls = api.calls('classifyTopics');
-    expect(calls.map((c) => c.body?.topics.length)).toEqual([MAX_CLASSIFY_TITLES, 1]);
+    // The chunks go out concurrently, so their recorded order is not fixed; the result order is.
+    expect(calls.map((c) => c.body?.topics.length).sort((a, b) => (a ?? 0) - (b ?? 0))).toEqual([
+      1,
+      MAX_CLASSIFY_TITLES,
+    ]);
     expect(result.map((c) => c.topic)).toEqual(titles);
   });
 

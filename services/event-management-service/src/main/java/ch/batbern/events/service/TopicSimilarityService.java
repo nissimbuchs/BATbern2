@@ -59,11 +59,12 @@ public class TopicSimilarityService {
      *
      * @param titles titles to classify; the spec bounds the count and the length
      * @return one classification per title, in the same order
-     * @throws ValidationException when a title is blank (the spec's {@code minLength} lets "   " through)
+     * @throws ValidationException when a title is null or blank ({@code @Size} lets null elements and
+     *     the spec's {@code minLength} lets "   " through)
      */
     public List<TopicClassification> classifyAll(List<String> titles) {
-        if (titles.stream().anyMatch(String::isBlank)) {
-            throw new ValidationException("topics", "A topic title must not be blank");
+        if (titles.stream().anyMatch(title -> title == null || title.isBlank())) {
+            throw new ValidationException("topics", "A topic title must not be null or blank");
         }
         return titles.stream()
                 .map(title -> {
