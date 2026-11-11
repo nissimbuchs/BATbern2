@@ -47,7 +47,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 /**
  * Provider half of the S2S contract (Stories 17.0b1, 17.0b2): every {@code /internal} operation in
- * {@code docs/api/internal/ems-internal.openapi.yml} runs through the real controller and must match
+ * {@code docs/api/internal/ems-internal.openapi.yml}, except the operations tagged {@code contract},
+ * which their implementers test, runs through the real controller and must match
  * the spec its consumers' contract tests answer from; the spec examples must match the same schema.
  * Callers: PCS {@code HttpOutboundMailRecorder} and {@code EventManagementClientImpl} (event
  * schedule since the 17.0 deferred work, attendance summary since Epic 17 6b). EMS serves no public

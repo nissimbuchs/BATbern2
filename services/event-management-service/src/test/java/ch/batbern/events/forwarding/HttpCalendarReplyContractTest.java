@@ -99,7 +99,24 @@ class HttpCalendarReplyContractTest {
         assertThatCode(() -> contract.replied(new Reply(MEETING, "anna.meier@example.com", "DECLINED")))
                 .doesNotThrowAnyException();
 
+        implementer.verify();
         assertThat(failures()).isEqualTo(1.0);
+    }
+
+    @Test
+    @DisplayName("no implementer configured: nothing sent, no exception, not counted")
+    void should_sendNothing_when_noImplementerIsConfigured() {
+        RestTemplate restTemplate = new RestTemplateBuilder().build();
+        try (ContractServer none = ContractServer.bindTo(restTemplate, EMS_INTERNAL)) {
+            SimpleMeterRegistry registry = new SimpleMeterRegistry();
+            HttpCalendarReplyContract unconfigured = new HttpCalendarReplyContract(restTemplate, List.of(), registry);
+
+            assertThatCode(() -> unconfigured.replied(new Reply(MEETING, "anna.meier@example.com", "ACCEPTED")))
+                    .doesNotThrowAnyException();
+
+            none.verify();
+            assertThat(registry.counter(HttpCalendarReplyContract.FAILURES).count()).isZero();
+        }
     }
 
     @Test

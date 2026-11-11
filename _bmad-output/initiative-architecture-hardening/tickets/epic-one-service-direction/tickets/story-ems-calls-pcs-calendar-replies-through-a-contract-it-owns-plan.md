@@ -3,14 +3,14 @@ title: 'EMS calls PCS calendar replies through a contract it owns'
 type: 'refactor'
 ticket: '8b'
 created: '2026-11-11'
-status: 'built'
+status: 'in-review'
 baseline_revision: '29c260f314d16c9c4d6f35a7c4bd0ac4853e3b1a'
 route: 'full'
 route_source: 'auto'
 risk: 'medium'
-review: ''
-review_source: ''
-lenses_ran: []
+review: 'quick'
+review_source: 'pinned'
+lenses_ran: ['quick']
 review_loop_iteration: 0
 context:
   - '{project-root}/docs/architecture/ADR-016-service-directions-and-service-to-service-calls.md'
@@ -83,6 +83,21 @@ Built 2026-11-11 on `feature/17-7b-user-reference-contract`, committed locally, 
 - **Module scripts** (before = baseline `29c260f3` + nothing, after = this build): deps mail 119 → 121, platform 33 → 31, mail → platform refs 15 → 14; target mail_center 96 → 98, platform 33 → 31; edges 52 / 27 / 91 unchanged. (The plan's "mail 120" was measured on `820c6803`; today's baseline already read 119/96.)
 - **Verification (2026-11-11).** EMS suite 2777 tests, 0 failures (15 skipped); PCS 288, 0 failures; gateway 338, 0 failures; shared-kernel `ContractServerTest` 34 green (pcs-internal now has no operation, so its example check is empty); checkstyle main+test EMS and PCS; `lint:api-internal`, `lint:api`, `check:s2s-client-urls` (0), `check:api-paths`, `make check-test-ratchet` pass. Logs in `~/.cache/batbern-test-logs/v8b/`.
 - **Local dev (AC 1, 2), 23:04 CET.** EMS and PCS restarted on the new jars. Through `POST /dev/emails/inbound` (to `replies@`, Content-Type `text/calendar; method=REPLY`, so the production `InboundReplyProcessor` path) for meeting `92fec106…` (BATbern60) and `partner.test8b@example.com`: ACCEPTED recorded 70 ms after the post, DECLINED replaced it 20 ms after the second post; `GET /api/v1/partner-meetings/{id}/rsvps` through the gateway as organizer showed DECLINED. Unknown meeting → WARN answer=404; NEEDS-ACTION → WARN answer=400. PCS stopped: inbound answered 200, exactly one ERROR `CALENDAR_REPLY not delivered` (plus the `ContractCalls` WARN), RSVP unchanged. PCS restarted (healthy). Test RSVP row and the 5 `mail_automatic_event` CALENDAR_* rows removed. The counter's value was not read live (actuator metrics endpoint not exposed locally); it is covered by `HttpCalendarReplyContractTest`.
+
+## Review Triage Log
+
+Pass 1 (quick lens), 2026-11-11: 0 high, 0 medium, 8 low, 0 false.
+
+| # | Finding | Verdict | Route | Evidence / action |
+|---|---------|---------|-------|-------------------|
+| 1 | With a second implementer, a 404 from the first stops delivery to the next | low | reject | Verified (`postForAnswers` stops at first failure), but PCS is the only implementer; a per-implementer "not mine" rule is new design for a case that does not exist. |
+| 2 | No implementer configured still logs "recorded" | low | patch | Verified. WARN instead. |
+| 3 | PCS `PartnerMeetingRsvpController` javadoc names the removed path | low | patch | Verified L19. |
+| 4 | PCS `SecurityConfig` comment describes only the removed endpoint | low | patch | Verified L94. |
+| 5 | EMS provider test javadoc claims every ems-internal operation runs in EMS | low | patch | Verified L49-51. |
+| 6 | ADR-008 lists a write under "Service-to-service reads" | low | patch | Verified. |
+| 7 | Spec and javadoc say the call carries no JWT | low | patch | Verified: `S2sHeaders.forCurrentUser()` forwards one when present. |
+| 8 | Connection-failure test lacks `verify()` | low | patch | Verified. |
 
 ## Design Notes
 

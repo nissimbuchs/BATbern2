@@ -21,8 +21,8 @@ import java.util.Map;
 
 /**
  * Calls the calendar reply contract at every configured implementer through shared-kernel
- * {@link ContractCalls}. The inbound SQS listener has no user, so no JWT goes out (ADR-016
- * decision 3: never required).
+ * {@link ContractCalls}. No JWT required; forwarded when there is one (ADR-016 decision 3). The
+ * inbound SQS listener has none.
  *
  * <p>Never throws. 404 (the implementer has no such meeting) and 400 (a PARTSTAT it does not
  * record) are the implementer's answer to this reply and are logged as a WARN; any other failure
@@ -76,6 +76,11 @@ public class HttpCalendarReplyContract implements CalendarReplyContract {
         body.put("meetingId", reply.meetingId());
         body.put("attendeeEmail", reply.attendeeEmail());
         body.put("partStat", reply.partStat());
+        if (calls.implementers().isEmpty()) {
+            log.warn("CALENDAR_REPLY not delivered, no implementer meetingId={} partStat={}: set {}{}.implementers",
+                    reply.meetingId(), reply.partStat(), ContractCalls.PROPERTY_PREFIX, NAME);
+            return;
+        }
         try {
             calls.post(PATH, body);
             log.info("CALENDAR_REPLY recorded meetingId={} emailPrefix={} status={}", reply.meetingId(),

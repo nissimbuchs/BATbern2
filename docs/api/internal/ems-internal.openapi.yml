@@ -199,7 +199,8 @@ paths:
         DECLINED or TENTATIVE answers 400; event-management logs either as a WARN. Any other
         failure (no answer, 5xx) is logged as an ERROR and counted
         (`forwarding.calendar_reply_contract.failures`). Inbound processing never fails because of
-        this call. The call carries no JWT (the SQS listener has no user) and needs none.
+        this call. No JWT required; forwarded when there is one (ADR-016 decision 3). The SQS
+        listener has none.
       requestBody:
         required: true
         content:
