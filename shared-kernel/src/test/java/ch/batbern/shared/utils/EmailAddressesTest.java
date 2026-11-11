@@ -130,7 +130,10 @@ class EmailAddressesTest {
             }
         }
         // every request e-mail property, plus two registration responses that echo the request
-        // (17 since 4.10 removed POST /events/{eventCode}/speakers/invite and its request body)
-        assertThat(found).as("email properties carrying the rule").isEqualTo(17);
+        // (17 since 4.10 removed POST /events/{eventCode}/speakers/invite and its request body;
+        // 16 since 4.10c removed POST /events/batch_registrations: the import person of the
+        // participants create is checked per person by the service, so one bad CSV row fails
+        // alone instead of the whole request)
+        assertThat(found).as("email properties carrying the rule").isEqualTo(16);
     }
 }

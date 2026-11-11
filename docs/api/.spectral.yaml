@@ -81,7 +81,6 @@ rules:
           - confirm
           - deregister
           - download
-          - enroll-stakeholders
           - export
           - invite
           - issue-invitation-credentials

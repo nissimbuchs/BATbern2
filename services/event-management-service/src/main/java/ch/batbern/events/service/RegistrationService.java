@@ -15,6 +15,8 @@ import ch.batbern.events.dto.generated.users.GetOrCreateUserResponse;
 import ch.batbern.events.dto.generated.users.UserResponse;
 import ch.batbern.events.dto.RegistrationResponse;
 import ch.batbern.events.exception.DuplicateSubscriberException;
+import ch.batbern.events.exception.UserServiceException;
+import ch.batbern.shared.utils.EmailAddresses;
 import ch.batbern.events.exception.RegistrationCapacityExceededException;
 import ch.batbern.events.exception.DeregistrationClosedException;
 import ch.batbern.events.exception.RegistrationClosedException;
@@ -385,42 +387,91 @@ public class RegistrationService {
                 .results(results);
     }
 
+    /** Import statuses of a person (API values); the database stores them lower case. */
+    private static final Set<String> IMPORT_STATUSES = Set.of("REGISTERED", "ATTENDED", "CANCELLED");
+    private static final int MAX_NAME = 100;
+    static final String IMPORT_FAILED_REASON = "Could not register this person";
+    static final String EMAIL_LINKED_REASON =
+            "This e-mail is linked to an existing account; add that user by name instead";
+
     private ParticipantImportResult importParticipant(Event event, ParticipantImportPerson person) {
-        ParticipantImportResult result = new ParticipantImportResult().email(person.getEmail());
+        ParticipantImportResult result = new ParticipantImportResult()
+                .email(person.getEmail() != null ? person.getEmail() : "");
+        String invalid = invalidImportPerson(person);
+        if (invalid != null) {
+            return result.outcome(ParticipantImportResult.OutcomeEnum.FAILED).reason(invalid);
+        }
         try {
             GetOrCreateUserRequest userRequest = new GetOrCreateUserRequest();
             userRequest.setEmail(person.getEmail());
-            userRequest.setFirstName(person.getFirstName());
-            userRequest.setLastName(person.getLastName());
+            userRequest.setFirstName(person.getFirstName().trim());
+            userRequest.setLastName(person.getLastName().trim());
             userRequest.setCompanyId(person.getCompanyId());
             userRequest.setCognitoSync(false); // ADR-005: historical attendee, no login
-            GetOrCreateUserResponse user = userApiClient.getOrCreateUser(userRequest);
-            String username = user.getUsername();
+            GetOrCreateUserResponse created = userApiClient.getOrCreateUser(userRequest);
+            String username = created.getUsername();
             result.username(username);
 
             if (registrationRepository.existsByEventIdAndAttendeeUsername(event.getId(), username)) {
                 return result.outcome(ParticipantImportResult.OutcomeEnum.SKIPPED);
             }
 
+            // The cache fields come from the profile CUMS returned, as on every other creation path:
+            // an existing user keeps their own name, address and company.
+            UserResponse user = created.getUser();
             registrationRepository.saveAndFlush(Registration.builder()
                     .registrationCode(generateUniqueRegistrationCode(event.getEventCode()))
                     .eventId(event.getId())
                     .attendeeUsername(username)
-                    .attendeeFirstName(person.getFirstName())
-                    .attendeeLastName(person.getLastName())
-                    .attendeeEmail(person.getEmail())
-                    .attendeeCompanyId(person.getCompanyId())
-                    // API enum UPPER_CASE, database lower case (coding standards)
-                    .status(person.getStatus().getValue().toLowerCase(Locale.ROOT))
+                    .attendeeFirstName(user.getFirstName())
+                    .attendeeLastName(user.getLastName())
+                    .attendeeEmail(user.getEmail())
+                    .attendeeCompanyId(user.getCompanyId())
+                    // API value UPPER_CASE, database lower case (coding standards)
+                    .status(person.getStatus().toLowerCase(Locale.ROOT))
                     .registrationDate(Instant.now())
                     .build());
             return result.outcome(ParticipantImportResult.OutcomeEnum.REGISTERED);
-        } catch (RuntimeException e) {
+        } catch (UserServiceException e) {
+            // CUMS get-or-create answers 409 only for EMAIL_LINKED_TO_ACCOUNT (cums-internal spec).
+            boolean linked = Integer.valueOf(409).equals(e.getStatusCode());
             log.warn("Participant import failed for {} on event {}: {}",
-                    LoggingUtils.maskEmail(person.getEmail()), event.getEventCode(), e.getMessage());
+                    LoggingUtils.maskEmail(person.getEmail()), event.getEventCode(), e.getMessage(), e);
             return result.outcome(ParticipantImportResult.OutcomeEnum.FAILED)
-                    .reason(e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName());
+                    .reason(linked ? EMAIL_LINKED_REASON : IMPORT_FAILED_REASON);
+        } catch (RuntimeException e) {
+            // Database or other internal errors: the details go to the log, never to the caller.
+            log.error("Participant import failed for {} on event {}",
+                    LoggingUtils.maskEmail(person.getEmail()), event.getEventCode(), e);
+            return result.outcome(ParticipantImportResult.OutcomeEnum.FAILED).reason(IMPORT_FAILED_REASON);
         }
+    }
+
+    /**
+     * The per-person rules of the import (checked here, not by the request schema, so one bad row
+     * fails alone): the one e-mail rule (#1102), names non-blank and at most 100 characters,
+     * company at most 100, status one of {@link #IMPORT_STATUSES}.
+     *
+     * @return the reason the person is refused, or {@code null} when the person is valid
+     */
+    private static String invalidImportPerson(ParticipantImportPerson person) {
+        if (person.getEmail() == null || !EmailAddresses.isAcceptable(person.getEmail())) {
+            return "Invalid e-mail address";
+        }
+        if (isBlankOrLong(person.getFirstName()) || isBlankOrLong(person.getLastName())) {
+            return "First and last name are required (at most " + MAX_NAME + " characters)";
+        }
+        if (person.getCompanyId() != null && person.getCompanyId().length() > MAX_NAME) {
+            return "Company is longer than " + MAX_NAME + " characters";
+        }
+        if (person.getStatus() == null || !IMPORT_STATUSES.contains(person.getStatus())) {
+            return "Status must be REGISTERED, ATTENDED or CANCELLED";
+        }
+        return null;
+    }
+
+    private static boolean isBlankOrLong(String value) {
+        return value == null || value.isBlank() || value.length() > MAX_NAME;
     }
 
     /**

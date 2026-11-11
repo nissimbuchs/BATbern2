@@ -474,7 +474,20 @@ class ParticipantsControllerIntegrationTest extends AbstractIntegrationTest {
                          "message": "This email is linked to an existing account, please sign in",
                          "severity": "LOW"}""");
             }
+            if (email.startsWith("broken.")) {
+                // A CUMS failure other than the linked address: the caller gets a generic reason.
+                return new Reply(HttpStatus.BAD_REQUEST, """
+                        {"timestamp": "2026-11-08T10:00:00Z", "path": "/internal/users/get-or-create",
+                         "status": 400, "error": "Bad Request", "message": "internal detail: column x violates y",
+                         "severity": "LOW"}""");
+            }
             String username = email.substring(0, email.indexOf('@')).toLowerCase(Locale.ROOT);
+            if (username.equals("hugo.muster")) {
+                // An existing user: CUMS answers their own profile, which the registration copies.
+                return Reply.ok("{\"username\": \"hugo.muster\", \"created\": false, \"companyUpdated\": false, "
+                        + "\"cognitoUserId\": null, \"user\": " + CumsContractHarness.userJson("hugo.muster",
+                        "Hugo", "Muster-Profil", "hugo.profil@example.com", "profilag") + "}");
+            }
             return Reply.ok(getOrCreateReply(username, body));
         });
         seedRegistration("ines.muster", "attended"); // already there → skipped
@@ -489,7 +502,15 @@ class ParticipantsControllerIntegrationTest extends AbstractIntegrationTest {
                   {"email": "ines.muster@example.com", "firstName": "Ines", "lastName": "Muster",
                    "status": "ATTENDED"},
                   {"email": "otto.cancel@example.com", "firstName": "Otto", "lastName": "Cancel",
-                   "status": "CANCELLED"}
+                   "status": "CANCELLED"},
+                  {"email": "blank.name@example.com", "firstName": " ", "lastName": "Blank",
+                   "status": "ATTENDED"},
+                  {"email": "not-an-email", "firstName": "No", "lastName": "Mail", "status": "ATTENDED"},
+                  {"email": "jürg@example.ch", "firstName": "Jürg", "lastName": "Umlaut", "status": "ATTENDED"},
+                  {"email": "wait.list@example.com", "firstName": "Wait", "lastName": "List",
+                   "status": "WAITLIST"},
+                  {"email": "broken.cums@example.com", "firstName": "Broken", "lastName": "Cums",
+                   "status": "ATTENDED"}
                 ]}""";
         mockMvc.perform(post("/api/v1/events/{eventCode}/participants", EVENT_CODE)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -497,24 +518,42 @@ class ParticipantsControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.enrolled").value(2))
                 .andExpect(jsonPath("$.skipped").value(1))
-                .andExpect(jsonPath("$.failed").value(1))
+                .andExpect(jsonPath("$.failed").value(6))
                 .andExpect(jsonPath("$.registrationCode").doesNotExist())
                 .andExpect(jsonPath("$.results[0].outcome").value("REGISTERED"))
                 .andExpect(jsonPath("$.results[0].username").value("hugo.muster"))
                 .andExpect(jsonPath("$.results[1].outcome").value("FAILED"))
                 .andExpect(jsonPath("$.results[1].email").value("linked.person@example.com"))
-                .andExpect(jsonPath("$.results[1].reason").isNotEmpty())
+                .andExpect(jsonPath("$.results[1].reason").value(
+                        "This e-mail is linked to an existing account; add that user by name instead"))
                 .andExpect(jsonPath("$.results[1].username").doesNotExist())
                 .andExpect(jsonPath("$.results[2].outcome").value("SKIPPED"))
-                .andExpect(jsonPath("$.results[3].outcome").value("REGISTERED"));
+                .andExpect(jsonPath("$.results[3].outcome").value("REGISTERED"))
+                // Invalid people fail alone, with the rule as reason; the valid ones above stay.
+                .andExpect(jsonPath("$.results[4].outcome").value("FAILED"))
+                .andExpect(jsonPath("$.results[4].reason").value(
+                        "First and last name are required (at most 100 characters)"))
+                .andExpect(jsonPath("$.results[5].outcome").value("FAILED"))
+                .andExpect(jsonPath("$.results[5].reason").value("Invalid e-mail address"))
+                .andExpect(jsonPath("$.results[6].reason").value("Invalid e-mail address"))
+                .andExpect(jsonPath("$.results[7].reason").value(
+                        "Status must be REGISTERED, ATTENDED or CANCELLED"))
+                // Any other failure: a generic reason, the details stay in the log.
+                .andExpect(jsonPath("$.results[8].outcome").value("FAILED"))
+                .andExpect(jsonPath("$.results[8].reason").value("Could not register this person"));
 
+        // Invalid people never reach CUMS.
         assertThat(getOrCreateEmails).containsExactly("hugo.muster@example.com", "linked.person@example.com",
-                "ines.muster@example.com", "otto.cancel@example.com");
+                "ines.muster@example.com", "otto.cancel@example.com", "broken.cums@example.com");
         Registration hugo = registrationRepository
                 .findByEventIdAndAttendeeUsername(event.getId(), "hugo.muster").orElseThrow();
         assertThat(hugo.getStatus()).isEqualTo("attended");
-        assertThat(hugo.getAttendeeLastName()).isEqualTo("Müster");
-        assertThat(hugo.getAttendeeCompanyId()).isEqualTo("musterag");
+        // The cache fields are the profile CUMS returned, not the CSV row (as on every creation path).
+        assertThat(hugo.getAttendeeFirstName()).isEqualTo("Hugo");
+        assertThat(hugo.getAttendeeLastName()).isEqualTo("Muster-Profil");
+        assertThat(hugo.getAttendeeEmail()).isEqualTo("hugo.profil@example.com");
+        assertThat(hugo.getAttendeeCompanyId()).isEqualTo("profilag");
+        assertThat(registrationRepository.countByEventId(event.getId())).isEqualTo(4); // control, hugo, ines, otto
         assertThat(registrationRepository.findByEventIdAndAttendeeUsername(event.getId(), "otto.cancel")
                 .orElseThrow().getStatus()).isEqualTo("cancelled");
         assertThat(registrationRepository.findByEventIdAndAttendeeUsername(event.getId(), "ines.muster")
@@ -594,8 +633,6 @@ class ParticipantsControllerIntegrationTest extends AbstractIntegrationTest {
         "{\"stakeholders\":false}",
         "{\"stakeholders\":true,\"notify\":false}",
         "{\"people\":[]}",
-        "{\"people\":[{\"email\":\"not-an-email\",\"firstName\":\"A\",\"lastName\":\"B\",\"status\":\"ATTENDED\"}]}",
-        "{\"people\":[{\"email\":\"a.b@example.com\",\"firstName\":\"A\",\"lastName\":\"B\",\"status\":\"WAITLIST\"}]}",
         "{\"username\":\"\"}"
     })
     @DisplayName("Mode error → 400, nothing stored")

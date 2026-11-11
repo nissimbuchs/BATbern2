@@ -471,28 +471,31 @@ export interface components {
       /** @description Stakeholder mode: `true` enrols every organizer and partner; `false` is a 400. */
       stakeholders?: boolean;
     };
-    /** @description One person of a historical import; the user is looked up or created by e-mail (no login). */
+    /**
+     * @description One person of a historical import; the user is looked up or created by e-mail (no login).
+     *     The rules are checked per person by the service, not by the request schema, so one CSV
+     *     row that breaks them is reported `FAILED` with a reason and the others are imported:
+     *     `email` follows the one e-mail rule (#1102: ASCII local part, any domain, at most 254
+     *     characters), `firstName` and `lastName` are non-blank and at most 100 characters,
+     *     `companyId` at most 100 characters, `status` one of `REGISTERED`, `ATTENDED`, `CANCELLED`.
+     */
     ParticipantImportPerson: {
-      /**
-       * Format: idn-email
-       * @example hugo.muster@example.com
-       */
-      email: string;
+      /** @example hugo.muster@example.com */
+      email?: string;
       /** @example Hugo */
-      firstName: string;
+      firstName?: string;
       /** @example Muster */
-      lastName: string;
+      lastName?: string;
       /**
        * @description Company identifier (company name); optional.
        * @example musterag
        */
       companyId?: string;
       /**
-       * @description The person's status at this event (`ATTENDED` for historical data).
+       * @description `REGISTERED`, `ATTENDED` or `CANCELLED` (`ATTENDED` for historical data); anything else fails that person.
        * @example ATTENDED
-       * @enum {string}
        */
-      status: 'REGISTERED' | 'ATTENDED' | 'CANCELLED';
+      status?: string;
     };
     /**
      * @description The fields of the request's mode only. Single: `registrationCode`, `status`,
@@ -522,7 +525,7 @@ export interface components {
       username?: string;
       /** @enum {string} */
       outcome: 'REGISTERED' | 'SKIPPED' | 'FAILED';
-      /** @description Why the person failed; absent otherwise */
+      /** @description Why the person failed (a rule of the person, the e-mail linked to another account, or a generic text); absent otherwise */
       reason?: string;
     };
     /**

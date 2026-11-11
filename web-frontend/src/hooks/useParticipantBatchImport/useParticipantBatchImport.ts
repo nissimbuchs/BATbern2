@@ -23,8 +23,12 @@ import type {
   ParticipantImportPerson,
 } from '../../types/participantImport.types';
 
-/** The API's limit of people per call. */
-export const PEOPLE_PER_REQUEST = 100;
+/**
+ * People per request. The server takes up to 100, but it looks each person up in CUMS one after
+ * the other, and 100 sequential CUMS calls can run past the frontend's 30 s request timeout; 20
+ * keeps a request well inside it.
+ */
+export const PEOPLE_PER_REQUEST = 20;
 
 /** One request: up to 100 people of one event, with the index of each in the candidate list. */
 interface EventChunk {

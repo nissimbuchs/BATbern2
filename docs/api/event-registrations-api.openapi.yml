@@ -1242,43 +1242,30 @@ components:
           description: 'Stakeholder mode: `true` enrols every organizer and partner; `false` is a 400.'
     ParticipantImportPerson:
       type: object
-      description: One person of a historical import; the user is looked up or created by e-mail (no login).
-      required:
-      - email
-      - firstName
-      - lastName
-      - status
+      description: |
+        One person of a historical import; the user is looked up or created by e-mail (no login).
+        The rules are checked per person by the service, not by the request schema, so one CSV
+        row that breaks them is reported `FAILED` with a reason and the others are imported:
+        `email` follows the one e-mail rule (#1102: ASCII local part, any domain, at most 254
+        characters), `firstName` and `lastName` are non-blank and at most 100 characters,
+        `companyId` at most 100 characters, `status` one of `REGISTERED`, `ATTENDED`, `CANCELLED`.
       properties:
         email:
           type: string
-          format: idn-email
-          # One email rule everywhere (#1102): ASCII local part (SES has no SMTPUTF8), any domain.
-          # Source of truth: shared-kernel EmailAddresses.OPENAPI_PATTERN.
-          pattern: '^[A-Za-z0-9!#$%&''*+/=?^_`{|}~-]+(\.[A-Za-z0-9!#$%&''*+/=?^_`{|}~-]+)*@[^\s@.]+(\.[^\s@.]+)+$'
-          maxLength: 254
           example: hugo.muster@example.com
         firstName:
           type: string
-          minLength: 1
-          maxLength: 100
           example: Hugo
         lastName:
           type: string
-          minLength: 1
-          maxLength: 100
           example: Muster
         companyId:
           type: string
-          maxLength: 100
           description: Company identifier (company name); optional.
           example: musterag
         status:
           type: string
-          enum:
-          - REGISTERED
-          - ATTENDED
-          - CANCELLED
-          description: The person's status at this event (`ATTENDED` for historical data).
+          description: '`REGISTERED`, `ATTENDED` or `CANCELLED` (`ATTENDED` for historical data); anything else fails that person.'
           example: ATTENDED
     AddParticipantsResponse:
       type: object
@@ -1332,7 +1319,7 @@ components:
           - FAILED
         reason:
           type: string
-          description: Why the person failed; absent otherwise
+          description: Why the person failed (a rule of the person, the e-mail linked to another account, or a generic text); absent otherwise
     MyRegistrationResponse:
       type: object
       description: 'Story 10.10: Minimal registration status for the authenticated user (AC1).

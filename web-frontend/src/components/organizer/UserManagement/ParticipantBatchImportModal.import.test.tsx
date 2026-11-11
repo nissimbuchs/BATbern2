@@ -36,7 +36,7 @@ describe('ParticipantBatchImportModal import', () => {
       skipped: 0,
       failed: 0,
       results: (body?.people ?? []).map((p) => ({
-        email: p.email,
+        email: p.email ?? '',
         outcome: 'REGISTERED' as const,
       })),
     }));

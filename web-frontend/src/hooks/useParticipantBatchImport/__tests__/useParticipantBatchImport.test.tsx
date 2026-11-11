@@ -3,7 +3,7 @@
  *
  * The hook regroups CSV rows (one per person) per event and sends each event's people to
  * `POST /events/{eventCode}/participants` (Story 4.10c, operationId `addParticipants`), in chunks
- * of 100, one request after the other. A person's status is aggregated over their events. It runs
+ * of 20, one request after the other. A person's status is aggregated over their events. It runs
  * with the real service and apiClient against the MSW harness (Epic 17 test fidelity), so a failed
  * request reaches the hook as the AxiosError real axios raises.
  */
@@ -38,7 +38,7 @@ const allRegistered = ({ body }: { body?: { people?: ParticipantImportPerson[] }
   skipped: 0,
   failed: 0,
   results: (body?.people ?? []).map((p): ParticipantImportResult => ({
-    email: p.email,
+    email: p.email ?? '',
     outcome: 'REGISTERED',
   })),
 });
@@ -84,9 +84,9 @@ describe('useParticipantBatchImport', () => {
     expect(result.current.isImporting).toBe(false);
   });
 
-  it('should_chunkBy100AndReportProgressPerRequest_when_eventHasMoreThan100People', async () => {
+  it('should_chunkBy20AndReportProgressPerRequest_when_eventHasMoreThan20People', async () => {
     api.on('addParticipants', allRegistered);
-    const rows = Array.from({ length: 101 }, (_, i) => row(i, ['BATbern7']));
+    const rows = Array.from({ length: 41 }, (_, i) => row(i, ['BATbern7']));
     const progress: Array<[number, number]> = [];
     const { result } = renderHook(() => useParticipantBatchImport(), { wrapper });
 
@@ -96,10 +96,11 @@ describe('useParticipantBatchImport', () => {
       );
     });
 
-    expect(api.calls('addParticipants').map((c) => c.body?.people?.length)).toEqual([100, 1]);
+    expect(api.calls('addParticipants').map((c) => c.body?.people?.length)).toEqual([20, 20, 1]);
     expect(progress).toEqual([
-      [1, 2],
-      [2, 2],
+      [1, 3],
+      [2, 3],
+      [3, 3],
     ]);
   });
 
