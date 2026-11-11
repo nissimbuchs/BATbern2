@@ -3422,6 +3422,19 @@ export interface operations {
           'application/json': components['schemas']['ErrorResponse'];
         };
       };
+      /**
+       * @description The address is on a reserved domain (RFC 2606/6761, e.g. `.invalid`) that never receives
+       *     mail, for example one stored before addresses were validated. `details.code` is
+       *     `RESERVED_DOMAIN`, `details.domain` names the domain; the address itself is not echoed.
+       */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
       500: components['responses']['InternalServerError'];
     };
   };

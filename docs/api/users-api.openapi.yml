@@ -2404,6 +2404,15 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: |
+            The address is on a reserved domain (RFC 2606/6761, e.g. `.invalid`) that never receives
+            mail, for example one stored before addresses were validated. `details.code` is
+            `RESERVED_DOMAIN`, `details.domain` names the domain; the address itself is not echoed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '500':
           $ref: '#/components/responses/InternalServerError'
       security:

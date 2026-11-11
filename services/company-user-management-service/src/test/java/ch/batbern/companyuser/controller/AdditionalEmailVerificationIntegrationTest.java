@@ -394,6 +394,23 @@ class AdditionalEmailVerificationIntegrationTest extends AbstractIntegrationTest
         assertThat(sesRecorder.mails()).isEmpty();
     }
 
+    @Test
+    @WithMockUser(username = "john.doe")
+    @DisplayName("resend to a reserved-domain address: 422 RESERVED_DOMAIN naming the domain only, no mail")
+    void should_return422_when_resendToReservedDomain() throws Exception {
+        // a row stored before the address was validated; the mail wall refuses it at send time
+        UserAdditionalEmail row = persistAdditional(caller, "old.box@legacy.invalid", null);
+
+        mockMvc.perform(post(resendPath(row.getId())))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.details.code").value("RESERVED_DOMAIN"))
+                .andExpect(jsonPath("$.details.domain").value("legacy.invalid"))
+                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.not(
+                        org.hamcrest.Matchers.containsString("old.box"))));
+
+        assertThat(sesRecorder.mails()).isEmpty();
+    }
+
     // ---------------------- helpers ----------------------
 
     private UserAdditionalEmail persistAdditional(User owner, String email, Instant verifiedAt) {

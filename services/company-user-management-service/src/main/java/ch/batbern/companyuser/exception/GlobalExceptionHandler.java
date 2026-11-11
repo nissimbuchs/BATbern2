@@ -3,6 +3,7 @@ package ch.batbern.companyuser.exception;
 import ch.batbern.shared.dto.ErrorResponse;
 import ch.batbern.shared.exception.ClientErrorClassifier;
 import ch.batbern.shared.exception.ValidationException;
+import ch.batbern.shared.service.ReservedEmailRecipientException;
 import ch.batbern.shared.util.CorrelationIdGenerator;
 import ch.batbern.shared.utils.LoggingUtils;
 import jakarta.servlet.http.HttpServletRequest;
@@ -202,6 +203,36 @@ public class GlobalExceptionHandler {
                 .severity("LOW")
                 .build();
         return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+    }
+
+    /**
+     * A mail to a recipient on a reserved domain (RFC 2606/6761, e.g. {@code .invalid}) is refused by
+     * the mail wall, for example the resend of a verification link to an additional address stored
+     * before addresses were validated (422, as the EMS mail center answers it). Names the domain
+     * only: the full address stays out of the answer and the logs.
+     */
+    @ExceptionHandler(ReservedEmailRecipientException.class)
+    public ResponseEntity<ErrorResponse> handleReservedEmailRecipientException(
+            ReservedEmailRecipientException ex,
+            HttpServletRequest request) {
+        String recipient = ex.getRecipient() == null ? "" : ex.getRecipient();
+        String domain = recipient.substring(recipient.lastIndexOf('@') + 1);
+        log.warn("Mail refused, recipient on reserved domain {}", domain);
+        Map<String, Object> details = new HashMap<>();
+        details.put("code", "RESERVED_DOMAIN");
+        details.put("domain", domain);
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .path(request.getRequestURI())
+                .status(HttpStatus.UNPROCESSABLE_ENTITY.value())
+                .error("Unprocessable Entity")
+                .message("A recipient is on the reserved domain " + domain + ", which never receives mail."
+                        + " Correct the address and send again.")
+                .correlationId(CorrelationIdGenerator.current())
+                .severity("LOW")
+                .details(details)
+                .build();
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(error);
     }
 
     /**
