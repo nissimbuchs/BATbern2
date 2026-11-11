@@ -228,13 +228,19 @@ class MailCenterRequestFeedIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @DisplayName("a request whose requester profile is gone is not delivered")
-    void missingRequester_isSkipped() throws Exception {
-        UUID id = merge("OPEN", null);
+    @DisplayName("a decided request whose requester profile is gone is still delivered, without name and address")
+    void missingRequester_isDeliveredWithoutAddress() throws Exception {
+        UUID id = merge("APPROVED", "orga.nizer");
         jdbc.update("UPDATE profile_merge_requests SET requester_username = 'gone.person' WHERE id = ?", id);
 
-        assertThat(page(since("2000-01-01T00:00:00Z"), 200).path("items").findValuesAsText("requestId"))
-                .doesNotContain(id.toString());
+        List<JsonNode> items = mine(page(since("2000-01-01T00:00:00Z"), 200), id);
+
+        assertThat(items).singleElement().satisfies(i -> {
+            assertThat(i.path("status").asText()).isEqualTo("APPROVED");
+            assertThat(i.path("decidedBy").asText()).isEqualTo("orga.nizer");
+            assertThat(i.path("requesterEmail").isNull()).isTrue();
+            assertThat(i.path("requesterName").isNull()).isTrue();
+        });
     }
 
     @Test

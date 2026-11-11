@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Epic 17 entry 7: reads company-user-management's change feed of merge and logo requests,
+ * Reads company-user-management's change feed of merge and logo requests,
  * {@code GET /internal/mail-center-requests} ({@code docs/api/internal/cums-internal.openapi.yml}).
  * In the mail center module, not in {@code client/}, because only the Mail Center uses it.
  * Headers from {@link S2sHeaders}: the job runs without a user, so no JWT is sent. A failed call

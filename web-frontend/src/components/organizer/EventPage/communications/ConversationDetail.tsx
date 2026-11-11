@@ -93,6 +93,12 @@ export const ConversationDetail: React.FC<ConversationDetailProps> = ({ conversa
     setToggled(Object.fromEntries(newestFirst.map(({ message }) => [message.mailKey, true])));
   const save = (change: Parameters<typeof patch.mutate>[0]['patch']) =>
     patch.mutate({ key: conversationKey, patch: change });
+  // Epic 17 entry 7: the decision closes the conversation at once; the request feed would close
+  // it only on its next poll, and until then the lists would still show it open.
+  const decided = () => {
+    save({ status: 'DONE' });
+    void query.refetch();
+  };
   // Story 16.6: same flow as the session materials: fetch a presigned URL, open it in a new tab.
   const download = async (mailKey: string, index: number) => {
     setDownloadFailed(false);
@@ -108,17 +114,11 @@ export const ConversationDetail: React.FC<ConversationDetailProps> = ({ conversa
     <Stack spacing={2} data-testid="conversation-detail">
       {/* #1237: a profile merge request is decided here */}
       {conversation.mergeRequestId && (
-        <ProfileMergeRequestPanel
-          requestId={conversation.mergeRequestId}
-          onDecided={() => void query.refetch()}
-        />
+        <ProfileMergeRequestPanel requestId={conversation.mergeRequestId} onDecided={decided} />
       )}
       {/* #1246: a company logo request is decided here */}
       {conversation.logoRequestId && (
-        <CompanyLogoRequestPanel
-          requestId={conversation.logoRequestId}
-          onDecided={() => void query.refetch()}
-        />
+        <CompanyLogoRequestPanel requestId={conversation.logoRequestId} onDecided={decided} />
       )}
       <Stack
         direction={{ xs: 'column', sm: 'row' }}

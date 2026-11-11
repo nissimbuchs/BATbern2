@@ -15,6 +15,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
@@ -27,6 +29,7 @@ import org.springframework.web.client.HttpServerErrorException;
 
 import java.nio.charset.StandardCharsets;
 import java.sql.Timestamp;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -170,6 +173,66 @@ class MailCenterRequestFeedJobIntegrationTest extends AbstractIntegrationTest {
                 .containsEntry("counterpart_address", "juerg.brunner@bücherstube.example");
     }
 
+    @ParameterizedTest(name = "requester replied after the decision: {0}")
+    @ValueSource(booleans = {true, false})
+    @DisplayName("a decision read again closes a reopened conversation only when no mail came in after it")
+    void redeliveredDecision_keepsARequesterReplyOpen(boolean replied) {
+        pages.put("", page("c1", item("MERGE", MERGE, "OPEN", null, null)));
+        job.pull();
+        Map<String, Object> decided = item("MERGE", MERGE, "APPROVED", "orga.nizer", null);
+        pages.put("c1", page("c2", decided));
+        job.pull();
+        assertThat(conversation(MERGE, "merge_request_id")).containsEntry("status", "DONE");
+        // Reopened: by a reply of the requester after the decision (as InboundMailStore does it),
+        // or, as the control, by hand without any new mail.
+        jdbc.update("UPDATE mail_conversation SET status = 'OPEN'"
+                + (replied ? ", last_inbound_at = now() + interval '1 second'" : "")
+                + " WHERE merge_request_id = ?", MERGE);
+        jdbc.update("DELETE FROM feed_cursors WHERE feed = ?", MailCenterRequestFeedJob.FEED);
+        pages.put("", page("c2", decided));
+
+        job.pull();
+
+        assertThat(conversation(MERGE, "merge_request_id")).containsEntry("status", replied ? "OPEN" : "DONE");
+    }
+
+    @Test
+    @DisplayName("requester profile gone: nothing is opened, but the decision still closes the conversation")
+    void withoutAddress_opensNothing_butCloses() {
+        Map<String, Object> logo = item("LOGO", LOGO, "OPEN", null, null);
+        logo.put("requesterEmail", null);
+        logo.put("requesterName", null);
+        pages.put("", page("c1", item("MERGE", MERGE, "OPEN", null, null), logo));
+        job.pull();
+        assertThat(count("logo_request_id", LOGO)).isZero();
+        Map<String, Object> decided = item("MERGE", MERGE, "DECLINED", "orga.nizer", null);
+        decided.put("requesterEmail", null);
+        decided.put("requesterName", null);
+        pages.put("c1", page("c2", decided));
+
+        job.pull();
+
+        assertThat(conversation(MERGE, "merge_request_id")).containsEntry("status", "DONE");
+    }
+
+    @Test
+    @DisplayName("a conversation stored but never linked to its request (crash between the steps) is linked")
+    void unlinkedConversation_isLinkedOnTheNextOpen() {
+        pages.put("", page("c1", item("MERGE", MERGE, "OPEN", null, null)));
+        job.pull();
+        String key = jdbc.queryForObject("SELECT conversation_key FROM mail_conversation WHERE merge_request_id = ?",
+                String.class, MERGE);
+        jdbc.update("UPDATE mail_conversation SET merge_request_id = NULL WHERE conversation_key = ?", key);
+        jdbc.update("DELETE FROM feed_cursors WHERE feed = ?", MailCenterRequestFeedJob.FEED);
+
+        job.pull();
+
+        assertThat(jdbc.queryForObject("SELECT conversation_key FROM mail_conversation WHERE merge_request_id = ?",
+                String.class, MERGE)).isEqualTo(key);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM mail_message WHERE send_group_id = ?", Integer.class,
+                RequestConversations.Kind.MERGE.groupId(MERGE))).isEqualTo(1);
+    }
+
     // ------------------------------------------------------------------ cursor
 
     @Test
@@ -265,7 +328,7 @@ class MailCenterRequestFeedJobIntegrationTest extends AbstractIntegrationTest {
                 : "Neues Logo für ACME AG: Anna Muster");
         item.put("note", note);
         item.put("decidedBy", decidedBy);
-        item.put("changedAt", "2026-11-11T10:00:00.123456Z");
+        item.put("changedAt", Instant.now().toString());
         return item;
     }
 

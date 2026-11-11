@@ -702,9 +702,13 @@ the EMS Mail Center. EMS pulls them (ADR-016 decision 4), CUMS never calls EMS f
   is open): open requests arrive, decided history does not.
 - **Job.** EMS `MailCenterRequestFeedJob` (cron `batbern.mail-center-request-feed.cron`, default every
   minute, ShedLock, off in tests) pages until a page is not full and calls `RequestConversations`:
-  open for every item (idempotent, finds the conversation by request id), then close for a decided
-  one with `updated_by` = `decidedBy`. A request decided before any poll saw it is opened, then
-  closed, so the record stays. The cursor (`feed_cursors`, EMS V153) is saved after each page. A
+  open when the request has no conversation yet and an address is known (a request whose requester
+  profile is gone comes with name and address null), then close for a decided one with
+  `updated_by` = `decidedBy`. A conversation that existed before the pass closes only when no mail
+  came in after the decision (`last_inbound_at <= changedAt`): a requester's answer reopened it, and
+  a decision read again (replay, first poll) must not close it. A request decided before any poll
+  saw it is opened, then closed, so the record stays. Deciding in the Mail Center sets the
+  conversation DONE at once (`PATCH /conversations/{key}`); the feed only catches up. The cursor (`feed_cursors`, EMS V153) is saved after each page. A
   failure (CUMS down, a bad item) stops the run with the cursor unchanged, logs
   `MAIL_CENTER_REQUEST_FEED failed` at ERROR and counts `mailcenter.request_feed.failures`; the next
   poll retries. The job sends no mail. Delay: up to one minute plus the settle window.

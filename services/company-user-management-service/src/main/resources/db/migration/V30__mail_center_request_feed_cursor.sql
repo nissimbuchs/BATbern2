@@ -1,5 +1,5 @@
 -- V30__mail_center_request_feed_cursor.sql
--- Epic 17 entry 7 (ADR-016 decision 4): event-management pulls merge and logo requests from
+-- ADR-016 decision 4: event-management pulls merge and logo requests from
 -- GET /internal/mail-center-requests instead of CUMS pushing them. The feed is ordered by a change
 -- cursor (changed_at, id). changed_at is the time the row was created or last changed its status
 -- or decision; the trigger sets it, so no code path can forget it. V23 and V25 stay untouched.

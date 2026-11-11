@@ -3,14 +3,14 @@ title: 'EMS pulls Mail Center requests from CUMS'
 type: 'refactor'
 ticket: '7'
 created: '2026-11-11'
-status: 'in-progress'
+status: 'in-review'
 baseline_revision: '9d10da27cb011b4a8604cb0c016cd11080483ca8'
 route: 'full'
 route_source: 'auto'
 risk: 'high'
-review: ''
-review_source: ''
-lenses_ran: []
+review: 'quick'
+review_source: 'pinned'
+lenses_ran: ['quick']
 review_loop_iteration: 0
 context: ['{project-root}/docs/architecture/ADR-016-service-directions-and-service-to-service-calls.md']
 ---
@@ -94,10 +94,23 @@ Built 2026-11-11 on `feature/17-3-7-mailcenter-request-feed`, no commit, no push
 - **Module scripts** (`ems-module-deps.py`, `ems-module-target.py`), before and after: mail center 96 → 97 classes (controller out, client and job in), violating edges 27 / refs 91 unchanged, mail-center outgoing edges unchanged. CUMS archunit store 4 → 2 lines (the user-merge pair).
 - **Extra docs:** user guide `event-mail.md` (delay of about 1.5 min), changelog entry, doc-drift mapping for `mailcenter/MailCenterRequestFeed*`.
 - **Ratchet:** `be-mock-s2s-client` fell by 2 (CUMS request ITs), baseline updated.
+- **Review fixes (2026-11-11):** a decision read again closes an existing conversation only when `last_inbound_at <= changedAt` (a requester's reply keeps it open; one opened in the same pass closes regardless); the feed LEFT JOINs the profile and sends name/address null when it is gone (EMS then opens nothing but still closes); a dedicated `InvalidLimitException` instead of mapping every `IllegalArgumentException` to 400; `RequestConversations.open` links a stored but unlinked conversation by its group id; deciding in the Mail Center PATCHes the conversation DONE at once (`ConversationDetail`, MSW test); users-api approve/decline texts say who closes the conversation.
 
 ## Plan Change Log
 
 ## Review Triage Log
+
+Pass 1 (quick lens), 2026-11-11: 0 high, 3 medium, 4 low, 0 false.
+
+| # | Finding | Verdict | Route | Evidence / action |
+|---|---------|---------|-------|-------------------|
+| 1 | A re-delivered decided item closes a conversation the requester reopened by replying | medium | patch | Verified: `InboundMailStore.conversationFor` L166 sets OPEN on a new inbound mail; `close` sets DONE whenever status is not DONE. The first production poll starts at the oldest OPEN request and re-delivers every decision after it. Fix: close only when no inbound mail arrived after the decision (`last_inbound_at <= changedAt`), except for a conversation opened in the same pass. |
+| 2 | Inner join on `user_profiles` drops decided rows of a deleted requester, so the close is lost | medium | patch | Verified: FEED joins `user_profiles` for every row; nothing rewrites `requester_username` on delete or merge. Fix: LEFT JOIN, deliver every row, requester name/email nullable in the spec; EMS opens only with an address and always applies the close. |
+| 3 | Every `IllegalArgumentException` in the controller becomes 400 | low | patch | Verified: handler lists `IllegalArgumentException`; only `limit` is intended. Direct correction: a dedicated exception for the limit. |
+| 4 | `RequestConversations.open` is not atomic: a crash between store and link leaves an unlinked conversation that every later poll fails to link | low | patch | Verified at L77-84: the duplicate branch returns `keyOf`, which stays null. Pre-existing, but the job retries routinely; owner rule "fix what you find". Fix: in the duplicate branch, link the conversation found by its group id. |
+| 5 | users-api approve/decline descriptions (L1235, L1551) still say the conversation is closed at once | low | patch | Verified. Align text with the pull (closed by the Mail Center, see 6). |
+| 6 | After a decision in the Mail Center the conversation stays OPEN in the lists until the next poll | medium | patch | Verified: `ProfileMergeRequestPanel`/`CompanyLogoRequestPanel` `settle` only refetches; `ConversationDetail` L113/L120 `onDecided` only refetches. The existing conversation PATCH (`save({status})`, L136) can set DONE right away; the feed close stays the backstop for decisions made elsewhere. |
+| 7 | ACs 1-3 have no recorded local-dev evidence | low | (verification) | Verified. Not a code fix: run after the patches, recorded in Implementation Notes. |
 
 ## Design Notes
 

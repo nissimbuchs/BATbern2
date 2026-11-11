@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.time.Instant;
 
 /**
- * Epic 17 entry 7: the change feed of merge and logo requests, pulled by event-management's Mail
+ * The change feed of merge and logo requests, pulled by event-management's Mail
  * Center every minute ({@link MailCenterRequestFeedService}). Same reachability as
  * {@link InternalUserController}: VPC only, the gateway denies {@code /internal/**}; a forwarded JWT
  * is optional and never changes the answer. A read, so it records nobody.
@@ -32,7 +32,10 @@ public class InternalMailCenterRequestController {
         return ResponseEntity.ok(feed.page(since, limit));
     }
 
-    @ExceptionHandler({MailCenterRequestFeedService.InvalidCursorException.class, IllegalArgumentException.class})
+    @ExceptionHandler({
+        MailCenterRequestFeedService.InvalidCursorException.class,
+        MailCenterRequestFeedService.InvalidLimitException.class
+    })
     public ResponseEntity<ErrorResponse> badRequest(RuntimeException e, HttpServletRequest request) {
         HttpStatus status = HttpStatus.BAD_REQUEST;
         return ResponseEntity.status(status).body(ErrorResponse.builder()

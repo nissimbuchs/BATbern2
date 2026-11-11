@@ -18,7 +18,7 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Epic 17 entry 7 (ADR-016 decision 4): the change feed of profile merge requests (#1237) and
+ * ADR-016 decision 4: the change feed of profile merge requests (#1237) and
  * company logo requests (#1246), which event-management pulls to open and close their Mail Center
  * conversations. CUMS no longer calls event-management for them.
  *
@@ -34,8 +34,8 @@ import java.util.UUID;
  * push already handled it).
  *
  * <p>Requester name and address are read from the profile at feed time; the subject is the text
- * the former push sent. A request whose requester profile is gone is not delivered (there is no
- * one to answer).
+ * the former push sent. A request whose requester profile is gone is delivered with both null, so
+ * its decision still reaches the Mail Center.
  */
 @Service
 @Slf4j
@@ -60,7 +60,7 @@ public class MailCenterRequestFeedService {
                 FROM company_logo_requests r
                 WHERE (r.changed_at, r.id) > (:since, :sinceId) AND r.changed_at <= :until
             ) x
-            JOIN user_profiles u ON u.username = x.requester_username
+            LEFT JOIN user_profiles u ON u.username = x.requester_username
             LEFT JOIN companies c ON c.name = x.company_name
             ORDER BY x.changed_at, x.id
             LIMIT :limit
@@ -93,6 +93,13 @@ public class MailCenterRequestFeedService {
     public record Page(List<Item> items, String nextCursor) {
     }
 
+    /** {@code limit} is outside 1 to {@value #MAX_LIMIT}. */
+    public static class InvalidLimitException extends RuntimeException {
+        public InvalidLimitException(String message) {
+            super(message);
+        }
+    }
+
     /** The cursor could not be read; the caller must send one it received, unchanged. */
     public static class InvalidCursorException extends RuntimeException {
         public InvalidCursorException(String message) {
@@ -104,7 +111,7 @@ public class MailCenterRequestFeedService {
     @Transactional(readOnly = true)
     public Page page(String since, int limit) {
         if (limit < 1 || limit > MAX_LIMIT) {
-            throw new IllegalArgumentException("limit must be between 1 and " + MAX_LIMIT);
+            throw new InvalidLimitException("limit must be between 1 and " + MAX_LIMIT);
         }
         Instant until = dbNow().minusSeconds(settleSeconds);
         Cursor from = since == null || since.isBlank() ? start(until) : Cursor.decode(since);
@@ -143,13 +150,16 @@ public class MailCenterRequestFeedService {
         Kind kind = Kind.valueOf(rs.getString("kind"));
         UUID id = rs.getObject("id", UUID.class);
         Instant changedAt = rs.getTimestamp("changed_at").toInstant();
-        String name = (nullToEmpty(rs.getString("first_name")) + " " + nullToEmpty(rs.getString("last_name"))).trim();
+        String email = rs.getString("email");
+        String name = email == null ? null
+                : (nullToEmpty(rs.getString("first_name")) + " " + nullToEmpty(rs.getString("last_name"))).trim();
+        String shown = name == null ? "?" : name;
         String subject = switch (kind) {
-            case MERGE -> "Profil zusammenführen: " + name;
+            case MERGE -> "Profil zusammenführen: " + shown;
             case LOGO -> "Neues Logo für " + companyDisplayName(rs.getString("display_name"),
-                    rs.getString("company_name")) + ": " + name;
+                    rs.getString("company_name")) + ": " + shown;
         };
-        Item item = new Item(kind, id, rs.getString("status"), name, rs.getString("email"), subject,
+        Item item = new Item(kind, id, rs.getString("status"), name, email, subject,
                 rs.getString("note"), rs.getString("decided_by"), changedAt.toString());
         return new Row(item, new Cursor(changedAt, id));
     }

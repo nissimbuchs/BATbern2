@@ -9,6 +9,8 @@ import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Component;
 
+import java.sql.Timestamp;
+import java.time.Instant;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
@@ -19,7 +21,7 @@ import java.util.UUID;
  * {@code logo_request_id}). It opens with one inbound message from the requester (an intro and their
  * note), has no event and the audience SYSTEM, and carries the request id so the Mail Center shows
  * the request with its decision buttons. Answering in it mails the requester like any conversation.
- * Both operations are idempotent. Since Epic 17 entry 7 {@link MailCenterRequestFeedJob} calls them
+ * Both operations are idempotent. {@link MailCenterRequestFeedJob} calls them
  * from company-user-management's request feed; CUMS no longer calls event-management for them.
  */
 @Component
@@ -78,19 +80,41 @@ public class RequestConversations {
             key = store.store(mail, kind.groupId(requestId), null, null,
                     new InboundMailStore.Placement(null, null, MailContext.Audience.SYSTEM.name(), null));
         } catch (InboundMailStore.DuplicateInboundMailException e) {
-            return keyOf(kind, requestId);
+            // The opening mail is stored, but the conversation may never have been linked (a crash
+            // between the two steps): find it by the mail's group id and link it now.
+            key = jdbc.query("SELECT c.conversation_key FROM mail_message m JOIN mail_conversation c"
+                    + " ON c.id = m.conversation_id WHERE m.send_group_id = :groupId",
+                    new MapSqlParameterSource("groupId", kind.groupId(requestId)),
+                    rs -> rs.next() ? rs.getString(1) : null);
+            if (key == null) {
+                return null;
+            }
         }
-        jdbc.update("UPDATE mail_conversation SET " + kind.column + " = :id WHERE conversation_key = :key",
+        jdbc.update("UPDATE mail_conversation SET " + kind.column + " = :id WHERE conversation_key = :key"
+                        + " AND " + kind.column + " IS NULL",
                 new MapSqlParameterSource("id", requestId).addValue("key", key));
         log.info("REQUEST_CONVERSATION opened kind={} request={} conversation={}", kind, requestId, key);
         return key;
     }
 
-    /** Marks the conversation DONE; nothing happens when there is none. */
-    public void close(Kind kind, UUID requestId, String decidedBy) {
+    /** True when the request has its conversation. */
+    public boolean exists(Kind kind, UUID requestId) {
+        return keyOf(kind, requestId) != null;
+    }
+
+    /**
+     * Marks the conversation DONE; nothing happens when there is none. With {@code decidedAt}, only
+     * when no mail came in after the decision: a requester who answered after it reopened the
+     * conversation, and a decision read again (replay, first poll) must not close it over that
+     * answer. {@code null} closes regardless (a conversation opened for an already decided request).
+     */
+    public void close(Kind kind, UUID requestId, String decidedBy, Instant decidedAt) {
         int updated = jdbc.update("UPDATE mail_conversation SET status = 'DONE', updated_at = now(), updated_by = :by"
-                + " WHERE " + kind.column + " = :id AND status <> 'DONE'",
-                new MapSqlParameterSource("id", requestId).addValue("by", decidedBy));
+                + " WHERE " + kind.column + " = :id AND status <> 'DONE'"
+                + " AND (CAST(:decidedAt AS TIMESTAMPTZ) IS NULL OR last_inbound_at IS NULL"
+                + " OR last_inbound_at <= CAST(:decidedAt AS TIMESTAMPTZ))",
+                new MapSqlParameterSource("id", requestId).addValue("by", decidedBy)
+                        .addValue("decidedAt", decidedAt == null ? null : Timestamp.from(decidedAt)));
         log.info("REQUEST_CONVERSATION closed kind={} request={} updated={}", kind, requestId, updated);
     }
 

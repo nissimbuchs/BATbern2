@@ -259,8 +259,8 @@ paths:
         is 30 s old, so a transaction that commits late cannot land behind a cursor already handed
         out. A page with fewer than `limit` items is the end for now; its `nextCursor` is where
         the next poll starts. Requester name and address are the profile's at the time of the
-        read; a request whose requester profile is gone is not delivered. A read; it records
-        nobody.
+        read; for a request whose requester profile is gone both are null (its decision is still
+        delivered). A read; it records nobody.
       parameters:
         - name: since
           in: query
@@ -753,15 +753,21 @@ components:
           type: string
           enum: [OPEN, APPROVED, DECLINED]
         requesterName:
+          nullable: true
           type: string
           maxLength: 255
-          description: First and last name of the requester's profile; empty when both are empty.
+          description: |
+            First and last name of the requester's profile (empty when both are empty); null when
+            the profile is gone.
         requesterEmail:
+          nullable: true
           type: string
           format: idn-email
           minLength: 1
           maxLength: 320
-          description: The requester's primary address, where answers in the conversation go.
+          description: |
+            The requester's primary address, where answers in the conversation go; null when the
+            profile is gone (the Mail Center then opens nothing, but still closes a decided request).
         subject:
           type: string
           minLength: 1

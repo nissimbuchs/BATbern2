@@ -11,13 +11,15 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import java.time.Instant;
 import java.util.List;
 
 /**
- * Epic 17 entry 7 (ADR-016 decision 4): the Mail Center pulls merge requests (#1237) and company
+ * ADR-016 decision 4: the Mail Center pulls merge requests (#1237) and company
  * logo requests (#1246) from company-user-management every minute, instead of being called by it.
  * An OPEN request gets its conversation ({@link RequestConversations#open}); a decided one has its
- * conversation set DONE by the organizer who decided ({@link RequestConversations#close}). A request
+ * conversation set DONE by the organizer who decided ({@link RequestConversations#close}), unless the
+ * requester wrote after the decision (that answer reopened it and stays open). A request
  * opened and decided between two polls arrives decided without a conversation: it is opened, then
  * closed, so the Mail Center keeps the record.
  *
@@ -94,13 +96,20 @@ public class MailCenterRequestFeedJob {
 
     private void apply(MailCenterRequestFeedClient.Item item) {
         RequestConversations.Kind kind = RequestConversations.Kind.valueOf(item.kind().name());
+        boolean existed = conversations.exists(kind, item.requestId());
         // open() returns the existing conversation when there is one, so a decided request is only
-        // opened here when it was decided before any poll saw it open.
-        conversations.open(kind, item.requestId(), item.requesterName(), item.requesterEmail(), item.subject(),
-                item.note());
+        // opened here when it was decided before any poll saw it open. Without an address (requester
+        // profile gone) there is nobody to answer: nothing is opened, a close still applies.
+        if (!existed && item.requesterEmail() != null && !item.requesterEmail().isBlank()) {
+            conversations.open(kind, item.requestId(), item.requesterName(), item.requesterEmail(), item.subject(),
+                    item.note());
+        }
         if (!item.open()) {
+            // A conversation opened before this pass closes only if no mail came in after the
+            // decision; one opened in this pass closes regardless (its opening mail is newer).
             conversations.close(kind, item.requestId(),
-                    item.decidedBy() == null || item.decidedBy().isBlank() ? SYSTEM : item.decidedBy());
+                    item.decidedBy() == null || item.decidedBy().isBlank() ? SYSTEM : item.decidedBy(),
+                    existed ? Instant.parse(item.changedAt()) : null);
         }
     }
 
