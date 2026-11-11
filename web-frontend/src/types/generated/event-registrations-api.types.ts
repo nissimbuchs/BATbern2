@@ -97,21 +97,30 @@ export interface paths {
     get?: never;
     put?: never;
     /**
-     * Add an existing user as a confirmed participant (organizer)
-     * @description Organizer-only. Adds an EXISTING BATbern user (chosen via the user autocomplete) onto
-     *     the event directly as a `confirmed` participant — skipping the self-registration +
-     *     email-confirmation step. The created row is a REAL attendee (counts toward capacity and
-     *     the event delete-guard), audited with `metadata.addedByOrganizer`.
+     * Add participants to the event (organizer); one user, an import list or the stakeholders
+     * @description Organizer-only. The one way to create participants of an event (Story 4.10c, ADR-013 §1).
+     *     The body carries **exactly one** of three modes; none, two, `stakeholders: false`, an empty
+     *     list or more than 100 people answer `400`.
      *
-     *     - Capacity: respected by default; if the event is full, returns `409` with
-     *       `details.code = "capacity_exceeded"`. Pass `force: true` to add over capacity.
-     *     - Duplicate: an already-active registration returns `409` (generic). A `cancelled`
-     *       prior registration is replaced.
-     *     - `notify` (default true) sends the attendee a "you have a confirmed spot" email.
+     *     - **`username`** (single add, `201`): adds an EXISTING BATbern user (chosen via the user
+     *       autocomplete) as a `confirmed` participant, skipping the self-registration and
+     *       email-confirmation step. The row is a REAL attendee (counts toward capacity and the event
+     *       delete-guard), audited with `metadata.addedByOrganizer`. Capacity is respected; a full
+     *       event answers `409` with `details.code = "capacity_exceeded"` unless `force: true`. An
+     *       already-active registration answers `409`; a `cancelled` one is replaced. `notify`
+     *       (default true) sends the attendee the "you have a confirmed spot" mail. `force` and
+     *       `notify` belong to this mode only.
+     *     - **`people`** (historical import, `200`): up to 100 people with the status they had at
+     *       this event. Each person is looked up or created by e-mail (no login, ADR-005); a person
+     *       already registered is skipped. One failing person does not roll back the others; the
+     *       response lists each person's outcome. No mail is sent.
+     *     - **`stakeholders: true`** (`200`): enrols every organizer and partner as a confirmed
+     *       participant (events that predate auto-enrolment). Idempotent: already-registered users
+     *       are counted as skipped. No mail is sent.
      *
-     *     **Spec:** `_bmad-output/implementation-artifacts/spec-organizer-add-participant.md`.
+     *     The response carries the fields of its mode only.
      */
-    post: operations['addParticipant'];
+    post: operations['addParticipants'];
     delete?: never;
     options?: never;
     head?: never;
@@ -306,28 +315,6 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/events/{eventCode}/enroll-stakeholders': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Bulk-enroll organizers and partners as confirmed participants
-     * @description Organizer-only action for events that predate auto-enrollment. Idempotent — already-registered users are counted as skipped, not re-enrolled.
-     *
-     *     **Security**: ORGANIZER role required.
-     */
-    post: operations['enrollStakeholders'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
   '/events/{eventCode}/registrations/confirm': {
     parameters: {
       query?: never;
@@ -434,38 +421,6 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/events/batch_registrations': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Create batch event registrations for a participant
-     * @description Creates multiple event registrations for a single participant in one transaction.
-     *     Used for bulk importing historical attendance data.
-     *
-     *     **Story**: BAT-12 - API Contract - Participant Batch Registration
-     *
-     *     **Behavior**:
-     *     - Creates user if doesn't exist (get-or-create by email)
-     *     - Skips duplicate registrations (idempotent)
-     *     - Returns partial success if some registrations fail
-     *
-     *     **Use Case**: Historical data migration for 2,307 participants
-     *
-     *     **Performance**: <500ms (P95) for 100 registrations
-     */
-    post: operations['createBatchRegistrations'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
   '/events/registrations': {
     parameters: {
       query?: never;
@@ -497,22 +452,78 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
   schemas: {
-    AddParticipantRequest: {
+    /**
+     * @description Exactly one mode: `username` (with optional `force`, `notify`), `people`, or
+     *     `stakeholders: true`. Checked by the service (400), not by `oneOf`.
+     */
+    AddParticipantsRequest: {
       /**
-       * @description The chosen existing user's username (= UserResponse.id).
+       * @description Single mode: the chosen existing user's username (= UserResponse.id).
        * @example jane.doe
        */
-      username: string;
-      /**
-       * @description When the event is full, true adds over capacity; false returns 409.
-       * @default false
-       */
+      username?: string;
+      /** @description Single mode: when the event is full, true adds over capacity; absent or false returns 409. */
       force?: boolean;
-      /**
-       * @description Send the attendee a "you have a confirmed spot" email.
-       * @default true
-       */
+      /** @description Single mode: send the attendee a "you have a confirmed spot" email (absent = true). */
       notify?: boolean;
+      /** @description Import mode: the people who took part in this event, at most 100 per call. */
+      people?: components['schemas']['ParticipantImportPerson'][];
+      /** @description Stakeholder mode: `true` enrols every organizer and partner; `false` is a 400. */
+      stakeholders?: boolean;
+    };
+    /** @description One person of a historical import; the user is looked up or created by e-mail (no login). */
+    ParticipantImportPerson: {
+      /**
+       * Format: idn-email
+       * @example hugo.muster@example.com
+       */
+      email: string;
+      /** @example Hugo */
+      firstName: string;
+      /** @example Muster */
+      lastName: string;
+      /**
+       * @description Company identifier (company name); optional.
+       * @example musterag
+       */
+      companyId?: string;
+      /**
+       * @description The person's status at this event (`ATTENDED` for historical data).
+       * @example ATTENDED
+       * @enum {string}
+       */
+      status: 'REGISTERED' | 'ATTENDED' | 'CANCELLED';
+    };
+    /**
+     * @description The fields of the request's mode only. Single: `registrationCode`, `status`,
+     *     `attendeeUsername`. Stakeholders: `enrolled`, `skipped`. Import: `enrolled`, `skipped`,
+     *     `failed`, `results`.
+     */
+    AddParticipantsResponse: {
+      /** @example BATbern57-reg-A1B2C3 */
+      registrationCode?: string;
+      /** @example confirmed */
+      status?: string;
+      /** @example jane.doe */
+      attendeeUsername?: string;
+      /** @description People or stakeholders newly registered */
+      enrolled?: number;
+      /** @description People or stakeholders already registered (idempotent skip) */
+      skipped?: number;
+      /** @description Import mode: people that could not be registered */
+      failed?: number;
+      /** @description Import mode: one entry per person, in request order */
+      results?: components['schemas']['ParticipantImportResult'][];
+    };
+    ParticipantImportResult: {
+      /** @description The e-mail as sent */
+      email: string;
+      /** @description The person's username; absent when the user could not be found or created */
+      username?: string;
+      /** @enum {string} */
+      outcome: 'REGISTERED' | 'SKIPPED' | 'FAILED';
+      /** @description Why the person failed; absent otherwise */
+      reason?: string;
     };
     /**
      * @description Story 10.10: Minimal registration status for the authenticated user (AC1).
@@ -709,12 +720,6 @@ export interface components {
       /** @description Human-readable result message */
       message: string;
     };
-    EnrollStakeholdersResponse: {
-      /** @description Number of stakeholders newly enrolled as confirmed participants */
-      enrolled: number;
-      /** @description Number of stakeholders already registered (idempotent skip) */
-      skipped: number;
-    };
     /**
      * @description Story 4.1.5a/4.1.6: Update registration details
      *     Public endpoint - uses confirmation code for access
@@ -732,81 +737,6 @@ export interface components {
         /** @description Receive event reminders */
         eventReminders?: boolean;
       };
-    };
-    /**
-     * @description Story BAT-12: Batch registration request for historical data import.
-     *     Creates multiple event registrations for a single participant.
-     */
-    BatchRegistrationRequest: {
-      /**
-       * Format: idn-email
-       * @description Participant email (used for user lookup/creation)
-       * @example adrian.buerki@centrisag.ch
-       */
-      participantEmail: string;
-      /**
-       * @description Participant first name
-       * @example Adrian
-       */
-      firstName: string;
-      /**
-       * @description Participant last name
-       * @example Bürki
-       */
-      lastName: string;
-      /**
-       * @description Company identifier (company name).
-       *     Optional for participants without company affiliation.
-       *     Story 3.2: Batch import includes company information from CSV.
-       * @example Centris AG
-       */
-      companyId?: string;
-      /** @description Array of event registrations (max 100 per batch) */
-      registrations: components['schemas']['BatchRegistrationItem'][];
-    };
-    /** @description Single event registration within a batch */
-    BatchRegistrationItem: {
-      /**
-       * @description Event code in format BATbernN where N is event number
-       * @example BATbern25
-       */
-      eventCode: string;
-      /**
-       * @description Registration status (use 'ATTENDED' for historical data)
-       * @example ATTENDED
-       * @enum {string}
-       */
-      status: 'REGISTERED' | 'ATTENDED' | 'CANCELLED';
-    };
-    /**
-     * @description Response for batch registration operation.
-     *     Returns partial success - some registrations may fail while others succeed.
-     */
-    BatchRegistrationResponse: {
-      /**
-       * @description Username of created/found participant
-       * @example adrian.buerki
-       */
-      username: string;
-      /**
-       * @description Total number of registrations attempted
-       * @example 3
-       */
-      totalRegistrations: number;
-      /**
-       * @description Number of registrations successfully created
-       * @example 3
-       */
-      successfulRegistrations: number;
-      /** @description List of registrations that failed */
-      failedRegistrations: components['schemas']['FailedRegistration'][];
-      /**
-       * @description List of error messages
-       * @example [
-       *       "Event BATbern99 not found"
-       *     ]
-       */
-      errors: string[];
     };
     /**
      * @description Story 10.12 (AC3): Response from GET /registrations/deregister/verify.
@@ -862,19 +792,6 @@ export interface components {
        * @example BATbern142
        */
       eventCode: string;
-    };
-    /** @description Details of a failed registration within a batch */
-    FailedRegistration: {
-      /**
-       * @description Event code that failed
-       * @example BATbern99
-       */
-      eventCode: string;
-      /**
-       * @description Reason for failure
-       * @example Event not found
-       */
-      reason: string;
     };
     /**
      * @description Page-based pagination metadata returned with every paginated list response.
@@ -1143,7 +1060,7 @@ export interface operations {
       500: components['responses']['InternalServerError'];
     };
   };
-  addParticipant: {
+  addParticipants: {
     parameters: {
       query?: never;
       header?: never;
@@ -1154,31 +1071,34 @@ export interface operations {
     };
     requestBody: {
       content: {
-        'application/json': components['schemas']['AddParticipantRequest'];
+        'application/json': components['schemas']['AddParticipantsRequest'];
       };
     };
     responses: {
-      /** @description Participant added as confirmed */
+      /** @description Bulk mode (`people` or `stakeholders`) processed */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AddParticipantsResponse'];
+        };
+      };
+      /** @description Single mode (`username`); the participant was added as confirmed */
       201: {
         headers: {
           [name: string]: unknown;
         };
         content: {
-          'application/json': {
-            /** @example BATbern57-reg-A1B2C3 */
-            registrationCode: string;
-            /** @example confirmed */
-            status: string;
-            /** @example jane.doe */
-            attendeeUsername: string;
-          };
+          'application/json': components['schemas']['AddParticipantsResponse'];
         };
       };
       400: components['responses']['BadRequest'];
+      401: components['responses']['Unauthorized'];
       403: components['responses']['Forbidden'];
       404: components['responses']['NotFound'];
       /**
-       * @description Conflict — either the user is already registered (generic) or the event is full
+       * @description Single mode: the user is already registered (generic) or the event is full
        *     (`details.code = "capacity_exceeded"`; retry with `force: true`).
        */
       409: {
@@ -1503,30 +1423,6 @@ export interface operations {
       };
     };
   };
-  enrollStakeholders: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        eventCode: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Enrollment counts */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['EnrollStakeholdersResponse'];
-        };
-      };
-      403: components['responses']['Forbidden'];
-      404: components['responses']['NotFound'];
-    };
-  };
   confirmRegistration: {
     parameters: {
       query: {
@@ -1704,57 +1600,6 @@ export interface operations {
           };
         };
       };
-    };
-  };
-  createBatchRegistrations: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['BatchRegistrationRequest'];
-      };
-    };
-    responses: {
-      /** @description Batch registrations processed (full or partial success) */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['BatchRegistrationResponse'];
-        };
-      };
-      /** @description Invalid request data */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['ErrorResponse'];
-        };
-      };
-      401: components['responses']['Unauthorized'];
-      /** @description Forbidden - requires ORGANIZER role */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          /**
-           * @example {
-           *       "error": "Forbidden",
-           *       "message": "This operation requires ORGANIZER role",
-           *       "code": "INSUFFICIENT_PERMISSIONS"
-           *     }
-           */
-          'application/json': components['schemas']['ErrorResponse'];
-        };
-      };
-      500: components['responses']['InternalServerError'];
     };
   };
   listUserRegistrations: {

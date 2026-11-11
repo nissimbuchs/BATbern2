@@ -4,11 +4,10 @@ import ch.batbern.shared.utils.LoggingUtils;
 import ch.batbern.events.client.UserApiClient;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Registration;
-import ch.batbern.events.registrations.dto.generated.BatchRegistrationItem;
-import ch.batbern.events.registrations.dto.generated.BatchRegistrationRequest;
-import ch.batbern.events.registrations.dto.generated.BatchRegistrationResponse;
+import ch.batbern.events.registrations.dto.generated.AddParticipantsResponse;
 import ch.batbern.events.registrations.dto.generated.CreateRegistrationRequest;
-import ch.batbern.events.registrations.dto.generated.FailedRegistration;
+import ch.batbern.events.registrations.dto.generated.ParticipantImportPerson;
+import ch.batbern.events.registrations.dto.generated.ParticipantImportResult;
 import ch.batbern.events.registrations.dto.generated.MyRegistrationResponse;
 import ch.batbern.events.registrations.dto.generated.MyRegistrationResponse.StatusEnum;
 import ch.batbern.events.dto.generated.users.GetOrCreateUserRequest;
@@ -39,7 +38,6 @@ import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 /**
  * Service for Registration business logic
@@ -349,116 +347,80 @@ public class RegistrationService {
     }
 
     /**
-     * Create batch event registrations for a participant (Story BAT-14).
-     * <p>
-     * This method:
-     * 1. Gets or creates user via User Management Service (anonymous user with cognitoSync=false)
-     * 2. Creates registrations for all events in the batch
-     * 3. Skips duplicate registrations (idempotent)
-     * 4. Returns detailed results with partial success support
-     * <p>
-     * Designed for historical data migration where a single participant attended multiple events.
+     * Historical import for one event (Story 4.10c; formerly the per-participant
+     * {@code POST /events/batch_registrations} of BAT-14): each person is looked up or created by
+     * e-mail in CUMS (no login, ADR-005) and registered with the given status unless already
+     * registered.
      *
-     * @param request Batch registration request with participant data and event list
-     * @return Batch registration response with success/failure counts and details
+     * <p>Not one transaction on purpose: each person's registration is saved on its own, so a
+     * person whose lookup or save fails is reported as {@code FAILED} and the others stay. No mail
+     * is sent.
+     *
+     * @param event  the event (loaded by the controller)
+     * @param people at most 100 people (checked by the request schema)
+     * @return counts and one result per person, in request order
      */
-    @Transactional
-    public BatchRegistrationResponse createBatchRegistrations(BatchRegistrationRequest request) {
-        log.debug("Creating batch registrations for participant: {}",
-                LoggingUtils.maskEmail(request.getParticipantEmail()));
-
-        // 1. Get or create user via User Management Service
-        GetOrCreateUserRequest userRequest = new GetOrCreateUserRequest();
-        userRequest.setEmail(request.getParticipantEmail());
-        userRequest.setFirstName(request.getFirstName());
-        userRequest.setLastName(request.getLastName());
-        userRequest.setCompanyId(request.getCompanyId()); // Story 3.2: Include company from batch import
-        userRequest.setCognitoSync(false); // ADR-005: Create anonymous user for historical data
-
-        GetOrCreateUserResponse userResponse = userApiClient.getOrCreateUser(userRequest);
-        String username = userResponse.getUsername();
-        log.info("Got/created user for batch registration: {}, created: {}",
-                username, userResponse.getCreated());
-
-        // 2. Process each registration in the batch
-        List<FailedRegistration> failedRegistrations = new ArrayList<>();
-        int successCount = 0;
-
-        for (BatchRegistrationItem item : request.getRegistrations()) {
-            try {
-                // Validate event exists
-                Event event = eventRepository.findByEventCode(item.getEventCode())
-                        .orElseThrow(() -> new NoSuchElementException(
-                                "Event not found: " + item.getEventCode()));
-
-                log.debug("Processing registration for event: {} (ID: {})", item.getEventCode(), event.getId());
-
-                // Check if registration already exists (idempotency)
-                boolean exists = registrationRepository.existsByEventIdAndAttendeeUsername(
-                        event.getId(),
-                        username
-                );
-
-                if (exists) {
-                    // Skip duplicate - idempotent behavior
-                    log.debug("Registration already exists for event: {} by user: {}, skipping",
-                            item.getEventCode(), username);
-                    continue;
-                }
-
-                // Create registration
-                // Convert enum status to lowercase string for database (per coding standards)
-                String status = item.getStatus().getValue().toLowerCase();
-
-                Registration registration = Registration.builder()
-                        .registrationCode(generateUniqueRegistrationCode(item.getEventCode()))
-                        .eventId(event.getId())
-                        .attendeeUsername(username)
-                        .attendeeCompanyId(request.getCompanyId())
-                        .status(status)
-                        .registrationDate(Instant.now())
-                        .build();
-
-                registrationRepository.save(registration);
-                successCount++;
-                log.debug("Created registration for event: {} by user: {}", item.getEventCode(), username);
-
-            } catch (NoSuchElementException e) {
-                // Event not found
-                failedRegistrations.add(new FailedRegistration(
-                        item.getEventCode(),
-                        "Event not found"
-                ));
-                log.warn("Failed to create registration for event: {} - Event not found", item.getEventCode());
-
-            } catch (Exception e) {
-                // Other errors (e.g., database errors, validation errors)
-                failedRegistrations.add(new FailedRegistration(
-                        item.getEventCode(),
-                        e.getMessage()
-                ));
-                log.error("Failed to create registration for event: {} - {}", item.getEventCode(), e.getMessage(), e);
+    public AddParticipantsResponse importParticipants(Event event, List<ParticipantImportPerson> people) {
+        List<ParticipantImportResult> results = new ArrayList<>();
+        int enrolled = 0;
+        int skipped = 0;
+        int failed = 0;
+        for (ParticipantImportPerson person : people) {
+            ParticipantImportResult result = importParticipant(event, person);
+            results.add(result);
+            if (result.getOutcome() == ParticipantImportResult.OutcomeEnum.REGISTERED) {
+                enrolled++;
+            } else if (result.getOutcome() == ParticipantImportResult.OutcomeEnum.SKIPPED) {
+                skipped++;
+            } else {
+                failed++;
             }
         }
+        log.info("Participant import for event {}: total={}, registered={}, skipped={}, failed={}",
+                event.getEventCode(), people.size(), enrolled, skipped, failed);
+        return new AddParticipantsResponse()
+                .enrolled(enrolled)
+                .skipped(skipped)
+                .failed(failed)
+                .results(results);
+    }
 
-        // 3. Build response with detailed results
-        List<String> errors = failedRegistrations.stream()
-                .map(f -> String.format("Event %s: %s", f.getEventCode(), f.getReason()))
-                .collect(Collectors.toList());
+    private ParticipantImportResult importParticipant(Event event, ParticipantImportPerson person) {
+        ParticipantImportResult result = new ParticipantImportResult().email(person.getEmail());
+        try {
+            GetOrCreateUserRequest userRequest = new GetOrCreateUserRequest();
+            userRequest.setEmail(person.getEmail());
+            userRequest.setFirstName(person.getFirstName());
+            userRequest.setLastName(person.getLastName());
+            userRequest.setCompanyId(person.getCompanyId());
+            userRequest.setCognitoSync(false); // ADR-005: historical attendee, no login
+            GetOrCreateUserResponse user = userApiClient.getOrCreateUser(userRequest);
+            String username = user.getUsername();
+            result.username(username);
 
-        BatchRegistrationResponse response = new BatchRegistrationResponse(
-                username,
-                request.getRegistrations().size(),
-                successCount,
-                failedRegistrations,
-                errors
-        );
+            if (registrationRepository.existsByEventIdAndAttendeeUsername(event.getId(), username)) {
+                return result.outcome(ParticipantImportResult.OutcomeEnum.SKIPPED);
+            }
 
-        log.info("Batch registration completed for user: {} - Total: {}, Successful: {}, Failed: {}",
-                username, response.getTotalRegistrations(), response.getSuccessfulRegistrations(),
-                response.getFailedRegistrations().size());
-
-        return response;
+            registrationRepository.saveAndFlush(Registration.builder()
+                    .registrationCode(generateUniqueRegistrationCode(event.getEventCode()))
+                    .eventId(event.getId())
+                    .attendeeUsername(username)
+                    .attendeeFirstName(person.getFirstName())
+                    .attendeeLastName(person.getLastName())
+                    .attendeeEmail(person.getEmail())
+                    .attendeeCompanyId(person.getCompanyId())
+                    // API enum UPPER_CASE, database lower case (coding standards)
+                    .status(person.getStatus().getValue().toLowerCase(Locale.ROOT))
+                    .registrationDate(Instant.now())
+                    .build());
+            return result.outcome(ParticipantImportResult.OutcomeEnum.REGISTERED);
+        } catch (RuntimeException e) {
+            log.warn("Participant import failed for {} on event {}: {}",
+                    LoggingUtils.maskEmail(person.getEmail()), event.getEventCode(), e.getMessage());
+            return result.outcome(ParticipantImportResult.OutcomeEnum.FAILED)
+                    .reason(e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName());
+        }
     }
 
     /**

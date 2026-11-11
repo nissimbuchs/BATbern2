@@ -8,11 +8,8 @@ import ch.batbern.events.domain.Logo;
 import ch.batbern.events.domain.Registration;
 import ch.batbern.events.dto.CreateEventRequest;
 import ch.batbern.events.dto.CreateRegistrationResponse;
-import ch.batbern.events.registrations.dto.generated.BatchRegistrationRequest;
-import ch.batbern.events.registrations.dto.generated.BatchRegistrationResponse;
 import ch.batbern.events.registrations.dto.generated.ConfirmRegistration200Response;
 import ch.batbern.events.registrations.dto.generated.CreateRegistrationRequest;
-import ch.batbern.events.registrations.dto.generated.EnrollStakeholdersResponse;
 import ch.batbern.events.registrations.dto.generated.MyRegistrationResponse;
 import ch.batbern.events.registrations.dto.generated.ResendConfirmationResponse;
 import ch.batbern.events.registrations.dto.generated.UpdateRegistrationStatusRequest;
@@ -1706,33 +1703,6 @@ public class EventController implements EventsApi, EventReportingApi, PublicEven
     }
 
     /**
-     * Enroll all organizers and partners as confirmed participants for an existing event.
-     *
-     * POST /api/v1/events/{eventCode}/enroll-stakeholders
-     *
-     * Organizer-only action intended for events that predate the auto-enrollment feature.
-     * Idempotent: already-registered users are counted as skipped, not re-enrolled.
-     * Returns counts of enrolled and skipped users.
-     */
-    @PostMapping("/events/{eventCode}/enroll-stakeholders")
-    @PreAuthorize("hasRole('ORGANIZER')")
-    @Operation(
-            summary = "Enroll Stakeholders",
-            description = "Bulk-enroll all organizers and partners as confirmed participants. "
-                    + "Idempotent — already-registered users are skipped. Requires ORGANIZER role."
-    )
-    public ResponseEntity<EnrollStakeholdersResponse> enrollStakeholders(@PathVariable String eventCode) {
-        log.info("POST /api/v1/events/{}/enroll-stakeholders", eventCode);
-        ch.batbern.events.domain.Event event = eventRepository.findByEventCode(eventCode)
-                .orElseThrow(() -> new EventNotFoundException("Event not found: " + eventCode));
-        ch.batbern.events.service.RegistrationService.EnrollmentSummary result =
-                registrationService.enrollStakeholders(event);
-        return ResponseEntity.ok(new EnrollStakeholdersResponse()
-                .enrolled(result.enrolled())
-                .skipped(result.skipped()));
-    }
-
-    /**
      * Get Event Analytics (AC13)
      *
      * GET /api/v1/events/{id}/analytics?metrics=attendance,registrations,engagement&timeframe=start,end
@@ -2145,50 +2115,6 @@ public class EventController implements EventsApi, EventReportingApi, PublicEven
                 .collect(Collectors.toList());
 
         return ResponseEntity.ok(responses);
-    }
-
-    /**
-     * Create Batch Registrations - Story BAT-14
-     *
-     * POST /api/v1/events/batch_registrations
-     *
-     * Creates multiple event registrations for a single participant in a single transaction.
-     * Designed for historical data migration where participants attended multiple events.
-     *
-     * Features:
-     * - Creates or retrieves user by email (anonymous users with cognitoSync=false)
-     * - Creates registrations for all specified events
-     * - Idempotent: Skips duplicate registrations without error
-     * - Partial success: Some registrations may succeed while others fail
-     * - Transactional: All-or-nothing for database operations
-     *
-     * Authorization: Requires ORGANIZER role
-     *
-     * @param request Batch registration request with participant data and event list
-     * @return Batch registration response with detailed success/failure information
-     */
-    @PostMapping("/events/batch_registrations")
-    @PreAuthorize("hasRole('ORGANIZER')")
-    @Operation(
-            summary = "Create Batch Event Registrations",
-            description = "Create multiple event registrations for a single participant. "
-                    + "Designed for historical data migration. Returns partial success details. "
-                    + "Requires ORGANIZER role."
-    )
-    public ResponseEntity<BatchRegistrationResponse> createBatchRegistrations(
-            @Valid @RequestBody BatchRegistrationRequest request) {
-        log.debug("POST /api/v1/events/batch_registrations - Participant: {}, Events: {}",
-                LoggingUtils.maskEmail(request.getParticipantEmail()), request.getRegistrations().size());
-
-        BatchRegistrationResponse response = registrationService.createBatchRegistrations(request);
-
-        log.info("Batch registration completed - User: {}, Total: {}, Successful: {}, Failed: {}",
-                response.getUsername(),
-                response.getTotalRegistrations(),
-                response.getSuccessfulRegistrations(),
-                response.getFailedRegistrations().size());
-
-        return ResponseEntity.ok(response);
     }
 
     /**
