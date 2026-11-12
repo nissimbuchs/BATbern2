@@ -20,7 +20,7 @@ This collection went through the light-audit checklist from
 ## Cleanup approach
 
 The CUMS cleanup endpoint sweeps any `companies.name LIKE 'BRUNOTESTCO%'` row
-plus the soft-FK `logos.associated_entity_id LIKE 'BRUNOTESTCO%'` rows in the
+plus the soft-FK `company_user_uploads.target_id ILIKE 'BRUNOTESTCO%'` rows (Story 17.11) in the
 same transaction. The 99-posttest-cleanup hook makes the collection
 idempotent: even if a test mid-flow crashes, the next run starts clean.
 

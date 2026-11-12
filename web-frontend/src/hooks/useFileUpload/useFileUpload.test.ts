@@ -1,30 +1,60 @@
 /**
  * useFileUpload Hook Tests
- * Story 1.16.3: Generic File Upload Service
- * Tests three-phase upload flow: presigned URL → S3 upload → confirm
+ * Story 1.16.3, the upload contract since Story 17.11: presign → S3 PUT → confirm.
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
-import MockAdapter from 'axios-mock-adapter';
+import { HttpResponse } from 'msw';
 import { useFileUpload } from './useFileUpload';
-import apiClient from '@/services/api/apiClient';
-import { logoUploadTarget } from '@/services/api/companyApi';
+import { uploadTarget } from '@/services/uploadService';
 import { materialUploadTarget } from '@/services/api/sessionApiClient';
+import { api } from '@/test/msw/api';
 
-// Backend calls are stubbed at the HTTP boundary: the real upload targets and
-// apiClient run. The S3 PUT goes through XMLHttpRequest, replaced per test below.
-const PRESIGN = '/logos/presigned-url';
-const CONFIRM = /^\/logos\/[^/]+\/confirm$/;
-let http: MockAdapter;
+// The backend answers through the MSW harness (checked against uploads-api); the real upload
+// targets and apiClient run. The S3 PUT goes through XMLHttpRequest, replaced per test below.
+const logoUploadTarget = uploadTarget('company-logo');
+
+/** The presign answer of the upload contract for a slot in the hook's shape. */
+function answerPresign(slot: {
+  uploadUrl: string;
+  fileId: string;
+  requiredHeaders: Record<string, string>;
+}) {
+  api.on(
+    'createFileUpload',
+    () => ({
+      uploadId: slot.fileId,
+      uploadUrl: slot.uploadUrl,
+      expiresAt: '2026-11-12T10:15:00Z',
+      requiredHeaders: slot.requiredHeaders,
+    }),
+    { status: 201 }
+  );
+}
+
+/** A confirm without target: CONFIRMED, no file URL yet. */
+function answerConfirm(fileUrl: string | null = null) {
+  api.on('confirmFileUpload', ({ params }) => ({
+    uploadId: params.uploadId,
+    purpose: 'company-logo' as const,
+    status: fileUrl ? ('ASSOCIATED' as const) : ('CONFIRMED' as const),
+    fileUrl,
+  }));
+}
 
 describe('useFileUpload Hook', () => {
   let mockXHR: Partial<XMLHttpRequest>;
   let xhrInstance: Partial<XMLHttpRequest>;
 
+  // The XMLHttpRequest of the harness (MSW, patched in at server start), for the backend calls
+  let HarnessXHR: typeof XMLHttpRequest;
+
   beforeEach(() => {
     vi.clearAllMocks();
-    http = new MockAdapter(apiClient);
+    HarnessXHR = global.XMLHttpRequest;
+    // jsdom has no object URLs (a browser API): the preview of a chosen file
+    URL.createObjectURL = vi.fn(() => 'blob:preview');
 
     // Mock XMLHttpRequest
     mockXHR = {
@@ -33,20 +63,25 @@ describe('useFileUpload Hook', () => {
       setRequestHeader: vi.fn(),
       upload: {
         addEventListener: vi.fn(),
-      } as XMLHttpRequestUpload,
+      } as unknown as XMLHttpRequestUpload,
       addEventListener: vi.fn(),
       status: 200,
     };
 
     xhrInstance = mockXHR;
     // Vitest v4 requires constructor mocks to use 'function' or 'class'
+    // Only the S3 PUT of the hook is replaced: a request axios opens (the backend calls) gets the
+    // harness's XMLHttpRequest, so MSW answers it and checks it against the spec.
     global.XMLHttpRequest = vi.fn(function MockXMLHttpRequest(this: XMLHttpRequest) {
+      if ((new Error().stack ?? '').includes('/axios/')) {
+        return new HarnessXHR();
+      }
       return Object.assign(this, xhrInstance);
     }) as unknown as typeof XMLHttpRequest;
   });
 
   afterEach(() => {
-    http.restore();
+    global.XMLHttpRequest = HarnessXHR;
     vi.restoreAllMocks();
   });
 
@@ -78,8 +113,8 @@ describe('useFileUpload Hook', () => {
       },
     };
 
-    http.onPost(PRESIGN).replyOnce(200, mockPresignedResponse.data); // Phase 1: presigned URL
-    http.onPost(CONFIRM).replyOnce(200, {}); // Phase 3: confirm
+    answerPresign(mockPresignedResponse.data); // Phase 1: presigned URL
+    answerConfirm(); // Phase 3: confirm
 
     const onUploadSuccess = vi.fn();
     const { result } = renderHook(() =>
@@ -97,12 +132,12 @@ describe('useFileUpload Hook', () => {
 
     // Wait for presigned URL request
     await waitFor(() => {
-      expect(http.history.post[0]?.url).toBe(PRESIGN);
+      expect(api.calls('createFileUpload')).toHaveLength(1);
     });
-    expect(JSON.parse(http.history.post[0].data)).toEqual({
+    expect(api.calls('createFileUpload')[0].body).toEqual({
       fileName: 'test-logo.png',
-      fileSize: file.size,
-      mimeType: 'image/png',
+      contentType: 'image/png',
+      size: file.size,
     });
 
     // Simulate S3 upload completion
@@ -117,23 +152,23 @@ describe('useFileUpload Hook', () => {
 
     // Wait for confirm request
     await waitFor(() => {
-      expect(http.history.post[1]?.url).toBe('/logos/upload-123/confirm');
+      expect(api.calls('confirmFileUpload')).toHaveLength(1);
     });
-    expect(JSON.parse(http.history.post[1].data)).toEqual({
-      fileId: 'upload-123',
-      fileExtension: 'png',
-      checksum: expect.any(String),
+    expect(api.calls('confirmFileUpload')[0].params).toEqual({
+      purpose: 'company-logo',
+      uploadId: 'upload-123',
     });
+    expect(api.calls('confirmFileUpload')[0].body).toEqual({});
 
     // Assert
     await waitFor(() => {
       expect(result.current.isUploading).toBe(false);
       expect(result.current.uploadProgress).toBe(100);
       expect(result.current.error).toBeNull();
+      // No hard-coded bucket any more: a local preview of the chosen file
       expect(onUploadSuccess).toHaveBeenCalledWith({
         uploadId: 'upload-123',
-        tempFileUrl:
-          'http://localhost:8450/batbern-development-company-logos/logos/temp/upload-123/logo.png',
+        tempFileUrl: 'blob:preview',
       });
     });
 
@@ -155,8 +190,8 @@ describe('useFileUpload Hook', () => {
       },
     };
 
-    http.onPost(PRESIGN).replyOnce(200, mockPresignedResponse.data);
-    http.onPost(CONFIRM).replyOnce(200, {});
+    answerPresign(mockPresignedResponse.data);
+    answerConfirm();
 
     const { result } = renderHook(() => useFileUpload({ target: logoUploadTarget }));
 
@@ -237,7 +272,7 @@ describe('useFileUpload Hook', () => {
 
     const uploadId = await uploadPromise!;
     expect(uploadId).toBeNull();
-    expect(http.history.post).toHaveLength(0);
+    expect(api.allCalls()).toHaveLength(0);
   });
 
   it('should_rejectLargeFile_when_fileSizeExceedsLimit', async () => {
@@ -271,7 +306,7 @@ describe('useFileUpload Hook', () => {
 
     const uploadId = await uploadPromise!;
     expect(uploadId).toBeNull();
-    expect(http.history.post).toHaveLength(0);
+    expect(api.allCalls()).toHaveLength(0);
   });
 
   // ============ Error Handling Tests ============
@@ -279,7 +314,9 @@ describe('useFileUpload Hook', () => {
   it('should_handlePresignedUrlError_when_backendFails', async () => {
     // Arrange
     const file = new File(['test content'], 'test-logo.png', { type: 'image/png' });
-    http.onPost(PRESIGN).replyOnce(500, { message: 'Backend error' });
+    api.on('createFileUpload', () =>
+      HttpResponse.json({ message: 'Backend error' }, { status: 500 })
+    );
 
     const onUploadError = vi.fn();
     const { result } = renderHook(() =>
@@ -329,7 +366,7 @@ describe('useFileUpload Hook', () => {
       },
     };
 
-    http.onPost(PRESIGN).replyOnce(200, mockPresignedResponse.data);
+    answerPresign(mockPresignedResponse.data);
 
     const onUploadError = vi.fn();
     const { result } = renderHook(() =>
@@ -388,7 +425,7 @@ describe('useFileUpload Hook', () => {
       },
     };
 
-    http.onPost(PRESIGN).replyOnce(200, mockPresignedResponse.data);
+    answerPresign(mockPresignedResponse.data);
 
     // The XHR constructor in the test harness copies mockXHR's props onto the
     // new instance once, at construction time — so we need the 403 state set
@@ -439,12 +476,9 @@ describe('useFileUpload Hook', () => {
   it('should_handleS3Timeout_when_putTimesOut', async () => {
     // Arrange — XHR fires its 'timeout' event after xhr.timeout ms.
     const file = new File(['test content'], 'test-logo.png', { type: 'image/png' });
-    http.onPost(PRESIGN).replyOnce(200, {
+    answerPresign({
       uploadUrl: 'https://s3.amazonaws.com/bucket/test.png',
       fileId: 'upload-timeout',
-      s3Key: 'logos/test.png',
-      fileExtension: 'png',
-      expiresInMinutes: 15,
       requiredHeaders: {},
     });
 
@@ -492,8 +526,10 @@ describe('useFileUpload Hook', () => {
       },
     };
 
-    http.onPost(PRESIGN).replyOnce(200, mockPresignedResponse.data);
-    http.onPost(CONFIRM).replyOnce(500, { message: 'Confirm failed' });
+    answerPresign(mockPresignedResponse.data);
+    api.on('confirmFileUpload', () =>
+      HttpResponse.json({ message: 'Confirm failed' }, { status: 500 })
+    );
 
     const onUploadError = vi.fn();
     const { result } = renderHook(() =>
@@ -607,8 +643,8 @@ describe('useFileUpload Hook', () => {
       },
     };
 
-    http.onPost(PRESIGN).replyOnce(200, mockPresignedResponse.data);
-    http.onPost(CONFIRM).replyOnce(200, {});
+    answerPresign(mockPresignedResponse.data);
+    answerConfirm();
 
     const { result } = renderHook(() => useFileUpload({ target: logoUploadTarget }));
 
@@ -639,17 +675,50 @@ describe('useFileUpload Hook', () => {
     });
   });
 
+  it('should_reportAttachedUrl_when_confirmAttachesToTarget', async () => {
+    const file = new File(['logo'], 'logo.svg', { type: 'image/svg+xml' });
+    answerPresign({ uploadUrl: 'https://bucket.example/put', fileId: 'up-t', requiredHeaders: {} });
+    answerConfirm('https://cdn.batbern.ch/logos/2026/companies/acme/logo-up-t.svg');
+    const onUploadSuccess = vi.fn();
+    const { result } = renderHook(() =>
+      useFileUpload({
+        target: uploadTarget('company-logo', { companyName: 'acme' }),
+        onUploadSuccess,
+      })
+    );
+
+    act(() => {
+      void result.current.uploadFile(file);
+    });
+    await waitFor(() => {
+      expect(mockXHR.open).toHaveBeenCalledWith('PUT', 'https://bucket.example/put');
+    });
+    await act(async () => {
+      const mockFn = mockXHR.addEventListener as ReturnType<typeof vi.fn>;
+      const loadListener = mockFn.mock.calls.find((call: unknown[]) => call[0] === 'load')?.[1] as
+        (() => void) | undefined;
+      loadListener?.();
+    });
+
+    await waitFor(() => {
+      expect(onUploadSuccess).toHaveBeenCalledWith({
+        uploadId: 'up-t',
+        tempFileUrl: 'https://cdn.batbern.ch/logos/2026/companies/acme/logo-up-t.svg',
+      });
+    });
+    expect(api.calls('confirmFileUpload')[0].body).toEqual({ target: { companyName: 'acme' } });
+  });
+
   it('should_presignAndConfirmAtMaterials_when_materialTargetGiven', async () => {
     const file = new File(['slides'], 'talk.pdf', { type: 'application/pdf' });
-    http.onPost('/materials/presigned-url').replyOnce(200, {
+    api.on('generateMaterialPresignedUrl', () => ({
       uploadUrl: 'https://s3.amazonaws.com/bucket/talk.pdf',
       fileId: 'mat-1',
       s3Key: 'materials/temp/mat-1/talk.pdf',
       fileExtension: 'pdf',
       expiresInMinutes: 15,
       requiredHeaders: {},
-    });
-    http.onPost('/materials/mat-1/confirm').replyOnce(200, {});
+    }));
 
     const { result } = renderHook(() =>
       useFileUpload({ target: materialUploadTarget, allowedTypes: ['application/pdf'] })
@@ -670,9 +739,14 @@ describe('useFileUpload Hook', () => {
     });
 
     expect(await uploadPromise!).toBe('mat-1');
-    expect(http.history.post.map((r) => r.url)).toEqual([
-      '/materials/presigned-url',
-      '/materials/mat-1/confirm',
+    expect(api.allCalls().map((c) => c.key)).toEqual([
+      'generateMaterialPresignedUrl',
+      'confirmMaterialUpload',
     ]);
+    expect(api.calls('confirmMaterialUpload')[0].body).toEqual({
+      fileId: 'mat-1',
+      fileExtension: 'pdf',
+      checksum: expect.any(String),
+    });
   });
 });

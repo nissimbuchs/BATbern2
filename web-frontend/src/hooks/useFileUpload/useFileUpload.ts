@@ -8,9 +8,12 @@
  * 2. Upload file directly to S3            (XHR PUT, here, for progress events)
  * 3. Confirm upload with backend           (target.confirm)
  *
- * The backend calls live in the service that owns the resource; the caller passes
- * the upload target for its purpose, e.g. `companyApi.logoUploadTarget` or
- * `sessionApiClient.materialUploadTarget`.
+ * The one hook for every upload (Story 17.11). The backend calls live in the service layer; the
+ * caller passes the upload target of its purpose, e.g. `uploadTarget('company-logo')` from
+ * `@/services/uploadService` or `sessionApiClient.materialUploadTarget`.
+ *
+ * The preview (`tempFileUrl`) is the CDN URL when the confirm attached the file, else a local
+ * object URL of the chosen file: a temp object is not served by the CDN.
  */
 
 import { useState, useCallback } from 'react';
@@ -18,7 +21,7 @@ import { formatErrorForDisplay } from '@/utils/errorHandling/errorMessages';
 import type { FileUploadPresignedUrl, FileUploadTarget } from '@/types/fileUpload.types';
 
 interface UseFileUploadOptions {
-  target: FileUploadTarget; // presign + confirm of the upload's purpose (logo, material)
+  target: FileUploadTarget; // presign + confirm of the upload's purpose (company-logo, material, ...)
   maxFileSize?: number; // in bytes, default 5MB
   allowedTypes?: string[]; // MIME types, default: PNG, JPEG, SVG
   onUploadSuccess?: (data: UploadSuccessData) => void;
@@ -55,21 +58,15 @@ interface UploadError {
 const DEFAULT_MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const DEFAULT_ALLOWED_TYPES = ['image/png', 'image/jpeg', 'image/svg+xml'];
 
-/**
- * Get CloudFront CDN URL based on environment
- * Returns the CloudFront domain for accessing uploaded files
- */
-function getCloudFrontUrl(): string {
-  const hostname = window.location.hostname;
+/** A local preview of the chosen file; undefined where the browser (or jsdom) has no object URLs. */
+function localPreviewUrl(file: File): string | undefined {
+  return typeof URL.createObjectURL === 'function' ? URL.createObjectURL(file) : undefined;
+}
 
-  if (hostname === 'localhost' || hostname === '127.0.0.1') {
-    // Local development - files served from MinIO
-    // Include bucket name in URL for MinIO path-style access
-    return 'http://localhost:8450/batbern-development-company-logos';
-  }
-
-  // Production (batbern.ch or www.batbern.ch)
-  return 'https://cdn.batbern.ch';
+/** The extension of the file name, lower case, for the materials confirm. */
+function extensionOf(fileName: string): string {
+  const dot = fileName.lastIndexOf('.');
+  return dot < 0 ? '' : fileName.slice(dot + 1).toLowerCase();
 }
 
 export const useFileUpload = (options: UseFileUploadOptions) => {
@@ -168,7 +165,8 @@ export const useFileUpload = (options: UseFileUploadOptions) => {
         return null;
       }
 
-      const { uploadUrl, fileId, s3Key, fileExtension, requiredHeaders } = presigned;
+      const { uploadUrl, fileId, requiredHeaders } = presigned;
+      const fileExtension = presigned.fileExtension ?? extensionOf(file.name);
 
       // ── Phase 2: Upload file directly to S3 using the presigned URL ─────────
       // The PUT bypasses our backend entirely. Errors here are S3-side or
@@ -304,13 +302,15 @@ export const useFileUpload = (options: UseFileUploadOptions) => {
       }
 
       // ── Phase 3: Confirm upload with backend ────────────────────────────────
+      let attachedUrl: string | null | undefined;
       try {
         const checksum = await calculateChecksum(file);
-        await target.confirm(fileId, {
+        const confirmed = await target.confirm(fileId, {
           fileId,
           fileExtension,
           checksum,
         });
+        attachedUrl = confirmed ? confirmed.fileUrl : undefined;
       } catch (err) {
         const formatted = formatErrorForDisplay(err);
         console.error('[FileUpload] Phase 3 (confirm) failed — file IS in S3 but unconfirmed', {
@@ -334,12 +334,11 @@ export const useFileUpload = (options: UseFileUploadOptions) => {
       setUploadProgress(100);
       setIsUploading(false);
 
-      // Notify success with CloudFront URL for display
+      // Notify success with a URL to show: the attached file's CDN URL, else a local preview
       if (onUploadSuccess) {
-        const cloudFrontUrl = getCloudFrontUrl();
         onUploadSuccess({
           uploadId: fileId,
-          tempFileUrl: `${cloudFrontUrl}/${s3Key}`, // Use CloudFront URL instead of S3 direct URL
+          tempFileUrl: attachedUrl ?? localPreviewUrl(file),
         });
       }
 

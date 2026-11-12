@@ -36,7 +36,8 @@ flowchart LR
 Every service validates the JWT again and decides access itself with `@PreAuthorize` (ADR-008,
 #1147). The AWS HTTP API (`infrastructure/lib/stacks/api-gateway-stack.ts`) has a single catch-all
 route without an authorizer; the Spring gateway (`api-gateway/`) authenticates and routes by path
-prefix in `DomainRouter.determineTargetService`, and copies the incoming headers, including
+prefix in `DomainRouter.determineTargetService` (the upload contract `/uploads/{purpose}` by the
+purpose prefix, `company-…` CUMS, `event-…` EMS, Story 17.11), and copies the incoming headers, including
 `Authorization`, to the service (`DomainRouter.routeRequest`). Service URLs are Service Connect
 names (`http://event-management:8080`, see `api-gateway-service-stack.ts`).
 
@@ -674,12 +675,13 @@ silently miss their target (issue #1099).
 A participant with a login asks the organizers for a new logo of the company on their profile.
 The organizers decide in the Mail Center; company edits themselves stay `ORGANIZER`-only.
 
-- **Upload.** The person uploads through the normal logo flow (`/logos/presigned-url`, S3 PUT,
-  `/logos/{uploadId}/confirm`), then `POST /users/me/company-logo-requests {logoUploadId, note?}`
-  (`isAuthenticated`). CUMS associates the confirmed upload with the request right away
-  (`logos.associated_entity_type = 'LOGO_REQUEST'`, key `logos/requests/{uploadId}/logo.{ext}`), so
-  it has a CDN URL for the preview and `LogoCleanupService` (which removes expired PENDING and
-  CONFIRMED uploads) leaves it alone.
+- **Upload.** The person uploads a `company-logo` upload without target (`POST /uploads/company-logo`,
+  S3 PUT, `POST /uploads/company-logo/{uploadId}/confirm`; any signed-in user, Story 17.11), then
+  `POST /users/me/company-logo-requests {logoUploadId, note?}` (`isAuthenticated`). CUMS associates
+  the CONFIRMED upload with the request right away (`company_user_uploads.target_type =
+  'LOGO_REQUEST'`, key `logos/requests/{uploadId}/logo.{ext}`), so it has a CDN URL for the preview
+  and the upload expiry (`UploadExpiryJob`, which removes expired PENDING and CONFIRMED uploads)
+  leaves it alone. An unknown or not CONFIRMED upload is 409 `LOGO_NOT_READY` (400 before 17.11).
 - **Record.** `company_logo_requests` (CUMS V25): requester, company slug, snapshot of the old logo
   URL, the new upload id and URL, optional note, status OPEN / APPROVED / DECLINED, decided by/at,
   optional reason. One OPEN request per person and company (partial unique index, 409
@@ -690,9 +692,9 @@ The organizers decide in the Mail Center; company edits themselves stay `ORGANIZ
   SYSTEM. If EMS does not answer, nothing is stored (502 `LOGO_REQUEST_NOT_DELIVERED`); the client
   uploads again on retry, because the association has already moved the temporary S3 object.
 - **Decision** (`ORGANIZER`). `POST /users/company-logo-requests/{id}/approve` copies the logo to the
-  company's final key (`logos/{year}/companies/{name}/logo-{uploadId}.{ext}`) and sets it through
-  `CompanyService.applyRequestedLogo` (cache invalidation, `CompanyUpdatedEvent`, like an organizer
-  edit). `.../decline {reason?}` changes nothing on the company. Either way the requester is mailed
+  company's final key (`logos/{year}/companies/{name}/logo-{uploadId}.{ext}`, `UploadService.reassign`)
+  and sets it through `CompanyService.applyRequestedLogo` (cache invalidation, `CompanyUpdatedEvent`,
+  like an organizer edit). `.../decline {reason?}` changes nothing on the company. Either way the requester is mailed
   at the primary address (`company-logo-approved|declined-{de,en}`, the reason block only when given),
   best effort, and the conversation is closed after the commit (contract `.../decision`).
   The request's own copy of the logo stays, so the decided conversation still shows both logos.

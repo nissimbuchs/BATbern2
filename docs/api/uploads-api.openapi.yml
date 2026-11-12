@@ -1,0 +1,369 @@
+openapi: 3.1.0
+info:
+  title: BATbern Uploads API
+  version: 1.0.0
+  description: |
+    One upload contract for every file a user hands to BATbern (ADR-002, decision 2026-11-07,
+    Story 17.11). Three operations, the same in every service:
+
+    1. `POST /uploads/{purpose}` reserves an upload and returns a presigned S3 URL (15 minutes).
+    2. The client PUTs the file to that URL, with the headers in `requiredHeaders`.
+    3. `POST /uploads/{purpose}/{uploadId}/confirm` checks that the file is in S3. With a `target`
+       (an existing entity) it attaches the file right away (ASSOCIATED) and returns its `fileUrl`.
+       Without one (the entity does not exist yet, e.g. the company in the create form) the upload is
+       CONFIRMED and the entity create takes its `uploadId` (`logoUploadId`, `themeImageUploadId`).
+
+    `POST /uploads/{purpose}/import` fetches an image from an HTTPS URL on the server
+    (ADR-002 Scope Clarification 2) and returns a CONFIRMED upload.
+
+    **Purposes and the service that owns them.** The gateway routes by the purpose prefix:
+    `company-…` to company-user-management, `event-…` to event-management. A purpose another service
+    owns, or an unknown one, answers 404. `uploadId` is a transient handle (ADR-003 case table), only
+    valid under its purpose.
+
+    | purpose | owner | types | max size | target | import |
+    |---|---|---|---|---|---|
+    | `company-logo` | CUMS | png, jpeg, svg | 5 MB | `companyName` (ORGANIZER) | yes (ORGANIZER) |
+    | `event-theme-image` | EMS | png, jpeg, svg | 5 MB | `eventCode` (ORGANIZER) | no |
+
+    **Lifecycle.** PENDING (reserved) → CONFIRMED (file in S3) → ASSOCIATED (attached to its entity).
+    A PENDING upload older than 24 hours and a CONFIRMED one older than 7 days are deleted with their
+    S3 object by the nightly expiry job.
+  contact:
+    name: BATbern Platform Team
+    email: platform@batbern.ch
+  license:
+    name: Proprietary
+    identifier: Proprietary
+
+servers:
+  - url: https://api.batbern.ch/api/v1
+    description: Production
+  - url: http://localhost:8080/api/v1
+    description: Development
+
+tags:
+  - name: Uploads
+    description: Presign, confirm and import of a file for one purpose (ADR-002)
+
+paths:
+  /uploads/{purpose}:
+    post:
+      tags:
+        - Uploads
+      summary: Reserve an upload and get a presigned S3 URL
+      description: |
+        Checks type and size for the purpose (400) and, with a `target`, that the caller may attach
+        to it (403) and that it exists (404). Returns the presigned PUT URL, valid 15 minutes. Any
+        signed-in user may upload without a target; the file does nothing until an entity that the
+        caller may change takes it.
+      operationId: createFileUpload
+      parameters:
+        - $ref: '#/components/parameters/Purpose'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUploadRequest'
+      responses:
+        '201':
+          description: Upload reserved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UploadSlot'
+              examples:
+                default:
+                  summary: a reserved company logo upload
+                  value:
+                    uploadId: 3f2b8c1e-5d4a-4e6b-9a7c-1b2d3e4f5a6b
+                    uploadUrl: https://www.batbern.ch/
+                    expiresAt: '2026-11-12T10:15:00Z'
+                    requiredHeaders:
+                      Content-Type: image/png
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /uploads/{purpose}/{uploadId}/confirm:
+    post:
+      tags:
+        - Uploads
+      summary: Confirm an upload, and attach it when a target is given
+      description: |
+        Checks that the file is in S3 (409 when it is not). Without a `target`: PENDING → CONFIRMED.
+        With a `target`: the file moves to its final key and is attached to the entity (ASSOCIATED),
+        e.g. it becomes the company logo. Confirming an upload that is already ASSOCIATED is 409; an
+        unknown, expired or other-purpose `uploadId` is 404.
+      operationId: confirmFileUpload
+      parameters:
+        - $ref: '#/components/parameters/Purpose'
+        - name: uploadId
+          in: path
+          required: true
+          description: The upload handle from `createFileUpload` or `importFileUpload`
+          schema:
+            type: string
+            maxLength: 100
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConfirmUploadRequest'
+      responses:
+        '200':
+          description: Upload confirmed (or attached)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Upload'
+              examples:
+                default:
+                  summary: a company logo attached to its company
+                  value:
+                    uploadId: 3f2b8c1e-5d4a-4e6b-9a7c-1b2d3e4f5a6b
+                    purpose: company-logo
+                    status: ASSOCIATED
+                    fileUrl: https://cdn.batbern.ch/logos/2026/companies/acme/logo-3f2b8c1e-5d4a-4e6b-9a7c-1b2d3e4f5a6b.png
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /uploads/{purpose}/import:
+    post:
+      tags:
+        - Uploads
+      summary: Import an image from an HTTPS URL (server-side)
+      description: |
+        The server fetches the image (ADR-002 Scope Clarification 2: there are no bytes on the
+        client to presign) and stores it as a CONFIRMED upload, ready for the entity create. Only
+        purposes that allow an import (404 otherwise). A URL that is not HTTPS, not an image or too
+        large is 400; an upstream that cannot be reached or answers with an error is 502.
+      operationId: importFileUpload
+      parameters:
+        - $ref: '#/components/parameters/Purpose'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ImportUploadRequest'
+      responses:
+        '201':
+          description: Image imported
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Upload'
+              examples:
+                default:
+                  summary: an imported company logo, ready for the create
+                  value:
+                    uploadId: 3f2b8c1e-5d4a-4e6b-9a7c-1b2d3e4f5a6b
+                    purpose: company-logo
+                    status: CONFIRMED
+                    fileUrl: null
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '502':
+          description: The image URL could not be fetched
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  parameters:
+    Purpose:
+      name: purpose
+      in: path
+      required: true
+      description: |
+        What the file is for. Decides the owning service, the rules and the target. The values
+        are those of `UploadPurpose`; a service answers 404 for a purpose it does not own.
+      schema:
+        type: string
+        enum:
+          - company-logo
+          - event-theme-image
+
+  schemas:
+    UploadPurpose:
+      type: string
+      enum:
+        - company-logo
+        - event-theme-image
+
+    UploadTarget:
+      type: object
+      description: |
+        The existing entity the file is for, by its meaningful ID (ADR-003). Set the one key of
+        the purpose: `companyName` for `company-logo`, `eventCode` for `event-theme-image`.
+      additionalProperties: false
+      properties:
+        companyName:
+          type: string
+          maxLength: 255
+        eventCode:
+          type: string
+          maxLength: 50
+
+    CreateUploadRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - fileName
+        - contentType
+        - size
+      properties:
+        fileName:
+          type: string
+          minLength: 1
+          maxLength: 255
+          description: Original file name with extension, e.g. `logo.png`
+        contentType:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: MIME type, signed into the upload URL
+        size:
+          type: integer
+          format: int64
+          minimum: 1
+          description: Size in bytes, signed into the upload URL
+        target:
+          $ref: '#/components/schemas/UploadTarget'
+
+    UploadSlot:
+      type: object
+      required:
+        - uploadId
+        - uploadUrl
+        - expiresAt
+        - requiredHeaders
+      properties:
+        uploadId:
+          type: string
+        uploadUrl:
+          type: string
+          description: Presigned S3 PUT URL. A credential until it expires; never log it.
+        expiresAt:
+          type: string
+          format: date-time
+          description: When the upload URL stops working
+        requiredHeaders:
+          type: object
+          additionalProperties:
+            type: string
+          description: Headers the PUT must send (the signed Content-Type)
+
+    ConfirmUploadRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        target:
+          $ref: '#/components/schemas/UploadTarget'
+
+    ImportUploadRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - url
+      properties:
+        url:
+          type: string
+          minLength: 1
+          maxLength: 2000
+          description: HTTPS URL of the image
+        fileName:
+          type: string
+          maxLength: 255
+          description: Base file name; the extension comes from the content type
+
+    Upload:
+      type: object
+      required:
+        - uploadId
+        - purpose
+        - status
+        - fileUrl
+      properties:
+        uploadId:
+          type: string
+        purpose:
+          $ref: '#/components/schemas/UploadPurpose'
+        status:
+          type: string
+          enum:
+            - PENDING
+            - CONFIRMED
+            - ASSOCIATED
+        fileUrl:
+          type: string
+          nullable: true
+          description: CDN URL of the attached file; null until ASSOCIATED
+
+    ErrorResponse:
+      $ref: './_shared.openapi.yml#/components/schemas/ErrorResponse'
+
+  responses:
+    BadRequest:
+      description: Type, size or request not valid for the purpose
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Unauthorized:
+      description: Not signed in
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Forbidden:
+      description: The caller may not attach to this target, or not import
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    NotFound:
+      description: Unknown purpose for this service, unknown target, or unknown or expired upload
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Conflict:
+      description: The upload is not in a state for this step (already attached, file missing)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: AWS Cognito JWT token
+
+security:
+  - BearerAuth: []

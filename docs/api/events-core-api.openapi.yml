@@ -261,6 +261,10 @@ paths:
                     workflowState: CREATED
         '400':
           $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/ThemeImageUploadNotFound'
+        '409':
+          $ref: '#/components/responses/ThemeImageUploadNotReady'
         '500':
           $ref: '#/components/responses/InternalServerError'
   /public/events/current:
@@ -826,7 +830,9 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
         '404':
-          $ref: '#/components/responses/NotFound'
+          $ref: '#/components/responses/EventOrThemeImageUploadNotFound'
+        '409':
+          $ref: '#/components/responses/ThemeImageUploadNotReady'
         '500':
           $ref: '#/components/responses/InternalServerError'
     patch:
@@ -903,7 +909,9 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
         '404':
-          $ref: '#/components/responses/NotFound'
+          $ref: '#/components/responses/EventOrThemeImageUploadNotFound'
+        '409':
+          $ref: '#/components/responses/ThemeImageUploadNotReady'
         '500':
           $ref: '#/components/responses/InternalServerError'
     delete:
@@ -3128,7 +3136,7 @@ components:
           nullable: true
           maxLength: 100
           example: abc123-def456
-          description: 'Upload ID from /logos/presigned-url for event theme image.
+          description: 'A CONFIRMED event-theme-image upload (uploads-api) for the event theme image. Unknown, expired or of another purpose 404, not CONFIRMED 409; nothing is stored or changed then.
 
             Story 2.5.3a: Event Theme Image Upload
 
@@ -3187,7 +3195,7 @@ components:
           type: string
           nullable: true
           maxLength: 100
-          description: Upload ID from /logos/presigned-url for event theme image
+          description: A CONFIRMED event-theme-image upload (uploads-api) for the event theme image
     PatchEventRequest:
       type: object
       properties:
@@ -3237,7 +3245,7 @@ components:
           type: string
           nullable: true
           maxLength: 100
-          description: Upload ID from /logos/presigned-url for event theme image
+          description: A CONFIRMED event-theme-image upload (uploads-api) for the event theme image
         qnaEnabled:
           type: boolean
           description: 'Story 7.5 rework: master on/off for this event''s per-session Q&A.'
@@ -3856,6 +3864,57 @@ components:
                 errorCode: NOT_FOUND
                 message: Event not found with id evt-999
                 timestamp: 2025-01-15 10:30:00+00:00
+    ThemeImageUploadNotFound:
+      description: |
+        The `themeImageUploadId` is no `event-theme-image` upload: unknown, expired or of another
+        purpose, e.g. a company logo (Story 17.11). Nothing is stored.
+      content:
+        application/json:
+          schema:
+            $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+          examples:
+            themeImageUploadNotFound:
+              value:
+                status: 404
+                error: Not Found
+                message: Upload 3f2b8c1e-5d4a-4e6b-9a7c-1b2d3e4f5a6b not found
+                timestamp: 2026-11-12 10:30:00+00:00
+    EventOrThemeImageUploadNotFound:
+      description: |
+        The event does not exist, or the `themeImageUploadId` is no `event-theme-image` upload
+        (unknown, expired or of another purpose, Story 17.11). Nothing is changed.
+      content:
+        application/json:
+          schema:
+            $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+          examples:
+            eventNotFound:
+              value:
+                error: RESOURCE_NOT_FOUND
+                errorCode: NOT_FOUND
+                message: Event not found with id evt-999
+                timestamp: 2025-01-15 10:30:00+00:00
+            themeImageUploadNotFound:
+              value:
+                status: 404
+                error: Not Found
+                message: Upload 3f2b8c1e-5d4a-4e6b-9a7c-1b2d3e4f5a6b not found
+                timestamp: 2026-11-12 10:30:00+00:00
+    ThemeImageUploadNotReady:
+      description: |
+        The `themeImageUploadId` is not CONFIRMED (still PENDING or already attached, Story 17.11).
+        Nothing is stored or changed.
+      content:
+        application/json:
+          schema:
+            $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+          examples:
+            themeImageUploadNotReady:
+              value:
+                status: 409
+                error: Conflict
+                message: Upload 3f2b8c1e-5d4a-4e6b-9a7c-1b2d3e4f5a6b is PENDING, not CONFIRMED
+                timestamp: 2026-11-12 10:30:00+00:00
     UnprocessableEntity:
       description: Request cannot be processed due to business logic
       content:

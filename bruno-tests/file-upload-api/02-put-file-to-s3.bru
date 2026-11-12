@@ -1,0 +1,29 @@
+meta {
+  name: PUT the file to the presigned URL
+  type: http
+  seq: 2
+}
+
+put {
+  url: {{testUploadUrl}}
+  body: text
+  auth: none
+}
+
+headers {
+  Content-Type: image/png
+}
+
+body:text {
+  PNG!
+}
+
+assert {
+  res.status: eq 200
+}
+
+docs {
+  The client uploads straight to S3 (MinIO locally); the backend never sees the bytes (ADR-002).
+  No Authorization header: the presigned URL is the credential. The object lands at a temp key and
+  is deleted by the nightly upload expiry unless a company takes it.
+}

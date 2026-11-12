@@ -1,38 +1,27 @@
 /**
  * #1246: on /profile the participant sees the company logo and asks the organizers for a new one.
+ *
+ * Story 17.11: the real useFileUpload and upload service run; the backend answers through the MSW
+ * harness (uploads-api, companies-api, users-api), the S3 PUT through a handler of its own.
  */
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { describe, it, expect, beforeEach } from 'vitest';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import MockAdapter from 'axios-mock-adapter';
-import apiClient from '@/services/api/apiClient';
-
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({ t: (key: string) => key }),
-}));
-
-const uploadFile = vi.fn();
-const useFileUploadOptions = vi.fn();
-vi.mock('@/hooks/useFileUpload/useFileUpload', () => ({
-  useFileUpload: (options: unknown) => {
-    useFileUploadOptions(options);
-    return { uploadFile, isUploading: false, uploadProgress: 0, error: null };
-  },
-}));
-
+import { http, HttpResponse } from 'msw';
+import { api } from '@/test/msw/api';
+import { server } from '@/test/msw/server';
 import { CompanyLogoSection } from '../CompanyLogoSection';
-import { logoUploadTarget } from '@/services/api/companyApi';
 
-// Company and logo-request calls are stubbed at the HTTP boundary.
-const COMPANY_URL = '/companies/acme';
-const OPEN_REQUEST_URL = '/users/me/company-logo-requests/open';
-const REQUESTS_URL = '/users/me/company-logo-requests';
-let http: MockAdapter;
+const S3_PUT = 'https://bucket.example/logos/temp/up-1/logo-up-1.png';
 
 const company = {
   name: 'acme',
   displayName: 'ACME AG',
+  isVerified: true,
+  createdAt: '2026-01-01T00:00:00Z',
+  updatedAt: '2026-01-01T00:00:00Z',
+  createdBy: 'orga.nizer',
   logo: { url: 'https://cdn.example.com/old.png' },
 };
 
@@ -52,16 +41,40 @@ function renderSection() {
 
 const png = () => new File(['x'], 'logo.png', { type: 'image/png' });
 
+/** The upload of the chosen file goes through: reserve, S3 PUT, confirm (no target). */
+function uploadSucceeds() {
+  api.on(
+    'createFileUpload',
+    () => ({
+      uploadId: 'up-1',
+      uploadUrl: S3_PUT,
+      expiresAt: '2026-11-12T10:15:00Z',
+      requiredHeaders: { 'Content-Type': 'image/png' },
+    }),
+    { status: 201 }
+  );
+  server.use(http.put(S3_PUT, () => new HttpResponse(null, { status: 200 })));
+  api.on('confirmFileUpload', () => ({
+    uploadId: 'up-1',
+    purpose: 'company-logo' as const,
+    status: 'CONFIRMED' as const,
+    fileUrl: null,
+  }));
+}
+
+async function chooseAndSend(note?: string) {
+  await userEvent.click(await screen.findByTestId('company-logo-request-button'));
+  await userEvent.upload(screen.getByTestId('company-logo-file'), png());
+  if (note) {
+    await userEvent.type(screen.getByTestId('company-logo-note'), note);
+  }
+  await userEvent.click(screen.getByTestId('company-logo-send'));
+}
+
 describe('CompanyLogoSection', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
-    http = new MockAdapter(apiClient);
-    http.onGet(COMPANY_URL).reply(200, company);
-    http.onGet(OPEN_REQUEST_URL).reply(204);
-  });
-
-  afterEach(() => {
-    http.restore();
+    api.on('getCompany', () => company);
+    api.on('getMyOpenCompanyLogoRequest', () => new HttpResponse(null, { status: 204 }));
   });
 
   it('shows the current logo and the request button', async () => {
@@ -74,39 +87,31 @@ describe('CompanyLogoSection', () => {
     expect(screen.getByTestId('company-logo-request-button')).toBeEnabled();
   });
 
-  it('uploads the logo to the logo upload target', async () => {
-    renderSection();
-
-    await screen.findByTestId('company-logo-current');
-    expect(useFileUploadOptions).toHaveBeenCalledWith(
-      expect.objectContaining({ target: logoUploadTarget })
-    );
-  });
-
   it('says so when the company has no logo yet', async () => {
-    http.onGet(COMPANY_URL).reply(200, { name: 'acme' });
+    api.on('getCompany', () => ({ ...company, logo: undefined }));
     renderSection();
 
-    expect(await screen.findByTestId('company-logo-none')).toBeInTheDocument();
+    expect(await screen.findByTestId('company-logo-none')).toHaveTextContent('No logo yet');
   });
 
-  it('uploads the chosen file and sends the request with the note', async () => {
-    uploadFile.mockResolvedValue('up-1');
-    http.onPost(REQUESTS_URL).reply(200, { status: 'OPEN' });
+  it('uploads the chosen file as a company-logo without target and sends the request', async () => {
+    uploadSucceeds();
     renderSection();
 
-    await userEvent.click(await screen.findByTestId('company-logo-request-button'));
-    await userEvent.upload(screen.getByTestId('company-logo-file'), png());
-    await userEvent.type(screen.getByTestId('company-logo-note'), 'Rebranding');
-    await userEvent.click(screen.getByTestId('company-logo-send'));
+    await chooseAndSend('Rebranding');
 
-    expect(uploadFile).toHaveBeenCalled();
-    expect(http.history.post).toHaveLength(1);
-    expect(JSON.parse(http.history.post[0].data)).toEqual({
+    expect(await screen.findByTestId('company-logo-sent')).toBeInTheDocument();
+    expect(api.calls('createFileUpload')[0].params).toEqual({ purpose: 'company-logo' });
+    expect(api.calls('createFileUpload')[0].body).toEqual({
+      fileName: 'logo.png',
+      contentType: 'image/png',
+      size: 1,
+    });
+    expect(api.calls('confirmFileUpload')[0].body).toEqual({});
+    expect(api.calls('createCompanyLogoRequest')[0].body).toEqual({
       logoUploadId: 'up-1',
       note: 'Rebranding',
     });
-    expect(await screen.findByTestId('company-logo-sent')).toBeInTheDocument();
   });
 
   it('cannot send without a file', async () => {
@@ -118,25 +123,34 @@ describe('CompanyLogoSection', () => {
   });
 
   it('a failed upload sends no request', async () => {
-    uploadFile.mockResolvedValue(null);
+    api.on('createFileUpload', () =>
+      HttpResponse.json({ status: 400, message: 'Type image/gif is not allowed' }, { status: 400 })
+    );
     renderSection();
 
-    await userEvent.click(await screen.findByTestId('company-logo-request-button'));
-    await userEvent.upload(screen.getByTestId('company-logo-file'), png());
-    await userEvent.click(screen.getByTestId('company-logo-send'));
+    await chooseAndSend();
 
-    expect(http.history.post).toHaveLength(0);
     expect(await screen.findByTestId('company-logo-error')).toHaveTextContent(
-      'profile.logo.errorUpload'
+      'The file could not be uploaded.'
     );
+    expect(api.calls('createFileUpload')).toHaveLength(1);
+    expect(api.calls('createCompanyLogoRequest')).toHaveLength(0);
   });
 
   it('an open request replaces the button with a notice', async () => {
-    http.onGet(OPEN_REQUEST_URL).reply(200, {
-      requestId: 'r-1',
-      status: 'OPEN',
-      newLogoUrl: 'https://cdn.example.com/new.png',
-    });
+    api.on('getMyOpenCompanyLogoRequest', () =>
+      HttpResponse.json({
+        requestId: '3f2b8c1e-5d4a-4e6b-9a7c-1b2d3e4f5a6b',
+        status: 'OPEN',
+        requesterUsername: 'anna.muster',
+        requesterName: 'Anna Muster',
+        companyName: 'acme',
+        companyDisplayName: 'ACME AG',
+        oldLogoUrl: 'https://cdn.example.com/old.png',
+        newLogoUrl: 'https://cdn.example.com/new.png',
+        createdAt: '2026-11-12T10:00:00Z',
+      })
+    );
     renderSection();
 
     expect(await screen.findByTestId('company-logo-pending')).toBeInTheDocument();
@@ -144,16 +158,18 @@ describe('CompanyLogoSection', () => {
   });
 
   it('shows the reason when the server refuses the request', async () => {
-    uploadFile.mockResolvedValue('up-1');
-    http.onPost(REQUESTS_URL).reply(409, { errorCode: 'LOGO_REQUEST_OPEN' });
+    uploadSucceeds();
+    api.on('createCompanyLogoRequest', () =>
+      HttpResponse.json({ status: 409, errorCode: 'LOGO_REQUEST_OPEN' }, { status: 409 })
+    );
     renderSection();
 
-    await userEvent.click(await screen.findByTestId('company-logo-request-button'));
-    await userEvent.upload(screen.getByTestId('company-logo-file'), png());
-    await userEvent.click(screen.getByTestId('company-logo-send'));
+    await chooseAndSend();
 
-    expect(await screen.findByTestId('company-logo-error')).toHaveTextContent(
-      'profile.logo.errorOpen'
-    );
+    await waitFor(() => {
+      expect(screen.getByTestId('company-logo-error')).toHaveTextContent(
+        'A request for this company is already with the organizers.'
+      );
+    });
   });
 });

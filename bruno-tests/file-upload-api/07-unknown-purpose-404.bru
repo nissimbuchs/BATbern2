@@ -1,0 +1,38 @@
+meta {
+  name: Reserve - unknown purpose is 404
+  type: http
+  seq: 7
+}
+
+post {
+  url: {{baseUrl}}/uploads/mail-attachment
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "fileName": "bruno-test-{{$timestamp}}.png",
+    "contentType": "image/png",
+    "size": 4
+  }
+}
+
+assert {
+  res.status: eq 404
+}
+
+docs {
+  The gateway routes /uploads/{purpose} by the purpose prefix (company-, event-); no service owns
+  any other purpose.
+}

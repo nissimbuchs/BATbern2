@@ -90,6 +90,8 @@ jobs:
             spec: docs/api/event-mail-api.openapi.yml
           - api: gateway-config
             spec: docs/api/gateway-config-api.openapi.yml
+          - api: uploads
+            spec: docs/api/uploads-api.openapi.yml
 
     steps:
       - name: Checkout code

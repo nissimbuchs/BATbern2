@@ -34,7 +34,7 @@ public class TestAwsConfig {
     /**
      * Mock S3Client for tests
      * Story 1.16.3: Generic File Upload Service
-     * Required by GenericLogoService and LogoCleanupService
+     * Story 17.11: the upload service (company-logo) and its expiry job run on it
      */
     @Bean
     @Primary

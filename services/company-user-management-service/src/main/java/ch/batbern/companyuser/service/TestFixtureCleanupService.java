@@ -19,7 +19,7 @@ import java.util.regex.Pattern;
 /**
  * Bruno test-fixture cleanup logic for CUMS.
  *
- * <p>Removes rows in {@code companies}, {@code user_profiles}, and {@code logos} that match
+ * <p>Removes rows in {@code companies}, {@code user_profiles}, and {@code company_user_uploads} that match
  * canonical Bruno test-data prefixes (see {@code bruno-tests/README.md}). The set of allowed
  * prefixes per entity type is locked in this class — request bodies cannot supply arbitrary
  * patterns, only one of the literal prefixes we recognize.
@@ -218,11 +218,11 @@ public class TestFixtureCleanupService {
                 // logos are the only ones tied to a specific company; PENDING/CONFIRMED
                 // logos for failed Bruno uploads are swept by the lifecycle expiry, not by
                 // this endpoint.
-                int logosForCompanies = repository.deleteLogosByAssociatedEntityIdLike(
-                        request.getPrefix() + "%"  // associated_entity_id starting with prefix
+                int logosForCompanies = repository.deleteUploadsByTargetIdLike(
+                        request.getPrefix() + "%"  // target_id starting with prefix
                 );
                 int companies = repository.deleteCompaniesByNameLike(likePattern);
-                counts.put("logos", logosForCompanies);
+                counts.put("company_user_uploads", logosForCompanies);
                 counts.put("companies", companies);
                 break;
             case USERS:

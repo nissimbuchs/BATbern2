@@ -4,7 +4,6 @@ import ch.batbern.shared.utils.LoggingUtils;
 import ch.batbern.events.notification.NotificationRepository;
 import ch.batbern.events.config.CacheConfig;
 import ch.batbern.events.domain.Event;
-import ch.batbern.events.domain.Logo;
 import ch.batbern.events.domain.Registration;
 import ch.batbern.events.dto.CreateEventRequest;
 import ch.batbern.events.dto.CreateRegistrationResponse;
@@ -34,10 +33,12 @@ import ch.batbern.events.exception.EventHasRealRegistrationsException;
 import ch.batbern.events.exception.EventNotFoundException;
 import ch.batbern.events.exception.RegistrationNotFoundException;
 import ch.batbern.events.repository.EventRepository;
-import ch.batbern.events.repository.LogoRepository;
 import ch.batbern.events.service.AgendaConfigResolver;
 import ch.batbern.events.service.EventSearchService;
 import ch.batbern.events.service.publishing.PublicEventShaper;
+import ch.batbern.events.domain.EventManagementUpload;
+import ch.batbern.events.service.EventThemeImageUploadHandler;
+import ch.batbern.shared.upload.UploadService;
 import ch.batbern.events.service.publishing.PublicSessionVisibilityPolicy;
 import ch.batbern.events.service.publishing.PublicSessionVisibilityService;
 import ch.batbern.shared.api.DeterministicPaging;
@@ -114,13 +115,12 @@ public class EventController implements EventsApi, EventReportingApi, PublicEven
     private final NotificationRepository notificationRepository;
     private final EventMapper eventMapper;
     private final EventGeneratedMapper eventGeneratedMapper;
-    private final LogoRepository logoRepository;
+    private final UploadService<EventManagementUpload> uploadService;
     private final ch.batbern.events.repository.SessionRepository sessionRepository;
     private final ch.batbern.events.service.EventAnalyticsService eventAnalyticsService;
     private final ch.batbern.shared.events.DomainEventPublisher eventPublisher;
     private final ch.batbern.events.security.SecurityContextHelper securityContextHelper;
     private final CacheManager cacheManager;
-    private final ch.batbern.events.service.GenericLogoService genericLogoService;
     private final ch.batbern.events.client.UserApiClient userApiClient;
     private final ch.batbern.events.service.RegistrationService registrationService;
     private final ch.batbern.events.repository.RegistrationRepository registrationRepository;
@@ -1010,6 +1010,10 @@ public class EventController implements EventsApi, EventReportingApi, PublicEven
                 .registrationCapacity(request.getRegistrationCapacity())
                 .build();
 
+        // A theme image upload that cannot be attached fails the create before anything is saved
+        // (404 unknown or of another purpose, 409 not CONFIRMED; Story 17.11)
+        requireThemeImage(request.getThemeImageUploadId(), null);
+
         // Save event
         Event savedEvent = eventRepository.save(event);
 
@@ -1095,6 +1099,7 @@ public class EventController implements EventsApi, EventReportingApi, PublicEven
 
         // Track original themeImageUploadId before updates (Story 2.5.3a bug fix)
         String originalUploadId = event.getThemeImageUploadId();
+        requireThemeImage(request.getThemeImageUploadId(), originalUploadId);
 
         // Replace all fields
         event.setTitle(request.getTitle());
@@ -1234,6 +1239,7 @@ public class EventController implements EventsApi, EventReportingApi, PublicEven
 
         // Track original themeImageUploadId before updates (Story 2.5.3a bug fix)
         String originalUploadId = event.getThemeImageUploadId();
+        requireThemeImage(request.getThemeImageUploadId(), originalUploadId);
 
         // Update only provided fields
         applyPatchUpdates(event, request);
@@ -2246,56 +2252,31 @@ public class EventController implements EventsApi, EventReportingApi, PublicEven
     }
 
     /**
-     * Associate theme image with event
-     * Story 2.5.3a: Event Theme Image Upload
-     *
-     * @param event Event entity to associate image with
-     * @param uploadId Upload ID from three-phase upload pattern
+     * A new theme image upload must be a CONFIRMED {@code event-theme-image} upload of this service:
+     * 404 unknown, expired or of another purpose (a company logo), 409 not CONFIRMED (Story 17.11).
+     * Checked before the event is saved; blank (remove) and the unchanged id pass.
+     */
+    private void requireThemeImage(String uploadId, String currentUploadId) {
+        if (uploadId != null && !uploadId.isBlank() && !uploadId.equals(currentUploadId)) {
+            uploadService.requireConfirmed(EventThemeImageUploadHandler.PURPOSE, uploadId);
+        }
+    }
+
+    /**
+     * Associate theme image with event (Story 2.5.3a; through the upload contract since Story 17.11).
+     * The upload was checked by {@link #requireThemeImage} before the save; a storage failure here
+     * leaves the event without the image and is logged.
      */
     private void associateThemeImage(Event event, String uploadId) {
-        log.info("Starting theme image association for event {} with uploadId {}", event.getEventCode(), uploadId);
         try {
-            // Fetch Logo to get file extension (Story 2.5.3a: preserve original file type)
-            Logo logo = logoRepository.findByUploadId(uploadId)
-                    .orElseThrow(() -> new RuntimeException("Logo not found for uploadId: " + uploadId));
-
-            String fileExtension = logo.getFileExtension();
-            log.info("Retrieved file extension from Logo: {}", fileExtension);
-
-            // Generate final S3 key with correct file extension
-            int year = java.time.LocalDate.now().getYear();
-            String finalS3Key = String.format(
-                "logos/%d/events/%s/theme-%s.%s",
-                year,
-                event.getEventCode(),
-                uploadId,
-                fileExtension
-            );
-            log.info("Generated final S3 key: {}", finalS3Key);
-
-            // Call GenericLogoService to associate
-            log.info("Calling GenericLogoService.associateLogoWithEntity...");
-            String cloudFrontUrl = genericLogoService.associateLogoWithEntity(
-                uploadId,
-                "EVENT",
-                event.getEventCode(),
-                finalS3Key
-            );
-            log.info("GenericLogoService returned CloudFront URL: {}", cloudFrontUrl);
-
-            // Update event with CloudFront URL
-            event.setThemeImageUrl(cloudFrontUrl);
-            log.info("Set themeImageUrl on event entity: {}", cloudFrontUrl);
-
-            Event savedEvent = eventRepository.save(event);
-            log.info("Saved event to database. themeImageUrl in saved entity: {}", savedEvent.getThemeImageUrl());
-
-            log.info("Theme image associated successfully for event {}: {}", event.getEventCode(), cloudFrontUrl);
-
-        } catch (Exception e) {
+            String url = uploadService.associate(EventThemeImageUploadHandler.PURPOSE, uploadId,
+                    event.getEventCode()).getFileUrl();
+            event.setThemeImageUrl(url);
+            eventRepository.save(event);
+            log.info("Theme image associated for event {}: {}", event.getEventCode(), url);
+        } catch (RuntimeException e) {
             log.error("FAILED to associate theme image for event {} with uploadId {}: {}",
                     event.getEventCode(), uploadId, e.getMessage(), e);
-            // Don't fail event creation - theme image is optional
         }
     }
 

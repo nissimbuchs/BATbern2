@@ -1430,11 +1430,12 @@ paths:
         - Company Logo Requests
       summary: Ask the organizers for a new logo of the caller's company
       description: |
-        #1246. The logo is uploaded first through the logo upload flow (`/logos/presigned-url`,
-        upload, `/logos/{uploadId}/confirm`); this call hands the confirmed upload over. The
-        request is for the company on the caller's profile (409 `NO_COMPANY` without one). At most
-        one open request per person and company (409 `LOGO_REQUEST_OPEN`). An unknown or
-        unconfirmed upload is 400 `LOGO_NOT_READY`. The upload is kept until the decision, and the
+        #1246. The logo is uploaded first as a `company-logo` upload without a target
+        (uploads-api: `POST /uploads/company-logo`, upload, `POST /uploads/company-logo/{uploadId}/confirm`);
+        this call hands the confirmed upload over. The request is for the company on the caller's
+        profile (409 `NO_COMPANY` without one). At most one open request per person and company
+        (409 `LOGO_REQUEST_OPEN`). An unknown upload, or one that is not CONFIRMED, is 409
+        `LOGO_NOT_READY`. The upload is kept until the decision, and the
         request opens a conversation in the Mail Center at once (502 `LOGO_REQUEST_NOT_DELIVERED`
         when that fails; nothing is stored then).
       operationId: createCompanyLogoRequest
@@ -3298,7 +3299,7 @@ components:
           type: string
           minLength: 1
           maxLength: 100
-          description: Upload id of a confirmed logo upload (`/logos/{uploadId}/confirm`)
+          description: Upload id of a CONFIRMED `company-logo` upload (uploads-api)
         note:
           type: string
           maxLength: 500

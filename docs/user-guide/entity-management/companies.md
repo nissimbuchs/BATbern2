@@ -372,7 +372,8 @@ GET    /api/companies              List companies (paginated)
 GET    /api/companies/{id}         Get company by ID
 PUT    /api/companies/{id}         Update company
 DELETE /api/companies/{id}         Delete company
-POST   /api/companies/{id}/logo    Request presigned URL for logo upload
+POST   /api/v1/uploads/company-logo                    Reserve a logo upload (presigned URL)
+POST   /api/v1/uploads/company-logo/{uploadId}/confirm Confirm it (with a target: replace the logo)
 ```
 
 ### Resource Expansion

@@ -1,16 +1,17 @@
 /**
  * useCompanyBatchImport Hook Tests
  *
- * The server-side logo upload moved into companyApi.uploadLogoFromUrl. HTTP is stubbed at the
- * boundary with axios-mock-adapter on apiClient; the real services run.
+ * The logo is imported on the server (`POST /uploads/company-logo/import`, Story 17.11). The
+ * backend answers through the MSW harness, which checks every request against the specs; the
+ * real services run.
  */
 
 import type { ReactNode } from 'react';
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import MockAdapter from 'axios-mock-adapter';
-import apiClient from '@/services/api/apiClient';
+import { HttpResponse } from 'msw';
+import { api } from '@/test/msw/api';
 import { useCompanyBatchImport } from '../useCompanyBatchImport';
 import type { ImportCandidate } from '@/types/companyImport.types';
 
@@ -24,24 +25,26 @@ const candidate = (overrides: Partial<ImportCandidate> = {}): ImportCandidate =>
   }) as unknown as ImportCandidate;
 
 describe('useCompanyBatchImport', () => {
-  let http: MockAdapter;
   let queryClient: QueryClient;
   const wrapper = ({ children }: { children: ReactNode }) => (
     <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
   );
 
   beforeEach(() => {
-    http = new MockAdapter(apiClient);
     queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   });
 
-  afterEach(() => {
-    http.restore();
-  });
-
-  it('should_uploadLogoFromUrlThenCreate_when_newCompanyHasLogo', async () => {
-    http.onPost('/logos/upload-from-url').reply(200, { uploadId: 'up-1' });
-    http.onPost('/companies').reply(201, { name: 'acme' });
+  it('should_importLogoThenCreate_when_newCompanyHasLogo', async () => {
+    api.on(
+      'importFileUpload',
+      () => ({
+        uploadId: 'up-1',
+        purpose: 'company-logo' as const,
+        status: 'CONFIRMED' as const,
+        fileUrl: null,
+      }),
+      { status: 201 }
+    );
     const { result } = renderHook(() => useCompanyBatchImport(), { wrapper });
 
     let outcome: Awaited<ReturnType<typeof result.current.importCompanies>> | undefined;
@@ -50,20 +53,22 @@ describe('useCompanyBatchImport', () => {
     });
 
     expect(outcome).toMatchObject({ total: 1, success: 1, failed: 0 });
-    expect(http.history.post.map((r) => r.url)).toEqual(['/logos/upload-from-url', '/companies']);
-    expect(JSON.parse(http.history.post[0].data)).toEqual({
+    expect(api.allCalls().map((c) => c.key)).toEqual(['importFileUpload', 'createCompany']);
+    expect(api.calls('importFileUpload')[0].params).toEqual({ purpose: 'company-logo' });
+    expect(api.calls('importFileUpload')[0].body).toEqual({
       url: 'https://img.example.com/acme.png',
-      filename: 'acme-logo',
+      fileName: 'acme-logo',
     });
-    expect(JSON.parse(http.history.post[1].data)).toMatchObject({
+    expect(api.calls('createCompany')[0].body).toMatchObject({
       name: 'acme',
       logoUploadId: 'up-1',
     });
   });
 
-  it('should_createWithoutLogo_when_logoUploadFails', async () => {
-    http.onPost('/logos/upload-from-url').reply(502);
-    http.onPost('/companies').reply(201, { name: 'acme' });
+  it('should_createWithoutLogo_when_logoImportFails', async () => {
+    api.on('importFileUpload', () =>
+      HttpResponse.json({ status: 502, message: 'upstream down' }, { status: 502 })
+    );
     const { result } = renderHook(() => useCompanyBatchImport(), { wrapper });
 
     let outcome: Awaited<ReturnType<typeof result.current.importCompanies>> | undefined;
@@ -72,17 +77,16 @@ describe('useCompanyBatchImport', () => {
     });
 
     expect(outcome).toMatchObject({ success: 1, failed: 0 });
-    expect(JSON.parse(http.history.post[1].data)).not.toHaveProperty('logoUploadId');
+    expect(api.calls('createCompany')[0].body).not.toHaveProperty('logoUploadId');
   });
 
-  it('should_skipLogoUpload_when_noLogoUrl', async () => {
-    http.onPost('/companies').reply(201, { name: 'acme' });
+  it('should_skipLogoImport_when_noLogoUrl', async () => {
     const { result } = renderHook(() => useCompanyBatchImport(), { wrapper });
 
     await act(async () => {
       await result.current.importCompanies([candidate({ logoUrl: null })]);
     });
 
-    expect(http.history.post.map((r) => r.url)).toEqual(['/companies']);
+    expect(api.allCalls().map((c) => c.key)).toEqual(['createCompany']);
   });
 });

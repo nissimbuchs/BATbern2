@@ -34,6 +34,7 @@ import type { operations as GatewayOps } from '../../types/generated/gateway-con
 import type { operations as PartnerOps } from '../../types/generated/partner-api.types';
 import type { operations as MeetingOps } from '../../types/generated/partner-meetings-api.types';
 import type { operations as TopicOps } from '../../types/generated/topics-api.types';
+import type { operations as UploadOps } from '../../types/generated/uploads-api.types';
 import type { operations as UserOps } from '../../types/generated/user-api.types';
 
 /** operationIds that partners-api and topics-api both define: qualified by spec in the key. */
@@ -58,6 +59,7 @@ export type Operations = CompanyOps &
   Omit<PartnerOps, SharedIds> &
   MeetingOps &
   Omit<TopicOps, SharedIds> &
+  UploadOps &
   UserOps & {
     'partners-api/listTopics': PartnerOps['listTopics'];
     'partners-api/updateTopic': PartnerOps['updateTopic'];

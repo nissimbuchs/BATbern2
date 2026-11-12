@@ -35,8 +35,8 @@ import static org.mockito.Mockito.when;
 public class TestAwsConfig {
 
     /**
-     * Mock S3Client for testing GenericLogoService
-     * Story 2.5.3a: Event Theme Image Upload
+     * Mock S3Client: the boundary of the upload service (Story 17.11, event-theme-image) and the
+     * media services
      */
     // #1186: not named s3Client. The test profile allows bean overriding, so a test bean with the
     // production bean's name was silently replaced by AwsConfig's real client and @Primary never applied.

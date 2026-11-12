@@ -1144,7 +1144,7 @@ export interface components {
       description?: string;
       eventType: components['schemas']['EventType'];
       /**
-       * @description Upload ID from /logos/presigned-url for event theme image.
+       * @description A CONFIRMED event-theme-image upload (uploads-api) for the event theme image. Unknown, expired or of another purpose 404, not CONFIRMED 409; nothing is stored or changed then.
        *     Story 2.5.3a: Event Theme Image Upload
        * @example abc123-def456
        */
@@ -1174,7 +1174,7 @@ export interface components {
       metadata?: string;
       description?: string;
       eventType?: components['schemas']['EventType'];
-      /** @description Upload ID from /logos/presigned-url for event theme image */
+      /** @description A CONFIRMED event-theme-image upload (uploads-api) for the event theme image */
       themeImageUploadId?: string | null;
     };
     PatchEventRequest: {
@@ -1200,7 +1200,7 @@ export interface components {
       publishedAt?: string;
       metadata?: string;
       description?: string;
-      /** @description Upload ID from /logos/presigned-url for event theme image */
+      /** @description A CONFIRMED event-theme-image upload (uploads-api) for the event theme image */
       themeImageUploadId?: string | null;
       /** @description Story 7.5 rework: master on/off for this event's per-session Q&A. */
       qnaEnabled?: boolean;
@@ -1950,6 +1950,42 @@ export interface components {
         'application/json': components['schemas']['ErrorResponse'];
       };
     };
+    /**
+     * @description The `themeImageUploadId` is no `event-theme-image` upload: unknown, expired or of another
+     *     purpose, e.g. a company logo (Story 17.11). Nothing is stored.
+     */
+    ThemeImageUploadNotFound: {
+      headers: {
+        [name: string]: unknown;
+      };
+      content: {
+        'application/json': components['schemas']['ErrorResponse'];
+      };
+    };
+    /**
+     * @description The event does not exist, or the `themeImageUploadId` is no `event-theme-image` upload
+     *     (unknown, expired or of another purpose, Story 17.11). Nothing is changed.
+     */
+    EventOrThemeImageUploadNotFound: {
+      headers: {
+        [name: string]: unknown;
+      };
+      content: {
+        'application/json': components['schemas']['ErrorResponse'];
+      };
+    };
+    /**
+     * @description The `themeImageUploadId` is not CONFIRMED (still PENDING or already attached, Story 17.11).
+     *     Nothing is stored or changed.
+     */
+    ThemeImageUploadNotReady: {
+      headers: {
+        [name: string]: unknown;
+      };
+      content: {
+        'application/json': components['schemas']['ErrorResponse'];
+      };
+    };
     /** @description Request cannot be processed due to business logic */
     UnprocessableEntity: {
       headers: {
@@ -2062,6 +2098,8 @@ export interface operations {
         };
         content?: never;
       };
+      404: components['responses']['ThemeImageUploadNotFound'];
+      409: components['responses']['ThemeImageUploadNotReady'];
       500: components['responses']['InternalServerError'];
     };
   };
@@ -2294,7 +2332,8 @@ export interface operations {
         };
         content?: never;
       };
-      404: components['responses']['NotFound'];
+      404: components['responses']['EventOrThemeImageUploadNotFound'];
+      409: components['responses']['ThemeImageUploadNotReady'];
       500: components['responses']['InternalServerError'];
     };
   };
@@ -2361,7 +2400,8 @@ export interface operations {
         };
         content?: never;
       };
-      404: components['responses']['NotFound'];
+      404: components['responses']['EventOrThemeImageUploadNotFound'];
+      409: components['responses']['ThemeImageUploadNotReady'];
       500: components['responses']['InternalServerError'];
     };
   };

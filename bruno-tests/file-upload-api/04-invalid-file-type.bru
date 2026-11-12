@@ -1,0 +1,39 @@
+meta {
+  name: Reserve - invalid file type is 400
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/uploads/company-logo
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "fileName": "bruno-test-{{$timestamp}}.pdf",
+    "contentType": "application/pdf",
+    "size": 1024
+  }
+}
+
+assert {
+  res.status: eq 400
+}
+
+tests {
+  test("should name the allowed types", function() {
+    expect(res.getBody().message).to.include('allowed');
+  });
+}

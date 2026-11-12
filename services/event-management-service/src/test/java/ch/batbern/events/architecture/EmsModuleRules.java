@@ -6,6 +6,8 @@ import com.tngtech.archunit.lang.ArchCondition;
 import com.tngtech.archunit.lang.ArchRule;
 import com.tngtech.archunit.lang.ConditionEvents;
 import com.tngtech.archunit.lang.SimpleConditionEvent;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
 
 import java.util.List;
 
@@ -97,6 +99,31 @@ final class EmsModuleRules {
                 .should(notExist("a client toward partner-coordination, which is downstream of EMS (ADR-016)"))
                 .as("Service direction: EMS has no client toward partner-coordination (downstream)")
                 .allowEmptyShould(true);
+    }
+
+    /**
+     * Story 17.11: EMS keeps its files in its own table ({@code event_management_uploads}); the
+     * {@code logos} table belongs to company-user-management (ADR-002 decision 2026-11-07). No
+     * entity of this service maps it. Not frozen: there is no violation to accept.
+     */
+    static ArchRule noEntityMapsLogos(String root) {
+        return classes().that().resideInAPackage(root + "..")
+                .and().areAnnotatedWith(Entity.class)
+                .should(notMapTable("logos"))
+                .as("Data ownership: no EMS entity maps the logos table (company-user-management's, Story 17.11)")
+                .allowEmptyShould(true);
+    }
+
+    static ArchCondition<JavaClass> notMapTable(String table) {
+        return new ArchCondition<>("not map the table " + table) {
+            @Override
+            public void check(JavaClass javaClass, ConditionEvents events) {
+                javaClass.tryGetAnnotationOfType(Table.class)
+                        .filter(t -> t.name().equalsIgnoreCase(table))
+                        .ifPresent(t -> events.add(SimpleConditionEvent.violated(javaClass,
+                                "Entity <" + javaClass.getName() + "> maps the table " + table)));
+            }
+        };
     }
 
     static ArchCondition<JavaClass> notExist(String reason) {

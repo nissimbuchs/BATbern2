@@ -168,13 +168,60 @@ task openApiGenerateUsers(type: org.openapitools.generator.gradle.plugin.tasks.G
     ]
 }
 
-compileJava.dependsOn tasks.openApiGenerate, tasks.openApiGenerateUsers
+// Story 17.11: the one upload contract (uploads-api); this service implements its company-* purposes
+task openApiGenerateUploads(type: org.openapitools.generator.gradle.plugin.tasks.GenerateTask) {
+    generatorName = 'spring'
+    inputSpec = "$rootDir/docs/api/uploads-api.openapi.yml".toString()
+    outputDir = "$buildDir/generated-uploads".toString()
+    apiPackage = 'ch.batbern.companyuser.uploads.api.generated'
+    modelPackage = 'ch.batbern.companyuser.uploads.dto.generated'
+    invokerPackage = 'ch.batbern.companyuser.uploads.api.invoker'
+    validateSpec = false
+
+    importMappings = [
+        'ErrorResponse': 'ch.batbern.shared.dto.ErrorResponse'
+    ]
+
+    typeMappings = [
+        'ErrorResponse': 'ch.batbern.shared.dto.ErrorResponse'
+    ]
+
+    configOptions = [
+        dateLibrary: 'java8',
+        interfaceOnly: 'true',
+        skipDefaultInterface: 'true',
+        useTags: 'true',
+        useSpringBoot3: 'true',
+        documentationProvider: 'none',
+        openApiNullable: 'false',
+        hideGenerationTimestamp: 'true',
+        useBeanValidation: 'true',
+        performBeanValidation: 'true',
+        useOptional: 'false',
+        delegatePattern: 'false',
+        useJakartaEe: 'true',
+        generateBuilders: 'true',
+        containerDefaultToNull: 'true'
+    ]
+
+    globalProperties = [
+        models: '',
+        apis: ''
+    ]
+
+    schemaMappings = [
+        'ErrorResponse': 'ch.batbern.shared.dto.ErrorResponse'
+    ]
+}
+
+compileJava.dependsOn tasks.openApiGenerate, tasks.openApiGenerateUsers, tasks.openApiGenerateUploads
 
 sourceSets {
     main {
         java {
             srcDir "$buildDir/generated/src/main/java"
             srcDir "$buildDir/generated-users/src/main/java"
+            srcDir "$buildDir/generated-uploads/src/main/java"
         }
     }
 }
@@ -182,6 +229,7 @@ sourceSets {
 clean {
     delete "$buildDir/generated"
     delete "$buildDir/generated-users"
+    delete "$buildDir/generated-uploads"
 }
 
 // Response conformance gate: every 2xx JSON response of an IT matches the spec of the operation
@@ -189,6 +237,7 @@ clean {
 ext.responseConformanceSpecs = [
     'docs/api/companies-api.openapi.yml',
     'docs/api/users-api.openapi.yml',
+    'docs/api/uploads-api.openapi.yml',
     'docs/api/internal/cums-internal.openapi.yml'
 ]
 apply from: "${rootProject.projectDir}/gradle/response-conformance.gradle"

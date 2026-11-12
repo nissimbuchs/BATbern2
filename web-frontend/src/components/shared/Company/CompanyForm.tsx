@@ -35,6 +35,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import type { components } from '@/types/generated/company-api.types';
 import { FileUpload } from '@/components/shared/FileUpload/FileUpload';
+import { uploadTarget } from '@/services/uploadService';
 import industriesData from '@/data/industries.json';
 
 type Company = components['schemas']['CompanyResponse'];
@@ -103,6 +104,12 @@ interface CompanyFormProps {
 }
 
 // Extract industry names from industries.json (using 'en' locale for now)
+/**
+ * The logo is confirmed without a target, also in edit mode: Save attaches it through
+ * `logoUploadId`, Cancel leaves the company as it was (Story 17.11).
+ */
+const LOGO_UPLOAD = uploadTarget('company-logo');
+
 const INDUSTRY_OPTIONS = industriesData.industries.map((ind) => ind.name.en).sort();
 
 export const CompanyForm: React.FC<CompanyFormProps> = ({
@@ -492,6 +499,7 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
               {t('company.fields.logo')}
             </Typography>
             <FileUpload
+              uploadTarget={LOGO_UPLOAD}
               currentFileUrl={logoUrl}
               onUploadSuccess={handleLogoUploadSuccess}
               onUploadError={handleLogoUploadError}

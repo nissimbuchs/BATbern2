@@ -9,7 +9,6 @@ import ch.batbern.events.domain.Session;
 import ch.batbern.events.domain.SessionUser;
 import ch.batbern.events.domain.SpeakerPool;
 import ch.batbern.events.repository.EventRepository;
-import ch.batbern.events.repository.LogoRepository;
 import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.events.repository.SessionUserRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
@@ -28,7 +27,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.CacheManager;
 import org.springframework.context.annotation.Import;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -95,9 +93,6 @@ class PublicSessionVisibilityIntegrationTest extends AbstractIntegrationTest {
     /** CUMS behind the real UserApiClient (Story 17.0b2). */
     @Autowired
     private CumsContractHarness cums;
-
-    @MockitoBean
-    private LogoRepository logoRepository;
 
     private Event event;
 

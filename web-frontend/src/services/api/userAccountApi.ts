@@ -500,7 +500,7 @@ export type CompanyLogoRequestView = components['schemas']['CompanyLogoRequestVi
 
 /**
  * #1246: asks the organizers for a new logo of the caller's company. `logoUploadId` comes from a
- * confirmed upload (useFileUpload). 409 `NO_COMPANY` / `LOGO_REQUEST_OPEN`, 400 `LOGO_NOT_READY`.
+ * confirmed upload (useFileUpload). 409 `NO_COMPANY` / `LOGO_REQUEST_OPEN` / `LOGO_NOT_READY`.
  */
 export const createCompanyLogoRequest = async (
   logoUploadId: string,

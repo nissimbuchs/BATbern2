@@ -14,11 +14,9 @@
 # silently: accepting one means adding it here, with the reason, in the same PR.
 # Stories: _bmad-output/initiative-architecture-hardening/ (17.6 dead surface, 17.9 and 17.10 API
 # conventions I and II, 17.9b one transition idiom for the event lifecycle, 17.10b API conventions
-# III (EMS, done), 17.10d its CUMS part (done), 17.11 upload contract company-logo, 17.11a-d upload purposes).
+# III (EMS, done), 17.10d its CUMS part (done), 17.11a-d upload purposes; 17.11 upload contract company-logo, done).
 
 # --- Stories and issues that remove the lines ---
-G12	17.11	(no-verb-segment|uuid-path-param)	/logos/
-G13	17.11	uuid-path-param	/users/company-logo-requests/
 N1	17.11a	no-verb-segment	/users/\{username\}/(picture/confirm|profile-picture/upload-from-url)$
 N2	17.11b	no-verb-segment	/events/\{eventCode\}/photos/confirm$
 N3	17.11c	no-verb-segment	/teaser-images/confirm$
@@ -26,6 +24,11 @@ N4	17.11d	(no-verb-segment|uuid-path-param)	(/materials/\{uploadId\}/confirm$|/s
 I1	#1070	no-literal-under-events	GET /events/current$
 
 # --- Exceptions accepted by the owner (2026-11-08) ---
+# X2 also holds, since Story 17.11 (2026-11-12, owner decision): the 3 company logo request
+# operations keyed by {requestId} (a transient request handle like the merge requests; moving them
+# under /companies/{companyName}/logo-requests needs a company name in the Mail Center contract and a
+# backfill, recorded in deferred-work) and the upload confirm keyed by {uploadId} (a transient upload
+# handle, only valid under its purpose, deleted by the expiry job unless attached).
 # X3 also holds the 4 additional-email operations keyed by {emailId} (Story 4.10d, 2026-11-11,
 # owner's blanket go): the address is the natural key and personal data, the row is loaded scoped
 # to the caller (findByIdAndUser, another user's id is 404), pinned by UserAdditionalEmailsIntegrationTest.
@@ -33,7 +36,7 @@ I1	#1070	no-literal-under-events	GET /events/current$
 # blanket go): the speaker pool entry has no username before READY (ADR-003 case table), and every
 # one is loaded with findByIdAndEventId, each backed by SpeakerCrossEventScopingIntegrationTest.
 X1	exception: ADR-003 owned child, a UUID that never leaves its meaningful parent	uuid-path-param	^(DELETE /events/\{eventCode\}/photos/\{photoId\}|DELETE /events/\{eventCode\}/speakers/\{speakerId\}|GET /events/\{eventCode\}/speakers/\{speakerId\}/content|GET /events/\{eventCode\}/speakers/\{speakerId\}/outreach|GET /events/\{eventCode\}/speakers/\{speakerId\}/status/history|PATCH /events/\{eventCode\}/speakers/\{speakerId\}|POST /events/\{eventCode\}/speakers/\{speakerId\}/abstract-analysis|POST /events/\{eventCode\}/speakers/\{speakerId\}/content|POST /events/\{eventCode\}/speakers/\{speakerId\}/outreach|POST /events/\{eventCode\}/speakers/\{speakerId\}/promote|POST /events/\{eventCode\}/speakers/\{speakerId\}/review|POST /events/\{eventCode\}/speakers/\{speakerId\}/send-invitation|PUT /events/\{eventCode\}/speakers/\{speakerId\}/status|DELETE /events/\{eventCode\}/sessions/\{sessionSlug\}/materials/\{materialId\}|DELETE /events/\{eventCode\}/sessions/\{sessionSlug\}/qna/posts/\{postId\}|DELETE /events/\{eventCode\}/teaser-images/\{imageId\}|DELETE /partners/\{companyName\}/notes/\{noteId\}|DELETE /users/\{username\}/watch-pairing/\{watchId\}|GET /events/\{eventCode\}/sessions/\{sessionSlug\}/materials/\{materialId\}/download|PATCH /events/\{eventCode\}/teaser-images/\{imageId\}|PATCH /events/\{eventCode\}/thanks/\{id\}|PATCH /partners/\{companyName\}/notes/\{noteId\})$
-X2	exception: ADR-003 transient technical handle (job, request), no natural name	uuid-path-param	^(GET /events/\{eventCode\}/ai/theme-image/jobs/\{jobId\}|GET /users/merge-requests/\{requestId\}|POST /users/merge-requests/\{requestId\}/approve|POST /users/merge-requests/\{requestId\}/decline)$
+X2	exception: ADR-003 transient technical handle (job, request, upload), no natural name	uuid-path-param	^(GET /events/\{eventCode\}/ai/theme-image/jobs/\{jobId\}|GET /users/company-logo-requests/\{requestId\}|GET /users/merge-requests/\{requestId\}|POST /uploads/\{purpose\}/\{uploadId\}/confirm|POST /users/company-logo-requests/\{requestId\}/approve|POST /users/company-logo-requests/\{requestId\}/decline|POST /users/merge-requests/\{requestId\}/approve|POST /users/merge-requests/\{requestId\}/decline)$
 X3	exception: ADR-003 the natural key is personal data (an email), so the UUID stays	uuid-path-param	^(DELETE /newsletter/subscribers/\{id\}|POST /newsletter/subscribers/\{id\}/resubscribe|POST /newsletter/subscribers/\{id\}/unsubscribe|POST /newsletter/subscribers/\{id\}/unsuppress|DELETE /users/me/additional-emails/\{emailId\}|PATCH /users/me/additional-emails/\{emailId\}|POST /users/me/additional-emails/\{emailId\}/make-primary|POST /users/me/additional-emails/\{emailId\}/resend-verification)$
 X4	exception: ADR-003 top-level aggregate without a natural name	uuid-path-param	^(DELETE /notifications/\{id\}|DELETE /partner-meetings/\{meetingId\}|DELETE /partners/topics/\{topicId\}|DELETE /partners/topics/\{topicId\}/vote|DELETE /tasks/templates/\{templateId\}|DELETE /tasks/\{taskId\}|GET /partner-meetings/\{meetingId\}|GET /partner-meetings/\{meetingId\}/rsvps|PATCH /notifications/\{id\}|PATCH /partner-meetings/\{meetingId\}|PATCH /partners/topics/\{topicId\}|PATCH /partners/topics/\{topicId\}/status|PATCH /tasks/\{taskId\}|POST /partner-meetings/\{meetingId\}/send-invite|POST /partners/topics/\{topicId\}/vote|PUT /tasks/templates/\{templateId\})$
 X5	exception: ADR-013 section 1 state transition addressed through a literal sub-resource, not an instance identifier	no-verb-segment	^(POST /events/\{eventCode\}/ai/theme-image/apply|POST /speaker-portal/events/\{eventCode\}/content/submit|POST /users/me/profile-claims/confirm)$

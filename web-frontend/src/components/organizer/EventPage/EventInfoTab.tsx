@@ -40,7 +40,7 @@ import type { Topic } from '@/types/topic.types';
 import type { Event, EventDetailUI, EventUI } from '@/types/event.types';
 import { EventTypeSelector } from '@/components/organizer/EventTypeSelector/EventTypeSelector';
 import { AiAssistDrawer } from './AiAssistDrawer';
-import { logoUploadTarget } from '@/services/api/companyApi';
+import { uploadTarget } from '@/services/uploadService';
 import { TopicSelectionOverlay } from './topicOverlay/TopicSelectionOverlay';
 import {
   createEventSchema,
@@ -63,6 +63,9 @@ function toDateInput(value?: string): string {
   return Number.isNaN(d.getTime()) ? '' : d.toISOString().slice(0, 10);
 }
 
+/** Confirmed without a target: the Save button attaches it through `themeImageUploadId`. */
+const THEME_IMAGE_UPLOAD = uploadTarget('event-theme-image');
+
 export const EventInfoTab: React.FC<EventInfoTabProps> = ({ event, eventCode }) => {
   const { t } = useTranslation('events');
   const { aiContentEnabled } = useFeatureFlags();
@@ -81,7 +84,7 @@ export const EventInfoTab: React.FC<EventInfoTabProps> = ({ event, eventCode }) 
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [imageRemoved, setImageRemoved] = useState(false);
   const { uploadFile, isUploading } = useFileUpload({
-    target: logoUploadTarget,
+    target: THEME_IMAGE_UPLOAD,
     maxFileSize: 5 * 1024 * 1024,
     allowedTypes: ['image/png', 'image/jpeg', 'image/svg+xml'],
     onUploadSuccess: (data) => {

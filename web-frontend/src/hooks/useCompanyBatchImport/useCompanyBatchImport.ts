@@ -8,22 +8,19 @@
 
 import { useState, useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { companyApiClient, uploadLogoFromUrl } from '@/services/api/companyApi';
+import { companyApiClient } from '@/services/api/companyApi';
+import { importUpload } from '@/services/uploadService';
 import type { ImportCandidate, BatchImportResult } from '@/types/companyImport.types';
 
 /**
- * Upload logo using server-side upload endpoint
- * This completely bypasses the frontend to avoid binary data corruption
- * with JPEG/BMP files (UTF-8 encoding issue).
- *
- * Returns the uploadId to include in CreateCompanyRequest
+ * Imports the logo on the server (`POST /uploads/company-logo/import`, Story 17.11): no bytes pass
+ * through the browser. Returns the CONFIRMED upload's id for `CreateCompanyRequest.logoUploadId`.
  */
 async function uploadLogo(logoUrl: string, companyName: string): Promise<string> {
   try {
     const filename = `${companyName}-logo`;
 
-    // Use server-side upload endpoint (bypasses frontend entirely)
-    return await uploadLogoFromUrl(logoUrl, filename);
+    return await importUpload('company-logo', logoUrl, filename);
   } catch (error) {
     // Re-throw with more context
     if (error instanceof Error) {

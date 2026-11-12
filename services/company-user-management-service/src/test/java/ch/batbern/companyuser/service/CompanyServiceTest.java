@@ -56,11 +56,6 @@ class CompanyServiceTest {
     @Mock
     private SecurityContextHelper securityContextHelper;
 
-    @Mock
-    private GenericLogoService genericLogoService;
-
-    @Mock
-    private ch.batbern.companyuser.repository.LogoRepository logoRepository;
 
     // The real slug rule (own code, no mock): the key a company gets is what these tests check
     private final SlugGenerationService slugService = new SlugGenerationService();
@@ -75,8 +70,10 @@ class CompanyServiceTest {
 
     @BeforeEach
     void setUp() {
-        companyService = new CompanyService(companyRepository, logoRepository, eventPublisher, searchService,
-                securityContextHelper, genericLogoService, slugService, new CompanyInserter(companyRepository));
+        // No upload service: no test here sets a logo upload id (the logo paths run in
+        // UploadsControllerIntegrationTest against the real upload service).
+        companyService = new CompanyService(companyRepository, eventPublisher, searchService,
+                securityContextHelper, null, slugService, new CompanyInserter(companyRepository));
 
         // Story 1.16.2: the company name (key) is the identifier, a slug since 2026-11-09
         companyName = "testcompany";

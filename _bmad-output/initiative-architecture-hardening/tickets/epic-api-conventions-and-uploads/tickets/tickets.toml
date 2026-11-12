@@ -117,6 +117,7 @@ after = ["10b", 11]
 hitl = false
 risk = "medium"
 references = ["docs/architecture/ADR-002-generic-file-upload-service.md"]
+notes = ["17.11 (2026-11-12) already created the EMS uploads table and wiring: event_management_uploads (V153), EventManagementUpload, EventManagementUploadRepository, UploadConfig, UploadsController (implements the generated uploads-api UploadsApi) and UploadExpiryJob (02:15), with event-theme-image as the first EMS purpose (EventThemeImageUploadHandler). 11b adds an EventPhotoUploadHandler and the event-photo value to the UploadPurpose enum in uploads-api; it does not create the table. The X2 line POST /uploads/{purpose}/{uploadId}/confirm is already accepted, so a new purpose adds no Spectral line."]
 
 [[entry]]
 id = "11c"

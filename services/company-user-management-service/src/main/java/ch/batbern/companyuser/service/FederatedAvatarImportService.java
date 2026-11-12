@@ -2,8 +2,9 @@ package ch.batbern.companyuser.service;
 
 import ch.batbern.companyuser.domain.User;
 import ch.batbern.companyuser.repository.UserRepository;
-import ch.batbern.companyuser.service.ImageUrlFetcher.FetchedImage;
-import ch.batbern.companyuser.service.ImageUrlFetcher.ImageFetchException;
+import ch.batbern.shared.upload.ImageUrlFetcher;
+import ch.batbern.shared.upload.ImageUrlFetcher.FetchedImage;
+import ch.batbern.shared.upload.ImageUrlFetcher.ImageFetchException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;

@@ -65,7 +65,6 @@
     "src/hooks/useCompanySearch/__tests__/useCompanySearch.test.tsx",
     "src/hooks/useEmailTemplates.test.ts",
     "src/hooks/useErrorToast/useErrorToast.test.ts",
-    "src/hooks/useFileUpload/useFileUpload.test.ts",
     "src/hooks/useForgotPassword/__tests__/useForgotPassword.test.tsx",
     "src/hooks/useKeyboardNavigation.test.ts",
     "src/hooks/useMyRegistration.test.ts",

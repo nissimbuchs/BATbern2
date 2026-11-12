@@ -93,7 +93,7 @@ public class CompanyLogoRequestController implements CompanyLogoRequestsApi {
     @ExceptionHandler(CompanyLogoRequestService.LogoNotReadyException.class)
     public ResponseEntity<ErrorResponse> notReady(CompanyLogoRequestService.LogoNotReadyException e,
             HttpServletRequest request) {
-        return error(HttpStatus.BAD_REQUEST, "LOGO_NOT_READY", e.getMessage(), request);
+        return error(HttpStatus.CONFLICT, "LOGO_NOT_READY", e.getMessage(), request);
     }
 
     @ExceptionHandler(MailCenterRequestContract.MailCenterCallFailedException.class)

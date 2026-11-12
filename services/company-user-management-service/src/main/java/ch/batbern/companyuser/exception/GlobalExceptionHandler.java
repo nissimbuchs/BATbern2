@@ -640,26 +640,6 @@ public class GlobalExceptionHandler {
     }
 
     /**
-     * Story 1.16.3: Handle logo not found exception
-     */
-    @ExceptionHandler(LogoNotFoundException.class)
-    public ResponseEntity<ErrorResponse> handleLogoNotFoundException(
-            LogoNotFoundException ex,
-            HttpServletRequest request) {
-        log.warn("Logo not found: {}", LoggingUtils.maskEmailsIn(ex.getMessage()));
-        ErrorResponse error = ErrorResponse.builder()
-                .timestamp(Instant.now())
-                .path(request.getRequestURI())
-                .status(HttpStatus.NOT_FOUND.value())
-                .error("Not Found")
-                .message(ex.getMessage())
-                .correlationId(CorrelationIdGenerator.current())
-                .severity("LOW")
-                .build();
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
-    }
-
-    /**
      * Story 1.16.3: Handle illegal state exceptions (e.g., deleting associated logos)
      * Returns 400 Bad Request for business rule violations
      */
@@ -769,6 +749,31 @@ public class GlobalExceptionHandler {
                 .severity("LOW")
                 .build();
         return ResponseEntity.status(ex.getStatusCode()).body(error);
+    }
+
+    /**
+     * No controller method matches the request (a removed path such as the former {@code /logos/*},
+     * Story 17.11): 404. Without this handler the catch-all {@code Exception} branch below answered
+     * 500, the trap EMS closed in Story 11.F.1.
+     */
+    @ExceptionHandler({
+        org.springframework.web.servlet.NoHandlerFoundException.class,
+        org.springframework.web.servlet.resource.NoResourceFoundException.class
+    })
+    public ResponseEntity<ErrorResponse> handleNoHandlerFoundException(
+            Exception ex,
+            HttpServletRequest request) {
+        log.debug("No handler for {} {}: {}", request.getMethod(), request.getRequestURI(), ex.getMessage());
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .path(request.getRequestURI())
+                .status(HttpStatus.NOT_FOUND.value())
+                .error("Not Found")
+                .message("No endpoint " + request.getMethod() + " " + request.getRequestURI())
+                .correlationId(CorrelationIdGenerator.current())
+                .severity("LOW")
+                .build();
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
     }
 
     /**

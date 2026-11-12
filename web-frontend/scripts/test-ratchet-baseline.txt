@@ -3,11 +3,8 @@
 # Rules: docs/architecture/coding-standards.md, section "Test fidelity rules".
 # Per test file: own-code mocks and class-level @Transactional ITs. Counts may only fall.
 # Format: <category> TAB <path> TAB <count>, sorted, zero counts omitted.
-be-mock-in-process	services/company-user-management-service/src/test/java/ch/batbern/companyuser/controller/LogoControllerTest.java	2
 be-mock-in-process	services/event-management-service/src/test/java/ch/batbern/events/controller/DeregistrationControllerIntegrationTest.java	3
-be-mock-in-process	services/event-management-service/src/test/java/ch/batbern/events/controller/EventControllerIntegrationTest.java	1
 be-mock-in-process	services/event-management-service/src/test/java/ch/batbern/events/controller/EventPhotoControllerIntegrationTest.java	1
-be-mock-in-process	services/event-management-service/src/test/java/ch/batbern/events/controller/PublicSessionVisibilityIntegrationTest.java	1
 be-mock-in-process	services/event-management-service/src/test/java/ch/batbern/events/controller/RegistrationControllerIntegrationTest.java	1
 be-mock-in-process	services/event-management-service/src/test/java/ch/batbern/events/controller/SessionQnaIntegrationTest.java	1
 be-mock-in-process	services/event-management-service/src/test/java/ch/batbern/events/forwarding/CalendarDeclineServiceIntegrationTest.java	1
@@ -74,7 +71,6 @@ be-transactional-it	services/company-user-management-service/src/test/java/ch/ba
 be-transactional-it	services/company-user-management-service/src/test/java/ch/batbern/companyuser/controller/DuplicateCandidatesIntegrationTest.java	1
 be-transactional-it	services/company-user-management-service/src/test/java/ch/batbern/companyuser/controller/HealthControllerIntegrationTest.java	1
 be-transactional-it	services/company-user-management-service/src/test/java/ch/batbern/companyuser/controller/InternalUserControllerIntegrationTest.java	1
-be-transactional-it	services/company-user-management-service/src/test/java/ch/batbern/companyuser/controller/LogoControllerTest.java	1
 be-transactional-it	services/company-user-management-service/src/test/java/ch/batbern/companyuser/controller/PublicOrganizerControllerIntegrationTest.java	1
 be-transactional-it	services/company-user-management-service/src/test/java/ch/batbern/companyuser/controller/PublicUserControllerIntegrationTest.java	1
 be-transactional-it	services/company-user-management-service/src/test/java/ch/batbern/companyuser/controller/UserMergeIntegrationTest.java	1
@@ -86,7 +82,6 @@ be-transactional-it	services/company-user-management-service/src/test/java/ch/ba
 be-transactional-it	services/company-user-management-service/src/test/java/ch/batbern/companyuser/integration/FederatedAvatarImportIntegrationTest.java	1
 be-transactional-it	services/company-user-management-service/src/test/java/ch/batbern/companyuser/integration/JITAdditionalEmailGuardIntegrationTest.java	1
 be-transactional-it	services/company-user-management-service/src/test/java/ch/batbern/companyuser/integration/JITProvisioningIntegrationTest.java	1
-be-transactional-it	services/company-user-management-service/src/test/java/ch/batbern/companyuser/integration/LogoUrlIntegrationTest.java	1
 be-transactional-it	services/company-user-management-service/src/test/java/ch/batbern/companyuser/integration/TestFixtureCleanupControllerIntegrationTest.java	1
 be-transactional-it	services/company-user-management-service/src/test/java/ch/batbern/companyuser/integration/UserProvisioningAndPatchIntegrationTest.java	1
 be-transactional-it	services/company-user-management-service/src/test/java/ch/batbern/companyuser/integration/UserServiceIssueCredentialsIntegrationTest.java	1
@@ -320,12 +315,10 @@ fe-mock-hooks	web-frontend/src/components/shared/Company/__tests__/ErrorHandling
 fe-mock-hooks	web-frontend/src/components/shared/Company/__tests__/Performance.test.tsx	2
 fe-mock-hooks	web-frontend/src/components/shared/Company/__tests__/Responsive.test.tsx	4
 fe-mock-hooks	web-frontend/src/components/shared/ErrorDisplay/ErrorToast.test.tsx	1
-fe-mock-hooks	web-frontend/src/components/shared/FileUpload/FileUpload.test.tsx	1
 fe-mock-hooks	web-frontend/src/components/shared/Layout/Accessibility.test.tsx	3
 fe-mock-hooks	web-frontend/src/components/shared/Layout/BaseLayout.test.tsx	3
 fe-mock-hooks	web-frontend/src/components/shared/Layout/ResponsiveLayout.test.tsx	3
 fe-mock-hooks	web-frontend/src/components/shared/Navigation/AppHeader.test.tsx	3
-fe-mock-hooks	web-frontend/src/components/user/CompanyLogoRequest/__tests__/CompanyLogoSection.test.tsx	1
 fe-mock-hooks	web-frontend/src/hooks/useMyRegistration.test.ts	1
 fe-mock-hooks	web-frontend/src/hooks/useTurnstile/useTurnstile.test.ts	1
 fe-mock-hooks	web-frontend/src/pages/PartnerCompanyPage.test.tsx	1
@@ -426,7 +419,6 @@ fe-mock-i18n	web-frontend/src/components/shared/Layout/BaseLayout.test.tsx	1
 fe-mock-i18n	web-frontend/src/components/shared/Layout/ResponsiveLayout.test.tsx	1
 fe-mock-i18n	web-frontend/src/components/shared/Navigation/AppHeader.test.tsx	1
 fe-mock-i18n	web-frontend/src/components/shared/Navigation/NavigationMenu.test.tsx	1
-fe-mock-i18n	web-frontend/src/components/user/CompanyLogoRequest/__tests__/CompanyLogoSection.test.tsx	1
 fe-mock-i18n	web-frontend/src/hooks/useRegistration/useRegistration.test.ts	1
 fe-mock-i18n	web-frontend/src/pages/PartnerCompanyPage.test.tsx	1
 fe-mock-i18n	web-frontend/src/pages/attendee/__tests__/AttendeeDashboardPage.test.tsx	1

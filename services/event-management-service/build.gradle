@@ -910,7 +910,53 @@ task openApiGenerateMail(type: org.openapitools.generator.gradle.plugin.tasks.Ge
 // OpenAPI Generator (media) — carved from events-api in API consolidation Phase 6
 
 // Make compileJava depend on all OpenAPI generation tasks
-compileJava.dependsOn tasks.openApiGenerate, tasks.openApiGenerateSessions, tasks.openApiGenerateSpeakers, tasks.openApiGenerateRegistrations, tasks.openApiGenerateNewsletter, tasks.openApiGenerateMedia, tasks.openApiGenerateAi, tasks.openApiGenerateAppSettings, tasks.openApiGenerateNotifications, tasks.openApiGenerateAnalytics, tasks.openApiGenerateWatch, tasks.openApiGenerateUsersClient, tasks.openApiGenerateTopics, tasks.openApiGenerateTasks, tasks.openApiGenerateMail
+// Story 17.11: the one upload contract (uploads-api); this service implements its event-* purposes
+task openApiGenerateUploads(type: org.openapitools.generator.gradle.plugin.tasks.GenerateTask) {
+    generatorName = 'spring'
+    inputSpec = "$rootDir/docs/api/uploads-api.openapi.yml".toString()
+    outputDir = "$buildDir/generated-uploads".toString()
+    apiPackage = 'ch.batbern.events.uploads.api.generated'
+    modelPackage = 'ch.batbern.events.uploads.dto.generated'
+    invokerPackage = 'ch.batbern.events.uploads.api.invoker'
+    validateSpec = false
+
+    importMappings = [
+        'ErrorResponse': 'ch.batbern.shared.dto.ErrorResponse'
+    ]
+
+    typeMappings = [
+        'ErrorResponse': 'ch.batbern.shared.dto.ErrorResponse'
+    ]
+
+    configOptions = [
+        dateLibrary: 'java8',
+        interfaceOnly: 'true',
+        skipDefaultInterface: 'true',
+        useTags: 'true',
+        useSpringBoot3: 'true',
+        documentationProvider: 'none',
+        openApiNullable: 'false',
+        hideGenerationTimestamp: 'true',
+        useBeanValidation: 'true',
+        performBeanValidation: 'true',
+        useOptional: 'false',
+        delegatePattern: 'false',
+        useJakartaEe: 'true',
+        generateBuilders: 'true',
+        containerDefaultToNull: 'true'
+    ]
+
+    globalProperties = [
+        models: '',
+        apis: ''
+    ]
+
+    schemaMappings = [
+        'ErrorResponse': 'ch.batbern.shared.dto.ErrorResponse'
+    ]
+}
+
+compileJava.dependsOn tasks.openApiGenerate, tasks.openApiGenerateSessions, tasks.openApiGenerateSpeakers, tasks.openApiGenerateRegistrations, tasks.openApiGenerateNewsletter, tasks.openApiGenerateMedia, tasks.openApiGenerateAi, tasks.openApiGenerateAppSettings, tasks.openApiGenerateNotifications, tasks.openApiGenerateAnalytics, tasks.openApiGenerateWatch, tasks.openApiGenerateUsersClient, tasks.openApiGenerateTopics, tasks.openApiGenerateTasks, tasks.openApiGenerateMail, tasks.openApiGenerateUploads
 
 // Add generated sources to source sets
 sourceSets {
@@ -931,6 +977,7 @@ sourceSets {
             srcDir "$buildDir/generated-topics/src/main/java"
             srcDir "$buildDir/generated-tasks/src/main/java"
             srcDir "$buildDir/generated-mail/src/main/java"
+            srcDir "$buildDir/generated-uploads/src/main/java"
         }
     }
 }
@@ -952,6 +999,7 @@ clean {
     delete "$buildDir/generated-topics"
     delete "$buildDir/generated-tasks"
     delete "$buildDir/generated-mail"
+    delete "$buildDir/generated-uploads"
 }
 
 // Response conformance gate: every 2xx JSON response of an IT matches the spec of the operation
@@ -971,6 +1019,7 @@ ext.responseConformanceSpecs = [
     'docs/api/event-tasks-api.openapi.yml',
     'docs/api/event-watch-api.openapi.yml',
     'docs/api/topics-api.openapi.yml',
+    'docs/api/uploads-api.openapi.yml',
     'docs/api/internal/ems-internal.openapi.yml'
 ]
 apply from: "${rootProject.projectDir}/gradle/response-conformance.gradle"

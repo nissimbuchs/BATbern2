@@ -1,0 +1,44 @@
+meta {
+  name: Confirm the company-logo upload (no target)
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/uploads/company-logo/{{testUploadId}}/confirm
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {}
+}
+
+assert {
+  res.status: eq 200
+  res.body.status: eq CONFIRMED
+  res.body.purpose: eq company-logo
+}
+
+tests {
+  test("should confirm without attaching (no target)", function() {
+    const body = res.getBody();
+    expect(body.uploadId).to.equal(bru.getVar("testUploadId"));
+    expect(body.fileUrl).to.equal(null);
+  });
+}
+
+docs {
+  Without a target the upload is CONFIRMED and waits for a company create or edit to take it as
+  logoUploadId. No target here on purpose: attaching would change a real company's logo.
+}
