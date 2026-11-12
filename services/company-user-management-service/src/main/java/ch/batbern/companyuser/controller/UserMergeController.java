@@ -1,8 +1,8 @@
 package ch.batbern.companyuser.controller;
 
 import ch.batbern.companyuser.api.generated.ProfileMergeApi;
-import ch.batbern.companyuser.client.EventManagementMailCenterClient;
-import ch.batbern.companyuser.client.EventManagementUserMergeClient;
+import ch.batbern.companyuser.client.UserReferenceContract;
+import ch.batbern.companyuser.client.MailCenterRequestContract;
 import ch.batbern.companyuser.domain.ProfileMergeRequest;
 import ch.batbern.companyuser.domain.User;
 import ch.batbern.companyuser.domain.UserAdditionalEmail;
@@ -67,9 +67,9 @@ public class UserMergeController implements ProfileMergeApi {
         return ResponseEntity.ok(new UserMergePreview()
                 .target(summary(p.target()))
                 .source(summary(p.source()))
-                .moves(p.events().moves())
-                .conflicts(p.events().conflicts())
-                .blockers(p.events().blockers())
+                .moves(p.holders().moves())
+                .conflicts(p.holders().conflicts())
+                .blockers(p.holders().blockers())
                 .canMerge(p.canMerge())
                 .reasons(p.reasons()));
     }
@@ -203,9 +203,9 @@ public class UserMergeController implements ProfileMergeApi {
         return new UserMergePreview()
                 .target(summary(p.target()))
                 .source(summary(p.source()))
-                .moves(p.events().moves())
-                .conflicts(p.events().conflicts())
-                .blockers(p.events().blockers())
+                .moves(p.holders().moves())
+                .conflicts(p.holders().conflicts())
+                .blockers(p.holders().blockers())
                 .canMerge(p.canMerge())
                 .reasons(p.reasons());
     }
@@ -221,9 +221,9 @@ public class UserMergeController implements ProfileMergeApi {
         return error(HttpStatus.BAD_REQUEST, "VALIDATION_ERROR", e.getMessage(), request, null);
     }
 
-    @ExceptionHandler(EventManagementMailCenterClient.MailCenterCallFailedException.class)
+    @ExceptionHandler(MailCenterRequestContract.MailCenterCallFailedException.class)
     public ResponseEntity<ErrorResponse> mailCenterFailed(
-            EventManagementMailCenterClient.MailCenterCallFailedException e, HttpServletRequest request) {
+            MailCenterRequestContract.MailCenterCallFailedException e, HttpServletRequest request) {
         return error(HttpStatus.BAD_GATEWAY, "MERGE_REQUEST_NOT_DELIVERED",
                 "The request could not be passed to the organizers; nothing was stored. Try again.", request, null);
     }
@@ -248,17 +248,17 @@ public class UserMergeController implements ProfileMergeApi {
                 Map.of("reasons", e.reasons()));
     }
 
-    @ExceptionHandler(EventManagementUserMergeClient.MergeBlockedException.class)
-    public ResponseEntity<ErrorResponse> blocked(EventManagementUserMergeClient.MergeBlockedException e,
+    @ExceptionHandler(UserReferenceContract.MergeBlockedException.class)
+    public ResponseEntity<ErrorResponse> blocked(UserReferenceContract.MergeBlockedException e,
             HttpServletRequest request) {
         return error(HttpStatus.CONFLICT, "MERGE_BLOCKED", e.getMessage(), request, null);
     }
 
-    @ExceptionHandler(EventManagementUserMergeClient.MergeCallFailedException.class)
-    public ResponseEntity<ErrorResponse> failed(EventManagementUserMergeClient.MergeCallFailedException e,
+    @ExceptionHandler(UserReferenceContract.MergeCallFailedException.class)
+    public ResponseEntity<ErrorResponse> failed(UserReferenceContract.MergeCallFailedException e,
             HttpServletRequest request) {
         return error(HttpStatus.BAD_GATEWAY, "MERGE_EVENT_SERVICE_FAILED",
-                "Event data could not be moved; nothing was merged. Try again.", request, null);
+                "Not every service could move its data; the profiles were not merged. Try again.", request, null);
     }
 
     @ExceptionHandler(ProfileClaimService.PlaceholderAddressException.class)

@@ -3,7 +3,7 @@ title: 'API conventions III b: additional-email key and get-or-create (breaking)
 type: 'refactor'
 ticket: '10d'
 created: '2026-11-11'
-status: 'built'
+status: 'done'
 baseline_revision: 'bade6e7cac19713d14d8df8cddad382c6e954984'
 route: 'full'
 route_source: 'auto'

@@ -44,3 +44,15 @@ logging:
     org.springframework.cache: DEBUG
     org.testcontainers: INFO
     com.github.dockerjava: WARN
+
+# Epic 17 entry 7: the Mail Center request contract has one implementer in tests. Its calls are
+# answered by the ContractServer bound to HttpMailCenterRequestContract (MailCenterContract); this
+# host never answers, so a test that files a request without binding it gets the 502.
+batbern:
+  contracts:
+    mail-center-requests:
+      implementers: http://mail-center-contract.invalid
+    # Epic 17 entry 7b: two holders, answered by the ContractServer bound to
+    # HttpUserReferenceContract (UserReferenceHolders), told apart by host.
+    user-references:
+      implementers: http://holder-a.invalid,http://holder-b.invalid

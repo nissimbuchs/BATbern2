@@ -122,7 +122,7 @@ class SpeakerInvitationEmailServiceTest {
 
         freshCredentials = new InvitationCredentialsResponse()
                 .action(InvitationCredentialsResponse.ActionEnum.FRESH_TEMP_PASSWORD)
-                .temporaryPassword("Tk7!aB2@nx9pQ4#z");
+                .temporaryPassword("example-temp-password");
         useExistingCredentials = new InvitationCredentialsResponse()
                 .action(InvitationCredentialsResponse.ActionEnum.USE_EXISTING_PASSWORD);
 
@@ -184,7 +184,7 @@ class SpeakerInvitationEmailServiceTest {
         verify(emailService).sendHtmlEmail(any(), anyString(), anyList(), anyString(), bodyCaptor.capture(), nullable(String.class));
         String body = bodyCaptor.getValue();
         // Temp password value appears.
-        assertThat(body).contains("Tk7!aB2@nx9pQ4#z");
+        assertThat(body).contains("example-temp-password");
         // FRESH branch wording present, USE_EXISTING wording absent.
         assertThat(body).contains("Temporary password");
         assertThat(body).doesNotContain("existing password");
@@ -202,7 +202,7 @@ class SpeakerInvitationEmailServiceTest {
         verify(emailService).sendHtmlEmail(any(), anyString(), anyList(), anyString(), bodyCaptor.capture(), nullable(String.class));
         String body = bodyCaptor.getValue();
         // No temp password appears.
-        assertThat(body).doesNotContain("Tk7!aB2@nx9pQ4#z");
+        assertThat(body).doesNotContain("example-temp-password");
         // USE_EXISTING wording present, FRESH-only wording absent.
         assertThat(body).contains("existing password");
         assertThat(body).doesNotContain("Temporary password");
@@ -223,7 +223,7 @@ class SpeakerInvitationEmailServiceTest {
         assertThat(subjectCaptor.getValue()).contains("Einladung als Referent");
         // German body must contain the German "temporary password" wording.
         String body = bodyCaptor.getValue();
-        assertThat(body).contains("Tk7!aB2@nx9pQ4#z");
+        assertThat(body).contains("example-temp-password");
         assertThat(body).contains("Temporäres Passwort");
     }
 
@@ -330,7 +330,7 @@ class SpeakerInvitationEmailServiceTest {
 
             verify(emailService).sendHtmlEmail(any(), anyString(), anyList(), anyString(), bodyCaptor.capture(), nullable(String.class));
             assertThat(bodyCaptor.getValue()).contains("John Doe");
-            assertThat(bodyCaptor.getValue()).contains("Tk7!aB2@nx9pQ4#z");
+            assertThat(bodyCaptor.getValue()).contains("example-temp-password");
         }
     }
 

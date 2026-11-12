@@ -26,7 +26,8 @@ flowchart LR
     GW -->|"/internal/** denyAll"| X["403"]
     EMS <-->|"/internal/** no JWT,<br/>Service Connect inside the VPC"| CUMS
     PCS -->|"/internal/users"| CUMS
-    PCS <-->|"/internal/mails, /internal/partner-meetings/rsvps"| EMS
+    PCS -->|"/internal/mails"| EMS
+    EMS -->|"/internal/calendar-replies<br/>(contract EMS owns)"| PCS
     EMS --> DB[("PostgreSQL<br/>one database, per-service tables")]
     CUMS --> DB
     PCS --> DB
@@ -187,21 +188,34 @@ a Watch release has switched to `/public/events/current` (#1070).
 Service-to-service reads that must not depend on the end user use a separate path prefix,
 `/internal/**`, outside the public `/api/v1` contract. The API gateway has no route for it and
 denies it explicitly (`SecurityConfig`: `/internal/**` → `denyAll`), so it is reachable only inside
-the VPC through Service Connect. Callers send **no** JWT.
+the VPC through Service Connect. Callers forward the user's JWT when there is one
+(`S2sHeaders.forCurrentUser()`) and never require it (ADR-016 decision 3).
 
 | Pattern | Service | Callers |
 |---|---|---|
 | `GET /internal/users/{username}[?include=…]` | Company-User Management | EMS user lookups (incl. preferred language, Q&A cadence), PCS contact enrichment, gateway `is_active` gate |
 | `GET /internal/users?role=&company=&page=&limit=` | Company-User Management | EMS organizer/partner lists, PCS partner contacts by company and users by role |
-| `POST /internal/partner-meetings/rsvps` | Partner Coordination | EMS inbound iCal REPLY handling |
 | `POST /internal/mails` | Event Management | PCS records its partner meeting invites and cancellations in "What went out" (Story 16.9) |
 | `POST /internal/users/get-or-create` | Company-User Management | EMS anonymous registration and speaker provisioning (ADR-005) |
 | `GET /internal/email-owners?email=` | Company-User Management | EMS by-email deregistration across a person's profiles (#1183) |
-| `GET /internal/users/merge-preview`, `POST /internal/users/merge`, `POST /internal/users/primary-email` | Event Management | CUMS profile merge (#1183 C/D, below) and primary-address change (#1244) |
-| `POST /internal/mail-center/{merge,logo}-requests[/{requestId}/done]` | Event Management | CUMS opens and closes the Mail Center conversation of a merge or logo request (#1237, #1246) |
+| `GET /internal/user-references/preview`, `POST /internal/user-references/merge`, `POST /internal/user-references/primary-email` | Event Management and Partner Coordination (implement the CUMS contract) | CUMS profile merge (#1183 C/D, below) and primary-address change (#1244); Epic 17 entry 7b |
+| `POST /internal/mail-center-requests`, `POST /internal/mail-center-requests/{requestId}/decision` | Event Management (implements the CUMS contract) | CUMS opens and closes the Mail Center conversation of a merge or logo request (#1237, #1246; Epic 17 entry 7, below) |
+| `POST /internal/calendar-replies` | Partner Coordination (implements the EMS contract) | EMS inbound iMIP REPLY to a partner meeting invite (Story 10.27; Epic 17 entry 8b, below); replaced `POST /internal/partner-meetings/rsvps` |
 
-The CUMS→EMS calls other than the merge itself (`primary-email`, `mail-center/*`) are upstream→downstream
-exceptions to the module map, owned by Story 17.7 (request pull); no new one is added.
+The Mail Center request and user-reference operations are **contracts CUMS owns** (ADR-016
+decisions 4 and 5): specified in `cums-internal.openapi.yml`, called through shared-kernel
+`ContractCalls` at every implementer listed in `batbern.contracts.mail-center-requests.implementers`
+(EMS) and `batbern.contracts.user-references.implementers` (EMS, PCS); CUMS names no downstream class.
+These two contracts are CUMS's only calls to a downstream service.
+
+The calendar reply operation is a **contract EMS owns** (Epic 17 entry 8b): specified in
+`ems-internal.openapi.yml`, called by `forwarding/InboundEmailRouter` through
+`forwarding/HttpCalendarReplyContract` (shared-kernel `ContractCalls`) at every implementer in
+`batbern.contracts.calendar-replies.implementers` (PCS). It is EMS's only call to a downstream
+service; EMS names no PCS class. An iMIP REPLY whose UID is `<meetingId>@batbern.ch` is recorded at
+once as that attendee's RSVP. The call never fails inbound processing: an unknown meeting (404) or a
+PARTSTAT other than ACCEPTED, DECLINED or TENTATIVE (400) is logged as a WARN, any other failure as an
+ERROR and counted (`forwarding.calendar_reply_contract.failures`); the reply is then lost, as before.
 
 Every operation above is specified in `docs/api/internal/` (`cums-`, `ems-`, `pcs-internal.openapi.yml`,
 Story 17.0b2) and contract-tested on both sides; the public tooling does not read that folder.
@@ -670,31 +684,71 @@ The organizers decide in the Mail Center; company edits themselves stay `ORGANIZ
   URL, the new upload id and URL, optional note, status OPEN / APPROVED / DECLINED, decided by/at,
   optional reason. One OPEN request per person and company (partial unique index, 409
   `LOGO_REQUEST_OPEN`); the company is the one on the caller's profile (409 `NO_COMPANY`).
-- **Mail Center.** In the same transaction CUMS calls EMS `POST /internal/mail-center/logo-requests`
-  (`RequestConversations` kind LOGO, `mail_conversation.logo_request_id`, EMS V146): an OPEN
-  conversation without event, audience SYSTEM. If EMS does not answer, nothing is stored (502
-  `LOGO_REQUEST_NOT_DELIVERED`); the client uploads again on retry, because the association has
-  already moved the temporary S3 object.
+- **Mail Center.** In the same transaction CUMS calls the Mail Center request contract (see "Mail
+  Center requests (Epic 17 entry 7)" below); EMS opens the conversation (`RequestConversations` kind
+  LOGO, `mail_conversation.logo_request_id`, EMS V146): an OPEN conversation without event, audience
+  SYSTEM. If EMS does not answer, nothing is stored (502 `LOGO_REQUEST_NOT_DELIVERED`); the client
+  uploads again on retry, because the association has already moved the temporary S3 object.
 - **Decision** (`ORGANIZER`). `POST /users/company-logo-requests/{id}/approve` copies the logo to the
   company's final key (`logos/{year}/companies/{name}/logo-{uploadId}.{ext}`) and sets it through
   `CompanyService.applyRequestedLogo` (cache invalidation, `CompanyUpdatedEvent`, like an organizer
   edit). `.../decline {reason?}` changes nothing on the company. Either way the requester is mailed
-  at the primary address (`company-logo-approved|declined-{de,en}`, the reason block only when given)
-  and the conversation is closed (`.../done`). Mail and close are best effort after the decision.
+  at the primary address (`company-logo-approved|declined-{de,en}`, the reason block only when given),
+  best effort, and the conversation is closed after the commit (contract `.../decision`).
   The request's own copy of the logo stays, so the decided conversation still shows both logos.
+
+## Mail Center requests (Epic 17 entry 7)
+
+Merge requests (#1237) and company logo requests (#1246) live in CUMS; their conversations live in
+the EMS Mail Center. CUMS tells the Mail Center through a contract it owns (ADR-016 decision 4,
+amended 2026-11-11: no polling): `POST /internal/mail-center-requests` (opened) and
+`POST /internal/mail-center-requests/{requestId}/decision` (decided), specified in
+`cums-internal.openapi.yml`.
+
+- **Caller.** CUMS `client/MailCenterRequestContract` (`HttpMailCenterRequestContract`) on
+  shared-kernel `ContractCalls`: one call per implementer in
+  `batbern.contracts.mail-center-requests.implementers` (`EVENT_MANAGEMENT_SERVICE_URL`), headers
+  from `S2sHeaders.forCurrentUser()` (the user's JWT when there is one), 2 s connect, 10 s read.
+- **Opened.** Inside the filing transaction, after the row is stored. An implementer that does not
+  answer fails the filing: 502 `MERGE_REQUEST_NOT_DELIVERED` or `LOGO_REQUEST_NOT_DELIVERED`, the row
+  is rolled back, the person can send again. The body carries kind, request id, the requester's name
+  and primary address, the subject (the German text organizers see) and the note.
+- **Withdrawn** (Epic 17 sweep). `MailCenterRequestDecisions.open` registers on the filing transaction
+  before every open call, whatever its outcome (an earlier implementer may have opened before a later
+  one failed; a timed-out open may still be committed): should the transaction roll back (a failed
+  open, a commit failure, a later failure), every implementer is told the decision `WITHDRAWN` by
+  `system:mail-center-request` and closes the conversation of a request that does not exist; one
+  without the conversation answers 204 and changes nothing. A failed withdrawal is an ERROR and
+  counted like a decision. No outbox, no retry. Residual: when EMS commits a timed-out open only after
+  the withdrawal arrived, the withdrawal found nothing to close and the conversation stays open; an
+  organizer sets it Done.
+- **Decided.** After the decision commits (`MailCenterRequestDecisions`, a transaction
+  synchronization), with kind, status, `decidedBy` and `decidedAt`, to every implementer, also after
+  one failed (`ContractCalls.postToEvery`). A failure is logged as ERROR
+  (`MAIL_CENTER_REQUEST decision not delivered`) and counted (`mailcenter.request_contract.failures`);
+  it does not undo the decision, and the conversation stays OPEN until an organizer sets it Done.
+  Deciding in the Mail Center sets the conversation DONE itself (`PATCH /conversations/{key}`).
+- **Implementer.** EMS `InternalRequestConversationController` calls `RequestConversations`: open is
+  idempotent (a second call changes nothing; an opening mail stored but never linked is linked by its
+  group id); the decision sets DONE with `updated_by` = `decidedBy`, unless a mail came in after
+  `decidedAt` (`last_inbound_at`), so a requester's late answer keeps the conversation open. A
+  decision for a request without a conversation is ignored.
 
 ## Profile Merge (#1183 C/D)
 
 Two profiles of one person (an imported or guest profile without login, and the person's login
 profile) are merged: the source is folded into the target and deleted. CUMS decides and
-orchestrates; EMS moves its own rows through an internal endpoint and keeps the undo log.
+orchestrates; every service that stores usernames (a holder: EMS, PCS) moves its own rows through
+the user-reference contract CUMS owns (Epic 17 entry 7b, `UserReferenceContract`), and EMS keeps the
+undo log.
 
 **Merge requests (#1237).** When the person cannot read the earlier profile's mailbox, CUMS stores a
-`profile_merge_requests` row and EMS opens a Mail Center conversation for it
-(`RequestConversations` kind MERGE, `POST /internal/mail-center/merge-requests`, `mail_conversation.merge_request_id`).
-The organizer approves or declines in that conversation (CUMS `/users/merge-requests/{id}/approve|decline`);
-approval runs the same merge with `carryAddresses = false`, then CUMS closes the conversation
-(`.../{id}/done`). Details: `06b-user-lifecycle-sync.md`.
+`profile_merge_requests` row and EMS opens a Mail Center conversation for it through the Mail Center
+request contract (`RequestConversations` kind MERGE, `mail_conversation.merge_request_id`; see "Mail
+Center requests (Epic 17 entry 7)" above). The organizer approves or declines in that conversation
+(CUMS `/users/merge-requests/{id}/approve|decline`); approval runs the same merge with
+`carryAddresses = false`, and the conversation is closed after the commit. Details:
+`06b-user-lifecycle-sync.md`.
 
 ```mermaid
 sequenceDiagram
@@ -706,10 +760,11 @@ sequenceDiagram
     participant EMS as EMS InternalUserMergeController
     participant EUS as EMS UserMergeService
     participant LOG as user_merge_log V144
+    participant PCS as PCS UserReferenceService
 
     alt organizer
         Org->>UMC: GET /users/{target}/merge-preview?source=
-        UMC->>UMS: preview: profile checks + EMS GET /internal/users/merge-preview
+        UMC->>UMS: preview: profile checks + GET /internal/user-references/preview at every holder, summed
         Org->>UMC: POST /users/{target}/merge - ORGANIZER
         UMC->>UMS: merge, trigger ORGANIZER
     else self-claim
@@ -720,19 +775,31 @@ sequenceDiagram
         PCL->>UMS: merge, trigger SELF_CLAIM
     end
     UMS->>UMS: lock both profiles, refuse SAME_PROFILE, SOURCE_HAS_LOGIN, BOTH_HAVE_LOGIN
-    UMS->>EMS: POST /internal/users/merge with a snapshot of the source profile, no JWT
+    UMS->>EMS: GET /internal/user-references/preview (every holder; a blocker refuses the merge)
+    UMS->>PCS: GET /internal/user-references/preview
+    UMS->>EMS: POST /internal/user-references/merge with a snapshot of the source profile
     EMS->>EUS: move rows from source to target username
     EUS->>EUS: same key at the target: keep the better registration, remove the other row
     EUS->>LOG: moved keys, removed rows in full, source snapshot
     EUS-->>UMS: moved and removed counts, own commit
+    UMS->>PCS: POST /internal/user-references/merge
+    PCS-->>UMS: topic_suggestions, partner_notes, partner_meetings moved, own commit
     UMS->>UMS: roles, activity, watch pairings to the target, delete the source
     UMS->>UMS: source addresses become verified additional emails of the target
 ```
 
-- **Refused with 409** in EMS when both lead a different talk at the same event; an organizer has to
-  resolve that first.
-- **Order makes retries safe.** EMS commits first and is idempotent. If the CUMS step fails, the
-  source still exists and owns nothing in EMS; running the merge again finishes it.
+- **Refused with 409** (`MERGE_NOT_ALLOWED`, reason `BLOCKED`) when a holder's preview names a
+  blocker (EMS: both lead a different talk at the same event), before any holder moves a row; an
+  organizer has to resolve that first. A holder that still refuses at merge time answers 409
+  (`MERGE_BLOCKED`).
+- **Order makes retries safe.** Holders merge in configured order, each in its own transaction and
+  idempotently. If a later holder or the CUMS step fails (502), the source still exists, earlier
+  holders have moved their rows, and running the merge again finishes it.
+- **What PCS moves** (`UserReferenceService.COLUMNS`): `topic_suggestions.suggested_by`,
+  `partner_notes.author_username`, `partner_meetings.created_by`. None is part of a unique key, so
+  PCS never conflicts or blocks. A merge that moved rows writes one `partner_user_merge_log` row
+  (PCS V12, Epic 17 sweep): source, target, `performed_by`, `trigger` and `moved`
+  (`{"table.column": [ids]}`); a merge that moved nothing (a repeat) writes none.
 - **What EMS moves** (`UserMergeService.MOVES`): registrations, session_users, speaker_arrivals,
   session_qna_notification, live_timing_presence, session_proposals, organizer_thanks,
   notifications, session_qna_post, session_content_history, newsletter_subscribers. Audit columns
@@ -740,7 +807,8 @@ sequenceDiagram
 - **Registration rank** when both have one for the same event: attended, confirmed, registered,
   waitlist, then no_show and cancelled (equal); the target's wins a tie.
 - `user_merge_log` (EMS V144) holds what is needed to undo a merge by hand: `moved`,
-  `removed_rows`, `source_profile`, `trigger` (`ORGANIZER` or `SELF_CLAIM`).
+  `removed_rows`, `source_profile`, `trigger` (`ORGANIZER` or `SELF_CLAIM`); the PCS part is in
+  `partner_user_merge_log` (PCS V12).
 
 ## Role Management Service
 

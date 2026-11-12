@@ -138,10 +138,6 @@ openai:
   chat-model: ${OPENAI_CHAT_MODEL:chat-latest}
   image-model: ${OPENAI_IMAGE_MODEL:chatgpt-image-latest}
 
-# Partner Coordination Service URL (Story 10.4: cross-service call for partner topics)
-partner-service:
-  base-url: ${PARTNER_COORDINATION_SERVICE_URL:http://partner-coordination:8080}
-
 # JWT Configuration for confirmation tokens
 jwt:
   secret: ${JWT_SECRET:changeme}
@@ -176,6 +172,13 @@ qna:
 
 # Speaker Deadline Reminders Configuration (Story 6.5)
 batbern:
+  # Contracts EMS owns (ADR-016 decision 4): the base URLs of the services that implement each one,
+  # comma-separated. EMS names none of them in code (shared-kernel ContractCalls).
+  contracts:
+    # Epic 17 entry 8b: an attendee's iMIP REPLY to a partner meeting invite (Story 10.27).
+    # Service Connect name in production.
+    calendar-replies:
+      implementers: ${PARTNER_COORDINATION_SERVICE_URL:http://partner-coordination:8080}
   ai:
     enabled: ${AI_ENABLED:false}
   ses:

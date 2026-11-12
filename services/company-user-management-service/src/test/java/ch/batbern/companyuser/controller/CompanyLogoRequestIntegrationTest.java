@@ -1,6 +1,7 @@
 package ch.batbern.companyuser.controller;
 
-import ch.batbern.companyuser.client.EventManagementMailCenterClient;
+import ch.batbern.companyuser.client.HttpMailCenterRequestContract;
+import ch.batbern.companyuser.client.MailCenterContract;
 import ch.batbern.companyuser.config.TestAwsConfig;
 import ch.batbern.companyuser.domain.Company;
 import ch.batbern.companyuser.domain.CompanyLogoRequest;
@@ -11,37 +12,47 @@ import ch.batbern.companyuser.repository.CompanyLogoRequestRepository;
 import ch.batbern.companyuser.repository.CompanyRepository;
 import ch.batbern.companyuser.repository.LogoRepository;
 import ch.batbern.companyuser.repository.UserRepository;
+import ch.batbern.companyuser.service.CompanyLogoRequestService;
 import ch.batbern.shared.test.mail.SesRecorder;
 import ch.batbern.shared.test.AbstractIntegrationTest;
+import ch.batbern.shared.test.contract.ContractServer;
 import ch.batbern.shared.types.Role;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.jayway.jsonpath.JsonPath;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.test.context.transaction.TestTransaction;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.mock.http.client.MockClientHttpRequest;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
+import org.springframework.test.web.client.ExpectedCount;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
-import org.springframework.transaction.annotation.Transactional;
 
+import java.net.ConnectException;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.springframework.http.HttpMethod.POST;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -50,12 +61,15 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 /**
  * #1246: a participant asks for a new company logo, an organizer accepts or declines in the Mail
- * Center. The Mail Center conversation (event-management) is mocked here and tested there; S3 is the
- * Mockito mock from {@link TestAwsConfig}.
+ * Center. The conversation goes through the real contract caller, answered at the wire by the
+ * {@link ContractServer} on the Mail Center request contract (Epic 17 entry 7); S3 is the Mockito
+ * mock from {@link TestAwsConfig}.
+ *
+ * <p>Not {@code @Transactional}: the decision reaches the contract after the commit. Every test
+ * commits; {@code @BeforeEach} and {@code @AfterEach} remove the rows.
  */
 @SpringBootTest
 @AutoConfigureMockMvc
-@Transactional
 @Import(TestAwsConfig.class)
 @DisplayName("Company logo request (#1246)")
 class CompanyLogoRequestIntegrationTest extends AbstractIntegrationTest {
@@ -79,12 +93,25 @@ class CompanyLogoRequestIntegrationTest extends AbstractIntegrationTest {
     private static final String REQUESTER = "success+anna.acme@simulator.amazonses.com";
     @Autowired
     private ObjectMapper objectMapper;
-    @MockitoBean
-    private EventManagementMailCenterClient mailCenter;
+    /** The real contract caller; the implementer answers through the contract harness at the wire. */
+    @Autowired
+    private HttpMailCenterRequestContract mailCenterContract;
+    @Autowired
+    private JdbcTemplate jdbc;
+    @Autowired
+    private CompanyLogoRequestService requestService;
+    @Autowired
+    private PlatformTransactionManager transactionManager;
+
+    private ContractServer mailCenter;
+    /** The id of the request filed first by {@link #createOk()}; the decision is expected for it. */
+    private UUID filed;
 
     @BeforeEach
     void setUp() {
+        removeRows();
         sesRecorder.reset();
+        mailCenter = MailCenterContract.bindTo(mailCenterContract);
         userRepository.save(User.builder().username("orga.nizer").email("orga@example.com")
                 .firstName("Orga").lastName("Nizer").cognitoUserId("cog-orga")
                 .roles(new HashSet<>(Set.of(Role.ORGANIZER))).build());
@@ -99,6 +126,44 @@ class CompanyLogoRequestIntegrationTest extends AbstractIntegrationTest {
                 .createdBy("orga.nizer").createdAt(Instant.now()).updatedAt(Instant.now()).build());
         confirmedUpload("up-1");
         confirmedUpload("up-2");
+    }
+
+    @AfterEach
+    void tearDown() {
+        mailCenter.close();
+        removeRows();
+    }
+
+    private void removeRows() {
+        jdbc.update("DELETE FROM company_logo_requests WHERE requester_username = 'anna.muster'");
+        jdbc.update("DELETE FROM logos WHERE upload_id IN ('up-1', 'up-2')");
+        jdbc.update("DELETE FROM companies WHERE name = 'acme'");
+        jdbc.update("DELETE FROM user_profiles WHERE username IN ('orga.nizer', 'anna.muster', 'bert.ohne')");
+    }
+
+    /** The implementer opens the conversation of a logo request (and records the body). */
+    private void expectOpened(StringBuilder body, ExpectedCount count) {
+        mailCenter.expect(POST, MailCenterContract.OPENED).times(count)
+                .andExpect(r -> body.append(((MockClientHttpRequest) r).getBodyAsString()))
+                .respondWithStatus(HttpStatus.NO_CONTENT);
+    }
+
+    private void expectOpened() {
+        expectOpened(new StringBuilder(), ExpectedCount.once());
+    }
+
+    /** The implementer is told the decision of the request filed first ({@link #filed}), by the organizer. */
+    private void expectDecided(String status) {
+        mailCenter.expect(POST, MailCenterContract.DECIDED)
+                .andExpect(r -> {
+                    assertThat(r.getURI().getPath()).endsWith("/" + filed + "/decision");
+                    String body = ((MockClientHttpRequest) r).getBodyAsString();
+                    assertThat((String) JsonPath.read(body, "$.kind")).isEqualTo("LOGO");
+                    assertThat((String) JsonPath.read(body, "$.status")).isEqualTo(status);
+                    assertThat((String) JsonPath.read(body, "$.decidedBy")).isEqualTo("orga.nizer");
+                    assertThat(Instant.parse(JsonPath.read(body, "$.decidedAt"))).isBefore(Instant.now());
+                })
+                .respondWithStatus(HttpStatus.NO_CONTENT);
     }
 
     private void confirmedUpload(String uploadId) {
@@ -123,7 +188,8 @@ class CompanyLogoRequestIntegrationTest extends AbstractIntegrationTest {
 
     private UUID createOk() throws Exception {
         String body = create(anna(), "up-1", "Neues Logo seit Juni", 201);
-        return UUID.fromString(objectMapper.readTree(body).path("requestId").asText());
+        filed = UUID.fromString(objectMapper.readTree(body).path("requestId").asText());
+        return filed;
     }
 
     // ---------------------------------------------------------------- the participant asks
@@ -131,6 +197,9 @@ class CompanyLogoRequestIntegrationTest extends AbstractIntegrationTest {
     @Test
     @DisplayName("a request snapshots the old logo, keeps the upload out of the cleanup and opens a conversation")
     void request_storesAndOpensConversation() throws Exception {
+        StringBuilder opened = new StringBuilder();
+        expectOpened(opened, ExpectedCount.once());
+
         UUID id = createOk();
 
         CompanyLogoRequest stored = requestRepository.findById(id).orElseThrow();
@@ -146,13 +215,13 @@ class CompanyLogoRequestIntegrationTest extends AbstractIntegrationTest {
         assertThat(logo.getAssociatedEntityType()).isEqualTo("LOGO_REQUEST");
         assertThat(logo.getExpiresAt()).isNull();
 
-        ArgumentCaptor<EventManagementMailCenterClient.OpenRequest> open =
-                ArgumentCaptor.forClass(EventManagementMailCenterClient.OpenRequest.class);
-        verify(mailCenter).openLogoRequest(open.capture());
-        assertThat(open.getValue().requestId()).isEqualTo(id);
-        assertThat(open.getValue().requesterEmail()).isEqualTo(REQUESTER);
-        assertThat(open.getValue().subject()).contains("ACME AG");
-        assertThat(open.getValue().note()).contains("Neues Logo seit Juni");
+        mailCenter.verify();
+        JsonNode body = objectMapper.readTree(opened.toString());
+        assertThat(body.path("kind").asText()).isEqualTo("LOGO");
+        assertThat(body.path("requestId").asText()).isEqualTo(id.toString());
+        assertThat(body.path("requesterEmail").asText()).isEqualTo(REQUESTER);
+        assertThat(body.path("subject").asText()).isEqualTo("Neues Logo für ACME AG: Anna Muster");
+        assertThat(body.path("note").asText()).isEqualTo("Neues Logo seit Juni");
 
         // The company is untouched until an organizer decides.
         assertThat(companyRepository.findByName("acme").orElseThrow().getLogoUrl()).isEqualTo(OLD_LOGO);
@@ -163,6 +232,7 @@ class CompanyLogoRequestIntegrationTest extends AbstractIntegrationTest {
     void openRequest_forProfile() throws Exception {
         mockMvc.perform(get("/api/v1/users/me/company-logo-requests/open").with(anna()))
                 .andExpect(status().isNoContent());
+        expectOpened();
         UUID id = createOk();
         mockMvc.perform(get("/api/v1/users/me/company-logo-requests/open").with(anna()))
                 .andExpect(status().isOk())
@@ -174,14 +244,16 @@ class CompanyLogoRequestIntegrationTest extends AbstractIntegrationTest {
     @Test
     @DisplayName("without a company on the profile: 409 NO_COMPANY, nothing stored")
     void request_withoutCompany_conflict() throws Exception {
+        expectOpened(new StringBuilder(), ExpectedCount.never());
         create(user("bert.ohne").roles("ATTENDEE"), "up-1", null, 409);
         assertThat(requestRepository.count()).isZero();
-        verify(mailCenter, never()).openLogoRequest(any());
+        mailCenter.verify();
     }
 
     @Test
     @DisplayName("one open request per person and company: 409 LOGO_REQUEST_OPEN")
     void request_twice_conflict() throws Exception {
+        expectOpened();
         createOk();
         String body = create(anna(), "up-2", null, 409);
         assertThat(objectMapper.readTree(body).path("errorCode").asText()).isEqualTo("LOGO_REQUEST_OPEN");
@@ -195,28 +267,51 @@ class CompanyLogoRequestIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @DisplayName("when the Mail Center is unreachable: 502, nothing stored")
+    @DisplayName("when the Mail Center is unreachable: 502, nothing stored, WITHDRAWN sent")
     void request_mailCenterDown_nothingStored() throws Exception {
-        // The class-level test transaction would hide the rollback: commit the fixture, let the
-        // request run in its own transaction, then remove the committed fixture.
-        TestTransaction.flagForCommit();
-        TestTransaction.end();
+        mailCenter.expect(POST, MailCenterContract.OPENED).respondWith(r -> {
+            throw new ConnectException("Connection refused");
+        });
+        mailCenter.expect(POST, MailCenterContract.DECIDED)
+                .andExpect(r -> assertThat(((MockClientHttpRequest) r).getBodyAsString())
+                        .contains("\"kind\":\"LOGO\"", "\"status\":\"WITHDRAWN\""))
+                .respondWithStatus(HttpStatus.NO_CONTENT);
+
+        String body = create(anna(), "up-1", null, 502);
+
+        assertThat(objectMapper.readTree(body).path("errorCode").asText()).isEqualTo("LOGO_REQUEST_NOT_DELIVERED");
+        assertThat(requestRepository.count()).isZero();
+        assertThat(logoRepository.findByUploadId("up-1").orElseThrow().getStatus()).isEqualTo(LogoStatus.CONFIRMED);
+        mailCenter.verify();
+    }
+
+    @Test
+    @DisplayName("sweep: a later failure rolls the filing back after the open: nothing stored, the conversation is WITHDRAWN")
+    void request_rolledBackAfterOpen_withdrawsConversation() {
+        expectOpened();
+        StringBuilder withdrawn = new StringBuilder();
+        mailCenter.expect(POST, MailCenterContract.DECIDED)
+                .andExpect(r -> withdrawn.append(((MockClientHttpRequest) r).getBodyAsString()))
+                .respondWithStatus(HttpStatus.NO_CONTENT);
+
+        SecurityContextHolder.getContext().setAuthentication(UsernamePasswordAuthenticationToken.authenticated(
+                new org.springframework.security.core.userdetails.User("anna.muster", "",
+                        List.of(new SimpleGrantedAuthority("ROLE_ATTENDEE"))),
+                null, List.of(new SimpleGrantedAuthority("ROLE_ATTENDEE"))));
         try {
-            doThrow(new EventManagementMailCenterClient.MailCenterCallFailedException("down"))
-                    .when(mailCenter).openLogoRequest(any());
-            String body = create(anna(), "up-1", null, 502);
-            assertThat(objectMapper.readTree(body).path("errorCode").asText()).isEqualTo("LOGO_REQUEST_NOT_DELIVERED");
-            assertThat(requestRepository.count()).isZero();
-            assertThat(logoRepository.findByUploadId("up-1").orElseThrow().getStatus()).isEqualTo(LogoStatus.CONFIRMED);
+            assertThatThrownBy(() -> new TransactionTemplate(transactionManager).executeWithoutResult(tx -> {
+                requestService.request("up-1", null);
+                throw new IllegalStateException("simulated later failure");
+            })).hasMessageContaining("simulated later failure");
         } finally {
-            requestRepository.deleteAll();
-            logoRepository.findByUploadId("up-1").ifPresent(logoRepository::delete);
-            logoRepository.findByUploadId("up-2").ifPresent(logoRepository::delete);
-            companyRepository.findByName("acme").ifPresent(companyRepository::delete);
-            for (String u : new String[] {"orga.nizer", "anna.muster", "bert.ohne"}) {
-                userRepository.findByUsername(u).ifPresent(userRepository::delete);
-            }
+            SecurityContextHolder.clearContext();
         }
+
+        mailCenter.verify();
+        assertThat(requestRepository.count()).isZero();
+        assertThat((String) JsonPath.read(withdrawn.toString(), "$.kind")).isEqualTo("LOGO");
+        assertThat((String) JsonPath.read(withdrawn.toString(), "$.status")).isEqualTo("WITHDRAWN");
+        assertThat((String) JsonPath.read(withdrawn.toString(), "$.decidedBy")).isEqualTo("system:mail-center-request");
     }
 
     // ---------------------------------------------------------------- organizers decide
@@ -224,6 +319,9 @@ class CompanyLogoRequestIntegrationTest extends AbstractIntegrationTest {
     @Test
     @DisplayName("only organizers read and decide a request")
     void decide_participant_forbidden() throws Exception {
+        expectOpened();
+        mailCenter.expect(POST, MailCenterContract.DECIDED).times(ExpectedCount.never())
+                .respondWithStatus(HttpStatus.NO_CONTENT);
         UUID id = createOk();
         mockMvc.perform(get("/api/v1/users/company-logo-requests/{id}", id).with(anna()))
                 .andExpect(status().isForbidden());
@@ -231,11 +329,13 @@ class CompanyLogoRequestIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isForbidden());
         mockMvc.perform(post("/api/v1/users/company-logo-requests/{id}/decline", id).with(anna())
                 .contentType(MediaType.APPLICATION_JSON).content("{}")).andExpect(status().isForbidden());
+        mailCenter.verify();
     }
 
     @Test
     @DisplayName("the organizer view shows company, old and new logo and the note")
     void get_organizerView() throws Exception {
+        expectOpened();
         UUID id = createOk();
         mockMvc.perform(get("/api/v1/users/company-logo-requests/{id}", id).with(organizer()))
                 .andExpect(status().isOk())
@@ -250,6 +350,8 @@ class CompanyLogoRequestIntegrationTest extends AbstractIntegrationTest {
     @Test
     @DisplayName("accept: the company gets the new logo, the requester a mail, the conversation is closed")
     void approve_setsLogo() throws Exception {
+        expectOpened();
+        expectDecided("APPROVED");
         UUID id = createOk();
 
         mockMvc.perform(post("/api/v1/users/company-logo-requests/{id}/approve", id).with(organizer()))
@@ -267,12 +369,14 @@ class CompanyLogoRequestIntegrationTest extends AbstractIntegrationTest {
 
         assertThat(sesRecorder.single().to()).containsExactly(REQUESTER);
         assertThat(sesRecorder.single().html()).contains("ACME AG");
-        verify(mailCenter).closeLogoRequest(id, "orga.nizer");
+        mailCenter.verify();
     }
 
     @Test
     @DisplayName("decline with a reason: the reason is mailed, the logo stays")
     void decline_withReason() throws Exception {
+        expectOpened();
+        expectDecided("DECLINED");
         UUID id = createOk();
 
         mockMvc.perform(post("/api/v1/users/company-logo-requests/{id}/decline", id).with(organizer())
@@ -284,12 +388,14 @@ class CompanyLogoRequestIntegrationTest extends AbstractIntegrationTest {
         assertThat(companyRepository.findByName("acme").orElseThrow().getLogoUrl()).isEqualTo(OLD_LOGO);
         assertThat(sesRecorder.single().to()).containsExactly(REQUESTER);
         assertThat(sesRecorder.single().html()).contains("Bitte als SVG &lt;senden&gt;").contains("<blockquote>");
-        verify(mailCenter).closeLogoRequest(id, "orga.nizer");
+        mailCenter.verify();
     }
 
     @Test
     @DisplayName("decline without a reason: the mail has no reason block")
     void decline_withoutReason() throws Exception {
+        expectOpened();
+        expectDecided("DECLINED");
         UUID id = createOk();
 
         mockMvc.perform(post("/api/v1/users/company-logo-requests/{id}/decline", id).with(organizer())
@@ -304,6 +410,8 @@ class CompanyLogoRequestIntegrationTest extends AbstractIntegrationTest {
     @Test
     @DisplayName("a decided request cannot be decided again: 409 LOGO_REQUEST_DECIDED; a new request is possible")
     void decide_twice_conflict() throws Exception {
+        expectOpened(new StringBuilder(), ExpectedCount.twice());
+        expectDecided("DECLINED");
         UUID id = createOk();
         mockMvc.perform(post("/api/v1/users/company-logo-requests/{id}/decline", id).with(organizer())
                 .contentType(MediaType.APPLICATION_JSON).content("{}")).andExpect(status().isOk());
@@ -312,6 +420,7 @@ class CompanyLogoRequestIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.errorCode").value("LOGO_REQUEST_DECIDED"));
         create(anna(), "up-2", null, 201);
+        mailCenter.verify();
     }
 
     @Test

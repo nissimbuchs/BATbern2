@@ -4,7 +4,7 @@
 #
 # A reduced ruleset, by owner decision 2026-11-08: structure, examples, and the personal-data-in-path
 # rule of the public ruleset. Not the naming rules (no-verb-segment, path-kebab-case, ...): the
-# internal paths keep their verbs (/internal/users/merge-preview, .../get-or-create) until Story 17.6
+# internal paths keep their verbs (/internal/users/get-or-create, .../issue-invitation-credentials) until Story 17.6
 # redesigns them, and no-internal-path exists to keep /internal out of the public specs. No baseline:
 # every finding fails. The public ruleset ../.spectral.yaml and its baseline are untouched.
 

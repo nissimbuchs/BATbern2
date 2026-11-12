@@ -30,9 +30,6 @@ be-mock-in-process	services/event-management-service/src/test/java/ch/batbern/ev
 be-mock-in-process	services/event-management-service/src/test/java/ch/batbern/events/watch/WatchSessionServiceIntegrationTest.java	1
 be-mock-s2s-client	api-gateway/src/test/java/ch/batbern/gateway/integration/AccountActiveGateIntegrationTest.java	1
 be-mock-s2s-client	api-gateway/src/test/java/ch/batbern/gateway/security/AccountActiveFilterTest.java	1
-be-mock-s2s-client	services/company-user-management-service/src/test/java/ch/batbern/companyuser/controller/CompanyLogoRequestIntegrationTest.java	1
-be-mock-s2s-client	services/company-user-management-service/src/test/java/ch/batbern/companyuser/controller/ProfileMergeRequestIntegrationTest.java	2
-be-mock-s2s-client	services/company-user-management-service/src/test/java/ch/batbern/companyuser/controller/UserMergeIntegrationTest.java	1
 be-mock-s2s-client	services/event-management-service/src/test/java/ch/batbern/events/controller/AnonymousRegistrationE2EIntegrationTest.java	1
 be-mock-s2s-client	services/event-management-service/src/test/java/ch/batbern/events/controller/EventControllerIntegrationTest.java	1
 be-mock-s2s-client	services/event-management-service/src/test/java/ch/batbern/events/controller/RegistrationCapacityIntegrationTest.java	1
@@ -42,7 +39,6 @@ be-mock-s2s-client	services/event-management-service/src/test/java/ch/batbern/ev
 be-mock-s2s-client	services/event-management-service/src/test/java/ch/batbern/events/controller/SpeakerPromoteControllerIntegrationTest.java	1
 be-mock-s2s-client	services/event-management-service/src/test/java/ch/batbern/events/forwarding/EmailForwardingServiceTest.java	1
 be-mock-s2s-client	services/event-management-service/src/test/java/ch/batbern/events/forwarding/ForwardingRecipientResolverTest.java	1
-be-mock-s2s-client	services/event-management-service/src/test/java/ch/batbern/events/forwarding/InboundEmailRouterTest.java	1
 be-mock-s2s-client	services/event-management-service/src/test/java/ch/batbern/events/mailcenter/ConversationServiceAssignmentTest.java	1
 be-mock-s2s-client	services/event-management-service/src/test/java/ch/batbern/events/mailcenter/MailComposerControllerIntegrationTest.java	1
 be-mock-s2s-client	services/event-management-service/src/test/java/ch/batbern/events/mailcenter/MailComposerSendIntegrationTest.java	1
@@ -74,13 +70,11 @@ be-mock-s2s-client	services/partner-coordination-service/src/test/java/ch/batber
 be-mock-s2s-client	services/partner-coordination-service/src/test/java/ch/batbern/partners/controller/PartnerMeetingInviteFailureIntegrationTest.java	1
 be-mock-s2s-client	services/partner-coordination-service/src/test/java/ch/batbern/partners/service/PartnerServiceTest.java	1
 be-transactional-it	services/company-user-management-service/src/test/java/ch/batbern/companyuser/controller/AccountMergeIntegrationTest.java	1
-be-transactional-it	services/company-user-management-service/src/test/java/ch/batbern/companyuser/controller/CompanyLogoRequestIntegrationTest.java	1
 be-transactional-it	services/company-user-management-service/src/test/java/ch/batbern/companyuser/controller/ConsentWriteOnceIntegrationTest.java	1
 be-transactional-it	services/company-user-management-service/src/test/java/ch/batbern/companyuser/controller/DuplicateCandidatesIntegrationTest.java	1
 be-transactional-it	services/company-user-management-service/src/test/java/ch/batbern/companyuser/controller/HealthControllerIntegrationTest.java	1
 be-transactional-it	services/company-user-management-service/src/test/java/ch/batbern/companyuser/controller/InternalUserControllerIntegrationTest.java	1
 be-transactional-it	services/company-user-management-service/src/test/java/ch/batbern/companyuser/controller/LogoControllerTest.java	1
-be-transactional-it	services/company-user-management-service/src/test/java/ch/batbern/companyuser/controller/ProfileMergeRequestIntegrationTest.java	1
 be-transactional-it	services/company-user-management-service/src/test/java/ch/batbern/companyuser/controller/PublicOrganizerControllerIntegrationTest.java	1
 be-transactional-it	services/company-user-management-service/src/test/java/ch/batbern/companyuser/controller/PublicUserControllerIntegrationTest.java	1
 be-transactional-it	services/company-user-management-service/src/test/java/ch/batbern/companyuser/controller/UserMergeIntegrationTest.java	1

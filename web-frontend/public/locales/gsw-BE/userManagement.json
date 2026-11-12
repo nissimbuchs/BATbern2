@@ -117,7 +117,10 @@
       "notifications": "Benachrichtigungen",
       "session_qna_post": "Q&A-Beiträge",
       "session_content_history": "Eingereichte Inhalte",
-      "newsletter_subscribers": "Newsletter-Abos"
+      "newsletter_subscribers": "Newsletter-Abos",
+      "topic_suggestions": "Themevorschläg",
+      "partner_notes": "Partnernotize",
+      "partner_meetings": "Partner-Meetings"
     }
   },
   "claim": {

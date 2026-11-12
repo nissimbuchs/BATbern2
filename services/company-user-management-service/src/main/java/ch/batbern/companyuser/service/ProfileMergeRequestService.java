@@ -1,6 +1,6 @@
 package ch.batbern.companyuser.service;
 
-import ch.batbern.companyuser.client.EventManagementMailCenterClient;
+import ch.batbern.companyuser.client.MailCenterRequestContract;
 import ch.batbern.companyuser.domain.ProfileMergeRequest;
 import ch.batbern.companyuser.domain.User;
 import ch.batbern.companyuser.exception.UserNotFoundException;
@@ -38,14 +38,19 @@ public class ProfileMergeRequestService {
     private final ProfileMergeRequestRepository requests;
     private final UserRepository userRepository;
     private final UserMergeService mergeService;
-    private final EventManagementMailCenterClient mailCenter;
+    private final MailCenterRequestDecisions mailCenterDecisions;
     private final ProfileMergeRequestEmailService emailService;
     private final SecurityContextHelper securityContext;
 
     public record Decided(ProfileMergeRequest request, UserMergeService.Preview preview) {
     }
 
-    /** The caller asks to merge one of their candidates; opens the Mail Center conversation. */
+    /**
+     * The caller asks to merge one of their candidates; the Mail Center request contract opens the
+     * conversation within this transaction, so a request is never stored without it. Should this
+     * transaction still roll back after the open, the conversation is withdrawn
+     * ({@link MailCenterRequestDecisions#open}).
+     */
     @Transactional
     public ProfileMergeRequest request(UUID candidateId, String note) {
         ProfileClaimService.ClaimPair pair = claimService.pair(candidateId);
@@ -70,8 +75,8 @@ public class ProfileMergeRequestService {
                 .build());
         User caller = pair.caller();
         String name = (nullToEmpty(caller.getFirstName()) + " " + nullToEmpty(caller.getLastName())).trim();
-        mailCenter.openMergeRequest(new EventManagementMailCenterClient.OpenRequest(saved.getId(), name,
-                caller.getEmail(), "Profil zusammenführen: " + name, trimmedNote));
+        mailCenterDecisions.open(new MailCenterRequestContract.Opened(MailCenterRequestContract.Kind.MERGE,
+                saved.getId(), name, caller.getEmail(), "Profil zusammenführen: " + name, trimmedNote));
         log.info("PROFILE_MERGE_REQUESTED id={} requester={} source={}", saved.getId(), requester, source);
         return saved;
     }
@@ -94,10 +99,10 @@ public class ProfileMergeRequestService {
         mergeService.merge(request.getRequesterUsername(), request.getSourceUsername(), organizer, "ORGANIZER",
                 false);
         decide(request, ProfileMergeRequest.Status.APPROVED, organizer, null);
-        // After the merge, nothing may roll this transaction back: event-management has already
-        // moved its rows. The mail and closing the conversation are best effort.
+        // After the merge, nothing may roll this transaction back: the holders of the user-reference
+        // contract have already moved their rows. The mail is best effort; the conversation is closed after the commit.
         User requester = requester(request);
-        afterDecision(request, organizer,
+        afterDecision(request,
                 () -> emailService.sendApproved(requester.getEmail(), requester.getFirstName(), locale(requester)));
         log.info("PROFILE_MERGE_REQUEST_APPROVED id={} by={}", id, organizer);
         return request;
@@ -113,23 +118,17 @@ public class ProfileMergeRequestService {
         String organizer = securityContext.getCurrentUsername();
         decide(request, ProfileMergeRequest.Status.DECLINED, organizer, reason.trim());
         User requester = requester(request);
-        afterDecision(request, organizer, () -> emailService.sendDeclined(requester.getEmail(),
+        afterDecision(request, () -> emailService.sendDeclined(requester.getEmail(),
                 requester.getFirstName(), locale(requester), reason.trim()));
         log.info("PROFILE_MERGE_REQUEST_DECLINED id={} by={}", id, organizer);
         return request;
     }
 
-    private void afterDecision(ProfileMergeRequest request, String organizer, Runnable mail) {
+    private void afterDecision(ProfileMergeRequest request, Runnable mail) {
         try {
             mail.run();
         } catch (RuntimeException e) {
             log.warn("PROFILE_MERGE_REQUEST mail failed id={} cause={}", request.getId(), e.getClass().getSimpleName());
-        }
-        try {
-            mailCenter.closeMergeRequest(request.getId(), organizer);
-        } catch (RuntimeException e) {
-            log.warn("PROFILE_MERGE_REQUEST conversation not closed id={} cause={}", request.getId(),
-                    e.getClass().getSimpleName());
         }
     }
 
@@ -139,6 +138,8 @@ public class ProfileMergeRequestService {
         request.setDecidedAt(Instant.now());
         request.setReason(reason);
         requests.saveAndFlush(request);
+        mailCenterDecisions.afterCommit(MailCenterRequestContract.Kind.MERGE, request.getId(), status.name(), by,
+                request.getDecidedAt());
     }
 
     private ProfileMergeRequest openRequest(UUID id) {

@@ -42,6 +42,25 @@ Only items that are not live yet. Everything else is listed under its release be
 
 ### Unreleased — after BATbern60
 
+**Improvement — Mail Center requests and profile merges, loose ends (Epic 17, sweep)**:
+- ✅ If filing a profile merge request or a logo request fails after its Mail Center conversation was opened, the conversation is closed again instead of staying open for a request that does not exist.
+- ✅ The decision on such a request reaches every service that keeps its conversation, also when one of them does not answer.
+- ✅ A profile merge now records which partner topics, notes and meetings it moved, so that part can be undone by hand like the rest.
+
+**Improvement — Calendar answers to partner meetings (Epic 17, entry 8b)**:
+- ✅ No visible change: when a partner accepts or declines a partner meeting invite in the calendar, the answer still shows in the meeting's RSVP list at once. Internally the event service now hands it on through a contract it owns instead of calling the partner service by name.
+- ✅ When the partner service does not answer, the incoming mail is still processed; the answer is not recorded and the operators see an error (as before, now also counted).
+
+**Improvement — Profile merge reaches partner data (Epic 17, entry 7b)**:
+- ✅ Merging two profiles now also moves the partner topics a person suggested, the partner notes they wrote and the partner meetings they created to the remaining profile. Before, those kept the name of the deleted profile. The merge preview lists them (topic suggestions, partner notes, partner meetings).
+- ✅ A merge that one service refuses (both profiles lead a different talk at one event) is refused before anything moves. When a service does not answer, the merge fails as before (the earlier profile stays) and can simply be repeated.
+- ⚠️ API: `POST /api/v1/users/{username}/merge` refuses a blocked merge with 409 `MERGE_NOT_ALLOWED` (reason `BLOCKED`) and documents its 502 `MERGE_EVENT_SERVICE_FAILED` (it always answered it).
+
+**Improvement — Merge and logo requests in the Mail Center (Epic 17, entry 7)**:
+- ✅ No visible change for people sending a request: it still shows in the Mail Center at once, and sending fails with "could not be passed to the organizers" (nothing stored, send again) when the Mail Center is unavailable.
+- ✅ A decision is now passed to the Mail Center only once it is saved. If the Mail Center does not take it, the decision stands, the operators see an error, and the conversation stays open until an organizer sets it to Done.
+- ⚠️ API: `POST /api/v1/users/me/profile-claims/merge-requests` now documents its 502 `MERGE_REQUEST_NOT_DELIVERED` (it always answered it).
+
 **Improvement — No e-mail address in links, one get-or-create shape (4.10d)**:
 - ✅ Changing, removing, confirming again or making primary one of your further e-mail addresses no longer puts the address in the web address, so it does not end up in server logs or the browser history. Nothing changes on the page.
 - ⚠️ API, breaking for scripts: the four operations on one further address take its `id` from `GET /api/v1/users/me` (`additionalEmails[].id`): `PATCH`, `DELETE /api/v1/users/me/additional-emails/{emailId}`, `POST …/{emailId}/make-primary`, `POST …/{emailId}/resend-verification` (was the URL-encoded address; that now answers 400). Making an address primary gives the addresses new ids. Get-or-create of a company is `POST /api/v1/companies/get-or-create` (was `POST /companies:get-or-create`, now 404) and answers 201 when it created the company, 200 when it found it.

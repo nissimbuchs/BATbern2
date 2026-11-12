@@ -1,7 +1,7 @@
 package ch.batbern.companyuser.controller;
 
-import ch.batbern.companyuser.client.EventManagementContract;
-import ch.batbern.companyuser.client.HttpEventManagementUserMergeClient;
+import ch.batbern.companyuser.client.HttpUserReferenceContract;
+import ch.batbern.companyuser.client.UserReferenceHolders;
 import ch.batbern.companyuser.config.InMemoryCognito;
 import ch.batbern.companyuser.config.TestAwsConfig;
 import ch.batbern.companyuser.domain.User;
@@ -32,6 +32,11 @@ import java.util.List;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static ch.batbern.companyuser.client.UserReferenceHolders.HOLDER_A;
+import static ch.batbern.companyuser.client.UserReferenceHolders.HOLDER_B;
+import static ch.batbern.companyuser.client.UserReferenceHolders.MERGE;
+import static ch.batbern.companyuser.client.UserReferenceHolders.PREVIEW;
+import static org.springframework.http.HttpMethod.GET;
 import static org.springframework.http.HttpMethod.POST;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -59,7 +64,6 @@ class AccountMergeIntegrationTest extends AbstractIntegrationTest {
     /** The other login's address receives the claim link: SES mailbox simulator, never delivered. */
     private static final String WORK = "success+anna.work@simulator.amazonses.com";
     private static final String PRIVATE = "anna@private.example.com";
-    private static final String MERGE = "/internal/users/merge";
 
     @Autowired
     private SesRecorder sesRecorder;
@@ -68,11 +72,11 @@ class AccountMergeIntegrationTest extends AbstractIntegrationTest {
     /** Cognito (the boundary): both people have a login there. */
     @Autowired
     private InMemoryCognito cognito;
-    /** The real client; event-management answers through the contract harness at the wire. */
+    /** The real contract caller; the holders answer through the contract harness at the wire. */
     @Autowired
-    private HttpEventManagementUserMergeClient eventManagementClient;
+    private HttpUserReferenceContract userReferenceContract;
 
-    private ContractServer eventManagement;
+    private ContractServer holders;
     private User a;
     private User b;
 
@@ -80,7 +84,7 @@ class AccountMergeIntegrationTest extends AbstractIntegrationTest {
     void setUp() {
         sesRecorder.reset();
         cognito.reset();
-        eventManagement = EventManagementContract.bindTo(eventManagementClient);
+        holders = UserReferenceHolders.bindTo(userReferenceContract);
         String subA = cognito.givenLogin(PRIVATE, UserStatusType.CONFIRMED).sub();
         String subB = cognito.givenLogin(WORK, UserStatusType.CONFIRMED).sub();
         a = userRepository.save(User.builder().username("anna.muster.2").email(PRIVATE)
@@ -93,16 +97,22 @@ class AccountMergeIntegrationTest extends AbstractIntegrationTest {
 
     @AfterEach
     void tearDown() {
-        eventManagement.close();
+        holders.close();
     }
 
     private String request(String email) {
         return "{\"email\": \"" + email + "\"}";
     }
 
-    /** A merge request reaching event-management fails the test at {@code verify()}. */
+    /** A merge reaching any holder fails the test at {@code verify()}. */
     private void expectNoMerge() {
-        eventManagement.expect(POST, MERGE).times(ExpectedCount.never()).respondWithExample();
+        holders.expect(POST, MERGE).times(ExpectedCount.never()).respondWithExample();
+    }
+
+    /** Both holders preview the merge, without a blocker, after the other login was disabled. */
+    private void expectPreviews() {
+        holders.expect(GET, PREVIEW).times(ExpectedCount.twice())
+                .andExpect(r -> assertThat(workLoginEnabled()).isFalse()).respondWithExample("clean");
     }
 
     private boolean workLoginEnabled() {
@@ -122,7 +132,7 @@ class AccountMergeIntegrationTest extends AbstractIntegrationTest {
         assertThat(sesRecorder.single().html()).contains("/claim-profile?token=");
         assertThat(workLoginEnabled()).isTrue();
         assertThat(userRepository.findByUsername("anna.muster")).isPresent();
-        eventManagement.verify();
+        holders.verify();
     }
 
     @Test
@@ -142,16 +152,18 @@ class AccountMergeIntegrationTest extends AbstractIntegrationTest {
     @DisplayName("confirming merges B into A: login disabled first, B's address kept as confirmed, login deleted")
     void should_mergeAndRemoveTheOtherLogin_when_confirmed() throws Exception {
         String token = tokenService.generateToken(a.getId(), b.getId(), b.getEmail());
-        // The login is disabled before event-management merges anything.
-        eventManagement.expect(POST, MERGE).andExpect(r -> assertThat(workLoginEnabled()).isFalse())
+        // The login is disabled before any holder merges anything.
+        expectPreviews();
+        holders.expect(POST, MERGE).atHost(HOLDER_A).andExpect(r -> assertThat(workLoginEnabled()).isFalse())
                 .respondWithExample();
+        holders.expect(POST, MERGE).atHost(HOLDER_B).respondWithExample("nothingHeld");
 
         mockMvc.perform(post("/api/v1/users/me/profile-claims/confirm").contentType(MediaType.APPLICATION_JSON)
                         .content("{\"token\": \"" + token + "\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.merged").value(true));
 
-        eventManagement.verify();
+        holders.verify();
         assertThat(cognito.login(WORK)).isEmpty();
         assertThat(cognito.login(PRIVATE)).hasValueSatisfying(l -> assertThat(l.enabled()).isTrue());
         assertThat(userRepository.findByUsername("anna.muster")).isEmpty();
@@ -168,17 +180,19 @@ class AccountMergeIntegrationTest extends AbstractIntegrationTest {
     @WithMockUser(username = "anna.muster.2", roles = "ATTENDEE")
     @DisplayName("the merge fails: the other login is enabled again and nothing is deleted")
     void should_enableTheLoginAgain_when_mergeFails() throws Exception {
-        eventManagement.expect(POST, MERGE).andExpect(r -> assertThat(workLoginEnabled()).isFalse())
+        expectPreviews();
+        holders.expect(POST, MERGE).atHost(HOLDER_A).andExpect(r -> assertThat(workLoginEnabled()).isFalse())
                 .respondWith(r -> {
-                    throw new ResourceAccessException("event-management down");
+                    throw new ResourceAccessException("holder down");
                 });
+        holders.expect(POST, MERGE).atHost(HOLDER_B).times(ExpectedCount.never()).respondWithExample();
         String token = tokenService.generateToken(a.getId(), b.getId(), b.getEmail());
 
         mockMvc.perform(post("/api/v1/users/me/profile-claims/confirm").contentType(MediaType.APPLICATION_JSON)
                         .content("{\"token\": \"" + token + "\"}"))
                 .andExpect(status().isBadGateway());
 
-        eventManagement.verify();
+        holders.verify();
         assertThat(cognito.login(WORK)).isPresent();
         assertThat(workLoginEnabled()).isTrue();
         assertThat(userRepository.findByUsername("anna.muster")).isPresent();
@@ -196,7 +210,7 @@ class AccountMergeIntegrationTest extends AbstractIntegrationTest {
                         .content("{\"token\": \"" + token + "\"}"))
                 .andExpect(status().is5xxServerError());
 
-        eventManagement.verify();
+        holders.verify();
         assertThat(userRepository.findByUsername("anna.muster")).isPresent();
         assertThat(workLoginEnabled()).isTrue();
     }

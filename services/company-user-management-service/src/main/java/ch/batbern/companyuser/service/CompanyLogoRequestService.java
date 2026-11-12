@@ -1,6 +1,6 @@
 package ch.batbern.companyuser.service;
 
-import ch.batbern.companyuser.client.EventManagementMailCenterClient;
+import ch.batbern.companyuser.client.MailCenterRequestContract;
 import ch.batbern.companyuser.domain.Company;
 import ch.batbern.companyuser.domain.CompanyLogoRequest;
 import ch.batbern.companyuser.domain.Logo;
@@ -45,7 +45,7 @@ public class CompanyLogoRequestService {
     private final LogoRepository logoRepository;
     private final GenericLogoService logoService;
     private final CompanyService companyService;
-    private final EventManagementMailCenterClient mailCenter;
+    private final MailCenterRequestDecisions mailCenterDecisions;
     private final CompanyLogoRequestEmailService emailService;
     private final SecurityContextHelper securityContext;
 
@@ -53,7 +53,12 @@ public class CompanyLogoRequestService {
     public record Details(CompanyLogoRequest request, User requester, Company company) {
     }
 
-    /** The caller asks for a new logo of their company; opens the Mail Center conversation. */
+    /**
+     * The caller asks for a new logo of their company; the Mail Center request contract opens the
+     * conversation within this transaction, so a request is never stored without it. Should this
+     * transaction still roll back after the open, the conversation is withdrawn
+     * ({@link MailCenterRequestDecisions#open}).
+     */
     @Transactional
     public Details request(String logoUploadId, String note) {
         User caller = currentUser();
@@ -86,8 +91,9 @@ public class CompanyLogoRequestService {
                 .build());
 
         String name = fullName(caller);
-        mailCenter.openLogoRequest(new EventManagementMailCenterClient.OpenRequest(saved.getId(), name,
-                caller.getEmail(), "Neues Logo für " + displayName(company) + ": " + name, trimmedNote));
+        mailCenterDecisions.open(new MailCenterRequestContract.Opened(MailCenterRequestContract.Kind.LOGO,
+                saved.getId(), name, caller.getEmail(), "Neues Logo für " + displayName(company) + ": " + name,
+                trimmedNote));
         log.info("COMPANY_LOGO_REQUESTED id={} requester={} company={}", saved.getId(), caller.getUsername(),
                 companyName);
         return new Details(saved, caller, company);
@@ -119,7 +125,7 @@ public class CompanyLogoRequestService {
         companyService.applyRequestedLogo(request.getCompanyName(), request.getNewLogoUploadId());
         decide(request, CompanyLogoRequest.Status.APPROVED, organizer, null);
         Details d = details(request);
-        afterDecision(request, organizer, () -> emailService.sendApproved(d.requester().getEmail(),
+        afterDecision(request, () -> emailService.sendApproved(d.requester().getEmail(),
                 d.requester().getFirstName(), locale(d.requester()), displayName(d.company(), request)));
         log.info("COMPANY_LOGO_REQUEST_APPROVED id={} by={}", id, organizer);
         return d;
@@ -133,23 +139,17 @@ public class CompanyLogoRequestService {
         String trimmed = reason == null || reason.isBlank() ? null : reason.trim();
         decide(request, CompanyLogoRequest.Status.DECLINED, organizer, trimmed);
         Details d = details(request);
-        afterDecision(request, organizer, () -> emailService.sendDeclined(d.requester().getEmail(),
+        afterDecision(request, () -> emailService.sendDeclined(d.requester().getEmail(),
                 d.requester().getFirstName(), locale(d.requester()), displayName(d.company(), request), trimmed));
         log.info("COMPANY_LOGO_REQUEST_DECLINED id={} by={}", id, organizer);
         return d;
     }
 
-    private void afterDecision(CompanyLogoRequest request, String organizer, Runnable mail) {
+    private void afterDecision(CompanyLogoRequest request, Runnable mail) {
         try {
             mail.run();
         } catch (RuntimeException e) {
             log.warn("COMPANY_LOGO_REQUEST mail failed id={} cause={}", request.getId(),
-                    e.getClass().getSimpleName());
-        }
-        try {
-            mailCenter.closeLogoRequest(request.getId(), organizer);
-        } catch (RuntimeException e) {
-            log.warn("COMPANY_LOGO_REQUEST conversation not closed id={} cause={}", request.getId(),
                     e.getClass().getSimpleName());
         }
     }
@@ -160,6 +160,8 @@ public class CompanyLogoRequestService {
         request.setDecidedAt(Instant.now());
         request.setReason(reason);
         requests.saveAndFlush(request);
+        mailCenterDecisions.afterCommit(MailCenterRequestContract.Kind.LOGO, request.getId(), status.name(), by,
+                request.getDecidedAt());
     }
 
     private Details details(CompanyLogoRequest request) {

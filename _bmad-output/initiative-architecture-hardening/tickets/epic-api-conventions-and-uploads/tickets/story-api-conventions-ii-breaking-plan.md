@@ -3,7 +3,7 @@ title: 'API conventions II (breaking): me/username twins for profile and picture
 type: 'refactor'
 ticket: '10'
 created: '2026-11-10'
-status: 'built'
+status: 'done'
 baseline_revision: 'ac006ac1ac2902b492c581a48b8d110cd1874993'
 route: 'full'
 route_source: 'auto'

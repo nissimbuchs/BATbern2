@@ -16,9 +16,9 @@ import java.util.UUID;
  * Organizer-facing RSVP query endpoint — Story 10.27 (AC7).
  *
  * Implements the generated {@link PartnerMeetingRsvpsApi} (partner-meetings-api spec).
- * The inbound iCal REPLY recording endpoint ({@code POST /internal/partner-meetings/rsvps}) is
- * VPC-internal (no JWT, not exposed through the gateway) and therefore lives in its own
- * {@link InternalRsvpController}, outside the {@code /api/v1} contract.
+ * Inbound iCal REPLYs are recorded through {@code POST /internal/calendar-replies}, the calendar
+ * reply contract event-management owns (VPC-internal, not exposed through the gateway), served by
+ * {@link InternalRsvpController} outside the {@code /api/v1} contract.
  */
 @RestController
 @RequestMapping("/api/v1")

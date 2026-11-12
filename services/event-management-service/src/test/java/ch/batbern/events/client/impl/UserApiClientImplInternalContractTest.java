@@ -413,7 +413,7 @@ class UserApiClientImplInternalContractTest {
         InvitationCredentialsResponse result = client.issueInvitationCredentials("anna.meier");
 
         assertThat(result.getAction()).isEqualTo(InvitationCredentialsResponse.ActionEnum.FRESH_TEMP_PASSWORD);
-        assertThat(result.getTemporaryPassword()).isEqualTo("Tk7!aB2@nx9pQ4#z");
+        assertThat(result.getTemporaryPassword()).isEqualTo("example-temp-password");
         cums.verify();
     }
 

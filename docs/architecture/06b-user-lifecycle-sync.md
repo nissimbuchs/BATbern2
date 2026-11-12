@@ -1105,9 +1105,11 @@ signs in by email, the `sub` and linked Google identities stay), then the swap i
 `user_profiles` / `user_additional_emails` with explicit flushes (global uniqueness; Hibernate flushes
 inserts before deletes); if the DB step fails, the login is moved back. The old primary stays as a
 confirmed additional address, as a new row under a new id (the chosen row is deleted), so the client
-reads the ids again. EMS `POST /internal/users/primary-email` moves upcoming registrations
-(event today or later) made under the old address, because deregistration, slides and
-`-participants@` read `registrations.attendee_email`. The UI refreshes the session afterwards, since
+reads the ids again. Then every holder of the user-reference contract is told
+(`POST /internal/user-references/primary-email`, best effort, WARN on failure): EMS moves upcoming
+registrations (event today or later) made under the old address at once, because deregistration,
+slides and `-participants@` read `registrations.attendee_email`; PCS keeps nothing by address and
+answers `updated: 0`. The UI refreshes the session afterwards, since
 the ID token carries the old address until then. `EMAIL_HAS_OTHER_LOGIN` means another account logs
 in with that address: the page then offers the account merge below.
 
@@ -1156,7 +1158,7 @@ registration for the same event, 19 of the profiles without login carry speaker 
 | **C: organizer merge** | ORGANIZER | User page → "Merge profile" → pick the other profile → preview → confirm. `GET /users/{target}/merge-preview?source=`, `POST /users/{target}/merge` |
 | **D: claim** | the person, logged in | Account settings and the attendee dashboard list profiles **without login** under the same first and last name (case-insensitive), with a masked address only. "This is me" mails a signed link (48 h, JWT type `profile-claim`) **to the earlier profile's address**; `/claim-profile?token=` confirms it, and only under the login that asked for it (else 403 `CLAIM_OTHER_ACCOUNT`). A candidate with a placeholder address from the historical import (`vorname.nachname@batbern.ch`, #1244) is flagged `placeholderAddress` and gets no link (409 `PLACEHOLDER_ADDRESS`); only the request to the organizers (row E) is offered. `GET/POST /users/me/profile-claims`, `POST /users/me/profile-claims/confirm` |
 | **F: two logins (#1244 step 3)** | the person, logged in as A | Owner decision 2026-11-07: someone with two accounts that both have a login (first the company address, later a private one). On `/profile`, adding B's address answers `ADDITIONAL_EMAIL_DUPLICATE` (making it primary answers `EMAIL_HAS_OTHER_LOGIN`); the page offers "Ist es Ihres?" → `POST /users/me/account-merges {email}`: B is the account whose **primary** address that is and which has a login, else 404. A signed link (same token as D, template `account-merge-{de,en}`) goes to B's address; `/claim-profile?token=` under A's login proves both mailboxes. Confirm: Cognito `disableLogin(B)` → `UserMergeService.mergeLoginAccount(A, B)` (trigger `SELF_CLAIM`, B's addresses carried as confirmed) → `deleteLogin(B)`. A failed merge enables B's login again; a login that cannot be disabled means nothing is merged; a failed delete leaves it disabled (logged `ACCOUNT_MERGE login disabled but not deleted`). Organizers do not get this. |
-| **E: request (#1237)** | the person asks, any ORGANIZER decides | For someone who cannot read the earlier profile's mailbox any more (a former employer's address). "I no longer have access to this address" + an optional note → `POST /users/me/profile-claims/merge-requests` stores a `profile_merge_requests` row (CUMS V23) and opens a Mail Center conversation (EMS `POST /internal/mail-center/merge-requests`, `mail_conversation.merge_request_id`, V145). The conversation shows both profiles, what would move and the note; **Approve** (`POST /users/merge-requests/{id}/approve`) runs the merge as `ORGANIZER` with the approving organizer as `performed_by`, **Decline** (`.../decline`) needs a reason. The person is mailed at their current address either way (templates `profile-merge-approved`/`-declined`, DE + EN) and the conversation is set to Done. |
+| **E: request (#1237)** | the person asks, any ORGANIZER decides | For someone who cannot read the earlier profile's mailbox any more (a former employer's address). "I no longer have access to this address" + an optional note → `POST /users/me/profile-claims/merge-requests` stores a `profile_merge_requests` row (CUMS V23) and opens a Mail Center conversation in the same transaction (the CUMS-owned Mail Center request contract, implemented by EMS; `mail_conversation.merge_request_id`, V145; 502 and nothing stored when EMS does not answer; Epic 17 entry 7, see `06-backend-architecture.md` → "Mail Center requests"). The conversation shows both profiles, what would move and the note; **Approve** (`POST /users/merge-requests/{id}/approve`) runs the merge as `ORGANIZER` with the approving organizer as `performed_by`, **Decline** (`.../decline`) needs a reason. The person is mailed at their current address either way (templates `profile-merge-approved`/`-declined`, DE + EN) and the conversation is set to Done after the commit. |
 
 **Finding the pairs.** Organizers open **Users → Mögliche Duplikate**:
 `GET /users/duplicate-candidates` (`ORGANIZER`, `DuplicateCandidateService`) compares the active
@@ -1176,26 +1178,37 @@ Measured on production 2026-11-07: 257 / 24 / 22 pairs for the three rules, 24 w
   The login profile is always the target; the organizer dialog offers to swap the direction. Two login
   profiles are merged only by the person themselves after proving both mailboxes (row F,
   `mergeLoginAccount`, the one path that accepts a source with a login; the snapshot records `hadLogin`).
-- **Order**: lock both profiles → event-management moves its rows (`POST /internal/users/merge`, Service
-  Connect, no JWT) and commits → company-user-management moves roles, `activity_history`,
+- **Order**: lock both profiles → every holder of the user-reference contract CUMS owns (Epic 17 entry 7b,
+  `batbern.contracts.user-references.implementers`: event-management, partner-coordination) previews the
+  merge, and a blocker at any holder refuses it (409 `MERGE_NOT_ALLOWED`, reason `BLOCKED`) before any
+  row moves → each holder moves its rows (`POST /internal/user-references/merge`, Service Connect, the
+  user's JWT forwarded when there is one) and commits on its own → company-user-management moves roles, `activity_history`,
   `watch_pairings`, `role_assignments.granted_by`, fills an empty company and bio, deletes the source and
   adds its address (verified, label "merged profile") and its additional addresses to the target, except an
   import placeholder (`vorname.nachname@batbern.ch`), which reaches nobody and stays only in the merge log.
-  Until 2026-11-08 placeholders were carried too; the 48 such rows were deleted by hand that day. If the
-  second step fails, the source still exists and owns nothing in event-management; running the merge again
-  finishes it (event-management's part is idempotent).
+  Until 2026-11-08 placeholders were carried too; the 48 such rows were deleted by hand that day. If a
+  holder or the last step fails (502), the source still exists and earlier holders have moved their rows;
+  running the merge again finishes it (every holder's part is idempotent).
 - **What moves in event-management** (`UserMergeService` there): registrations, speaker slots
   (`session_users`), speaker arrivals, notifications, Q&A posts and notifications, talk proposals, content
   submissions, organizer thanks, live-timing presence, newsletter rows. **Not moved**: audit columns
   (`created_by`, `changed_by_username`, …) and organizer columns; a source without login never acted as
-  organizer. Partner topic suggestions live in partner-coordination and are made by partner logins.
+  organizer.
+- **What moves in partner-coordination** (`UserReferenceService`, since Epic 17 entry 7b): who suggested
+  a topic (`topic_suggestions.suggested_by`), who wrote a partner note (`partner_notes.author_username`),
+  who created a partner meeting (`partner_meetings.created_by`). No unique key, so no collision and no
+  blocker. Since the Epic 17 sweep a merge that moved rows writes one `partner_user_merge_log` row (PCS
+  V12) with the moved ids per column; a repeat that moves nothing writes none. Before 7b these rows kept the merged-away username; a read-only production
+  count on 2026-11-11 found none naming a former merge source (0 of 43, 0 of 2, 0 of 2).
 - **Collisions**: same session, same event (arrivals, proposals, thanks) → the source row goes. Two
   registrations for one event → the better one stays (attended, confirmed, registered, waitlist, cancelled;
   the target's on a tie), because every `my-registration` lookup expects one row.
-- **Refused**: both lead a different talk at the same event (409 `MERGE_BLOCKED`); the organizer removes
-  one first.
+- **Refused**: both lead a different talk at the same event (409 `MERGE_NOT_ALLOWED` with reason
+  `BLOCKED`, or `MERGE_BLOCKED` if it arises between preview and merge); the organizer removes one first.
 - **Undo** is by hand, from `user_merge_log` (event-management, V144): the moved row keys per column, every
-  removed row in full, and the deleted source profile with its roles and addresses.
+  removed row in full, and the deleted source profile with its roles and addresses. The partner-coordination
+  part from `partner_user_merge_log` (V12): set the three columns back to the source username for the ids
+  listed under `moved`.
 - **Requests (E, #1237)**: the mail to the old address is the ownership proof in D; without it a human
   decides. An approved request merges **without carrying any of the source's addresses**
   (`UserMergeService.merge(..., carryAddresses = false)`): an address nobody proved must not become a

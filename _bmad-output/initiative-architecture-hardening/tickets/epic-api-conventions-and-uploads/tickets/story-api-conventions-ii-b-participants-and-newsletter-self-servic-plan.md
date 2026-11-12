@@ -3,7 +3,7 @@ title: 'API conventions II b (breaking): one participants create, newsletter sel
 type: 'refactor'
 ticket: '10c'
 created: '2026-11-11'
-status: 'built'
+status: 'done'
 baseline_revision: 'f5052221721ec37cf91cdf13dd25d56064f953cc'
 route: 'full'
 route_source: 'auto'

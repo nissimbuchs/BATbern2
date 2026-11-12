@@ -1,6 +1,6 @@
 package ch.batbern.companyuser.service;
 
-import ch.batbern.companyuser.client.EventManagementUserMergeClient;
+import ch.batbern.companyuser.client.UserReferenceContract;
 import ch.batbern.companyuser.domain.User;
 import ch.batbern.companyuser.domain.UserAdditionalEmail;
 import ch.batbern.companyuser.exception.AdditionalEmailNotFoundException;
@@ -26,9 +26,10 @@ import java.util.UUID;
  * <p>Order: Cognito moves the login first (it refuses an address another login holds, which is the
  * case for the account merge); then the profile swaps the two addresses, the old primary stays as a
  * confirmed additional address (a new row, so the ids of the addresses change). If the profile
- * step fails, the login is moved back. Last, event-management moves upcoming registrations made
- * under the old address; that step is best effort, because those registrations are still found
- * through the old address.
+ * step fails, the login is moved back. Last, every holder of the user-reference contract is told
+ * ({@link UserReferenceContract}): event-management moves upcoming registrations made under the old
+ * address at once. That step is best effort, because those registrations are still found through
+ * the old address.
  */
 @Service
 @RequiredArgsConstructor
@@ -38,7 +39,7 @@ public class PrimaryEmailService {
     private final UserRepository userRepository;
     private final UserAdditionalEmailRepository additionalEmailRepository;
     private final CognitoIntegrationService cognitoService;
-    private final EventManagementUserMergeClient eventManagement;
+    private final UserReferenceContract holders;
     private final SecurityContextHelper securityContext;
 
     @Transactional
@@ -70,9 +71,9 @@ public class PrimaryEmailService {
         }
 
         try {
-            eventManagement.primaryEmailChanged(username, oldEmail, newEmail);
+            holders.primaryEmailChanged(username, oldEmail, newEmail);
         } catch (RuntimeException e) {
-            log.warn("event-management not told about the new primary address of {}: {}", username,
+            log.warn("Holders not told about the new primary address of {}: {}", username,
                     e.getMessage());
         }
         log.info("PRIMARY_EMAIL_CHANGED user={} from={} to={}", username, LoggingUtils.maskEmail(oldEmail),

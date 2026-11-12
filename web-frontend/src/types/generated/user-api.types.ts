@@ -225,7 +225,8 @@ export interface paths {
     /**
      * Preview merging another profile into this one (Organizer)
      * @description #1183 C. Shows both profiles and what a merge of `source` into `{username}` would move:
-     *     rows per table, rows that collide (same event, same session) and blockers. Changes nothing.
+     *     rows per table, rows that collide (same event, same session) and blockers, summed over every
+     *     service that stores usernames (event-management, partner-coordination). Changes nothing.
      *
      *     `canMerge` is false, with the reasons in `reasons`, when the source has a login (merge in
      *     the other direction instead), both have a login, they are the same profile, or a blocker
@@ -255,11 +256,17 @@ export interface paths {
      * Merge another profile into this one (Organizer)
      * @description #1183 C. Moves the source's registrations, speaker slots, history, roles and addresses to
      *     `{username}`, adds the source's address as a verified additional address, and deletes the
-     *     source profile. Where both hold a registration for the same event, the better one stays
-     *     (attended, confirmed, registered, waitlist, no_show, cancelled). Every moved and removed row is
-     *     logged in `user_merge_log` (event-management) so a merge can be undone by hand.
+     *     source profile. Every service that stores usernames moves its rows (the user-reference
+     *     contract, Epic 17 entry 7b: event-management, and partner-coordination's topic suggestions,
+     *     partner notes and partner meetings); `moved` and `removed` list them all by `table.column`.
+     *     Where both hold a registration for the same event, the better one stays (attended,
+     *     confirmed, registered, waitlist, no_show, cancelled). Every moved and removed row of
+     *     event-management is logged in `user_merge_log` so a merge can be undone by hand.
      *
-     *     Refused with 409 `MERGE_NOT_ALLOWED` when the preview's `canMerge` is false.
+     *     Refused with 409 `MERGE_NOT_ALLOWED` when the preview's `canMerge` is false; a blocker found
+     *     by any service refuses the merge before any service moves a row. 502
+     *     `MERGE_EVENT_SERVICE_FAILED` when a service does not answer; the source profile stays and
+     *     repeating the merge completes it.
      *
      *     **Authorization**: ORGANIZER role required
      */
@@ -395,8 +402,8 @@ export interface paths {
      *     #1244 step 3: when the link came from `POST /users/me/account-merges` (the other profile has
      *     its own login), that login is disabled first, the profile is merged with its addresses as
      *     confirmed addresses of the caller, and the login is deleted. If the merge fails the login is
-     *     enabled again (502 when event-management did not answer); if it cannot be disabled nothing
-     *     is merged.
+     *     enabled again (502 `MERGE_EVENT_SERVICE_FAILED` when a holder of the user-reference contract
+     *     did not answer); if it cannot be disabled nothing is merged.
      */
     post: operations['confirmProfileClaim'];
     delete?: never;
@@ -421,6 +428,8 @@ export interface paths {
      *     Center. The candidate must be one of `GET /users/me/profile-claims` (else 404). At most one
      *     open request per profile pair (409 `MERGE_REQUEST_OPEN`); a declined pair can be asked again
      *     after 30 days (409 `MERGE_REQUEST_DECLINED`). The old address is not added to the profile.
+     *     The request opens a conversation in the Mail Center at once (502
+     *     `MERGE_REQUEST_NOT_DELIVERED` when that fails; nothing is stored then).
      */
     post: operations['requestProfileMerge'];
     delete?: never;
@@ -464,7 +473,9 @@ export interface paths {
      * @description #1237. Runs the organizer merge (the requester's login profile is the target, the profile
      *     without login the source), logged in `user_merge_log`. The same rules as an organizer
      *     merge apply: 409 when two different talks at the same event block it. The requester is
-     *     mailed at their current address and the conversation is closed.
+     *     mailed at their current address and the conversation in the Mail Center is closed at once,
+     *     after the commit (Mail Center request contract; a failure there is logged and does not undo
+     *     the decision).
      */
     post: operations['approveProfileMergeRequest'];
     delete?: never;
@@ -485,7 +496,7 @@ export interface paths {
     /**
      * Decline a profile merge request with a reason (organizers)
      * @description #1237. The reason is mailed to the requester at their current address. The pair is not
-     *     offered for a new request for 30 days.
+     *     offered for a new request for 30 days. The conversation is closed as on approval.
      */
     post: operations['declineProfileMergeRequest'];
     delete?: never;
@@ -510,8 +521,8 @@ export interface paths {
      *     request is for the company on the caller's profile (409 `NO_COMPANY` without one). At most
      *     one open request per person and company (409 `LOGO_REQUEST_OPEN`). An unknown or
      *     unconfirmed upload is 400 `LOGO_NOT_READY`. The upload is kept until the decision, and the
-     *     request opens a conversation in the Mail Center (502 `LOGO_REQUEST_NOT_DELIVERED` when that
-     *     fails; nothing is stored then).
+     *     request opens a conversation in the Mail Center at once (502 `LOGO_REQUEST_NOT_DELIVERED`
+     *     when that fails; nothing is stored then).
      */
     post: operations['createCompanyLogoRequest'];
     delete?: never;
@@ -572,7 +583,9 @@ export interface paths {
     /**
      * Accept a logo request; the company gets the new logo (organizers)
      * @description #1246. Sets the logo as an organizer edit would. The requester is mailed at their primary
-     *     address and the conversation is closed. 409 `LOGO_REQUEST_DECIDED` when already decided.
+     *     address and the conversation in the Mail Center is closed at once, after the commit (a
+     *     failure there is logged and does not undo the decision). 409 `LOGO_REQUEST_DECIDED` when
+     *     already decided.
      */
     post: operations['approveCompanyLogoRequest'];
     delete?: never;
@@ -593,7 +606,8 @@ export interface paths {
     /**
      * Decline a logo request, with an optional reason (organizers)
      * @description #1246. The requester is mailed, with the reason when one is given. The logo stays. The
-     *     person may ask again. 409 `LOGO_REQUEST_DECIDED` when already decided.
+     *     person may ask again. The conversation is closed as on acceptance. 409
+     *     `LOGO_REQUEST_DECIDED` when already decided.
      */
     post: operations['declineCompanyLogoRequest'];
     delete?: never;
@@ -1772,7 +1786,7 @@ export interface components {
        *     `action = "FRESH_TEMP_PASSWORD"`; null when `action = "USE_EXISTING_PASSWORD"`.
        *     Never persisted at rest in CUMS or EMS; the caller embeds it once in the
        *     invitation email and discards it from memory.
-       * @example Tk7!aB2@nx9pQ4#z
+       * @example example-temp-password
        */
       temporaryPassword: string | null;
       /**
@@ -2536,6 +2550,15 @@ export interface operations {
       404: components['responses']['NotFound'];
       409: components['responses']['Conflict'];
       500: components['responses']['InternalServerError'];
+      /** @description A service holding usernames did not complete its part; the source profile stays */
+      502: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
     };
   };
   listProfileClaimCandidates: {
@@ -2705,6 +2728,15 @@ export interface operations {
       403: components['responses']['Forbidden'];
       409: components['responses']['Conflict'];
       500: components['responses']['InternalServerError'];
+      /** @description A holder of the user-reference contract did not complete its part; the earlier profile stays */
+      502: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
     };
   };
   requestProfileMerge: {
@@ -2734,6 +2766,15 @@ export interface operations {
       404: components['responses']['NotFound'];
       409: components['responses']['Conflict'];
       500: components['responses']['InternalServerError'];
+      /** @description The Mail Center did not take the request; nothing was stored */
+      502: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
     };
   };
   getProfileMergeRequest: {

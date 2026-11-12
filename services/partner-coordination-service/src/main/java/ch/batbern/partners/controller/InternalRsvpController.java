@@ -1,52 +1,47 @@
 package ch.batbern.partners.controller;
 
-import ch.batbern.partners.domain.PartnerMeetingRsvp;
 import ch.batbern.partners.domain.RsvpStatus;
 import ch.batbern.partners.dto.RecordRsvpRequest;
-import ch.batbern.partners.meetings.dto.generated.RsvpDTO;
 import ch.batbern.partners.service.PartnerMeetingRsvpService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Locale;
+
 /**
- * Internal RSVP recording endpoint for inbound iCal REPLY emails — Story 10.27 (AC6).
+ * partner-coordination implements the calendar reply contract event-management owns
+ * ({@code POST /internal/calendar-replies} in {@code docs/api/internal/ems-internal.openapi.yml},
+ * ADR-016 decision 5, Epic 17 entry 8b): an attendee's iMIP REPLY to a partner meeting invite
+ * (Story 10.27) is recorded at once as that attendee's RSVP. It replaced
+ * {@code POST /internal/partner-meetings/rsvps}.
  *
- * <p>{@code POST /internal/partner-meetings/rsvps} is NOT JWT-protected — it is secured by the
- * VPC / Service Connect private DNS namespace only and is intentionally NOT exposed through the
- * API gateway, so it is not part of the partner-meetings-api public contract. It lives outside the
- * {@code /api/v1} prefix and therefore in its own controller (separate from the contract-first
- * {@link PartnerMeetingRsvpController}).
+ * <p>Called from the inbound mail listener, which has no user: no JWT, and none needed.
+ * {@code /internal/**} is not routed by the API gateway, which also denies it. An unknown meeting
+ * answers 404 (the service's {@code PartnerNotFoundException}), a PARTSTAT other than ACCEPTED,
+ * DECLINED or TENTATIVE answers 400; both carry the shared {@code ErrorResponse}.
  */
 @RestController
 @RequiredArgsConstructor
-@Slf4j
 public class InternalRsvpController {
 
     private final PartnerMeetingRsvpService rsvpService;
 
-    /**
-     * Record or update an RSVP from an inbound iCal REPLY email (AC6).
-     * Not JWT-protected — secured by VPC/Service Connect private DNS namespace only.
-     */
-    @PostMapping("/internal/partner-meetings/rsvps")
-    public ResponseEntity<RsvpDTO> recordRsvp(@Valid @RequestBody RecordRsvpRequest request) {
-        // Validate partStat against known enum values
-        RsvpStatus status;
+    @PostMapping("/internal/calendar-replies")
+    public ResponseEntity<Void> recordCalendarReply(@Valid @RequestBody RecordRsvpRequest request) {
+        rsvpService.upsertRsvp(request.getMeetingId(), request.getAttendeeEmail(), status(request.getPartStat()));
+        return ResponseEntity.noContent().build();
+    }
+
+    /** ACCEPTED, DECLINED or TENTATIVE in any case; anything else is a 400 (global handler). */
+    private static RsvpStatus status(String partStat) {
         try {
-            status = RsvpStatus.valueOf(request.getPartStat().toUpperCase());
+            return RsvpStatus.valueOf(partStat.trim().toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException e) {
-            log.warn("Unknown partStat value: {}", request.getPartStat());
-            return ResponseEntity.badRequest().build();
+            throw new IllegalArgumentException("Unknown partStat: " + partStat, e);
         }
-
-        PartnerMeetingRsvp rsvp = rsvpService.upsertRsvp(
-                request.getMeetingId(), request.getAttendeeEmail(), status);
-
-        return ResponseEntity.ok(PartnerMeetingRsvpService.toRsvpDTO(rsvp));
     }
 }

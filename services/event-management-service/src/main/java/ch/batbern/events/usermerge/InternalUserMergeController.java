@@ -17,10 +17,12 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.Map;
 
 /**
- * #1183 C/D: company-user-management merges two profiles of one person and asks event-management to
- * move its rows ({@link UserMergeService}). No JWT: service to service in the VPC. {@code /internal/**}
- * is not routed by the API gateway, which also denies it; the production chain's permit is covered by
- * {@code InternalPathSecurityTest}. Not part of a public OpenAPI contract, like {@code InternalMailController}.
+ * #1183 C/D: event-management's part of the user-reference contract CUMS owns (ADR-016 decision 5,
+ * {@code /internal/user-references/*} in {@code docs/api/internal/cums-internal.openapi.yml}). CUMS
+ * merges two profiles of one person and every holder moves its rows ({@link UserMergeService}); here
+ * also the merge log. The user's JWT is forwarded when there is one, never required.
+ * {@code /internal/**} is not routed by the API gateway, which also denies it; the production
+ * chain's permit is covered by {@code InternalPathSecurityTest}.
  */
 @RestController
 @RequiredArgsConstructor
@@ -28,12 +30,12 @@ public class InternalUserMergeController {
 
     private final UserMergeService mergeService;
 
-    @GetMapping("/internal/users/merge-preview")
+    @GetMapping("/internal/user-references/preview")
     public UserMergeService.Preview preview(@RequestParam String source, @RequestParam String target) {
         return mergeService.preview(source, target);
     }
 
-    @PostMapping("/internal/users/merge")
+    @PostMapping("/internal/user-references/merge")
     public UserMergeService.Result merge(@Valid @RequestBody MergeRequest request) {
         return mergeService.merge(request.sourceUsername(), request.targetUsername(), request.performedBy(),
                 request.trigger(), request.sourceProfile());
@@ -44,7 +46,7 @@ public class InternalUserMergeController {
      * the old primary address follow, so deregistration links, slides and the -participants@ list
      * reach the new one. Past registrations and registrations under other addresses stay.
      */
-    @PostMapping("/internal/users/primary-email")
+    @PostMapping("/internal/user-references/primary-email")
     public Map<String, Integer> primaryEmailChanged(@Valid @RequestBody PrimaryEmailChange request) {
         return Map.of("updated", mergeService.primaryEmailChanged(request.username(), request.oldEmail(),
                 request.newEmail()));

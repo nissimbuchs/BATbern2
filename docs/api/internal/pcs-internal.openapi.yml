@@ -4,84 +4,22 @@ info:
   version: 1.0.0
   description: |
     Service-to-service operations of partner-coordination under `/internal/**` (Story 17.0b2).
-    Caller: event-management (`PartnerMeetingRsvpClientImpl`, from the inbound-mail SQS listener).
 
-    Not a public API: the API gateway does not route `/internal/**` and denies it explicitly; the
-    services reach it inside the VPC through Service Connect, without a JWT. Public API tooling does
-    not read `docs/api/internal/`. The specs describe the endpoints as they are; Story 17.6
-    redesigns them. Paths are full paths (server `/`).
+    partner-coordination serves no internal operation of its own: no service calls it by name
+    (ADR-016 decision 1: CUMS and event-management are upstream of it). It implements contracts
+    its upstreams own (ADR-016 decisions 4 and 5), specified in the owner's spec, not here:
+
+    - the user-reference contract (`/internal/user-references/*`), owned by CUMS,
+      `cums-internal.openapi.yml` (Epic 17 entry 7b);
+    - the calendar reply contract (`/internal/calendar-replies`), owned by event-management,
+      `ems-internal.openapi.yml` (Epic 17 entry 8b). It replaced
+      `POST /internal/partner-meetings/rsvps`.
+
+    The file stays so that a future partner-coordination operation has its place. Not a public
+    API: the API gateway does not route `/internal/**` and denies it explicitly. Public API tooling
+    does not read `docs/api/internal/`.
 servers:
   - url: /
 security: []
 
-paths:
-  /internal/partner-meetings/rsvps:
-    post:
-      operationId: recordInternalRsvp
-      summary: Record or update an RSVP from an inbound iCal REPLY (Story 10.27, AC6)
-      description: |
-        One RSVP per meeting and address (the address is compared case-insensitively). An unknown
-        `partStat` answers 400 without a body.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/RecordRsvpRequest'
-            example:
-              meetingId: 4b1f5a2e-6d3c-4f8a-9a51-0c8e7d2b1f00
-              attendeeEmail: anna.meier@example.com
-              partStat: ACCEPTED
-      responses:
-        '200':
-          description: The recorded RSVP
-          content:
-            application/json:
-              schema:
-                $ref: '../partner-meetings-api.openapi.yml#/components/schemas/RsvpDTO'
-              examples:
-                accepted:
-                  value:
-                    attendeeEmail: anna.meier@example.com
-                    status: ACCEPTED
-                    respondedAt: '2026-11-08T10:00:00Z'
-        '400':
-          description: |
-            Invalid request body (missing `meetingId`, malformed address): the shared ErrorResponse.
-            Known deviation, kept as it is until Story 17.6: an unknown `partStat` answers 400
-            without a body, which this schema does not describe.
-          content:
-            application/json:
-              schema:
-                $ref: '../_shared.openapi.yml#/components/schemas/ErrorResponse'
-        '404':
-          description: No partner meeting with this id
-          content:
-            application/json:
-              schema:
-                $ref: '../_shared.openapi.yml#/components/schemas/ErrorResponse'
-
-components:
-  schemas:
-    RecordRsvpRequest:
-      type: object
-      description: Hand-written DTO `ch.batbern.partners.dto.RecordRsvpRequest`.
-      required: [meetingId, attendeeEmail, partStat]
-      properties:
-        meetingId:
-          type: string
-          format: uuid
-        attendeeEmail:
-          type: string
-          format: idn-email
-          minLength: 1
-          maxLength: 255
-          # One email rule everywhere (#1102): ASCII local part (SES has no SMTPUTF8), any domain.
-          # Source of truth: shared-kernel EmailAddresses.OPENAPI_PATTERN.
-          pattern: '^[A-Za-z0-9!#$%&''*+/=?^_`{|}~-]+(\.[A-Za-z0-9!#$%&''*+/=?^_`{|}~-]+)*@[^\s@.]+(\.[^\s@.]+)+$'
-        partStat:
-          type: string
-          minLength: 1
-          description: |
-            iCal PARTSTAT, matched case-insensitively against ACCEPTED, DECLINED, TENTATIVE. Any
-            other value answers 400.
+paths: {}

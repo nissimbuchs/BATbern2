@@ -349,7 +349,7 @@ flowchart TB
         SESX["SES"]
         OAIX["OpenAI"]
         CUMSX["CUMS /internal, UserApiClient"]
-        PCSX["PCS /internal,<br/>PartnerMeetingRsvpClient"]
+        PCSX["PCS, calendar reply contract EMS owns,<br/>HttpCalendarReplyContract"]
     end
 
     C1 --> S1 & S4
@@ -409,7 +409,7 @@ flowchart TB
         B1["CompanyService, GenericLogoService<br/>ADR-002 upload states"]
         B2["UserService, RoleService<br/>minimum two organizers"]
         B3["JITUserProvisioningInterceptor,<br/>FederatedAvatarImportInterceptor"]
-        B4["UserMergeService<br/>calls EMS /internal/users/merge"]
+        B4["UserMergeService<br/>calls every holder /internal/user-references/*"]
         B5["LogoCleanupService, UserReconciliationService,<br/>CognitoConfirmationResendJob, WatchPairingCleanupService"]
     end
     DB[("PostgreSQL<br/>CUMS tables")]
@@ -516,7 +516,8 @@ from the floor", source COMMUNITY), and partner analytics (attendance from EMS, 
 `/api/v1/partners/me`, `/api/v1/partners/{companyName}/contacts`, `/notes`,
 `/analytics/dashboard`, `/analytics/export`, `/api/v1/partners/topics` (backlog, status, vote),
 `/api/v1/partner-meetings` (with `/rsvps` and `/send-invite`), `/api/v1/attendees/topics`, and
-the VPC-only `/internal/partner-meetings/rsvps`. See
+the VPC-only `/internal/calendar-replies` (the calendar reply contract EMS owns, Epic 17 entry 8b)
+and `/internal/user-references/*` (the contract CUMS owns, 7b). See
 [04-api-partner-coordination.md](./04-api-partner-coordination.md).
 
 **Dependencies:** CUMS (companies, users), EMS (attendance summary, event data, and

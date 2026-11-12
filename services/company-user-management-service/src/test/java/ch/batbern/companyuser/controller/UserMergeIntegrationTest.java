@@ -1,6 +1,7 @@
 package ch.batbern.companyuser.controller;
 
-import ch.batbern.companyuser.client.EventManagementUserMergeClient;
+import ch.batbern.companyuser.client.HttpUserReferenceContract;
+import ch.batbern.companyuser.client.UserReferenceHolders;
 import ch.batbern.companyuser.config.TestAwsConfig;
 import ch.batbern.shared.types.Role;
 import ch.batbern.companyuser.domain.User;
@@ -10,33 +11,38 @@ import ch.batbern.companyuser.repository.UserRepository;
 import ch.batbern.companyuser.service.ProfileClaimTokenService;
 import ch.batbern.shared.test.mail.SesRecorder;
 import ch.batbern.shared.test.AbstractIntegrationTest;
+import ch.batbern.shared.test.contract.ContractServer;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.mock.http.client.MockClientHttpRequest;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.web.client.ExpectedCount;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
+import java.net.ConnectException;
 import java.util.Set;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static ch.batbern.companyuser.client.UserReferenceHolders.HOLDER_A;
+import static ch.batbern.companyuser.client.UserReferenceHolders.HOLDER_B;
+import static ch.batbern.companyuser.client.UserReferenceHolders.MERGE;
+import static ch.batbern.companyuser.client.UserReferenceHolders.PREVIEW;
+import static org.springframework.http.HttpMethod.GET;
+import static org.springframework.http.HttpMethod.POST;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -44,8 +50,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 /**
  * #1183 C (organizer merges two profiles) and D (a person claims an earlier profile under their
- * name) against real PostgreSQL. event-management's part ({@code /internal/users/merge}) is mocked
- * here and tested in its own service ({@code InternalUserMergeIntegrationTest}).
+ * name) against real PostgreSQL. The holders of the user-reference contract (Epic 17 entry 7b) answer
+ * at the wire through the {@link ContractServer}: two holders, like event-management and
+ * partner-coordination in production; each holder's own part is tested in its service.
  */
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -67,8 +74,12 @@ class UserMergeIntegrationTest extends AbstractIntegrationTest {
     private static final String GUEST = "success+anna.work@simulator.amazonses.com";
     @Autowired
     private ProfileClaimTokenService claimTokenService;
-    @MockitoBean
-    private EventManagementUserMergeClient eventManagement;
+    /** The real contract caller; the holders answer through the contract harness at the wire. */
+    @Autowired
+    private HttpUserReferenceContract userReferenceContract;
+    @Autowired
+    private ObjectMapper objectMapper;
+    private ContractServer holders;
     @jakarta.persistence.PersistenceContext
     private jakarta.persistence.EntityManager entityManager;
 
@@ -78,10 +89,7 @@ class UserMergeIntegrationTest extends AbstractIntegrationTest {
     @BeforeEach
     void setUp() {
         sesRecorder.reset();
-        when(eventManagement.preview(anyString(), anyString())).thenReturn(new EventManagementUserMergeClient.Preview(
-                Map.of("registrations.attendee_username", 2), Map.of("registrations", 1), List.of()));
-        when(eventManagement.merge(any())).thenReturn(new EventManagementUserMergeClient.Result(
-                Map.of("registrations.attendee_username", 2), Map.of("registrations", 1)));
+        holders = UserReferenceHolders.bindTo(userReferenceContract);
 
         userRepository.save(User.builder().username("orga.nizer").email("orga@example.com")
                 .firstName("Orga").lastName("Nizer").cognitoUserId("cog-orga")
@@ -97,12 +105,42 @@ class UserMergeIntegrationTest extends AbstractIntegrationTest {
         userRepository.saveAndFlush(guest);
     }
 
+    @AfterEach
+    void tearDown() {
+        holders.close();
+    }
+
+    /** Holder A (event-management-like) and holder B (partner-coordination-like) preview, no blocker. */
+    private void expectPreviews() {
+        holders.expect(GET, PREVIEW).atHost(HOLDER_A).respondWith(HttpStatus.OK, """
+                {"moves": {"registrations.attendee_username": 2}, "conflicts": {"registrations": 1},
+                 "blockers": []}""");
+        holders.expect(GET, PREVIEW).atHost(HOLDER_B).respondWith(HttpStatus.OK, """
+                {"moves": {"partner_notes.author_username": 1}, "conflicts": {}, "blockers": []}""");
+    }
+
+    /** Both holders merge; the request body holder A received is appended to {@code body}. */
+    private void expectMerges(StringBuilder body) {
+        holders.expect(POST, MERGE).atHost(HOLDER_A)
+                .andExpect(r -> body.append(((MockClientHttpRequest) r).getBodyAsString()))
+                .respondWith(HttpStatus.OK, """
+                        {"moved": {"registrations.attendee_username": 2}, "removed": {"registrations": 1}}""");
+        holders.expect(POST, MERGE).atHost(HOLDER_B).respondWith(HttpStatus.OK, """
+                {"moved": {"partner_notes.author_username": 1}, "removed": {}}""");
+    }
+
+    private void expectNoMerge() {
+        holders.expect(POST, MERGE).times(ExpectedCount.never()).respondWithExample();
+    }
+
     // ---------------------------------------------------------------- C: organizer merge
 
     @Test
     @WithMockUser(username = "orga.nizer", roles = "ORGANIZER")
-    @DisplayName("C: preview shows both profiles and event-management's counts; mergeable")
+    @DisplayName("C: preview shows both profiles and every holder's counts; mergeable")
     void preview_showsBothSides() throws Exception {
+        expectPreviews();
+
         mockMvc.perform(get("/api/v1/users/anna.muster.2/merge-preview").param("source", "anna.muster"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.target.username").value("anna.muster.2"))
@@ -110,19 +148,50 @@ class UserMergeIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.source.hasLogin").value(false))
                 .andExpect(jsonPath("$.source.additionalEmails[0]").value("anna.old@example.com"))
                 .andExpect(jsonPath("$.moves['registrations.attendee_username']").value(2))
+                .andExpect(jsonPath("$.moves['partner_notes.author_username']").value(1))
                 .andExpect(jsonPath("$.conflicts.registrations").value(1))
                 .andExpect(jsonPath("$.canMerge").value(true));
+        holders.verify();
     }
 
     @Test
     @WithMockUser(username = "orga.nizer", roles = "ORGANIZER")
-    @DisplayName("C: merge moves roles and addresses, deletes the source, hands event-management a snapshot")
+    @DisplayName("C: one holder refuses (blocker): not mergeable; merge refused before any holder moves a row")
+    void merge_holderBlocks_isRefusedBeforeAnyHolderMerges() throws Exception {
+        holders.expect(GET, PREVIEW).atHost(HOLDER_A).times(ExpectedCount.twice()).respondWithExample("blocked");
+        holders.expect(GET, PREVIEW).atHost(HOLDER_B).times(ExpectedCount.twice()).respondWithExample("nothingHeld");
+        expectNoMerge();
+
+        mockMvc.perform(get("/api/v1/users/anna.muster.2/merge-preview").param("source", "anna.muster"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.blockers[0]").value("BATbern58"))
+                .andExpect(jsonPath("$.canMerge").value(false))
+                .andExpect(jsonPath("$.reasons[0]").value("BLOCKED"));
+        mockMvc.perform(post("/api/v1/users/anna.muster.2/merge").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"sourceUsername\": \"anna.muster\"}"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.errorCode").value("MERGE_NOT_ALLOWED"))
+                .andExpect(jsonPath("$.details.reasons[0]").value("BLOCKED"));
+
+        holders.verify();
+        assertThat(userRepository.findByUsername("anna.muster")).isPresent();
+    }
+
+    @Test
+    @WithMockUser(username = "orga.nizer", roles = "ORGANIZER")
+    @DisplayName("C: merge moves roles and addresses, deletes the source, every holder moves its rows, snapshot sent")
     void merge_absorbsTheGuestProfile() throws Exception {
+        expectPreviews();
+        StringBuilder merged = new StringBuilder();
+        expectMerges(merged);
+
         mockMvc.perform(post("/api/v1/users/anna.muster.2/merge").contentType(MediaType.APPLICATION_JSON)
                         .content("{\"sourceUsername\": \"anna.muster\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.moved['registrations.attendee_username']").value(2))
+                .andExpect(jsonPath("$.moved['partner_notes.author_username']").value(1))
                 .andExpect(jsonPath("$.removed.registrations").value(1));
+        holders.verify();
 
         entityManager.flush();
         entityManager.clear();
@@ -139,14 +208,12 @@ class UserMergeIntegrationTest extends AbstractIntegrationTest {
                 .filteredOn(e -> e.getEmail().equals(GUEST))
                 .allSatisfy(e -> assertThat(e.getVerifiedAt()).isNotNull());
 
-        ArgumentCaptor<EventManagementUserMergeClient.MergeCall> call =
-                ArgumentCaptor.forClass(EventManagementUserMergeClient.MergeCall.class);
-        verify(eventManagement).merge(call.capture());
-        assertThat(call.getValue().sourceUsername()).isEqualTo("anna.muster");
-        assertThat(call.getValue().targetUsername()).isEqualTo("anna.muster.2");
-        assertThat(call.getValue().performedBy()).isEqualTo("orga.nizer");
-        assertThat(call.getValue().trigger()).isEqualTo("ORGANIZER");
-        assertThat(call.getValue().sourceProfile().toString()).contains(GUEST)
+        JsonNode call = objectMapper.readTree(merged.toString());
+        assertThat(call.path("sourceUsername").asText()).isEqualTo("anna.muster");
+        assertThat(call.path("targetUsername").asText()).isEqualTo("anna.muster.2");
+        assertThat(call.path("performedBy").asText()).isEqualTo("orga.nizer");
+        assertThat(call.path("trigger").asText()).isEqualTo("ORGANIZER");
+        assertThat(call.path("sourceProfile").toString()).contains(GUEST)
                 .contains("SPEAKER").contains("anna.old@example.com");
     }
 
@@ -157,6 +224,9 @@ class UserMergeIntegrationTest extends AbstractIntegrationTest {
         User placeholder = userRepository.saveAndFlush(User.builder().username("anna.muster.3")
                 .email("anna.muster@batbern.ch").firstName("Anna").lastName("Muster")
                 .roles(new HashSet<>(Set.of(Role.ATTENDEE))).build());
+        expectPreviews();
+        StringBuilder merged = new StringBuilder();
+        expectMerges(merged);
 
         mockMvc.perform(post("/api/v1/users/anna.muster.2/merge").contentType(MediaType.APPLICATION_JSON)
                         .content("{\"sourceUsername\": \"" + placeholder.getUsername() + "\"}"))
@@ -168,10 +238,9 @@ class UserMergeIntegrationTest extends AbstractIntegrationTest {
         assertThat(additionalEmailRepository.findAll())
                 .extracting(UserAdditionalEmail::getEmail)
                 .doesNotContain("anna.muster@batbern.ch");
-        ArgumentCaptor<EventManagementUserMergeClient.MergeCall> call =
-                ArgumentCaptor.forClass(EventManagementUserMergeClient.MergeCall.class);
-        verify(eventManagement).merge(call.capture());
-        assertThat(call.getValue().sourceProfile().toString()).contains("anna.muster@batbern.ch");
+        holders.verify();
+        assertThat(objectMapper.readTree(merged.toString()).path("sourceProfile").toString())
+                .contains("anna.muster@batbern.ch");
     }
 
     @Test
@@ -187,6 +256,9 @@ class UserMergeIntegrationTest extends AbstractIntegrationTest {
     @WithMockUser(username = "orga.nizer", roles = "ORGANIZER")
     @DisplayName("C: the source has a login: not mergeable in this direction; merge refused, nothing touched")
     void merge_sourceWithLogin_isRefused() throws Exception {
+        holders.expect(GET, PREVIEW).times(ExpectedCount.twice()).respondWithExample("clean");
+        expectNoMerge();
+
         mockMvc.perform(get("/api/v1/users/anna.muster/merge-preview").param("source", "anna.muster.2"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.canMerge").value(false))
@@ -196,21 +268,42 @@ class UserMergeIntegrationTest extends AbstractIntegrationTest {
                         .content("{\"sourceUsername\": \"anna.muster.2\"}"))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.errorCode").value("MERGE_NOT_ALLOWED"));
-        verify(eventManagement, never()).merge(any());
+        holders.verify();
         assertThat(userRepository.findByUsername("anna.muster.2")).isPresent();
     }
 
     @Test
     @WithMockUser(username = "orga.nizer", roles = "ORGANIZER")
-    @DisplayName("C: event-management fails: the source profile stays, 502")
-    void merge_eventManagementDown_keepsSource() throws Exception {
-        when(eventManagement.merge(any())).thenThrow(new EventManagementUserMergeClient.MergeCallFailedException(
-                "event-management answered 500"));
+    @DisplayName("C: a holder does not answer: the source profile stays, 502; repeated with both holders up, it completes")
+    void merge_holderDown_keepsSource() throws Exception {
+        expectPreviews();
+        holders.expect(POST, MERGE).atHost(HOLDER_A).respondWithExample();
+        holders.expect(POST, MERGE).atHost(HOLDER_B).respondWith(r -> {
+            throw new ConnectException("Connection refused");
+        });
 
         mockMvc.perform(post("/api/v1/users/anna.muster.2/merge").contentType(MediaType.APPLICATION_JSON)
                         .content("{\"sourceUsername\": \"anna.muster\"}"))
-                .andExpect(status().isBadGateway());
+                .andExpect(status().isBadGateway())
+                .andExpect(jsonPath("$.errorCode").value("MERGE_EVENT_SERVICE_FAILED"));
+        holders.verify();
         assertThat(userRepository.findByUsername("anna.muster")).isPresent();
+
+        // Both holders up again: the same merge completes (holder A's part is idempotent, moves nothing more).
+        holders.reset();
+        expectPreviews();
+        holders.expect(POST, MERGE).atHost(HOLDER_A).respondWithExample("nothingHeld");
+        holders.expect(POST, MERGE).atHost(HOLDER_B).respondWith(HttpStatus.OK, """
+                {"moved": {"partner_notes.author_username": 1}, "removed": {}}""");
+
+        mockMvc.perform(post("/api/v1/users/anna.muster.2/merge").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"sourceUsername\": \"anna.muster\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.moved['partner_notes.author_username']").value(1));
+        holders.verify();
+        entityManager.flush();
+        entityManager.clear();
+        assertThat(userRepository.findByUsername("anna.muster")).isEmpty();
     }
 
     @Test
@@ -220,7 +313,7 @@ class UserMergeIntegrationTest extends AbstractIntegrationTest {
         mockMvc.perform(post("/api/v1/users/anna.muster.2/merge").contentType(MediaType.APPLICATION_JSON)
                         .content("{\"sourceUsername\": \"anna.muster\"}"))
                 .andExpect(status().isForbidden());
-        verify(eventManagement, never()).merge(any());
+        holders.verify();
     }
 
     // ---------------------------------------------------------------- D: claim an earlier profile
@@ -299,6 +392,9 @@ class UserMergeIntegrationTest extends AbstractIntegrationTest {
     @DisplayName("D: confirming the link while logged in as the claimer merges, as SELF_CLAIM")
     void confirm_merges() throws Exception {
         String token = claimTokenService.generateToken(login.getId(), guest.getId(), guest.getEmail());
+        expectPreviews();
+        StringBuilder merged = new StringBuilder();
+        expectMerges(merged);
 
         mockMvc.perform(post("/api/v1/users/me/profile-claims/confirm").contentType(MediaType.APPLICATION_JSON)
                         .content("{\"token\": \"" + token + "\"}"))
@@ -308,11 +404,10 @@ class UserMergeIntegrationTest extends AbstractIntegrationTest {
 
         entityManager.flush();
         assertThat(userRepository.findByUsername("anna.muster")).isEmpty();
-        ArgumentCaptor<EventManagementUserMergeClient.MergeCall> call =
-                ArgumentCaptor.forClass(EventManagementUserMergeClient.MergeCall.class);
-        verify(eventManagement).merge(call.capture());
-        assertThat(call.getValue().trigger()).isEqualTo("SELF_CLAIM");
-        assertThat(call.getValue().performedBy()).isEqualTo("anna.muster.2");
+        holders.verify();
+        JsonNode call = objectMapper.readTree(merged.toString());
+        assertThat(call.path("trigger").asText()).isEqualTo("SELF_CLAIM");
+        assertThat(call.path("performedBy").asText()).isEqualTo("anna.muster.2");
 
         mockMvc.perform(post("/api/v1/users/me/profile-claims/confirm").contentType(MediaType.APPLICATION_JSON)
                         .content("{\"token\": \"" + token + "\"}"))
@@ -331,7 +426,7 @@ class UserMergeIntegrationTest extends AbstractIntegrationTest {
                         .content("{\"token\": \"" + token + "\"}"))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.errorCode").value("CLAIM_OTHER_ACCOUNT"));
-        verify(eventManagement, never()).merge(any());
+        holders.verify();
     }
 
     @Test

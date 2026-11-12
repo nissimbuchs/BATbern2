@@ -21,15 +21,16 @@ import java.util.Map;
 
 /**
  * #1183 C/D: moves everything event-management holds under one username to another, because both
- * profiles belong to the same person. company-user-management decides that and calls this through
- * {@code POST /internal/users/merge}; it deletes the source profile afterwards.
+ * profiles belong to the same person. company-user-management decides that and calls every holder of
+ * its user-reference contract, this one through {@code POST /internal/user-references/merge}; it
+ * deletes the source profile after all holders answered.
  *
  * <p>What moves: the person's own rows (registrations, speaker slots, arrivals, notifications, Q&A,
  * proposals, thanks, newsletter rows). What does not: audit columns that record
  * who did something at the time ({@code created_by}, {@code changed_by_username}, ...), and organizer
  * columns, since the source of a merge never has a login and so never acted as organizer. Partner
- * topic suggestions live in partner-coordination and are made by partner logins, so they never
- * belong to a source either.
+ * topic suggestions, notes and meetings live in partner-coordination, which moves them itself as
+ * another holder of the same contract.
  *
  * <p>Where the target already holds a row with the same key (the same session, the same event), the
  * source row is removed. Registrations are the exception: the better one stays (attended, then
@@ -146,6 +147,22 @@ public class UserMergeService {
             movedCounts.put(m.name(), keys.size());
         }
 
+        // A repeat (a later holder failed, the merge runs again) moves nothing here; its log row exists.
+        boolean nothingMoved = removedRows.isEmpty() && movedCounts.values().stream().allMatch(n -> n == 0);
+        boolean logged = nothingMoved && Boolean.TRUE.equals(jdbc.queryForObject("SELECT EXISTS (SELECT 1 FROM "
+                + "user_merge_log WHERE source_username = :source AND target_username = :target)", p, Boolean.class));
+        if (!logged) {
+            insertLog(p, performedBy, trigger, moved, removedRows, sourceProfile);
+        }
+
+        evictCaches();
+        log.info("USER_MERGE source={} target={} trigger={} moved={} removed={} logged={}",
+                source, target, trigger, movedCounts, removed, !logged);
+        return new Result(movedCounts, removed);
+    }
+
+    private void insertLog(MapSqlParameterSource p, String performedBy, String trigger, Map<String, Object> moved,
+            List<Map<String, Object>> removedRows, Object sourceProfile) {
         jdbc.update("INSERT INTO user_merge_log (source_username, target_username, performed_by, trigger, moved, "
                 + "removed_rows, source_profile) VALUES (:source, :target, :by, :trigger, CAST(:moved AS jsonb), "
                 + "CAST(:removed AS jsonb), CAST(:profile AS jsonb))",
@@ -155,11 +172,6 @@ public class UserMergeService {
                                 .map(r -> "{\"table\": " + json(r.get("table")) + ", \"row\": " + r.get("row") + "}")
                                 .toList()) + "]")
                         .addValue("profile", sourceProfile == null ? null : json(sourceProfile)));
-
-        evictCaches();
-        log.info("USER_MERGE source={} target={} trigger={} moved={} removed={}",
-                source, target, trigger, movedCounts, removed);
-        return new Result(movedCounts, removed);
     }
 
     private void removeRows(String table, String sql, MapSqlParameterSource p,

@@ -101,12 +101,17 @@ jwt:
 app:
   base-url: ${APP_BASE_URL:https://www.batbern.ch}
 
-# #1183 C/D: a profile merge moves event-management's rows through POST /internal/users/merge.
-# Service Connect name, like the other services use for each other (no infra variable needed).
-event-management-service:
-  base-url: ${EVENT_MANAGEMENT_SERVICE_URL:http://event-management:8080}
-
 batbern:
+  # Contracts CUMS owns (ADR-016 decision 4): the base URLs of the services that implement each
+  # one, comma-separated. CUMS names none of them in code (shared-kernel ContractCalls).
+  contracts:
+    # Epic 17 entry 7: open and close the Mail Center conversation of merge and logo requests.
+    mail-center-requests:
+      implementers: ${EVENT_MANAGEMENT_SERVICE_URL:http://event-management:8080}
+    # Epic 17 entry 7b: the services that store usernames; a profile merge moves their rows
+    # (#1183), a new primary address reaches them (#1244). Service Connect names in production.
+    user-references:
+      implementers: ${EVENT_MANAGEMENT_SERVICE_URL:http://event-management:8080},${PARTNER_COORDINATION_SERVICE_URL:http://partner-coordination:8080}
   user:
     additional-emails:
       verification:

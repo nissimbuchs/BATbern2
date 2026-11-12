@@ -174,7 +174,7 @@ class ProductionSecurityFilterChainTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"/internal/users/john.doe", "/internal/users", "/internal/partner-meetings/rsvps",
+    @ValueSource(strings = {"/internal/users/john.doe", "/internal/users", "/internal/calendar-replies",
         "/internal/users/provision", "/internal/companies/acme", "/internal/events/attendance-summary"})
     @DisplayName("should_denyInternalPath_when_requestedThroughGateway")
     void should_denyInternalPath_when_requestedThroughGateway(String path) throws Exception {

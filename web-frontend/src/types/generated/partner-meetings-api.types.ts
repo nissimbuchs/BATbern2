@@ -98,10 +98,10 @@ export interface paths {
      * @description Returns the RSVP list and accepted/declined/tentative summary for a meeting — Story 10.27 (AC7).
      *     ORGANIZER role required.
      *
-     *     RSVPs are recorded by an internal, VPC-only callback `POST /internal/partner-meetings/rsvps`
-     *     (no JWT — secured by the Service Connect private DNS namespace) that ingests inbound iCal
-     *     REPLY emails. That callback is intentionally NOT exposed through the API gateway and is
-     *     therefore not part of this public contract.
+     *     RSVPs are recorded at once when event-management receives an iCal REPLY mail, through the
+     *     VPC-only calendar reply contract `POST /internal/calendar-replies` it owns
+     *     (`docs/api/internal/ems-internal.openapi.yml`, Epic 17 entry 8b). That operation is not
+     *     exposed through the API gateway and is therefore not part of this public contract.
      */
     get: operations['getMeetingRsvps'];
     put?: never;

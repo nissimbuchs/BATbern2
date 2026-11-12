@@ -93,7 +93,8 @@ services:
       - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-local}
       - LOG_LEVEL=${LOG_LEVEL:-DEBUG}
       - APP_ENVIRONMENT=development
-      - EVENT_MANAGEMENT_SERVICE_URL=http://batbern-event-management:8080  # #1183 profile merge
+      - EVENT_MANAGEMENT_SERVICE_URL=http://batbern-event-management:8080  # #1183 profile merge (user-reference contract)
+      - PARTNER_COORDINATION_SERVICE_URL=http://batbern-partner-coordination:8080  # user-reference contract (17 7b)
 
       # AWS Configuration
       - AWS_REGION=${AWS_REGION:-eu-central-1}
