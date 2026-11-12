@@ -264,12 +264,13 @@ sequenceDiagram
   ([ADR-007](./ADR-007-unified-user-profile.md)). Google sign-in through Cognito federation; the
   pre-signup trigger links a Google identity to an existing profile with the same email
   ([ADR-010](./ADR-010-federated-identity-via-cognito.md)).
-- **Routing table** (from `DomainRouter`): `/api/v1/watch/pair` and `/watch/authenticate` go to
-  CUMS, the rest of `/api/v1/watch` to EMS; `events`, `event-types`, `registrations`, `topics`,
+- **Routing table** (from `DomainRouter`): `/api/v1/uploads/{purpose}` goes by the purpose prefix
+  (`company-…` to CUMS, `event-…` to EMS, any other 404; Story 17.11); `/api/v1/watch/pair` and
+  `/watch/authenticate` go to CUMS, the rest of `/api/v1/watch` to EMS; `events`, `event-types`, `registrations`, `topics`,
   `tasks`, `notifications`, `materials`, `speaker-portal`, `attendee-portal`, `sessions`,
   `email-templates`, `analytics`, `newsletter`, `thanks`, `conversations`, `mails`, `ai`,
   `public/settings/features` and `public/events` go to EMS; `partners`, `partner-meetings` and
-  `attendees/topics` go to PCS; `companies`, `users`, `logos`, the other
+  `attendees/topics` go to PCS; `companies`, `users`, the other
   `public` paths and `settings` go to CUMS; `admin` goes to EMS except the per-service
   test-fixture paths.
 

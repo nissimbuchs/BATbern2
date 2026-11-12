@@ -24,7 +24,7 @@ public class AwsConfig {
 
     /**
      * S3 client for file operations (Production)
-     * Used by GenericLogoService to copy/delete files
+     * Used by the upload service (Story 17.11) and the media services to copy/delete files
      */
     @Bean
     public S3Client s3Client() {

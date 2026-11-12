@@ -25,7 +25,7 @@ public class LocalAwsConfig {
     /**
      * S3 Client configured for MinIO (local S3-compatible storage)
      * Story 1.16.3: Generic File Upload Service
-     * Provides S3 operations for GenericLogoService and LogoCleanupService
+     * Provides S3 operations for the upload service (Story 17.11) and the profile pictures
      */
     @Bean
     @Primary

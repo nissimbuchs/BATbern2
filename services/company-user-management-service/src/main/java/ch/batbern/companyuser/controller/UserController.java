@@ -32,7 +32,7 @@ import ch.batbern.companyuser.dto.generated.UserSearchResponse;
 import ch.batbern.companyuser.dto.generated.UserReconciliationReport;
 import ch.batbern.companyuser.dto.generated.UserSyncStatus;
 import ch.batbern.companyuser.repository.UserRepository;
-import ch.batbern.companyuser.service.ImageUrlFetcher;
+import ch.batbern.shared.upload.ImageUrlFetcher;
 import ch.batbern.companyuser.service.PrimaryEmailService;
 import ch.batbern.companyuser.service.ProfilePictureService;
 import ch.batbern.companyuser.service.UserSearchService;

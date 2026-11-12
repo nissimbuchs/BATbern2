@@ -58,6 +58,12 @@ public class DomainRouter {
         // Route based on path patterns - /api/v1/{domain}
         // Note: Check specific patterns BEFORE general prefix matches
 
+        // Story 17.11: one upload contract, routed by the purpose prefix to the service that owns the
+        // purpose (ADR-002 decision 2026-11-07): event-… to EMS, company-… to CUMS, anything else 404.
+        if (cleanPath.startsWith("/api/v1/uploads/")) {
+            return uploadService(cleanPath);
+        }
+
         // W2.2: Watch pairing (unauthenticated) → company-user-management-service
         // W2.4+: Watch event/arrivals endpoints → event-management-service
         // Must check /api/v1/watch/pair specifically before /api/v1/watch/events fallthrough
@@ -103,7 +109,6 @@ public class DomainRouter {
             return "partner-coordination-service";
         } else if (cleanPath.startsWith("/api/v1/companies")
                 || cleanPath.startsWith("/api/v1/users")
-                || cleanPath.startsWith("/api/v1/logos")
                 || cleanPath.startsWith("/api/v1/public")) {
             return "company-user-management-service";
         } else if (cleanPath.startsWith("/api/v1/admin/test-fixtures/cums")) {
@@ -120,6 +125,19 @@ public class DomainRouter {
         } else {
             throw new RouteNotFoundException(cleanPath);
         }
+    }
+
+    /** The owner of {@code /api/v1/uploads/{purpose}[/...]} by its purpose prefix. */
+    private static String uploadService(String cleanPath) {
+        String rest = cleanPath.substring("/api/v1/uploads/".length());
+        String purpose = rest.contains("/") ? rest.substring(0, rest.indexOf('/')) : rest;
+        if (purpose.startsWith("event-")) {
+            return "event-management-service";
+        }
+        if (purpose.startsWith("company-")) {
+            return "company-user-management-service";
+        }
+        throw new RouteNotFoundException(cleanPath);
     }
 
     /**

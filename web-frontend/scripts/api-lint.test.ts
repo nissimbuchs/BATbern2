@@ -271,7 +271,7 @@ describe('the committed baseline', () => {
     for (const expected of [
       'no-verb-segment POST /events/{eventCode}/mails/preview',
       'no-verb-segment POST /speaker-portal/events/{eventCode}/content/submit',
-      'no-verb-segment POST /logos/upload-from-url',
+      'no-verb-segment POST /users/me/profile-claims/confirm',
       'uuid-path-param POST /users/company-logo-requests/{requestId}/approve',
       'uuid-path-param POST /users/merge-requests/{requestId}/decline',
     ]) {

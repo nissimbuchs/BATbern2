@@ -1,7 +1,7 @@
 package ch.batbern.companyuser.service;
 
 import ch.batbern.companyuser.domain.Company;
-import ch.batbern.companyuser.domain.Logo;
+import ch.batbern.companyuser.domain.CompanyUserUpload;
 import ch.batbern.companyuser.dto.generated.CompanyLogo;
 import ch.batbern.companyuser.dto.generated.CompanyResponse;
 import ch.batbern.companyuser.dto.generated.CreateCompanyRequest;
@@ -13,11 +13,12 @@ import ch.batbern.companyuser.event.CompanyVerifiedEvent;
 import ch.batbern.companyuser.exception.CompanyNotFoundException;
 import ch.batbern.companyuser.exception.CompanyValidationException;
 import ch.batbern.companyuser.repository.CompanyRepository;
-import ch.batbern.companyuser.repository.LogoRepository;
 import ch.batbern.companyuser.security.SecurityContextHelper;
 import ch.batbern.shared.events.DomainEventPublisher;
 import ch.batbern.shared.exception.ValidationException;
 import ch.batbern.shared.service.SlugGenerationService;
+import ch.batbern.shared.upload.UploadRecord;
+import ch.batbern.shared.upload.UploadService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -46,11 +47,10 @@ import java.util.stream.Collectors;
 public class CompanyService {
 
     private final CompanyRepository companyRepository;
-    private final LogoRepository logoRepository;
     private final DomainEventPublisher eventPublisher;
     private final CompanySearchService searchService;
     private final SecurityContextHelper securityContextHelper;
-    private final GenericLogoService genericLogoService;
+    private final UploadService<CompanyUserUpload> uploadService;
     private final SlugGenerationService slugService;
     private final CompanyInserter companyInserter;
 
@@ -102,30 +102,17 @@ public class CompanyService {
 
         Company savedCompany = companyRepository.save(company);
 
-        // Associate logo if provided (Story 1.16.3: Generic File Upload Service)
-        if (request.getLogoUploadId() != null) {
-            try {
-                String finalS3Key = generateFinalS3Key(savedCompany.getName(), request.getLogoUploadId());
-                String logoUrl = genericLogoService.associateLogoWithEntity(
-                        request.getLogoUploadId(),
-                        "COMPANY",
-                        savedCompany.getName(),
-                        finalS3Key
-                );
-
-                savedCompany.setLogoUrl(logoUrl);
-                savedCompany.setLogoS3Key(finalS3Key);
-                savedCompany.setLogoFileId(request.getLogoUploadId());
-                // Flush: setting the logo updates the new row, and its @PreUpdate moves updatedAt,
-                // which the response must show.
-                companyRepository.saveAndFlush(savedCompany);
-
-                log.info("Logo associated with company: {}, logoUrl: {}", savedCompany.getName(), logoUrl);
-            } catch (Exception e) {
-                log.error("Failed to associate logo with company: {}", savedCompany.getName(), e);
-                // Don't fail company creation if logo association fails
-                // Logo can be added later via update
-            }
+        // The logo of the create form (Story 17.11): a CONFIRMED company-logo upload. A logo that
+        // cannot be attached (unknown, expired, not confirmed) fails the create with 404/409, so a
+        // company is never created without the logo its creator chose.
+        if (request.getLogoUploadId() != null && !request.getLogoUploadId().isBlank()) {
+            setLogo(savedCompany, uploadService.associate(CompanyLogoUploadHandler.PURPOSE,
+                    request.getLogoUploadId(), savedCompany.getName()));
+            // Flush: setting the logo updates the new row, and its @PreUpdate moves updatedAt,
+            // which the response must show.
+            companyRepository.saveAndFlush(savedCompany);
+            log.info("Logo associated with company: {}, logoUrl: {}", savedCompany.getName(),
+                    savedCompany.getLogoUrl());
         }
 
         // Invalidate search cache (AC8)
@@ -324,25 +311,16 @@ public class CompanyService {
         // Handle logo changes (Story 1.16.3: Generic File Upload)
         // Check if logoUploadId was provided in the request (including empty string to clear it)
         if (request.getLogoUploadId() != null) {
-            if (!request.getLogoUploadId().isBlank()) {
-                // Associate new logo
-                try {
-                    String finalS3Key = generateFinalS3Key(updatedCompany.getName(), request.getLogoUploadId());
-                    String logoUrl = genericLogoService.associateLogoWithEntity(
-                            request.getLogoUploadId(),
-                            "COMPANY",
-                            updatedCompany.getName(),
-                            finalS3Key
-                    );
-                    updatedCompany.setLogoUrl(logoUrl);
-                    updatedCompany.setLogoS3Key(finalS3Key);
-                    updatedCompany.setLogoFileId(request.getLogoUploadId());
-                    updatedCompany = companyRepository.saveAndFlush(updatedCompany);
-                    log.info("Logo updated for company: {}, logoUrl: {}", updatedCompany.getName(), logoUrl);
-                } catch (Exception e) {
-                    log.error("Failed to associate logo with company: {}", updatedCompany.getName(), e);
-                    // Don't fail company update if logo association fails
-                }
+            if (request.getLogoUploadId().equals(updatedCompany.getLogoFileId())) {
+                log.debug("Logo upload {} is already the logo of {}", request.getLogoUploadId(),
+                        updatedCompany.getName());
+            } else if (!request.getLogoUploadId().isBlank()) {
+                // A new logo: a CONFIRMED company-logo upload (Story 17.11; 404/409 otherwise)
+                setLogo(updatedCompany, uploadService.associate(CompanyLogoUploadHandler.PURPOSE,
+                        request.getLogoUploadId(), updatedCompany.getName()));
+                updatedCompany = companyRepository.saveAndFlush(updatedCompany);
+                log.info("Logo updated for company: {}, logoUrl: {}", updatedCompany.getName(),
+                        updatedCompany.getLogoUrl());
             } else {
                 // Clear logo (blank/empty string means remove)
                 log.info("Clearing logo for company: {}", updatedCompany.getName());
@@ -496,14 +474,6 @@ public class CompanyService {
     }
 
     /**
-     * Generate final S3 key for company logo
-     * Pattern: logos/{year}/companies/{company-name}/logo-{uploadId}.{ext}
-     * Story 1.16.3: Generic File Upload Service
-     *
-     * Fetches Logo entity to get actual file extension (png, jpg, jpeg, svg)
-     * instead of hardcoding to .png
-     */
-    /**
      * #1246: gives the company the logo of an accepted logo request. Same effect as an organizer
      * setting the logo in the company edit: final key, cache invalidation, CompanyUpdatedEvent.
      *
@@ -512,11 +482,26 @@ public class CompanyService {
     public String applyRequestedLogo(String companyName, String uploadId) {
         Company company = companyRepository.findByName(companyName)
                 .orElseThrow(() -> new CompanyNotFoundException(companyName));
-        String finalS3Key = generateFinalS3Key(company.getName(), uploadId);
-        String logoUrl = genericLogoService.reassignLogo(uploadId, "COMPANY", company.getName(), finalS3Key);
-        company.setLogoUrl(logoUrl);
-        company.setLogoS3Key(finalS3Key);
-        company.setLogoFileId(uploadId);
+        CompanyUserUpload upload = uploadService.find(CompanyLogoUploadHandler.PURPOSE, uploadId)
+                .orElseThrow(() -> new CompanyValidationException("Logo upload not found: " + uploadId));
+        UploadRecord moved = uploadService.reassign(CompanyLogoUploadHandler.PURPOSE, uploadId,
+                CompanyLogoUploadHandler.TARGET_TYPE, company.getName(),
+                CompanyLogoUploadHandler.logoKey(company.getName(), upload));
+        return logoChanged(company, moved);
+    }
+
+    /**
+     * Story 17.11: an upload confirmed with the target {@code companyName} becomes the company logo,
+     * with the same effects as the edit (cache invalidation, CompanyUpdatedEvent).
+     */
+    public String applyLogo(String companyName, UploadRecord upload) {
+        Company company = companyRepository.findByName(companyName)
+                .orElseThrow(() -> new CompanyNotFoundException(companyName));
+        return logoChanged(company, upload);
+    }
+
+    private String logoChanged(Company company, UploadRecord upload) {
+        setLogo(company, upload);
         company.setUpdatedAt(Instant.now());
         Company saved = companyRepository.save(company);
         searchService.invalidateCache();
@@ -529,20 +514,13 @@ public class CompanyService {
                 saved.getDescription(),
                 saved.getUpdatedAt(),
                 securityContextHelper.getCurrentUserId()));
-        log.info("Requested logo applied to company: {}, logoUrl: {}", saved.getName(), logoUrl);
-        return logoUrl;
+        log.info("Logo applied to company: {}, logoUrl: {}", saved.getName(), saved.getLogoUrl());
+        return saved.getLogoUrl();
     }
 
-    private String generateFinalS3Key(String companyName, String uploadId) {
-        // Fetch Logo to get file extension (preserve original file type)
-        Logo logo = logoRepository.findByUploadId(uploadId)
-                .orElseThrow(() -> new RuntimeException("Logo not found for uploadId: " + uploadId));
-
-        String fileExtension = logo.getFileExtension();
-        log.debug("Retrieved file extension from Logo: {}", fileExtension);
-
-        int year = java.time.LocalDate.now().getYear();
-        return String.format("logos/%d/companies/%s/logo-%s.%s",
-                year, companyName, uploadId, fileExtension);
+    private static void setLogo(Company company, UploadRecord upload) {
+        company.setLogoUrl(upload.getFileUrl());
+        company.setLogoS3Key(upload.getS3Key());
+        company.setLogoFileId(upload.getUploadId());
     }
 }

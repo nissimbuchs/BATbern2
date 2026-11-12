@@ -1,0 +1,64 @@
+meta {
+  name: Reserve a company-logo upload
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/uploads/company-logo
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "fileName": "bruno-test-{{$timestamp}}.png",
+    "contentType": "image/png",
+    "size": 4
+  }
+}
+
+assert {
+  res.status: eq 201
+  res.body.uploadId: isDefined
+  res.body.uploadUrl: isDefined
+  res.body.expiresAt: isDefined
+}
+
+script:post-response {
+  if (res.getStatus() === 201) {
+    const body = res.getBody();
+    bru.setVar("testUploadId", body.uploadId);
+    bru.setVar("testUploadUrl", body.uploadUrl);
+  }
+}
+
+tests {
+  test("should reserve the upload with a presigned S3 PUT", function() {
+    const body = res.getBody();
+    expect(body.uploadId).to.be.a('string');
+    // AWS S3 (staging/production) or MinIO (local development)
+    const isS3 = body.uploadUrl.includes('amazonaws.com') || body.uploadUrl.includes('localhost:8450');
+    expect(isS3).to.be.true;
+  });
+
+  test("should name the signed Content-Type", function() {
+    expect(res.getBody().requiredHeaders['Content-Type']).to.equal('image/png');
+  });
+}
+
+docs {
+  Story 17.11: the one upload contract (uploads-api). Purpose company-logo is owned by
+  company-user-management; the gateway routes /uploads/company-* there. The declared size (4 bytes)
+  is signed into the URL, so the PUT in 02 sends exactly 4 bytes.
+}

@@ -43,186 +43,8 @@ tags:
     description: Company search and autocomplete with caching
   - name: Company Verification
     description: Company verification
-  - name: Logos
-    description: Generic logo/image upload (presigned-URL flow, URL proxy/import, admin cleanup) — LogoController, Story 1.16.3
 
 paths:
-  /logos/presigned-url:
-    post:
-      tags:
-        - Logos
-      summary: Generate a presigned URL for a logo upload
-      description: |
-        Phase 1 of the three-phase upload flow. Returns a presigned S3 URL (15-min expiry) plus
-        upload metadata. Supports PNG/JPEG/SVG up to 5MB. No authentication required.
-      operationId: requestLogoUploadUrl
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/LogoUploadRequest'
-      responses:
-        '200':
-          description: Presigned URL generated
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/LogoPresignedUploadUrl'
-              examples:
-                default:
-                  summary: generated from the schema and captured sub-values
-                  value:
-                    uploadUrl: https://www.batbern.ch/
-                    fileId: 3f2b8c1e-5d4a-4e6b-9a7c-1b2d3e4f5a6b
-                    s3Key: uploads/2026/sample/file.png
-                    fileExtension: png
-                    expiresInMinutes: 1
-                    requiredHeaders:
-                      key: uploads/2026/sample/file.png
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-
-  /logos/{uploadId}/confirm:
-    post:
-      tags:
-        - Logos
-      summary: Confirm a logo upload completion
-      description: |
-        Phase 2 — confirms the file was uploaded to S3 (PENDING → CONFIRMED). No authentication required.
-      operationId: confirmLogoUpload
-      parameters:
-        - name: uploadId
-          in: path
-          required: true
-          schema:
-            type: string
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/LogoUploadConfirmRequest'
-      responses:
-        '200':
-          description: Upload confirmed
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-
-  /logos/{uploadId}:
-    delete:
-      tags:
-        - Logos
-      summary: Delete an unused logo
-      description: |
-        Deletes a logo in PENDING or CONFIRMED status (ASSOCIATED logos cannot be deleted).
-        Requires authentication.
-      operationId: deleteUnusedLogo
-      parameters:
-        - name: uploadId
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '204':
-          description: Logo deleted
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-      security:
-        - BearerAuth: []
-
-  /logos/cleanup/statistics:
-    get:
-      tags:
-        - Logos
-      summary: Get logo-upload cleanup statistics (Admin)
-      description: Counts of logo uploads by state, for monitoring orphaned uploads. Requires ORGANIZER role.
-      operationId: getLogoCleanupStatistics
-      responses:
-        '200':
-          description: Cleanup statistics
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/LogoCleanupStatistics'
-              examples:
-                default:
-                  summary: captured from the local anonymized database
-                  value:
-                    pendingCount: 0
-                    confirmedCount: 0
-                    associatedCount: 157
-                    expiredPendingCount: 0
-                    expiredConfirmedCount: 0
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-      security:
-        - BearerAuth: []
-
-  /logos/cleanup/trigger:
-    post:
-      tags:
-        - Logos
-      summary: Manually trigger the logo cleanup job (Admin)
-      description: Triggers the orphaned-upload cleanup job (normally runs daily at 02:00). Requires ORGANIZER role.
-      operationId: triggerLogoCleanup
-      responses:
-        '202':
-          description: Cleanup job triggered
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-      security:
-        - BearerAuth: []
-
-  /logos/upload-from-url:
-    post:
-      tags:
-        - Logos
-      summary: Fetch an image from a URL and upload it to S3 (server-side)
-      description: |
-        Fetches an image from a URL and uploads it directly to S3 (bypasses the browser to avoid
-        binary corruption), returning the upload ID. Up to 10MB. No authentication required.
-      operationId: uploadImageFromUrl
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UploadImageFromUrlRequest'
-      responses:
-        '200':
-          description: Image uploaded
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UploadImageFromUrlResponse'
-              examples:
-                default:
-                  summary: generated from the schema and captured sub-values
-                  value:
-                    uploadId: 3f2b8c1e-5d4a-4e6b-9a7c-1b2d3e4f5a6b
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '413':
-          description: Image exceeds the 10MB limit
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-
   /companies:
     get:
       tags:
@@ -426,8 +248,10 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/LogoUploadNotFound'
         '409':
-          $ref: '#/components/responses/Conflict'
+          $ref: '#/components/responses/CompanyOrLogoUploadConflict'
         '500':
           $ref: '#/components/responses/InternalServerError'
       security:
@@ -547,9 +371,9 @@ paths:
         '403':
           $ref: '#/components/responses/Forbidden'
         '404':
-          $ref: '#/components/responses/NotFound'
+          $ref: '#/components/responses/CompanyOrLogoUploadNotFound'
         '409':
-          $ref: '#/components/responses/Conflict'
+          $ref: '#/components/responses/CompanyOrLogoUploadConflict'
         '500':
           $ref: '#/components/responses/InternalServerError'
       security:
@@ -830,123 +654,8 @@ paths:
       security:
         - BearerAuth: []
 
-  # Logo upload endpoints removed - Story 1.16.3: Generic File Upload Service
-  # Use the generic file upload API instead:
-  # 1. POST /api/v1/logos/presigned-url - Generate upload URL
-  # 2. PUT (presigned URL) - Upload file to S3
-  # 3. POST /api/v1/logos/{uploadId}/confirm - Confirm upload
-  # 4. POST /api/v1/companies (with logoUploadId) - Associate logo with company
-  #
-  # The logo upload operations are documented inline under the `Logos` tag in this spec
-  # (served by LogoController -> generated LogosApi).
-
 components:
   schemas:
-    LogoUploadRequest:
-      type: object
-      required:
-        - fileName
-        - fileSize
-        - mimeType
-      properties:
-        fileName:
-          type: string
-          description: Original filename with extension (e.g. "company-logo.png")
-        fileSize:
-          type: integer
-          format: int64
-          description: File size in bytes (max 5,242,880 = 5MB)
-        mimeType:
-          type: string
-          description: MIME type (e.g. "image/png", "image/jpeg", "image/svg+xml")
-    LogoPresignedUploadUrl:
-      type: object
-      description: Presigned S3 upload URL + metadata for a logo upload
-      required:
-        - uploadUrl
-        - fileId
-        - fileExtension
-        - expiresInMinutes
-        - requiredHeaders
-      properties:
-        uploadUrl:
-          type: string
-          description: The presigned S3 URL to PUT the file to
-        fileId:
-          type: string
-          description: Unique file identifier for tracking the upload
-        s3Key:
-          type: string
-          description: S3 key where the file will be stored
-        fileExtension:
-          type: string
-          description: File extension (used to reconstruct the S3 key on confirm)
-        expiresInMinutes:
-          type: integer
-          description: URL expiry in minutes (typically 15)
-        requiredHeaders:
-          type: object
-          additionalProperties:
-            type: string
-          description: Headers the client must send with the S3 PUT
-    LogoUploadConfirmRequest:
-      type: object
-      required:
-        - fileId
-        - fileExtension
-      properties:
-        fileId:
-          type: string
-          description: File ID returned from the presigned-URL request
-        fileExtension:
-          type: string
-          description: File extension (used to reconstruct the S3 key)
-        checksum:
-          type: string
-          description: Optional SHA-256 checksum for integrity verification
-    LogoCleanupStatistics:
-      type: object
-      description: Counts of logo uploads by state (admin monitoring)
-      required:
-        - pendingCount
-        - confirmedCount
-        - associatedCount
-        - expiredPendingCount
-        - expiredConfirmedCount
-      properties:
-        pendingCount:
-          type: integer
-          format: int64
-        confirmedCount:
-          type: integer
-          format: int64
-        associatedCount:
-          type: integer
-          format: int64
-        expiredPendingCount:
-          type: integer
-          format: int64
-        expiredConfirmedCount:
-          type: integer
-          format: int64
-    UploadImageFromUrlRequest:
-      type: object
-      required:
-        - url
-      properties:
-        url:
-          type: string
-          description: External image URL to fetch and upload
-        filename:
-          type: string
-          description: Suggested base filename (extension derived from content type)
-          default: logo
-    UploadImageFromUrlResponse:
-      type: object
-      properties:
-        uploadId:
-          type: string
-          description: Upload ID for use in subsequent company creation
     CompanyResponse:
       type: object
       description: |
@@ -1028,9 +737,6 @@ components:
           description: Internal file identifier
           example: file-123
 
-    # Logo upload is served by LogoController under the `Logos` tag in this same spec
-    # (consolidated from the retired file-upload-api spec — API consolidation 2026-06-30).
-
     CompanySearchResponse:
       type: object
       description: |
@@ -1098,7 +804,7 @@ components:
           example: Leading Swiss IT consulting firm
         logoUploadId:
           type: string
-          description: Upload ID from three-phase upload via /api/v1/logos/presigned-url (optional)
+          description: A CONFIRMED `company-logo` upload (uploads-api, `POST /uploads/company-logo`), attached to the new company (optional). Unknown, expired or of another purpose 404, not CONFIRMED 409; the company is not created then
           example: abc123-def456
 
     UpdateCompanyRequest:
@@ -1134,7 +840,7 @@ components:
           example: Leading Swiss IT consulting firm
         logoUploadId:
           type: string
-          description: Upload ID from three-phase upload (set to empty string to remove logo)
+          description: A CONFIRMED `company-logo` upload (uploads-api) that becomes the logo; an empty string removes the logo, the current logo's id changes nothing. Unknown, expired or of another purpose 404, not CONFIRMED 409; nothing is changed then
           example: abc123-def456
 
     GetOrCreateCompanyRequest:
@@ -1239,6 +945,66 @@ components:
                 errorCode: CONFLICT
                 message: Company with name 'swissitsolut' already exists
                 timestamp: 2025-01-15T10:30:00Z
+
+    LogoUploadNotFound:
+      description: |
+        The `logoUploadId` is no `company-logo` upload: unknown, expired or of another purpose
+        (Story 17.11). Nothing is stored.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            logoUploadNotFound:
+              value:
+                status: 404
+                error: Not Found
+                message: Upload 3f2b8c1e-5d4a-4e6b-9a7c-1b2d3e4f5a6b not found
+                timestamp: 2026-11-12T10:30:00Z
+
+    CompanyOrLogoUploadNotFound:
+      description: |
+        The company does not exist, or the `logoUploadId` is no `company-logo` upload (unknown,
+        expired or of another purpose, Story 17.11).
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            companyNotFound:
+              value:
+                error: RESOURCE_NOT_FOUND
+                errorCode: NOT_FOUND
+                message: Company not found with name 'swissitsolut'
+                timestamp: 2025-01-15T10:30:00Z
+            logoUploadNotFound:
+              value:
+                status: 404
+                error: Not Found
+                message: Upload 3f2b8c1e-5d4a-4e6b-9a7c-1b2d3e4f5a6b not found
+                timestamp: 2026-11-12T10:30:00Z
+
+    CompanyOrLogoUploadConflict:
+      description: |
+        A company with this name exists, or the `logoUploadId` is not CONFIRMED (still PENDING or
+        already attached, Story 17.11). Nothing is stored.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            duplicateName:
+              value:
+                error: CONFLICT
+                errorCode: CONFLICT
+                message: Company with name 'swissitsolut' already exists
+                timestamp: 2025-01-15T10:30:00Z
+            logoUploadNotReady:
+              value:
+                status: 409
+                error: Conflict
+                message: Upload 3f2b8c1e-5d4a-4e6b-9a7c-1b2d3e4f5a6b is PENDING, not CONFIRMED
+                timestamp: 2026-11-12T10:30:00Z
 
     InternalServerError:
       description: Internal server error

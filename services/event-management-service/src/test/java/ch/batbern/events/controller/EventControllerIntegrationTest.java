@@ -107,8 +107,8 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
     @MockitoBean
     private UserApiClient userApiClient;
 
-    @MockitoBean
-    private ch.batbern.events.repository.LogoRepository logoRepository;
+    @Autowired
+    private org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
 
     @Autowired
     private ApplicationContext applicationContext;
@@ -125,7 +125,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
     @BeforeEach
     void setUp() {
         // Reset mocks to prevent test pollution
-        reset(userApiClient, logoRepository);
+        reset(userApiClient);
 
         // Clear all Spring caches to prevent stale cache entries across @Transactional test rollbacks
         cacheManager.getCacheNames().forEach(name -> {
@@ -143,9 +143,6 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
 
         // Mock UserApiClient for registration tests (Story 2.2a)
         mockUserApiClient();
-
-        // Mock LogoRepository for theme image upload tests (Story 2.5.3a)
-        mockLogoRepository();
 
         // Create test data
         createTestEvent("BATbern 2025", "2025-05-15T09:00:00Z", "AGENDA_PUBLISHED");
@@ -205,25 +202,15 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
                 });
     }
 
-    private void mockLogoRepository() {
-        // Mock findByUploadId to return test logos with proper file extensions
-        when(logoRepository.findByUploadId(anyString()))
-                .thenAnswer(invocation -> {
-                    String uploadId = invocation.getArgument(0);
-
-                    // Create a mock Logo with proper data
-                    ch.batbern.events.domain.Logo logo = ch.batbern.events.domain.Logo.builder()
-                            .id(java.util.UUID.randomUUID())
-                            .uploadId(uploadId)
-                            .s3Key("temp/" + uploadId)
-                            .fileExtension("png")
-                            .fileSize(1024L)
-                            .mimeType("image/png")
-                            .status(ch.batbern.events.domain.LogoStatus.CONFIRMED)
-                            .build();
-
-                    return java.util.Optional.of(logo);
-                });
+    /**
+     * A CONFIRMED event-theme-image upload, as POST /uploads/event-theme-image and its confirm leave it
+     * (Story 17.11). Inserted in the test transaction.
+     */
+    private void confirmedThemeUpload(String uploadId) {
+        jdbcTemplate.update("INSERT INTO event_management_uploads (upload_id, purpose, s3_key, file_extension,"
+                + " file_size, content_type, status, expires_at) VALUES (?, 'event-theme-image', ?, 'png', 1024,"
+                + " 'image/png', 'confirmed', now() + interval '1 hour')", uploadId,
+                "logos/temp/" + uploadId + "/theme-" + uploadId + ".png");
     }
 
     private String capitalize(String str) {
@@ -2038,8 +2025,9 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
     @DisplayName("should_storeThemeImageUploadId_when_uploadIdProvided")
     @WithMockUser(username = "test.organizer", roles = "ORGANIZER")
     void should_storeThemeImageUploadId_when_uploadIdProvided() throws Exception {
-        // Given - Create event with theme image upload ID
+        // Given - a confirmed theme image upload
         String uploadId = "test-upload-theme-123";
+        confirmedThemeUpload(uploadId);
 
         String requestBody = """
                 {
@@ -2065,9 +2053,45 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.eventCode").value("BATbern99"));
 
-        // Then - Verify uploadId was stored in event
+        // Then - the upload is attached at the final key of the event
         Event savedEvent = eventRepository.findByEventCode("BATbern99").orElseThrow();
         assertThat(savedEvent.getThemeImageUploadId()).isEqualTo(uploadId);
+        assertThat(savedEvent.getThemeImageUrl()).endsWith("/events/BATbern99/theme-" + uploadId + ".png");
+        assertThat(jdbcTemplate.queryForObject("SELECT status FROM event_management_uploads WHERE upload_id = ?",
+                String.class, uploadId)).isEqualTo("associated");
+    }
+
+    @Test
+    @DisplayName("should_return404AndNotCreate_when_themeImageUploadIsUnknownOrOfAnotherPurpose")
+    @WithMockUser(username = "test.organizer", roles = "ORGANIZER")
+    void should_return404AndNotCreate_when_themeImageUploadIsUnknownOrOfAnotherPurpose() throws Exception {
+        // A CONFIRMED upload of another purpose in this service's table: only its purpose is wrong,
+        // so the 404 comes from the purpose filter (Story 17.11)
+        jdbcTemplate.update("INSERT INTO event_management_uploads (upload_id, purpose, s3_key, file_extension,"
+                + " file_size, content_type, status, expires_at) VALUES ('a-company-logo-upload', 'company-logo',"
+                + " 'logos/temp/x/logo-x.png', 'png', 1024, 'image/png', 'confirmed', now() + interval '1 hour')");
+        String requestBody = """
+                {
+                    "title": "Cloud Conference 2025",
+                    "eventNumber": 98,
+                    "date": "2025-06-15T09:00:00Z",
+                    "registrationDeadline": "2025-06-08T23:59:59Z",
+                    "venueName": "Tech Hub Bern",
+                    "venueAddress": "Bahnhofplatz 1, 3011 Bern",
+                    "venueCapacity": 500,
+                    "organizerUsername": "john.doe",
+                    "currentAttendeeCount": 0,
+                    "eventType": "EVENING",
+                    "themeImageUploadId": "a-company-logo-upload"
+                }
+                """;
+
+        mockMvc.perform(post("/api/v1/events")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isNotFound());
+
+        assertThat(eventRepository.findByEventCode("BATbern98")).isEmpty();
     }
 
     @Test
@@ -2108,6 +2132,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
         Event existingEvent = createTestEvent("Event to Update", "2025-08-10T09:00:00Z", "AGENDA_PUBLISHED");
 
         String uploadId = "test-upload-update-456";
+        confirmedThemeUpload(uploadId);
         String patchBody = """
                 {
                     "themeImageUploadId": "%s"
@@ -2121,9 +2146,11 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.eventCode").value(existingEvent.getEventCode()));
 
-        // Then - Verify uploadId was updated
+        // Then - Verify uploadId was updated and the image attached
         Event updatedEvent = eventRepository.findByEventCode(existingEvent.getEventCode()).orElseThrow();
         assertThat(updatedEvent.getThemeImageUploadId()).isEqualTo(uploadId);
+        assertThat(updatedEvent.getThemeImageUrl())
+                .endsWith("/events/" + existingEvent.getEventCode() + "/theme-" + uploadId + ".png");
     }
 
     @Test

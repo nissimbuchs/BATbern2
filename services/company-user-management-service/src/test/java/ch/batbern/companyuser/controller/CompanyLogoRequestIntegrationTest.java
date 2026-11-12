@@ -5,18 +5,18 @@ import ch.batbern.companyuser.client.MailCenterContract;
 import ch.batbern.companyuser.config.TestAwsConfig;
 import ch.batbern.companyuser.domain.Company;
 import ch.batbern.companyuser.domain.CompanyLogoRequest;
-import ch.batbern.companyuser.domain.Logo;
-import ch.batbern.companyuser.domain.LogoStatus;
+import ch.batbern.companyuser.domain.CompanyUserUpload;
 import ch.batbern.companyuser.domain.User;
 import ch.batbern.companyuser.repository.CompanyLogoRequestRepository;
 import ch.batbern.companyuser.repository.CompanyRepository;
-import ch.batbern.companyuser.repository.LogoRepository;
+import ch.batbern.companyuser.repository.CompanyUserUploadRepository;
 import ch.batbern.companyuser.repository.UserRepository;
 import ch.batbern.companyuser.service.CompanyLogoRequestService;
 import ch.batbern.shared.test.mail.SesRecorder;
 import ch.batbern.shared.test.AbstractIntegrationTest;
 import ch.batbern.shared.test.contract.ContractServer;
 import ch.batbern.shared.types.Role;
+import ch.batbern.shared.upload.UploadStatus;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.jayway.jsonpath.JsonPath;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -83,7 +83,7 @@ class CompanyLogoRequestIntegrationTest extends AbstractIntegrationTest {
     @Autowired
     private CompanyRepository companyRepository;
     @Autowired
-    private LogoRepository logoRepository;
+    private CompanyUserUploadRepository uploadRepository;
     @Autowired
     private CompanyLogoRequestRepository requestRepository;
     @Autowired
@@ -136,7 +136,7 @@ class CompanyLogoRequestIntegrationTest extends AbstractIntegrationTest {
 
     private void removeRows() {
         jdbc.update("DELETE FROM company_logo_requests WHERE requester_username = 'anna.muster'");
-        jdbc.update("DELETE FROM logos WHERE upload_id IN ('up-1', 'up-2')");
+        jdbc.update("DELETE FROM company_user_uploads WHERE upload_id IN ('up-1', 'up-2')");
         jdbc.update("DELETE FROM companies WHERE name = 'acme'");
         jdbc.update("DELETE FROM user_profiles WHERE username IN ('orga.nizer', 'anna.muster', 'bert.ohne')");
     }
@@ -166,11 +166,11 @@ class CompanyLogoRequestIntegrationTest extends AbstractIntegrationTest {
                 .respondWithStatus(HttpStatus.NO_CONTENT);
     }
 
+    /** A CONFIRMED company-logo upload, as POST /uploads/company-logo and its confirm leave it. */
     private void confirmedUpload(String uploadId) {
-        logoRepository.saveAndFlush(Logo.builder().uploadId(uploadId)
-                .s3Key("logos/temp/" + uploadId + "/logo-f.png").fileExtension("png").fileSize(1000L)
-                .mimeType("image/png").status(LogoStatus.CONFIRMED).expiresAt(Instant.now().plusSeconds(3600))
-                .build());
+        jdbc.update("INSERT INTO company_user_uploads (upload_id, purpose, s3_key, file_extension, file_size,"
+                + " content_type, status, expires_at) VALUES (?, 'company-logo', ?, 'png', 1000, 'image/png',"
+                + " 'confirmed', now() + interval '1 hour')", uploadId, "logos/temp/" + uploadId + "/logo-f.png");
     }
 
     private String create(RequestPostProcessor who, String uploadId, String note, int expectedStatus)
@@ -210,9 +210,9 @@ class CompanyLogoRequestIntegrationTest extends AbstractIntegrationTest {
         assertThat(stored.getNewLogoUrl()).contains("logos/requests/up-1/");
         assertThat(stored.getNote()).isEqualTo("Neues Logo seit Juni");
 
-        Logo logo = logoRepository.findByUploadId("up-1").orElseThrow();
-        assertThat(logo.getStatus()).isEqualTo(LogoStatus.ASSOCIATED);
-        assertThat(logo.getAssociatedEntityType()).isEqualTo("LOGO_REQUEST");
+        CompanyUserUpload logo = uploadRepository.findByUploadId("up-1").orElseThrow();
+        assertThat(logo.getStatus()).isEqualTo(UploadStatus.ASSOCIATED);
+        assertThat(logo.getTargetType()).isEqualTo("LOGO_REQUEST");
         assertThat(logo.getExpiresAt()).isNull();
 
         mailCenter.verify();
@@ -260,10 +260,25 @@ class CompanyLogoRequestIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @DisplayName("an unknown or unconfirmed upload: 400 LOGO_NOT_READY")
-    void request_unknownUpload_badRequest() throws Exception {
-        String body = create(anna(), "nope", null, 400);
+    @DisplayName("an unknown or unconfirmed upload: 409 LOGO_NOT_READY")
+    void request_unknownUpload_conflict() throws Exception {
+        String body = create(anna(), "nope", null, 409);
         assertThat(objectMapper.readTree(body).path("errorCode").asText()).isEqualTo("LOGO_NOT_READY");
+    }
+
+    @Test
+    @DisplayName("an upload that is reserved but not confirmed: 409, nothing stored, upload untouched")
+    void request_pendingUpload_conflict() throws Exception {
+        jdbc.update("INSERT INTO company_user_uploads (upload_id, purpose, s3_key, file_extension, file_size,"
+                + " content_type, status, expires_at) VALUES ('up-pending', 'company-logo',"
+                + " 'logos/temp/up-pending/logo-f.png', 'png', 1000, 'image/png', 'pending', now() + interval '1 hour')");
+
+        String body = create(anna(), "up-pending", null, 409);
+
+        assertThat(objectMapper.readTree(body).path("errorCode").asText()).isEqualTo("LOGO_NOT_READY");
+        assertThat(requestRepository.count()).isZero();
+        assertThat(uploadRepository.findByUploadId("up-pending").orElseThrow().getStatus())
+                .isEqualTo(UploadStatus.PENDING);
     }
 
     @Test
@@ -281,7 +296,7 @@ class CompanyLogoRequestIntegrationTest extends AbstractIntegrationTest {
 
         assertThat(objectMapper.readTree(body).path("errorCode").asText()).isEqualTo("LOGO_REQUEST_NOT_DELIVERED");
         assertThat(requestRepository.count()).isZero();
-        assertThat(logoRepository.findByUploadId("up-1").orElseThrow().getStatus()).isEqualTo(LogoStatus.CONFIRMED);
+        assertThat(uploadRepository.findByUploadId("up-1").orElseThrow().getStatus()).isEqualTo(UploadStatus.CONFIRMED);
         mailCenter.verify();
     }
 
@@ -363,9 +378,9 @@ class CompanyLogoRequestIntegrationTest extends AbstractIntegrationTest {
         assertThat(company.getLogoUrl()).contains("/companies/acme/logo-up-1.png");
         assertThat(company.getLogoS3Key()).contains("/companies/acme/logo-up-1.png");
         assertThat(company.getLogoFileId()).isEqualTo("up-1");
-        Logo logo = logoRepository.findByUploadId("up-1").orElseThrow();
-        assertThat(logo.getAssociatedEntityType()).isEqualTo("COMPANY");
-        assertThat(logo.getAssociatedEntityId()).isEqualTo("acme");
+        CompanyUserUpload logo = uploadRepository.findByUploadId("up-1").orElseThrow();
+        assertThat(logo.getTargetType()).isEqualTo("COMPANY");
+        assertThat(logo.getTargetId()).isEqualTo("acme");
 
         assertThat(sesRecorder.single().to()).containsExactly(REQUESTER);
         assertThat(sesRecorder.single().html()).contains("ACME AG");

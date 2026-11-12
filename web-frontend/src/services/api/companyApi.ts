@@ -10,7 +10,6 @@ import apiClient from '@/services/api/apiClient';
 import { isAxiosError } from 'axios';
 import type { components } from '@/types/generated/company-api.types';
 import type { CompanyFilters, PaginationParams } from '@/types/company.types';
-import type { FileUploadPresignedUrl, FileUploadTarget } from '@/types/fileUpload.types';
 
 // Type aliases for cleaner code
 type Company = components['schemas']['CompanyResponse'];
@@ -218,19 +217,8 @@ class CompanyApiClient {
     }
   }
 
-  /**
-   * DEPRECATED: Logo upload methods removed in Story 1.16.3
-   * Use the generic file upload API instead (see file-upload-api.openapi.yml)
-   *
-   * Migration path:
-   * 1. POST /api/v1/logos/presigned-url - Generate upload URL
-   * 2. PUT (presigned URL) - Upload file to S3
-   * 3. POST /api/v1/logos/{uploadId}/confirm - Confirm upload
-   * 4. POST /api/v1/companies (with logoUploadId) - Associate logo with company
-   */
-
-  // async requestLogoUploadUrl(...) - REMOVED - Use generic file upload API
-  // async confirmLogoUpload(...) - REMOVED - Use generic file upload API
+  // Logo upload: the upload contract (`@/services/uploadService`, purpose `company-logo`, Story
+  // 17.11); the create and edit take the CONFIRMED upload as `logoUploadId`.
 
   /**
    * Transform axios errors into standardized error format
@@ -266,39 +254,6 @@ class CompanyApiClient {
 
 // Export singleton instance
 export const companyApiClient = new CompanyApiClient();
-
-/**
- * Logo upload target for useFileUpload (ADR-002): phase 1 presign and phase 3
- * confirm of the generic logo upload. Errors are passed through for the hook to report.
- *
- * POST /api/v1/logos/presigned-url, POST /api/v1/logos/{uploadId}/confirm
- */
-export const logoUploadTarget: FileUploadTarget = {
-  purpose: 'logo',
-  presign: async (request) => {
-    const response = await apiClient.post<FileUploadPresignedUrl>('/logos/presigned-url', request);
-    return response.data;
-  },
-  confirm: async (fileId, request) => {
-    await apiClient.post(`/logos/${fileId}/confirm`, request);
-  },
-};
-
-/**
- * Server-side logo upload from an external URL (batch import): the backend fetches the image
- * and stores it, so no binary passes through the browser. Returns the uploadId for
- * `CreateCompanyRequest.logoUploadId`.
- * Errors are passed through.
- *
- * POST /api/v1/logos/upload-from-url
- */
-export const uploadLogoFromUrl = async (url: string, filename: string): Promise<string> => {
-  const response = await apiClient.post<{ uploadId: string }>('/logos/upload-from-url', {
-    url,
-    filename,
-  });
-  return response.data.uploadId;
-};
 
 // Exported for direct use. Bound: every method's catch path calls this.transformError, and a
 // destructured method has no `this` (it rejected with a TypeError instead, found in 17.0c2).

@@ -34,7 +34,7 @@ public class LocalAwsConfig {
     /**
      * S3 Client configured for MinIO (local S3-compatible storage)
      * Story 2.5.3a: Event Theme Image Upload
-     * Provides S3 operations for GenericLogoService
+     * Provides S3 operations for the upload service (Story 17.11) and the media services
      */
     @Bean
     @Primary

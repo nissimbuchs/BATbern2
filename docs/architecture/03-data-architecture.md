@@ -84,7 +84,7 @@ logo.
 **Key attributes** (`companies`, CUMS): `id` (UUID, internal), `name` (public identifier,
 pattern `^[a-zA-Z0-9]{1,12}$`, unique), `display_name` (full official name for the UI), `website`,
 `industry`, `description`, `logo_url`, `logo_s3_key`, `logo_file_id` (the `upload_id` of the
-`logos` row), `is_verified`, `created_by`. The Swiss UID column was dropped in CUMS V22.
+`company_user_uploads` row, Story 17.11; older logos point at a `logos` row), `is_verified`, `created_by`. The Swiss UID column was dropped in CUMS V22.
 
 **Meaningful IDs (Story 1.16.2):** the database key is a UUID; the API and URLs use `name`
 (`/companies/GoogleZH`). The unique constraint on `name` is case-sensitive; the search endpoint
@@ -96,36 +96,49 @@ matches case-insensitively (`findByNameContainingIgnoreCase`).
 - Company to partner: `partners.company_name` (PCS) stores the company `name`, one partner per
   company (unique).
 
-### Logo upload (ADR-002)
+### Uploads (ADR-002, Story 17.11)
 
-**Purpose:** the generic three-phase upload for company logos and other branding images
-([ADR-002](./ADR-002-generic-file-upload-service.md)), table `logos`.
+**Purpose:** one upload contract for every file a user hands over
+([ADR-002](./ADR-002-generic-file-upload-service.md), decision 2026-11-07). The mechanics live in
+shared-kernel (`ch.batbern.shared.upload`: `UploadService`, `UploadRecord`, `UploadPurposeHandler`);
+each service keeps its uploads in its own table: `company_user_uploads` (CUMS V30) and
+`event_management_uploads` (EMS V153). All services share one database, so the table name carries
+the service.
 
 ```mermaid
 stateDiagram-v2
-    [*] --> PENDING: presigned URL requested
-    PENDING --> CONFIRMED: file in S3, confirm call
+    [*] --> PENDING: POST /uploads/{purpose}
+    PENDING --> CONFIRMED: file in S3, confirm without target
+    PENDING --> ASSOCIATED: confirm with target
     CONFIRMED --> ASSOCIATED: entity created or updated with the uploadId
-    PENDING --> [*]: cleanup after 24 h
-    CONFIRMED --> [*]: cleanup after 7 days
+    PENDING --> [*]: expiry after 24 h
+    CONFIRMED --> [*]: expiry after 7 days
 ```
 
-- **Endpoints** (CUMS, `companies-api`): `POST /logos/presigned-url`, `POST /logos/{uploadId}/confirm`,
-  plus `upload-from-url` for server-side imports (`fetch-from-url`, which had no caller, was removed
-  by Story 17.1).
-- **Constraints** (from the migrations): `file_extension` in png, jpg, jpeg, svg; `file_size` up
-  to 5 MB.
-- **S3 keys:** temporary `logos/temp/{uploadId}/logo-{fileId}.{ext}`; final
-  `logos/{year}/{entity-type}/{entity-name}/logo-{fileId}.{ext}` (`GenericLogoService`).
-- **Cleanup:** `LogoCleanupService` in CUMS, daily at 02:00, removes PENDING older than 24 hours
-  and CONFIRMED older than 7 days.
-- **Use:** companies (`associated_entity_type = 'COMPANY'`, checked in `CompanyService`). EMS also
-  maps the table (`events.theme_image_upload_id`); which other entity types are written in
-  practice (not verified 2026-11-04).
-- **Not via `logos`:** user profile pictures use `ProfilePictureService` with keys
-  `profile-pictures/{year}/{username}/...` and the columns `user_profiles.profile_picture_url` and
-  `profile_picture_s3_key`. Session materials, event photos and teaser images have their own
-  tables in EMS.
+- **Endpoints** (`uploads-api`): `POST /uploads/{purpose}`, `POST /uploads/{purpose}/{uploadId}/confirm`,
+  `POST /uploads/{purpose}/import`. The gateway routes by the purpose prefix (`company-…` CUMS,
+  `event-…` EMS). Purposes today: `company-logo` (CUMS, also the logo requests of #1246) and
+  `event-theme-image` (EMS). Profile pictures, event photos, teaser images and session materials
+  follow in Stories 17.11a–d.
+- **Columns:** `upload_id` (the handle), `purpose`, `s3_key` (temp, then final), `file_url` (CDN URL
+  once attached), `file_extension`, `file_size`, `content_type`, `status` (`pending`, `confirmed`,
+  `associated`, lower case), `target_type` and `target_id` (e.g. `COMPANY` / company name,
+  `LOGO_REQUEST`, `EVENT` / event code), `created_by`, `expires_at`. A check constraint ties
+  `associated` to a target, a file URL and no expiry.
+- **Rules:** per purpose in its handler; logos and theme images: png, jpeg, svg up to 5 MB.
+- **S3 keys** (layouts unchanged): temporary `logos/temp/{uploadId}/logo-{uploadId}.{ext}` (theme
+  image: `theme-…`); final `logos/{year}/companies/{name}/logo-{uploadId}.{ext}`,
+  `logos/requests/{uploadId}/logo.{ext}` and `logos/{year}/events/{eventCode}/theme-{uploadId}.{ext}`.
+- **Expiry:** `UploadExpiryJob` per service (CUMS 02:00, EMS 02:15, ShedLock) deletes PENDING past
+  24 hours and CONFIRMED past 7 days with their S3 object; a failed S3 delete keeps the row for the
+  next night and counts `batbern.uploads.expiry.failures`.
+- **`logos`** (CUMS V10, EMS V5): no code reads or writes it since Story 17.11 (an EMS ArchUnit rule
+  holds that no EMS entity maps it). The table stays, with the history of the logos uploaded before;
+  its drop waits for the owner's go. Nothing was copied from it (no upload was in flight, owner
+  2026-11-12).
+- **Not yet on the contract:** user profile pictures (`ProfilePictureService`, keys
+  `profile-pictures/{year}/{username}/...`), session materials, event photos and teaser images,
+  each with its own table or columns until its story moves it.
 
 ### User
 
@@ -483,7 +496,7 @@ erDiagram
         varchar website
         varchar industry
         varchar logo_url
-        varchar logo_file_id "logos.upload_id"
+        varchar logo_file_id "company_user_uploads.upload_id"
         bool is_verified
         varchar created_by
     }
@@ -530,22 +543,23 @@ erDiagram
         varchar device_name
         timestamp paired_at
     }
-    logos {
+    company_user_uploads {
         uuid id PK
         varchar upload_id UK
+        varchar purpose "company-logo"
         varchar s3_key
-        varchar cloudfront_url
-        varchar status "PENDING CONFIRMED ASSOCIATED"
-        varchar associated_entity_type
-        varchar associated_entity_id
-        timestamp expires_at
+        varchar file_url
+        varchar status "pending confirmed associated"
+        varchar target_type
+        varchar target_id
+        timestamptz expires_at
     }
     user_profiles ||--o{ role_assignments : "user_id"
     user_profiles ||--o{ user_additional_emails : "user_id"
     user_profiles ||--o{ activity_history : "user_id"
     user_profiles ||--o{ watch_pairings : "username"
     user_profiles }o..o| companies : "company_id = name, no FK"
-    companies |o..o| logos : "logo_file_id = upload_id, no FK"
+    companies |o..o| company_user_uploads : "logo_file_id = upload_id, no FK"
 ```
 
 - `role_assignments` has a composite key (user, role); `granted_by` points to the organizer who
@@ -554,7 +568,8 @@ erDiagram
   copied its row into `app_settings` (key `presentation`). It stayed, unread, for one release so an
   old CUMS image could still start (rollback safety); CUMS V29 dropped it (#1280).
 - `shedlock` (scheduler locks) is declared by both CUMS (V12) and EMS (V31) with
-  `CREATE TABLE IF NOT EXISTS`; `logos` likewise by CUMS (V10) and EMS (V5).
+  `CREATE TABLE IF NOT EXISTS`; `logos` likewise by CUMS (V10) and EMS (V5). `logos` is unused since
+  Story 17.11 and waits for its drop (owner's go).
 
 ### Partner Coordination Service (PCS)
 
@@ -635,7 +650,7 @@ erDiagram
 
 ### Event Management Service (EMS)
 
-EMS owns 43 tables, plus `logos` and `shedlock`, which it shares with CUMS. They are grouped by domain below; a table that belongs to two groups is drawn
+EMS owns 44 tables, plus `logos` (unused since Story 17.11) and `shedlock`, which it shares with CUMS. They are grouped by domain below; a table that belongs to two groups is drawn
 in full in one and as a key-only stub in the other.
 
 #### Events, agenda and topics
@@ -1222,7 +1237,8 @@ erDiagram
 | `app_settings` | Key-value settings edited in Administration, the one store for application settings (`AdminSettingsService`, `/admin/settings/{key}`): for example the forwarding recipients, `mailcenter.notify-instead-of-forward`, `venue.coordination.config` (JSON) and `presentation` (JSON `{aboutText, partnerCount}` for the presenter screen, validated on write, read anonymously at `/public/settings/presentation`; moved from CUMS by V152, Story 4.9) |
 | `user_merge_log` | One row per profile merge: source and target username, who and how (ORGANIZER or SELF_CLAIM), what moved and what was removed (JSONB), a snapshot of the source profile |
 | `shedlock` | Scheduler locks so that only one task runs each scheduled job |
-| `logos` | Shared with CUMS, see above |
+| `event_management_uploads` | The uploads of the EMS purposes (`event-theme-image`; Story 17.11, V153), see "Uploads" above |
+| `logos` | Shared with CUMS, unused since Story 17.11, see above |
 
 ### Speaker and attendee data
 
@@ -1305,7 +1321,7 @@ TO` and cross-checked against the applied schema on 2026-11-04.
 | partner-coordination-service | V1 to V10 | `flyway_schema_history_partner_coordination` |
 | (former speaker stub, removed by Story 17.2) | shared-kernel baseline only | `flyway_schema_history_speaker_coordination`, kept |
 
-**EMS** (43 tables plus the shared `logos` and `shedlock`): `events` V2, `sessions` V2, `registrations` V2, `logos` V5 (shared with
+**EMS** (44 tables plus the shared `logos` and `shedlock`): `events` V2, `sessions` V2, `registrations` V2, `logos` V5 (shared with
 CUMS), `session_users` V7, `event_types` V10, `topics` V14, `topic_usage_history` V14,
 `speaker_pool` V14, `speaker_outreach_history` V16, `task_templates` V22, `event_tasks` V22,
 `speaker_status_history` V23, `session_timing_history` V28, `speaker_slot_preferences` V28,
@@ -1318,16 +1334,17 @@ V80, `ai_prompts` V82, `app_settings` V88, `session_proposals` V109, `organizer_
 `session_qna_window` V112, `session_qna_post` V112, `session_qna_notification` V117,
 `live_timing_presence` V119, `event_agenda_config` V121, `email_forwarding_log` V128,
 `mail_message` V135, `mail_recipient` V135, `mail_conversation` V139, `mail_automatic_event`
-V139, `user_merge_log` V144.
+V139, `user_merge_log` V144, `event_management_uploads` V153.
 
 Dropped: `publishing_versions` (V28 to V89), `speakers` (V37 to V94), `speaker_invitation_tokens`
 (V43 to V104); in CUMS `presentation_settings` (V14 to V29), copied into `app_settings` by EMS V152
 (Story 4.9) and dropped one release later (rollback safety).
 
-**CUMS** (8 tables): `companies` V3, `user_profiles` V4, `role_assignments` V5,
+**CUMS** (9 tables): `companies` V3, `user_profiles` V4, `role_assignments` V5,
 `activity_history` V6, `logos` V10, `shedlock` V12, `watch_pairings` V13,
 `user_additional_emails` V16, `company_key_changes` V28 (shared: CUMS
-V28, EMS V150 and PCS V11 create it with the same canonical block, see below).
+V28, EMS V150 and PCS V11 create it with the same canonical block, see below), `company_user_uploads`
+V30 (Story 17.11; `logos` unused since).
 
 **Company keys** (owner decision 2026-11-09): `companies.name`, the company's meaningful ID, is
 `^[a-zA-Z0-9]{1,12}$`, the slug that `SlugGenerationService.generateCompanyName` makes from the typed
@@ -1349,7 +1366,7 @@ entity, unused), `topic_suggestions` V4 (V2 version dropped and recreated), `top
 Described in earlier versions of this document; none of it exists in the migrations or the code.
 
 - `content_metadata`, `presentation_files`, `supplementary_materials` tables (files are in
-  `session_materials`, `event_photos`, `event_teaser_images` and `logos`).
+  `session_materials`, `event_photos`, `event_teaser_images` and the uploads tables).
 - Storage quotas per user (`storage_quota`, `storage_usage_log`) and the quota triggers.
 - Download counters on session files.
 - Virus scanning status on uploads.

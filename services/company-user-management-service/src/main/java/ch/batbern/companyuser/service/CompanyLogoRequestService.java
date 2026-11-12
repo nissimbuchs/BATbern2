@@ -3,15 +3,15 @@ package ch.batbern.companyuser.service;
 import ch.batbern.companyuser.client.MailCenterRequestContract;
 import ch.batbern.companyuser.domain.Company;
 import ch.batbern.companyuser.domain.CompanyLogoRequest;
-import ch.batbern.companyuser.domain.Logo;
-import ch.batbern.companyuser.domain.LogoStatus;
+import ch.batbern.companyuser.domain.CompanyUserUpload;
 import ch.batbern.companyuser.domain.User;
 import ch.batbern.companyuser.exception.UserNotFoundException;
 import ch.batbern.companyuser.repository.CompanyLogoRequestRepository;
 import ch.batbern.companyuser.repository.CompanyRepository;
-import ch.batbern.companyuser.repository.LogoRepository;
 import ch.batbern.companyuser.repository.UserRepository;
 import ch.batbern.companyuser.security.SecurityContextHelper;
+import ch.batbern.shared.upload.UploadService;
+import ch.batbern.shared.upload.UploadStatus;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -24,10 +24,11 @@ import java.util.UUID;
 
 /**
  * #1246: a participant asks the organizers for a new logo of the company on their profile. The
- * uploaded logo is associated with the request right away (entity {@code LOGO_REQUEST}), so it has a
- * CDN URL for the Mail Center and the logo cleanup leaves it alone. Any organizer accepts (the
- * company gets the logo through {@link CompanyService#applyRequestedLogo}) or declines with an
- * optional reason; the requester is mailed either way.
+ * uploaded logo (a {@code company-logo} upload) is associated with the request right away (target
+ * {@code LOGO_REQUEST}), so it has a CDN URL for the Mail Center and the upload expiry leaves it
+ * alone. Any organizer accepts (the company gets the logo through
+ * {@link CompanyService#applyRequestedLogo}) or declines with an optional reason; the requester is
+ * mailed either way.
  *
  * <p>Guard rails: one open request per person and company; only the caller's own company; a
  * declined person may ask again.
@@ -42,8 +43,7 @@ public class CompanyLogoRequestService {
     private final CompanyLogoRequestRepository requests;
     private final UserRepository userRepository;
     private final CompanyRepository companyRepository;
-    private final LogoRepository logoRepository;
-    private final GenericLogoService logoService;
+    private final UploadService<CompanyUserUpload> uploads;
     private final CompanyService companyService;
     private final MailCenterRequestDecisions mailCenterDecisions;
     private final CompanyLogoRequestEmailService emailService;
@@ -72,12 +72,13 @@ public class CompanyLogoRequestService {
                 CompanyLogoRequest.Status.OPEN)) {
             throw new RequestConflictException("LOGO_REQUEST_OPEN", "A logo request for this company is already open");
         }
-        Logo logo = logoRepository.findByUploadId(logoUploadId)
-                .filter(l -> l.getStatus() == LogoStatus.CONFIRMED)
+        CompanyUserUpload logo = uploads.find(CompanyLogoUploadHandler.PURPOSE, logoUploadId)
+                .filter(l -> l.getStatus() == UploadStatus.CONFIRMED && !l.isExpired(Instant.now()))
                 .orElseThrow(() -> new LogoNotReadyException("The logo upload is unknown or not confirmed"));
 
         String key = String.format("logos/requests/%s/logo.%s", logoUploadId, logo.getFileExtension());
-        String newLogoUrl = logoService.associateLogoWithEntity(logoUploadId, ENTITY_TYPE, companyName, key);
+        String newLogoUrl = uploads.associateAt(CompanyLogoUploadHandler.PURPOSE, logoUploadId, ENTITY_TYPE,
+                companyName, key).getFileUrl();
         String trimmedNote = note == null || note.isBlank() ? null : note.trim();
         CompanyLogoRequest saved = requests.saveAndFlush(CompanyLogoRequest.builder()
                 .requesterUsername(caller.getUsername())
@@ -228,7 +229,7 @@ public class CompanyLogoRequestService {
         }
     }
 
-    /** 400 LOGO_NOT_READY: the upload is unknown or was not confirmed. */
+    /** 409 LOGO_NOT_READY: the upload is unknown or not CONFIRMED (Story 17.11, was 400). */
     public static class LogoNotReadyException extends RuntimeException {
         public LogoNotReadyException(String message) {
             super(message);

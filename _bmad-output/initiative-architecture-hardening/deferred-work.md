@@ -105,3 +105,6 @@
 - source_plan: `_bmad-output/initiative-architecture-hardening/tickets/epic-one-service-direction/tickets/story-refactor-sweep-plan.md`
   summary: When CUMS times out opening a Mail Center conversation, its WITHDRAWN decision probably reaches EMS before the slow open commits, so the conversation stays OPEN for a request that does not exist.
   evidence: The withdrawal is sent at once after the 10 s read timeout; `RequestConversations.close` then updates 0 rows and the late open creates the conversation. Not measured. Fix: EMS keeps a withdrawal marker per request id that a later open respects. Rare: needs EMS slower than 10 s.
+- source_plan: `_bmad-output/initiative-architecture-hardening/tickets/epic-api-conventions-and-uploads/tickets/story-one-upload-contract-first-purpose-company-logo-plan.md`
+  summary: Move the company logo request operations under `/companies/{companyName}/logo-requests/{requestId}`, loaded scoped to the company (exception X1 instead of X2).
+  evidence: Owner preferred it 2026-11-12, but the Mail Center panel only knows the request id; it needs `companyName` in the CUMS `/internal/mail-center-requests` contract, an EMS `mail_conversations` column and a backfill of production logo conversations, too much for the upload story.

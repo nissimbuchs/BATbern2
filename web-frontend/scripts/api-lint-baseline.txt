@@ -6,8 +6,6 @@
 # grows the baseline states why and adds the owner group.
 # Format: <rule> TAB <spec file> TAB <METHOD> <path>, sorted.
 no-literal-under-events	events-core-api.openapi.yml	GET /events/current
-no-verb-segment	companies-api.openapi.yml	POST /logos/cleanup/trigger
-no-verb-segment	companies-api.openapi.yml	POST /logos/upload-from-url
 no-verb-segment	event-ai-api.openapi.yml	POST /events/{eventCode}/ai/theme-image/apply
 no-verb-segment	event-mail-api.openapi.yml	GET /conversations/{conversationKey}/messages/{mailKey}/attachments/{index}/download
 no-verb-segment	event-mail-api.openapi.yml	POST /events/{eventCode}/mails/preview
@@ -36,8 +34,6 @@ no-verb-segment	users-api.openapi.yml	POST /users/{username}/picture/confirm
 no-verb-segment	users-api.openapi.yml	POST /users/{username}/profile-picture/upload-from-url
 no-verb-segment	users-api.openapi.yml	POST /watch/authenticate
 no-verb-segment	users-api.openapi.yml	POST /watch/pair
-uuid-path-param	companies-api.openapi.yml	DELETE /logos/{uploadId}
-uuid-path-param	companies-api.openapi.yml	POST /logos/{uploadId}/confirm
 uuid-path-param	event-ai-api.openapi.yml	GET /events/{eventCode}/ai/theme-image/jobs/{jobId}
 uuid-path-param	event-ai-api.openapi.yml	POST /events/{eventCode}/speakers/{speakerId}/abstract-analysis
 uuid-path-param	event-media-api.openapi.yml	DELETE /events/{eventCode}/photos/{photoId}
@@ -81,6 +77,7 @@ uuid-path-param	partners-api.openapi.yml	PATCH /partners/topics/{topicId}
 uuid-path-param	partners-api.openapi.yml	PATCH /partners/topics/{topicId}/status
 uuid-path-param	partners-api.openapi.yml	PATCH /partners/{companyName}/notes/{noteId}
 uuid-path-param	partners-api.openapi.yml	POST /partners/topics/{topicId}/vote
+uuid-path-param	uploads-api.openapi.yml	POST /uploads/{purpose}/{uploadId}/confirm
 uuid-path-param	users-api.openapi.yml	DELETE /users/me/additional-emails/{emailId}
 uuid-path-param	users-api.openapi.yml	DELETE /users/{username}/watch-pairing/{watchId}
 uuid-path-param	users-api.openapi.yml	GET /users/company-logo-requests/{requestId}

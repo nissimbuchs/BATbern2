@@ -16,7 +16,8 @@ import { isAxiosError } from 'axios';
 import { Clock, ImageIcon, Loader2 } from 'lucide-react';
 import { Button } from '@/components/public/ui/button';
 import { useFileUpload } from '@/hooks/useFileUpload/useFileUpload';
-import { companyApiClient, logoUploadTarget } from '@/services/api/companyApi';
+import { companyApiClient } from '@/services/api/companyApi';
+import { uploadTarget } from '@/services/uploadService';
 import {
   createCompanyLogoRequest,
   getMyOpenCompanyLogoRequest,
@@ -46,6 +47,9 @@ function errorKey(err: unknown): string {
   }
 }
 
+/** The logo is uploaded without a target: the organizer's decision attaches it (#1246). */
+const LOGO_UPLOAD = uploadTarget('company-logo');
+
 export function CompanyLogoSection({ companyName }: CompanyLogoSectionProps) {
   const { t } = useTranslation('common');
   const queryClient = useQueryClient();
@@ -54,7 +58,7 @@ export function CompanyLogoSection({ companyName }: CompanyLogoSectionProps) {
   const [preview, setPreview] = useState<string | null>(null);
   const [note, setNote] = useState('');
   const [sent, setSent] = useState(false);
-  const { uploadFile } = useFileUpload({ target: logoUploadTarget });
+  const { uploadFile } = useFileUpload({ target: LOGO_UPLOAD });
 
   const company = useQuery({
     queryKey: ['company', companyName],

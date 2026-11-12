@@ -1,6 +1,6 @@
 # ADR-002: Generic File Upload Service Architecture
 
-**Status**: Accepted
+**Status**: Accepted (decision 2026-11-07 implemented for `company-logo` and `event-theme-image` by Story 17.11, 2026-11-12)
 **Date**: 2025-10-27
 **Decision Makers**: Development Team, Architect Agent (Winston)
 **Related Stories**: Story 1.16.3 (Generic File Upload Service), Story 2.5.1 (Company Management Frontend)
@@ -610,12 +610,12 @@ not drift:
 
 | Call site | Flow | Size cap |
 |-----------|------|----------|
-| ~~`LogoController.fetchImageFromUrl` (`POST /fetch-from-url`)~~ removed by Story 17.1 (2026-11, no caller); logo import uses `LogoController.uploadImageFromUrl` (`POST /logos/upload-from-url`) | Import a company logo from a remote URL | 10 MB |
+| ~~`LogoController.fetchImageFromUrl` (`POST /fetch-from-url`)~~ removed by Story 17.1 (2026-11, no caller); since Story 17.11 the logo import is `POST /uploads/company-logo/import` (`UploadService.importFromUrl`, HTTPS only) | Import a company logo from a remote URL | 5 MB (the purpose's limit; the fetch cap was 10 MB before) |
 | `UserController` profile-picture-from-URL path | Import a profile picture from a remote URL | 5 MB |
 | `FederatedAvatarImportService` (Pattern 1c, Story 12.12) | One-time Google avatar import on federated sign-in | 5 MB |
 
-All three share the `ImageUrlFetcher` pipeline (company-user-management-service,
-consolidated by the 12.12 code review): single HTTPS `GET` with `Redirect.NEVER` (so an
+All three share the `ImageUrlFetcher` pipeline (consolidated by the 12.12 code review; in
+shared-kernel `ch.batbern.shared.upload` since Story 17.11): single HTTPS `GET` with `Redirect.NEVER` (so an
 SSRF-validated host cannot 3xx the fetch onto an unvalidated one), content-type
 allow-list, and a per-caller size cap. After the fetch, storage goes through the normal
 entity-specific service (e.g. `ProfilePictureService`) and is served from
@@ -777,27 +777,48 @@ not a copy of the CUMS class, and both services create and use the same `logos` 
 
 ## Implementation Status
 
-### Completed
-- ✅ Architectural design documented (ADR-002)
-- ✅ Story created (1.16.3)
-- ✅ Database schema designed
+### Story 17.11 (2026-11-12): one upload contract, first purposes `company-logo` and `event-theme-image`
 
-### In Progress (Story 1.16.3)
-- ⏳ V6 Flyway migration creation
-- ⏳ Logo entity and repository
-- ⏳ GenericLogoService implementation
-- ⏳ LogoCleanupService implementation
-- ⏳ LogoController REST endpoints
-- ⏳ Frontend FileUpload component
-- ⏳ Frontend useFileUpload hook
-- ⏳ CompanyService integration
-- ⏳ Test suite
+Implements the decision of 2026-11-07 for its first two purposes:
 
-### Planned (Post-Implementation)
-- ⏳ User profile picture support (Story TBD)
-- ⏳ Event banner support (Story TBD)
-- ⏳ CloudWatch dashboards for monitoring
-- ⏳ S3 lifecycle policies for automated archival
+- **Contract:** `docs/api/uploads-api.openapi.yml`, operations `createFileUpload`
+  (`POST /uploads/{purpose}`), `confirmFileUpload` (`POST /uploads/{purpose}/{uploadId}/confirm`,
+  attaches when `target` is given) and `importFileUpload` (`POST /uploads/{purpose}/import`). The
+  six `/logos/*` operations of `companies-api` are deleted (no aliases; 404).
+- **Mechanics** in shared-kernel `ch.batbern.shared.upload`: `UploadService` (presign through
+  `S3Links`, confirm with a HEAD of the object, associate, reassign, import through
+  `ImageUrlFetcher`, expiry), `UploadRecord` (`@MappedSuperclass`, the state machine),
+  `UploadRecordRepository`, `UploadPurposeHandler` (SPI: rules, who may upload or attach, target
+  key and type, final key, what confirm attaches, import), `UploadRules`, `UploadException`. Not a
+  component: each service builds its `UploadService` in `UploadConfig` with its table and handlers.
+- **CUMS:** table `company_user_uploads` (V30, created empty: no upload was in flight, owner
+  2026-11-12), `CompanyLogoUploadHandler` (target `companyName`, ORGANIZER; import ORGANIZER; without
+  target any signed-in user, so the #1246 logo request works for every participant),
+  `UploadsController`, `UploadExpiryJob` (02:00). `CompanyService` and `CompanyLogoRequestService`
+  take their uploads from it. Removed: `LogoController`, `GenericLogoService`, `LogoCleanupService`,
+  `Logo`, `LogoStatus`, `LogoRepository`, `LogoNotFoundException`.
+- **EMS:** table `event_management_uploads` (V153), `EventThemeImageUploadHandler` (ORGANIZER, target
+  `eventCode`, no import), `UploadsController`, `UploadExpiryJob` (02:15). `EventController` checks a
+  `themeImageUploadId` before saving the event (404 unknown or of another purpose, 409 not
+  CONFIRMED). Removed: the EMS `GenericLogoService`, `Logo`, `LogoStatus`, `LogoRepository`; the
+  ArchUnit rule `EmsDataOwnershipTest` holds that no EMS entity maps `logos`.
+- **Gateway:** `/api/v1/uploads/{purpose}` by the purpose prefix (`company-` CUMS, `event-` EMS,
+  any other 404); `/api/v1/logos` is no longer routed.
+- **Frontend:** `services/uploadService.ts` (`uploadTarget(purpose, target?)`, `importUpload`), the
+  one hook `useFileUpload` (no hard-coded bucket; the preview is the attached file's CDN URL or a
+  local object URL), `FileUpload` requires its `uploadTarget`.
+- **Key layouts unchanged:** `logos/{year}/companies/{name}/logo-{uploadId}.{ext}`,
+  `logos/requests/{uploadId}/logo.{ext}`, `logos/{year}/events/{eventCode}/theme-{uploadId}.{ext}`;
+  existing S3 objects and CDN URLs are untouched.
+- **Left:** the `logos` table stays in both migrations' history and in the database until the owner
+  gives the go for its drop. Purposes `profile-picture`, `event-photo`, `teaser-image` and
+  `session-material` follow in Stories 17.11a–d; each adds a handler and its enum value, no
+  operation.
+
+### Story 1.16.3 (2025-10, historical)
+
+The original three-phase logo upload (`logos` table, `GenericLogoService`, `LogoCleanupService`,
+`LogoController`) described above; replaced by Story 17.11.
 
 ## Alternatives Considered
 

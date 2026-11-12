@@ -1,0 +1,39 @@
+meta {
+  name: Reserve - larger than 5 MB is 400
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{baseUrl}}/uploads/company-logo
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "fileName": "bruno-test-{{$timestamp}}.png",
+    "contentType": "image/png",
+    "size": 5242881
+  }
+}
+
+assert {
+  res.status: eq 400
+}
+
+tests {
+  test("should say the size limit", function() {
+    expect(res.getBody().message).to.include('5 MB');
+  });
+}

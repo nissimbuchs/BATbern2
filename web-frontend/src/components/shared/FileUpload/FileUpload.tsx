@@ -4,7 +4,8 @@
  * ADR-002: Generic File Upload Service Architecture
  *
  * Reusable file upload component with drag-and-drop support
- * Uses generic /api/v1/logos endpoints - works for any entity type
+ * The caller passes the upload target of its purpose (`uploadTarget('company-logo')` from
+ * `@/services/uploadService`, Story 17.11): there is no default purpose.
  *
  * Features:
  * - Drag-and-drop file upload
@@ -16,6 +17,7 @@
  *
  * Usage:
  * <FileUpload
+ *   uploadTarget={uploadTarget('company-logo')}
  *   currentFileUrl={logoUrl}
  *   onUploadSuccess={(data) => setLogoUploadId(data.uploadId)}
  *   onUploadError={(error) => console.error(error)}
@@ -45,7 +47,6 @@ import {
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useFileUpload } from '@/hooks/useFileUpload/useFileUpload';
-import { logoUploadTarget } from '@/services/api/companyApi';
 import type { FileUploadTarget } from '@/types/fileUpload.types';
 
 export interface UploadedFile {
@@ -74,7 +75,7 @@ interface FileUploadProps {
   multiple?: boolean; // Enable multiple file uploads
   maxFiles?: number; // Maximum number of files (default 10)
   uploadedFiles?: UploadedFile[]; // List of uploaded files (for multiple mode)
-  uploadTarget?: FileUploadTarget; // presign + confirm of the upload's purpose (default: logo)
+  uploadTarget: FileUploadTarget; // presign + confirm of the upload's purpose (required)
 }
 
 // Helper function to format file size
@@ -113,7 +114,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   multiple = false,
   maxFiles = 10,
   uploadedFiles = [],
-  uploadTarget = logoUploadTarget, // Default to logos for backward compatibility
+  uploadTarget,
 }) => {
   const { t } = useTranslation('common');
   const [fileUrl, setFileUrl] = useState<string | undefined>(currentFileUrl);

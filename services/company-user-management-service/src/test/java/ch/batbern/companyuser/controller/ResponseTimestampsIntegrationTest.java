@@ -2,11 +2,8 @@ package ch.batbern.companyuser.controller;
 
 import ch.batbern.companyuser.config.TestAwsConfig;
 import ch.batbern.companyuser.domain.Company;
-import ch.batbern.companyuser.domain.Logo;
-import ch.batbern.companyuser.domain.LogoStatus;
 import ch.batbern.companyuser.domain.User;
 import ch.batbern.companyuser.repository.CompanyRepository;
-import ch.batbern.companyuser.repository.LogoRepository;
 import ch.batbern.companyuser.repository.UserRepository;
 import ch.batbern.shared.test.AbstractIntegrationTest;
 import ch.batbern.shared.types.Role;
@@ -74,8 +71,6 @@ class ResponseTimestampsIntegrationTest extends AbstractIntegrationTest {
     @Autowired
     private CompanyRepository companyRepository;
     @Autowired
-    private LogoRepository logoRepository;
-    @Autowired
     private JdbcTemplate jdbcTemplate;
     @Autowired
     private CacheManager cacheManager;
@@ -109,7 +104,7 @@ class ResponseTimestampsIntegrationTest extends AbstractIntegrationTest {
 
     @AfterEach
     void tearDown() {
-        jdbcTemplate.update("DELETE FROM logos WHERE upload_id = ?", UPLOAD_ID);
+        jdbcTemplate.update("DELETE FROM company_user_uploads WHERE upload_id = ?", UPLOAD_ID);
         jdbcTemplate.update("DELETE FROM watch_pairings");
         jdbcTemplate.update("DELETE FROM user_profiles");
         jdbcTemplate.queryForList("SELECT name FROM companies", String.class).stream()
@@ -164,10 +159,10 @@ class ResponseTimestampsIntegrationTest extends AbstractIntegrationTest {
     void should_returnStoredTimestamps_when_companyCreatedWithLogo() throws Exception {
         // The logo is set on the new row in a second save, an update before the insert is flushed:
         // @PreUpdate then moves updatedAt after the response was built.
-        logoRepository.saveAndFlush(Logo.builder().uploadId(UPLOAD_ID)
-                .s3Key("logos/temp/" + UPLOAD_ID + "/logo-f.png").fileExtension("png").fileSize(1000L)
-                .mimeType("image/png").status(LogoStatus.CONFIRMED).expiresAt(Instant.now().plusSeconds(3600))
-                .build());
+        jdbcTemplate.update("INSERT INTO company_user_uploads (upload_id, purpose, s3_key, file_extension,"
+                + " file_size, content_type, status, expires_at) VALUES (?, 'company-logo', ?, 'png', 1000,"
+                + " 'image/png', 'confirmed', now() + interval '1 hour')", UPLOAD_ID,
+                "logos/temp/" + UPLOAD_ID + "/logo-f.png");
 
         String response = mockMvc.perform(post("/api/v1/companies").contentType(MediaType.APPLICATION_JSON)
                         .content("{\"name\": \"Ølund\", \"displayName\": \"Ølund Partner\", \"logoUploadId\": \""

@@ -42,6 +42,12 @@ Only items that are not live yet. Everything else is listed under its release be
 
 ### Unreleased — after BATbern60
 
+**Improvement — One upload contract, company logos and theme images (Epic 17, 17.11)**:
+- ✅ Company logos (create form, company edit, batch import and the logo request on the profile) and event theme images upload through one shared flow. Nothing changes on the page, except that the preview right after choosing a file now shows the file itself.
+- ✅ A participant without the speaker or partner role can upload the logo for a logo request again (the upload step refused them since the role checks of October).
+- ✅ Creating a company or an event with a logo or theme image that cannot be attached (unknown, expired, not confirmed) now fails with a message instead of creating it without the image.
+- ⚠️ API, breaking for scripts: uploads go through `POST /api/v1/uploads/{purpose}` (presigned URL), the PUT to S3 and `POST /api/v1/uploads/{purpose}/{uploadId}/confirm` (with a `target` it attaches the file), imports through `POST /api/v1/uploads/company-logo/import`. Purposes: `company-logo`, `event-theme-image`. The six `/api/v1/logos/*` operations answer 404. A logo request with an upload that is not confirmed answers 409 `LOGO_NOT_READY` (was 400).
+
 **Improvement — Mail Center requests and profile merges, loose ends (Epic 17, sweep)**:
 - ✅ If filing a profile merge request or a logo request fails after its Mail Center conversation was opened, the conversation is closed again instead of staying open for a request that does not exist.
 - ✅ The decision on such a request reaches every service that keeps its conversation, also when one of them does not answer.

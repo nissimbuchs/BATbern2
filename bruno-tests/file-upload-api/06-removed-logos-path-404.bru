@@ -1,0 +1,38 @@
+meta {
+  name: Removed /logos/presigned-url is 404
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{baseUrl}}/logos/presigned-url
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "fileName": "bruno-test-{{$timestamp}}.png",
+    "fileSize": 1024,
+    "mimeType": "image/png"
+  }
+}
+
+assert {
+  res.status: eq 404
+}
+
+docs {
+  Story 17.11 removed the six /logos/* operations (no aliases). The gateway has no route for
+  /api/v1/logos any more; CUMS answers 404 for them too (UploadsControllerIntegrationTest).
+}

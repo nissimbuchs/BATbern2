@@ -188,7 +188,7 @@ class SessionMaterialsServiceTest {
     void should_throwInvalidUploadIdException_when_uploadIdNotFound() {
         // Given - This test assumes we validate upload IDs against Logo/Upload table
         // For now, we'll skip this test as the story doesn't specify this validation
-        // TODO: Revisit if upload ID validation is needed against GenericLogoService
+        // Materials move to the upload contract in Story 17.11d (uploads-api, session-material)
     }
 
     // Test 2.4: Domain Event Emission

@@ -4,129 +4,6 @@
  */
 
 export interface paths {
-  '/logos/presigned-url': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Generate a presigned URL for a logo upload
-     * @description Phase 1 of the three-phase upload flow. Returns a presigned S3 URL (15-min expiry) plus
-     *     upload metadata. Supports PNG/JPEG/SVG up to 5MB. No authentication required.
-     */
-    post: operations['requestLogoUploadUrl'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/logos/{uploadId}/confirm': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Confirm a logo upload completion
-     * @description Phase 2 — confirms the file was uploaded to S3 (PENDING → CONFIRMED). No authentication required.
-     */
-    post: operations['confirmLogoUpload'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/logos/{uploadId}': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    post?: never;
-    /**
-     * Delete an unused logo
-     * @description Deletes a logo in PENDING or CONFIRMED status (ASSOCIATED logos cannot be deleted).
-     *     Requires authentication.
-     */
-    delete: operations['deleteUnusedLogo'];
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/logos/cleanup/statistics': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Get logo-upload cleanup statistics (Admin)
-     * @description Counts of logo uploads by state, for monitoring orphaned uploads. Requires ORGANIZER role.
-     */
-    get: operations['getLogoCleanupStatistics'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/logos/cleanup/trigger': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Manually trigger the logo cleanup job (Admin)
-     * @description Triggers the orphaned-upload cleanup job (normally runs daily at 02:00). Requires ORGANIZER role.
-     */
-    post: operations['triggerLogoCleanup'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/logos/upload-from-url': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Fetch an image from a URL and upload it to S3 (server-side)
-     * @description Fetches an image from a URL and uploads it directly to S3 (bypasses the browser to avoid
-     *     binary corruption), returning the upload ID. Up to 10MB. No authentication required.
-     */
-    post: operations['uploadImageFromUrl'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
   '/companies': {
     parameters: {
       query?: never;
@@ -350,68 +227,6 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
   schemas: {
-    LogoUploadRequest: {
-      /** @description Original filename with extension (e.g. "company-logo.png") */
-      fileName: string;
-      /**
-       * Format: int64
-       * @description File size in bytes (max 5,242,880 = 5MB)
-       */
-      fileSize: number;
-      /** @description MIME type (e.g. "image/png", "image/jpeg", "image/svg+xml") */
-      mimeType: string;
-    };
-    /** @description Presigned S3 upload URL + metadata for a logo upload */
-    LogoPresignedUploadUrl: {
-      /** @description The presigned S3 URL to PUT the file to */
-      uploadUrl: string;
-      /** @description Unique file identifier for tracking the upload */
-      fileId: string;
-      /** @description S3 key where the file will be stored */
-      s3Key?: string;
-      /** @description File extension (used to reconstruct the S3 key on confirm) */
-      fileExtension: string;
-      /** @description URL expiry in minutes (typically 15) */
-      expiresInMinutes: number;
-      /** @description Headers the client must send with the S3 PUT */
-      requiredHeaders: {
-        [key: string]: string;
-      };
-    };
-    LogoUploadConfirmRequest: {
-      /** @description File ID returned from the presigned-URL request */
-      fileId: string;
-      /** @description File extension (used to reconstruct the S3 key) */
-      fileExtension: string;
-      /** @description Optional SHA-256 checksum for integrity verification */
-      checksum?: string;
-    };
-    /** @description Counts of logo uploads by state (admin monitoring) */
-    LogoCleanupStatistics: {
-      /** Format: int64 */
-      pendingCount: number;
-      /** Format: int64 */
-      confirmedCount: number;
-      /** Format: int64 */
-      associatedCount: number;
-      /** Format: int64 */
-      expiredPendingCount: number;
-      /** Format: int64 */
-      expiredConfirmedCount: number;
-    };
-    UploadImageFromUrlRequest: {
-      /** @description External image URL to fetch and upload */
-      url: string;
-      /**
-       * @description Suggested base filename (extension derived from content type)
-       * @default logo
-       */
-      filename?: string;
-    };
-    UploadImageFromUrlResponse: {
-      /** @description Upload ID for use in subsequent company creation */
-      uploadId?: string;
-    };
     /**
      * @description Company response with meaningful IDs.
      *     Story 1.16.2: name field is the unique identifier (no separate id field).
@@ -511,7 +326,7 @@ export interface components {
       /** @example Leading Swiss IT consulting firm */
       description?: string;
       /**
-       * @description Upload ID from three-phase upload via /api/v1/logos/presigned-url (optional)
+       * @description A CONFIRMED `company-logo` upload (uploads-api, `POST /uploads/company-logo`), attached to the new company (optional). Unknown, expired or of another purpose 404, not CONFIRMED 409; the company is not created then
        * @example abc123-def456
        */
       logoUploadId?: string;
@@ -532,7 +347,7 @@ export interface components {
       /** @example Leading Swiss IT consulting firm */
       description?: string;
       /**
-       * @description Upload ID from three-phase upload (set to empty string to remove logo)
+       * @description A CONFIRMED `company-logo` upload (uploads-api) that becomes the logo; an empty string removes the logo, the current logo's id changes nothing. Unknown, expired or of another purpose 404, not CONFIRMED 409; nothing is changed then
        * @example abc123-def456
        */
       logoUploadId?: string;
@@ -677,6 +492,42 @@ export interface components {
         'application/json': components['schemas']['ErrorResponse'];
       };
     };
+    /**
+     * @description The `logoUploadId` is no `company-logo` upload: unknown, expired or of another purpose
+     *     (Story 17.11). Nothing is stored.
+     */
+    LogoUploadNotFound: {
+      headers: {
+        [name: string]: unknown;
+      };
+      content: {
+        'application/json': components['schemas']['ErrorResponse'];
+      };
+    };
+    /**
+     * @description The company does not exist, or the `logoUploadId` is no `company-logo` upload (unknown,
+     *     expired or of another purpose, Story 17.11).
+     */
+    CompanyOrLogoUploadNotFound: {
+      headers: {
+        [name: string]: unknown;
+      };
+      content: {
+        'application/json': components['schemas']['ErrorResponse'];
+      };
+    };
+    /**
+     * @description A company with this name exists, or the `logoUploadId` is not CONFIRMED (still PENDING or
+     *     already attached, Story 17.11). Nothing is stored.
+     */
+    CompanyOrLogoUploadConflict: {
+      headers: {
+        [name: string]: unknown;
+      };
+      content: {
+        'application/json': components['schemas']['ErrorResponse'];
+      };
+    };
     /** @description Internal server error */
     InternalServerError: {
       headers: {
@@ -694,157 +545,6 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
-  requestLogoUploadUrl: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['LogoUploadRequest'];
-      };
-    };
-    responses: {
-      /** @description Presigned URL generated */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['LogoPresignedUploadUrl'];
-        };
-      };
-      400: components['responses']['BadRequest'];
-      500: components['responses']['InternalServerError'];
-    };
-  };
-  confirmLogoUpload: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        uploadId: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['LogoUploadConfirmRequest'];
-      };
-    };
-    responses: {
-      /** @description Upload confirmed */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      400: components['responses']['BadRequest'];
-      404: components['responses']['NotFound'];
-      500: components['responses']['InternalServerError'];
-    };
-  };
-  deleteUnusedLogo: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        uploadId: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Logo deleted */
-      204: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      400: components['responses']['BadRequest'];
-      401: components['responses']['Unauthorized'];
-      404: components['responses']['NotFound'];
-    };
-  };
-  getLogoCleanupStatistics: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Cleanup statistics */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['LogoCleanupStatistics'];
-        };
-      };
-      401: components['responses']['Unauthorized'];
-      403: components['responses']['Forbidden'];
-    };
-  };
-  triggerLogoCleanup: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Cleanup job triggered */
-      202: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      401: components['responses']['Unauthorized'];
-      403: components['responses']['Forbidden'];
-    };
-  };
-  uploadImageFromUrl: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['UploadImageFromUrlRequest'];
-      };
-    };
-    responses: {
-      /** @description Image uploaded */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['UploadImageFromUrlResponse'];
-        };
-      };
-      400: components['responses']['BadRequest'];
-      /** @description Image exceeds the 10MB limit */
-      413: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      500: components['responses']['InternalServerError'];
-    };
-  };
   listCompanies: {
     parameters: {
       query?: {
@@ -913,7 +613,8 @@ export interface operations {
       400: components['responses']['BadRequest'];
       401: components['responses']['Unauthorized'];
       403: components['responses']['Forbidden'];
-      409: components['responses']['Conflict'];
+      404: components['responses']['LogoUploadNotFound'];
+      409: components['responses']['CompanyOrLogoUploadConflict'];
       500: components['responses']['InternalServerError'];
     };
   };
@@ -996,8 +697,8 @@ export interface operations {
       400: components['responses']['BadRequest'];
       401: components['responses']['Unauthorized'];
       403: components['responses']['Forbidden'];
-      404: components['responses']['NotFound'];
-      409: components['responses']['Conflict'];
+      404: components['responses']['CompanyOrLogoUploadNotFound'];
+      409: components['responses']['CompanyOrLogoUploadConflict'];
       500: components['responses']['InternalServerError'];
     };
   };

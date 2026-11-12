@@ -37,10 +37,10 @@ describe('MSW harness', () => {
   });
 
   it('fails a method the path does not define', async () => {
-    await expect(apiClient.delete('/logos/cleanup/statistics')).rejects.toThrow();
+    await expect(apiClient.delete('/uploads/company-logo/import')).rejects.toThrow();
 
     expect(api.takeViolations()).toEqual([
-      'DELETE /api/logos/cleanup/statistics: method DELETE is not defined for /logos/cleanup/statistics (the spec has GET)',
+      'DELETE /api/uploads/company-logo/import: method DELETE is not defined for /uploads/company-logo/import (the spec has POST)',
     ]);
   });
 

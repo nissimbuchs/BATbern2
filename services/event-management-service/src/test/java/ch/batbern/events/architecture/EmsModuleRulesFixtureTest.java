@@ -8,6 +8,8 @@ import ch.batbern.events.architecture.fixtures.mailcenter.render.FixtureMailPipe
 import ch.batbern.events.architecture.fixtures.mailcenter.variables.FixtureMailVariable;
 import ch.batbern.events.architecture.fixtures.notification.FixtureNotifier;
 import ch.batbern.events.architecture.fixtures.registrations.FixtureRegistrationService;
+import ch.batbern.events.architecture.fixtures.uploads.FixtureLogoEntity;
+import ch.batbern.events.architecture.fixtures.uploads.FixtureUploadEntity;
 import ch.batbern.events.architecture.fixtures.watch.FixtureWatchService;
 import com.tngtech.archunit.core.domain.JavaClasses;
 import com.tngtech.archunit.core.importer.ClassFileImporter;
@@ -107,6 +109,18 @@ class EmsModuleRulesFixtureTest {
         assertThat(result.getFailureReport().getDetails())
                 .anyMatch(line -> line.contains(PartnerFixtureClient.class.getName()))
                 .noneMatch(line -> line.contains(UserFixtureClient.class.getName()));
+    }
+
+    @Test
+    @DisplayName("should_fail_when_entityMapsLogos")
+    void should_fail_when_entityMapsLogos() {
+        EvaluationResult result = EmsModuleRules.noEntityMapsLogos(ROOT).evaluate(ALL);
+
+        assertThat(result.getFailureReport().getDetails())
+                .anyMatch(line -> line.contains(FixtureLogoEntity.class.getName()))
+                .noneMatch(line -> line.contains(FixtureUploadEntity.class.getName()));
+        assertThat(EmsModuleRules.noEntityMapsLogos(ROOT)
+                .evaluate(new ClassFileImporter().importClasses(FixtureUploadEntity.class)).hasViolation()).isFalse();
     }
 
     @Test

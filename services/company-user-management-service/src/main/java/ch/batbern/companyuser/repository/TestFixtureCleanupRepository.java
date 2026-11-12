@@ -18,7 +18,7 @@ import java.util.UUID;
  *       the deletion methods aren't reachable from normal application code paths.</li>
  *   <li>The DELETE statements use {@code LIKE :pattern} for predictable, set-based deletion
  *       with one SQL round-trip per table — JPA cascade isn't relied on for performance.</li>
- *   <li>The {@code logos.associated_entity_id} reference (soft FK by name, not a real
+ *   <li>The {@code company_user_uploads.target_id} reference (soft FK by name, not a real
  *       database constraint) is wiped explicitly before its parent.</li>
  * </ul>
  *
@@ -37,8 +37,8 @@ import java.util.UUID;
 public interface TestFixtureCleanupRepository extends JpaRepository<Company, UUID> {
 
     /**
-     * Delete logos whose {@code associated_entity_id} starts with the prefix
-     * (i.e. logos linked to test companies/users by ADR-003 soft FK).
+     * Delete uploads ({@code company_user_uploads}, Story 17.11) whose {@code target_id} starts with
+     * the prefix (i.e. logos attached to test companies by ADR-003 soft FK).
      *
      * <p>Anchored on the soft-FK column ONLY. An earlier version also matched
      * {@code s3_key LIKE '%/<prefix>%'} but that pattern was fragile against S3 key
@@ -46,23 +46,23 @@ public interface TestFixtureCleanupRepository extends JpaRepository<Company, UUI
      * after any path separator. PENDING / CONFIRMED logos for failed Bruno uploads
      * are swept by the {@code expires_at} lifecycle column, not by this endpoint.
      *
-     * @param entityIdPattern {@code LIKE} pattern for the associated_entity_id column
+     * @param entityIdPattern {@code LIKE} pattern for the target_id column
      *                        (e.g. {@code "BRUNOTESTCO%"})
-     * @return number of logo rows deleted
+     * @return number of upload rows deleted
      */
     @Modifying
     @Query(
-            value = "DELETE FROM logos WHERE associated_entity_id ILIKE :entityIdPattern",
+            value = "DELETE FROM company_user_uploads WHERE target_id ILIKE :entityIdPattern",
             nativeQuery = true
     )
-    int deleteLogosByAssociatedEntityIdLike(@Param("entityIdPattern") String entityIdPattern);
+    int deleteUploadsByTargetIdLike(@Param("entityIdPattern") String entityIdPattern);
 
     /**
      * Delete companies whose {@code name} starts with the prefix, ignoring case: since 2026-11-09
      * {@code POST /companies} stores the lower-case slug ({@code BRUNOTESTCO<ts>} becomes
      * {@code brunotestco1}), so the canonical prefix must match both spellings.
-     * Caller must have already wiped soft-FK references in {@code logos.associated_entity_id}
-     * (handled by {@link #deleteLogosByAssociatedEntityIdLike(String)}).
+     * Caller must have already wiped soft-FK references in {@code company_user_uploads.target_id}
+     * (handled by {@link #deleteUploadsByTargetIdLike(String)}).
      *
      * @param namePattern {@code LIKE} pattern for the name column
      * @return number of company rows deleted

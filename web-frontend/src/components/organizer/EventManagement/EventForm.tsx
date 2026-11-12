@@ -55,6 +55,7 @@ import type { Topic } from '@/types/topic.types';
 import type { Event, EventUI, CreateEventRequest } from '@/types/event.types';
 import { useDebounce } from '@/hooks/useDebounce';
 import { FileUpload } from '@/components/shared/FileUpload/FileUpload';
+import { uploadTarget } from '@/services/uploadService';
 import { EventTypeSelector } from '@/components/organizer/EventTypeSelector/EventTypeSelector';
 import type { components } from '@/types/generated/events-core-api.types';
 import { workflowService } from '@/services/workflowService';
@@ -78,6 +79,9 @@ import {
 // normalizeEventType, createEventSchema, EventFormData, PartialEventFormData,
 // transformDatesForApi and getChangedFields now live in ./eventFormSchema
 // (shared with the Details · Info in-tab editor — Story 14.F.2).
+
+/** Confirmed without a target: create and Save attach it through `themeImageUploadId` (Story 17.11). */
+const THEME_IMAGE_UPLOAD = uploadTarget('event-theme-image');
 
 interface EventFormProps {
   open: boolean;
@@ -919,6 +923,7 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
                   {t('form.themeImageHelp')}
                 </Typography>
                 <FileUpload
+                  uploadTarget={THEME_IMAGE_UPLOAD}
                   currentFileUrl={event?.themeImageUrl ?? undefined}
                   onUploadSuccess={(data) => setThemeImageUploadId(data.uploadId)}
                   onUploadError={(error) => {

@@ -73,6 +73,36 @@ class DomainRouterTest {
     }
 
     @Test
+    @DisplayName("should_routeUploadsByPurpose_when_uploadsEndpointCalled")
+    void should_routeUploadsByPurpose_when_uploadsEndpointCalled() {
+        // Story 17.11: the purpose prefix names the owning service
+        assertThat(domainRouter.determineTargetService("/api/v1/uploads/company-logo"))
+                .isEqualTo("company-user-management-service");
+        assertThat(domainRouter.determineTargetService("/api/v1/uploads/company-logo/abc/confirm"))
+                .isEqualTo("company-user-management-service");
+        assertThat(domainRouter.determineTargetService("/api/v1/uploads/company-logo/import"))
+                .isEqualTo("company-user-management-service");
+        assertThat(domainRouter.determineTargetService("/api/v1/uploads/event-theme-image"))
+                .isEqualTo("event-management-service");
+        assertThat(domainRouter.determineTargetService("/api/v1/uploads/event-theme-image/abc/confirm"))
+                .isEqualTo("event-management-service");
+    }
+
+    @Test
+    @DisplayName("should_throwRouteNotFound_when_uploadPurposeUnknownOrLogosPathCalled")
+    void should_throwRouteNotFound_when_uploadPurposeUnknownOrLogosPathCalled() {
+        assertThatThrownBy(() -> domainRouter.determineTargetService("/api/v1/uploads/mail-attachment"))
+                .isInstanceOf(RouteNotFoundException.class);
+        assertThatThrownBy(() -> domainRouter.determineTargetService("/api/v1/uploads/"))
+                .isInstanceOf(RouteNotFoundException.class);
+        // The six /logos operations are gone with Story 17.11
+        assertThatThrownBy(() -> domainRouter.determineTargetService("/api/v1/logos/presigned-url"))
+                .isInstanceOf(RouteNotFoundException.class);
+        assertThatThrownBy(() -> domainRouter.determineTargetService("/api/v1/logos/upload-from-url"))
+                .isInstanceOf(RouteNotFoundException.class);
+    }
+
+    @Test
     @DisplayName("should_routeHomepagePhotosToEms_when_publicEventPhotosCalled")
     void should_routeHomepagePhotosToEms_when_publicEventPhotosCalled() {
         // Story 4.10b: the one /public/event-photos path is EMS; other /public paths stay CUMS.

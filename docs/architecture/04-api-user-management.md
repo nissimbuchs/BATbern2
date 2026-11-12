@@ -610,24 +610,12 @@ responses:
 
 ### Profile Picture Management
 
-**Important (ADR-002)**: Profile pictures use the Generic File Upload Service. See ADR-002 for complete architecture.
-
-#### Three-Phase Upload Pattern
-
-**Phase 1: Initiate Upload** - `POST /api/v1/logos/presigned-url`
-- No authentication required
-- Returns presigned S3 URL and uploadId
-- See ADR-002 for endpoint details
-
-**Phase 2: Upload to S3** - `PUT {presignedUrl}`
-- Direct client-to-S3 upload
-- Binary file upload with progress tracking
-- No backend involvement
-
-**Phase 3: Confirm Upload** - `POST /api/v1/logos/{uploadId}/confirm`
-- Confirms successful S3 upload
-- Updates logo status to CONFIRMED
-- See ADR-002 for endpoint details
+**Uploads (ADR-002, Story 17.11).** Files go through one contract, `uploads-api`:
+`POST /api/v1/uploads/{purpose}` (presigned PUT URL), `PUT {uploadUrl}` straight to S3, and
+`POST /api/v1/uploads/{purpose}/{uploadId}/confirm` (with a `target` it attaches the file). The
+company logo is purpose `company-logo`. Profile pictures still use their own operations below until
+Story 17.11a moves them to purpose `profile-picture`. The former `/api/v1/logos/*` operations are
+gone (404).
 
 **Profile picture (Story 4.10).** One set for the user themself and for organizers:
 `POST /api/v1/users/{username}/picture/presigned-url` → PUT to S3 →
