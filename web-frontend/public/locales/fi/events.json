@@ -1452,6 +1452,7 @@
   "whatsNew": {
     "title": "Uutta",
     "close": "Sulje, nähty",
+    "isNew": "Uusi",
     "entries": {
       "profileMerge": {
         "title": "Aiempi profiili nimelläsi",

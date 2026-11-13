@@ -17,7 +17,12 @@ import { HttpResponse } from 'msw';
 import { api } from '@/test/msw/api';
 import { aClaimCandidate, aUserSettings, futureEvent, pastEvent } from '@/test/fixtures';
 import i18n from '@/i18n/config';
-import { MAX_ENTRIES, WHATS_NEW_ENTRIES, selectEntries } from '@/features/whatsNew/catalogue';
+import {
+  MAX_ENTRIES,
+  WHATS_NEW_ENTRIES,
+  listAllEntries,
+  selectEntries,
+} from '@/features/whatsNew/catalogue';
 import type { Event } from '@/test/fixtures';
 import { anAuthState, anAuthUser, renderWithAuth } from '@/test/auth';
 import type { components } from '@/types/generated/events-core-api.types';
@@ -96,10 +101,10 @@ function given(upcoming: AttendeeEventCard[]) {
   );
 }
 
-function renderPage() {
+function renderPage(url = '/dashboard') {
   return renderWithAuth(<AttendeeDashboardPage />, {
     auth: anAuthState(anAuthUser({ role: 'attendee', username: 'matthias.keller.2' })),
-    initialEntries: ['/dashboard'],
+    initialEntries: [url],
   });
 }
 
@@ -317,6 +322,43 @@ describe('AttendeeDashboardPage, What’s new card', () => {
     await settingsSettled(second.queryClient);
     expect(api.calls('getUserSettings').length).toBeGreaterThanOrEqual(2);
     expect(screen.queryByTestId('whats-new-card')).not.toBeInTheDocument();
+  });
+
+  it('should_listEverything_when_openedFromTheMenuWhileUpToDate', async () => {
+    const user = userEvent.setup();
+    storedSeenAt = new Date().toISOString();
+    renderPage('/dashboard#whats-new');
+
+    const shown = await entryKeys();
+    expect(shown).toEqual(
+      listAllEntries(WHATS_NEW_ENTRIES, storedSeenAt, { hasClaimCandidates: false }).map(
+        ({ entry }) => entry.key
+      )
+    );
+    expect(shown.length).toBeGreaterThan(MAX_ENTRIES);
+    expect(screen.queryByTestId(/^whats-new-new-/)).not.toBeInTheDocument();
+
+    // Closing the full list stores nothing (all seen already) and hides it.
+    await user.click(screen.getByTestId('whats-new-close'));
+    await waitFor(() => expect(screen.queryByTestId('whats-new-card')).not.toBeInTheDocument());
+    expect(api.calls('updateUserSettings')).toHaveLength(0);
+  });
+
+  it('should_listEverythingWithTheNewOnesFirstAndMarked_when_openedFromTheMenu', async () => {
+    const user = userEvent.setup();
+    storedSeenAt = dayBefore(newestReleaseDay());
+    renderPage('/dashboard#whats-new');
+
+    const shown = await entryKeys();
+    const fresh = expected(storedSeenAt);
+    expect(shown.slice(0, fresh.length)).toEqual(fresh);
+    expect(shown.length).toBeGreaterThan(fresh.length);
+    for (const key of fresh) expect(screen.getByTestId(`whats-new-new-${key}`)).toBeInTheDocument();
+
+    // Closing it marks everything seen.
+    await user.click(screen.getByTestId('whats-new-close'));
+    await waitFor(() => expect(screen.queryByTestId('whats-new-card')).not.toBeInTheDocument());
+    expect(api.calls('updateUserSettings')).toHaveLength(1);
   });
 
   it('should_keepTheCardWithoutAPageError_when_storingFails', async () => {

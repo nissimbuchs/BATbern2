@@ -13,10 +13,18 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfileClaimCandidates } from '@/hooks/useProfileClaimCandidates';
 import { getUserSettings, updateUserSettings } from '@/services/api/userApi';
-import { WHATS_NEW_ENTRIES, selectEntries, type WhatsNewEntry } from './catalogue';
+import {
+  WHATS_NEW_ENTRIES,
+  listAllEntries,
+  selectEntries,
+  type ListedEntry,
+  type WhatsNewEntry,
+} from './catalogue';
 
 export interface WhatsNew {
   entries: WhatsNewEntry[];
+  /** Everything that applies to the user, the new ones first and marked (the menu item). */
+  all: ListedEntry[];
   hasNew: boolean;
   dismiss: () => void;
   dismissing: boolean;
@@ -48,6 +56,11 @@ export function useWhatsNew(): WhatsNew {
     [settings, seenAt, hasClaimCandidates]
   );
 
+  const all = useMemo(
+    () => (settings ? listAllEntries(WHATS_NEW_ENTRIES, seenAt, { hasClaimCandidates }) : []),
+    [settings, seenAt, hasClaimCandidates]
+  );
+
   const mutation = useMutation({
     mutationFn: () => updateUserSettings({ whatsNewSeenAt: new Date().toISOString() }),
     onSuccess: (updated) => {
@@ -63,6 +76,7 @@ export function useWhatsNew(): WhatsNew {
 
   return {
     entries,
+    all,
     hasNew: entries.length > 0,
     dismiss: () => mutation.mutate(),
     dismissing: mutation.isPending,

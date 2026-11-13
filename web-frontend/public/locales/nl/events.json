@@ -1452,6 +1452,7 @@
   "whatsNew": {
     "title": "Wat is er nieuw",
     "close": "Sluiten, gezien",
+    "isNew": "Nieuw",
     "entries": {
       "profileMerge": {
         "title": "Een eerder profiel op jouw naam",

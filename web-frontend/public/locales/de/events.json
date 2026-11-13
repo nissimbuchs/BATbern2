@@ -1466,6 +1466,7 @@
   "whatsNew": {
     "title": "Was ist neu",
     "close": "Schliessen, gesehen",
+    "isNew": "Neu",
     "entries": {
       "profileMerge": {
         "title": "Ein früheres Profil unter Ihrem Namen",

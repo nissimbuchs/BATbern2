@@ -3,9 +3,13 @@
  * released since the user last closed it, at most three, each with a title, one sentence and a
  * link. Closing it stores "seen now" on the user's settings. Renders nothing when nothing is new.
  *
+ * Opened from the menu item (the URL carries #whats-new) it lists everything, new ones first and
+ * marked, also when nothing is new (owner 2026-11-13). Closing that list stores "seen now" only when
+ * something was new, and drops the fragment so the list closes.
+ *
  * Tailwind only: it lives on the PublicLayout dashboard, which must not import MUI.
  */
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Sparkles, X } from 'lucide-react';
 import { Card } from '@/components/public/ui/card';
@@ -15,11 +19,21 @@ import { useWhatsNew } from './useWhatsNew';
 export const WhatsNewCard = () => {
   const { t } = useTranslation('events');
   const location = useLocation();
-  const { entries, dismiss, dismissing } = useWhatsNew();
+  const navigate = useNavigate();
+  const { entries, all, hasNew, dismiss, dismissing } = useWhatsNew();
+  const showAll = location.hash === '#whats-new';
+  const listed = showAll ? all : entries.map((entry) => ({ entry, isNew: false }));
 
-  if (entries.length === 0) {
+  if (listed.length === 0) {
     return null;
   }
+
+  const close = () => {
+    if (hasNew) dismiss();
+    if (showAll) {
+      navigate({ pathname: location.pathname, search: location.search }, { replace: true });
+    }
+  };
 
   return (
     <Card
@@ -37,7 +51,7 @@ export const WhatsNewCard = () => {
         </div>
         <button
           type="button"
-          onClick={dismiss}
+          onClick={close}
           disabled={dismissing}
           className="rounded-md p-1 text-zinc-400 hover:text-zinc-200 hover:bg-accent transition-colors disabled:opacity-50"
           aria-label={t('whatsNew.close')}
@@ -47,7 +61,7 @@ export const WhatsNewCard = () => {
         </button>
       </div>
       <ul className="flex flex-col gap-3">
-        {entries.map((entry) => {
+        {listed.map(({ entry, isNew }) => {
           const [path, fragment] = entry.link.split('#');
           return (
             <li key={entry.key} data-testid={`whats-new-entry-${entry.key}`}>
@@ -59,8 +73,18 @@ export const WhatsNewCard = () => {
                   if (fragment && path === location.pathname) scrollToFragment(fragment);
                 }}
               >
-                <span className="block text-sm font-medium text-foreground group-hover:underline">
-                  {t(`whatsNew.entries.${entry.key}.title`)}
+                <span className="flex items-center gap-2 text-sm font-medium text-foreground">
+                  <span className="group-hover:underline">
+                    {t(`whatsNew.entries.${entry.key}.title`)}
+                  </span>
+                  {isNew && (
+                    <span
+                      className="rounded-full bg-blue-500/15 px-2 py-0.5 text-xs font-medium text-blue-400"
+                      data-testid={`whats-new-new-${entry.key}`}
+                    >
+                      {t('whatsNew.isNew')}
+                    </span>
+                  )}
                 </span>
                 <span className="block text-sm text-zinc-500">
                   {t(`whatsNew.entries.${entry.key}.text`)}

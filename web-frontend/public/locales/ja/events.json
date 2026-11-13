@@ -1452,6 +1452,7 @@
   "whatsNew": {
     "title": "新着情報",
     "close": "閉じる（確認済み）",
+    "isNew": "新着",
     "entries": {
       "profileMerge": {
         "title": "お名前の以前のプロフィール",

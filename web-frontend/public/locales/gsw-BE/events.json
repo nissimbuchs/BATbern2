@@ -1455,6 +1455,7 @@
   "whatsNew": {
     "title": "Was isch nöi",
     "close": "Zuemache, gseh",
+    "isNew": "Nöi",
     "entries": {
       "profileMerge": {
         "title": "Es früechers Profil under Öiem Name",

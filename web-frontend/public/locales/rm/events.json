@@ -1452,6 +1452,7 @@
   "whatsNew": {
     "title": "Novitads",
     "close": "Serrar, vis",
+    "isNew": "Nov",
     "entries": {
       "profileMerge": {
         "title": "In profil pli vegl sut voss num",

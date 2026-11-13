@@ -1452,6 +1452,7 @@
   "whatsNew": {
     "title": "Novità",
     "close": "Chiudi, visto",
+    "isNew": "Novità",
     "entries": {
       "profileMerge": {
         "title": "Un profilo precedente a tuo nome",

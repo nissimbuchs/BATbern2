@@ -4,7 +4,13 @@
  */
 import { describe, it, expect } from 'vitest';
 import i18n from '@/i18n/config';
-import { MAX_ENTRIES, WHATS_NEW_ENTRIES, selectEntries, type WhatsNewEntry } from '../catalogue';
+import {
+  MAX_ENTRIES,
+  WHATS_NEW_ENTRIES,
+  listAllEntries,
+  selectEntries,
+  type WhatsNewEntry,
+} from '../catalogue';
 
 const NO_CANDIDATES = { hasClaimCandidates: false };
 const CANDIDATES = { hasClaimCandidates: true };
@@ -32,11 +38,13 @@ describe('the live What’s new list', () => {
       whatsNew?: {
         title?: string;
         close?: string;
+        isNew?: string;
         entries?: Record<string, Record<string, string>>;
       };
     };
     expect(bundle?.whatsNew?.title).toBeTruthy();
     expect(bundle?.whatsNew?.close).toBeTruthy();
+    expect(bundle?.whatsNew?.isNew).toBeTruthy();
     for (const { key } of WHATS_NEW_ENTRIES) {
       expect(bundle.whatsNew?.entries?.[key]?.title, `${locale} ${key}.title`).toBeTruthy();
       expect(bundle.whatsNew?.entries?.[key]?.text, `${locale} ${key}.text`).toBeTruthy();
@@ -137,6 +145,36 @@ describe('selectEntries', () => {
       'qna',
       'topics',
       'logo',
+    ]);
+  });
+});
+
+describe('listAllEntries (the menu item What’s new)', () => {
+  const shown = (seenAt: string | null, facts = NO_CANDIDATES) =>
+    listAllEntries(ENTRIES, seenAt, facts).map(
+      ({ entry, isNew }) => `${entry.key}${isNew ? '*' : ''}`
+    );
+
+  it('should_listEveryEntryInListOrder_when_upToDate', () => {
+    expect(shown('2026-03-08T00:00:00Z')).toEqual(['qna', 'topics', 'login', 'logo', 'thanks']);
+  });
+
+  it('should_putTheNewOnesFirstAndMarkThem_when_seenBefore', () => {
+    expect(shown('2026-03-05T10:00:00Z')).toEqual(['logo*', 'qna', 'topics', 'login', 'thanks']);
+  });
+
+  it('should_markTheImportantOnesNewWithoutCap_when_neverSeen', () => {
+    expect(shown(null)).toEqual(['qna*', 'topics*', 'logo*', 'login', 'thanks']);
+  });
+
+  it('should_listTheMergeOnlyWhenItApplies', () => {
+    expect(shown('2026-03-08T00:00:00Z', CANDIDATES)).toEqual([
+      'merge',
+      'qna',
+      'topics',
+      'login',
+      'logo',
+      'thanks',
     ]);
   });
 });

@@ -104,3 +104,36 @@ export function selectEntries(
     .slice(0, MAX_ENTRIES)
     .map(({ entry }) => entry);
 }
+
+/** One line of the full list: the entry and whether the user has not seen it yet. */
+export interface ListedEntry {
+  entry: WhatsNewEntry;
+  isNew: boolean;
+}
+
+/**
+ * The full list, for the menu item "What's new" (owner 2026-11-13: the item always shows all of it,
+ * also after the card was closed). Every entry whose condition the user meets, no cap: the new ones
+ * first, in the order of {@link selectEntries} and marked, then the others in list order.
+ */
+export function listAllEntries(
+  entries: readonly WhatsNewEntry[],
+  seenAt: string | null | undefined,
+  facts: WhatsNewUserFacts
+): ListedEntry[] {
+  const fresh = selectEntries(entries, seenAt, facts);
+  const freshKeys = new Set(fresh.map((e) => e.key));
+  const seen = seenAt ? Date.parse(seenAt) : NaN;
+  const isNew = (entry: WhatsNewEntry) =>
+    Number.isNaN(seen) ? entry.important : releasedAt(entry) > seen;
+  const newBeyondCap = entries.filter(
+    (e) => (!e.condition || facts[e.condition]) && !freshKeys.has(e.key) && isNew(e)
+  );
+  const rest = entries.filter(
+    (e) => (!e.condition || facts[e.condition]) && !freshKeys.has(e.key) && !isNew(e)
+  );
+  return [
+    ...[...fresh, ...newBeyondCap].map((entry) => ({ entry, isNew: true })),
+    ...rest.map((entry) => ({ entry, isNew: false })),
+  ];
+}
