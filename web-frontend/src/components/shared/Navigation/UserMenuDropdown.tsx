@@ -1,5 +1,5 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
   Menu,
@@ -23,6 +23,7 @@ import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import { UserContext } from '../../../types/auth';
 import { updateUserSettings, type UserLanguage } from '../../../services/api/userApi';
 import { USER_GUIDE_URL } from '@/config/navigationConfig';
+import { scrollToFragment } from '@/features/whatsNew/scrollToFragment';
 
 interface UserMenuDropdownProps {
   user: UserContext;
@@ -36,7 +37,8 @@ interface UserMenuDropdownProps {
 }
 
 /** The "What's new" card on the attendee dashboard (every logged-in user reaches it). */
-const WHATS_NEW_LINK = '/attendee/dashboard#whats-new';
+const WHATS_NEW_PATH = '/attendee/dashboard';
+const WHATS_NEW_LINK = `${WHATS_NEW_PATH}#whats-new`;
 
 const UserMenuDropdown: React.FC<UserMenuDropdownProps> = ({
   user,
@@ -48,6 +50,7 @@ const UserMenuDropdown: React.FC<UserMenuDropdownProps> = ({
   whatsNewHasNew = false,
 }) => {
   const navigate = useNavigate();
+  const { pathname } = useLocation();
   const { t, i18n } = useTranslation();
 
   const handleProfileClick = () => {
@@ -62,6 +65,8 @@ const UserMenuDropdown: React.FC<UserMenuDropdownProps> = ({
 
   const handleWhatsNewClick = () => {
     navigate(WHATS_NEW_LINK);
+    // Already on the dashboard (perhaps with #whats-new): the router does not scroll again.
+    if (pathname === WHATS_NEW_PATH) scrollToFragment('whats-new');
     onClose();
   };
 

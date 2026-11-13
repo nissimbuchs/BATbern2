@@ -300,29 +300,26 @@ class UserSettingsControllerIntegrationTest extends AbstractIntegrationTest {
                 .getWhatsNewSeenAt()).isEqualTo(seen);
     }
 
-    /** A client clock a little ahead is accepted; the tolerance is five minutes. */
-    @Test
+    /**
+     * A client clock running fast must not keep the card open: a time in the future is stored as
+     * the server's now (later entries still come back), and nothing else is refused.
+     */
+    @ParameterizedTest
+    @ValueSource(longs = {2, 60 * 24})
     @WithMockUser(username = "max.muster")
-    void should_acceptWhatsNewSeenAt_when_slightlyAheadOfTheServerClock() throws Exception {
-        Instant ahead = Instant.now().plus(2, ChronoUnit.MINUTES).truncatedTo(ChronoUnit.SECONDS);
-        mockMvc.perform(patch(URL).contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"whatsNewSeenAt\": \"" + ahead + "\"}"))
-                .andExpect(status().isOk());
-        assertThat(userRepository.findByUsername("max.muster").orElseThrow().getSettings()
-                .getWhatsNewSeenAt()).isEqualTo(ahead);
-    }
-
-    @Test
-    @WithMockUser(username = "max.muster")
-    void should_return400AndStoreNothing_when_whatsNewSeenAtIsInTheFuture() throws Exception {
-        Instant future = Instant.now().plus(1, ChronoUnit.DAYS);
+    void should_storeTheServerNow_when_whatsNewSeenAtIsInTheFuture(long minutesAhead) throws Exception {
+        Instant before = Instant.now();
+        Instant future = before.plus(minutesAhead, ChronoUnit.MINUTES);
         mockMvc.perform(patch(URL).contentType(MediaType.APPLICATION_JSON)
                         .content("{\"theme\": \"dark\", \"whatsNewSeenAt\": \"" + future + "\"}"))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isOk());
+        Instant after = Instant.now();
 
         User stored = userRepository.findByUsername("max.muster").orElseThrow();
-        assertThat(stored.getSettings().getWhatsNewSeenAt()).isNull();
-        assertThat(stored.getPreferences().getTheme()).isEqualTo("light");
+        assertThat(stored.getSettings().getWhatsNewSeenAt())
+                // PostgreSQL keeps microseconds (rounded): allow a millisecond either side
+                .isBetween(before.minusMillis(1), after.plusMillis(1));
+        assertThat(stored.getPreferences().getTheme()).isEqualTo("dark");
     }
 
     @Test

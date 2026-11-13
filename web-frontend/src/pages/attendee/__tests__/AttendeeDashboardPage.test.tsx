@@ -15,7 +15,9 @@ import userEvent from '@testing-library/user-event';
 import type { QueryClient } from '@tanstack/react-query';
 import { HttpResponse } from 'msw';
 import { api } from '@/test/msw/api';
-import { aClaimCandidate, aUser, aUserSettings, futureEvent, pastEvent } from '@/test/fixtures';
+import { aClaimCandidate, aUserSettings, futureEvent, pastEvent } from '@/test/fixtures';
+import i18n from '@/i18n/config';
+import { MAX_ENTRIES, WHATS_NEW_ENTRIES, selectEntries } from '@/features/whatsNew/catalogue';
 import type { Event } from '@/test/fixtures';
 import { anAuthState, anAuthUser, renderWithAuth } from '@/test/auth';
 import type { components } from '@/types/generated/events-core-api.types';
@@ -209,18 +211,29 @@ describe('AttendeeDashboardPage', () => {
   });
 });
 
-describe('AttendeeDashboardPage, What\u2019s new card', () => {
+describe('AttendeeDashboardPage, What’s new card', () => {
   /** The stored "seen" time, as the server keeps it across browsers. */
   let storedSeenAt: string | undefined;
+
+  /** What the card must show for a stored time, from the live list (it grows with every PR). */
+  const expected = (seenAt: string | undefined, hasClaimCandidates = false) =>
+    selectEntries(WHATS_NEW_ENTRIES, seenAt, { hasClaimCandidates }).map((e) => e.key);
+
+  /** The day before the newest live entry: at least that entry is new, older ones are not. */
+  const newestReleaseDay = () =>
+    WHATS_NEW_ENTRIES.filter((e) => !e.condition)
+      .map((e) => e.releasedOn)
+      .sort()
+      .at(-1)!;
+  const dayBefore = (day: string) =>
+    new Date(Date.parse(`${day}T00:00:00Z`) - 12 * 60 * 60 * 1000).toISOString();
 
   beforeEach(() => {
     storedSeenAt = undefined;
     api.on('listPublicEvents', () => page(CALENDAR));
     given([]);
-    api.on('getCurrentUser', () =>
-      aUser({
-        settings: aUserSettings(storedSeenAt ? { whatsNewSeenAt: storedSeenAt } : {}),
-      })
+    api.on('getUserSettings', () =>
+      aUserSettings(storedSeenAt ? { whatsNewSeenAt: storedSeenAt } : {})
     );
     api.on('updateUserSettings', ({ body }) => {
       storedSeenAt = body?.whatsNewSeenAt;
@@ -228,10 +241,12 @@ describe('AttendeeDashboardPage, What\u2019s new card', () => {
     });
   });
 
-  /** The profile (with the settings) has answered, one way or the other. */
-  const profileSettled = (queryClient: QueryClient) =>
+  /** The settings have answered, one way or the other. */
+  const settingsSettled = (queryClient: QueryClient) =>
     waitFor(() =>
-      expect(['success', 'error']).toContain(queryClient.getQueryState(['userProfile'])?.status)
+      expect(['success', 'error']).toContain(
+        queryClient.getQueryState(['users', 'me', 'settings', 'whatsNew'])?.status
+      )
     );
 
   const entryKeys = async () => {
@@ -241,27 +256,35 @@ describe('AttendeeDashboardPage, What\u2019s new card', () => {
       .map((el) => el.getAttribute('data-testid')!.replace('whats-new-entry-', ''));
   };
 
-  it('should_showTheThreeMostImportant_when_neverSeen', async () => {
+  it('should_showTheMostImportantAtMostThree_when_neverSeen', async () => {
     renderPage();
 
-    expect(await entryKeys()).toEqual(['sessionQna', 'suggestTopics', 'companyLogo']);
+    const shown = await entryKeys();
+    expect(shown).toEqual(expected(undefined));
+    expect(shown.length).toBeGreaterThan(0);
+    expect(shown.length).toBeLessThanOrEqual(MAX_ENTRIES);
     const card = screen.getByTestId('whats-new-card');
     expect(card).toHaveAttribute('id', 'whats-new');
-    expect(within(card).getByText('Questions and comments per session')).toBeInTheDocument();
-    expect(within(card).getByText('Suggest topics').closest('a')).toHaveAttribute(
-      'href',
-      '/attendee/dashboard#suggest-topics'
-    );
+    // Each entry: its title, linking to where the feature is.
+    const first = WHATS_NEW_ENTRIES.find((e) => e.key === shown[0])!;
+    const title = within(card).getByText(i18n.t(`events:whatsNew.entries.${first.key}.title`));
+    expect(title.closest('a')).toHaveAttribute('href', first.link);
     // The card sits above the dashboard's own content.
     const heading = screen.getByRole('heading', { level: 1 });
     expect(heading.compareDocumentPosition(card) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
-  it('should_showOnlyTheNewerEntry_when_seenBefore', async () => {
-    storedSeenAt = '2026-11-05T10:00:00Z';
+  it('should_showOnlyTheNewerEntries_when_seenBefore', async () => {
+    storedSeenAt = dayBefore(newestReleaseDay());
     renderPage();
 
-    expect(await entryKeys()).toEqual(['companyLogo']);
+    const shown = await entryKeys();
+    expect(shown).toEqual(expected(storedSeenAt));
+    // Only entries released after the stored time.
+    for (const key of shown) {
+      const entry = WHATS_NEW_ENTRIES.find((e) => e.key === key)!;
+      expect(Date.parse(`${entry.releasedOn}T00:00:00Z`)).toBeGreaterThan(Date.parse(storedSeenAt));
+    }
   });
 
   it('should_showNoCard_when_upToDate', async () => {
@@ -269,7 +292,7 @@ describe('AttendeeDashboardPage, What\u2019s new card', () => {
     const { queryClient } = renderPage();
 
     await screen.findByTestId('attendee-past');
-    await profileSettled(queryClient);
+    await settingsSettled(queryClient);
     expect(screen.queryByTestId('whats-new-card')).not.toBeInTheDocument();
   });
 
@@ -291,8 +314,8 @@ describe('AttendeeDashboardPage, What\u2019s new card', () => {
     first.unmount();
     const second = renderPage();
     await screen.findByTestId('attendee-past');
-    await profileSettled(second.queryClient);
-    expect(api.calls('getCurrentUser').length).toBeGreaterThanOrEqual(2);
+    await settingsSettled(second.queryClient);
+    expect(api.calls('getUserSettings').length).toBeGreaterThanOrEqual(2);
     expect(screen.queryByTestId('whats-new-card')).not.toBeInTheDocument();
   });
 
@@ -314,11 +337,11 @@ describe('AttendeeDashboardPage, What\u2019s new card', () => {
     api.on('listProfileClaimCandidates', () => [aClaimCandidate()]);
     renderPage();
 
-    await waitFor(async () =>
-      expect(await entryKeys()).toEqual(['profileMerge', 'sessionQna', 'suggestTopics'])
-    );
+    await waitFor(async () => expect(await entryKeys()).toEqual(expected(undefined, true)));
+    const merge = WHATS_NEW_ENTRIES.find((e) => e.condition === 'hasClaimCandidates')!;
+    expect((await entryKeys())[0]).toBe(merge.key);
     expect(
-      within(screen.getByTestId('whats-new-entry-profileMerge')).getByRole('link')
+      within(screen.getByTestId(`whats-new-entry-${merge.key}`)).getByRole('link')
     ).toHaveAttribute('href', '/attendee/dashboard#earlier-profiles');
     // The offer it links to is on the page, with the link target.
     expect(await screen.findByTestId('earlier-profiles-section')).toHaveAttribute(
@@ -329,28 +352,19 @@ describe('AttendeeDashboardPage, What\u2019s new card', () => {
 
   it('should_leaveOutTheMerge_when_theCandidatesCannotBeRead', async () => {
     api.on('listProfileClaimCandidates', () =>
-      HttpResponse.json({ message: 'boom' }, { status: 500 })
+      HttpResponse.json({ message: 'boom' }, { status: 401 })
     );
     renderPage();
 
-    expect(await entryKeys()).toEqual(['sessionQna', 'suggestTopics', 'companyLogo']);
+    expect(await entryKeys()).toEqual(expected(undefined, false));
   });
 
-  it('should_showNoCard_when_theSettingsAreMissing', async () => {
-    api.on('getCurrentUser', () => aUser({ settings: null }));
+  it('should_showNoCard_when_theSettingsCannotBeRead', async () => {
+    api.on('getUserSettings', () => HttpResponse.json({ message: 'boom' }, { status: 401 }));
     const { queryClient } = renderPage();
 
     await screen.findByTestId('attendee-past');
-    await profileSettled(queryClient);
-    expect(screen.queryByTestId('whats-new-card')).not.toBeInTheDocument();
-  });
-
-  it('should_showNoCard_when_theProfileCannotBeRead', async () => {
-    api.on('getCurrentUser', () => HttpResponse.json({ message: 'boom' }, { status: 500 }));
-    const { queryClient } = renderPage();
-
-    await screen.findByTestId('attendee-past');
-    await profileSettled(queryClient);
+    await settingsSettled(queryClient);
     expect(screen.queryByTestId('whats-new-card')).not.toBeInTheDocument();
   });
 });

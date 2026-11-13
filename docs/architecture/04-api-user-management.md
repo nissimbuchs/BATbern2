@@ -357,7 +357,7 @@ Other services read the settings with `?include=settings` on `/internal/users/{u
 
 `whatsNewSeenAt` (column `settings_whats_new_seen_at`, V32) is when the user last closed the
 "What's new" card on the attendee dashboard; absent means never. The frontend sends "now" when the
-card is closed; a time more than five minutes ahead of the server clock is refused with 400. The
+card is closed; a time ahead of the server clock is stored as the server's now. The
 features themselves are a list in the frontend (`web-frontend/src/features/whatsNew/catalogue.ts`),
 not a table: an entry shows when it was released after this time.
 

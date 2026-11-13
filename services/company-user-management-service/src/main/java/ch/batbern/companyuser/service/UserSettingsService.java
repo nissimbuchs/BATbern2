@@ -14,7 +14,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.DateTimeException;
-import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalTime;
 import java.time.ZoneId;
@@ -33,8 +32,6 @@ import java.util.Locale;
 @RequiredArgsConstructor
 public class UserSettingsService {
 
-    /** How far a client clock may run ahead when it sends the "What's new" seen time. */
-    static final Duration WHATS_NEW_CLOCK_TOLERANCE = Duration.ofMinutes(5);
 
     private final UserRepository userRepository;
     private final SecurityContextHelper securityContext;
@@ -61,8 +58,10 @@ public class UserSettingsService {
     /**
      * Applies the fields present in the request; every other setting stays.
      *
-     * @throws UserValidationException for a timezone that is not an IANA zone id, or a
-     *     {@code whatsNewSeenAt} more than five minutes in the future (400)
+     * A {@code whatsNewSeenAt} in the future (a client clock running fast) is stored as the server's
+     * now, so closing the "What's new" card always works and later entries still come back.
+     *
+     * @throws UserValidationException for a timezone that is not an IANA zone id (400)
      */
     @Transactional
     public ch.batbern.companyuser.dto.generated.UserSettings updateCurrentUserSettings(
@@ -72,10 +71,7 @@ public class UserSettingsService {
             requireZoneId(request.getTimezone());
         }
         Instant whatsNewSeenAt = request.getWhatsNewSeenAt() != null
-                ? request.getWhatsNewSeenAt().toInstant() : null;
-        if (whatsNewSeenAt != null && whatsNewSeenAt.isAfter(Instant.now().plus(WHATS_NEW_CLOCK_TOLERANCE))) {
-            throw new UserValidationException("whatsNewSeenAt", "Must not be in the future");
-        }
+                ? earliest(request.getWhatsNewSeenAt().toInstant(), Instant.now()) : null;
         if (user.getPreferences() == null) {
             user.setPreferences(UserPreferences.builder().build());
         }
@@ -185,6 +181,10 @@ public class UserSettingsService {
         String username = securityContext.getCurrentUsername();
         return userRepository.findByUsername(username)
                 .orElseThrow(() -> new UserNotFoundException(username));
+    }
+
+    private static Instant earliest(Instant a, Instant b) {
+        return a.isBefore(b) ? a : b;
     }
 
     private static void requireZoneId(String timezone) {

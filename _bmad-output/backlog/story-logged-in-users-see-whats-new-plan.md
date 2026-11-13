@@ -3,14 +3,14 @@ title: 'Logged-in users see the features added since they last looked'
 type: 'feature'
 ticket: '2'
 created: '2026-11-13'
-status: 'in-progress'
+status: 'in-review'
 baseline_revision: 'a1496b5cc68a9e0e71d309ae20d271c79dd1dda6'
 route: 'full'
 route_source: 'auto'
 risk: 'medium'
-review: ''
-review_source: ''
-lenses_ran: []
+review: 'quick'
+review_source: 'pinned'
+lenses_ran: ['quick']
 review_loop_iteration: 0
 context: ['{project-root}/_bmad-output/backlog/story-logged-in-users-see-whats-new.md']
 ---
@@ -90,7 +90,7 @@ context: ['{project-root}/_bmad-output/backlog/story-logged-in-users-see-whats-n
 
 Built 2026-11-13 on `feature/whats-new-card` (not pushed, no PR).
 
-- **Backend (CUMS).** `V32__add_settings_whats_new_seen_at.sql` adds nullable `TIMESTAMPTZ settings_whats_new_seen_at` to `user_profiles`. `UserSettings` embeddable gets `Instant whatsNewSeenAt`; `UserSettingsService` maps it both ways and refuses a value more than 5 minutes ahead of the server clock (`UserValidationException`, 400, nothing stored). No new endpoint; the existing `@PreAuthorize("isAuthenticated()")` on `PATCH /users/me/settings` covers it. The response omits it while null (CUMS serialises non-null only), so the spec has it optional and nullable. Four ITs in `UserSettingsControllerIntegrationTest`: PATCH then GET (also `GET /users/me?include=settings`, column checked by SQL, a later PATCH keeps it), +2 min accepted, +1 day 400 with nothing stored, anonymous PATCH 401. The red phase was a compile failure (the getter did not exist), not run separately.
+- **Backend (CUMS).** `V32__add_settings_whats_new_seen_at.sql` adds nullable `TIMESTAMPTZ settings_whats_new_seen_at` to `user_profiles`. `UserSettings` embeddable gets `Instant whatsNewSeenAt`; `UserSettingsService` maps it both ways; a value ahead of the server clock is stored as the server's now (review finding 3; first built as a 400 beyond +5 min, which kept the card open for a client with a fast clock). No new endpoint; the existing `@PreAuthorize("isAuthenticated()")` on `PATCH /users/me/settings` covers it. The response omits it while null (CUMS serialises non-null only), so the spec has it optional and nullable. Four ITs in `UserSettingsControllerIntegrationTest`: PATCH then GET (also `GET /users/me?include=settings`, column checked by SQL, a later PATCH keeps it), +2 min and +1 day stored as the server's now, anonymous PATCH 401. The red phase was a compile failure (the getter did not exist), not run separately.
 - **Spec + types.** `whatsNewSeenAt` (date-time) on `UserSettings` and `UpdateUserSettingsRequest`; `npm run generate:api-types` regenerated `user-api.types.ts`. EMS and PCS generate clients from users-api too; the field is additive and optional.
 - **Frontend.** `features/whatsNew/catalogue.ts` (list in owner order, `releasedOn` from the merge dates in git: Epic 7 #776 2026-06-12, SSO/extra e-mails 2026-06-07, merge #1204 2026-11-04, logo request #1247 2026-11-07; `selectEntries` ranks conditional, then important, then list order, max 3), `useWhatsNew.ts` (profile query `['userProfile']` + candidates query, both disabled when logged out; `dismiss()` PATCHes `new Date().toISOString()`, sets the cache, invalidates; on failure logs a warning and the card stays), `WhatsNewCard.tsx` (`id="whats-new"`, Tailwind only), `scrollToFragment.ts`. The candidates query moved into `hooks/useProfileClaimCandidates` so the card and `EarlierProfilesSection` share one key; the section got `id="earlier-profiles"`.
 - **Dashboard.** Card between h1 and the merge banner. Invisible link targets added: `id="suggest-topics"` on the topic panel wrapper, `id="attendee-past"` on the past section. A small `useScrollToFragment` scrolls to the URL fragment once its element renders (React Router does not).
@@ -107,7 +107,26 @@ Built 2026-11-13 on `feature/whats-new-card` (not pushed, no PR).
 - 2026-11-13: `contexts/authRules.ts` gives organizer, speaker and partner `/attendee` path access. Without it, a user without the ATTENDEE role (organizer-only, for instance) clicking "What's new" was redirected by `ProtectedRoute` to `/dashboard`, which breaks the frozen "every logged-in user, whatever the role" and the AC "lead to the card". The EMS endpoint behind the dashboard is already `isAuthenticated()`. Side effect: such users can now open the whole attendee dashboard (their own registrations, topic suggestion), which they could already reach via the API.
 - 2026-11-13: Menu item for every logged-in user; with nothing new it leads to the dashboard without a card (the matrix says "no card" when up to date). Owner may prefer to hide the item or show an "up to date" line then.
 
+- 2026-11-13 (review pass 1): a future `whatsNewSeenAt` is stored as the server's now instead of 400 (finding 3).
+- 2026-11-13 (review pass 1): What's new reads the settings with `GET /users/me/settings` under its own query key (`['users','me','settings','whatsNew']`) with `skipAuthRedirect`, instead of the shared `['userProfile']` query, which has no per-call opt-out (finding 4). Dismiss sets that key and still invalidates `['userProfile']`. `listProfileClaimCandidates` always sends `skipAuthRedirect`: its one query is shared by the dashboard offer and the card, and the offer renders nothing on failure anyway.
+- 2026-11-13 (review pass 1): selection tests run on fixture entries; the live list is checked only for invariants (unique keys, no future date, texts in all 10 locales, the owner's seven in order); the dashboard test derives its expectations from the live list (finding 2). `AppHeader.test.tsx` moved to the real AuthContext, UI store and i18next plus MSW, with `window.matchMedia` for the width (finding 5; fe-mock-hooks 96/159 → 95/156, fe-mock-i18n 96/96 → 95/95). Menu items scroll when already on the dashboard (finding 9); `.prettierignore` line removed (finding 10); `releasedOn` comment (finding 1).
+
 ## Review Triage Log
+
+Pass 1 (quick lens, diff 63ac36449..033fec09a). Verdicts: high 0, medium 4, low 3, false 2, maybe-false 0 (+1 not a code finding).
+
+| # | Finding | Verdict | Route | Evidence / action |
+|---|---------|---------|-------|-------------------|
+| 1 | Entry released before its deploy is missed by users who closed the card that day | low | patch (comment) | Opening the PR deploys it, so the gap is hours on the release day, not days. Comment in catalogue: `releasedOn` = the day the PR is opened. |
+| 2 | Selection tests assert the live list with fixed dates; the next entry breaks them | medium | patch | Selection tests move to fixture entries; live-list tests keep only invariants. |
+| 3 | Fast client clock (>5 min): every dismiss 400, card never closes | medium | patch | Server stores min(value, now) instead of refusing. |
+| 4 | Profile-claims read on public pages can redirect to /login on 401 | medium | patch | Matrix says "entry omitted"; add `skipAuthRedirect` to the reads used only by What's new. |
+| 5 | AppHeader.test.tsx still mocks own hooks (touch rule) | medium | patch | coding-standards Touch rule; move to the MSW harness. |
+| 6 | Local-dev walkthrough not run | n/a | step 5 | Done before the PR, not a code defect. |
+| 7 | sessionQna/thankOrganizers/selfNomination link to `/` | false | reject | `/` renders HomePage with the current event (Q&A, thanks) and the upcoming cards with self-nomination (App.tsx L758). |
+| 8 | V32 without V31 on this branch: out-of-order skip of V31 | medium | defer→handled | Branch is rebased on develop after #1309 merges, before the PR; checked at PR time. |
+| 9 | Header "What's new" item does not scroll when the hash is already set | low | patch | Items call `scrollToFragment` when already on the dashboard. |
+| 10 | `.prettierignore` still lists deleted release-notes.txt | low | patch | Delete the line. |
 
 ## Design Notes
 

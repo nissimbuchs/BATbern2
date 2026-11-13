@@ -1650,8 +1650,8 @@ export interface components {
       twoFactorEnabled?: boolean;
       /**
        * Format: date-time
-       * @description The time the user closed the "What's new" card (the client sends "now"). Rejected
-       *     with 400 when more than five minutes ahead of the server clock.
+       * @description The time the user closed the "What's new" card (the client sends "now"). A time
+       *     ahead of the server clock is stored as the server's now.
        * @example 2026-11-13T09:30:00Z
        */
       whatsNewSeenAt?: string;

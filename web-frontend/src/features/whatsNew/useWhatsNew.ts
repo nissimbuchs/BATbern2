@@ -3,17 +3,16 @@
  * dot on the user menu) and `dismiss()`, which stores "seen now" on the user's settings
  * (`PATCH /users/me/settings`, `whatsNewSeenAt`), so every browser of the account agrees.
  *
- * Reads the settings through the shared profile query (`['userProfile']`) and the claim
- * candidates through the query the dashboard offer uses. Nothing is fetched when logged out.
- * Settings that cannot be read show nothing; candidates that cannot be read only drop the
- * conditional merge entry.
+ * Reads the settings with `GET /users/me/settings` and the claim candidates through the query the
+ * dashboard offer uses, both without the 401 redirect to /login (the dot is in the header of
+ * public pages too). Nothing is fetched when logged out. Settings that cannot be read show
+ * nothing; candidates that cannot be read only drop the conditional merge entry.
  */
 import { useMemo } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/useAuth';
-import { useUserProfile } from '@/hooks/useUserProfile';
 import { useProfileClaimCandidates } from '@/hooks/useProfileClaimCandidates';
-import { updateUserSettings, type CurrentUserResponse } from '@/services/api/userApi';
+import { getUserSettings, updateUserSettings } from '@/services/api/userApi';
 import { WHATS_NEW_ENTRIES, selectEntries, type WhatsNewEntry } from './catalogue';
 
 export interface WhatsNew {
@@ -23,15 +22,24 @@ export interface WhatsNew {
   dismissing: boolean;
 }
 
-export const USER_PROFILE_KEY = ['userProfile'] as const;
+/** The settings read of "What's new". */
+export const WHATS_NEW_SETTINGS_KEY = ['users', 'me', 'settings', 'whatsNew'] as const;
+/** The shared profile query (`useUserProfile`), which carries the settings too. */
+const USER_PROFILE_KEY = ['userProfile'] as const;
 
 export function useWhatsNew(): WhatsNew {
   const { isAuthenticated } = useAuth();
   const queryClient = useQueryClient();
-  const profile = useUserProfile({ enabled: isAuthenticated });
+  const settingsQuery = useQuery({
+    queryKey: WHATS_NEW_SETTINGS_KEY,
+    queryFn: () => getUserSettings({ skipAuthRedirect: true }),
+    enabled: isAuthenticated,
+    staleTime: 5 * 60 * 1000,
+    retry: false,
+  });
   const candidates = useProfileClaimCandidates({ enabled: isAuthenticated });
 
-  const settings = isAuthenticated ? profile.data?.settings : undefined;
+  const settings = isAuthenticated ? settingsQuery.data : undefined;
   const hasClaimCandidates = (candidates.data?.length ?? 0) > 0;
   const seenAt = settings?.whatsNewSeenAt;
 
@@ -43,10 +51,8 @@ export function useWhatsNew(): WhatsNew {
   const mutation = useMutation({
     mutationFn: () => updateUserSettings({ whatsNewSeenAt: new Date().toISOString() }),
     onSuccess: (updated) => {
-      // Hide at once, then re-read the profile so every reader agrees with the server.
-      queryClient.setQueryData<CurrentUserResponse>(USER_PROFILE_KEY, (old) =>
-        old ? { ...old, settings: updated } : old
-      );
+      // Hide at once; the profile query carries the settings too.
+      queryClient.setQueryData(WHATS_NEW_SETTINGS_KEY, updated);
       void queryClient.invalidateQueries({ queryKey: USER_PROFILE_KEY });
     },
     onError: (error) => {

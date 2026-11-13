@@ -17,7 +17,11 @@ export type WhatsNewCondition = 'hasClaimCandidates';
 export interface WhatsNewEntry {
   /** i18n key below `whatsNew.entries` in the `events` namespace. */
   key: string;
-  /** Production release day, YYYY-MM-DD (start of the day, UTC). */
+  /**
+   * Production release day, YYYY-MM-DD (start of the day, UTC). For a new entry, set it to the
+   * day the PR that ships it is opened: opening a PR to develop deploys it to production. A later
+   * day would hide the entry from users who close the card between the deploy and that day.
+   */
   releasedOn: string;
   /** Shown on a first view (nothing seen yet). */
   important: boolean;

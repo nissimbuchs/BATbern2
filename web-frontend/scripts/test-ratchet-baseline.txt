@@ -314,7 +314,6 @@ fe-mock-hooks	web-frontend/src/components/shared/ErrorDisplay/ErrorToast.test.ts
 fe-mock-hooks	web-frontend/src/components/shared/Layout/Accessibility.test.tsx	3
 fe-mock-hooks	web-frontend/src/components/shared/Layout/BaseLayout.test.tsx	3
 fe-mock-hooks	web-frontend/src/components/shared/Layout/ResponsiveLayout.test.tsx	3
-fe-mock-hooks	web-frontend/src/components/shared/Navigation/AppHeader.test.tsx	3
 fe-mock-hooks	web-frontend/src/hooks/useMyRegistration.test.ts	1
 fe-mock-hooks	web-frontend/src/hooks/useTurnstile/useTurnstile.test.ts	1
 fe-mock-hooks	web-frontend/src/pages/PartnerCompanyPage.test.tsx	1
@@ -412,7 +411,6 @@ fe-mock-i18n	web-frontend/src/components/shared/Company/CompanyCard.test.tsx	1
 fe-mock-i18n	web-frontend/src/components/shared/Layout/Accessibility.test.tsx	1
 fe-mock-i18n	web-frontend/src/components/shared/Layout/BaseLayout.test.tsx	1
 fe-mock-i18n	web-frontend/src/components/shared/Layout/ResponsiveLayout.test.tsx	1
-fe-mock-i18n	web-frontend/src/components/shared/Navigation/AppHeader.test.tsx	1
 fe-mock-i18n	web-frontend/src/components/shared/Navigation/NavigationMenu.test.tsx	1
 fe-mock-i18n	web-frontend/src/hooks/useRegistration/useRegistration.test.ts	1
 fe-mock-i18n	web-frontend/src/pages/PartnerCompanyPage.test.tsx	1

@@ -12,7 +12,7 @@ import userEvent from '@testing-library/user-event';
 import { PublicNavigation } from './PublicNavigation';
 import { anAuthState, anAuthUser, renderWithAuth, signedOut } from '@/test/auth';
 import { api } from '@/test/msw/api';
-import { aUser, aUserSettings } from '@/test/fixtures';
+import { aUserSettings } from '@/test/fixtures';
 import type { UserRole } from '@/types/auth';
 
 const renderNav = (auth = signedOut()) => renderWithAuth(<PublicNavigation />, { auth });
@@ -112,9 +112,7 @@ describe('PublicNavigation', () => {
   // Story 2 of 2026-11-13: "What's new" for every logged-in user, whatever the role.
   describe('What\u2019s new', () => {
     const settingsSeenAt = (whatsNewSeenAt?: string) =>
-      api.on('getCurrentUser', () =>
-        aUser({ settings: aUserSettings(whatsNewSeenAt ? { whatsNewSeenAt } : {}) })
-      );
+      api.on('getUserSettings', () => aUserSettings(whatsNewSeenAt ? { whatsNewSeenAt } : {}));
 
     it.each<[UserRole]>([['attendee'], ['speaker'], ['organizer'], ['partner']])(
       'should_showTheDotAndTheMenuItem_when_%sHasNotSeenTheLatest',
@@ -141,12 +139,36 @@ describe('PublicNavigation', () => {
       expect(await screen.findByTestId('public-nav-whats-new')).toBeInTheDocument();
       // Both answers are in, and nothing is new.
       await vi.waitFor(() => {
-        expect(queryClient.getQueryState(['userProfile'])?.status).toBe('success');
+        expect(queryClient.getQueryState(['users', 'me', 'settings', 'whatsNew'])?.status).toBe(
+          'success'
+        );
         expect(queryClient.getQueryState(['users', 'me', 'profile-claims'])?.status).toBe(
           'success'
         );
       });
       expect(screen.queryByTestId('public-nav-whats-new-dot')).not.toBeInTheDocument();
+    });
+
+    it('should_scrollToTheCard_when_clickedWhileAlreadyThere', async () => {
+      const target = document.createElement('div');
+      target.id = 'whats-new';
+      const scrollIntoView = vi.fn();
+      target.scrollIntoView = scrollIntoView;
+      document.body.appendChild(target);
+      try {
+        const user = userEvent.setup();
+        renderWithAuth(<PublicNavigation />, {
+          auth: authenticatedAs(['attendee']),
+          initialEntries: ['/attendee/dashboard#whats-new'],
+        });
+
+        await user.click(screen.getByTestId('public-nav-user-menu'));
+        await user.click(await screen.findByTestId('public-nav-whats-new'));
+
+        expect(scrollIntoView).toHaveBeenCalled();
+      } finally {
+        target.remove();
+      }
     });
 
     it('should_showNoDotNoItemAndAskNothing_when_loggedOut', async () => {
@@ -156,7 +178,7 @@ describe('PublicNavigation', () => {
       expect(screen.queryByTestId('public-nav-whats-new-dot')).not.toBeInTheDocument();
       expect(screen.queryByTestId('public-nav-whats-new')).not.toBeInTheDocument();
       expect(screen.queryByTestId('public-nav-mobile-whats-new')).not.toBeInTheDocument();
-      expect(api.calls('getCurrentUser')).toHaveLength(0);
+      expect(api.calls('getUserSettings')).toHaveLength(0);
       expect(api.calls('listProfileClaimCandidates')).toHaveLength(0);
     });
   });

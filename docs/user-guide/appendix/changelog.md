@@ -47,7 +47,7 @@ Only items that are not live yet. Everything else is listed under its release be
 - ✅ If an earlier profile under your name exists, the card first offers to merge it (links to the existing offer on the dashboard).
 - ✅ A dot on the user menu (public site and portal) says something is new; the menu item "What's new" leads to the card. Every logged-in user has it, whatever the role; organizers, partners and speakers can now open the participant dashboard for it.
 - ✅ Closing the card hides it and the dot on every device: the time is stored with your settings.
-- ⚠️ API: `PATCH /api/v1/users/me/settings` takes `whatsNewSeenAt` (date-time, at most five minutes in the future, else 400); `GET /users/me/settings` and `GET /users/me?include=settings` return it when set.
+- ⚠️ API: `PATCH /api/v1/users/me/settings` takes `whatsNewSeenAt` (date-time; a future time is stored as the server's now); `GET /users/me/settings` and `GET /users/me?include=settings` return it when set.
 - 🧹 The unused release-notes box (removed from the login page in March), its `release-notes.txt` and its push script are gone.
 
 **Improvement — The attendee dashboard shows the next three events**:

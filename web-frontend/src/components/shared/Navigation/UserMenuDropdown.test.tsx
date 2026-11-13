@@ -554,6 +554,34 @@ describe('UserMenuDropdown', () => {
       expect(mockNavigate).toHaveBeenCalledWith('/attendee/dashboard#whats-new');
     });
 
+    it('should_scrollToTheCard_when_clickedWhileAlreadyOnTheDashboard', () => {
+      const target = document.createElement('div');
+      target.id = 'whats-new';
+      const scrollIntoView = vi.fn();
+      target.scrollIntoView = scrollIntoView;
+      document.body.appendChild(target);
+      try {
+        render(
+          <MemoryRouter initialEntries={['/attendee/dashboard#whats-new']}>
+            <UserMenuDropdown
+              user={mockUser}
+              anchorEl={anchorEl}
+              open={true}
+              onClose={vi.fn()}
+              onLogout={mockOnLogout}
+              onLanguageChange={mockOnLanguageChange}
+            />
+          </MemoryRouter>
+        );
+
+        fireEvent.click(screen.getByTestId('whats-new-link'));
+
+        expect(scrollIntoView).toHaveBeenCalled();
+      } finally {
+        target.remove();
+      }
+    });
+
     it('should_showTheDot_only_when_somethingIsNew', () => {
       const { unmount } = renderMenu(true);
       expect(screen.getByTestId('whats-new-link-dot')).toHaveAttribute('data-visible', 'true');
