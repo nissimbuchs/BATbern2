@@ -94,7 +94,7 @@ dependencies {
 
     // Spec spec-auto-participant-email-aliases-excel-export: name-badge XLSX export.
     // Same version as partner-coordination-service to keep the POI footprint aligned.
-    implementation 'org.apache.poi:poi-ooxml:5.4.0'
+    implementation 'org.apache.poi:poi-ooxml:6.0.0'
 }
 
 // Flyway configuration - service-specific table name
