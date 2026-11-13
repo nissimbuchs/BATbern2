@@ -15,8 +15,6 @@ vi.mock('@/services/speakerPortalService', () => ({
     getContentInfo: vi.fn(),
     submitContent: vi.fn(),
     uploadMaterial: vi.fn(),
-    getMaterialPresignedUrl: vi.fn(),
-    confirmMaterialUpload: vi.fn(),
   },
 }));
 

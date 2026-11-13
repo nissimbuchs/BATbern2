@@ -1,17 +1,20 @@
 package ch.batbern.events.service;
 
 import ch.batbern.shared.utils.S3Links;
+import ch.batbern.events.domain.EventManagementUpload;
 import ch.batbern.events.domain.Session;
 import ch.batbern.events.domain.SessionMaterial;
 import ch.batbern.events.event.SessionMaterialsUploadedEvent;
 import ch.batbern.events.exception.MaterialNotFoundException;
 import ch.batbern.events.exception.SessionNotFoundException;
+import ch.batbern.events.repository.EventManagementUploadRepository;
 import ch.batbern.events.repository.SessionMaterialsRepository;
 import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.events.sessions.dto.generated.MaterialUploadItem;
 import ch.batbern.events.sessions.dto.generated.SessionMaterialAssociationRequest;
 import ch.batbern.events.sessions.dto.generated.SessionMaterialResponse;
 import ch.batbern.shared.events.DomainEventPublisher;
+import ch.batbern.shared.upload.UploadService;
 import ch.batbern.shared.utils.CloudFrontUrlBuilder;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,11 +22,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.model.CopyObjectRequest;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 
 import java.time.Duration;
-import java.time.Year;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
@@ -35,14 +36,13 @@ import java.util.stream.Collectors;
  * Story 5.9: Session Materials Upload - Task 2b (GREEN Phase)
  *
  * Key Features:
- * - Associates uploaded materials with sessions (ADR-002 3-phase upload)
- * - Moves files from temp S3 location to final location
+ * - Attaches confirmed uploads of purpose session-material to sessions (Story 17.11d; the upload
+ *   itself runs on the upload contract, {@link SessionMaterialUploadHandler})
  * - Emits domain events for audit trail
  * - Handles S3 cleanup on material deletion
  *
- * S3 Key Strategy:
- * - Temp: materials/temp/{uploadId}/file-{fileId}.{ext}
- * - Final: materials/{year}/events/{eventCode}/sessions/{sessionSlug}/file-{fileId}.{ext}
+ * S3 key: materials/events/{eventCode}/sessions/{sessionSlug}/file-{uploadId}.{ext} (no year since
+ * Story 17.11d; earlier materials keep theirs)
  */
 @Service
 @Transactional
@@ -55,6 +55,9 @@ public class SessionMaterialsService {
     private final S3Client s3Client;
     private final software.amazon.awssdk.services.s3.presigner.S3Presigner s3Presigner;
     private final DomainEventPublisher domainEventPublisher;
+    private final UploadService<EventManagementUpload> uploadService;
+    private final SessionMaterialUploadHandler materialUploads;
+    private final EventManagementUploadRepository uploadRepository;
 
     @Value("${aws.s3.bucket-name:batbern-development-company-logos}")
     private String bucketName;
@@ -63,85 +66,37 @@ public class SessionMaterialsService {
     private String cloudFrontDomain;
 
     /**
-     * Associate uploaded materials with a session
-     * Phase 3 of ADR-002 3-phase upload process
+     * Attaches confirmed {@code session-material} uploads to a session (Story 17.11d): the organizer's
+     * session editor uploads before the session exists, confirms without a target and names the
+     * uploads here once the session is saved. Name, size and type come from the upload; the material
+     * type is the one given, else derived (PRESENTATION for a speaker). An unknown, expired,
+     * other-purpose or other-session upload is 404, one not CONFIRMED 409.
      *
-     * @param sessionSlug The session slug
-     * @param request     Association request with list of materials
-     * @param uploadedBy  Username of uploader
-     * @return List of associated materials
-     * @throws SessionNotFoundException if session not found
+     * @throws SessionNotFoundException if the session is not in the event
      */
     public List<SessionMaterialResponse> associateMaterialsWithSession(
+            String eventCode,
             String sessionSlug,
             SessionMaterialAssociationRequest request,
             String uploadedBy) {
 
         log.info("Associating {} materials with session: {}", request.getMaterials().size(), sessionSlug);
 
-        // Validate session exists
-        Session session = sessionRepository.findBySessionSlug(sessionSlug)
-                .orElseThrow(() -> new SessionNotFoundException(sessionSlug));
+        Session session = materialUploads.session(eventCode, sessionSlug);
+        materialUploads.checkMayChangeMaterials(session);
+        String targetId = SessionMaterialUploadHandler.targetId(session.getEventCode(), sessionSlug);
 
-        // Create SessionMaterial entities and move files to final S3 location
         List<SessionMaterial> materials = new ArrayList<>();
         for (MaterialUploadItem item : request.getMaterials()) {
-            // Generate final S3 key
-            String finalS3Key = generateFinalS3Key(session, item.getUploadId(), item.getFileExtension());
-
-            // Generate temp S3 key (matches MaterialsUploadService pattern)
-            String tempS3Key = String.format("materials/temp/%s/file-%s.%s",
-                    item.getUploadId(), item.getUploadId(), item.getFileExtension());
-
-            // Copy from temp to final location
-            copyS3Object(tempS3Key, finalS3Key);
-
-            // Build CloudFront URL
-            String cloudFrontUrl = CloudFrontUrlBuilder.buildUrl(cloudFrontDomain, bucketName, finalS3Key);
-
-            // Create SessionMaterial entity
-            SessionMaterial material = SessionMaterial.builder()
-                    .session(session)
-                    .uploadId(item.getUploadId())
-                    .s3Key(finalS3Key)
-                    .cloudFrontUrl(cloudFrontUrl)
-                    .fileName(item.getFileName())
-                    .fileExtension(item.getFileExtension())
-                    .fileSize(item.getFileSize())
-                    .mimeType(item.getMimeType())
-                    .materialType(item.getMaterialType())
-                    .uploadedBy(uploadedBy)
-                    .contentExtracted(false)
-                    .extractionStatus("PENDING")
-                    .build();
-
-            materials.add(material);
+            EventManagementUpload upload = uploadService.associate(SessionMaterialUploadHandler.PURPOSE,
+                    item.getUploadId(), targetId);
+            String type = item.getMaterialType() == null ? null : item.getMaterialType().getValue();
+            materials.add(materialUploads.createMaterial(session, upload, type, uploadedBy));
         }
+        materialUploads.published(session, materials, uploadedBy);
 
-        // Save all materials
-        List<SessionMaterial> savedMaterials = sessionMaterialsRepository.saveAll(materials);
-
-        // Emit domain event
-        List<String> uploadIds = request.getMaterials().stream()
-                .map(MaterialUploadItem::getUploadId)
-                .collect(Collectors.toList());
-        List<String> materialTypes = request.getMaterials().stream()
-                .map(MaterialUploadItem::getMaterialType)
-                .collect(Collectors.toList());
-
-        SessionMaterialsUploadedEvent event = new SessionMaterialsUploadedEvent(
-                sessionSlug,
-                session.getEventCode(),
-                uploadIds,
-                materialTypes,
-                uploadedBy
-        );
-        domainEventPublisher.publish(event);
-
-        log.info("Associated {} materials with session: {}", savedMaterials.size(), sessionSlug);
-
-        // Convert to response DTOs
-        return savedMaterials.stream()
+        log.info("Associated {} materials with session: {}", materials.size(), sessionSlug);
+        return materials.stream()
                 .map(this::toResponse)
                 .collect(Collectors.toList());
     }
@@ -187,7 +142,10 @@ public class SessionMaterialsService {
 
         // Generate presigned URL valid for 1 hour using injected presigner
         try {
-            String url = S3Links.downloadUrl(s3Presigner, bucketName, material.getS3Key(), Duration.ofHours(1));
+            // Story 17.11d: the download carries the original file name (Content-Disposition);
+            // a row without one falls back to the key's name.
+            String url = S3Links.downloadUrl(s3Presigner, bucketName, material.getS3Key(), Duration.ofHours(1),
+                    downloadName(material));
             // #1187: never log the link itself, it is a bearer credential for an hour
             log.info("Generated download URL for material {} (key {})", materialId, material.getS3Key());
             return url;
@@ -195,6 +153,15 @@ public class SessionMaterialsService {
             log.error("Failed to generate download URL for material {}", materialId, e);
             throw new RuntimeException("Failed to generate download URL", e);
         }
+    }
+
+    /** The name a download is saved under: the original file name, else the last segment of the key. */
+    static String downloadName(SessionMaterial material) {
+        if (material.getFileName() != null && !material.getFileName().isBlank()) {
+            return material.getFileName();
+        }
+        String key = material.getS3Key();
+        return key.substring(key.lastIndexOf('/') + 1);
     }
 
     /**
@@ -206,14 +173,15 @@ public class SessionMaterialsService {
      * @throws MaterialNotFoundException if material not found
      * @throws IllegalArgumentException  if material doesn't belong to session
      */
-    public void deleteMaterial(String sessionSlug, UUID materialId, String username) {
+    public void deleteMaterial(String eventCode, String sessionSlug, UUID materialId, String username) {
         log.info("Deleting material {} from session: {}", materialId, sessionSlug);
 
         SessionMaterial material = sessionMaterialsRepository.findById(materialId)
                 .orElseThrow(() -> new MaterialNotFoundException(materialId.toString()));
 
-        // Validate material belongs to this session
-        if (!material.getSession().getSessionSlug().equals(sessionSlug)) {
+        // Validate material belongs to this session of this event (Story 17.11d: the event too)
+        if (!material.getSession().getSessionSlug().equals(sessionSlug)
+                || (eventCode != null && !eventCode.equals(material.getSession().getEventCode()))) {
             throw new IllegalArgumentException("Material does not belong to the specified session");
         }
 
@@ -222,6 +190,11 @@ public class SessionMaterialsService {
 
         // Delete from database (trigger will update sessions.materials_count automatically)
         sessionMaterialsRepository.delete(material);
+        // The upload row of a material added on the upload contract (Story 17.11d): ASSOCIATED rows
+        // never expire, so it would stay forever. Materials added before 17.11d have none.
+        uploadRepository.findByUploadId(material.getUploadId())
+                .filter(u -> SessionMaterialUploadHandler.PURPOSE.equals(u.getPurpose()))
+                .ifPresent(uploadRepository::delete);
 
         log.info("Deleted material {} from session: {}", materialId, sessionSlug);
     }
@@ -327,7 +300,7 @@ public class SessionMaterialsService {
             String uploadId = UUID.randomUUID().toString();
 
             // Generate final S3 key
-            String finalS3Key = generateFinalS3Key(session, uploadId, fileExtension);
+            String finalS3Key = finalS3Key(session.getEventCode(), session.getSessionSlug(), uploadId, fileExtension);
 
             // Upload directly to final S3 location
             uploadToS3(finalS3Key, fileData, mimeType);
@@ -431,36 +404,13 @@ public class SessionMaterialsService {
     }
 
     /**
-     * Generate final S3 key for material
-     * Pattern: materials/{year}/events/{eventCode}/sessions/{sessionSlug}/file-{uploadId}.{ext}
+     * The final key of a session material, without the year (Story 17.11d, as 11a):
+     * {@code materials/events/{eventCode}/sessions/{sessionSlug}/file-{uploadId}.{ext}}. Materials stored
+     * before keep their key.
      */
-    private String generateFinalS3Key(Session session, String uploadId, String fileExtension) {
-        int year = Year.now().getValue();
-        String eventCode = session.getEventCode();
-        String sessionSlug = session.getSessionSlug();
-
-        return String.format("materials/%d/events/%s/sessions/%s/file-%s.%s",
-                year, eventCode, sessionSlug, uploadId, fileExtension);
-    }
-
-    /**
-     * Copy S3 object from temp to final location
-     */
-    private void copyS3Object(String sourceKey, String destinationKey) {
-        try {
-            CopyObjectRequest copyRequest = CopyObjectRequest.builder()
-                    .sourceBucket(bucketName)
-                    .sourceKey(sourceKey)
-                    .destinationBucket(bucketName)
-                    .destinationKey(destinationKey)
-                    .build();
-
-            s3Client.copyObject(copyRequest);
-            log.debug("Copied S3 object from {} to {}", sourceKey, destinationKey);
-        } catch (Exception e) {
-            log.error("Failed to copy S3 object from {} to {}", sourceKey, destinationKey, e);
-            throw new RuntimeException("Failed to copy S3 object", e);
-        }
+    static String finalS3Key(String eventCode, String sessionSlug, String uploadId, String fileExtension) {
+        return String.format("materials/events/%s/sessions/%s/file-%s.%s",
+                eventCode, sessionSlug, uploadId, fileExtension);
     }
 
     /**

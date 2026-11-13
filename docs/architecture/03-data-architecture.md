@@ -119,28 +119,32 @@ stateDiagram-v2
   `POST /uploads/{purpose}/import`. The gateway routes by purpose (an explicit map, Story 17.11a).
   Purposes today: `company-logo` (CUMS, also the logo requests of #1246), `profile-picture` (CUMS,
   target `username` required, 17.11a), `event-theme-image` (EMS), `event-photo` (EMS, target
-  `eventCode` required, 17.11b) and `teaser-image` (EMS, target `eventCode` required, `_global` for
-  the global set, 17.11c). Session materials follow in Story 17.11d.
+  `eventCode` required, 17.11b), `teaser-image` (EMS, target `eventCode` required, `_global` for
+  the global set, 17.11c) and `session-material` (EMS, target `eventCode` + `sessionSlug`, optional,
+  17.11d).
   Final keys carry no year since 17.11a.
 - **Columns:** `upload_id` (the handle), `purpose`, `s3_key` (temp, then final), `file_url` (CDN URL
-  once attached), `file_extension`, `file_size`, `content_type`, `status` (`pending`, `confirmed`,
+  once attached), `file_name` (the original name, CUMS V33 / EMS V156, null for uploads made before
+  17.11d), `file_extension`, `file_size`, `content_type`, `status` (`pending`, `confirmed`,
   `associated`, lower case), `target_type` and `target_id` (e.g. `COMPANY` / company name,
-  `LOGO_REQUEST`, `EVENT` / event code, `EVENT_TEASER` / event code or `_global`; set on a PENDING row already when the create named a target,
+  `LOGO_REQUEST`, `EVENT` / event code, `EVENT_TEASER` / event code or `_global`, `SESSION` / `{eventCode}/{sessionSlug}`; set on a PENDING row already when the create named a target,
   and a confirm for another target is 404, Story 17.11b), `created_by`, `expires_at`. A check
   constraint ties `associated` to a file URL and no expiry (and a target).
 - **Rules:** per purpose in its handler; logos, theme images and profile pictures: png, jpeg, svg up
   to 5 MB; event photos: jpeg, png, webp up to 10 MB; teaser images: jpeg, png, webp, svg up to
-  10 MB (no limit before 17.11c, the old presign signed no size), at most 10 per event and 10 global.
+  10 MB (no limit before 17.11c, the old presign signed no size), at most 10 per event and 10 global;
+  session materials by the caller's role: organizers 100 MB (presentations, documents, videos,
+  archives), speakers 50 MB (pptx, ppt, key, pdf).
 - **S3 keys:** temporary `logos/temp/{uploadId}/logo-{uploadId}.{ext}` (theme image: `theme-…`) and
-  `profile-pictures/temp/{uploadId}/profile-{uploadId}.{ext}`, `events/temp/{uploadId}/photo-{uploadId}.{ext}`, `events/temp/{uploadId}/teaser-{uploadId}.{ext}`; final
+  `profile-pictures/temp/{uploadId}/profile-{uploadId}.{ext}`, `events/temp/{uploadId}/photo-{uploadId}.{ext}`, `events/temp/{uploadId}/teaser-{uploadId}.{ext}`, `materials/temp/{uploadId}/file-{uploadId}.{ext}`; final
   `logos/companies/{name}/logo-{uploadId}.{ext}`, `logos/requests/{uploadId}/logo.{ext}`,
   `logos/events/{eventCode}/theme-{uploadId}.{ext}` and
   `profile-pictures/{username}/profile-{uploadId}.{ext}` (also the Google avatar import),
   `events/{eventCode}/photos/{uploadId}.{ext}` (the layout photos had before),
   `events/{eventCode}/teaser/{uploadId}.{ext}` and `global/teaser/{uploadId}.{ext}` (the layout
-  teaser images had before). No year
-  since Story 17.11a; objects stored earlier keep their `logos/{year}/…` and
-  `profile-pictures/{year}/…` keys, and the rows (`companies.logo_s3_key`,
+  teaser images had before), `materials/events/{eventCode}/sessions/{sessionSlug}/file-{uploadId}.{ext}`.
+  No year since Story 17.11a; objects stored earlier keep their `logos/{year}/…`,
+  `profile-pictures/{year}/…` and `materials/{year}/…` keys, and the rows (`companies.logo_s3_key`,
   `user_profiles.profile_picture_s3_key`, the URLs) hold the full key.
 - **Expiry:** `UploadExpiryJob` per service (CUMS 02:00, EMS 02:15, ShedLock) deletes PENDING past
   24 hours and CONFIRMED past 7 days with their S3 object; a failed S3 delete keeps the row for the
@@ -160,7 +164,12 @@ stateDiagram-v2
   `target_type` `EVENT_TEASER`); the confirm creates the `event_teaser_images` row (event code null
   for `_global`), last in display order. Deleting a teaser image deletes its upload row (found by
   its S3 key; images added before 17.11c have none).
-- **Not yet on the contract:** session materials, with their own table until Story 17.11d moves them.
+- **Session materials** are on the contract since Story 17.11d (purpose `session-material`, rows
+  with `target_type` `SESSION`); the confirm with the target creates the `session_materials` row
+  with the upload's name, size and type, and `POST …/sessions/{sessionSlug}/materials` attaches
+  uploads confirmed before the session existed. The server-side batch import
+  (`uploadMaterialFromUrl`) writes its object directly, without an upload row. Every purpose of
+  ADR-002 except `mail-attachment` is on the contract.
 
 ### User
 

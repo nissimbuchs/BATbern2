@@ -18,7 +18,8 @@ export interface paths {
      * @description Checks type and size for the purpose (400) and, with a `target`, that the caller may attach
      *     to it (403) and that it exists (404). Returns the presigned PUT URL, valid 15 minutes. Any
      *     signed-in user may upload without a target; the file does nothing until an entity that the
-     *     caller may change takes it. A purpose that requires a target (`profile-picture`,
+     *     caller may change takes it (`session-material`: organizers and speakers only, 403 otherwise).
+     *     A purpose that requires a target (`profile-picture`,
      *     `event-photo`, `teaser-image`) answers 400 without one. The target given here is recorded
      *     with the upload; the confirm must name the same one. `teaser-image` answers 409 when its
      *     event (or the global set) already has 10 teaser images.
@@ -45,7 +46,7 @@ export interface paths {
      *     With a `target`: the file moves to its final key and is attached to the entity (ASSOCIATED),
      *     e.g. it becomes the company logo. Confirming an upload that is already ASSOCIATED is 409; an
      *     unknown, expired or other-purpose `uploadId` is 404, and so is a `target` other than the one
-     *     given on create (Story 17.11b). A purpose that requires a target (`profile-picture`,
+     *     given on create (Story 17.11b), e.g. another session for `session-material`. A purpose that requires a target (`profile-picture`,
      *     `event-photo`, `teaser-image`) answers 400 without one. `teaser-image` answers 409 when its
      *     event (or the global set) already has 10 teaser images.
      */
@@ -85,11 +86,18 @@ export interface components {
   schemas: {
     /** @enum {string} */
     UploadPurpose:
-      'company-logo' | 'event-theme-image' | 'profile-picture' | 'event-photo' | 'teaser-image';
+      | 'company-logo'
+      | 'event-theme-image'
+      | 'profile-picture'
+      | 'event-photo'
+      | 'teaser-image'
+      | 'session-material';
     /**
-     * @description The existing entity the file is for, by its meaningful ID (ADR-003). Set the one key of
-     *     the purpose: `companyName` for `company-logo`, `eventCode` for `event-theme-image` and
-     *     `event-photo`, `teaser-image`, `username` for `profile-picture`.
+     * @description The existing entity the file is for, by its meaningful ID (ADR-003). Set the keys of the
+     *     purpose: `companyName` for `company-logo`, `eventCode` for `event-theme-image`,
+     *     `event-photo` and `teaser-image`, `username` for `profile-picture`, `eventCode` and
+     *     `sessionSlug` together for `session-material`. Any other key, or only part of a two-key
+     *     target, is 400.
      */
     UploadTarget: {
       companyName?: string;
@@ -99,6 +107,8 @@ export interface components {
        */
       eventCode?: string;
       username?: string;
+      /** @description The session's slug, with `eventCode`, for `session-material` */
+      sessionSlug?: string;
     };
     CreateUploadRequest: {
       /** @description Original file name with extension, e.g. `logo.png` */
@@ -246,7 +256,12 @@ export interface components {
      *     are those of `UploadPurpose`; a service answers 404 for a purpose it does not own.
      */
     Purpose:
-      'company-logo' | 'event-theme-image' | 'profile-picture' | 'event-photo' | 'teaser-image';
+      | 'company-logo'
+      | 'event-theme-image'
+      | 'profile-picture'
+      | 'event-photo'
+      | 'teaser-image'
+      | 'session-material';
   };
   requestBodies: never;
   headers: never;

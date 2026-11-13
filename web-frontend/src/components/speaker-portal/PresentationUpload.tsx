@@ -31,6 +31,8 @@ const ALLOWED_EXTENSIONS = ['pptx', 'ppt', 'pdf', 'key'];
 interface PresentationUploadProps {
   /** Story 11.E.3: event code (replaces magic-link token; Cognito session is automatic) */
   eventCode: string;
+  /** Story 17.11d: the speaker's session, the target of the upload */
+  sessionSlug: string;
   /** Current material URL (null if none) */
   currentMaterialUrl: string | null;
   /** Current material file name (null if none) */
@@ -47,6 +49,7 @@ interface PresentationUploadProps {
  */
 const PresentationUpload = ({
   eventCode,
+  sessionSlug,
   currentMaterialUrl,
   currentMaterialName,
   onMaterialUploaded,
@@ -128,12 +131,15 @@ const PresentationUpload = ({
       setIsUploading(true);
 
       try {
-        // Upload using service (3-phase presigned URL flow)
-        const response = await speakerPortalService.uploadMaterial(eventCode, file, (progress) =>
-          setUploadProgress(progress)
+        // Upload contract, purpose session-material, attached to the session on confirm (17.11d)
+        const response = await speakerPortalService.uploadMaterial(
+          eventCode,
+          sessionSlug,
+          file,
+          (progress) => setUploadProgress(progress)
         );
 
-        if (!response.cloudFrontUrl) {
+        if (!response.fileUrl) {
           throw new Error('Upload failed: the server returned no file URL');
         }
 
@@ -142,7 +148,7 @@ const PresentationUpload = ({
         setUploadProgress(0);
         setSelectedFileName(null);
         setShowDropzone(false);
-        onMaterialUploaded(response.cloudFrontUrl, response.fileName ?? file.name);
+        onMaterialUploaded(response.fileUrl, response.fileName);
       } catch (err) {
         // Handle error
         setIsUploading(false);
@@ -154,7 +160,7 @@ const PresentationUpload = ({
         onError({ type: 'UPLOAD_FAILED', message: errorMsg });
       }
     },
-    [eventCode, validateFile, onMaterialUploaded, onError]
+    [eventCode, sessionSlug, validateFile, onMaterialUploaded, onError]
   );
 
   /**

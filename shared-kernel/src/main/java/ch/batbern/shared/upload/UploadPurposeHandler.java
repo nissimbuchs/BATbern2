@@ -4,6 +4,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 
+import java.util.List;
+
 /**
  * One upload purpose in the service that owns it (ADR-002, Story 17.11). {@link UploadService} runs
  * the mechanics; the handler says what is purpose-specific.
@@ -18,6 +20,15 @@ public interface UploadPurposeHandler {
 
     /** The key of the target in the API, e.g. {@code companyName}. */
     String targetKey();
+
+    /**
+     * All keys of the target in the API, in order (Story 17.11d). A target with several keys (e.g.
+     * {@code eventCode} and {@code sessionSlug} of a session) is given whole or not at all; its
+     * {@code targetId} is the values joined with {@code /} in this order. Default: {@link #targetKey()}.
+     */
+    default List<String> targetKeys() {
+        return List.of(targetKey());
+    }
 
     /** Stored with an associated upload, e.g. {@code COMPANY}. */
     String targetType();

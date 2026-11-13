@@ -9,10 +9,8 @@
  * - Form validation
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach, type Mock } from 'vitest';
+import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
 import { screen, waitFor, fireEvent } from '@testing-library/react';
-import MockAdapter from 'axios-mock-adapter';
-import apiClient from '@/services/api/apiClient';
 import { renderWithProviders as render } from '@/test/test-utils';
 import userEvent from '@testing-library/user-event';
 import { SessionEditModal, type SessionUpdateData } from '../SessionEditModal';
@@ -21,24 +19,17 @@ type SaveFn = (sessionSlug: string, updates: SessionUpdateData) => Promise<void>
 import type { SessionUI } from '@/types/event.types';
 import { AxiosError } from 'axios';
 import { aSession } from '@/test/fixtures';
-import { HttpResponse } from 'msw';
+import { http, HttpResponse } from 'msw';
 import { api } from '@/test/msw/api';
+import { server } from '@/test/msw/server';
 
 // Mock SessionSpeakersTab to isolate SessionEditModal tests
 vi.mock('../SessionSpeakersTab', () => ({
   SessionSpeakersTab: () => <div data-testid="session-speakers-tab">No speakers assigned yet</div>,
 }));
 
-// Session API calls are stubbed at the HTTP boundary; the real sessionApiClient
-// (and its materialUploadTarget, handed to FileUpload) runs.
-const MATERIAL_URL = '/events/BATbern99/sessions/test-session/materials/mat-1';
-let http: MockAdapter;
-beforeEach(() => {
-  http = new MockAdapter(apiClient);
-});
-afterEach(() => {
-  http.restore();
-});
+// The backend answers through the MSW harness; the real sessionApiClient and upload service (the
+// session-material upload target handed to FileUpload, Story 17.11d) run.
 
 // Mock i18n
 vi.mock('react-i18next', () => ({
@@ -793,6 +784,61 @@ describe('SessionEditModal - Materials Tab (Story 5.9 - AC1)', () => {
     });
   });
 
+  it('should_attachUploadedFilesByUploadId_when_saved', async () => {
+    // Story 17.11d: the file is reserved and confirmed as session-material without a target; the
+    // save hands only its uploadId to associateMaterials (name, size, type come from the upload).
+    const S3_PUT = 'https://bucket.example/materials/temp/up-7/file-up-7.pdf';
+    api.on(
+      'createFileUpload',
+      () => ({
+        uploadId: 'up-7',
+        uploadUrl: S3_PUT,
+        expiresAt: '2026-11-13T10:15:00Z',
+        requiredHeaders: { 'Content-Type': 'application/pdf' },
+      }),
+      { status: 201 }
+    );
+    server.use(http.put(S3_PUT, () => new HttpResponse(null)));
+    api.on('confirmFileUpload', () => ({
+      uploadId: 'up-7',
+      purpose: 'session-material' as const,
+      status: 'CONFIRMED' as const,
+      fileUrl: null,
+    }));
+    api.on('associateMaterials', () => ({ materials: [] }), { status: 201 });
+    const user = userEvent.setup();
+    render(
+      <SessionEditModal
+        open={true}
+        onClose={vi.fn()}
+        session={mockSession}
+        eventDate="2024-12-15"
+        onSave={mockOnSave}
+      />
+    );
+    await user.click(screen.getByRole('tab', { name: /materials/i }));
+
+    const input = screen
+      .getByTestId('file-dropzone')
+      .querySelector('input[type="file"]') as HTMLInputElement;
+    await user.upload(
+      input,
+      new File(['pdf'], 'Handout Brünnimann.pdf', { type: 'application/pdf' })
+    );
+    await waitFor(() => expect(api.calls('confirmFileUpload')).toHaveLength(1));
+    expect(api.calls('createFileUpload')[0].params).toEqual({ purpose: 'session-material' });
+    expect(api.calls('createFileUpload')[0].body).not.toHaveProperty('target');
+
+    await user.click(screen.getByRole('button', { name: /save/i }));
+
+    await waitFor(() => expect(api.calls('associateMaterials')).toHaveLength(1));
+    expect(api.calls('associateMaterials')[0].params).toEqual({
+      eventCode: 'BATbern57',
+      sessionSlug: 'test-session',
+    });
+    expect(api.calls('associateMaterials')[0].body).toEqual({ materials: [{ uploadId: 'up-7' }] });
+  });
+
   it('should_displayUploadedMaterialsList_when_materialsExist', async () => {
     const mockSessionWithMaterials: SessionUI = {
       ...mockSession,
@@ -867,10 +913,6 @@ describe('SessionEditModal - Delete Material', () => {
     ],
   };
 
-  beforeEach(() => {
-    http.onDelete(MATERIAL_URL).reply(204);
-  });
-
   it('should_renderDeleteButton_when_existingMaterialsDisplayed', async () => {
     const user = userEvent.setup();
     render(
@@ -910,7 +952,12 @@ describe('SessionEditModal - Delete Material', () => {
     await user.click(deleteButton);
 
     await waitFor(() => {
-      expect(http.history.delete.map((r) => r.url)).toEqual([MATERIAL_URL]);
+      expect(api.calls('deleteSessionMaterial')).toHaveLength(1);
+    });
+    expect(api.calls('deleteSessionMaterial')[0].params).toEqual({
+      eventCode: 'BATbern99',
+      sessionSlug: 'test-session',
+      materialId: 'mat-1',
     });
 
     await waitFor(() => {
@@ -919,8 +966,7 @@ describe('SessionEditModal - Delete Material', () => {
   });
 
   it('should_showError_when_deleteFails', async () => {
-    // On the MSW harness: real axios raises the error, the real sessionApiClient maps it.
-    http.restore();
+    // Real axios raises the error, the real sessionApiClient maps it.
     api.on('deleteSessionMaterial', () =>
       HttpResponse.json(
         { status: 500, error: 'Internal Server Error', message: 'Material is locked' },

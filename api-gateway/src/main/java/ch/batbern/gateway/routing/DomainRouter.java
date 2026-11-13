@@ -40,7 +40,8 @@ public class DomainRouter {
             "profile-picture", "company-user-management-service",
             "event-theme-image", "event-management-service",
             "event-photo", "event-management-service",
-            "teaser-image", "event-management-service");
+            "teaser-image", "event-management-service",
+            "session-material", "event-management-service");
 
     private final RestTemplate restTemplate;
 
@@ -95,7 +96,6 @@ public class DomainRouter {
                 || cleanPath.startsWith("/api/v1/topics")
                 || cleanPath.startsWith("/api/v1/tasks")
                 || cleanPath.startsWith("/api/v1/notifications")
-                || cleanPath.startsWith("/api/v1/materials") // Story 5.9: Materials upload
                 || cleanPath.startsWith("/api/v1/speaker-portal") // Story 6.2a: Speaker portal
                 || cleanPath.startsWith("/api/v1/attendee-portal") // Story 7.6: Attendee dashboard
                 || cleanPath.startsWith("/api/v1/sessions") // GlobalSessionController lives in EMS

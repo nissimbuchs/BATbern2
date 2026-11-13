@@ -29,16 +29,18 @@ function strings(value: unknown): string[] {
 describe('spec examples (MSW harness defaults)', () => {
   it('reads all public specs (positive control)', () => {
     // 286 operations on 2026-11-11 after Story 4.10c (four create/self-service twins folded) and 3.6b;
-    // 278 on 2026-11-13 after Story 17.11a removed the three profile picture upload operations.
-    expect(operations.length).toBeGreaterThan(270);
+    // 278 on 2026-11-13 after Story 17.11a removed the three profile picture upload operations;
+    // 270 after Stories 17.11b-d removed the photo, teaser and material upload operations.
+    expect(operations.length).toBeGreaterThan(260);
     // 245 on 2026-11-11: Story 4.10 removed seven JSON 2xx responses (the /users/me twins,
     // speakers/invite, the reminders endpoint), 4.10c four (batch_registrations,
     // enroll-stakeholders, the /newsletter/my-subscription pair) and added the participants
     // 200; 3.6b moved GET /events/attendance-summary to /internal (245). Story 4.10b removed the
     // notification history and batch-delete and folded the verb paths into PATCH (244). Story
-    // 17.11a removed the three profile picture upload operations with their JSON 200s (242). A
-    // floor, not a count.
-    expect(jsonResponses.length).toBeGreaterThan(235);
+    // 17.11a removed the three profile picture upload operations with their JSON 200s (242);
+    // Stories 17.11b-d the photo, teaser and material upload operations (235). A floor, not a
+    // count.
+    expect(jsonResponses.length).toBeGreaterThan(225);
   });
 
   it('every JSON 2xx response has an example', () => {

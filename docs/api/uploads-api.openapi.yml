@@ -28,12 +28,23 @@ info:
     | `profile-picture` | CUMS | png, jpeg, svg | 5 MB | `username`, required (ORGANIZER or the user themself) | yes (ORGANIZER) |
     | `event-photo` | EMS | jpeg, png, webp | 10 MB | `eventCode`, required (ORGANIZER) | no |
     | `teaser-image` | EMS | jpeg, png, webp, svg | 10 MB | `eventCode`, required, `_global` for the global set (ORGANIZER) | no |
+    | `session-material` | EMS | ORGANIZER: pptx, ppt, key, odp, pdf, doc, docx, txt, mp4, mov, avi, mkv, webm, zip, gz, tar; SPEAKER: pptx, ppt, key, pdf | ORGANIZER 100 MB, SPEAKER 50 MB | `eventCode` + `sessionSlug` (ORGANIZER any session, SPEAKER own session) | no |
 
     A purpose whose target is required answers 400 on create and confirm without one.
     `profile-picture` has no create-form case: the user always exists, so the upload is attached on
     confirm. The batch import of speaker portraits imports, then confirms with the target.
     `event-photo` (Story 17.11b): the confirm with the target creates the photo in the event's
     gallery (`GET /events/{eventCode}/photos`).
+    `session-material` (Story 17.11d): the target has two keys, `eventCode` and `sessionSlug`, both
+    or none (one alone is 400). The rules depend on the caller's role (an organizer's rules when the
+    caller is an organizer). A speaker may only name a session they are on (403). The confirm with
+    the target creates the session material (`GET /events/{eventCode}/sessions/{sessionSlug}/materials`),
+    its type derived from the content type (always PRESENTATION for a speaker). Without a target
+    (the organizer's session editor, which attaches the files only when the session is saved, so a
+    cancel attaches nothing) the upload is CONFIRMED and
+    `POST /events/{eventCode}/sessions/{sessionSlug}/materials` takes its `uploadId`. The upload
+    keeps the original file name: the material is listed under it, and its download
+    (`…/materials/{materialId}/download`) is saved under it (`Content-Disposition`).
     `teaser-image` (Story 17.11c): the confirm with the target creates the teaser image
     (`GET /events/{eventCode}/teaser-images`); `eventCode` `_global` names the global set shown on
     every event. At most 10 per event and 10 global: the 11th is refused with 409 on create and on
@@ -47,8 +58,9 @@ info:
     `logos/companies/{companyName}/logo-{uploadId}.{ext}`,
     `logos/events/{eventCode}/theme-{uploadId}.{ext}`,
     `profile-pictures/{username}/profile-{uploadId}.{ext}`,
-    `events/{eventCode}/photos/{uploadId}.{ext}`, `events/{eventCode}/teaser/{uploadId}.{ext}` and
-    `global/teaser/{uploadId}.{ext}`. Files attached earlier keep their key and URL.
+    `events/{eventCode}/photos/{uploadId}.{ext}`, `events/{eventCode}/teaser/{uploadId}.{ext}`,
+    `global/teaser/{uploadId}.{ext}` and
+    `materials/events/{eventCode}/sessions/{sessionSlug}/file-{uploadId}.{ext}`. Files attached earlier keep their key and URL.
 
     **Lifecycle.** PENDING (reserved) → CONFIRMED (file in S3) → ASSOCIATED (attached to its entity).
     A PENDING upload older than 24 hours and a CONFIRMED one older than 7 days are deleted with their
@@ -80,7 +92,8 @@ paths:
         Checks type and size for the purpose (400) and, with a `target`, that the caller may attach
         to it (403) and that it exists (404). Returns the presigned PUT URL, valid 15 minutes. Any
         signed-in user may upload without a target; the file does nothing until an entity that the
-        caller may change takes it. A purpose that requires a target (`profile-picture`,
+        caller may change takes it (`session-material`: organizers and speakers only, 403 otherwise).
+        A purpose that requires a target (`profile-picture`,
         `event-photo`, `teaser-image`) answers 400 without one. The target given here is recorded
         with the upload; the confirm must name the same one. `teaser-image` answers 409 when its
         event (or the global set) already has 10 teaser images.
@@ -130,7 +143,7 @@ paths:
         With a `target`: the file moves to its final key and is attached to the entity (ASSOCIATED),
         e.g. it becomes the company logo. Confirming an upload that is already ASSOCIATED is 409; an
         unknown, expired or other-purpose `uploadId` is 404, and so is a `target` other than the one
-        given on create (Story 17.11b). A purpose that requires a target (`profile-picture`,
+        given on create (Story 17.11b), e.g. another session for `session-material`. A purpose that requires a target (`profile-picture`,
         `event-photo`, `teaser-image`) answers 400 without one. `teaser-image` answers 409 when its
         event (or the global set) already has 10 teaser images.
       operationId: confirmFileUpload
@@ -241,6 +254,7 @@ components:
           - profile-picture
           - event-photo
           - teaser-image
+          - session-material
 
   schemas:
     UploadPurpose:
@@ -251,13 +265,16 @@ components:
         - profile-picture
         - event-photo
         - teaser-image
+        - session-material
 
     UploadTarget:
       type: object
       description: |
-        The existing entity the file is for, by its meaningful ID (ADR-003). Set the one key of
-        the purpose: `companyName` for `company-logo`, `eventCode` for `event-theme-image` and
-        `event-photo`, `teaser-image`, `username` for `profile-picture`.
+        The existing entity the file is for, by its meaningful ID (ADR-003). Set the keys of the
+        purpose: `companyName` for `company-logo`, `eventCode` for `event-theme-image`,
+        `event-photo` and `teaser-image`, `username` for `profile-picture`, `eventCode` and
+        `sessionSlug` together for `session-material`. Any other key, or only part of a two-key
+        target, is 400.
       additionalProperties: false
       properties:
         companyName:
@@ -272,6 +289,10 @@ components:
         username:
           type: string
           maxLength: 100
+        sessionSlug:
+          type: string
+          maxLength: 200
+          description: The session's slug, with `eventCode`, for `session-material`
 
     CreateUploadRequest:
       type: object

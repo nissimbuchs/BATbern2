@@ -42,6 +42,13 @@ public abstract class UploadRecord {
     @Column(name = "file_url", length = 1000)
     private String fileUrl;
 
+    /**
+     * The original file name the client sent on create, or the base name of an import (Story
+     * 17.11d); null for uploads made before.
+     */
+    @Column(name = "file_name", length = 255, updatable = false)
+    private String fileName;
+
     @Column(name = "file_extension", nullable = false, length = 10, updatable = false)
     private String fileExtension;
 
@@ -80,7 +87,7 @@ public abstract class UploadRecord {
     private Instant expiresAt;
 
     /** The file of a new upload: its temp key and what the client declared. */
-    record TempFile(String key, String extension, long size, String contentType) {
+    record TempFile(String key, String name, String extension, long size, String contentType) {
     }
 
     /** The target a reserved upload is bound to (Story 17.11b); both null for none. */
@@ -94,6 +101,7 @@ public abstract class UploadRecord {
         this.uploadId = newUploadId;
         this.purpose = newPurpose;
         this.s3Key = file.key();
+        this.fileName = file.name();
         this.fileExtension = file.extension();
         this.fileSize = file.size();
         this.contentType = file.contentType();

@@ -3,7 +3,7 @@
  * Story 1.16.3, the upload contract since Story 17.11.
  *
  * The real useFileUpload and upload services run; the backend answers through the MSW harness
- * (checked against uploads-api and event-media-api), the S3 PUT through a handler of its own.
+ * (checked against uploads-api), the S3 PUT through a handler of its own.
  */
 
 import { render, screen, waitFor } from '@testing-library/react';
@@ -14,13 +14,14 @@ import { api } from '@/test/msw/api';
 import { server } from '@/test/msw/server';
 import { FileUpload } from './FileUpload';
 import { uploadTarget } from '@/services/uploadService';
-import { materialUploadTarget } from '@/services/api/sessionApiClient';
 
 /** The upload target is required since Story 17.11: there is no default purpose. */
 const logoUploadTarget = uploadTarget('company-logo');
+/** Session materials, confirmed without a target (the session editor, Story 17.11d). */
+const materialUploadTarget = uploadTarget('session-material');
 
 const S3_PUT = 'https://bucket.example/logos/temp/up-1/logo-up-1.png';
-const MATERIAL_PUT = 'https://bucket.example/materials/temp/mat.pdf';
+const MATERIAL_PUT = 'https://bucket.example/materials/temp/mat/file-mat.pdf';
 
 /** Reserve and confirm of the upload contract succeed; the S3 PUT answers `s3`. */
 function logoUploadAnswers(s3: () => Promise<Response> | Response = () => new HttpResponse(null)) {
@@ -43,21 +44,29 @@ function logoUploadAnswers(s3: () => Promise<Response> | Response = () => new Ht
   }));
 }
 
-/** The materials endpoints answer; each file gets its own upload id. */
+/** Reserve and confirm of `session-material` answer; each file gets its own upload id. */
 function materialUploadAnswers() {
   let n = 0;
-  api.on('generateMaterialPresignedUrl', () => {
-    n += 1;
-    return {
-      uploadUrl: MATERIAL_PUT,
-      fileId: `mat-${n}`,
-      s3Key: `materials/temp/mat-${n}.pdf`,
-      fileExtension: 'pdf',
-      expiresInMinutes: 15,
-      requiredHeaders: {},
-    };
-  });
+  api.on(
+    'createFileUpload',
+    () => {
+      n += 1;
+      return {
+        uploadId: `mat-${n}`,
+        uploadUrl: MATERIAL_PUT,
+        expiresAt: '2026-11-12T10:15:00Z',
+        requiredHeaders: { 'Content-Type': 'application/pdf' },
+      };
+    },
+    { status: 201 }
+  );
   server.use(http.put(MATERIAL_PUT, () => new HttpResponse(null)));
+  api.on('confirmFileUpload', () => ({
+    uploadId: 'mat',
+    purpose: 'session-material' as const,
+    status: 'CONFIRMED' as const,
+    fileUrl: null,
+  }));
 }
 
 function fileInput(): HTMLInputElement {
@@ -277,7 +286,7 @@ describe('FileUpload Component', () => {
   // ============ Story 5.9: Multiple Files Upload (session materials) ============
 
   describe('Story 5.9: Session Materials Upload', () => {
-    it('should_uploadEachFileAtMaterials_when_multipleFilesSelected', async () => {
+    it('should_uploadEachFileAsSessionMaterial_when_multipleFilesSelected', async () => {
       const user = userEvent.setup();
       materialUploadAnswers();
       render(
@@ -303,9 +312,9 @@ describe('FileUpload Component', () => {
       expect(onUploadSuccess).toHaveBeenCalledWith(
         expect.objectContaining({ uploadId: 'mat-2', fileName: 'handout.pdf' })
       );
-      expect(api.calls('generateMaterialPresignedUrl')).toHaveLength(2);
-      expect(api.calls('confirmMaterialUpload')).toHaveLength(2);
-      expect(api.calls('createFileUpload')).toHaveLength(0);
+      expect(api.calls('createFileUpload')).toHaveLength(2);
+      expect(api.calls('createFileUpload')[0].params).toEqual({ purpose: 'session-material' });
+      expect(api.calls('confirmFileUpload')).toHaveLength(2);
     });
 
     it('should_rejectFiles_when_overMaxFilesLimit', async () => {

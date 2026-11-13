@@ -182,6 +182,8 @@ public class ContentSubmissionService {
                 .eventTitle(event.getTitle())
                 .hasSessionAssigned(hasSession)
                 .sessionTitle(sessionTitle != null ? sessionTitle : "Your Presentation")
+                // Story 17.11d: the target of the speaker's session-material upload
+                .sessionSlug(session != null ? session.getSessionSlug() : null)
                 .canSubmitContent(canSubmit)
                 // 2026-05-20 (Q#E) — `contentStatus` field dropped from the DTO; the
                 // local `contentStatus` variable is retained as the source of

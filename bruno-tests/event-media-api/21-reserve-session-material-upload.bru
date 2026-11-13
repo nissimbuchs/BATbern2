@@ -1,0 +1,56 @@
+meta {
+  name: Reserve a session-material upload for the fixture session
+  type: http
+  seq: 21
+}
+
+post {
+  url: {{baseUrl}}/uploads/session-material
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "fileName": "Bruno Vortrag {{photoTimestamp}}.pdf",
+    "contentType": "application/pdf",
+    "size": 4,
+    "target": { "eventCode": "{{photoEventCode}}", "sessionSlug": "{{materialSessionSlug}}" }
+  }
+}
+
+assert {
+  res.status: eq 201
+  res.body.uploadId: isDefined
+  res.body.uploadUrl: isDefined
+}
+
+script:post-response {
+  if (res.getStatus() === 201) {
+    bru.setVar("materialUploadId", res.getBody().uploadId);
+    bru.setVar("materialUploadUrl", res.getBody().uploadUrl);
+  }
+}
+
+tests {
+  test("should name the signed Content-Type", function() {
+    expect(res.getBody().requiredHeaders['Content-Type']).to.equal('application/pdf');
+  });
+}
+
+docs {
+  Story 17.11d: purpose session-material is owned by event-management; the gateway routes
+  /uploads/session-material there. The target has two keys, eventCode and sessionSlug, both or
+  none (one alone is 400, 23). Organizers 100 MB and many types, speakers 50 MB and slides on a
+  session they are on (SessionMaterialUploadIntegrationTest).
+}

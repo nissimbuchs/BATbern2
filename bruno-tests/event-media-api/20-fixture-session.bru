@@ -1,0 +1,51 @@
+meta {
+  name: Fixture — create the session the material upload tests act on
+  type: http
+  seq: 20
+}
+
+post {
+  url: {{baseUrl}}/events/{{photoEventCode}}/sessions
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+script:pre-request {
+  const start = new Date(new Date(bru.getVar("photoEventDate")).getTime() + 60 * 60 * 1000);
+  bru.setVar("materialSessionStart", start.toISOString());
+  bru.setVar("materialSessionEnd", new Date(start.getTime() + 45 * 60 * 1000).toISOString());
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "title": "Bruno Materials Session {{photoTimestamp}}",
+    "description": "Session for the session-material upload tests (Story 17.11d)",
+    "sessionType": "presentation",
+    "startTime": "{{materialSessionStart}}",
+    "endTime": "{{materialSessionEnd}}",
+    "language": "de"
+  }
+}
+
+assert {
+  res.status: eq 201
+}
+
+tests {
+  test("materialSessionSlug set for the collection", function() {
+    bru.setVar("materialSessionSlug", res.getBody().session.sessionSlug);
+  });
+}
+
+docs {
+  Story 17.11d: the session lives in the fixture event of 00 and goes with it (98/99).
+}

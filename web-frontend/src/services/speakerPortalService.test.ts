@@ -1,81 +1,69 @@
 /**
  * Story 11.F.1 RD5: Cognito-side replacement for the legacy magic-link test suite.
  *
- * The old test file asserted magic-link `?token=` parameter handling + `Skip-Auth`
- * header behaviour. After Phase E (Story 11.E.3) the service was rewritten:
- *   - every per-event method takes `eventCode` first (path parameter)
- *   - the magic-link `token` field is gone from every request body
- *   - the `Skip-Auth` header is gone (the axios interceptor attaches the Cognito Bearer)
+ * After Phase E (Story 11.E.3) every per-event method takes `eventCode` first (path parameter), the
+ * magic-link `token` field is gone from every request body and the axios interceptor attaches the
+ * Cognito Bearer.
  *
- * These tests verify the post-E.3 contract: correct URL shape, no token query
- * parameter, clean error surfacing for 401/403/404/409 from the backend.
+ * The real apiClient runs against the MSW harness (Epic 17 test fidelity): every request is checked
+ * against event-speakers-api and uploads-api, and each test reads what went over the wire. Errors
+ * from the backend surface with status, error code and correlation id.
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-
-vi.mock('@/services/api/apiClient', () => ({
-  default: {
-    get: vi.fn(),
-    post: vi.fn(),
-  },
-}));
-
-import apiClient from '@/services/api/apiClient';
+import { describe, it, expect, vi } from 'vitest';
+import { http, HttpResponse } from 'msw';
+import { api } from '@/test/msw/api';
+import { server } from '@/test/msw/server';
 import { speakerPortalService } from './speakerPortalService';
 
-const mockedGet = vi.mocked(apiClient.get);
-const mockedPost = vi.mocked(apiClient.post);
+/** An error answer in the services' error shape, optionally with a correlation id header. */
+const problem = (status: number, body: Record<string, unknown>, correlationId?: string) =>
+  HttpResponse.json(
+    { timestamp: '2026-11-13T08:00:00Z', status, ...body },
+    { status, headers: correlationId ? { 'x-correlation-id': correlationId } : {} }
+  );
+
+const respondResult = {
+  success: true,
+  speakerName: 'Test Speaker',
+  eventName: 'BATbern99',
+  nextSteps: [],
+  contentDeadline: null,
+};
 
 describe('speakerPortalService — Cognito contract (Story 11.E.3 + 11.F.1)', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
   describe('respond()', () => {
     it('should_postWithEventCodeInPath_when_submittingAcceptResponse', async () => {
-      mockedPost.mockResolvedValueOnce({
-        data: {
-          success: true,
-          speakerName: 'Test Speaker',
-          eventName: 'BATbern99',
-          nextSteps: [],
-        },
-      } as never);
+      api.on('respond', () => respondResult);
 
       await speakerPortalService.respond('BATbern99', { response: 'ACCEPT' });
 
-      expect(mockedPost).toHaveBeenCalledTimes(1);
-      const [url, body] = mockedPost.mock.calls[0]!;
-      expect(url).toBe('/speaker-portal/events/BATbern99/respond');
-      expect(body).toEqual({ response: 'ACCEPT' });
+      const [call] = api.calls('respond');
+      expect(call.params).toEqual({ eventCode: 'BATbern99' });
+      expect(call.body).toEqual({ response: 'ACCEPT' });
       // Story 11.F.1: no magic-link token field in the request body.
-      expect(body).not.toHaveProperty('token');
+      expect(call.body).not.toHaveProperty('token');
     });
 
     it('should_urlEncodeEventCode_when_eventCodeHasReservedChars', async () => {
-      mockedPost.mockResolvedValueOnce({ data: { success: true } } as never);
+      api.on('respond', () => respondResult);
 
       await speakerPortalService.respond('BAT/99', { response: 'DECLINE', reason: 'busy' });
 
-      const [url] = mockedPost.mock.calls[0]!;
-      expect(url).toBe('/speaker-portal/events/BAT%2F99/respond');
+      expect(api.calls('respond')[0].url.pathname).toMatch(
+        /\/speaker-portal\/events\/BAT%2F99\/respond$/
+      );
     });
 
     it('should_surfaceBackend409_when_alreadyResponded', async () => {
-      const axiosError = {
-        isAxiosError: true,
-        response: {
-          status: 409,
-          data: {
-            errorCode: 'ALREADY_RESPONDED',
-            message: 'Already responded',
-            previousResponse: 'ACCEPTED',
-            respondedAt: '2026-05-20T10:00:00Z',
-          },
-          headers: {},
-        },
-      };
-      mockedPost.mockRejectedValueOnce(axiosError);
+      api.on('respond', () =>
+        problem(409, {
+          errorCode: 'ALREADY_RESPONDED',
+          message: 'Already responded',
+          previousResponse: 'ACCEPTED',
+          respondedAt: '2026-05-20T10:00:00Z',
+        })
+      );
 
       await expect(
         speakerPortalService.respond('BATbern99', { response: 'ACCEPT' })
@@ -87,14 +75,7 @@ describe('speakerPortalService — Cognito contract (Story 11.E.3 + 11.F.1)', ()
     });
 
     it('should_surfaceBackend403_when_speakerHasNoAccessToEvent', async () => {
-      mockedPost.mockRejectedValueOnce({
-        isAxiosError: true,
-        response: {
-          status: 403,
-          data: { errorCode: 'FORBIDDEN', message: 'Forbidden' },
-          headers: {},
-        },
-      });
+      api.on('respond', () => problem(403, { errorCode: 'FORBIDDEN', message: 'Forbidden' }));
 
       await expect(
         speakerPortalService.respond('OtherEvent', { response: 'ACCEPT' })
@@ -102,7 +83,7 @@ describe('speakerPortalService — Cognito contract (Story 11.E.3 + 11.F.1)', ()
     });
 
     it('should_returnNetworkError_when_axiosErrorHasNoResponse', async () => {
-      mockedPost.mockRejectedValueOnce({ isAxiosError: true });
+      api.on('respond', () => HttpResponse.error());
 
       await expect(
         speakerPortalService.respond('BATbern99', { response: 'ACCEPT' })
@@ -112,20 +93,22 @@ describe('speakerPortalService — Cognito contract (Story 11.E.3 + 11.F.1)', ()
 
   describe('getDashboard()', () => {
     it('should_getFromDashboardEndpoint_when_calledWithoutArgs', async () => {
-      mockedGet.mockResolvedValueOnce({
-        data: { speakerName: 'X', profileCompleteness: 100, upcomingEvents: [], pastEvents: [] },
-      } as never);
+      api.on('getDashboard', () => ({
+        speakerName: 'X',
+        profilePictureUrl: null,
+        profileCompleteness: 100,
+        upcomingEvents: [],
+        pastEvents: [],
+      }));
 
-      await speakerPortalService.getDashboard();
-
-      expect(mockedGet).toHaveBeenCalledWith('/speaker-portal/dashboard');
+      await expect(speakerPortalService.getDashboard()).resolves.toMatchObject({
+        speakerName: 'X',
+      });
+      expect(api.calls('getDashboard')).toHaveLength(1);
     });
 
     it('should_surfaceBackend401_when_authenticationMissing', async () => {
-      mockedGet.mockRejectedValueOnce({
-        isAxiosError: true,
-        response: { status: 401, data: { message: 'Unauthorized' }, headers: {} },
-      });
+      api.on('getDashboard', () => problem(401, { message: 'Unauthorized' }));
 
       await expect(speakerPortalService.getDashboard()).rejects.toMatchObject({ status: 401 });
     });
@@ -133,34 +116,34 @@ describe('speakerPortalService — Cognito contract (Story 11.E.3 + 11.F.1)', ()
 
   describe('getContentInfo() / submitContent()', () => {
     it('should_getContentInfoFromEventScopedPath_when_called', async () => {
-      mockedGet.mockResolvedValueOnce({ data: {} } as never);
+      api.on('getContentInfo', () => ({ eventCode: 'BATbern99', sessionSlug: 'keynote' }));
 
-      await speakerPortalService.getContentInfo('BATbern99');
-
-      expect(mockedGet).toHaveBeenCalledWith('/speaker-portal/events/BATbern99/content');
+      await expect(speakerPortalService.getContentInfo('BATbern99')).resolves.toMatchObject({
+        sessionSlug: 'keynote',
+      });
+      expect(api.calls('getContentInfo')[0].params).toEqual({ eventCode: 'BATbern99' });
     });
 
     it('should_postToContentSubmitEndpoint_when_submittingContent', async () => {
-      mockedPost.mockResolvedValueOnce({
-        data: { submissionId: 's-1', version: 1, status: 'submitted', sessionTitle: 'T' },
-      } as never);
+      api.on(
+        'submitContent',
+        () => ({ submissionId: 's-1', version: 1, status: 'SUBMITTED', sessionTitle: 'T' }),
+        { status: 201 }
+      );
 
       await speakerPortalService.submitContent('BATbern99', {
         title: 'My Talk',
         contentAbstract: 'Abstract',
       });
 
-      const [url, body] = mockedPost.mock.calls[0]!;
-      expect(url).toBe('/speaker-portal/events/BATbern99/content/submit');
-      expect(body).toMatchObject({ title: 'My Talk', contentAbstract: 'Abstract' });
-      expect(body).not.toHaveProperty('token');
+      const [call] = api.calls('submitContent');
+      expect(call.params).toEqual({ eventCode: 'BATbern99' });
+      expect(call.body).toMatchObject({ title: 'My Talk', contentAbstract: 'Abstract' });
+      expect(call.body).not.toHaveProperty('token');
     });
 
     it('should_surfaceBackend404_when_eventNotFound', async () => {
-      mockedGet.mockRejectedValueOnce({
-        isAxiosError: true,
-        response: { status: 404, data: { message: 'Event not found' }, headers: {} },
-      });
+      api.on('getContentInfo', () => problem(404, { message: 'Event not found' }));
 
       await expect(speakerPortalService.getContentInfo('Unknown')).rejects.toMatchObject({
         status: 404,
@@ -169,34 +152,79 @@ describe('speakerPortalService — Cognito contract (Story 11.E.3 + 11.F.1)', ()
   });
 
   describe('uploadMaterial()', () => {
-    // The wire type SpeakerMaterialUploadResponse marks every field optional: without an
-    // upload URL or upload id there is nothing to PUT to or confirm, so the upload fails
-    // before any S3 request instead of PUTting to "undefined".
-    it('should_rejectWithoutS3Request_when_presignedResponseHasNoUploadUrl', async () => {
-      mockedPost.mockResolvedValueOnce({ data: { uploadId: 'upload-1' } } as never);
+    const S3_PUT = 'https://bucket.example/materials/temp/up-1/file-up-1.pdf';
+    const FILE_URL =
+      'https://cdn.batbern.ch/materials/events/BATbern99/sessions/keynote/file-up-1.pdf';
+
+    // Story 17.11d: purpose session-material with the speaker's session as target; the confirm
+    // with the target attaches the slides and returns their CDN URL.
+    it('should_reserveAndConfirmForTheSession_when_uploading', async () => {
+      api.on(
+        'createFileUpload',
+        () => ({
+          uploadId: 'up-1',
+          uploadUrl: S3_PUT,
+          expiresAt: '2026-11-13T10:15:00Z',
+          requiredHeaders: { 'Content-Type': 'application/pdf' },
+        }),
+        { status: 201 }
+      );
+      let putType: string | null = null;
+      server.use(
+        http.put(S3_PUT, ({ request }) => {
+          putType = request.headers.get('Content-Type');
+          return new HttpResponse(null);
+        })
+      );
+      api.on('confirmFileUpload', () => ({
+        uploadId: 'up-1',
+        purpose: 'session-material' as const,
+        status: 'ASSOCIATED' as const,
+        fileUrl: FILE_URL,
+      }));
+      const file = new File(['x'], 'Vortrag Müller.pdf', { type: 'application/pdf' });
+
+      await expect(
+        speakerPortalService.uploadMaterial('BATbern99', 'keynote', file)
+      ).resolves.toEqual({ fileUrl: FILE_URL, fileName: 'Vortrag Müller.pdf' });
+
+      const target = { eventCode: 'BATbern99', sessionSlug: 'keynote' };
+      expect(api.calls('createFileUpload')[0].params).toEqual({ purpose: 'session-material' });
+      expect(api.calls('createFileUpload')[0].body).toEqual({
+        fileName: 'Vortrag Müller.pdf',
+        contentType: 'application/pdf',
+        size: 1,
+        target,
+      });
+      expect(putType).toBe('application/pdf');
+      expect(api.calls('confirmFileUpload')[0].params).toEqual({
+        purpose: 'session-material',
+        uploadId: 'up-1',
+      });
+      expect(api.calls('confirmFileUpload')[0].body).toEqual({ target });
+    });
+
+    it('should_surfaceBackend403_when_sessionIsNotTheSpeakers', async () => {
+      api.on('createFileUpload', () =>
+        problem(403, { message: 'Speakers may only change the materials of their own sessions' })
+      );
       const open = vi.spyOn(XMLHttpRequest.prototype, 'open');
       const file = new File(['x'], 'talk.pdf', { type: 'application/pdf' });
 
-      await expect(speakerPortalService.uploadMaterial('BATbern99', file)).rejects.toThrow(
-        /upload url/i
-      );
+      await expect(
+        speakerPortalService.uploadMaterial('BATbern99', 'other-session', file)
+      ).rejects.toMatchObject({ status: 403 });
 
-      expect(open).not.toHaveBeenCalled();
-      expect(mockedPost).toHaveBeenCalledTimes(1);
+      // Only the reserve went out: no S3 PUT, no confirm.
+      expect(open.mock.calls.filter(([method]) => method === 'PUT')).toHaveLength(0);
+      expect(api.calls('confirmFileUpload')).toHaveLength(0);
       open.mockRestore();
     });
   });
 
   describe('correlation ID propagation', () => {
     it('should_appendCorrelationIdToErrorMessage_when_headerPresent', async () => {
-      mockedPost.mockRejectedValueOnce({
-        isAxiosError: true,
-        response: {
-          status: 500,
-          data: { message: 'Server error' },
-          headers: { 'x-correlation-id': 'abc-123' },
-        },
-      });
+      api.on('respond', () => problem(500, { message: 'Server error' }, 'abc-123'));
 
       await expect(
         speakerPortalService.respond('BATbern99', { response: 'ACCEPT' })

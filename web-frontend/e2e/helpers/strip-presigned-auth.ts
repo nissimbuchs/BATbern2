@@ -23,9 +23,13 @@
  * untouched, so the other ~410 specs are unaffected.
  */
 
-import type { Page } from '@playwright/test';
+import type { BrowserContext, Page } from '@playwright/test';
 
-export async function stripPresignedAuthHeader(page: Page): Promise<void> {
+/**
+ * Pass the page, or its context to cover popups too (e.g. a presigned download opened with
+ * `window.open`, Story 17.11d).
+ */
+export async function stripPresignedAuthHeader(page: Page | BrowserContext): Promise<void> {
   await page.route(/X-Amz-Signature=/, async (route) => {
     // Playwright lowercases header names in request().headers().
     const headers = { ...route.request().headers() };

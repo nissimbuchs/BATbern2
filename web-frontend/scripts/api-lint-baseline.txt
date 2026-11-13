@@ -20,7 +20,6 @@ no-verb-segment	event-registrations-api.openapi.yml	POST /registrations/deregist
 no-verb-segment	event-sessions-api.openapi.yml	GET /events/{eventCode}/sessions/{sessionSlug}/materials/{materialId}/download
 no-verb-segment	event-sessions-api.openapi.yml	POST /events/{eventCode}/sessions/auto-assign
 no-verb-segment	event-speakers-api.openapi.yml	POST /speaker-portal/events/{eventCode}/content/submit
-no-verb-segment	event-speakers-api.openapi.yml	POST /speaker-portal/events/{eventCode}/materials/confirm
 no-verb-segment	partners-api.openapi.yml	GET /partners/{companyName}/analytics/export
 no-verb-segment	topics-api.openapi.yml	POST /topics/calculate-similarities
 no-verb-segment	users-api.openapi.yml	GET /users/additional-emails/verify
@@ -33,7 +32,6 @@ no-verb-segment	users-api.openapi.yml	POST /watch/pair
 uuid-path-param	event-ai-api.openapi.yml	GET /events/{eventCode}/ai/theme-image/jobs/{jobId}
 uuid-path-param	event-ai-api.openapi.yml	POST /events/{eventCode}/speakers/{speakerId}/abstract-analysis
 uuid-path-param	event-media-api.openapi.yml	DELETE /events/{eventCode}/photos/{photoId}
-uuid-path-param	event-media-api.openapi.yml	POST /materials/{uploadId}/confirm
 uuid-path-param	event-newsletter-api.openapi.yml	DELETE /newsletter/subscribers/{id}
 uuid-path-param	event-newsletter-api.openapi.yml	POST /newsletter/subscribers/{id}/resubscribe
 uuid-path-param	event-newsletter-api.openapi.yml	POST /newsletter/subscribers/{id}/unsubscribe

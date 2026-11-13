@@ -285,6 +285,17 @@ class ContentSubmissionServiceIntegrationTest extends AbstractIntegrationTest {
         assertThat(history.get(0).getChangedByUsername()).isEqualTo(SPEAKER);
     }
 
+    // Story 17.11d: the content info names the speaker's session, the target of the
+    // session-material upload in the speaker portal.
+    @Test
+    @DisplayName("should_returnSessionSlug_when_speakerHasAnAssignedSession")
+    void should_returnSessionSlug_when_speakerHasAnAssignedSession() {
+        SpeakerPool speaker = seedSpeaker(SpeakerWorkflowState.ACCEPTED, SPEAKER);
+        String slug = sessionRepository.findById(speaker.getSessionId()).orElseThrow().getSessionSlug();
+
+        assertThat(contentSubmissionService.getContentInfo(speaker).getSessionSlug()).isEqualTo(slug);
+    }
+
     // ============================================================
     // AC9 #4 — No profile patch when bio + pictureUrl both null
     // ============================================================

@@ -267,11 +267,7 @@ export const uploadProfilePicture = async (
     mimeType: file.type,
   });
   await uploadToS3(slot.uploadUrl, file, onProgress, slot.requiredHeaders);
-  const confirmed = await target.confirm(slot.fileId, {
-    fileId: slot.fileId,
-    fileExtension: file.name.split('.').pop() ?? '',
-    checksum: '',
-  });
+  const confirmed = await target.confirm(slot.fileId);
   if (!confirmed?.fileUrl) {
     throw new Error('The profile picture was not attached');
   }

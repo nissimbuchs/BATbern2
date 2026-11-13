@@ -108,7 +108,6 @@ be-transactional-it	services/event-management-service/src/test/java/ch/batbern/e
 be-transactional-it	services/event-management-service/src/test/java/ch/batbern/events/controller/RegistrationControllerIntegrationTest.java	1
 be-transactional-it	services/event-management-service/src/test/java/ch/batbern/events/controller/RegistrationStatusIntegrationTest.java	1
 be-transactional-it	services/event-management-service/src/test/java/ch/batbern/events/controller/SelfNominationIntegrationTest.java	1
-be-transactional-it	services/event-management-service/src/test/java/ch/batbern/events/controller/SessionMaterialsControllerIntegrationTest.java	1
 be-transactional-it	services/event-management-service/src/test/java/ch/batbern/events/controller/SessionQnaIntegrationTest.java	1
 be-transactional-it	services/event-management-service/src/test/java/ch/batbern/events/controller/SessionSpeakerControllerIntegrationTest.java	1
 be-transactional-it	services/event-management-service/src/test/java/ch/batbern/events/controller/SlotAssignmentControllerIntegrationTest.java	1
@@ -477,7 +476,6 @@ fe-mock-services	web-frontend/src/components/shared/Company/CompanyBatchImportMo
 fe-mock-services	web-frontend/src/components/shared/Company/__tests__/CompanySearch.test.tsx	1
 fe-mock-services	web-frontend/src/components/shared/Navigation/MobileDrawer.test.tsx	1
 fe-mock-services	web-frontend/src/components/shared/Navigation/NavigationMenu.test.tsx	1
-fe-mock-services	web-frontend/src/components/speaker-portal/__tests__/PresentationUpload.test.tsx	1
 fe-mock-services	web-frontend/src/features/profile/WatchPairingSection.test.tsx	1
 fe-mock-services	web-frontend/src/hooks/__tests__/useCurrentEvent.test.tsx	1
 fe-mock-services	web-frontend/src/hooks/__tests__/useInfiniteEvents.test.tsx	1
@@ -548,7 +546,6 @@ fe-mock-services	web-frontend/src/services/publicOrganizerService.test.ts	1
 fe-mock-services	web-frontend/src/services/registrationService.test.ts	1
 fe-mock-services	web-frontend/src/services/speakerContentService.test.ts	1
 fe-mock-services	web-frontend/src/services/speakerOutreachService.test.ts	1
-fe-mock-services	web-frontend/src/services/speakerPortalService.test.ts	1
 fe-mock-services	web-frontend/src/services/speakerStatusService.test.ts	1
 fe-mock-services	web-frontend/src/services/timetableService/__tests__/timetableService.test.ts	1
 fe-mock-services	web-frontend/src/services/topicService.test.ts	1

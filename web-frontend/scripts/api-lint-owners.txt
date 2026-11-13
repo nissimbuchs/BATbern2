@@ -14,10 +14,9 @@
 # silently: accepting one means adding it here, with the reason, in the same PR.
 # Stories: _bmad-output/initiative-architecture-hardening/ (17.6 dead surface, 17.9 and 17.10 API
 # conventions I and II, 17.9b one transition idiom for the event lifecycle, 17.10b API conventions
-# III (EMS, done), 17.10d its CUMS part (done), 17.11d upload purposes; 17.11 upload contract company-logo, 17.11a profile-picture, 17.11b event-photo and 17.11c teaser-image, done).
+# III (EMS, done), 17.10d its CUMS part (done); 17.11 upload contract company-logo, 17.11a profile-picture, 17.11b event-photo, 17.11c teaser-image and 17.11d session-material, done).
 
 # --- Stories and issues that remove the lines ---
-N4	17.11d	(no-verb-segment|uuid-path-param)	(/materials/\{uploadId\}/confirm$|/speaker-portal/events/\{eventCode\}/materials/confirm$)
 I1	#1070	no-literal-under-events	GET /events/current$
 
 # --- Exceptions accepted by the owner (2026-11-08) ---

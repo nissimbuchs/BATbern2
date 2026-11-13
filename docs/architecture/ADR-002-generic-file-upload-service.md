@@ -1,6 +1,6 @@
 # ADR-002: Generic File Upload Service Architecture
 
-**Status**: Accepted (decision 2026-11-07 implemented for `company-logo` and `event-theme-image` by Story 17.11, 2026-11-12, for `profile-picture` by Story 17.11a, 2026-11-13, for `event-photo` by Story 17.11b, 2026-11-13, and for `teaser-image` by Story 17.11c, 2026-11-13)
+**Status**: Accepted (decision 2026-11-07 implemented for `company-logo` and `event-theme-image` by Story 17.11, 2026-11-12, for `profile-picture` by Story 17.11a, 2026-11-13, for `event-photo` by Story 17.11b, 2026-11-13, for `teaser-image` by Story 17.11c, 2026-11-13, and for `session-material` by Story 17.11d, 2026-11-13; every purpose of the decision except `mail-attachment` is on the contract)
 **Date**: 2025-10-27
 **Decision Makers**: Development Team, Architect Agent (Winston)
 **Related Stories**: Story 1.16.3 (Generic File Upload Service), Story 2.5.1 (Company Management Frontend)
@@ -777,7 +777,7 @@ not a copy of the CUMS class, and both services create and use the same `logos` 
 
 ## Implementation Status
 
-### Purposes (current)
+### Purposes (final, Story 17.11d)
 
 | purpose | owner | types | max size | target | import | final key |
 |---|---|---|---|---|---|---|
@@ -786,6 +786,10 @@ not a copy of the CUMS class, and both services create and use the same `logos` 
 | `profile-picture` | CUMS | png, jpeg, svg | 5 MB | `username` (ORGANIZER or the user themself), required | yes (ORGANIZER) | `profile-pictures/{username}/profile-{uploadId}.{ext}` |
 | `event-photo` | EMS | jpeg, png, webp | 10 MB | `eventCode` (ORGANIZER), required | no | `events/{eventCode}/photos/{uploadId}.{ext}` |
 | `teaser-image` | EMS | jpeg, png, webp, svg | 10 MB | `eventCode` (ORGANIZER), required, `_global` for the global set | no | `events/{eventCode}/teaser/{uploadId}.{ext}`, `global/teaser/{uploadId}.{ext}` |
+| `session-material` | EMS | ORGANIZER: pptx, ppt, key, odp, pdf, doc, docx, txt, mp4, mov, avi, mkv, webm, zip, gz, tar; SPEAKER: pptx, ppt, key, pdf | ORGANIZER 100 MB, SPEAKER 50 MB | `eventCode` + `sessionSlug` (ORGANIZER any session, SPEAKER a session they are on), optional | no | `materials/events/{eventCode}/sessions/{sessionSlug}/file-{uploadId}.{ext}` |
+
+The upload keeps the original file name (`file_name`, CUMS V33, EMS V156, Story 17.11d); uploads
+made before have none.
 
 The gateway routes each purpose by an explicit map in `DomainRouter` (an unlisted purpose is 404).
 Final keys carry no year since Story 17.11a; files stored earlier keep their `…/{year}/…` key and URL
@@ -794,6 +798,45 @@ Final keys carry no year since Story 17.11a; files stored earlier keep their `�
 **Target binding** (Story 17.11b): a target given on create is stored on the PENDING row
 (`target_type`, `target_id`); a confirm, or an entity's `associate`, for another target answers 404
 and changes nothing. An upload reserved without a target may still be confirmed with one.
+
+### Story 17.11d (2026-11-13): purpose `session-material`
+
+- **Contract:** `session-material` joins the `UploadPurpose` enum and `UploadTarget` gets
+  `sessionSlug` (`uploads-api`). The four operations `POST /materials/presigned-url`,
+  `POST /materials/{uploadId}/confirm` (`event-media-api`),
+  `POST /speaker-portal/events/{eventCode}/materials/presigned-url` and `…/materials/confirm`
+  (`event-speakers-api`) and their schemas are deleted (no aliases; 404). `associateMaterials`
+  (`POST /events/{eventCode}/sessions/{sessionSlug}/materials`) takes only `{uploadId, materialType?}`
+  items: name, size and type come from the upload, the type is derived from the content type when
+  omitted (organizers only; a speaker's material is always PRESENTATION). `SpeakerContentInfo` gets
+  the speaker's `sessionSlug`, the target of the portal upload. List stays; the download URL now
+  saves the file under its original name (`Content-Disposition`); delete checks that the session
+  is in the event (404) and also deletes the material's upload row.
+- **Shared kernel:** two-key targets. `UploadPurposeHandler.targetKeys()` (default
+  `List.of(targetKey())`); `UploadService` joins the values with `/` in this order, all keys or
+  none, a partial or foreign key is 400. `UploadRecord.fileName` (column `file_name`, CUMS V33, EMS
+  V156, nullable): the name sent on create, or the base name of an import.
+- **EMS:** `SessionMaterialUploadHandler` (ORGANIZER or SPEAKER, else 403; target
+  `{eventCode, sessionSlug}`, optional; the session must be in the event, 404; a speaker only on a
+  session they are on in `session_users`, 403, the rule the association and delete share; rules by
+  the caller's role: organizers 100 MB and their type list, speakers 50 MB and slides, as the two
+  old paths; temp key `materials/temp/{uploadId}/file-{uploadId}.{ext}`, target type `SESSION`, no
+  import). Attach creates the `session_materials` row with the upload's name, size, type and URL,
+  type PRESENTATION for a speaker, else derived from the content type; publishes
+  `SessionMaterialsUploadedEvent` and clears the event cache after the commit.
+  `SessionMaterialsService.associateMaterialsWithSession` attaches confirmed uploads through
+  `UploadService.associate`, so an upload reserved for another session is 404. Final key without
+  the year, `materials/events/{eventCode}/sessions/{sessionSlug}/file-{uploadId}.{ext}`, also for the
+  server-side batch import (`uploadMaterialFromUrl`); existing keys stay. Removed:
+  `MaterialsUploadController`, `MaterialsUploadService`, `SpeakerPortalMaterialsService` and the two
+  speaker portal operations, the now unused `FileSizeExceededException` and
+  `InvalidFileTypeException`. Fixed with it: neither old path stored a pending upload, the
+  association rebuilt the temp key from an extension and a file name the client sent, and a
+  speaker's confirm never checked the object in S3.
+- **Gateway:** `session-material` → EMS in the purpose map; `/api/v1/materials` is no longer routed.
+- **Frontend:** the session editor uploads with `uploadTarget('session-material')` (confirmed
+  without a target, the session is saved first) and `associateMaterials` sends the uploadIds; the
+  speaker portal's `uploadMaterial` runs on `uploadTarget('session-material', {eventCode, sessionSlug})`.
 
 ### Story 17.11c (2026-11-13): purpose `teaser-image`
 
@@ -901,8 +944,7 @@ Implements the decision of 2026-11-07 for its first two purposes:
 - **`logos` dropped** (#1307, owner go 2026-11-13): CUMS V31 and EMS V154 drop the table; its upload
   history is discarded by decision, the S3 objects stay.
 - **Left:** purposes `profile-picture` (done, 17.11a, above), `event-photo` (done, 17.11b, above),
-  `teaser-image` (done, 17.11c, above); `session-material` follows in Story 17.11d; it adds a handler, its enum value and its line in
-  the gateway map, no operation.
+  `teaser-image` (done, 17.11c, above) and `session-material` (done, 17.11d, above).
 
 ### Story 1.16.3 (2025-10, historical)
 

@@ -41,11 +41,7 @@ describe('uploadService', () => {
     const target = uploadTarget('company-logo', { companyName: 'acme' });
 
     await target.presign({ fileName: 'logo.svg', fileSize: 10, mimeType: 'image/svg+xml' });
-    const result = await target.confirm('up-1', {
-      fileId: 'up-1',
-      fileExtension: 'svg',
-      checksum: 'c',
-    });
+    const result = await target.confirm('up-1');
 
     expect(api.calls('createFileUpload')[0].body?.target).toEqual({ companyName: 'acme' });
     const confirm = api.calls('confirmFileUpload')[0];
@@ -63,11 +59,7 @@ describe('uploadService', () => {
       fileUrl: null,
     }));
 
-    const result = await uploadTarget('event-theme-image').confirm('up-2', {
-      fileId: 'up-2',
-      fileExtension: 'png',
-      checksum: 'c',
-    });
+    const result = await uploadTarget('event-theme-image').confirm('up-2');
 
     expect(api.calls('confirmFileUpload')[0].body).toEqual({});
     expect(result).toEqual({ fileUrl: null });

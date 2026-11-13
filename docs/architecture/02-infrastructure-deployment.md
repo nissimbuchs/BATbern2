@@ -531,7 +531,7 @@ graph LR
     GW["DomainRouter"]
     GW -->|"/watch/pair, /watch/authenticate"| CUMS["company-user-management"]
     GW -->|"/watch/**"| EMS["event-management"]
-    GW -->|"/events, /event-types, /registrations,<br/>/topics, /tasks, /notifications, /materials,<br/>/speaker-portal, /attendee-portal, /sessions,<br/>/email-templates, /analytics, /newsletter,<br/>/thanks, /conversations, /mails, /ai,<br/>/public/events, /public/settings/features,<br/>/speakers/ID/ai/**, /admin/**"| EMS
+    GW -->|"/events, /event-types, /registrations,<br/>/topics, /tasks, /notifications,<br/>/speaker-portal, /attendee-portal, /sessions,<br/>/email-templates, /analytics, /newsletter,<br/>/thanks, /conversations, /mails, /ai,<br/>/public/events, /public/settings/features,<br/>/speakers/ID/ai/**, /admin/**"| EMS
     GW -->|"/partners, /partner-meetings,<br/>/attendees/topics"| PCS["partner-coordination"]
     GW -->|"/companies, /users, /logos,<br/>/public/** other, /settings"| CUMS
     GW -->|"/admin/test-fixtures/cums, ems, pcs"| FIX["matching service"]
@@ -1317,9 +1317,9 @@ sequenceDiagram
 ### File Upload Service Implementation
 
 Uploads go directly from the browser to S3 with presigned URLs; files never pass through the
-backend. The pattern, as implemented in CUMS `GenericLogoService` and `ProfilePictureService`
-and in EMS `MaterialsUploadService`, `EventPhotoService`, `EventTeaserImageService`,
-`SpeakerPortalMaterialsService`, `ConversationAttachmentService`:
+backend. The pattern, as implemented by the shared upload contract (shared-kernel `UploadService`
+with one `UploadPurposeHandler` per purpose in CUMS and EMS, ADR-002, Stories 17.11 to 17.11d) and
+by EMS `ConversationAttachmentService`:
 
 ```mermaid
 sequenceDiagram
@@ -1345,10 +1345,12 @@ Key shapes of new objects (examples): `logos/temp/{uploadId}/logo-{uploadId}.{ex
 `profile-pictures/temp/{uploadId}/profile-{uploadId}.{ext}` →
 `profile-pictures/{username}/profile-{uploadId}.{ext}`; `events/temp/{uploadId}/photo-{uploadId}.{ext}` →
 `events/{eventCode}/photos/{uploadId}.{ext}` (event photos, Story 17.11b); `events/temp/{uploadId}/teaser-{uploadId}.{ext}` →
-`events/{eventCode}/teaser/{uploadId}.{ext}` or `global/teaser/{uploadId}.{ext}` (teaser images, Story 17.11c). Since Story 17.11a the final keys carry no
-year; objects stored earlier keep their `logos/{year}/…` and `profile-pictures/{year}/…` keys (the
-database rows hold the full key and URL, nothing is moved);
-`materials/temp/{uploadId}/file-{uploadId}.{ext}`. Size limits and confirm steps differ per
+`events/{eventCode}/teaser/{uploadId}.{ext}` or `global/teaser/{uploadId}.{ext}` (teaser images, Story 17.11c);
+`materials/temp/{uploadId}/file-{uploadId}.{ext}` →
+`materials/events/{eventCode}/sessions/{sessionSlug}/file-{uploadId}.{ext}` (session materials, Story 17.11d).
+Since Story 17.11a the final keys carry no year; objects stored earlier keep their `logos/{year}/…`,
+`profile-pictures/{year}/…` and `materials/{year}/…` keys (the database rows hold the full key and
+URL, nothing is moved). Size limits and confirm steps differ per
 service; the Java listing previously shown here (`ContentStorageService`, four buckets) did not
 match the code and is removed.
 

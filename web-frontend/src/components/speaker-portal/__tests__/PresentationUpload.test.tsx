@@ -1,27 +1,48 @@
 /**
- * PresentationUpload Tests (Story 6.3 AC7)
+ * PresentationUpload Tests (Story 6.3 AC7; the upload contract since Story 17.11d)
  *
- * Tests for the presentation file upload component.
+ * The real speakerPortalService and upload service run; the backend answers through the MSW harness
+ * (checked against uploads-api), the S3 PUT through a handler of its own. The speaker's slides are
+ * purpose `session-material` with the target `{eventCode, sessionSlug}`.
  */
 
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
+import { http, HttpResponse } from 'msw';
+import { api } from '@/test/msw/api';
+import { server } from '@/test/msw/server';
 import PresentationUpload from '../PresentationUpload';
-import type { MaterialConfirmResponse } from '@/services/speakerPortalService';
 
-// Mock the speaker portal service
-const mockUploadMaterial = vi.fn();
+const S3_PUT = 'https://bucket.example/materials/temp/up-1/file-up-1.pptx';
+const FILE_URL =
+  'https://cdn.batbern.ch/materials/events/BATbern99/sessions/keynote/file-up-1.pptx';
+const PPTX = 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
 
-vi.mock('@/services/speakerPortalService', () => ({
-  speakerPortalService: {
-    uploadMaterial: (...args: unknown[]) => mockUploadMaterial(...args),
-  },
-}));
+/** Reserve, S3 PUT and confirm succeed; the confirm attaches with `fileUrl`. */
+function uploadAnswers(fileUrl: string | null = FILE_URL) {
+  api.on(
+    'createFileUpload',
+    () => ({
+      uploadId: 'up-1',
+      uploadUrl: S3_PUT,
+      expiresAt: '2026-11-13T10:15:00Z',
+      requiredHeaders: { 'Content-Type': PPTX },
+    }),
+    { status: 201 }
+  );
+  server.use(http.put(S3_PUT, () => new HttpResponse(null)));
+  api.on('confirmFileUpload', () => ({
+    uploadId: 'up-1',
+    purpose: 'session-material' as const,
+    status: fileUrl ? ('ASSOCIATED' as const) : ('CONFIRMED' as const),
+    fileUrl,
+  }));
+}
 
 describe('PresentationUpload', () => {
   const defaultProps = {
     eventCode: 'BATbern99',
-    token: 'valid-token',
+    sessionSlug: 'keynote',
     currentMaterialUrl: null,
     currentMaterialName: null,
     onMaterialUploaded: vi.fn(),
@@ -66,15 +87,7 @@ describe('PresentationUpload', () => {
 
   describe('AC7.3: Accepted formats - PPTX, PDF, KEY', () => {
     it('should accept PPTX files', async () => {
-      const mockResponse: MaterialConfirmResponse = {
-        materialId: 'mat-123',
-        uploadId: 'upload-123',
-        fileName: 'presentation.pptx',
-        cloudFrontUrl: 'https://cdn.example.com/materials/presentation.pptx',
-        materialType: 'PRESENTATION',
-        uploadedAt: new Date().toISOString(),
-      };
-      mockUploadMaterial.mockResolvedValue(mockResponse);
+      uploadAnswers();
 
       render(<PresentationUpload {...defaultProps} />);
 
@@ -88,20 +101,12 @@ describe('PresentationUpload', () => {
       });
 
       await waitFor(() => {
-        expect(mockUploadMaterial).toHaveBeenCalled();
+        expect(api.calls('confirmFileUpload')).toHaveLength(1);
       });
     });
 
     it('should accept PDF files', async () => {
-      const mockResponse: MaterialConfirmResponse = {
-        materialId: 'mat-123',
-        uploadId: 'upload-123',
-        fileName: 'presentation.pdf',
-        cloudFrontUrl: 'https://cdn.example.com/materials/presentation.pdf',
-        materialType: 'PRESENTATION',
-        uploadedAt: new Date().toISOString(),
-      };
-      mockUploadMaterial.mockResolvedValue(mockResponse);
+      uploadAnswers();
 
       render(<PresentationUpload {...defaultProps} />);
 
@@ -113,20 +118,12 @@ describe('PresentationUpload', () => {
       });
 
       await waitFor(() => {
-        expect(mockUploadMaterial).toHaveBeenCalled();
+        expect(api.calls('confirmFileUpload')).toHaveLength(1);
       });
     });
 
     it('should accept KEY files', async () => {
-      const mockResponse: MaterialConfirmResponse = {
-        materialId: 'mat-123',
-        uploadId: 'upload-123',
-        fileName: 'presentation.key',
-        cloudFrontUrl: 'https://cdn.example.com/materials/presentation.key',
-        materialType: 'PRESENTATION',
-        uploadedAt: new Date().toISOString(),
-      };
-      mockUploadMaterial.mockResolvedValue(mockResponse);
+      uploadAnswers();
 
       render(<PresentationUpload {...defaultProps} />);
 
@@ -140,7 +137,7 @@ describe('PresentationUpload', () => {
       });
 
       await waitFor(() => {
-        expect(mockUploadMaterial).toHaveBeenCalled();
+        expect(api.calls('confirmFileUpload')).toHaveLength(1);
       });
     });
 
@@ -166,15 +163,7 @@ describe('PresentationUpload', () => {
 
   describe('AC7.4: 50MB file size limit', () => {
     it('should accept files under 50MB', async () => {
-      const mockResponse: MaterialConfirmResponse = {
-        materialId: 'mat-123',
-        uploadId: 'upload-123',
-        fileName: 'large-presentation.pptx',
-        cloudFrontUrl: 'https://cdn.example.com/materials/presentation.pptx',
-        materialType: 'PRESENTATION',
-        uploadedAt: new Date().toISOString(),
-      };
-      mockUploadMaterial.mockResolvedValue(mockResponse);
+      uploadAnswers();
 
       render(<PresentationUpload {...defaultProps} />);
 
@@ -192,7 +181,7 @@ describe('PresentationUpload', () => {
       });
 
       await waitFor(() => {
-        expect(mockUploadMaterial).toHaveBeenCalled();
+        expect(api.calls('confirmFileUpload')).toHaveLength(1);
       });
     });
 
@@ -220,54 +209,55 @@ describe('PresentationUpload', () => {
   });
 
   describe('AC7.5: Upload progress indicator', () => {
-    it('should show progress during upload', async () => {
-      let progressCallback: ((progress: number) => void) | undefined;
-      mockUploadMaterial.mockImplementation(
-        (_token: string, _file: File, onProgress?: (progress: number) => void) => {
-          progressCallback = onProgress;
-          return new Promise(() => {}); // Never resolves
-        }
-      );
+    it('should show the progress bar while the file goes to S3', async () => {
+      uploadAnswers();
+      server.use(http.put(S3_PUT, () => new Promise<Response>(() => {}))); // S3 never answers
 
       render(<PresentationUpload {...defaultProps} />);
 
-      const file = new File(['content'], 'presentation.pptx', {
-        type: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-      });
+      const file = new File(['content'], 'presentation.pptx', { type: PPTX });
       const fileInput = screen.getByLabelText(/upload presentation/i);
 
       await act(async () => {
         fireEvent.change(fileInput, { target: { files: [file] } });
       });
 
-      // Simulate progress update
-      await act(async () => {
-        progressCallback?.(50);
-      });
-
-      expect(screen.getByText(/50%/)).toBeInTheDocument();
-      // Multiple progressbars may exist (BATbernLoader + upload bar); find the upload one by aria-valuenow
+      await waitFor(() => expect(screen.getByText(/uploading/i)).toBeInTheDocument());
+      // Multiple progressbars may exist (BATbernLoader + upload bar); the upload one has a value
       const uploadBar = screen
         .getAllByRole('progressbar')
         .find((el) => el.hasAttribute('aria-valuenow'));
-      expect(uploadBar).toHaveAttribute('aria-valuenow', '50');
+      expect(uploadBar).toBeDefined();
+      expect(api.calls('confirmFileUpload')).toHaveLength(0);
     });
 
-    it('should show uploading state', async () => {
-      mockUploadMaterial.mockImplementation(() => new Promise(() => {})); // Never resolves
+    it('should reserve for the speaker session with name, type and size', async () => {
+      uploadAnswers();
 
       render(<PresentationUpload {...defaultProps} />);
 
-      const file = new File(['content'], 'presentation.pptx', {
-        type: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-      });
-      const fileInput = screen.getByLabelText(/upload presentation/i);
-
+      const file = new File(['content'], 'Vortrag Müller.pptx', { type: PPTX });
       await act(async () => {
-        fireEvent.change(fileInput, { target: { files: [file] } });
+        fireEvent.change(screen.getByLabelText(/upload presentation/i), {
+          target: { files: [file] },
+        });
       });
 
-      expect(screen.getByText(/uploading/i)).toBeInTheDocument();
+      await waitFor(() => expect(api.calls('confirmFileUpload')).toHaveLength(1));
+      expect(api.calls('createFileUpload')[0].params).toEqual({ purpose: 'session-material' });
+      expect(api.calls('createFileUpload')[0].body).toEqual({
+        fileName: 'Vortrag Müller.pptx',
+        contentType: PPTX,
+        size: file.size,
+        target: { eventCode: 'BATbern99', sessionSlug: 'keynote' },
+      });
+      expect(api.calls('confirmFileUpload')[0].params).toEqual({
+        purpose: 'session-material',
+        uploadId: 'up-1',
+      });
+      expect(api.calls('confirmFileUpload')[0].body).toEqual({
+        target: { eventCode: 'BATbern99', sessionSlug: 'keynote' },
+      });
     });
   });
 
@@ -303,15 +293,7 @@ describe('PresentationUpload', () => {
 
   describe('Upload success', () => {
     it('should call onMaterialUploaded after successful upload', async () => {
-      const mockResponse: MaterialConfirmResponse = {
-        materialId: 'mat-123',
-        uploadId: 'upload-123',
-        fileName: 'presentation.pptx',
-        cloudFrontUrl: 'https://cdn.example.com/materials/presentation.pptx',
-        materialType: 'PRESENTATION',
-        uploadedAt: new Date().toISOString(),
-      };
-      mockUploadMaterial.mockResolvedValue(mockResponse);
+      uploadAnswers();
       const onMaterialUploaded = vi.fn();
 
       render(<PresentationUpload {...defaultProps} onMaterialUploaded={onMaterialUploaded} />);
@@ -326,22 +308,18 @@ describe('PresentationUpload', () => {
       });
 
       await waitFor(() => {
-        expect(onMaterialUploaded).toHaveBeenCalledWith(
-          'https://cdn.example.com/materials/presentation.pptx',
-          'presentation.pptx'
-        );
+        expect(onMaterialUploaded).toHaveBeenCalledWith(FILE_URL, 'presentation.pptx');
       });
     });
   });
 
   describe('Error handling', () => {
     it('should report a failed upload when the confirmation has no file URL', async () => {
-      // SpeakerMaterialConfirmResponse marks cloudFrontUrl optional; without it there is no
-      // material to show, so the upload counts as failed instead of passing an empty URL on.
+      // A confirm that did not attach has no fileUrl; without it there is no material to show, so
+      // the upload counts as failed instead of passing an empty URL on.
       const onError = vi.fn();
       const onMaterialUploaded = vi.fn();
-      const mockResponse: MaterialConfirmResponse = { materialId: 'mat-1', uploadId: 'up-1' };
-      mockUploadMaterial.mockResolvedValue(mockResponse);
+      uploadAnswers(null);
 
       render(
         <PresentationUpload
@@ -366,7 +344,13 @@ describe('PresentationUpload', () => {
 
     it('should display error message on upload failure', async () => {
       const onError = vi.fn();
-      mockUploadMaterial.mockRejectedValue(new Error('Upload failed'));
+      uploadAnswers();
+      api.on('createFileUpload', () =>
+        HttpResponse.json(
+          { status: 400, message: 'Upload failed: files of type .pptx are too large' },
+          { status: 400 }
+        )
+      );
 
       render(<PresentationUpload {...defaultProps} onError={onError} />);
 

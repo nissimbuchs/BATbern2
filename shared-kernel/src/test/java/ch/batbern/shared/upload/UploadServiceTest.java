@@ -557,6 +557,68 @@ class UploadServiceTest {
                 HttpStatus.NOT_FOUND);
     }
 
+    /** A purpose whose target has two keys (Story 17.11d, a session in its event). */
+    static class TwoKeyHandler extends TestHandler {
+        @Override
+        public String purpose() {
+            return "session-material";
+        }
+
+        @Override
+        public List<String> targetKeys() {
+            return List.of("eventCode", "sessionSlug");
+        }
+
+        @Override
+        public String targetKey() {
+            return "eventCode";
+        }
+
+        @Override
+        public void checkTarget(String targetId) {
+            if (!"BATbern1/keynote".equals(targetId)) {
+                throw UploadException.notFound("no session " + targetId);
+            }
+        }
+    }
+
+    @Test
+    void should_joinTargetKeysInOrder_when_purposeHasTwo() {
+        UploadService<TestUpload> twoKeys = new UploadService<>(inMemoryRepository(), TestUpload::new,
+                List.of(new TwoKeyHandler()), s3, presigner,
+                new UploadService.UploadStorage("bucket", "https://cdn.batbern.ch"), clock);
+        Map<String, String> target = new HashMap<>();
+        target.put("sessionSlug", "keynote");
+        target.put("eventCode", "BATbern1");
+        target.put("companyName", null);
+
+        String id = twoKeys.create("session-material", "a.png", "image/png", 10, target).uploadId();
+
+        assertThat(table.get(id).getTargetId()).isEqualTo("BATbern1/keynote");
+    }
+
+    @Test
+    void should_return400_when_onlyPartOfATwoKeyTargetIsGiven() {
+        UploadService<TestUpload> twoKeys = new UploadService<>(inMemoryRepository(), TestUpload::new,
+                List.of(new TwoKeyHandler()), s3, presigner,
+                new UploadService.UploadStorage("bucket", "https://cdn.batbern.ch"), clock);
+
+        assertStatus(() -> twoKeys.create("session-material", "a.png", "image/png", 10,
+                Map.of("sessionSlug", "keynote")), HttpStatus.BAD_REQUEST);
+        assertStatus(() -> twoKeys.create("session-material", "a.png", "image/png", 10,
+                Map.of("eventCode", "BATbern1")), HttpStatus.BAD_REQUEST);
+        assertStatus(() -> twoKeys.create("session-material", "a.png", "image/png", 10,
+                Map.of("eventCode", "BATbern1", "sessionSlug", "keynote", "username", "x")), HttpStatus.BAD_REQUEST);
+        assertThat(table).isEmpty();
+    }
+
+    @Test
+    void should_keepOriginalFileName_when_reserved() {
+        String id = service.create("company-logo", "Firmen Logo.PNG", "image/png", 10, Map.of()).uploadId();
+
+        assertThat(table.get(id).getFileName()).isEqualTo("Firmen Logo.PNG");
+    }
+
     private static void assertStatus(Runnable call, HttpStatus status) {
         assertThatThrownBy(call::run).isInstanceOfSatisfying(UploadException.class,
                 e -> assertThat(e.getStatusCode()).isEqualTo(status));

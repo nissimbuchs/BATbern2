@@ -1,0 +1,30 @@
+meta {
+  name: The material is listed with its original name
+  type: http
+  seq: 25
+}
+
+get {
+  url: {{baseUrl}}/events/{{photoEventCode}}/sessions/{{materialSessionSlug}}/materials
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("one material, original file name, type derived from the PDF", function() {
+    const materials = res.getBody().materials;
+    expect(materials).to.have.lengthOf(1);
+    expect(materials[0].uploadId).to.equal(bru.getVar("materialUploadId"));
+    expect(materials[0].fileName).to.equal("Bruno Vortrag " + bru.getVar("photoTimestamp") + ".pdf");
+    expect(materials[0].materialType).to.equal("DOCUMENT");
+    bru.setVar("materialId", materials[0].id);
+  });
+}

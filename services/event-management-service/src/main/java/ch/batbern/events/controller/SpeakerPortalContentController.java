@@ -2,21 +2,14 @@ package ch.batbern.events.controller;
 
 import ch.batbern.events.config.CacheConfig;
 import ch.batbern.events.domain.SpeakerPool;
-import ch.batbern.events.exception.FileSizeExceededException;
-import ch.batbern.events.exception.InvalidFileTypeException;
 import ch.batbern.events.security.SecurityContextHelper;
 import ch.batbern.events.service.ContentSubmissionService;
 import ch.batbern.events.service.SpeakerPortalAuthorizationService;
-import ch.batbern.events.service.SpeakerPortalMaterialsService;
 import ch.batbern.events.service.content.ContentSubmissionPayload;
 import ch.batbern.events.speakers.api.generated.SpeakerPortalContentApi;
 import ch.batbern.events.speakers.dto.generated.ContentSubmitRequest;
 import ch.batbern.events.speakers.dto.generated.ContentSubmitResponse;
 import ch.batbern.events.speakers.dto.generated.SpeakerContentInfo;
-import ch.batbern.events.speakers.dto.generated.SpeakerMaterialConfirmRequest;
-import ch.batbern.events.speakers.dto.generated.SpeakerMaterialConfirmResponse;
-import ch.batbern.events.speakers.dto.generated.SpeakerMaterialUploadRequest;
-import ch.batbern.events.speakers.dto.generated.SpeakerMaterialUploadResponse;
 import ch.batbern.shared.exception.ValidationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,6 +29,9 @@ import org.springframework.web.bind.annotation.RestController;
  * replace the previous magic-link token path. Every endpoint takes {@code eventCode} as a
  * path parameter; {@link SpeakerPortalAuthorizationService} gates access by pool ownership.
  *
+ * <p>Story 17.11d: slides are uploaded through the upload contract, purpose {@code session-material}
+ * with the speaker's session as target ({@code sessionSlug} in {@link SpeakerContentInfo}).
+ *
  * <p>API-consolidation Phase 7: implements the generated {@link SpeakerPortalContentApi}.
  */
 @RestController
@@ -46,17 +42,14 @@ public class SpeakerPortalContentController implements SpeakerPortalContentApi {
     private static final Logger LOG = LoggerFactory.getLogger(SpeakerPortalContentController.class);
 
     private final ContentSubmissionService contentSubmissionService;
-    private final SpeakerPortalMaterialsService materialsService;
     private final SpeakerPortalAuthorizationService authorizationService;
     private final SecurityContextHelper securityContextHelper;
 
     public SpeakerPortalContentController(
             ContentSubmissionService contentSubmissionService,
-            SpeakerPortalMaterialsService materialsService,
             SpeakerPortalAuthorizationService authorizationService,
             SecurityContextHelper securityContextHelper) {
         this.contentSubmissionService = contentSubmissionService;
-        this.materialsService = materialsService;
         this.authorizationService = authorizationService;
         this.securityContextHelper = securityContextHelper;
     }
@@ -119,64 +112,6 @@ public class SpeakerPortalContentController implements SpeakerPortalContentApi {
             throw new ValidationException(e.getMessage());
         } catch (IllegalStateException e) {
             LOG.warn("Content submission failed - state error: {} eventCode={}",
-                    e.getMessage(), eventCode);
-            throw new ValidationException(e.getMessage());
-        }
-    }
-
-    @Override
-    public ResponseEntity<SpeakerMaterialUploadResponse> generatePresignedUrl(
-            String eventCode,
-            SpeakerMaterialUploadRequest request) {
-
-        String username = securityContextHelper.getCurrentUsername();
-        SpeakerPool speaker = authorizationService.resolveSpeakerPool(username, eventCode);
-
-        LOG.info("Material presigned URL request: username={} eventCode={} ip={}",
-                username, eventCode, SpeakerPortalHttp.clientIp());
-
-        try {
-            SpeakerMaterialUploadResponse response =
-                    materialsService.generatePresignedUrl(speaker, request);
-            LOG.info("Presigned URL generated - uploadId: {} eventCode={}",
-                    response.getUploadId(), eventCode);
-            return ResponseEntity.ok(response);
-        } catch (IllegalArgumentException e) {
-            LOG.warn("Material upload failed - {}: eventCode={}", e.getMessage(), eventCode);
-            throw new ValidationException(e.getMessage());
-        } catch (FileSizeExceededException | InvalidFileTypeException e) {
-            LOG.warn("Material upload failed - {}: eventCode={}", e.getMessage(), eventCode);
-            throw new ValidationException(e.getMessage());
-        }
-    }
-
-    // Story 11.E.8 follow-up — materials/confirm also mutates session-level state
-    // (session_materials → materialsCount, materialsStatus, hasPresentation in the
-    // event response). Evict the same Caffeine cache so the organizer's Sessions tab
-    // reflects new uploads without waiting 15 min for the TTL to expire.
-    @Override
-    @CacheEvict(value = CacheConfig.EVENT_WITH_INCLUDES_CACHE, allEntries = true)
-    public ResponseEntity<SpeakerMaterialConfirmResponse> confirmUpload(
-            String eventCode,
-            SpeakerMaterialConfirmRequest request) {
-
-        String username = securityContextHelper.getCurrentUsername();
-        SpeakerPool speaker = authorizationService.resolveSpeakerPool(username, eventCode);
-
-        LOG.info("Material confirm request: username={} eventCode={} uploadId={} ip={}",
-                username, eventCode, request.getUploadId(), SpeakerPortalHttp.clientIp());
-
-        try {
-            SpeakerMaterialConfirmResponse response =
-                    materialsService.confirmUpload(speaker, request);
-            LOG.info("Material confirmed - materialId: {} eventCode={}",
-                    response.getMaterialId(), eventCode);
-            return ResponseEntity.status(HttpStatus.CREATED).body(response);
-        } catch (IllegalArgumentException e) {
-            LOG.warn("Material confirm failed - {}: eventCode={}", e.getMessage(), eventCode);
-            throw new ValidationException(e.getMessage());
-        } catch (IllegalStateException e) {
-            LOG.warn("Material confirm failed - state error: {} eventCode={}",
                     e.getMessage(), eventCode);
             throw new ValidationException(e.getMessage());
         }

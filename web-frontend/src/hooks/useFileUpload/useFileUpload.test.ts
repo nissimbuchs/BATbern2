@@ -8,7 +8,6 @@ import { renderHook, act, waitFor } from '@testing-library/react';
 import { HttpResponse } from 'msw';
 import { useFileUpload } from './useFileUpload';
 import { uploadTarget } from '@/services/uploadService';
-import { materialUploadTarget } from '@/services/api/sessionApiClient';
 import { api } from '@/test/msw/api';
 
 // The backend answers through the MSW harness (checked against uploads-api); the real upload
@@ -709,19 +708,25 @@ describe('useFileUpload Hook', () => {
     expect(api.calls('confirmFileUpload')[0].body).toEqual({ target: { companyName: 'acme' } });
   });
 
-  it('should_presignAndConfirmAtMaterials_when_materialTargetGiven', async () => {
+  it('should_sendTheTwoKeyTarget_when_sessionMaterialTargetGiven', async () => {
+    // Story 17.11d: session materials are the upload contract's purpose session-material, with a
+    // target of two keys.
     const file = new File(['slides'], 'talk.pdf', { type: 'application/pdf' });
-    api.on('generateMaterialPresignedUrl', () => ({
+    answerPresign({
       uploadUrl: 'https://s3.amazonaws.com/bucket/talk.pdf',
       fileId: 'mat-1',
-      s3Key: 'materials/temp/mat-1/talk.pdf',
-      fileExtension: 'pdf',
-      expiresInMinutes: 15,
-      requiredHeaders: {},
-    }));
+      requiredHeaders: { 'Content-Type': 'application/pdf' },
+    });
+    answerConfirm(
+      'https://cdn.batbern.ch/materials/events/BATbern58/sessions/keynote/file-mat-1.pdf'
+    );
+    const target = uploadTarget('session-material', {
+      eventCode: 'BATbern58',
+      sessionSlug: 'keynote',
+    });
 
     const { result } = renderHook(() =>
-      useFileUpload({ target: materialUploadTarget, allowedTypes: ['application/pdf'] })
+      useFileUpload({ target, allowedTypes: ['application/pdf'] })
     );
 
     let uploadPromise: Promise<string | null>;
@@ -739,14 +744,16 @@ describe('useFileUpload Hook', () => {
     });
 
     expect(await uploadPromise!).toBe('mat-1');
-    expect(api.allCalls().map((c) => c.key)).toEqual([
-      'generateMaterialPresignedUrl',
-      'confirmMaterialUpload',
-    ]);
-    expect(api.calls('confirmMaterialUpload')[0].body).toEqual({
-      fileId: 'mat-1',
-      fileExtension: 'pdf',
-      checksum: expect.any(String),
+    expect(api.allCalls().map((c) => c.key)).toEqual(['createFileUpload', 'confirmFileUpload']);
+    expect(api.calls('createFileUpload')[0].params).toEqual({ purpose: 'session-material' });
+    expect(api.calls('createFileUpload')[0].body).toEqual({
+      fileName: 'talk.pdf',
+      contentType: 'application/pdf',
+      size: file.size,
+      target: { eventCode: 'BATbern58', sessionSlug: 'keynote' },
+    });
+    expect(api.calls('confirmFileUpload')[0].body).toEqual({
+      target: { eventCode: 'BATbern58', sessionSlug: 'keynote' },
     });
   });
 });

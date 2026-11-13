@@ -142,7 +142,8 @@ describe('specMatcher on the real docs/api (smoke)', () => {
     // 287 on 2026-11-11 after Story 4.10c folded batch_registrations, enroll-stakeholders and
     // the /newsletter/my-subscription pair into their collections. 278 on 2026-11-13 after Story
     // 17.11a removed the three profile picture upload operations (uploads-api took them over).
-    expect(real.operations.length).toBeGreaterThan(270);
+    // 270 on 2026-11-13 after Stories 17.11b-d removed the photo, teaser and material uploads.
+    expect(real.operations.length).toBeGreaterThan(260);
     expect(matchOperation(real, 'GET', '/users/me').ok).toBe(true);
   });
 });

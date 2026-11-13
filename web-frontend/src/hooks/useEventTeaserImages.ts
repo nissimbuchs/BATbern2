@@ -78,11 +78,7 @@ export const useUploadTeaserImage = (eventCode?: string | null) => {
           mimeType: file.type,
         });
         await eventApiClient.uploadPhotoToS3(slot.uploadUrl, file);
-        return await target.confirm(slot.fileId, {
-          fileId: slot.fileId,
-          fileExtension: fileName.split('.').pop() ?? '',
-          checksum: '',
-        });
+        return await target.confirm(slot.fileId);
       } catch (error) {
         throw withServerMessage(error);
       }

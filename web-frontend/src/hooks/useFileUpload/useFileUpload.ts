@@ -63,12 +63,6 @@ function localPreviewUrl(file: File): string | undefined {
   return typeof URL.createObjectURL === 'function' ? URL.createObjectURL(file) : undefined;
 }
 
-/** The extension of the file name, lower case, for the materials confirm. */
-function extensionOf(fileName: string): string {
-  const dot = fileName.lastIndexOf('.');
-  return dot < 0 ? '' : fileName.slice(dot + 1).toLowerCase();
-}
-
 export const useFileUpload = (options: UseFileUploadOptions) => {
   const {
     target,
@@ -118,12 +112,6 @@ export const useFileUpload = (options: UseFileUploadOptions) => {
     [allowedTypes, maxFileSize, handleError]
   );
 
-  const calculateChecksum = async (file: File): Promise<string> => {
-    // Simple checksum calculation using file metadata
-    // In production, you might want to calculate actual SHA-256
-    return `${file.name}-${file.size}-${file.lastModified}`;
-  };
-
   const uploadFile = useCallback(
     async (file: File): Promise<string | null> => {
       // Reset state
@@ -166,7 +154,6 @@ export const useFileUpload = (options: UseFileUploadOptions) => {
       }
 
       const { uploadUrl, fileId, requiredHeaders } = presigned;
-      const fileExtension = presigned.fileExtension ?? extensionOf(file.name);
 
       // ── Phase 2: Upload file directly to S3 using the presigned URL ─────────
       // The PUT bypasses our backend entirely. Errors here are S3-side or
@@ -304,12 +291,7 @@ export const useFileUpload = (options: UseFileUploadOptions) => {
       // ── Phase 3: Confirm upload with backend ────────────────────────────────
       let attachedUrl: string | null | undefined;
       try {
-        const checksum = await calculateChecksum(file);
-        const confirmed = await target.confirm(fileId, {
-          fileId,
-          fileExtension,
-          checksum,
-        });
+        const confirmed = await target.confirm(fileId);
         attachedUrl = confirmed ? confirmed.fileUrl : undefined;
       } catch (err) {
         const formatted = formatErrorForDisplay(err);

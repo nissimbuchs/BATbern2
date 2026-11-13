@@ -50,11 +50,7 @@ export const useUploadEventPhoto = (eventCode: string) => {
         mimeType: file.type,
       });
       await eventApiClient.uploadPhotoToS3(slot.uploadUrl, file);
-      return target.confirm(slot.fileId, {
-        fileId: slot.fileId,
-        fileExtension: fileName.split('.').pop() ?? '',
-        checksum: '',
-      });
+      return target.confirm(slot.fileId);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['event-photos', eventCode] });

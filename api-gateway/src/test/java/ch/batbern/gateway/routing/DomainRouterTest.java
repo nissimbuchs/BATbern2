@@ -102,6 +102,11 @@ class DomainRouterTest {
                 .isEqualTo("event-management-service");
         assertThat(domainRouter.determineTargetService("/api/v1/uploads/teaser-image/abc/confirm"))
                 .isEqualTo("event-management-service");
+        // Story 17.11d
+        assertThat(domainRouter.determineTargetService("/api/v1/uploads/session-material"))
+                .isEqualTo("event-management-service");
+        assertThat(domainRouter.determineTargetService("/api/v1/uploads/session-material/abc/confirm"))
+                .isEqualTo("event-management-service");
     }
 
     @Test
@@ -120,6 +125,11 @@ class DomainRouterTest {
         assertThatThrownBy(() -> domainRouter.determineTargetService("/api/v1/logos/presigned-url"))
                 .isInstanceOf(RouteNotFoundException.class);
         assertThatThrownBy(() -> domainRouter.determineTargetService("/api/v1/logos/upload-from-url"))
+                .isInstanceOf(RouteNotFoundException.class);
+        // The /materials presign and confirm are gone with Story 17.11d
+        assertThatThrownBy(() -> domainRouter.determineTargetService("/api/v1/materials/presigned-url"))
+                .isInstanceOf(RouteNotFoundException.class);
+        assertThatThrownBy(() -> domainRouter.determineTargetService("/api/v1/materials/abc/confirm"))
                 .isInstanceOf(RouteNotFoundException.class);
     }
 

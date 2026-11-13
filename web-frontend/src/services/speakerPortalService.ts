@@ -15,6 +15,7 @@
 import apiClient from '@/services/api/apiClient';
 import { AxiosError } from 'axios';
 import type { components } from '@/types/generated/event-speakers-api.types';
+import { confirmUpload, uploadTarget } from '@/services/uploadService';
 
 // API base path for speaker portal endpoints
 const SPEAKER_PORTAL_API_PATH = '/speaker-portal';
@@ -111,11 +112,13 @@ export type SpeakerContentInfo = components['schemas']['SpeakerContentInfo'];
 
 export type ContentSubmitRequest = components['schemas']['ContentSubmitRequest'];
 export type ContentSubmitResponse = components['schemas']['ContentSubmitResponse'];
-export type SpeakerMaterialUploadRequest = components['schemas']['SpeakerMaterialUploadRequest'];
 
-export type MaterialUploadResponse = components['schemas']['SpeakerMaterialUploadResponse'];
-export type MaterialConfirmRequest = components['schemas']['SpeakerMaterialConfirmRequest'];
-export type MaterialConfirmResponse = components['schemas']['SpeakerMaterialConfirmResponse'];
+/** A speaker's uploaded slides, attached to their session (Story 17.11d). */
+export interface UploadedMaterial {
+  /** The material's CDN URL; null only if the confirm did not attach (never for a target). */
+  fileUrl: string | null;
+  fileName: string;
+}
 
 /**
  * Speaker Portal Service Class — Story 11.E.3.
@@ -208,82 +211,64 @@ class SpeakerPortalService {
     }
   }
 
-  async getMaterialPresignedUrl(
-    eventCode: string,
-    request: SpeakerMaterialUploadRequest
-  ): Promise<MaterialUploadResponse> {
-    try {
-      const response = await apiClient.post<MaterialUploadResponse>(
-        `${SPEAKER_PORTAL_API_PATH}/events/${encodeURIComponent(eventCode)}/materials/presigned-url`,
-        request
-      );
-      return response.data;
-    } catch (error) {
-      throw this.transformError(error);
-    }
-  }
-
-  async confirmMaterialUpload(
-    eventCode: string,
-    request: MaterialConfirmRequest
-  ): Promise<MaterialConfirmResponse> {
-    try {
-      const response = await apiClient.post<MaterialConfirmResponse>(
-        `${SPEAKER_PORTAL_API_PATH}/events/${encodeURIComponent(eventCode)}/materials/confirm`,
-        request
-      );
-      return response.data;
-    } catch (error) {
-      throw this.transformError(error);
-    }
-  }
-
+  /**
+   * Uploads the speaker's slides to their session (Story 17.11d): purpose `session-material` of the
+   * upload contract with the target `{eventCode, sessionSlug}`. The confirm with the target creates
+   * the session material (PRESENTATION); its `fileUrl` is the material's CDN URL. The PUT runs
+   * through XHR for the progress events.
+   */
   async uploadMaterial(
     eventCode: string,
+    sessionSlug: string,
     file: File,
     onProgress?: (progress: number) => void
-  ): Promise<MaterialConfirmResponse> {
-    const { uploadUrl, uploadId, requiredHeaders } = await this.getMaterialPresignedUrl(eventCode, {
-      fileName: file.name,
-      fileSize: file.size,
-      mimeType: file.type,
-    });
-    if (!uploadUrl || !uploadId) {
-      throw new Error('Upload failed: the server returned no upload URL');
+  ): Promise<UploadedMaterial> {
+    try {
+      const target = uploadTarget('session-material', { eventCode, sessionSlug });
+      const {
+        uploadUrl,
+        fileId: uploadId,
+        requiredHeaders,
+      } = await target.presign({
+        fileName: file.name,
+        fileSize: file.size,
+        mimeType: file.type,
+      });
+      if (!uploadUrl || !uploadId) {
+        throw new Error('Upload failed: the server returned no upload URL');
+      }
+
+      await new Promise<void>((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.upload.addEventListener('progress', (event) => {
+          if (event.lengthComputable && onProgress) {
+            const percentComplete = Math.round((event.loaded / event.total) * 100);
+            onProgress(percentComplete);
+          }
+        });
+        xhr.addEventListener('load', () => {
+          if (xhr.status === 200) {
+            resolve();
+          } else {
+            reject(new Error(`S3 upload failed with status ${xhr.status}`));
+          }
+        });
+        xhr.addEventListener('error', () => reject(new Error('S3 upload failed')));
+        xhr.open('PUT', uploadUrl);
+        Object.entries(requiredHeaders ?? {}).forEach(([key, value]) => {
+          xhr.setRequestHeader(key, value);
+        });
+        xhr.send(file);
+      });
+
+      const confirmed = await confirmUpload('session-material', uploadId, {
+        eventCode,
+        sessionSlug,
+      });
+      return { fileUrl: confirmed.fileUrl ?? null, fileName: file.name };
+    } catch (error) {
+      throw this.transformError(error);
     }
-
-    await new Promise<void>((resolve, reject) => {
-      const xhr = new XMLHttpRequest();
-      xhr.upload.addEventListener('progress', (event) => {
-        if (event.lengthComputable && onProgress) {
-          const percentComplete = Math.round((event.loaded / event.total) * 100);
-          onProgress(percentComplete);
-        }
-      });
-      xhr.addEventListener('load', () => {
-        if (xhr.status === 200) {
-          resolve();
-        } else {
-          reject(new Error(`S3 upload failed with status ${xhr.status}`));
-        }
-      });
-      xhr.addEventListener('error', () => reject(new Error('S3 upload failed')));
-      xhr.open('PUT', uploadUrl);
-      Object.entries(requiredHeaders ?? {}).forEach(([key, value]) => {
-        xhr.setRequestHeader(key, value);
-      });
-      xhr.send(file);
-    });
-
-    const fileExtension = file.name.split('.').pop()?.toLowerCase() || '';
-    return this.confirmMaterialUpload(eventCode, {
-      uploadId,
-      fileName: file.name,
-      fileExtension,
-      fileSize: file.size,
-      mimeType: file.type,
-      materialType: 'PRESENTATION',
-    });
   }
 
   /**
