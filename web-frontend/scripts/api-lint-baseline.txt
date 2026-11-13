@@ -30,8 +30,6 @@ no-verb-segment	users-api.openapi.yml	GET /users/{username}/merge-preview
 no-verb-segment	users-api.openapi.yml	POST /users/additional-emails/verify
 no-verb-segment	users-api.openapi.yml	POST /users/admin/reconcile
 no-verb-segment	users-api.openapi.yml	POST /users/me/profile-claims/confirm
-no-verb-segment	users-api.openapi.yml	POST /users/{username}/picture/confirm
-no-verb-segment	users-api.openapi.yml	POST /users/{username}/profile-picture/upload-from-url
 no-verb-segment	users-api.openapi.yml	POST /watch/authenticate
 no-verb-segment	users-api.openapi.yml	POST /watch/pair
 uuid-path-param	event-ai-api.openapi.yml	GET /events/{eventCode}/ai/theme-image/jobs/{jobId}

@@ -1,0 +1,64 @@
+meta {
+  name: Batch import - import an image as a profile-picture upload
+  type: http
+  seq: 14
+}
+
+post {
+  url: {{baseUrl}}/uploads/profile-picture/import
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "url": "https://www.batbern.ch/icons/icon-192x192.png",
+    "fileName": "bruno-test-import"
+  }
+}
+
+script:pre-request {
+  // Attaching changes the caller's real picture and leaves an S3 object behind (DELETE clears
+  // only the user row). So this end-to-end chain (14b to 14e) runs only against local dev, and
+  // only when 01 saw no picture, so the DELETE in 14e restores the previous state exactly.
+  const local = bru.getEnvName() === "development";
+  const hadPicture = (bru.getVar("originalProfilePictureUrl") || "") !== "";
+  bru.setVar("ownPictureImportRuns", local && !hadPicture);
+  if (!local || hadPicture) {
+    console.log("Skipping the import chain: " + (local ? "the account already has a picture" : "not local dev"));
+    bru.runner.skipRequest();
+  }
+}
+
+assert {
+  res.status: eq 201
+  res.body.status: eq CONFIRMED
+  res.body.purpose: eq profile-picture
+}
+
+script:post-response {
+  if (res.getStatus() === 201) {
+    bru.setVar("importedPictureUploadId", res.getBody().uploadId);
+  }
+}
+
+docs {
+  Story 17.11a, the speaker batch import end to end: an organizer imports an image from an HTTPS
+  URL (the server fetches it), then confirms the upload with the target username (14c). The image
+  is the BATbern app icon on www.batbern.ch: ours, stable, no person in it. Here the organizer's own
+  username is the target, so no other account is touched.
+
+  Skipped outside local dev (in the deploy run this collection hits production) and when the
+  account already has a picture: the old picture's S3 key could not be put back through the API,
+  so the chain does not replace it.
+}

@@ -126,8 +126,8 @@ const ProfilePhotoUpload = ({
       setIsUploading(true);
 
       try {
-        // Upload using CUMS user-picture endpoints (3-phase presigned URL flow). Returns the
-        // CDN URL string directly.
+        // The upload contract, purpose profile-picture with the own username as target (Story
+        // 17.11a): presign, PUT to S3, confirm attaches it. Returns the CDN URL.
         const uploadedUrl = await uploadProfilePicture(username, file, (progress) =>
           setUploadProgress(progress)
         );

@@ -32,8 +32,6 @@ import software.amazon.awssdk.services.s3.model.HeadObjectRequest;
 import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 
 import java.time.Instant;
-import java.time.Year;
-import java.time.ZoneOffset;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -155,7 +153,7 @@ class UploadsControllerIntegrationTest extends AbstractIntegrationTest {
                         + "\"}", 201);
 
         Company stored = companyRepository.findByName(company.path("name").asText()).orElseThrow();
-        String key = "logos/" + Year.now(ZoneOffset.UTC) + "/companies/" + stored.getName()
+        String key = "logos/companies/" + stored.getName()
                 + "/logo-" + uploadId + ".svg";
         assertThat(stored.getLogoS3Key()).isEqualTo(key);
         assertThat(stored.getLogoUrl()).endsWith("/" + key);

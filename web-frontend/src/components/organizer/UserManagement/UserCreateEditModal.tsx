@@ -211,7 +211,7 @@ const UserCreateEditModal: React.FC<UserCreateEditModalProps> = ({
 
     setIsUploadingPhoto(true);
     try {
-      // Story 4.10: /users/{username}/picture* (user.id is the username)
+      // Purpose profile-picture with target username (Story 17.11a; user.id is the username)
       const newUrl = await uploadProfilePicture(user.id, file);
       setProfilePictureUrl(newUrl);
     } catch (error) {

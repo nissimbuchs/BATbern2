@@ -1,6 +1,6 @@
 # ADR-002: Generic File Upload Service Architecture
 
-**Status**: Accepted (decision 2026-11-07 implemented for `company-logo` and `event-theme-image` by Story 17.11, 2026-11-12)
+**Status**: Accepted (decision 2026-11-07 implemented for `company-logo` and `event-theme-image` by Story 17.11, 2026-11-12, and for `profile-picture` by Story 17.11a, 2026-11-13)
 **Date**: 2025-10-27
 **Decision Makers**: Development Team, Architect Agent (Winston)
 **Related Stories**: Story 1.16.3 (Generic File Upload Service), Story 2.5.1 (Company Management Frontend)
@@ -657,7 +657,7 @@ resource (`DELETE /events/{c}/photos/{id}`, `…/materials/{id}/download`).
 **Placement.** The mechanics (key layout, presign, size and type rules, PENDING → CONFIRMED →
 ASSOCIATED, expiry cleanup) live in one shared-kernel component. Each purpose is a small handler in
 the owning service: who may upload for this target, allowed types and size, the S3 key, what confirm
-attaches. The gateway routes `/api/v1/uploads/{purpose}` by purpose prefix to the owning service, so
+attaches. The gateway routes `/api/v1/uploads/{purpose}` by purpose to the owning service (an explicit map since Story 17.11a), so
 no service handles another service's files. Each service keeps its own `uploads` table; the `logos`
 table that EMS and CUMS share today goes away with the migration.
 
@@ -777,6 +777,42 @@ not a copy of the CUMS class, and both services create and use the same `logos` 
 
 ## Implementation Status
 
+### Purposes (current)
+
+| purpose | owner | types | max size | target | import | final key |
+|---|---|---|---|---|---|---|
+| `company-logo` | CUMS | png, jpeg, svg | 5 MB | `companyName` (ORGANIZER), optional | yes (ORGANIZER) | `logos/companies/{name}/logo-{uploadId}.{ext}` |
+| `event-theme-image` | EMS | png, jpeg, svg | 5 MB | `eventCode` (ORGANIZER), optional | no | `logos/events/{eventCode}/theme-{uploadId}.{ext}` |
+| `profile-picture` | CUMS | png, jpeg, svg | 5 MB | `username` (ORGANIZER or the user themself), required | yes (ORGANIZER) | `profile-pictures/{username}/profile-{uploadId}.{ext}` |
+
+The gateway routes each purpose by an explicit map in `DomainRouter` (an unlisted purpose is 404).
+Final keys carry no year since Story 17.11a; files stored earlier keep their `…/{year}/…` key and URL
+(the rows hold the full key and URL).
+
+### Story 17.11a (2026-11-13): purpose `profile-picture`
+
+- **Contract:** `profile-picture` joins the `UploadPurpose` enum and `UploadTarget` gets `username`
+  (`uploads-api`). The three operations `POST /users/{username}/picture/presigned-url`,
+  `.../picture/confirm` and `POST /users/{username}/profile-picture/upload-from-url` are deleted from
+  `users-api` (no aliases; 404). `DELETE /users/{username}/picture` stays.
+- **Shared kernel:** `UploadPurposeHandler.requiresTarget()` (default false); `UploadService.create`
+  and `confirm` answer 400 when a purpose requires a target and none is given.
+- **CUMS:** `ProfilePictureUploadHandler` (target `username`, required; ORGANIZER or
+  `UserOwnership.isCurrentUser`, else 403; unknown user 404; temp key
+  `profile-pictures/temp/{uploadId}/profile-{uploadId}.{ext}`; attach sets `profilePictureUrl` and
+  `profilePictureS3Key`; import ORGANIZER). The speaker batch import imports, then confirms with
+  the target. Fixed with it: the old confirm rebuilt the key from the current year and never checked
+  the object in S3 (a picture confirmed across New Year pointed at a missing object); pictures now
+  have a pending state and the nightly expiry. `ProfilePictureService` keeps only the server-side
+  store of the Google avatar import (no upload row) and the key builder both use.
+- **No year in final keys** (owner 2026-11-13) for every purpose: the upload year means nothing and
+  caused the rollover bug.
+- **Gateway:** an explicit purpose → service map replaces the prefix rule (`profile-picture`,
+  `teaser-image` and `session-material` carry no service prefix).
+- **Frontend:** `userAccountApi.uploadProfilePicture` runs on `uploadTarget('profile-picture',
+  {username})` (XHR PUT kept for the progress bar); the batch import uses
+  `userApi.importProfilePicture` (`importUpload` + `confirmUpload` with the target).
+
 ### Story 17.11 (2026-11-12): one upload contract, first purposes `company-logo` and `event-theme-image`
 
 Implements the decision of 2026-11-07 for its first two purposes:
@@ -808,14 +844,14 @@ Implements the decision of 2026-11-07 for its first two purposes:
 - **Frontend:** `services/uploadService.ts` (`uploadTarget(purpose, target?)`, `importUpload`), the
   one hook `useFileUpload` (no hard-coded bucket; the preview is the attached file's CDN URL or a
   local object URL), `FileUpload` requires its `uploadTarget`.
-- **Key layouts unchanged:** `logos/{year}/companies/{name}/logo-{uploadId}.{ext}`,
+- **Key layouts unchanged** (until 17.11a dropped the year): `logos/{year}/companies/{name}/logo-{uploadId}.{ext}`,
   `logos/requests/{uploadId}/logo.{ext}`, `logos/{year}/events/{eventCode}/theme-{uploadId}.{ext}`;
   existing S3 objects and CDN URLs are untouched.
 - **`logos` dropped** (#1307, owner go 2026-11-13): CUMS V31 and EMS V154 drop the table; its upload
   history is discarded by decision, the S3 objects stay.
-- **Left:** purposes `profile-picture`, `event-photo`, `teaser-image` and
-  `session-material` follow in Stories 17.11a–d; each adds a handler and its enum value, no
-  operation.
+- **Left:** purposes `profile-picture` (done, 17.11a, above), `event-photo`, `teaser-image` and
+  `session-material` follow in Stories 17.11b–d; each adds a handler, its enum value and its line in
+  the gateway map, no operation.
 
 ### Story 1.16.3 (2025-10, historical)
 

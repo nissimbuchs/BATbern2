@@ -1340,9 +1340,12 @@ sequenceDiagram
     UI->>CDN: display with ?w= and ?h= for resizing
 ```
 
-Key shapes (examples): `logos/temp/{uploadId}/logo-{fileId}.{ext}` →
-`logos/{year}/{entity-type}/{entity-name}/logo-{fileId}.{ext}`;
-`profile-pictures/{year}/{username}/profile-{fileId}.{ext}`;
+Key shapes of new objects (examples): `logos/temp/{uploadId}/logo-{uploadId}.{ext}` →
+`logos/companies/{name}/logo-{uploadId}.{ext}` (theme image: `logos/events/{eventCode}/theme-…`);
+`profile-pictures/temp/{uploadId}/profile-{uploadId}.{ext}` →
+`profile-pictures/{username}/profile-{uploadId}.{ext}`. Since Story 17.11a the final keys carry no
+year; objects stored earlier keep their `logos/{year}/…` and `profile-pictures/{year}/…` keys (the
+database rows hold the full key and URL, nothing is moved);
 `materials/temp/{uploadId}/file-{uploadId}.{ext}`. Size limits and confirm steps differ per
 service; the Java listing previously shown here (`ContentStorageService`, four buckets) did not
 match the code and is removed.

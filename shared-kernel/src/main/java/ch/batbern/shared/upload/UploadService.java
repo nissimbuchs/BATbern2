@@ -328,6 +328,10 @@ public class UploadService<T extends UploadRecord> {
                 .filter(e -> e.getValue() != null && !e.getValue().isBlank())
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
         if (present.isEmpty()) {
+            if (handler.requiresTarget()) {
+                throw UploadException.badRequest("The upload of " + handler.purpose() + " needs a target: "
+                        + handler.targetKey());
+            }
             return null;
         }
         if (present.size() > 1 || !present.containsKey(handler.targetKey())) {

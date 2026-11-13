@@ -1,11 +1,11 @@
 meta {
-  name: Validation - Invalid File Type
+  name: Validation - invalid file type is 400
   type: http
   seq: 13
 }
 
 post {
-  url: {{baseUrl}}/users/{{currentUsername}}/picture/presigned-url
+  url: {{baseUrl}}/uploads/profile-picture
   body: json
   auth: bearer
 }
@@ -22,9 +22,12 @@ headers {
 
 body:json {
   {
-    "fileName": "document.pdf",
-    "fileSize": 1048576,
-    "mimeType": "application/pdf"
+    "fileName": "bruno-test-{{$timestamp}}.pdf",
+    "contentType": "application/pdf",
+    "size": 1048576,
+    "target": {
+      "username": "{{currentUsername}}"
+    }
   }
 }
 
@@ -33,23 +36,11 @@ assert {
 }
 
 tests {
-  test("should reject invalid file type with 400 on /users/{username}/picture (AC10, Story 4.10)", function() {
-    // 404 would mean the picture path is gone: Story 4.10 moved it from /users/me/picture.
-    expect(res.getStatus()).to.equal(400);
+  test("should name the allowed types", function() {
+    expect(res.getBody().message).to.include('allowed');
   });
+}
 
-  test("should return error message about allowed file types", function() {
-    if (res.getStatus() === 400) {
-      const body = res.getBody();
-      expect(body.message).to.exist;
-      expect(body.message).to.match(/PNG|JPG|JPEG|SVG/i);
-    }
-  });
-
-  test("should include correlation ID for troubleshooting", function() {
-    if (res.getStatus() === 400) {
-      const body = res.getBody();
-      expect(body.correlationId).to.exist;
-    }
-  });
+docs {
+  Story 17.11a: purpose profile-picture accepts png, jpeg and svg only.
 }

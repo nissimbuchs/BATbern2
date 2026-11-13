@@ -9,6 +9,7 @@
  */
 
 import apiClient from './apiClient';
+import { confirmUpload, importUpload } from '@/services/uploadService';
 import type { components as UserApiComponents } from '@/types/generated/user-api.types';
 
 /** The wire user of `GET /users/me` (user-api). */
@@ -75,17 +76,16 @@ export const getPublicUser = async (username: string): Promise<PublicUserRespons
 };
 
 /**
- * Admin: the server fetches an image from `url`, stores it as the user's profile picture and
- * returns its CDN URL.
+ * Organizer (speaker batch import): the server fetches an image from `url` (purpose
+ * `profile-picture`, `POST /uploads/profile-picture/import`), then the confirm with the target
+ * makes it the user's picture. Returns its CDN URL.
  */
-export const uploadProfilePictureFromUrl = async (
+export const importProfilePicture = async (
   username: string,
   url: string,
-  filename: string
-): Promise<{ profilePictureUrl?: string }> => {
-  const response = await apiClient.post<{ profilePictureUrl?: string }>(
-    `/users/${encodeURIComponent(username)}/profile-picture/upload-from-url`,
-    { url, filename }
-  );
-  return response.data;
+  fileName: string
+): Promise<string | null> => {
+  const uploadId = await importUpload('profile-picture', url, fileName);
+  const attached = await confirmUpload('profile-picture', uploadId, { username });
+  return attached.fileUrl;
 };

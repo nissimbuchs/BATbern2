@@ -8,8 +8,6 @@ import ch.batbern.shared.upload.UploadRules;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
-import java.time.LocalDate;
-import java.time.ZoneOffset;
 
 /**
  * Purpose {@code company-logo} (Story 17.11): the logo of a company. Without a target, any signed-in
@@ -68,10 +66,14 @@ public class CompanyLogoUploadHandler implements UploadPurposeHandler {
         return logoKey(companyName, upload);
     }
 
-    /** Unchanged layout of every company logo: {@code logos/{year}/companies/{name}/logo-{uploadId}.{ext}}. */
+    /**
+     * The key of every company logo: {@code logos/companies/{name}/logo-{uploadId}.{ext}}. No year
+     * (Story 17.11a, the upload year means nothing and caused a rollover bug). Logos stored earlier
+     * keep their {@code logos/{year}/…} key and URL.
+     */
     public static String logoKey(String companyName, UploadRecord upload) {
-        return String.format("logos/%d/companies/%s/logo-%s.%s", LocalDate.now(ZoneOffset.UTC).getYear(),
-                companyName, upload.getUploadId(), upload.getFileExtension());
+        return String.format("logos/companies/%s/logo-%s.%s", companyName, upload.getUploadId(),
+                upload.getFileExtension());
     }
 
     @Override

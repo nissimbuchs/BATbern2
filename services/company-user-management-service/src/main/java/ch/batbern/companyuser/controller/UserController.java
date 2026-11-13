@@ -11,18 +11,12 @@ import ch.batbern.companyuser.api.generated.UserAdministrationApi;
 import ch.batbern.shared.types.Role;
 import ch.batbern.companyuser.domain.User;
 import ch.batbern.companyuser.dto.generated.AddAdditionalEmailRequest;
-import ch.batbern.companyuser.dto.generated.AdminUploadProfilePictureFromUrlRequest;
-import ch.batbern.companyuser.dto.generated.AdminUploadProfilePictureFromUrlResponse;
 import ch.batbern.companyuser.dto.generated.AdditionalEmail;
 import ch.batbern.companyuser.dto.generated.AdditionalEmailVerificationCheckResponse;
 import ch.batbern.companyuser.dto.generated.AdditionalEmailVerificationConfirmResponse;
 import ch.batbern.companyuser.dto.generated.ConfirmAdditionalEmailVerificationRequest;
 import ch.batbern.companyuser.dto.generated.CreateUserRequest;
 import ch.batbern.companyuser.dto.generated.PaginatedUserResponse;
-import ch.batbern.companyuser.dto.generated.PresignedUploadUrl;
-import ch.batbern.companyuser.dto.generated.ProfilePictureUploadConfirmRequest;
-import ch.batbern.companyuser.dto.generated.ProfilePictureUploadConfirmResponse;
-import ch.batbern.companyuser.dto.generated.ProfilePictureUploadRequest;
 import ch.batbern.companyuser.dto.generated.UpdateAdditionalEmailRequest;
 import ch.batbern.companyuser.dto.generated.UpdateUserRequest;
 import ch.batbern.companyuser.dto.generated.UpdateUserRolesRequest;
@@ -32,9 +26,7 @@ import ch.batbern.companyuser.dto.generated.UserSearchResponse;
 import ch.batbern.companyuser.dto.generated.UserReconciliationReport;
 import ch.batbern.companyuser.dto.generated.UserSyncStatus;
 import ch.batbern.companyuser.repository.UserRepository;
-import ch.batbern.shared.upload.ImageUrlFetcher;
 import ch.batbern.companyuser.service.PrimaryEmailService;
-import ch.batbern.companyuser.service.ProfilePictureService;
 import ch.batbern.companyuser.service.UserSearchService;
 import ch.batbern.companyuser.service.UserService;
 import ch.batbern.shared.api.SortCriteria;
@@ -52,7 +44,6 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.net.URI;
 import java.util.List;
 import java.util.UUID;
 
@@ -78,9 +69,11 @@ import java.util.UUID;
  * interfaces carry neither); behaviour matches the pre-wiring controller exactly.
  *
  * <p>The formerly-undocumented endpoints — service-to-service {@code GET /users/by-company},
- * {@code POST /users/{username}/profile-picture/upload-from-url},
  * {@code POST /users/admin/reconcile}, {@code GET /users/admin/sync-status} — are now contract-first
- * too (spec ops added under User Management / Profile Picture / User Administration tags).
+ * too (spec ops added under User Management / User Administration tags).
+ *
+ * <p>Story 17.11a: profile picture uploads (presign, confirm, import from a URL) run on the upload
+ * contract, purpose {@code profile-picture} ({@link UploadsController}); only the removal is here.
  */
 @RestController
 @RequestMapping("/api/v1")
@@ -92,7 +85,6 @@ public class UserController implements UserManagementApi, UserAccountApi, Profil
 
     private final UserService userService;
     private final UserSearchService userSearchService;
-    private final ProfilePictureService profilePictureService;
     private final UserRepository userRepository;
     private final ch.batbern.companyuser.service.UserReconciliationService reconciliationService;
     private final ch.batbern.companyuser.service.RoleService roleService;
@@ -402,57 +394,6 @@ public class UserController implements UserManagementApi, UserAccountApi, Profil
     // ProfilePictureApi
     // ------------------------------------------------------------------------
 
-    /**
-     * Request a presigned URL for a user's profile picture upload: the user themself or an
-     * organizer (Story 4.10, replaces {@code /users/me/picture/presigned-url}).
-     */
-    @Override
-    @PreAuthorize("hasRole('ORGANIZER') or @userOwnership.isCurrentUser(#username)")
-    @Timed(value = "users.profilePicture.requestPresignedUrl",
-            description = "Time to generate presigned URL for a profile picture",
-            percentiles = {0.5, 0.95, 0.99})
-    public ResponseEntity<PresignedUploadUrl> requestProfilePictureUploadUrlForUser(
-            String username, ProfilePictureUploadRequest profilePictureUploadRequest) {
-        log.info("Requesting presigned URL for profile picture upload for user: {}, file: {}",
-                username, profilePictureUploadRequest.getFileName());
-
-        User user = userRepository.findByUsername(username)
-            .orElseThrow(() -> new ch.batbern.companyuser.exception.UserNotFoundException(username));
-
-        PresignedUploadUrl response = profilePictureService.generateProfilePictureUploadUrl(
-            user.getId(),
-            user.getUsername(),
-            profilePictureUploadRequest.getFileName(),
-            profilePictureUploadRequest.getFileSize());
-
-        return ResponseEntity.ok(response);
-    }
-
-    /** Confirm a user's profile picture upload: the user themself or an organizer (Story 4.10). */
-    @Override
-    @PreAuthorize("hasRole('ORGANIZER') or @userOwnership.isCurrentUser(#username)")
-    @Timed(value = "users.profilePicture.confirm",
-            description = "Time to confirm a profile picture upload",
-            percentiles = {0.5, 0.95, 0.99})
-    public ResponseEntity<ProfilePictureUploadConfirmResponse> confirmProfilePictureUploadForUser(
-            String username, ProfilePictureUploadConfirmRequest profilePictureUploadConfirmRequest) {
-        log.info("Confirming profile picture upload for user: {}, fileId={}",
-                username, profilePictureUploadConfirmRequest.getFileId());
-
-        User user = userRepository.findByUsername(username)
-            .orElseThrow(() -> new ch.batbern.companyuser.exception.UserNotFoundException(username));
-
-        profilePictureService.confirmProfilePictureUpload(
-            user.getId(),
-            user.getUsername(),
-            profilePictureUploadConfirmRequest.getFileId(),
-            profilePictureUploadConfirmRequest.getFileExtension());
-
-        UserResponse updatedUser = userService.getUserByUsername(username);
-
-        return ResponseEntity.ok(toConfirmResponse(updatedUser.getProfilePictureUrl()));
-    }
-
     /** Remove a user's profile picture: the user themself or an organizer (Story 4.10). */
     @Override
     @PreAuthorize("hasRole('ORGANIZER') or @userOwnership.isCurrentUser(#username)")
@@ -489,54 +430,6 @@ public class UserController implements UserManagementApi, UserAccountApi, Profil
     public ResponseEntity<UserResponse> patchUser(String username, UpdateUserRequest updateUserRequest) {
         log.info("Patching user {}", username);
         return ResponseEntity.ok(userService.updateUser(username, updateUserRequest));
-    }
-
-    /**
-     * Admin: Upload profile picture from URL for a specific user. Fetches an image from a URL and
-     * uploads it directly to S3, bypassing the frontend (avoids binary corruption). Used for batch
-     * imports of speaker portraits. POST /api/v1/users/{username}/profile-picture/upload-from-url.
-     */
-    @Override
-    @PreAuthorize("hasRole('ORGANIZER')")
-    @Timed(value = "users.profilePicture.admin.uploadFromUrl",
-            description = "Time to upload profile picture from URL for user (admin)",
-            percentiles = {0.5, 0.95, 0.99})
-    public ResponseEntity<AdminUploadProfilePictureFromUrlResponse> uploadProfilePictureFromUrl(
-            String username,
-            AdminUploadProfilePictureFromUrlRequest request) {
-
-        String url = request.getUrl();
-        String suggestedFilename = request.getFilename() != null ? request.getFilename() : "profile";
-
-        if (url == null || url.isBlank()) {
-            return ResponseEntity.badRequest().build();
-        }
-
-        log.info("Admin uploading profile picture from URL for user: {}, url: {}", username, url);
-
-        try {
-            // Shared fetch + image validation pipeline (12.12 review, finding #7); 5MB cap.
-            ImageUrlFetcher.FetchedImage image = ImageUrlFetcher.fetch(url, 5 * 1024 * 1024);
-
-            String filename = suggestedFilename + "." + image.extension();
-
-            String profilePictureUrl = profilePictureService.uploadProfilePictureDirectly(
-                    username, image.body(), filename, image.contentType());
-
-            log.info("Successfully uploaded profile picture for user: {}, URL: {}", username, profilePictureUrl);
-
-            return ResponseEntity.ok(new AdminUploadProfilePictureFromUrlResponse()
-                    .profilePictureUrl(profilePictureUrl));
-
-        } catch (ImageUrlFetcher.ImageFetchException e) {
-            log.error("Error fetching profile picture from URL for user: {}: {}", username, e.getMessage());
-            return switch (e.getReason()) {
-                case HTTP_STATUS -> ResponseEntity.status(e.getStatusCode()).build();
-                case NOT_AN_IMAGE -> ResponseEntity.badRequest().build();
-                case TOO_LARGE -> ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE).build();
-                case IO -> ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-            };
-        }
     }
 
     /**
@@ -631,11 +524,6 @@ public class UserController implements UserManagementApi, UserAccountApi, Profil
                 .roles(u.getRoles() == null ? null
                         : u.getRoles().stream().map(UserResponse.RolesEnum::getValue).toList())
                 .profilePictureUrl(u.getProfilePictureUrl());
-    }
-
-    /** Build the generated confirm response from a (possibly null) profile-picture URL. */
-    private static ProfilePictureUploadConfirmResponse toConfirmResponse(URI profilePictureUrl) {
-        return new ProfilePictureUploadConfirmResponse().profilePictureUrl(profilePictureUrl);
     }
 
     /**

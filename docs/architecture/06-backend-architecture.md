@@ -36,8 +36,9 @@ flowchart LR
 Every service validates the JWT again and decides access itself with `@PreAuthorize` (ADR-008,
 #1147). The AWS HTTP API (`infrastructure/lib/stacks/api-gateway-stack.ts`) has a single catch-all
 route without an authorizer; the Spring gateway (`api-gateway/`) authenticates and routes by path
-prefix in `DomainRouter.determineTargetService` (the upload contract `/uploads/{purpose}` by the
-purpose prefix, `company-…` CUMS, `event-…` EMS, Story 17.11), and copies the incoming headers, including
+prefix in `DomainRouter.determineTargetService` (the upload contract `/uploads/{purpose}` by an
+explicit map of purpose to service, Story 17.11a: `company-logo` and `profile-picture` CUMS,
+`event-theme-image` EMS, an unlisted purpose 404), and copies the incoming headers, including
 `Authorization`, to the service (`DomainRouter.routeRequest`). Service URLs are Service Connect
 names (`http://event-management:8080`, see `api-gateway-service-stack.ts`).
 
@@ -692,7 +693,7 @@ The organizers decide in the Mail Center; company edits themselves stay `ORGANIZ
   SYSTEM. If EMS does not answer, nothing is stored (502 `LOGO_REQUEST_NOT_DELIVERED`); the client
   uploads again on retry, because the association has already moved the temporary S3 object.
 - **Decision** (`ORGANIZER`). `POST /users/company-logo-requests/{id}/approve` copies the logo to the
-  company's final key (`logos/{year}/companies/{name}/logo-{uploadId}.{ext}`, `UploadService.reassign`)
+  company's final key (`logos/companies/{name}/logo-{uploadId}.{ext}`, no year since 17.11a; `UploadService.reassign`)
   and sets it through `CompanyService.applyRequestedLogo` (cache invalidation, `CompanyUpdatedEvent`,
   like an organizer edit). `.../decline {reason?}` changes nothing on the company. Either way the requester is mailed
   at the primary address (`company-logo-approved|declined-{de,en}`, the reason block only when given),

@@ -1,11 +1,11 @@
 meta {
-  name: Validation - File Size Exceeded
+  name: Validation - larger than 5 MB is 400
   type: http
   seq: 12
 }
 
 post {
-  url: {{baseUrl}}/users/{{currentUsername}}/picture/presigned-url
+  url: {{baseUrl}}/uploads/profile-picture
   body: json
   auth: bearer
 }
@@ -22,9 +22,12 @@ headers {
 
 body:json {
   {
-    "fileName": "large-profile.png",
-    "fileSize": 6291456,
-    "mimeType": "image/png"
+    "fileName": "bruno-test-{{$timestamp}}.png",
+    "contentType": "image/png",
+    "size": 6291456,
+    "target": {
+      "username": "{{currentUsername}}"
+    }
   }
 }
 
@@ -33,23 +36,16 @@ assert {
 }
 
 tests {
-  test("should reject file size > 5MB with 400 on /users/{username}/picture (AC10, Story 4.10)", function() {
-    // 404 would mean the picture path is gone: Story 4.10 moved it from /users/me/picture.
-    expect(res.getStatus()).to.equal(400);
-  });
-
-  test("should return error message about file size limit", function() {
-    if (res.getStatus() === 400) {
-      const body = res.getBody();
-      expect(body.message).to.exist;
-      expect(body.message).to.include('5MB');
-    }
+  test("should say the size limit", function() {
+    expect(res.getBody().message).to.include('5 MB');
   });
 
   test("should include correlation ID for troubleshooting", function() {
-    if (res.getStatus() === 400) {
-      const body = res.getBody();
-      expect(body.correlationId).to.exist;
-    }
+    expect(res.getBody().correlationId).to.exist;
   });
+}
+
+docs {
+  Story 17.11a: the 5 MB limit of purpose profile-picture (uploads-api), checked on the
+  reservation.
 }

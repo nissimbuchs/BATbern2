@@ -68,6 +68,12 @@ class UploadServiceTest {
         final List<String> attached = new ArrayList<>();
         boolean targetAllowed = true;
         boolean importAllowed;
+        boolean targetRequired;
+
+        @Override
+        public boolean requiresTarget() {
+            return targetRequired;
+        }
 
         @Override
         public boolean supportsImport() {
@@ -250,6 +256,23 @@ class UploadServiceTest {
         handler.targetAllowed = false;
         assertStatus(() -> service.create("company-logo", "a.png", "image/png", 10, Map.of("companyName", "acme")),
                 HttpStatus.FORBIDDEN);
+    }
+
+    @Test
+    void should_return400_when_requiredTargetIsMissing() {
+        String id = reserve();
+        handler.targetRequired = true;
+
+        assertStatus(() -> service.create("company-logo", "a.png", "image/png", 10, Map.of()),
+                HttpStatus.BAD_REQUEST);
+        assertStatus(() -> service.create("company-logo", "a.png", "image/png", 10, Map.of("companyName", " ")),
+                HttpStatus.BAD_REQUEST);
+        assertStatus(() -> service.confirm("company-logo", id, Map.of()), HttpStatus.BAD_REQUEST);
+        assertThat(table).hasSize(1);
+        assertThat(table.get(id).getStatus()).isEqualTo(UploadStatus.PENDING);
+
+        assertThat(service.confirm("company-logo", id, Map.of("companyName", "acme")).getStatus())
+                .isEqualTo(UploadStatus.ASSOCIATED);
     }
 
     @Test

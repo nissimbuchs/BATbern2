@@ -1,0 +1,60 @@
+meta {
+  name: Batch import - confirm the imported upload with the target username
+  type: http
+  seq: 14
+}
+
+post {
+  url: {{baseUrl}}/uploads/profile-picture/{{importedPictureUploadId}}/confirm
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "target": {
+      "username": "{{currentUsername}}"
+    }
+  }
+}
+
+script:pre-request {
+  // Runs only against local dev and only for an account without a picture (decided in 14b).
+  if (bru.getVar("ownPictureImportRuns") !== true) {
+    bru.runner.skipRequest();
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.status: eq ASSOCIATED
+}
+
+script:post-response {
+  if (res.getStatus() === 200) {
+    bru.setVar("importedPictureUrl", res.getBody().fileUrl);
+  }
+}
+
+tests {
+  test("should attach at the key without year", function() {
+    const url = res.getBody().fileUrl;
+    expect(url).to.include("/profile-pictures/" + bru.getVar("currentUsername") + "/profile-"
+      + bru.getVar("importedPictureUploadId") + ".png");
+  });
+}
+
+docs {
+  The confirm with the target moves the imported file to its final key and makes it the user's
+  picture (gated like 14b).
+}

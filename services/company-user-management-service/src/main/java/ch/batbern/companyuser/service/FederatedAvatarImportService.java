@@ -25,7 +25,7 @@ import java.util.concurrent.RejectedExecutionException;
  * on every federated request (once the Cognito IdP mapping of AC1 is deployed). Hotlinking
  * it would be wrong — those URLs rotate/expire — so this service fetches the photo ONCE,
  * stores it in our own S3 via the existing {@link ProfilePictureService} machinery
- * (content-type + 5MB validation, {@code profile-pictures/{year}/{username}/} key
+ * (content-type + 5MB validation, {@code profile-pictures/{username}/} key
  * convention, CloudFront URL), and never touches it again.
  *
  * <p><b>One-terminal-attempt semantics (AC3, refined by the 12.12 review):</b> the attempt

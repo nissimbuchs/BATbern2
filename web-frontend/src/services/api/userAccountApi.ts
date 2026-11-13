@@ -10,14 +10,10 @@ import type {
   UserPreferencesView,
   UserSettingsView,
   UserActivity,
-  LogoUploadResponse,
-  LogoConfirmRequest,
-  LogoConfirmResponse,
 } from '@/types/userAccount.types';
 import type { components } from '@/types/generated/user-api.types';
 import { updateUserSettings as patchUserSettings, type UserSettingsChanges } from './userApi';
-
-type ProfilePictureUploadRequest = components['schemas']['ProfilePictureUploadRequest'];
+import { uploadTarget } from '@/services/uploadService';
 
 const USER_API_PATH = '/users';
 
@@ -202,8 +198,8 @@ export const updateUserSettings = async (
 const lower = <T extends string>(value: T | undefined): Lowercase<T> | undefined =>
   value === undefined ? undefined : (value.toLowerCase() as Lowercase<T>);
 
-// Profile Picture Upload Service (ADR-002 3-phase pattern). Story 4.10: one set,
-// `/users/{username}/picture*`, for the user themself and for organizers.
+// Profile picture: the upload contract, purpose `profile-picture` with target `username`
+// (Story 17.11a); the user themself or an organizer. The removal stays on `/users/{username}/picture`.
 
 /**
  * Remove a user's profile picture (the user themself or an organizer).
@@ -213,38 +209,15 @@ export const removeProfilePicture = async (username: string): Promise<void> => {
 };
 
 /**
- * Phase 1: Request presigned URL for S3 upload (profile picture)
- */
-export const requestPresignedUrl = async (
-  username: string,
-  request: ProfilePictureUploadRequest
-): Promise<LogoUploadResponse> => {
-  const response = await apiClient.post(
-    `${USER_API_PATH}/${encodeURIComponent(username)}/picture/presigned-url`,
-    request
-  );
-  const data = response.data;
-
-  // Map backend response fields to frontend type
-  // Backend returns: uploadUrl, fileId, s3Key, fileExtension, expiresInMinutes
-  // Frontend expects: presignedUrl, uploadId, s3Key, expiresAt
-  return {
-    uploadId: data.fileId,
-    presignedUrl: data.uploadUrl,
-    s3Key: data.s3Key,
-    expiresAt: new Date(Date.now() + (data.expiresInMinutes || 15) * 60 * 1000).toISOString(),
-  };
-};
-
-/**
- * Phase 2: Upload file directly to S3 using presigned URL
+ * PUT the file straight to S3 with the presigned URL and its signed headers. XMLHttpRequest (not
+ * the API client) for the progress events and so that no auth header is sent to S3.
  */
 export const uploadToS3 = async (
   presignedUrl: string,
   file: File,
-  onProgress?: (progress: number) => void
+  onProgress?: (progress: number) => void,
+  requiredHeaders: Record<string, string> = {}
 ): Promise<void> => {
-  // Use native fetch for S3 upload to avoid adding auth headers
   const xhr = new XMLHttpRequest();
 
   return new Promise((resolve, reject) => {
@@ -272,64 +245,37 @@ export const uploadToS3 = async (
     });
 
     xhr.open('PUT', presignedUrl);
-    xhr.setRequestHeader('Content-Type', file.type);
+    const headers = { 'Content-Type': file.type, ...requiredHeaders };
+    Object.entries(headers).forEach(([name, value]) => xhr.setRequestHeader(name, value));
     xhr.send(file);
   });
 };
 
 /**
- * Phase 3: Confirm upload completion (profile picture); the backend associates the picture.
- */
-export const confirmUpload = async (
-  username: string,
-  uploadId: string,
-  request: LogoConfirmRequest
-): Promise<LogoConfirmResponse> => {
-  // Backend expects: fileId, fileExtension, checksum (optional)
-  const response = await apiClient.post(
-    `${USER_API_PATH}/${encodeURIComponent(username)}/picture/confirm`,
-    {
-      fileId: uploadId, // Backend uses 'fileId' not 'uploadId'
-      fileExtension: request.fileExtension,
-      checksum: request.checksum,
-    }
-  );
-  const data = response.data;
-
-  // Backend returns profilePictureUrl; the frontend type calls it cloudFrontUrl
-  return {
-    uploadId: uploadId,
-    status: 'CONFIRMED',
-    cloudFrontUrl: data.profilePictureUrl,
-  };
-};
-
-/**
- * Complete 3-phase upload workflow for a user's profile picture; returns the CDN URL.
+ * Upload a user's profile picture: reserve (`POST /uploads/profile-picture` with the target),
+ * PUT to S3, confirm with the target, which attaches it. Returns the picture's CDN URL.
  */
 export const uploadProfilePicture = async (
   username: string,
   file: File,
   onProgress?: (progress: number) => void
 ): Promise<string> => {
-  // Phase 1: Request presigned URL
-  const uploadResponse = await requestPresignedUrl(username, {
+  const target = uploadTarget('profile-picture', { username });
+  const slot = await target.presign({
     fileName: file.name,
     fileSize: file.size,
     mimeType: file.type,
   });
-
-  // Phase 2: Upload to S3
-  await uploadToS3(uploadResponse.presignedUrl, file, onProgress);
-
-  // Phase 3: Confirm upload
-  const fileExtension = file.name.split('.').pop() || 'jpg';
-  const confirmResponse = await confirmUpload(username, uploadResponse.uploadId, {
-    fileExtension,
+  await uploadToS3(slot.uploadUrl, file, onProgress, slot.requiredHeaders);
+  const confirmed = await target.confirm(slot.fileId, {
+    fileId: slot.fileId,
+    fileExtension: file.name.split('.').pop() ?? '',
     checksum: '',
   });
-
-  return confirmResponse.cloudFrontUrl;
+  if (!confirmed?.fileUrl) {
+    throw new Error('The profile picture was not attached');
+  }
+  return confirmed.fileUrl;
 };
 
 // =====================================================================

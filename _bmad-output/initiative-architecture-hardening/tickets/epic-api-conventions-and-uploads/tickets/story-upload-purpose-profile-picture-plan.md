@@ -3,12 +3,12 @@ title: 'Upload purpose profile-picture'
 type: 'refactor'
 ticket: '11a'
 created: '2026-11-13'
-status: 'ready-for-dev'
-baseline_revision: ''
+status: 'built'
+baseline_revision: '130d70523'
 route: 'full'
 route_source: 'auto'
 risk: 'medium'
-review: ''
+review: 'quick'
 review_source: ''
 lenses_ran: []
 review_loop_iteration: 0
@@ -64,20 +64,29 @@ context:
 ## Tasks & Acceptance
 
 **Execution:**
-- [ ] Specs + `npm run generate:api-types` -- contract first.
-- [ ] Shared-kernel `requiresTarget` + `UploadServiceTest` (RED first).
-- [ ] CUMS: RED ITs `ProfilePictureUploadIntegrationTest` (matrix rows, old paths pinned), then the handler, `UploadsController` target, removal from `UserController`/`ProfilePictureService`. Move the picture tests in the two ITs onto the contract.
-- [ ] Gateway: map + `DomainRouterTest` (`profile-picture` → CUMS).
-- [ ] Frontend: services, hooks, components; tests on MSW; `npm run check:api-paths`.
-- [ ] Bruno `users-api` picture files rewritten (presign, invalid type, too large, other user 403 not testable with one identity: IT covers it). Prose in `docs {}`. Playwright `photo-upload.spec.ts` updated.
-- [ ] Baselines: `npm run lint:api -- --update` (91 → 89), remove N1 from `api-lint-owners.txt`, `make check-test-ratchet`.
-- [ ] Docs: ADR-002 Implementation Status (purpose table), `uploads-api` description, doc-drift mapped docs.
+- [x] Specs + `npm run generate:api-types` -- contract first.
+- [x] Shared-kernel `requiresTarget` + `UploadServiceTest` (RED first).
+- [x] CUMS: RED ITs `ProfilePictureUploadIntegrationTest` (matrix rows, old paths pinned), then the handler, `UploadsController` target, removal from `UserController`/`ProfilePictureService`. Move the picture tests in the two ITs onto the contract.
+- [x] Gateway: map + `DomainRouterTest` (`profile-picture` → CUMS).
+- [x] Frontend: services, hooks, components; tests on MSW; `npm run check:api-paths`.
+- [x] Bruno `users-api` picture files rewritten (presign, invalid type, too large, other user 403 not testable with one identity: IT covers it). Prose in `docs {}`. Playwright `photo-upload.spec.ts` updated.
+- [x] Baselines: `npm run lint:api -- --update` (91 → 89), remove N1 from `api-lint-owners.txt`, `make check-test-ratchet`.
+- [x] Docs: ADR-002 Implementation Status (purpose table), `uploads-api` description, doc-drift mapped docs.
 
 **Acceptance Criteria:**
 - Given local dev, when a speaker changes their own picture, an organizer changes another user's, and an organizer runs a speaker batch import with a picture URL, then each picture shows after a reload, and the network log shows only `/uploads/profile-picture*` calls for it.
 - Given `npm run lint:api`, when it runs, then the N1 lines are gone and the baseline is 2 lines smaller.
 
 ## Implementation Notes
+
+- Built 2026-11-13 on `feature/17-4-11-upload-purposes`, not committed. TDD order: the shared-kernel `requiresTarget` test and the `DomainRouterTest` lines were written first and seen RED. `ProfilePictureUploadIntegrationTest` was NOT written first: it was written after `ProfilePictureUploadHandler`, `UploadsController` and the `UserController` removal, and then run (one failure, a 403 on `GET /users/{username}` by a speaker in the test itself, fixed in the test). The Execution item "RED ITs, then the handler" was therefore not followed as written.
+- Open gap, not closed by 11a: create and confirm check their target independently, and nothing binds the confirm to the target (or the caller) the upload was reserved for. An upload reserved for user X can be confirmed by another user with target = themself (their own target check passes), which puts the file meant for X on their own profile; an organizer can equally confirm a reserve for X onto user Y. Each target check still holds per call (no one attaches where they may not), but the reserve→confirm binding is missing. It is closed by 11b's shared target binding in `UploadService` (store the target on create, require the same one on confirm), not by 11a.
+- Review fixes (coordinator, 2026-11-13): `03-data-architecture.md` key bullets and the stale "not yet on the contract" bullet, `02-infrastructure-deployment.md` key shapes (new objects without year, old keys keep it), the stale upload-from-url Javadoc in `AvatarImportConfig` and `ImageUrlFetcher`, and Bruno `users-api/14b`–`14e` (import, confirm with the own username, read `/users/me`, DELETE). The chain runs only on `development` and only when 01 saw no picture; outside local dev it is skipped because in the deploy run the collection hits production, and a DELETE clears only the user row, not the S3 object. Ran on local dev in both states: chain green with no prior picture, all four skipped with one (picture unchanged).
+- Old paths measured: all three answer 404 in CUMS (no template matches), also `/users/me/picture/presigned-url` and `/confirm` (the ownership IT pinned them to 403/400 before; now 404 for everyone). `DELETE /users/me/picture` keeps 403/400.
+- `uploadService.ts` gained `confirmUpload(purpose, uploadId, target?)`; `uploadTarget().confirm` uses it, `userApi.importProfilePicture` = `importUpload` + `confirmUpload`. `userAccountApi.uploadToS3` now sends the signed `requiredHeaders`. Dead `Logo*` upload types in `userAccount.types.ts` removed.
+- Spec floors in `specMatcher.test.ts` and `msw/examples.test.ts` lowered (operations 278, JSON 2xx 242 measured).
+- Year dropped from all final keys: `CompanyLogoUploadHandler.logoKey` (also used by the logo request approve), `EventThemeImageUploadHandler.finalKey`, `ProfilePictureService.pictureKey` (handler and Google avatar import).
+- Docs: ADR-002 (purpose table + 17.11a section), `uploads-api`/`users-api` descriptions, `docs/api/README.md`, `01-system-overview`, `03-data-architecture`, `04-api-user-management`, `06-backend-architecture`, `06b-user-lifecycle-sync`, user-guide changelog.
 
 ## Plan Change Log
 

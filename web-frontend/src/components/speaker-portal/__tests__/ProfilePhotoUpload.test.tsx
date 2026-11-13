@@ -22,9 +22,9 @@ import { api } from '@/test/msw/api';
 import { server } from '@/test/msw/server';
 import ProfilePhotoUpload from '../ProfilePhotoUpload';
 
-// Story 4.10: on the MSW harness (touch rule). The real userAccountApi runs the 3-phase upload:
-// POST /users/{username}/picture/presigned-url, PUT to the presigned S3 URL (another host, its
-// own handler), POST /users/{username}/picture/confirm.
+// On the MSW harness. The real userAccountApi runs the upload contract (Story 17.11a): POST
+// /uploads/profile-picture with the own username as target, PUT to the presigned S3 URL (another
+// host, its own handler), POST /uploads/profile-picture/{uploadId}/confirm with the target.
 const USERNAME = 'hong.an';
 const S3_URL = 'https://bucket.example/profile-upload';
 
@@ -41,19 +41,26 @@ const s3 = (behaviour: 'ok' | 'fail' | 'hang' | Array<'ok' | 'fail'>) => {
 };
 
 const presigned = () =>
-  api.on('requestProfilePictureUploadUrlForUser', () => ({
-    uploadUrl: S3_URL,
-    fileId: 'file-1',
-    s3Key: `profile-pictures/2026/${USERNAME}/profile-file-1.jpg`,
-    fileExtension: 'jpg',
-    expiresInMinutes: 15,
-    requiredHeaders: { 'Content-Type': 'image/jpeg' },
-  }));
+  api.on(
+    'createFileUpload',
+    () => ({
+      uploadId: 'file-1',
+      uploadUrl: S3_URL,
+      expiresAt: '2026-11-13T10:15:00Z',
+      requiredHeaders: { 'Content-Type': 'image/jpeg' },
+    }),
+    { status: 201 }
+  );
 
 const mockSuccess = (cloudFrontUrl: string) => {
   presigned();
   s3('ok');
-  api.on('confirmProfilePictureUploadForUser', () => ({ profilePictureUrl: cloudFrontUrl }));
+  api.on('confirmFileUpload', () => ({
+    uploadId: 'file-1',
+    purpose: 'profile-picture' as const,
+    status: 'ASSOCIATED' as const,
+    fileUrl: cloudFrontUrl,
+  }));
 };
 
 const mockPending = () => {
@@ -66,7 +73,7 @@ const mockFailure = () => {
   s3('fail');
 };
 
-const uploadsRequested = () => api.calls('requestProfilePictureUploadUrlForUser');
+const uploadsRequested = () => api.calls('createFileUpload');
 
 describe('ProfilePhotoUpload Component', () => {
   // Code review 2026-05-18 (D1): the eventCode prop was removed — profile photo lives on
@@ -143,16 +150,20 @@ describe('ProfilePhotoUpload Component', () => {
       await waitFor(() => {
         expect(uploadsRequested()).toHaveLength(1);
       });
-      expect(uploadsRequested()[0].params).toEqual({ username: USERNAME });
-      expect(uploadsRequested()[0].body).toMatchObject({
+      expect(uploadsRequested()[0].params).toEqual({ purpose: 'profile-picture' });
+      expect(uploadsRequested()[0].body).toEqual({
         fileName: file.name,
-        mimeType: 'image/jpeg',
+        contentType: 'image/jpeg',
+        size: file.size,
+        target: { username: USERNAME },
       });
       await waitFor(() => {
-        expect(api.calls('confirmProfilePictureUploadForUser')[0]?.params).toEqual({
-          username: USERNAME,
+        expect(api.calls('confirmFileUpload')[0]?.params).toEqual({
+          purpose: 'profile-picture',
+          uploadId: 'file-1',
         });
       });
+      expect(api.calls('confirmFileUpload')[0].body).toEqual({ target: { username: USERNAME } });
     });
 
     it('should_acceptPNGFiles_when_pngProvided', async () => {

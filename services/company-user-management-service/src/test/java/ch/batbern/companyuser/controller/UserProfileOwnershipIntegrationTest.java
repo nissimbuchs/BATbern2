@@ -6,6 +6,7 @@ import ch.batbern.companyuser.events.UserUpdatedEvent;
 import ch.batbern.companyuser.repository.UserRepository;
 import ch.batbern.shared.test.AbstractIntegrationTest;
 import ch.batbern.shared.types.Role;
+import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -38,7 +39,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 /**
  * Story 4.10: a user's profile and picture are one set, {@code /users/{username}}, with one
- * ownership rule. The user themself may edit their own; an organizer (profile: also an admin) any;
+ * ownership rule (the picture upload: purpose {@code profile-picture}, Story 17.11a). The user
+ * themself may edit their own; an organizer (profile: also an admin) any;
  * everyone else gets 403. Consent ({@code termsAccepted}) is self only. The {@code /users/me}
  * twins and {@code PUT /users/{username}} are gone.
  *
@@ -79,6 +81,8 @@ class UserProfileOwnershipIntegrationTest extends AbstractIntegrationTest {
 
     @AfterEach
     void tearDown() {
+        jdbcTemplate.update("DELETE FROM company_user_uploads WHERE purpose = 'profile-picture' AND created_by IN (?, ?)",
+                SPEAKER, ORGANIZER);
         jdbcTemplate.update("DELETE FROM watch_pairings");
         jdbcTemplate.update("DELETE FROM user_profiles");
     }
@@ -268,20 +272,32 @@ class UserProfileOwnershipIntegrationTest extends AbstractIntegrationTest {
 
     // --- /users/{username}/picture* -----------------------------------------------------------
 
+    // Uploads run on the upload contract, purpose profile-picture (Story 17.11a): the same ownership
+    // rule, through the handler. Upload and attach once per test here; the rest of the matrix is in
+    // ProfilePictureUploadIntegrationTest.
+
+    private void uploadPicture(String username, int expectedCreate, int expectedConfirm) throws Exception {
+        String body = "{\"fileName\": \"portrait.png\", \"contentType\": \"image/png\", \"size\": 2097152,"
+                + " \"target\": {\"username\": \"" + username + "\"}}";
+        String created = mockMvc.perform(post("/api/v1/uploads/profile-picture")
+                        .contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().is(expectedCreate))
+                .andReturn().getResponse().getContentAsString();
+        if (expectedCreate != 201) {
+            return;
+        }
+        String uploadId = JsonPath.read(created, "$.uploadId");
+        mockMvc.perform(post("/api/v1/uploads/profile-picture/{id}/confirm", uploadId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"target\": {\"username\": \"" + username + "\"}}"))
+                .andExpect(status().is(expectedConfirm));
+    }
+
     @Test
     @WithMockUser(username = SPEAKER, roles = "SPEAKER")
     void should_manageOwnPicture_when_speakerUsesOwnUsername() throws Exception {
-        mockMvc.perform(post("/api/v1/users/{username}/picture/presigned-url", SPEAKER)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"fileName\": \"portrait.png\", \"fileSize\": 2097152, \"mimeType\": \"image/png\"}"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.s3Key").value(org.hamcrest.Matchers.containsString(SPEAKER)));
-
-        mockMvc.perform(post("/api/v1/users/{username}/picture/confirm", SPEAKER)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"fileId\": \"own-file-1\", \"fileExtension\": \"png\"}"))
-                .andExpect(status().isOk());
-        assertThat(stored(SPEAKER).getProfilePictureS3Key()).contains("own-file-1");
+        uploadPicture(SPEAKER, 201, 200);
+        assertThat(stored(SPEAKER).getProfilePictureS3Key()).startsWith("profile-pictures/" + SPEAKER + "/profile-");
 
         mockMvc.perform(delete("/api/v1/users/{username}/picture", SPEAKER))
                 .andExpect(status().isNoContent());
@@ -297,14 +313,7 @@ class UserProfileOwnershipIntegrationTest extends AbstractIntegrationTest {
                 "https://cdn.batbern.ch/profile-pictures/2025/jane.smith/p.png",
                 "profile-pictures/2025/jane.smith/p.png", OTHER);
 
-        mockMvc.perform(post("/api/v1/users/{username}/picture/presigned-url", OTHER)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"fileName\": \"portrait.png\", \"fileSize\": 2097152, \"mimeType\": \"image/png\"}"))
-                .andExpect(status().isForbidden());
-        mockMvc.perform(post("/api/v1/users/{username}/picture/confirm", OTHER)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"fileId\": \"foreign-file\", \"fileExtension\": \"png\"}"))
-                .andExpect(status().isForbidden());
+        uploadPicture(OTHER, 403, 0);
         mockMvc.perform(delete("/api/v1/users/{username}/picture", OTHER))
                 .andExpect(status().isForbidden());
 
@@ -314,15 +323,8 @@ class UserProfileOwnershipIntegrationTest extends AbstractIntegrationTest {
     @Test
     @WithMockUser(username = ORGANIZER, roles = "ORGANIZER")
     void should_manageAnotherPicture_when_organizer() throws Exception {
-        mockMvc.perform(post("/api/v1/users/{username}/picture/presigned-url", OTHER)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"fileName\": \"portrait.png\", \"fileSize\": 2097152, \"mimeType\": \"image/png\"}"))
-                .andExpect(status().isOk());
-        mockMvc.perform(post("/api/v1/users/{username}/picture/confirm", OTHER)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"fileId\": \"organizer-file\", \"fileExtension\": \"png\"}"))
-                .andExpect(status().isOk());
-        assertThat(stored(OTHER).getProfilePictureS3Key()).contains("organizer-file");
+        uploadPicture(OTHER, 201, 200);
+        assertThat(stored(OTHER).getProfilePictureS3Key()).startsWith("profile-pictures/" + OTHER + "/profile-");
         mockMvc.perform(delete("/api/v1/users/{username}/picture", OTHER))
                 .andExpect(status().isNoContent());
         assertThat(stored(OTHER).getProfilePictureS3Key()).isNull();
@@ -350,14 +352,16 @@ class UserProfileOwnershipIntegrationTest extends AbstractIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"bio\": \"Via the old path\"}"))
                 .andExpect(expected);
+        // The /users/me/picture upload twins are gone with the upload operations (Story 17.11a): no
+        // template matches, 404 for everyone.
         mockMvc.perform(post("/api/v1/users/me/picture/presigned-url")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"fileName\": \"portrait.png\", \"fileSize\": 2097152, \"mimeType\": \"image/png\"}"))
-                .andExpect(expected);
+                .andExpect(status().isNotFound());
         mockMvc.perform(post("/api/v1/users/me/picture/confirm")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"fileId\": \"old-path-file\", \"fileExtension\": \"png\"}"))
-                .andExpect(expected);
+                .andExpect(status().isNotFound());
         mockMvc.perform(delete("/api/v1/users/me/picture"))
                 .andExpect(expected);
     }

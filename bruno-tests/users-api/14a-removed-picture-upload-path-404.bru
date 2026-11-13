@@ -1,0 +1,39 @@
+meta {
+  name: Removed /users/{username}/picture/presigned-url is 404
+  type: http
+  seq: 14
+}
+
+post {
+  url: {{baseUrl}}/users/{{currentUsername}}/picture/presigned-url
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "fileName": "bruno-test-{{$timestamp}}.png",
+    "fileSize": 1024,
+    "mimeType": "image/png"
+  }
+}
+
+assert {
+  res.status: eq 404
+}
+
+docs {
+  Story 17.11a removed the three picture upload operations (presigned-url, confirm,
+  profile-picture/upload-from-url), no aliases. All three answer 404, pinned in the CUMS
+  ProfilePictureUploadIntegrationTest. DELETE /users/{username}/picture stays.
+}

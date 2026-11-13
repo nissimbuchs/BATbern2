@@ -3,13 +3,14 @@
  *
  * Handles batch import of speakers from legacy JSON format as SPEAKER role users.
  * Uses sequential API calls (one per speaker) with status tracking and duplicate detection.
- * Supports portrait upload via server-side URL fetch (same as company logos).
+ * Supports portrait upload via server-side URL fetch (same as company logos): the upload contract,
+ * purpose `profile-picture`, import then confirm with the target (Story 17.11a).
  */
 
 import { useState, useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { createUser, updateUser, UpdateUserData } from '@/services/api/userManagementApi';
-import { uploadProfilePictureFromUrl } from '@/services/api/userApi';
+import { importProfilePicture } from '@/services/api/userApi';
 import type { SpeakerImportCandidate, SpeakerBatchImportResult } from '@/types/speakerImport.types';
 import type { CreateUserFormData } from '@/types/user.types';
 
@@ -40,9 +41,8 @@ function buildUpdatePayload(
 }
 
 /**
- * Upload portrait for a user after they've been created
- * Uses server-side upload endpoint to avoid binary data corruption
- * This endpoint fetches the image and uploads it directly to S3, then associates it with the user
+ * Upload portrait for a user after they've been created: the server fetches the image (no bytes
+ * pass through the browser) and the confirm with the target makes it the user's picture.
  */
 async function uploadPortraitForUser(
   username: string,
@@ -50,15 +50,8 @@ async function uploadPortraitForUser(
   speakerName: string
 ): Promise<void> {
   try {
-    const filename = `${speakerName}-portrait`;
-
-    // Use server-side upload endpoint (bypasses frontend entirely)
-    // This endpoint fetches the image, uploads to S3, and associates with the user in one call
-    const uploaded = await uploadProfilePictureFromUrl(username, portraitUrl, filename);
-
-    console.log(
-      `[BatchImport] Successfully uploaded portrait for ${speakerName}: ${uploaded.profilePictureUrl}`
-    );
+    const pictureUrl = await importProfilePicture(username, portraitUrl, `${speakerName}-portrait`);
+    console.log(`[BatchImport] Successfully uploaded portrait for ${speakerName}: ${pictureUrl}`);
   } catch (error) {
     // Log but don't fail the import - portrait is optional
     console.error(`[BatchImport] Failed to upload portrait for ${speakerName}:`, error);

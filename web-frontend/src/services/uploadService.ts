@@ -7,7 +7,8 @@
  *
  * `uploadTarget(purpose, target?)` is what `useFileUpload` takes. Without a target the upload is
  * CONFIRMED and the entity create or edit takes its `uploadId` (`logoUploadId`,
- * `themeImageUploadId`); with one it is attached on confirm. Errors are passed through for the hook
+ * `themeImageUploadId`); with one it is attached on confirm. `profile-picture` always needs its
+ * target `username` (Story 17.11a). Errors are passed through for the hook
  * to report per phase.
  */
 import apiClient from '@/services/api/apiClient';
@@ -37,12 +38,24 @@ export const uploadTarget = (
       requiredHeaders: response.data.requiredHeaders,
     };
   },
-  confirm: async (uploadId) => {
-    const body: ConfirmUploadRequest = target ? { target } : {};
-    const response = await apiClient.post<Upload>(`/uploads/${purpose}/${uploadId}/confirm`, body);
-    return { fileUrl: response.data.fileUrl };
-  },
+  confirm: async (uploadId) => ({
+    fileUrl: (await confirmUpload(purpose, uploadId, target)).fileUrl,
+  }),
 });
+
+/**
+ * Confirm an upload (the file is in S3); with a target it is attached and the result carries its
+ * `fileUrl`. A purpose whose target is required (`profile-picture`) answers 400 without one.
+ */
+export const confirmUpload = async (
+  purpose: UploadPurpose,
+  uploadId: string,
+  target?: UploadTargetRef
+): Promise<Upload> => {
+  const body: ConfirmUploadRequest = target ? { target } : {};
+  const response = await apiClient.post<Upload>(`/uploads/${purpose}/${uploadId}/confirm`, body);
+  return response.data;
+};
 
 /**
  * Server-side import of an image from an HTTPS URL (batch import): the backend fetches and stores

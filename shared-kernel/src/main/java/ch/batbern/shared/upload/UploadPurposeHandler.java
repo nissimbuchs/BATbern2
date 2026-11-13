@@ -23,6 +23,15 @@ public interface UploadPurposeHandler {
     String targetType();
 
     /**
+     * Whether create and confirm need a target (400 without one). True for a purpose whose entity
+     * always exists before the upload (e.g. the user of a profile picture), so no entity create can
+     * take a confirmed upload.
+     */
+    default boolean requiresTarget() {
+        return false;
+    }
+
+    /**
      * The caller may upload for this purpose at all (403 otherwise). Default: any signed-in user, as
      * the file does nothing until an entity the caller may change takes it.
      */

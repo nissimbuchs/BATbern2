@@ -116,19 +116,25 @@ stateDiagram-v2
 ```
 
 - **Endpoints** (`uploads-api`): `POST /uploads/{purpose}`, `POST /uploads/{purpose}/{uploadId}/confirm`,
-  `POST /uploads/{purpose}/import`. The gateway routes by the purpose prefix (`company-…` CUMS,
-  `event-…` EMS). Purposes today: `company-logo` (CUMS, also the logo requests of #1246) and
-  `event-theme-image` (EMS). Profile pictures, event photos, teaser images and session materials
-  follow in Stories 17.11a–d.
+  `POST /uploads/{purpose}/import`. The gateway routes by purpose (an explicit map, Story 17.11a).
+  Purposes today: `company-logo` (CUMS, also the logo requests of #1246), `profile-picture` (CUMS,
+  target `username` required, 17.11a) and `event-theme-image` (EMS). Event photos, teaser images and
+  session materials follow in Stories 17.11b–d. Final keys carry no year since 17.11a.
 - **Columns:** `upload_id` (the handle), `purpose`, `s3_key` (temp, then final), `file_url` (CDN URL
   once attached), `file_extension`, `file_size`, `content_type`, `status` (`pending`, `confirmed`,
   `associated`, lower case), `target_type` and `target_id` (e.g. `COMPANY` / company name,
   `LOGO_REQUEST`, `EVENT` / event code), `created_by`, `expires_at`. A check constraint ties
   `associated` to a target, a file URL and no expiry.
-- **Rules:** per purpose in its handler; logos and theme images: png, jpeg, svg up to 5 MB.
-- **S3 keys** (layouts unchanged): temporary `logos/temp/{uploadId}/logo-{uploadId}.{ext}` (theme
-  image: `theme-…`); final `logos/{year}/companies/{name}/logo-{uploadId}.{ext}`,
-  `logos/requests/{uploadId}/logo.{ext}` and `logos/{year}/events/{eventCode}/theme-{uploadId}.{ext}`.
+- **Rules:** per purpose in its handler; logos, theme images and profile pictures: png, jpeg, svg up
+  to 5 MB.
+- **S3 keys:** temporary `logos/temp/{uploadId}/logo-{uploadId}.{ext}` (theme image: `theme-…`) and
+  `profile-pictures/temp/{uploadId}/profile-{uploadId}.{ext}`; final
+  `logos/companies/{name}/logo-{uploadId}.{ext}`, `logos/requests/{uploadId}/logo.{ext}`,
+  `logos/events/{eventCode}/theme-{uploadId}.{ext}` and
+  `profile-pictures/{username}/profile-{uploadId}.{ext}` (also the Google avatar import). No year
+  since Story 17.11a; objects stored earlier keep their `logos/{year}/…` and
+  `profile-pictures/{year}/…` keys, and the rows (`companies.logo_s3_key`,
+  `user_profiles.profile_picture_s3_key`, the URLs) hold the full key.
 - **Expiry:** `UploadExpiryJob` per service (CUMS 02:00, EMS 02:15, ShedLock) deletes PENDING past
   24 hours and CONFIRMED past 7 days with their S3 object; a failed S3 delete keeps the row for the
   next night and counts `batbern.uploads.expiry.failures`.
@@ -137,9 +143,11 @@ stateDiagram-v2
   decision; the S3 objects stay, and `companies.logo_url` and `events.theme_image_url` still point at
   them. Nothing was copied from it (no upload was in flight, owner 2026-11-12). An EMS ArchUnit rule
   (`EmsDataOwnershipTest`) holds that no EMS entity maps `logos` or `company_user_uploads`.
-- **Not yet on the contract:** user profile pictures (`ProfilePictureService`, keys
-  `profile-pictures/{year}/{username}/...`), session materials, event photos and teaser images,
-  each with its own table or columns until its story moves it.
+- **Profile pictures** are on the contract since Story 17.11a (purpose `profile-picture`, target
+  `username` required, rows in `company_user_uploads` with `target_type` `USER`). The Google avatar
+  import stores server-side through `ProfilePictureService` without an upload row.
+- **Not yet on the contract:** session materials, event photos and teaser images, each with its own
+  table or columns until its story (17.11b–d) moves it.
 
 ### User
 

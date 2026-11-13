@@ -803,7 +803,7 @@ Every branch continues the request; a failure is logged and the request proceeds
 
 - **Trigger**: `picture` claim present AND `profile_picture_url IS NULL` AND `picture_import_attempted_at IS NULL`. Native sign-ins carry no claim → immediate exit, zero DB cost. The interceptor reuses the `User` the JIT interceptor resolved for the request (request attribute) instead of re-running the same `findByCognitoUserId` SELECT.
 - **One TERMINAL attempt ever** _(refined by the 12.12 code review)_: `user_profiles.picture_import_attempted_at` (CUMS V18, comment updated in V19) is claimed via an **atomic conditional UPDATE** (`UserRepository.claimPictureImportAttempt`) **before** the fetch is dispatched — the database serialises concurrent first requests, exactly one wins. A **terminal** outcome (success, upstream 3xx/4xx, non-image response, oversize, invalid/non-Google claim) keeps the claim forever: no clobbering user uploads, no re-import-after-delete loops, no repeated fetches of broken Google URLs. A **transient** failure (upstream 5xx/429, network timeout, executor rejection) **releases the claim** so a later federated request retries — a one-off Google blip doesn't permanently cost the user their avatar.
-- **Fetch-once-and-own**: the photo is fetched server-side (dedicated `avatarImportExecutor`, never on the request thread) via the shared `ImageUrlFetcher` pipeline, validated and stored through the existing `ProfilePictureService` (content-type + 5 MB validation, `profile-pictures/{year}/{username}/` key convention) and served from `cdn.batbern.ch` — `googleusercontent.com` URLs are never hotlinked (they rotate/expire).
+- **Fetch-once-and-own**: the photo is fetched server-side (dedicated `avatarImportExecutor`, never on the request thread) via the shared `ImageUrlFetcher` pipeline, validated and stored through the existing `ProfilePictureService` (content-type + 5 MB validation, `profile-pictures/{username}/` key convention, no year since Story 17.11a; earlier pictures keep their `profile-pictures/{year}/…` key) and served from `cdn.batbern.ch` — `googleusercontent.com` URLs are never hotlinked (they rotate/expire).
 - **SSRF guard**: only `https` URLs on `googleusercontent.com` (or a subdomain) are ever fetched, and the fetch client refuses redirects (`Redirect.NEVER`) so the validated host can't 3xx the fetch onto a different one; the sized variant suffix (`=s96-c`, also with trailing query/fragment, or the legacy `/s96-c/` path-segment form) is upgraded to the 512px variant before fetching.
 - **Error handling**: same fail-open contract as JIT — any failure is logged and swallowed; a broken avatar fetch never fails the user's API request.
 - **Lost-update safety**: `User` is `@DynamicUpdate` — the async import's save writes only the picture columns, so it cannot clobber concurrent profile/onboarding writes (and vice versa).
@@ -1134,7 +1134,7 @@ Each name part is capped at 40 characters so the suffix still fits `VARCHAR(100)
 generators are pinned to one golden file, `shared-kernel/src/test/resources/username-generation-cases.json`;
 change both together.
 
-**Why the username stays ASCII**: it appears in URLs, S3 keys (`profile-pictures/{year}/{username}/`) and as
+**Why the username stays ASCII**: it appears in URLs, S3 keys (`profile-pictures/{username}/`) and as
 the cross-service reference. Unicode there means percent-encoding everywhere, case-folding ambiguity and
 homoglyph spoofing, for no gain to the person, whose name is displayed as entered.
 

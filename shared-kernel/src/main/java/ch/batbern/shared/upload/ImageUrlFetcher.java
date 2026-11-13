@@ -12,11 +12,10 @@ import java.time.Duration;
  * content-type check → size cap → content-type→extension mapping.
  *
  * <p>Story 12.12 review (finding #7): this logic previously existed as three hand-rolled
- * copies — {@code UserController.uploadProfilePictureFromUrl}, {@code LogoController
- * .uploadImageFromUrl}, and {@code FederatedAvatarImportService.fetchAndImport} — which
- * had already diverged on the fetch-time size cap (5MB / 10MB / none). All three now call
- * this single helper; the size cap is the only intentional per-caller difference and is a
- * parameter.
+ * copies, which had already diverged on the fetch-time size cap (5MB / 10MB / none). Its callers
+ * now are {@code UploadService.importFromUrl} (Story 17.11, 17.11a) and
+ * {@code FederatedAvatarImportService.fetchAndImport}; the size cap is the only intentional
+ * per-caller difference and is a parameter.
  *
  * <p>Failures are reported as {@link ImageFetchException} with a {@link
  * ImageFetchException.Reason} so callers can map them to HTTP responses (controllers) or
@@ -28,8 +27,8 @@ public final class ImageUrlFetcher {
     private static final Duration FETCH_REQUEST_TIMEOUT = Duration.ofSeconds(30);
 
     /**
-     * Default client for the admin upload-from-url endpoints (organizer-initiated, so
-     * following redirects is acceptable there — unlike the federated avatar import, which
+     * Default client for {@code UploadService.importFromUrl} ({@code POST /uploads/{purpose}/import},
+     * organizer-initiated, so following redirects is acceptable there — unlike the federated avatar import, which
      * supplies its own redirect-refusing client as part of its SSRF guard).
      */
     private static final HttpClient DEFAULT_CLIENT = HttpClient.newBuilder()

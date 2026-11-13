@@ -66,6 +66,7 @@ public class UploadsController implements UploadsApi {
         if (target != null) {
             keys.put("companyName", target.getCompanyName());
             keys.put("eventCode", target.getEventCode());
+            keys.put("username", target.getUsername());
         }
         return keys;
     }

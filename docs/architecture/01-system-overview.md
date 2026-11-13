@@ -264,8 +264,8 @@ sequenceDiagram
   ([ADR-007](./ADR-007-unified-user-profile.md)). Google sign-in through Cognito federation; the
   pre-signup trigger links a Google identity to an existing profile with the same email
   ([ADR-010](./ADR-010-federated-identity-via-cognito.md)).
-- **Routing table** (from `DomainRouter`): `/api/v1/uploads/{purpose}` goes by the purpose prefix
-  (`company-…` to CUMS, `event-…` to EMS, any other 404; Story 17.11); `/api/v1/watch/pair` and
+- **Routing table** (from `DomainRouter`): `/api/v1/uploads/{purpose}` goes by an explicit purpose map
+  (`company-logo`, `profile-picture` to CUMS, `event-theme-image` to EMS, any other 404; Story 17.11, 17.11a); `/api/v1/watch/pair` and
   `/watch/authenticate` go to CUMS, the rest of `/api/v1/watch` to EMS; `events`, `event-types`, `registrations`, `topics`,
   `tasks`, `notifications`, `materials`, `speaker-portal`, `attendee-portal`, `sessions`,
   `email-templates`, `analytics`, `newsletter`, `thanks`, `conversations`, `mails`, `ai`,

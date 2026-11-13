@@ -130,13 +130,11 @@ class FederatedAvatarImportIntegrationTest extends AbstractIntegrationTest {
 
         performAuthenticatedRequest("avatar-sub-1", "google.federated@example.ch", PICTURE_CLAIM);
 
-        // The image was stored in OUR S3 under the existing profile-pictures key convention.
+        // The image was stored in OUR S3 under the profile-pictures key convention, no year (17.11a).
         ArgumentCaptor<PutObjectRequest> putCaptor = ArgumentCaptor.forClass(PutObjectRequest.class);
         verify(s3Client).putObject(putCaptor.capture(), any(RequestBody.class));
         assertThat(putCaptor.getValue().key())
-                .startsWith("profile-pictures/")
-                .contains("/google.federated/profile-")
-                .endsWith(".jpeg");
+                .matches("profile-pictures/google\\.federated/profile-[0-9a-f-]{36}\\.jpeg");
 
         // The fetch upgraded the =s96-c sized variant to =s512-c before requesting.
         ArgumentCaptor<HttpRequest> requestCaptor = ArgumentCaptor.forClass(HttpRequest.class);

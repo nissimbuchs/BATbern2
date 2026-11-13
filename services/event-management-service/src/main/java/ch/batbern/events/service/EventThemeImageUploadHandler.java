@@ -13,9 +13,6 @@ import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.stereotype.Component;
 
-import java.time.LocalDate;
-import java.time.ZoneOffset;
-
 /**
  * Purpose {@code event-theme-image} (Story 17.11): the theme image of an event, organizers only. It
  * was a {@code company-logo}-style upload through company-user-management before; EMS now owns its
@@ -71,11 +68,15 @@ public class EventThemeImageUploadHandler implements UploadPurposeHandler {
         return String.format("logos/temp/%s/theme-%s.%s", uploadId, uploadId, extension);
     }
 
-    /** Unchanged layout: {@code logos/{year}/events/{eventCode}/theme-{uploadId}.{ext}}. */
+    /**
+     * {@code logos/events/{eventCode}/theme-{uploadId}.{ext}}: no year (Story 17.11a, the upload year
+     * means nothing and caused a rollover bug). Theme images stored earlier keep their
+     * {@code logos/{year}/…} key and URL.
+     */
     @Override
     public String finalKey(UploadRecord upload, String eventCode) {
-        return String.format("logos/%d/events/%s/theme-%s.%s", LocalDate.now(ZoneOffset.UTC).getYear(), eventCode,
-                upload.getUploadId(), upload.getFileExtension());
+        return String.format("logos/events/%s/theme-%s.%s", eventCode, upload.getUploadId(),
+                upload.getFileExtension());
     }
 
     @Override

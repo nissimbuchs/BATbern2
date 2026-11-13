@@ -23,9 +23,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * The upload contract for the purposes this service owns ({@code company-logo}), Story 17.11. Who may
- * do what is per purpose and target, so the method rule is "signed in" and the handler decides the
- * rest (403); another service's purpose is 404.
+ * The upload contract for the purposes this service owns ({@code company-logo}, Story 17.11;
+ * {@code profile-picture}, 17.11a). Who may do what is per purpose and target, so the method rule is
+ * "signed in" and the handler decides the rest (403); another service's purpose is 404.
  */
 @RestController
 @RequestMapping("/api/v1")
@@ -66,6 +66,7 @@ public class UploadsController implements UploadsApi {
         if (target != null) {
             keys.put("companyName", target.getCompanyName());
             keys.put("eventCode", target.getEventCode());
+            keys.put("username", target.getUsername());
         }
         return keys;
     }

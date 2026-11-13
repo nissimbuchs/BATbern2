@@ -619,18 +619,23 @@ responses:
 **Uploads (ADR-002, Story 17.11).** Files go through one contract, `uploads-api`:
 `POST /api/v1/uploads/{purpose}` (presigned PUT URL), `PUT {uploadUrl}` straight to S3, and
 `POST /api/v1/uploads/{purpose}/{uploadId}/confirm` (with a `target` it attaches the file). The
-company logo is purpose `company-logo`. Profile pictures still use their own operations below until
-Story 17.11a moves them to purpose `profile-picture`. The former `/api/v1/logos/*` operations are
-gone (404).
+company logo is purpose `company-logo`, the profile picture purpose `profile-picture` (Story 17.11a).
+The former `/api/v1/logos/*` operations are gone (404).
 
-**Profile picture (Story 4.10).** One set for the user themself and for organizers:
-`POST /api/v1/users/{username}/picture/presigned-url` → PUT to S3 →
-`POST /api/v1/users/{username}/picture/confirm` (associates the picture), and
-`DELETE /api/v1/users/{username}/picture`. Authorization: the user themself
-(`@userOwnership.isCurrentUser(#username)`) or ORGANIZER. The `/users/me/picture*` twins are
-gone; `/users/me/...` now matches the `{username}` templates with the username `me`, which no
-user has (`chk_username_format`): 403 for a non-organizer, 400 for an organizer, nothing
-changes. The full contract is `docs/api/users-api.openapi.yml`.
+**Profile picture (Story 4.10, 17.11a).** Purpose `profile-picture`, target `username` (required:
+400 without it): `POST /api/v1/uploads/profile-picture` with `target: {username}` → PUT to S3 →
+`POST /api/v1/uploads/profile-picture/{uploadId}/confirm` with the target (checks the file is in S3,
+409 otherwise, then attaches it), and `DELETE /api/v1/users/{username}/picture`. Authorization: the
+user themself (`UserOwnership.isCurrentUser`) or ORGANIZER, 403 otherwise; an unknown username is
+404. The speaker batch import is organizer only: `POST /api/v1/uploads/profile-picture/import`
+(server-side fetch), then confirm with the target. Final key
+`profile-pictures/{username}/profile-{uploadId}.{ext}` (no year; earlier pictures keep their
+`profile-pictures/{year}/…` key). The former `/users/{username}/picture/presigned-url`,
+`/users/{username}/picture/confirm` and `/users/{username}/profile-picture/upload-from-url` answer
+404. The `/users/me/picture` DELETE twin matches the `{username}` template with the username `me`,
+which no user has (`chk_username_format`): 403 for a non-organizer, 400 for an organizer, nothing
+changes. The full contracts are `docs/api/uploads-api.openapi.yml` and
+`docs/api/users-api.openapi.yml`.
 
 ### GDPR Compliance
 
