@@ -161,7 +161,17 @@ export const PublicNavigation = ({
                       <ChevronDown className="h-4 w-4 text-foreground/60" />
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent align="end" className="w-64 p-2">
+                  <PopoverContent
+                    align="end"
+                    className="w-64 p-2"
+                    // Focus the menu itself on open, not its first control: that is the language
+                    // <select> (Safari skips links), and Safari opens a focused <select> (owner
+                    // 2026-11-13). Keyboard users still Tab on from the menu.
+                    onOpenAutoFocus={(event) => {
+                      event.preventDefault();
+                      (event.currentTarget as HTMLElement | null)?.focus();
+                    }}
+                  >
                     <div className="flex flex-col gap-1">
                       {/* 2026-05-20 (Q#2b) — Portal + My Sessions moved out to the main
                           nav bar above. The dropdown is now secondary actions only:

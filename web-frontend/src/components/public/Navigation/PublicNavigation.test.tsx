@@ -4,7 +4,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { BrowserRouter } from 'react-router-dom';
 import { PublicNavigation } from './PublicNavigation';
@@ -153,6 +153,32 @@ describe('PublicNavigation', () => {
         expect(profileLink).toHaveAttribute('href', '/profile');
       }
     );
+
+    // 2026-11-13 owner: opening the user menu also opened the language picker. On open the
+    // menu moved focus to its first focusable control; Safari skips links, so that was the
+    // language <select>, and Safari on touch devices opens a focused <select>.
+    it('does not move focus to a control inside the user menu when it opens', async () => {
+      authenticatedAs(['attendee']);
+      const user = userEvent.setup();
+      render(
+        <BrowserRouter>
+          <PublicNavigation />
+        </BrowserRouter>
+      );
+
+      await user.click(screen.getByTestId('public-nav-user-menu'));
+
+      const profileLink = await screen.findByRole('link', { name: /my profile/i });
+      const menu = profileLink.closest('[role="dialog"]') as HTMLElement;
+      const languageSelector = within(menu).getByTestId('language-selector');
+      // Positive control: the menu is open and its controls are rendered.
+      expect(languageSelector).toBeVisible();
+      const controls = Array.from(menu.querySelectorAll('a, button, select, input'));
+      expect(controls.length).toBeGreaterThan(2);
+      expect(controls).not.toContain(document.activeElement);
+      // Focus is on the menu itself, so keyboard users continue from there.
+      expect(document.activeElement).toBe(menu);
+    });
 
     // Story 7.6: "My Events" attendee-dashboard link gating.
     it('shows the "My Events" link for an attendee', () => {
