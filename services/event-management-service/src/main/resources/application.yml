@@ -32,8 +32,10 @@ spring:
     clean-disabled: true
     locations: classpath:db/migration
     table: flyway_schema_history_event_management
-    # Allow missing migrations (migrations removed from codebase after being applied)
-    ignore-migration-patterns: "*:missing"
+    # *:missing: migrations removed from the codebase after being applied.
+    # *:future: Flyway's default, which setting this key replaces. Without it the previous image
+    # cannot start after a deploy applied a newer migration, so a rollback fails (#1309, 2026-11-13).
+    ignore-migration-patterns: "*:missing,*:future"
 
 management:
   endpoints:
