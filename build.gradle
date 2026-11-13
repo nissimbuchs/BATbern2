@@ -14,7 +14,7 @@ buildscript {
 
         // Flyway
         classpath 'org.flywaydb:flyway-gradle-plugin:13.12.1'
-        classpath 'org.postgresql:postgresql:42.7.7'
+        classpath 'org.postgresql:postgresql:42.7.14'
         classpath 'org.flywaydb:flyway-database-postgresql:13.12.1'
 
         // OpenAPI Generator
@@ -115,7 +115,7 @@ configure(subprojects.findAll { it.path.startsWith(':services:') }) {
             implementation 'org.springframework.boot:spring-boot-jackson2'
 
             // Database - PostgreSQL + Flyway
-            runtimeOnly 'org.postgresql:postgresql:42.7.7'
+            runtimeOnly 'org.postgresql:postgresql:42.7.14'
             implementation 'org.flywaydb:flyway-core'
             implementation 'org.flywaydb:flyway-database-postgresql'
             // Epic 13 (SB4): Flyway auto-configuration moved OUT of spring-boot-autoconfigure
