@@ -3742,6 +3742,15 @@ components:
         twoFactorEnabled:
           type: boolean
           default: false
+        whatsNewSeenAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: |
+            When the user last closed the "What's new" card on the attendee dashboard. Features
+            released after this time are shown again; absent (never closed) shows the most
+            important ones.
+          example: '2026-11-13T09:30:00Z'
 
     UpdateUserSettingsRequest:
       type: object
@@ -3797,6 +3806,13 @@ components:
           type: boolean
         twoFactorEnabled:
           type: boolean
+        whatsNewSeenAt:
+          type: string
+          format: date-time
+          description: |
+            The time the user closed the "What's new" card (the client sends "now"). A time
+            ahead of the server clock is stored as the server's now.
+          example: '2026-11-13T09:30:00Z'
 
     UpdateUserRequest:
       type: object

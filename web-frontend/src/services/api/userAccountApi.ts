@@ -444,10 +444,15 @@ export const resendAdditionalEmailVerification = async (emailId: string): Promis
 export type ProfileClaimCandidate = components['schemas']['ProfileClaimCandidate'];
 export type ProfileClaimConfirmResponse = components['schemas']['ProfileClaimConfirmResponse'];
 
-/** Earlier profiles without a login under the caller's name (masked address only). */
+/**
+ * Earlier profiles without a login under the caller's name (masked address only). An optional
+ * read (the dashboard offer, the "What's new" merge entry, also in the header on public pages):
+ * a 401 fails the query (nothing shown) instead of sending the user to /login.
+ */
 export const listProfileClaimCandidates = async (): Promise<ProfileClaimCandidate[]> => {
   const response = await apiClient.get<ProfileClaimCandidate[]>(
-    `${USER_API_PATH}/me/profile-claims`
+    `${USER_API_PATH}/me/profile-claims`,
+    { skipAuthRedirect: true }
   );
   return response.data;
 };

@@ -24,6 +24,7 @@ import { getRolesWithNavEntries } from '@/config/navigationConfig';
 import type { UserProfile } from '@/types/user';
 import type { NotificationPage } from '@/types/notification';
 import type { UserContext, UserRole } from '@/types/auth';
+import { useWhatsNew } from '@/features/whatsNew/useWhatsNew';
 
 interface AppHeaderProps {
   user?: UserProfile;
@@ -44,6 +45,7 @@ const AppHeader = React.memo(function AppHeader({
   const { user: storeUser, signOut } = useAuth();
   const { setUserMenuOpen: setUserMenuOpenState, activeNavRole, setActiveNavRole } = useUIStore();
   const navigate = useNavigate();
+  const { hasNew: whatsNewHasNew } = useWhatsNew();
 
   const user = userProp || storeUser;
   // Use prop if provided (for testing), otherwise would use hook data when backend is ready
@@ -237,16 +239,26 @@ const AppHeader = React.memo(function AppHeader({
               aria-haspopup="true"
               data-testid="user-menu-button"
             >
-              <Avatar
-                sx={{
-                  width: 32,
-                  height: 32,
-                  bgcolor: 'primary.main',
-                  fontSize: '0.875rem',
-                }}
+              {/* "What's new" (story 2 of 2026-11-13): a dot when something is new */}
+              <Badge
+                variant="dot"
+                color="error"
+                invisible={!whatsNewHasNew}
+                overlap="circular"
+                data-testid="user-menu-whats-new-dot"
+                data-visible={whatsNewHasNew ? 'true' : 'false'}
               >
-                {user.email.charAt(0).toUpperCase()}
-              </Avatar>
+                <Avatar
+                  sx={{
+                    width: 32,
+                    height: 32,
+                    bgcolor: 'primary.main',
+                    fontSize: '0.875rem',
+                  }}
+                >
+                  {user.email.charAt(0).toUpperCase()}
+                </Avatar>
+              </Badge>
             </IconButton>
           </Box>
         </Toolbar>
@@ -272,6 +284,7 @@ const AppHeader = React.memo(function AppHeader({
           open={userMenuOpen}
           onClose={handleUserMenuClose}
           onLogout={handleLogout}
+          whatsNewHasNew={whatsNewHasNew}
           onLanguageChange={handleLanguageChange}
         />
       )}

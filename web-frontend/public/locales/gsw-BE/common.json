@@ -183,7 +183,9 @@
     "settings": "Istellige",
     "administration": "Verwautig",
     "help": "Hilf",
-    "logout": "Abmälde"
+    "logout": "Abmälde",
+    "whatsNew": "Was isch nöi",
+    "whatsNewAvailable": "Benutzermenü, öppis Nöis für Euch"
   },
   "role": {
     "organizer": "Veranstautigsorganisator",
@@ -669,9 +671,6 @@
       "loadFailed": "Failed to load user account data. Please try again.",
       "correlationId": "Correlation ID: {{id}}"
     }
-  },
-  "releaseNotes": {
-    "title": "Release Notes"
   },
   "profile": {
     "pageTitle": "Dys Profil",

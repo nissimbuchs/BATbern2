@@ -53,6 +53,14 @@ export const PublicFooter = () => {
                   {t('navigation.about')}
                 </Link>
               </li>
+              <li>
+                <Link
+                  to="/why-an-account"
+                  className="text-sm text-zinc-400 hover:text-blue-400 transition-colors"
+                >
+                  {t('registration:accountBenefits.title')}
+                </Link>
+              </li>
             </ul>
           </div>
 

@@ -14,8 +14,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.DateTimeException;
+import java.time.Instant;
 import java.time.LocalTime;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.Locale;
 
 /**
@@ -29,6 +31,7 @@ import java.util.Locale;
 @Service
 @RequiredArgsConstructor
 public class UserSettingsService {
+
 
     private final UserRepository userRepository;
     private final SecurityContextHelper securityContext;
@@ -55,6 +58,9 @@ public class UserSettingsService {
     /**
      * Applies the fields present in the request; every other setting stays.
      *
+     * A {@code whatsNewSeenAt} in the future (a client clock running fast) is stored as the server's
+     * now, so closing the "What's new" card always works and later entries still come back.
+     *
      * @throws UserValidationException for a timezone that is not an IANA zone id (400)
      */
     @Transactional
@@ -64,6 +70,8 @@ public class UserSettingsService {
         if (request.getTimezone() != null) {
             requireZoneId(request.getTimezone());
         }
+        Instant whatsNewSeenAt = request.getWhatsNewSeenAt() != null
+                ? earliest(request.getWhatsNewSeenAt().toInstant(), Instant.now()) : null;
         if (user.getPreferences() == null) {
             user.setPreferences(UserPreferences.builder().build());
         }
@@ -124,6 +132,9 @@ public class UserSettingsService {
         if (request.getTwoFactorEnabled() != null) {
             settings.setTwoFactorEnabled(request.getTwoFactorEnabled());
         }
+        if (whatsNewSeenAt != null) {
+            settings.setWhatsNewSeenAt(whatsNewSeenAt);
+        }
 
         userRepository.save(user);
         log.info("Updated settings for user: {}", user.getUsername());
@@ -161,13 +172,19 @@ public class UserSettingsService {
                 .showActivityHistory(settings.isShowActivityHistory())
                 .allowMessaging(settings.isAllowMessaging())
                 .allowCalendarSync(settings.isAllowCalendarSync())
-                .twoFactorEnabled(settings.isTwoFactorEnabled());
+                .twoFactorEnabled(settings.isTwoFactorEnabled())
+                .whatsNewSeenAt(settings.getWhatsNewSeenAt() != null
+                        ? settings.getWhatsNewSeenAt().atOffset(ZoneOffset.UTC) : null);
     }
 
     private User currentUser() {
         String username = securityContext.getCurrentUsername();
         return userRepository.findByUsername(username)
                 .orElseThrow(() -> new UserNotFoundException(username));
+    }
+
+    private static Instant earliest(Instant a, Instant b) {
+        return a.isBefore(b) ? a : b;
     }
 
     private static void requireZoneId(String timezone) {

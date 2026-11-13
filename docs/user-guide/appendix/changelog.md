@@ -42,6 +42,23 @@ Only items that are not live yet. Everything else is listed under its release be
 
 ### Unreleased — after BATbern60
 
+**Improvement — Visitors see what a free account gives them**:
+- ✅ The "please confirm your registration" mail, the last step of the registration wizard and the two pages after registering no longer promise "exclusive content" or "personalized event recommendations". They list four things an account gives today: questions and comments on the talks (two weeks before to two weeks after the event), topic suggestions for coming events, all your BATbern visits in one place (including registrations from before the account), and your company's logo next to your name.
+- ✅ New public page `/why-an-account` with the same list, linked from the mail, the wizard and the footer. Logged out it offers sign-up; logged in it leads to your profile.
+- ✅ Mail templates an organizer has changed in the account block keep their wording; only the shipped wording is replaced (migration V155).
+
+**New — "What's new" for logged-in users**:
+- ✅ A card at the top of the participant dashboard lists the features added since you last closed it, at most three, each with a sentence and a link: session Q&A and comments, topic suggestions, login and profile, the company logo request, thanking the organizers, your event history and proposing yourself as a speaker. On your first visit it shows the three most important ones (Q&A, topic suggestions, company logo).
+- ✅ If an earlier profile under your name exists, the card first offers to merge it (links to the existing offer on the dashboard).
+- ✅ A dot on the user menu (public site and portal) says something is new; the menu item "What's new" opens the page `/attendee/whats-new` with all news, the new ones first and marked "New", and a search over title and text. Opening that page counts as seen; the card links to it too. Every logged-in user has it, whatever the role; organizers, partners and speakers can now open the participant dashboard for it.
+- ✅ Closing the card hides it and the dot on every device: the time is stored with your settings.
+- ⚠️ API: `PATCH /api/v1/users/me/settings` takes `whatsNewSeenAt` (date-time; a future time is stored as the server's now); `GET /users/me/settings` and `GET /users/me?include=settings` return it when set.
+- 🧹 The unused release-notes box (removed from the login page in March), its `release-notes.txt` and its push script are gone.
+
+**Improvement — The attendee dashboard shows the next three events**:
+- ✅ "Upcoming events" on the participant dashboard no longer stays empty without a registration. It shows three events: every upcoming event you are registered for first (with its registration status), then the next events you are not registered for, until there are three. Registered for more than three, you see all of them and no others.
+- ✅ The cards are the ones of the homepage section "Nächste BAT-Termine". A published event links to its event page, where you register. An event not yet published shows code, title and date only, without a link.
+
 **Improvement — One upload contract, company logos and theme images (Epic 17, 17.11)**:
 - ✅ Company logos (create form, company edit, batch import and the logo request on the profile) and event theme images upload through one shared flow. Nothing changes on the page, except that the preview right after choosing a file now shows the file itself.
 - ✅ A participant without the speaker or partner role can upload the logo for a logo request again (the upload step refused them since the role checks of October).

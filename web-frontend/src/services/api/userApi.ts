@@ -4,6 +4,7 @@
  *
  * Endpoints:
  * - GET   /api/v1/users/me?include=roles,settings
+ * - GET   /api/v1/users/me/settings
  * - PATCH /api/v1/users/me/settings (Story 4.9: one settings resource, partial update)
  */
 
@@ -28,6 +29,19 @@ export const getUserProfile = async (includes?: string[]): Promise<CurrentUserRe
   const params = includes && includes.length > 0 ? { include: includes.join(',') } : {};
 
   const response = await apiClient.get<CurrentUserResponse>('/users/me', { params });
+  return response.data;
+};
+
+/**
+ * The caller's settings (`GET /users/me/settings`). `skipAuthRedirect` for an optional read on any
+ * page (the "What's new" dot): a 401 then fails the query instead of sending the user to /login.
+ */
+export const getUserSettings = async (
+  options: { skipAuthRedirect?: boolean } = {}
+): Promise<UserSettingsResponse> => {
+  const response = await apiClient.get<UserSettingsResponse>('/users/me/settings', {
+    skipAuthRedirect: options.skipAuthRedirect,
+  });
   return response.data;
 };
 

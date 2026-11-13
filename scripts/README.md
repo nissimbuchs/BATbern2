@@ -23,9 +23,6 @@ Central location for all operational scripts used in development, CI/CD, and con
 ### Staging Operations
 
 ```bash
-# Push release notes to staging
-./scripts/staging/push-release-notes.sh
-
 # Start database tunnel to staging
 ./scripts/staging/start-db-tunnel.sh
 ```
@@ -75,7 +72,6 @@ scripts/
 │   └── validate-backend-config.sh     # Validate .env completeness
 │
 ├── staging/                           # Staging environment operations
-│   ├── push-release-notes.sh          # Push release notes to staging
 │   └── start-db-tunnel.sh             # Start DB tunnel to staging
 │
 ├── test/                              # Testing scripts
@@ -172,40 +168,6 @@ Configuration Summary:
 ### 2. Staging Operations (`staging/`)
 
 **Purpose:** Scripts for interacting with the staging environment.
-
-#### push-release-notes.sh
-
-Uploads the web-frontend release notes to staging and invalidates CloudFront cache.
-
-**Usage:**
-```bash
-./scripts/staging/push-release-notes.sh
-```
-
-**What it does:**
-1. Displays current content of `web-frontend/public/release-notes.txt`
-2. Asks for confirmation
-3. Uploads file to S3 bucket `batbern-frontend-staging`
-4. Finds CloudFront distribution
-5. Creates cache invalidation for immediate visibility
-
-**Prerequisites:**
-- AWS CLI installed
-- AWS profile `batbern-staging` configured
-- Permissions to write to S3 and invalidate CloudFront
-
-**Example:**
-```bash
-# Edit release notes
-vim web-frontend/public/release-notes.txt
-
-# Push to staging
-./scripts/staging/push-release-notes.sh
-
-# Changes visible within 1-2 minutes at https://www.batbern.ch
-```
-
----
 
 #### start-db-tunnel.sh
 

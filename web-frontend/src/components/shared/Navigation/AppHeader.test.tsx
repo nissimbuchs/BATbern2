@@ -1,15 +1,20 @@
 /**
  * AppHeader Component Tests
  * Story 1.17, Task 6a: TDD for role-adaptive application header
+ *
+ * On the real AuthContext (`renderWithAuth`), the real UI store, real i18next (en) and the MSW
+ * harness; only the screen width (`window.matchMedia`, a browser boundary) and `useNavigate`
+ * (react-router) are stubbed.
  */
 
-import { describe, test, expect, beforeEach, vi } from 'vitest';
-import { render, screen, fireEvent, within } from '@testing-library/react';
-import { BrowserRouter } from 'react-router-dom';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest';
+import { screen, fireEvent, within } from '@testing-library/react';
 import AppHeader from './AppHeader';
 import { useUIStore } from '@/stores/uiStore';
-import { anAuthState, anAuthUser } from '@/test/auth';
+import { anAuthState, anAuthUser, renderWithAuth } from '@/test/auth';
+import { api } from '@/test/msw/api';
+import { aUserSettings } from '@/test/fixtures';
+import type { UserRole } from '@/types/auth';
 
 const mockNavigate = vi.fn();
 vi.mock('react-router-dom', async () => {
@@ -17,243 +22,117 @@ vi.mock('react-router-dom', async () => {
   return { ...actual, useNavigate: () => mockNavigate };
 });
 
-// Mock stores and hooks
-vi.mock('@/stores/uiStore');
-vi.mock('@/hooks/useAuth');
+/** The window is `width` px wide: MUI's media queries answer from it. */
+function setWidth(width: number) {
+  window.matchMedia = ((query: string) => {
+    const min = /min-width:\s*([\d.]+)px/.exec(query);
+    const max = /max-width:\s*([\d.]+)px/.exec(query);
+    const matches = (!min || width >= Number(min[1])) && (!max || width <= Number(max[1]));
+    return {
+      matches,
+      media: query,
+      onchange: null,
+      addListener: () => {},
+      removeListener: () => {},
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      dispatchEvent: () => false,
+    };
+  }) as typeof window.matchMedia;
+}
 
-// Mock useNotifications hook
-vi.mock('@/hooks/useNotifications', () => ({
-  useNotifications: vi.fn(() => ({
-    data: {
-      notifications: [],
-      unreadCount: 3,
-    },
-    isLoading: false,
-  })),
-}));
+const originalMatchMedia = window.matchMedia;
 
-// Mock useBreakpoints hook to return desktop breakpoints
-vi.mock('@/hooks/useBreakpoints', () => ({
-  useBreakpoints: vi.fn(() => ({
-    isMobile: false,
-    isTablet: false,
-    isDesktop: true,
-    isWideDesktop: true,
-  })),
-}));
+const as = (role: UserRole) =>
+  anAuthState(
+    anAuthUser({
+      userId: 'user-123',
+      username: 'test.user',
+      email: 'test@batbern.ch',
+      role,
+      roles: [role],
+      companyId: 'company-123',
+    })
+  );
 
-// Mock i18next
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string) => {
-      const translations: Record<string, string> = {
-        'navigation.dashboard': 'Dashboard',
-        'navigation.events': 'Events',
-        'navigation.speakers': 'Speakers',
-        'navigation.partners': 'Partners',
-        'navigation.analytics': 'Analytics',
-        'navigation.myEvents': 'My Events',
-        'navigation.myContent': 'My Content',
-        'navigation.myRegistrations': 'My Registrations',
-        'navigation.profile': 'Profile',
-        'navigation.myCompany': 'My Company',
-        'navigation.topics': 'Topics',
-        'navigation.companies': 'Companies',
-        'navigation.users': 'Users',
-        'navigation.newsletterSubscribers': 'Newsletter Subscribers',
-        'navigation.publicSite': 'Public Site',
-        'navigation.partnerTopics': 'Partner Topics',
-        'navigation.partnerMeetings': 'Partner Meetings',
-        'events:navigation.dashboard': 'Events',
-        'menu.profile': 'Profile',
-        'menu.settings': 'Settings',
-        'menu.help': 'Help',
-        'menu.logout': 'Logout',
-        'role.organizer': 'Organizer',
-        'role.speaker': 'Speaker',
-        'role.partner': 'Partner',
-        'role.attendee': 'Attendee',
-        'navigation.notifications': 'Notifications',
-        'navigation.userMenu': 'User menu',
-        'navigation.openMenu': 'menu',
-      };
-      return translations[key] || key;
-    },
-    i18n: {
-      language: 'en',
-      changeLanguage: vi.fn().mockResolvedValue(undefined),
-    },
-  }),
-}));
+const renderHeader = (ui = <AppHeader />, role: UserRole = 'organizer') =>
+  renderWithAuth(ui, { auth: as(role) });
 
 describe('AppHeader Component', () => {
-  let queryClient: QueryClient;
-  const mockSignOut = vi.fn();
-
-  beforeEach(async () => {
-    queryClient = new QueryClient({
-      defaultOptions: {
-        queries: { retry: false },
-      },
-    });
-    vi.clearAllMocks();
-
-    // Mock useAuth hook
-    const { useAuth } = await import('@/hooks/useAuth');
-    vi.mocked(useAuth).mockReturnValue(
-      anAuthState(
-        anAuthUser({
-          userId: 'user-123',
-          username: 'test.user',
-          email: 'test@batbern.ch',
-          role: 'organizer',
-          roles: ['organizer'],
-          companyId: 'company-123',
-        }),
-        { signOut: mockSignOut }
-      )
-    );
-
-    vi.mocked(useUIStore).mockReturnValue({
-      locale: 'de',
-      sidebarCollapsed: false,
-      notificationDrawerOpen: false,
-      userMenuOpen: false,
-      activeNavRole: null,
-      setLocale: vi.fn(),
-      toggleSidebar: vi.fn(),
-      setSidebarCollapsed: vi.fn(),
-      setNotificationDrawerOpen: vi.fn(),
-      setUserMenuOpen: vi.fn(),
-      setActiveNavRole: vi.fn(),
-      reset: vi.fn(),
-    });
+  beforeEach(() => {
+    mockNavigate.mockClear();
+    useUIStore.getState().reset();
+    setWidth(1500);
   });
 
-  const renderWithProviders = (component: React.ReactElement) => {
-    // Set desktop viewport size to ensure navigation menu is visible (not mobile drawer)
-    global.innerWidth = 1024;
-    global.innerHeight = 768;
-    global.dispatchEvent(new Event('resize'));
-
-    return render(
-      <BrowserRouter>
-        <QueryClientProvider client={queryClient}>{component}</QueryClientProvider>
-      </BrowserRouter>
-    );
-  };
+  afterEach(() => {
+    window.matchMedia = originalMatchMedia;
+  });
 
   describe('Basic Rendering', () => {
     test('should_renderMaterialUIAppBar_when_headerMounted', () => {
-      renderWithProviders(<AppHeader />);
+      renderHeader();
 
-      // Should render Material-UI AppBar
-      const appBar = screen.getByRole('banner');
-      expect(appBar).toBeInTheDocument();
+      expect(screen.getByRole('banner')).toBeInTheDocument();
     });
 
     test('should_renderBATbernLogo_when_headerMounted', () => {
-      renderWithProviders(<AppHeader />);
+      renderHeader();
 
-      // Should display BATbern logo/branding
-      const logo = screen.getByRole('img', { name: /batbern/i });
-      expect(logo).toBeInTheDocument();
+      expect(screen.getByRole('img', { name: /batbern/i })).toBeInTheDocument();
     });
 
     test('should_renderNavigationMenu_when_headerMounted', () => {
-      renderWithProviders(<AppHeader />);
+      renderHeader();
 
-      // Should render navigation menu
-      const navigation = screen.getByRole('navigation');
-      expect(navigation).toBeInTheDocument();
+      expect(screen.getByRole('navigation')).toBeInTheDocument();
     });
   });
 
   describe('Role-Based Navigation', () => {
     test('should_renderOrganizerNavigation_when_userRoleIsOrganizer', () => {
-      renderWithProviders(<AppHeader />);
+      renderHeader();
 
-      // Organizer should see Events, Partners, Companies, Users menu items
+      // Organizer should see Events, Partners, Companies menu items
       expect(screen.getAllByText(/events/i)[0]).toBeInTheDocument();
       expect(screen.getAllByText(/partners/i)[0]).toBeInTheDocument();
       expect(screen.getByText(/companies/i)).toBeInTheDocument();
     });
 
-    test('should_renderEmptyNavigation_when_userRoleIsSpeaker', async () => {
+    test('should_renderEmptyNavigation_when_userRoleIsSpeaker', () => {
       // 2026-05-20 (Q#1b / Q#3) — SPEAKER role has no admin-nav entries. Speakers
-      // live in the public site and reach their dashboard via the public navigation,
-      // not the admin top nav. AppHeader's NavigationMenu therefore renders empty
-      // for a speaker-only user.
-      const { useAuth } = await import('@/hooks/useAuth');
-      vi.mocked(useAuth).mockReturnValue({
-        ...vi.mocked(useAuth)(),
-        user: {
-          ...vi.mocked(useAuth)().user!,
-          role: 'speaker',
-          // Explicit single-role array so the new filter (getRolesWithNavEntries)
-          // does not fall back to the legacy `role` field.
-          roles: ['speaker'],
-        },
-      });
+      // live in the public site and reach their dashboard via the public navigation.
+      renderHeader(<AppHeader />, 'speaker');
 
-      renderWithProviders(<AppHeader />);
-
-      // No nav items for speakers — no Dashboard / My Events / My Content links
-      // in the role-based admin nav.
       expect(screen.queryByText(/^my events$/i)).not.toBeInTheDocument();
       expect(screen.queryByText(/^my content$/i)).not.toBeInTheDocument();
     });
 
-    test('should_renderPartnerNavigation_when_userRoleIsPartner', async () => {
-      const { useAuth } = await import('@/hooks/useAuth');
-      vi.mocked(useAuth).mockReturnValue({
-        ...vi.mocked(useAuth)(),
-        user: {
-          ...vi.mocked(useAuth)().user!,
-          role: 'partner',
-          roles: ['partner'],
-        },
-      });
-
-      renderWithProviders(<AppHeader />);
+    test('should_renderPartnerNavigation_when_userRoleIsPartner', () => {
+      renderHeader(<AppHeader />, 'partner');
 
       // Partner should see My Company and Topics
       expect(screen.getAllByText(/my company/i)[0]).toBeInTheDocument();
-      expect(screen.getAllByText(/topics/i)[0]).toBeInTheDocument();
+      expect(screen.getAllByText(/topic/i)[0]).toBeInTheDocument();
     });
 
-    test('should_renderEmptyNavigation_when_userRoleIsAttendee', async () => {
+    test('should_renderEmptyNavigation_when_userRoleIsAttendee', () => {
       // 2026-05-20 (Q#1b / Q#3) — ATTENDEE role has no admin-nav entries either.
-      // Attendees browse events and register through the public website; the
-      // admin top nav is irrelevant for them.
-      const { useAuth } = await import('@/hooks/useAuth');
-      vi.mocked(useAuth).mockReturnValue({
-        ...vi.mocked(useAuth)(),
-        user: {
-          ...vi.mocked(useAuth)().user!,
-          role: 'attendee',
-          roles: ['attendee'],
-        },
-      });
+      renderHeader(<AppHeader />, 'attendee');
 
-      renderWithProviders(<AppHeader />);
-
-      // No nav items for attendees — no "My Registrations" link in the role-based nav.
       expect(screen.queryByText(/my registrations/i)).not.toBeInTheDocument();
     });
   });
 
   describe('Notification Bell', () => {
     test('should_renderNotificationBell_when_headerMounted', () => {
-      renderWithProviders(<AppHeader />);
+      renderHeader();
 
-      // Should render notification bell icon
-      const notificationButton = screen.getByLabelText(/notifications/i);
-      expect(notificationButton).toBeInTheDocument();
+      expect(screen.getByLabelText(/notifications/i)).toBeInTheDocument();
     });
 
     test('should_showUnreadBadge_when_unreadNotificationsExist', () => {
-      renderWithProviders(
+      renderHeader(
         <AppHeader
           notifications={{
             data: [],
@@ -263,16 +142,13 @@ describe('AppHeader Component', () => {
         />
       );
 
-      // Should show badge with unread count
-      const badge = screen.getByText('3');
-      expect(badge).toBeInTheDocument();
+      expect(screen.getByText('3')).toBeInTheDocument();
     });
 
     test('should_navigateToNotifications_when_bellClicked', () => {
-      renderWithProviders(<AppHeader />);
+      renderHeader();
 
-      const notificationButton = screen.getByLabelText(/notifications/i);
-      fireEvent.click(notificationButton);
+      fireEvent.click(screen.getByLabelText(/notifications/i));
 
       expect(mockNavigate).toHaveBeenCalledWith('/organizer/notifications');
     });
@@ -280,60 +156,37 @@ describe('AppHeader Component', () => {
 
   describe('User Menu', () => {
     test('should_renderUserAvatar_when_headerMounted', () => {
-      renderWithProviders(<AppHeader />);
+      renderHeader();
 
-      // Should render user avatar/profile button
-      const userButton = screen.getByLabelText(/user menu|profile/i);
-      expect(userButton).toBeInTheDocument();
+      expect(screen.getByLabelText(/user menu|profile/i)).toBeInTheDocument();
     });
 
     test('should_openUserMenu_when_avatarClicked', () => {
-      const setUserMenuOpen = vi.fn();
-      vi.mocked(useUIStore).mockReturnValue({
-        ...vi.mocked(useUIStore)(),
-        setUserMenuOpen,
-      });
+      renderHeader();
 
-      renderWithProviders(<AppHeader />);
+      fireEvent.click(screen.getByLabelText(/user menu|profile/i));
 
-      const userButton = screen.getByLabelText(/user menu|profile/i);
-      fireEvent.click(userButton);
-
-      expect(setUserMenuOpen).toHaveBeenCalledWith(true);
+      expect(useUIStore.getState().userMenuOpen).toBe(true);
+      expect(screen.getByTestId('whats-new-link')).toBeInTheDocument();
     });
   });
 
-  // Language Switcher test removed - language switcher is now in UserMenuDropdown
-  // See UserMenuDropdown.test.tsx for language switcher tests
-
   // #1198: between 1200 and 1440 px the labelled bar did not fit; icons with names instead.
   describe('Navigation width', () => {
-    test('should_showIconsOnly_when_desktopNarrowerThan1440', async () => {
-      const { useBreakpoints } = await import('@/hooks/useBreakpoints');
-      vi.mocked(useBreakpoints).mockReturnValue({
-        isMobile: false,
-        isTablet: false,
-        isDesktop: true,
-        isWideDesktop: false,
-      });
+    test('should_showIconsOnly_when_desktopNarrowerThan1440', () => {
+      setWidth(1300);
 
-      renderWithProviders(<AppHeader />);
+      renderHeader();
 
       const events = screen.getByTestId('nav-organizer-events');
       expect(events).toHaveAccessibleName('Events');
       expect(within(events).queryByText('Events')).not.toBeInTheDocument();
     });
 
-    test('should_showLabels_when_1440OrWider', async () => {
-      const { useBreakpoints } = await import('@/hooks/useBreakpoints');
-      vi.mocked(useBreakpoints).mockReturnValue({
-        isMobile: false,
-        isTablet: false,
-        isDesktop: true,
-        isWideDesktop: true,
-      });
+    test('should_showLabels_when_1440OrWider', () => {
+      setWidth(1500);
 
-      renderWithProviders(<AppHeader />);
+      renderHeader();
 
       expect(
         within(screen.getByTestId('nav-organizer-events')).getByText('Events')
@@ -342,38 +195,50 @@ describe('AppHeader Component', () => {
   });
 
   describe('Mobile Responsive', () => {
-    test('should_renderHamburgerMenu_when_mobile', async () => {
-      // Mock useBreakpoints to return mobile
-      const { useBreakpoints } = await import('@/hooks/useBreakpoints');
-      vi.mocked(useBreakpoints).mockReturnValue({
-        isMobile: true,
-        isTablet: false,
-        isDesktop: false,
-        isWideDesktop: false,
-      });
+    test('should_renderHamburgerMenu_when_mobile', () => {
+      setWidth(600);
 
-      renderWithProviders(<AppHeader />);
+      renderHeader();
 
-      // Should render hamburger menu button with exact aria-label "menu"
-      const hamburgerButton = screen.getByLabelText('menu');
-      expect(hamburgerButton).toBeInTheDocument();
+      expect(screen.getByLabelText('Open menu')).toBeInTheDocument();
     });
 
-    test('should_hideDesktopNavigation_when_mobile', async () => {
-      // Mock useBreakpoints to return mobile
-      const { useBreakpoints } = await import('@/hooks/useBreakpoints');
-      vi.mocked(useBreakpoints).mockReturnValue({
-        isMobile: true,
-        isTablet: false,
-        isDesktop: false,
-        isWideDesktop: false,
-      });
+    test('should_hideDesktopNavigation_when_mobile', () => {
+      setWidth(600);
 
-      renderWithProviders(<AppHeader />);
+      renderHeader();
 
-      // Desktop navigation should NOT be rendered when isMobile is true
-      const navigation = screen.queryByRole('navigation');
-      expect(navigation).not.toBeInTheDocument();
+      expect(screen.queryByRole('navigation')).not.toBeInTheDocument();
+    });
+  });
+
+  // Story 2 of 2026-11-13: the dot on the avatar reads the stored "seen" time over the network.
+  describe('What’s new dot', () => {
+    test('should_showTheDot_when_theOrganizerHasNotSeenTheLatest', async () => {
+      api.on('getUserSettings', () => aUserSettings());
+      renderHeader();
+
+      await vi.waitFor(() =>
+        expect(screen.getByTestId('user-menu-whats-new-dot')).toHaveAttribute(
+          'data-visible',
+          'true'
+        )
+      );
+    });
+
+    test('should_notShowTheDot_when_upToDate', async () => {
+      api.on('getUserSettings', () => aUserSettings({ whatsNewSeenAt: new Date().toISOString() }));
+      const { queryClient } = renderHeader();
+
+      await vi.waitFor(() =>
+        expect(queryClient.getQueryState(['users', 'me', 'settings', 'whatsNew'])?.status).toBe(
+          'success'
+        )
+      );
+      expect(screen.getByTestId('user-menu-whats-new-dot')).toHaveAttribute(
+        'data-visible',
+        'false'
+      );
     });
   });
 });

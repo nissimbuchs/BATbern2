@@ -355,6 +355,12 @@ and replaced the full-replace PUT with a partial PATCH (ADR-013). The storage is
 the other settings; before, the frontend sent it to `/users/me/preferences`, which dropped it.
 Other services read the settings with `?include=settings` on `/internal/users/{username}`.
 
+`whatsNewSeenAt` (column `settings_whats_new_seen_at`, V32) is when the user last closed the
+"What's new" card on the attendee dashboard; absent means never. The frontend sends "now" when the
+card is closed; a time ahead of the server clock is stored as the server's now. The
+features themselves are a list in the frontend (`web-frontend/src/features/whatsNew/catalogue.ts`),
+not a table: an entry shows when it was released after this time.
+
 #### Get User Settings
 
 ```yaml
@@ -866,6 +872,10 @@ UserSettings:
     twoFactorEnabled:
       type: boolean
       default: false
+    whatsNewSeenAt:
+      type: string
+      format: date-time
+      nullable: true   # absent: the "What's new" card was never closed
 ```
 
 ### UpdateUserRequest

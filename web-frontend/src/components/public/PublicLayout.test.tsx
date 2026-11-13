@@ -1,12 +1,15 @@
 /**
  * PublicLayout Component Tests
  * Story 4.1.2: Public Layout & Navigation
+ *
+ * Signed out through the real AuthContext (`renderWithAuth`, which also provides the query
+ * client the navigation's "What's new" dot needs).
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
-import { BrowserRouter } from 'react-router-dom';
+import { screen } from '@testing-library/react';
 import { PublicLayout } from './PublicLayout';
+import { renderWithAuth, signedOut } from '@/test/auth';
 
 // Mock i18next with actual translations
 vi.mock('react-i18next', () => ({
@@ -36,19 +39,6 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
-// Mock the useAuth hook
-vi.mock('@/hooks/useAuth', () => ({
-  useAuth: () => ({
-    isAuthenticated: false,
-    isLoading: false,
-    user: null,
-    canAccess: vi.fn(() => false),
-    login: vi.fn(),
-    logout: vi.fn(),
-    refreshSession: vi.fn(),
-  }),
-}));
-
 // Mock child component
 const TestChild = () => <div>Test Content</div>;
 
@@ -58,24 +48,22 @@ describe('PublicLayout', () => {
   });
 
   it('should render children correctly', () => {
-    render(
-      <BrowserRouter>
-        <PublicLayout>
-          <TestChild />
-        </PublicLayout>
-      </BrowserRouter>
+    renderWithAuth(
+      <PublicLayout>
+        <TestChild />
+      </PublicLayout>,
+      { auth: signedOut() }
     );
 
     expect(screen.getByText('Test Content')).toBeInTheDocument();
   });
 
   it('should apply dark theme classes', () => {
-    const { container } = render(
-      <BrowserRouter>
-        <PublicLayout>
-          <TestChild />
-        </PublicLayout>
-      </BrowserRouter>
+    const { container } = renderWithAuth(
+      <PublicLayout>
+        <TestChild />
+      </PublicLayout>,
+      { auth: signedOut() }
     );
 
     const layoutDiv = container.firstChild as HTMLElement;
@@ -89,12 +77,11 @@ describe('PublicLayout', () => {
   });
 
   it('should render navigation and footer', () => {
-    const { container } = render(
-      <BrowserRouter>
-        <PublicLayout>
-          <TestChild />
-        </PublicLayout>
-      </BrowserRouter>
+    const { container } = renderWithAuth(
+      <PublicLayout>
+        <TestChild />
+      </PublicLayout>,
+      { auth: signedOut() }
     );
 
     // Check for navigation - look for logo image and navigation links

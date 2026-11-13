@@ -14,6 +14,7 @@ import { Card } from '@/components/public/ui/card';
 import { CheckCircle2, XCircle, ArrowLeft, Calendar } from 'lucide-react';
 import { BATbernLoader } from '@components/shared/BATbernLoader';
 import { eventApiClient } from '@/services/eventApiClient';
+import { AccountBenefits } from '@/components/public/AccountBenefits/AccountBenefits';
 
 type ConfirmationState = 'loading' | 'success' | 'error' | 'already_confirmed';
 
@@ -24,12 +25,13 @@ const ConfirmRegistrationPage = () => {
   const token = searchParams.get('token');
 
   const [state, setState] = useState<ConfirmationState>('loading');
+  // The i18n key, not the text, so the message follows a language switch.
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
     if (!token || !eventCode) {
       setState('error');
-      setErrorMessage(`No confirmation token${!token ? ' or event code' : ''} provided`);
+      setErrorMessage('confirmation.error.messages.missingLink');
       return;
     }
 
@@ -56,13 +58,11 @@ const ConfirmRegistrationPage = () => {
 
         const errorMessage = error instanceof Error ? error.message : '';
         if (errorMessage.includes('expired')) {
-          setErrorMessage('Confirmation link has expired. Please register again.');
+          setErrorMessage('confirmation.error.messages.expired');
         } else if (errorMessage.includes('Invalid')) {
-          setErrorMessage(
-            'Invalid confirmation link. Please check your email for the correct link.'
-          );
+          setErrorMessage('confirmation.error.messages.invalid');
         } else {
-          setErrorMessage('Failed to confirm registration. Please try again or contact support.');
+          setErrorMessage('confirmation.error.messages.failed');
         }
       }
     };
@@ -117,15 +117,17 @@ const ConfirmRegistrationPage = () => {
               </ul>
             </Card>
 
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            {/* What a free account gives */}
+            <Card className="p-6 mb-8 bg-blue-950/30 border-blue-500/30">
+              <AccountBenefits signUpTo="/auth/register" />
+            </Card>
+
+            <div className="flex justify-center">
               <Button asChild>
                 <Link to="/">
                   <ArrowLeft className="h-4 w-4 mr-2" />
-                  Back to Home
+                  {t('confirmation.backToHome')}
                 </Link>
-              </Button>
-              <Button asChild variant="outline">
-                <Link to="/auth/register">{t('confirmation.success.createAccount')}</Link>
               </Button>
             </div>
           </>
@@ -143,16 +145,14 @@ const ConfirmRegistrationPage = () => {
             </div>
 
             <Card className="p-6 mb-8 text-center">
-              <p className="text-zinc-300">
-                Your registration was previously confirmed. No further action is needed.
-              </p>
+              <p className="text-zinc-300">{t('confirmation.alreadyConfirmed.message')}</p>
             </Card>
 
             <div className="flex justify-center">
               <Button asChild variant="outline">
                 <Link to="/">
                   <ArrowLeft className="h-4 w-4 mr-2" />
-                  Back to Home
+                  {t('confirmation.backToHome')}
                 </Link>
               </Button>
             </div>
@@ -166,7 +166,7 @@ const ConfirmRegistrationPage = () => {
               <XCircle className="h-16 w-16 text-red-400 mx-auto mb-4" />
               <h1 className="text-3xl font-light mb-2">{t('confirmation.error.title')}</h1>
               <p className="text-xl text-zinc-400">
-                {errorMessage || 'Unable to confirm your registration'}
+                {t(errorMessage ?? 'confirmation.error.messages.unable')}
               </p>
             </div>
 
@@ -184,7 +184,7 @@ const ConfirmRegistrationPage = () => {
               <Button asChild variant="outline">
                 <Link to="/">
                   <ArrowLeft className="h-4 w-4 mr-2" />
-                  Back to Home
+                  {t('confirmation.backToHome')}
                 </Link>
               </Button>
               <Button asChild>

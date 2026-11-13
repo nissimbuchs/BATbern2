@@ -6,13 +6,26 @@
 
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Menu, ChevronDown, LogOut, UserCircle } from 'lucide-react';
+import { Menu, ChevronDown, LogOut, Sparkles, UserCircle } from 'lucide-react';
 import { Button } from '@/components/public/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/public/ui/popover';
 import LanguageSwitcher from '@/components/shared/LanguageSwitcher/LanguageSwitcher';
 import { ThankOrganizersNavButton } from './ThankOrganizersNavButton';
 import { useAuth } from '@/hooks/useAuth';
 import { useTranslation } from 'react-i18next';
+import { useWhatsNew } from '@/features/whatsNew/useWhatsNew';
+import { WHATS_NEW_PAGE_PATH } from '@/features/whatsNew/catalogue';
+
+/** The "What's new" card on the attendee dashboard (every logged-in user reaches it). */
+
+/** The dot on the avatar when something is new for the user. */
+const WhatsNewDot = ({ testId }: { testId: string }) => (
+  <span
+    className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-background"
+    data-testid={testId}
+    aria-hidden="true"
+  />
+);
 
 interface PublicNavigationProps {
   /** Top offset in pixels (e.g., when a banner is present above) */
@@ -31,6 +44,7 @@ export const PublicNavigation = ({
   const { isAuthenticated, user, signOut } = useAuth();
   const { t } = useTranslation('common');
   const navigate = useNavigate();
+  const { hasNew: whatsNewHasNew } = useWhatsNew();
 
   // 2026-05-20 (Q#2 / Q#2b) — "Portal" and "My Sessions" live in the main horizontal
   // nav bar (next to Home / About / Past Events), not the user dropdown. Visibility:
@@ -154,14 +168,26 @@ export const PublicNavigation = ({
                       variant="outline"
                       className="flex items-center gap-2 px-3"
                       data-testid="public-nav-user-menu"
+                      aria-label={whatsNewHasNew ? t('menu.whatsNewAvailable') : undefined}
                     >
-                      <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-semibold leading-none">
+                      <span className="relative flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-semibold leading-none">
                         {initials}
+                        {whatsNewHasNew && <WhatsNewDot testId="public-nav-whats-new-dot" />}
                       </span>
                       <ChevronDown className="h-4 w-4 text-foreground/60" />
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent align="end" className="w-64 p-2">
+                  <PopoverContent
+                    align="end"
+                    className="w-64 p-2"
+                    // Focus the menu itself on open, not its first control: that is the language
+                    // <select> (Safari skips links), and Safari opens a focused <select> (owner
+                    // 2026-11-13). Keyboard users still Tab on from the menu.
+                    onOpenAutoFocus={(event) => {
+                      event.preventDefault();
+                      (event.currentTarget as HTMLElement | null)?.focus();
+                    }}
+                  >
                     <div className="flex flex-col gap-1">
                       {/* 2026-05-20 (Q#2b) — Portal + My Sessions moved out to the main
                           nav bar above. The dropdown is now secondary actions only:
@@ -175,6 +201,20 @@ export const PublicNavigation = ({
                       >
                         <UserCircle className="h-4 w-4" />
                         {t('navigation.myProfile', 'My Profile')}
+                      </Link>
+                      <Link
+                        to={WHATS_NEW_PAGE_PATH}
+                        className="flex items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-accent transition-colors"
+                        data-testid="public-nav-whats-new"
+                      >
+                        <Sparkles className="h-4 w-4" />
+                        {t('menu.whatsNew')}
+                        {whatsNewHasNew && (
+                          <span
+                            className="ml-auto h-2 w-2 rounded-full bg-red-500"
+                            aria-hidden="true"
+                          />
+                        )}
                       </Link>
                       <div className="py-1 px-1">
                         <LanguageSwitcher />
@@ -311,8 +351,9 @@ export const PublicNavigation = ({
                   onClick={closeMobileMenu}
                   className="flex items-center gap-2"
                 >
-                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white/20 text-xs font-semibold leading-none">
+                  <span className="relative flex h-6 w-6 items-center justify-center rounded-full bg-white/20 text-xs font-semibold leading-none">
                     {initials}
+                    {whatsNewHasNew && <WhatsNewDot testId="public-nav-mobile-whats-new-dot" />}
                   </span>
                   {user?.email ?? ''}
                 </Link>
@@ -323,6 +364,20 @@ export const PublicNavigation = ({
                 <Link to="/profile" onClick={closeMobileMenu} className="flex items-center gap-2">
                   <UserCircle className="h-4 w-4" />
                   {t('navigation.myProfile', 'My Profile')}
+                </Link>
+              </Button>
+              <Button asChild variant="secondary" className="w-full">
+                <Link
+                  to={WHATS_NEW_PAGE_PATH}
+                  onClick={closeMobileMenu}
+                  className="flex items-center gap-2"
+                  data-testid="public-nav-mobile-whats-new"
+                >
+                  <Sparkles className="h-4 w-4" />
+                  {t('menu.whatsNew')}
+                  {whatsNewHasNew && (
+                    <span className="h-2 w-2 rounded-full bg-red-500" aria-hidden="true" />
+                  )}
                 </Link>
               </Button>
               <div className="px-1">

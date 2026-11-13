@@ -1448,5 +1448,47 @@
     "nameLabel": "Nome della sede",
     "capacityLabel": "Capienza della sede",
     "addressLabel": "Indirizzo della sede"
+  },
+  "whatsNew": {
+    "title": "Novità",
+    "close": "Chiudi, visto",
+    "isNew": "Novità",
+    "allNews": "Tutte le novità",
+    "searchPlaceholder": "Cerca nelle novità",
+    "noMatch": "Nessuna novità corrisponde alla tua ricerca.",
+    "entries": {
+      "profileMerge": {
+        "title": "Un profilo precedente a tuo nome",
+        "text": "Abbiamo trovato una registrazione precedente a tuo nome. Uniscila al tuo account per avere tutti i tuoi eventi in un unico posto."
+      },
+      "sessionQna": {
+        "title": "Domande e commenti per sessione",
+        "text": "Da due settimane prima a due settimane dopo un evento, fai domande ai relatori e commenta ogni sessione."
+      },
+      "suggestTopics": {
+        "title": "Proponi temi",
+        "text": "Proponi un tema che vorresti vedere a un prossimo BATbern."
+      },
+      "loginAndProfile": {
+        "title": "Accesso con Google e il tuo profilo",
+        "text": "Accedi con Google, aggiungi altri indirizzi e-mail e mantieni aggiornato il tuo profilo."
+      },
+      "companyLogo": {
+        "title": "Il logo della tua azienda",
+        "text": "Il logo della tua azienda manca o è superato? Inviane uno nuovo dal tuo profilo."
+      },
+      "thankOrganizers": {
+        "title": "Ringrazia gli organizzatori",
+        "text": "Durante e dopo un evento, invia agli organizzatori un breve ringraziamento."
+      },
+      "eventHistory": {
+        "title": "La tua cronologia eventi",
+        "text": "Vedi tutti i BATbern a cui eri iscritto o hai partecipato."
+      },
+      "selfNomination": {
+        "title": "Proponiti come relatore",
+        "text": "Vuoi tenere una presentazione? Proponiti sulla pagina dell'evento."
+      }
+    }
   }
 }

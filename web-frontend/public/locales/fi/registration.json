@@ -45,8 +45,9 @@
     "noEmailCheck1": "Tarkista roskapostikansio",
     "noEmailCheck2": "Varmista, että syötit oikean sähköpostiosoitteen",
     "noEmailCheck3": "Odota muutama minuutti ja tarkista uudelleen",
-    "createAccountTitle": "Luo tili hallinnoidaksesi rekisteröintejäsi",
-    "createAccountText": "Sähköpostin kautta vahvistuksen jälkeen voit luoda tilin hallinnoidaksesi kaikkia rekisteröintejäsi."
+    "backToHome": "Takaisin etusivulle",
+    "emailSentTo": "Lähetimme vahvistussähköpostin osoitteeseen",
+    "clickLink": "Viimeistele ilmoittautumisesi napsauttamalla sähköpostin vahvistuslinkkiä. Linkki on voimassa 48 tuntia."
   },
   "wizard": {
     "steps": {
@@ -122,10 +123,6 @@
       "privacyLink": "tietosuojakäytännön",
       "required": "*",
       "error": "Sinun täytyy hyväksyä käyttöehdot viimeistelläksesi rekisteröinnin."
-    },
-    "account": {
-      "title": "Haluatko hallita kaikkia rekisteröintejäsi yhdessä paikassa?",
-      "message": "Rekisteröinnin jälkeen voit luoda ilmaisen tilin rekisteröintihistoriasi hallinnoimiseksi."
     }
   },
   "success": {
@@ -155,12 +152,12 @@
       "checkIn": "Kirjautuminen tapahtumaan",
       "checkInText": "Esitä henkilöllisyystodistuksesi tapahtuman vastaanotossa kirjautumista varten. Vahvistettu ilmoittautumisesi on tallessa järjestelmässämme.",
       "eventDetails": "Tapahtuman tiedot",
-      "eventDetailsText": "Saat tapahtumapäivityksiä ja muistutuksia sähköpostitse.",
-      "createAccount": "Luo tili ilmoittautumisten hallintaan"
+      "eventDetailsText": "Saat tapahtumapäivityksiä ja muistutuksia sähköpostitse."
     },
     "alreadyConfirmed": {
       "title": "Jo vahvistettu",
-      "subtitle": "Tämä ilmoittautuminen on jo vahvistettu"
+      "subtitle": "Tämä ilmoittautuminen on jo vahvistettu",
+      "message": "Ilmoittautumisesi on jo vahvistettu. Sinun ei tarvitse tehdä muuta."
     },
     "error": {
       "title": "Vahvistus epäonnistui",
@@ -169,8 +166,16 @@
       "expired": "Vahvistuslinkit vanhenevat 48 tunnin kuluttua - sinun täytyy ehkä ilmoittautua uudelleen",
       "useLatestEmail": "Varmista, että käytät uusinta vahvistussähköpostia",
       "contactSupport": "Ota yhteyttä tukeen, jos ongelma jatkuu",
-      "registerAgain": "Ilmoittaudu uudelleen"
-    }
+      "registerAgain": "Ilmoittaudu uudelleen",
+      "messages": {
+        "missingLink": "Vahvistuslinkki on puutteellinen. Käytä sähköpostissasi olevaa linkkiä.",
+        "expired": "Vahvistuslinkki on vanhentunut. Ilmoittaudu uudelleen.",
+        "invalid": "Virheellinen vahvistuslinkki. Tarkista, että käytät sähköpostisi oikeaa linkkiä.",
+        "failed": "Ilmoittautumisen vahvistus epäonnistui. Yritä uudelleen tai ota yhteyttä tukeen.",
+        "unable": "Ilmoittautumistasi ei voitu vahvistaa"
+      }
+    },
+    "backToHome": "Takaisin etusivulle"
   },
   "companySearch": {
     "error": "Virhe yritysten lataamisessa",
@@ -246,5 +251,17 @@
     "registeredOn": "Ilmoittautunut",
     "cancelButton": "Pidä ilmoittautumiseni",
     "confirmButton": "Kyllä, peruuta ilmoittautuminen"
+  },
+  "accountBenefits": {
+    "title": "Mitä ilmainen tili sinulle tarjoaa",
+    "items": {
+      "qna": "Kysy kysymyksiä ja kommentoi esityksiä kaksi viikkoa ennen tapahtumaa ja kaksi viikkoa sen jälkeen",
+      "topics": "Ehdota aiheita tuleviin BATbern-tapahtumiin",
+      "history": "Kaikki BATbern-käyntisi yhdessä paikassa, myös ilmoittautumiset ajalta ennen tiliäsi",
+      "logo": "Yrityksesi logo nimesi vieressä"
+    },
+    "signUp": "Luo ilmainen tili",
+    "moreLink": "Lisää tilistä",
+    "profileButton": "Siirry profiiliisi"
   }
 }

@@ -58,7 +58,7 @@ export const getPublicOrganizers = async (): Promise<User[]> => {
 };
 
 /**
- * Fetches the next 3 upcoming events for the Upcoming Events slide.
+ * Fetches the next `max` (default 3) upcoming events for the Upcoming Events slide.
  * Public read model (`GET /public/events?scope=upcoming`): published events from today on,
  * nearest first, selected server-side. Story 4.9 found that the slide asked the organizer list
  * `/events` with a `status` parameter no spec declares; EMS ignored it and returned the oldest
@@ -67,9 +67,12 @@ export const getPublicOrganizers = async (): Promise<User[]> => {
  * @param excludeEventCode — the event currently being presented; excluded from
  *   the result so the slide shows only genuinely *future* events, not the
  *   current one (whose date is still in the future).
+ * @param max — how many to return (default 3, the slide). The attendee dashboard asks for more,
+ *   because it skips the events the user is registered for. At most the 10 fetched.
  */
 export const getUpcomingEvents = async (
-  excludeEventCode?: string
+  excludeEventCode?: string,
+  max = 3
 ): Promise<coreComponents['schemas']['Event'][]> => {
   const response = await apiClient.get<{ data: coreComponents['schemas']['Event'][] }>(
     '/public/events',
@@ -80,7 +83,7 @@ export const getUpcomingEvents = async (
   return (response.data.data ?? [])
     .filter((e) => new Date(e.date) > now && e.eventCode !== excludeEventCode)
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-    .slice(0, 3);
+    .slice(0, max);
 };
 
 /**

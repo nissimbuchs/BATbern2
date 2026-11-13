@@ -131,9 +131,6 @@ vi.mock('react-i18next', () => ({
         'confirmStep.terms.required': '*',
         'confirmStep.terms.error':
           'You must accept the terms and conditions to complete registration.',
-        'confirmStep.account.title': 'Want to manage all your registrations in one place?',
-        'confirmStep.account.message':
-          'After registering, you can create a free account to view your registration history, update preferences, and get personalized event recommendations.',
         // Common namespace keys
         'navigation.home': 'Home',
       };

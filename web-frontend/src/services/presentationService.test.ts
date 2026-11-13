@@ -75,6 +75,27 @@ describe('presentationService', () => {
       expect(api.calls('listEvents')).toHaveLength(0);
     });
 
+    it('returns up to `max` events when asked for more (attendee dashboard, story 3)', async () => {
+      api.on('listPublicEvents', () =>
+        page([
+          futureEvent(30, { eventCode: 'BATbern64' }),
+          futureEvent(10, { eventCode: 'BATbern62' }),
+          futureEvent(5, { eventCode: 'BATbern61' }),
+          futureEvent(20, { eventCode: 'BATbern63' }),
+          futureEvent(40, { eventCode: 'BATbern65' }),
+        ])
+      );
+
+      const result = await getUpcomingEvents(undefined, 4);
+
+      expect(result.map((e) => e.eventCode)).toEqual([
+        'BATbern61',
+        'BATbern62',
+        'BATbern63',
+        'BATbern64',
+      ]);
+    });
+
     it('returns nothing when every event is past', async () => {
       api.on('listPublicEvents', () => page([pastEvent(3, { eventCode: 'BATbern59' })]));
 

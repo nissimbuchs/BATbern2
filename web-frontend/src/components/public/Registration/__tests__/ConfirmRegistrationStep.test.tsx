@@ -5,7 +5,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { screen, fireEvent } from '@testing-library/react';
+import { screen, fireEvent, within } from '@testing-library/react';
 import { render } from '@/test/test-utils';
 import { ConfirmRegistrationStep } from '../ConfirmRegistrationStep';
 import type { CreateRegistrationRequest } from '@/types/event.types';
@@ -225,17 +225,6 @@ describe('ConfirmRegistrationStep Component', () => {
     });
   });
 
-  describe('Account Creation CTA', () => {
-    it('should_displayAccountCreationPrompt_when_rendered', () => {
-      render(<ConfirmRegistrationStep {...defaultProps} />);
-
-      expect(screen.getByText(/Want to manage all your registrations/i)).toBeInTheDocument();
-      expect(
-        screen.getByText(/After registering, you can create a free account/i)
-      ).toBeInTheDocument();
-    });
-  });
-
   describe('Header and Instructions', () => {
     it('should_displayStepTitle_when_rendered', () => {
       render(<ConfirmRegistrationStep {...defaultProps} />);
@@ -249,6 +238,23 @@ describe('ConfirmRegistrationStep Component', () => {
       expect(
         screen.getByText(/Please review your information and complete your registration/i)
       ).toBeInTheDocument();
+    });
+  });
+
+  describe('Account benefits', () => {
+    it('should_listTheFourBenefits_and_linkThePage_when_rendered', () => {
+      render(<ConfirmRegistrationStep {...defaultProps} />);
+
+      expect(screen.getByText('What a free account gives you')).toBeInTheDocument();
+      const items = within(screen.getByTestId('account-benefits-list')).getAllByRole('listitem');
+      expect(items).toHaveLength(4);
+      expect(items[0]).toHaveTextContent(/Ask questions and comment on the talks/);
+      expect(items[3]).toHaveTextContent("Your company's logo next to your name");
+      // The wizard keeps its form: the page opens in a new tab
+      const more = screen.getByRole('link', { name: 'More about the account' });
+      expect(more).toHaveAttribute('href', '/why-an-account');
+      expect(more).toHaveAttribute('target', '_blank');
+      expect(screen.queryByText(/personalized event recommendations/)).not.toBeInTheDocument();
     });
   });
 });

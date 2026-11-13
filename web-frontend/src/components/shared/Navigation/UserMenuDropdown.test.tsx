@@ -529,4 +529,39 @@ describe('UserMenuDropdown', () => {
       });
     });
   });
+
+  // Story 2 of 2026-11-13: "What's new" for every logged-in user, a dot when something is new.
+  describe('What\u2019s new', () => {
+    const renderMenu = (whatsNewHasNew?: boolean) =>
+      renderWithRouter(
+        <UserMenuDropdown
+          user={{ ...mockUser, role: 'partner', roles: ['partner'] }}
+          anchorEl={anchorEl}
+          open={true}
+          onClose={vi.fn()}
+          onLogout={mockOnLogout}
+          onLanguageChange={mockOnLanguageChange}
+          whatsNewHasNew={whatsNewHasNew}
+        />
+      );
+
+    it('should_openTheWhatsNewPage_when_clicked', () => {
+      renderMenu(true);
+
+      const item = screen.getByTestId('whats-new-link');
+      expect(item).toHaveTextContent(text('menu.whatsNew'));
+      fireEvent.click(item);
+      expect(mockNavigate).toHaveBeenCalledWith('/attendee/whats-new');
+    });
+
+    it('should_showTheDot_only_when_somethingIsNew', () => {
+      const { unmount } = renderMenu(true);
+      expect(screen.getByTestId('whats-new-link-dot')).toHaveAttribute('data-visible', 'true');
+      unmount();
+
+      renderMenu();
+      expect(screen.getByTestId('whats-new-link')).toBeInTheDocument();
+      expect(screen.getByTestId('whats-new-link-dot')).toHaveAttribute('data-visible', 'false');
+    });
+  });
 });

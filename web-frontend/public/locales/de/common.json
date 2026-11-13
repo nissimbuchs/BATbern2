@@ -146,7 +146,9 @@
     "settings": "Einstellungen",
     "administration": "Verwaltung",
     "help": "Hilfe",
-    "logout": "Abmelden"
+    "logout": "Abmelden",
+    "whatsNew": "Was ist neu",
+    "whatsNewAvailable": "Benutzermenü, etwas Neues für Sie"
   },
   "role": {
     "organizer": "Veranstalter",
@@ -830,9 +832,6 @@
       "loadFailed": "Failed to load user account data. Please try again.",
       "correlationId": "Correlation ID: {{id}}"
     }
-  },
-  "releaseNotes": {
-    "title": "Release Notes"
   },
   "profile": {
     "pageTitle": "Ihr Profil",

@@ -21,7 +21,9 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.time.Instant;
 import java.time.LocalTime;
+import java.time.temporal.ChronoUnit;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -262,10 +264,71 @@ class UserSettingsControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.preferences").doesNotExist());
     }
 
+    /**
+     * Story "What's new": the time the user last closed the card is stored on the settings, so
+     * every browser of the same account sees the same state.
+     */
+    @Test
+    @WithMockUser(username = "max.muster")
+    void should_storeWhatsNewSeenAtAndReturnItEverywhere_when_patched() throws Exception {
+        mockMvc.perform(get(URL))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.whatsNewSeenAt").doesNotExist());
+
+        Instant seen = Instant.now().truncatedTo(ChronoUnit.SECONDS);
+        mockMvc.perform(patch(URL).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"whatsNewSeenAt\": \"" + seen + "\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.whatsNewSeenAt").exists())
+                .andExpect(jsonPath("$.theme").value("light"));
+
+        assertThat(userRepository.findByUsername("max.muster").orElseThrow().getSettings()
+                .getWhatsNewSeenAt()).isEqualTo(seen);
+        Integer rows = jdbcTemplate.queryForObject(
+                "SELECT count(*) FROM user_profiles WHERE username = 'max.muster'"
+                        + " AND settings_whats_new_seen_at IS NOT NULL", Integer.class);
+        assertThat(rows).isEqualTo(1);
+
+        mockMvc.perform(get("/api/v1/users/me").param("include", "settings"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.settings.whatsNewSeenAt").exists());
+
+        // another field later keeps it
+        mockMvc.perform(patch(URL).contentType(MediaType.APPLICATION_JSON).content("{\"theme\": \"dark\"}"))
+                .andExpect(status().isOk());
+        assertThat(userRepository.findByUsername("max.muster").orElseThrow().getSettings()
+                .getWhatsNewSeenAt()).isEqualTo(seen);
+    }
+
+    /**
+     * A client clock running fast must not keep the card open: a time in the future is stored as
+     * the server's now (later entries still come back), and nothing else is refused.
+     */
+    @ParameterizedTest
+    @ValueSource(longs = {2, 60 * 24})
+    @WithMockUser(username = "max.muster")
+    void should_storeTheServerNow_when_whatsNewSeenAtIsInTheFuture(long minutesAhead) throws Exception {
+        Instant before = Instant.now();
+        Instant future = before.plus(minutesAhead, ChronoUnit.MINUTES);
+        mockMvc.perform(patch(URL).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"theme\": \"dark\", \"whatsNewSeenAt\": \"" + future + "\"}"))
+                .andExpect(status().isOk());
+        Instant after = Instant.now();
+
+        User stored = userRepository.findByUsername("max.muster").orElseThrow();
+        assertThat(stored.getSettings().getWhatsNewSeenAt())
+                // PostgreSQL keeps microseconds (rounded): allow a millisecond either side
+                .isBetween(before.minusMillis(1), after.plusMillis(1));
+        assertThat(stored.getPreferences().getTheme()).isEqualTo("dark");
+    }
+
     @Test
     void should_return401_when_notAuthenticated() throws Exception {
         mockMvc.perform(get(URL)).andExpect(status().isUnauthorized());
         mockMvc.perform(patch(URL).contentType(MediaType.APPLICATION_JSON).content("{\"theme\": \"dark\"}"))
+                .andExpect(status().isUnauthorized());
+        mockMvc.perform(patch(URL).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"whatsNewSeenAt\": \"" + Instant.now() + "\"}"))
                 .andExpect(status().isUnauthorized());
     }
 }

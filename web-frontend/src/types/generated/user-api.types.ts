@@ -1607,6 +1607,14 @@ export interface components {
       allowCalendarSync: boolean;
       /** @default false */
       twoFactorEnabled: boolean;
+      /**
+       * Format: date-time
+       * @description When the user last closed the "What's new" card on the attendee dashboard. Features
+       *     released after this time are shown again; absent (never closed) shows the most
+       *     important ones.
+       * @example 2026-11-13T09:30:00Z
+       */
+      whatsNewSeenAt?: string | null;
     };
     /**
      * @description Partial update of the caller's settings: every field is optional and only the fields
@@ -1640,6 +1648,13 @@ export interface components {
       allowMessaging?: boolean;
       allowCalendarSync?: boolean;
       twoFactorEnabled?: boolean;
+      /**
+       * Format: date-time
+       * @description The time the user closed the "What's new" card (the client sends "now"). A time
+       *     ahead of the server clock is stored as the server's now.
+       * @example 2026-11-13T09:30:00Z
+       */
+      whatsNewSeenAt?: string;
     };
     UpdateUserRequest: {
       firstName?: string;

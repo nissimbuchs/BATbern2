@@ -152,7 +152,7 @@ describe('FrontendStack — variant canary (beta.batbern.ch)', () => {
     // The SPA router CloudFront Function must map the prerendered public routes to their
     // route-specific static HTML (see web-frontend/scripts/prerender.mjs):
     //   - `/` (and `/index.html`) → /home/index.html  (homepage loading shell)
-    //   - `/privacy`, `/about`, `/support` → their /<route>/index.html
+    //   - `/privacy`, `/about`, `/support`, `/why-an-account` → their /<route>/index.html
     // while everything else still falls back to the neutral /index.html SPA shell.
     const functions = template.findResources('AWS::CloudFront::Function');
     const router = Object.values(functions).find(
@@ -161,7 +161,7 @@ describe('FrontendStack — variant canary (beta.batbern.ch)', () => {
     expect(router).toBeDefined();
     const code: string = router!.Properties.FunctionCode;
     expect(code).toContain("request.uri = '/home/index.html'");
-    expect(code).toContain("['/privacy', '/about', '/support']");
+    expect(code).toContain("['/privacy', '/about', '/support', '/why-an-account']");
     expect(code).toContain("request.uri = '/index.html'"); // neutral SPA fallback preserved
   });
 

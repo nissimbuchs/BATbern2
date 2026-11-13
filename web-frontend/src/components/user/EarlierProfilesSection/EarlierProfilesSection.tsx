@@ -14,15 +14,13 @@
 
 import React, { useState } from 'react';
 import { Alert, Box, Button, Stack, TextField, Typography } from '@mui/material';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
+import { requestProfileClaim, requestProfileMerge } from '@/services/api/userAccountApi';
 import {
-  listProfileClaimCandidates,
-  requestProfileClaim,
-  requestProfileMerge,
-} from '@/services/api/userAccountApi';
-
-const CANDIDATES_KEY = ['users', 'me', 'profile-claims'];
+  PROFILE_CLAIM_CANDIDATES_KEY,
+  useProfileClaimCandidates,
+} from '@/hooks/useProfileClaimCandidates';
 
 /** The 409 error code of a refused merge request, if any. */
 function conflictCode(error: unknown): string | undefined {
@@ -40,12 +38,7 @@ export const EarlierProfilesSection: React.FC<{ variant?: 'section' | 'banner' }
   const [askingFor, setAskingFor] = useState<string | null>(null);
   const [note, setNote] = useState('');
 
-  const candidates = useQuery({
-    queryKey: CANDIDATES_KEY,
-    queryFn: listProfileClaimCandidates,
-    staleTime: 5 * 60 * 1000,
-    retry: false,
-  });
+  const candidates = useProfileClaimCandidates();
 
   const claim = useMutation({
     mutationFn: (candidateId: string) => requestProfileClaim(candidateId),
@@ -57,7 +50,7 @@ export const EarlierProfilesSection: React.FC<{ variant?: 'section' | 'banner' }
     onSuccess: () => {
       setAskingFor(null);
       setNote('');
-      void queryClient.invalidateQueries({ queryKey: CANDIDATES_KEY });
+      void queryClient.invalidateQueries({ queryKey: PROFILE_CLAIM_CANDIDATES_KEY });
     },
   });
 
@@ -68,7 +61,11 @@ export const EarlierProfilesSection: React.FC<{ variant?: 'section' | 'banner' }
   const askError = conflictCode(ask.error);
 
   return (
-    <Box sx={variant === 'banner' ? { mb: 3 } : { mt: 4 }} data-testid="earlier-profiles-section">
+    <Box
+      id="earlier-profiles"
+      sx={variant === 'banner' ? { mb: 3 } : { mt: 4 }}
+      data-testid="earlier-profiles-section"
+    >
       <Alert severity="info">
         <Typography variant="subtitle2" gutterBottom>
           {t('claim.sectionTitle')}

@@ -145,7 +145,9 @@
     "settings": "設定",
     "administration": "管理",
     "help": "ヘルプ",
-    "logout": "ログアウト"
+    "logout": "ログアウト",
+    "whatsNew": "新着情報",
+    "whatsNewAvailable": "ユーザーメニュー、新着情報があります"
   },
   "role": {
     "organizer": "イベント主催者",
@@ -826,9 +828,6 @@
       "loadFailed": "Failed to load user account data. Please try again.",
       "correlationId": "Correlation ID: {{id}}"
     }
-  },
-  "releaseNotes": {
-    "title": "Release Notes"
   },
   "profile": {
     "pageTitle": "プロフィール",

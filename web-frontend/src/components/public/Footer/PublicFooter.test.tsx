@@ -76,6 +76,15 @@ describe('PublicFooter', () => {
     expect(supportLink).toHaveAttribute('href', '/support');
   });
 
+  it('should link the account page next to About', () => {
+    renderFooter();
+
+    expect(screen.getByRole('link', { name: 'What a free account gives you' })).toHaveAttribute(
+      'href',
+      '/why-an-account'
+    );
+  });
+
   it('should have proper styling classes for dark theme', () => {
     const { container } = renderFooter();
 

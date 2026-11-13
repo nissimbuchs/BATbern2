@@ -18,6 +18,7 @@ import type { components } from '../../types/generated/user-api.types';
 
 export type UserResponse = components['schemas']['UserResponse'];
 export type UserSearchResponse = components['schemas']['UserSearchResponse'];
+export type UserSettings = components['schemas']['UserSettings'];
 type Role = UserResponse['roles'][number];
 
 /** One timestamp for many rows on purpose: a sort on `createdAt` has ties, as in production. */
@@ -43,6 +44,30 @@ export function aUser(overrides: Partial<UserResponse> = {}): UserResponse {
     additionalEmails: [],
     createdAt: FIXTURE_CREATED_AT,
     updatedAt: FIXTURE_CREATED_AT,
+    ...overrides,
+  };
+}
+
+/** The settings of `GET /users/me?include=settings`, with the server's defaults. */
+export function aUserSettings(overrides: Partial<UserSettings> = {}): UserSettings {
+  return {
+    theme: 'auto',
+    language: 'de',
+    timezone: 'Europe/Zurich',
+    emailNotifications: true,
+    inAppNotifications: true,
+    pushNotifications: false,
+    notificationFrequency: 'immediate',
+    qnaNotificationFrequency: 'live',
+    quietHoursStart: null,
+    quietHoursEnd: null,
+    profileVisibility: 'public',
+    showEmail: false,
+    showCompany: true,
+    showActivityHistory: true,
+    allowMessaging: true,
+    allowCalendarSync: false,
+    twoFactorEnabled: false,
     ...overrides,
   };
 }

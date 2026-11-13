@@ -182,7 +182,7 @@ export default defineConfig({
     // Sitemap generation for SEO (Story 4.1.8)
     sitemap({
       hostname: 'https://batbern.ch',
-      dynamicRoutes: ['/', '/current-event', '/archive', '/search', '/about'],
+      dynamicRoutes: ['/', '/current-event', '/archive', '/search', '/about', '/why-an-account'],
       changefreq: 'weekly',
       priority: 0.8,
     }),

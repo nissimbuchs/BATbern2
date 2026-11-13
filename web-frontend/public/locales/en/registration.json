@@ -45,8 +45,9 @@
     "noEmailCheck1": "Check your spam/junk folder",
     "noEmailCheck2": "Make sure you entered the correct email address",
     "noEmailCheck3": "Wait a few minutes and check again",
-    "createAccountTitle": "Create an Account to Manage Your Registrations",
-    "createAccountText": "After confirming your registration via email, you can create an account to view and manage all your event registrations in one place."
+    "backToHome": "Back to Home",
+    "emailSentTo": "We've sent a confirmation email to",
+    "clickLink": "Click the confirmation link in the email to complete your registration. The link is valid for 48 hours."
   },
   "wizard": {
     "steps": {
@@ -122,10 +123,6 @@
       "privacyLink": "privacy policy",
       "required": "*",
       "error": "You must accept the terms and conditions to complete registration."
-    },
-    "account": {
-      "title": "Want to manage all your registrations in one place?",
-      "message": "After registering, you can create a free account to view your registration history, update preferences, and get personalized event recommendations."
     }
   },
   "success": {
@@ -163,12 +160,12 @@
       "checkIn": "Check-in at the Event",
       "checkInText": "Present your ID at the event desk for check-in. We'll have your confirmed registration on file.",
       "eventDetails": "Event Details",
-      "eventDetailsText": "You'll receive event updates and reminders via email.",
-      "createAccount": "Create Account to Manage Registrations"
+      "eventDetailsText": "You'll receive event updates and reminders via email."
     },
     "alreadyConfirmed": {
       "title": "Already Confirmed",
-      "subtitle": "This registration has already been confirmed"
+      "subtitle": "This registration has already been confirmed",
+      "message": "Your registration was previously confirmed. No further action is needed."
     },
     "error": {
       "title": "Confirmation Failed",
@@ -177,8 +174,16 @@
       "expired": "Confirmation links expire after 48 hours - you may need to register again",
       "useLatestEmail": "Make sure you're using the latest confirmation email",
       "contactSupport": "Contact support if the problem persists",
-      "registerAgain": "Register Again"
-    }
+      "registerAgain": "Register Again",
+      "messages": {
+        "missingLink": "The confirmation link is incomplete. Please use the link from your email.",
+        "expired": "Confirmation link has expired. Please register again.",
+        "invalid": "Invalid confirmation link. Please check your email for the correct link.",
+        "failed": "Failed to confirm registration. Please try again or contact support.",
+        "unable": "Unable to confirm your registration"
+      }
+    },
+    "backToHome": "Back to Home"
   },
   "registrationStatusBanner": {
     "confirmed": "Your registration is confirmed. We'll see you there!",
@@ -246,5 +251,17 @@
     "registeredOn": "Registered on",
     "cancelButton": "Keep My Registration",
     "confirmButton": "Yes, Unregister Me"
+  },
+  "accountBenefits": {
+    "title": "What a free account gives you",
+    "items": {
+      "qna": "Ask questions and comment on the talks, from two weeks before to two weeks after the event",
+      "topics": "Suggest topics for coming BATbern events",
+      "history": "All your BATbern visits in one place, including registrations from before you had an account",
+      "logo": "Your company's logo next to your name"
+    },
+    "signUp": "Create a free account",
+    "moreLink": "More about the account",
+    "profileButton": "Go to your profile"
   }
 }

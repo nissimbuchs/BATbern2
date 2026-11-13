@@ -61,6 +61,7 @@ const PUBLIC_PATHS = [
   '/forgot-password',
   '/auth',
   '/about',
+  '/why-an-account', // story "Visitors see what an account gives them": linked from the mail
   '/archive',
   '/register',
 ];
@@ -76,6 +77,7 @@ const PATH_ACCESS: Record<UserRole, string[]> = {
     '/analytics',
     '/organizer',
     '/account',
+    '/attendee', // "What's new" card on the attendee dashboard: every logged-in user
   ],
   speaker: [
     '/dashboard',
@@ -85,6 +87,7 @@ const PATH_ACCESS: Record<UserRole, string[]> = {
     '/speaker',
     '/speaker-portal',
     '/account',
+    '/attendee', // "What's new" card on the attendee dashboard: every logged-in user
   ],
   partner: [
     '/dashboard',
@@ -94,6 +97,7 @@ const PATH_ACCESS: Record<UserRole, string[]> = {
     '/events',
     '/partner',
     '/account',
+    '/attendee', // "What's new" card on the attendee dashboard: every logged-in user
   ],
   // Story 12.11: '/profile' for every role — the role-neutral profile page is
   // also the onboarding-gate target, so every authenticated role must reach it.
