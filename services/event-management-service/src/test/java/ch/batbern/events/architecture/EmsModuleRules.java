@@ -102,15 +102,17 @@ final class EmsModuleRules {
     }
 
     /**
-     * Story 17.11: EMS keeps its files in its own table ({@code event_management_uploads}); the
-     * {@code logos} table belongs to company-user-management (ADR-002 decision 2026-11-07). No
-     * entity of this service maps it. Not frozen: there is no violation to accept.
+     * Story 17.11: EMS keeps its files in its own table ({@code event_management_uploads}). No entity
+     * of this service maps an upload table of another service: {@code company_user_uploads}
+     * (company-user-management's, ADR-002 decision 2026-11-07) or the former shared {@code logos},
+     * dropped by #1307 (CUMS V31, EMS V154). Not frozen: there is no violation to accept.
      */
-    static ArchRule noEntityMapsLogos(String root) {
+    static ArchRule noEntityMapsForeignUploadTable(String root) {
         return classes().that().resideInAPackage(root + "..")
                 .and().areAnnotatedWith(Entity.class)
-                .should(notMapTable("logos"))
-                .as("Data ownership: no EMS entity maps the logos table (company-user-management's, Story 17.11)")
+                .should(notMapTable("company_user_uploads"))
+                .andShould(notMapTable("logos"))
+                .as("Data ownership: no EMS entity maps an upload table of another service (Story 17.11, #1307)")
                 .allowEmptyShould(true);
     }
 

@@ -84,7 +84,7 @@ logo.
 **Key attributes** (`companies`, CUMS): `id` (UUID, internal), `name` (public identifier,
 pattern `^[a-zA-Z0-9]{1,12}$`, unique), `display_name` (full official name for the UI), `website`,
 `industry`, `description`, `logo_url`, `logo_s3_key`, `logo_file_id` (the `upload_id` of the
-`company_user_uploads` row, Story 17.11; older logos point at a `logos` row), `is_verified`, `created_by`. The Swiss UID column was dropped in CUMS V22.
+`company_user_uploads` row, Story 17.11; for older logos it names a row of the dropped `logos` table), `is_verified`, `created_by`. The Swiss UID column was dropped in CUMS V22.
 
 **Meaningful IDs (Story 1.16.2):** the database key is a UUID; the API and URLs use `name`
 (`/companies/GoogleZH`). The unique constraint on `name` is case-sensitive; the search endpoint
@@ -132,10 +132,11 @@ stateDiagram-v2
 - **Expiry:** `UploadExpiryJob` per service (CUMS 02:00, EMS 02:15, ShedLock) deletes PENDING past
   24 hours and CONFIRMED past 7 days with their S3 object; a failed S3 delete keeps the row for the
   next night and counts `batbern.uploads.expiry.failures`.
-- **`logos`** (CUMS V10, EMS V5): no code reads or writes it since Story 17.11 (an EMS ArchUnit rule
-  holds that no EMS entity maps it). The table stays, with the history of the logos uploaded before;
-  its drop waits for the owner's go. Nothing was copied from it (no upload was in flight, owner
-  2026-11-12).
+- **`logos`** (CUMS V10, EMS V5): the former shared upload table, unused since Story 17.11 and
+  dropped by CUMS V31 and EMS V154 (#1307, owner go 2026-11-13). Its upload history was discarded by
+  decision; the S3 objects stay, and `companies.logo_url` and `events.theme_image_url` still point at
+  them. Nothing was copied from it (no upload was in flight, owner 2026-11-12). An EMS ArchUnit rule
+  (`EmsDataOwnershipTest`) holds that no EMS entity maps `logos` or `company_user_uploads`.
 - **Not yet on the contract:** user profile pictures (`ProfilePictureService`, keys
   `profile-pictures/{year}/{username}/...`), session materials, event photos and teaser images,
   each with its own table or columns until its story moves it.
@@ -568,8 +569,8 @@ erDiagram
   copied its row into `app_settings` (key `presentation`). It stayed, unread, for one release so an
   old CUMS image could still start (rollback safety); CUMS V29 dropped it (#1280).
 - `shedlock` (scheduler locks) is declared by both CUMS (V12) and EMS (V31) with
-  `CREATE TABLE IF NOT EXISTS`; `logos` likewise by CUMS (V10) and EMS (V5). `logos` is unused since
-  Story 17.11 and waits for its drop (owner's go).
+  `CREATE TABLE IF NOT EXISTS`. `logos` was created the same way by CUMS (V10) and EMS (V5) and is
+  dropped by both (CUMS V31, EMS V154, `DROP TABLE IF EXISTS`, #1307).
 
 ### Partner Coordination Service (PCS)
 
@@ -650,7 +651,7 @@ erDiagram
 
 ### Event Management Service (EMS)
 
-EMS owns 44 tables, plus `logos` (unused since Story 17.11) and `shedlock`, which it shares with CUMS. They are grouped by domain below; a table that belongs to two groups is drawn
+EMS owns 44 tables, plus `shedlock`, which it shares with CUMS. They are grouped by domain below; a table that belongs to two groups is drawn
 in full in one and as a key-only stub in the other.
 
 #### Events, agenda and topics
@@ -1238,7 +1239,6 @@ erDiagram
 | `user_merge_log` | One row per profile merge: source and target username, who and how (ORGANIZER or SELF_CLAIM), what moved and what was removed (JSONB), a snapshot of the source profile |
 | `shedlock` | Scheduler locks so that only one task runs each scheduled job |
 | `event_management_uploads` | The uploads of the EMS purposes (`event-theme-image`; Story 17.11, V153), see "Uploads" above |
-| `logos` | Shared with CUMS, unused since Story 17.11, see above |
 
 ### Speaker and attendee data
 
@@ -1316,13 +1316,13 @@ TO` and cross-checked against the applied schema on 2026-11-04.
 
 | Service | Migrations | Flyway history table |
 |---|---|---|
-| event-management-service | V1 to V144 | `flyway_schema_history_event_management` |
-| company-user-management-service | V1 to V22 | `flyway_schema_history_company_user_management` |
-| partner-coordination-service | V1 to V10 | `flyway_schema_history_partner_coordination` |
+| event-management-service | V1 to V154 | `flyway_schema_history_event_management` |
+| company-user-management-service | V1 to V31 | `flyway_schema_history_company_user_management` |
+| partner-coordination-service | V1 to V12 | `flyway_schema_history_partner_coordination` |
 | (former speaker stub, removed by Story 17.2) | shared-kernel baseline only | `flyway_schema_history_speaker_coordination`, kept |
 
-**EMS** (44 tables plus the shared `logos` and `shedlock`): `events` V2, `sessions` V2, `registrations` V2, `logos` V5 (shared with
-CUMS), `session_users` V7, `event_types` V10, `topics` V14, `topic_usage_history` V14,
+**EMS** (44 tables plus the shared `shedlock`): `events` V2, `sessions` V2, `registrations` V2,
+`session_users` V7, `event_types` V10, `topics` V14, `topic_usage_history` V14,
 `speaker_pool` V14, `speaker_outreach_history` V16, `task_templates` V22, `event_tasks` V22,
 `speaker_status_history` V23, `session_timing_history` V28, `speaker_slot_preferences` V28,
 `publishing_config` V28, `workflow_state_migration_log` V30, `shedlock` V31 (shared with CUMS),
@@ -1338,13 +1338,14 @@ V139, `user_merge_log` V144, `event_management_uploads` V153.
 
 Dropped: `publishing_versions` (V28 to V89), `speakers` (V37 to V94), `speaker_invitation_tokens`
 (V43 to V104); in CUMS `presentation_settings` (V14 to V29), copied into `app_settings` by EMS V152
-(Story 4.9) and dropped one release later (rollback safety).
+(Story 4.9) and dropped one release later (rollback safety); the shared `logos` (CUMS V10 and EMS V5
+to CUMS V31 and EMS V154, #1307), unused since Story 17.11.
 
-**CUMS** (9 tables): `companies` V3, `user_profiles` V4, `role_assignments` V5,
-`activity_history` V6, `logos` V10, `shedlock` V12, `watch_pairings` V13,
-`user_additional_emails` V16, `company_key_changes` V28 (shared: CUMS
-V28, EMS V150 and PCS V11 create it with the same canonical block, see below), `company_user_uploads`
-V30 (Story 17.11; `logos` unused since).
+**CUMS** (12 tables): `companies` V3, `user_profiles` V4, `role_assignments` V5,
+`activity_history` V6, `shedlock` V12, `watch_pairings` V13, `user_additional_emails` V16,
+`profile_merge_requests` V23, `company_logo_requests` V25, `user_duplicate_dismissals` V26,
+`company_key_changes` V28 (shared: CUMS V28, EMS V150 and PCS V11 create it with the same canonical
+block, see below), `company_user_uploads` V30 (Story 17.11).
 
 **Company keys** (owner decision 2026-11-09): `companies.name`, the company's meaningful ID, is
 `^[a-zA-Z0-9]{1,12}$`, the slug that `SlugGenerationService.generateCompanyName` makes from the typed
@@ -1353,7 +1354,7 @@ within 12 characters). Keys stored before that rule were re-keyed by CUMS V28, E
 each contains shared-kernel `db/company/company_key_changes.sql` byte for byte
 (`CompanyKeyChangesContract`), which records old key → new key once in `company_key_changes` from
 `companies` (whichever service migrates first, under an advisory lock); each service then rewrites
-only its own references: CUMS `companies`, `logos` (COMPANY rows), `company_logo_requests`,
+only its own references: CUMS `companies`, `logos` (COMPANY rows; table dropped since by V31), `company_logo_requests`,
 `activity_history` (COMPANY rows), `user_profiles.company_id`; EMS `registrations.attendee_company_id`;
 PCS `partners`, `topic_suggestions`, `topic_votes`. The table stays as the audit of what changed.
 

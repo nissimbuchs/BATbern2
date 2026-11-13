@@ -125,25 +125,6 @@ DELETE FROM partners
  );
 
 \echo ''
-\echo '--- Delete logos referencing about-to-be-deleted test companies (soft FK) ---'
--- logos.associated_entity_id is a VARCHAR string reference, not a real FK.
--- Wipe any logo associated with the 10 legacy test company names.
-DELETE FROM logos
- WHERE associated_entity_type = 'COMPANY'
-   AND associated_entity_id IN (
-       'bruno test company 1761143046',
-       'E2E Test Company 1768749259021',
-       'E2E Test Company 1768749674661',
-       'E2E Test Company 1768749879358',
-       'E2E Test Company 1768750018824',
-       'E2E Test Company 1769018072980',
-       'E2E Test Company 1771356468161',
-       'testag',
-       'testcompanya',
-       'testdeclinea'
-   );
-
-\echo ''
 \echo '--- Delete companies (the 10 legacy rows) ---'
 DELETE FROM companies
  WHERE name IN (

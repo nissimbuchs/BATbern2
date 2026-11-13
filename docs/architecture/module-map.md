@@ -57,9 +57,11 @@ CUMS (identity) is upstream of all. EMS (event) is upstream of PCS (partners).
   (`mailcenter.render|variables`) uses no other mail-center class; `notification` uses none of
   them; no `*Partner*Client*`. CUMS `ServiceDirectionTest`: no `*EventManagement*Client*`,
   `*Partner*Client*`. PCS: none, it is the most downstream service.
-- EMS `architecture/EmsDataOwnershipTest` (not frozen, it has no violation): no EMS entity maps the
-  CUMS table `logos` (Story 17.11; EMS keeps its files in `event_management_uploads`). The fixture
-  test `EmsModuleRulesFixtureTest.should_fail_when_entityMapsLogos` proves the rule fires.
+- EMS `architecture/EmsDataOwnershipTest` (not frozen, it has no violation): no EMS entity maps an
+  upload table of another service, `company_user_uploads` or the former shared `logos` (dropped by
+  CUMS V31 / EMS V154, #1307); EMS keeps its files in `event_management_uploads` (Story 17.11). The
+  fixture test `EmsModuleRulesFixtureTest.should_fail_when_entityMapsUploadTableOfAnotherService`
+  proves the rule fires.
 - `FrozenRuleKeysTest` (EMS, CUMS) fails when a frozen rule is added, renamed or removed without
   its store: ArchUnit would otherwise accept all its current violations on the first run.
 - Today's violations sit in `src/test/resources/archunit_store`. A new one fails the build; a fixed
@@ -82,7 +84,7 @@ CUMS (identity) is upstream of all. EMS (event) is upstream of PCS (partners).
 | User or company data | `UserApiClient` (cached, `/internal`) | store name/email (ADR-004) |
 | Headers of a service-to-service call | `S2sHeaders.forCurrentUser()` (shared-kernel) | read the `SecurityContext` in a client |
 | A person's proven addresses | `PersonAddresses` | read additional e-mails directly |
-| File upload | `uploads-api` `/uploads/{purpose}`: shared-kernel `ch.batbern.shared.upload` (`UploadService`, `UploadRecord`, `ImageUrlFetcher`) + an `UploadPurposeHandler` in the owning service, its own uploads table (`company_user_uploads`, `event_management_uploads`); frontend `uploadTarget(purpose, target?)` + `useFileUpload` (ADR-002, Story 17.11) | new presign code or endpoints; a table of another service (EMS maps no `logos`: `EmsDataOwnershipTest`) |
+| File upload | `uploads-api` `/uploads/{purpose}`: shared-kernel `ch.batbern.shared.upload` (`UploadService`, `UploadRecord`, `ImageUrlFetcher`) + an `UploadPurposeHandler` in the owning service, its own uploads table (`company_user_uploads`, `event_management_uploads`); frontend `uploadTarget(purpose, target?)` + `useFileUpload` (ADR-002, Story 17.11) | new presign code or endpoints; a table of another service (EMS maps no `company_user_uploads` or `logos`: `EmsDataOwnershipTest`) |
 | Admin or feature setting | `AdminSettingsService` (`/admin/settings/{key}`) | a new settings resource |
 | Scheduled job | `@Scheduled` + ShedLock | unlocked scheduler. Audience mails are organizer-sent only (#1179) |
 | Error → HTTP status | `ClientErrorClassifier` | another catch-all |

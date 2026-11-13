@@ -8,6 +8,7 @@ import ch.batbern.events.architecture.fixtures.mailcenter.render.FixtureMailPipe
 import ch.batbern.events.architecture.fixtures.mailcenter.variables.FixtureMailVariable;
 import ch.batbern.events.architecture.fixtures.notification.FixtureNotifier;
 import ch.batbern.events.architecture.fixtures.registrations.FixtureRegistrationService;
+import ch.batbern.events.architecture.fixtures.uploads.FixtureCumsUploadEntity;
 import ch.batbern.events.architecture.fixtures.uploads.FixtureLogoEntity;
 import ch.batbern.events.architecture.fixtures.uploads.FixtureUploadEntity;
 import ch.batbern.events.architecture.fixtures.watch.FixtureWatchService;
@@ -112,14 +113,15 @@ class EmsModuleRulesFixtureTest {
     }
 
     @Test
-    @DisplayName("should_fail_when_entityMapsLogos")
-    void should_fail_when_entityMapsLogos() {
-        EvaluationResult result = EmsModuleRules.noEntityMapsLogos(ROOT).evaluate(ALL);
+    @DisplayName("should_fail_when_entityMapsUploadTableOfAnotherService")
+    void should_fail_when_entityMapsUploadTableOfAnotherService() {
+        EvaluationResult result = EmsModuleRules.noEntityMapsForeignUploadTable(ROOT).evaluate(ALL);
 
         assertThat(result.getFailureReport().getDetails())
                 .anyMatch(line -> line.contains(FixtureLogoEntity.class.getName()))
+                .anyMatch(line -> line.contains(FixtureCumsUploadEntity.class.getName()))
                 .noneMatch(line -> line.contains(FixtureUploadEntity.class.getName()));
-        assertThat(EmsModuleRules.noEntityMapsLogos(ROOT)
+        assertThat(EmsModuleRules.noEntityMapsForeignUploadTable(ROOT)
                 .evaluate(new ClassFileImporter().importClasses(FixtureUploadEntity.class)).hasViolation()).isFalse();
     }
 

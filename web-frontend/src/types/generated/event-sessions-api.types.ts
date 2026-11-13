@@ -918,7 +918,7 @@ export interface components {
       profilePictureUrl: string | null;
       /**
        * Format: uri
-       * @description Company logo CloudFront URL (cross-service DB join: logos table).
+       * @description Company logo CloudFront URL (cross-service DB join: companies.logo_url).
        *     Populated on archive list responses to avoid a separate useCompany API call.
        * @example https://cdn.batbern.ch/logos/2025/companies/sbb/logo.jpeg
        */

@@ -55,6 +55,6 @@ public interface UserPortraitProjection {
      */
     String getCompanyDisplayName();
 
-    /** Company logo CloudFront URL from logos.cloudfront_url (CUMS). */
+    /** Company logo CloudFront URL from companies.logo_url (CUMS). */
     String getCompanyLogoUrl();
 }
