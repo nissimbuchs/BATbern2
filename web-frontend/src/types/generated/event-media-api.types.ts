@@ -41,40 +41,6 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/events/{eventCode}/photos/upload-url': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** Request presigned URL for photo upload */
-    post: operations['requestEventPhotoUploadUrl'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/events/{eventCode}/photos/confirm': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** Confirm photo upload and persist record */
-    post: operations['confirmEventPhotoUpload'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
   '/events/{eventCode}/photos/{photoId}': {
     parameters: {
       query?: never;
@@ -170,28 +136,6 @@ export interface components {
       /** Format: date-time */
       uploadedAt: string;
       sortOrder: number;
-    };
-    EventPhotoUploadRequest: {
-      filename: string;
-      /**
-       * @description MIME type of the photo. Validated server-side against the allowed set (image/jpeg, image/png, image/webp) with a friendly 400 message; kept as a free string (not a wire enum) so the service stays the single validation authority.
-       * @example image/jpeg
-       */
-      contentType: string;
-      /** Format: int64 */
-      fileSize: number;
-    };
-    EventPhotoUploadResponse: {
-      /** Format: uuid */
-      photoId: string;
-      uploadUrl: string;
-      s3Key: string;
-      expiresIn: number;
-    };
-    EventPhotoConfirmRequest: {
-      /** Format: uuid */
-      photoId: string;
-      s3Key: string;
     };
     /**
      * @description Standard error envelope returned on every 4xx/5xx response across all services.
@@ -346,62 +290,6 @@ export interface operations {
           'application/json': components['schemas']['EventPhotoResponse'][];
         };
       };
-    };
-  };
-  requestEventPhotoUploadUrl: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        eventCode: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['EventPhotoUploadRequest'];
-      };
-    };
-    responses: {
-      /** @description Presigned URL + photoId */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['EventPhotoUploadResponse'];
-        };
-      };
-      401: components['responses']['Unauthorized'];
-      403: components['responses']['Forbidden'];
-    };
-  };
-  confirmEventPhotoUpload: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        eventCode: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['EventPhotoConfirmRequest'];
-      };
-    };
-    responses: {
-      /** @description Photo confirmed and stored */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['EventPhotoResponse'];
-        };
-      };
-      401: components['responses']['Unauthorized'];
-      403: components['responses']['Forbidden'];
     };
   };
   deleteEventPhoto: {

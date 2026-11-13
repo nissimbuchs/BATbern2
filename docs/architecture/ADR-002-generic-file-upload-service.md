@@ -1,6 +1,6 @@
 # ADR-002: Generic File Upload Service Architecture
 
-**Status**: Accepted (decision 2026-11-07 implemented for `company-logo` and `event-theme-image` by Story 17.11, 2026-11-12, and for `profile-picture` by Story 17.11a, 2026-11-13)
+**Status**: Accepted (decision 2026-11-07 implemented for `company-logo` and `event-theme-image` by Story 17.11, 2026-11-12, for `profile-picture` by Story 17.11a, 2026-11-13, and for `event-photo` by Story 17.11b, 2026-11-13)
 **Date**: 2025-10-27
 **Decision Makers**: Development Team, Architect Agent (Winston)
 **Related Stories**: Story 1.16.3 (Generic File Upload Service), Story 2.5.1 (Company Management Frontend)
@@ -784,10 +784,34 @@ not a copy of the CUMS class, and both services create and use the same `logos` 
 | `company-logo` | CUMS | png, jpeg, svg | 5 MB | `companyName` (ORGANIZER), optional | yes (ORGANIZER) | `logos/companies/{name}/logo-{uploadId}.{ext}` |
 | `event-theme-image` | EMS | png, jpeg, svg | 5 MB | `eventCode` (ORGANIZER), optional | no | `logos/events/{eventCode}/theme-{uploadId}.{ext}` |
 | `profile-picture` | CUMS | png, jpeg, svg | 5 MB | `username` (ORGANIZER or the user themself), required | yes (ORGANIZER) | `profile-pictures/{username}/profile-{uploadId}.{ext}` |
+| `event-photo` | EMS | jpeg, png, webp | 10 MB | `eventCode` (ORGANIZER), required | no | `events/{eventCode}/photos/{uploadId}.{ext}` |
 
 The gateway routes each purpose by an explicit map in `DomainRouter` (an unlisted purpose is 404).
 Final keys carry no year since Story 17.11a; files stored earlier keep their `…/{year}/…` key and URL
 (the rows hold the full key and URL).
+
+**Target binding** (Story 17.11b): a target given on create is stored on the PENDING row
+(`target_type`, `target_id`); a confirm, or an entity's `associate`, for another target answers 404
+and changes nothing. An upload reserved without a target may still be confirmed with one.
+
+### Story 17.11b (2026-11-13): purpose `event-photo`
+
+- **Contract:** `event-photo` joins the `UploadPurpose` enum (`uploads-api`). The operations
+  `POST /events/{eventCode}/photos/upload-url` and `POST /events/{eventCode}/photos/confirm` and
+  their schemas are deleted from `event-media-api` (no aliases; both now answer 405, they fall on
+  `/photos/{photoId}`, which has DELETE only). List, delete and `GET /public/event-photos` stay.
+- **Shared kernel:** the target binding above (`UploadRecord.start` takes the binding,
+  `isBoundElsewhere`).
+- **EMS:** `EventPhotoUploadHandler` (ORGANIZER, target `eventCode` required, unknown event 404, no
+  import; jpeg, png, webp up to 10 MB as before; temp key
+  `events/temp/{uploadId}/photo-{uploadId}.{ext}`). Attach creates the `event_photos` row with the
+  upload's id as photo id, `display_url` = the upload's `fileUrl`, file name `photo.{ext}`, the
+  confirming organizer's username and sort order 0. Fixed with it: the old confirm took the S3 key
+  from the client and had no pending state or expiry. `EventPhotoService` keeps list, delete and
+  the homepage sample; the unused `PhotoConfirmResponse` and `PhotoUploadNotFoundException` are gone.
+- **Gateway:** `event-photo` → EMS in the purpose map.
+- **Frontend:** `useUploadEventPhoto` runs on `uploadTarget('event-photo', {eventCode})` with
+  `eventApiClient.uploadPhotoToS3` for the PUT.
 
 ### Story 17.11a (2026-11-13): purpose `profile-picture`
 
@@ -849,8 +873,8 @@ Implements the decision of 2026-11-07 for its first two purposes:
   existing S3 objects and CDN URLs are untouched.
 - **`logos` dropped** (#1307, owner go 2026-11-13): CUMS V31 and EMS V154 drop the table; its upload
   history is discarded by decision, the S3 objects stay.
-- **Left:** purposes `profile-picture` (done, 17.11a, above), `event-photo`, `teaser-image` and
-  `session-material` follow in Stories 17.11b–d; each adds a handler, its enum value and its line in
+- **Left:** purposes `profile-picture` (done, 17.11a, above), `event-photo` (done, 17.11b, above),
+  `teaser-image` and `session-material` follow in Stories 17.11c–d; each adds a handler, its enum value and its line in
   the gateway map, no operation.
 
 ### Story 1.16.3 (2025-10, historical)

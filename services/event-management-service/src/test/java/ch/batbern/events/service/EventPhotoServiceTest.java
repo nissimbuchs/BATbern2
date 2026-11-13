@@ -2,14 +2,9 @@ package ch.batbern.events.service;
 
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.EventPhoto;
-import ch.batbern.events.media.dto.generated.EventPhotoConfirmRequest;
 import ch.batbern.events.media.dto.generated.EventPhotoResponse;
-import ch.batbern.events.media.dto.generated.EventPhotoUploadRequest;
-import ch.batbern.events.media.dto.generated.EventPhotoUploadResponse;
 import ch.batbern.events.exception.EventPhotoNotFoundException;
-import ch.batbern.events.exception.EventNotFoundException;
-import ch.batbern.events.exception.InvalidFileTypeException;
-import ch.batbern.events.exception.PhotoUploadNotFoundException;
+import ch.batbern.events.repository.EventManagementUploadRepository;
 import ch.batbern.events.repository.EventPhotoRepository;
 import ch.batbern.events.repository.EventRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -21,15 +16,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
-import software.amazon.awssdk.services.s3.model.HeadObjectRequest;
-import software.amazon.awssdk.services.s3.model.HeadObjectResponse;
-import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
-import software.amazon.awssdk.services.s3.presigner.S3Presigner;
-import software.amazon.awssdk.services.s3.presigner.model.PresignedPutObjectRequest;
-import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignRequest;
 
-import java.net.MalformedURLException;
-import java.net.URI;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -39,8 +26,6 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -49,8 +34,7 @@ import static org.mockito.Mockito.when;
  * Unit tests for EventPhotoService.
  * Story 10.21: Event Photos Gallery — AC9 (TDD)
  *
- * Tests cover:
- * - AC2: 3-phase presigned upload URL (requestUploadUrl)
+ * Tests cover (the upload is EventPhotoUploadIntegrationTest, Story 17.11b):
  * - AC3: Delete photo (DB + S3)
  * - AC4: List photos for event (listPhotos)
  * - AC5: Recent photos from last N events (getRecentPhotos)
@@ -65,7 +49,7 @@ class EventPhotoServiceTest {
     private EventRepository eventRepository;
 
     @Mock
-    private S3Presigner s3Presigner;
+    private EventManagementUploadRepository uploadRepository;
 
     @Mock
     private S3Client s3Client;
@@ -75,236 +59,16 @@ class EventPhotoServiceTest {
     private static final String BUCKET_NAME = "test-bucket";
     private static final String CLOUDFRONT_DOMAIN = "https://cdn.batbern.ch";
     private static final String EVENT_CODE = "BATbern42";
-    private static final String UPLOADER = "organizer@batbern.ch";
 
     @BeforeEach
     void setUp() {
         service = new EventPhotoService(
                 photoRepository,
                 eventRepository,
-                s3Presigner,
+                uploadRepository,
                 s3Client,
-                BUCKET_NAME,
-                CLOUDFRONT_DOMAIN
+                BUCKET_NAME
         );
-    }
-
-    // ── requestUploadUrl ────────────────────────────────────────────────────────
-
-    @Nested
-    @DisplayName("requestUploadUrl")
-    class RequestUploadUrlTests {
-
-        @Test
-        @DisplayName("should return uploadUrl, photoId, s3Key with .jpg extension for JPEG - AC2")
-        void shouldReturnUploadUrlForJpeg() throws MalformedURLException {
-            // Given
-            EventPhotoUploadRequest request = EventPhotoUploadRequest.builder()
-                    .filename("event-photo.jpg")
-                    .contentType("image/jpeg")
-                    .fileSize(2L * 1024 * 1024)
-                    .build();
-
-            when(eventRepository.findByEventCode(EVENT_CODE))
-                    .thenReturn(Optional.of(new Event()));
-
-            PresignedPutObjectRequest mockPresigned = mock(PresignedPutObjectRequest.class);
-            when(mockPresigned.url()).thenReturn(URI.create("https://s3.amazonaws.com/test-bucket/key?sig=x").toURL());
-            when(s3Presigner.presignPutObject(any(PutObjectPresignRequest.class))).thenReturn(mockPresigned);
-
-            // When
-            EventPhotoUploadResponse response = service.requestUploadUrl(EVENT_CODE, request, UPLOADER);
-
-            // Then
-            assertThat(response.getPhotoId()).isNotNull();
-            assertThat(response.getUploadUrl()).contains("s3.amazonaws.com");
-            assertThat(response.getS3Key()).startsWith("events/" + EVENT_CODE + "/photos/");
-            assertThat(response.getS3Key()).endsWith(".jpg");
-            assertThat(response.getExpiresIn()).isEqualTo(900);
-        }
-
-        @Test
-        @DisplayName("should produce s3Key ending in .png for image/png content type - AC2")
-        void shouldProducePngExtensionForPng() throws MalformedURLException {
-            // Given
-            EventPhotoUploadRequest request = EventPhotoUploadRequest.builder()
-                    .filename("photo.png")
-                    .contentType("image/png")
-                    .fileSize(1024L)
-                    .build();
-
-            when(eventRepository.findByEventCode(EVENT_CODE))
-                    .thenReturn(Optional.of(new Event()));
-
-            PresignedPutObjectRequest mockPresigned = mock(PresignedPutObjectRequest.class);
-            when(mockPresigned.url()).thenReturn(URI.create("https://s3.amazonaws.com/test/key").toURL());
-            when(s3Presigner.presignPutObject(any(PutObjectPresignRequest.class))).thenReturn(mockPresigned);
-
-            // When
-            EventPhotoUploadResponse response = service.requestUploadUrl(EVENT_CODE, request, UPLOADER);
-
-            // Then
-            assertThat(response.getS3Key()).endsWith(".png");
-        }
-
-        @Test
-        @DisplayName("should throw EventNotFoundException when event does not exist - AC2")
-        void shouldThrowWhenEventNotFound() {
-            // Given
-            when(eventRepository.findByEventCode(EVENT_CODE)).thenReturn(Optional.empty());
-
-            EventPhotoUploadRequest request = EventPhotoUploadRequest.builder()
-                    .filename("photo.jpg")
-                    .contentType("image/jpeg")
-                    .fileSize(1024L)
-                    .build();
-
-            // When / Then
-            assertThatThrownBy(() -> service.requestUploadUrl(EVENT_CODE, request, UPLOADER))
-                    .isInstanceOf(EventNotFoundException.class);
-        }
-
-        @Test
-        @DisplayName("should throw InvalidFileTypeException for disallowed content type - AC2")
-        void shouldThrowForDisallowedContentType() {
-            // Given
-            when(eventRepository.findByEventCode(EVENT_CODE))
-                    .thenReturn(Optional.of(new Event()));
-
-            EventPhotoUploadRequest request = EventPhotoUploadRequest.builder()
-                    .filename("file.gif")
-                    .contentType("image/gif")
-                    .fileSize(1024L)
-                    .build();
-
-            // When / Then
-            assertThatThrownBy(() -> service.requestUploadUrl(EVENT_CODE, request, UPLOADER))
-                    .isInstanceOf(InvalidFileTypeException.class);
-        }
-
-        @Test
-        @DisplayName("should throw InvalidFileTypeException for null content type - C2/H3")
-        void shouldThrowForNullContentType() {
-            // Given
-            when(eventRepository.findByEventCode(EVENT_CODE))
-                    .thenReturn(Optional.of(new Event()));
-
-            EventPhotoUploadRequest request = EventPhotoUploadRequest.builder()
-                    .filename("file.jpg")
-                    .contentType(null)
-                    .fileSize(1024L)
-                    .build();
-
-            // When / Then
-            assertThatThrownBy(() -> service.requestUploadUrl(EVENT_CODE, request, UPLOADER))
-                    .isInstanceOf(InvalidFileTypeException.class);
-        }
-
-        @Test
-        @DisplayName("should throw InvalidFileTypeException when file exceeds 10 MB limit - C2")
-        void shouldThrowWhenFileSizeExceedsLimit() {
-            // Given
-            when(eventRepository.findByEventCode(EVENT_CODE))
-                    .thenReturn(Optional.of(new Event()));
-
-            long oversizedFile = 11L * 1024 * 1024; // 11 MB
-            EventPhotoUploadRequest request = EventPhotoUploadRequest.builder()
-                    .filename("big-photo.jpg")
-                    .contentType("image/jpeg")
-                    .fileSize(oversizedFile)
-                    .build();
-
-            // When / Then
-            assertThatThrownBy(() -> service.requestUploadUrl(EVENT_CODE, request, UPLOADER))
-                    .isInstanceOf(InvalidFileTypeException.class)
-                    .hasMessageContaining("10 MB");
-        }
-    }
-
-    // ── confirmUpload ───────────────────────────────────────────────────────────
-
-    @Nested
-    @DisplayName("confirmUpload")
-    class ConfirmUploadTests {
-
-        @Test
-        @DisplayName("should verify S3, save EventPhoto with CloudFront displayUrl - AC2")
-        void shouldSavePhotoWithCloudFrontUrl() {
-            // Given
-            UUID photoId = UUID.randomUUID();
-            String s3Key = "events/" + EVENT_CODE + "/photos/" + photoId + ".jpg";
-
-            EventPhotoConfirmRequest request = EventPhotoConfirmRequest.builder()
-                    .photoId(photoId)
-                    .s3Key(s3Key)
-                    .build();
-
-            when(s3Client.headObject(any(HeadObjectRequest.class)))
-                    .thenReturn(HeadObjectResponse.builder().build());
-
-            EventPhoto savedPhoto = EventPhoto.builder()
-                    .id(photoId)
-                    .eventCode(EVENT_CODE)
-                    .s3Key(s3Key)
-                    .displayUrl(CLOUDFRONT_DOMAIN + "/" + s3Key)
-                    .uploadedAt(Instant.now())
-                    .uploadedBy(UPLOADER)
-                    .sortOrder(0)
-                    .build();
-            when(photoRepository.save(any(EventPhoto.class))).thenReturn(savedPhoto);
-
-            // When
-            EventPhotoResponse result = service.confirmUpload(EVENT_CODE, request, UPLOADER);
-
-            // Then
-            verify(s3Client).headObject(any(HeadObjectRequest.class));
-            verify(photoRepository).save(argThat(EventPhoto::isNew));
-            // displayUrl must be domain + "/" + s3Key (no double bucket name)
-            assertThat(result.getDisplayUrl()).isEqualTo(CLOUDFRONT_DOMAIN + "/" + s3Key);
-            assertThat(result.getEventCode()).isEqualTo(EVENT_CODE);
-        }
-
-        @Test
-        @DisplayName("should throw InvalidFileTypeException when s3Key does not belong to eventCode - H1")
-        void shouldThrowWhenS3KeyDoesNotBelongToEvent() {
-            // Given
-            UUID photoId = UUID.randomUUID();
-            String foreignS3Key = "events/OTHER_EVENT/photos/" + photoId + ".jpg";
-
-            EventPhotoConfirmRequest request = EventPhotoConfirmRequest.builder()
-                    .photoId(photoId)
-                    .s3Key(foreignS3Key)
-                    .build();
-
-            // When / Then
-            assertThatThrownBy(() -> service.confirmUpload(EVENT_CODE, request, UPLOADER))
-                    .isInstanceOf(InvalidFileTypeException.class);
-
-            verify(s3Client, never()).headObject(any(HeadObjectRequest.class));
-            verify(photoRepository, never()).save(any());
-        }
-
-        @Test
-        @DisplayName("should throw PhotoUploadNotFoundException when file not in S3 - AC2")
-        void shouldThrowWhenFileNotInS3() {
-            // Given
-            UUID photoId = UUID.randomUUID();
-            String s3Key = "events/" + EVENT_CODE + "/photos/" + photoId + ".jpg";
-
-            EventPhotoConfirmRequest request = EventPhotoConfirmRequest.builder()
-                    .photoId(photoId)
-                    .s3Key(s3Key)
-                    .build();
-
-            when(s3Client.headObject(any(HeadObjectRequest.class)))
-                    .thenThrow(NoSuchKeyException.builder().message("Not found").build());
-
-            // When / Then
-            assertThatThrownBy(() -> service.confirmUpload(EVENT_CODE, request, UPLOADER))
-                    .isInstanceOf(PhotoUploadNotFoundException.class);
-
-            verify(photoRepository, never()).save(any());
-        }
     }
 
     // ── deletePhoto ─────────────────────────────────────────────────────────────

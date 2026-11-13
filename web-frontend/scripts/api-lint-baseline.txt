@@ -9,7 +9,6 @@ no-literal-under-events	events-core-api.openapi.yml	GET /events/current
 no-verb-segment	event-ai-api.openapi.yml	POST /events/{eventCode}/ai/theme-image/apply
 no-verb-segment	event-mail-api.openapi.yml	GET /conversations/{conversationKey}/messages/{mailKey}/attachments/{index}/download
 no-verb-segment	event-mail-api.openapi.yml	POST /events/{eventCode}/mails/preview
-no-verb-segment	event-media-api.openapi.yml	POST /events/{eventCode}/photos/confirm
 no-verb-segment	event-newsletter-api.openapi.yml	GET /newsletter/unsubscribe/verify
 no-verb-segment	event-newsletter-api.openapi.yml	POST /newsletter/unsubscribe
 no-verb-segment	event-registrations-api.openapi.yml	GET /events/{eventCode}/participants/export.docx

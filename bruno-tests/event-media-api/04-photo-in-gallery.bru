@@ -1,0 +1,29 @@
+meta {
+  name: The photo is in the event's gallery
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{baseUrl}}/events/{{photoEventCode}}/photos
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("should list the uploaded photo", function() {
+    const photos = res.getBody();
+    const photo = photos.find(p => p.id === bru.getVar("photoUploadId"));
+    expect(photo).to.not.equal(undefined);
+    expect(photo.eventCode).to.equal(bru.getVar("photoEventCode"));
+    expect(photo.filename).to.equal("photo.jpg");
+  });
+}
+
+docs {
+  Anonymous read, unchanged by Story 17.11b.
+}

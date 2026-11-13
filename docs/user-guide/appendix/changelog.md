@@ -59,6 +59,11 @@ Only items that are not live yet. Everything else is listed under its release be
 - ✅ "Upcoming events" on the participant dashboard no longer stays empty without a registration. It shows three events: every upcoming event you are registered for first (with its registration status), then the next events you are not registered for, until there are three. Registered for more than three, you see all of them and no others.
 - ✅ The cards are the ones of the homepage section "Nächste BAT-Termine". A published event links to its event page, where you register. An event not yet published shows code, title and date only, without a link.
 
+**Improvement — Event photos on the upload contract (Epic 17, 17.11b)**:
+- ✅ Uploading photos on the Wrap-up tab of an event works as before (JPEG, PNG, WebP up to 10 MB), through the same upload flow as logos and profile pictures.
+- ✅ A photo is only added once its file has really arrived in storage, and only to the event it was started for. Uploads that are never finished are deleted by the nightly cleanup.
+- ⚠️ API, breaking for scripts: purpose `event-photo` with target `{eventCode}` (required) on `POST /api/v1/uploads/event-photo` and its confirm. `POST /api/v1/events/{eventCode}/photos/upload-url` and `.../photos/confirm` are gone (405). Listing, deleting and the homepage photos are unchanged.
+
 **Improvement — Profile pictures on the upload contract (Epic 17, 17.11a)**:
 - ✅ Changing your own picture (account page, speaker portal), an organizer changing another user's picture and the speaker batch import with portrait URLs work as before, through the same upload flow as company logos.
 - ✅ A picture is only attached once the file has really arrived in storage. Before, a picture uploaded just before New Year and confirmed just after it pointed at a missing file: the storage path no longer contains the year (also for new company logos and theme images; files stored earlier keep their address).

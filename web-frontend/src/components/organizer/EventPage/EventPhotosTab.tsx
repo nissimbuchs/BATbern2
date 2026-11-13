@@ -67,14 +67,7 @@ export const EventPhotosTab: React.FC<EventPhotosTabProps> = ({ eventCode }) => 
       const results = await Promise.allSettled(
         files.map(async (file) => {
           try {
-            await uploadMutation.mutateAsync({
-              file,
-              request: {
-                filename: file.name,
-                contentType: file.type as 'image/jpeg' | 'image/png' | 'image/webp',
-                fileSize: file.size,
-              },
-            });
+            await uploadMutation.mutateAsync({ file });
           } finally {
             setUploadProgress((prev) => prev && { ...prev, done: prev.done + 1 });
           }
@@ -129,6 +122,7 @@ export const EventPhotosTab: React.FC<EventPhotosTabProps> = ({ eventCode }) => 
           type="file"
           accept="image/jpeg,image/png,image/webp"
           multiple
+          data-testid="event-photos-input"
           style={{ display: 'none' }}
           onChange={handleFileChange}
         />
@@ -171,7 +165,11 @@ export const EventPhotosTab: React.FC<EventPhotosTabProps> = ({ eventCode }) => 
         <Grid container spacing={2}>
           {photos.map((photo) => (
             <Grid size={{ xs: 12, sm: 6, md: 4, lg: 3 }} key={photo.id}>
-              <Card sx={{ position: 'relative' }}>
+              <Card
+                sx={{ position: 'relative' }}
+                data-testid="event-photo-card"
+                data-photo-id={photo.id}
+              >
                 <CardMedia
                   component="img"
                   height="180"

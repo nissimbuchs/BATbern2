@@ -1,0 +1,40 @@
+meta {
+  name: The old photo upload-url path is gone
+  type: http
+  seq: 7
+}
+
+post {
+  url: {{baseUrl}}/events/{{photoEventCode}}/photos/upload-url
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "filename": "bruno-photo.jpg",
+    "contentType": "image/jpeg",
+    "fileSize": 1024
+  }
+}
+
+tests {
+  test("405: upload-url now falls on /photos/{photoId}, which has no POST", function() {
+    expect(res.getStatus()).to.equal(405);
+  });
+}
+
+docs {
+  Story 17.11b, breaking, no alias. POST /events/{eventCode}/photos/upload-url and
+  POST /events/{eventCode}/photos/confirm are removed; both are pinned at 405 by
+  EventPhotoUploadIntegrationTest.
+}

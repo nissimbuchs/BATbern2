@@ -1,16 +1,10 @@
 package ch.batbern.events.service;
 
-import ch.batbern.shared.utils.S3Links;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.EventPhoto;
-import ch.batbern.events.exception.EventNotFoundException;
 import ch.batbern.events.exception.EventPhotoNotFoundException;
-import ch.batbern.events.exception.InvalidFileTypeException;
-import ch.batbern.events.exception.PhotoUploadNotFoundException;
-import ch.batbern.events.media.dto.generated.EventPhotoConfirmRequest;
 import ch.batbern.events.media.dto.generated.EventPhotoResponse;
-import ch.batbern.events.media.dto.generated.EventPhotoUploadRequest;
-import ch.batbern.events.media.dto.generated.EventPhotoUploadResponse;
+import ch.batbern.events.repository.EventManagementUploadRepository;
 import ch.batbern.events.repository.EventPhotoRepository;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.shared.api.DeterministicPaging;
@@ -20,146 +14,50 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
-import software.amazon.awssdk.services.s3.model.HeadObjectRequest;
-import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
-import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 
-import java.time.Duration;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Set;
 import java.util.UUID;
 
 /**
- * Service for event photo management (upload, confirm, delete, list).
+ * Service for event photo management (list, delete, homepage sample).
  * <p>
- * Story 10.21: Event Photos Gallery
- * <p>
- * Uses the 3-phase presigned PUT pattern:
- * 1. requestUploadUrl — generate presigned S3 URL
- * 2. Client PUT directly to S3 (no backend involved)
- * 3. confirmUpload — verify S3 presence, persist EventPhoto record
+ * Story 10.21: Event Photos Gallery. Uploads go through the upload contract, purpose
+ * {@code event-photo} ({@link EventPhotoUploadHandler}, Story 17.11b).
  */
 @Service
 @Transactional
 @Slf4j
 public class EventPhotoService {
 
-    private static final long MAX_FILE_SIZE_BYTES = 10L * 1024 * 1024; // 10 MB
-    private static final int PRESIGNED_URL_EXPIRY_SECONDS = 900; // 15 min
-    private static final Set<String> ALLOWED_TYPES = Set.of(
-            "image/jpeg", "image/png", "image/webp");
-
     private final EventPhotoRepository photoRepository;
     private final EventRepository eventRepository;
-    private final S3Presigner s3Presigner;
+    private final EventManagementUploadRepository uploadRepository;
     private final S3Client s3Client;
     private final String bucketName;
-    private final String cloudFrontDomain;
 
     public EventPhotoService(
             EventPhotoRepository photoRepository,
             EventRepository eventRepository,
-            S3Presigner s3Presigner,
+            EventManagementUploadRepository uploadRepository,
             S3Client s3Client,
-            @Value("${aws.s3.bucket-name:batbern-development-company-logos}") String bucketName,
-            @Value("${aws.cloudfront.domain:https://cdn.batbern.ch}") String cloudFrontDomain) {
+            @Value("${aws.s3.bucket-name:batbern-development-company-logos}") String bucketName) {
         this.photoRepository = photoRepository;
         this.eventRepository = eventRepository;
-        this.s3Presigner = s3Presigner;
+        this.uploadRepository = uploadRepository;
         this.s3Client = s3Client;
         this.bucketName = bucketName;
-        this.cloudFrontDomain = cloudFrontDomain;
-    }
-
-    /**
-     * Phase 1: Generate presigned PUT URL for direct S3 upload.
-     * AC2 — Upload flow
-     */
-    public EventPhotoUploadResponse requestUploadUrl(String eventCode,
-                                                     EventPhotoUploadRequest request,
-                                                     String uploaderUsername) {
-        eventRepository.findByEventCode(eventCode)
-                .orElseThrow(() -> new EventNotFoundException("Event not found: " + eventCode));
-
-        String contentType = request.getContentType();
-        if (contentType == null || !ALLOWED_TYPES.contains(contentType)) {
-            throw new InvalidFileTypeException(
-                    "Allowed content types: image/jpeg, image/png, image/webp");
-        }
-
-        if (request.getFileSize() > MAX_FILE_SIZE_BYTES) {
-            throw new InvalidFileTypeException(
-                    "File size exceeds maximum allowed size of 10 MB");
-        }
-
-        UUID photoId = UUID.randomUUID();
-        String ext = resolveExtension(request.getFilename(), request.getContentType());
-        String s3Key = String.format("events/%s/photos/%s.%s", eventCode, photoId, ext);
-
-        String uploadUrl = S3Links.uploadUrl(s3Presigner, bucketName, s3Key, request.getContentType(), null,
-                Duration.ofSeconds(PRESIGNED_URL_EXPIRY_SECONDS));
-
-        return EventPhotoUploadResponse.builder()
-                .photoId(photoId)
-                .uploadUrl(uploadUrl)
-                .s3Key(s3Key)
-                .expiresIn(PRESIGNED_URL_EXPIRY_SECONDS)
-                .build();
-    }
-
-    /**
-     * Phase 3: Confirm upload — verify S3 presence, persist EventPhoto record.
-     * AC2 — Upload flow
-     */
-    public EventPhotoResponse confirmUpload(String eventCode,
-                                            EventPhotoConfirmRequest request,
-                                            String uploaderUsername) {
-        String expectedPrefix = String.format("events/%s/photos/", eventCode);
-        if (request.getS3Key() == null || !request.getS3Key().startsWith(expectedPrefix)) {
-            throw new InvalidFileTypeException(
-                    "Invalid s3Key: must belong to event " + eventCode);
-        }
-
-        try {
-            s3Client.headObject(HeadObjectRequest.builder()
-                    .bucket(bucketName)
-                    .key(request.getS3Key())
-                    .build());
-        } catch (NoSuchKeyException e) {
-            throw new PhotoUploadNotFoundException(request.getPhotoId().toString());
-        }
-
-        // cloudFrontDomain already includes the bucket path in local dev
-        // (e.g. http://localhost:8450/batbern-development-company-logos) so we
-        // must NOT use CloudFrontUrlBuilder (which would append bucketName again).
-        // In production cloudFrontDomain is https://cdn.batbern.ch — same pattern.
-        String displayUrl = cloudFrontDomain + "/" + request.getS3Key();
-        String filename = request.getS3Key()
-                .substring(request.getS3Key().lastIndexOf('/') + 1);
-
-        EventPhoto photo = EventPhoto.builder()
-                .id(request.getPhotoId())
-                .newEntity(true)
-                .eventCode(eventCode)
-                .s3Key(request.getS3Key())
-                .displayUrl(displayUrl)
-                .filename(filename)
-                .uploadedAt(Instant.now())
-                .uploadedBy(uploaderUsername)
-                .sortOrder(0)
-                .build();
-
-        return toResponse(photoRepository.save(photo));
     }
 
     /**
      * Delete a photo: remove DB record and S3 object.
      * S3 delete is best-effort — failures are logged but do not block DB delete.
+     * The photo's upload row (uploadId = photo id, Story 17.11b) goes with it: ASSOCIATED rows never
+     * expire, so it would stay forever. Photos stored before 17.11b have none.
      * AC3 — Delete
      */
     public void deletePhoto(String eventCode, UUID photoId) {
@@ -176,6 +74,9 @@ public class EventPhotoService {
         }
 
         photoRepository.delete(photo);
+        uploadRepository.findByUploadId(photoId.toString())
+                .filter(upload -> EventPhotoUploadHandler.PURPOSE.equals(upload.getPurpose()))
+                .ifPresent(uploadRepository::delete);
         log.info("Photo {} deleted from event {}", photoId, eventCode);
     }
 
@@ -236,17 +137,4 @@ public class EventPhotoService {
                 .build();
     }
 
-    private String resolveExtension(String filename, String contentType) {
-        if (filename != null && filename.contains(".")) {
-            String ext = filename.substring(filename.lastIndexOf('.') + 1).toLowerCase();
-            if (Set.of("jpg", "jpeg", "png", "webp").contains(ext)) {
-                return ext.equals("jpeg") ? "jpg" : ext;
-            }
-        }
-        return switch (contentType) {
-            case "image/png" -> "png";
-            case "image/webp" -> "webp";
-            default -> "jpg";
-        };
-    }
 }

@@ -26,16 +26,23 @@ info:
     | `company-logo` | CUMS | png, jpeg, svg | 5 MB | `companyName` (ORGANIZER) | yes (ORGANIZER) |
     | `event-theme-image` | EMS | png, jpeg, svg | 5 MB | `eventCode` (ORGANIZER) | no |
     | `profile-picture` | CUMS | png, jpeg, svg | 5 MB | `username`, required (ORGANIZER or the user themself) | yes (ORGANIZER) |
+    | `event-photo` | EMS | jpeg, png, webp | 10 MB | `eventCode`, required (ORGANIZER) | no |
 
     A purpose whose target is required answers 400 on create and confirm without one.
     `profile-picture` has no create-form case: the user always exists, so the upload is attached on
     confirm. The batch import of speaker portraits imports, then confirms with the target.
+    `event-photo` (Story 17.11b): the confirm with the target creates the photo in the event's
+    gallery (`GET /events/{eventCode}/photos`).
+
+    **Target binding** (Story 17.11b). A target given on create is recorded with the reserved
+    upload; a confirm that names another target answers 404 and changes nothing. An upload reserved
+    without a target may still name one on confirm.
 
     **Final keys** carry no year (Story 17.11a, the upload year caused a rollover bug):
     `logos/companies/{companyName}/logo-{uploadId}.{ext}`,
     `logos/events/{eventCode}/theme-{uploadId}.{ext}`,
-    `profile-pictures/{username}/profile-{uploadId}.{ext}`. Files attached earlier keep their key and
-    URL.
+    `profile-pictures/{username}/profile-{uploadId}.{ext}`,
+    `events/{eventCode}/photos/{uploadId}.{ext}`. Files attached earlier keep their key and URL.
 
     **Lifecycle.** PENDING (reserved) → CONFIRMED (file in S3) → ASSOCIATED (attached to its entity).
     A PENDING upload older than 24 hours and a CONFIRMED one older than 7 days are deleted with their
@@ -67,8 +74,9 @@ paths:
         Checks type and size for the purpose (400) and, with a `target`, that the caller may attach
         to it (403) and that it exists (404). Returns the presigned PUT URL, valid 15 minutes. Any
         signed-in user may upload without a target; the file does nothing until an entity that the
-        caller may change takes it. A purpose that requires a target (`profile-picture`) answers 400
-        without one.
+        caller may change takes it. A purpose that requires a target (`profile-picture`,
+        `event-photo`) answers 400 without one. The target given here is recorded with the upload;
+        the confirm must name the same one.
       operationId: createFileUpload
       parameters:
         - $ref: '#/components/parameters/Purpose'
@@ -112,8 +120,9 @@ paths:
         Checks that the file is in S3 (409 when it is not). Without a `target`: PENDING → CONFIRMED.
         With a `target`: the file moves to its final key and is attached to the entity (ASSOCIATED),
         e.g. it becomes the company logo. Confirming an upload that is already ASSOCIATED is 409; an
-        unknown, expired or other-purpose `uploadId` is 404. A purpose that requires a target
-        (`profile-picture`) answers 400 without one.
+        unknown, expired or other-purpose `uploadId` is 404, and so is a `target` other than the one
+        given on create (Story 17.11b). A purpose that requires a target (`profile-picture`,
+        `event-photo`) answers 400 without one.
       operationId: confirmFileUpload
       parameters:
         - $ref: '#/components/parameters/Purpose'
@@ -220,6 +229,7 @@ components:
           - company-logo
           - event-theme-image
           - profile-picture
+          - event-photo
 
   schemas:
     UploadPurpose:
@@ -228,13 +238,14 @@ components:
         - company-logo
         - event-theme-image
         - profile-picture
+        - event-photo
 
     UploadTarget:
       type: object
       description: |
         The existing entity the file is for, by its meaningful ID (ADR-003). Set the one key of
-        the purpose: `companyName` for `company-logo`, `eventCode` for `event-theme-image`,
-        `username` for `profile-picture`.
+        the purpose: `companyName` for `company-logo`, `eventCode` for `event-theme-image` and
+        `event-photo`, `username` for `profile-picture`.
       additionalProperties: false
       properties:
         companyName:

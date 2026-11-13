@@ -1,0 +1,23 @@
+meta {
+  name: Cleanup — delete the uploaded photo
+  type: http
+  seq: 8
+}
+
+delete {
+  url: {{baseUrl}}/events/{{photoEventCode}}/photos/{{photoUploadId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+assert {
+  res.status: eq 204
+}
+
+docs {
+  Removes the photo row and its S3 object. The event goes in 98/99.
+}

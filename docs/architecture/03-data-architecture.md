@@ -118,20 +118,23 @@ stateDiagram-v2
 - **Endpoints** (`uploads-api`): `POST /uploads/{purpose}`, `POST /uploads/{purpose}/{uploadId}/confirm`,
   `POST /uploads/{purpose}/import`. The gateway routes by purpose (an explicit map, Story 17.11a).
   Purposes today: `company-logo` (CUMS, also the logo requests of #1246), `profile-picture` (CUMS,
-  target `username` required, 17.11a) and `event-theme-image` (EMS). Event photos, teaser images and
-  session materials follow in Stories 17.11b–d. Final keys carry no year since 17.11a.
+  target `username` required, 17.11a), `event-theme-image` (EMS) and `event-photo` (EMS, target
+  `eventCode` required, 17.11b). Teaser images and session materials follow in Stories 17.11c–d.
+  Final keys carry no year since 17.11a.
 - **Columns:** `upload_id` (the handle), `purpose`, `s3_key` (temp, then final), `file_url` (CDN URL
   once attached), `file_extension`, `file_size`, `content_type`, `status` (`pending`, `confirmed`,
   `associated`, lower case), `target_type` and `target_id` (e.g. `COMPANY` / company name,
-  `LOGO_REQUEST`, `EVENT` / event code), `created_by`, `expires_at`. A check constraint ties
-  `associated` to a target, a file URL and no expiry.
+  `LOGO_REQUEST`, `EVENT` / event code; set on a PENDING row already when the create named a target,
+  and a confirm for another target is 404, Story 17.11b), `created_by`, `expires_at`. A check
+  constraint ties `associated` to a file URL and no expiry (and a target).
 - **Rules:** per purpose in its handler; logos, theme images and profile pictures: png, jpeg, svg up
-  to 5 MB.
+  to 5 MB; event photos: jpeg, png, webp up to 10 MB.
 - **S3 keys:** temporary `logos/temp/{uploadId}/logo-{uploadId}.{ext}` (theme image: `theme-…`) and
-  `profile-pictures/temp/{uploadId}/profile-{uploadId}.{ext}`; final
+  `profile-pictures/temp/{uploadId}/profile-{uploadId}.{ext}`, `events/temp/{uploadId}/photo-{uploadId}.{ext}`; final
   `logos/companies/{name}/logo-{uploadId}.{ext}`, `logos/requests/{uploadId}/logo.{ext}`,
   `logos/events/{eventCode}/theme-{uploadId}.{ext}` and
-  `profile-pictures/{username}/profile-{uploadId}.{ext}` (also the Google avatar import). No year
+  `profile-pictures/{username}/profile-{uploadId}.{ext}` (also the Google avatar import),
+  `events/{eventCode}/photos/{uploadId}.{ext}` (the layout photos had before). No year
   since Story 17.11a; objects stored earlier keep their `logos/{year}/…` and
   `profile-pictures/{year}/…` keys, and the rows (`companies.logo_s3_key`,
   `user_profiles.profile_picture_s3_key`, the URLs) hold the full key.
@@ -146,8 +149,11 @@ stateDiagram-v2
 - **Profile pictures** are on the contract since Story 17.11a (purpose `profile-picture`, target
   `username` required, rows in `company_user_uploads` with `target_type` `USER`). The Google avatar
   import stores server-side through `ProfilePictureService` without an upload row.
-- **Not yet on the contract:** session materials, event photos and teaser images, each with its own
-  table or columns until its story (17.11b–d) moves it.
+- **Event photos** are on the contract since Story 17.11b (purpose `event-photo`, rows in
+  `event_management_uploads` with `target_type` `EVENT`); the confirm creates the `event_photos` row
+  (photo id = upload id).
+- **Not yet on the contract:** session materials and teaser images, each with its own table or
+  columns until its story (17.11c–d) moves it.
 
 ### User
 

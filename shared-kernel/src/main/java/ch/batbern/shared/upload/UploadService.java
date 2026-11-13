@@ -84,7 +84,8 @@ public class UploadService<T extends UploadRecord> {
     }
 
     /**
-     * Reserves an upload (PENDING) and presigns its PUT. With a target, checks it first.
+     * Reserves an upload (PENDING) and presigns its PUT. With a target, checks it first and binds the
+     * upload to it: the confirm must name the same target (Story 17.11b).
      *
      * @param target the target keys the client sent (empty: none)
      */
@@ -106,7 +107,9 @@ public class UploadService<T extends UploadRecord> {
         String tempKey = handler.tempKey(uploadId, extension);
         Instant now = clock.instant();
         T upload = newRecord.get();
-        upload.start(uploadId, purpose, new UploadRecord.TempFile(tempKey, extension, size, type),
+        UploadRecord.Binding binding = targetId == null ? UploadRecord.Binding.NONE
+                : new UploadRecord.Binding(handler.targetType(), targetId);
+        upload.start(uploadId, purpose, new UploadRecord.TempFile(tempKey, extension, size, type), binding,
                 UploadPurposeHandler.callerName(), now, now.plus(PENDING_LIFETIME));
         repository.save(upload);
 
@@ -117,7 +120,8 @@ public class UploadService<T extends UploadRecord> {
 
     /**
      * Confirms that the file is in S3 (PENDING → CONFIRMED). With a target, attaches it right away
-     * (ASSOCIATED) and the handler puts it on the target.
+     * (ASSOCIATED) and the handler puts it on the target. A target other than the one given on create
+     * is 404, as if the upload did not exist for it (Story 17.11b).
      */
     @Transactional
     public T confirm(String purpose, String uploadId, Map<String, String> target) {
@@ -128,6 +132,10 @@ public class UploadService<T extends UploadRecord> {
             handler.checkTarget(targetId);
         }
         T upload = live(purpose, uploadId);
+        if (targetId != null) {
+            // Before the 409: another target never learns that the upload exists (Story 17.11b).
+            requireBoundTo(upload, targetId);
+        }
         if (upload.getStatus() == UploadStatus.ASSOCIATED) {
             throw UploadException.conflict("Upload " + uploadId + " is already attached");
         }
@@ -183,7 +191,7 @@ public class UploadService<T extends UploadRecord> {
         Instant now = clock.instant();
         T upload = newRecord.get();
         upload.start(uploadId, purpose, new UploadRecord.TempFile(tempKey, extension, image.body().length, type),
-                UploadPurposeHandler.callerName(), now, now.plus(PENDING_LIFETIME));
+                UploadRecord.Binding.NONE, UploadPurposeHandler.callerName(), now, now.plus(PENDING_LIFETIME));
         upload.confirm(now, now.plus(CONFIRMED_LIFETIME));
         repository.save(upload);
         log.info("UPLOAD_IMPORTED purpose={} uploadId={} bytes={} name={}", purpose, uploadId,
@@ -195,12 +203,13 @@ public class UploadService<T extends UploadRecord> {
      * Attaches a CONFIRMED upload to an entity at the purpose's final key (the entity create or
      * update that takes an {@code …UploadId}). The caller has authorized the change of the entity.
      *
-     * @throws UploadException 404 unknown or expired, 409 not CONFIRMED
+     * @throws UploadException 404 unknown, expired or reserved for another target, 409 not CONFIRMED
      */
     @Transactional
     public T associate(String purpose, String uploadId, String targetId) {
         UploadPurposeHandler handler = handler(purpose);
         T upload = confirmed(purpose, uploadId);
+        requireBoundTo(upload, targetId);
         return associate(handler, upload, handler.targetType(), targetId, handler.finalKey(upload, targetId));
     }
 
@@ -313,6 +322,13 @@ public class UploadService<T extends UploadRecord> {
             throw UploadException.notFound("Upload " + uploadId + " has expired");
         }
         return upload;
+    }
+
+    /** 404 when the upload was reserved for another target (Story 17.11b). */
+    private static void requireBoundTo(UploadRecord upload, String targetId) {
+        if (upload.isBoundElsewhere(targetId)) {
+            throw UploadException.notFound("Upload " + upload.getUploadId() + " not found for " + targetId);
+        }
     }
 
     private T confirmed(String purpose, String uploadId) {

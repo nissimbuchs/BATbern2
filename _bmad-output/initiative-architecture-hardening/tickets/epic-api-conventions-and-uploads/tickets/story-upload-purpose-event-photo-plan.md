@@ -3,12 +3,12 @@ title: 'Upload purpose event-photo'
 type: 'refactor'
 ticket: '11b'
 created: '2026-11-13'
-status: 'ready-for-dev'
-baseline_revision: ''
+status: 'built'
+baseline_revision: '91c6b4ca1'
 route: 'full'
 route_source: 'auto'
 risk: 'medium'
-review: ''
+review: 'quick'
 review_source: ''
 lenses_ran: []
 review_loop_iteration: 0
@@ -58,20 +58,36 @@ context:
 ## Tasks & Acceptance
 
 **Execution:**
-- [ ] Specs + types.
-- [ ] Shared-kernel target binding + unit tests.
-- [ ] EMS RED IT (matrix), handler, removals, ratchet mock removed in `EventPhotoControllerIntegrationTest`.
-- [ ] Gateway map entry `event-photo` → EMS (map from 11a).
-- [ ] Frontend hook, client, tests on MSW.
-- [ ] Bruno, Playwright.
-- [ ] `lint:api --update` (−1 line), remove N2, ratchet update.
+- [x] Specs + types.
+- [x] Shared-kernel target binding + unit tests.
+- [x] EMS RED IT (matrix), handler, removals, ratchet mock removed in `EventPhotoControllerIntegrationTest`.
+- [x] Gateway map entry `event-photo` → EMS (map from 11a).
+- [x] Frontend hook, client, tests on MSW.
+- [x] Bruno, Playwright.
+- [x] `lint:api --update` (−1 line), remove N2, ratchet update.
 
 **Acceptance Criteria:**
 - Given local dev, when an organizer uploads a photo on the event page, then it shows in the gallery after reload and on the public recent photos, and the network log shows only `/uploads/event-photo*` for the upload.
 
 ## Implementation Notes
 
+- Old paths: both `POST …/photos/upload-url` and `POST …/photos/confirm` now answer **405** (they fall on `/photos/{photoId}`, DELETE only). Pinned in `EventPhotoUploadIntegrationTest` and Bruno 07.
+- RED shown: `UploadServiceTest` 3 new tests failed before the binding; `EventPhotoUploadIntegrationTest` 5 of 6 failed with the handler unregistered (the 405 pin is independent of it).
+- Photo id = upload id (`UUID.fromString(uploadId)`), so the gallery card, the S3 key and the upload row share one id.
+- Removed with the operations: `PhotoUploadNotFoundException` and `PhotoConfirmResponse` (unused after the removal / already unused).
+- Deleting a photo also deletes its upload row (`event_management_uploads`, uploadId = photo id, purpose `event-photo`): an ASSOCIATED row never expires. Deleting an event cascades to `event_photos` in the database only; the upload rows and S3 objects of its photos stay (unchanged behaviour for S3, accepted for now).
+- `UploadService.confirm` checks the target binding before the ASSOCIATED → 409 check, and `isBoundElsewhere` covers ASSOCIATED rows too: another target always gets 404, the same target on an attached upload 409.
+- Playwright reads `/public/event-photos?lastNEvents=1` (the fixture is the latest past event), since the 5-event sample is random beyond 100 photos.
+- `EventPhotosTab` got `data-testid` `event-photos-input` and `event-photo-card` (`data-photo-id`) for the Playwright spec.
+
 ## Plan Change Log
+
+- 2026-11-13, review (accepted): the frozen constraint "`display_url` built exactly as `EventPhotoService` builds it today" is not kept literally. `CloudFrontUrlBuilder` is byte-identical to `domain + "/" + key` in production: it adds the bucket segment only for a `localhost` domain. This deviation from a frozen constraint goes to the owner in the PR body.
+- 2026-11-13, review: stricter server rule. The contract takes the extension from the file name and refuses a name with no extension or an unknown one (400), even when the content type is a valid image; the former `EventPhotoService` fell back to the content type. The frontend now sends a name with an extension: `photoFileName` in `useEventPhotos.ts` adds the extension of `file.type` when the name has no accepted one. A script calling the API with such a name now gets 400.
+- 2026-11-13, review: final keys keep the old `.jpg` for a `.jpeg` file (`EventPhotoUploadHandler.keyExtension`, photos only); the file name is `photo.jpg` then too.
+- 2026-11-13, build: `display_url` is the upload's `fileUrl` (`CloudFrontUrlBuilder`), not `domain + "/" + key`. Identical in production (the CDN domain has no `localhost`); in local dev the old form lacked the MinIO bucket segment (the comment in `EventPhotoService` claiming the domain carried it is contradicted by `start-all-native.sh`), so photos would not render locally.
+- 2026-11-13, build: `uploadedBy` is the confirming organizer's username via `SecurityContextHelper.getCurrentUsernameOrNull()`, not `upload.getCreatedBy()`. `createdBy` is `auth.getName()`, which is the Cognito `sub` (a UUID) for a JWT; the old controller deliberately avoided that (ADR-003). Creator and confirmer are the same organizer in the UI flow.
+- 2026-11-13, build: the binding is also enforced in `UploadService.associate(purpose, uploadId, targetId)` (entity create or update taking an upload), else a bound upload could be confirmed without a target and then attached elsewhere. No current caller reserves with a target (all frontend `uploadTarget` calls for logos and theme images pass none), so nothing changes for them.
 
 ## Review Triage Log
 

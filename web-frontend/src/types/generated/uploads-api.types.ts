@@ -18,8 +18,9 @@ export interface paths {
      * @description Checks type and size for the purpose (400) and, with a `target`, that the caller may attach
      *     to it (403) and that it exists (404). Returns the presigned PUT URL, valid 15 minutes. Any
      *     signed-in user may upload without a target; the file does nothing until an entity that the
-     *     caller may change takes it. A purpose that requires a target (`profile-picture`) answers 400
-     *     without one.
+     *     caller may change takes it. A purpose that requires a target (`profile-picture`,
+     *     `event-photo`) answers 400 without one. The target given here is recorded with the upload;
+     *     the confirm must name the same one.
      */
     post: operations['createFileUpload'];
     delete?: never;
@@ -42,8 +43,9 @@ export interface paths {
      * @description Checks that the file is in S3 (409 when it is not). Without a `target`: PENDING → CONFIRMED.
      *     With a `target`: the file moves to its final key and is attached to the entity (ASSOCIATED),
      *     e.g. it becomes the company logo. Confirming an upload that is already ASSOCIATED is 409; an
-     *     unknown, expired or other-purpose `uploadId` is 404. A purpose that requires a target
-     *     (`profile-picture`) answers 400 without one.
+     *     unknown, expired or other-purpose `uploadId` is 404, and so is a `target` other than the one
+     *     given on create (Story 17.11b). A purpose that requires a target (`profile-picture`,
+     *     `event-photo`) answers 400 without one.
      */
     post: operations['confirmFileUpload'];
     delete?: never;
@@ -80,11 +82,11 @@ export type webhooks = Record<string, never>;
 export interface components {
   schemas: {
     /** @enum {string} */
-    UploadPurpose: 'company-logo' | 'event-theme-image' | 'profile-picture';
+    UploadPurpose: 'company-logo' | 'event-theme-image' | 'profile-picture' | 'event-photo';
     /**
      * @description The existing entity the file is for, by its meaningful ID (ADR-003). Set the one key of
-     *     the purpose: `companyName` for `company-logo`, `eventCode` for `event-theme-image`,
-     *     `username` for `profile-picture`.
+     *     the purpose: `companyName` for `company-logo`, `eventCode` for `event-theme-image` and
+     *     `event-photo`, `username` for `profile-picture`.
      */
     UploadTarget: {
       companyName?: string;
@@ -233,7 +235,7 @@ export interface components {
      * @description What the file is for. Decides the owning service, the rules and the target. The values
      *     are those of `UploadPurpose`; a service answers 404 for a purpose it does not own.
      */
-    Purpose: 'company-logo' | 'event-theme-image' | 'profile-picture';
+    Purpose: 'company-logo' | 'event-theme-image' | 'profile-picture' | 'event-photo';
   };
   requestBodies: never;
   headers: never;

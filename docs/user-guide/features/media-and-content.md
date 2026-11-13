@@ -19,7 +19,7 @@ Beyond logos and speaker materials, the platform provides a set of media and con
 
 ## Event Photos Gallery (Story 10.21)
 
-Organizers upload and manage photos for each event directly from the event detail page's **Photos** tab. Uploads use the standard 3-phase presigned-URL flow (request URL → PUT to S3 → confirm), and any photo can be deleted (DB record and S3 object are both removed after a confirmation dialog).
+Organizers upload and manage photos for each event directly from the event detail page's **Photos** tab. Uploads use the shared upload flow (Story 17.11b: `POST /api/v1/uploads/event-photo` with the event as target → PUT to S3 → confirm with the same event, which adds the photo to the gallery); JPEG, PNG and WebP up to 10 MB. Any photo can be deleted (DB record and S3 object are both removed after a confirmation dialog).
 
 The photos are also surfaced publicly:
 

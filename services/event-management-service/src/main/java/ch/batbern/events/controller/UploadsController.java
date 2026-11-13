@@ -23,7 +23,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * The upload contract for the purposes this service owns ({@code event-theme-image}), Story 17.11. Who may
+ * The upload contract for the purposes this service owns ({@code event-theme-image}, Story 17.11;
+ * {@code event-photo}, Story 17.11b). Who may
  * do what is per purpose and target, so the method rule is "signed in" and the handler decides the
  * rest (403); another service's purpose is 404.
  */

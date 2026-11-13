@@ -366,21 +366,6 @@ describe('EventApiClient — mocked', () => {
     });
   });
 
-  describe('requestEventPhotoUploadUrl', () => {
-    it('should return upload URL response', async () => {
-      const mockResponse = { uploadUrl: 'https://s3.example.com/upload', uploadId: 'up-1' };
-      mockApiClient.post.mockResolvedValue({ data: mockResponse });
-
-      const result = await eventApiClient.requestEventPhotoUploadUrl('BATbern142', {
-        fileName: 'photo.jpg',
-        fileSize: 200_000,
-        mimeType: 'image/jpeg',
-      });
-
-      expect(result.uploadUrl).toBe('https://s3.example.com/upload');
-    });
-  });
-
   describe('uploadPhotoToS3', () => {
     it('should call axios.put with the upload URL and file', async () => {
       mockAxios.put.mockResolvedValue({ status: 200 });
@@ -391,22 +376,6 @@ describe('EventApiClient — mocked', () => {
       expect(mockAxios.put).toHaveBeenCalledWith('https://s3.example.com/upload', mockFile, {
         headers: { 'Content-Type': 'image/jpeg' },
       });
-    });
-  });
-
-  describe('confirmEventPhotoUpload', () => {
-    it('should return confirmed photo', async () => {
-      const mockPhoto = { id: 'photo-1', cloudFrontUrl: 'https://cdn.example.com/photo.jpg' };
-      mockApiClient.post.mockResolvedValue({ data: mockPhoto });
-
-      const result = await eventApiClient.confirmEventPhotoUpload('BATbern142', {
-        uploadId: 'up-1',
-        fileName: 'photo.jpg',
-        fileSize: 200_000,
-        mimeType: 'image/jpeg',
-      });
-
-      expect(result.id).toBe('photo-1');
     });
   });
 

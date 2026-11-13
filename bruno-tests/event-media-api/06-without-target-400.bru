@@ -1,0 +1,37 @@
+meta {
+  name: Reserve - without a target is 400
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{baseUrl}}/uploads/event-photo
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "fileName": "bruno-photo.jpg",
+    "contentType": "image/jpeg",
+    "size": 1024
+  }
+}
+
+assert {
+  res.status: eq 400
+}
+
+docs {
+  event-photo requires its target eventCode: a photo always belongs to an existing event.
+}

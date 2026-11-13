@@ -4,7 +4,6 @@
 # Per test file: own-code mocks and class-level @Transactional ITs. Counts may only fall.
 # Format: <category> TAB <path> TAB <count>, sorted, zero counts omitted.
 be-mock-in-process	services/event-management-service/src/test/java/ch/batbern/events/controller/DeregistrationControllerIntegrationTest.java	3
-be-mock-in-process	services/event-management-service/src/test/java/ch/batbern/events/controller/EventPhotoControllerIntegrationTest.java	1
 be-mock-in-process	services/event-management-service/src/test/java/ch/batbern/events/controller/RegistrationControllerIntegrationTest.java	1
 be-mock-in-process	services/event-management-service/src/test/java/ch/batbern/events/controller/SessionQnaIntegrationTest.java	1
 be-mock-in-process	services/event-management-service/src/test/java/ch/batbern/events/forwarding/CalendarDeclineServiceIntegrationTest.java	1
@@ -499,7 +498,6 @@ fe-mock-services	web-frontend/src/hooks/useDeregistration.test.ts	1
 fe-mock-services	web-frontend/src/hooks/useEmailTemplates.test.ts	1
 fe-mock-services	web-frontend/src/hooks/useEmailVerification/useEmailVerification.test.ts	1
 fe-mock-services	web-frontend/src/hooks/useEventManagement/useEventRegistrations.test.ts	1
-fe-mock-services	web-frontend/src/hooks/useEventPhotos.test.ts	1
 fe-mock-services	web-frontend/src/hooks/useEventTypes.test.ts	1
 fe-mock-services	web-frontend/src/hooks/useEvents.hooks.test.tsx	1
 fe-mock-services	web-frontend/src/hooks/useEvents.test.ts	1

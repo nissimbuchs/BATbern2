@@ -92,6 +92,11 @@ class DomainRouterTest {
                 .isEqualTo("company-user-management-service");
         assertThat(domainRouter.determineTargetService("/api/v1/uploads/profile-picture/import"))
                 .isEqualTo("company-user-management-service");
+        // Story 17.11b
+        assertThat(domainRouter.determineTargetService("/api/v1/uploads/event-photo"))
+                .isEqualTo("event-management-service");
+        assertThat(domainRouter.determineTargetService("/api/v1/uploads/event-photo/abc/confirm"))
+                .isEqualTo("event-management-service");
     }
 
     @Test

@@ -25,9 +25,6 @@ import type { components as mediaComponents } from '@/types/generated/event-medi
 import type { components as coreComponents } from '@/types/generated/events-core-api.types';
 
 type EventPhotoResponse = mediaComponents['schemas']['EventPhotoResponse'];
-type EventPhotoUploadRequest = mediaComponents['schemas']['EventPhotoUploadRequest'];
-type EventPhotoUploadResponse = mediaComponents['schemas']['EventPhotoUploadResponse'];
-type EventPhotoConfirmRequest = mediaComponents['schemas']['EventPhotoConfirmRequest'];
 
 type TeaserImageItem = coreComponents['schemas']['TeaserImageItem'];
 type TeaserImageUploadUrlRequest = coreComponents['schemas']['TeaserImageUploadUrlRequest'];
@@ -403,40 +400,11 @@ class EventApiClient {
     }
   }
 
-  async requestEventPhotoUploadUrl(
-    eventCode: string,
-    request: EventPhotoUploadRequest
-  ): Promise<EventPhotoUploadResponse> {
-    try {
-      const response = await apiClient.post<EventPhotoUploadResponse>(
-        `${EVENT_API_PATH}/${eventCode}/photos/upload-url`,
-        request
-      );
-      return response.data;
-    } catch (error) {
-      throw this.transformError(error);
-    }
-  }
-
+  /** PUT of a photo or teaser image to its presigned S3 URL (event photos: `uploads-api`, 17.11b). */
   async uploadPhotoToS3(uploadUrl: string, file: File): Promise<void> {
     await axios.put(uploadUrl, file, {
       headers: { 'Content-Type': file.type },
     });
-  }
-
-  async confirmEventPhotoUpload(
-    eventCode: string,
-    request: EventPhotoConfirmRequest
-  ): Promise<EventPhotoResponse> {
-    try {
-      const response = await apiClient.post<EventPhotoResponse>(
-        `${EVENT_API_PATH}/${eventCode}/photos/confirm`,
-        request
-      );
-      return response.data;
-    } catch (error) {
-      throw this.transformError(error);
-    }
   }
 
   async deleteEventPhoto(eventCode: string, photoId: string): Promise<void> {

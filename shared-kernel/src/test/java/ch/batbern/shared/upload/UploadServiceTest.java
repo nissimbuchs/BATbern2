@@ -109,7 +109,7 @@ class UploadServiceTest {
             if (!targetAllowed) {
                 throw UploadException.forbidden("no");
             }
-            if (!"acme".equals(targetId)) {
+            if (!"acme".equals(targetId) && !"globex".equals(targetId)) {
                 throw UploadException.notFound("no company " + targetId);
             }
         }
@@ -273,6 +273,73 @@ class UploadServiceTest {
 
         assertThat(service.confirm("company-logo", id, Map.of("companyName", "acme")).getStatus())
                 .isEqualTo(UploadStatus.ASSOCIATED);
+    }
+
+    @Test
+    void should_recordTarget_when_reservedForOne() {
+        String id = service.create("company-logo", "a.png", "image/png", 10, Map.of("companyName", "acme")).uploadId();
+
+        TestUpload stored = table.get(id);
+        assertThat(stored.getStatus()).isEqualTo(UploadStatus.PENDING);
+        assertThat(stored.getTargetType()).isEqualTo("COMPANY");
+        assertThat(stored.getTargetId()).isEqualTo("acme");
+        assertThat(stored.getFileUrl()).isNull();
+    }
+
+    @Test
+    void should_return404AndChangeNothing_when_confirmedForAnotherTarget() {
+        String id = service.create("company-logo", "a.png", "image/png", 10, Map.of("companyName", "acme")).uploadId();
+
+        assertStatus(() -> service.confirm("company-logo", id, Map.of("companyName", "globex")),
+                HttpStatus.NOT_FOUND);
+
+        assertThat(table.get(id).getStatus()).isEqualTo(UploadStatus.PENDING);
+        assertThat(table.get(id).getTargetId()).isEqualTo("acme");
+        assertThat(copies).isEmpty();
+        assertThat(handler.attached).isEmpty();
+    }
+
+    @Test
+    void should_attach_when_confirmedForTheReservedTarget() {
+        String id = service.create("company-logo", "a.png", "image/png", 10, Map.of("companyName", "acme")).uploadId();
+
+        TestUpload done = service.confirm("company-logo", id, Map.of("companyName", "acme"));
+
+        assertThat(done.getStatus()).isEqualTo(UploadStatus.ASSOCIATED);
+        assertThat(done.getTargetId()).isEqualTo("acme");
+        assertThat(handler.attached).containsExactly("acme=" + done.getFileUrl());
+    }
+
+    @Test
+    void should_return404NotConflict_when_attachedUploadConfirmedForAnotherTarget() {
+        String id = reserve();
+        service.confirm("company-logo", id, Map.of("companyName", "acme"));
+
+        assertStatus(() -> service.confirm("company-logo", id, Map.of("companyName", "globex")),
+                HttpStatus.NOT_FOUND);
+        assertStatus(() -> service.confirm("company-logo", id, Map.of("companyName", "acme")),
+                HttpStatus.CONFLICT);
+        assertThat(table.get(id).getTargetId()).isEqualTo("acme");
+        assertThat(handler.attached).hasSize(1);
+    }
+
+    @Test
+    void should_attachToAnyTarget_when_reservedWithoutOne() {
+        String id = reserve();
+        assertThat(table.get(id).getTargetId()).isNull();
+
+        assertThat(service.confirm("company-logo", id, Map.of("companyName", "globex")).getTargetId())
+                .isEqualTo("globex");
+    }
+
+    @Test
+    void should_return404_when_associatingToAnotherTargetThanReserved() {
+        String id = service.create("company-logo", "a.png", "image/png", 10, Map.of("companyName", "acme")).uploadId();
+        service.confirm("company-logo", id, Map.of());
+
+        assertStatus(() -> service.associate("company-logo", id, "globex"), HttpStatus.NOT_FOUND);
+        assertThat(table.get(id).getStatus()).isEqualTo(UploadStatus.CONFIRMED);
+        assertThat(service.associate("company-logo", id, "acme").getStatus()).isEqualTo(UploadStatus.ASSOCIATED);
     }
 
     @Test

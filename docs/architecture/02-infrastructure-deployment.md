@@ -1343,7 +1343,8 @@ sequenceDiagram
 Key shapes of new objects (examples): `logos/temp/{uploadId}/logo-{uploadId}.{ext}` →
 `logos/companies/{name}/logo-{uploadId}.{ext}` (theme image: `logos/events/{eventCode}/theme-…`);
 `profile-pictures/temp/{uploadId}/profile-{uploadId}.{ext}` →
-`profile-pictures/{username}/profile-{uploadId}.{ext}`. Since Story 17.11a the final keys carry no
+`profile-pictures/{username}/profile-{uploadId}.{ext}`; `events/temp/{uploadId}/photo-{uploadId}.{ext}` →
+`events/{eventCode}/photos/{uploadId}.{ext}` (event photos, Story 17.11b). Since Story 17.11a the final keys carry no
 year; objects stored earlier keep their `logos/{year}/…` and `profile-pictures/{year}/…` keys (the
 database rows hold the full key and URL, nothing is moved);
 `materials/temp/{uploadId}/file-{uploadId}.{ext}`. Size limits and confirm steps differ per

@@ -38,7 +38,8 @@ public class DomainRouter {
     private static final Map<String, String> UPLOAD_PURPOSE_OWNERS = Map.of(
             "company-logo", "company-user-management-service",
             "profile-picture", "company-user-management-service",
-            "event-theme-image", "event-management-service");
+            "event-theme-image", "event-management-service",
+            "event-photo", "event-management-service");
 
     private final RestTemplate restTemplate;
 
