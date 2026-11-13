@@ -23,6 +23,6 @@ public interface QnaAuthorProjection {
     /** Human-readable company name (companies.display_name → name → company_id). */
     String getCompanyDisplayName();
 
-    /** Company logo CloudFront URL (logos.cloudfront_url for the COMPANY entity), or null. */
+    /** Company logo CloudFront URL (companies.logo_url), or null. */
     String getCompanyLogoUrl();
 }

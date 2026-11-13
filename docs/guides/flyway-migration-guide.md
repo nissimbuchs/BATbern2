@@ -488,6 +488,14 @@ ORDER BY installed_rank;
 2. Test migration on staging first
 3. Deploy to production
 
+**Image rollback after a migration.** The deploy pipeline rolls back to the previous image when a
+post-deploy check fails. That image must start against a database that already holds the newer
+migration, so Flyway must ignore future migrations. `*:future` is Flyway's default, but setting
+`ignore-migration-patterns` replaces the default: always list it (EMS uses `"*:missing,*:future"`).
+On 2026-11-13 (#1309) EMS had only `*:missing`, and the rollback could not start EMS. Guard:
+`FlywayRollbackCompatibilityIntegrationTest` in EMS. A migration must also stay compatible with the
+previous code (additive first, drop in a later release), or the rolled-back image breaks at runtime.
+
 **Example**: If V2 added a column, V3 drops it:
 
 ```sql

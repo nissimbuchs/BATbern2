@@ -801,7 +801,8 @@ Implements the decision of 2026-11-07 for its first two purposes:
   `eventCode`, no import), `UploadsController`, `UploadExpiryJob` (02:15). `EventController` checks a
   `themeImageUploadId` before saving the event (404 unknown or of another purpose, 409 not
   CONFIRMED). Removed: the EMS `GenericLogoService`, `Logo`, `LogoStatus`, `LogoRepository`; the
-  ArchUnit rule `EmsDataOwnershipTest` holds that no EMS entity maps `logos`.
+  ArchUnit rule `EmsDataOwnershipTest` holds that no EMS entity maps `logos` or
+  `company_user_uploads`.
 - **Gateway:** `/api/v1/uploads/{purpose}` by the purpose prefix (`company-` CUMS, `event-` EMS,
   any other 404); `/api/v1/logos` is no longer routed.
 - **Frontend:** `services/uploadService.ts` (`uploadTarget(purpose, target?)`, `importUpload`), the
@@ -810,8 +811,9 @@ Implements the decision of 2026-11-07 for its first two purposes:
 - **Key layouts unchanged:** `logos/{year}/companies/{name}/logo-{uploadId}.{ext}`,
   `logos/requests/{uploadId}/logo.{ext}`, `logos/{year}/events/{eventCode}/theme-{uploadId}.{ext}`;
   existing S3 objects and CDN URLs are untouched.
-- **Left:** the `logos` table stays in both migrations' history and in the database until the owner
-  gives the go for its drop. Purposes `profile-picture`, `event-photo`, `teaser-image` and
+- **`logos` dropped** (#1307, owner go 2026-11-13): CUMS V31 and EMS V154 drop the table; its upload
+  history is discarded by decision, the S3 objects stay.
+- **Left:** purposes `profile-picture`, `event-photo`, `teaser-image` and
   `session-material` follow in Stories 17.11a–d; each adds a handler and its enum value, no
   operation.
 
