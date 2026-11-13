@@ -1453,6 +1453,9 @@
     "title": "Novitads",
     "close": "Serrar, vis",
     "isNew": "Nov",
+    "allNews": "Tut las novitads",
+    "searchPlaceholder": "Tschertgar en las novitads",
+    "noMatch": "Nagina novitad na correspunda a Vossa tschertga.",
     "entries": {
       "profileMerge": {
         "title": "In profil pli vegl sut voss num",

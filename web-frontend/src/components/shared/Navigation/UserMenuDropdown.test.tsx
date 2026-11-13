@@ -545,41 +545,13 @@ describe('UserMenuDropdown', () => {
         />
       );
 
-    it('should_leadToTheCard_when_clicked', () => {
+    it('should_openTheWhatsNewPage_when_clicked', () => {
       renderMenu(true);
 
       const item = screen.getByTestId('whats-new-link');
       expect(item).toHaveTextContent(text('menu.whatsNew'));
       fireEvent.click(item);
-      expect(mockNavigate).toHaveBeenCalledWith('/attendee/dashboard#whats-new');
-    });
-
-    it('should_scrollToTheCard_when_clickedWhileAlreadyOnTheDashboard', () => {
-      const target = document.createElement('div');
-      target.id = 'whats-new';
-      const scrollIntoView = vi.fn();
-      target.scrollIntoView = scrollIntoView;
-      document.body.appendChild(target);
-      try {
-        render(
-          <MemoryRouter initialEntries={['/attendee/dashboard#whats-new']}>
-            <UserMenuDropdown
-              user={mockUser}
-              anchorEl={anchorEl}
-              open={true}
-              onClose={vi.fn()}
-              onLogout={mockOnLogout}
-              onLanguageChange={mockOnLanguageChange}
-            />
-          </MemoryRouter>
-        );
-
-        fireEvent.click(screen.getByTestId('whats-new-link'));
-
-        expect(scrollIntoView).toHaveBeenCalled();
-      } finally {
-        target.remove();
-      }
+      expect(mockNavigate).toHaveBeenCalledWith('/attendee/whats-new');
     });
 
     it('should_showTheDot_only_when_somethingIsNew', () => {

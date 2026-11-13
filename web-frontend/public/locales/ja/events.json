@@ -1453,6 +1453,9 @@
     "title": "新着情報",
     "close": "閉じる（確認済み）",
     "isNew": "新着",
+    "allNews": "すべての新着情報",
+    "searchPlaceholder": "新着情報を検索",
+    "noMatch": "検索に一致する新着情報はありません。",
     "entries": {
       "profileMerge": {
         "title": "お名前の以前のプロフィール",

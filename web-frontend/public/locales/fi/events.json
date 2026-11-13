@@ -1453,6 +1453,9 @@
     "title": "Uutta",
     "close": "Sulje, nähty",
     "isNew": "Uusi",
+    "allNews": "Kaikki uutiset",
+    "searchPlaceholder": "Hae uutisista",
+    "noMatch": "Mikään uutinen ei vastaa hakuasi.",
     "entries": {
       "profileMerge": {
         "title": "Aiempi profiili nimelläsi",

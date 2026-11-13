@@ -26,6 +26,8 @@ export interface WhatsNew {
   /** Everything that applies to the user, the new ones first and marked (the menu item). */
   all: ListedEntry[];
   hasNew: boolean;
+  /** Settings and claim candidates have answered: `entries` and `all` are final. */
+  ready: boolean;
   dismiss: () => void;
   dismissing: boolean;
 }
@@ -78,6 +80,7 @@ export function useWhatsNew(): WhatsNew {
     entries,
     all,
     hasNew: entries.length > 0,
+    ready: !!settings && (candidates.isSuccess || candidates.isError),
     dismiss: () => mutation.mutate(),
     dismissing: mutation.isPending,
   };

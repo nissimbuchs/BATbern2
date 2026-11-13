@@ -1467,6 +1467,9 @@
     "title": "What's new",
     "close": "Close, I have seen it",
     "isNew": "New",
+    "allNews": "All news",
+    "searchPlaceholder": "Search the news",
+    "noMatch": "No news matches your search.",
     "entries": {
       "profileMerge": {
         "title": "An earlier profile under your name",

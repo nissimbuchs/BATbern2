@@ -1453,6 +1453,9 @@
     "title": "Wat is er nieuw",
     "close": "Sluiten, gezien",
     "isNew": "Nieuw",
+    "allNews": "Al het nieuws",
+    "searchPlaceholder": "Zoeken in het nieuws",
+    "noMatch": "Geen nieuws komt overeen met je zoekopdracht.",
     "entries": {
       "profileMerge": {
         "title": "Een eerder profiel op jouw naam",

@@ -14,8 +14,8 @@
  *
  * Past: the local card, linking to /archive/{code}.
  *
- * "What's new" (story 2 of 2026-11-13): the card sits on top, the user menu of both headers links
- * to it (#whats-new). Its entries link to #earlier-profiles, #suggest-topics and #attendee-past.
+ * "What's new" (story 2 of 2026-11-13): the card sits on top and links to the full list
+ * (/attendee/whats-new), where the user menu of both headers leads. Its entries link to #earlier-profiles, #suggest-topics and #attendee-past.
  */
 
 import { useEffect } from 'react';

@@ -5,7 +5,7 @@
  */
 
 import { useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Menu, ChevronDown, LogOut, Sparkles, UserCircle } from 'lucide-react';
 import { Button } from '@/components/public/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/public/ui/popover';
@@ -14,11 +14,9 @@ import { ThankOrganizersNavButton } from './ThankOrganizersNavButton';
 import { useAuth } from '@/hooks/useAuth';
 import { useTranslation } from 'react-i18next';
 import { useWhatsNew } from '@/features/whatsNew/useWhatsNew';
-import { scrollToFragment } from '@/features/whatsNew/scrollToFragment';
+import { WHATS_NEW_PAGE_PATH } from '@/features/whatsNew/catalogue';
 
 /** The "What's new" card on the attendee dashboard (every logged-in user reaches it). */
-const WHATS_NEW_PATH = '/attendee/dashboard';
-const WHATS_NEW_LINK = `${WHATS_NEW_PATH}#whats-new`;
 
 /** The dot on the avatar when something is new for the user. */
 const WhatsNewDot = ({ testId }: { testId: string }) => (
@@ -47,11 +45,6 @@ export const PublicNavigation = ({
   const { t } = useTranslation('common');
   const navigate = useNavigate();
   const { hasNew: whatsNewHasNew } = useWhatsNew();
-  const { pathname } = useLocation();
-  // Already on the dashboard (perhaps with #whats-new): the router does not scroll again.
-  const onWhatsNewClick = () => {
-    if (pathname === WHATS_NEW_PATH) scrollToFragment('whats-new');
-  };
 
   // 2026-05-20 (Q#2 / Q#2b) — "Portal" and "My Sessions" live in the main horizontal
   // nav bar (next to Home / About / Past Events), not the user dropdown. Visibility:
@@ -210,8 +203,7 @@ export const PublicNavigation = ({
                         {t('navigation.myProfile', 'My Profile')}
                       </Link>
                       <Link
-                        to={WHATS_NEW_LINK}
-                        onClick={onWhatsNewClick}
+                        to={WHATS_NEW_PAGE_PATH}
                         className="flex items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-accent transition-colors"
                         data-testid="public-nav-whats-new"
                       >
@@ -376,11 +368,8 @@ export const PublicNavigation = ({
               </Button>
               <Button asChild variant="secondary" className="w-full">
                 <Link
-                  to={WHATS_NEW_LINK}
-                  onClick={() => {
-                    closeMobileMenu();
-                    onWhatsNewClick();
-                  }}
+                  to={WHATS_NEW_PAGE_PATH}
+                  onClick={closeMobileMenu}
                   className="flex items-center gap-2"
                   data-testid="public-nav-mobile-whats-new"
                 >

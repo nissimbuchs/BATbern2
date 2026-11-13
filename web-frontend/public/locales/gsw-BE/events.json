@@ -1456,6 +1456,9 @@
     "title": "Was isch nöi",
     "close": "Zuemache, gseh",
     "isNew": "Nöi",
+    "allNews": "Aui Nöiigkeite",
+    "searchPlaceholder": "Nöiigkeite dürsueche",
+    "noMatch": "Kei Nöiigkeit passt zu Ihrer Suechi.",
     "entries": {
       "profileMerge": {
         "title": "Es früechers Profil under Öiem Name",

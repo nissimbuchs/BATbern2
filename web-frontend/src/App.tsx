@@ -140,6 +140,7 @@ const PublicRegistrationPage = React.lazy(() => import('@pages/public/Registrati
 const RegistrationSuccessPage = React.lazy(() => import('@pages/public/RegistrationSuccessPage'));
 const ConfirmRegistrationPage = React.lazy(() => import('@pages/public/ConfirmRegistrationPage'));
 const AttendeeDashboardPage = React.lazy(() => import('@pages/attendee/AttendeeDashboardPage'));
+const WhatsNewPage = React.lazy(() => import('@pages/attendee/WhatsNewPage'));
 // Story 4.2: Archive browsing pages
 const ArchivePage = React.lazy(() => import('@pages/public/ArchivePage'));
 
@@ -459,6 +460,15 @@ function App() {
                       element={
                         <ProtectedRoute>
                           <AttendeeDashboardPage />
+                        </ProtectedRoute>
+                      }
+                    />
+                    {/* "What's new": the full, searchable list (owner 2026-11-13). */}
+                    <Route
+                      path="/attendee/whats-new"
+                      element={
+                        <ProtectedRoute>
+                          <WhatsNewPage />
                         </ProtectedRoute>
                       }
                     />

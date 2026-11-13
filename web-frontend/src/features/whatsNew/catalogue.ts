@@ -34,6 +34,9 @@ export interface WhatsNewEntry {
 /** At most this many entries on the card. */
 export const MAX_ENTRIES = 3;
 
+/** The page with the full, searchable list (menu item "What's new"). */
+export const WHATS_NEW_PAGE_PATH = '/attendee/whats-new';
+
 /**
  * The list, in the owner's order (2026-11-13). Release days from the merge to develop, which
  * deploys to production: Epic 7 #776 (2026-06-12), SSO #737 / additional emails #745, logo request
@@ -112,8 +115,8 @@ export interface ListedEntry {
 }
 
 /**
- * The full list, for the menu item "What's new" (owner 2026-11-13: the item always shows all of it,
- * also after the card was closed). Every entry whose condition the user meets, no cap: the new ones
+ * The full list, for the "What's new" page (owner 2026-11-13: the menu item always shows all of
+ * it, also after the card was closed). Every entry whose condition the user meets, no cap: the new ones
  * first, in the order of {@link selectEntries} and marked, then the others in list order.
  */
 export function listAllEntries(

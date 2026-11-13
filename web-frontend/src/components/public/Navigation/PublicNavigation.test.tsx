@@ -125,7 +125,7 @@ describe('PublicNavigation', () => {
         await user.click(screen.getByTestId('public-nav-user-menu'));
         expect(await screen.findByTestId('public-nav-whats-new')).toHaveAttribute(
           'href',
-          '/attendee/dashboard#whats-new'
+          '/attendee/whats-new'
         );
       }
     );
@@ -147,28 +147,6 @@ describe('PublicNavigation', () => {
         );
       });
       expect(screen.queryByTestId('public-nav-whats-new-dot')).not.toBeInTheDocument();
-    });
-
-    it('should_scrollToTheCard_when_clickedWhileAlreadyThere', async () => {
-      const target = document.createElement('div');
-      target.id = 'whats-new';
-      const scrollIntoView = vi.fn();
-      target.scrollIntoView = scrollIntoView;
-      document.body.appendChild(target);
-      try {
-        const user = userEvent.setup();
-        renderWithAuth(<PublicNavigation />, {
-          auth: authenticatedAs(['attendee']),
-          initialEntries: ['/attendee/dashboard#whats-new'],
-        });
-
-        await user.click(screen.getByTestId('public-nav-user-menu'));
-        await user.click(await screen.findByTestId('public-nav-whats-new'));
-
-        expect(scrollIntoView).toHaveBeenCalled();
-      } finally {
-        target.remove();
-      }
     });
 
     it('should_showNoDotNoItemAndAskNothing_when_loggedOut', async () => {

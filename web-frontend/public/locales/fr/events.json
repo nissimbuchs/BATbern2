@@ -1453,6 +1453,9 @@
     "title": "Nouveautés",
     "close": "Fermer, vu",
     "isNew": "Nouveau",
+    "allNews": "Toutes les nouveautés",
+    "searchPlaceholder": "Rechercher dans les nouveautés",
+    "noMatch": "Aucune nouveauté ne correspond à votre recherche.",
     "entries": {
       "profileMerge": {
         "title": "Un ancien profil à votre nom",
