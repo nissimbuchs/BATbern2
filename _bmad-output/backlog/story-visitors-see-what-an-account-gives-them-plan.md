@@ -3,12 +3,12 @@ title: 'Visitors see what a BATbern account gives them before they create one'
 type: 'feature'
 ticket: '1'
 created: '2026-11-13'
-status: 'in-review'
+status: 'built'
 baseline_revision: '60a0923dd58f96e7175060a80104598bcccdfb18'
 route: 'full'
 route_source: 'auto'
 risk: 'medium'
-review: ''
+review: 'quick'
 review_source: ''
 lenses_ran: []
 review_loop_iteration: 0
@@ -117,6 +117,16 @@ context: ['{project-root}/_bmad-output/backlog/story-visitors-see-what-an-accoun
 - 2026-11-13: owner approved plan and wording ("Approved and continue"); baseline moved to 60a0923dd after the rebase onto develop with #1309.
 
 ## Review Triage Log
+
+| # | Finding | Verdict | Action |
+|---|---|---|---|
+| 1 | Production rows were never read; the guard may match nothing | checked | Read both production rows 2026-11-13 through `GET /email-templates/registration-confirmation/{de,en}` (read-only): the exact old block is present in each (LF, updated 2026-10-18). V155 will apply. |
+| 2 | `WhyAnAccountPage.test` logged-in case counted every `listitem` on the page (footer included) | patch | Scoped to `account-benefits-list`, exactly 4. |
+| 3 | gsw-BE lacks ~28 older `successPage.*` / `confirmation.*` keys | reject | Existed before; gsw-BE falls back to `de` (`i18n/config.ts`), which Bernese readers read. Not this story. |
+| 4 | Confirm page stored the translated error text, so it ignored a later language switch | patch | Stores the key; test switches to DE after a failure (red without the fix). |
+| 5 | Prerendered page shows sign-up briefly to a logged-in visitor | defer | Cosmetic, by design of the prerender (logged-out HTML). |
+
+Reviewer verified by reading: migration replace output equals the new template files byte for byte; `{{baseUrl}}` is set for this template at send time; `/why-an-account` is in every route list (App, PUBLIC_PATHS, prerender, preview-prerender, sitemap, CloudFront router); no removed key is still referenced; no own-code `vi.mock`.
 
 ## Design Notes
 

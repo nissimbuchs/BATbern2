@@ -39,7 +39,9 @@ describe('WhyAnAccountPage', () => {
   it('should_leadToTheProfile_insteadOfSignUp_when_loggedIn', () => {
     renderWithAuth(<WhyAnAccountPage />, { auth: signedInAs('attendee') });
 
-    expect(screen.getAllByRole('listitem').length).toBeGreaterThanOrEqual(4);
+    expect(
+      within(screen.getByTestId('account-benefits-list')).getAllByRole('listitem')
+    ).toHaveLength(4);
     expect(screen.getByRole('link', { name: 'Go to your profile' })).toHaveAttribute(
       'href',
       '/profile'

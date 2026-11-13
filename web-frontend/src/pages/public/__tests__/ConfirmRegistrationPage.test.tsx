@@ -4,7 +4,9 @@
  * MSW answers `POST /events/{eventCode}/registrations/confirm`; nothing of ours is mocked.
  */
 import { describe, expect, it } from 'vitest';
-import { screen, within } from '@testing-library/react';
+import { act, screen, within } from '@testing-library/react';
+import { HttpResponse } from 'msw';
+import i18n from '@/i18n/config';
 import { Route, Routes } from 'react-router-dom';
 import { api } from '@/test/msw/api';
 import { renderWithAuth, signedOut } from '@/test/auth';
@@ -60,5 +62,29 @@ describe('ConfirmRegistrationPage', () => {
         'Your registration was previously confirmed. No further action is needed.'
       )
     ).toBeInTheDocument();
+  });
+
+  it('should_showTheErrorInTheNewLanguage_when_theLanguageChangesAfterAFailure', async () => {
+    api.on('confirmRegistration', () =>
+      HttpResponse.json({ message: 'Server error' }, { status: 500 })
+    );
+
+    renderPage();
+    expect(
+      await screen.findByText(
+        'Failed to confirm registration. Please try again or contact support.'
+      )
+    ).toBeInTheDocument();
+
+    try {
+      await act(() => i18n.changeLanguage('de'));
+      expect(
+        await screen.findByText(
+          'Die Anmeldung konnte nicht bestätigt werden. Bitte versuchen Sie es erneut oder kontaktieren Sie den Support.'
+        )
+      ).toBeInTheDocument();
+    } finally {
+      await act(() => i18n.changeLanguage('en'));
+    }
   });
 });

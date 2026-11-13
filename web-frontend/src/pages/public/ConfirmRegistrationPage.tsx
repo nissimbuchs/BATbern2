@@ -25,12 +25,13 @@ const ConfirmRegistrationPage = () => {
   const token = searchParams.get('token');
 
   const [state, setState] = useState<ConfirmationState>('loading');
+  // The i18n key, not the text, so the message follows a language switch.
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
     if (!token || !eventCode) {
       setState('error');
-      setErrorMessage(t('confirmation.error.messages.missingLink'));
+      setErrorMessage('confirmation.error.messages.missingLink');
       return;
     }
 
@@ -57,11 +58,11 @@ const ConfirmRegistrationPage = () => {
 
         const errorMessage = error instanceof Error ? error.message : '';
         if (errorMessage.includes('expired')) {
-          setErrorMessage(t('confirmation.error.messages.expired'));
+          setErrorMessage('confirmation.error.messages.expired');
         } else if (errorMessage.includes('Invalid')) {
-          setErrorMessage(t('confirmation.error.messages.invalid'));
+          setErrorMessage('confirmation.error.messages.invalid');
         } else {
-          setErrorMessage(t('confirmation.error.messages.failed'));
+          setErrorMessage('confirmation.error.messages.failed');
         }
       }
     };
@@ -165,7 +166,7 @@ const ConfirmRegistrationPage = () => {
               <XCircle className="h-16 w-16 text-red-400 mx-auto mb-4" />
               <h1 className="text-3xl font-light mb-2">{t('confirmation.error.title')}</h1>
               <p className="text-xl text-zinc-400">
-                {errorMessage || t('confirmation.error.messages.unable')}
+                {t(errorMessage ?? 'confirmation.error.messages.unable')}
               </p>
             </div>
 
