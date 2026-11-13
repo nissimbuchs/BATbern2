@@ -13,9 +13,13 @@
  * the published list (for example when that list fails) keeps the local card below.
  *
  * Past: the local card, linking to /archive/{code}.
+ *
+ * "What's new" (story 2 of 2026-11-13): the card sits on top, the user menu of both headers links
+ * to it (#whats-new). Its entries link to #earlier-profiles, #suggest-topics and #attendee-past.
  */
 
-import { Link } from 'react-router-dom';
+import { useEffect } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { EventEditionLabel } from '@/components/shared/EventEditionLabel/EventEditionLabel';
@@ -30,11 +34,31 @@ import { PlannedEventCard, PublishedEventCard } from '@/components/public/Upcomi
 import { useUpcomingEventCards } from '@/hooks/useUpcomingEventCards';
 import * as attendeeDashboardService from '@/services/attendeeDashboardService';
 import type { AttendeeEventCard } from '@/services/attendeeDashboardService';
+import { WhatsNewCard } from '@/features/whatsNew/WhatsNewCard';
+import { scrollToFragment } from '@/features/whatsNew/scrollToFragment';
 
 /** Cards in the upcoming list: registered ones count, unregistered ones fill up to this. */
 const UPCOMING_CARDS = 3;
 /** Calendar events to ask for: enough to fill three after skipping the registered ones. */
 const CALENDAR_CANDIDATES = 10;
+/** Arriving with a #fragment: its target may render only after its query answers. */
+const FRAGMENT_TRIES = 15;
+const FRAGMENT_TRY_MS = 200;
+
+/** Scrolls to the #fragment of the URL once its element is on the page. */
+function useScrollToFragment() {
+  const { hash } = useLocation();
+  useEffect(() => {
+    const fragment = hash.replace(/^#/, '');
+    if (!fragment) return undefined;
+    let tries = 0;
+    const timer = window.setInterval(() => {
+      tries += 1;
+      if (scrollToFragment(fragment) || tries >= FRAGMENT_TRIES) window.clearInterval(timer);
+    }, FRAGMENT_TRY_MS);
+    return () => window.clearInterval(timer);
+  }, [hash]);
+}
 
 function formatDate(iso?: string): string {
   if (!iso) return '';
@@ -89,6 +113,7 @@ function EventCard({ event, linkPrefix }: { event: AttendeeEventCard; linkPrefix
 const AttendeeDashboardPage = () => {
   const { t } = useTranslation('events');
   const { user } = useAuth();
+  useScrollToFragment();
 
   const {
     data: dashboard,
@@ -124,6 +149,8 @@ const AttendeeDashboardPage = () => {
               ? t('attendee.dashboard.titleWithName', { name: greetingName })
               : t('attendee.dashboard.title')}
           </h1>
+
+          <WhatsNewCard />
 
           {/* #1183 D: earlier registrations under the same name, on a profile without login */}
           <EarlierProfilesSection variant="banner" />
@@ -179,7 +206,7 @@ const AttendeeDashboardPage = () => {
                 )}
               </section>
 
-              <section className="mb-8" data-testid="attendee-past">
+              <section id="attendee-past" className="mb-8 scroll-mt-28" data-testid="attendee-past">
                 <h2 className="text-sm font-medium text-zinc-300 mb-3">
                   {t('attendee.dashboard.past')}
                 </h2>
@@ -197,7 +224,7 @@ const AttendeeDashboardPage = () => {
           )}
 
           {/* Story 7.1: Topics From the Floor — preserved from the old welcome page. */}
-          <div className="mt-8">
+          <div id="suggest-topics" className="mt-8 scroll-mt-28">
             <CommunityTopicSuggestPanel />
           </div>
         </div>

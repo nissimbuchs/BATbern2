@@ -1448,5 +1448,43 @@
     "nameLabel": "Num dal lieu",
     "capacityLabel": "Capacitad dal lieu",
     "addressLabel": "Adressa dal lieu"
+  },
+  "whatsNew": {
+    "title": "Novitads",
+    "close": "Serrar, vis",
+    "entries": {
+      "profileMerge": {
+        "title": "In profil pli vegl sut voss num",
+        "text": "Nus avain chattà ina annunzia pli veglia sut voss num. Unì ella cun voss conto per avair tut voss arranschaments en in lieu."
+      },
+      "sessionQna": {
+        "title": "Dumondas e commentaris per referat",
+        "text": "Da duas emnas avant fin duas emnas suenter in arranschament pudais vus far dumondas als referents e commentar mintga referat."
+      },
+      "suggestTopics": {
+        "title": "Proponer temas",
+        "text": "Proponi in tema che vus vulessas vesair ad in proxim BATbern."
+      },
+      "loginAndProfile": {
+        "title": "Login cun Google e voss profil",
+        "text": "S'annunziai cun Google, agiunschai ulteriuras adressas d'e-mail e tegnai voss profil actual."
+      },
+      "companyLogo": {
+        "title": "Il logo da vossa firma",
+        "text": "Manca il logo da vossa firma u è el antiquà? Tramettai in nov da voss profil."
+      },
+      "thankOrganizers": {
+        "title": "Engraziar als organisaturs",
+        "text": "Durant e suenter in arranschament tramettai als organisaturs in curt engraziament."
+      },
+      "eventHistory": {
+        "title": "Voss arranschaments",
+        "text": "Vesai tut ils BATbern per ils quals vus eras annunzià u als quals vus avais participà."
+      },
+      "selfNomination": {
+        "title": "Sa proponer sco referent",
+        "text": "Vulais vus tegnair in referat? Propona vus sez sin la pagina da l'arranschament."
+      }
+    }
   }
 }

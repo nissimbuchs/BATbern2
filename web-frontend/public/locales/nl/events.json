@@ -1448,5 +1448,43 @@
     "nameLabel": "Naam van de locatie",
     "capacityLabel": "Capaciteit van de locatie",
     "addressLabel": "Adres van de locatie"
+  },
+  "whatsNew": {
+    "title": "Wat is er nieuw",
+    "close": "Sluiten, gezien",
+    "entries": {
+      "profileMerge": {
+        "title": "Een eerder profiel op jouw naam",
+        "text": "We hebben een eerdere inschrijving op jouw naam gevonden. Voeg die samen met je account, zodat al je evenementen op één plek staan."
+      },
+      "sessionQna": {
+        "title": "Vragen en opmerkingen per sessie",
+        "text": "Van twee weken voor tot twee weken na een evenement stel je de sprekers vragen en geef je commentaar op elke sessie."
+      },
+      "suggestTopics": {
+        "title": "Onderwerpen voorstellen",
+        "text": "Stel een onderwerp voor dat je graag op een volgende BATbern zou zien."
+      },
+      "loginAndProfile": {
+        "title": "Inloggen met Google en je profiel",
+        "text": "Log in met Google, voeg extra e-mailadressen toe en houd je profiel actueel."
+      },
+      "companyLogo": {
+        "title": "Het logo van je bedrijf",
+        "text": "Ontbreekt het logo van je bedrijf of is het verouderd? Stuur een nieuw logo vanuit je profiel."
+      },
+      "thankOrganizers": {
+        "title": "De organisatoren bedanken",
+        "text": "Tijdens en na een evenement stuur je de organisatoren een kort bedankje."
+      },
+      "eventHistory": {
+        "title": "Je evenementengeschiedenis",
+        "text": "Bekijk alle BATbern-edities waarvoor je was ingeschreven of die je hebt bijgewoond."
+      },
+      "selfNomination": {
+        "title": "Jezelf voorstellen als spreker",
+        "text": "Wil je een presentatie geven? Stel jezelf voor op de pagina van het evenement."
+      }
+    }
   }
 }

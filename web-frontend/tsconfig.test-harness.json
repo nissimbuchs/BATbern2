@@ -44,7 +44,6 @@
     "src/components/organizer/UserManagement/UserCard.test.tsx",
     "src/components/organizer/UserManagement/UserDetailModal.test.tsx",
     "src/components/organizer/UserManagement/UserTable.test.tsx",
-    "src/components/public/Navigation/PublicNavigation.test.tsx",
     "src/components/public/Registration/__tests__/RegistrationWizard.test.tsx",
     "src/components/shared/Company/CompanyCard.test.tsx",
     "src/components/shared/Company/__tests__/CompanyCard.test.tsx",

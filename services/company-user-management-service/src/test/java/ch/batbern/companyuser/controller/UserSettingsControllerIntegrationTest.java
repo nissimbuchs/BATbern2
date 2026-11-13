@@ -21,7 +21,9 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.time.Instant;
 import java.time.LocalTime;
+import java.time.temporal.ChronoUnit;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -262,10 +264,74 @@ class UserSettingsControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.preferences").doesNotExist());
     }
 
+    /**
+     * Story "What's new": the time the user last closed the card is stored on the settings, so
+     * every browser of the same account sees the same state.
+     */
+    @Test
+    @WithMockUser(username = "max.muster")
+    void should_storeWhatsNewSeenAtAndReturnItEverywhere_when_patched() throws Exception {
+        mockMvc.perform(get(URL))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.whatsNewSeenAt").doesNotExist());
+
+        Instant seen = Instant.now().truncatedTo(ChronoUnit.SECONDS);
+        mockMvc.perform(patch(URL).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"whatsNewSeenAt\": \"" + seen + "\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.whatsNewSeenAt").exists())
+                .andExpect(jsonPath("$.theme").value("light"));
+
+        assertThat(userRepository.findByUsername("max.muster").orElseThrow().getSettings()
+                .getWhatsNewSeenAt()).isEqualTo(seen);
+        Integer rows = jdbcTemplate.queryForObject(
+                "SELECT count(*) FROM user_profiles WHERE username = 'max.muster'"
+                        + " AND settings_whats_new_seen_at IS NOT NULL", Integer.class);
+        assertThat(rows).isEqualTo(1);
+
+        mockMvc.perform(get("/api/v1/users/me").param("include", "settings"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.settings.whatsNewSeenAt").exists());
+
+        // another field later keeps it
+        mockMvc.perform(patch(URL).contentType(MediaType.APPLICATION_JSON).content("{\"theme\": \"dark\"}"))
+                .andExpect(status().isOk());
+        assertThat(userRepository.findByUsername("max.muster").orElseThrow().getSettings()
+                .getWhatsNewSeenAt()).isEqualTo(seen);
+    }
+
+    /** A client clock a little ahead is accepted; the tolerance is five minutes. */
+    @Test
+    @WithMockUser(username = "max.muster")
+    void should_acceptWhatsNewSeenAt_when_slightlyAheadOfTheServerClock() throws Exception {
+        Instant ahead = Instant.now().plus(2, ChronoUnit.MINUTES).truncatedTo(ChronoUnit.SECONDS);
+        mockMvc.perform(patch(URL).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"whatsNewSeenAt\": \"" + ahead + "\"}"))
+                .andExpect(status().isOk());
+        assertThat(userRepository.findByUsername("max.muster").orElseThrow().getSettings()
+                .getWhatsNewSeenAt()).isEqualTo(ahead);
+    }
+
+    @Test
+    @WithMockUser(username = "max.muster")
+    void should_return400AndStoreNothing_when_whatsNewSeenAtIsInTheFuture() throws Exception {
+        Instant future = Instant.now().plus(1, ChronoUnit.DAYS);
+        mockMvc.perform(patch(URL).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"theme\": \"dark\", \"whatsNewSeenAt\": \"" + future + "\"}"))
+                .andExpect(status().isBadRequest());
+
+        User stored = userRepository.findByUsername("max.muster").orElseThrow();
+        assertThat(stored.getSettings().getWhatsNewSeenAt()).isNull();
+        assertThat(stored.getPreferences().getTheme()).isEqualTo("light");
+    }
+
     @Test
     void should_return401_when_notAuthenticated() throws Exception {
         mockMvc.perform(get(URL)).andExpect(status().isUnauthorized());
         mockMvc.perform(patch(URL).contentType(MediaType.APPLICATION_JSON).content("{\"theme\": \"dark\"}"))
+                .andExpect(status().isUnauthorized());
+        mockMvc.perform(patch(URL).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"whatsNewSeenAt\": \"" + Instant.now() + "\"}"))
                 .andExpect(status().isUnauthorized());
     }
 }

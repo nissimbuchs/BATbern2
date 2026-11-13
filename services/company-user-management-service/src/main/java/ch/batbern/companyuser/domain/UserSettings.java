@@ -8,6 +8,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.time.Instant;
+
 /**
  * User settings embeddable object
  * Story 1.14-2, AC: 7 (User Settings)
@@ -52,4 +54,8 @@ public class UserSettings {
     @Column(name = "settings_two_factor_enabled")
     @Builder.Default
     private boolean twoFactorEnabled = false;
+
+    /** When the user last closed the "What's new" card; null = never (first-time view). */
+    @Column(name = "settings_whats_new_seen_at")
+    private Instant whatsNewSeenAt;
 }

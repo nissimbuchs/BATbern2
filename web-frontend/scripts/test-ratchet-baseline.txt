@@ -243,7 +243,6 @@ fe-mock-hooks	web-frontend/src/components/auth/ForgotPasswordConfirmation/Forgot
 fe-mock-hooks	web-frontend/src/components/auth/LoginForm/LoginForm.test.tsx	1
 fe-mock-hooks	web-frontend/src/components/auth/LogoutPage/LogoutPage.test.tsx	1
 fe-mock-hooks	web-frontend/src/components/auth/RegistrationWizard/RegistrationWizard.test.tsx	1
-fe-mock-hooks	web-frontend/src/components/auth/ReleaseNotesInfoBox/ReleaseNotesInfoBox.test.tsx	1
 fe-mock-hooks	web-frontend/src/components/auth/ResetPasswordForm/ResetPasswordForm.test.tsx	1
 fe-mock-hooks	web-frontend/src/components/organizer/Admin/EmailTemplateEditModal.test.tsx	1
 fe-mock-hooks	web-frontend/src/components/organizer/Admin/EmailTemplatesTab.test.tsx	1
@@ -300,9 +299,7 @@ fe-mock-hooks	web-frontend/src/components/public/Event/SessionCards.test.tsx	1
 fe-mock-hooks	web-frontend/src/components/public/Event/__tests__/SessionQnaThread.test.tsx	2
 fe-mock-hooks	web-frontend/src/components/public/Event/__tests__/SpeakerDisplay.test.tsx	2
 fe-mock-hooks	web-frontend/src/components/public/Hero/__tests__/HeroSection.test.tsx	1
-fe-mock-hooks	web-frontend/src/components/public/Navigation/PublicNavigation.test.tsx	1
 fe-mock-hooks	web-frontend/src/components/public/Navigation/__tests__/ThankOrganizersNavButton.test.tsx	3
-fe-mock-hooks	web-frontend/src/components/public/PublicLayout.test.tsx	1
 fe-mock-hooks	web-frontend/src/components/public/Registration/__tests__/RegistrationWizard.test.tsx	4
 fe-mock-hooks	web-frontend/src/components/public/Testimonials/__tests__/TestimonialSection.test.tsx	3
 fe-mock-hooks	web-frontend/src/components/public/__tests__/UpcomingEventsSection.test.tsx	2
@@ -486,7 +483,6 @@ fe-mock-services	web-frontend/src/components/shared/Company/__tests__/CompanySea
 fe-mock-services	web-frontend/src/components/shared/Navigation/MobileDrawer.test.tsx	1
 fe-mock-services	web-frontend/src/components/shared/Navigation/NavigationMenu.test.tsx	1
 fe-mock-services	web-frontend/src/components/speaker-portal/__tests__/PresentationUpload.test.tsx	1
-fe-mock-services	web-frontend/src/components/user/EarlierProfilesSection/EarlierProfilesSection.test.tsx	1
 fe-mock-services	web-frontend/src/features/profile/WatchPairingSection.test.tsx	1
 fe-mock-services	web-frontend/src/hooks/__tests__/useCurrentEvent.test.tsx	1
 fe-mock-services	web-frontend/src/hooks/__tests__/useInfiniteEvents.test.tsx	1

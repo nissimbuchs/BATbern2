@@ -11,6 +11,7 @@ import {
   SelectChangeEvent,
   ListItemIcon,
   ListItemText,
+  Badge,
 } from '@mui/material';
 import PersonIcon from '@mui/icons-material/Person';
 import SettingsIcon from '@mui/icons-material/Settings';
@@ -18,6 +19,7 @@ import HelpIcon from '@mui/icons-material/Help';
 import LogoutIcon from '@mui/icons-material/Logout';
 import LanguageIcon from '@mui/icons-material/Language';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import { UserContext } from '../../../types/auth';
 import { updateUserSettings, type UserLanguage } from '../../../services/api/userApi';
 import { USER_GUIDE_URL } from '@/config/navigationConfig';
@@ -29,7 +31,12 @@ interface UserMenuDropdownProps {
   onClose: () => void;
   onLogout: () => void;
   onLanguageChange: (language: string) => void;
+  /** Something is new on the "What's new" card: the item shows a dot. */
+  whatsNewHasNew?: boolean;
 }
+
+/** The "What's new" card on the attendee dashboard (every logged-in user reaches it). */
+const WHATS_NEW_LINK = '/attendee/dashboard#whats-new';
 
 const UserMenuDropdown: React.FC<UserMenuDropdownProps> = ({
   user,
@@ -38,6 +45,7 @@ const UserMenuDropdown: React.FC<UserMenuDropdownProps> = ({
   onClose,
   onLogout,
   onLanguageChange,
+  whatsNewHasNew = false,
 }) => {
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
@@ -49,6 +57,11 @@ const UserMenuDropdown: React.FC<UserMenuDropdownProps> = ({
 
   const handleAdministrationClick = () => {
     navigate('/organizer/admin');
+    onClose();
+  };
+
+  const handleWhatsNewClick = () => {
+    navigate(WHATS_NEW_LINK);
     onClose();
   };
 
@@ -119,6 +132,22 @@ const UserMenuDropdown: React.FC<UserMenuDropdownProps> = ({
           <PersonIcon fontSize="small" />
         </ListItemIcon>
         <ListItemText>{t('menu.profile')}</ListItemText>
+      </MenuItem>
+
+      {/* "What's new" (story 2 of 2026-11-13): every logged-in user, dot when something is new */}
+      <MenuItem onClick={handleWhatsNewClick} role="menuitem" data-testid="whats-new-link">
+        <ListItemIcon>
+          <Badge
+            variant="dot"
+            color="error"
+            invisible={!whatsNewHasNew}
+            data-testid="whats-new-link-dot"
+            data-visible={whatsNewHasNew ? 'true' : 'false'}
+          >
+            <AutoAwesomeIcon fontSize="small" />
+          </Badge>
+        </ListItemIcon>
+        <ListItemText>{t('menu.whatsNew')}</ListItemText>
       </MenuItem>
 
       {/* Settings Menu Item */}

@@ -1462,5 +1462,43 @@
     "nameLabel": "Name des Veranstaltungsorts",
     "capacityLabel": "Kapazität des Veranstaltungsorts",
     "addressLabel": "Adresse des Veranstaltungsorts"
+  },
+  "whatsNew": {
+    "title": "Was ist neu",
+    "close": "Schliessen, gesehen",
+    "entries": {
+      "profileMerge": {
+        "title": "Ein früheres Profil unter Ihrem Namen",
+        "text": "Wir haben eine frühere Anmeldung unter Ihrem Namen gefunden. Führen Sie sie mit Ihrem Konto zusammen, damit Ihre Anlässe an einem Ort sind."
+      },
+      "sessionQna": {
+        "title": "Fragen und Kommentare pro Referat",
+        "text": "Von zwei Wochen vor bis zwei Wochen nach einem Anlass stellen Sie den Referierenden Fragen und kommentieren jedes Referat."
+      },
+      "suggestTopics": {
+        "title": "Themen vorschlagen",
+        "text": "Schlagen Sie ein Thema vor, das Sie an einem künftigen BATbern sehen möchten."
+      },
+      "loginAndProfile": {
+        "title": "Login mit Google und Ihr Profil",
+        "text": "Melden Sie sich mit Google an, ergänzen Sie weitere E-Mail-Adressen und halten Sie Ihr Profil aktuell."
+      },
+      "companyLogo": {
+        "title": "Das Logo Ihrer Firma",
+        "text": "Fehlt das Logo Ihrer Firma oder ist es veraltet? Senden Sie aus Ihrem Profil ein neues."
+      },
+      "thankOrganizers": {
+        "title": "Den Organisatoren danken",
+        "text": "Während und nach einem Anlass senden Sie den Organisatoren ein kurzes Dankeschön."
+      },
+      "eventHistory": {
+        "title": "Ihre Anlässe",
+        "text": "Sehen Sie alle BATbern, für die Sie angemeldet waren oder an denen Sie teilgenommen haben."
+      },
+      "selfNomination": {
+        "title": "Sich als Referent:in vorschlagen",
+        "text": "Möchten Sie ein Referat halten? Schlagen Sie sich auf der Seite des Anlasses selbst vor."
+      }
+    }
   }
 }

@@ -1462,5 +1462,43 @@
     "nameLabel": "Venue Name",
     "capacityLabel": "Venue Capacity",
     "addressLabel": "Venue Address"
+  },
+  "whatsNew": {
+    "title": "What's new",
+    "close": "Close, I have seen it",
+    "entries": {
+      "profileMerge": {
+        "title": "An earlier profile under your name",
+        "text": "We found an earlier registration under your name. Merge it into your account to keep your events in one place."
+      },
+      "sessionQna": {
+        "title": "Questions and comments per session",
+        "text": "From two weeks before until two weeks after an event, ask the speakers questions and comment on each session."
+      },
+      "suggestTopics": {
+        "title": "Suggest topics",
+        "text": "Propose a topic you would like to see at a future BATbern."
+      },
+      "loginAndProfile": {
+        "title": "Login with Google and your profile",
+        "text": "Sign in with Google, add further email addresses and keep your profile up to date."
+      },
+      "companyLogo": {
+        "title": "Your company's logo",
+        "text": "Is your company's logo missing or out of date? Send a new one from your profile."
+      },
+      "thankOrganizers": {
+        "title": "Thank the organizers",
+        "text": "During and after an event, send the organizers a short thank-you."
+      },
+      "eventHistory": {
+        "title": "Your event history",
+        "text": "See every BATbern you registered for or attended."
+      },
+      "selfNomination": {
+        "title": "Propose yourself as a speaker",
+        "text": "Would you like to give a talk? Nominate yourself on the event page."
+      }
+    }
   }
 }

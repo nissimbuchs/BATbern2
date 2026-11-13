@@ -42,6 +42,14 @@ Only items that are not live yet. Everything else is listed under its release be
 
 ### Unreleased — after BATbern60
 
+**New — "What's new" for logged-in users**:
+- ✅ A card at the top of the participant dashboard lists the features added since you last closed it, at most three, each with a sentence and a link: session Q&A and comments, topic suggestions, login and profile, the company logo request, thanking the organizers, your event history and proposing yourself as a speaker. On your first visit it shows the three most important ones (Q&A, topic suggestions, company logo).
+- ✅ If an earlier profile under your name exists, the card first offers to merge it (links to the existing offer on the dashboard).
+- ✅ A dot on the user menu (public site and portal) says something is new; the menu item "What's new" leads to the card. Every logged-in user has it, whatever the role; organizers, partners and speakers can now open the participant dashboard for it.
+- ✅ Closing the card hides it and the dot on every device: the time is stored with your settings.
+- ⚠️ API: `PATCH /api/v1/users/me/settings` takes `whatsNewSeenAt` (date-time, at most five minutes in the future, else 400); `GET /users/me/settings` and `GET /users/me?include=settings` return it when set.
+- 🧹 The unused release-notes box (removed from the login page in March), its `release-notes.txt` and its push script are gone.
+
 **Improvement — The attendee dashboard shows the next three events**:
 - ✅ "Upcoming events" on the participant dashboard no longer stays empty without a registration. It shows three events: every upcoming event you are registered for first (with its registration status), then the next events you are not registered for, until there are three. Registered for more than three, you see all of them and no others.
 - ✅ The cards are the ones of the homepage section "Nächste BAT-Termine". A published event links to its event page, where you register. An event not yet published shows code, title and date only, without a link.

@@ -14,8 +14,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.DateTimeException;
+import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalTime;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.Locale;
 
 /**
@@ -29,6 +32,9 @@ import java.util.Locale;
 @Service
 @RequiredArgsConstructor
 public class UserSettingsService {
+
+    /** How far a client clock may run ahead when it sends the "What's new" seen time. */
+    static final Duration WHATS_NEW_CLOCK_TOLERANCE = Duration.ofMinutes(5);
 
     private final UserRepository userRepository;
     private final SecurityContextHelper securityContext;
@@ -55,7 +61,8 @@ public class UserSettingsService {
     /**
      * Applies the fields present in the request; every other setting stays.
      *
-     * @throws UserValidationException for a timezone that is not an IANA zone id (400)
+     * @throws UserValidationException for a timezone that is not an IANA zone id, or a
+     *     {@code whatsNewSeenAt} more than five minutes in the future (400)
      */
     @Transactional
     public ch.batbern.companyuser.dto.generated.UserSettings updateCurrentUserSettings(
@@ -63,6 +70,11 @@ public class UserSettingsService {
         User user = currentUser();
         if (request.getTimezone() != null) {
             requireZoneId(request.getTimezone());
+        }
+        Instant whatsNewSeenAt = request.getWhatsNewSeenAt() != null
+                ? request.getWhatsNewSeenAt().toInstant() : null;
+        if (whatsNewSeenAt != null && whatsNewSeenAt.isAfter(Instant.now().plus(WHATS_NEW_CLOCK_TOLERANCE))) {
+            throw new UserValidationException("whatsNewSeenAt", "Must not be in the future");
         }
         if (user.getPreferences() == null) {
             user.setPreferences(UserPreferences.builder().build());
@@ -124,6 +136,9 @@ public class UserSettingsService {
         if (request.getTwoFactorEnabled() != null) {
             settings.setTwoFactorEnabled(request.getTwoFactorEnabled());
         }
+        if (whatsNewSeenAt != null) {
+            settings.setWhatsNewSeenAt(whatsNewSeenAt);
+        }
 
         userRepository.save(user);
         log.info("Updated settings for user: {}", user.getUsername());
@@ -161,7 +176,9 @@ public class UserSettingsService {
                 .showActivityHistory(settings.isShowActivityHistory())
                 .allowMessaging(settings.isAllowMessaging())
                 .allowCalendarSync(settings.isAllowCalendarSync())
-                .twoFactorEnabled(settings.isTwoFactorEnabled());
+                .twoFactorEnabled(settings.isTwoFactorEnabled())
+                .whatsNewSeenAt(settings.getWhatsNewSeenAt() != null
+                        ? settings.getWhatsNewSeenAt().atOffset(ZoneOffset.UTC) : null);
     }
 
     private User currentUser() {

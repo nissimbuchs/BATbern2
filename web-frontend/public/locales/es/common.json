@@ -145,7 +145,9 @@
     "settings": "Configuración",
     "administration": "Administración",
     "help": "Ayuda",
-    "logout": "Cerrar sesión"
+    "logout": "Cerrar sesión",
+    "whatsNew": "Novedades",
+    "whatsNewAvailable": "Menú de usuario, novedades para ti"
   },
   "role": {
     "organizer": "Organizador de eventos",
@@ -826,9 +828,6 @@
       "loadFailed": "Failed to load user account data. Please try again.",
       "correlationId": "Correlation ID: {{id}}"
     }
-  },
-  "releaseNotes": {
-    "title": "Release Notes"
   },
   "profile": {
     "pageTitle": "Tu perfil",

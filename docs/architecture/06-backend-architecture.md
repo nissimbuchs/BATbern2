@@ -1393,7 +1393,9 @@ Every template-based mail in event-management renders the same way:
 - **A user's settings** are one CUMS resource, `GET`/`PATCH /users/me/settings`
   (`UserSettingsService`): display, notifications and privacy in one object, partial update.
   Storage stays the two embeddables on `user_profiles`. EMS reads language, Q&A frequency and
-  notification settings with `/internal/users/{username}?include=settings`.
+  notification settings with `/internal/users/{username}?include=settings`. The settings also
+  keep `whatsNewSeenAt`, the time the user last closed the "What's new" card (validated: not more
+  than five minutes in the future); the list of features is frontend code, not data.
 - **Derived configuration** that is not stored (feature flags, the gateway `/config`) is not a
   setting and stays where it is.
 

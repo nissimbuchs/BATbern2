@@ -1448,5 +1448,43 @@
     "nameLabel": "Nom du lieu",
     "capacityLabel": "Capacité du lieu",
     "addressLabel": "Adresse du lieu"
+  },
+  "whatsNew": {
+    "title": "Nouveautés",
+    "close": "Fermer, vu",
+    "entries": {
+      "profileMerge": {
+        "title": "Un ancien profil à votre nom",
+        "text": "Nous avons trouvé une inscription antérieure à votre nom. Fusionnez-la avec votre compte pour réunir vos événements."
+      },
+      "sessionQna": {
+        "title": "Questions et commentaires par session",
+        "text": "De deux semaines avant à deux semaines après un événement, posez vos questions aux intervenants et commentez chaque session."
+      },
+      "suggestTopics": {
+        "title": "Proposer des thèmes",
+        "text": "Proposez un thème que vous aimeriez voir lors d'un prochain BATbern."
+      },
+      "loginAndProfile": {
+        "title": "Connexion avec Google et votre profil",
+        "text": "Connectez-vous avec Google, ajoutez d'autres adresses e-mail et tenez votre profil à jour."
+      },
+      "companyLogo": {
+        "title": "Le logo de votre entreprise",
+        "text": "Le logo de votre entreprise manque ou est obsolète ? Envoyez-en un nouveau depuis votre profil."
+      },
+      "thankOrganizers": {
+        "title": "Remercier les organisateurs",
+        "text": "Pendant et après un événement, envoyez un court merci aux organisateurs."
+      },
+      "eventHistory": {
+        "title": "Votre historique d'événements",
+        "text": "Retrouvez tous les BATbern auxquels vous étiez inscrit ou avez participé."
+      },
+      "selfNomination": {
+        "title": "Se proposer comme intervenant",
+        "text": "Vous aimeriez donner une présentation ? Proposez-vous sur la page de l'événement."
+      }
+    }
   }
 }

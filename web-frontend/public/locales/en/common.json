@@ -184,7 +184,9 @@
     "settings": "Settings",
     "administration": "Administration",
     "help": "Help",
-    "logout": "Logout"
+    "logout": "Logout",
+    "whatsNew": "What's new",
+    "whatsNewAvailable": "User menu, something new for you"
   },
   "role": {
     "organizer": "Event Organizer",
@@ -829,9 +831,6 @@
       "loadFailed": "Failed to load user account data. Please try again.",
       "correlationId": "Correlation ID: {{id}}"
     }
-  },
-  "releaseNotes": {
-    "title": "Release Notes"
   },
   "profile": {
     "pageTitle": "Your Profile",

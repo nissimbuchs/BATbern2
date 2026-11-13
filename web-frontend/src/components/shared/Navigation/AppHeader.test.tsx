@@ -10,6 +10,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import AppHeader from './AppHeader';
 import { useUIStore } from '@/stores/uiStore';
 import { anAuthState, anAuthUser } from '@/test/auth';
+import { api } from '@/test/msw/api';
+import { aUser, aUserSettings } from '@/test/fixtures';
 
 const mockNavigate = vi.fn();
 vi.mock('react-router-dom', async () => {
@@ -374,6 +376,36 @@ describe('AppHeader Component', () => {
       // Desktop navigation should NOT be rendered when isMobile is true
       const navigation = screen.queryByRole('navigation');
       expect(navigation).not.toBeInTheDocument();
+    });
+  });
+
+  // Story 2 of 2026-11-13: the dot on the avatar reads the stored "seen" time over the network.
+  describe('What\u2019s new dot', () => {
+    test('should_showTheDot_when_theOrganizerHasNotSeenTheLatest', async () => {
+      api.on('getCurrentUser', () => aUser({ settings: aUserSettings() }));
+      renderWithProviders(<AppHeader />);
+
+      await vi.waitFor(() =>
+        expect(screen.getByTestId('user-menu-whats-new-dot')).toHaveAttribute(
+          'data-visible',
+          'true'
+        )
+      );
+    });
+
+    test('should_notShowTheDot_when_upToDate', async () => {
+      api.on('getCurrentUser', () =>
+        aUser({ settings: aUserSettings({ whatsNewSeenAt: new Date().toISOString() }) })
+      );
+      renderWithProviders(<AppHeader />);
+
+      await vi.waitFor(() =>
+        expect(queryClient.getQueryState(['userProfile'])?.status).toBe('success')
+      );
+      expect(screen.getByTestId('user-menu-whats-new-dot')).toHaveAttribute(
+        'data-visible',
+        'false'
+      );
     });
   });
 });

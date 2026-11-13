@@ -1448,5 +1448,43 @@
     "nameLabel": "Tapahtumapaikan nimi",
     "capacityLabel": "Tapahtumapaikan kapasiteetti",
     "addressLabel": "Tapahtumapaikan osoite"
+  },
+  "whatsNew": {
+    "title": "Uutta",
+    "close": "Sulje, nähty",
+    "entries": {
+      "profileMerge": {
+        "title": "Aiempi profiili nimelläsi",
+        "text": "Löysimme nimelläsi aiemman ilmoittautumisen. Yhdistä se tiliisi, niin kaikki tapahtumasi ovat yhdessä paikassa."
+      },
+      "sessionQna": {
+        "title": "Kysymykset ja kommentit esityksittäin",
+        "text": "Kahdesta viikosta ennen kahteen viikkoon jälkeen tapahtuman voit esittää puhujille kysymyksiä ja kommentoida jokaista esitystä."
+      },
+      "suggestTopics": {
+        "title": "Ehdota aiheita",
+        "text": "Ehdota aihetta, jonka haluaisit nähdä tulevassa BATbernissä."
+      },
+      "loginAndProfile": {
+        "title": "Kirjautuminen Googlella ja profiilisi",
+        "text": "Kirjaudu Googlella, lisää muita sähköpostiosoitteita ja pidä profiilisi ajan tasalla."
+      },
+      "companyLogo": {
+        "title": "Yrityksesi logo",
+        "text": "Puuttuuko yrityksesi logo tai onko se vanhentunut? Lähetä uusi profiilistasi."
+      },
+      "thankOrganizers": {
+        "title": "Kiitä järjestäjiä",
+        "text": "Tapahtuman aikana ja sen jälkeen voit lähettää järjestäjille lyhyen kiitoksen."
+      },
+      "eventHistory": {
+        "title": "Tapahtumahistoriasi",
+        "text": "Katso kaikki BATbern-tapahtumat, joihin ilmoittauduit tai osallistuit."
+      },
+      "selfNomination": {
+        "title": "Ehdota itseäsi puhujaksi",
+        "text": "Haluaisitko pitää esityksen? Ehdota itseäsi tapahtuman sivulla."
+      }
+    }
   }
 }

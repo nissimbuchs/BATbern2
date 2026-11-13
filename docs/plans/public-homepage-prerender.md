@@ -19,7 +19,7 @@ These were the plan's original open questions; all now decided (with the user) a
 
 ### Key wiring findings from the audit (de-risk the decouple)
 
-- **The public shell consumes no config.** `useConfig` consumers are: `useTurnstile` (newsletter widget — *the only one on the public path*), `usePresentationData`, `useLiveSessionControl`, `ReleaseNotesInfoBox` (all auth/organizer/presentation, rendered only after config loads).
+- **The public shell consumes no config.** `useConfig` consumers are: `useTurnstile` (newsletter widget — *the only one on the public path*), `usePresentationData`, `useLiveSessionControl` (all organizer/presentation, rendered only after config loads).
 - **The API base URL does not need the config fetch.** `getApiUrl()` (`runtime-config.ts`) derives it from hostname; `ConfigController.getApiBaseUrl()` returns exactly `<host>/api/v1` in every env (`http://localhost:{port}/api/v1` dev, `https://api.batbern.ch/api/v1` staging+prod). So `apiClient` can self-initialise `baseURL = getApiUrl() + '/api/v1'` at module load (byte-identical to config in prod) → **homepage event data loads in parallel with the config fetch, not after it.** `updateApiClientConfig()` still runs on config-resolve as the authoritative override (no-op in prod).
 - **Only `useTurnstile` needs softening** for the null-config window → add `useOptionalConfig()` (returns `AppConfig | null`, no throw); treat null as "turnstile not ready/disabled". `useConfig()` keeps its throw-if-null contract for the non-public consumers.
 

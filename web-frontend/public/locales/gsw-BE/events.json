@@ -1451,5 +1451,43 @@
     "nameLabel": "Name vom Veranstautigsort",
     "capacityLabel": "Kapazität vom Veranstautigsort",
     "addressLabel": "Adress vom Veranstautigsort"
+  },
+  "whatsNew": {
+    "title": "Was isch nöi",
+    "close": "Zuemache, gseh",
+    "entries": {
+      "profileMerge": {
+        "title": "Es früechers Profil under Öiem Name",
+        "text": "Mir hei e früecheri Aamäldig under Öiem Name gfunde. Füeret se mit Öiem Konto zäme, de si Öii Aläss amne Ort."
+      },
+      "sessionQna": {
+        "title": "Frage und Kommentär pro Referat",
+        "text": "Vo zwo Wuche vor bis zwo Wuche nach emne Alass chöit Dir de Referänte Frage stelle und jedes Referat kommentiere."
+      },
+      "suggestTopics": {
+        "title": "Theme vorschla",
+        "text": "Schlöht es Thema vor, wo Dir amne nächschte BATbern weit gseh."
+      },
+      "loginAndProfile": {
+        "title": "Login mit Google und Öies Profil",
+        "text": "Mäldet Nech mit Google aa, ergänzet wiiteri E-Mail-Adrässe und haltet Öies Profil aktuell."
+      },
+      "companyLogo": {
+        "title": "S Logo vo Öiere Firma",
+        "text": "Fählt s Logo vo Öiere Firma oder isch es veraltet? Schicket us Öiem Profil es nöis."
+      },
+      "thankOrganizers": {
+        "title": "De Organisatore danke",
+        "text": "Während und nach emne Alass schicket Dir de Organisatore es churzes Merci."
+      },
+      "eventHistory": {
+        "title": "Öii Aläss",
+        "text": "Gseht alli BATbern, wo Dir aagmäldet gsi sit oder derbi gsi sit."
+      },
+      "selfNomination": {
+        "title": "Sich als Referänt vorschla",
+        "text": "Weit Dir es Referat ha? Schlöht Nech uf der Site vom Alass sälber vor."
+      }
+    }
   }
 }

@@ -11,9 +11,11 @@
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import { screen, waitFor, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import type { QueryClient } from '@tanstack/react-query';
 import { HttpResponse } from 'msw';
 import { api } from '@/test/msw/api';
-import { futureEvent, pastEvent } from '@/test/fixtures';
+import { aClaimCandidate, aUser, aUserSettings, futureEvent, pastEvent } from '@/test/fixtures';
 import type { Event } from '@/test/fixtures';
 import { anAuthState, anAuthUser, renderWithAuth } from '@/test/auth';
 import type { components } from '@/types/generated/events-core-api.types';
@@ -204,5 +206,151 @@ describe('AttendeeDashboardPage', () => {
     const card = await within(past).findByTestId('attendee-event-card');
     expect(card).toHaveAttribute('href', '/archive/BATbern50');
     expect(within(card).getByText('Old Event')).toBeInTheDocument();
+  });
+});
+
+describe('AttendeeDashboardPage, What\u2019s new card', () => {
+  /** The stored "seen" time, as the server keeps it across browsers. */
+  let storedSeenAt: string | undefined;
+
+  beforeEach(() => {
+    storedSeenAt = undefined;
+    api.on('listPublicEvents', () => page(CALENDAR));
+    given([]);
+    api.on('getCurrentUser', () =>
+      aUser({
+        settings: aUserSettings(storedSeenAt ? { whatsNewSeenAt: storedSeenAt } : {}),
+      })
+    );
+    api.on('updateUserSettings', ({ body }) => {
+      storedSeenAt = body?.whatsNewSeenAt;
+      return aUserSettings({ whatsNewSeenAt: storedSeenAt });
+    });
+  });
+
+  /** The profile (with the settings) has answered, one way or the other. */
+  const profileSettled = (queryClient: QueryClient) =>
+    waitFor(() =>
+      expect(['success', 'error']).toContain(queryClient.getQueryState(['userProfile'])?.status)
+    );
+
+  const entryKeys = async () => {
+    const card = await screen.findByTestId('whats-new-card');
+    return within(card)
+      .getAllByTestId(/^whats-new-entry-/)
+      .map((el) => el.getAttribute('data-testid')!.replace('whats-new-entry-', ''));
+  };
+
+  it('should_showTheThreeMostImportant_when_neverSeen', async () => {
+    renderPage();
+
+    expect(await entryKeys()).toEqual(['sessionQna', 'suggestTopics', 'companyLogo']);
+    const card = screen.getByTestId('whats-new-card');
+    expect(card).toHaveAttribute('id', 'whats-new');
+    expect(within(card).getByText('Questions and comments per session')).toBeInTheDocument();
+    expect(within(card).getByText('Suggest topics').closest('a')).toHaveAttribute(
+      'href',
+      '/attendee/dashboard#suggest-topics'
+    );
+    // The card sits above the dashboard's own content.
+    const heading = screen.getByRole('heading', { level: 1 });
+    expect(heading.compareDocumentPosition(card) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it('should_showOnlyTheNewerEntry_when_seenBefore', async () => {
+    storedSeenAt = '2026-11-05T10:00:00Z';
+    renderPage();
+
+    expect(await entryKeys()).toEqual(['companyLogo']);
+  });
+
+  it('should_showNoCard_when_upToDate', async () => {
+    storedSeenAt = new Date().toISOString();
+    const { queryClient } = renderPage();
+
+    await screen.findByTestId('attendee-past');
+    await profileSettled(queryClient);
+    expect(screen.queryByTestId('whats-new-card')).not.toBeInTheDocument();
+  });
+
+  it('should_hideTheCardAndStoreNow_when_closed_andShowNoneInAnotherBrowser', async () => {
+    const user = userEvent.setup();
+    const first = renderPage();
+
+    await screen.findByTestId('whats-new-card');
+    const before = Date.now();
+    await user.click(screen.getByTestId('whats-new-close'));
+
+    await waitFor(() => expect(screen.queryByTestId('whats-new-card')).not.toBeInTheDocument());
+    const sent = api.calls('updateUserSettings')[0].body?.whatsNewSeenAt;
+    expect(sent).toBeDefined();
+    expect(Date.parse(sent!)).toBeGreaterThanOrEqual(before - 1000);
+    expect(Object.keys(api.calls('updateUserSettings')[0].body ?? {})).toEqual(['whatsNewSeenAt']);
+
+    // Another browser: a fresh query cache reads the stored time from the server.
+    first.unmount();
+    const second = renderPage();
+    await screen.findByTestId('attendee-past');
+    await profileSettled(second.queryClient);
+    expect(api.calls('getCurrentUser').length).toBeGreaterThanOrEqual(2);
+    expect(screen.queryByTestId('whats-new-card')).not.toBeInTheDocument();
+  });
+
+  it('should_keepTheCardWithoutAPageError_when_storingFails', async () => {
+    api.on('updateUserSettings', () => HttpResponse.json({ message: 'boom' }, { status: 500 }));
+    const user = userEvent.setup();
+    renderPage();
+
+    await screen.findByTestId('whats-new-card');
+    await user.click(screen.getByTestId('whats-new-close'));
+
+    await waitFor(() => expect(api.calls('updateUserSettings')).toHaveLength(1));
+    await waitFor(() => expect(screen.getByTestId('whats-new-close')).toBeEnabled());
+    expect(screen.getByTestId('whats-new-card')).toBeInTheDocument();
+    expect(screen.queryByTestId('attendee-dashboard-error')).not.toBeInTheDocument();
+  });
+
+  it('should_putTheMergeFirst_when_theUserHasAnEarlierProfile', async () => {
+    api.on('listProfileClaimCandidates', () => [aClaimCandidate()]);
+    renderPage();
+
+    await waitFor(async () =>
+      expect(await entryKeys()).toEqual(['profileMerge', 'sessionQna', 'suggestTopics'])
+    );
+    expect(
+      within(screen.getByTestId('whats-new-entry-profileMerge')).getByRole('link')
+    ).toHaveAttribute('href', '/attendee/dashboard#earlier-profiles');
+    // The offer it links to is on the page, with the link target.
+    expect(await screen.findByTestId('earlier-profiles-section')).toHaveAttribute(
+      'id',
+      'earlier-profiles'
+    );
+  });
+
+  it('should_leaveOutTheMerge_when_theCandidatesCannotBeRead', async () => {
+    api.on('listProfileClaimCandidates', () =>
+      HttpResponse.json({ message: 'boom' }, { status: 500 })
+    );
+    renderPage();
+
+    expect(await entryKeys()).toEqual(['sessionQna', 'suggestTopics', 'companyLogo']);
+  });
+
+  it('should_showNoCard_when_theSettingsAreMissing', async () => {
+    api.on('getCurrentUser', () => aUser({ settings: null }));
+    const { queryClient } = renderPage();
+
+    await screen.findByTestId('attendee-past');
+    await profileSettled(queryClient);
+    expect(screen.queryByTestId('whats-new-card')).not.toBeInTheDocument();
+  });
+
+  it('should_showNoCard_when_theProfileCannotBeRead', async () => {
+    api.on('getCurrentUser', () => HttpResponse.json({ message: 'boom' }, { status: 500 }));
+    const { queryClient } = renderPage();
+
+    await screen.findByTestId('attendee-past');
+    await profileSettled(queryClient);
+    expect(screen.queryByTestId('whats-new-card')).not.toBeInTheDocument();
   });
 });
