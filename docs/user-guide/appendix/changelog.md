@@ -42,6 +42,11 @@ Only items that are not live yet. Everything else is listed under its release be
 
 ### Unreleased — after BATbern60
 
+**Improvement — Visitors see what a free account gives them**:
+- ✅ The "please confirm your registration" mail, the last step of the registration wizard and the two pages after registering no longer promise "exclusive content" or "personalized event recommendations". They list four things an account gives today: questions and comments on the talks (two weeks before to two weeks after the event), topic suggestions for coming events, all your BATbern visits in one place (including registrations from before the account), and your company's logo next to your name.
+- ✅ New public page `/why-an-account` with the same list, linked from the mail, the wizard and the footer. Logged out it offers sign-up; logged in it leads to your profile.
+- ✅ Mail templates an organizer has changed in the account block keep their wording; only the shipped wording is replaced (migration V155).
+
 **New — "What's new" for logged-in users**:
 - ✅ A card at the top of the participant dashboard lists the features added since you last closed it, at most three, each with a sentence and a link: session Q&A and comments, topic suggestions, login and profile, the company logo request, thanking the organizers, your event history and proposing yourself as a speaker. On your first visit it shows the three most important ones (Q&A, topic suggestions, company logo).
 - ✅ If an earlier profile under your name exists, the card first offers to merge it (links to the existing offer on the dashboard).

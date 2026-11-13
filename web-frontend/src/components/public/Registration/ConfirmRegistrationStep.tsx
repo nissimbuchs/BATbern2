@@ -9,6 +9,7 @@ import { useTranslation } from 'react-i18next';
 import { Card } from '@/components/public/ui/card';
 import { Checkbox } from '@/components/public/ui/checkbox';
 import { Textarea } from '@/components/public/ui/textarea';
+import { AccountBenefits } from '@/components/public/AccountBenefits/AccountBenefits';
 import type { CreateRegistrationRequest } from '@/types/event.types';
 
 export interface ConfirmRegistrationStepProps {
@@ -173,15 +174,9 @@ export const ConfirmRegistrationStep = ({
         )}
       </div>
 
-      {/* Account Creation CTA */}
+      {/* What a free account gives (no sign-up here: the page opens in a new tab, the form stays) */}
       <Card className="bg-zinc-800/30 border-zinc-700 p-4">
-        <div className="flex items-start gap-3">
-          <span className="text-2xl">💡</span>
-          <div>
-            <p className="text-sm text-zinc-300 mb-1">{t('confirmStep.account.title')}</p>
-            <p className="text-xs text-zinc-400">{t('confirmStep.account.message')}</p>
-          </div>
-        </div>
+        <AccountBenefits moreLinkInNewTab />
       </Card>
     </div>
   );

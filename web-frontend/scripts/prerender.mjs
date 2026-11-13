@@ -49,6 +49,7 @@ const ROUTES = [
   { path: '/privacy', expect: 'Datenschutz' },
   { path: '/support' },
   { path: '/about' },
+  { path: '/why-an-account' },
   {
     path: '/',
     expect: 'homepage-loading',

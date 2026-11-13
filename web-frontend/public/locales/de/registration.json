@@ -45,8 +45,9 @@
     "noEmailCheck1": "Spam-/Junk-Ordner prüfen",
     "noEmailCheck2": "Stellen Sie sicher, dass Sie die richtige E-Mail-Adresse eingegeben haben",
     "noEmailCheck3": "Einige Minuten warten und erneut prüfen",
-    "createAccountTitle": "Erstellen Sie ein Konto, um Ihre Anmeldungen zu verwalten",
-    "createAccountText": "Nach der Bestätigung Ihrer Anmeldung per E-Mail können Sie ein Konto erstellen, um alle Ihre Veranstaltungsanmeldungen an einem Ort zu verwalten."
+    "backToHome": "Zurück zur Startseite",
+    "emailSentTo": "Wir haben eine Bestätigungs-E-Mail gesendet an",
+    "clickLink": "Klicken Sie auf den Bestätigungslink in der E-Mail, um Ihre Anmeldung abzuschliessen. Der Link ist 48 Stunden gültig."
   },
   "wizard": {
     "steps": {
@@ -122,10 +123,6 @@
       "privacyLink": "Datenschutzerklärung",
       "required": "*",
       "error": "Sie müssen den Nutzungsbedingungen zustimmen, um die Anmeldung abzuschliessen."
-    },
-    "account": {
-      "title": "Möchten Sie alle Ihre Anmeldungen an einem Ort verwalten?",
-      "message": "Nach der Anmeldung können Sie ein kostenloses Konto erstellen, um Ihre Anmeldungshistorie einzusehen, Präferenzen zu aktualisieren und personalisierte Veranstaltungsempfehlungen zu erhalten."
     }
   },
   "success": {
@@ -155,12 +152,12 @@
       "checkIn": "Check-in bei der Veranstaltung",
       "checkInText": "Zeigen Sie Ihren Ausweis am Veranstaltungsschalter vor. Wir haben Ihre bestätigte Registrierung hinterlegt.",
       "eventDetails": "Veranstaltungsdetails",
-      "eventDetailsText": "Sie erhalten Veranstaltungsaktualisierungen und Erinnerungen per E-Mail.",
-      "createAccount": "Konto erstellen, um Registrierungen zu verwalten"
+      "eventDetailsText": "Sie erhalten Veranstaltungsaktualisierungen und Erinnerungen per E-Mail."
     },
     "alreadyConfirmed": {
       "title": "Bereits bestätigt",
-      "subtitle": "Diese Registrierung wurde bereits bestätigt"
+      "subtitle": "Diese Registrierung wurde bereits bestätigt",
+      "message": "Ihre Anmeldung wurde bereits bestätigt. Sie müssen nichts weiter tun."
     },
     "error": {
       "title": "Bestätigung fehlgeschlagen",
@@ -169,8 +166,16 @@
       "expired": "Bestätigungslinks sind 48 Stunden gültig - möglicherweise müssen Sie sich erneut registrieren",
       "useLatestEmail": "Stellen Sie sicher, dass Sie die neueste Bestätigungs-E-Mail verwenden",
       "contactSupport": "Kontaktieren Sie den Support, wenn das Problem weiterhin besteht",
-      "registerAgain": "Erneut registrieren"
-    }
+      "registerAgain": "Erneut registrieren",
+      "messages": {
+        "missingLink": "Der Bestätigungslink ist unvollständig. Bitte verwenden Sie den Link aus Ihrer E-Mail.",
+        "expired": "Der Bestätigungslink ist abgelaufen. Bitte melden Sie sich erneut an.",
+        "invalid": "Ungültiger Bestätigungslink. Bitte prüfen Sie, ob Sie den richtigen Link aus Ihrer E-Mail verwenden.",
+        "failed": "Die Anmeldung konnte nicht bestätigt werden. Bitte versuchen Sie es erneut oder kontaktieren Sie den Support.",
+        "unable": "Ihre Anmeldung konnte nicht bestätigt werden"
+      }
+    },
+    "backToHome": "Zurück zur Startseite"
   },
   "companySearch": {
     "error": "Fehler beim Laden der Unternehmen",
@@ -246,5 +251,17 @@
     "registeredOn": "Angemeldet am",
     "cancelButton": "Anmeldung behalten",
     "confirmButton": "Ja, abmelden"
+  },
+  "accountBenefits": {
+    "title": "Was Ihnen ein kostenloses Konto bietet",
+    "items": {
+      "qna": "Fragen und Kommentare zu den Vorträgen, von zwei Wochen vor bis zwei Wochen nach dem Event",
+      "topics": "Themen für kommende BATbern-Events vorschlagen",
+      "history": "Alle Ihre BATbern-Besuche an einem Ort, auch Anmeldungen aus der Zeit vor Ihrem Konto",
+      "logo": "Das Logo Ihrer Firma neben Ihrem Namen"
+    },
+    "signUp": "Kostenloses Konto erstellen",
+    "moreLink": "Mehr zum Konto",
+    "profileButton": "Zu Ihrem Profil"
   }
 }

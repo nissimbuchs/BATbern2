@@ -57,7 +57,7 @@ flowchart TB
         EB["ErrorBoundary"] --> CP["ConfigProvider: GET /api/v1/config"]
     end
     CP --> APP["App.tsx: QueryClientProvider, HelmetProvider, AuthProvider, BrowserRouter, LanguageSync"]
-    APP --> PUB["Public routes, Tailwind only: / , /events/:eventCode, /archive, /about, /privacy, /support"]
+    APP --> PUB["Public routes, Tailwind only: / , /events/:eventCode, /archive, /about, /why-an-account, /privacy, /support"]
     APP --> MUI["Lazy MuiLayout: MUI ThemeProvider"]
     MUI --> OPENMUI["Public MUI routes: /register, confirmations, /unsubscribe, /verify-email, /present"]
     MUI --> GUARD["ProtectedRoute / SpeakerRoute / PartnerRoute"]
@@ -1461,7 +1461,7 @@ set `skipAuthRedirect`, used by optional public reads such as the archive Q&A); 
 
 The route table lives in `web-frontend/src/App.tsx` (React Router 7). Routes that use MUI sit
 under a lazy `<MuiLayout>` boundary; the public Tailwind-only routes (`/`, `/events/:eventCode`,
-`/archive`, `/archive/:eventCode`, `/about`, `/privacy`, `/support`) are declared as siblings so
+`/archive`, `/archive/:eventCode`, `/about`, `/why-an-account`, `/privacy`, `/support`) are declared as siblings so
 that the public homepage never loads MUI. Unknown paths (`*`) redirect to `/`.
 
 Guards: **P** = `ProtectedRoute` (any authenticated role, then the path-prefix check below),
@@ -1475,6 +1475,7 @@ Guards: **P** = `ProtectedRoute` (any authenticated role, then the path-prefix c
 /archive                                  # Archive list
 /archive/:eventCode                       # Archived event (HomePage)
 /about  /privacy  /support
+/why-an-account                           # What a free account gives (linked from the confirmation mail)
 
 # Public, MUI layout
 /register/:eventCode                      # Registration wizard

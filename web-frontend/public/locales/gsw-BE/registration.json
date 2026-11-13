@@ -87,5 +87,37 @@
     "waitlistSuccessBody": "Du bisch uf Platz {{position}} vo dr Warteliste. Mir schribe dir, wenn e Platz frei wird.",
     "waitlistSuccessTitle": "Du bisch uf dr Warteliste!",
     "waitlistWarning": "Dä Aalass isch usbuecht. Wenn d abschicksch, chunnsch uf d Warteliste."
+  },
+  "successPage": {
+    "backToHome": "Zrügg zur Startsyte",
+    "emailSentTo": "Mir hei e Bestätigungs-E-Mail gschickt a",
+    "clickLink": "Klick uf e Bestätigungslink i dr E-Mail, für d Aamäudig abzschliesse. Dr Link isch 48 Stund gültig."
+  },
+  "confirmation": {
+    "backToHome": "Zrügg zur Startsyte",
+    "alreadyConfirmed": {
+      "message": "Dini Aamäudig isch scho bestätiget worde. Du muesch nüt meh mache."
+    },
+    "error": {
+      "messages": {
+        "missingLink": "Dr Bestätigungslink isch nid komplett. Bruuch bitte dr Link us dire E-Mail.",
+        "expired": "Dr Bestätigungslink isch abgloffe. Bitte mäud di nomau aa.",
+        "invalid": "Ungültige Bestätigungslink. Bitte lueg, dass du dr richtig Link us dire E-Mail bruuchsch.",
+        "failed": "D Aamäudig het nid chönne bestätiget wärde. Bitte probier's nomau oder mäud di bim Support.",
+        "unable": "Dini Aamäudig het nid chönne bestätiget wärde"
+      }
+    }
+  },
+  "accountBenefits": {
+    "title": "Was dir es gratis Konto bringt",
+    "items": {
+      "qna": "Frage u Kommentär zu de Vorträg, vo zwöi Wuche vor bis zwöi Wuche nach em Event",
+      "topics": "Theme für chömendi BATbern-Events vorschlah",
+      "history": "Aui dini BATbern-Bsüech amne Ort, ou Aamäudige us dr Zyt vor dim Konto",
+      "logo": "Ds Logo vo dire Firma näbe dim Name"
+    },
+    "signUp": "Gratis Konto erstelle",
+    "moreLink": "Meh zum Konto",
+    "profileButton": "Zu dim Profil"
   }
 }

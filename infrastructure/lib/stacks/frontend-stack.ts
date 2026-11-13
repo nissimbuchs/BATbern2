@@ -135,7 +135,7 @@ function handler(event) {
     request.uri = '/home/index.html';
     return request;
   }
-  var prerendered = ['/privacy', '/about', '/support'];
+  var prerendered = ['/privacy', '/about', '/support', '/why-an-account'];
   for (var i = 0; i < prerendered.length; i++) {
     if (uri === prerendered[i] || uri === prerendered[i] + '/') {
       request.uri = prerendered[i] + '/index.html';

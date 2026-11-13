@@ -135,6 +135,7 @@ const SlotAssignmentPage = React.lazy(() => import('@pages/organizer/SlotAssignm
 // Public Pages - Story 4.1.2, 4.1.3, 4.1.5, 4.1.6, 4.2
 // HomePage is eagerly imported (top of file) to avoid double-spinner on first load.
 const AboutPage = React.lazy(() => import('@pages/AboutPage'));
+const WhyAnAccountPage = React.lazy(() => import('@pages/public/WhyAnAccountPage'));
 const PublicRegistrationPage = React.lazy(() => import('@pages/public/RegistrationPage'));
 const RegistrationSuccessPage = React.lazy(() => import('@pages/public/RegistrationSuccessPage'));
 const ConfirmRegistrationPage = React.lazy(() => import('@pages/public/ConfirmRegistrationPage'));
@@ -761,6 +762,7 @@ function App() {
                   {/* Story 4.2 / 10.21: Archive detail — reuses HomePage (dark-theme components) */}
                   <Route path="/archive/:eventCode" element={<HomePage />} />
                   <Route path="/about" element={<AboutPage />} />
+                  <Route path="/why-an-account" element={<WhyAnAccountPage />} />
                   <Route path="/privacy" element={<PrivacyPage />} />
                   <Route path="/support" element={<SupportPage />} />
                   {/* Catch all route - redirect to home (MUI-free) */}

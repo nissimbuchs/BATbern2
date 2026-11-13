@@ -45,8 +45,9 @@
     "noEmailCheck1": "Controleer uw spammap",
     "noEmailCheck2": "Zorg ervoor dat u het juiste e-mailadres heeft ingevoerd",
     "noEmailCheck3": "Wacht een paar minuten en controleer opnieuw",
-    "createAccountTitle": "Maak een account aan om uw registraties te beheren",
-    "createAccountText": "Na bevestiging via e-mail kunt u een account aanmaken om al uw registraties te beheren."
+    "backToHome": "Terug naar home",
+    "emailSentTo": "We hebben een bevestigingsmail gestuurd naar",
+    "clickLink": "Klik op de bevestigingslink in de e-mail om uw inschrijving af te ronden. De link is 48 uur geldig."
   },
   "wizard": {
     "steps": {
@@ -122,10 +123,6 @@
       "privacyLink": "privacybeleid",
       "required": "*",
       "error": "U moet akkoord gaan met de algemene voorwaarden om de registratie te voltooien."
-    },
-    "account": {
-      "title": "Wilt u al uw registraties op één plek beheren?",
-      "message": "Na registratie kunt u een gratis account aanmaken om al uw registraties te beheren."
     }
   },
   "success": {
@@ -155,12 +152,12 @@
       "checkIn": "Inchecken bij het evenement",
       "checkInText": "Toon uw identiteitsbewijs bij de balie van het evenement voor inchecken. Uw bevestigde registratie staat in ons systeem.",
       "eventDetails": "Evenementdetails",
-      "eventDetailsText": "U ontvangt evenementupdates en herinneringen via e-mail.",
-      "createAccount": "Account aanmaken om registraties te beheren"
+      "eventDetailsText": "U ontvangt evenementupdates en herinneringen via e-mail."
     },
     "alreadyConfirmed": {
       "title": "Al bevestigd",
-      "subtitle": "Deze registratie is al bevestigd"
+      "subtitle": "Deze registratie is al bevestigd",
+      "message": "Uw inschrijving was al bevestigd. U hoeft verder niets te doen."
     },
     "error": {
       "title": "Bevestiging mislukt",
@@ -169,8 +166,16 @@
       "expired": "Bevestigingslinks verlopen na 48 uur - u moet zich mogelijk opnieuw registreren",
       "useLatestEmail": "Zorg ervoor dat u de meest recente bevestigings-e-mail gebruikt",
       "contactSupport": "Neem contact op met de ondersteuning als het probleem aanhoudt",
-      "registerAgain": "Opnieuw registreren"
-    }
+      "registerAgain": "Opnieuw registreren",
+      "messages": {
+        "missingLink": "De bevestigingslink is onvolledig. Gebruik de link uit uw e-mail.",
+        "expired": "De bevestigingslink is verlopen. Schrijf u opnieuw in.",
+        "invalid": "Ongeldige bevestigingslink. Controleer of u de juiste link uit uw e-mail gebruikt.",
+        "failed": "De inschrijving kon niet worden bevestigd. Probeer het opnieuw of neem contact op met support.",
+        "unable": "Uw inschrijving kon niet worden bevestigd"
+      }
+    },
+    "backToHome": "Terug naar home"
   },
   "companySearch": {
     "error": "Fout bij laden bedrijven",
@@ -246,5 +251,17 @@
     "registeredOn": "Geregistreerd op",
     "cancelButton": "Registratie behouden",
     "confirmButton": "Ja, uitschrijven"
+  },
+  "accountBenefits": {
+    "title": "Wat een gratis account u biedt",
+    "items": {
+      "qna": "Vragen stellen en reageren op de presentaties, van twee weken voor tot twee weken na het evenement",
+      "topics": "Onderwerpen voorstellen voor komende BATbern-evenementen",
+      "history": "Al uw BATbern-bezoeken op één plek, ook inschrijvingen van vóór uw account",
+      "logo": "Het logo van uw bedrijf naast uw naam"
+    },
+    "signUp": "Gratis account aanmaken",
+    "moreLink": "Meer over het account",
+    "profileButton": "Naar uw profiel"
   }
 }

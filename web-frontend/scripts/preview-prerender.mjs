@@ -19,7 +19,7 @@ const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const PORT = 4173;
 
 // Keep in sync with the CloudFront RouterFunction + scripts/prerender.mjs.
-const PRERENDERED = ['/privacy', '/about', '/support'];
+const PRERENDERED = ['/privacy', '/about', '/support', '/why-an-account'];
 
 const server = await preview({
   root: projectRoot,

@@ -45,8 +45,9 @@
     "noEmailCheck1": "Revisa tu carpeta de spam",
     "noEmailCheck2": "Asegúrate de haber ingresado el correo correcto",
     "noEmailCheck3": "Espera unos minutos y vuelve a revisar",
-    "createAccountTitle": "Crea una cuenta para gestionar tus registros",
-    "createAccountText": "Después de confirmar tu registro por correo, puedes crear una cuenta para gestionar todos tus registros."
+    "backToHome": "Volver al inicio",
+    "emailSentTo": "Hemos enviado un correo de confirmación a",
+    "clickLink": "Haz clic en el enlace de confirmación del correo para completar tu inscripción. El enlace es válido por 48 horas."
   },
   "wizard": {
     "steps": {
@@ -122,10 +123,6 @@
       "privacyLink": "política de privacidad",
       "required": "*",
       "error": "Debes aceptar los términos y condiciones para completar el registro."
-    },
-    "account": {
-      "title": "¿Quieres gestionar todos tus registros en un solo lugar?",
-      "message": "Después de registrarte, puedes crear una cuenta gratuita para gestionar tus registros."
     }
   },
   "success": {
@@ -155,12 +152,12 @@
       "checkIn": "Registro en el evento",
       "checkInText": "Presente su identificación en el mostrador del evento para el registro. Tendremos su inscripción confirmada en el sistema.",
       "eventDetails": "Detalles del evento",
-      "eventDetailsText": "Recibirá actualizaciones y recordatorios del evento por correo electrónico.",
-      "createAccount": "Crear una cuenta para gestionar inscripciones"
+      "eventDetailsText": "Recibirá actualizaciones y recordatorios del evento por correo electrónico."
     },
     "alreadyConfirmed": {
       "title": "Ya confirmado",
-      "subtitle": "Esta inscripción ya ha sido confirmada"
+      "subtitle": "Esta inscripción ya ha sido confirmada",
+      "message": "Tu inscripción ya fue confirmada. No necesitas hacer nada más."
     },
     "error": {
       "title": "Error al confirmar",
@@ -169,8 +166,16 @@
       "expired": "Los enlaces de confirmación expiran después de 48 horas - es posible que deba registrarse de nuevo",
       "useLatestEmail": "Asegúrese de estar usando el correo electrónico de confirmación más reciente",
       "contactSupport": "Contacte al soporte si el problema persiste",
-      "registerAgain": "Registrarse de nuevo"
-    }
+      "registerAgain": "Registrarse de nuevo",
+      "messages": {
+        "missingLink": "El enlace de confirmación está incompleto. Usa el enlace de tu correo.",
+        "expired": "El enlace de confirmación ha caducado. Inscríbete de nuevo.",
+        "invalid": "Enlace de confirmación no válido. Comprueba que usas el enlace correcto de tu correo.",
+        "failed": "No se pudo confirmar la inscripción. Inténtalo de nuevo o contacta con soporte.",
+        "unable": "No se pudo confirmar tu inscripción"
+      }
+    },
+    "backToHome": "Volver al inicio"
   },
   "companySearch": {
     "error": "Error al cargar las empresas",
@@ -246,5 +251,17 @@
     "registeredOn": "Registrado el",
     "cancelButton": "Mantener mi registro",
     "confirmButton": "Sí, cancelar registro"
+  },
+  "accountBenefits": {
+    "title": "Lo que te ofrece una cuenta gratuita",
+    "items": {
+      "qna": "Hacer preguntas y comentar las charlas, desde dos semanas antes hasta dos semanas después del evento",
+      "topics": "Proponer temas para los próximos eventos BATbern",
+      "history": "Todas tus visitas a BATbern en un solo lugar, incluidas las inscripciones anteriores a tu cuenta",
+      "logo": "El logo de tu empresa junto a tu nombre"
+    },
+    "signUp": "Crear una cuenta gratuita",
+    "moreLink": "Más sobre la cuenta",
+    "profileButton": "Ir a tu perfil"
   }
 }

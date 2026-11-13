@@ -61,6 +61,7 @@ const PUBLIC_PATHS = [
   '/forgot-password',
   '/auth',
   '/about',
+  '/why-an-account', // story "Visitors see what an account gives them": linked from the mail
   '/archive',
   '/register',
 ];

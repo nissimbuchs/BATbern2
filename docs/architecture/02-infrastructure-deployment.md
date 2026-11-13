@@ -640,7 +640,7 @@ graph TB
 
 **Frontend:**
 - Built once, environment-agnostic: `npm run build:prerender` (Vite build plus a static crawl of
-  `/`, `/privacy`, `/about`, `/support`; falls back to a CSR-only build if the crawl fails).
+  `/`, `/privacy`, `/about`, `/support`, `/why-an-account`; falls back to a CSR-only build if the crawl fails).
 - The SPA loads its configuration at runtime from `GET /api/v1/config`, so no `VITE_*` values are
   baked in by the deploy.
 - Shipped by the `Frontend` stack's `BucketDeployment` into the website bucket, served by

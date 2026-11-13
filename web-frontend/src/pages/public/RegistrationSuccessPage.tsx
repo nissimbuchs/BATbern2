@@ -12,7 +12,8 @@ import { useTranslation } from 'react-i18next';
 import { PublicLayout } from '@/components/public/PublicLayout';
 import { Button } from '@/components/public/ui/button';
 import { Card } from '@/components/public/ui/card';
-import { CheckCircle2, Mail, UserPlus, ArrowLeft } from 'lucide-react';
+import { CheckCircle2, Mail, ArrowLeft } from 'lucide-react';
+import { AccountBenefits } from '@/components/public/AccountBenefits/AccountBenefits';
 
 const RegistrationSuccessPage = () => {
   const { t } = useTranslation('registration');
@@ -59,7 +60,7 @@ const RegistrationSuccessPage = () => {
           <Button asChild variant="outline">
             <Link to="/">
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Home
+              {t('successPage.backToHome')}
             </Link>
           </Button>
         </div>
@@ -83,14 +84,11 @@ const RegistrationSuccessPage = () => {
           <h2 className="text-2xl font-light mb-4">{t('successPage.emailSentTitle')}</h2>
           {email && (
             <p className="text-zinc-300 mb-4">
-              We've sent a confirmation email to{' '}
+              {t('successPage.emailSentTo')}{' '}
               <span className="font-mono text-blue-400">{email}</span>
             </p>
           )}
-          <p className="text-sm text-zinc-400 mb-6">
-            Click the confirmation link in the email to complete your registration. The link is
-            valid for <span className="text-zinc-300 font-medium">48 hours</span>.
-          </p>
+          <p className="text-sm text-zinc-400 mb-6">{t('successPage.clickLink')}</p>
 
           <div className="border-t border-zinc-800 pt-6 mt-6">
             <h3 className="text-sm font-medium text-zinc-300 mb-2">
@@ -104,23 +102,13 @@ const RegistrationSuccessPage = () => {
           </div>
         </Card>
 
-        {/* Account Creation CTA */}
+        {/* What a free account gives */}
         <Card className="p-6 mb-8 bg-blue-950/30 border-blue-500/30">
-          <div className="flex items-start gap-3">
-            <UserPlus className="h-5 w-5 text-blue-400 flex-shrink-0 mt-0.5" />
-            <div className="flex-1">
-              <h3 className="text-lg font-light mb-2">{t('successPage.createAccountTitle')}</h3>
-              <p className="text-sm text-zinc-400 mb-4">{t('successPage.createAccountText')}</p>
-              {email && (
-                <Button asChild variant="outline" size="sm">
-                  <Link to={`/auth/register?email=${encodeURIComponent(email)}`}>
-                    <UserPlus className="h-4 w-4 mr-2" />
-                    Create Account
-                  </Link>
-                </Button>
-              )}
-            </div>
-          </div>
+          <AccountBenefits
+            signUpTo={
+              email ? `/auth/register?email=${encodeURIComponent(email)}` : '/auth/register'
+            }
+          />
         </Card>
 
         {/* Navigation */}
@@ -128,7 +116,7 @@ const RegistrationSuccessPage = () => {
           <Button asChild variant="outline">
             <Link to="/">
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Home
+              {t('successPage.backToHome')}
             </Link>
           </Button>
         </div>
