@@ -136,7 +136,7 @@ collections=(
 # sessions into its own fixture event (Story 4.10b).
 # company-get-or-create-api creates a company through get-or-create (201) and deletes it; the
 # production collection companies-api checks only the 200 of an existing company (Story 4.10d).
-# event-media-api uploads a photo to its own fixture event and deletes both (Story 17.11b).
+# event-media-api uploads a photo and a teaser image to its own fixture event and deletes them (Story 17.11b, 17.11c).
 dev_only_collections=(
     "speaker-portal-api"
     "event-publishing-api"

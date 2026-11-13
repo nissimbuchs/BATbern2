@@ -59,6 +59,11 @@ Only items that are not live yet. Everything else is listed under its release be
 - ✅ "Upcoming events" on the participant dashboard no longer stays empty without a registration. It shows three events: every upcoming event you are registered for first (with its registration status), then the next events you are not registered for, until there are three. Registered for more than three, you see all of them and no others.
 - ✅ The cards are the ones of the homepage section "Nächste BAT-Termine". A published event links to its event page, where you register. An event not yet published shows code, title and date only, without a link.
 
+**Improvement — Teaser images on the upload contract (Epic 17, 17.11c)**:
+- ✅ Adding teaser images on the event settings tab and global teaser images in Administration works as before (JPEG, PNG, WebP, SVG), through the same upload flow as photos and logos. New: a teaser image may be at most 10 MB.
+- ✅ New: an upload is reserved first and expires if never finished (the nightly cleanup deletes it with its file), and it is bound to the event (or the global set) it was started for, so it cannot land on another one. The limit of 10 per event and 10 global is now checked when the upload starts, so the 11th fails before the file is sent, and again when it is added.
+- ⚠️ API, breaking for scripts: purpose `teaser-image` with target `{eventCode}` (required, `_global` for the global set) on `POST /api/v1/uploads/teaser-image` and its confirm; a full set answers 409 (was 422). `POST /api/v1/events/{eventCode}/teaser-images/upload-url` and `.../teaser-images/confirm` are gone (405). Listing, position change and deleting are unchanged.
+
 **Improvement — Event photos on the upload contract (Epic 17, 17.11b)**:
 - ✅ Uploading photos on the Wrap-up tab of an event works as before (JPEG, PNG, WebP up to 10 MB), through the same upload flow as logos and profile pictures.
 - ✅ A photo is only added once its file has really arrived in storage, and only to the event it was started for. Uploads that are never finished are deleted by the nightly cleanup.

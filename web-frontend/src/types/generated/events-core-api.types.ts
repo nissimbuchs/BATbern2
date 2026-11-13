@@ -527,40 +527,6 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/events/{eventCode}/teaser-images/upload-url': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** Get presigned S3 PUT URL for teaser image upload (organizer-only) */
-    post: operations['generateTeaserImageUploadUrl'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/events/{eventCode}/teaser-images/confirm': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** Confirm upload and persist new teaser image */
-    post: operations['confirmTeaserImageUpload'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
   '/events/{eventCode}/teaser-images/{imageId}': {
     parameters: {
       query?: never;
@@ -840,42 +806,6 @@ export interface components {
     };
     TeaserImageUpdateRequest: {
       presentationPosition: components['schemas']['TeaserImagePresentationPosition'];
-    };
-    TeaserImageUploadUrlRequest: {
-      /**
-       * @description MIME type of the image (image/jpeg, image/png, image/webp).
-       * @example image/jpeg
-       */
-      contentType: string;
-      /**
-       * @description Original filename.
-       * @example teaser.jpg
-       */
-      fileName: string;
-    };
-    TeaserImageUploadUrlResponse: {
-      /**
-       * Format: uri
-       * @description Presigned S3 PUT URL for direct upload.
-       */
-      uploadUrl: string;
-      /**
-       * @description S3 object key to use in the confirm step.
-       * @example events/BATbern57/teaser/abc123-def456.jpg
-       */
-      s3Key: string;
-      /**
-       * @description URL expiry in seconds.
-       * @example 900
-       */
-      expiresIn: number;
-    };
-    TeaserImageConfirmRequest: {
-      /**
-       * @description S3 object key returned by the upload-url step.
-       * @example events/BATbern57/teaser/abc123-def456.jpg
-       */
-      s3Key: string;
     };
     /** @description A speaker as the public website shows it (Public Events). */
     PublicSpeaker: {
@@ -2912,73 +2842,6 @@ export interface operations {
       };
       401: components['responses']['Unauthorized'];
       403: components['responses']['Forbidden'];
-    };
-  };
-  generateTeaserImageUploadUrl: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @example BATbern57 */
-        eventCode: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['TeaserImageUploadUrlRequest'];
-      };
-    };
-    responses: {
-      /** @description Presigned URL + s3Key */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['TeaserImageUploadUrlResponse'];
-        };
-      };
-      401: components['responses']['Unauthorized'];
-      403: components['responses']['Forbidden'];
-    };
-  };
-  confirmTeaserImageUpload: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @example BATbern57 */
-        eventCode: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['TeaserImageConfirmRequest'];
-      };
-    };
-    responses: {
-      /** @description Teaser image confirmed and persisted */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['TeaserImageItem'];
-        };
-      };
-      401: components['responses']['Unauthorized'];
-      403: components['responses']['Forbidden'];
-      /** @description Max image limit reached */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['ErrorResponse'];
-        };
-      };
     };
   };
   deleteTeaserImage: {

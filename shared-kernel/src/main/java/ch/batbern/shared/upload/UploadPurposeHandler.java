@@ -44,6 +44,15 @@ public interface UploadPurposeHandler {
      */
     void checkTarget(String targetId);
 
+    /**
+     * The target can take another file, checked only when an upload is reserved for it (409
+     * otherwise), e.g. a full set of teaser images (Story 17.11c). Not on confirm: there the
+     * contract's own answers (unknown or expired upload 404, another target 404, already attached
+     * 409) come first, and {@link #attach} checks again under its lock. Default: always room.
+     */
+    default void checkCanReserve(String targetId) {
+    }
+
     /** The final S3 key once attached to the target. */
     String finalKey(UploadRecord upload, String targetId);
 

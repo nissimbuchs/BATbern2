@@ -2,11 +2,8 @@ package ch.batbern.events.controller;
 
 import ch.batbern.events.config.CacheConfig;
 import ch.batbern.events.core.api.generated.TeaserImagesApi;
-import ch.batbern.events.core.dto.generated.TeaserImageConfirmRequest;
 import ch.batbern.events.core.dto.generated.TeaserImageItem;
 import ch.batbern.events.core.dto.generated.TeaserImageUpdateRequest;
-import ch.batbern.events.core.dto.generated.TeaserImageUploadUrlRequest;
-import ch.batbern.events.core.dto.generated.TeaserImageUploadUrlResponse;
 import ch.batbern.events.service.EventTeaserImageService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,7 +17,9 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * REST controller for teaser image management (event-specific and global).
+ * REST controller for teaser image management (event-specific and global): list, presentation
+ * position, delete. Adding one is the upload contract, purpose {@code teaser-image}
+ * ({@code TeaserImageUploadHandler}, Story 17.11c).
  * <p>
  * Uses the same endpoints for both. eventCode="_global" maps to null in the
  * service layer, meaning the image has no event association and is shown on
@@ -40,38 +39,16 @@ import java.util.UUID;
 @Slf4j
 public class EventTeaserImageController implements TeaserImagesApi {
 
-    static final String GLOBAL_CODE = "_global";
-
     private final EventTeaserImageService teaserImageService;
 
     private static String resolveEventCode(String eventCode) {
-        return GLOBAL_CODE.equals(eventCode) ? null : eventCode;
+        return EventTeaserImageService.scopeOf(eventCode);
     }
 
     @Override
     @PreAuthorize("hasRole('ORGANIZER') or #eventCode == '_global'")
     public ResponseEntity<List<TeaserImageItem>> listTeaserImages(String eventCode) {
         return ResponseEntity.ok(teaserImageService.listByEventCode(resolveEventCode(eventCode)));
-    }
-
-    @Override
-    @PreAuthorize("hasRole('ORGANIZER')")
-    public ResponseEntity<TeaserImageUploadUrlResponse> generateTeaserImageUploadUrl(
-            String eventCode,
-            TeaserImageUploadUrlRequest request) {
-        return ResponseEntity.ok(
-                teaserImageService.generateUploadUrl(
-                        resolveEventCode(eventCode), request.getContentType(), request.getFileName()));
-    }
-
-    @Override
-    @PreAuthorize("hasRole('ORGANIZER')")
-    @CacheEvict(value = CacheConfig.EVENT_WITH_INCLUDES_CACHE, allEntries = true)
-    public ResponseEntity<TeaserImageItem> confirmTeaserImageUpload(
-            String eventCode,
-            TeaserImageConfirmRequest request) {
-        return ResponseEntity.ok(
-                teaserImageService.confirmUpload(resolveEventCode(eventCode), request.getS3Key()));
     }
 
     @Override

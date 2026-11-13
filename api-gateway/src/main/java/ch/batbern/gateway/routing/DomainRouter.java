@@ -39,7 +39,8 @@ public class DomainRouter {
             "company-logo", "company-user-management-service",
             "profile-picture", "company-user-management-service",
             "event-theme-image", "event-management-service",
-            "event-photo", "event-management-service");
+            "event-photo", "event-management-service",
+            "teaser-image", "event-management-service");
 
     private final RestTemplate restTemplate;
 

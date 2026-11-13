@@ -1,14 +1,12 @@
 package ch.batbern.events.service;
 
-import ch.batbern.shared.utils.S3Links;
-import ch.batbern.events.domain.EventTeaserImage;
 import ch.batbern.events.core.dto.generated.TeaserImageItem;
 import ch.batbern.events.core.dto.generated.TeaserImagePresentationPosition;
-import ch.batbern.events.core.dto.generated.TeaserImageUploadUrlResponse;
+import ch.batbern.events.domain.EventTeaserImage;
 import ch.batbern.events.exception.TeaserImageLimitExceededException;
 import ch.batbern.events.exception.TeaserImageNotFoundException;
+import ch.batbern.events.repository.EventManagementUploadRepository;
 import ch.batbern.events.repository.EventTeaserImageRepository;
-import ch.batbern.shared.utils.CloudFrontUrlBuilder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.lang.Nullable;
@@ -16,120 +14,82 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
-import software.amazon.awssdk.services.s3.model.HeadObjectRequest;
-import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
-import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 
 import java.net.URI;
-import java.time.Duration;
 import java.util.List;
-import java.util.Set;
 import java.util.UUID;
 
 /**
- * Service for teaser image management (upload, confirm, delete).
+ * Teaser images of an event (eventCode != null) or the global set (eventCode == null, shown on all
+ * event presentations): list, presentation position, delete, and the row a confirmed upload creates.
  * <p>
- * Handles both event-specific images (eventCode != null) and global images
- * (eventCode == null, shown on all event presentations).
- * <p>
- * Uses the 3-phase presigned PUT pattern:
- * 1. generateUploadUrl — generate presigned S3 URL
- * 2. Client PUT directly to S3 (no backend involved)
- * 3. confirmUpload — verify S3 presence, persist EventTeaserImage record
+ * Uploads go through the upload contract, purpose {@code teaser-image}
+ * ({@link TeaserImageUploadHandler}, Story 17.11c), with the target {@code eventCode};
+ * {@link #GLOBAL_CODE} names the global set there and in the paths.
  */
 @Service
 @Transactional
 @Slf4j
 public class EventTeaserImageService {
 
+    /** The event code that names the global set, in the paths and as an upload target. */
+    public static final String GLOBAL_CODE = "_global";
+
     private static final int MAX_TEASER_IMAGES = 10;
-    private static final int PRESIGNED_URL_EXPIRY_SECONDS = 900; // 15 min
-    private static final Set<String> ALLOWED_TYPES = Set.of(
-            "image/jpeg", "image/png", "image/webp", "image/svg+xml");
 
     private final EventTeaserImageRepository teaserImageRepository;
-    private final S3Presigner s3Presigner;
+    private final EventManagementUploadRepository uploadRepository;
     private final S3Client s3Client;
     private final String bucketName;
-    private final String cloudFrontDomain;
 
     public EventTeaserImageService(
             EventTeaserImageRepository teaserImageRepository,
-            S3Presigner s3Presigner,
+            EventManagementUploadRepository uploadRepository,
             S3Client s3Client,
-            @Value("${aws.s3.bucket-name:batbern-development-company-logos}") String bucketName,
-            @Value("${aws.cloudfront.domain:https://cdn.batbern.ch}") String cloudFrontDomain) {
+            @Value("${aws.s3.bucket-name:batbern-development-company-logos}") String bucketName) {
         this.teaserImageRepository = teaserImageRepository;
-        this.s3Presigner = s3Presigner;
+        this.uploadRepository = uploadRepository;
         this.s3Client = s3Client;
         this.bucketName = bucketName;
-        this.cloudFrontDomain = cloudFrontDomain;
+    }
+
+    /** The stored event code of a path or target value: null for {@link #GLOBAL_CODE}. */
+    @Nullable
+    public static String scopeOf(String eventCode) {
+        return GLOBAL_CODE.equals(eventCode) ? null : eventCode;
     }
 
     /**
-     * Phase 1: Generate presigned PUT URL for direct S3 upload.
+     * Refuses a new teaser image when the scope already has {@value #MAX_TEASER_IMAGES} (409). Checked
+     * when the upload is reserved; {@link #addUploaded} checks again under the scope's lock.
      * @param eventCode event code, or null for global images
      */
-    public TeaserImageUploadUrlResponse generateUploadUrl(@Nullable String eventCode,
-                                                          String contentType,
-                                                          String fileName) {
-        if (contentType == null || !ALLOWED_TYPES.contains(contentType)) {
-            throw new IllegalArgumentException(
-                    "Unsupported content type: " + contentType
-                    + ". Allowed: image/jpeg, image/png, image/webp, image/svg+xml");
+    @Transactional(readOnly = true)
+    public void checkRoomFor(@Nullable String eventCode) {
+        long count = eventCode != null
+                ? teaserImageRepository.countByEventCode(eventCode)
+                : teaserImageRepository.countByEventCodeIsNull();
+        if (count >= MAX_TEASER_IMAGES) {
+            throw limitExceeded(eventCode);
         }
-        String ext = resolveExtension(fileName, contentType);
-        String s3Key = eventCode != null
-                ? String.format("events/%s/teaser/%s.%s", eventCode, UUID.randomUUID(), ext)
-                : String.format("global/teaser/%s.%s", UUID.randomUUID(), ext);
-
-        String uploadUrl = S3Links.uploadUrl(s3Presigner, bucketName, s3Key, contentType, null,
-                Duration.ofSeconds(PRESIGNED_URL_EXPIRY_SECONDS));
-
-        return new TeaserImageUploadUrlResponse(
-                URI.create(uploadUrl),
-                s3Key,
-                PRESIGNED_URL_EXPIRY_SECONDS
-        );
     }
 
     /**
-     * Phase 3: Confirm upload — verify S3 presence, persist EventTeaserImage.
+     * Creates the teaser image of a confirmed {@code teaser-image} upload, last in display order.
+     * Takes the scope's transaction-scoped advisory lock first ({@code pg_advisory_xact_lock}, keyed
+     * on the event code or {@link #GLOBAL_CODE}), so concurrent confirms for one scope run one after
+     * the other and each counts the rows the one before committed: the limit and a unique display
+     * order hold, also for an empty scope. The lock is released when the confirm transaction ends.
      * @param eventCode event code, or null for global images
      */
-    public TeaserImageItem confirmUpload(@Nullable String eventCode, String s3Key) {
-        // Validate s3Key prefix matches the scope
-        String expectedPrefix = eventCode != null
-                ? String.format("events/%s/teaser/", eventCode)
-                : "global/teaser/";
-        if (s3Key == null || !s3Key.startsWith(expectedPrefix)) {
-            throw new IllegalArgumentException("s3Key must start with " + expectedPrefix);
-        }
-
-        // Lock existing rows so concurrent confirms serialize
+    public EventTeaserImage addUploaded(@Nullable String eventCode, String s3Key, String imageUrl) {
+        teaserImageRepository.lockScope(eventCode != null ? eventCode : GLOBAL_CODE);
         List<EventTeaserImage> existing = eventCode != null
-                ? teaserImageRepository.findByEventCodeForUpdate(eventCode)
-                : teaserImageRepository.findGlobalForUpdate();
-
+                ? teaserImageRepository.findByEventCodeOrderByDisplayOrderAsc(eventCode)
+                : teaserImageRepository.findByEventCodeIsNullOrderByDisplayOrderAsc();
         if (existing.size() >= MAX_TEASER_IMAGES) {
-            if (eventCode != null) {
-                throw new TeaserImageLimitExceededException(eventCode, MAX_TEASER_IMAGES);
-            } else {
-                throw new TeaserImageLimitExceededException(MAX_TEASER_IMAGES);
-            }
+            throw limitExceeded(eventCode);
         }
-
-        // Verify S3 presence
-        try {
-            s3Client.headObject(HeadObjectRequest.builder()
-                    .bucket(bucketName)
-                    .key(s3Key)
-                    .build());
-        } catch (NoSuchKeyException e) {
-            throw new IllegalStateException("Uploaded file not found in S3: " + s3Key);
-        }
-
-        String imageUrl = CloudFrontUrlBuilder.buildUrl(cloudFrontDomain, bucketName, s3Key);
         int displayOrder = existing.stream()
                 .mapToInt(EventTeaserImage::getDisplayOrder)
                 .max()
@@ -142,10 +102,15 @@ public class EventTeaserImageService {
         entity.setDisplayOrder(displayOrder);
 
         EventTeaserImage saved = teaserImageRepository.save(entity);
-        log.info("Teaser image {} confirmed for {}, displayOrder={}",
+        log.info("Teaser image {} added for {}, displayOrder={}",
                 saved.getId(), eventCode != null ? "event " + eventCode : "global", displayOrder);
+        return saved;
+    }
 
-        return toItem(saved);
+    private static TeaserImageLimitExceededException limitExceeded(@Nullable String eventCode) {
+        return eventCode != null
+                ? new TeaserImageLimitExceededException(eventCode, MAX_TEASER_IMAGES)
+                : new TeaserImageLimitExceededException(MAX_TEASER_IMAGES);
     }
 
     /**
@@ -165,6 +130,10 @@ public class EventTeaserImageService {
         }
 
         teaserImageRepository.delete(image);
+        // The upload row of an image added on the upload contract (Story 17.11c): ASSOCIATED rows
+        // never expire, so it would stay forever. Images added before 17.11c have none.
+        uploadRepository.findByPurposeAndS3Key(TeaserImageUploadHandler.PURPOSE, image.getS3Key())
+                .ifPresent(uploadRepository::delete);
         log.info("Teaser image {} deleted from {}", imageId,
                 eventCode != null ? "event " + eventCode : "global");
     }
@@ -211,20 +180,5 @@ public class EventTeaserImageService {
                 entity.getDisplayOrder(),
                 TeaserImagePresentationPosition.fromValue(entity.getPresentationPosition())
         );
-    }
-
-    private String resolveExtension(String fileName, String contentType) {
-        if (fileName != null && fileName.contains(".")) {
-            String ext = fileName.substring(fileName.lastIndexOf('.') + 1).toLowerCase();
-            if (Set.of("jpg", "jpeg", "png", "webp", "svg").contains(ext)) {
-                return ext.equals("jpeg") ? "jpg" : ext;
-            }
-        }
-        return switch (contentType != null ? contentType : "") {
-            case "image/png" -> "png";
-            case "image/webp" -> "webp";
-            case "image/svg+xml" -> "svg";
-            default -> "jpg";
-        };
     }
 }

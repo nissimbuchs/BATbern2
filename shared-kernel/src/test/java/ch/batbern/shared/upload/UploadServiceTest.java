@@ -69,6 +69,14 @@ class UploadServiceTest {
         boolean targetAllowed = true;
         boolean importAllowed;
         boolean targetRequired;
+        boolean full;
+
+        @Override
+        public void checkCanReserve(String targetId) {
+            if (full) {
+                throw UploadException.conflict("full");
+            }
+        }
 
         @Override
         public boolean requiresTarget() {
@@ -398,6 +406,47 @@ class UploadServiceTest {
         }
 
         assertThat(deletes).doesNotContain(temp);
+    }
+
+    @Test
+    @DisplayName("attach refused after the copy (rollback): the final object goes, the temp object stays")
+    void should_deleteFinalObjectAndKeepTemp_when_associationRollsBack() {
+        String id = reserve();
+        service.confirm("company-logo", id, Map.of());
+        String temp = table.get(id).getS3Key();
+        String finalKey = "logos/2026/companies/acme/logo-" + id + ".png";
+
+        TransactionSynchronizationManager.initSynchronization();
+        try {
+            service.associate("company-logo", id, "acme");
+            assertThat(deletes).isEmpty();
+            TransactionSynchronizationManager.getSynchronizations()
+                    .forEach(sync -> sync.afterCompletion(TransactionSynchronization.STATUS_ROLLED_BACK));
+        } finally {
+            TransactionSynchronizationManager.clearSynchronization();
+        }
+
+        assertThat(deletes).containsExactly(finalKey);
+        assertThat(deletes).doesNotContain(temp);
+    }
+
+    @Test
+    @DisplayName("checkCanReserve runs on create with a target, never on confirm")
+    void should_checkRoomOnCreateOnly_when_targetGiven() {
+        handler.full = true;
+        assertStatus(() -> service.create("company-logo", "Logo.PNG", "image/png", 1000,
+                Map.of("companyName", "acme")), HttpStatus.CONFLICT);
+        handler.full = false;
+        String id = service.create("company-logo", "Logo.PNG", "image/png", 1000, Map.of("companyName", "acme"))
+                .uploadId();
+        handler.full = true;
+
+        assertStatus(() -> service.confirm("company-logo", id, Map.of("companyName", "globex")),
+                HttpStatus.NOT_FOUND);
+        assertStatus(() -> service.confirm("company-logo", "unknown", Map.of("companyName", "acme")),
+                HttpStatus.NOT_FOUND);
+        assertThat(service.confirm("company-logo", id, Map.of("companyName", "acme")).getStatus())
+                .isEqualTo(UploadStatus.ASSOCIATED);
     }
 
     @Test

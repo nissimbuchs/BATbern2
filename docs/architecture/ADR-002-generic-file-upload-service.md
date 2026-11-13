@@ -1,6 +1,6 @@
 # ADR-002: Generic File Upload Service Architecture
 
-**Status**: Accepted (decision 2026-11-07 implemented for `company-logo` and `event-theme-image` by Story 17.11, 2026-11-12, for `profile-picture` by Story 17.11a, 2026-11-13, and for `event-photo` by Story 17.11b, 2026-11-13)
+**Status**: Accepted (decision 2026-11-07 implemented for `company-logo` and `event-theme-image` by Story 17.11, 2026-11-12, for `profile-picture` by Story 17.11a, 2026-11-13, for `event-photo` by Story 17.11b, 2026-11-13, and for `teaser-image` by Story 17.11c, 2026-11-13)
 **Date**: 2025-10-27
 **Decision Makers**: Development Team, Architect Agent (Winston)
 **Related Stories**: Story 1.16.3 (Generic File Upload Service), Story 2.5.1 (Company Management Frontend)
@@ -785,6 +785,7 @@ not a copy of the CUMS class, and both services create and use the same `logos` 
 | `event-theme-image` | EMS | png, jpeg, svg | 5 MB | `eventCode` (ORGANIZER), optional | no | `logos/events/{eventCode}/theme-{uploadId}.{ext}` |
 | `profile-picture` | CUMS | png, jpeg, svg | 5 MB | `username` (ORGANIZER or the user themself), required | yes (ORGANIZER) | `profile-pictures/{username}/profile-{uploadId}.{ext}` |
 | `event-photo` | EMS | jpeg, png, webp | 10 MB | `eventCode` (ORGANIZER), required | no | `events/{eventCode}/photos/{uploadId}.{ext}` |
+| `teaser-image` | EMS | jpeg, png, webp, svg | 10 MB | `eventCode` (ORGANIZER), required, `_global` for the global set | no | `events/{eventCode}/teaser/{uploadId}.{ext}`, `global/teaser/{uploadId}.{ext}` |
 
 The gateway routes each purpose by an explicit map in `DomainRouter` (an unlisted purpose is 404).
 Final keys carry no year since Story 17.11a; files stored earlier keep their `…/{year}/…` key and URL
@@ -793,6 +794,32 @@ Final keys carry no year since Story 17.11a; files stored earlier keep their `�
 **Target binding** (Story 17.11b): a target given on create is stored on the PENDING row
 (`target_type`, `target_id`); a confirm, or an entity's `associate`, for another target answers 404
 and changes nothing. An upload reserved without a target may still be confirmed with one.
+
+### Story 17.11c (2026-11-13): purpose `teaser-image`
+
+- **Contract:** `teaser-image` joins the `UploadPurpose` enum (`uploads-api`); `eventCode` `_global`
+  names the global set, as in the teaser paths. The operations
+  `POST /events/{eventCode}/teaser-images/upload-url` and `POST /events/{eventCode}/teaser-images/confirm`
+  and their schemas are deleted from `events-core-api` (no aliases; both now answer 405, they fall on
+  `/teaser-images/{imageId}`, which has PATCH and DELETE only). List, PATCH and DELETE stay.
+- **EMS:** `TeaserImageUploadHandler` (ORGANIZER, target `eventCode` required, unknown event 404, no
+  import; jpeg, png, webp, svg as before, up to 10 MB, new because the contract signs a size; temp
+  key `events/temp/{uploadId}/teaser-{uploadId}.{ext}`, target type `EVENT_TEASER`). The limit of
+  10 per scope is checked on create (new handler hook `checkCanReserve`, create only, so a confirm
+  first gets the contract's 404/409 answers) and again on attach under a transaction-scoped advisory
+  lock on the scope (`pg_advisory_xact_lock`; a row lock cannot serialize inserts);
+  `TeaserImageLimitExceededException` is now a 409 `UploadException` with its old message (it was 422
+  on the old confirm). Attach creates the `event_teaser_images` row, last in display order, with
+  the upload's `fileUrl` as `imageUrl`, and clears the event cache after the commit (the theme image
+  handler too). Deleting a teaser image deletes its upload row.
+- **Shared kernel:** when the confirm transaction rolls back after the copy to the final key (e.g.
+  the limit on attach), the final object is deleted after the rollback; the temp object stays for a
+  retry. Fixed with it: the old confirm took the S3 key from the client, signed no size and had
+  no pending state or expiry. `GLOBAL_CODE` and the `_global` mapping moved from the controller to
+  `EventTeaserImageService`.
+- **Gateway:** `teaser-image` → EMS in the purpose map.
+- **Frontend:** `useUploadTeaserImage` runs on `uploadTarget('teaser-image', {eventCode})`, with
+  `_global` for the global images tab.
 
 ### Story 17.11b (2026-11-13): purpose `event-photo`
 
@@ -874,7 +901,7 @@ Implements the decision of 2026-11-07 for its first two purposes:
 - **`logos` dropped** (#1307, owner go 2026-11-13): CUMS V31 and EMS V154 drop the table; its upload
   history is discarded by decision, the S3 objects stay.
 - **Left:** purposes `profile-picture` (done, 17.11a, above), `event-photo` (done, 17.11b, above),
-  `teaser-image` and `session-material` follow in Stories 17.11c–d; each adds a handler, its enum value and its line in
+  `teaser-image` (done, 17.11c, above); `session-material` follows in Story 17.11d; it adds a handler, its enum value and its line in
   the gateway map, no operation.
 
 ### Story 1.16.3 (2025-10, historical)

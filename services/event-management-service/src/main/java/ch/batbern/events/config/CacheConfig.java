@@ -1,6 +1,7 @@
 package ch.batbern.events.config;
 
 import com.github.benmanes.caffeine.cache.Caffeine;
+import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.cache.caffeine.CaffeineCacheManager;
@@ -8,6 +9,8 @@ import org.springframework.cache.support.NoOpCacheManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.util.concurrent.TimeUnit;
 
@@ -39,6 +42,32 @@ public class CacheConfig {
     public static final String EVENT_TYPES_CACHE = "eventTypes";
     public static final String STATUS_SUMMARY_CACHE = "statusSummary";
     public static final String STATUS_HISTORY_CACHE = "statusHistory";
+
+    /**
+     * Clears the caches once the current transaction has committed (right away without one). A
+     * clear inside the transaction lets a concurrent read put the old state back before the commit
+     * (Story 17.11c review: the upload handlers attach inside the confirm transaction).
+     */
+    public static void clearAfterCommit(CacheManager cacheManager, String... names) {
+        Runnable clear = () -> {
+            for (String name : names) {
+                Cache cache = cacheManager.getCache(name);
+                if (cache != null) {
+                    cache.clear();
+                }
+            }
+        };
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    clear.run();
+                }
+            });
+        } else {
+            clear.run();
+        }
+    }
 
     /**
      * Local-dev only: disable application caching so direct DB edits are reflected

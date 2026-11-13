@@ -3,12 +3,12 @@ title: 'Upload purpose teaser-image'
 type: 'refactor'
 ticket: '11c'
 created: '2026-11-13'
-status: 'ready-for-dev'
-baseline_revision: ''
+status: 'built'
+baseline_revision: '59c369b89'
 route: 'full'
 route_source: 'auto'
 risk: 'low'
-review: ''
+review: 'quick'
 review_source: ''
 lenses_ran: []
 review_loop_iteration: 0
@@ -54,19 +54,35 @@ context: []
 ## Tasks & Acceptance
 
 **Execution:**
-- [ ] Specs + types.
-- [ ] EMS RED IT `TeaserImageUploadIntegrationTest` (matrix), handler, removals, IT de-`@Transactional`.
-- [ ] Gateway map `teaser-image` → EMS.
-- [ ] Frontend hook, client, tests on MSW.
-- [ ] Bruno, Playwright (global CRUD, plus one event teaser).
-- [ ] `lint:api --update` (−1), remove N3, ratchet update.
+- [x] Specs + types.
+- [x] EMS RED IT `TeaserImageUploadIntegrationTest` (matrix), handler, removals, IT de-`@Transactional`.
+- [x] Gateway map `teaser-image` → EMS.
+- [x] Frontend hook, client, tests on MSW.
+- [x] Bruno, Playwright (global CRUD, plus one event teaser).
+- [x] `lint:api --update` (−1), remove N3, ratchet update.
 
 **Acceptance Criteria:**
 - Given local dev, when an organizer adds an event teaser and a global teaser, then both show (event page, global images tab) after reload, and the 11th in one scope is refused with the existing message.
 
 ## Implementation Notes
 
+- Old paths: `POST …/teaser-images/upload-url` and `POST …/teaser-images/confirm` now answer **405** (they fall on `/teaser-images/{imageId}`, PATCH and DELETE only). Pinned in `TeaserImageUploadIntegrationTest` and Bruno 14.
+- Not strictly RED-first: the handler was written before the IT ran. Instead, the cache eviction was mutation-checked: with `cache.clear()` commented out in `attach` (before the review moved it after the commit), the event-teaser IT case fails (the event GET is cached before the upload); restored, green.
+- `GLOBAL_CODE` and `scopeOf(eventCode)` (`_global` → null) moved to `EventTeaserImageService`; the controller and `TeaserImageUploadHandler` use them. `GLOBAL_TEASER_CODE` is exported from `eventApiClient.ts` for the hook.
+- Limit (after review): `EventTeaserImageService.checkRoomFor` runs in the new shared hook `UploadPurposeHandler.checkCanReserve`, called on create only, so a confirm against a full scope first gets the contract's answers (unknown upload 404, other target 404, already attached 409; IT `should_answerContractFirst_when_scopeFullOnConfirm`). On confirm the limit is checked in `attach` (`addUploaded`) under `pg_advisory_xact_lock` keyed on the scope (`event_teaser_images:` + event code or `_global`); the former `FOR UPDATE` row-lock queries are removed (they lock nothing in an empty scope and do not hold back inserts). The attach-time limit is covered by the advisory-lock ITs `should_admitExactlyOne_when_confirmsRaceForTheLastPlace` (9 in scope, 4 concurrent confirms: one 200, three 409, 10 rows, distinct display orders) and `should_giveDistinctDisplayOrders_when_confirmsRaceInEmptyScope`; with the lock call commented out both failed (mutation check). A confirm refused for the limit rolls back: the upload stays PENDING and the final S3 object copied in that transaction is deleted after the rollback (shared `UploadService`, unit test plus the IT verifying the delete).
+- Target type `EVENT_TEASER` (target id is the event code or `_global`), temp key `events/temp/{uploadId}/teaser-{uploadId}.{ext}`, `.jpeg` stored as `.jpg` (reuses `EventPhotoUploadHandler.keyExtension`). The teaser row keeps its generated id (not the upload id, unlike photos: the entity has `@GeneratedValue`, and changing it was out of scope).
+- Deleting a teaser image deletes its upload row too (new `EventManagementUploadRepository.findByPurposeAndS3Key`), as 11b does for photos: an ASSOCIATED row never expires. Images added before 17.11c have none. Deleting an event cascades to `event_teaser_images` only; upload rows and S3 objects of its teasers stay (same as photos).
+- Event cache (after review): `attach` clears `EVENT_WITH_INCLUDES_CACHE` after the commit (`CacheConfig.clearAfterCommit`, a `TransactionSynchronization.afterCommit`); `EventThemeImageUploadHandler` moved to the same helper for its two caches.
+- Frontend: `useUploadTeaserImage` takes `{ file }` only; it rethrows a refused step with the server's `message` (`withServerMessage`), so the tabs show "Maximum of 10 teaser images reached for event: …" instead of Axios' "Request failed with status code 409". The file-name helper of 11b moved to `uploadService.fileNameWithExtension`; `photoFileName` wraps it.
+- `EventSettingsTab` got `data-testid` `teaser-image-input` and `teaser-image-card` (`data-image-id`) for the new Playwright spec `e2e/organizer/event-teaser-image-upload.spec.ts` (local dev only, like the 11b photo spec).
+- `EventTeaserImageServiceTest` (three mocks, two of them own repositories) is deleted; what it covered is in the ITs on PostgreSQL: limit, global count and display order in `TeaserImageUploadIntegrationTest`, position update and not-found in `EventTeaserImageControllerIntegrationTest`, which now also verifies the S3 delete and covers the `_global` delete and scope separation.
+- `TeaserImageUploadIntegrationTest` removes only its own global rows (fill rows with key prefix `global/teaser/it-17-11c-`, rows created by its uploads) and fills a scope up to a total, so other classes' global rows are left alone.
+- `EventTeaserImageControllerIntegrationTest`: no class `@Transactional`, no `TestSecurityConfig`, no `@MockitoBean` S3 (the `TestAwsConfig` mocks serve), and its `deleteAll()` on `events` and `event_teaser_images` replaced by deletes of its own event code (with commits, `deleteAll` would have wiped other classes' rows).
+
 ## Plan Change Log
+
+- 2026-11-13, build: **limit status 409, not 422.** The frozen matrix says "409 at reserve (and at attach) with the existing limit error"; the Code Map said "keep its status" (422). The frozen intent wins: `TeaserImageLimitExceededException` now extends `UploadException` with 409 and keeps its exact message, and its 422 handler in `GlobalExceptionHandler` is removed (no other thrower). The upload contract documents 409 for a full target (create and confirm). Owner to confirm in the PR body; a script that checked for 422 on the old confirm sees 409 now (the old confirm is gone anyway).
+- 2026-11-13, build: deleting a teaser image also deletes its upload row (see Implementation Notes). Not in the plan; done for parity with 11b, which otherwise leaves ASSOCIATED rows forever.
 
 ## Review Triage Log
 
@@ -79,6 +95,8 @@ context: []
 **Cleaner.** Removed: 2 operations and the client-supplied key. Gained: a size limit, pending state and expiry, and one ratchet mock and one transactional IT fewer. Spectral −1.
 
 ## Verification
+
+**Run results (2026-11-13, local dev from this worktree, EMS and gateway restarted):** full EMS and gateway suites green (before the review fixes); after the review fixes shared-kernel, the EMS teaser/photo/upload/theme/guard tests, the CUMS upload/logo/profile-picture tests, the affected Vitest files, `check:test-ratchet`, Bruno `event-media-api` (17/17) and both Playwright specs, `admin-global-images-crud.spec.ts` and `event-teaser-image-upload.spec.ts`, green on local dev. Live API check on local dev: the 11th teaser of one event is refused at reserve with 409 and the existing message.
 
 **Commands:**
 - `./gradlew :services:event-management-service:test --max-workers=4` -- green

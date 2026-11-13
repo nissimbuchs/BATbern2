@@ -1,7 +1,6 @@
 package ch.batbern.events.controller;
 
 import ch.batbern.events.config.TestAwsConfig;
-import ch.batbern.events.config.TestSecurityConfig;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.EventTeaserImage;
 import ch.batbern.events.core.dto.generated.EventType;
@@ -9,6 +8,7 @@ import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.EventTeaserImageRepository;
 import ch.batbern.shared.test.AbstractIntegrationTest;
 import ch.batbern.shared.types.EventWorkflowState;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -16,30 +16,23 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.CacheManager;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.transaction.annotation.Transactional;
 import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.model.HeadObjectRequest;
-import software.amazon.awssdk.services.s3.model.HeadObjectResponse;
-import software.amazon.awssdk.services.s3.presigner.S3Presigner;
-import software.amazon.awssdk.services.s3.presigner.model.PresignedPutObjectRequest;
-import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignRequest;
+import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 
-import java.net.URI;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -47,13 +40,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * Integration tests for EventTeaserImageController.
  * Story 10.22: Event Teaser Images — AC8 (TDD)
  *
- * Uses real PostgreSQL via Testcontainers (AbstractIntegrationTest) with mocked S3 only.
- * Each test verifies actual DB state after HTTP calls (AC8: "integration test verifies DB state").
- * H2 fix: replaced @MockBean EventTeaserImageService with real service + @MockitoBean S3 beans.
+ * Uses real PostgreSQL via Testcontainers (AbstractIntegrationTest); S3 is the Mockito mock of
+ * {@link TestAwsConfig}. Each test verifies actual DB state after HTTP calls (AC8).
  * M2 fix: added GET /events/{eventCode} test verifying teaserImages in EventResponse.
+ * Adding a teaser image is the upload contract since Story 17.11c ({@link TeaserImageUploadIntegrationTest}).
+ *
+ * <p>Not {@code @Transactional}: every request commits; {@code @AfterEach} removes this test's rows.
  */
-@Transactional
-@Import({TestSecurityConfig.class, TestAwsConfig.class})
+@Import(TestAwsConfig.class)
 class EventTeaserImageControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
@@ -68,18 +62,17 @@ class EventTeaserImageControllerIntegrationTest extends AbstractIntegrationTest 
     @Autowired
     CacheManager cacheManager;
 
-    @MockitoBean
-    S3Presigner s3Presigner;
+    @Autowired
+    JdbcTemplate jdbc;
 
-    @MockitoBean
+    @Autowired
     S3Client s3Client;
 
     private static final String EVENT_CODE = "BATbern997";
 
     @BeforeEach
     void setUp() {
-        teaserImageRepository.deleteAll();
-        eventRepository.deleteAll();
+        removeRows();
         createTestEvent();
         // Clear event caches so GET tests see fresh DB state (cache is shared across test methods).
         // Clear rather than evict one key: the event cache key carries an audience suffix
@@ -90,66 +83,6 @@ class EventTeaserImageControllerIntegrationTest extends AbstractIntegrationTest 
                 cache.clear();
             }
         });
-    }
-
-    // ── upload-url ───────────────────────────────────────────────────────────────
-
-    @Test
-    @DisplayName("POST upload-url as ORGANIZER returns 200 with uploadUrl and s3Key - AC2")
-    @WithMockUser(roles = "ORGANIZER")
-    void generateUploadUrl_asOrganizer_returns200() throws Exception {
-        PresignedPutObjectRequest mockPresigned = mock(PresignedPutObjectRequest.class);
-        when(mockPresigned.url()).thenReturn(URI.create("https://s3.amazonaws.com/test-bucket/key?sig=x").toURL());
-        when(s3Presigner.presignPutObject(any(PutObjectPresignRequest.class))).thenReturn(mockPresigned);
-
-        mockMvc.perform(post("/api/v1/events/{code}/teaser-images/upload-url", EVENT_CODE)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"contentType\":\"image/jpeg\",\"fileName\":\"teaser.jpg\"}"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.uploadUrl").isNotEmpty())
-                .andExpect(jsonPath("$.s3Key").isNotEmpty())
-                .andExpect(jsonPath("$.expiresIn").value(900));
-    }
-
-    @Test
-    @DisplayName("POST upload-url with disallowed content type returns 400 - H1")
-    @WithMockUser(roles = "ORGANIZER")
-    void generateUploadUrl_disallowedContentType_returns400() throws Exception {
-        mockMvc.perform(post("/api/v1/events/{code}/teaser-images/upload-url", EVENT_CODE)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"contentType\":\"application/pdf\",\"fileName\":\"doc.pdf\"}"))
-                .andExpect(status().isBadRequest());
-    }
-
-    @Test
-    @DisplayName("POST upload-url as anonymous returns 401 - AC2")
-    void generateUploadUrl_asAnonymous_returns401() throws Exception {
-        mockMvc.perform(post("/api/v1/events/{code}/teaser-images/upload-url", EVENT_CODE)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"contentType\":\"image/jpeg\",\"fileName\":\"teaser.jpg\"}"))
-                .andExpect(status().isUnauthorized());
-    }
-
-    // ── confirm ──────────────────────────────────────────────────────────────────
-
-    @Test
-    @DisplayName("POST confirm persists row to DB and returns TeaserImageItem - AC2 + AC8 DB state")
-    @WithMockUser(roles = "ORGANIZER")
-    void confirmUpload_asOrganizer_persistsRowAndReturns200() throws Exception {
-        String s3Key = "events/" + EVENT_CODE + "/teaser/" + UUID.randomUUID() + ".jpg";
-        when(s3Client.headObject(any(HeadObjectRequest.class))).thenReturn(HeadObjectResponse.builder().build());
-
-        mockMvc.perform(post("/api/v1/events/{code}/teaser-images/confirm", EVENT_CODE)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"s3Key\":\"" + s3Key + "\"}"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").isNotEmpty())
-                .andExpect(jsonPath("$.imageUrl").isNotEmpty())
-                .andExpect(jsonPath("$.displayOrder").value(0))
-                .andExpect(jsonPath("$.presentationPosition").value("AFTER_TOPIC_REVEAL"));
-
-        // AC8: verify actual DB state
-        assertThat(teaserImageRepository.findByEventCodeOrderByDisplayOrderAsc(EVENT_CODE)).hasSize(1);
     }
 
     // ── delete ───────────────────────────────────────────────────────────────────
@@ -163,8 +96,40 @@ class EventTeaserImageControllerIntegrationTest extends AbstractIntegrationTest 
         mockMvc.perform(delete("/api/v1/events/{code}/teaser-images/{id}", EVENT_CODE, image.getId()))
                 .andExpect(status().isNoContent());
 
-        // AC8: verify actual DB state
+        // AC8: verify actual DB state, and the S3 object goes too
         assertThat(teaserImageRepository.findById(image.getId())).isEmpty();
+        verify(s3Client, atLeastOnce()).deleteObject(
+                argThat((DeleteObjectRequest r) -> ("events/" + EVENT_CODE + "/teaser/img.jpg").equals(r.key())));
+    }
+
+    @Test
+    @DisplayName("DELETE a global image (_global) removes it, the event's images stay")
+    @WithMockUser(roles = "ORGANIZER")
+    void deleteTeaserImage_global_removesOnlyTheGlobalRow() throws Exception {
+        EventTeaserImage eventImage = createTeaserImage("events/" + EVENT_CODE + "/teaser/keep.jpg", 0);
+        EventTeaserImage global = new EventTeaserImage();
+        global.setEventCode(null);
+        global.setS3Key("global/teaser/it-controller-" + UUID.randomUUID() + ".jpg");
+        global.setImageUrl("https://cdn.batbern.ch/" + global.getS3Key());
+        global = teaserImageRepository.save(global);
+
+        mockMvc.perform(delete("/api/v1/events/{code}/teaser-images/{id}", "_global", global.getId()))
+                .andExpect(status().isNoContent());
+
+        assertThat(teaserImageRepository.findById(global.getId())).isEmpty();
+        assertThat(teaserImageRepository.findById(eventImage.getId())).isPresent();
+    }
+
+    @Test
+    @DisplayName("DELETE an event's image through _global is 404: scopes do not mix")
+    @WithMockUser(roles = "ORGANIZER")
+    void deleteTeaserImage_eventImageViaGlobal_returns404() throws Exception {
+        EventTeaserImage image = createTeaserImage("events/" + EVENT_CODE + "/teaser/img.jpg", 0);
+
+        mockMvc.perform(delete("/api/v1/events/{code}/teaser-images/{id}", "_global", image.getId()))
+                .andExpect(status().isNotFound());
+
+        assertThat(teaserImageRepository.findById(image.getId())).isPresent();
     }
 
     @Test
@@ -249,7 +214,19 @@ class EventTeaserImageControllerIntegrationTest extends AbstractIntegrationTest 
                 .andExpect(status().isUnauthorized());
     }
 
+    @AfterEach
+    void tearDown() {
+        removeRows();
+    }
+
     // ── helpers ──────────────────────────────────────────────────────────────────
+
+    private void removeRows() {
+        jdbc.update("DELETE FROM event_teaser_images WHERE event_code = ?", EVENT_CODE);
+        jdbc.update("DELETE FROM event_teaser_images WHERE event_code IS NULL"
+                + " AND s3_key LIKE 'global/teaser/it-controller-%'");
+        jdbc.update("DELETE FROM events WHERE event_code = ?", EVENT_CODE);
+    }
 
     private void createTestEvent() {
         Event event = new Event();

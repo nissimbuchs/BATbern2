@@ -1,0 +1,56 @@
+meta {
+  name: Reserve a teaser-image upload for the fixture event
+  type: http
+  seq: 10
+}
+
+post {
+  url: {{baseUrl}}/uploads/teaser-image
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "fileName": "bruno-teaser-{{photoTimestamp}}.png",
+    "contentType": "image/png",
+    "size": 4,
+    "target": { "eventCode": "{{photoEventCode}}" }
+  }
+}
+
+assert {
+  res.status: eq 201
+  res.body.uploadId: isDefined
+  res.body.uploadUrl: isDefined
+}
+
+script:post-response {
+  if (res.getStatus() === 201) {
+    bru.setVar("teaserUploadId", res.getBody().uploadId);
+    bru.setVar("teaserUploadUrl", res.getBody().uploadUrl);
+  }
+}
+
+tests {
+  test("should name the signed Content-Type", function() {
+    expect(res.getBody().requiredHeaders['Content-Type']).to.equal('image/png');
+  });
+}
+
+docs {
+  Story 17.11c: purpose teaser-image is owned by event-management; the gateway routes
+  /uploads/teaser-image there. The target eventCode is required ("_global" names the global set,
+  not used here so the run leaves the shared global images alone) and bound to the upload. A set
+  with 10 teaser images answers 409 here already (TeaserImageUploadIntegrationTest).
+}

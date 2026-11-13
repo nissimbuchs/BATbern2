@@ -97,6 +97,7 @@ public class UploadService<T extends UploadRecord> {
         String targetId = targetId(handler, target);
         if (targetId != null) {
             handler.checkTarget(targetId);
+            handler.checkCanReserve(targetId);
         }
         String type = normalizedType(contentType);
         String extension = checkedExtension(handler, fileName);
@@ -297,7 +298,7 @@ public class UploadService<T extends UploadRecord> {
             String finalKey) {
         String tempKey = upload.getS3Key();
         copy(tempKey, finalKey);
-        deleteAfterCommit(tempKey);
+        cleanUpAfterCompletion(tempKey, finalKey);
         String url = CloudFrontUrlBuilder.buildUrl(cdnDomain, bucket, finalKey);
         upload.associate(targetType, targetId, finalKey, url, clock.instant());
         log.info("UPLOAD_ASSOCIATED purpose={} uploadId={} target={}:{} key={}", handler.purpose(),
@@ -427,19 +428,28 @@ public class UploadService<T extends UploadRecord> {
     }
 
     /**
-     * Removes the temp object once the association is committed. On a rollback the row is CONFIRMED
-     * again at its temp key, so the object must still be there for a retry with the same uploadId.
+     * After the association: on commit the temp object goes. On a rollback (e.g. the handler's
+     * attach refuses, Story 17.11c) the row is back at its temp key, so the temp object must stay for
+     * a retry with the same uploadId, and the final object copied in this transaction goes instead,
+     * as nothing points at it.
      */
-    private void deleteAfterCommit(String key) {
+    private void cleanUpAfterCompletion(String tempKey, String finalKey) {
         if (TransactionSynchronizationManager.isSynchronizationActive()) {
             TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
                 @Override
                 public void afterCommit() {
-                    delete(key);
+                    delete(tempKey);
+                }
+
+                @Override
+                public void afterCompletion(int status) {
+                    if (status == STATUS_ROLLED_BACK) {
+                        delete(finalKey);
+                    }
                 }
             });
         } else {
-            delete(key);
+            delete(tempKey);
         }
     }
 

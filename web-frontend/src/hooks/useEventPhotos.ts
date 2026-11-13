@@ -4,7 +4,7 @@
  */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { eventApiClient } from '@/services/eventApiClient';
-import { uploadTarget } from '@/services/uploadService';
+import { fileNameWithExtension, uploadTarget } from '@/services/uploadService';
 
 /** The extensions `event-photo` accepts, and the one each allowed type implies. */
 const PHOTO_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp'];
@@ -15,19 +15,11 @@ const EXTENSION_BY_TYPE: Record<string, string> = {
 };
 
 /**
- * The file name sent on create. The upload contract takes the extension from the name and refuses
- * a name without an accepted one (Story 17.11b; the former photo endpoint fell back to the content
- * type), so a name without one gets the extension of its type, e.g. `IMG_0042` → `IMG_0042.jpg`.
+ * The file name sent on create (Story 17.11b): a name without an accepted extension gets the one
+ * of its type, e.g. `IMG_0042` → `IMG_0042.jpg`. See {@link fileNameWithExtension}.
  */
-export const photoFileName = (file: File): string => {
-  const dot = file.name.lastIndexOf('.');
-  const extension = dot < 0 ? '' : file.name.slice(dot + 1).toLowerCase();
-  const fromType = EXTENSION_BY_TYPE[file.type];
-  if (PHOTO_EXTENSIONS.includes(extension) || !fromType) {
-    return file.name;
-  }
-  return `${file.name || 'photo'}.${fromType}`;
-};
+export const photoFileName = (file: File): string =>
+  fileNameWithExtension(file, PHOTO_EXTENSIONS, EXTENSION_BY_TYPE, 'photo');
 
 export const useEventPhotos = (eventCode: string, enabled = true) => {
   return useQuery({

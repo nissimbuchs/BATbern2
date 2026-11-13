@@ -19,8 +19,9 @@ export interface paths {
      *     to it (403) and that it exists (404). Returns the presigned PUT URL, valid 15 minutes. Any
      *     signed-in user may upload without a target; the file does nothing until an entity that the
      *     caller may change takes it. A purpose that requires a target (`profile-picture`,
-     *     `event-photo`) answers 400 without one. The target given here is recorded with the upload;
-     *     the confirm must name the same one.
+     *     `event-photo`, `teaser-image`) answers 400 without one. The target given here is recorded
+     *     with the upload; the confirm must name the same one. `teaser-image` answers 409 when its
+     *     event (or the global set) already has 10 teaser images.
      */
     post: operations['createFileUpload'];
     delete?: never;
@@ -45,7 +46,8 @@ export interface paths {
      *     e.g. it becomes the company logo. Confirming an upload that is already ASSOCIATED is 409; an
      *     unknown, expired or other-purpose `uploadId` is 404, and so is a `target` other than the one
      *     given on create (Story 17.11b). A purpose that requires a target (`profile-picture`,
-     *     `event-photo`) answers 400 without one.
+     *     `event-photo`, `teaser-image`) answers 400 without one. `teaser-image` answers 409 when its
+     *     event (or the global set) already has 10 teaser images.
      */
     post: operations['confirmFileUpload'];
     delete?: never;
@@ -82,14 +84,19 @@ export type webhooks = Record<string, never>;
 export interface components {
   schemas: {
     /** @enum {string} */
-    UploadPurpose: 'company-logo' | 'event-theme-image' | 'profile-picture' | 'event-photo';
+    UploadPurpose:
+      'company-logo' | 'event-theme-image' | 'profile-picture' | 'event-photo' | 'teaser-image';
     /**
      * @description The existing entity the file is for, by its meaningful ID (ADR-003). Set the one key of
      *     the purpose: `companyName` for `company-logo`, `eventCode` for `event-theme-image` and
-     *     `event-photo`, `username` for `profile-picture`.
+     *     `event-photo`, `teaser-image`, `username` for `profile-picture`.
      */
     UploadTarget: {
       companyName?: string;
+      /**
+       * @description The event's code, e.g. `BATbern58`. For `teaser-image`, `_global` names the global
+       *     teaser images shown on every event.
+       */
       eventCode?: string;
       username?: string;
     };
@@ -220,7 +227,10 @@ export interface components {
         'application/json': components['schemas']['ErrorResponse'];
       };
     };
-    /** @description The upload is not in a state for this step (already attached, file missing) */
+    /**
+     * @description The upload is not in a state for this step (already attached, file missing), or the target
+     *     is full (`teaser-image`: 10 per event or global)
+     */
     Conflict: {
       headers: {
         [name: string]: unknown;
@@ -235,7 +245,8 @@ export interface components {
      * @description What the file is for. Decides the owning service, the rules and the target. The values
      *     are those of `UploadPurpose`; a service answers 404 for a purpose it does not own.
      */
-    Purpose: 'company-logo' | 'event-theme-image' | 'profile-picture' | 'event-photo';
+    Purpose:
+      'company-logo' | 'event-theme-image' | 'profile-picture' | 'event-photo' | 'teaser-image';
   };
   requestBodies: never;
   headers: never;
@@ -275,6 +286,7 @@ export interface operations {
       401: components['responses']['Unauthorized'];
       403: components['responses']['Forbidden'];
       404: components['responses']['NotFound'];
+      409: components['responses']['Conflict'];
     };
   };
   confirmFileUpload: {

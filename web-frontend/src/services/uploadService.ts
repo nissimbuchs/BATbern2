@@ -70,3 +70,25 @@ export const importUpload = async (
   const response = await apiClient.post<Upload>(`/uploads/${purpose}/import`, body);
   return response.data.uploadId;
 };
+
+/**
+ * The file name sent on create. The upload contract takes the extension from the name and refuses
+ * a name without an accepted one (the former photo and teaser endpoints fell back to the content
+ * type), so a name without one gets the extension of its type, e.g. `IMG_0042` → `IMG_0042.jpg`;
+ * an empty name becomes `{fallbackBase}.{ext}`. A type outside `extensionByType` leaves the name as
+ * it is, and the server answers 400.
+ */
+export const fileNameWithExtension = (
+  file: File,
+  acceptedExtensions: readonly string[],
+  extensionByType: Readonly<Record<string, string>>,
+  fallbackBase: string
+): string => {
+  const dot = file.name.lastIndexOf('.');
+  const extension = dot < 0 ? '' : file.name.slice(dot + 1).toLowerCase();
+  const fromType = extensionByType[file.type];
+  if (acceptedExtensions.includes(extension) || !fromType) {
+    return file.name;
+  }
+  return `${file.name || fallbackBase}.${fromType}`;
+};

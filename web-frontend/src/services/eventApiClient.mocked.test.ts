@@ -393,41 +393,6 @@ describe('EventApiClient — mocked', () => {
 
   // ── Event Teaser Images (Story 10.22) ─────────────────────────────────────────
 
-  describe('requestTeaserImageUploadUrl', () => {
-    it('should return teaser image upload URL', async () => {
-      const mockResponse = { uploadUrl: 'https://s3.example.com/teaser-upload', uploadId: 'ti-1' };
-      mockApiClient.post.mockResolvedValue({ data: mockResponse });
-
-      const result = await eventApiClient.requestTeaserImageUploadUrl('BATbern142', {
-        fileName: 'teaser.jpg',
-        fileSize: 150_000,
-        mimeType: 'image/jpeg',
-      });
-
-      expect(mockApiClient.post).toHaveBeenCalledWith(
-        '/events/BATbern142/teaser-images/upload-url',
-        expect.objectContaining({ fileName: 'teaser.jpg' })
-      );
-      expect(result.uploadId).toBe('ti-1');
-    });
-  });
-
-  describe('confirmTeaserImageUpload', () => {
-    it('should return confirmed teaser image', async () => {
-      const mockItem = { id: 'ti-1', cloudFrontUrl: 'https://cdn.example.com/teaser.jpg' };
-      mockApiClient.post.mockResolvedValue({ data: mockItem });
-
-      const result = await eventApiClient.confirmTeaserImageUpload('BATbern142', {
-        uploadId: 'ti-1',
-        fileName: 'teaser.jpg',
-        fileSize: 150_000,
-        mimeType: 'image/jpeg',
-      });
-
-      expect(result.id).toBe('ti-1');
-    });
-  });
-
   describe('deleteTeaserImage', () => {
     it('should call DELETE on teaser image endpoint', async () => {
       mockApiClient.delete.mockResolvedValue({ data: undefined });

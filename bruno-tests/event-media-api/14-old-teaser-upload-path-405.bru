@@ -1,0 +1,39 @@
+meta {
+  name: The old teaser upload-url path is gone
+  type: http
+  seq: 14
+}
+
+post {
+  url: {{baseUrl}}/events/{{photoEventCode}}/teaser-images/upload-url
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "contentType": "image/png",
+    "fileName": "bruno-teaser.png"
+  }
+}
+
+tests {
+  test("405: upload-url now falls on /teaser-images/{imageId}, which has no POST", function() {
+    expect(res.getStatus()).to.equal(405);
+  });
+}
+
+docs {
+  Story 17.11c, breaking, no alias. POST /events/{eventCode}/teaser-images/upload-url and
+  POST /events/{eventCode}/teaser-images/confirm are removed; both are pinned at 405 by
+  TeaserImageUploadIntegrationTest.
+}

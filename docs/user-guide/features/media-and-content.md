@@ -30,7 +30,7 @@ Public photo listing endpoints (`GET /api/v1/events/{eventCode}/photos` and `GET
 
 ## Event Teaser Images (Story 10.22)
 
-Organizers upload one or more teaser images for an event from the event settings tab (presigned-URL upload, with a thumbnail gallery and per-image delete; **max 10 images** per event). On the [moderator presentation page](#moderator-presentation-page-story-108ab), each teaser image renders as its own full-screen slide, inserted in order between the topic-reveal slide and the agenda-preview slide — a visual mood-setter sequence. When an event has no teaser images, the presentation renders exactly as before (no blank slides).
+Organizers upload one or more teaser images for an event from the event settings tab (shared upload flow since Story 17.11c: `POST /api/v1/uploads/teaser-image` with the event as target → PUT to S3 → confirm with the same event; JPEG, PNG, WebP and SVG up to 10 MB; a thumbnail gallery and per-image delete; **max 10 images** per event). Global teaser images, shown on every event, are managed in Administration with the target `_global`, also at most 10. On the [moderator presentation page](#moderator-presentation-page-story-108ab), each teaser image renders as its own full-screen slide, inserted in order between the topic-reveal slide and the agenda-preview slide — a visual mood-setter sequence. When an event has no teaser images, the presentation renders exactly as before (no blank slides).
 
 ## AI-Assisted Event Content (Story 10.16)
 

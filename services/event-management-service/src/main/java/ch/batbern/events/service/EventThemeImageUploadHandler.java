@@ -9,7 +9,6 @@ import ch.batbern.shared.upload.UploadPurposeHandler;
 import ch.batbern.shared.upload.UploadRecord;
 import ch.batbern.shared.upload.UploadRules;
 import lombok.RequiredArgsConstructor;
-import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.stereotype.Component;
 
@@ -86,14 +85,7 @@ public class EventThemeImageUploadHandler implements UploadPurposeHandler {
         event.setThemeImageUploadId(upload.getUploadId());
         event.setThemeImageUrl(upload.getFileUrl());
         eventRepository.save(event);
-        evict(CacheConfig.EVENT_WITH_INCLUDES_CACHE);
-        evict(CacheConfig.ARCHIVE_EVENTS_CACHE);
-    }
-
-    private void evict(String name) {
-        Cache cache = cacheManager.getCache(name);
-        if (cache != null) {
-            cache.clear();
-        }
+        CacheConfig.clearAfterCommit(cacheManager, CacheConfig.EVENT_WITH_INCLUDES_CACHE,
+                CacheConfig.ARCHIVE_EVENTS_CACHE);
     }
 }
