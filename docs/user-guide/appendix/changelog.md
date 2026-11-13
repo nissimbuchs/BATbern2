@@ -42,6 +42,10 @@ Only items that are not live yet. Everything else is listed under its release be
 
 ### Unreleased — after BATbern60
 
+**Improvement — The attendee dashboard shows the next three events**:
+- ✅ "Upcoming events" on the participant dashboard no longer stays empty without a registration. It shows three events: every upcoming event you are registered for first (with its registration status), then the next events you are not registered for, until there are three. Registered for more than three, you see all of them and no others.
+- ✅ The cards are the ones of the homepage section "Nächste BAT-Termine". A published event links to its event page, where you register. An event not yet published shows code, title and date only, without a link.
+
 **Improvement — One upload contract, company logos and theme images (Epic 17, 17.11)**:
 - ✅ Company logos (create form, company edit, batch import and the logo request on the profile) and event theme images upload through one shared flow. Nothing changes on the page, except that the preview right after choosing a file now shows the file itself.
 - ✅ A participant without the speaker or partner role can upload the logo for a logo request again (the upload step refused them since the role checks of October).

@@ -223,7 +223,6 @@ fe-mock-components	web-frontend/src/components/shared/Company/__tests__/CompanyM
 fe-mock-components	web-frontend/src/components/shared/__tests__/OrganizerChip.test.tsx	1
 fe-mock-components	web-frontend/src/pages/PartnerCompanyPage.test.tsx	1
 fe-mock-components	web-frontend/src/pages/UserAccountPage/UserAccountPage.test.tsx	2
-fe-mock-components	web-frontend/src/pages/attendee/__tests__/AttendeeDashboardPage.test.tsx	2
 fe-mock-components	web-frontend/src/pages/organizer/OrganizerAnalyticsPage.test.tsx	4
 fe-mock-components	web-frontend/src/pages/public/ClaimProfilePage.test.tsx	1
 fe-mock-components	web-frontend/src/pages/public/__tests__/ArchivePage.test.tsx	2
@@ -324,7 +323,6 @@ fe-mock-hooks	web-frontend/src/hooks/useTurnstile/useTurnstile.test.ts	1
 fe-mock-hooks	web-frontend/src/pages/PartnerCompanyPage.test.tsx	1
 fe-mock-hooks	web-frontend/src/pages/PresentationPage.test.tsx	2
 fe-mock-hooks	web-frontend/src/pages/UserAccountPage/UserAccountPage.test.tsx	2
-fe-mock-hooks	web-frontend/src/pages/attendee/__tests__/AttendeeDashboardPage.test.tsx	1
 fe-mock-hooks	web-frontend/src/pages/public/__tests__/ArchivePage.test.tsx	1
 fe-mock-hooks	web-frontend/src/pages/public/__tests__/DeregistrationPage.test.tsx	1
 fe-mock-hooks	web-frontend/src/pages/public/__tests__/UnsubscribePage.test.tsx	1
@@ -421,7 +419,6 @@ fe-mock-i18n	web-frontend/src/components/shared/Navigation/AppHeader.test.tsx	1
 fe-mock-i18n	web-frontend/src/components/shared/Navigation/NavigationMenu.test.tsx	1
 fe-mock-i18n	web-frontend/src/hooks/useRegistration/useRegistration.test.ts	1
 fe-mock-i18n	web-frontend/src/pages/PartnerCompanyPage.test.tsx	1
-fe-mock-i18n	web-frontend/src/pages/attendee/__tests__/AttendeeDashboardPage.test.tsx	1
 fe-mock-i18n	web-frontend/src/pages/organizer/OrganizerAnalyticsPage.test.tsx	1
 fe-mock-i18n	web-frontend/src/pages/public/__tests__/ArchivePage.test.tsx	1
 fe-mock-i18n	web-frontend/src/pages/public/__tests__/DeregistrationPage.test.tsx	1
@@ -537,7 +534,6 @@ fe-mock-services	web-frontend/src/hooks/useUserManagement/__tests__/useUserSearc
 fe-mock-services	web-frontend/src/hooks/useUserManagement/useUserManagement.test.ts	1
 fe-mock-services	web-frontend/src/hooks/useUserSync/__tests__/useUserSync.test.tsx	1
 fe-mock-services	web-frontend/src/hooks/useUserSync/useUserSync.test.ts	1
-fe-mock-services	web-frontend/src/pages/attendee/__tests__/AttendeeDashboardPage.test.tsx	1
 fe-mock-services	web-frontend/src/pages/dev/DevEmailInboxPage.test.tsx	1
 fe-mock-services	web-frontend/src/pages/public/ClaimProfilePage.test.tsx	1
 fe-mock-services	web-frontend/src/pages/public/__tests__/ArchivePage.test.tsx	2
