@@ -1388,14 +1388,7 @@
       "past": "Afgelopen evenementen",
       "emptyUpcoming": "Geen aankomende evenementen — bekijk wat eraan komt.",
       "emptyPast": "Nog geen afgelopen evenementen.",
-      "error": "Kon je evenementen niet laden. Probeer het opnieuw.",
-      "status": {
-        "registered": "Geregistreerd",
-        "confirmed": "Bevestigd",
-        "waitlist": "Wachtlijst",
-        "attended": "Aanwezig geweest",
-        "no_show": "Niet verschenen"
-      }
+      "error": "Kon je evenementen niet laden. Probeer het opnieuw."
     }
   },
   "appreciation": {

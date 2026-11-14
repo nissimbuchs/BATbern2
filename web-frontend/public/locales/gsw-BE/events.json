@@ -1391,14 +1391,7 @@
       "past": "Vergangeni Aläss",
       "emptyUpcoming": "Kei chömende Aläss — lueg, was chunnt.",
       "emptyPast": "No kei vergangeni Aläss.",
-      "error": "Dini Aläss hei nid chönne glade wärde. Probier's nomal.",
-      "status": {
-        "registered": "Aagmäldet",
-        "confirmed": "Bestätigt",
-        "waitlist": "Wartlischte",
-        "attended": "Debi gsi",
-        "no_show": "Nid cho"
-      }
+      "error": "Dini Aläss hei nid chönne glade wärde. Probier's nomal."
     }
   },
   "appreciation": {

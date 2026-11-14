@@ -1388,14 +1388,7 @@
       "past": "Événements passés",
       "emptyUpcoming": "Aucun événement à venir — découvrez ce qui arrive.",
       "emptyPast": "Aucun événement passé pour l'instant.",
-      "error": "Impossible de charger vos événements. Veuillez réessayer.",
-      "status": {
-        "registered": "Inscrit",
-        "confirmed": "Confirmé",
-        "waitlist": "Liste d'attente",
-        "attended": "Participé",
-        "no_show": "Absent"
-      }
+      "error": "Impossible de charger vos événements. Veuillez réessayer."
     }
   },
   "appreciation": {

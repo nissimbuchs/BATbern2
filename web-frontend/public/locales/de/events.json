@@ -1402,14 +1402,7 @@
       "past": "Vergangene Veranstaltungen",
       "emptyUpcoming": "Keine kommenden Veranstaltungen — schau, was ansteht.",
       "emptyPast": "Noch keine vergangenen Veranstaltungen.",
-      "error": "Deine Veranstaltungen konnten nicht geladen werden. Bitte versuche es erneut.",
-      "status": {
-        "registered": "Angemeldet",
-        "confirmed": "Bestätigt",
-        "waitlist": "Warteliste",
-        "attended": "Teilgenommen",
-        "no_show": "Nicht erschienen"
-      }
+      "error": "Deine Veranstaltungen konnten nicht geladen werden. Bitte versuche es erneut."
     }
   },
   "appreciation": {

@@ -1388,14 +1388,7 @@
       "past": "Occurrenzas passadas",
       "emptyUpcoming": "Naginas proximas occurrenzas — guarda tge che vegn.",
       "emptyPast": "Anc naginas occurrenzas passadas.",
-      "error": "Tias occurrenzas n'han betg pudì vegnir chargiadas. Empruva anc ina giada.",
-      "status": {
-        "registered": "Annunzià",
-        "confirmed": "Confermà",
-        "waitlist": "Glista d'spetga",
-        "attended": "Participà",
-        "no_show": "Betg cumparì"
-      }
+      "error": "Tias occurrenzas n'han betg pudì vegnir chargiadas. Empruva anc ina giada."
     }
   },
   "appreciation": {

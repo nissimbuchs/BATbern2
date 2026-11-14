@@ -165,14 +165,16 @@ describe('AttendeeDashboardPage', () => {
     expect(within(cards[1]).queryByTestId('event-card-status-chip')).toBeNull();
   });
 
-  it('should_showAllRegisteredEventsAndNoOthers_when_userIsRegisteredForFour', async () => {
+  // Owner 2026-11-14: three cards, one row, even with more registrations (the next three).
+  it('should_showOnlyTheNextThreeRegisteredEvents_when_userIsRegisteredForFour', async () => {
     given(CALENDAR.slice(0, 4).map((e) => registered(e)));
 
     renderPage();
 
     const cards = await upcomingCards();
-    expect(cards).toHaveLength(4);
-    expect(within(cards[3]).getByText('Tbd Herbst 28')).toBeInTheDocument();
+    expect(cards).toHaveLength(3);
+    expect(within(cards[0]).getByText('FinOps')).toBeInTheDocument();
+    expect(screen.queryByText('Tbd Herbst 28')).not.toBeInTheDocument();
     expect(screen.queryByText('Tbd Frühling 29')).not.toBeInTheDocument();
   });
 
@@ -187,7 +189,7 @@ describe('AttendeeDashboardPage', () => {
     expect(cards[0]).toHaveAttribute('data-testid', 'attendee-event-card');
     expect(cards[0]).toHaveAttribute('href', '/events/BATbern61');
     expect(within(cards[0]).getByText('FinOps')).toBeInTheDocument();
-    expect(within(cards[0]).getByTestId('attendee-event-status')).toHaveTextContent('Confirmed');
+    expect(within(cards[0]).queryByTestId('attendee-event-status')).toBeNull();
   });
 
   it('should_showTheEmptyText_when_thereIsNoUpcomingEventAtAll', async () => {
@@ -208,6 +210,8 @@ describe('AttendeeDashboardPage', () => {
     const card = await within(past).findByTestId('attendee-event-card');
     expect(card).toHaveAttribute('href', '/archive/BATbern50');
     expect(within(card).getByText('Old Event')).toBeInTheDocument();
+    // Owner 2026-11-14: no participation status on the local card (it overflowed the card).
+    expect(within(card).queryByTestId('attendee-event-status')).toBeNull();
   });
 });
 

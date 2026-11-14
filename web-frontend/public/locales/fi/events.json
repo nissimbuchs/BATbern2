@@ -1388,14 +1388,7 @@
       "past": "Menneet tapahtumat",
       "emptyUpcoming": "Ei tulevia tapahtumia — katso mitä on tulossa.",
       "emptyPast": "Ei vielä menneitä tapahtumia.",
-      "error": "Tapahtumiasi ei voitu ladata. Yritä uudelleen.",
-      "status": {
-        "registered": "Ilmoittautunut",
-        "confirmed": "Vahvistettu",
-        "waitlist": "Jonopaikka",
-        "attended": "Osallistui",
-        "no_show": "Ei saapunut"
-      }
+      "error": "Tapahtumiasi ei voitu ladata. Yritä uudelleen."
     }
   },
   "appreciation": {
