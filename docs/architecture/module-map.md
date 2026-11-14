@@ -62,6 +62,11 @@ CUMS (identity) is upstream of all. EMS (event) is upstream of PCS (partners).
   CUMS V31 / EMS V154, #1307); EMS keeps its files in `event_management_uploads` (Story 17.11). The
   fixture test `EmsModuleRulesFixtureTest.should_fail_when_entityMapsUploadTableOfAnotherService`
   proves the rule fires.
+- EMS `architecture/EmsEndpointPlacementTest` (not frozen, it has no violation): `EventController`
+  maps no `/registrations` or `/my-registration` path, neither by hand nor through an implemented
+  interface (the generated `RegistrationsApi`); the registration endpoints live in
+  `RegistrationController`, the counts and the delete guard in `RegistrationService` (Story 17.13).
+  Fixture tests in `EmsModuleRulesFixtureTest` prove it fires on both.
 - `FrozenRuleKeysTest` (EMS, CUMS) fails when a frozen rule is added, renamed or removed without
   its store: ArchUnit would otherwise accept all its current violations on the first run.
 - Today's violations sit in `src/test/resources/archunit_store`. A new one fails the build; a fixed

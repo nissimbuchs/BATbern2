@@ -242,6 +242,23 @@ public interface RegistrationRepository
     long countByEventIdAndStatusIn(UUID eventId, List<String> statuses);
 
     /**
+     * Registrations with one of these statuses, per event, in one query (Story 17.13: the archive
+     * list's {@code include=registrations} counted one event at a time). An event without such a
+     * registration has no row.
+     */
+    @Query("SELECT r.eventId AS eventId, COUNT(r) AS registrations FROM Registration r "
+            + "WHERE r.eventId IN :eventIds AND r.status IN :statuses GROUP BY r.eventId")
+    List<EventRegistrationCount> countPerEventByStatusIn(
+            @Param("eventIds") Collection<UUID> eventIds, @Param("statuses") List<String> statuses);
+
+    /** One row of {@link #countPerEventByStatusIn}. */
+    interface EventRegistrationCount {
+        UUID getEventId();
+
+        long getRegistrations();
+    }
+
+    /**
      * Count *real* attendees for an event: active-status registrations that are NOT programmatic
      * (i.e. carry no {@code autoRegisteredFrom} metadata marker). Programmatic enrollments —
      * organizers/partners auto-enrolled at event creation and auto-registered speakers — are

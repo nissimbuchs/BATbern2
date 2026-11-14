@@ -62,14 +62,14 @@ deferred: []
 ## Tasks & Acceptance
 
 **Execution:**
-- [ ] `controller/RegistrationController.java` -- new, implements `RegistrationsApi`, same `@PreAuthorize` per op; private helpers `registrationOfEvent` (one 404 rule, cross-event hidden) and `sendConfirmation` (token + deregistration URL + mail, used by create and resend) -- moves the code, removes FQNs and duplication.
-- [ ] `service/RegistrationService.java` + `RegistrationRepository.java` -- `listForEvent`, `countsFor(eventId)` (record), `activeCounts(Collection<UUID>)` (one grouped query), `requireNoRealAttendees(eventCode, eventId)` -- registration logic leaves event core.
-- [ ] `controller/EventController.java` -- remove endpoints and registration repository use; call the new service methods.
-- [ ] `test/.../architecture/EmsModuleRules.java`, new `EmsEndpointPlacementTest.java`, fixtures under `fixtures/eventcore*`, `EmsModuleRulesFixtureTest.java` -- rule `noRegistrationEndpointIn(root, "EventController")` checking mapping annotations of the class and its interfaces for `/registrations` or `/my-registration`; fixture tests: fires on hand mapping, fires via an implemented interface, passes on a clean controller.
-- [ ] `test/.../controller/RegistrationControllerIntegrationTest.java` -- receive the 5 moved tests; replace `@MockitoBean UserApiClient`/`RegistrationEmailService` with `CumsContractHarness` + `SesRecorder`, drop class `@Transactional` (explicit cleanup); add 400 malformed-code and 404 cross-event cases.
-- [ ] `RegistrationCapacityIntegrationTest`, `SecurityConfigIntegrationTest`, `EventControllerIntegrationTest` -- well-formed codes; remove the moved tests.
-- [ ] `web-frontend/scripts/test-ratchet-baseline.txt` -- update for the STALE lines only (`npm run check:test-ratchet -- --update`).
-- [ ] `docs/architecture/module-map.md` (Gates), `docs/architecture/01-system-overview.md` (~316), `docs/architecture/06-backend-architecture.md` if it names the controller -- document new controller and rule.
+- [x] `controller/RegistrationController.java` -- new, implements `RegistrationsApi`, same `@PreAuthorize` per op; private helpers `registrationOfEvent` (one 404 rule, cross-event hidden) and `sendConfirmation` (token + deregistration URL + mail, used by create and resend) -- moves the code, removes FQNs and duplication.
+- [x] `service/RegistrationService.java` + `RegistrationRepository.java` -- `listForEvent`, `countsFor(eventId)` (record), `activeCounts(Collection<UUID>)` (one grouped query), `requireNoRealAttendees(eventCode, eventId)` -- registration logic leaves event core.
+- [x] `controller/EventController.java` -- remove endpoints and registration repository use; call the new service methods.
+- [x] `test/.../architecture/EmsModuleRules.java`, new `EmsEndpointPlacementTest.java`, fixtures under `fixtures/eventcore*`, `EmsModuleRulesFixtureTest.java` -- rule `noRegistrationEndpointIn(root, "EventController")` checking mapping annotations of the class and its interfaces for `/registrations` or `/my-registration`; fixture tests: fires on hand mapping, fires via an implemented interface, passes on a clean controller.
+- [x] `test/.../controller/RegistrationControllerIntegrationTest.java` -- receive the 5 moved tests; replace `@MockitoBean UserApiClient`/`RegistrationEmailService` with `CumsContractHarness` + `SesRecorder`, drop class `@Transactional` (explicit cleanup); add 400 malformed-code and 404 cross-event cases.
+- [x] `RegistrationCapacityIntegrationTest`, `SecurityConfigIntegrationTest`, `EventControllerIntegrationTest` -- well-formed codes; remove the moved tests.
+- [x] `web-frontend/scripts/test-ratchet-baseline.txt` -- update for the STALE lines only (`npm run check:test-ratchet -- --update`).
+- [x] `docs/architecture/module-map.md` (Gates), `docs/architecture/01-system-overview.md` (~316), `docs/architecture/06-backend-architecture.md` if it names the controller -- document new controller and rule.
 
 **Acceptance Criteria:**
 - Given the EMS main classes, when `EmsEndpointPlacementTest` runs, then it passes and `EventController` has no `/registrations` or `/my-registration` mapping and implements no `RegistrationsApi`.
@@ -79,6 +79,13 @@ deferred: []
 - Given local dev, when Bruno (event-full-workflow-api, events-crud-api, participants-api) and Playwright `registration-flow.spec.ts` + `organizer/event-participants.spec.ts` run, then they pass.
 
 ## Implementation Notes
+
+- Module script after the change (2026-11-15, working tree on f5f052e6a + this story): 26 violating pairs / 84 refs (was 92); `event_core -> registrations` 4 (was 12): EventController 2 (`RegistrationService`, `WaitlistPromotionService`, the accepted L2 -> L3 deviation), ArchivalBestEffortSteps 1, Event 1.
+- `RegistrationController implements RegistrationsApi`; `createMyRegistration` now answers the generated `CreateMyRegistration201Response` (message, email): the former hand DTO also wrote `"companyUpdated": null`, which is gone from that one response. The hand `dto/CreateRegistrationResponse` is deleted (its only user was EventController).
+- Anonymous create: the CUMS user lookup and the confirmation token now happen only when a confirmation mail is sent (not for a waitlist registration, which never used them). The confirmation log line no longer logs a token prefix.
+- `include=registrations`: archive list one grouped query (`countPerEventByStatusIn`), detail the same method with one id.
+- `RegistrationControllerIntegrationTest`: on `CumsContractHarness` + `SesRecorder`, no class `@Transactional` (cleanup by event code); the 7 formerly `@Disabled` list/filter tests run again (denormalized attendee fields seeded), the 2 QR stubs removed; new: 400 on spec pattern/page/limit, 404 cross-event PATCH/DELETE, 404 unknown, 400 malformed registration code. Event dates relative to now.
+- Verified: EMS test task green (2804 tests, 0 failures, 6 skipped, no STALE line), checkstyleMain/Test clean, test ratchet 3 STALE lines removed by `--update` (no RAISED). Bruno and Playwright left to the parent (local dev).
 
 ## Plan Change Log
 

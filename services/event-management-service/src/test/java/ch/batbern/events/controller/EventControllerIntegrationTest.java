@@ -1278,94 +1278,9 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
     // ============================================================================
 
     // ============================================================================
-    // AC11: Get Event Registrations
+    // AC11, AC12: registration list, create, update and delete moved to
+    // RegistrationControllerIntegrationTest with the endpoints (Story 17.13)
     // ============================================================================
-
-    @Test
-    @DisplayName("should_listRegistrations_when_requested")
-    @WithMockUser(roles = "ORGANIZER")
-    void should_listRegistrations_when_requested() throws Exception {
-        Event savedEvent = seededAgendaPublishedEvent();
-
-        // Story 3.2: Response format uses paginated wrapper {data: [], pagination: {}}
-        mockMvc.perform(get("/api/v1/events/" + savedEvent.getEventCode() + "/registrations")
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data").isArray())
-                .andExpect(jsonPath("$.pagination").exists())
-                .andExpect(jsonPath("$.pagination.totalItems").isNumber());
-    }
-
-    @Test
-    @DisplayName("should_filterRegistrations_when_filterProvided")
-    @WithMockUser(roles = "ORGANIZER")
-    void should_filterRegistrations_when_filterProvided() throws Exception {
-        Event savedEvent = seededAgendaPublishedEvent();
-
-        // Story 3.2: Response format uses paginated wrapper {data: [], pagination: {}}
-        // Note: The API uses query params (status, search, companyId), not a JSON filter param
-        mockMvc.perform(get("/api/v1/events/" + savedEvent.getEventCode() + "/registrations")
-                        .param("status", "CONFIRMED")
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data").isArray())
-                .andExpect(jsonPath("$.pagination").exists());
-    }
-
-    @Test
-    @DisplayName("should_return404_when_listingRegistrationsForNonExistentEvent")
-    @WithMockUser(roles = "ORGANIZER")
-    void should_return404_when_listingRegistrationsForNonExistentEvent() throws Exception {
-        mockMvc.perform(get("/api/v1/events/non-existent-id/registrations")
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isNotFound());
-    }
-
-    // ============================================================================
-    // AC12: Manage Event Registrations (POST/PATCH/DELETE)
-    // ============================================================================
-
-    @Test
-    @DisplayName("should_createRegistration_when_validData")
-    void should_createRegistration_when_validData() throws Exception {
-        // Feedback #1: register against a FUTURE-dated event so the registration-deadline guard
-        // allows it (the shared @BeforeEach events are intentionally past-dated for list/filter tests).
-        Event savedEvent = createTestEvent("BATbern RegCreate", "2027-06-15T09:00:00Z", "AGENDA_PUBLISHED");
-
-        String newRegistration = """
-                {
-                    "firstName": "John",
-                    "lastName": "Doe",
-                    "email": "john.doe@example.com",
-                    "termsAccepted": true
-                }
-                """;
-
-        mockMvc.perform(post("/api/v1/events/" + savedEvent.getEventCode() + "/registrations")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(newRegistration))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.message").value("Registration submitted successfully. Check your email to confirm."))
-                .andExpect(jsonPath("$.email").value("john.doe@example.com")); // Story 4.1.5c: Minimal response
-    }
-
-    @Test
-    @DisplayName("should_return400_when_creatingRegistrationWithInvalidData")
-    void should_return400_when_creatingRegistrationWithInvalidData() throws Exception {
-        Event savedEvent = seededAgendaPublishedEvent();
-
-        String invalidRegistration = """
-                {
-                    "email": "invalid-email",
-                }
-                """;
-
-        mockMvc.perform(post("/api/v1/events/" + savedEvent.getEventCode() + "/registrations")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(invalidRegistration))
-                .andExpect(status().isBadRequest());
-    }
-
 
     // ============================================================================
     // AC13: Event Analytics

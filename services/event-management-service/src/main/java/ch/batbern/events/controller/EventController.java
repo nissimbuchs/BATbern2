@@ -1,22 +1,13 @@
 package ch.batbern.events.controller;
 
-import ch.batbern.shared.utils.LoggingUtils;
 import ch.batbern.events.notification.NotificationRepository;
 import ch.batbern.events.config.CacheConfig;
 import ch.batbern.events.domain.Event;
-import ch.batbern.events.domain.Registration;
 import ch.batbern.events.dto.CreateEventRequest;
-import ch.batbern.events.dto.CreateRegistrationResponse;
-import ch.batbern.events.registrations.dto.generated.ConfirmRegistration200Response;
-import ch.batbern.events.registrations.dto.generated.CreateRegistrationRequest;
-import ch.batbern.events.registrations.dto.generated.MyRegistrationResponse;
-import ch.batbern.events.registrations.dto.generated.ResendConfirmationResponse;
-import ch.batbern.events.registrations.dto.generated.UpdateRegistrationStatusRequest;
 import ch.batbern.events.dto.generated.topics.SelectTopicForEventRequest;
 import ch.batbern.events.dto.generated.topics.TopicSelectionResponse;
 import ch.batbern.events.dto.EventResponse;
 import ch.batbern.events.dto.PatchEventRequest;
-import ch.batbern.events.dto.RegistrationResponse;
 import ch.batbern.events.dto.UpdateEventRequest;
 import ch.batbern.events.mapper.EventMapper;
 import ch.batbern.events.mapper.EventGeneratedMapper;
@@ -29,26 +20,24 @@ import ch.batbern.events.analytics.dto.generated.EventAnalytics;
 import ch.batbern.events.event.EventCreatedEvent;
 import ch.batbern.events.event.EventUpdatedEvent;
 import ch.batbern.events.exception.BusinessValidationException;
-import ch.batbern.events.exception.EventHasRealRegistrationsException;
 import ch.batbern.events.exception.EventNotFoundException;
-import ch.batbern.events.exception.RegistrationNotFoundException;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.service.AgendaConfigResolver;
 import ch.batbern.events.service.EventSearchService;
+import ch.batbern.events.service.RegistrationService;
+import ch.batbern.events.service.WaitlistPromotionService;
 import ch.batbern.events.service.publishing.PublicEventShaper;
 import ch.batbern.events.domain.EventManagementUpload;
 import ch.batbern.events.service.EventThemeImageUploadHandler;
 import ch.batbern.shared.upload.UploadService;
 import ch.batbern.events.service.publishing.PublicSessionVisibilityPolicy;
 import ch.batbern.events.service.publishing.PublicSessionVisibilityService;
-import ch.batbern.shared.api.DeterministicPaging;
 import ch.batbern.shared.exception.NotFoundException;
 import ch.batbern.shared.exception.ValidationException;
 import jakarta.validation.Valid;
 import ch.batbern.shared.dto.PaginatedResponse;
 import ch.batbern.shared.types.EventWorkflowState;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 import java.time.Instant;
@@ -70,15 +59,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.ArrayList;
@@ -87,7 +71,6 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -122,10 +105,7 @@ public class EventController implements EventsApi, EventReportingApi, PublicEven
     private final ch.batbern.events.security.SecurityContextHelper securityContextHelper;
     private final CacheManager cacheManager;
     private final ch.batbern.events.client.UserApiClient userApiClient;
-    private final ch.batbern.events.service.RegistrationService registrationService;
-    private final ch.batbern.events.repository.RegistrationRepository registrationRepository;
-    private final ch.batbern.events.service.ConfirmationTokenService confirmationTokenService;
-    private final ch.batbern.events.service.RegistrationEmailService registrationEmailService;
+    private final RegistrationService registrationService;
     private final ch.batbern.events.service.TopicService topicService;
     private final ch.batbern.events.repository.TopicRepository topicRepository;
     private final ch.batbern.events.repository.SessionUserRepository sessionUserRepository;
@@ -133,7 +113,7 @@ public class EventController implements EventsApi, EventReportingApi, PublicEven
     private final ch.batbern.events.repository.SpeakerPoolRepository speakerPoolRepository;
     private final AgendaConfigResolver agendaConfigResolver;
     private final ch.batbern.events.service.SessionService sessionService;
-    private final ch.batbern.events.service.WaitlistPromotionService waitlistPromotionService;
+    private final WaitlistPromotionService waitlistPromotionService;
     private final ch.batbern.events.service.EventTeaserImageService eventTeaserImageService;
     private final ch.batbern.events.service.EventTimeResolver eventTimeResolver;
     private final PublicSessionVisibilityService publicSessionVisibilityService;
@@ -150,9 +130,6 @@ public class EventController implements EventsApi, EventReportingApi, PublicEven
     private SessionView organizerEndpointView() {
         return publicSessionVisibilityService.callerIsOrganizer() ? SessionView.ALL : SessionView.NONE;
     }
-
-    @Value("${app.base-url:https://batbern.ch}")
-    private String appBaseUrl;
 
     /**
      * List/Search Events (AC1)
@@ -339,14 +316,12 @@ public class EventController implements EventsApi, EventReportingApi, PublicEven
             }
         }
 
-        // --- BATCH 2: Registrations count (1 query via IN) ---
+        // --- BATCH 2: Registrations count (1 grouped query) ---
         if (includes.contains("registrations")) {
-            // Existing registrationRepository doesn't have a batch count; fall back to per-event
-            // (registrations are rarely requested on archive list, so this is acceptable)
+            Map<UUID, Long> activeCounts = registrationService.activeCounts(
+                    events.stream().map(Event::getId).toList());
             for (int i = 0; i < events.size(); i++) {
-                long regCount = registrationRepository.countByEventIdAndStatusIn(
-                        events.get(i).getId(), Registration.ACTIVE_STATUSES);
-                responses.get(i).setCurrentAttendeeCount((int) regCount);
+                responses.get(i).setCurrentAttendeeCount(activeCounts.get(events.get(i).getId()).intValue());
             }
         }
 
@@ -541,9 +516,8 @@ public class EventController implements EventsApi, EventReportingApi, PublicEven
                     expandMetricsToDTO(event, response);
                     break;
                 case "registrations":
-                    long registrationCount = registrationRepository.countByEventIdAndStatusIn(
-                            event.getId(), Registration.ACTIVE_STATUSES);
-                    response.setCurrentAttendeeCount((int) registrationCount);
+                    response.setCurrentAttendeeCount(
+                            registrationService.activeCounts(List.of(event.getId())).get(event.getId()).intValue());
                     break;
                 default:
                     log.warn("Unknown include resource requested: {}", trimmed);
@@ -1345,11 +1319,7 @@ public class EventController implements EventsApi, EventReportingApi, PublicEven
         // registrations — organizers/partners auto-enrolled at creation and auto-registered
         // speakers — never block deletion, otherwise no event would ever be deletable (every
         // event auto-enrols ~15 stakeholders). Real attendees → 409, cancel the event instead.
-        long realAttendees = registrationRepository.countRealAttendees(
-                event.getId(), Registration.ACTIVE_STATUSES);
-        if (realAttendees > 0) {
-            throw new EventHasRealRegistrationsException(eventCode, realAttendees);
-        }
+        registrationService.requireNoRealAttendees(eventCode, event.getId());
 
         // Delete event (cascades programmatic registrations, sessions, etc. via FK ON DELETE CASCADE).
         // Notifications reference the event by code without a FK, so they go explicitly (#1068).
@@ -1485,21 +1455,17 @@ public class EventController implements EventsApi, EventReportingApi, PublicEven
     /**
      * Enrich an EventResponse with live registration counts (Story 10.11).
      * Adds confirmedCount, waitlistCount, and spotsRemaining (null when capacity is unlimited).
-     * Cost: 2 DB queries per call — acceptable for single-event endpoints.
+     * Cost: 3 DB queries per call — acceptable for single-event endpoints.
      */
-    private void enrichWithRegistrationCounts(EventResponse response, java.util.UUID eventId) {
-        long confirmed = registrationRepository.countByEventIdAndStatusIn(
-                eventId, Registration.CONFIRMED_STATUSES);
-        long waitlisted = registrationRepository.countByEventIdAndStatus(eventId, "waitlist");
+    private void enrichWithRegistrationCounts(EventResponse response, UUID eventId) {
+        var counts = registrationService.countsFor(eventId);
+        response.setConfirmedCount((int) counts.confirmed());
+        response.setWaitlistCount((int) counts.waitlisted());
         // Real attendees exclude programmatic enrollments (organizers/partners/speakers); drives
         // the organizer Delete-button enable-state and mirrors the deleteEvent 409 guard.
-        long realAttendees = registrationRepository.countRealAttendees(
-                eventId, Registration.ACTIVE_STATUSES);
-        response.setConfirmedCount((int) confirmed);
-        response.setWaitlistCount((int) waitlisted);
-        response.setRealAttendeeCount((int) realAttendees);
+        response.setRealAttendeeCount((int) counts.realAttendees());
         if (response.getRegistrationCapacity() != null) {
-            response.setSpotsRemaining((int) (response.getRegistrationCapacity() - confirmed));
+            response.setSpotsRemaining((int) (response.getRegistrationCapacity() - counts.confirmed()));
         }
     }
 
@@ -1614,97 +1580,6 @@ public class EventController implements EventsApi, EventReportingApi, PublicEven
     }
 
     /**
-     * Manually promote a waitlisted registration to registered (Story 10.11 — AC3, AC5)
-     *
-     * POST /api/v1/events/{eventCode}/registrations/{registrationCode}/promote
-     *
-     * Organizer-only: promotes the specified waitlisted registration to status=registered.
-     * Returns 204 on success, 404 if registration not found, 409 if not on waitlist.
-     */
-    @PostMapping("/events/{eventCode}/registrations/{registrationCode}/promote")
-    @Operation(summary = "Promote Waitlisted Registration",
-            description = "Organizer-only: promote a waitlisted registration to registered status")
-    @PreAuthorize("hasRole('ORGANIZER')")
-    public ResponseEntity<Void> promoteFromWaitlist(
-            @PathVariable String eventCode,
-            @PathVariable String registrationCode) {
-        log.debug("POST /api/v1/events/{}/registrations/{}/promote", eventCode, registrationCode);
-        // M2 fix: validate registration belongs to this event before promoting
-        Event event = eventRepository.findByEventCode(eventCode)
-                .orElseThrow(() -> new EventNotFoundException("Event not found: " + eventCode));
-        Registration reg = registrationRepository.findByRegistrationCode(registrationCode)
-                .orElseThrow(() -> new RegistrationNotFoundException(registrationCode));
-        if (!event.getId().equals(reg.getEventId())) {
-            // Don't reveal existence of cross-event registrations — treat as not found
-            throw new RegistrationNotFoundException(registrationCode);
-        }
-        waitlistPromotionService.manuallyPromote(registrationCode);
-        return ResponseEntity.noContent().build();
-    }
-
-    /**
-     * Resend registration confirmation email
-     *
-     * POST /api/v1/events/{eventCode}/registrations/{registrationCode}/resend-confirmation
-     *
-     * Organizer-only: generates fresh JWT tokens and re-sends the confirmation email
-     * to the attendee. Only valid for registrations in "registered" (pending) status.
-     */
-    @PostMapping("/events/{eventCode}/registrations/{registrationCode}/resend-confirmation")
-    @Operation(
-            summary = "Resend Registration Confirmation Email",
-            description = "Organizer-only: resend the confirmation email to an attendee whose "
-                    + "registration is still pending (status=registered). Generates fresh tokens."
-    )
-    @PreAuthorize("hasRole('ORGANIZER')")
-    public ResponseEntity<ResendConfirmationResponse> resendConfirmationEmail(
-            @PathVariable String eventCode,
-            @PathVariable String registrationCode) {
-        log.info("POST /api/v1/events/{}/registrations/{}/resend-confirmation", eventCode, registrationCode);
-
-        Event event = eventRepository.findByEventCode(eventCode)
-                .orElseThrow(() -> new EventNotFoundException("Event not found: " + eventCode));
-        Registration registration = registrationRepository.findByRegistrationCode(registrationCode)
-                .orElseThrow(() -> new RegistrationNotFoundException(registrationCode));
-
-        if (!event.getId().equals(registration.getEventId())) {
-            throw new RegistrationNotFoundException(registrationCode);
-        }
-
-        if (!"registered".equalsIgnoreCase(registration.getStatus())) {
-            return ResponseEntity.status(org.springframework.http.HttpStatus.CONFLICT)
-                    .body(new ResendConfirmationResponse().message(
-                            "Confirmation email can only be resent for pending registrations. "
-                            + "Current status: " + registration.getStatus()));
-        }
-
-        String confirmationToken = confirmationTokenService.generateConfirmationToken(
-                registration.getId(), eventCode);
-
-        ch.batbern.events.dto.generated.users.UserResponse userProfile =
-                userApiClient.getUserByUsername(registration.getAttendeeUsername());
-
-        String deregistrationUrl = registration.getDeregistrationToken() != null
-                ? appBaseUrl + "/deregister?token=" + registration.getDeregistrationToken()
-                : null;
-
-        registrationEmailService.sendRegistrationConfirmation(
-                registration,
-                userProfile,
-                event,
-                confirmationToken,
-                deregistrationUrl,
-                java.util.Locale.GERMAN
-        );
-
-        log.info("Confirmation email resent for registration {}: attendee={}", registrationCode,
-                LoggingUtils.maskEmail(userProfile.getEmail()));
-
-        return ResponseEntity.ok(new ResendConfirmationResponse().message(
-                "Confirmation email resent to " + userProfile.getEmail()));
-    }
-
-    /**
      * Get Event Analytics (AC13)
      *
      * GET /api/v1/events/{id}/analytics?metrics=attendance,registrations,engagement&timeframe=start,end
@@ -1743,512 +1618,6 @@ public class EventController implements EventsApi, EventReportingApi, PublicEven
         analytics.setEventCode(eventCode);
 
         return ResponseEntity.ok(analytics);
-    }
-
-    // ================================
-    // Registration Endpoints (Story 2.2a: Anonymous Event Registration)
-    // ================================
-
-    /**
-     * Get My Registration Status - Story 10.10 (AC1)
-     *
-     * GET /api/v1/events/{eventCode}/my-registration
-     *
-     * Returns the authenticated user's registration status for the specified event.
-     * ADR-003: Uses eventCode (meaningful ID). ADR-004: Minimal response (no user profile fields).
-     *
-     * Authentication: Required. @PreAuthorize("isAuthenticated()") provides method-level guard
-     * (production URL-level security via SecurityConfig.anyRequest().authenticated() also applies).
-     *
-     * Always returns 200. Use the {@code registered} boolean in the response to determine
-     * if the user has a registration record — avoids browser console 404 noise.
-     *
-     * @param eventCode Event code to check registration for
-     * @return 200 always — registered=true with full data if found, registered=false if not
-     */
-    @GetMapping("/events/{eventCode}/my-registration")
-    @PreAuthorize("isAuthenticated()")
-    @Operation(
-            summary = "Get my registration status for an event",
-            description = "Returns the authenticated user's registration status. "
-                    + "Always 200 — use `registered` field to check enrollment. Requires authentication."
-    )
-    public ResponseEntity<MyRegistrationResponse> getMyRegistration(
-            @PathVariable String eventCode) {
-        log.debug("GET /api/v1/events/{}/my-registration", eventCode);
-
-        // ADR-001: Use custom:username claim (not sub UUID) — same pattern as all other endpoints
-        String username = securityContextHelper.getCurrentUsername();
-
-        return ResponseEntity.ok(registrationService.getMyRegistration(eventCode, username));
-    }
-
-    /**
-     * Quick Registration for Authenticated Attendee
-     *
-     * POST /api/v1/events/{eventCode}/my-registration
-     *
-     * Creates a confirmed registration for the currently authenticated user without
-     * requiring form input or email confirmation. Profile data is read from the JWT
-     * and the User Management Service. No email is sent.
-     *
-     * @param eventCode Event code to register for
-     * @return 201 Created with minimal response
-     */
-    @PostMapping("/events/{eventCode}/my-registration")
-    @PreAuthorize("isAuthenticated()")
-    @Operation(
-            summary = "Quick Registration for Authenticated Attendee",
-            description = "Creates a confirmed registration for the logged-in user. "
-                    + "No request body required — profile is read from the JWT session. "
-                    + "No confirmation email is sent. Requires authentication."
-    )
-    public ResponseEntity<CreateRegistrationResponse> createMyRegistration(
-            @PathVariable String eventCode) {
-        log.debug("POST /api/v1/events/{}/my-registration", eventCode);
-
-        String username = securityContextHelper.getCurrentUsername();
-        // Use SecurityContextHelper to extract the email claim — consistent with
-        // other endpoints in this service (e.g. NewsletterController) and handles
-        // both real JWT and @WithMockUser in tests.
-        String email = securityContextHelper.getCurrentUserEmail();
-
-        Registration registration = registrationService.createRegistrationForAuthenticatedUser(
-                eventCode, username, email);
-
-        String message = "waitlist".equals(registration.getStatus())
-                ? "You have been added to the waitlist for this event."
-                : "Registration confirmed.";
-
-        CreateRegistrationResponse response = CreateRegistrationResponse.builder()
-                .message(message)
-                .email(email)
-                .build();
-
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
-    }
-
-    /**
-     * Cancel My Registration (Authenticated Attendee)
-     *
-     * DELETE /api/v1/events/{eventCode}/my-registration
-     *
-     * Immediately cancels the authenticated user's registration for the given event.
-     * No email is sent. Triggers waitlist promotion if applicable.
-     *
-     * @param eventCode Event code whose registration to cancel
-     * @return 204 No Content on success
-     */
-    @DeleteMapping("/events/{eventCode}/my-registration")
-    @PreAuthorize("isAuthenticated()")
-    @Operation(
-            summary = "Cancel My Registration",
-            description = "Immediately cancels the authenticated user's registration. "
-                    + "No email sent. Triggers waitlist promotion. Requires authentication."
-    )
-    public ResponseEntity<Void> deleteMyRegistration(@PathVariable String eventCode) {
-        log.debug("DELETE /api/v1/events/{}/my-registration", eventCode);
-
-        String username = securityContextHelper.getCurrentUsername();
-
-        ch.batbern.events.domain.Event event = eventRepository.findByEventCode(eventCode)
-                .orElseThrow(() -> new NoSuchElementException("Event not found: " + eventCode));
-
-        Registration registration = registrationRepository
-                .findByEventIdAndAttendeeUsername(event.getId(), username)
-                .filter(r -> !"cancelled".equalsIgnoreCase(r.getStatus()))
-                .orElseThrow(() -> new NoSuchElementException(
-                        "No active registration found for user " + username + " at event " + eventCode));
-
-        registrationService.cancelRegistration(registration);
-        log.info("Authenticated cancellation: registration {} cancelled for user {} at event {}",
-                registration.getRegistrationCode(), username, eventCode);
-
-        return ResponseEntity.noContent().build();
-    }
-
-    /**
-     * Create Event Registration (Anonymous) - Story 2.2a (ADR-005)
-     *
-     * POST /api/v1/events/{eventCode}/registrations
-     *
-     * Creates a new registration for an event with anonymous user support.
-     * Users can register without creating a Cognito account (anonymous users).
-     *
-     * @param eventCode Event code to register for
-     * @param request Registration request with attendee details
-     * @return Created registration with enriched user data
-     */
-    @PostMapping("/events/{eventCode}/registrations")
-    @Operation(
-            summary = "Create Event Registration (Anonymous)",
-            description = "Register for an event without requiring authentication. "
-                    + "Creates anonymous user profile automatically. "
-                    + "Registration starts in PENDING status. User must confirm via email link."
-    )
-    @PreAuthorize("permitAll()")
-    public ResponseEntity<CreateRegistrationResponse> createRegistration(
-            @PathVariable String eventCode,
-            @Valid @RequestBody CreateRegistrationRequest request) {
-        log.debug("POST /api/v1/events/{}/registrations", eventCode);
-
-        // QA Fix (VALID-001): Check if this is a resend (existing pending registration)
-        // Service returns existing registration if status is "registered" (pending)
-        Instant beforeCreate = Instant.now();
-
-        // Create registration with status=PENDING (will be confirmed via email)
-        Registration registration = registrationService.createRegistration(eventCode, request);
-
-        // QA Fix (VALID-001): Detect if this is a resend (registration existed before this call)
-        boolean isResend = registration.getCreatedAt() != null
-            && registration.getCreatedAt().isBefore(beforeCreate);
-
-        // Generate confirmation token (48h validity)
-        String confirmationToken = confirmationTokenService.generateConfirmationToken(
-                registration.getId(),
-                eventCode
-        );
-
-        // Fetch event for email
-        ch.batbern.events.domain.Event event = eventRepository.findByEventCode(eventCode)
-                .orElseThrow(() -> new NoSuchElementException("Event not found: " + eventCode));
-
-        // Fetch user profile for email
-        ch.batbern.events.dto.generated.users.UserResponse userProfile =
-                userApiClient.getUserByUsername(registration.getAttendeeUsername());
-
-        // Story 10.11: Waitlist registrations get waitlist-confirmation email (sent by service).
-        // Regular registrations get normal confirmation email with JWT tokens.
-        if (!"waitlist".equals(registration.getStatus())) {
-            // Send confirmation email with JWT token (Story 4.1.5c).
-            // Email includes:
-            //   - Confirmation link: https://batbern.ch/events/{eventCode}/confirm-registration?token={confirmationToken}
-            //   - Deregistration link: https://batbern.ch/deregister?token={deregistrationToken} (Story 10.12)
-            String deregistrationUrl = registration.getDeregistrationToken() != null
-                    ? appBaseUrl + "/deregister?token=" + registration.getDeregistrationToken()
-                    : null;
-            registrationEmailService.sendRegistrationConfirmation(
-                    registration,
-                    userProfile,
-                    event,
-                    confirmationToken,
-                    deregistrationUrl,
-                    java.util.Locale.GERMAN // Default to German for BATbern events
-            );
-
-            log.info("Confirmation token generated, email queued for registration {}: confirm={}",
-                    registration.getId(),
-                    confirmationToken.substring(0, 20) + "...");
-        }
-
-        // QA Fix (VALID-001): Return different status for resend vs new registration
-        if (isResend) {
-            if ("waitlist".equals(registration.getStatus())) {
-                // Story 10.11 (T10.4): Duplicate waitlist registration — return 200 OK.
-                // Waitlist-confirmation email already resent by RegistrationService.
-                log.info("Duplicate waitlist registration for event: {} by user: {}, returning existing waitlist entry",
-                        eventCode, registration.getAttendeeUsername());
-                CreateRegistrationResponse response = CreateRegistrationResponse.builder()
-                        .message("You are already on the waitlist for this event."
-                                + " A new confirmation email has been sent.")
-                        .email(request.getEmail())
-                        .companyUpdated(registration.getCompanyUpdated())
-                        .build();
-                return ResponseEntity.ok(response);
-            }
-            // For other statuses (e.g., "registered"), return 409
-            log.info("Duplicate registration attempt for event: {} by user: {} (status: {})",
-                    eventCode, registration.getAttendeeUsername(), registration.getStatus());
-            throw new IllegalStateException("User " + registration.getAttendeeUsername()
-                + " is already registered for event " + eventCode);
-        }
-
-        // Return minimal response (no sensitive data)
-        CreateRegistrationResponse response = CreateRegistrationResponse.builder()
-                .message("Registration submitted successfully. Check your email to confirm.")
-                .email(request.getEmail())
-                .companyUpdated(registration.getCompanyUpdated()) // BATbern59 badge fix: drive UI notice
-                .build();
-
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
-    }
-
-    /**
-     * List Event Registrations - Story 2.2a, Story 3.3 (Pagination)
-     *
-     * GET /api/v1/events/{eventCode}/registrations?page=1&limit=25
-     *
-     * @param eventCode Event code to list registrations for
-     * @param page Page number (1-indexed, default: 1)
-     * @param limit Items per page (default: 25, max: 100)
-     * @return Paginated list of registrations enriched with user data
-     */
-    @GetMapping("/events/{eventCode}/registrations")
-    @PreAuthorize("hasRole('ORGANIZER')")
-    @Operation(
-            summary = "List Event Registrations",
-            description = "Retrieve registrations for a specific event with "
-                    + "enriched user data, filtering, and pagination"
-    )
-    public ResponseEntity<PaginatedResponse<RegistrationResponse>> listRegistrations(
-            @PathVariable String eventCode,
-            @Parameter(description = "Page number (1-indexed, default: 1)")
-            @RequestParam(required = false) Integer page,
-            @Parameter(description = "Items per page (default: 25, max: 100)")
-            @RequestParam(required = false) Integer limit,
-            @Parameter(description = "Filter by registration status (can specify multiple)")
-            @RequestParam(required = false) List<String> status,
-            @Parameter(description = "Search in attendee name or email")
-            @RequestParam(required = false) String search,
-            @Parameter(description = "Filter by company ID")
-            @RequestParam(required = false) String companyId
-    ) {
-        log.debug("GET /api/v1/events/{}/registrations - page: {}, limit: {}, status: {}, search: {}, companyId: {}",
-                eventCode, page, limit, status, search, companyId);
-
-        // Default pagination values
-        int pageNumber = (page != null && page > 0) ? page - 1 : 0; // Convert 1-indexed to 0-indexed
-        int pageSize = (limit != null && limit > 0) ? Math.min(limit, 100) : 25; // Default 25, max 100
-
-        // Find event to get UUID
-        Event event = eventRepository.findByEventCode(eventCode)
-                .orElseThrow(() -> new EventNotFoundException("Event not found with code: " + eventCode));
-
-        // Build specification for database-level filters
-        // Performance Optimization: All filters now applied at database level using denormalized fields
-        org.springframework.data.jpa.domain.Specification<Registration> spec =
-                ch.batbern.events.specification.RegistrationSpecification.buildSpecification(
-                        event.getId(),
-                        status,
-                        search,      // Now searches denormalized firstName/lastName/email fields
-                        companyId    // Now filters using denormalized companyId field
-                );
-
-        // Create Pageable with sorting by last name, first name, then id (#1131: names are not unique)
-        org.springframework.data.domain.Pageable pageable = DeterministicPaging.pageRequest(
-                pageNumber,
-                pageSize,
-                org.springframework.data.domain.Sort.by(
-                        org.springframework.data.domain.Sort.Order.asc("attendeeLastName"),
-                        org.springframework.data.domain.Sort.Order.asc("attendeeFirstName")
-                )
-        );
-
-        // Fetch filtered and paginated registrations from database (NOT all registrations!)
-        org.springframework.data.domain.Page<Registration> registrationsPage =
-                registrationRepository.findAll(spec, pageable);
-
-        // Enrich only the current page of registrations with user data
-        List<RegistrationResponse> paginatedResponses = registrationsPage.getContent().stream()
-                .peek(reg -> reg.setEventCode(eventCode)) // Set transient field
-                .map(registrationService::enrichRegistrationWithUserData)
-                .collect(Collectors.toList());
-
-        // Build pagination metadata from Page object
-        ch.batbern.shared.api.PaginationMetadata paginationMetadata =
-                ch.batbern.shared.api.PaginationMetadata.builder()
-                        .page(pageNumber + 1) // Convert back to 1-indexed for response
-                        .limit(pageSize)
-                        .totalItems(registrationsPage.getTotalElements())
-                        .totalPages(registrationsPage.getTotalPages())
-                        .hasNext(registrationsPage.hasNext())
-                        .hasPrev(registrationsPage.hasPrevious())
-                        .build();
-
-        // Build paginated response
-        PaginatedResponse<RegistrationResponse> response = PaginatedResponse.<RegistrationResponse>builder()
-                .data(paginatedResponses)
-                .pagination(paginationMetadata)
-                .build();
-
-        return ResponseEntity.ok(response);
-    }
-
-    /**
-     * Confirm Event Registration - Email Confirmation Flow
-     *
-     * POST /api/v1/events/{eventCode}/registrations/confirm?token={JWT}
-     *
-     * Confirms a pending registration using the JWT token from the confirmation email.
-     * Updates registration status from PENDING to CONFIRMED.
-     * Token is valid for 48 hours and event code in URL must match event code in token.
-     *
-     * @param eventCode Event code to confirm registration for
-     * @param token JWT confirmation token from email
-     * @return Success message
-     */
-    @PostMapping("/events/{eventCode}/registrations/confirm")
-    @Operation(
-            summary = "Confirm Registration",
-            description = "Confirm a pending registration using the token from the confirmation "
-                + "email. Token is valid for 48 hours and event code must match."
-    )
-    @PreAuthorize("permitAll()")
-    public ResponseEntity<ConfirmRegistration200Response> confirmRegistration(
-            @PathVariable String eventCode,
-            @RequestParam("token") String token) {
-        log.debug("POST /api/v1/events/{}/registrations/confirm", eventCode);
-
-        try {
-            // Validate token
-            io.jsonwebtoken.Claims claims = confirmationTokenService.validateConfirmationToken(token);
-
-            // Extract event code from token and verify it matches URL
-            String tokenEventCode = confirmationTokenService.getEventCode(claims);
-            if (!eventCode.equals(tokenEventCode)) {
-                throw new IllegalArgumentException("Event code mismatch: URL has " + eventCode
-                    + " but token has " + tokenEventCode);
-            }
-
-            // Extract registration ID
-            UUID registrationId = confirmationTokenService.getRegistrationId(claims);
-
-            // Find registration
-            Registration registration = registrationRepository.findById(registrationId)
-                    .orElseThrow(() -> new NoSuchElementException("Registration not found: " + registrationId));
-
-            // Fetch the event to verify registration belongs to it and to get event code
-            Event event = eventRepository.findById(registration.getEventId())
-                    .orElseThrow(() -> new NoSuchElementException(
-                            "Event not found for registration: " + registrationId));
-
-            // Verify registration belongs to this event
-            if (!event.getEventCode().equals(eventCode)) {
-                throw new IllegalArgumentException("Registration does not belong to event: " + eventCode);
-            }
-
-            // Check if already confirmed
-            if ("confirmed".equalsIgnoreCase(registration.getStatus())) {
-                return ResponseEntity.ok(new ConfirmRegistration200Response()
-                        .message("Registration already confirmed")
-                        .status(ConfirmRegistration200Response.StatusEnum.CONFIRMED));
-            }
-
-            // Update status to confirmed (Story 4.1.5c: registered → confirmed)
-            registration.setStatus("confirmed"); // Lowercase per DB constraint
-            registration.setUpdatedAt(Instant.now());
-            registrationRepository.save(registration);
-
-            log.info("Registration confirmed: {} for event: {}", registrationId, eventCode);
-
-            // The pending mail carries no calendar invite; it comes with the confirmed mail.
-            registrationService.notifyRegistrationConfirmed(registration, event);
-
-            // Return success response
-            return ResponseEntity.ok(new ConfirmRegistration200Response()
-                    .message("Registration confirmed successfully!")
-                    .status(ConfirmRegistration200Response.StatusEnum.CONFIRMED));
-
-        } catch (io.jsonwebtoken.JwtException e) {
-            log.warn("Invalid confirmation token: {}", e.getMessage());
-            throw new IllegalArgumentException("Invalid or expired confirmation token");
-        }
-    }
-
-    /**
-     * Update Event Registration (Partial Update)
-     *
-     * PATCH /api/v1/events/{eventCode}/registrations/{registrationCode}
-     *
-     * Updates specific fields of a registration (e.g., status). Organizer only: attendees cancel
-     * through the token-based deregistration flow or {@code DELETE /events/{code}/my-registration}.
-     *
-     * @param eventCode Event code
-     * @param registrationCode Registration code
-     * @param updates Map of fields to update
-     * @return Updated registration with enriched user data
-     */
-    @PatchMapping("/events/{eventCode}/registrations/{registrationCode}")
-    @PreAuthorize("hasRole('ORGANIZER')")
-    @Operation(
-            summary = "Update Event Registration",
-            description = "Partially update a registration (e.g., change status)"
-    )
-    public ResponseEntity<RegistrationResponse> updateRegistration(
-            @PathVariable String eventCode,
-            @PathVariable String registrationCode,
-            @RequestBody UpdateRegistrationStatusRequest updates) {
-        log.debug("PATCH /api/v1/events/{}/registrations/{}", eventCode, registrationCode);
-
-        // Find registration
-        Registration registration = registrationRepository.findByRegistrationCode(registrationCode)
-                .orElseThrow(() -> new NoSuchElementException("Registration not found: " + registrationCode));
-
-        // Verify registration belongs to this event
-        Event event = eventRepository.findByEventCode(eventCode)
-                .orElseThrow(() -> new EventNotFoundException("Event not found with code: " + eventCode));
-
-        if (!registration.getEventId().equals(event.getId())) {
-            throw new NoSuchElementException("Registration " + registrationCode
-                    + " does not belong to event " + eventCode);
-        }
-
-        // Apply updates
-        boolean becomingCancelled = false;
-        if (updates.getStatus() != null) {
-            String newStatus = updates.getStatus();
-            String previousStatus = registration.getStatus();
-            registration.setStatus(newStatus);
-            // Story 10.12 (CR fix): Trigger waitlist promotion for ANY non-cancelled → cancelled
-            // transition, including waitlist → cancelled. Previously missed the waitlist case.
-            becomingCancelled = "cancelled".equalsIgnoreCase(newStatus)
-                    && !"cancelled".equalsIgnoreCase(previousStatus);
-        }
-
-        // Save updated registration
-        registration = registrationRepository.save(registration);
-
-        // Story 10.11: Auto-promote next waitlisted attendee when a spot is freed
-        if (becomingCancelled) {
-            waitlistPromotionService.promoteFromWaitlist(event.getId());
-        }
-
-        // Enrich with user data
-        registration.setEventCode(eventCode);
-        RegistrationResponse response = registrationService.enrichRegistrationWithUserData(registration);
-
-        return ResponseEntity.ok(response);
-    }
-
-    /**
-     * Delete Event Registration
-     *
-     * DELETE /api/v1/events/{eventCode}/registrations/{registrationCode}
-     *
-     * Deletes a registration from the event. Organizer only.
-     *
-     * @param eventCode Event code
-     * @param registrationCode Registration code
-     * @return 204 No Content
-     */
-    @DeleteMapping("/events/{eventCode}/registrations/{registrationCode}")
-    @PreAuthorize("hasRole('ORGANIZER')")
-    @Operation(
-            summary = "Delete Event Registration",
-            description = "Delete a registration from the event"
-    )
-    public ResponseEntity<Void> deleteRegistration(
-            @PathVariable String eventCode,
-            @PathVariable String registrationCode) {
-        log.debug("DELETE /api/v1/events/{}/registrations/{}", eventCode, registrationCode);
-
-        // Find registration
-        Registration registration = registrationRepository.findByRegistrationCode(registrationCode)
-                .orElseThrow(() -> new NoSuchElementException("Registration not found: " + registrationCode));
-
-        // Verify registration belongs to this event
-        Event event = eventRepository.findByEventCode(eventCode)
-                .orElseThrow(() -> new EventNotFoundException("Event not found with code: " + eventCode));
-
-        if (!registration.getEventId().equals(event.getId())) {
-            throw new NoSuchElementException("Registration " + registrationCode
-                    + " does not belong to event " + eventCode);
-        }
-
-        // Delete registration
-        registrationRepository.delete(registration);
-
-        return ResponseEntity.noContent().build();
     }
 
     /**

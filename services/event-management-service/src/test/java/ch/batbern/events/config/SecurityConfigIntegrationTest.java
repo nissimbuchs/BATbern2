@@ -56,9 +56,10 @@ class SecurityConfigIntegrationTest extends AbstractIntegrationTest {
             }
             """;
 
-        // When: POST to registration endpoint without auth
+        // When: POST to registration endpoint without auth (a well-formed code: a malformed one
+        // answers 400 on the spec pattern before the handler, Story 17.13)
         // Then: Should not require authentication (404 is OK, means security passed)
-        mockMvc.perform(post("/api/v1/events/NON_EXISTENT_EVENT/registrations")
+        mockMvc.perform(post("/api/v1/events/BATbern99999/registrations")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestBody))
                 .andExpect(status().isNotFound()); // Event doesn't exist, but security passed
@@ -110,7 +111,7 @@ class SecurityConfigIntegrationTest extends AbstractIntegrationTest {
     void should_allowAnonymousAccess_when_confirmingRegistration() throws Exception {
         // When: POST to confirmation endpoint without authentication
         // Then: Should not require authentication (400 is OK, means security passed, token validation failed)
-        mockMvc.perform(post("/api/v1/events/NON_EXISTENT_EVENT/registrations/confirm")
+        mockMvc.perform(post("/api/v1/events/BATbern99999/registrations/confirm")
                         .param("token", "invalid-token"))
                 .andExpect(status().isBadRequest()); // Invalid token, but security passed
     }

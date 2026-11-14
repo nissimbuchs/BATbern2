@@ -2,6 +2,7 @@ package ch.batbern.events.architecture;
 
 import ch.batbern.events.architecture.fixtures.client.PartnerFixtureClient;
 import ch.batbern.events.architecture.fixtures.client.UserFixtureClient;
+import ch.batbern.events.architecture.fixtures.eventcoreinherited.FixtureRegistrationsApi;
 import ch.batbern.events.architecture.fixtures.forwarding.FixtureForwarder;
 import ch.batbern.events.architecture.fixtures.mailcenter.FixtureMailCenterService;
 import ch.batbern.events.architecture.fixtures.mailcenter.render.FixtureMailPipeline;
@@ -40,6 +41,12 @@ class EmsModuleRulesFixtureTest {
     private static final String ROOT = "ch.batbern.events.architecture.fixtures";
 
     private static final JavaClasses ALL = new ClassFileImporter().importPackages(ROOT);
+
+    /** Three fixtures named EventController (the rule goes by simple name), hence qualified. */
+    private static final Class<?> HAND_MAPPED = ch.batbern.events.architecture.fixtures.eventcore.EventController.class;
+    private static final Class<?> INHERITING =
+            ch.batbern.events.architecture.fixtures.eventcoreinherited.EventController.class;
+    private static final Class<?> CLEAN = ch.batbern.events.architecture.fixtures.eventcoreclean.EventController.class;
 
     @Test
     @DisplayName("should_fail_when_classOutsideEdgeModuleUsesIt")
@@ -123,6 +130,43 @@ class EmsModuleRulesFixtureTest {
                 .noneMatch(line -> line.contains(FixtureUploadEntity.class.getName()));
         assertThat(EmsModuleRules.noEntityMapsForeignUploadTable(ROOT)
                 .evaluate(new ClassFileImporter().importClasses(FixtureUploadEntity.class)).hasViolation()).isFalse();
+    }
+
+    @Test
+    @DisplayName("should_fail_when_eventControllerMapsRegistrationEndpoint")
+    void should_fail_when_eventControllerMapsRegistrationEndpoint() {
+        EvaluationResult result = EmsModuleRules.noRegistrationEndpointIn(ROOT, "EventController").evaluate(ALL);
+
+        assertThat(result.getFailureReport().getDetails())
+                .anyMatch(line -> line.contains(HAND_MAPPED.getName())
+                        && line.contains("/events/{eventCode}/registrations"))
+                .noneMatch(line -> line.contains(CLEAN.getName()));
+    }
+
+    @Test
+    @DisplayName("should_fail_when_eventControllerInheritsRegistrationEndpoint")
+    void should_fail_when_eventControllerInheritsRegistrationEndpoint() {
+        EvaluationResult result = EmsModuleRules.noRegistrationEndpointIn(ROOT, "EventController")
+                .evaluate(new ClassFileImporter().importClasses(
+                        INHERITING, FixtureRegistrationsApi.class));
+
+        assertThat(result.getFailureReport().getDetails())
+                .anyMatch(line -> line.contains(INHERITING.getName())
+                        && line.contains("/events/{eventCode}/my-registration")
+                        && line.contains(FixtureRegistrationsApi.class.getName()));
+    }
+
+    @Test
+    @DisplayName("should_pass_when_eventControllerMapsNoRegistrationEndpoint")
+    void should_pass_when_eventControllerMapsNoRegistrationEndpoint() {
+        // Positive control: the same rule reports the hand-mapped fixture.
+        assertThat(EmsModuleRules.noRegistrationEndpointIn(ROOT, "EventController")
+                .evaluate(new ClassFileImporter().importClasses(HAND_MAPPED))
+                .hasViolation()).isTrue();
+
+        assertThat(EmsModuleRules.noRegistrationEndpointIn(ROOT, "EventController")
+                .evaluate(new ClassFileImporter().importClasses(CLEAN))
+                .hasViolation()).isFalse();
     }
 
     @Test

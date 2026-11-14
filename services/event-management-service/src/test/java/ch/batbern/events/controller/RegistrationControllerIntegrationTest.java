@@ -1,47 +1,46 @@
 package ch.batbern.events.controller;
 
-import ch.batbern.shared.test.AbstractIntegrationTest;
-import ch.batbern.events.client.UserApiClient;
+import ch.batbern.events.config.CumsContractHarness;
 import ch.batbern.events.config.TestAwsConfig;
 import ch.batbern.events.config.TestSecurityConfig;
+import ch.batbern.events.core.dto.generated.EventType;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Registration;
-import ch.batbern.events.core.dto.generated.EventType;
-import ch.batbern.events.dto.generated.users.GetOrCreateUserResponse;
-import ch.batbern.events.dto.generated.users.UserResponse;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.RegistrationRepository;
 import ch.batbern.events.service.ConfirmationTokenService;
-import ch.batbern.events.service.RegistrationEmailService;
+import ch.batbern.shared.test.AbstractIntegrationTest;
+import ch.batbern.shared.test.contract.ContractServer.Call;
+import ch.batbern.shared.test.contract.ContractServer.Reply;
+import ch.batbern.shared.test.mail.SesRecorder;
+import ch.batbern.shared.types.EventWorkflowState;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.Locale;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.reset;
-import static org.mockito.Mockito.when;
+import static org.springframework.http.HttpMethod.POST;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
@@ -50,167 +49,117 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * Integration Tests for Registration Endpoints
- * <p>
- * Story 2.2a: Anonymous Event Registration (ADR-005)
- * Story 4.1.5c: Secure Email-Based Registration Confirmation
- * <p>
- * Test Scenarios:
- * - Create anonymous registration (no auth required) - Returns {message, email}
- * - Registration creates/retrieves user via User Management API
- * - Registration code generation and format validation
- * - Confirm registration via JWT token
- * - Retrieve registration by code with enriched user data
- * - List all registrations for an event
- * <p>
- * Uses Testcontainers PostgreSQL for production parity.
+ * Integration tests for {@link RegistrationController}: anonymous registration (Story 2.2a,
+ * ADR-005), the e-mail confirmation (Story 4.1.5c), the organizer's list, status change and delete,
+ * and the spec validation the generated {@code RegistrationsApi} brings (Story 17.13).
+ *
+ * <p>Production chain, CUMS as the {@link CumsContractHarness} and SES as the {@link SesRecorder}
+ * (no own-code mocks). Not {@code @Transactional}: the requests commit, so the test removes its two
+ * events and their registrations in {@code @BeforeEach} and {@code @AfterEach}. Attendee usernames
+ * are ASCII ({@code john.doe}) because CUMS usernames are ({@code ^[a-z]+\.[a-z]+}); the search tests
+ * carry the non-ASCII names in the denormalized attendee fields.
  */
-@Transactional
 @Import({TestSecurityConfig.class, TestAwsConfig.class})
-public class RegistrationControllerIntegrationTest extends AbstractIntegrationTest {
+class RegistrationControllerIntegrationTest extends AbstractIntegrationTest {
+
+    private static final String EVENT_CODE = "BATbern1713";
+    private static final String OTHER_EVENT_CODE = "BATbern1714";
+    /** An AWS mailbox-simulator address: mail to it may be sent. */
+    private static final String JOHN_MAIL = "success+john.doe@simulator.amazonses.com";
+    private static final String NEW_REGISTRATION = """
+            {
+                "firstName": "John",
+                "lastName": "Doe",
+                "email": "john.doe@example.com",
+                "termsAccepted": true
+            }
+            """;
 
     @Autowired
     private MockMvc mockMvc;
-
     @Autowired
     private EventRepository eventRepository;
-
     @Autowired
     private RegistrationRepository registrationRepository;
-
+    @Autowired
+    private ConfirmationTokenService confirmationTokenService;
+    @Autowired
+    private CumsContractHarness cums;
+    @Autowired
+    private SesRecorder sesRecorder;
+    @Autowired
+    private JdbcTemplate jdbc;
     @Autowired
     private ObjectMapper objectMapper;
 
-    @Autowired
-    private ConfirmationTokenService confirmationTokenService;
-
-    @MockitoBean
-    private UserApiClient userApiClient;
-
-    @MockitoBean
-    private RegistrationEmailService registrationEmailService;
-
     private Event testEvent;
-    private UserResponse mockUserProfile;
-    private GetOrCreateUserResponse mockCreateResponse;
 
     @BeforeEach
     void setUp() {
-        // Reset mocks to prevent test pollution
-        reset(userApiClient, registrationEmailService);
+        cleanUp();
+        cums.reset();
+        sesRecorder.reset();
 
-        // Clean database before each test
-        registrationRepository.deleteAll();
-        eventRepository.deleteAll();
+        testEvent = eventRepository.save(event(EVENT_CODE, 1713));
+        // CUMS get-or-create: the username is the e-mail's local part, the user what was sent.
+        cums.answer(POST, "/internal/users/get-or-create", call -> Reply.ok(getOrCreateReply(call, false)));
+        cums.user("john.doe", "John", "Doe", JOHN_MAIL);
+    }
 
-        // Create test event
-        testEvent = Event.builder()
-                .eventCode("BATbern142")
-                .title("BATbern 2025 Test")
-                .eventNumber(142)
-                .date(Instant.parse("2027-06-15T09:00:00Z"))
-                .registrationDeadline(Instant.parse("2027-06-08T23:59:59Z"))
-                .venueName("Test Venue")
-                .venueAddress("Test Address 123, Bern")
-                .venueCapacity(100)
-                .organizerUsername("test.organizer")
-                .currentAttendeeCount(0)
-                .description("Test event for registration")
-                .eventType(EventType.EVENING)
-                .workflowState(ch.batbern.shared.types.EventWorkflowState.CREATED)
-                .build();
-        testEvent = eventRepository.save(testEvent);
+    @AfterEach
+    void tearDown() {
+        cleanUp();
+        cums.reset();
+    }
 
-        // Mock UserApiClient response (simulates User Management Service)
-        mockUserProfile = new UserResponse()
-                .id("john.doe")
-                .firstName("John")
-                .lastName("Doe")
-                .email("john.doe@example.com")
-                .companyId("Test Company");
-
-        mockCreateResponse = new GetOrCreateUserResponse()
-                .username("john.doe")
-                .created(true)
-                .user(mockUserProfile);
-
-        lenient().when(userApiClient.getOrCreateUser(any())).thenReturn(mockCreateResponse);
-
-        // Dynamic mock for getUserByUsername - handles any username
-        lenient().when(userApiClient.getUserByUsername(any(String.class)))
-                .thenAnswer(invocation -> {
-                    String username = invocation.getArgument(0);
-                    String[] parts = username.split("\\.");
-                    String firstName = parts.length > 0 ? capitalize(parts[0]) : "Test";
-                    String lastName = parts.length > 1 ? capitalize(parts[1]) : "User";
-
-                    return new UserResponse()
-                            .id(username)
-                            .firstName(firstName)
-                            .lastName(lastName)
-                            .email(username + "@example.com")
-                            .companyId("Test Company");
-                });
+    /** Deletes this class's events and their registrations (the requests commit). */
+    private void cleanUp() {
+        jdbc.update("DELETE FROM registrations WHERE event_id IN (SELECT id FROM events WHERE event_code IN (?, ?))",
+                EVENT_CODE, OTHER_EVENT_CODE);
+        jdbc.update("DELETE FROM events WHERE event_code IN (?, ?)", EVENT_CODE, OTHER_EVENT_CODE);
     }
 
     // ============================================================================
-    // Test: Create Anonymous Registration (ADR-005)
+    // Create anonymous registration (ADR-005)
     // ============================================================================
 
     @Test
     @DisplayName("should_createRegistration_when_validDataProvided")
     void should_createRegistration_when_validDataProvided() throws Exception {
-        String requestJson = """
-                {
-                    "firstName": "John",
-                    "lastName": "Doe",
-                    "email": "john.doe@example.com",
-                    "termsAccepted": true
-                }
-                """;
-
-        // Story 4.1.5c: Registration now returns {message, email} instead of full registration
-        mockMvc.perform(post("/api/v1/events/BATbern142/registrations")
+        // Story 4.1.5c: the response is {message, email}, the registration details go by mail
+        mockMvc.perform(post("/api/v1/events/{eventCode}/registrations", EVENT_CODE)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(requestJson))
+                        .content(NEW_REGISTRATION))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.message").value(containsString("Registration submitted successfully")))
+                .andExpect(jsonPath("$.message").value("Registration submitted successfully. Check your email to confirm."))
                 .andExpect(jsonPath("$.email").value("john.doe@example.com"))
-                // No longer returns registration details in response
                 .andExpect(jsonPath("$.registrationCode").doesNotExist())
                 .andExpect(jsonPath("$.status").doesNotExist());
 
-        // Verify registration was saved to database
-        assertThat(registrationRepository.count()).isEqualTo(1);
-        Registration savedRegistration = registrationRepository.findAll().get(0);
-        assertThat(savedRegistration.getRegistrationCode()).startsWith("BATbern142-reg-");
-        assertThat(savedRegistration.getAttendeeUsername()).isEqualTo("john.doe");
-        assertThat(savedRegistration.getStatus()).isEqualTo("registered"); // Story 4.1.5c: starts as 'registered'
+        Registration saved = registrationRepository.findByEventIdAndAttendeeUsername(testEvent.getId(), "john.doe")
+                .orElseThrow();
+        assertThat(saved.getRegistrationCode()).startsWith(EVENT_CODE + "-reg-");
+        assertThat(saved.getStatus()).isEqualTo("registered"); // confirmed by the mailed link
+
+        // The confirmation link goes to the attendee CUMS knows, with the deregistration link.
+        sesRecorder.awaitAsyncSends();
+        assertThat(sesRecorder.mailsTo(JOHN_MAIL)).singleElement()
+                .satisfies(mail -> assertThat(mail.html())
+                        .contains("/deregister?token=" + saved.getDeregistrationToken()));
     }
 
     @Test
     @DisplayName("should_returnCompanyUpdatedTrue_when_existingUserCompanyRefreshed")
     void should_returnCompanyUpdatedTrue_when_existingUserCompanyRefreshed() throws Exception {
         // BATbern59 badge fix: CUMS reports it refreshed the returning attendee's company.
-        when(userApiClient.getOrCreateUser(any())).thenReturn(new GetOrCreateUserResponse()
-                .username("john.doe")
-                .created(false)
-                .companyUpdated(true)
-                .user(mockUserProfile));
+        cums.answer(POST, "/internal/users/get-or-create", call -> Reply.ok(getOrCreateReply(call, true)));
 
-        String requestJson = """
-                {
-                    "firstName": "John",
-                    "lastName": "Doe",
-                    "email": "john.doe@example.com",
-                    "company": "New Employer AG",
-                    "termsAccepted": true
-                }
-                """;
-
-        mockMvc.perform(post("/api/v1/events/BATbern142/registrations")
+        mockMvc.perform(post("/api/v1/events/{eventCode}/registrations", EVENT_CODE)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(requestJson))
+                        .content("""
+                                {"firstName": "John", "lastName": "Doe", "email": "john.doe@example.com",
+                                 "company": "New Employer AG", "termsAccepted": true}
+                                """))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.companyUpdated").value(true));
     }
@@ -218,19 +167,9 @@ public class RegistrationControllerIntegrationTest extends AbstractIntegrationTe
     @Test
     @DisplayName("should_returnCompanyUpdatedFalse_when_companyUnchanged")
     void should_returnCompanyUpdatedFalse_when_companyUnchanged() throws Exception {
-        // Default mock returns created=true, companyUpdated unset → response must be false, not null.
-        String requestJson = """
-                {
-                    "firstName": "John",
-                    "lastName": "Doe",
-                    "email": "john.doe@example.com",
-                    "termsAccepted": true
-                }
-                """;
-
-        mockMvc.perform(post("/api/v1/events/BATbern142/registrations")
+        mockMvc.perform(post("/api/v1/events/{eventCode}/registrations", EVENT_CODE)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(requestJson))
+                        .content(NEW_REGISTRATION))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.companyUpdated").value(false));
     }
@@ -238,129 +177,108 @@ public class RegistrationControllerIntegrationTest extends AbstractIntegrationTe
     @Test
     @DisplayName("should_return400_when_invalidDataProvided")
     void should_return400_when_invalidDataProvided() throws Exception {
-        String requestJson = """
-                {
-                    "firstName": "",
-                    "lastName": "Doe",
-                    "email": "invalid-email",
-                    "termsAccepted": true
-                }
-                """;
-
-        mockMvc.perform(post("/api/v1/events/BATbern142/registrations")
+        mockMvc.perform(post("/api/v1/events/{eventCode}/registrations", EVENT_CODE)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(requestJson))
+                        .content("""
+                                {"firstName": "", "lastName": "Doe", "email": "invalid-email", "termsAccepted": true}
+                                """))
+                .andExpect(status().isBadRequest());
+        assertThat(registrationRepository.findByEventIdAndAttendeeUsername(testEvent.getId(), "john.doe")).isEmpty();
+    }
+
+    @Test
+    @DisplayName("should_return400_when_creatingRegistrationWithMalformedJson")
+    void should_return400_when_creatingRegistrationWithMalformedJson() throws Exception {
+        // Moved from EventControllerIntegrationTest (Story 17.13): a trailing comma is no JSON.
+        mockMvc.perform(post("/api/v1/events/{eventCode}/registrations", EVENT_CODE)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"email\": \"invalid-email\",}"))
                 .andExpect(status().isBadRequest());
     }
 
     @Test
     @DisplayName("should_return404_when_eventNotFound")
     void should_return404_when_eventNotFound() throws Exception {
-        String requestJson = """
-                {
-                    "firstName": "John",
-                    "lastName": "Doe",
-                    "email": "john.doe@example.com",
-                    "termsAccepted": true
-                }
-                """;
-
-        mockMvc.perform(post("/api/v1/events/NONEXISTENT/registrations")
+        mockMvc.perform(post("/api/v1/events/{eventCode}/registrations", "BATbern99999")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(requestJson))
+                        .content(NEW_REGISTRATION))
                 .andExpect(status().isNotFound());
     }
 
-    // ============================================================================
-    // Test: Registration Code Format Validation (ADR-003)
-    // ============================================================================
+    @ParameterizedTest
+    @ValueSource(strings = {"NONEXISTENT", "BATbern10k", "batbern1713"})
+    @DisplayName("should_return400_when_eventCodeViolatesSpecPattern")
+    void should_return400_when_eventCodeViolatesSpecPattern(String eventCode) throws Exception {
+        // Story 17.13: RegistrationsApi brings the spec pattern ^BATbern[0-9]+$ (was 404).
+        mockMvc.perform(post("/api/v1/events/{eventCode}/registrations", eventCode)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(NEW_REGISTRATION))
+                .andExpect(status().isBadRequest());
+        assertThat(cums.calls(POST, "/internal/users/get-or-create")).isEmpty();
+    }
 
     @Test
     @DisplayName("should_generateUniqueRegistrationCode_when_multipleRegistrationsCreated")
     void should_generateUniqueRegistrationCode_when_multipleRegistrationsCreated() throws Exception {
-        String requestJson = """
-                {
-                    "firstName": "John",
-                    "lastName": "Doe",
-                    "email": "john.doe@example.com",
-                    "termsAccepted": true
-                }
-                """;
-
-        // Create first registration - Story 4.1.5c: returns {message, email}
-        mockMvc.perform(post("/api/v1/events/BATbern142/registrations")
+        mockMvc.perform(post("/api/v1/events/{eventCode}/registrations", EVENT_CODE)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(requestJson))
+                        .content(NEW_REGISTRATION))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.message").exists())
                 .andExpect(jsonPath("$.email").value("john.doe@example.com"));
-
-        // Get registration code from database
-        String registrationCode1 = registrationRepository.findAll().get(0).getRegistrationCode();
-
-        // Create second registration with different email
-        UserResponse janeProfile = new UserResponse()
-                .id("jane.smith")
-                .firstName("Jane")
-                .lastName("Smith")
-                .email("jane.smith@example.com")
-                .companyId("Test Company");
-
-        GetOrCreateUserResponse janeCreateResponse = new GetOrCreateUserResponse()
-                .username("jane.smith")
-                .created(true)
-                .user(janeProfile);
-
-        when(userApiClient.getOrCreateUser(any())).thenReturn(janeCreateResponse);
-        when(userApiClient.getUserByUsername("jane.smith")).thenReturn(janeProfile);
-
-        String requestJson2 = """
-                {
-                    "firstName": "Jane",
-                    "lastName": "Smith",
-                    "email": "jane.smith@example.com",
-                    "termsAccepted": true
-                }
-                """;
-
-        mockMvc.perform(post("/api/v1/events/BATbern142/registrations")
+        mockMvc.perform(post("/api/v1/events/{eventCode}/registrations", EVENT_CODE)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(requestJson2))
+                        .content("""
+                                {"firstName": "Jane", "lastName": "Smith", "email": "jane.smith@example.com",
+                                 "termsAccepted": true}
+                                """))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.message").exists())
                 .andExpect(jsonPath("$.email").value("jane.smith@example.com"));
 
-        // Get second registration code from database
-        String registrationCode2 = registrationRepository.findAll().get(1).getRegistrationCode();
+        String code1 = registrationRepository.findByEventIdAndAttendeeUsername(testEvent.getId(), "john.doe")
+                .orElseThrow().getRegistrationCode();
+        String code2 = registrationRepository.findByEventIdAndAttendeeUsername(testEvent.getId(), "jane.smith")
+                .orElseThrow().getRegistrationCode();
+        assertThat(code1).isNotEqualTo(code2);
+        assertThat(code1).matches(EVENT_CODE + "-reg-[A-Z0-9]{6}");
+        assertThat(code2).matches(EVENT_CODE + "-reg-[A-Z0-9]{6}");
+    }
 
-        // Verify codes are unique
-        assertThat(registrationCode1).isNotEqualTo(registrationCode2);
-        assertThat(registrationCode1).matches("BATbern142-reg-[A-Z0-9]{6}");
-        assertThat(registrationCode2).matches("BATbern142-reg-[A-Z0-9]{6}");
+    @Test
+    @DisplayName("QA Fix (VALID-001): should_return409_when_duplicateRegistrationAttempted")
+    void should_return409_when_duplicateRegistrationAttempted() throws Exception {
+        mockMvc.perform(post("/api/v1/events/{eventCode}/registrations", EVENT_CODE)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(NEW_REGISTRATION))
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(post("/api/v1/events/{eventCode}/registrations", EVENT_CODE)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(NEW_REGISTRATION))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value(containsString("already registered")));
+
+        assertThat(registrationRepository.findAll().stream()
+                .filter(r -> testEvent.getId().equals(r.getEventId()))).hasSize(1);
     }
 
     // ============================================================================
-    // Test: List Registrations for Event
+    // List registrations of an event (Story 3.3)
     // ============================================================================
 
     @Test
-    @Disabled("Flaky test - passes individually but fails in full suite due to test pollution")
     @DisplayName("should_listRegistrations_when_eventHasRegistrations_withPagination")
     @WithMockUser(roles = "ORGANIZER")
     void should_listRegistrations_when_eventHasRegistrations() throws Exception {
-        // Create test registrations
         createTestRegistration("john.doe", "confirmed");
         createTestRegistration("jane.smith", "registered");
 
-        mockMvc.perform(get("/api/v1/events/BATbern142/registrations")
-                        .contentType(MediaType.APPLICATION_JSON))
+        mockMvc.perform(get("/api/v1/events/{eventCode}/registrations", EVENT_CODE))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data").isArray())
                 .andExpect(jsonPath("$.data", hasSize(2)))
-                .andExpect(jsonPath("$.data[0].registrationCode").exists())
-                .andExpect(jsonPath("$.data[0].eventCode").value("BATbern142"))
-                .andExpect(jsonPath("$.data[0].attendeeUsername").exists())
-                .andExpect(jsonPath("$.data[1].registrationCode").exists())
+                .andExpect(jsonPath("$.data[0].attendeeUsername").value("john.doe")) // sorted by last name
+                .andExpect(jsonPath("$.data[0].eventCode").value(EVENT_CODE))
+                .andExpect(jsonPath("$.data[0].attendeeFirstName").value("John")) // from CUMS
+                .andExpect(jsonPath("$.data[1].attendeeUsername").value("jane.smith"))
                 .andExpect(jsonPath("$.pagination.totalItems").value(2))
                 .andExpect(jsonPath("$.pagination.page").value(1))
                 .andExpect(jsonPath("$.pagination.limit").value(25));
@@ -370,13 +288,36 @@ public class RegistrationControllerIntegrationTest extends AbstractIntegrationTe
     @DisplayName("should_returnEmptyList_when_eventHasNoRegistrations")
     @WithMockUser(roles = "ORGANIZER")
     void should_returnEmptyList_when_eventHasNoRegistrations() throws Exception {
-        mockMvc.perform(get("/api/v1/events/BATbern142/registrations")
-                        .contentType(MediaType.APPLICATION_JSON))
+        mockMvc.perform(get("/api/v1/events/{eventCode}/registrations", EVENT_CODE))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data").isArray())
                 .andExpect(jsonPath("$.data", hasSize(0)))
                 .andExpect(jsonPath("$.pagination.totalItems").value(0))
                 .andExpect(jsonPath("$.pagination.totalPages").value(0));
+    }
+
+    @Test
+    @DisplayName("should_return404_when_listingRegistrationsForNonExistentEvent")
+    @WithMockUser(roles = "ORGANIZER")
+    void should_return404_when_listingRegistrationsForNonExistentEvent() throws Exception {
+        mockMvc.perform(get("/api/v1/events/{eventCode}/registrations", "BATbern99999"))
+                .andExpect(status().isNotFound());
+    }
+
+    @ParameterizedTest
+    @CsvSource({"non-existent-id,1,25", EVENT_CODE + ",0,25", EVENT_CODE + ",1,0", EVENT_CODE + ",1,500"})
+    @WithMockUser(roles = "ORGANIZER")
+    @DisplayName("should_return400_when_listParametersViolateSpec")
+    void should_return400_when_listParametersViolateSpec(String eventCode, String page, String limit)
+            throws Exception {
+        // Story 17.13: spec pattern of eventCode, page >= 1, 1 <= limit <= 100 (were 404 or clamped)
+        mockMvc.perform(get("/api/v1/events/{eventCode}/registrations", eventCode)
+                        .param("page", page).param("limit", limit))
+                .andExpect(status().isBadRequest());
+        // Positive control: the same request within the limits answers.
+        mockMvc.perform(get("/api/v1/events/{eventCode}/registrations", EVENT_CODE)
+                        .param("page", "1").param("limit", "100"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.pagination.limit").value(100));
     }
 
     @Test
@@ -385,8 +326,7 @@ public class RegistrationControllerIntegrationTest extends AbstractIntegrationTe
         // The production chain answers 401 before the controller (17.0b3).
         createTestRegistration("john.doe", "confirmed");
 
-        mockMvc.perform(get("/api/v1/events/BATbern142/registrations")
-                        .contentType(MediaType.APPLICATION_JSON))
+        mockMvc.perform(get("/api/v1/events/{eventCode}/registrations", EVENT_CODE))
                 .andExpect(status().isUnauthorized());
     }
 
@@ -394,76 +334,41 @@ public class RegistrationControllerIntegrationTest extends AbstractIntegrationTe
     @WithMockUser(username = "joe.user", roles = "ATTENDEE")
     @DisplayName("should_return403_when_nonOrganizerListsRegistrations")
     void should_return403_when_nonOrganizerListsRegistrations() throws Exception {
-        mockMvc.perform(get("/api/v1/events/BATbern142/registrations")
-                        .contentType(MediaType.APPLICATION_JSON))
+        mockMvc.perform(get("/api/v1/events/{eventCode}/registrations", EVENT_CODE))
                 .andExpect(status().isForbidden());
     }
 
     @Test
-    @Disabled("Flaky test - passes individually but fails in full suite due to test pollution")
     @DisplayName("should_returnPlaceholderData_when_userNotFound")
-    @org.springframework.test.annotation.DirtiesContext
     @WithMockUser(roles = "ORGANIZER")
     void should_returnPlaceholderData_when_userNotFound() throws Exception {
-        // Create registrations - one with existing user, one with missing user
         createTestRegistration("john.doe", "confirmed");
         createTestRegistration("deleted.user", "registered");
+        cums.unknownUser("deleted.user");
 
-        // Reset mock to clear any previous stubbing
-        reset(userApiClient);
-
-        // Mock UserApiClient to throw UserNotFoundException for deleted.user
-        lenient().when(userApiClient.getUserByUsername("deleted.user"))
-                .thenThrow(new ch.batbern.events.exception.UserNotFoundException("deleted.user"));
-
-        // Keep the dynamic mock for other usernames (john.doe)
-        lenient().when(userApiClient.getUserByUsername("john.doe"))
-                .thenAnswer(invocation -> new UserResponse()
-                        .id("john.doe")
-                        .firstName("John")
-                        .lastName("Doe")
-                        .email("john.doe@example.com")
-                        .companyId("Test Company"));
-
-        // Request should succeed despite one missing user
-        mockMvc.perform(get("/api/v1/events/BATbern142/registrations")
-                        .contentType(MediaType.APPLICATION_JSON))
+        // The list still answers; the missing user is shown as such (a data-quality signal).
+        mockMvc.perform(get("/api/v1/events/{eventCode}/registrations", EVENT_CODE))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data").isArray())
                 .andExpect(jsonPath("$.data", hasSize(2)))
-                .andExpect(jsonPath("$.pagination.totalItems").value(2))
-                // First registration (john.doe) has real user data
                 .andExpect(jsonPath("$.data[0].attendeeUsername").value("john.doe"))
                 .andExpect(jsonPath("$.data[0].attendeeFirstName").value("John"))
-                .andExpect(jsonPath("$.data[0].attendeeLastName").value("Doe"))
-                .andExpect(jsonPath("$.data[0].attendeeEmail").value("john.doe@example.com"))
-                // Second registration (deleted.user) has placeholder data
+                .andExpect(jsonPath("$.data[0].attendeeEmail").value(JOHN_MAIL))
                 .andExpect(jsonPath("$.data[1].attendeeUsername").value("deleted.user"))
                 .andExpect(jsonPath("$.data[1].attendeeFirstName").value("[User Not Found]"))
                 .andExpect(jsonPath("$.data[1].attendeeLastName").value("[deleted.user]"))
                 .andExpect(jsonPath("$.data[1].attendeeEmail").value("missing@unknown.invalid"));
     }
 
-    // ============================================================================
-    // Test: Filter Registrations (Story 3.3)
-    // ============================================================================
-
     @Test
-    @Disabled("Flaky test - passes individually but fails in full suite due to test pollution")
     @DisplayName("should_filterByStatus_when_statusFilterProvided")
     @WithMockUser(roles = "ORGANIZER")
     void should_filterByStatus_when_statusFilterProvided() throws Exception {
-        // Create registrations with different statuses
         createTestRegistration("john.doe", "confirmed");
         createTestRegistration("jane.smith", "registered");
         createTestRegistration("bob.jones", "confirmed");
 
-        // Filter for CONFIRMED status only
-        mockMvc.perform(get("/api/v1/events/BATbern142/registrations")
-                        .param("status", "CONFIRMED")
-                        .contentType(MediaType.APPLICATION_JSON))
+        mockMvc.perform(get("/api/v1/events/{eventCode}/registrations", EVENT_CODE).param("status", "CONFIRMED"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data").isArray())
                 .andExpect(jsonPath("$.data", hasSize(2)))
                 .andExpect(jsonPath("$.pagination.totalItems").value(2))
                 .andExpect(jsonPath("$.data[0].status").value("CONFIRMED"))
@@ -471,258 +376,156 @@ public class RegistrationControllerIntegrationTest extends AbstractIntegrationTe
     }
 
     @Test
-    @Disabled("Flaky test - passes individually but fails in full suite due to test pollution")
     @DisplayName("should_filterByMultipleStatuses_when_multipleStatusFiltersProvided")
     @WithMockUser(roles = "ORGANIZER")
     void should_filterByMultipleStatuses_when_multipleStatusFiltersProvided() throws Exception {
-        // Create registrations with different statuses
         createTestRegistration("john.doe", "confirmed");
         createTestRegistration("jane.smith", "registered");
         createTestRegistration("bob.jones", "cancelled");
         createTestRegistration("alice.williams", "attended");
 
-        // Filter for CONFIRMED and ATTENDED statuses
-        mockMvc.perform(get("/api/v1/events/BATbern142/registrations")
+        mockMvc.perform(get("/api/v1/events/{eventCode}/registrations", EVENT_CODE)
                         .param("status", "CONFIRMED")
-                        .param("status", "ATTENDED")
-                        .contentType(MediaType.APPLICATION_JSON))
+                        .param("status", "ATTENDED"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data").isArray())
                 .andExpect(jsonPath("$.data", hasSize(2)))
                 .andExpect(jsonPath("$.pagination.totalItems").value(2));
     }
 
     @Test
-    @Disabled("Flaky test - passes individually but fails in full suite due to test pollution")
-    @DisplayName("should_searchByName_when_searchTermProvided")
-    @WithMockUser(roles = "ORGANIZER")
-    void should_searchByName_when_searchTermProvided() throws Exception {
-        // Create registrations
-        createTestRegistration("john.doe", "confirmed");
-        createTestRegistration("jane.smith", "registered");
-        createTestRegistration("bob.jones", "confirmed");
-
-        // Search for "john" (should match john.doe's first name)
-        mockMvc.perform(get("/api/v1/events/BATbern142/registrations")
-                        .param("search", "john")
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data").isArray())
-                .andExpect(jsonPath("$.data", hasSize(1)))
-                .andExpect(jsonPath("$.data[0].attendeeUsername").value("john.doe"))
-                .andExpect(jsonPath("$.data[0].attendeeFirstName").value("John"));
-    }
-
-    @Test
-    @Disabled("Flaky test - passes individually but fails in full suite due to test pollution")
-    @DisplayName("should_searchByEmail_when_searchTermProvided")
-    @WithMockUser(roles = "ORGANIZER")
-    void should_searchByEmail_when_searchTermProvided() throws Exception {
-        // Create registrations
-        createTestRegistration("john.doe", "confirmed");
-        createTestRegistration("jane.smith", "registered");
-
-        // Search for email domain
-        mockMvc.perform(get("/api/v1/events/BATbern142/registrations")
-                        .param("search", "jane.smith@example.com")
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data").isArray())
-                .andExpect(jsonPath("$.data", hasSize(1)))
-                .andExpect(jsonPath("$.data[0].attendeeEmail").value("jane.smith@example.com"));
-    }
-
-    @Test
-    @Disabled("Flaky test - passes individually but fails in full suite due to test pollution")
     @DisplayName("should_filterByCompanyId_when_companyIdProvided")
-    @org.springframework.test.annotation.DirtiesContext
     @WithMockUser(roles = "ORGANIZER")
     void should_filterByCompanyId_when_companyIdProvided() throws Exception {
-        // Create registrations with different companies
-        createTestRegistration("john.doe", "confirmed");
-        createTestRegistration("jane.smith", "registered");
+        saveParticipant("john.doe", "John", "Doe", "companyone");
+        saveParticipant("jane.smith", "Jane", "Smith", "companytwo");
 
-        // Reset mock to clear any previous stubbing
-        reset(userApiClient);
-
-        // Mock different companies for each user
-        when(userApiClient.getUserByUsername("john.doe"))
-                .thenReturn(new UserResponse()
-                        .id("john.doe")
-                        .firstName("John")
-                        .lastName("Doe")
-                        .email("john.doe@example.com")
-                        .companyId("company-1"));
-
-        when(userApiClient.getUserByUsername("jane.smith"))
-                .thenReturn(new UserResponse()
-                        .id("jane.smith")
-                        .firstName("Jane")
-                        .lastName("Smith")
-                        .email("jane.smith@example.com")
-                        .companyId("company-2"));
-
-        // Filter for company-1
-        mockMvc.perform(get("/api/v1/events/BATbern142/registrations")
-                        .param("companyId", "company-1")
-                        .contentType(MediaType.APPLICATION_JSON))
+        mockMvc.perform(get("/api/v1/events/{eventCode}/registrations", EVENT_CODE).param("companyId", "companyone"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data").isArray())
                 .andExpect(jsonPath("$.data", hasSize(1)))
-                .andExpect(jsonPath("$.data[0].attendeeUsername").value("john.doe"))
-                .andExpect(jsonPath("$.data[0].attendeeCompany").value("company-1"));
+                .andExpect(jsonPath("$.data[0].attendeeUsername").value("john.doe"));
     }
 
     @Test
     @DisplayName("should_applyCombinedFilters_when_multipleFiltersProvided")
     @WithMockUser(roles = "ORGANIZER")
     void should_applyCombinedFilters_when_multipleFiltersProvided() throws Exception {
-        // Explicitly mock UserApiClient for each username to avoid flakiness
-        when(userApiClient.getUserByUsername("john.doe"))
-                .thenReturn(new UserResponse()
-                        .id("john.doe")
-                        .firstName("John")
-                        .lastName("Doe")
-                        .email("john.doe@example.com")
-                        .companyId("Test Company"));
-
-        when(userApiClient.getUserByUsername("jane.doe"))
-                .thenReturn(new UserResponse()
-                        .id("jane.doe")
-                        .firstName("Jane")
-                        .lastName("Doe")
-                        .email("jane.doe@example.com")
-                        .companyId("Test Company"));
-
-        when(userApiClient.getUserByUsername("bob.jones"))
-                .thenReturn(new UserResponse()
-                        .id("bob.jones")
-                        .firstName("Bob")
-                        .lastName("Jones")
-                        .email("bob.jones@example.com")
-                        .companyId("Test Company"));
-
-        // Create registrations
         createTestRegistration("john.doe", "confirmed");
         createTestRegistration("jane.doe", "confirmed");
         createTestRegistration("bob.jones", "registered");
 
-        // Flush to ensure data is persisted before query
-        registrationRepository.flush();
-
-        // Filter: status=CONFIRMED AND search="doe"
-        mockMvc.perform(get("/api/v1/events/BATbern142/registrations")
+        // status=CONFIRMED AND search="doe"
+        mockMvc.perform(get("/api/v1/events/{eventCode}/registrations", EVENT_CODE)
                         .param("status", "CONFIRMED")
-                        .param("search", "doe")
-                        .contentType(MediaType.APPLICATION_JSON))
+                        .param("search", "doe"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data").isArray())
                 .andExpect(jsonPath("$.data", hasSize(2)))
                 .andExpect(jsonPath("$.pagination.totalItems").value(2))
                 .andExpect(jsonPath("$.data[0].status").value("CONFIRMED"))
                 .andExpect(jsonPath("$.data[1].status").value("CONFIRMED"));
     }
 
-    // ============================================================================
-    // Test: QR Code Generation (DEPRECATED - Story 4.1.5c)
-    // ============================================================================
-    // QR code functionality has been removed in Story 4.1.5c
-    // Replaced with email-based confirmation using JWT tokens
-
     @Test
-    @Disabled("Story 4.1.5c: QR code functionality removed")
-    @DisplayName("should_generateQRCode_when_validRegistrationProvided")
-    void should_generateQRCode_when_validRegistrationProvided() throws Exception {
-        // This test is disabled because QR code functionality has been removed
+    @WithMockUser(roles = "ORGANIZER")
+    @DisplayName("A waitlisted registration carries its queue position in the list, others null")
+    void should_returnWaitlistPosition_when_listingRegistrations() throws Exception {
+        // The organizer's waitlist view numbers and orders rows by this position (Epic 14 FR28).
+        Registration waiting = createTestRegistration("anna.wartend", "waitlist");
+        waiting.setWaitlistPosition(3);
+        registrationRepository.save(waiting);
+        createTestRegistration("ben.dabei", "confirmed");
+
+        mockMvc.perform(get("/api/v1/events/{eventCode}/registrations", EVENT_CODE).param("status", "WAITLIST"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data", hasSize(1)))
+                .andExpect(jsonPath("$.data[0].waitlistPosition").value(3));
+        mockMvc.perform(get("/api/v1/events/{eventCode}/registrations", EVENT_CODE).param("status", "CONFIRMED"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data", hasSize(1)))
+                .andExpect(jsonPath("$.data[0].waitlistPosition").value(nullValue()));
     }
 
-    @Test
-    @Disabled("Story 4.1.5c: QR code functionality removed")
-    @DisplayName("should_return404_when_qrCodeRequestedForNonexistentRegistration")
-    void should_return404_when_qrCodeRequestedForNonexistentRegistration() throws Exception {
-        // This test is disabled because QR code functionality has been removed
-    }
-
     // ============================================================================
-    // Test: Email Confirmation Flow (Story 4.1.5c)
+    // E-mail confirmation (Story 4.1.5c)
     // ============================================================================
 
     @Test
     @DisplayName("should_confirmRegistration_when_validTokenProvided")
     void should_confirmRegistration_when_validTokenProvided() throws Exception {
-        // Create a test registration in 'registered' status
         Registration registration = createTestRegistration("john.doe", "registered");
+        String token = confirmationTokenService.generateConfirmationToken(registration.getId(), EVENT_CODE);
 
-        // Generate confirmation token
-        String token = confirmationTokenService.generateConfirmationToken(
-                registration.getId(),
-                testEvent.getEventCode()
-        );
-
-        // Confirm registration
-        mockMvc.perform(post("/api/v1/events/" + testEvent.getEventCode() + "/registrations/confirm")
-                        .param("token", token)
-                        .contentType(MediaType.APPLICATION_JSON))
+        mockMvc.perform(post("/api/v1/events/{eventCode}/registrations/confirm", EVENT_CODE).param("token", token))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.message").value("Registration confirmed successfully!"))
                 .andExpect(jsonPath("$.status").value("CONFIRMED"));
 
-        // Verify status was updated in database
-        Registration confirmedRegistration = registrationRepository.findById(registration.getId()).orElseThrow();
-        assertThat(confirmedRegistration.getStatus()).isEqualTo("confirmed");
-
-        // The "registration confirmed" mail (with the calendar invite) goes out exactly once
-        verify(registrationEmailService).sendRegistrationConfirmed(
-                any(Registration.class), any(UserResponse.class), any(Event.class), any());
-        verify(userApiClient).getUserByUsername(eq("john.doe"));
+        assertThat(registrationRepository.findById(registration.getId()).orElseThrow().getStatus())
+                .isEqualTo("confirmed");
+        // The "registration confirmed" mail (with the calendar invite) goes out once.
+        sesRecorder.awaitAsyncSends();
+        assertThat(sesRecorder.mailsTo(JOHN_MAIL)).hasSize(1);
     }
 
     @Test
     @DisplayName("should_returnAlreadyConfirmed_when_registrationAlreadyConfirmed")
     void should_returnAlreadyConfirmed_when_registrationAlreadyConfirmed() throws Exception {
-        // Create a test registration that's already confirmed
-        Registration registration = createTestRegistration("john.doe", "confirmed");
+        Registration registration = createTestRegistration("john.doe", "registered");
+        String token = confirmationTokenService.generateConfirmationToken(registration.getId(), EVENT_CODE);
+        // Positive control: the first click mails the confirmation.
+        mockMvc.perform(post("/api/v1/events/{eventCode}/registrations/confirm", EVENT_CODE).param("token", token))
+                .andExpect(status().isOk());
+        sesRecorder.awaitAsyncSends();
+        assertThat(sesRecorder.mailsTo(JOHN_MAIL)).hasSize(1);
+        sesRecorder.reset();
 
-        // Generate confirmation token
-        String token = confirmationTokenService.generateConfirmationToken(
-                registration.getId(),
-                testEvent.getEventCode()
-        );
-
-        // Try to confirm again (should be idempotent)
-        mockMvc.perform(post("/api/v1/events/" + testEvent.getEventCode() + "/registrations/confirm")
-                        .param("token", token)
-                        .contentType(MediaType.APPLICATION_JSON))
+        // A second click is idempotent and does not mail the calendar invite again.
+        mockMvc.perform(post("/api/v1/events/{eventCode}/registrations/confirm", EVENT_CODE).param("token", token))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.message").value("Registration already confirmed"))
                 .andExpect(jsonPath("$.status").value("CONFIRMED"));
-
-        // Verify status is still confirmed
-        Registration stillConfirmed = registrationRepository.findById(registration.getId()).orElseThrow();
-        assertThat(stillConfirmed.getStatus()).isEqualTo("confirmed");
-
-        // A second click must not mail the calendar invite again
-        verify(registrationEmailService, never()).sendRegistrationConfirmed(any(), any(), any(), any());
+        sesRecorder.awaitAsyncSends();
+        assertThat(sesRecorder.mails()).isEmpty();
+        assertThat(registrationRepository.findById(registration.getId()).orElseThrow().getStatus())
+                .isEqualTo("confirmed");
     }
+
+    @Test
+    @DisplayName("should_return400_when_invalidTokenProvided")
+    void should_return400_when_invalidTokenProvided() throws Exception {
+        mockMvc.perform(post("/api/v1/events/{eventCode}/registrations/confirm", EVENT_CODE)
+                        .param("token", "invalid.jwt.token"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("should_return404_when_registrationNotFoundForToken")
+    void should_return404_when_registrationNotFoundForToken() throws Exception {
+        String token = confirmationTokenService.generateConfirmationToken(UUID.randomUUID(), EVENT_CODE);
+
+        mockMvc.perform(post("/api/v1/events/{eventCode}/registrations/confirm", EVENT_CODE).param("token", token))
+                .andExpect(status().isNotFound());
+    }
+
+    // ============================================================================
+    // Organizer PATCH and DELETE
+    // ============================================================================
 
     @Test
     @WithMockUser(roles = "ORGANIZER")
     @DisplayName("should_updateStatus_when_patchWithTypedStatusBody")
     void should_updateStatus_when_patchWithTypedStatusBody() throws Exception {
-        // The PATCH body is now the typed UpdateRegistrationStatusRequest ({status}),
-        // replacing the former raw Map<String,Object> (adversarial-review gap 2).
         Registration registration = createTestRegistration("john.doe", "registered");
 
-        mockMvc.perform(patch("/api/v1/events/" + testEvent.getEventCode()
-                        + "/registrations/" + registration.getRegistrationCode())
+        mockMvc.perform(patch("/api/v1/events/{eventCode}/registrations/{registrationCode}",
+                        EVENT_CODE, registration.getRegistrationCode())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"status\":\"confirmed\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.registrationCode").value(registration.getRegistrationCode()))
-                .andExpect(jsonPath("$.status").value("CONFIRMED")); // response status is uppercased
+                .andExpect(jsonPath("$.status").value("CONFIRMED")); // response status is upper case
 
-        Registration updated = registrationRepository.findById(registration.getId()).orElseThrow();
-        assertThat(updated.getStatus()).isEqualTo("confirmed"); // DB constraint is lowercase
+        assertThat(registrationRepository.findById(registration.getId()).orElseThrow().getStatus())
+                .isEqualTo("confirmed"); // DB constraint is lower case
     }
 
     @Test
@@ -731,8 +534,8 @@ public class RegistrationControllerIntegrationTest extends AbstractIntegrationTe
     void should_return403_when_nonOrganizerPatchesRegistration() throws Exception {
         Registration registration = createTestRegistration("john.doe", "confirmed");
 
-        mockMvc.perform(patch("/api/v1/events/" + testEvent.getEventCode()
-                        + "/registrations/" + registration.getRegistrationCode())
+        mockMvc.perform(patch("/api/v1/events/{eventCode}/registrations/{registrationCode}",
+                        EVENT_CODE, registration.getRegistrationCode())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"status\":\"cancelled\"}"))
                 .andExpect(status().isForbidden());
@@ -747,8 +550,8 @@ public class RegistrationControllerIntegrationTest extends AbstractIntegrationTe
     void should_return403_when_nonOrganizerDeletesRegistration() throws Exception {
         Registration registration = createTestRegistration("john.doe", "confirmed");
 
-        mockMvc.perform(delete("/api/v1/events/" + testEvent.getEventCode()
-                        + "/registrations/" + registration.getRegistrationCode()))
+        mockMvc.perform(delete("/api/v1/events/{eventCode}/registrations/{registrationCode}",
+                        EVENT_CODE, registration.getRegistrationCode()))
                 .andExpect(status().isForbidden());
 
         assertThat(registrationRepository.findById(registration.getId())).isPresent();
@@ -760,123 +563,70 @@ public class RegistrationControllerIntegrationTest extends AbstractIntegrationTe
     void should_deleteRegistration_when_organizerDeletes() throws Exception {
         Registration registration = createTestRegistration("john.doe", "confirmed");
 
-        mockMvc.perform(delete("/api/v1/events/" + testEvent.getEventCode()
-                        + "/registrations/" + registration.getRegistrationCode()))
+        mockMvc.perform(delete("/api/v1/events/{eventCode}/registrations/{registrationCode}",
+                        EVENT_CODE, registration.getRegistrationCode()))
                 .andExpect(status().isNoContent());
 
         assertThat(registrationRepository.findById(registration.getId())).isEmpty();
     }
 
     @Test
-    @DisplayName("should_return400_when_invalidTokenProvided")
-    void should_return400_when_invalidTokenProvided() throws Exception {
-        String invalidToken = "invalid.jwt.token";
+    @WithMockUser(roles = "ORGANIZER")
+    @DisplayName("should_return404_when_registrationBelongsToAnotherEvent")
+    void should_return404_when_registrationBelongsToAnotherEvent() throws Exception {
+        // Story 17.13: PATCH and DELETE answer a code of event B under event A like an unknown code,
+        // as promote and resend do; the message no longer names the other event.
+        Event other = eventRepository.save(event(OTHER_EVENT_CODE, 1714));
+        Registration elsewhere = registrationRepository.save(registration(other, "john.doe", "confirmed"));
+        // Positive control: under its own event the registration is found.
+        mockMvc.perform(patch("/api/v1/events/{eventCode}/registrations/{registrationCode}",
+                        OTHER_EVENT_CODE, elsewhere.getRegistrationCode())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isOk());
 
-        mockMvc.perform(post("/api/v1/events/" + testEvent.getEventCode() + "/registrations/confirm")
-                        .param("token", invalidToken)
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isBadRequest());
+        mockMvc.perform(patch("/api/v1/events/{eventCode}/registrations/{registrationCode}",
+                        EVENT_CODE, elsewhere.getRegistrationCode())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"cancelled\"}"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message", not(containsString("does not belong"))));
+        mockMvc.perform(delete("/api/v1/events/{eventCode}/registrations/{registrationCode}",
+                        EVENT_CODE, elsewhere.getRegistrationCode()))
+                .andExpect(status().isNotFound());
+
+        Registration unchanged = registrationRepository.findById(elsewhere.getId()).orElseThrow();
+        assertThat(unchanged.getStatus()).isEqualTo("confirmed");
     }
 
     @Test
-    @DisplayName("should_return404_when_registrationNotFoundForToken")
-    void should_return404_when_registrationNotFoundForToken() throws Exception {
-        // Generate token for non-existent registration
-        java.util.UUID nonExistentId = java.util.UUID.randomUUID();
-        String token = confirmationTokenService.generateConfirmationToken(
-                nonExistentId,
-                testEvent.getEventCode()
-        );
-
-        mockMvc.perform(post("/api/v1/events/" + testEvent.getEventCode() + "/registrations/confirm")
-                        .param("token", token)
-                        .contentType(MediaType.APPLICATION_JSON))
+    @WithMockUser(roles = "ORGANIZER")
+    @DisplayName("should_return404_when_registrationOrEventUnknown")
+    void should_return404_when_registrationOrEventUnknown() throws Exception {
+        mockMvc.perform(delete("/api/v1/events/{eventCode}/registrations/{registrationCode}",
+                        EVENT_CODE, EVENT_CODE + "-reg-ABC123"))
+                .andExpect(status().isNotFound());
+        mockMvc.perform(delete("/api/v1/events/{eventCode}/registrations/{registrationCode}",
+                        "BATbern99999", "BATbern99999-reg-ABC123"))
                 .andExpect(status().isNotFound());
     }
 
     @Test
-    @DisplayName("QA Fix (VALID-001): should_return500_when_duplicateRegistrationAttempted")
-    void should_return500_when_duplicateRegistrationAttempted() throws Exception {
-        // Given: A user who already has a registration for this event
-        when(userApiClient.getOrCreateUser(any())).thenReturn(mockCreateResponse);
-        when(userApiClient.getUserByUsername("john.doe")).thenReturn(mockUserProfile);
+    @WithMockUser(roles = "ORGANIZER")
+    @DisplayName("should_return400_when_registrationCodeViolatesSpecPattern")
+    void should_return400_when_registrationCodeViolatesSpecPattern() throws Exception {
+        Registration registration = createTestRegistration("john.doe", "confirmed");
 
-        String registrationRequest = """
-                {
-                    "firstName": "John",
-                    "lastName": "Doe",
-                    "email": "john.doe@example.com",
-                    "termsAccepted": true
-                }
-                """;
-
-        // When: First registration attempt (should succeed)
-        // Story 4.1.5c: Registration now returns {message, email}
-        mockMvc.perform(post("/api/v1/events/BATbern142/registrations")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(registrationRequest))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.message").exists())
-                .andExpect(jsonPath("$.email").value("john.doe@example.com"));
-
-        // Then: Second registration attempt with same user should fail with 409 Conflict
-        mockMvc.perform(post("/api/v1/events/BATbern142/registrations")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(registrationRequest))
-                .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.message").value(containsString("already registered")));
-
-        // Verify only one registration exists
-        assertThat(registrationRepository.count()).isEqualTo(1);
-    }
-
-    // ============================================================================
-    // Helper Methods
-    // ============================================================================
-
-    private Registration createTestRegistration(String attendeeUsername, String status) {
-        Registration registration = Registration.builder()
-                .registrationCode(testEvent.getEventCode() + "-reg-" + generateRandomCode())
-                .eventId(testEvent.getId())
-                .attendeeUsername(attendeeUsername)
-                .status(status)
-                .registrationDate(Instant.parse("2025-06-01T10:00:00Z"))
-                .build();
-
-        // No need to mock getUserByUsername - handled by dynamic mock in setUp()
-        return registrationRepository.save(registration);
-    }
-
-    private String generateRandomCode() {
-        // Use UUID to guarantee uniqueness (prevents duplicate key violations in fast test runs)
-        return "TEST" + java.util.UUID.randomUUID().toString().substring(0, 8);
-    }
-
-    private String capitalize(String str) {
-        if (str == null || str.isEmpty()) {
-            return str;
-        }
-        return str.substring(0, 1).toUpperCase() + str.substring(1).toLowerCase();
+        mockMvc.perform(delete("/api/v1/events/{eventCode}/registrations/{registrationCode}",
+                        EVENT_CODE, "not-a-registration-code"))
+                .andExpect(status().isBadRequest());
+        assertThat(registrationRepository.findById(registration.getId())).isPresent();
     }
 
     // ============================================================================
     // Participant search. Every word in username, first/last name, e-mail or
     // company id (denormalized columns), folded, any order, in SQL before paging.
     // ============================================================================
-
-    private void saveParticipant(String username, String first, String last, String companyId) {
-        registrationRepository.save(Registration.builder()
-                .registrationCode(testEvent.getEventCode() + "-reg-" + generateRandomCode())
-                .eventId(testEvent.getId())
-                .attendeeUsername(username)
-                .attendeeFirstName(first)
-                .attendeeLastName(last)
-                .attendeeEmail(username + "@example.com")
-                .attendeeCompanyId(companyId)
-                .status("registered")
-                .registrationDate(Instant.parse("2025-06-01T10:00:00Z"))
-                .build());
-    }
 
     private void saveParticipants() {
         saveParticipant("anna.mueller", "Anna", "Müller", "mobiliar");
@@ -895,7 +645,7 @@ public class RegistrationControllerIntegrationTest extends AbstractIntegrationTe
     void should_findParticipants_bySearch(String input, int expected) throws Exception {
         saveParticipants();
 
-        mockMvc.perform(get("/api/v1/events/BATbern142/registrations").param("search", input))
+        mockMvc.perform(get("/api/v1/events/{eventCode}/registrations", EVENT_CODE).param("search", input))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.pagination.totalItems").value(expected));
     }
@@ -906,31 +656,11 @@ public class RegistrationControllerIntegrationTest extends AbstractIntegrationTe
     void should_returnParticipantBeyondFirstPage() throws Exception {
         saveParticipants();
 
-        mockMvc.perform(get("/api/v1/events/BATbern142/registrations")
+        mockMvc.perform(get("/api/v1/events/{eventCode}/registrations", EVENT_CODE)
                         .param("search", "mueller").param("page", "2").param("limit", "2"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data", hasSize(1)))
                 .andExpect(jsonPath("$.pagination.totalItems").value(3));
-    }
-
-    @Test
-    @WithMockUser(roles = "ORGANIZER")
-    @DisplayName("A waitlisted registration carries its queue position in the list, others null")
-    void should_returnWaitlistPosition_when_listingRegistrations() throws Exception {
-        // The organizer's waitlist view numbers and orders rows by this position (Epic 14 FR28).
-        Registration waiting = createTestRegistration("anna.wartend", "waitlist");
-        waiting.setWaitlistPosition(3);
-        registrationRepository.save(waiting);
-        createTestRegistration("ben.dabei", "confirmed");
-
-        mockMvc.perform(get("/api/v1/events/BATbern142/registrations").param("status", "WAITLIST"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data", hasSize(1)))
-                .andExpect(jsonPath("$.data[0].waitlistPosition").value(3));
-        mockMvc.perform(get("/api/v1/events/BATbern142/registrations").param("status", "CONFIRMED"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data", hasSize(1)))
-                .andExpect(jsonPath("$.data[0].waitlistPosition").value(nullValue()));
     }
 
     @ParameterizedTest
@@ -940,7 +670,8 @@ public class RegistrationControllerIntegrationTest extends AbstractIntegrationTe
     void should_answer2xx_when_participantSearchIsHostileOrBlank(String input) throws Exception {
         saveParticipants();
 
-        var result = mockMvc.perform(get("/api/v1/events/BATbern142/registrations").param("search", input))
+        var result = mockMvc.perform(get("/api/v1/events/{eventCode}/registrations", EVENT_CODE)
+                        .param("search", input))
                 .andExpect(status().isOk());
         if (input.isBlank()) {
             result.andExpect(jsonPath("$.pagination.totalItems").value(4));
@@ -948,5 +679,88 @@ public class RegistrationControllerIntegrationTest extends AbstractIntegrationTe
         if ("100%".equals(input)) {
             result.andExpect(jsonPath("$.pagination.totalItems").value(0));
         }
+    }
+
+    // ============================================================================
+    // Helpers
+    // ============================================================================
+
+    private static Event event(String eventCode, int eventNumber) {
+        Instant date = Instant.now().plus(60, ChronoUnit.DAYS);
+        return Event.builder()
+                .eventCode(eventCode)
+                .title("Registration Test " + eventNumber)
+                .eventNumber(eventNumber)
+                .date(date)
+                .registrationDeadline(date.minus(7, ChronoUnit.DAYS))
+                .venueName("Test Venue")
+                .venueAddress("Test Address 123, Bern")
+                .venueCapacity(100)
+                .organizerUsername("test.organizer")
+                .currentAttendeeCount(0)
+                .description("Test event for registration")
+                .eventType(EventType.EVENING)
+                .workflowState(EventWorkflowState.CREATED)
+                .build();
+    }
+
+    /** A registration with the denormalized attendee fields derived from the username. */
+    private static Registration registration(Event event, String username, String status) {
+        String[] names = username.split("\\.");
+        return Registration.builder()
+                .registrationCode(event.getEventCode() + "-reg-" + randomCode())
+                .eventId(event.getId())
+                .attendeeUsername(username)
+                .attendeeFirstName(capitalize(names[0]))
+                .attendeeLastName(capitalize(names[1]))
+                .attendeeEmail(username + "@example.com")
+                .status(status)
+                .deregistrationToken(UUID.randomUUID())
+                .registrationDate(Instant.now())
+                .build();
+    }
+
+    private Registration createTestRegistration(String username, String status) {
+        return registrationRepository.save(registration(testEvent, username, status));
+    }
+
+    private void saveParticipant(String username, String first, String last, String companyId) {
+        registrationRepository.save(Registration.builder()
+                .registrationCode(EVENT_CODE + "-reg-" + randomCode())
+                .eventId(testEvent.getId())
+                .attendeeUsername(username)
+                .attendeeFirstName(first)
+                .attendeeLastName(last)
+                .attendeeEmail(username + "@example.com")
+                .attendeeCompanyId(companyId)
+                .status("registered")
+                .registrationDate(Instant.now())
+                .build());
+    }
+
+    /** Unique per call: the registration code is unique across all tests. */
+    private static String randomCode() {
+        return "TEST" + UUID.randomUUID().toString().substring(0, 8).toUpperCase(Locale.ROOT);
+    }
+
+    private static String capitalize(String value) {
+        return value.substring(0, 1).toUpperCase(Locale.ROOT) + value.substring(1);
+    }
+
+    /** A {@code GetOrCreateUserResponse} for the requested person, username from the e-mail. */
+    private String getOrCreateReply(Call call, boolean companyUpdated) {
+        JsonNode request;
+        try {
+            request = objectMapper.readTree(call.body());
+        } catch (Exception e) {
+            throw new IllegalStateException(e);
+        }
+        String email = request.get("email").asText();
+        String username = email.substring(0, email.indexOf('@')).toLowerCase(Locale.ROOT);
+        String user = CumsContractHarness.userJson(username, request.get("firstName").asText(),
+                request.get("lastName").asText(), email,
+                request.hasNonNull("companyId") ? request.get("companyId").asText() : null);
+        return "{\"username\": \"" + username + "\", \"created\": true, \"companyUpdated\": " + companyUpdated
+                + ", \"cognitoUserId\": null, \"user\": " + user + "}";
     }
 }

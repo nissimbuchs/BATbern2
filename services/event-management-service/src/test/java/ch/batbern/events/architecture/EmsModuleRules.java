@@ -1,15 +1,25 @@
 package ch.batbern.events.architecture;
 
 import com.tngtech.archunit.base.DescribedPredicate;
+import com.tngtech.archunit.core.domain.JavaAnnotation;
 import com.tngtech.archunit.core.domain.JavaClass;
+import com.tngtech.archunit.core.domain.JavaMethod;
 import com.tngtech.archunit.lang.ArchCondition;
 import com.tngtech.archunit.lang.ArchRule;
 import com.tngtech.archunit.lang.ConditionEvents;
 import com.tngtech.archunit.lang.SimpleConditionEvent;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 import static com.tngtech.archunit.base.DescribedPredicate.not;
 import static com.tngtech.archunit.core.domain.JavaClass.Predicates.resideInAnyPackage;
@@ -114,6 +124,62 @@ final class EmsModuleRules {
                 .andShould(notMapTable("logos"))
                 .as("Data ownership: no EMS entity maps an upload table of another service (Story 17.11, #1307)")
                 .allowEmptyShould(true);
+    }
+
+    /** Path segments of the registrations module's endpoints (Story 17.13). */
+    static final List<String> REGISTRATION_PATHS = List.of("/registrations", "/my-registration");
+
+    private static final Set<String> MAPPING_ANNOTATIONS = Set.of(
+            RequestMapping.class.getName(), GetMapping.class.getName(), PostMapping.class.getName(),
+            PutMapping.class.getName(), PatchMapping.class.getName(), DeleteMapping.class.getName());
+
+    /**
+     * Story 17.13: the registration endpoints live in {@code RegistrationController} ("no new endpoints
+     * in {@code EventController}", module map). The named controller maps no path containing
+     * {@link #REGISTRATION_PATHS}, neither by its own mapping annotations nor through a superclass or an
+     * implemented interface (a generated {@code RegistrationsApi}). Not frozen: there is no violation.
+     */
+    static ArchRule noRegistrationEndpointIn(String root, String controllerSimpleName) {
+        return classes().that().resideInAPackage(root + "..")
+                .and().haveSimpleName(controllerSimpleName)
+                .should(mapNoPathContaining(REGISTRATION_PATHS))
+                .as("Endpoint placement: " + controllerSimpleName + " maps no registration endpoint "
+                        + REGISTRATION_PATHS + ", directly or inherited (Story 17.13)");
+    }
+
+    static ArchCondition<JavaClass> mapNoPathContaining(List<String> segments) {
+        return new ArchCondition<>("map no path containing " + segments) {
+            @Override
+            public void check(JavaClass javaClass, ConditionEvents events) {
+                List<JavaClass> types = new ArrayList<>();
+                types.add(javaClass);
+                types.addAll(javaClass.getAllRawSuperclasses());
+                types.addAll(javaClass.getAllRawInterfaces());
+                for (JavaClass type : types) {
+                    report(javaClass, type.getName(), type.getAnnotations(), events);
+                    for (JavaMethod method : type.getMethods()) {
+                        report(javaClass, method.getFullName(), method.getAnnotations(), events);
+                    }
+                }
+            }
+
+            private void report(JavaClass javaClass, String where,
+                    Set<? extends JavaAnnotation<?>> annotations, ConditionEvents events) {
+                for (JavaAnnotation<?> annotation : annotations) {
+                    if (!MAPPING_ANNOTATIONS.contains(annotation.getRawType().getName())) {
+                        continue;
+                    }
+                    for (String attribute : List.of("value", "path")) {
+                        for (String path : annotation.get(attribute).map(v -> (String[]) v).orElse(new String[0])) {
+                            if (segments.stream().anyMatch(path::contains)) {
+                                events.add(SimpleConditionEvent.violated(javaClass, "Class <"
+                                        + javaClass.getName() + "> maps " + path + " (" + where + ")"));
+                            }
+                        }
+                    }
+                }
+            }
+        };
     }
 
     static ArchCondition<JavaClass> notMapTable(String table) {
