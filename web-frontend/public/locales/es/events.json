@@ -1388,14 +1388,7 @@
       "past": "Eventos pasados",
       "emptyUpcoming": "No hay próximos eventos — mira lo que viene.",
       "emptyPast": "Aún no hay eventos pasados.",
-      "error": "No se pudieron cargar tus eventos. Inténtalo de nuevo.",
-      "status": {
-        "registered": "Registrado",
-        "confirmed": "Confirmado",
-        "waitlist": "Lista de espera",
-        "attended": "Asistió",
-        "no_show": "No asistió"
-      }
+      "error": "No se pudieron cargar tus eventos. Inténtalo de nuevo."
     }
   },
   "appreciation": {

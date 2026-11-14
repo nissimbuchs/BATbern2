@@ -246,7 +246,8 @@ function handler(event) {
           "script-src-elem 'self' 'unsafe-inline' blob: https://cdn.jsdelivr.net https://cdn.tiny.cloud https://challenges.cloudflare.com; " +
           "worker-src 'self' blob: https://cdn.jsdelivr.net; " +
           "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.tiny.cloud https://cdn.jsdelivr.net; " +
-          "img-src 'self' data: https:; " +
+          // blob: previews a picked file before upload (useFileUpload, ProfilePhotoUpload).
+          "img-src 'self' data: blob: https:; " +
           "font-src 'self' data: https://fonts.gstatic.com https://assets.unicorn.studio https://cdn.tiny.cloud; " +
           // auth.batbern.ch: Cognito custom hosted-UI domain (#738). Amplify POSTs the
           // OAuth code exchange to https://auth.batbern.ch/oauth2/token from

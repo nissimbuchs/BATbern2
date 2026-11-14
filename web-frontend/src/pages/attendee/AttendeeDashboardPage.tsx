@@ -5,14 +5,16 @@
  * upcoming and past. Mirrors the speaker dashboard (PublicLayout, Tailwind-only). The
  * Story 7.1 community-topic panel is preserved as a secondary section.
  *
- * Upcoming (story 3, owner 2026-11-13): three cards, the homepage's upcoming-event cards. Every
- * upcoming event the user is registered for comes first (all of them, even more than three), then
- * the next events of the calendar they are not registered for, until there are three. A published
+ * Upcoming (story 3, owner 2026-11-13): three cards, the homepage's upcoming-event cards, one row.
+ * The upcoming events the user is registered for come first (the next three at most, owner
+ * 2026-11-14), then the next events of the calendar they are not registered for, until there are
+ * three. A published
  * event links to its event page, where the user registers; an unpublished one shows code, title
  * and date only, without a link. No register button on the card. A registered event missing from
  * the published list (for example when that list fails) keeps the local card below.
  *
- * Past: the local card, linking to /archive/{code}.
+ * Past: the local card, linking to /archive/{code}, without the participation status (owner
+ * 2026-11-14: not needed, and it overflowed the card on narrow screens).
  *
  * "What's new" (story 2 of 2026-11-13): the card sits on top and links to the full list
  * (/attendee/whats-new), where the user menu of both headers leads. Its entries link to #earlier-profiles, #suggest-topics and #attendee-past.
@@ -37,7 +39,7 @@ import type { AttendeeEventCard } from '@/services/attendeeDashboardService';
 import { WhatsNewCard } from '@/features/whatsNew/WhatsNewCard';
 import { scrollToFragment } from '@/features/whatsNew/scrollToFragment';
 
-/** Cards in the upcoming list: registered ones count, unregistered ones fill up to this. */
+/** Cards in the upcoming list (one row): registered ones first, unregistered ones fill up. */
 const UPCOMING_CARDS = 3;
 /** Calendar events to ask for: enough to fill three after skipping the registered ones. */
 const CALENDAR_CANDIDATES = 10;
@@ -67,8 +69,6 @@ function formatDate(iso?: string): string {
 }
 
 function EventCard({ event, linkPrefix }: { event: AttendeeEventCard; linkPrefix: string }) {
-  const { t } = useTranslation('events');
-  const statusKey = (event.registrationStatus ?? '').toLowerCase();
   return (
     <Link
       to={`${linkPrefix}${event.eventCode}`}
@@ -76,34 +76,24 @@ function EventCard({ event, linkPrefix }: { event: AttendeeEventCard; linkPrefix
       data-testid="attendee-event-card"
     >
       <Card className="p-4 mb-3">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-          <div>
-            <EventEditionLabel
-              eventCode={event.eventCode}
-              className="block text-xs font-semibold uppercase tracking-wide text-muted-foreground"
-            />
-            <h3 className="text-base font-medium text-foreground">{event.eventTitle}</h3>
-            <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground mt-0.5">
-              <span className="flex items-center gap-1">
-                <Calendar className="w-3.5 h-3.5" aria-hidden="true" />
-                {formatDate(event.eventDate)}
-              </span>
-              {event.eventLocation && (
-                <span className="flex items-center gap-1">
-                  <MapPin className="w-3.5 h-3.5" aria-hidden="true" />
-                  {event.eventLocation}
-                </span>
-              )}
-            </div>
-          </div>
-          {statusKey && (
-            <span
-              className="self-start rounded bg-zinc-800 px-2 py-0.5 text-xs text-zinc-300"
-              data-testid="attendee-event-status"
-            >
-              {t(`attendee.dashboard.status.${statusKey}`, statusKey)}
+        <div className="min-w-0">
+          <EventEditionLabel
+            eventCode={event.eventCode}
+            className="block text-xs font-semibold uppercase tracking-wide text-muted-foreground"
+          />
+          <h3 className="text-base font-medium text-foreground break-words">{event.eventTitle}</h3>
+          <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground mt-0.5">
+            <span className="flex items-center gap-1">
+              <Calendar className="w-3.5 h-3.5" aria-hidden="true" />
+              {formatDate(event.eventDate)}
             </span>
-          )}
+            {event.eventLocation && (
+              <span className="flex items-center gap-1">
+                <MapPin className="w-3.5 h-3.5" aria-hidden="true" />
+                {event.eventLocation}
+              </span>
+            )}
+          </div>
         </div>
       </Card>
     </Link>
@@ -132,9 +122,9 @@ const AttendeeDashboardPage = () => {
   const greetingName = dashboard?.attendeeName || user?.username || '';
   const loading = isLoading || (!!dashboard && upcoming.isLoading);
 
-  const registeredUpcoming = [...(dashboard?.upcomingEvents ?? [])].sort(
-    (a, b) => new Date(a.eventDate ?? 0).getTime() - new Date(b.eventDate ?? 0).getTime()
-  );
+  const registeredUpcoming = [...(dashboard?.upcomingEvents ?? [])]
+    .sort((a, b) => new Date(a.eventDate ?? 0).getTime() - new Date(b.eventDate ?? 0).getTime())
+    .slice(0, UPCOMING_CARDS);
   const registeredCodes = new Set(registeredUpcoming.map((e) => e.eventCode));
   const unregistered = upcoming.calendar
     .filter((e) => !registeredCodes.has(e.eventCode))

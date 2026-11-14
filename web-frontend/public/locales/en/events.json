@@ -1402,14 +1402,7 @@
       "past": "Past events",
       "emptyUpcoming": "No upcoming events — browse what's coming up.",
       "emptyPast": "No past events yet.",
-      "error": "Couldn't load your events. Please try again.",
-      "status": {
-        "registered": "Registered",
-        "confirmed": "Confirmed",
-        "waitlist": "Waitlist",
-        "attended": "Attended",
-        "no_show": "No-show"
-      }
+      "error": "Couldn't load your events. Please try again."
     }
   },
   "appreciation": {

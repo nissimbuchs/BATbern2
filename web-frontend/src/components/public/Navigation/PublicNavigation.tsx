@@ -110,7 +110,11 @@ export const PublicNavigation = ({
             </div>
 
             {/* Primary Navigation - Center (desktop) */}
-            <div className="hidden md:flex items-center space-x-8">
+            {/* xl, not md: with all role links (Portal, My Sessions, My Events; German labels) the bar
+                is about 1120 px wide, so on iPad portrait and landscape the user menu was pushed off
+                the right edge (owner 2026-11-14; measured: ends at 1254 px at 1280). Below xl:
+                hamburger. Keep gap-6: gap-8 no longer fits at 1280. */}
+            <div className="hidden xl:flex items-center gap-6 whitespace-nowrap">
               <Link to="/" className="text-foreground/80 hover:text-foreground transition-colors">
                 {t('navigation.home')}
               </Link>
@@ -158,7 +162,7 @@ export const PublicNavigation = ({
             </div>
 
             {/* CTA Buttons - Right (desktop) */}
-            <div className="hidden md:flex items-center gap-3">
+            <div className="hidden xl:flex items-center gap-3 flex-shrink-0">
               {/* Thank the organizers — Story 7.4: only on a live/completed event page */}
               {thankableEventCode && <ThankOrganizersNavButton eventCode={thankableEventCode} />}
               {isAuthenticated ? (
@@ -243,7 +247,7 @@ export const PublicNavigation = ({
 
             {/* Hamburger Button - Mobile only */}
             <button
-              className="md:hidden p-2 text-foreground/80 hover:text-foreground transition-colors"
+              className="xl:hidden p-2 text-foreground/80 hover:text-foreground transition-colors"
               onClick={() => setMobileMenuOpen((prev) => !prev)}
               aria-label={t('navigation.openMenu')}
             >
@@ -349,13 +353,16 @@ export const PublicNavigation = ({
                         : '/dashboard'
                   }
                   onClick={closeMobileMenu}
-                  className="flex items-center gap-2"
+                  className="flex min-w-0 items-center justify-start gap-2"
                 >
-                  <span className="relative flex h-6 w-6 items-center justify-center rounded-full bg-white/20 text-xs font-semibold leading-none">
+                  <span className="relative flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-white/20 text-xs font-semibold leading-none">
                     {initials}
                     {whatsNewHasNew && <WhatsNewDot testId="public-nav-mobile-whats-new-dot" />}
                   </span>
-                  {user?.email ?? ''}
+                  {/* A long address is cut with … instead of running out of the drawer (2026-11-14). */}
+                  <span className="min-w-0 truncate" title={user?.email ?? ''}>
+                    {user?.email ?? ''}
+                  </span>
                 </Link>
               </Button>
               {/* 2026-06-05 — My Profile for every authenticated user (role-neutral
