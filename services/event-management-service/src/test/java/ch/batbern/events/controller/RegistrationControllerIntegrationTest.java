@@ -29,11 +29,14 @@ import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Locale;
 import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -41,6 +44,7 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.http.HttpMethod.POST;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
@@ -66,6 +70,10 @@ class RegistrationControllerIntegrationTest extends AbstractIntegrationTest {
     private static final String OTHER_EVENT_CODE = "BATbern1714";
     /** An AWS mailbox-simulator address: mail to it may be sent. */
     private static final String JOHN_MAIL = "success+john.doe@simulator.amazonses.com";
+    private static final String JANE_MAIL = "success+jane.smith@simulator.amazonses.com";
+    private static final String CONFIRM_LINK = "confirm-registration?token=";
+    private static final Pattern CONFIRM_TOKEN =
+            Pattern.compile("confirm-registration\\?token=([A-Za-z0-9._-]+)");
     private static final String NEW_REGISTRATION = """
             {
                 "firstName": "John",
@@ -101,7 +109,7 @@ class RegistrationControllerIntegrationTest extends AbstractIntegrationTest {
         sesRecorder.reset();
 
         testEvent = eventRepository.save(event(EVENT_CODE, 1713));
-        // CUMS get-or-create: the username is the e-mail's local part, the user what was sent.
+        // CUMS get-or-create: the username is first.last, the user what was sent.
         cums.answer(POST, "/internal/users/get-or-create", call -> Reply.ok(getOrCreateReply(call, false)));
         cums.user("john.doe", "John", "Doe", JOHN_MAIL);
     }
@@ -259,6 +267,54 @@ class RegistrationControllerIntegrationTest extends AbstractIntegrationTest {
 
         assertThat(registrationRepository.findAll().stream()
                 .filter(r -> testEvent.getId().equals(r.getEventId()))).hasSize(1);
+    }
+
+    @Test
+    @DisplayName("should_sendNoConfirmationLink_when_anonymousRegistrationLandsOnWaitlist")
+    void should_sendNoConfirmationLink_when_anonymousRegistrationLandsOnWaitlist() throws Exception {
+        Event capped = cappedOtherEvent();
+        cums.user("jane.smith", "Jane", "Smith", JANE_MAIL);
+
+        mockMvc.perform(post("/api/v1/events/{eventCode}/registrations", OTHER_EVENT_CODE)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(NEW_REGISTRATION))
+                .andExpect(status().isCreated());
+        mockMvc.perform(post("/api/v1/events/{eventCode}/registrations", OTHER_EVENT_CODE)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"firstName\": \"Jane\", \"lastName\": \"Smith\", \"email\": \""
+                                + JANE_MAIL + "\", \"termsAccepted\": true}"))
+                .andExpect(status().isCreated());
+
+        assertThat(registrationRepository.findByEventIdAndAttendeeUsername(capped.getId(), "jane.smith")
+                .orElseThrow().getStatus()).isEqualTo("waitlist");
+        sesRecorder.awaitAsyncSends();
+        // Positive control: the first attendee got the confirmation link.
+        assertThat(sesRecorder.mailsTo(JOHN_MAIL)).anyMatch(mail -> mail.html().contains(CONFIRM_LINK));
+        assertThat(sesRecorder.mailsTo(JANE_MAIL)).noneMatch(mail -> mail.html().contains(CONFIRM_LINK));
+    }
+
+    // ============================================================================
+    // Registration of the signed-in user (POST /my-registration)
+    // ============================================================================
+
+    @Test
+    @DisplayName("should_confirmOrWaitlist_when_signedInUserRegisters")
+    void should_confirmOrWaitlist_when_signedInUserRegisters() throws Exception {
+        cappedOtherEvent();
+        cums.user("jane.smith", "Jane", "Smith", JANE_MAIL);
+
+        mockMvc.perform(post("/api/v1/events/{eventCode}/my-registration", OTHER_EVENT_CODE)
+                        .with(signedIn("john.doe", JOHN_MAIL)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.message").value("Registration confirmed."))
+                .andExpect(jsonPath("$.email").value(JOHN_MAIL));
+
+        // The event holds one: the next one waits.
+        mockMvc.perform(post("/api/v1/events/{eventCode}/my-registration", OTHER_EVENT_CODE)
+                        .with(signedIn("jane.smith", JANE_MAIL)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.message").value("You have been added to the waitlist for this event."))
+                .andExpect(jsonPath("$.email").value(JANE_MAIL));
     }
 
     // ============================================================================
@@ -597,6 +653,29 @@ class RegistrationControllerIntegrationTest extends AbstractIntegrationTest {
 
         Registration unchanged = registrationRepository.findById(elsewhere.getId()).orElseThrow();
         assertThat(unchanged.getStatus()).isEqualTo("confirmed");
+
+        // Promote: a waitlisted registration of event B is not found under event A and keeps waiting.
+        cums.user("ben.waiting", "Ben", "Waiting", "success+ben.waiting@simulator.amazonses.com");
+        Registration waiting = registration(other, "ben.waiting", "waitlist");
+        waiting.setWaitlistPosition(1);
+        waiting = registrationRepository.save(waiting);
+        mockMvc.perform(post("/api/v1/events/{eventCode}/registrations/{registrationCode}/promote",
+                        EVENT_CODE, waiting.getRegistrationCode()))
+                .andExpect(status().isNotFound());
+        assertThat(registrationRepository.findById(waiting.getId()).orElseThrow().getStatus()).isEqualTo("waitlist");
+        // Positive control: under its own event it is promoted.
+        mockMvc.perform(post("/api/v1/events/{eventCode}/registrations/{registrationCode}/promote",
+                        OTHER_EVENT_CODE, waiting.getRegistrationCode()))
+                .andExpect(status().isNoContent());
+        assertThat(registrationRepository.findById(waiting.getId()).orElseThrow().getStatus())
+                .isEqualTo("registered");
+    }
+
+    /** A signed-in caller with this username and e-mail claim (no role needed). */
+    private static RequestPostProcessor signedIn(String username, String email) {
+        return jwt().jwt(token -> token.subject("sub-" + username)
+                .claim("custom:username", username)
+                .claim("email", email));
     }
 
     @Test
@@ -621,6 +700,43 @@ class RegistrationControllerIntegrationTest extends AbstractIntegrationTest {
                         EVENT_CODE, "not-a-registration-code"))
                 .andExpect(status().isBadRequest());
         assertThat(registrationRepository.findById(registration.getId())).isPresent();
+    }
+
+    @Test
+    @WithMockUser(roles = "ORGANIZER")
+    @DisplayName("should_resendWorkingConfirmation_when_registrationPending_and_refuseOtherwise")
+    void should_resendWorkingConfirmation_when_registrationPending_and_refuseOtherwise() throws Exception {
+        Registration pending = createTestRegistration("john.doe", "registered");
+
+        mockMvc.perform(post("/api/v1/events/{eventCode}/registrations/{registrationCode}/resend-confirmation",
+                        EVENT_CODE, pending.getRegistrationCode()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("Confirmation email resent to " + JOHN_MAIL));
+        sesRecorder.awaitAsyncSends();
+        assertThat(sesRecorder.mailsTo(JOHN_MAIL)).hasSize(1);
+        Matcher token = CONFIRM_TOKEN.matcher(sesRecorder.mailsTo(JOHN_MAIL).get(0).html());
+        assertThat(token.find()).as("confirmation link in the mail").isTrue();
+        // The resent token confirms the registration.
+        mockMvc.perform(post("/api/v1/events/{eventCode}/registrations/confirm", EVENT_CODE)
+                        .param("token", token.group(1)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("Registration confirmed successfully!"));
+        sesRecorder.awaitAsyncSends();
+        sesRecorder.reset();
+
+        // Now confirmed: 409, nothing sent.
+        mockMvc.perform(post("/api/v1/events/{eventCode}/registrations/{registrationCode}/resend-confirmation",
+                        EVENT_CODE, pending.getRegistrationCode()))
+                .andExpect(status().isConflict());
+        // A pending registration of another event under this one: 404, nothing sent.
+        Event other = eventRepository.save(event(OTHER_EVENT_CODE, 1714));
+        Registration elsewhere = registrationRepository.save(registration(other, "jane.smith", "registered"));
+        cums.user("jane.smith", "Jane", "Smith", JANE_MAIL);
+        mockMvc.perform(post("/api/v1/events/{eventCode}/registrations/{registrationCode}/resend-confirmation",
+                        EVENT_CODE, elsewhere.getRegistrationCode()))
+                .andExpect(status().isNotFound());
+        sesRecorder.awaitAsyncSends();
+        assertThat(sesRecorder.mails()).isEmpty();
     }
 
     // ============================================================================
@@ -704,6 +820,13 @@ class RegistrationControllerIntegrationTest extends AbstractIntegrationTest {
                 .build();
     }
 
+    /** The other event, with room for one registration. */
+    private Event cappedOtherEvent() {
+        Event capped = event(OTHER_EVENT_CODE, 1714);
+        capped.setRegistrationCapacity(1);
+        return eventRepository.save(capped);
+    }
+
     /** A registration with the denormalized attendee fields derived from the username. */
     private static Registration registration(Event event, String username, String status) {
         String[] names = username.split("\\.");
@@ -747,7 +870,7 @@ class RegistrationControllerIntegrationTest extends AbstractIntegrationTest {
         return value.substring(0, 1).toUpperCase(Locale.ROOT) + value.substring(1);
     }
 
-    /** A {@code GetOrCreateUserResponse} for the requested person, username from the e-mail. */
+    /** A {@code GetOrCreateUserResponse} for the requested person, username {@code first.last}. */
     private String getOrCreateReply(Call call, boolean companyUpdated) {
         JsonNode request;
         try {
@@ -756,7 +879,8 @@ class RegistrationControllerIntegrationTest extends AbstractIntegrationTest {
             throw new IllegalStateException(e);
         }
         String email = request.get("email").asText();
-        String username = email.substring(0, email.indexOf('@')).toLowerCase(Locale.ROOT);
+        String username = (request.get("firstName").asText() + "." + request.get("lastName").asText())
+                .toLowerCase(Locale.ROOT);
         String user = CumsContractHarness.userJson(username, request.get("firstName").asText(),
                 request.get("lastName").asText(), email,
                 request.hasNonNull("companyId") ? request.get("companyId").asText() : null);

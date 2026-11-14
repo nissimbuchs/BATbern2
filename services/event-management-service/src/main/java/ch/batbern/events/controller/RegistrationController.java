@@ -313,8 +313,7 @@ public class RegistrationController implements RegistrationsApi {
         log.debug("DELETE /api/v1/events/{}/my-registration", eventCode);
 
         String username = securityContextHelper.getCurrentUsername();
-        Event event = eventRepository.findByEventCode(eventCode)
-                .orElseThrow(() -> new NoSuchElementException("Event not found: " + eventCode));
+        Event event = findEvent(eventCode);
         Registration registration = registrationRepository
                 .findByEventIdAndAttendeeUsername(event.getId(), username)
                 .filter(r -> !"cancelled".equalsIgnoreCase(r.getStatus()))

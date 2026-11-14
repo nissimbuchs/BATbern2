@@ -48,6 +48,7 @@ import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.startsWith;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
@@ -2641,6 +2642,27 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
                 // Then: currentAttendeeCount = 3 (cancelled excluded via ACTIVE_STATUSES)
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data[0].currentAttendeeCount").value(3));
+    }
+
+    @Test
+    @DisplayName("should_countEachEventOnItsOwn_when_listIncludesRegistrations")
+    void should_countEachEventOnItsOwn_when_listIncludesRegistrations() throws Exception {
+        // Story 17.13: one grouped count for the whole page; an event without registrations is 0.
+        eventRepository.deleteAll();
+        Event busy = createTestEvent("Busy Event", "2024-06-15T09:00:00Z", "CREATED");
+        Event empty = createTestEvent("Empty Event", "2024-07-15T09:00:00Z", "CREATED");
+        createRegistration(busy.getId(), "registered");
+        createRegistration(busy.getId(), "confirmed");
+        createRegistration(busy.getId(), "cancelled");
+        entityManager.flush();
+
+        mockMvc.perform(get("/api/v1/events?include=registrations"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data", hasSize(2)))
+                .andExpect(jsonPath("$.data[?(@.eventCode == '" + busy.getEventCode() + "')].currentAttendeeCount")
+                        .value(contains(2)))
+                .andExpect(jsonPath("$.data[?(@.eventCode == '" + empty.getEventCode() + "')].currentAttendeeCount")
+                        .value(contains(0)));
     }
 
     // ============================================================================

@@ -274,7 +274,7 @@ public class RegistrationService {
      *
      * @param page 1-based page number
      */
-    @Transactional(readOnly = true)
+    // No transaction: one short query, then up to 100 CUMS calls that must not hold a DB connection.
     public Page<RegistrationResponse> listForEvent(Event event, List<String> statuses, String search,
             String companyId, int page, int limit) {
         Specification<Registration> spec = RegistrationSpecification.buildSpecification(
@@ -289,8 +289,9 @@ public class RegistrationService {
 
     /**
      * Live registration counts of one event (Story 10.11), moved from {@code EventController}
-     * (Story 17.13). Not transactional on purpose: {@code createEvent} reads them inside its own
-     * transaction right after saving the event, see {@link RegistrationRepository#countRealAttendees}.
+     * (Story 17.13). Plain counts that need no transaction of their own. Called inside
+     * {@code createEvent} they run in its transaction, right after the event is saved; that is why
+     * {@link RegistrationRepository#countRealAttendees} uses flushMode COMMIT.
      */
     public RegistrationCounts countsFor(UUID eventId) {
         return new RegistrationCounts(
