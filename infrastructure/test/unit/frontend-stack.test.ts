@@ -294,3 +294,25 @@ describe('FrontendStack — CSP allows the Cognito custom auth domain (SSO token
     }
   });
 });
+
+describe('FrontendStack — CSP allows blob: images (upload previews)', () => {
+  // Regression test for 2026-11-14: useFileUpload (Story 17.11, #1308) previews a picked file
+  // through URL.createObjectURL, but img-src allowed only 'self' data: https:, so the browser
+  // blocked every preview ("Loading the image 'blob:https://www.batbern.ch/…' violates … img-src").
+  // The upload itself went through; the empty preview made it look as if it had failed.
+  test('should_allowBlob_inImgSrc_on_allResponseHeadersPolicies', () => {
+    const template = synth(stagingConfig);
+
+    const policies = Object.entries(
+      template.findResources('AWS::CloudFront::ResponseHeadersPolicy')
+    );
+    expect(policies.length).toBe(2);
+
+    for (const [logicalId, resource] of policies) {
+      const csp: string =
+        resource.Properties.ResponseHeadersPolicyConfig.SecurityHeadersConfig.ContentSecurityPolicy
+          .ContentSecurityPolicy;
+      expect(`${logicalId}: ${csp}`).toMatch(/img-src [^;]*\bblob:/);
+    }
+  });
+});

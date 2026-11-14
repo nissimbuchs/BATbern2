@@ -41,6 +41,10 @@ anonymously. The frontend guards (`ProtectedRoute`) are UX only.
     (`*.cloudfront.net`), branded CDN domain (`cdn.batbern.ch`), and `api.batbern.ch`
   - `frame-src`: Allows Google Maps embeds (`https://www.google.com/maps/`) and Cloudflare Turnstile captcha (`https://challenges.cloudflare.com`)
   - `script-src`: Allows Cloudflare Turnstile script (`https://challenges.cloudflare.com`)
+  - `img-src`: `'self' data: blob: https:`. `blob:` is for the preview of a picked file before
+    upload (`useFileUpload`, `ProfilePhotoUpload`, `CompanyLogoSection` use `URL.createObjectURL`);
+    without it every upload preview was blocked (2026-11-14, after #1308). Blob URLs are created
+    by the page itself only.
   - **Where configured — two places, easy to miss**: the **SPA document's** CSP is set by
     the frontend CloudFront `ResponseHeadersPolicy` (`infrastructure/lib/stacks/frontend-stack.ts`)
     — NOT by the gateway Java filters, which only cover API responses
