@@ -35,6 +35,8 @@ interface SpeakerDisplayProps {
  * - Profile picture: Left-aligned, 80x80 (medium), 56x56 (small)
  * - Speaker info: Middle section with name and company
  * - Company logo: Right-aligned, same size as profile picture
+ * - Narrow (iPad portrait, two session cards side by side): the row wraps and the logo moves below
+ *   instead of covering the name; the name keeps at least 7rem and breaks long words.
  */
 export const SpeakerDisplay = ({
   speaker,
@@ -98,7 +100,7 @@ export const SpeakerDisplay = ({
   const sizes = sizeClasses[size];
 
   return (
-    <div ref={ref} className={`flex items-center gap-3 ${className}`}>
+    <div ref={ref} className={`flex flex-wrap items-center gap-3 ${className}`}>
       {/* Profile Picture — shown immediately if URL is known; otherwise initials until lazy-loaded */}
       {showProfilePicture && (
         <div
@@ -127,8 +129,11 @@ export const SpeakerDisplay = ({
       )}
 
       {/* Speaker Info (flex-grow to take available space) */}
-      <div className="flex-1 min-w-0 flex flex-col justify-center">
-        <div className={`${sizes.name} font-light text-zinc-100`} data-testid="speaker-name">
+      <div className="flex-1 min-w-[7rem] flex flex-col justify-center">
+        <div
+          className={`${sizes.name} font-light text-zinc-100 break-words`}
+          data-testid="speaker-name"
+        >
           {speaker.firstName} {speaker.lastName}
         </div>
         {speaker.company && (

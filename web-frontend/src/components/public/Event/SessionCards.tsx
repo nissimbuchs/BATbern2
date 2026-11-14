@@ -242,7 +242,8 @@ export const SessionCards = ({
                 {session.speakers && session.speakers.length > 0 ? (
                   <div>
                     <p className="text-xs text-zinc-500 mb-2">{t('common:role.speaker')}:</p>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    {/* Two speaker columns only when a session card is wide enough (cards are two per row from md). */}
+                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-2">
                       {session.speakers.map((speaker) => (
                         <SpeakerDisplay
                           key={speaker.username}
