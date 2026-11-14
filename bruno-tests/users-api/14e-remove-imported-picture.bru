@@ -1,0 +1,36 @@
+meta {
+  name: Batch import - remove the imported picture again
+  type: http
+  seq: 14
+}
+
+delete {
+  url: {{baseUrl}}/users/{{currentUsername}}/picture
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+}
+
+script:pre-request {
+  // Runs only against local dev and only for an account without a picture (decided in 14b).
+  if (bru.getVar("ownPictureImportRuns") !== true) {
+    bru.runner.skipRequest();
+  }
+}
+
+assert {
+  res.status: eq 204
+}
+
+docs {
+  Cleanup of 14b to 14d. The chain only runs when the account had no picture, so removing it
+  restores the previous state. The S3 object stays (DELETE clears the user row only); on local dev
+  that is MinIO.
+}

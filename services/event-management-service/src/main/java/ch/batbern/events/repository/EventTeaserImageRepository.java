@@ -1,9 +1,7 @@
 package ch.batbern.events.repository;
 
 import ch.batbern.events.domain.EventTeaserImage;
-import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -26,16 +24,6 @@ public interface EventTeaserImageRepository extends JpaRepository<EventTeaserIma
 
     long countByEventCode(String eventCode);
 
-    /**
-     * SELECT ... FOR UPDATE on all images for an event.
-     * Used by confirmUpload to serialize concurrent uploads and prevent over-limit races
-     * and duplicate displayOrder values (M1 race condition fix).
-     */
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("SELECT e FROM EventTeaserImage e WHERE e.eventCode = :eventCode ORDER BY e.displayOrder ASC")
-    List<EventTeaserImage> findByEventCodeForUpdate(
-            @Param("eventCode") @org.springframework.lang.NonNull String eventCode);
-
     // ── Global teaser images (event_code IS NULL) ────────────────────────────
 
     List<EventTeaserImage> findByEventCodeIsNullOrderByDisplayOrderAsc();
@@ -44,7 +32,12 @@ public interface EventTeaserImageRepository extends JpaRepository<EventTeaserIma
 
     long countByEventCodeIsNull();
 
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("SELECT e FROM EventTeaserImage e WHERE e.eventCode IS NULL ORDER BY e.displayOrder ASC")
-    List<EventTeaserImage> findGlobalForUpdate();
+    /**
+     * Serializes adding teaser images to one scope (an event code, or {@code _global}) until the
+     * transaction ends (Story 17.11c). A row lock cannot: an empty scope has no rows to lock, and
+     * rows inserted by a concurrent transaction are not in the locked set. Returns 1.
+     */
+    @Query(value = "SELECT 1 FROM (SELECT pg_advisory_xact_lock("
+            + "hashtextextended('event_teaser_images:' || :scope, 0))) l", nativeQuery = true)
+    int lockScope(@Param("scope") String scope);
 }

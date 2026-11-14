@@ -60,10 +60,7 @@ export const GlobalImagesTab: React.FC = () => {
     e.target.value = '';
     setUploadError(null);
     try {
-      await uploadMutation.mutateAsync({
-        file,
-        request: { contentType: file.type, fileName: file.name },
-      });
+      await uploadMutation.mutateAsync({ file });
     } catch (err) {
       setUploadError(
         err instanceof Error

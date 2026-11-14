@@ -1,0 +1,46 @@
+meta {
+  name: Confirm before the PUT is 409
+  type: http
+  seq: 11
+}
+
+post {
+  url: {{baseUrl}}/uploads/profile-picture/{{profilePictureUploadId}}/confirm
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "target": {
+      "username": "{{currentUsername}}"
+    }
+  }
+}
+
+assert {
+  res.status: eq 409
+}
+
+tests {
+  test("should refuse to attach a file that is not in S3", function() {
+    expect(res.getBody().message).to.include('not in storage');
+  });
+}
+
+docs {
+  The upload of 10 was never PUT to S3. Confirm checks the object first (the old
+  /users/{username}/picture/confirm did not, and pointed the user at a missing file), so it
+  answers 409 and the caller's picture stays as it is. A full attach is not run here on purpose:
+  in the deploy run this collection hits production and would replace a real picture.
+}

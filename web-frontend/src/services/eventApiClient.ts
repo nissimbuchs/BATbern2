@@ -25,18 +25,14 @@ import type { components as mediaComponents } from '@/types/generated/event-medi
 import type { components as coreComponents } from '@/types/generated/events-core-api.types';
 
 type EventPhotoResponse = mediaComponents['schemas']['EventPhotoResponse'];
-type EventPhotoUploadRequest = mediaComponents['schemas']['EventPhotoUploadRequest'];
-type EventPhotoUploadResponse = mediaComponents['schemas']['EventPhotoUploadResponse'];
-type EventPhotoConfirmRequest = mediaComponents['schemas']['EventPhotoConfirmRequest'];
 
 type TeaserImageItem = coreComponents['schemas']['TeaserImageItem'];
-type TeaserImageUploadUrlRequest = coreComponents['schemas']['TeaserImageUploadUrlRequest'];
-type TeaserImageUploadUrlResponse = coreComponents['schemas']['TeaserImageUploadUrlResponse'];
-type TeaserImageConfirmRequest = coreComponents['schemas']['TeaserImageConfirmRequest'];
 type TeaserImageUpdateRequest = coreComponents['schemas']['TeaserImageUpdateRequest'];
 
 // API base path for event endpoints
 const EVENT_API_PATH = '/events';
+/** The event code of the global teaser images, in the teaser paths and as upload target. */
+export const GLOBAL_TEASER_CODE = '_global';
 /** Public Events read model for the website (2026-10-07). */
 const PUBLIC_EVENT_API_PATH = '/public/events';
 
@@ -403,40 +399,11 @@ class EventApiClient {
     }
   }
 
-  async requestEventPhotoUploadUrl(
-    eventCode: string,
-    request: EventPhotoUploadRequest
-  ): Promise<EventPhotoUploadResponse> {
-    try {
-      const response = await apiClient.post<EventPhotoUploadResponse>(
-        `${EVENT_API_PATH}/${eventCode}/photos/upload-url`,
-        request
-      );
-      return response.data;
-    } catch (error) {
-      throw this.transformError(error);
-    }
-  }
-
+  /** PUT of a photo or teaser image to its presigned S3 URL (`uploads-api`, 17.11b, 17.11c). */
   async uploadPhotoToS3(uploadUrl: string, file: File): Promise<void> {
     await axios.put(uploadUrl, file, {
       headers: { 'Content-Type': file.type },
     });
-  }
-
-  async confirmEventPhotoUpload(
-    eventCode: string,
-    request: EventPhotoConfirmRequest
-  ): Promise<EventPhotoResponse> {
-    try {
-      const response = await apiClient.post<EventPhotoResponse>(
-        `${EVENT_API_PATH}/${eventCode}/photos/confirm`,
-        request
-      );
-      return response.data;
-    } catch (error) {
-      throw this.transformError(error);
-    }
   }
 
   async deleteEventPhoto(eventCode: string, photoId: string): Promise<void> {
@@ -462,43 +429,13 @@ class EventApiClient {
   // ── Teaser Images (event-specific or global when eventCode is null/_global) ──
 
   private teaserBasePath(eventCode?: string | null): string {
-    const code = eventCode != null && eventCode.length > 0 ? eventCode : '_global';
+    const code = eventCode != null && eventCode.length > 0 ? eventCode : GLOBAL_TEASER_CODE;
     return `${EVENT_API_PATH}/${code}/teaser-images`;
   }
 
   async listTeaserImages(eventCode?: string | null): Promise<TeaserImageItem[]> {
     try {
       const response = await apiClient.get<TeaserImageItem[]>(this.teaserBasePath(eventCode));
-      return response.data;
-    } catch (error) {
-      throw this.transformError(error);
-    }
-  }
-
-  async requestTeaserImageUploadUrl(
-    eventCode: string | null | undefined,
-    request: TeaserImageUploadUrlRequest
-  ): Promise<TeaserImageUploadUrlResponse> {
-    try {
-      const response = await apiClient.post<TeaserImageUploadUrlResponse>(
-        `${this.teaserBasePath(eventCode)}/upload-url`,
-        request
-      );
-      return response.data;
-    } catch (error) {
-      throw this.transformError(error);
-    }
-  }
-
-  async confirmTeaserImageUpload(
-    eventCode: string | null | undefined,
-    request: TeaserImageConfirmRequest
-  ): Promise<TeaserImageItem> {
-    try {
-      const response = await apiClient.post<TeaserImageItem>(
-        `${this.teaserBasePath(eventCode)}/confirm`,
-        request
-      );
       return response.data;
     } catch (error) {
       throw this.transformError(error);

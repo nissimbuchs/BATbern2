@@ -1,0 +1,37 @@
+meta {
+  name: A session-material target without its eventCode is 400
+  type: http
+  seq: 23
+}
+
+post {
+  url: {{baseUrl}}/uploads/session-material
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "fileName": "bruno-partial.pdf",
+    "contentType": "application/pdf",
+    "size": 4,
+    "target": { "sessionSlug": "{{materialSessionSlug}}" }
+  }
+}
+
+assert {
+  res.status: eq 400
+}
+
+docs {
+  Story 17.11d: a two-key target is given whole or not at all.
+}

@@ -30,6 +30,19 @@ import java.util.concurrent.CompletableFuture;
 @RequiredArgsConstructor
 public class DomainRouter {
 
+    /**
+     * The service that owns each upload purpose (Story 17.11a): one line per purpose, so a new
+     * purpose is routed only once it is listed (fails closed). Purpose names carry no service
+     * prefix ({@code profile-picture}, {@code teaser-image}, {@code session-material}).
+     */
+    private static final Map<String, String> UPLOAD_PURPOSE_OWNERS = Map.of(
+            "company-logo", "company-user-management-service",
+            "profile-picture", "company-user-management-service",
+            "event-theme-image", "event-management-service",
+            "event-photo", "event-management-service",
+            "teaser-image", "event-management-service",
+            "session-material", "event-management-service");
+
     private final RestTemplate restTemplate;
 
     @Value("${services.event-management.url:http://localhost:8081}")
@@ -58,8 +71,8 @@ public class DomainRouter {
         // Route based on path patterns - /api/v1/{domain}
         // Note: Check specific patterns BEFORE general prefix matches
 
-        // Story 17.11: one upload contract, routed by the purpose prefix to the service that owns the
-        // purpose (ADR-002 decision 2026-11-07): event-… to EMS, company-… to CUMS, anything else 404.
+        // Story 17.11: one upload contract, routed by purpose to the service that owns it (ADR-002
+        // decision 2026-11-07); since 17.11a by an explicit map, an unlisted purpose is 404.
         if (cleanPath.startsWith("/api/v1/uploads/")) {
             return uploadService(cleanPath);
         }
@@ -83,7 +96,6 @@ public class DomainRouter {
                 || cleanPath.startsWith("/api/v1/topics")
                 || cleanPath.startsWith("/api/v1/tasks")
                 || cleanPath.startsWith("/api/v1/notifications")
-                || cleanPath.startsWith("/api/v1/materials") // Story 5.9: Materials upload
                 || cleanPath.startsWith("/api/v1/speaker-portal") // Story 6.2a: Speaker portal
                 || cleanPath.startsWith("/api/v1/attendee-portal") // Story 7.6: Attendee dashboard
                 || cleanPath.startsWith("/api/v1/sessions") // GlobalSessionController lives in EMS
@@ -127,17 +139,15 @@ public class DomainRouter {
         }
     }
 
-    /** The owner of {@code /api/v1/uploads/{purpose}[/...]} by its purpose prefix. */
+    /** The owner of {@code /api/v1/uploads/{purpose}[/...]}; an unlisted purpose is 404. */
     private static String uploadService(String cleanPath) {
         String rest = cleanPath.substring("/api/v1/uploads/".length());
         String purpose = rest.contains("/") ? rest.substring(0, rest.indexOf('/')) : rest;
-        if (purpose.startsWith("event-")) {
-            return "event-management-service";
+        String owner = UPLOAD_PURPOSE_OWNERS.get(purpose);
+        if (owner == null) {
+            throw new RouteNotFoundException(cleanPath);
         }
-        if (purpose.startsWith("company-")) {
-            return "company-user-management-service";
-        }
-        throw new RouteNotFoundException(cleanPath);
+        return owner;
     }
 
     /**

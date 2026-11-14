@@ -1,0 +1,46 @@
+meta {
+  name: Confirm the session-material upload with its session
+  type: http
+  seq: 24
+}
+
+post {
+  url: {{baseUrl}}/uploads/session-material/{{materialUploadId}}/confirm
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "target": { "eventCode": "{{photoEventCode}}", "sessionSlug": "{{materialSessionSlug}}" }
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.status: eq ASSOCIATED
+  res.body.purpose: eq session-material
+}
+
+tests {
+  test("should store the material under its session, without a year, keyed by the upload", function() {
+    const key = "materials/events/" + bru.getVar("photoEventCode") + "/sessions/"
+      + bru.getVar("materialSessionSlug") + "/file-" + bru.getVar("materialUploadId") + ".pdf";
+    expect(res.getBody().fileUrl).to.include(key);
+  });
+}
+
+docs {
+  The confirm with the target creates the session_materials row. Another session than the
+  reserved one would be 404 (SessionMaterialUploadIntegrationTest).
+}

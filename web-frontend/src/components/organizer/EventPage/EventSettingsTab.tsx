@@ -221,10 +221,7 @@ export const EventSettingsTab: React.FC<EventSettingsTabProps> = ({ event, event
     e.target.value = '';
     setTeaserUploadError(null);
     try {
-      await uploadTeaserImageMutation.mutateAsync({
-        file,
-        request: { contentType: file.type, fileName: file.name },
-      });
+      await uploadTeaserImageMutation.mutateAsync({ file });
     } catch (err) {
       setTeaserUploadError(
         err instanceof Error
@@ -522,7 +519,12 @@ export const EventSettingsTab: React.FC<EventSettingsTabProps> = ({ event, event
             {[...teaserImages]
               .sort((a, b) => a.displayOrder - b.displayOrder)
               .map((img) => (
-                <Stack key={img.id} spacing={0.75}>
+                <Stack
+                  key={img.id}
+                  spacing={0.75}
+                  data-testid="teaser-image-card"
+                  data-image-id={img.id}
+                >
                   <Box
                     sx={{
                       position: 'relative',
@@ -589,6 +591,7 @@ export const EventSettingsTab: React.FC<EventSettingsTabProps> = ({ event, event
           ref={fileInputRef}
           type="file"
           accept="image/jpeg,image/png,image/webp,image/svg+xml"
+          data-testid="teaser-image-input"
           style={{ display: 'none' }}
           onChange={handleTeaserImageFileChange}
         />

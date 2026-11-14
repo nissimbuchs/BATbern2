@@ -14,13 +14,12 @@ import software.amazon.awssdk.services.s3.model.CopyObjectRequest;
 import software.amazon.awssdk.services.s3.model.CopyObjectResponse;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectResponse;
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.s3.S3Configuration;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
-import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
-import software.amazon.awssdk.services.s3.presigner.model.PresignedGetObjectRequest;
-import software.amazon.awssdk.services.s3.presigner.model.PresignedPutObjectRequest;
-import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignRequest;
 
-import java.net.MalformedURLException;
 import java.net.URI;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -60,37 +59,21 @@ public class TestAwsConfig {
     }
 
     /**
-     * Mock S3Presigner for testing MaterialsUploadService
-     * Story 5.9: Session Materials Upload
+     * A real S3Presigner with static test credentials: presigning is local signing, no network. Tests
+     * can read what a presigned URL carries, e.g. the {@code response-content-disposition} of a
+     * session material download (Story 17.11d). Nothing is ever sent to this endpoint.
      */
     // #1186: see testS3Client, same reason.
     @Bean
     @Primary
     public S3Presigner testS3Presigner() {
-        S3Presigner mockS3Presigner = Mockito.mock(S3Presigner.class);
-
-        // Configure mock to return presigned URL
-        PresignedPutObjectRequest mockPresignedRequest = Mockito.mock(PresignedPutObjectRequest.class);
-        try {
-            when(mockPresignedRequest.url()).thenReturn(URI.create("https://minio.local:8450/test-upload-url").toURL());
-        } catch (MalformedURLException e) {
-            throw new RuntimeException("Failed to create test URL", e);
-        }
-
-        when(mockS3Presigner.presignPutObject(any(PutObjectPresignRequest.class)))
-                .thenReturn(mockPresignedRequest);
-
-        // Configure mock for presignGetObject (used by services that issue download-side presigned URLs)
-        PresignedGetObjectRequest mockGetPresignedRequest = Mockito.mock(PresignedGetObjectRequest.class);
-        try {
-            when(mockGetPresignedRequest.url()).thenReturn(URI.create("https://presigned.s3.amazonaws.com/test-asset").toURL());
-        } catch (MalformedURLException e) {
-            throw new RuntimeException("Failed to create test presigned GET URL", e);
-        }
-        when(mockS3Presigner.presignGetObject(any(GetObjectPresignRequest.class)))
-                .thenReturn(mockGetPresignedRequest);
-
-        return mockS3Presigner;
+        return S3Presigner.builder()
+                .region(Region.EU_CENTRAL_1)
+                .endpointOverride(URI.create("https://s3.test.invalid"))
+                .credentialsProvider(StaticCredentialsProvider.create(
+                        AwsBasicCredentials.create("test-access-key", "test-secret-key")))
+                .serviceConfiguration(S3Configuration.builder().pathStyleAccessEnabled(true).build())
+                .build();
     }
 
     /**

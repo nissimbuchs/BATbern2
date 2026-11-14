@@ -1,0 +1,44 @@
+meta {
+  name: Validation - profile-picture without target is 400
+  type: http
+  seq: 14
+}
+
+post {
+  url: {{baseUrl}}/uploads/profile-picture
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "fileName": "bruno-test-{{$timestamp}}.png",
+    "contentType": "image/png",
+    "size": 4
+  }
+}
+
+assert {
+  res.status: eq 400
+}
+
+tests {
+  test("should say the purpose needs its target", function() {
+    expect(res.getBody().message).to.include('username');
+  });
+}
+
+docs {
+  Story 17.11a: the user always exists, so profile-picture has no create-form case and requires
+  its target username on create and confirm.
+}

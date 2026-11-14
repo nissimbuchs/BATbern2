@@ -5,9 +5,11 @@
  * Real Create → Read → Update → Delete of a global teaser image, driven through the frontend
  * (Admin page → Global Images tab). Images are freely creatable+deletable, so they gate
  * per-deploy → `@smoke`.
- *   • CREATE = the ADR-002 3-phase presigned upload (request-url → S3/MinIO PUT → confirm),
- *     reusing the slice-1 `stripPresignedAuthHeader` (the global Authorization header is fatal
- *     on a presigned PUT — see that helper). A real 1×1 PNG from the factory.
+ *   • CREATE = the upload contract, purpose `teaser-image` with the target `_global` (Story
+ *     17.11c: `POST /uploads/teaser-image` → S3/MinIO PUT → confirm with the same target), reusing
+ *     the slice-1 `stripPresignedAuthHeader` (the global Authorization header is fatal on a
+ *     presigned PUT — see that helper). A real 1×1 PNG from the factory. The removed
+ *     `…/teaser-images/upload-url` and `…/confirm` are never called.
  *   • READ   = the new gallery item renders (id-keyed testid).
  *   • UPDATE = change the slide-position Select to a different value; verify it persisted.
  *   • DELETE = the per-image remove button (no confirm dialog); verify it is gone server-side.
@@ -61,9 +63,20 @@ test.describe('AdminTabs · Global Images CRUD', { tag: ['@smoke', '@gate'] }, (
       MAX_GLOBAL_IMAGES
     );
 
+    // Every API call that could carry a teaser upload, to prove it runs on the contract only.
+    const uploadCalls: string[] = [];
+    page.on('request', (request) => {
+      const { pathname } = new URL(request.url());
+      if (
+        /\/api\/v1\/(uploads\/|events\/[^/]+\/teaser-images\/(upload-url|confirm))/.test(pathname)
+      ) {
+        uploadCalls.push(`${request.method()} ${pathname}`);
+      }
+    });
+
     await openGlobalImagesTab(page);
 
-    // ── CREATE (3-phase presigned upload via the hidden file input) ─────────────────────────
+    // ── CREATE (upload contract, target _global, via the hidden file input) ──────────────────
     const png = factory.uploadPngFile();
     await page.getByTestId('global-image-input').setInputFiles({
       name: png.name,
@@ -71,7 +84,7 @@ test.describe('AdminTabs · Global Images CRUD', { tag: ['@smoke', '@gate'] }, (
       buffer: png.buffer,
     });
 
-    // The upload runs request-url → PUT → confirm; the new image appears once confirm resolves.
+    // The upload runs reserve → PUT → confirm; the new image appears once confirm resolves.
     // Capture its server id by diffing the gallery (no prefix-sweep path for images).
     await expect
       .poll(
@@ -84,6 +97,11 @@ test.describe('AdminTabs · Global Images CRUD', { tag: ['@smoke', '@gate'] }, (
       .toBe(1);
     createdId = (await listGlobalImageIds(token)).find((id) => !before.includes(id)) ?? null;
     expect(createdId).not.toBeNull();
+    expect(uploadCalls).toHaveLength(2);
+    expect(uploadCalls[0]).toBe('POST /api/v1/uploads/teaser-image');
+    expect(uploadCalls[1]).toMatch(
+      /^POST \/api\/v1\/uploads\/teaser-image\/[0-9a-f-]{36}\/confirm$/
+    );
 
     // ── READ ──────────────────────────────────────────────────────────────────────────────
     await expect(page.getByTestId(`global-image-item-${createdId}`)).toBeVisible({

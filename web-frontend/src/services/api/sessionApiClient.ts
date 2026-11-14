@@ -9,7 +9,6 @@
 import apiClient from '@/services/api/apiClient';
 import { isAxiosError } from 'axios';
 import type { Session, SessionMaterial, SessionSpeaker } from '@/types/event.types';
-import type { FileUploadPresignedUrl, FileUploadTarget } from '@/types/fileUpload.types';
 import type { components as EventSessionsComponents } from '@/types/generated/event-sessions-api.types';
 
 // API base path for session endpoints
@@ -26,7 +25,10 @@ export interface AssignSpeakerRequest {
   speakerRole: 'PRIMARY_SPEAKER' | 'CO_SPEAKER' | 'MODERATOR' | 'PANELIST';
 }
 
-/** materialType: PRESENTATION, DOCUMENT, VIDEO, ARCHIVE or OTHER. */
+/**
+ * A confirmed upload of purpose `session-material` (Story 17.11d); materialType (PRESENTATION,
+ * DOCUMENT, VIDEO, ARCHIVE or OTHER) is derived from the content type when omitted.
+ */
 export type MaterialUploadItem = EventSessionsComponents['schemas']['MaterialUploadItem'];
 export type SessionMaterialAssociationRequest =
   EventSessionsComponents['schemas']['SessionMaterialAssociationRequest'];
@@ -93,14 +95,14 @@ class SessionApiClient {
   }
 
   /**
-   * Associate uploaded materials with a session
-   * Story 5.9: Session Materials Upload (AC5)
+   * Attach confirmed `session-material` uploads to a session (Story 17.11d: an upload confirmed
+   * before the session was saved; one for an existing session is attached by its confirm)
    *
    * POST /api/v1/events/{eventCode}/sessions/{sessionSlug}/materials
    *
    * @param eventCode - Event code (e.g., "BATbern142")
    * @param sessionSlug - Session slug identifier
-   * @param materials - Material association request with uploadIds and materialTypes
+   * @param materials - the uploadIds, optionally with a materialType
    * @returns Created materials list
    */
   async associateMaterials(
@@ -306,24 +308,3 @@ class SessionApiClient {
 
 // Export singleton instance
 export const sessionApiClient = new SessionApiClient();
-
-/**
- * Session material upload target for useFileUpload (Story 5.9): phase 1 presign
- * and phase 3 confirm. The uploads are associated with a session afterwards
- * (`associateMaterials`). Errors are passed through for the hook to report.
- *
- * POST /api/v1/materials/presigned-url, POST /api/v1/materials/{uploadId}/confirm
- */
-export const materialUploadTarget: FileUploadTarget = {
-  purpose: 'material',
-  presign: async (request) => {
-    const response = await apiClient.post<FileUploadPresignedUrl>(
-      '/materials/presigned-url',
-      request
-    );
-    return response.data;
-  },
-  confirm: async (fileId, request) => {
-    await apiClient.post(`/materials/${fileId}/confirm`, request);
-  },
-};

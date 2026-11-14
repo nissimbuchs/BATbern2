@@ -2,8 +2,10 @@
  * Global teaser-image fixture helpers — slice 12 / admin tabs (plan §C)
  * docs/plans/playwright-staging-hardening.md
  *
- * Global teaser images (event_code IS NULL) live under `/events/_global/teaser-images`
- * (eventApiClient.teaserBasePath maps a null/empty eventCode to the `_global` segment). They
+ * Global teaser images (event_code IS NULL) are listed, changed and deleted under
+ * `/events/_global/teaser-images` (eventApiClient.teaserBasePath maps a null/empty eventCode to
+ * the `_global` segment) and uploaded on the upload contract, purpose `teaser-image` with the
+ * target `{eventCode: "_global"}` (Story 17.11c). They
  * have NO prefix-sweep entityType, so the Global Images CRUD spec captures the id assigned at
  * upload-confirm (by diffing the gallery before/after) and tears it down by explicit DELETE —
  * the same endpoint the UI remove button hits. Helpers require an ORGANIZER idToken; the

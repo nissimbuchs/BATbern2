@@ -1,0 +1,33 @@
+meta {
+  name: The material downloads under its original name
+  type: http
+  seq: 26
+}
+
+get {
+  url: {{baseUrl}}/events/{{photoEventCode}}/sessions/{{materialSessionSlug}}/materials/{{materialId}}/download
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.downloadUrl: isDefined
+}
+
+tests {
+  test("the presigned URL saves the file under its original name", function() {
+    const url = decodeURIComponent(res.getBody().downloadUrl);
+    const name = encodeURIComponent("Bruno Vortrag " + bru.getVar("photoTimestamp") + ".pdf");
+    expect(url).to.include("response-content-disposition=attachment; filename*=UTF-8''" + name);
+  });
+}
+
+docs {
+  Story 17.11d: the download sets Content-Disposition with the material's original file name
+  (the key itself is file-{uploadId}.pdf). The URL is a credential for an hour; never log it.
+}

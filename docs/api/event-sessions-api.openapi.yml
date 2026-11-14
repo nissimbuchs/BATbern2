@@ -1832,7 +1832,12 @@ paths:
       tags:
       - Session Materials
       summary: Associate uploaded materials with a session
-      description: 'Associate 1-10 already-uploaded materials with a session (Story 5.9).
+      description: 'Attaches 1-10 confirmed uploads of purpose `session-material` to the session
+        (Story 17.11d): the organizer''s session editor, which confirms its uploads without a target
+        and attaches them on save. Name, size and content type come from the upload. An
+        unknown, expired, other-purpose or other-session `uploadId` is 404, one that is not
+        CONFIRMED 409. An upload for an existing session is attached by the confirm with its
+        target instead (`uploads-api`).
 
 
         **Authorization**: ORGANIZER (any session) or SPEAKER (own sessions only).'
@@ -1876,6 +1881,12 @@ paths:
           description: Speaker may only upload to their own sessions
         '404':
           $ref: '#/components/responses/NotFound'
+        '409':
+          description: An upload is not CONFIRMED (still pending, or already attached)
+          content:
+            application/json:
+              schema:
+                $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
         '500':
           $ref: '#/components/responses/InternalServerError'
     get:
@@ -1964,6 +1975,7 @@ paths:
       - Session Materials
       summary: Get a presigned download URL for a material
       description: 'Generate a time-limited presigned download URL for a single material (Story 5.9).
+        The file is saved under the material''s original file name (`Content-Disposition`, Story 17.11d).
         Public endpoint.'
       operationId: getMaterialDownloadUrl
       parameters:
@@ -2657,46 +2669,30 @@ components:
           example: PENDING
     MaterialUploadItem:
       type: object
-      description: 'Story 5.9: one already-uploaded material to associate with a session. Carries
-        the upload correlation id from the presigned-URL step plus the file metadata.'
+      additionalProperties: false
+      description: 'One confirmed upload of purpose `session-material` (`uploads-api`, Story 17.11d)
+        to attach to the session. Name, size and type come from the upload.'
       required:
       - uploadId
-      - materialType
-      - fileName
-      - fileExtension
-      - fileSize
-      - mimeType
       properties:
         uploadId:
           type: string
           minLength: 1
-          description: Upload correlation id from MaterialsUploadService presigned-URL generation
-          example: upload-2026-0001
+          maxLength: 100
+          description: A CONFIRMED upload of purpose `session-material`, reserved without a target
+            or for this session
+          example: 3f2b8c1e-5d4a-4e6b-9a7c-1b2d3e4f5a6b
         materialType:
           type: string
-          minLength: 1
-          description: Material classification (PRESENTATION, DOCUMENT, VIDEO, ARCHIVE, OTHER)
+          enum:
+          - PRESENTATION
+          - DOCUMENT
+          - VIDEO
+          - ARCHIVE
+          - OTHER
+          description: The organizer's classification; when omitted, derived from the upload's
+            content type. Ignored for a speaker, whose materials are always PRESENTATION.
           example: PRESENTATION
-        fileName:
-          type: string
-          minLength: 1
-          description: Original uploaded file name
-          example: slides.pdf
-        fileExtension:
-          type: string
-          minLength: 1
-          description: File extension without the dot
-          example: pdf
-        fileSize:
-          type: integer
-          format: int64
-          description: File size in bytes
-          example: 2097152
-        mimeType:
-          type: string
-          minLength: 1
-          description: MIME type of the material
-          example: application/pdf
     SessionMaterialAssociationRequest:
       type: object
       description: 'Story 5.9: associate 1-10 already-uploaded materials with a session.'

@@ -4,19 +4,44 @@
  * Pass eventCode for event-specific images, or null/undefined for global images
  * (shown on all event presentations).
  *
- * 3-phase presigned PUT upload pattern:
- * 1. POST .../upload-url → { uploadUrl, s3Key }
+ * Upload on the upload contract, purpose `teaser-image` (Story 17.11c):
+ * 1. POST /uploads/teaser-image with the target `eventCode` (`_global` for the global set)
  * 2. Client PUT to S3 directly (no backend involvement)
- * 3. POST .../confirm → TeaserImageItem
+ * 3. POST /uploads/teaser-image/{uploadId}/confirm with the same target → the teaser image exists
+ * A full set (10 images) is refused with 409 on step 1 or 3.
  */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { eventApiClient } from '@/services/eventApiClient';
+import { isAxiosError } from 'axios';
+import { eventApiClient, GLOBAL_TEASER_CODE } from '@/services/eventApiClient';
+import { fileNameWithExtension, uploadTarget } from '@/services/uploadService';
 import type { components } from '@/types/generated/events-core-api.types';
 
-type TeaserImageUploadUrlRequest = components['schemas']['TeaserImageUploadUrlRequest'];
 type TeaserImageUpdateRequest = components['schemas']['TeaserImageUpdateRequest'];
 
 const GLOBAL_KEY = ['global-teaser-images'] as const;
+
+/** The extensions `teaser-image` accepts, and the one each allowed type implies. */
+const TEASER_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp', 'svg'];
+const EXTENSION_BY_TYPE: Record<string, string> = {
+  'image/jpeg': 'jpg',
+  'image/png': 'png',
+  'image/webp': 'webp',
+  'image/svg+xml': 'svg',
+};
+
+/**
+ * The server's message for a refused step (e.g. the limit: "Maximum of 10 teaser images reached
+ * for event: …"), which the tabs show; any other error as it is.
+ */
+function withServerMessage(error: unknown): Error {
+  if (isAxiosError(error)) {
+    const message = (error.response?.data as { message?: string } | undefined)?.message;
+    if (message) {
+      return new Error(message);
+    }
+  }
+  return error instanceof Error ? error : new Error(String(error));
+}
 
 function cacheKey(eventCode?: string | null) {
   return eventCode ? ['event', eventCode] : [...GLOBAL_KEY];
@@ -34,16 +59,29 @@ export const useTeaserImages = (eventCode?: string | null) => {
 };
 
 /**
- * 3-phase upload mutation.
+ * Uploads one teaser image to the event, or to the global set for null/undefined.
+ * On success: invalidates the event (its `teaserImages`) or the global list.
  */
 export const useUploadTeaserImage = (eventCode?: string | null) => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ file, request }: { file: File; request: TeaserImageUploadUrlRequest }) => {
-      const urlResponse = await eventApiClient.requestTeaserImageUploadUrl(eventCode, request);
-      await eventApiClient.uploadPhotoToS3(urlResponse.uploadUrl, file);
-      return eventApiClient.confirmTeaserImageUpload(eventCode, { s3Key: urlResponse.s3Key });
+    mutationFn: async ({ file }: { file: File }) => {
+      const target = uploadTarget('teaser-image', {
+        eventCode: eventCode || GLOBAL_TEASER_CODE,
+      });
+      const fileName = fileNameWithExtension(file, TEASER_EXTENSIONS, EXTENSION_BY_TYPE, 'teaser');
+      try {
+        const slot = await target.presign({
+          fileName,
+          fileSize: file.size,
+          mimeType: file.type,
+        });
+        await eventApiClient.uploadPhotoToS3(slot.uploadUrl, file);
+        return await target.confirm(slot.fileId);
+      } catch (error) {
+        throw withServerMessage(error);
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: cacheKey(eventCode) });

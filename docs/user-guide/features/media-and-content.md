@@ -19,7 +19,7 @@ Beyond logos and speaker materials, the platform provides a set of media and con
 
 ## Event Photos Gallery (Story 10.21)
 
-Organizers upload and manage photos for each event directly from the event detail page's **Photos** tab. Uploads use the standard 3-phase presigned-URL flow (request URL → PUT to S3 → confirm), and any photo can be deleted (DB record and S3 object are both removed after a confirmation dialog).
+Organizers upload and manage photos for each event directly from the event detail page's **Photos** tab. Uploads use the shared upload flow (Story 17.11b: `POST /api/v1/uploads/event-photo` with the event as target → PUT to S3 → confirm with the same event, which adds the photo to the gallery); JPEG, PNG and WebP up to 10 MB. Any photo can be deleted (DB record and S3 object are both removed after a confirmation dialog).
 
 The photos are also surfaced publicly:
 
@@ -30,7 +30,7 @@ Public photo listing endpoints (`GET /api/v1/events/{eventCode}/photos` and `GET
 
 ## Event Teaser Images (Story 10.22)
 
-Organizers upload one or more teaser images for an event from the event settings tab (presigned-URL upload, with a thumbnail gallery and per-image delete; **max 10 images** per event). On the [moderator presentation page](#moderator-presentation-page-story-108ab), each teaser image renders as its own full-screen slide, inserted in order between the topic-reveal slide and the agenda-preview slide — a visual mood-setter sequence. When an event has no teaser images, the presentation renders exactly as before (no blank slides).
+Organizers upload one or more teaser images for an event from the event settings tab (shared upload flow since Story 17.11c: `POST /api/v1/uploads/teaser-image` with the event as target → PUT to S3 → confirm with the same event; JPEG, PNG, WebP and SVG up to 10 MB; a thumbnail gallery and per-image delete; **max 10 images** per event). Global teaser images, shown on every event, are managed in Administration with the target `_global`, also at most 10. On the [moderator presentation page](#moderator-presentation-page-story-108ab), each teaser image renders as its own full-screen slide, inserted in order between the topic-reveal slide and the agenda-preview slide — a visual mood-setter sequence. When an event has no teaser images, the presentation renders exactly as before (no blank slides).
 
 ## AI-Assisted Event Content (Story 10.16)
 

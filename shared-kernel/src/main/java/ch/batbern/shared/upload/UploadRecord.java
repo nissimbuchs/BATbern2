@@ -42,6 +42,13 @@ public abstract class UploadRecord {
     @Column(name = "file_url", length = 1000)
     private String fileUrl;
 
+    /**
+     * The original file name the client sent on create, or the base name of an import (Story
+     * 17.11d); null for uploads made before.
+     */
+    @Column(name = "file_name", length = 255, updatable = false)
+    private String fileName;
+
     @Column(name = "file_extension", nullable = false, length = 10, updatable = false)
     private String fileExtension;
 
@@ -55,11 +62,14 @@ public abstract class UploadRecord {
     @Column(name = "status", nullable = false, length = 20)
     private UploadStatus status;
 
-    /** What the file is attached to, e.g. {@code COMPANY}; null until ASSOCIATED. */
+    /**
+     * What the file is for, e.g. {@code COMPANY}: the target given on create (Story 17.11b, a confirm
+     * for another target is refused), else null until ASSOCIATED.
+     */
     @Column(name = "target_type", length = 50)
     private String targetType;
 
-    /** The meaningful ID of the target (company name, event code); null until ASSOCIATED. */
+    /** The meaningful ID of the target (company name, event code); as {@link #targetType}. */
     @Column(name = "target_id", length = 255)
     private String targetId;
 
@@ -77,17 +87,26 @@ public abstract class UploadRecord {
     private Instant expiresAt;
 
     /** The file of a new upload: its temp key and what the client declared. */
-    record TempFile(String key, String extension, long size, String contentType) {
+    record TempFile(String key, String name, String extension, long size, String contentType) {
     }
 
-    /** Fills a new record as PENDING. */
-    void start(String newUploadId, String newPurpose, TempFile file, String by, Instant now, Instant expiry) {
+    /** The target a reserved upload is bound to (Story 17.11b); both null for none. */
+    record Binding(String type, String id) {
+        static final Binding NONE = new Binding(null, null);
+    }
+
+    /** Fills a new record as PENDING, bound to the target given on create (if any). */
+    void start(String newUploadId, String newPurpose, TempFile file, Binding binding, String by, Instant now,
+            Instant expiry) {
         this.uploadId = newUploadId;
         this.purpose = newPurpose;
         this.s3Key = file.key();
+        this.fileName = file.name();
         this.fileExtension = file.extension();
         this.fileSize = file.size();
         this.contentType = file.contentType();
+        this.targetType = binding.type();
+        this.targetId = binding.id();
         this.createdBy = by;
         this.status = UploadStatus.PENDING;
         this.createdAt = now;
@@ -129,6 +148,14 @@ public abstract class UploadRecord {
         this.s3Key = newKey;
         this.fileUrl = url;
         this.updatedAt = now;
+    }
+
+    /**
+     * True when the upload was reserved for, or is attached to, another target than this one (Story
+     * 17.11b); an upload reserved without a target may go to any.
+     */
+    public boolean isBoundElsewhere(String target) {
+        return targetId != null && !targetId.equals(target);
     }
 
     /** PENDING or CONFIRMED past its expiry (strictly after, as the expiry job's query). */

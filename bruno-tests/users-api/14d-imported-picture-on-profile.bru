@@ -1,0 +1,41 @@
+meta {
+  name: Batch import - the picture is on the profile
+  type: http
+  seq: 14
+}
+
+get {
+  url: {{baseUrl}}/users/me
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Accept: application/json
+}
+
+script:pre-request {
+  // Runs only against local dev and only for an account without a picture (decided in 14b).
+  if (bru.getVar("ownPictureImportRuns") !== true) {
+    bru.runner.skipRequest();
+  }
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("profilePictureUrl is the attached file", function() {
+    expect(res.getBody().profilePictureUrl).to.equal(bru.getVar("importedPictureUrl"));
+  });
+}
+
+docs {
+  A fresh read, as the page after a reload does (gated like 14b).
+}

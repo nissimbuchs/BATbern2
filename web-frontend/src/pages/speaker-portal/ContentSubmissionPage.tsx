@@ -524,9 +524,10 @@ export default function ContentSubmissionPage() {
               <label className="block text-sm font-medium text-gray-300 mb-2">
                 {t('speakerPortal.content.presentationFile')}
               </label>
-              {contentInfo.hasSessionAssigned ? (
+              {contentInfo.hasSessionAssigned && contentInfo.sessionSlug ? (
                 <PresentationUpload
                   eventCode={eventCode!}
+                  sessionSlug={contentInfo.sessionSlug}
                   currentMaterialUrl={materialUrl}
                   currentMaterialName={materialFileName}
                   onMaterialUploaded={(url, fileName) => {

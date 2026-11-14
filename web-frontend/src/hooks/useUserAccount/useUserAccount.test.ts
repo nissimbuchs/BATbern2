@@ -208,16 +208,21 @@ describe('profile and picture', () => {
         return new HttpResponse(null, { status: 200 });
       })
     );
-    api.on('requestProfilePictureUploadUrlForUser', () => ({
-      uploadUrl: 'https://bucket.example/upload',
-      fileId: 'file-1',
-      s3Key: 'users/matthias.keller/p.png',
-      fileExtension: 'png',
-      expiresInMinutes: 15,
-      requiredHeaders: { 'Content-Type': 'image/png' },
-    }));
-    api.on('confirmProfilePictureUploadForUser', () => ({
-      profilePictureUrl: 'https://cdn.example.com/p.png',
+    api.on(
+      'createFileUpload',
+      () => ({
+        uploadId: 'file-1',
+        uploadUrl: 'https://bucket.example/upload',
+        expiresAt: '2026-11-13T10:15:00Z',
+        requiredHeaders: { 'Content-Type': 'image/png' },
+      }),
+      { status: 201 }
+    );
+    api.on('confirmFileUpload', () => ({
+      uploadId: 'file-1',
+      purpose: 'profile-picture' as const,
+      status: 'ASSOCIATED' as const,
+      fileUrl: 'https://cdn.example.com/p.png',
     }));
     const { result } = renderHook(() => useUploadProfilePicture(), { wrapper });
 
@@ -231,11 +236,15 @@ describe('profile and picture', () => {
 
     expect(url).toBe('https://cdn.example.com/p.png');
     expect(s3Puts).toEqual(['image/png']);
-    expect(api.calls('confirmProfilePictureUploadForUser')[0].params).toEqual({
-      username: 'matthias.keller',
+    expect(api.calls('createFileUpload')[0].body).toMatchObject({
+      target: { username: 'matthias.keller' },
     });
-    expect(api.calls('confirmProfilePictureUploadForUser')[0].body).toMatchObject({
-      fileId: 'file-1',
+    expect(api.calls('confirmFileUpload')[0].params).toEqual({
+      purpose: 'profile-picture',
+      uploadId: 'file-1',
+    });
+    expect(api.calls('confirmFileUpload')[0].body).toEqual({
+      target: { username: 'matthias.keller' },
     });
   });
 

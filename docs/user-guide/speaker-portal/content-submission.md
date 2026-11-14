@@ -67,7 +67,7 @@ The submission form has three main sections:
 └─────────────────────────────────────────────────────┘
 ```
 
-Files are uploaded directly to S3 via presigned URL — they are never sent through the backend. The speaker's Cognito Bearer token authorises the request; the presigned-URL endpoint is scoped to the event's `eventCode`. A progress bar is shown during upload.
+Files are uploaded directly to S3 via presigned URL — they are never sent through the backend. Since Story 17.11d the upload runs on the shared upload flow (`POST /api/v1/uploads/session-material`, purpose `session-material`, with the speaker's own session as target `{eventCode, sessionSlug}`); the confirm attaches the file to the session as a PRESENTATION under its original file name. The speaker's Cognito Bearer token authorises the request, and a session the speaker is not on is refused (403). A progress bar is shown during upload.
 
 ### 3 — Review & Submit
 

@@ -2,7 +2,6 @@ package ch.batbern.events.controller;
 
 import ch.batbern.shared.test.AbstractIntegrationTest;
 import ch.batbern.events.config.TestAwsConfig;
-import ch.batbern.events.config.TestSecurityConfig;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Session;
 import ch.batbern.events.domain.SessionMaterial;
@@ -16,32 +15,23 @@ import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.events.repository.SessionUserRepository;
 import ch.batbern.shared.types.EventWorkflowState;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.transaction.annotation.Transactional;
-import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.model.CopyObjectRequest;
-import software.amazon.awssdk.services.s3.model.CopyObjectResponse;
-import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
-import software.amazon.awssdk.services.s3.model.DeleteObjectResponse;
 
 import java.time.Instant;
-import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -58,11 +48,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * - RBAC: Speaker can only upload to own sessions (403 Forbidden if not owner)
  * - RBAC: Organizer can upload to any session (200 OK)
  *
- * TDD Workflow: RED Phase - These tests MUST fail until SessionMaterialsController is implemented
- * Uses Testcontainers PostgreSQL for production parity
+ * Uses Testcontainers PostgreSQL for production parity. Not {@code @Transactional}: every request
+ * commits, {@code @AfterEach} removes this class's rows. Associating real uploads (and the speaker and
+ * organizer upload rights) is in {@link SessionMaterialUploadIntegrationTest} since Story 17.11d.
  */
-@Transactional
-@Import({TestSecurityConfig.class, TestAwsConfig.class})
+@Import(TestAwsConfig.class)
 public class SessionMaterialsControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
@@ -83,8 +73,10 @@ public class SessionMaterialsControllerIntegrationTest extends AbstractIntegrati
     @Autowired
     private ObjectMapper objectMapper;
 
-    @MockitoBean
-    private S3Client s3Client;
+    @Autowired
+    private JdbcTemplate jdbc;
+
+    private static final String EVENT = "BATbern9961";
 
     private Event testEvent;
     private Session testSession;
@@ -95,17 +87,13 @@ public class SessionMaterialsControllerIntegrationTest extends AbstractIntegrati
 
     @BeforeEach
     void setUp() {
-        // Clean database
-        sessionMaterialsRepository.deleteAll();
-        sessionUserRepository.deleteAll();
-        sessionRepository.deleteAll();
-        eventRepository.deleteAll();
+        removeRows();
 
         // Create test event
-        eventCode = "bat-bern-2026-spring";
+        eventCode = EVENT;
         testEvent = Event.builder()
                 .eventCode(eventCode)
-                .eventNumber(130)
+                .eventNumber(9961)
                 .title("BATbern Spring 2026")
                 .description("Test Event for Materials Upload")
                 .date(Instant.now().plusSeconds(86400 * 30)) // 30 days from now
@@ -120,7 +108,7 @@ public class SessionMaterialsControllerIntegrationTest extends AbstractIntegrati
         testEvent = eventRepository.save(testEvent);
 
         // Create test session (speaker: john.doe)
-        sessionSlug = "keynote-digital-transformation";
+        sessionSlug = "it-materials-keynote";
         testSession = Session.builder()
                 .sessionSlug(sessionSlug)
                 .eventId(testEvent.getId())
@@ -144,7 +132,7 @@ public class SessionMaterialsControllerIntegrationTest extends AbstractIntegrati
         sessionUserRepository.save(speakerAssignment);
 
         // Create another session (speaker: jane.smith) for RBAC tests
-        anotherSessionSlug = "workshop-cloud-architecture";
+        anotherSessionSlug = "it-materials-workshop";
         anotherSession = Session.builder()
                 .sessionSlug(anotherSessionSlug)
                 .eventId(testEvent.getId())
@@ -166,60 +154,19 @@ public class SessionMaterialsControllerIntegrationTest extends AbstractIntegrati
                 .speakerRole(SessionUser.SpeakerRole.PRIMARY_SPEAKER)
                 .build();
         sessionUserRepository.save(anotherSpeakerAssignment);
-
-        // Mock S3Client responses
-        when(s3Client.copyObject(any(CopyObjectRequest.class)))
-                .thenReturn(CopyObjectResponse.builder().build());
-        when(s3Client.deleteObject(any(DeleteObjectRequest.class)))
-                .thenReturn(DeleteObjectResponse.builder().build());
     }
 
-    /**
-     * Test 3.1: POST /api/v1/sessions/{sessionSlug}/materials - Success (AC5)
-     * Organizer associates uploaded materials with session, returns 201 Created
-     */
-    @Test
-    @DisplayName("Test 3.1: should_associateMaterials_when_organizerAndValidUploadIds")
-    @WithMockUser(username = "organizer.user", roles = "ORGANIZER")
-    void should_associateMaterials_when_organizerAndValidUploadIds() throws Exception {
-        // Given: Valid association request with 2 materials
-        SessionMaterialAssociationRequest request = new SessionMaterialAssociationRequest(
-                Arrays.asList(
-                        MaterialUploadItem.builder()
-                                .uploadId("upload-id-1")
-                                .materialType("PRESENTATION")
-                                .fileName("presentation.pdf")
-                                .fileExtension("pdf")
-                                .fileSize(1024L)
-                                .mimeType("application/pdf")
-                                .build(),
-                        MaterialUploadItem.builder()
-                                .uploadId("upload-id-2")
-                                .materialType("DOCUMENT")
-                                .fileName("document.pdf")
-                                .fileExtension("pdf")
-                                .fileSize(2048L)
-                                .mimeType("application/pdf")
-                                .build()
-                )
-        );
+    @AfterEach
+    void tearDown() {
+        removeRows();
+    }
 
-        // When: POST /api/v1/events/{eventCode}/sessions/{sessionSlug}/materials
-        // Then: 201 Created with materials list
-        mockMvc.perform(post("/api/v1/events/{eventCode}/sessions/{sessionSlug}/materials", eventCode, sessionSlug)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.materials", hasSize(2)))
-                .andExpect(jsonPath("$.materials[0].uploadId", is("upload-id-1")))
-                .andExpect(jsonPath("$.materials[0].materialType", is("PRESENTATION")))
-                .andExpect(jsonPath("$.materials[0].fileName", notNullValue()))
-                .andExpect(jsonPath("$.materials[0].cloudFrontUrl", notNullValue()))
-                .andExpect(jsonPath("$.materials[0].uploadedBy", is("organizer.user")))
-                .andExpect(jsonPath("$.materials[0].contentExtracted", is(false)))
-                .andExpect(jsonPath("$.materials[0].extractionStatus", is("PENDING")))
-                .andExpect(jsonPath("$.materials[1].uploadId", is("upload-id-2")))
-                .andExpect(jsonPath("$.materials[1].materialType", is("DOCUMENT")));
+    private void removeRows() {
+        String sessions = "SELECT id FROM sessions WHERE event_code = ?";
+        jdbc.update("DELETE FROM session_materials WHERE session_id IN (" + sessions + ")", EVENT);
+        jdbc.update("DELETE FROM session_users WHERE session_id IN (" + sessions + ")", EVENT);
+        jdbc.update("DELETE FROM sessions WHERE event_code = ?", EVENT);
+        jdbc.update("DELETE FROM events WHERE event_code = ?", EVENT);
     }
 
     /**
@@ -329,14 +276,7 @@ public class SessionMaterialsControllerIntegrationTest extends AbstractIntegrati
         // Given: Non-existent session slug
         String nonExistentSlug = "non-existent-session";
         SessionMaterialAssociationRequest request = new SessionMaterialAssociationRequest(
-                List.of(MaterialUploadItem.builder()
-                        .uploadId("upload-id-1")
-                        .materialType("PRESENTATION")
-                        .fileName("presentation.pdf")
-                        .fileExtension("pdf")
-                        .fileSize(1024L)
-                        .mimeType("application/pdf")
-                        .build())
+                List.of(MaterialUploadItem.builder().uploadId("upload-id-1").build())
         );
 
         // When: POST /api/v1/sessions/{sessionSlug}/materials with invalid slug
@@ -368,35 +308,6 @@ public class SessionMaterialsControllerIntegrationTest extends AbstractIntegrati
     }
 
     /**
-     * Test 3.7: RBAC - Speaker can upload to own session (AC7)
-     * Speaker john.doe can upload materials to their own session
-     */
-    @Test
-    @DisplayName("Test 3.7: should_allowUpload_when_speakerOwnsSession")
-    @WithMockUser(username = "john.doe", roles = "SPEAKER")
-    void should_allowUpload_when_speakerOwnsSession() throws Exception {
-        // Given: Speaker john.doe owns testSession, valid request
-        SessionMaterialAssociationRequest request = new SessionMaterialAssociationRequest(
-                List.of(MaterialUploadItem.builder()
-                        .uploadId("upload-id-speaker")
-                        .materialType("PRESENTATION")
-                        .fileName("presentation.pdf")
-                        .fileExtension("pdf")
-                        .fileSize(1024L)
-                        .mimeType("application/pdf")
-                        .build())
-        );
-
-        // When: POST /api/v1/sessions/{sessionSlug}/materials as session owner
-        // Then: 201 Created (speaker can upload to own session)
-        mockMvc.perform(post("/api/v1/events/{eventCode}/sessions/{sessionSlug}/materials", eventCode, sessionSlug)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.materials[0].uploadedBy", is("john.doe")));
-    }
-
-    /**
      * Test 3.8: RBAC - Speaker cannot upload to another speaker's session (AC7)
      * Speaker john.doe CANNOT upload materials to jane.smith's session (403 Forbidden)
      */
@@ -406,14 +317,7 @@ public class SessionMaterialsControllerIntegrationTest extends AbstractIntegrati
     void should_forbidUpload_when_speakerDoesNotOwnSession() throws Exception {
         // Given: Speaker john.doe does NOT own anotherSession (owned by jane.smith)
         SessionMaterialAssociationRequest request = new SessionMaterialAssociationRequest(
-                List.of(MaterialUploadItem.builder()
-                        .uploadId("upload-id-unauthorized")
-                        .materialType("PRESENTATION")
-                        .fileName("presentation.pdf")
-                        .fileExtension("pdf")
-                        .fileSize(1024L)
-                        .mimeType("application/pdf")
-                        .build())
+                List.of(MaterialUploadItem.builder().uploadId("upload-id-unauthorized").build())
         );
 
         // When: POST /api/v1/sessions/{anotherSessionSlug}/materials as non-owner
@@ -422,35 +326,6 @@ public class SessionMaterialsControllerIntegrationTest extends AbstractIntegrati
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isForbidden());
-    }
-
-    /**
-     * Test 3.9: RBAC - Organizer can upload to any session (AC7)
-     * Organizer can upload materials to sessions they don't own
-     */
-    @Test
-    @DisplayName("Test 3.9: should_allowUpload_when_userIsOrganizer")
-    @WithMockUser(username = "organizer.user", roles = "ORGANIZER")
-    void should_allowUpload_when_userIsOrganizer() throws Exception {
-        // Given: Organizer (not session owner), valid request for anotherSession
-        SessionMaterialAssociationRequest request = new SessionMaterialAssociationRequest(
-                List.of(MaterialUploadItem.builder()
-                        .uploadId("upload-id-organizer")
-                        .materialType("DOCUMENT")
-                        .fileName("document.pdf")
-                        .fileExtension("pdf")
-                        .fileSize(2048L)
-                        .mimeType("application/pdf")
-                        .build())
-        );
-
-        // When: POST /api/v1/sessions/{anotherSessionSlug}/materials as organizer
-        // Then: 201 Created (organizer can upload to any session)
-        mockMvc.perform(post("/api/v1/events/{eventCode}/sessions/{sessionSlug}/materials", eventCode, anotherSessionSlug)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.materials[0].uploadedBy", is("organizer.user")));
     }
 
     /**

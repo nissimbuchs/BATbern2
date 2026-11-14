@@ -22,8 +22,6 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
 import java.time.Instant;
-import java.time.Year;
-import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -111,8 +109,7 @@ class UploadsControllerIntegrationTest extends AbstractIntegrationTest {
         Event event = eventRepository.findByEventCode(EVENT).orElseThrow();
         assertThat(event.getThemeImageUploadId()).isEqualTo(uploadId);
         assertThat(event.getThemeImageUrl()).isEqualTo(done.path("fileUrl").asText())
-                .endsWith("/logos/" + Year.now(ZoneOffset.UTC) + "/events/" + EVENT
-                        + "/theme-" + uploadId + ".jpg");
+                .endsWith("/logos/events/" + EVENT + "/theme-" + uploadId + ".jpg");
     }
 
     @Test

@@ -10,10 +10,11 @@
  *     camera IconButton — there is NO crop dialog and NO client-side progress UI. The four
  *     prior `test.skip`s asserted a crop interface / a phase-by-phase progress UI / a
  *     standalone size-validation screen that were NEVER built → DELETED (logged below).
- *   • Upload is the ADR-002 3-phase flow: POST /users/{username}/picture/presigned-url → PUT to
- *     S3 → POST /users/{username}/picture/confirm (confirm associates the picture). The happy-path
- *     `@smoke` exercises all three phases end-to-end; a per-phase UI test is therefore
- *     redundant and was deleted.
+ *   • Upload is the upload contract (ADR-002, Story 17.11a): POST /uploads/profile-picture with
+ *     the own username as target → PUT to S3 → POST /uploads/profile-picture/{uploadId}/confirm
+ *     with the target (confirm checks the file is in S3 and attaches it). The happy-path `@smoke`
+ *     exercises all three phases end-to-end and asserts that only `/uploads/profile-picture*`
+ *     calls carry the upload; a per-phase UI test is therefore redundant and was deleted.
  *   • Upload failure surfaces only via `console.error` — there is NO inline error UI, so the
  *     prior zero-assertion `should_showInlineError_*` test asserted a non-existent feature
  *     → DELETED.
@@ -83,10 +84,27 @@ test.describe('Profile Photo Upload', { tag: '@gate' }, () => {
       // the presigned PUT for carrying two auth mechanisms — strip it on the storage request.
       await stripPresignedAuthHeader(page);
 
+      // Every API call that touches the picture, to prove the upload runs on the contract only.
+      const pictureCalls: string[] = [];
+      page.on('request', (request) => {
+        const { pathname } = new URL(request.url());
+        if (/\/api\/v1\/(uploads\/|users\/[^/]+\/(picture|profile-picture))/.test(pathname)) {
+          pictureCalls.push(`${request.method()} ${pathname}`);
+        }
+      });
+
       await page.getByTestId('profile-photo-input').setInputFiles(png);
 
       // S3 round-trip + confirm + react-query refetch — generous wait, but signal-based.
       await expect(page.getByTestId('remove-photo-button')).toBeVisible({ timeout: 30_000 });
+      expect(pictureCalls).toEqual([
+        'POST /api/v1/uploads/profile-picture',
+        expect.stringMatching(/^POST \/api\/v1\/uploads\/profile-picture\/[^/]+\/confirm$/),
+      ]);
+
+      // The picture is stored, not only shown from local state: it is still there after a reload.
+      await page.reload();
+      await expect(page.getByTestId('remove-photo-button')).toBeVisible({ timeout: 15_000 });
 
       // AC13: removal goes through a native window.confirm — auto-accept it.
       page.on('dialog', (dialog) => dialog.accept());

@@ -1,0 +1,24 @@
+meta {
+  name: Cleanup — delete the uploaded teaser image
+  type: http
+  seq: 15
+}
+
+delete {
+  url: {{baseUrl}}/events/{{photoEventCode}}/teaser-images/{{teaserImageId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+assert {
+  res.status: eq 204
+}
+
+docs {
+  Removes the teaser row, its upload row and its S3 object. The event goes in 98/99 (a row left by
+  a failed run goes with it, cascade).
+}

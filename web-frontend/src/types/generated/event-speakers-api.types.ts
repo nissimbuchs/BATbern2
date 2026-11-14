@@ -492,46 +492,6 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/speaker-portal/events/{eventCode}/materials/presigned-url': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Request a presigned S3 URL for a material upload
-     * @description Story 6.3 material upload. SPEAKER role (pool ownership enforced).
-     */
-    post: operations['generatePresignedUrl'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/speaker-portal/events/{eventCode}/materials/confirm': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Confirm a completed material upload
-     * @description Story 6.3 material confirm (moves the object into place). SPEAKER role.
-     */
-    post: operations['confirmUpload'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1322,6 +1282,11 @@ export interface components {
       eventTitle?: string;
       hasSessionAssigned?: boolean;
       sessionTitle?: string | null;
+      /**
+       * @description The slug of the speaker's session, the target of a `session-material` upload
+       *     (`uploads-api`, Story 17.11d); null without an assigned session.
+       */
+      sessionSlug?: string | null;
       canSubmitContent?: boolean;
       hasDraft?: boolean;
       draftTitle?: string | null;
@@ -1345,47 +1310,6 @@ export interface components {
       bio?: string;
       profilePictureUrl?: string;
       presentationUploadId?: string;
-    };
-    /** @description Request a presigned URL for a material upload */
-    SpeakerMaterialUploadRequest: {
-      fileName: string;
-      /** Format: int64 */
-      fileSize: number;
-      mimeType: string;
-    };
-    /** @description Presigned upload URL + metadata */
-    SpeakerMaterialUploadResponse: {
-      uploadUrl?: string;
-      uploadId?: string;
-      s3Key?: string;
-      fileExtension?: string;
-      expiresInMinutes?: number;
-      /** @description Headers the client must send on the presigned PUT */
-      requiredHeaders?: {
-        [key: string]: string;
-      };
-    };
-    /** @description Confirm a completed material upload */
-    SpeakerMaterialConfirmRequest: {
-      uploadId: string;
-      fileName: string;
-      fileExtension: string;
-      /** Format: int64 */
-      fileSize: number;
-      mimeType: string;
-      /** @description Defaults to PRESENTATION when omitted */
-      materialType?: string;
-    };
-    /** @description Result of confirming a material upload */
-    SpeakerMaterialConfirmResponse: {
-      /** Format: uuid */
-      materialId?: string;
-      uploadId?: string;
-      fileName?: string;
-      cloudFrontUrl?: string;
-      materialType?: string;
-      /** Format: date-time */
-      uploadedAt?: string;
     };
     /**
      * @description Standard error envelope returned on every 4xx/5xx response across all services.
@@ -2477,68 +2401,6 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['ContentSubmitResponse'];
-        };
-      };
-      400: components['responses']['BadRequest'];
-      401: components['responses']['Unauthorized'];
-      403: components['responses']['Forbidden'];
-      404: components['responses']['NotFound'];
-    };
-  };
-  generatePresignedUrl: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Event code the speaker-portal action targets */
-        eventCode: components['parameters']['SpeakerPortalEventCode'];
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['SpeakerMaterialUploadRequest'];
-      };
-    };
-    responses: {
-      /** @description Presigned upload URL + metadata */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['SpeakerMaterialUploadResponse'];
-        };
-      };
-      400: components['responses']['BadRequest'];
-      401: components['responses']['Unauthorized'];
-      403: components['responses']['Forbidden'];
-      404: components['responses']['NotFound'];
-    };
-  };
-  confirmUpload: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Event code the speaker-portal action targets */
-        eventCode: components['parameters']['SpeakerPortalEventCode'];
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['SpeakerMaterialConfirmRequest'];
-      };
-    };
-    responses: {
-      /** @description Material confirmed */
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['SpeakerMaterialConfirmResponse'];
         };
       };
       400: components['responses']['BadRequest'];

@@ -1,6 +1,6 @@
 # ADR-002: Generic File Upload Service Architecture
 
-**Status**: Accepted (decision 2026-11-07 implemented for `company-logo` and `event-theme-image` by Story 17.11, 2026-11-12)
+**Status**: Accepted (decision 2026-11-07 implemented for `company-logo` and `event-theme-image` by Story 17.11, 2026-11-12, for `profile-picture` by Story 17.11a, 2026-11-13, for `event-photo` by Story 17.11b, 2026-11-13, for `teaser-image` by Story 17.11c, 2026-11-13, and for `session-material` by Story 17.11d, 2026-11-13; every purpose of the decision except `mail-attachment` is on the contract)
 **Date**: 2025-10-27
 **Decision Makers**: Development Team, Architect Agent (Winston)
 **Related Stories**: Story 1.16.3 (Generic File Upload Service), Story 2.5.1 (Company Management Frontend)
@@ -657,7 +657,7 @@ resource (`DELETE /events/{c}/photos/{id}`, `…/materials/{id}/download`).
 **Placement.** The mechanics (key layout, presign, size and type rules, PENDING → CONFIRMED →
 ASSOCIATED, expiry cleanup) live in one shared-kernel component. Each purpose is a small handler in
 the owning service: who may upload for this target, allowed types and size, the S3 key, what confirm
-attaches. The gateway routes `/api/v1/uploads/{purpose}` by purpose prefix to the owning service, so
+attaches. The gateway routes `/api/v1/uploads/{purpose}` by purpose to the owning service (an explicit map since Story 17.11a), so
 no service handles another service's files. Each service keeps its own `uploads` table; the `logos`
 table that EMS and CUMS share today goes away with the migration.
 
@@ -777,6 +777,136 @@ not a copy of the CUMS class, and both services create and use the same `logos` 
 
 ## Implementation Status
 
+### Purposes (final, Story 17.11d)
+
+| purpose | owner | types | max size | target | import | final key |
+|---|---|---|---|---|---|---|
+| `company-logo` | CUMS | png, jpeg, svg | 5 MB | `companyName` (ORGANIZER), optional | yes (ORGANIZER) | `logos/companies/{name}/logo-{uploadId}.{ext}` |
+| `event-theme-image` | EMS | png, jpeg, svg | 5 MB | `eventCode` (ORGANIZER), optional | no | `logos/events/{eventCode}/theme-{uploadId}.{ext}` |
+| `profile-picture` | CUMS | png, jpeg, svg | 5 MB | `username` (ORGANIZER or the user themself), required | yes (ORGANIZER) | `profile-pictures/{username}/profile-{uploadId}.{ext}` |
+| `event-photo` | EMS | jpeg, png, webp | 10 MB | `eventCode` (ORGANIZER), required | no | `events/{eventCode}/photos/{uploadId}.{ext}` |
+| `teaser-image` | EMS | jpeg, png, webp, svg | 10 MB | `eventCode` (ORGANIZER), required, `_global` for the global set | no | `events/{eventCode}/teaser/{uploadId}.{ext}`, `global/teaser/{uploadId}.{ext}` |
+| `session-material` | EMS | ORGANIZER: pptx, ppt, key, odp, pdf, doc, docx, txt, mp4, mov, avi, mkv, webm, zip, gz, tar; SPEAKER: pptx, ppt, key, pdf | ORGANIZER 100 MB, SPEAKER 50 MB | `eventCode` + `sessionSlug` (ORGANIZER any session, SPEAKER a session they are on), optional | no | `materials/events/{eventCode}/sessions/{sessionSlug}/file-{uploadId}.{ext}` |
+
+The upload keeps the original file name (`file_name`, CUMS V33, EMS V156, Story 17.11d); uploads
+made before have none.
+
+The gateway routes each purpose by an explicit map in `DomainRouter` (an unlisted purpose is 404).
+Final keys carry no year since Story 17.11a; files stored earlier keep their `…/{year}/…` key and URL
+(the rows hold the full key and URL).
+
+**Target binding** (Story 17.11b): a target given on create is stored on the PENDING row
+(`target_type`, `target_id`); a confirm, or an entity's `associate`, for another target answers 404
+and changes nothing. An upload reserved without a target may still be confirmed with one.
+
+### Story 17.11d (2026-11-13): purpose `session-material`
+
+- **Contract:** `session-material` joins the `UploadPurpose` enum and `UploadTarget` gets
+  `sessionSlug` (`uploads-api`). The four operations `POST /materials/presigned-url`,
+  `POST /materials/{uploadId}/confirm` (`event-media-api`),
+  `POST /speaker-portal/events/{eventCode}/materials/presigned-url` and `…/materials/confirm`
+  (`event-speakers-api`) and their schemas are deleted (no aliases; 404). `associateMaterials`
+  (`POST /events/{eventCode}/sessions/{sessionSlug}/materials`) takes only `{uploadId, materialType?}`
+  items: name, size and type come from the upload, the type is derived from the content type when
+  omitted (organizers only; a speaker's material is always PRESENTATION). `SpeakerContentInfo` gets
+  the speaker's `sessionSlug`, the target of the portal upload. List stays; the download URL now
+  saves the file under its original name (`Content-Disposition`); delete checks that the session
+  is in the event (404) and also deletes the material's upload row.
+- **Shared kernel:** two-key targets. `UploadPurposeHandler.targetKeys()` (default
+  `List.of(targetKey())`); `UploadService` joins the values with `/` in this order, all keys or
+  none, a partial or foreign key is 400. `UploadRecord.fileName` (column `file_name`, CUMS V33, EMS
+  V156, nullable): the name sent on create, or the base name of an import.
+- **EMS:** `SessionMaterialUploadHandler` (ORGANIZER or SPEAKER, else 403; target
+  `{eventCode, sessionSlug}`, optional; the session must be in the event, 404; a speaker only on a
+  session they are on in `session_users`, 403, the rule the association and delete share; rules by
+  the caller's role: organizers 100 MB and their type list, speakers 50 MB and slides, as the two
+  old paths; temp key `materials/temp/{uploadId}/file-{uploadId}.{ext}`, target type `SESSION`, no
+  import). Attach creates the `session_materials` row with the upload's name, size, type and URL,
+  type PRESENTATION for a speaker, else derived from the content type; publishes
+  `SessionMaterialsUploadedEvent` and clears the event cache after the commit.
+  `SessionMaterialsService.associateMaterialsWithSession` attaches confirmed uploads through
+  `UploadService.associate`, so an upload reserved for another session is 404. Final key without
+  the year, `materials/events/{eventCode}/sessions/{sessionSlug}/file-{uploadId}.{ext}`, also for the
+  server-side batch import (`uploadMaterialFromUrl`); existing keys stay. Removed:
+  `MaterialsUploadController`, `MaterialsUploadService`, `SpeakerPortalMaterialsService` and the two
+  speaker portal operations, the now unused `FileSizeExceededException` and
+  `InvalidFileTypeException`. Fixed with it: neither old path stored a pending upload, the
+  association rebuilt the temp key from an extension and a file name the client sent, and a
+  speaker's confirm never checked the object in S3.
+- **Gateway:** `session-material` → EMS in the purpose map; `/api/v1/materials` is no longer routed.
+- **Frontend:** the session editor uploads with `uploadTarget('session-material')` (confirmed
+  without a target, the session is saved first) and `associateMaterials` sends the uploadIds; the
+  speaker portal's `uploadMaterial` runs on `uploadTarget('session-material', {eventCode, sessionSlug})`.
+
+### Story 17.11c (2026-11-13): purpose `teaser-image`
+
+- **Contract:** `teaser-image` joins the `UploadPurpose` enum (`uploads-api`); `eventCode` `_global`
+  names the global set, as in the teaser paths. The operations
+  `POST /events/{eventCode}/teaser-images/upload-url` and `POST /events/{eventCode}/teaser-images/confirm`
+  and their schemas are deleted from `events-core-api` (no aliases; both now answer 405, they fall on
+  `/teaser-images/{imageId}`, which has PATCH and DELETE only). List, PATCH and DELETE stay.
+- **EMS:** `TeaserImageUploadHandler` (ORGANIZER, target `eventCode` required, unknown event 404, no
+  import; jpeg, png, webp, svg as before, up to 10 MB, new because the contract signs a size; temp
+  key `events/temp/{uploadId}/teaser-{uploadId}.{ext}`, target type `EVENT_TEASER`). The limit of
+  10 per scope is checked on create (new handler hook `checkCanReserve`, create only, so a confirm
+  first gets the contract's 404/409 answers) and again on attach under a transaction-scoped advisory
+  lock on the scope (`pg_advisory_xact_lock`; a row lock cannot serialize inserts);
+  `TeaserImageLimitExceededException` is now a 409 `UploadException` with its old message (it was 422
+  on the old confirm). Attach creates the `event_teaser_images` row, last in display order, with
+  the upload's `fileUrl` as `imageUrl`, and clears the event cache after the commit (the theme image
+  handler too). Deleting a teaser image deletes its upload row.
+- **Shared kernel:** when the confirm transaction rolls back after the copy to the final key (e.g.
+  the limit on attach), the final object is deleted after the rollback; the temp object stays for a
+  retry. Fixed with it: the old confirm took the S3 key from the client, signed no size and had
+  no pending state or expiry. `GLOBAL_CODE` and the `_global` mapping moved from the controller to
+  `EventTeaserImageService`.
+- **Gateway:** `teaser-image` → EMS in the purpose map.
+- **Frontend:** `useUploadTeaserImage` runs on `uploadTarget('teaser-image', {eventCode})`, with
+  `_global` for the global images tab.
+
+### Story 17.11b (2026-11-13): purpose `event-photo`
+
+- **Contract:** `event-photo` joins the `UploadPurpose` enum (`uploads-api`). The operations
+  `POST /events/{eventCode}/photos/upload-url` and `POST /events/{eventCode}/photos/confirm` and
+  their schemas are deleted from `event-media-api` (no aliases; both now answer 405, they fall on
+  `/photos/{photoId}`, which has DELETE only). List, delete and `GET /public/event-photos` stay.
+- **Shared kernel:** the target binding above (`UploadRecord.start` takes the binding,
+  `isBoundElsewhere`).
+- **EMS:** `EventPhotoUploadHandler` (ORGANIZER, target `eventCode` required, unknown event 404, no
+  import; jpeg, png, webp up to 10 MB as before; temp key
+  `events/temp/{uploadId}/photo-{uploadId}.{ext}`). Attach creates the `event_photos` row with the
+  upload's id as photo id, `display_url` = the upload's `fileUrl`, file name `photo.{ext}`, the
+  confirming organizer's username and sort order 0. Fixed with it: the old confirm took the S3 key
+  from the client and had no pending state or expiry. `EventPhotoService` keeps list, delete and
+  the homepage sample; the unused `PhotoConfirmResponse` and `PhotoUploadNotFoundException` are gone.
+- **Gateway:** `event-photo` → EMS in the purpose map.
+- **Frontend:** `useUploadEventPhoto` runs on `uploadTarget('event-photo', {eventCode})` with
+  `eventApiClient.uploadPhotoToS3` for the PUT.
+
+### Story 17.11a (2026-11-13): purpose `profile-picture`
+
+- **Contract:** `profile-picture` joins the `UploadPurpose` enum and `UploadTarget` gets `username`
+  (`uploads-api`). The three operations `POST /users/{username}/picture/presigned-url`,
+  `.../picture/confirm` and `POST /users/{username}/profile-picture/upload-from-url` are deleted from
+  `users-api` (no aliases; 404). `DELETE /users/{username}/picture` stays.
+- **Shared kernel:** `UploadPurposeHandler.requiresTarget()` (default false); `UploadService.create`
+  and `confirm` answer 400 when a purpose requires a target and none is given.
+- **CUMS:** `ProfilePictureUploadHandler` (target `username`, required; ORGANIZER or
+  `UserOwnership.isCurrentUser`, else 403; unknown user 404; temp key
+  `profile-pictures/temp/{uploadId}/profile-{uploadId}.{ext}`; attach sets `profilePictureUrl` and
+  `profilePictureS3Key`; import ORGANIZER). The speaker batch import imports, then confirms with
+  the target. Fixed with it: the old confirm rebuilt the key from the current year and never checked
+  the object in S3 (a picture confirmed across New Year pointed at a missing object); pictures now
+  have a pending state and the nightly expiry. `ProfilePictureService` keeps only the server-side
+  store of the Google avatar import (no upload row) and the key builder both use.
+- **No year in final keys** (owner 2026-11-13) for every purpose: the upload year means nothing and
+  caused the rollover bug.
+- **Gateway:** an explicit purpose → service map replaces the prefix rule (`profile-picture`,
+  `teaser-image` and `session-material` carry no service prefix).
+- **Frontend:** `userAccountApi.uploadProfilePicture` runs on `uploadTarget('profile-picture',
+  {username})` (XHR PUT kept for the progress bar); the batch import uses
+  `userApi.importProfilePicture` (`importUpload` + `confirmUpload` with the target).
+
 ### Story 17.11 (2026-11-12): one upload contract, first purposes `company-logo` and `event-theme-image`
 
 Implements the decision of 2026-11-07 for its first two purposes:
@@ -808,14 +938,13 @@ Implements the decision of 2026-11-07 for its first two purposes:
 - **Frontend:** `services/uploadService.ts` (`uploadTarget(purpose, target?)`, `importUpload`), the
   one hook `useFileUpload` (no hard-coded bucket; the preview is the attached file's CDN URL or a
   local object URL), `FileUpload` requires its `uploadTarget`.
-- **Key layouts unchanged:** `logos/{year}/companies/{name}/logo-{uploadId}.{ext}`,
+- **Key layouts unchanged** (until 17.11a dropped the year): `logos/{year}/companies/{name}/logo-{uploadId}.{ext}`,
   `logos/requests/{uploadId}/logo.{ext}`, `logos/{year}/events/{eventCode}/theme-{uploadId}.{ext}`;
   existing S3 objects and CDN URLs are untouched.
 - **`logos` dropped** (#1307, owner go 2026-11-13): CUMS V31 and EMS V154 drop the table; its upload
   history is discarded by decision, the S3 objects stay.
-- **Left:** purposes `profile-picture`, `event-photo`, `teaser-image` and
-  `session-material` follow in Stories 17.11a–d; each adds a handler and its enum value, no
-  operation.
+- **Left:** purposes `profile-picture` (done, 17.11a, above), `event-photo` (done, 17.11b, above),
+  `teaser-image` (done, 17.11c, above) and `session-material` (done, 17.11d, above).
 
 ### Story 1.16.3 (2025-10, historical)
 

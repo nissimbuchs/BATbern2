@@ -1,0 +1,45 @@
+meta {
+  name: Confirm the teaser-image upload with its event
+  type: http
+  seq: 12
+}
+
+post {
+  url: {{baseUrl}}/uploads/teaser-image/{{teaserUploadId}}/confirm
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "target": { "eventCode": "{{photoEventCode}}" }
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.status: eq ASSOCIATED
+  res.body.purpose: eq teaser-image
+}
+
+tests {
+  test("should store the teaser under the event, keyed by the upload", function() {
+    const key = "events/" + bru.getVar("photoEventCode") + "/teaser/" + bru.getVar("teaserUploadId") + ".png";
+    expect(res.getBody().fileUrl).to.include(key);
+  });
+}
+
+docs {
+  The confirm with the target creates the event_teaser_images row, last in display order. Another
+  event than the reserved one would be 404 (TeaserImageUploadIntegrationTest).
+}

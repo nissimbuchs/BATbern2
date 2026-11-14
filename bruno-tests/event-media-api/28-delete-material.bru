@@ -1,0 +1,19 @@
+meta {
+  name: Delete the material
+  type: http
+  seq: 28
+}
+
+delete {
+  url: {{baseUrl}}/events/{{photoEventCode}}/sessions/{{materialSessionSlug}}/materials/{{materialId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+assert {
+  res.status: eq 204
+}

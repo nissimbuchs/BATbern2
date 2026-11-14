@@ -14,7 +14,7 @@ import {
   getPublicUser,
   getUserProfile,
   updateUserSettings,
-  uploadProfilePictureFromUrl,
+  importProfilePicture,
   type UserSettingsResponse,
 } from './userApi';
 import { aUser } from '@/test/fixtures';
@@ -150,20 +150,52 @@ describe('userApi', () => {
     });
   });
 
-  describe('uploadProfilePictureFromUrl', () => {
-    it('posts the URL and filename for the user', async () => {
-      await uploadProfilePictureFromUrl(
+  describe('importProfilePicture (speaker batch import, Story 17.11a)', () => {
+    it('imports the URL as a profile-picture upload, then confirms it with the user as target', async () => {
+      api.on(
+        'importFileUpload',
+        () => ({
+          uploadId: 'up-9',
+          purpose: 'profile-picture' as const,
+          status: 'CONFIRMED' as const,
+          fileUrl: null,
+        }),
+        { status: 201 }
+      );
+      api.on('confirmFileUpload', () => ({
+        uploadId: 'up-9',
+        purpose: 'profile-picture' as const,
+        status: 'ASSOCIATED' as const,
+        fileUrl: 'https://cdn.batbern.ch/profile-pictures/jane.doe/profile-up-9.jpeg',
+      }));
+
+      const url = await importProfilePicture(
         'jane.doe',
         'https://img.example.com/p.jpg',
         'Jane-portrait'
       );
 
-      const [call] = api.calls('uploadProfilePictureFromUrl');
-      expect(call.params).toEqual({ username: 'jane.doe' });
-      expect(call.body).toEqual({
+      expect(url).toBe('https://cdn.batbern.ch/profile-pictures/jane.doe/profile-up-9.jpeg');
+      expect(api.allCalls().map((c) => c.key)).toEqual(['importFileUpload', 'confirmFileUpload']);
+      expect(api.calls('importFileUpload')[0].params).toEqual({ purpose: 'profile-picture' });
+      expect(api.calls('importFileUpload')[0].body).toEqual({
         url: 'https://img.example.com/p.jpg',
-        filename: 'Jane-portrait',
+        fileName: 'Jane-portrait',
       });
+      expect(api.calls('confirmFileUpload')[0].params).toEqual({
+        purpose: 'profile-picture',
+        uploadId: 'up-9',
+      });
+      expect(api.calls('confirmFileUpload')[0].body).toEqual({ target: { username: 'jane.doe' } });
+    });
+
+    it('does not confirm when the import fails', async () => {
+      api.on('importFileUpload', () => HttpResponse.json({ status: 502 }, { status: 502 }));
+
+      await expect(
+        importProfilePicture('jane.doe', 'https://img.example.com/p.jpg', 'Jane-portrait')
+      ).rejects.toMatchObject({ response: { status: 502 } });
+      expect(api.calls('confirmFileUpload')).toHaveLength(0);
     });
   });
 });

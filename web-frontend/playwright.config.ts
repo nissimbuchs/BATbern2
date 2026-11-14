@@ -64,6 +64,19 @@ export const BASE_URL = envConfig.baseURL;
 export const API_URL = envConfig.apiURL;
 export const TEST_ENV = testEnv;
 
+/**
+ * Headers for every request of a project: the test environment, English, and the Bearer of the
+ * project's role when one is set. A project's `extraHTTPHeaders` replaces the global one, so each
+ * role project passes its own token here.
+ */
+function headersFor(token: string | undefined): Record<string, string> {
+  return {
+    'X-Test-Environment': testEnv,
+    'Accept-Language': 'en-US,en;q=0.9',
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
+}
+
 export default defineConfig({
   testDir: './e2e',
 
@@ -127,11 +140,7 @@ export default defineConfig({
     video: 'retain-on-failure',
 
     /* Extra HTTP headers for all requests */
-    extraHTTPHeaders: {
-      'X-Test-Environment': testEnv,
-      'Accept-Language': 'en-US,en;q=0.9',
-      ...(process.env.AUTH_TOKEN ? { Authorization: `Bearer ${process.env.AUTH_TOKEN}` } : {}),
-    },
+    extraHTTPHeaders: headersFor(process.env.AUTH_TOKEN),
   },
 
   /* Configure projects for major browsers */
@@ -168,6 +177,10 @@ export default defineConfig({
             use: {
               ...devices['Desktop Chrome'],
               storageState: '.playwright-auth-speaker.json',
+              // The speaker's own token: the global header carries the organizer's, and an
+              // extraHTTPHeaders Authorization wins over the app's own, so every API call of a
+              // speaker spec would run as the organizer (Story 17.11d found it).
+              extraHTTPHeaders: headersFor(process.env.SPEAKER_AUTH_TOKEN),
             },
             testMatch: '**/e2e/speaker/**/*.spec.ts',
           },
@@ -184,6 +197,8 @@ export default defineConfig({
             use: {
               ...devices['Desktop Chrome'],
               storageState: '.playwright-auth-partner.json',
+              // The partner's own token, as for the speaker project.
+              extraHTTPHeaders: headersFor(process.env.PARTNER_AUTH_TOKEN),
             },
             testMatch: '**/e2e/partner/**/*.spec.ts',
           },

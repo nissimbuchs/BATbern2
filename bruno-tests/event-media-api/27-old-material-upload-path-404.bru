@@ -1,0 +1,41 @@
+meta {
+  name: The old material presign path is gone
+  type: http
+  seq: 27
+}
+
+post {
+  url: {{baseUrl}}/materials/presigned-url
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "fileName": "bruno.pdf",
+    "fileSize": 4,
+    "mimeType": "application/pdf"
+  }
+}
+
+tests {
+  test("404: the gateway has no /materials route any more", function() {
+    expect(res.getStatus()).to.equal(404);
+  });
+}
+
+docs {
+  Story 17.11d, breaking, no alias. POST /materials/presigned-url, POST /materials/{uploadId}/confirm
+  and the speaker portal's POST /speaker-portal/events/{eventCode}/materials/presigned-url and
+  .../materials/confirm are removed; the service answers 404 for all four
+  (SessionMaterialUploadIntegrationTest).
+}

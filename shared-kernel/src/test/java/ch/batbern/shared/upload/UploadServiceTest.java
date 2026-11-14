@@ -68,6 +68,20 @@ class UploadServiceTest {
         final List<String> attached = new ArrayList<>();
         boolean targetAllowed = true;
         boolean importAllowed;
+        boolean targetRequired;
+        boolean full;
+
+        @Override
+        public void checkCanReserve(String targetId) {
+            if (full) {
+                throw UploadException.conflict("full");
+            }
+        }
+
+        @Override
+        public boolean requiresTarget() {
+            return targetRequired;
+        }
 
         @Override
         public boolean supportsImport() {
@@ -103,7 +117,7 @@ class UploadServiceTest {
             if (!targetAllowed) {
                 throw UploadException.forbidden("no");
             }
-            if (!"acme".equals(targetId)) {
+            if (!"acme".equals(targetId) && !"globex".equals(targetId)) {
                 throw UploadException.notFound("no company " + targetId);
             }
         }
@@ -253,6 +267,90 @@ class UploadServiceTest {
     }
 
     @Test
+    void should_return400_when_requiredTargetIsMissing() {
+        String id = reserve();
+        handler.targetRequired = true;
+
+        assertStatus(() -> service.create("company-logo", "a.png", "image/png", 10, Map.of()),
+                HttpStatus.BAD_REQUEST);
+        assertStatus(() -> service.create("company-logo", "a.png", "image/png", 10, Map.of("companyName", " ")),
+                HttpStatus.BAD_REQUEST);
+        assertStatus(() -> service.confirm("company-logo", id, Map.of()), HttpStatus.BAD_REQUEST);
+        assertThat(table).hasSize(1);
+        assertThat(table.get(id).getStatus()).isEqualTo(UploadStatus.PENDING);
+
+        assertThat(service.confirm("company-logo", id, Map.of("companyName", "acme")).getStatus())
+                .isEqualTo(UploadStatus.ASSOCIATED);
+    }
+
+    @Test
+    void should_recordTarget_when_reservedForOne() {
+        String id = service.create("company-logo", "a.png", "image/png", 10, Map.of("companyName", "acme")).uploadId();
+
+        TestUpload stored = table.get(id);
+        assertThat(stored.getStatus()).isEqualTo(UploadStatus.PENDING);
+        assertThat(stored.getTargetType()).isEqualTo("COMPANY");
+        assertThat(stored.getTargetId()).isEqualTo("acme");
+        assertThat(stored.getFileUrl()).isNull();
+    }
+
+    @Test
+    void should_return404AndChangeNothing_when_confirmedForAnotherTarget() {
+        String id = service.create("company-logo", "a.png", "image/png", 10, Map.of("companyName", "acme")).uploadId();
+
+        assertStatus(() -> service.confirm("company-logo", id, Map.of("companyName", "globex")),
+                HttpStatus.NOT_FOUND);
+
+        assertThat(table.get(id).getStatus()).isEqualTo(UploadStatus.PENDING);
+        assertThat(table.get(id).getTargetId()).isEqualTo("acme");
+        assertThat(copies).isEmpty();
+        assertThat(handler.attached).isEmpty();
+    }
+
+    @Test
+    void should_attach_when_confirmedForTheReservedTarget() {
+        String id = service.create("company-logo", "a.png", "image/png", 10, Map.of("companyName", "acme")).uploadId();
+
+        TestUpload done = service.confirm("company-logo", id, Map.of("companyName", "acme"));
+
+        assertThat(done.getStatus()).isEqualTo(UploadStatus.ASSOCIATED);
+        assertThat(done.getTargetId()).isEqualTo("acme");
+        assertThat(handler.attached).containsExactly("acme=" + done.getFileUrl());
+    }
+
+    @Test
+    void should_return404NotConflict_when_attachedUploadConfirmedForAnotherTarget() {
+        String id = reserve();
+        service.confirm("company-logo", id, Map.of("companyName", "acme"));
+
+        assertStatus(() -> service.confirm("company-logo", id, Map.of("companyName", "globex")),
+                HttpStatus.NOT_FOUND);
+        assertStatus(() -> service.confirm("company-logo", id, Map.of("companyName", "acme")),
+                HttpStatus.CONFLICT);
+        assertThat(table.get(id).getTargetId()).isEqualTo("acme");
+        assertThat(handler.attached).hasSize(1);
+    }
+
+    @Test
+    void should_attachToAnyTarget_when_reservedWithoutOne() {
+        String id = reserve();
+        assertThat(table.get(id).getTargetId()).isNull();
+
+        assertThat(service.confirm("company-logo", id, Map.of("companyName", "globex")).getTargetId())
+                .isEqualTo("globex");
+    }
+
+    @Test
+    void should_return404_when_associatingToAnotherTargetThanReserved() {
+        String id = service.create("company-logo", "a.png", "image/png", 10, Map.of("companyName", "acme")).uploadId();
+        service.confirm("company-logo", id, Map.of());
+
+        assertStatus(() -> service.associate("company-logo", id, "globex"), HttpStatus.NOT_FOUND);
+        assertThat(table.get(id).getStatus()).isEqualTo(UploadStatus.CONFIRMED);
+        assertThat(service.associate("company-logo", id, "acme").getStatus()).isEqualTo(UploadStatus.ASSOCIATED);
+    }
+
+    @Test
     void should_confirm_when_fileIsInStorage() {
         String id = reserve();
         clock.advance(Duration.ofMinutes(5));
@@ -308,6 +406,47 @@ class UploadServiceTest {
         }
 
         assertThat(deletes).doesNotContain(temp);
+    }
+
+    @Test
+    @DisplayName("attach refused after the copy (rollback): the final object goes, the temp object stays")
+    void should_deleteFinalObjectAndKeepTemp_when_associationRollsBack() {
+        String id = reserve();
+        service.confirm("company-logo", id, Map.of());
+        String temp = table.get(id).getS3Key();
+        String finalKey = "logos/2026/companies/acme/logo-" + id + ".png";
+
+        TransactionSynchronizationManager.initSynchronization();
+        try {
+            service.associate("company-logo", id, "acme");
+            assertThat(deletes).isEmpty();
+            TransactionSynchronizationManager.getSynchronizations()
+                    .forEach(sync -> sync.afterCompletion(TransactionSynchronization.STATUS_ROLLED_BACK));
+        } finally {
+            TransactionSynchronizationManager.clearSynchronization();
+        }
+
+        assertThat(deletes).containsExactly(finalKey);
+        assertThat(deletes).doesNotContain(temp);
+    }
+
+    @Test
+    @DisplayName("checkCanReserve runs on create with a target, never on confirm")
+    void should_checkRoomOnCreateOnly_when_targetGiven() {
+        handler.full = true;
+        assertStatus(() -> service.create("company-logo", "Logo.PNG", "image/png", 1000,
+                Map.of("companyName", "acme")), HttpStatus.CONFLICT);
+        handler.full = false;
+        String id = service.create("company-logo", "Logo.PNG", "image/png", 1000, Map.of("companyName", "acme"))
+                .uploadId();
+        handler.full = true;
+
+        assertStatus(() -> service.confirm("company-logo", id, Map.of("companyName", "globex")),
+                HttpStatus.NOT_FOUND);
+        assertStatus(() -> service.confirm("company-logo", "unknown", Map.of("companyName", "acme")),
+                HttpStatus.NOT_FOUND);
+        assertThat(service.confirm("company-logo", id, Map.of("companyName", "acme")).getStatus())
+                .isEqualTo(UploadStatus.ASSOCIATED);
     }
 
     @Test
@@ -416,6 +555,68 @@ class UploadServiceTest {
         handler.importAllowed = false;
         assertStatus(() -> service.importFromUrl("company-logo", "https://example.com/a.png", "logo"),
                 HttpStatus.NOT_FOUND);
+    }
+
+    /** A purpose whose target has two keys (Story 17.11d, a session in its event). */
+    static class TwoKeyHandler extends TestHandler {
+        @Override
+        public String purpose() {
+            return "session-material";
+        }
+
+        @Override
+        public List<String> targetKeys() {
+            return List.of("eventCode", "sessionSlug");
+        }
+
+        @Override
+        public String targetKey() {
+            return "eventCode";
+        }
+
+        @Override
+        public void checkTarget(String targetId) {
+            if (!"BATbern1/keynote".equals(targetId)) {
+                throw UploadException.notFound("no session " + targetId);
+            }
+        }
+    }
+
+    @Test
+    void should_joinTargetKeysInOrder_when_purposeHasTwo() {
+        UploadService<TestUpload> twoKeys = new UploadService<>(inMemoryRepository(), TestUpload::new,
+                List.of(new TwoKeyHandler()), s3, presigner,
+                new UploadService.UploadStorage("bucket", "https://cdn.batbern.ch"), clock);
+        Map<String, String> target = new HashMap<>();
+        target.put("sessionSlug", "keynote");
+        target.put("eventCode", "BATbern1");
+        target.put("companyName", null);
+
+        String id = twoKeys.create("session-material", "a.png", "image/png", 10, target).uploadId();
+
+        assertThat(table.get(id).getTargetId()).isEqualTo("BATbern1/keynote");
+    }
+
+    @Test
+    void should_return400_when_onlyPartOfATwoKeyTargetIsGiven() {
+        UploadService<TestUpload> twoKeys = new UploadService<>(inMemoryRepository(), TestUpload::new,
+                List.of(new TwoKeyHandler()), s3, presigner,
+                new UploadService.UploadStorage("bucket", "https://cdn.batbern.ch"), clock);
+
+        assertStatus(() -> twoKeys.create("session-material", "a.png", "image/png", 10,
+                Map.of("sessionSlug", "keynote")), HttpStatus.BAD_REQUEST);
+        assertStatus(() -> twoKeys.create("session-material", "a.png", "image/png", 10,
+                Map.of("eventCode", "BATbern1")), HttpStatus.BAD_REQUEST);
+        assertStatus(() -> twoKeys.create("session-material", "a.png", "image/png", 10,
+                Map.of("eventCode", "BATbern1", "sessionSlug", "keynote", "username", "x")), HttpStatus.BAD_REQUEST);
+        assertThat(table).isEmpty();
+    }
+
+    @Test
+    void should_keepOriginalFileName_when_reserved() {
+        String id = service.create("company-logo", "Firmen Logo.PNG", "image/png", 10, Map.of()).uploadId();
+
+        assertThat(table.get(id).getFileName()).isEqualTo("Firmen Logo.PNG");
     }
 
     private static void assertStatus(Runnable call, HttpStatus status) {

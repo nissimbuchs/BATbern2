@@ -2,7 +2,9 @@ openapi: 3.0.3
 info:
   title: BATbern Event Media API
   version: 1.0.0
-  description: 'Event photo gallery: upload-url issuance, confirmation, listing, and deletion.
+  description: 'Event photo gallery: listing and deletion. Photos are uploaded through the upload
+    contract (`uploads-api`, purpose `event-photo`, Story 17.11b); its confirm with the target
+    `eventCode` creates the photo.
 
 
     Carved from the consolidated events-api spec (API consolidation Phase 6). Paths preserved verbatim.'
@@ -22,9 +24,7 @@ security:
 - BearerAuth: []
 tags:
 - name: Event Photos
-  description: Event photo gallery — upload, listing, and deletion
-- name: Materials Upload
-  description: Speaker material upload via presigned URLs
+  description: Event photo gallery — listing and deletion (upload through `uploads-api`, purpose `event-photo`)
 paths:
   /public/event-photos:
     get:
@@ -101,87 +101,6 @@ paths:
                   summary: captured from the local anonymized database
                   value:
                     []
-  /events/{eventCode}/photos/upload-url:
-    post:
-      tags:
-      - Event Photos
-      summary: Request presigned URL for photo upload
-      operationId: requestEventPhotoUploadUrl
-      security:
-      - BearerAuth: []
-      parameters:
-      - name: eventCode
-        in: path
-        required: true
-        schema:
-          type: string
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/EventPhotoUploadRequest'
-      responses:
-        '200':
-          description: Presigned URL + photoId
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/EventPhotoUploadResponse'
-              examples:
-                default:
-                  summary: generated from the schema and captured sub-values
-                  value:
-                    photoId: 3f2b8c1e-5d4a-4e6b-9a7c-1b2d3e4f5a6b
-                    uploadUrl: https://www.batbern.ch/
-                    s3Key: uploads/2026/sample/file.png
-                    expiresIn: 1
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-  /events/{eventCode}/photos/confirm:
-    post:
-      tags:
-      - Event Photos
-      summary: Confirm photo upload and persist record
-      operationId: confirmEventPhotoUpload
-      security:
-      - BearerAuth: []
-      parameters:
-      - name: eventCode
-        in: path
-        required: true
-        schema:
-          type: string
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/EventPhotoConfirmRequest'
-      responses:
-        '200':
-          description: Photo confirmed and stored
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/EventPhotoResponse'
-              examples:
-                default:
-                  summary: generated from the schema and captured sub-values
-                  value:
-                    id: 51ae2297-44ab-4364-9fd7-36c4dd95daa8
-                    eventCode: BATbern58
-                    displayUrl: https://cdn.batbern.ch/events/BATbern58/photos/51ae2297-44ab-4364-9fd7-36c4dd95daa8.jpg
-                    filename: 51ae2297-44ab-4364-9fd7-36c4dd95daa8.jpg
-                    uploadedBy: b3d43852-e071-707b-c4e7-1ca6257dba68
-                    uploadedAt: "2026-06-12T09:01:58.796642Z"
-                    sortOrder: 0
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
   /events/{eventCode}/photos/{photoId}:
     delete:
       tags:
@@ -212,123 +131,8 @@ paths:
         '403':
           $ref: '#/components/responses/Forbidden'
 
-  /materials/presigned-url:
-    post:
-      tags:
-        - Materials Upload
-      summary: Generate a presigned URL for a session-material upload
-      description: 'Story 5.9 (3-phase upload, phase 1). ORGANIZER or SPEAKER role.'
-      operationId: generateMaterialPresignedUrl
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/MaterialUploadRequest'
-      responses:
-        '200':
-          description: Presigned upload URL + metadata
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PresignedMaterialUploadUrl'
-              examples:
-                default:
-                  summary: generated from the schema and captured sub-values
-                  value:
-                    uploadUrl: https://www.batbern.ch/
-                    fileId: 3f2b8c1e-5d4a-4e6b-9a7c-1b2d3e4f5a6b
-                    s3Key: uploads/2026/sample/file.png
-                    fileExtension: png
-                    expiresInMinutes: 1
-                    requiredHeaders:
-                      key: uploads/2026/sample/file.png
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-      security:
-        - BearerAuth: []
-
-  /materials/{uploadId}/confirm:
-    post:
-      tags:
-        - Materials Upload
-      summary: Confirm a completed material upload
-      description: 'Story 5.9 (3-phase upload, phase 2). ORGANIZER or SPEAKER role.'
-      operationId: confirmMaterialUpload
-      parameters:
-        - name: uploadId
-          in: path
-          required: true
-          description: Upload ID returned from the presigned-url step
-          schema:
-            type: string
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/MaterialUploadConfirmRequest'
-      responses:
-        '204':
-          description: Upload confirmed
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-      security:
-        - BearerAuth: []
-
 components:
   schemas:
-    MaterialUploadRequest:
-      type: object
-      description: Request a presigned URL for a material upload (Story 5.9)
-      required:
-        - fileName
-        - fileSize
-        - mimeType
-      properties:
-        fileName:
-          type: string
-        fileSize:
-          type: integer
-          format: int64
-        mimeType:
-          type: string
-    MaterialUploadConfirmRequest:
-      type: object
-      description: Confirm a completed material upload (Story 5.9)
-      properties:
-        fileId:
-          type: string
-        fileExtension:
-          type: string
-        checksum:
-          type: string
-    PresignedMaterialUploadUrl:
-      type: object
-      description: Presigned material upload URL + metadata (Story 5.9)
-      properties:
-        uploadUrl:
-          type: string
-        fileId:
-          type: string
-        s3Key:
-          type: string
-        fileExtension:
-          type: string
-        expiresInMinutes:
-          type: integer
-        requiredHeaders:
-          type: object
-          additionalProperties:
-            type: string
     EventPhotoResponse:
       type: object
       required:
@@ -358,52 +162,6 @@ components:
           format: date-time
         sortOrder:
           type: integer
-    EventPhotoUploadRequest:
-      type: object
-      required:
-      - filename
-      - contentType
-      - fileSize
-      properties:
-        filename:
-          type: string
-        contentType:
-          type: string
-          description: 'MIME type of the photo. Validated server-side against the allowed set
-            (image/jpeg, image/png, image/webp) with a friendly 400 message; kept as a free
-            string (not a wire enum) so the service stays the single validation authority.'
-          example: image/jpeg
-        fileSize:
-          type: integer
-          format: int64
-    EventPhotoUploadResponse:
-      type: object
-      required:
-      - photoId
-      - uploadUrl
-      - s3Key
-      - expiresIn
-      properties:
-        photoId:
-          type: string
-          format: uuid
-        uploadUrl:
-          type: string
-        s3Key:
-          type: string
-        expiresIn:
-          type: integer
-    EventPhotoConfirmRequest:
-      type: object
-      required:
-      - photoId
-      - s3Key
-      properties:
-        photoId:
-          type: string
-          format: uuid
-        s3Key:
-          type: string
   responses:
     BadRequest:
       description: Bad request - validation error

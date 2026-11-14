@@ -1,0 +1,27 @@
+meta {
+  name: PUT the material to the presigned URL
+  type: http
+  seq: 22
+}
+
+put {
+  url: {{materialUploadUrl}}
+  body: text
+  auth: none
+}
+
+headers {
+  Content-Type: application/pdf
+}
+
+body:text {
+  PDF!
+}
+
+assert {
+  res.status: eq 200
+}
+
+docs {
+  Straight to S3 (MinIO locally), no Authorization header: the presigned URL is the credential.
+}

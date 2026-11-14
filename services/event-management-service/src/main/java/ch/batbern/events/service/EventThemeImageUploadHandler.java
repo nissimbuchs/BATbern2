@@ -9,12 +9,8 @@ import ch.batbern.shared.upload.UploadPurposeHandler;
 import ch.batbern.shared.upload.UploadRecord;
 import ch.batbern.shared.upload.UploadRules;
 import lombok.RequiredArgsConstructor;
-import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.stereotype.Component;
-
-import java.time.LocalDate;
-import java.time.ZoneOffset;
 
 /**
  * Purpose {@code event-theme-image} (Story 17.11): the theme image of an event, organizers only. It
@@ -71,11 +67,15 @@ public class EventThemeImageUploadHandler implements UploadPurposeHandler {
         return String.format("logos/temp/%s/theme-%s.%s", uploadId, uploadId, extension);
     }
 
-    /** Unchanged layout: {@code logos/{year}/events/{eventCode}/theme-{uploadId}.{ext}}. */
+    /**
+     * {@code logos/events/{eventCode}/theme-{uploadId}.{ext}}: no year (Story 17.11a, the upload year
+     * means nothing and caused a rollover bug). Theme images stored earlier keep their
+     * {@code logos/{year}/…} key and URL.
+     */
     @Override
     public String finalKey(UploadRecord upload, String eventCode) {
-        return String.format("logos/%d/events/%s/theme-%s.%s", LocalDate.now(ZoneOffset.UTC).getYear(), eventCode,
-                upload.getUploadId(), upload.getFileExtension());
+        return String.format("logos/events/%s/theme-%s.%s", eventCode, upload.getUploadId(),
+                upload.getFileExtension());
     }
 
     @Override
@@ -85,14 +85,7 @@ public class EventThemeImageUploadHandler implements UploadPurposeHandler {
         event.setThemeImageUploadId(upload.getUploadId());
         event.setThemeImageUrl(upload.getFileUrl());
         eventRepository.save(event);
-        evict(CacheConfig.EVENT_WITH_INCLUDES_CACHE);
-        evict(CacheConfig.ARCHIVE_EVENTS_CACHE);
-    }
-
-    private void evict(String name) {
-        Cache cache = cacheManager.getCache(name);
-        if (cache != null) {
-            cache.clear();
-        }
+        CacheConfig.clearAfterCommit(cacheManager, CacheConfig.EVENT_WITH_INCLUDES_CACHE,
+                CacheConfig.ARCHIVE_EVENTS_CACHE);
     }
 }

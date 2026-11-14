@@ -1,0 +1,27 @@
+meta {
+  name: PUT the photo to the presigned URL
+  type: http
+  seq: 2
+}
+
+put {
+  url: {{photoUploadUrl}}
+  body: text
+  auth: none
+}
+
+headers {
+  Content-Type: image/jpeg
+}
+
+body:text {
+  JPG!
+}
+
+assert {
+  res.status: eq 200
+}
+
+docs {
+  Straight to S3 (MinIO locally), no Authorization header: the presigned URL is the credential.
+}

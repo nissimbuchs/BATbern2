@@ -33,6 +33,6 @@ assert {
 }
 
 docs {
-  The gateway routes /uploads/{purpose} by the purpose prefix (company-, event-); no service owns
-  any other purpose.
+  The gateway routes /uploads/{purpose} by an explicit map of purpose to service (Story 17.11a);
+  an unlisted purpose has no route.
 }

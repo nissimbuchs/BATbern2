@@ -34,8 +34,8 @@ public class AvatarImportConfig {
     }
 
     /**
-     * HTTP client for fetching the Google avatar (timeouts mirror the admin
-     * upload-from-url endpoint in {@code UserController}).
+     * HTTP client for fetching the Google avatar (timeouts mirror the default client of
+     * {@code ImageUrlFetcher}, which the upload import {@code POST /uploads/{purpose}/import} uses).
      *
      * <p>{@code Redirect.NEVER} (12.12 review, finding #8): the SSRF guard validates the
      * host of the INITIAL URL only, so following a cross-host 3xx would silently defeat

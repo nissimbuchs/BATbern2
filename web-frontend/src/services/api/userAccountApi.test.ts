@@ -8,7 +8,8 @@
  * which changes only the fields sent.
  */
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { HttpResponse } from 'msw';
+import { http, HttpResponse } from 'msw';
+import { server } from '@/test/msw/server';
 import { api } from '@/test/msw/api';
 import type { UserSettingsResponse } from './userApi';
 import {
@@ -17,8 +18,7 @@ import {
   updateUserPreferences,
   updateUserSettings,
   removeProfilePicture,
-  requestPresignedUrl,
-  confirmUpload,
+  uploadProfilePicture,
 } from './userAccountApi';
 import { aUser } from '@/test/fixtures';
 
@@ -216,13 +216,34 @@ describe('updateUserSettings (privacy, PATCH /users/me/settings)', () => {
 });
 
 describe('profile picture', () => {
-  const upload = {
-    uploadUrl: 'https://s3.example.com/upload',
-    fileId: 'file-abc',
-    s3Key: 'users/hong.an/picture.jpg',
-    fileExtension: 'jpg',
-    expiresInMinutes: 15,
-    requiredHeaders: { 'Content-Type': 'image/png' },
+  const S3_PUT = 'https://s3.example.com/upload';
+
+  /** Presign, S3 and confirm answer; returns the Content-Type headers S3 received. */
+  const pictureUploadAnswers = (fileUrl: string | null) => {
+    const s3Puts: string[] = [];
+    server.use(
+      http.put(S3_PUT, ({ request }) => {
+        s3Puts.push(request.headers.get('Content-Type') ?? '');
+        return new HttpResponse(null, { status: 200 });
+      })
+    );
+    api.on(
+      'createFileUpload',
+      () => ({
+        uploadId: 'upload-1',
+        uploadUrl: S3_PUT,
+        expiresAt: '2026-11-13T10:15:00Z',
+        requiredHeaders: { 'Content-Type': 'image/jpeg' },
+      }),
+      { status: 201 }
+    );
+    api.on('confirmFileUpload', () => ({
+      uploadId: 'upload-1',
+      purpose: 'profile-picture' as const,
+      status: fileUrl ? ('ASSOCIATED' as const) : ('CONFIRMED' as const),
+      fileUrl,
+    }));
+    return s3Puts;
   };
 
   it('removes the picture of the given user', async () => {
@@ -241,83 +262,58 @@ describe('profile picture', () => {
     });
   });
 
-  it('requests a presigned URL and maps fileId and uploadUrl', async () => {
-    const now = Date.now();
-    vi.spyOn(Date, 'now').mockReturnValue(now);
-    api.on('requestProfilePictureUploadUrlForUser', () => upload);
+  it('uploads the own picture on the upload contract and returns its CDN URL', async () => {
+    const s3Puts = pictureUploadAnswers('https://cdn.example.com/photo.jpg');
+    const file = new File(['content'], 'Porträt.JPG', { type: 'image/jpeg' });
 
-    const result = await requestPresignedUrl('hong.an', {
-      fileName: 'photo.jpg',
-      fileSize: 1024,
-      mimeType: 'image/jpeg',
-    });
+    const url = await uploadProfilePicture('hong.an', file);
 
-    expect(api.calls('requestProfilePictureUploadUrlForUser')[0].params).toEqual({
-      username: 'hong.an',
+    expect(url).toBe('https://cdn.example.com/photo.jpg');
+    expect(api.calls('createFileUpload')[0].params).toEqual({ purpose: 'profile-picture' });
+    expect(api.calls('createFileUpload')[0].body).toEqual({
+      fileName: 'Porträt.JPG',
+      contentType: 'image/jpeg',
+      size: file.size,
+      target: { username: 'hong.an' },
     });
-    expect(api.calls('requestProfilePictureUploadUrlForUser')[0].body).toEqual({
-      fileName: 'photo.jpg',
-      fileSize: 1024,
-      mimeType: 'image/jpeg',
-    });
-    expect(result).toEqual({
-      uploadId: 'file-abc',
-      presignedUrl: 'https://s3.example.com/upload',
-      s3Key: 'users/hong.an/picture.jpg',
-      expiresAt: new Date(now + 15 * 60 * 1000).toISOString(),
-    });
-  });
-
-  it('confirms the upload and maps profilePictureUrl to cloudFrontUrl', async () => {
-    api.on('confirmProfilePictureUploadForUser', () => ({
-      profilePictureUrl: 'https://cdn.example.com/photo.jpg',
-    }));
-
-    const result = await confirmUpload('hong.an', 'upload-1', {
-      fileExtension: 'jpg',
-      checksum: '',
-    });
-
-    expect(api.calls('confirmProfilePictureUploadForUser')[0].params).toEqual({
-      username: 'hong.an',
-    });
-    expect(api.calls('confirmProfilePictureUploadForUser')[0].body).toEqual({
-      fileId: 'upload-1',
-      fileExtension: 'jpg',
-      checksum: '',
-    });
-    expect(result).toEqual({
+    expect(s3Puts).toEqual(['image/jpeg']);
+    expect(api.calls('confirmFileUpload')[0].params).toEqual({
+      purpose: 'profile-picture',
       uploadId: 'upload-1',
-      status: 'CONFIRMED',
-      cloudFrontUrl: 'https://cdn.example.com/photo.jpg',
+    });
+    expect(api.calls('confirmFileUpload')[0].body).toEqual({ target: { username: 'hong.an' } });
+  });
+
+  it('uploads the picture of another user (organizer) with that user as target', async () => {
+    pictureUploadAnswers('https://cdn.example.com/pic.jpg');
+
+    await uploadProfilePicture(
+      'matthias.keller',
+      new File(['x'], 'pic.jpg', { type: 'image/jpeg' })
+    );
+
+    expect(api.calls('createFileUpload')[0].body).toMatchObject({
+      target: { username: 'matthias.keller' },
+    });
+    expect(api.calls('confirmFileUpload')[0].body).toEqual({
+      target: { username: 'matthias.keller' },
     });
   });
 
-  it('requests and confirms a picture for another user (organizer)', async () => {
-    api.on('requestProfilePictureUploadUrlForUser', () => upload);
-    api.on('confirmProfilePictureUploadForUser', () => ({
-      profilePictureUrl: 'https://cdn.example.com/pic.jpg',
-    }));
+  it('fails when the confirm did not attach the picture', async () => {
+    pictureUploadAnswers(null);
 
-    const requested = await requestPresignedUrl('matthias.keller', {
-      fileName: 'pic.png',
-      fileSize: 2048,
-      mimeType: 'image/png',
-    });
-    const confirmed = await confirmUpload('matthias.keller', 'upload-99', {
-      fileExtension: 'png',
-      checksum: 'abc123',
-    });
+    await expect(
+      uploadProfilePicture('hong.an', new File(['x'], 'pic.jpg', { type: 'image/jpeg' }))
+    ).rejects.toThrow('not attached');
+  });
 
-    expect(api.calls('requestProfilePictureUploadUrlForUser')[0].params).toEqual({
-      username: 'matthias.keller',
-    });
-    expect(requested.uploadId).toBe('file-abc');
-    expect(api.calls('confirmProfilePictureUploadForUser')[0].body).toEqual({
-      fileId: 'upload-99',
-      fileExtension: 'png',
-      checksum: 'abc123',
-    });
-    expect(confirmed.cloudFrontUrl).toBe('https://cdn.example.com/pic.jpg');
+  it('passes a refusal of the reservation through (another user, not an organizer)', async () => {
+    api.on('createFileUpload', () => HttpResponse.json({ status: 403 }, { status: 403 }));
+
+    await expect(
+      uploadProfilePicture('matthias.keller', new File(['x'], 'pic.jpg', { type: 'image/jpeg' }))
+    ).rejects.toMatchObject({ response: { status: 403 } });
+    expect(api.calls('confirmFileUpload')).toHaveLength(0);
   });
 });

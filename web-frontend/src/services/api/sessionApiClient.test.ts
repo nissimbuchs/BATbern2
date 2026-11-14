@@ -79,20 +79,18 @@ describe('sessionApiClient', () => {
     });
 
     it('should_postMaterials_when_associated', async () => {
-      const material = {
-        uploadId: 'up-1',
-        materialType: 'PRESENTATION',
-        fileName: 'Präsentation Brünnimann.pdf',
-        fileExtension: 'pdf',
-        fileSize: 500_000,
-        mimeType: 'application/pdf',
-      };
+      // Story 17.11d: confirmed session-material uploads only; name, size and type come from the
+      // upload, the material type is derived when omitted.
+      const materials = [
+        { uploadId: 'up-1', materialType: 'PRESENTATION' as const },
+        { uploadId: 'up-2' },
+      ];
 
-      await sessionApiClient.associateMaterials(EVENT, 'session-1', { materials: [material] });
+      await sessionApiClient.associateMaterials(EVENT, 'session-1', { materials });
 
       const [call] = api.calls('associateMaterials');
       expect(call.params).toEqual({ eventCode: EVENT, sessionSlug: 'session-1' });
-      expect(call.body).toEqual({ materials: [material] });
+      expect(call.body).toEqual({ materials });
     });
 
     it('should_returnDownloadUrl_when_requested', async () => {

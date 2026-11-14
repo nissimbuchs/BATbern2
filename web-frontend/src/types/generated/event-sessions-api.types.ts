@@ -572,7 +572,7 @@ export interface paths {
     put?: never;
     /**
      * Associate uploaded materials with a session
-     * @description Associate 1-10 already-uploaded materials with a session (Story 5.9).
+     * @description Attaches 1-10 confirmed uploads of purpose `session-material` to the session (Story 17.11d): the organizer's session editor, which confirms its uploads without a target and attaches them on save. Name, size and content type come from the upload. An unknown, expired, other-purpose or other-session `uploadId` is 404, one that is not CONFIRMED 409. An upload for an existing session is attached by the confirm with its target instead (`uploads-api`).
      *
      *     **Authorization**: ORGANIZER (any session) or SPEAKER (own sessions only).
      */
@@ -614,7 +614,7 @@ export interface paths {
     };
     /**
      * Get a presigned download URL for a material
-     * @description Generate a time-limited presigned download URL for a single material (Story 5.9). Public endpoint.
+     * @description Generate a time-limited presigned download URL for a single material (Story 5.9). The file is saved under the material's original file name (`Content-Disposition`, Story 17.11d). Public endpoint.
      */
     get: operations['getMaterialDownloadUrl'];
     put?: never;
@@ -1042,39 +1042,19 @@ export interface components {
        */
       extractionStatus: string;
     };
-    /** @description Story 5.9: one already-uploaded material to associate with a session. Carries the upload correlation id from the presigned-URL step plus the file metadata. */
+    /** @description One confirmed upload of purpose `session-material` (`uploads-api`, Story 17.11d) to attach to the session. Name, size and type come from the upload. */
     MaterialUploadItem: {
       /**
-       * @description Upload correlation id from MaterialsUploadService presigned-URL generation
-       * @example upload-2026-0001
+       * @description A CONFIRMED upload of purpose `session-material`, reserved without a target or for this session
+       * @example 3f2b8c1e-5d4a-4e6b-9a7c-1b2d3e4f5a6b
        */
       uploadId: string;
       /**
-       * @description Material classification (PRESENTATION, DOCUMENT, VIDEO, ARCHIVE, OTHER)
+       * @description The organizer's classification; when omitted, derived from the upload's content type. Ignored for a speaker, whose materials are always PRESENTATION.
        * @example PRESENTATION
+       * @enum {string}
        */
-      materialType: string;
-      /**
-       * @description Original uploaded file name
-       * @example slides.pdf
-       */
-      fileName: string;
-      /**
-       * @description File extension without the dot
-       * @example pdf
-       */
-      fileExtension: string;
-      /**
-       * Format: int64
-       * @description File size in bytes
-       * @example 2097152
-       */
-      fileSize: number;
-      /**
-       * @description MIME type of the material
-       * @example application/pdf
-       */
-      mimeType: string;
+      materialType?: 'PRESENTATION' | 'DOCUMENT' | 'VIDEO' | 'ARCHIVE' | 'OTHER';
     };
     /** @description Story 5.9: associate 1-10 already-uploaded materials with a session. */
     SessionMaterialAssociationRequest: {
@@ -2565,6 +2545,15 @@ export interface operations {
         content?: never;
       };
       404: components['responses']['NotFound'];
+      /** @description An upload is not CONFIRMED (still pending, or already attached) */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
       500: components['responses']['InternalServerError'];
     };
   };

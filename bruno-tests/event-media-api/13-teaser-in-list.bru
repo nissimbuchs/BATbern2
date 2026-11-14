@@ -1,0 +1,33 @@
+meta {
+  name: The teaser image is listed for the event
+  type: http
+  seq: 13
+}
+
+get {
+  url: {{baseUrl}}/events/{{photoEventCode}}/teaser-images
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("should list the uploaded teaser image", function() {
+    const key = "/teaser/" + bru.getVar("teaserUploadId") + ".png";
+    const image = res.getBody().find(i => i.imageUrl.endsWith(key));
+    expect(image).to.not.equal(undefined);
+    expect(image.presentationPosition).to.equal("AFTER_TOPIC_REVEAL");
+    bru.setVar("teaserImageId", image.id);
+  });
+}
+
+docs {
+  Organizer read, unchanged by Story 17.11c.
+}

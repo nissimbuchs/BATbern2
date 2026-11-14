@@ -116,19 +116,36 @@ stateDiagram-v2
 ```
 
 - **Endpoints** (`uploads-api`): `POST /uploads/{purpose}`, `POST /uploads/{purpose}/{uploadId}/confirm`,
-  `POST /uploads/{purpose}/import`. The gateway routes by the purpose prefix (`company-…` CUMS,
-  `event-…` EMS). Purposes today: `company-logo` (CUMS, also the logo requests of #1246) and
-  `event-theme-image` (EMS). Profile pictures, event photos, teaser images and session materials
-  follow in Stories 17.11a–d.
+  `POST /uploads/{purpose}/import`. The gateway routes by purpose (an explicit map, Story 17.11a).
+  Purposes today: `company-logo` (CUMS, also the logo requests of #1246), `profile-picture` (CUMS,
+  target `username` required, 17.11a), `event-theme-image` (EMS), `event-photo` (EMS, target
+  `eventCode` required, 17.11b), `teaser-image` (EMS, target `eventCode` required, `_global` for
+  the global set, 17.11c) and `session-material` (EMS, target `eventCode` + `sessionSlug`, optional,
+  17.11d).
+  Final keys carry no year since 17.11a.
 - **Columns:** `upload_id` (the handle), `purpose`, `s3_key` (temp, then final), `file_url` (CDN URL
-  once attached), `file_extension`, `file_size`, `content_type`, `status` (`pending`, `confirmed`,
+  once attached), `file_name` (the original name, CUMS V33 / EMS V156, null for uploads made before
+  17.11d), `file_extension`, `file_size`, `content_type`, `status` (`pending`, `confirmed`,
   `associated`, lower case), `target_type` and `target_id` (e.g. `COMPANY` / company name,
-  `LOGO_REQUEST`, `EVENT` / event code), `created_by`, `expires_at`. A check constraint ties
-  `associated` to a target, a file URL and no expiry.
-- **Rules:** per purpose in its handler; logos and theme images: png, jpeg, svg up to 5 MB.
-- **S3 keys** (layouts unchanged): temporary `logos/temp/{uploadId}/logo-{uploadId}.{ext}` (theme
-  image: `theme-…`); final `logos/{year}/companies/{name}/logo-{uploadId}.{ext}`,
-  `logos/requests/{uploadId}/logo.{ext}` and `logos/{year}/events/{eventCode}/theme-{uploadId}.{ext}`.
+  `LOGO_REQUEST`, `EVENT` / event code, `EVENT_TEASER` / event code or `_global`, `SESSION` / `{eventCode}/{sessionSlug}`; set on a PENDING row already when the create named a target,
+  and a confirm for another target is 404, Story 17.11b), `created_by`, `expires_at`. A check
+  constraint ties `associated` to a file URL and no expiry (and a target).
+- **Rules:** per purpose in its handler; logos, theme images and profile pictures: png, jpeg, svg up
+  to 5 MB; event photos: jpeg, png, webp up to 10 MB; teaser images: jpeg, png, webp, svg up to
+  10 MB (no limit before 17.11c, the old presign signed no size), at most 10 per event and 10 global;
+  session materials by the caller's role: organizers 100 MB (presentations, documents, videos,
+  archives), speakers 50 MB (pptx, ppt, key, pdf).
+- **S3 keys:** temporary `logos/temp/{uploadId}/logo-{uploadId}.{ext}` (theme image: `theme-…`) and
+  `profile-pictures/temp/{uploadId}/profile-{uploadId}.{ext}`, `events/temp/{uploadId}/photo-{uploadId}.{ext}`, `events/temp/{uploadId}/teaser-{uploadId}.{ext}`, `materials/temp/{uploadId}/file-{uploadId}.{ext}`; final
+  `logos/companies/{name}/logo-{uploadId}.{ext}`, `logos/requests/{uploadId}/logo.{ext}`,
+  `logos/events/{eventCode}/theme-{uploadId}.{ext}` and
+  `profile-pictures/{username}/profile-{uploadId}.{ext}` (also the Google avatar import),
+  `events/{eventCode}/photos/{uploadId}.{ext}` (the layout photos had before),
+  `events/{eventCode}/teaser/{uploadId}.{ext}` and `global/teaser/{uploadId}.{ext}` (the layout
+  teaser images had before), `materials/events/{eventCode}/sessions/{sessionSlug}/file-{uploadId}.{ext}`.
+  No year since Story 17.11a; objects stored earlier keep their `logos/{year}/…`,
+  `profile-pictures/{year}/…` and `materials/{year}/…` keys, and the rows (`companies.logo_s3_key`,
+  `user_profiles.profile_picture_s3_key`, the URLs) hold the full key.
 - **Expiry:** `UploadExpiryJob` per service (CUMS 02:00, EMS 02:15, ShedLock) deletes PENDING past
   24 hours and CONFIRMED past 7 days with their S3 object; a failed S3 delete keeps the row for the
   next night and counts `batbern.uploads.expiry.failures`.
@@ -137,9 +154,22 @@ stateDiagram-v2
   decision; the S3 objects stay, and `companies.logo_url` and `events.theme_image_url` still point at
   them. Nothing was copied from it (no upload was in flight, owner 2026-11-12). An EMS ArchUnit rule
   (`EmsDataOwnershipTest`) holds that no EMS entity maps `logos` or `company_user_uploads`.
-- **Not yet on the contract:** user profile pictures (`ProfilePictureService`, keys
-  `profile-pictures/{year}/{username}/...`), session materials, event photos and teaser images,
-  each with its own table or columns until its story moves it.
+- **Profile pictures** are on the contract since Story 17.11a (purpose `profile-picture`, target
+  `username` required, rows in `company_user_uploads` with `target_type` `USER`). The Google avatar
+  import stores server-side through `ProfilePictureService` without an upload row.
+- **Event photos** are on the contract since Story 17.11b (purpose `event-photo`, rows in
+  `event_management_uploads` with `target_type` `EVENT`); the confirm creates the `event_photos` row
+  (photo id = upload id).
+- **Teaser images** are on the contract since Story 17.11c (purpose `teaser-image`, rows with
+  `target_type` `EVENT_TEASER`); the confirm creates the `event_teaser_images` row (event code null
+  for `_global`), last in display order. Deleting a teaser image deletes its upload row (found by
+  its S3 key; images added before 17.11c have none).
+- **Session materials** are on the contract since Story 17.11d (purpose `session-material`, rows
+  with `target_type` `SESSION`); the confirm with the target creates the `session_materials` row
+  with the upload's name, size and type, and `POST …/sessions/{sessionSlug}/materials` attaches
+  uploads confirmed before the session existed. The server-side batch import
+  (`uploadMaterialFromUrl`) writes its object directly, without an upload row. Every purpose of
+  ADR-002 except `mail-attachment` is on the contract.
 
 ### User
 

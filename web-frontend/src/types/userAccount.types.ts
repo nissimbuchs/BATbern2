@@ -89,23 +89,3 @@ export interface UserProfileData {
   settings: UserSettingsView;
   activity: UserActivity[];
 }
-
-// Profile picture upload types (ADR-002); the request body is the generated
-// ProfilePictureUploadRequest (user-api).
-export interface LogoUploadResponse {
-  uploadId: string;
-  presignedUrl: string;
-  expiresAt: string;
-  s3Key: string;
-}
-
-export interface LogoConfirmRequest {
-  fileExtension: string;
-  checksum: string;
-}
-
-export interface LogoConfirmResponse {
-  uploadId: string;
-  status: 'CONFIRMED';
-  cloudFrontUrl: string;
-}

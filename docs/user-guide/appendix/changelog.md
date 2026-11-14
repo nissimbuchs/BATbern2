@@ -59,6 +59,27 @@ Only items that are not live yet. Everything else is listed under its release be
 - ✅ "Upcoming events" on the participant dashboard no longer stays empty without a registration. It shows three events: every upcoming event you are registered for first (with its registration status), then the next events you are not registered for, until there are three. Registered for more than three, you see all of them and no others.
 - ✅ The cards are the ones of the homepage section "Nächste BAT-Termine". A published event links to its event page, where you register. An event not yet published shows code, title and date only, without a link.
 
+**Improvement — Session materials on the upload contract (Epic 17, 17.11d)**:
+- ✅ Organizers add materials in the session editor (Materials tab) and speakers upload their slides in the speaker portal as before, through the same upload flow as photos, logos and teaser images. The limits stay: organizers 100 MB per file (presentations, documents, videos, archives), speakers 50 MB (PPTX, PPT, KEY, PDF).
+- ✅ New: a material keeps the name of the uploaded file, taken from the upload itself, and a download is saved under that name (it was `file-<id>.pdf`). An upload is reserved first and expires if never finished (the nightly cleanup deletes it with its file), and an upload started for one session cannot land on another. A speaker can only upload to a session they are on.
+- ⚠️ API, breaking for scripts: purpose `session-material` with target `{eventCode, sessionSlug}` on `POST /api/v1/uploads/session-material` and its confirm (the confirm with the target creates the material). `POST /api/v1/materials/presigned-url`, `POST /api/v1/materials/{uploadId}/confirm`, `POST /api/v1/speaker-portal/events/{eventCode}/materials/presigned-url` and `.../materials/confirm` are gone (404). `POST /api/v1/events/{eventCode}/sessions/{sessionSlug}/materials` takes only `{uploadId, materialType?}` per material (`materialType` is ignored for speakers, always PRESENTATION). Deleting a material with a session slug of another event answers 404. Listing is unchanged.
+
+**Improvement — Teaser images on the upload contract (Epic 17, 17.11c)**:
+- ✅ Adding teaser images on the event settings tab and global teaser images in Administration works as before (JPEG, PNG, WebP, SVG), through the same upload flow as photos and logos. New: a teaser image may be at most 10 MB.
+- ✅ New: an upload is reserved first and expires if never finished (the nightly cleanup deletes it with its file), and it is bound to the event (or the global set) it was started for, so it cannot land on another one. The limit of 10 per event and 10 global is now checked when the upload starts, so the 11th fails before the file is sent, and again when it is added.
+- ⚠️ API, breaking for scripts: purpose `teaser-image` with target `{eventCode}` (required, `_global` for the global set) on `POST /api/v1/uploads/teaser-image` and its confirm; a full set answers 409 (was 422). `POST /api/v1/events/{eventCode}/teaser-images/upload-url` and `.../teaser-images/confirm` are gone (405). Listing, position change and deleting are unchanged.
+
+**Improvement — Event photos on the upload contract (Epic 17, 17.11b)**:
+- ✅ Uploading photos on the Wrap-up tab of an event works as before (JPEG, PNG, WebP up to 10 MB), through the same upload flow as logos and profile pictures.
+- ✅ A photo is only added once its file has really arrived in storage, and only to the event it was started for. Uploads that are never finished are deleted by the nightly cleanup.
+- ⚠️ API, breaking for scripts: purpose `event-photo` with target `{eventCode}` (required) on `POST /api/v1/uploads/event-photo` and its confirm. `POST /api/v1/events/{eventCode}/photos/upload-url` and `.../photos/confirm` are gone (405). Listing, deleting and the homepage photos are unchanged.
+
+**Improvement — Profile pictures on the upload contract (Epic 17, 17.11a)**:
+- ✅ Changing your own picture (account page, speaker portal), an organizer changing another user's picture and the speaker batch import with portrait URLs work as before, through the same upload flow as company logos.
+- ✅ A picture is only attached once the file has really arrived in storage. Before, a picture uploaded just before New Year and confirmed just after it pointed at a missing file: the storage path no longer contains the year (also for new company logos and theme images; files stored earlier keep their address).
+- ✅ Reserved uploads that are never finished are deleted by the nightly cleanup, as for logos.
+- ⚠️ API, breaking for scripts: purpose `profile-picture` with target `{username}` (required) on `POST /api/v1/uploads/profile-picture` and its confirm; the speaker import uses `POST /api/v1/uploads/profile-picture/import`, then the confirm with the target. `POST /api/v1/users/{username}/picture/presigned-url`, `.../picture/confirm` and `.../profile-picture/upload-from-url` answer 404. `DELETE /api/v1/users/{username}/picture` stays.
+
 **Improvement — One upload contract, company logos and theme images (Epic 17, 17.11)**:
 - ✅ Company logos (create form, company edit, batch import and the logo request on the profile) and event theme images upload through one shared flow. Nothing changes on the page, except that the preview right after choosing a file now shows the file itself.
 - ✅ A participant without the speaker or partner role can upload the logo for a logo request again (the upload step refused them since the role checks of October).

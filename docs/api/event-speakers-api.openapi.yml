@@ -1527,93 +1527,6 @@ paths:
       security:
       - BearerAuth: []
 
-  /speaker-portal/events/{eventCode}/materials/presigned-url:
-    post:
-      tags:
-        - Speaker Portal Content
-      summary: Request a presigned S3 URL for a material upload
-      description: 'Story 6.3 material upload. SPEAKER role (pool ownership enforced).'
-      operationId: generatePresignedUrl
-      parameters:
-        - $ref: '#/components/parameters/SpeakerPortalEventCode'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/SpeakerMaterialUploadRequest'
-      responses:
-        '200':
-          description: Presigned upload URL + metadata
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SpeakerMaterialUploadResponse'
-              examples:
-                default:
-                  summary: generated from the schema and captured sub-values
-                  value:
-                    uploadUrl: https://www.batbern.ch/
-                    uploadId: 3f2b8c1e-5d4a-4e6b-9a7c-1b2d3e4f5a6b
-                    s3Key: uploads/2026/sample/file.png
-                    fileExtension: png
-                    expiresInMinutes: 1
-                    requiredHeaders:
-                      key: uploads/2026/sample/file.png
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-      security:
-      - BearerAuth: []
-
-  /speaker-portal/events/{eventCode}/materials/confirm:
-    post:
-      tags:
-        - Speaker Portal Content
-      summary: Confirm a completed material upload
-      description: 'Story 6.3 material confirm (moves the object into place). SPEAKER role.'
-      operationId: confirmUpload
-      parameters:
-        - $ref: '#/components/parameters/SpeakerPortalEventCode'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/SpeakerMaterialConfirmRequest'
-      responses:
-        '201':
-          description: Material confirmed
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SpeakerMaterialConfirmResponse'
-              examples:
-                default:
-                  summary: generated from the schema and captured sub-values
-                  value:
-                    materialId: 3f2b8c1e-5d4a-4e6b-9a7c-1b2d3e4f5a6b
-                    uploadId: 3f2b8c1e-5d4a-4e6b-9a7c-1b2d3e4f5a6b
-                    fileName: Sample name
-                    cloudFrontUrl: https://www.batbern.ch/
-                    materialType: sample
-                    uploadedAt: "2026-05-14T16:00:00Z"
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-      security:
-      - BearerAuth: []
-
 components:
   parameters:
     SpeakerPortalEventCode:
@@ -2797,6 +2710,12 @@ components:
         sessionTitle:
           nullable: true
           type: string
+        sessionSlug:
+          nullable: true
+          type: string
+          description: |
+            The slug of the speaker's session, the target of a `session-material` upload
+            (`uploads-api`, Story 17.11d); null without an assigned session.
         canSubmitContent:
           type: boolean
         hasDraft:
@@ -2859,82 +2778,6 @@ components:
         presentationUploadId:
           type: string
           maxLength: 200
-    SpeakerMaterialUploadRequest:
-      type: object
-      description: Request a presigned URL for a material upload
-      required:
-        - fileName
-        - fileSize
-        - mimeType
-      properties:
-        fileName:
-          type: string
-        fileSize:
-          type: integer
-          format: int64
-        mimeType:
-          type: string
-    SpeakerMaterialUploadResponse:
-      type: object
-      description: Presigned upload URL + metadata
-      properties:
-        uploadUrl:
-          type: string
-        uploadId:
-          type: string
-        s3Key:
-          type: string
-        fileExtension:
-          type: string
-        expiresInMinutes:
-          type: integer
-        requiredHeaders:
-          type: object
-          additionalProperties:
-            type: string
-          description: Headers the client must send on the presigned PUT
-    SpeakerMaterialConfirmRequest:
-      type: object
-      description: Confirm a completed material upload
-      required:
-        - uploadId
-        - fileName
-        - fileExtension
-        - fileSize
-        - mimeType
-      properties:
-        uploadId:
-          type: string
-        fileName:
-          type: string
-        fileExtension:
-          type: string
-        fileSize:
-          type: integer
-          format: int64
-        mimeType:
-          type: string
-        materialType:
-          type: string
-          description: Defaults to PRESENTATION when omitted
-    SpeakerMaterialConfirmResponse:
-      type: object
-      description: Result of confirming a material upload
-      properties:
-        materialId:
-          type: string
-          format: uuid
-        uploadId:
-          type: string
-        fileName:
-          type: string
-        cloudFrontUrl:
-          type: string
-        materialType:
-          type: string
-        uploadedAt:
-          type: string
-          format: date-time
   responses:
     Conflict:
       description: Conflict - the speaker has already responded

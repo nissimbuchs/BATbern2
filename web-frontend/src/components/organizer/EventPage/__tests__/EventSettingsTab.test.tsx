@@ -13,15 +13,10 @@ import i18n from '@/i18n/config';
 import { EventSettingsTab } from '../EventSettingsTab';
 import type { Event } from '@/types/event.types';
 import { anEvent } from '@/test/fixtures';
+import { HttpResponse } from 'msw';
+import { api } from '@/test/msw/api';
 
-// Mock event API client
-vi.mock('@/services/eventApiClient', () => ({
-  eventApiClient: {
-    deleteEvent: vi.fn(() => Promise.resolve()),
-    cancelEvent: vi.fn(() => Promise.resolve()),
-  },
-}));
-
+// HTTP on the MSW harness: the real eventApiClient runs (Story 17.11c moved this off vi.mock).
 // Mock useNavigate
 const mockNavigate = vi.fn();
 vi.mock('react-router-dom', async () => {
@@ -237,6 +232,7 @@ describe('EventSettingsTab Component (Story 5.6)', () => {
     });
 
     it('should_navigateToEvents_when_deleteConfirmed', async () => {
+      api.on('deleteEvent', () => new HttpResponse(null, { status: 204 }));
       renderWithProviders(<EventSettingsTab event={mockEvent} eventCode="BAT54" />);
 
       const deleteButton = screen.getByRole('button', { name: /Delete Event/i });
@@ -253,6 +249,7 @@ describe('EventSettingsTab Component (Story 5.6)', () => {
       await waitFor(() => {
         expect(mockNavigate).toHaveBeenCalledWith('/organizer/events');
       });
+      expect(api.calls('deleteEvent')[0].params).toEqual({ eventCode: 'BAT54' });
     });
   });
 });

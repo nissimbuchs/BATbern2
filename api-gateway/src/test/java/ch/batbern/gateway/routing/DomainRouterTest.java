@@ -75,7 +75,7 @@ class DomainRouterTest {
     @Test
     @DisplayName("should_routeUploadsByPurpose_when_uploadsEndpointCalled")
     void should_routeUploadsByPurpose_when_uploadsEndpointCalled() {
-        // Story 17.11: the purpose prefix names the owning service
+        // Story 17.11a: an explicit map of purpose to owning service (no prefix rule)
         assertThat(domainRouter.determineTargetService("/api/v1/uploads/company-logo"))
                 .isEqualTo("company-user-management-service");
         assertThat(domainRouter.determineTargetService("/api/v1/uploads/company-logo/abc/confirm"))
@@ -86,6 +86,27 @@ class DomainRouterTest {
                 .isEqualTo("event-management-service");
         assertThat(domainRouter.determineTargetService("/api/v1/uploads/event-theme-image/abc/confirm"))
                 .isEqualTo("event-management-service");
+        assertThat(domainRouter.determineTargetService("/api/v1/uploads/profile-picture"))
+                .isEqualTo("company-user-management-service");
+        assertThat(domainRouter.determineTargetService("/api/v1/uploads/profile-picture/abc/confirm"))
+                .isEqualTo("company-user-management-service");
+        assertThat(domainRouter.determineTargetService("/api/v1/uploads/profile-picture/import"))
+                .isEqualTo("company-user-management-service");
+        // Story 17.11b
+        assertThat(domainRouter.determineTargetService("/api/v1/uploads/event-photo"))
+                .isEqualTo("event-management-service");
+        assertThat(domainRouter.determineTargetService("/api/v1/uploads/event-photo/abc/confirm"))
+                .isEqualTo("event-management-service");
+        // Story 17.11c
+        assertThat(domainRouter.determineTargetService("/api/v1/uploads/teaser-image"))
+                .isEqualTo("event-management-service");
+        assertThat(domainRouter.determineTargetService("/api/v1/uploads/teaser-image/abc/confirm"))
+                .isEqualTo("event-management-service");
+        // Story 17.11d
+        assertThat(domainRouter.determineTargetService("/api/v1/uploads/session-material"))
+                .isEqualTo("event-management-service");
+        assertThat(domainRouter.determineTargetService("/api/v1/uploads/session-material/abc/confirm"))
+                .isEqualTo("event-management-service");
     }
 
     @Test
@@ -95,10 +116,20 @@ class DomainRouterTest {
                 .isInstanceOf(RouteNotFoundException.class);
         assertThatThrownBy(() -> domainRouter.determineTargetService("/api/v1/uploads/"))
                 .isInstanceOf(RouteNotFoundException.class);
+        // Fails closed: a prefix alone names no owner any more (Story 17.11a)
+        assertThatThrownBy(() -> domainRouter.determineTargetService("/api/v1/uploads/event-unknown"))
+                .isInstanceOf(RouteNotFoundException.class);
+        assertThatThrownBy(() -> domainRouter.determineTargetService("/api/v1/uploads/company-unknown/x/confirm"))
+                .isInstanceOf(RouteNotFoundException.class);
         // The six /logos operations are gone with Story 17.11
         assertThatThrownBy(() -> domainRouter.determineTargetService("/api/v1/logos/presigned-url"))
                 .isInstanceOf(RouteNotFoundException.class);
         assertThatThrownBy(() -> domainRouter.determineTargetService("/api/v1/logos/upload-from-url"))
+                .isInstanceOf(RouteNotFoundException.class);
+        // The /materials presign and confirm are gone with Story 17.11d
+        assertThatThrownBy(() -> domainRouter.determineTargetService("/api/v1/materials/presigned-url"))
+                .isInstanceOf(RouteNotFoundException.class);
+        assertThatThrownBy(() -> domainRouter.determineTargetService("/api/v1/materials/abc/confirm"))
                 .isInstanceOf(RouteNotFoundException.class);
     }
 

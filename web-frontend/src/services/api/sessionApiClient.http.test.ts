@@ -1,89 +1,42 @@
 /**
- * Session API: company sessions and material uploads
+ * Session API over HTTP: company sessions (the other operations, the association of uploaded
+ * materials included, are in sessionApiClient.test.ts).
  *
- * On MockAdapter(apiClient). Kept apart from sessionApiClient.test.ts, which mocks the
- * apiClient module.
+ * The real apiClient runs against the MSW harness (Epic 17 test fidelity): every request is
+ * checked against event-sessions-api and each test reads what went over the wire.
  */
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import MockAdapter from 'axios-mock-adapter';
-import apiClient from './apiClient';
-import { materialUploadTarget, sessionApiClient } from './sessionApiClient';
+import { describe, it, expect } from 'vitest';
+import { HttpResponse } from 'msw';
+import { api } from '@/test/msw/api';
+import { sessionApiClient } from './sessionApiClient';
+
+const pagination = {
+  page: 1,
+  limit: 50,
+  totalItems: 1,
+  totalPages: 1,
+  hasNext: false,
+  hasPrev: false,
+};
 
 describe('sessionApiClient over HTTP', () => {
-  let http: MockAdapter;
-
-  beforeEach(() => {
-    http = new MockAdapter(apiClient);
-  });
-
-  afterEach(() => {
-    http.restore();
-  });
-
   describe('listSessionsByCompany', () => {
     it('should_getSessionsOfCompany_when_called', async () => {
       const sessions = [{ sessionSlug: 's1', eventCode: 'BATbern56', title: 'T', speakers: [] }];
-      http.onGet('/sessions').reply(200, { data: sessions });
+      api.on('searchSessionsByCompany', () => ({ data: sessions, pagination }));
 
-      await expect(sessionApiClient.listSessionsByCompany('acme')).resolves.toEqual(sessions);
-      expect(http.history.get[0].params).toEqual({ companyName: 'acme', limit: 50 });
-    });
-
-    it('should_returnEmptyList_when_noDataField', async () => {
-      http.onGet('/sessions').reply(200, {});
-
-      await expect(sessionApiClient.listSessionsByCompany('acme')).resolves.toEqual([]);
+      await expect(sessionApiClient.listSessionsByCompany('Müller AG')).resolves.toEqual(sessions);
+      const query = api.calls('searchSessionsByCompany')[0].query;
+      expect(query.get('companyName')).toBe('Müller AG');
+      expect(query.get('limit')).toBe('50');
     });
 
     it('should_passErrorThrough_when_requestFails', async () => {
-      http.onGet('/sessions').reply(500);
+      api.on('searchSessionsByCompany', () => HttpResponse.json({ status: 500 }, { status: 500 }));
 
       await expect(sessionApiClient.listSessionsByCompany('acme')).rejects.toMatchObject({
         response: { status: 500 },
-      });
-    });
-  });
-
-  describe('materialUploadTarget', () => {
-    it('should_presignAtMaterials_when_presign', async () => {
-      const presigned = {
-        uploadUrl: 'https://s3.example.com/put',
-        fileId: 'mat-1',
-        s3Key: 'materials/temp/mat-1/talk.pdf',
-        fileExtension: 'pdf',
-        expiresInMinutes: 15,
-        requiredHeaders: {},
-      };
-      http.onPost('/materials/presigned-url').reply(200, presigned);
-
-      await expect(
-        materialUploadTarget.presign({
-          fileName: 'talk.pdf',
-          fileSize: 99,
-          mimeType: 'application/pdf',
-        })
-      ).resolves.toEqual(presigned);
-      expect(JSON.parse(http.history.post[0].data)).toEqual({
-        fileName: 'talk.pdf',
-        fileSize: 99,
-        mimeType: 'application/pdf',
-      });
-    });
-
-    it('should_confirmAtMaterials_when_confirm', async () => {
-      http.onPost('/materials/mat-1/confirm').reply(200, {});
-
-      await materialUploadTarget.confirm('mat-1', {
-        fileId: 'mat-1',
-        fileExtension: 'pdf',
-        checksum: 'c',
-      });
-
-      expect(JSON.parse(http.history.post[0].data)).toEqual({
-        fileId: 'mat-1',
-        fileExtension: 'pdf',
-        checksum: 'c',
       });
     });
   });

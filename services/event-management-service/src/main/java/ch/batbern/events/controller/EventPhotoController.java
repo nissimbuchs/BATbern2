@@ -1,11 +1,7 @@
 package ch.batbern.events.controller;
 
 import ch.batbern.events.media.api.generated.EventPhotosApi;
-import ch.batbern.events.media.dto.generated.EventPhotoConfirmRequest;
 import ch.batbern.events.media.dto.generated.EventPhotoResponse;
-import ch.batbern.events.media.dto.generated.EventPhotoUploadRequest;
-import ch.batbern.events.media.dto.generated.EventPhotoUploadResponse;
-import ch.batbern.events.security.SecurityContextHelper;
 import ch.batbern.events.service.EventPhotoService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,7 +23,8 @@ import java.util.UUID;
  * bean-validation, so this class only supplies {@code /api/v1} as the prefix and the
  * method bodies.
  * <p>
- * Mixed auth: public GET endpoints + ORGANIZER-only write endpoints.
+ * Mixed auth: public GET endpoints + ORGANIZER-only delete. Uploads go through the upload
+ * contract, purpose {@code event-photo} (Story 17.11b).
  * The homepage sample is {@code GET /public/event-photos} (Story 4.10b; it was
  * {@code /events/recent-photos}, a literal in the {@code {eventCode}} namespace).
  */
@@ -38,7 +35,6 @@ import java.util.UUID;
 public class EventPhotoController implements EventPhotosApi {
 
     private final EventPhotoService photoService;
-    private final SecurityContextHelper securityContextHelper;
 
     /**
      * Public: recent photos from last N events (homepage marquee). AC5.
@@ -60,30 +56,6 @@ public class EventPhotoController implements EventPhotosApi {
     }
 
     /**
-     * Organizer: request presigned PUT URL for photo upload (phase 1 of 3). AC2.
-     */
-    @Override
-    @PreAuthorize("hasRole('ORGANIZER')")
-    public ResponseEntity<EventPhotoUploadResponse> requestEventPhotoUploadUrl(
-            String eventCode,
-            EventPhotoUploadRequest eventPhotoUploadRequest) {
-        String username = resolveUsername();
-        return ResponseEntity.ok(photoService.requestUploadUrl(eventCode, eventPhotoUploadRequest, username));
-    }
-
-    /**
-     * Organizer: confirm upload — verify S3 presence and persist record (phase 3 of 3). AC2.
-     */
-    @Override
-    @PreAuthorize("hasRole('ORGANIZER')")
-    public ResponseEntity<EventPhotoResponse> confirmEventPhotoUpload(
-            String eventCode,
-            EventPhotoConfirmRequest eventPhotoConfirmRequest) {
-        String username = resolveUsername();
-        return ResponseEntity.ok(photoService.confirmUpload(eventCode, eventPhotoConfirmRequest, username));
-    }
-
-    /**
      * Organizer: delete a photo (DB record + S3 object, best-effort). AC3.
      */
     @Override
@@ -91,16 +63,5 @@ public class EventPhotoController implements EventPhotosApi {
     public ResponseEntity<Void> deleteEventPhoto(String eventCode, UUID photoId) {
         photoService.deletePhoto(eventCode, photoId);
         return ResponseEntity.noContent().build();
-    }
-
-    /**
-     * The uploader's CANONICAL username (ADR-003), or {@code "system"} when unauthenticated.
-     * Uses {@link SecurityContextHelper#getCurrentUsernameOrNull()} (custom:username claim +
-     * Pattern 3b twin DB fallback) rather than {@code authentication.getName()}, which returns
-     * the Cognito {@code sub} (a UUID) and would mis-attribute uploaded photos.
-     */
-    private String resolveUsername() {
-        String username = securityContextHelper.getCurrentUsernameOrNull();
-        return username != null ? username : "system";
     }
 }

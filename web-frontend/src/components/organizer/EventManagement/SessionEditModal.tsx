@@ -47,7 +47,8 @@ import { useTranslation } from 'react-i18next';
 import { isAxiosError } from 'axios';
 import type { SessionUI, SessionMaterial } from '@/types/event.types';
 import { FileUpload, type UploadedFile } from '@/components/shared/FileUpload/FileUpload';
-import { materialUploadTarget, sessionApiClient } from '@/services/api/sessionApiClient';
+import { sessionApiClient } from '@/services/api/sessionApiClient';
+import { uploadTarget } from '@/services/uploadService';
 import { SessionSpeakersTab } from './SessionSpeakersTab';
 import { isStructuralSession } from '@/utils/sessionTypes';
 
@@ -110,35 +111,9 @@ const MAX_ABSTRACT_LENGTH = 5000;
 const MIN_SESSION_DURATION = 15; // minutes
 const MAX_SESSION_DURATION = 480; // 8 hours
 
-// Helper: Map MIME type to material type enum
-const getMaterialTypeFromMimeType = (mimeType: string): string => {
-  if (mimeType.startsWith('video/')) {
-    return 'VIDEO';
-  } else if (
-    mimeType.includes('powerpoint') ||
-    mimeType.includes('presentation') ||
-    mimeType.includes('keynote')
-  ) {
-    return 'PRESENTATION';
-  } else if (
-    mimeType === 'application/pdf' ||
-    mimeType.includes('document') ||
-    mimeType === 'text/plain'
-  ) {
-    return 'DOCUMENT';
-  } else if (mimeType.includes('zip') || mimeType.includes('gzip') || mimeType.includes('tar')) {
-    return 'ARCHIVE';
-  } else {
-    return 'OTHER';
-  }
-};
-
-// Helper: Extract file extension from filename (without dot)
-const getFileExtension = (fileName: string): string => {
-  const lastDot = fileName.lastIndexOf('.');
-  if (lastDot === -1) return '';
-  return fileName.substring(lastDot + 1).toLowerCase();
-};
+// Story 17.11d: purpose session-material, confirmed without a target; handleSave hands the
+// uploadIds to associateMaterials, so the materials are attached on save and a cancel attaches none.
+const sessionMaterialUpload = uploadTarget('session-material');
 
 // Extract HH:mm from ISO 8601 timestamp
 const extractTimeFromISO = (isoString: string | null | undefined): string => {
@@ -312,14 +287,9 @@ export const SessionEditModal: React.FC<SessionEditModalProps> = ({
 
       // Story 5.9: Save uploaded materials if any
       if (uploadedMaterials.length > 0) {
-        const materials = uploadedMaterials.map((file) => ({
-          uploadId: file.uploadId,
-          materialType: getMaterialTypeFromMimeType(file.fileType),
-          fileName: file.fileName,
-          fileExtension: getFileExtension(file.fileName),
-          fileSize: file.fileSize,
-          mimeType: file.fileType,
-        }));
+        // Story 17.11d: name, size and type come from the confirmed upload; the backend derives
+        // the material type from the content type.
+        const materials = uploadedMaterials.map((file) => ({ uploadId: file.uploadId }));
 
         await sessionApiClient.associateMaterials(session.eventCode, session.sessionSlug, {
           materials,
@@ -644,7 +614,7 @@ export const SessionEditModal: React.FC<SessionEditModalProps> = ({
                 multiple={true}
                 maxFiles={10}
                 uploadedFiles={uploadedMaterials}
-                uploadTarget={materialUploadTarget} // Story 5.9: Use materials endpoint
+                uploadTarget={sessionMaterialUpload} // Story 17.11d: confirmed without a target, attached on save
               />
             </Box>
 

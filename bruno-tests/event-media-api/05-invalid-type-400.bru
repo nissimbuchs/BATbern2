@@ -1,0 +1,44 @@
+meta {
+  name: Reserve - a GIF is 400
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{baseUrl}}/uploads/event-photo
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "fileName": "bruno-photo.gif",
+    "contentType": "image/gif",
+    "size": 1024,
+    "target": { "eventCode": "{{photoEventCode}}" }
+  }
+}
+
+assert {
+  res.status: eq 400
+}
+
+tests {
+  test("should name the allowed types", function() {
+    expect(res.getBody().message).to.include('allowed');
+  });
+}
+
+docs {
+  Event photos: jpeg, png, webp up to 10 MB (as before Story 17.11b).
+}

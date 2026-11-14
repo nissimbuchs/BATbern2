@@ -264,10 +264,10 @@ sequenceDiagram
   ([ADR-007](./ADR-007-unified-user-profile.md)). Google sign-in through Cognito federation; the
   pre-signup trigger links a Google identity to an existing profile with the same email
   ([ADR-010](./ADR-010-federated-identity-via-cognito.md)).
-- **Routing table** (from `DomainRouter`): `/api/v1/uploads/{purpose}` goes by the purpose prefix
-  (`company-…` to CUMS, `event-…` to EMS, any other 404; Story 17.11); `/api/v1/watch/pair` and
+- **Routing table** (from `DomainRouter`): `/api/v1/uploads/{purpose}` goes by an explicit purpose map
+  (`company-logo`, `profile-picture` to CUMS, `event-theme-image`, `event-photo`, `teaser-image`, `session-material` to EMS, any other 404; Story 17.11 to 17.11d); `/api/v1/watch/pair` and
   `/watch/authenticate` go to CUMS, the rest of `/api/v1/watch` to EMS; `events`, `event-types`, `registrations`, `topics`,
-  `tasks`, `notifications`, `materials`, `speaker-portal`, `attendee-portal`, `sessions`,
+  `tasks`, `notifications`, `speaker-portal`, `attendee-portal`, `sessions`,
   `email-templates`, `analytics`, `newsletter`, `thanks`, `conversations`, `mails`, `ai`,
   `public/settings/features` and `public/events` go to EMS; `partners`, `partner-meetings` and
   `attendees/topics` go to PCS; `companies`, `users`, the other
@@ -312,7 +312,7 @@ flowchart TB
         C1["Events and workflow<br/>EventController, EventWorkflowController,<br/>EventTypeController, AgendaConfigController,<br/>PublishingEngineController"]
         C2["Sessions and agenda<br/>SessionController, GlobalSessionController,<br/>SlotAssignmentController, TimetableController"]
         C3["Speaker workflow<br/>EventSpeakerPoolController, SpeakerStatusController,<br/>SpeakerInvitationController, SpeakerOutreachController,<br/>SpeakerReminderController, SessionSpeakerController"]
-        C4["Speaker portal<br/>SpeakerPortal*Controller, MaterialsUploadController,<br/>SessionMaterialsController"]
+        C4["Speaker portal<br/>SpeakerPortal*Controller,<br/>SessionMaterialsController"]
         C5["Registrations<br/>EventController registration endpoints,<br/>ParticipantsController, DeregistrationController"]
         C6["Attendee contributions<br/>SelfNominationController, OrganizerThanksController,<br/>EventQnaController, SessionQnaController,<br/>AttendeeDashboardController"]
         C7["Tasks<br/>EventTaskController, TaskTemplateController"]
