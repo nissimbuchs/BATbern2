@@ -21,6 +21,7 @@ import ch.batbern.shared.utils.EmailAddresses;
 import ch.batbern.events.exception.RegistrationCapacityExceededException;
 import ch.batbern.events.exception.DeregistrationClosedException;
 import ch.batbern.events.exception.RegistrationClosedException;
+import ch.batbern.events.exception.RegistrationProfileIncompleteException;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.RegistrationRepository;
 import ch.batbern.events.specification.RegistrationSpecification;
@@ -877,7 +878,7 @@ public class RegistrationService {
             boolean missingLast = userProfile.getLastName() == null
                     || userProfile.getLastName().isBlank();
             if (missingFirst || missingLast) {
-                throw new ch.batbern.events.exception.IncompleteProfileException(
+                throw new RegistrationProfileIncompleteException(
                         username, missingFirst, missingLast);
             }
         }

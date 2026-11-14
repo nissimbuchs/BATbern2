@@ -96,16 +96,16 @@ public class GlobalExceptionHandler {
     }
 
     /**
-     * Handle IncompleteProfileException — authenticated user tried to register
+     * Handle RegistrationProfileIncompleteException — authenticated user tried to register
      * for an event but their profile is missing first or last name.
      *
      * Returns HTTP 409 Conflict with {@code code = "profile_incomplete"} and
      * details about which fields are missing. Frontend reads this to show an
      * inline profile-completion form and retry the registration.
      */
-    @ExceptionHandler(IncompleteProfileException.class)
-    public ResponseEntity<ErrorResponse> handleIncompleteProfileException(
-            IncompleteProfileException ex,
+    @ExceptionHandler(RegistrationProfileIncompleteException.class)
+    public ResponseEntity<ErrorResponse> handleRegistrationProfileIncompleteException(
+            RegistrationProfileIncompleteException ex,
             HttpServletRequest request) {
         log.info("Refused authenticated registration — profile incomplete: {}", ex.getMessage());
 
@@ -314,30 +314,6 @@ public class GlobalExceptionHandler {
             TopicNotFoundException ex,
             HttpServletRequest request) {
         log.warn("Topic not found: {}", ex.getMessage());
-
-        ErrorResponse error = ErrorResponse.builder()
-                .timestamp(Instant.now())
-                .path(request.getRequestURI())
-                .status(HttpStatus.NOT_FOUND.value())
-                .error("Not Found")
-                .message(ex.getMessage())
-                .correlationId(CorrelationIdGenerator.current())
-                .severity("LOW")
-                .build();
-
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
-    }
-
-    /**
-     * Handle SpeakerNotFoundException (speaker not found in speaker pool)
-     * Returns HTTP 404 Not Found
-     * Story 5.3: Speaker Outreach Tracking
-     */
-    @ExceptionHandler(SpeakerNotFoundException.class)
-    public ResponseEntity<ErrorResponse> handleSpeakerNotFoundException(
-            SpeakerNotFoundException ex,
-            HttpServletRequest request) {
-        log.warn("Speaker not found: {}", ex.getMessage());
 
         ErrorResponse error = ErrorResponse.builder()
                 .timestamp(Instant.now())
@@ -672,29 +648,6 @@ public class GlobalExceptionHandler {
                 .build();
 
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
-    }
-
-    /**
-     * Handle WorkflowException (invalid workflow state transition)
-     * Returns HTTP 422 Unprocessable Entity with WORKFLOW_ERROR code
-     */
-    @ExceptionHandler(WorkflowException.class)
-    public ResponseEntity<ErrorResponse> handleWorkflowException(
-            WorkflowException ex,
-            HttpServletRequest request) {
-        log.warn("Workflow error: {}", ex.getMessage());
-
-        ErrorResponse error = ErrorResponse.builder()
-                .timestamp(Instant.now())
-                .path(request.getRequestURI())
-                .status(HttpStatus.UNPROCESSABLE_ENTITY.value())
-                .error("Unprocessable Entity")
-                .message(ex.getMessage())
-                .correlationId(CorrelationIdGenerator.current())
-                .severity("HIGH")
-                .build();
-
-        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(error);
     }
 
     /**

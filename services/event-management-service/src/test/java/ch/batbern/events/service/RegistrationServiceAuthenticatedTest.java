@@ -4,7 +4,7 @@ import ch.batbern.events.client.UserApiClient;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.core.dto.generated.EventType;
 import ch.batbern.events.dto.generated.users.UserResponse;
-import ch.batbern.events.exception.IncompleteProfileException;
+import ch.batbern.events.exception.RegistrationProfileIncompleteException;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.RegistrationRepository;
 import ch.batbern.shared.types.EventWorkflowState;
@@ -99,7 +99,7 @@ class RegistrationServiceAuthenticatedTest {
         assertThatThrownBy(() ->
                 registrationService.createRegistrationForAuthenticatedUser(
                         "BATbern59", "user.tom", "tom@windshop.ch"))
-                .isInstanceOf(IncompleteProfileException.class)
+                .isInstanceOf(RegistrationProfileIncompleteException.class)
                 .extracting("missingFirstName", "missingLastName")
                 .containsExactly(true, false);
 
@@ -113,7 +113,7 @@ class RegistrationServiceAuthenticatedTest {
         assertThatThrownBy(() ->
                 registrationService.createRegistrationForAuthenticatedUser(
                         "BATbern59", "user.tom", "tom@windshop.ch"))
-                .isInstanceOf(IncompleteProfileException.class)
+                .isInstanceOf(RegistrationProfileIncompleteException.class)
                 .extracting("missingFirstName", "missingLastName")
                 .containsExactly(false, true);
 
@@ -127,7 +127,7 @@ class RegistrationServiceAuthenticatedTest {
         assertThatThrownBy(() ->
                 registrationService.createRegistrationForAuthenticatedUser(
                         "BATbern59", "user.tom", "tom@windshop.ch"))
-                .isInstanceOf(IncompleteProfileException.class)
+                .isInstanceOf(RegistrationProfileIncompleteException.class)
                 .extracting("missingFirstName", "missingLastName")
                 .containsExactly(true, true);
     }
@@ -140,7 +140,7 @@ class RegistrationServiceAuthenticatedTest {
         assertThatThrownBy(() ->
                 registrationService.createRegistrationForAuthenticatedUser(
                         "BATbern59", "user.tom", "tom@windshop.ch"))
-                .isInstanceOf(IncompleteProfileException.class);
+                .isInstanceOf(RegistrationProfileIncompleteException.class);
     }
 
     @Test
