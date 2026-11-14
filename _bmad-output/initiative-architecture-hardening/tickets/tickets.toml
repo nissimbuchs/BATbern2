@@ -42,11 +42,9 @@ after = [
 id = 5
 slug = "epic-ems-walls"
 title = "EMS has walls a build checks"
-description = "An accepted EMS modularization design, then registrations, exceptions, mail core and event core moved behind ArchUnit rules, with the module script showing fewer violations than the 2026-11-07 baseline."
-covers = ["R17", "R18", "R19", "R20", "R21"]
+description = "The two largest EMS files are split: registration endpoints leave EventController for their own controller (17.13), and domain exceptions carry their status and error code through a base class so GlobalExceptionHandler maps no domain exception (17.14), each guarded by an ArchUnit rule and with behaviour unchanged. Narrowed by the owner 2026-11-14: no modularization design, mail core split, extension points or package moves."
+covers = ["R18", "R19"]
 after = [
-  { epic = 1, needs = "17.5 ArchUnit freeze and its first wall fixes (inbound mail chain, retention schedulers and dev mail controller in forwarding/mailcenter, JwtStompInterceptor in security, ModeratorReplyAddress in mailcenter/render, mail-center exception handlers out of GlobalExceptionHandler), the store 17.12 designs from; 16.8c clean-up before 17.15 splits mail core from mail center" },
   { epic = 2, needs = "17.0a ratchet baseline settled before 17.13 moves registration tests" },
-  { epic = 3, needs = "17.7 and 17.8 done in mail center and InboundEmailRouter before 17.15 splits mail core from mail center" },
   { epic = 4, needs = "17.10's folding of batch_registrations and enroll-stakeholders before 17.13 moves the registration endpoints" },
 ]

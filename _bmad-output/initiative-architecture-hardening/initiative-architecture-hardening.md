@@ -11,7 +11,6 @@ companions:
   - docs/architecture/ADR-016-service-directions-and-service-to-service-calls.md
   - docs/architecture/ADR-002-generic-file-upload-service.md
   - docs/architecture/ADR-003-meaningful-identifiers-public-apis.md
-  - docs/plans/ems-modularization-extension-points.md
   - _bmad-output/implementation-artifacts/16-8-shared-composer.md
 after: []
 risk: high
@@ -45,11 +44,8 @@ Developers and agents working on BATbern find one endpoint, one transport and on
 - R14 (17.9): tasks, app settings and user settings each have one endpoint to change state. `analyze-abstract` sits under the event and is event-scoped.
 - R15 (17.10): no `me` / `{username}` twins remain for pictures and profile. One speaker path key is used across the specs. `batch_registrations`, `enroll-stakeholders` and `my-subscription` are folded into their resources.
 - R16 (17.11): one upload contract, `/api/v1/uploads/{purpose}` in shared-kernel, carries `company-logo` live, including logo requests. The old `/logos` upload operations are gone, and EMS no longer reads or writes `logos`.
-- R17 (17.12): the owner accepts `docs/architecture/ems-modularization.md`, with target packages, move order, release slicing for 17.13 to 17.16 and a defined freeze baseline for the full layering.
 - R18 (17.13): `EventController` holds no registration endpoints, and all registration paths behave as before.
 - R19 (17.14): `GlobalExceptionHandler` imports no domain class, and every exception keeps its status and error code.
-- R20 (17.15): mail core depends on no mail-center class. Delivery status, "What went out" and the moderator Reply-To behave as before.
-- R21 (17.16): event core depends on no L3+ module, and all workflow transitions behave as before.
 - R22 (owner 2026-11-08, PRD "Not stories yet"): after 17.11, the purposes profile-picture, event-photo, teaser-image and session-material (organizer and speaker portal) run on `/api/v1/uploads/{purpose}` in production, one story each, and their old presign, confirm and upload-from-url operations are gone.
 - R23 (owner 2026-11-08, API conventions III): the notification state changes are PATCH operations, the AI prompt reset deletes the override, session batch import is a bulk create, no path carries an e-mail address (additional e-mails), event types sit at `/event-types`, recent photos and the cross-event registrations list sit outside `/events/{literal}`, and get-or-create uses the slash form (ADR-013 §2).
 - R24 (owner 2026-11-08, ADR-013 §1): the event lifecycle (publish, phase publish and unpublish, auto-publish schedule, workflow transition) has one transition idiom in the specs, the other operations folded into it, and publishing still reaches the public site.
@@ -87,11 +83,12 @@ Developers and agents working on BATbern find one endpoint, one transport and on
 ## Boundaries
 
 - Out: the P5 pre-deploy gate (parked until 17.1 to 17.5 and 17.0a to 17.0d, `docs/plans/pre-deploy-gate-plan.md`).
-- Out: the `mail-attachment` upload purpose (the other four after `company-logo` are R22, owner 2026-11-08), the Watch API path changes (owner deciding), the remaining EMS module moves (planning, publishing, ai) after 17.12, and the follow-up reviews (action list item 9). Each becomes a story only after its predecessor proves the pattern.
+- Out: the `mail-attachment` upload purpose (the other four after `company-logo` are R22, owner 2026-11-08), the Watch API path changes (owner deciding), and the follow-up reviews (action list item 9). Each becomes a story only after its predecessor proves the pattern.
 - Out: 16.12 and 16.13 (archived), and converting every existing `@MockitoBean UserApiClient` at once (gradual, under the 17.0a touch rule).
+- Out (owner 2026-11-14): the EMS modularization: 17.12 (design), 17.15 (mail core split), 17.16 (event-core extension points), a Spring Modulith migration and module package moves. The 17.5 ArchUnit walls stay the guard; the 2 mail-core store lines stay frozen with no owning story.
 - Out: the target storage design in `docs/prd-enhanced.md` §4.2 (per-type buckets, ClamAV, quotas). 17.11 unifies the upload API on the one existing content bucket. §4.2 waits for the owner's strike/defer/rewrite decision (#1210).
 - Must not change: user-visible behaviour outside the breaking API stories. The registration wizard, the Mail Center sends, the topic canvas and the workflow transitions behave as before.
-- Tracer path: 17.1 clears the dead surface; the gates (17.3, 17.4, 17.5) and the test harness (17.0a to 17.0d) baseline it and fix what needs no later design (17.5's EMS moves, 3b's frontend calls); the decoupling and convention stories shrink the rest under the gates; 17.12 designs the EMS restructuring from the store 17.5 leaves.
+- Tracer path: 17.1 clears the dead surface; the gates (17.3, 17.4, 17.5) and the test harness (17.0a to 17.0d) baseline it and fix what needs no later design (17.5's EMS moves, 3b's frontend calls); the decoupling and convention stories shrink the rest under the gates; 17.13 and 17.14 split the two largest EMS files.
 
 ## References
 
@@ -101,7 +98,6 @@ Developers and agents working on BATbern find one endpoint, one transport and on
 - plan — `docs/plans/architecture-review-2026-11-actions.md` (action list, measured baseline)
 - plan — `docs/plans/test-fidelity-proposal-2026-11.md` (P1 to P4, the 57-bug classification)
 - architecture — `docs/architecture/module-map.md`, `docs/architecture/ADR-016-service-directions-and-service-to-service-calls.md`, `docs/architecture/ADR-002-generic-file-upload-service.md` (decision 2026-11-07), `docs/architecture/ADR-003-meaningful-identifiers-public-apis.md` (amendment 2026-11)
-- plan — `docs/plans/ems-modularization-extension-points.md` (input to 17.12)
 - story — 17.1 and 17.3 are v7 story files in `_bmad-output/initiative-architecture-hardening/tickets/epic-dead-surface-and-gates/tickets/` (converted from the v6 files 2026-11-07)
 - story — `_bmad-output/implementation-artifacts/16-8-shared-composer.md`, Part 16.8c, AC18, Dev Notes "Endpoints retired in 16.8c"
 
@@ -120,3 +116,4 @@ Developers and agents working on BATbern find one endpoint, one transport and on
 - Decision: 2026-11-08, owner. Every line of the 17.4 Spectral baseline names its owning story or an owner-accepted exception; all proposed exception classes accepted. The 20 lines no story owned (beside the 2 Watch API lines, owner still deciding) become backlog entries in epic 4: 11a to 11d (upload purposes profile-picture, event-photo, teaser-image, session-material) and 10b (API conventions III). New R22 and R23; Boundaries and Done when follow.
 - Decision: 2026-11-08, owner. Backlog story 9b in epic 4, one transition idiom for the event lifecycle (ADR-013 §1), after 17.9; new R24.
 - Decision: 2026-11-08, owner. Entry 3c in epic 1 (PRD 17.3c): a gate against hand-written copies of generated API types, from the last item of `deferred-work.md`; new R25. Built before 17.6: epic 3's wait on epic 1 names it.
+- Decision: 2026-11-14, owner. No EMS modularization: R17, R20 and R21 retired (ids not reused), 17.12, 17.15 and 17.16 dropped, no Spring Modulith migration or package moves. The 26 EMS fixes since 2026-09-14 are behaviour bugs, none from module coupling; the moves would cost about 350 files and four or more production deploys for no user value. Epic 5 keeps 17.13 and 17.14, the splits of `EventController` (2334 lines) and `GlobalExceptionHandler` (1486 lines). Spike and measurements: `tickets/epic-ems-walls/architecture-ems-walls/.memlog.md`.

@@ -3,7 +3,7 @@ title: 'Logged-in users see the features added since they last looked'
 type: 'feature'
 ticket: '2'
 created: '2026-11-13'
-status: 'built'
+status: done
 baseline_revision: 'a1496b5cc68a9e0e71d309ae20d271c79dd1dda6'
 route: 'full'
 route_source: 'auto'

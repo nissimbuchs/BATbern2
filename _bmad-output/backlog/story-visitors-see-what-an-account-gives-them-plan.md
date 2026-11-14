@@ -3,7 +3,7 @@ title: 'Visitors see what a BATbern account gives them before they create one'
 type: 'feature'
 ticket: '1'
 created: '2026-11-13'
-status: 'built'
+status: done
 baseline_revision: '60a0923dd58f96e7175060a80104598bcccdfb18'
 route: 'full'
 route_source: 'auto'
