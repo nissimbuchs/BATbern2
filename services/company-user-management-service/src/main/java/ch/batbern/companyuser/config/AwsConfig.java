@@ -1,5 +1,6 @@
 package ch.batbern.companyuser.config;
 
+import ch.batbern.shared.config.S3EndpointOverride;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -28,6 +29,16 @@ public class AwsConfig {
     @Value("${aws.region:eu-central-1}")
     private String awsRegion;
 
+    /** Pre-deploy gate only (MinIO); blank in production, where the CDK stacks never set it. */
+    @Value("${aws.s3.endpoint:}")
+    private String s3Endpoint;
+
+    @Value("${aws.s3.endpoint-access-key:}")
+    private String s3AccessKey;
+
+    @Value("${aws.s3.endpoint-secret-key:}")
+    private String s3SecretKey;
+
     @Bean
     @ConditionalOnMissingBean
     public AwsCredentialsProvider awsCredentialsProvider() {
@@ -38,9 +49,9 @@ public class AwsConfig {
     @ConditionalOnMissingBean
     public S3Client s3Client(AwsCredentialsProvider credentialsProvider) {
         log.info("Creating S3Client for region: {}", awsRegion);
-        return S3Client.builder()
+        return s3EndpointOverride().applyTo(S3Client.builder()
                 .region(Region.of(awsRegion))
-                .credentialsProvider(credentialsProvider)
+                .credentialsProvider(credentialsProvider))
                 .build();
     }
 
@@ -49,8 +60,16 @@ public class AwsConfig {
     public S3Presigner s3Presigner(S3Client s3Client) {
         log.info("Creating S3Presigner using S3Client for region: {}", awsRegion);
 
+        S3EndpointOverride override = s3EndpointOverride();
+        if (override.active()) {
+            return override.applyTo(S3Presigner.builder().region(Region.of(awsRegion))).build();
+        }
         // Create the presigner using the same configuration as S3Client
         return S3Presigner.create();
+    }
+
+    private S3EndpointOverride s3EndpointOverride() {
+        return new S3EndpointOverride(s3Endpoint, s3AccessKey, s3SecretKey);
     }
 
     @Bean

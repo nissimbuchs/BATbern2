@@ -1,6 +1,8 @@
 package ch.batbern.events.config;
 
+import ch.batbern.shared.config.S3EndpointOverride;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -22,6 +24,15 @@ import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 @Slf4j
 public class AwsConfig {
 
+    /** Pre-deploy gate only (MinIO); blank in production, where the CDK stacks never set it. */
+    private final S3EndpointOverride s3EndpointOverride;
+
+    public AwsConfig(@Value("${aws.s3.endpoint:}") String s3Endpoint,
+                     @Value("${aws.s3.endpoint-access-key:}") String s3AccessKey,
+                     @Value("${aws.s3.endpoint-secret-key:}") String s3SecretKey) {
+        this.s3EndpointOverride = new S3EndpointOverride(s3Endpoint, s3AccessKey, s3SecretKey);
+    }
+
     /**
      * S3 client for file operations (Production)
      * Used by the upload service (Story 17.11) and the media services to copy/delete files
@@ -29,9 +40,9 @@ public class AwsConfig {
     @Bean
     public S3Client s3Client() {
         log.info("Creating S3Client for AWS region: eu-central-1");
-        return S3Client.builder()
+        return s3EndpointOverride.applyTo(S3Client.builder()
                 .region(Region.EU_CENTRAL_1) // Bern, Switzerland region
-                .credentialsProvider(DefaultCredentialsProvider.builder().build())
+                .credentialsProvider(DefaultCredentialsProvider.builder().build()))
                 .build();
     }
 
@@ -57,9 +68,9 @@ public class AwsConfig {
     @Bean
     public S3Presigner s3Presigner() {
         log.info("Creating S3Presigner for AWS region: eu-central-1");
-        return S3Presigner.builder()
+        return s3EndpointOverride.applyTo(S3Presigner.builder()
                 .region(Region.EU_CENTRAL_1) // Bern, Switzerland region
-                .credentialsProvider(DefaultCredentialsProvider.builder().build())
+                .credentialsProvider(DefaultCredentialsProvider.builder().build()))
                 .build();
     }
 }

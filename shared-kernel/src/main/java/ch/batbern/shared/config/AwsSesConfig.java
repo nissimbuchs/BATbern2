@@ -5,9 +5,14 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.ses.SesClient;
+import software.amazon.awssdk.services.ses.SesClientBuilder;
+
+import java.net.URI;
 
 /**
  * AWS SES configuration for sending transactional emails.
@@ -21,11 +26,21 @@ import software.amazon.awssdk.services.ses.SesClient;
 @Slf4j
 public class AwsSesConfig {
 
+    /** Placeholder credentials for a fake SES: it ignores the signature, real SES never sees them. */
+    private static final String OVERRIDE_CREDENTIAL = "endpoint-override";
+
     @Value("${aws.region:eu-central-1}")
     private String awsRegion;
 
     @Value("${aws.profile:#{null}}")
     private String awsProfile;
+
+    /**
+     * Optional SES endpoint (env {@code BATBERN_SES_ENDPOINT}), for the pre-deploy gate's fake SES.
+     * Blank by default and never set by the CDK stacks, so production builds the client as before.
+     */
+    @Value("${batbern.ses.endpoint:}")
+    private String sesEndpoint;
 
     /**
      * AWS SES Client for production and staging only.
@@ -41,10 +56,23 @@ public class AwsSesConfig {
     public SesClient sesClient() {
         log.info("Initializing AWS SES client for region: {}, profile: {}",
                 awsRegion, awsProfile != null ? awsProfile : "default");
+        return buildSesClient(awsRegion, sesEndpoint);
+    }
 
-        return SesClient.builder()
-                .region(Region.of(awsRegion))
-                .credentialsProvider(DefaultCredentialsProvider.builder().build())
+    /**
+     * Builds the client. With an endpoint, it talks to that endpoint with placeholder credentials
+     * (a fake SES); without one, it is the production client: AWS SES, default credentials chain.
+     */
+    static SesClient buildSesClient(String region, String endpoint) {
+        SesClientBuilder builder = SesClient.builder().region(Region.of(region));
+        if (endpoint == null || endpoint.isBlank()) {
+            return builder.credentialsProvider(DefaultCredentialsProvider.builder().build()).build();
+        }
+        log.warn("SES endpoint override active: {} (pre-deploy gate only, never production)", endpoint.trim());
+        return builder
+                .endpointOverride(URI.create(endpoint.trim()))
+                .credentialsProvider(StaticCredentialsProvider.create(
+                        AwsBasicCredentials.create(OVERRIDE_CREDENTIAL, OVERRIDE_CREDENTIAL)))
                 .build();
     }
 }
