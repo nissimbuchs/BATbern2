@@ -1527,6 +1527,33 @@ flowchart LR
     MAN["organizer: Promote to Registered<br/>manuallyPromote, ignores capacity"] --> M
 ```
 
+**Organizer status changes (#1315).** `PATCH /events/{code}/registrations/{registrationCode}` takes
+a lower-case status from the spec enum (anything else is 400) and runs
+`RegistrationService.changeStatus`, one transaction with its side effects, by the table
+`STATUS_TRANSITIONS`. No status, or the current one, writes nothing. A change not in the table is
+409 `REGISTRATION_TRANSITION_NOT_ALLOWED`.
+
+| From \ To | registered | waitlist | confirmed | cancelled | attended | no_show |
+|---|---|---|---|---|---|---|
+| registered | no change | 409 | capacity check | promote | yes | yes |
+| waitlist | 409 | no change | as `POST .../promote`: ends `registered`, promotion mail | leaves the queue, renumber | 409 | 409 |
+| confirmed | 409 | 409 | no change | promote | yes | yes |
+| attended | 409 | 409 | yes (correction) | yes, no promotion | no change | yes |
+| no_show | 409 | 409 | yes (correction) | yes, no promotion | yes | no change |
+| cancelled | 409 | 409 | 409 | no change | 409 | 409 |
+
+- *Capacity check*: refused (409 `capacity_exceeded`, `activeCount`, `capacity`) while `registered` +
+  `confirmed` exceed the capacity; the registration to confirm already counts. Corrections from
+  `attended` or `no_show` take no capacity check: the event is over.
+- *Promote*: `promoteFromWaitlist(eventId)`, joining the transaction, only when the registration held
+  a place (`registered`, `confirmed`). Unlike an attendee's cancellation, the organizer's has no
+  deadline rule (#1238 E2).
+- *Renumber*: the remaining waitlist is numbered 1, 2, 3 again; nobody is promoted, the registration
+  held no place. Promotion itself still does not renumber.
+- BATbern60 attendance was recorded through this PATCH from `registered` (1 attended, 8 no-show), so
+  `registered` to `attended`/`no_show` stays allowed. The organizer menu offers Cancel for every
+  status but cancelled.
+
 Saving the capacity again unchanged is how an organizer fills places that are already free. A
 participant an organizer adds over the capacity (`force`) leaves `free` at or below zero, so a later
 cancellation does not pull someone in until a place is really free.

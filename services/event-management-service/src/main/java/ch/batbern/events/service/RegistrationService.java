@@ -22,7 +22,9 @@ import ch.batbern.events.exception.RegistrationAlreadyProcessedException;
 import ch.batbern.events.exception.RegistrationCapacityExceededException;
 import ch.batbern.events.exception.DeregistrationClosedException;
 import ch.batbern.events.exception.RegistrationClosedException;
+import ch.batbern.events.exception.RegistrationNotFoundException;
 import ch.batbern.events.exception.RegistrationProfileIncompleteException;
+import ch.batbern.events.exception.RegistrationStatusTransitionException;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.RegistrationRepository;
 import ch.batbern.events.specification.RegistrationSpecification;
@@ -585,6 +587,116 @@ public class RegistrationService {
 
     private static boolean isBlankOrLong(String value) {
         return value == null || value.isBlank() || value.length() > MAX_NAME;
+    }
+
+    /**
+     * The organizer's status changes (#1315): from a status to the statuses it may change to. The
+     * current status is always allowed (no change); nothing else is. Nothing changes to
+     * {@code registered} or {@code waitlist} here: those are set by registration and promotion.
+     * {@code attended} and {@code no_show} reach {@code confirmed} and {@code cancelled} as
+     * corrections after the event; BATbern60 attendance was recorded from {@code registered}.
+     * The side effects are in {@link #changeStatus}.
+     */
+    static final Map<String, Set<String>> STATUS_TRANSITIONS = Map.of(
+            "registered", Set.of("confirmed", "cancelled", "attended", "no_show"),
+            "waitlist", Set.of("confirmed", "cancelled"),
+            "confirmed", Set.of("cancelled", "attended", "no_show"),
+            "attended", Set.of("confirmed", "cancelled", "no_show"),
+            "no_show", Set.of("confirmed", "cancelled", "attended"),
+            "cancelled", Set.of());
+
+    /**
+     * The registration with this code, if it belongs to this event: 404 otherwise, the same answer
+     * for an unknown code and for a code of another event (its existence is not revealed).
+     */
+    @Transactional(readOnly = true)
+    public Registration findOfEvent(Event event, String registrationCode) {
+        return registrationRepository.findByRegistrationCode(registrationCode)
+                .filter(registration -> event.getId().equals(registration.getEventId()))
+                .orElseThrow(() -> new RegistrationNotFoundException(registrationCode));
+    }
+
+    /**
+     * Organizer status change ({@code PATCH /events/{code}/registrations/{registrationCode}}), by the
+     * table {@link #STATUS_TRANSITIONS}, in one transaction with its side effects (#1315):
+     * <ul>
+     *   <li>{@code registered} to {@code confirmed}: refused while more registrations hold a place
+     *       than the capacity allows (this one counted);</li>
+     *   <li>{@code registered} or {@code confirmed} to {@code cancelled}: the freed place goes to the
+     *       waitlist ({@link WaitlistPromotionService#promoteFromWaitlist}, which joins this
+     *       transaction);</li>
+     *   <li>{@code waitlist} to {@code confirmed}: the promote endpoint
+     *       ({@link WaitlistPromotionService#manuallyPromote}); the registration ends {@code registered};</li>
+     *   <li>{@code waitlist} to {@code cancelled}: leaves the queue, the positions behind it move up;</li>
+     *   <li>every other allowed change sets the status only.</li>
+     * </ul>
+     * No target, or the current status, writes nothing.
+     *
+     * @param target the new status, lower case (the spec enum), or {@code null}
+     * @return the registration as it is now
+     * @throws RegistrationNotFoundException          no registration with this code in this event (404)
+     * @throws RegistrationStatusTransitionException   the change is not in the table (409)
+     * @throws RegistrationCapacityExceededException   confirming would keep the event over capacity (409)
+     */
+    @Transactional
+    public Registration changeStatus(Event event, String registrationCode, String target) {
+        Registration registration = findOfEvent(event, registrationCode);
+        String from = registration.getStatus();
+        if (target == null || target.equals(from)) {
+            return registration;
+        }
+        if (!STATUS_TRANSITIONS.getOrDefault(from, Set.of()).contains(target)) {
+            throw new RegistrationStatusTransitionException(registrationCode, from, target);
+        }
+
+        if ("waitlist".equals(from)) {
+            if ("confirmed".equals(target)) {
+                waitlistPromotionService.manuallyPromote(registrationCode); // same entity, now registered
+            } else {
+                registration.setStatus(target);
+                registration.setWaitlistPosition(null);
+                registrationRepository.save(registration);
+                renumberWaitlist(event.getId());
+            }
+        } else {
+            if ("registered".equals(from) && "confirmed".equals(target)) {
+                assertCapacityForConfirmation(event);
+            }
+            registration.setStatus(target);
+            registrationRepository.save(registration);
+            if ("cancelled".equals(target) && Registration.CAPACITY_STATUSES.contains(from)) {
+                waitlistPromotionService.promoteFromWaitlist(event.getId());
+            }
+        }
+        log.info("Organizer changed registration {} from {} to {}", registrationCode, from, registration.getStatus());
+        return registration;
+    }
+
+    /** The event's place holders, the pending one to confirm counted, fit its capacity. */
+    private void assertCapacityForConfirmation(Event event) {
+        Integer capacity = event.getRegistrationCapacity();
+        if (capacity == null) {
+            return;
+        }
+        long holders = registrationRepository.countByEventIdAndStatusIn(event.getId(), Registration.CAPACITY_STATUSES);
+        if (holders > capacity) {
+            throw RegistrationCapacityExceededException.forConfirmation(event.getEventCode(), holders, capacity);
+        }
+    }
+
+    /**
+     * Numbers the event's waitlist 1, 2, 3, ... in its current order, after an organizer took a
+     * registration off it (#1315). The query flushes the change that left the queue first.
+     */
+    private void renumberWaitlist(UUID eventId) {
+        List<Registration> waiting = registrationRepository.findWaitlistByEventIdOrdered(eventId);
+        for (int i = 0; i < waiting.size(); i++) {
+            Registration registration = waiting.get(i);
+            if (!Integer.valueOf(i + 1).equals(registration.getWaitlistPosition())) {
+                registration.setWaitlistPosition(i + 1);
+                registrationRepository.save(registration);
+            }
+        }
     }
 
     /** What a confirmation link did: confirmed a pending registration, or found it confirmed already. */

@@ -21,7 +21,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
@@ -29,14 +31,19 @@ import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -761,6 +768,226 @@ class RegistrationControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isNotFound());
         sesRecorder.awaitAsyncSends();
         assertThat(sesRecorder.mails()).isEmpty();
+    }
+
+    // ============================================================================
+    // Organizer status change: the transition table (#1315)
+    // ============================================================================
+
+    private static final List<String> STATUSES =
+            List.of("registered", "waitlist", "confirmed", "cancelled", "attended", "no_show");
+
+    /** The 36 pairs; the table of docs/architecture/06-backend-architecture.md, "Status changes". */
+    static Stream<Arguments> everyTransition() {
+        Map<String, Set<String>> allowed = Map.of(
+                "registered", Set.of("confirmed", "cancelled", "attended", "no_show"),
+                "waitlist", Set.of("confirmed", "cancelled"),
+                "confirmed", Set.of("cancelled", "attended", "no_show"),
+                "attended", Set.of("confirmed", "cancelled", "no_show"),
+                "no_show", Set.of("confirmed", "cancelled", "attended"),
+                "cancelled", Set.of());
+        return STATUSES.stream().flatMap(from -> STATUSES.stream().map(to -> {
+            boolean ok = from.equals(to) || allowed.get(from).contains(to);
+            // waitlist -> confirmed is the promote endpoint: the registration ends as registered.
+            String end = !ok ? from : "waitlist".equals(from) && "confirmed".equals(to) ? "registered" : to;
+            return Arguments.of(from, to, ok ? 200 : 409, end);
+        }));
+    }
+
+    @ParameterizedTest(name = "{0} -> {1}: {2}, ends {3}")
+    @MethodSource("everyTransition")
+    @WithMockUser(roles = "ORGANIZER")
+    @DisplayName("#1315: every status pair answers 200 or 409 as the table says, never 500")
+    void should_followTransitionTable_when_organizerPatchesStatus(String from, String to, int expected, String end)
+            throws Exception {
+        Registration registration = registration(testEvent, "john.doe", from);
+        if ("waitlist".equals(from)) {
+            registration.setWaitlistPosition(1);
+        }
+        registration = registrationRepository.save(registration);
+
+        var result = patchStatus(EVENT_CODE, registration.getRegistrationCode(), "{\"status\":\"" + to + "\"}")
+                .andExpect(status().is(expected));
+        if (expected == 409) {
+            result.andExpect(jsonPath("$.details.code").value("REGISTRATION_TRANSITION_NOT_ALLOWED"));
+        } else {
+            result.andExpect(jsonPath("$.status").value(end.toUpperCase(Locale.ROOT)));
+        }
+        assertThat(registrationRepository.findById(registration.getId()).orElseThrow().getStatus()).isEqualTo(end);
+    }
+
+    @ParameterizedTest
+    @CsvSource({"cancelled,confirmed", "registered,waitlist", "confirmed,waitlist", "confirmed,registered"})
+    @WithMockUser(roles = "ORGANIZER")
+    @DisplayName("#1315: a transition outside the table answers 409, changes nothing and mails nobody")
+    void should_return409AndMailNobody_when_transitionNotInTable(String from, String to) throws Exception {
+        Registration registration = createTestRegistration("john.doe", from);
+        Instant updatedAt = registrationRepository.findById(registration.getId()).orElseThrow().getUpdatedAt();
+
+        patchStatus(EVENT_CODE, registration.getRegistrationCode(), "{\"status\":\"" + to + "\"}")
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.details.code").value("REGISTRATION_TRANSITION_NOT_ALLOWED"))
+                .andExpect(jsonPath("$.message").value(containsString(from + " to " + to)));
+
+        Registration unchanged = registrationRepository.findById(registration.getId()).orElseThrow();
+        assertThat(unchanged.getStatus()).isEqualTo(from);
+        assertThat(unchanged.getUpdatedAt()).isEqualTo(updatedAt);
+        // Positive control: the one PATCH that mails (waitlist -> confirmed) reaches Jane.
+        cums.user("jane.smith", "Jane", "Smith", JANE_MAIL);
+        Registration waiting = registration(testEvent, "jane.smith", "waitlist");
+        waiting.setWaitlistPosition(1);
+        waiting = registrationRepository.save(waiting);
+        patchStatus(EVENT_CODE, waiting.getRegistrationCode(), "{\"status\":\"confirmed\"}").andExpect(status().isOk());
+        sesRecorder.awaitAsyncSends();
+        assertThat(sesRecorder.mailsTo(JANE_MAIL)).hasSize(1);
+        assertThat(sesRecorder.mailsTo(JOHN_MAIL)).isEmpty();
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"CONFIRMED", "foo", ""})
+    @WithMockUser(roles = "ORGANIZER")
+    @DisplayName("#1315: a status outside the lower-case enum answers 400 (was 500 or a stored bad value)")
+    void should_return400_when_statusNotInEnum(String value) throws Exception {
+        Registration registration = createTestRegistration("john.doe", "registered");
+
+        patchStatus(EVENT_CODE, registration.getRegistrationCode(), "{\"status\":\"" + value + "\"}")
+                .andExpect(status().isBadRequest());
+
+        assertThat(registrationRepository.findById(registration.getId()).orElseThrow().getStatus())
+                .isEqualTo("registered");
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"{}", "{\"status\":\"confirmed\"}"})
+    @WithMockUser(roles = "ORGANIZER")
+    @DisplayName("#1315: no status or the same status writes nothing and mails nobody")
+    void should_writeNothing_when_statusMissingOrUnchanged(String body) throws Exception {
+        Registration registration = createTestRegistration("john.doe", "confirmed");
+        Instant updatedAt = registrationRepository.findById(registration.getId()).orElseThrow().getUpdatedAt();
+
+        patchStatus(EVENT_CODE, registration.getRegistrationCode(), body)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("CONFIRMED"));
+
+        assertThat(registrationRepository.findById(registration.getId()).orElseThrow().getUpdatedAt())
+                .isEqualTo(updatedAt);
+        // Positive control: a real change writes.
+        patchStatus(EVENT_CODE, registration.getRegistrationCode(), "{\"status\":\"attended\"}")
+                .andExpect(status().isOk());
+        assertThat(registrationRepository.findById(registration.getId()).orElseThrow().getUpdatedAt())
+                .isAfter(updatedAt);
+        sesRecorder.awaitAsyncSends();
+        assertThat(sesRecorder.mails()).isEmpty();
+    }
+
+    @Test
+    @WithMockUser(roles = "ORGANIZER")
+    @DisplayName("#1315: registered -> confirmed is refused while the event holds more than its capacity")
+    void should_checkCapacity_when_organizerConfirmsPendingRegistration() throws Exception {
+        Event capped = cappedOtherEvent(); // capacity 1
+        Registration john = registrationRepository.save(registration(capped, "john.doe", "registered"));
+        Registration jane = registrationRepository.save(registration(capped, "jane.smith", "registered"));
+
+        // Two hold a place, one fits: confirming John would keep the event over capacity.
+        patchStatus(OTHER_EVENT_CODE, john.getRegistrationCode(), "{\"status\":\"confirmed\"}")
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.details.code").value("capacity_exceeded"))
+                .andExpect(jsonPath("$.details.activeCount").value(2))
+                .andExpect(jsonPath("$.details.capacity").value(1))
+                .andExpect(jsonPath("$.message").value(not(containsString("force"))));
+        assertThat(registrationRepository.findById(john.getId()).orElseThrow().getStatus()).isEqualTo("registered");
+
+        // At capacity (John's own place counted): confirmed.
+        patchStatus(OTHER_EVENT_CODE, jane.getRegistrationCode(), "{\"status\":\"cancelled\"}")
+                .andExpect(status().isOk());
+        patchStatus(OTHER_EVENT_CODE, john.getRegistrationCode(), "{\"status\":\"confirmed\"}")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("CONFIRMED"));
+    }
+
+    @Test
+    @WithMockUser(roles = "ORGANIZER")
+    @DisplayName("#1315: waitlist -> confirmed is the promote endpoint: registered, position cleared, mail")
+    void should_promote_when_organizerConfirmsWaitlistedRegistration() throws Exception {
+        Event capped = cappedOtherEvent(); // capacity 1, already full: the promotion ignores it
+        registrationRepository.save(registration(capped, "jane.smith", "confirmed"));
+        Registration waiting = registration(capped, "john.doe", "waitlist");
+        waiting.setWaitlistPosition(1);
+        waiting = registrationRepository.save(waiting);
+
+        patchStatus(OTHER_EVENT_CODE, waiting.getRegistrationCode(), "{\"status\":\"confirmed\"}")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("REGISTERED"))
+                .andExpect(jsonPath("$.waitlistPosition").value(nullValue()));
+
+        Registration promoted = registrationRepository.findById(waiting.getId()).orElseThrow();
+        assertThat(promoted.getStatus()).isEqualTo("registered");
+        assertThat(promoted.getWaitlistPosition()).isNull();
+        sesRecorder.awaitAsyncSends();
+        assertThat(sesRecorder.mailsTo(JOHN_MAIL)).singleElement()
+                .satisfies(mail -> assertThat(mail.subject()).contains("Warteliste"));
+    }
+
+    @Test
+    @WithMockUser(roles = "ORGANIZER")
+    @DisplayName("#1315: waitlist -> cancelled leaves the queue, renumbers it and promotes nobody")
+    void should_renumberWaitlist_when_organizerCancelsWaitlistedRegistration() throws Exception {
+        Event capped = event(OTHER_EVENT_CODE, 1714);
+        capped.setRegistrationCapacity(2);
+        capped = eventRepository.save(capped);
+        registrationRepository.save(registration(capped, "jane.smith", "confirmed")); // one place free
+        Registration first = waiting(capped, "anna.erste", 1);
+        Registration second = waiting(capped, "ben.zweite", 2);
+        Registration third = waiting(capped, "carl.dritte", 3);
+
+        patchStatus(OTHER_EVENT_CODE, second.getRegistrationCode(), "{\"status\":\"cancelled\"}")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("CANCELLED"));
+
+        Registration left = registrationRepository.findById(second.getId()).orElseThrow();
+        assertThat(left.getStatus()).isEqualTo("cancelled");
+        assertThat(left.getWaitlistPosition()).isNull();
+        // Nobody moves up: a waitlisted registration held no place.
+        assertThat(registrationRepository.findById(first.getId()).orElseThrow())
+                .satisfies(r -> assertThat(r.getStatus()).isEqualTo("waitlist"))
+                .satisfies(r -> assertThat(r.getWaitlistPosition()).isEqualTo(1));
+        assertThat(registrationRepository.findById(third.getId()).orElseThrow())
+                .satisfies(r -> assertThat(r.getStatus()).isEqualTo("waitlist"))
+                .satisfies(r -> assertThat(r.getWaitlistPosition()).isEqualTo(2));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"registered", "confirmed"})
+    @WithMockUser(roles = "ORGANIZER")
+    @DisplayName("#1315: cancelling a place holder promotes the first waiting in the same request")
+    void should_promoteFromWaitlist_when_organizerCancelsPlaceHolder(String holder) throws Exception {
+        Event capped = cappedOtherEvent(); // capacity 1
+        Registration leaving = registrationRepository.save(registration(capped, "jane.smith", holder));
+        Registration waiting = waiting(capped, "john.doe", 1);
+
+        patchStatus(OTHER_EVENT_CODE, leaving.getRegistrationCode(), "{\"status\":\"cancelled\"}")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("CANCELLED"));
+
+        assertThat(registrationRepository.findById(leaving.getId()).orElseThrow().getStatus()).isEqualTo("cancelled");
+        assertThat(registrationRepository.findById(waiting.getId()).orElseThrow().getStatus()).isEqualTo("registered");
+        sesRecorder.awaitAsyncSends();
+        assertThat(sesRecorder.mailsTo(JOHN_MAIL)).hasSize(1); // the promotion mail
+    }
+
+    private ResultActions patchStatus(String eventCode, String registrationCode,
+            String body) throws Exception {
+        return mockMvc.perform(patch("/api/v1/events/{eventCode}/registrations/{registrationCode}",
+                        eventCode, registrationCode)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(body));
+    }
+
+    /** A waitlisted registration at this position. */
+    private Registration waiting(Event event, String username, int position) {
+        Registration registration = registration(event, username, "waitlist");
+        registration.setWaitlistPosition(position);
+        return registrationRepository.save(registration);
     }
 
     // ============================================================================

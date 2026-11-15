@@ -6,7 +6,6 @@ import ch.batbern.events.domain.Registration;
 import ch.batbern.events.dto.RegistrationResponse;
 import ch.batbern.events.dto.generated.users.UserResponse;
 import ch.batbern.events.exception.EventNotFoundException;
-import ch.batbern.events.exception.RegistrationNotFoundException;
 import ch.batbern.events.registrations.api.generated.RegistrationsApi;
 import ch.batbern.events.registrations.dto.generated.ConfirmRegistration200Response;
 import ch.batbern.events.registrations.dto.generated.CreateMyRegistration201Response;
@@ -179,9 +178,9 @@ public class RegistrationController implements RegistrationsApi {
     }
 
     /**
-     * Organizer status change. Attendees cancel through the deregistration link or
-     * {@code DELETE /events/{eventCode}/my-registration}. Any transition to {@code cancelled}
-     * (waitlist included) frees a place and promotes from the waitlist (Story 10.12).
+     * Organizer status change by the transition table of {@link RegistrationService#changeStatus}
+     * (#1315), in one transaction with its waitlist effects. Attendees cancel through the
+     * deregistration link or {@code DELETE /events/{eventCode}/my-registration}.
      */
     @Override
     @PreAuthorize("hasRole('ORGANIZER')")
@@ -189,20 +188,8 @@ public class RegistrationController implements RegistrationsApi {
             String eventCode, String registrationCode, UpdateRegistrationStatusRequest updates) {
         log.debug("PATCH /api/v1/events/{}/registrations/{}", eventCode, registrationCode);
 
-        Registration registration = registrationOfEvent(eventCode, registrationCode);
-        boolean becomingCancelled = false;
-        if (updates.getStatus() != null) {
-            String previousStatus = registration.getStatus();
-            registration.setStatus(updates.getStatus());
-            becomingCancelled = "cancelled".equalsIgnoreCase(updates.getStatus())
-                    && !"cancelled".equalsIgnoreCase(previousStatus);
-        }
-        registration = registrationRepository.save(registration);
-
-        if (becomingCancelled) {
-            waitlistPromotionService.promoteFromWaitlist(registration.getEventId());
-        }
-
+        String target = updates.getStatus() != null ? updates.getStatus().getValue() : null;
+        Registration registration = registrationService.changeStatus(findEvent(eventCode), registrationCode, target);
         registration.setEventCode(eventCode);
         return ResponseEntity.ok(registrationService.enrichRegistrationWithUserData(registration));
     }
@@ -317,14 +304,9 @@ public class RegistrationController implements RegistrationsApi {
         return registrationOfEvent(findEvent(eventCode), registrationCode);
     }
 
-    /**
-     * The registration with this code, if it belongs to this event: 404 otherwise, the same answer
-     * for an unknown code and for a code of another event (its existence is not revealed).
-     */
+    /** 404 for an unknown code and for a code of another event alike ({@link RegistrationService#findOfEvent}). */
     private Registration registrationOfEvent(Event event, String registrationCode) {
-        return registrationRepository.findByRegistrationCode(registrationCode)
-                .filter(registration -> event.getId().equals(registration.getEventId()))
-                .orElseThrow(() -> new RegistrationNotFoundException(registrationCode));
+        return registrationService.findOfEvent(event, registrationCode);
     }
 
     /**

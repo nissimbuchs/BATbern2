@@ -664,15 +664,29 @@ paths:
       tags:
       - Registrations
       summary: Update registration
-      description: 'Partially update a registration (e.g. set the status).
+      description: |
+        Organizer status change of a registration (#1315). One transaction: the status and its
+        side effects (waitlist promotion, renumbering) are written together or not at all. No
+        status, or the current status, changes nothing (200). Any other change not in this table
+        answers 409 `REGISTRATION_TRANSITION_NOT_ALLOWED`:
 
+        | From | To | Effect |
+        |---|---|---|
+        | registered | confirmed | refused (409 `capacity_exceeded`) while more registrations hold a place than the capacity allows |
+        | registered, confirmed | cancelled | the freed place goes to the first on the waitlist (promotion mail) |
+        | registered, confirmed | attended, no_show | status only |
+        | waitlist | confirmed | as `POST .../promote`: the registration becomes `registered` (waitlist position cleared, promotion mail, no capacity check); the response says `REGISTERED` |
+        | waitlist | cancelled | leaves the waitlist, the positions behind it move up; nobody is promoted |
+        | attended, no_show | confirmed, cancelled | correction after the event: status only, no capacity check, no promotion |
+        | attended | no_show, and no_show to attended | status only |
+        | cancelled | anything | 409 |
+
+        Nothing changes to `registered` or `waitlist` by this request.
 
         **Story**: 4.1.6 - Uses registrationCode
 
         **Security**: ORGANIZER role required. Attendees cancel through the token-based
         deregistration flow or `DELETE /events/{eventCode}/my-registration`.
-
-        '
       operationId: updateRegistration
       parameters:
       - name: eventCode
@@ -733,6 +747,37 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+        '409':
+          description: The change is not in the transition table, or confirming would exceed the capacity; nothing changed
+          content:
+            application/json:
+              schema:
+                $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+              examples:
+                transitionNotAllowed:
+                  summary: Not in the transition table
+                  value:
+                    timestamp: '2026-11-15T10:00:00Z'
+                    path: /api/v1/events/BATbern142/registrations/BATbern142-reg-A3X9K2
+                    status: 409
+                    error: Conflict
+                    message: Registration BATbern142-reg-A3X9K2 cannot change from cancelled to confirmed
+                    severity: LOW
+                    details:
+                      code: REGISTRATION_TRANSITION_NOT_ALLOWED
+                capacityExceeded:
+                  summary: Confirming would exceed the capacity
+                  value:
+                    timestamp: '2026-11-15T10:00:00Z'
+                    path: /api/v1/events/BATbern142/registrations/BATbern142-reg-A3X9K2
+                    status: 409
+                    error: Conflict
+                    message: Event BATbern142 holds 254 registrations for 253 places; confirming this one would keep it over capacity
+                    severity: LOW
+                    details:
+                      code: capacity_exceeded
+                      activeCount: 254
+                      capacity: 253
         '500':
           $ref: '#/components/responses/InternalServerError'
     delete:
@@ -1661,12 +1706,21 @@ components:
           example: Vegetarian meal preference
     UpdateRegistrationStatusRequest:
       type: object
-      description: 'Organizer status change for a registration (e.g. confirm/cancel).
-        The deployed PATCH handler reads only `status`; a cancel triggers waitlist promotion.'
+      description: 'Organizer status change for a registration (e.g. confirm/cancel). Only `status`
+        is read; no status, or the current one, changes nothing. The allowed transitions are listed
+        on `updateRegistration` (#1315).'
       properties:
         status:
           type: string
-          description: New registration status (registered, waitlist, confirmed, cancelled, attended, no_show)
+          description: New registration status, lower case (the response carries it upper case).
+            Any other value answers 400.
+          enum:
+          - registered
+          - waitlist
+          - confirmed
+          - cancelled
+          - attended
+          - no_show
           example: confirmed
     ResendConfirmationResponse:
       type: object
