@@ -1,68 +1,73 @@
 /**
  * #1183 D — the claim link page: POST only on the button; 403 means another login.
+ *
+ * Rendered as the app routes it, inside the real `ProtectedRoute` with the provider's own path
+ * rules, so a role that may not open `/claim-profile` lands on `/dashboard` here too (#1217).
+ * The network is the MSW harness.
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { describe, it, expect } from 'vitest';
+import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { MemoryRouter } from 'react-router-dom';
-import { I18nextProvider } from 'react-i18next';
-import { AxiosError, type AxiosResponse } from 'axios';
-import i18n from '../../i18n/config';
+import { HttpResponse } from 'msw';
+import { Route, Routes } from 'react-router-dom';
 import ClaimProfilePage from './ClaimProfilePage';
-import * as api from '@/services/api/userAccountApi';
+import { ProtectedRoute } from '@/components/auth/ProtectedRoute/ProtectedRoute';
+import { renderWithAuth, signedInAs } from '@/test/auth';
+import { api } from '@/test/msw/api';
+import type { UserRole } from '@/types/auth';
 
-vi.mock('@/services/api/userAccountApi', () => ({ confirmProfileClaim: vi.fn() }));
-vi.mock('@/components/public/PublicLayout', () => ({
-  PublicLayout: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-}));
-
-const renderPage = (search = '?token=abc') =>
-  render(
-    <QueryClientProvider
-      client={
-        new QueryClient({
-          defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
-        })
-      }
-    >
-      <I18nextProvider i18n={i18n}>
-        <MemoryRouter initialEntries={[`/claim-profile${search}`]}>
-          <ClaimProfilePage />
-        </MemoryRouter>
-      </I18nextProvider>
-    </QueryClientProvider>
+const renderClaimLink = (role: UserRole = 'attendee', search = '?token=abc') =>
+  renderWithAuth(
+    <Routes>
+      <Route path="/dashboard" element={<div>Dashboard Page</div>} />
+      <Route
+        path="/claim-profile"
+        element={
+          <ProtectedRoute>
+            <ClaimProfilePage />
+          </ProtectedRoute>
+        }
+      />
+    </Routes>,
+    { auth: signedInAs(role), initialEntries: [`/claim-profile${search}`] }
   );
 
 describe('ClaimProfilePage (#1183 D)', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
+  it.each<UserRole>(['attendee', 'speaker', 'partner', 'organizer'])(
+    'should_openTheClaimPage_when_%sFollowsTheLink',
+    async (role) => {
+      renderClaimLink(role);
+
+      expect(await screen.findByTestId('claim-confirm-button')).toBeInTheDocument();
+      expect(screen.queryByText('Dashboard Page')).not.toBeInTheDocument();
+    }
+  );
 
   it('should_notCallApi_until_buttonClicked_then_showMerged', async () => {
-    vi.mocked(api.confirmProfileClaim).mockResolvedValue({ merged: true, alreadyMerged: false });
-    renderPage();
+    api.on('confirmProfileClaim', () => ({ merged: true, alreadyMerged: false }));
+    renderClaimLink();
 
-    expect(api.confirmProfileClaim).not.toHaveBeenCalled();
-    await userEvent.click(screen.getByTestId('claim-confirm-button'));
+    const button = await screen.findByTestId('claim-confirm-button');
+    expect(api.calls('confirmProfileClaim')).toHaveLength(0);
+    await userEvent.click(button);
 
-    expect(api.confirmProfileClaim).toHaveBeenCalledWith('abc');
     expect(await screen.findByTestId('claim-merged')).toBeInTheDocument();
+    expect(api.calls('confirmProfileClaim')[0].body).toEqual({ token: 'abc' });
   });
 
   it('should_showOtherAccount_when_403', async () => {
-    vi.mocked(api.confirmProfileClaim).mockRejectedValue(
-      new AxiosError('forbidden', '403', undefined, undefined, { status: 403 } as AxiosResponse)
+    api.on('confirmProfileClaim', () =>
+      HttpResponse.json({ message: 'forbidden' }, { status: 403 })
     );
-    renderPage();
+    renderClaimLink();
 
-    await userEvent.click(screen.getByTestId('claim-confirm-button'));
+    await userEvent.click(await screen.findByTestId('claim-confirm-button'));
 
     expect(await screen.findByTestId('claim-otherAccount')).toBeInTheDocument();
   });
 
-  it('should_showInvalid_when_noToken', () => {
-    renderPage('');
-    expect(screen.getByTestId('claim-invalid')).toBeInTheDocument();
+  it('should_showInvalid_when_noToken', async () => {
+    renderClaimLink('attendee', '');
+    expect(await screen.findByTestId('claim-invalid')).toBeInTheDocument();
   });
 });

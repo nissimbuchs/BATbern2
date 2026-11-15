@@ -66,42 +66,19 @@ const PUBLIC_PATHS = [
   '/register',
 ];
 
-// Role-based path access
+/**
+ * Pages every signed-in role may open, whatever its other paths: the dashboard redirect, the
+ * role-neutral profile (also the onboarding-gate target, Story 12.11), the account, the
+ * attendee dashboard with its "What's new" card, and the claim link from the claim mail (#1217).
+ */
+const EVERY_ROLE_PATHS = ['/dashboard', '/profile', '/account', '/attendee', '/claim-profile'];
+
+// Role-based path access, on top of EVERY_ROLE_PATHS
 const PATH_ACCESS: Record<UserRole, string[]> = {
-  organizer: [
-    '/dashboard',
-    '/profile', // Story 12.11: role-neutral profile page
-    '/events',
-    '/speakers',
-    '/partners',
-    '/analytics',
-    '/organizer',
-    '/account',
-    '/attendee', // "What's new" card on the attendee dashboard: every logged-in user
-  ],
-  speaker: [
-    '/dashboard',
-    '/profile',
-    '/events',
-    '/materials',
-    '/speaker',
-    '/speaker-portal',
-    '/account',
-    '/attendee', // "What's new" card on the attendee dashboard: every logged-in user
-  ],
-  partner: [
-    '/dashboard',
-    '/profile',
-    '/analytics',
-    '/organizer/analytics',
-    '/events',
-    '/partner',
-    '/account',
-    '/attendee', // "What's new" card on the attendee dashboard: every logged-in user
-  ],
-  // Story 12.11: '/profile' for every role — the role-neutral profile page is
-  // also the onboarding-gate target, so every authenticated role must reach it.
-  attendee: ['/dashboard', '/profile', '/events', '/content', '/search', '/attendee', '/account'],
+  organizer: ['/events', '/speakers', '/partners', '/analytics', '/organizer'],
+  speaker: ['/events', '/materials', '/speaker', '/speaker-portal'],
+  partner: ['/analytics', '/organizer/analytics', '/events', '/partner'],
+  attendee: ['/events', '/content', '/search'],
 };
 
 /**
@@ -123,6 +100,8 @@ export function canAccessPath(
     return true;
   }
   if (!isAuthenticated || !user) return false;
-  const allowedPaths = effectiveRoles(user).flatMap((r) => PATH_ACCESS[r] ?? []);
+  const roles = effectiveRoles(user);
+  if (roles.length === 0) return false;
+  const allowedPaths = [...EVERY_ROLE_PATHS, ...roles.flatMap((r) => PATH_ACCESS[r] ?? [])];
   return allowedPaths.some((allowedPath) => path.startsWith(allowedPath));
 }

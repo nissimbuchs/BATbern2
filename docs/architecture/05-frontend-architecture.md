@@ -1555,9 +1555,13 @@ All authenticated routes render through `ProtectedRoute`
    (`AuthContext`, including the Pattern 3b DB fallback for empty JWT roles, see
    `06b-user-lifecycle-sync.md`). Any of the user's roles suffices; otherwise redirect to
    `/dashboard`.
-3. **Path-prefix check** `canAccess(pathname)` in `src/contexts/AuthContext.tsx`: a static
-   map of path prefixes per role (for example organizer: `/organizer`, `/events`,
-   `/speakers`, ...). A path no role's prefix list covers redirects to `/dashboard`.
+3. **Path-prefix check** `canAccess(pathname)`, the pure `canAccessPath` in
+   `src/contexts/authRules.ts`: the role-neutral prefixes every signed-in role may open
+   (`EVERY_ROLE_PATHS`: `/dashboard`, `/profile`, `/account`, `/attendee`, `/claim-profile`)
+   plus a static map of prefixes per role (for example organizer: `/organizer`, `/events`,
+   `/speakers`, ...). A user with no role opens none of them; a path no list covers redirects
+   to `/dashboard`. A new page for every role goes into `EVERY_ROLE_PATHS` (#1217: the claim
+   link was in no list and bounced every role).
 
 The full decision, including the two steps before the list above (auth still loading, not
 signed in) and the optional email-verification check (`requiresVerification`, off by default):
