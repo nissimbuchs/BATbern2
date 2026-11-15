@@ -200,7 +200,7 @@ and answers 404 (one) or is ignored (many, `findAllByIdInAndRecipientUsername`).
 (`PUT …/{id}/read`, `batch-read`), `DELETE /notifications/batch-delete` and the history read
 `GET /notifications/history` (which read anyone's notifications by `?username=`) are gone.
 
-Events are deleted with their notifications (`EventController`, `deleteByEventCode`); archiving
+Events are deleted with their notifications (`EventWriteService.delete`, `deleteByEventCode`); archiving
 an event marks its unread rows `READ` (`dismissNotificationsForEvent`, Story 10.18).
 
 ### Escalation email: the one NotificationService send

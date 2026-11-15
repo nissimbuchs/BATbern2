@@ -225,7 +225,7 @@ describe('FrontendStack — browser caching of static assets', () => {
   // assets but emitted no Cache-Control header, so browsers re-downloaded
   // ~5.6 MiB on repeat visits. A dedicated ResponseHeadersPolicy adds an
   // immutable 1-year Cache-Control to the content-hashed behaviors only.
-  // See docs/plans/public-homepage-performance.md (Phase 6).
+  // See docs/archive/plans/public-homepage-performance.md (Phase 6).
 
   test('should_createSeparateSecurityAndStaticAssetsPolicies', () => {
     const template = synth(stagingConfig);

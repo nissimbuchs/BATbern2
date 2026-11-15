@@ -1,8 +1,15 @@
 # generated: 2026-02-21
 # project: BATbern
 # tracking_system: file-system
-# story_location: _bmad-output/implementation-artifacts
-# epics_source: docs/prd/epic-*.md + docs/watch-app/epics.md
+# story_location: _bmad-output/implementation-artifacts/archive
+# epics_source: docs/prd/epic-*.md, docs/archive/prd/epic-*.md + docs/archive/watch-app/epics.md
+#
+# ARCHIVE INDEX, READ-ONLY (2026-11-15). Epics 1-17 are closed. Unimplemented stories of
+# epics 1-16 were archived by owner decision 2026-11-07 (status 'archived': not built, not
+# open work; revive only on owner request, as a new ticket). Epic 17 was tracked in the
+# BMAD v7 initiative _bmad-output/initiative-architecture-hardening/ and closed 2026-11-15.
+# Story files are in _bmad-output/implementation-artifacts/archive/. Open work:
+# _bmad-output/backlog/ and the open GitHub issues.
 
 # STATUS DEFINITIONS:
 # ==================
@@ -21,6 +28,8 @@
 #   - in-progress: Developer actively working on implementation
 #   - review: Ready for code review (via Dev's code-review workflow)
 #   - done: Story completed
+#   - cancelled / deferred: closed before 2026-11-07 without being built
+#   - archived: not built; archived by owner decision 2026-11-07 (epics 1-16) or dropped (Epic 17)
 #
 # Retrospective Status:
 #   - optional: Can be completed but not required
@@ -34,10 +43,10 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-02-21
-last_updated: 2026-11-07
+last_updated: 2026-11-15
 project: BATbern
 tracking_system: file-system
-story_location: _bmad-output/implementation-artifacts
+story_location: _bmad-output/implementation-artifacts/archive
 
 development_status:
 
@@ -89,7 +98,7 @@ development_status:
   2-8-4-partner-contact-management: done
   epic-2-retrospective: done
 
-  # Epic 3: Historical Data Migration - COMPLETE (tooling ready, production import pending)
+  # Epic 3: Historical Data Migration - COMPLETE, all historical data imported into production (owner 2026-11-15)
   epic-3: done
   3-1-historical-data-migration: done
   epic-3-retrospective: done
@@ -202,18 +211,18 @@ development_status:
   11-e-2-cognito-provisioning-at-ready-invitation-email-i18n: done
   11-e-3-speaker-portal-cognito-auth-frontend-session-multi-role-nav: done
   11-e-4-epic-11-trailing-cleanup: done
-  11-e-5-adapt-lifecycle-e2e-and-bruno-organizer-happy-path: ready-for-dev
+  11-e-5-adapt-lifecycle-e2e-and-bruno-organizer-happy-path: archived
   11-f-1-magic-link-teardown-branch-deletion: done
-  11-f-2-after-commit-refactor-for-cognito-side-effects: backlog
-  11-g-1-speaker-company-self-service: ready-for-dev
+  11-f-2-after-commit-refactor-for-cognito-side-effects: archived
+  11-g-1-speaker-company-self-service: archived
   epic-11-retrospective: optional
 
   # ============================================================
   # Epic 12: SSO / OIDC Federation — "Sign in with Google" (Apple deferred)
-  # Source: docs/plans/sso-oidc-federation.md + ADR-010. Single real Cognito pool (staging IS prod, §4):
+  # Source: docs/archive/plans/sso-oidc-federation.md + ADR-010. Single real Cognito pool (staging IS prod, §4):
   # every story is independently prod-deployable with deploy -> verify -> next gates. Sequence = dependency order.
   # ============================================================
-  epic-12: in-progress
+  epic-12: done
   12-1-cognito-attribute-hygiene: done
   12-2-gateway-is-active-gate: done
   12-3-canonical-jit-provisioning: done
@@ -224,12 +233,12 @@ development_status:
   12-7-frontend-callback-route-and-service: done
   12-8-federated-provisioning-inactive-gating-verify: done
   12-9-continue-with-google-button-feature-flag: done
-  12-10-apple-oidc-and-trigger-retirement-cleanup: backlog
+  12-10-apple-oidc-and-trigger-retirement-cleanup: archived
   12-11-federated-onboarding-completion: done
   12-12-google-profile-picture-import: done
   epic-12-retrospective: optional
 
-  # Epic 13: Spring Boot 4 Migration — IN PROGRESS (docs/plans/spring-boot-4-migration.md)
+  # Epic 13: Spring Boot 4 Migration — CLOSED 2026-11-07, 13.4 + 13.5 archived (SB 4.0.9 live 2026-11-05) (docs/plans/spring-boot-4-migration.md)
   # 2026-11-04: SB 4.0.7 LIVE via #797 (merged 2026-06-19). Still open: 13.4 (preferred-json-mapper: jackson2
   #   is still set in every service's application.yml) and 13.5. The history below is from June 2026.
   # Driver: SB 3.5 OSS support ends 2026-06-30; migrating 3.5.7 → 4.0.7.
@@ -245,17 +254,17 @@ development_status:
   #   auto-wiring); preferred-json-mapper=jackson2 + spring.jackson→jackson2 relocation; spring-cloud-aws 4.0.2;
   #   resilience4j -spring-boot4; gateway DataSource autoconfigure.exclude; @AutoConfigureTestRestTemplate.
   #   REMAINING: Bruno (payload-diff) + Playwright gates, then flip Jackson-2-compat OFF (final step).
-  epic-13: in-progress
+  epic-13: done
   13-1-zero-deprecation-baseline-compat-matrix: done
   13-2-shared-kernel-pilot-service-sb4: done      # collapsed into unified migration (feature/epic-13-spring-boot-4)
   13-3-remaining-domain-services-sb4: done         # collapsed into unified migration (feature/epic-13-spring-boot-4)
-  13-4-api-gateway-closeout-jackson3-flag-flip: in-progress  # collapsed into unified migration (feature/epic-13-spring-boot-4)
-  13-5-unpin-bom-managed-dependency-versions: ready-for-dev  # follow-up (2026-06-19): delegate SB-BOM-managed pins (postgresql override 42.7.7 → BOM 42.7.11) + codify pin policy; NO floating versions
+  13-4-api-gateway-closeout-jackson3-flag-flip: archived  # collapsed into unified migration (feature/epic-13-spring-boot-4)
+  13-5-unpin-bom-managed-dependency-versions: archived  # follow-up is open issue #1231. Original note (2026-06-19): delegate SB-BOM-managed pins (postgresql override 42.7.7 → BOM 42.7.11) + codify pin policy; NO floating versions
   epic-13-retrospective: optional
 
-  # Epic 14: Event Detail Page — Lifecycle-Aware Redesign - COMPLETE (docs/prd/epic-14-event-detail-redesign.md)
+  # Epic 14: Event Detail Page — Lifecycle-Aware Redesign - COMPLETE (docs/archive/prd/epic-14-event-detail-redesign.md)
   # Shipped as one PR, #788 (merged 2026-06-15). Delivered per phase via tech specs
-  # (_bmad-output/implementation-artifacts/spec-14-*.md, all status 'done'), not per-story files.
+  # (_bmad-output/implementation-artifacts/archive/spec-14-*.md, all status 'done'), not per-story files.
   epic-14: done
   14-a-event-detail-shell: done
   14-b-cockpit: done
@@ -270,30 +279,30 @@ development_status:
   14-g-mobile-navigation: done
   epic-14-retrospective: optional
 
-  # Epic 15: Post-Event #2 Hardening — IN PROGRESS (docs/prd/epic-15-post-event-2-hardening.md)
+  # Epic 15: Post-Event #2 Hardening — CLOSED 2026-11-07, 15.1 P2/P3, 15.4, 15.8 archived (docs/archive/prd/epic-15-post-event-2-hardening.md)
   # Architectural/multi-layer follow-ups from the 2nd live event. Quick-wins (#1,#8b,#12-17) shipped
   # on feature/event-2-feedback-quick-wins (merged #799). 15.6/#790 already fixed (commit 80195136).
   # Each story independently prod-deployable (staging IS prod). Sequencing: 15.5→15.7→15.1→15.2→15.3→15.4→15.8+15.9.
   # 2026-11-04 audit (#1210): 15-1 back to in-progress (only P1 live via #800; P2 watch + P3 WS teardown open,
   #   WebSocketConfig and @stomp/stompjs still present). 15-3 done (#806 merged 2026-06-21).
   #   15-4 back to backlog: it was set to done in #805 (a 15.2 PR) but no email_domains / mismatch flag exists in code.
-  epic-15: in-progress
-  15-1-websockets-to-rest-polling-live-agenda: in-progress  # P1 live (#800); P2 + P3 open, one long story by decision 2026-06-20
+  epic-15: done
+  15-1-websockets-to-rest-polling-live-agenda: archived  # P1 live (#800); P2 + P3 open, one long story by decision 2026-06-20
   15-2-per-event-editable-event-type-config: done
   15-3-stable-slot-assignment-insert-swap-mobile-tap: done  # #806
-  15-4-company-email-domain-mismatch-warning: backlog  # see audit note above
+  15-4-company-email-domain-mismatch-warning: archived  # see audit note above
   15-5-speaker-company-logo-presenter-live-control: done
   15-6-present-mode-agenda-title-overlap: done
   15-7-notify-speaker-moderator-on-new-qa-question: done
-  15-8-linkedin-post-drafts: backlog
+  15-8-linkedin-post-drafts: archived
   15-9-owasp-llm-agentic-security-checklist: done
   epic-15-retrospective: optional
 
-  # Epic 16: Mail Center — 16.0–16.11 LIVE by 2026-11-03; 16.8c gated, 16.12/16.13 backlog (docs/prd/epic-16-mail-center.md)
+  # Epic 16: Mail Center — CLOSED. 16.0–16.11 LIVE by 2026-11-03; 16.8c live with Epic 17; 16.12/16.13 archived (docs/archive/prd/epic-16-mail-center.md)
   # 16.0 = #1160 + #1161 (two PRs). Start with an explicit story path: older ready-for-dev stories sort first.
   # Sequence (owner decision 3): 16.0 (A, C, B) -> 16.1a -> 16.1b -> 16.3 -> 16.4, then 16.8 -> 16.9, then 16.2 + 16.6 for speakers, then all aliases, 16.5, 16.7.
   # 16.0-16.4 live 2026-10-31 (#1164, #1165, #1166). 16.2 split 2026-11-01: 16.2a speakers, 16.2b all aliases. 16.10 = Mail tab on user + partner detail (owner request 2026-10-31).
-  epic-16: in-progress
+  epic-16: done
   16-0-stop-losing-replies-and-calendar-declines: done
   16-1a-record-outbound-mail: done
   16-1b-delivery-status: done
@@ -304,45 +313,45 @@ development_status:
   16-5-own-text-placeholders-preview: done  # live via #1180 2026-11-02; Task 8 checks done 2026-11-02
   16-6-answer-from-mail-center: done  # live via #1189 2026-11-02; switch OFF, owner turns groups on
   16-7-global-mail-navigation: done  # live via #1194 2026-11-03 (merge 451d01c6), V143 applied
-  16-8-shared-composer: in-progress  # 16.8a + 16.8b live via #1174 2026-11-01; 16.8c open, after one release + owner go
+  16-8-shared-composer: done  # 16.8a + 16.8b live via #1174 2026-11-01; 16.8c live via Epic 17 (#1281)
   16-9-partner-meeting-mails: done  # live via #1180 2026-11-02; Task 12 checks done 2026-11-02 (#1182 found)
   16-10-mail-tab-user-partner-detail: done  # live via #1194 2026-11-03 with 16.7
   16-11-mail-pipeline-variable-catalog: done  # merged #1177 2026-11-02
-  16-12-html-in-java-mails-to-templates: backlog
-  16-13-one-mail-value-for-email-service: backlog
+  16-12-html-in-java-mails-to-templates: archived
+  16-13-one-mail-value-for-email-service: archived
   epic-16-retrospective: optional
 
-  # Epic 17: Architecture hardening — backlog, scope decided by owner 2026-11-07, each story needs owner go (docs/prd/epic-17-architecture-hardening.md)
+  # Epic 17: Architecture hardening — CLOSED 2026-11-15 (last #1314, follow-up #1316). Tracked in the BMAD v7 initiative _bmad-output/initiative-architecture-hardening/; this block is a summary (docs/archive/prd/epic-17-architecture-hardening.md)
   # Order: 17.0a-d (test fidelity) alongside 17.1-17.5, then 16.8c (Epic 16, after 17.1), then 17.6-17.11, 17.12 (design, Winston), 17.13-17.16
-  epic-17: in-progress
-  17-0a-test-rules-and-ratchet: backlog  # test-fidelity proposal P1/P3/P4; owner go 2026-11-07
-  17-0b-s2s-contract-harness: backlog  # P2.1 + P2.4a-c; 17.6 waits for 17.0a + 17.0b
-  17-0c-frontend-msw-harness: backlog  # P2.2; needs 17.3 (shared matcher); 17.9 and 17.11 wait for 17.0c + 17.0d
-  17-0d-production-shaped-fixtures: backlog  # P2.3
-  17-1-dead-api-surface: ready-for-dev  # moved 2026-11-07 to the BMAD v7 tree: _bmad-output/initiative-architecture-hardening/ (Epic 17 is tracked there, not here)
-  17-2-dormant-infrastructure-stubs-and-event-bus: backlog  # prod infra, not on an event day; closes #1216, bus part of #1220
-  17-3-frontend-path-contract-check: ready-for-dev  # moved 2026-11-07 to the BMAD v7 tree (see 17-1)
-  17-4-openapi-lint-and-spec-diff-report: backlog
-  17-5-archunit-freeze: backlog
-  17-6-service-to-service-via-internal: backlog
-  17-7-user-reference-contract-and-request-pull: backlog
-  17-8-ems-pcs-direction: backlog
-  17-9-api-conventions-1: backlog
-  17-10-api-conventions-2: backlog
-  17-11-one-upload-contract-company-logo: backlog
-  17-12-ems-modularization-design: backlog  # design task for Winston, not a dev story
-  17-13-registrations-out-of-event-controller: backlog
-  17-14-domain-exception-base: backlog
-  17-15-mail-core-mail-center-split: backlog
-  17-16-event-core-extension-points: backlog
+  epic-17: done
+  17-0a-test-rules-and-ratchet: done  # live; tracked in the BMAD v7 initiative
+  17-0b-s2s-contract-harness: done  # live; tracked in the BMAD v7 initiative
+  17-0c-frontend-msw-harness: done  # live; tracked in the BMAD v7 initiative
+  17-0d-production-shaped-fixtures: done  # live; tracked in the BMAD v7 initiative
+  17-1-dead-api-surface: done  # live; tracked in the BMAD v7 initiative
+  17-2-dormant-infrastructure-stubs-and-event-bus: done  # live; tracked in the BMAD v7 initiative
+  17-3-frontend-path-contract-check: done  # live; tracked in the BMAD v7 initiative
+  17-4-openapi-lint-and-spec-diff-report: done  # live; tracked in the BMAD v7 initiative
+  17-5-archunit-freeze: done  # live; tracked in the BMAD v7 initiative
+  17-6-service-to-service-via-internal: done  # live; tracked in the BMAD v7 initiative
+  17-7-user-reference-contract-and-request-pull: done  # live; tracked in the BMAD v7 initiative
+  17-8-ems-pcs-direction: done  # live; tracked in the BMAD v7 initiative
+  17-9-api-conventions-1: done  # live; tracked in the BMAD v7 initiative
+  17-10-api-conventions-2: done  # live; tracked in the BMAD v7 initiative
+  17-11-one-upload-contract-company-logo: done  # live; tracked in the BMAD v7 initiative
+  17-12-ems-modularization-design: archived  # dropped by owner 2026-11-14
+  17-13-registrations-out-of-event-controller: done  # live; tracked in the BMAD v7 initiative
+  17-14-domain-exception-base: done  # live; tracked in the BMAD v7 initiative
+  17-15-mail-core-mail-center-split: archived  # dropped by owner 2026-11-14
+  17-16-event-core-extension-points: archived  # dropped by owner 2026-11-14
   epic-17-retrospective: optional
 
   # Deferred-work backlog clusters (groomed 2026-06-07 — see deferred-work.md) — candidate stories,
   # not yet scheduled. Cluster A is a REQUIRED precondition for 12-10 (Apple/generic OIDC).
-  cluster-a-auth-sso-hardening: backlog
-  cluster-b-cognito-db-consistency-outbox: backlog
-  cluster-c-i18n-date-handling-sweep: backlog
-  cluster-d-test-ux-papercuts: backlog
+  cluster-a-auth-sso-hardening: archived
+  cluster-b-cognito-db-consistency-outbox: archived
+  cluster-c-i18n-date-handling-sweep: archived
+  cluster-d-test-ux-papercuts: archived
 
   # ============================================================
   # BATBERN WATCH APP EPICS (Separate track)

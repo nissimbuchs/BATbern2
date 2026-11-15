@@ -34,13 +34,10 @@ import ch.batbern.shared.types.SpeakerWorkflowState;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.time.Instant;
 import java.util.List;
@@ -230,22 +227,7 @@ public class SpeakerWorkflowService {
      * content review alike.
      */
     private void evictEventReadCacheAfterCommit() {
-        Runnable evict = () -> {
-            Cache cache = cacheManager.getCache(CacheConfig.EVENT_WITH_INCLUDES_CACHE);
-            if (cache != null) {
-                cache.clear();
-            }
-        };
-        if (TransactionSynchronizationManager.isSynchronizationActive()) {
-            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-                @Override
-                public void afterCommit() {
-                    evict.run();
-                }
-            });
-        } else {
-            evict.run();
-        }
+        CacheConfig.clearAfterCommit(cacheManager, CacheConfig.EVENT_WITH_INCLUDES_CACHE);
     }
 
     private boolean isAllowed(SpeakerWorkflowState from, SpeakerWorkflowState to) {

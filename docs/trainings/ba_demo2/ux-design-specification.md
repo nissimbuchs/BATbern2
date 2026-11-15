@@ -3,8 +3,8 @@ stepsCompleted: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]
 lastStep: 14
 workflow_completed: true
 inputDocuments:
-  - _bmad-output/brainstorming/brainstorming-session-2026-04-04.md
-  - docs/front-end-spec.md
+  - _bmad-output/archive/brainstorming/brainstorming-session-2026-04-04.md
+  - docs/archive/planning/front-end-spec.md
   - docs/prd-enhanced.md
   - docs/wireframes/story-6.4-topic-voting.md
 ---
@@ -287,7 +287,7 @@ Their company appears in the Who Is Who gallery with a "New" badge. Veterans wel
 
 ### Rationale for Selection
 
-The BATbern design system (documented in `docs/front-end-spec.md`) already provides the complete foundation:
+The BATbern design system (documented in `docs/archive/planning/front-end-spec.md`) already provides the complete foundation:
 - Full color palette with both light (portals) and dark (public pages) themes
 - Typography system (Inter primary, JetBrains Mono for monospace)
 - 8px spacing grid, 12-column responsive layout

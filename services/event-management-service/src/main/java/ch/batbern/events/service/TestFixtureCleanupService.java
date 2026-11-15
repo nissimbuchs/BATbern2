@@ -81,7 +81,7 @@ public class TestFixtureCleanupService {
          *
          * <p>Like {@link #EVENTS}, the delete is a native {@code DELETE FROM events WHERE
          * event_number >= …} that BYPASSES the workflow-state machine AND the real-attendee
-         * delete-guard ({@code EventController} returns 409 when an event has a non-auto
+         * delete-guard ({@code DELETE /events/{code}} returns 409 when an event has a non-auto
          * registration). That guard is exactly why these events leak through the normal delete
          * path: a registration test stamps a genuine anonymous attendee on the fixture event, so
          * the per-test {@code DELETE /events/{code}} teardown gets 409 and silently skips it.

@@ -139,7 +139,7 @@ public class WatchEventController {
         }
 
         // Story 15.5: company name + logo for each speaker, via the read-only cross-service join
-        // (same path the presenter's single-event endpoint uses — EventController#findUserPortraits).
+        // (same join the event read's batch session expansion uses, SessionEventExpansion).
         // ADR-004: read-time enrichment, nothing duplicated on session_users.
         Map<String, UserPortraitProjection> portraitMap = new HashMap<>();
         if (!speakerUsernames.isEmpty()) {

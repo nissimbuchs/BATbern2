@@ -1,0 +1,45 @@
+{
+  "response" : {
+    "status" : 401,
+    "xCacheStatus" : null,
+    "body" : ""
+  },
+  "eventAfter" : {
+    "status" : 200,
+    "xCacheStatus" : "MISS",
+    "body" : {
+      "eventCode" : "BATbern9704",
+      "title" : "Capture Draft",
+      "eventNumber" : 9704,
+      "date" : "ts#1",
+      "registrationDeadline" : "ts#2",
+      "venueName" : "Kornhausforum",
+      "venueAddress" : "Kornhausplatz 18, 3011 Bern",
+      "venueCapacity" : 200,
+      "qnaEnabled" : true,
+      "qnaOpenTrigger" : "EVENT_COMPLETED",
+      "qnaWindowDays" : 14,
+      "confirmedCount" : 0,
+      "waitlistCount" : 0,
+      "realAttendeeCount" : 0,
+      "organizerUsername" : "olga.organizer",
+      "currentAttendeeCount" : 0,
+      "createdAt" : "ts#3",
+      "updatedAt" : "ts#4",
+      "teaserImages" : [ ],
+      "eventType" : "EVENING",
+      "typicalStartTime" : "16:00",
+      "typicalEndTime" : "19:00",
+      "workflowState" : "CREATED",
+      "venue" : {
+        "id" : "BATbern9704",
+        "name" : "Kornhausforum",
+        "address" : "Kornhausplatz 18, 3011 Bern",
+        "capacity" : 200
+      }
+    }
+  },
+  "registrations" : [ ],
+  "uploads" : [ "capture-theme-0 associated BATbern9701" ],
+  "mails" : [ ]
+}

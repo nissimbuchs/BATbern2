@@ -11,6 +11,7 @@ import com.tngtech.archunit.lang.ConditionEvents;
 import com.tngtech.archunit.lang.SimpleConditionEvent;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
+import org.springframework.data.repository.Repository;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -209,6 +210,50 @@ final class EmsModuleRules {
                 .allowEmptyShould(false)
                 .as("Endpoint placement: " + controllerSimpleName + " uses no " + repositorySimpleName
                         + "; it reads and writes through its service (#1315)");
+    }
+
+    /**
+     * Backlog story "EventController keeps only HTTP": the named controller depends on event core and
+     * platform only. No Spring Data {@code Repository}, no generated class outside {@code <root>.core}
+     * (the event core API), and no class under {@code root} whose module ({@link EmsModuleNames}, the
+     * scripts' naming) is another than event core or platform. The modules above event core plug in
+     * through event-core interfaces they implement. Not frozen: there is no violation. Fails when no
+     * class has the controller's name.
+     */
+    static ArchRule controllerUsesOnlyEventCore(String root, String controllerSimpleName) {
+        return noClasses().that().resideInAPackage(root + "..")
+                .and().haveSimpleName(controllerSimpleName)
+                .should().dependOnClassesThat(outsideEventCore(root))
+                .allowEmptyShould(false)
+                .as("Endpoint placement: " + controllerSimpleName + " uses event core and platform only: no"
+                        + " repository, no generated class outside core, no class of another EMS module");
+    }
+
+    static DescribedPredicate<JavaClass> outsideEventCore(String root) {
+        return new DescribedPredicate<>("are a Spring Data repository, a generated class outside " + root
+                + ".core or a class of an EMS module other than event core and platform") {
+            @Override
+            public boolean test(JavaClass type) {
+                if (type.isAssignableTo(Repository.class)) {
+                    return true;
+                }
+                String name = type.getName();
+                if (!name.startsWith(root + ".")) {
+                    return false;
+                }
+                String relative = name.substring(root.length() + 1);
+                int lastDot = relative.lastIndexOf('.');
+                String packagePath = lastDot < 0 ? "" : relative.substring(0, lastDot);
+                if (List.of(packagePath.split("\\.")).contains("generated")) {
+                    return !packagePath.startsWith("core.") && !packagePath.equals("core");
+                }
+                String simple = relative.substring(lastDot + 1);
+                String topLevel = simple.contains("$") ? simple.substring(0, simple.indexOf('$')) : simple;
+                String firstPackage = lastDot < 0 ? "" : packagePath.split("\\.")[0];
+                String module = EmsModuleNames.moduleOf(firstPackage, topLevel);
+                return !EmsModuleNames.EVENT_CORE.equals(module) && !EmsModuleNames.PLATFORM.equals(module);
+            }
+        };
     }
 
     static ArchCondition<JavaClass> mapNoPathContaining(List<String> segments) {

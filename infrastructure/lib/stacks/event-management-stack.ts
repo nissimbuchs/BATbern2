@@ -115,7 +115,6 @@ export class EventManagementStack extends cdk.Stack {
             CLOUDFRONT_DOMAIN: props.config.domain?.cdnDomain
               ? `https://${props.config.domain.cdnDomain}`
               : `https://${props.cloudFrontDistribution.distributionDomainName}`,
-            CLOUDFRONT_DISTRIBUTION_ID: props.cloudFrontDistribution.distributionId,
           }),
           // Service Connect URL for company-user-management service (ADR-004)
           // Uses DNS-based service discovery: http://<service-name>:8080
@@ -285,25 +284,6 @@ export class EventManagementStack extends cdk.Stack {
           actions: ['cloudwatch:PutMetricData'],
           resources: ['*'],
           conditions: { StringEquals: { 'cloudwatch:namespace': 'BATbern/MailCenter' } },
-        })
-      );
-    }
-
-    // Grant CloudFront cache invalidation permissions for publishing engine (Story 5.7 - BAT-11)
-    if (props.cloudFrontDistribution) {
-      this.service.taskDefinition.taskRole.addToPrincipalPolicy(
-        new iam.PolicyStatement({
-          effect: iam.Effect.ALLOW,
-          actions: [
-            'cloudfront:CreateInvalidation',
-            'cloudfront:GetInvalidation',
-            'cloudfront:ListInvalidations',
-          ],
-          resources: [
-            `arn:aws:cloudfront::${cdk.Stack.of(this).account}:distribution/${
-              props.cloudFrontDistribution.distributionId
-            }`,
-          ],
         })
       );
     }

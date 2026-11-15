@@ -1,0 +1,15 @@
+{
+  "response" : {
+    "status" : 400,
+    "xCacheStatus" : null,
+    "body" : {
+      "correlationId" : "uuid#1",
+      "error" : "Bad Request",
+      "message" : "Required parameter 'scope' is not present.",
+      "path" : "/api/v1/public/events",
+      "severity" : "LOW",
+      "status" : 400,
+      "timestamp" : "ts#1"
+    }
+  }
+}

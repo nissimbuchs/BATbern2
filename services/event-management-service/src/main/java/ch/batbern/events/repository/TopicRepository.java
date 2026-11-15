@@ -37,7 +37,7 @@ public interface TopicRepository extends JpaRepository<Topic, UUID>, JpaSpecific
 
     /**
      * Batch-load topics by a set of topic codes.
-     * Used by EventController.buildBatchExpandedResponses() to avoid N+1 topic queries.
+     * Used by the batch topic expansion of event lists (TopicEventExpansion) to avoid N+1 topic queries.
      */
     List<Topic> findByTopicCodeIn(java.util.Collection<String> topicCodes);
 

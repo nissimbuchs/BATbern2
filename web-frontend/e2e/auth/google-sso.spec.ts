@@ -11,7 +11,7 @@
 /**
  * E2E smoke — "Continue with Google" SSO button (Story 12.9, SSO Phase 5)
  *
- * SCOPE & CAVEAT (per docs/plans/sso-oidc-federation.md §6):
+ * SCOPE & CAVEAT (per docs/archive/plans/sso-oidc-federation.md §6):
  * A full Google OAuth round-trip (consent → idpresponse → Cognito → /auth/callback) CANNOT be
  * automated in CI without a managed test Google identity. So this spec covers only what is
  * automatable: with `features.sso` ON, the login page renders the button and clicking it

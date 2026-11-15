@@ -5,7 +5,7 @@ created: '2026-05-28'
 status: 'done'
 baseline_commit: '42f7977a9065982895a466ce5bc3be68565e237a'
 context:
-  - '{project-root}/docs/plans/auto-participant-email-aliases-excel-export.md'
+  - '{project-root}/docs/archive/plans/auto-participant-email-aliases-excel-export.md'
   - '{project-root}/_bmad-output/project-context.md'
   - '{project-root}/docs/architecture/ADR-003-meaningful-identifiers-public-apis.md'
   - '{project-root}/docs/architecture/ADR-004-factor-user-fields-from-domain-entities.md'
@@ -145,7 +145,7 @@ context:
 - [x] `EventParticipantsTab.tsx` -- export button + handler + `<Alert>` error path.
 - [x] `web-frontend/public/locales/*/events.json` -- new keys `event.participants.exportNameBadges` + `event.participants.exportError` added in all 10 locales. **Deviation:** spec said `translation.json`; actual file is namespaced `events.json`. See Spec Change Log §3.
 - [x] Bruno tests -- 5 `.bru` files in `bruno-tests/events/` (distribution-list happy + moderator + unknown-event, participants-export happy + forbidden). All comments in `docs { }` blocks.
-- [x] `.github/doc-drift-mappings.yml` -- no entry needed (architecture plan at `docs/plans/auto-participant-email-aliases-excel-export.md` checked in alongside code).
+- [x] `.github/doc-drift-mappings.yml` -- no entry needed (architecture plan at `docs/archive/plans/auto-participant-email-aliases-excel-export.md` checked in alongside code).
 - [x] **NEW (deviation):** `V107__add_registration_metadata.sql` -- adds `metadata JSONB NOT NULL DEFAULT '{}'` to `registrations` (spec assumed column existed; it did not). New forward-only migration; CLAUDE.md frozen-migration rule respected. See Spec Change Log §4.
 - [x] **NEW:** `Registration.java` -- added `@JdbcTypeCode(SqlTypes.JSON) Map<String, Object> metadata` field to map V107 column.
 - [x] **NEW:** `api-gateway/src/main/java/ch/batbern/gateway/config/SecurityConfig.java` + EMS `SecurityConfig.java` -- `permitAll` for `GET /api/v1/events/*/distribution-list/*` (Lambda forwarder VPC-internal pattern; matches existing `/registrations` permitAll). Per memory `feedback_dual_security_config.md`, BOTH gateway and target service security configs were updated.

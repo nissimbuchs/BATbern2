@@ -82,16 +82,16 @@ test.describe('Company create with logo (Story 17.11)', () => {
     await page.getByTestId('submit-company-button').click();
     await expect(page.getByTestId('company-form-dialog')).toBeHidden({ timeout: 15_000 });
 
-    // The company has its logo at the final key, and the CDN (MinIO locally) serves it
+    // The company has its logo at the final key (CompanyLogoUploadHandler.logoKey:
+    // logos/companies/{name}/logo-{uploadId}.{ext}, no year since Story 17.11a), and the CDN
+    // (MinIO locally) serves it
     const company = await request.get(
       `${API_BASE_URL}/api/v1/companies/${companySlug(name)}?include=logo`,
       { headers: { Authorization: `Bearer ${token}` } }
     );
     expect(company.ok()).toBe(true);
     const logoUrl: string = (await company.json()).logo.url;
-    expect(logoUrl).toMatch(
-      new RegExp(`/logos/\\d{4}/companies/${companySlug(name)}/logo-.+\\.png$`)
-    );
+    expect(logoUrl).toMatch(new RegExp(`/logos/companies/${companySlug(name)}/logo-.+\\.png$`));
     expect((await request.get(logoUrl)).ok()).toBe(true);
 
     // Only the upload contract was used for the file

@@ -7,7 +7,7 @@ backlog Story 12.10 — PostConfirmation/PreAuthentication are still deployed un
 **Date**: 2026-05-31 (decided) · 2026-06-04 (delivered)
 **Decision Makers**: Nissim Buchs (owner), Architecture
 **Related ADRs**: ADR-001 (Invitation-Based Registration / Cognito-for-auth-only), ADR-003 (Meaningful Identifiers in Public APIs), ADR-004 (Factor User Fields from Domain Entities), ADR-007 (Unified User Profile), ADR-009 (Unified Speaker Workflow — Cognito `FORCE_CHANGE_PASSWORD`)
-**Related Plan**: `docs/plans/sso-oidc-federation.md` (phased, prod-safe delivery)
+**Related Plan**: `docs/archive/plans/sso-oidc-federation.md` (phased, prod-safe delivery)
 **Affects documentation**: `docs/architecture/06b-user-lifecycle-sync.md` (§"Cognito Custom-Attribute Inventory & Deprecation Status", and the now-corrected PreAuthentication claim)
 
 ## Context
@@ -157,7 +157,7 @@ plus `batbern.ch` domain verification and consent-screen publication to Producti
 
 ## Implementation
 
-Delivery is phased and prod-safe; see `docs/plans/sso-oidc-federation.md`. Order: **PR 0** (attribute
+Delivery is phased and prod-safe; see `docs/archive/plans/sso-oidc-federation.md`. Order: **PR 0** (attribute
 hygiene) → **PR 1** (API-Gateway `is_active` gate + canonical JIT) → **SSO Phases 0–5** (Phase 3 is
 verify-only, since PR 1 already builds provisioning + gating) → **cleanup track** (retire
 PostAuthentication, PreAuthentication, PostConfirmation). Each phase is independently deployable to

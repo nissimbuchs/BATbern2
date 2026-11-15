@@ -18,7 +18,6 @@ import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.PublishingConfigRepository;
 import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.events.service.AgendaConfigResolver;
-import ch.batbern.events.service.CdnInvalidationService;
 import ch.batbern.events.service.EventWorkflowStateMachine;
 import ch.batbern.events.service.StructuralSessionService;
 import ch.batbern.events.security.SecurityContextHelper;
@@ -62,7 +61,6 @@ public class PublishingService {
     private final CacheManager cacheManager;
     private final EventWorkflowStateMachine eventWorkflowStateMachine;
     private final SecurityContextHelper securityContextHelper;
-    private final CdnInvalidationService cdnInvalidationService;
     private final org.springframework.context.ApplicationEventPublisher applicationEventPublisher;
     private final StructuralSessionService structuralSessionService;
     private final DomainEventPublisher domainEventPublisher;
@@ -134,7 +132,6 @@ public class PublishingService {
         }
 
         evictEventCache(event.getEventCode());
-        boolean cdnInvalidated = invalidateCdn(event.getEventCode(), phase);
 
         // Story 7.5 rework: when the speakers phase publishes, signal the Q&A listener — it opens
         // the windows iff this event's qnaOpenTrigger == SPEAKERS_PUBLISHED (idempotent; no-op
@@ -148,7 +145,6 @@ public class PublishingService {
                 .phase(phase.value())
                 .published(true)
                 .publishedAt(now.atOffset(ZoneOffset.UTC))
-                .cdnInvalidated(cdnInvalidated)
                 .build();
     }
 
@@ -174,13 +170,11 @@ public class PublishingService {
         eventRepository.save(event);
 
         evictEventCache(event.getEventCode());
-        boolean cdnInvalidated = invalidateCdn(event.getEventCode(), phase);
 
         return UnpublishPhaseResponse.builder()
                 .phase(phase.value())
                 .published(false)
                 .unpublishedAt(Instant.now().atOffset(ZoneOffset.UTC))
-                .cdnInvalidated(cdnInvalidated)
                 .build();
     }
 
@@ -405,11 +399,6 @@ public class PublishingService {
                 .field(field)
                 .message(message)
                 .build();
-    }
-
-    private boolean invalidateCdn(String eventCode, PublishingPhase phase) {
-        String invalidationId = cdnInvalidationService.invalidateCache(eventCode, phase.value());
-        return invalidationId != null && !invalidationId.startsWith("error");
     }
 
     private static PublishingPhase currentPhaseOf(Event event) {

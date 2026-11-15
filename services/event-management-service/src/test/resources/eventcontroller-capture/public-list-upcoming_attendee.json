@@ -1,0 +1,62 @@
+{
+  "response" : {
+    "status" : 200,
+    "xCacheStatus" : null,
+    "body" : {
+      "data" : [ {
+        "eventCode" : "BATbern9701",
+        "title" : "Capture Upcoming",
+        "eventNumber" : 9701,
+        "date" : "ts#1",
+        "registrationDeadline" : "ts#2",
+        "venueName" : "Kornhausforum",
+        "venueAddress" : "Kornhausplatz 18, 3011 Bern",
+        "venueCapacity" : 200,
+        "registrationCapacity" : 3,
+        "qnaEnabled" : true,
+        "qnaOpenTrigger" : "EVENT_COMPLETED",
+        "qnaWindowDays" : 14,
+        "currentAttendeeCount" : 0,
+        "description" : "Upcoming description",
+        "createdAt" : "ts#3",
+        "updatedAt" : "ts#4",
+        "themeImageUrl" : "https://cdn.batbern.ch/events/BATbern9701/theme-capture-theme-0.png",
+        "themeImageUploadId" : "capture-theme-0",
+        "topicCode" : "capture-upcoming-topic",
+        "eventType" : "EVENING",
+        "workflowState" : "AGENDA_PUBLISHED",
+        "topic" : {
+          "code" : "capture-upcoming-topic",
+          "name" : "Capture Upcoming Topic",
+          "description" : "Capture Upcoming Topic description",
+          "category" : "technical"
+        },
+        "sessions" : [ {
+          "sessionSlug" : "lunch",
+          "eventCode" : "BATbern9701",
+          "title" : "Lunch",
+          "description" : "Lunch abstract",
+          "sessionType" : "lunch",
+          "startTime" : "ts#5",
+          "endTime" : "ts#6",
+          "room" : "Saal",
+          "capacity" : null,
+          "language" : "de",
+          "createdAt" : "ts#7",
+          "updatedAt" : "ts#8",
+          "speakers" : [ ],
+          "materialsStatus" : "NONE"
+        } ],
+        "speakers" : [ ]
+      } ],
+      "pagination" : {
+        "page" : 1,
+        "limit" : 20,
+        "totalItems" : 1,
+        "totalPages" : 1,
+        "hasNext" : false,
+        "hasPrev" : false
+      }
+    }
+  }
+}

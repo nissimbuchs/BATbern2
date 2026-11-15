@@ -1,0 +1,80 @@
+{
+  "response" : {
+    "status" : 400,
+    "xCacheStatus" : null,
+    "body" : {
+      "correlationId" : "uuid#1",
+      "details" : {
+        "currentState" : "AGENDA_PUBLISHED",
+        "message" : "Cannot select topic when event is in AGENDA_PUBLISHED state"
+      },
+      "error" : "Bad Request",
+      "message" : "Invalid state transition",
+      "path" : "/api/v1/events/BATbern9701/topics",
+      "severity" : "MEDIUM",
+      "status" : 400,
+      "timestamp" : "ts#1"
+    }
+  },
+  "eventAfter" : {
+    "status" : 200,
+    "xCacheStatus" : "MISS",
+    "body" : {
+      "eventCode" : "BATbern9701",
+      "title" : "Capture Upcoming",
+      "eventNumber" : 9701,
+      "date" : "ts#2",
+      "registrationDeadline" : "ts#3",
+      "venueName" : "Kornhausforum",
+      "venueAddress" : "Kornhausplatz 18, 3011 Bern",
+      "venueCapacity" : 200,
+      "registrationCapacity" : 3,
+      "qnaEnabled" : true,
+      "qnaOpenTrigger" : "EVENT_COMPLETED",
+      "qnaWindowDays" : 14,
+      "confirmedCount" : 3,
+      "waitlistCount" : 2,
+      "spotsRemaining" : 0,
+      "realAttendeeCount" : 4,
+      "organizerUsername" : "olga.organizer",
+      "currentAttendeeCount" : 5,
+      "description" : "Upcoming description",
+      "createdAt" : "ts#4",
+      "updatedAt" : "ts#5",
+      "themeImageUrl" : "https://cdn.batbern.ch/events/BATbern9701/theme-capture-theme-0.png",
+      "themeImageUploadId" : "capture-theme-0",
+      "teaserImages" : [ {
+        "id" : "uuid#2",
+        "imageUrl" : "https://cdn.batbern.ch/events/BATbern9701/teaser-0.png",
+        "displayOrder" : 0,
+        "presentationPosition" : "AFTER_TOPIC_REVEAL"
+      }, {
+        "id" : "uuid#3",
+        "imageUrl" : "https://cdn.batbern.ch/events/BATbern9701/teaser-1.png",
+        "displayOrder" : 1,
+        "presentationPosition" : "AFTER_TOPIC_REVEAL"
+      } ],
+      "topicCode" : "capture-upcoming-topic",
+      "eventType" : "EVENING",
+      "typicalStartTime" : "17:30",
+      "typicalEndTime" : "19:00",
+      "workflowState" : "AGENDA_PUBLISHED",
+      "topic" : {
+        "code" : "capture-upcoming-topic",
+        "name" : "Capture Upcoming Topic",
+        "description" : "Capture Upcoming Topic description",
+        "category" : "technical"
+      },
+      "venue" : {
+        "id" : "BATbern9701",
+        "name" : "Kornhausforum",
+        "address" : "Kornhausplatz 18, 3011 Bern",
+        "capacity" : 200
+      },
+      "currentPublishedPhase" : "AGENDA"
+    }
+  },
+  "registrations" : [ "BATbern9701-carl.confirmed confirmed null", "BATbern9701-cora.cancelled cancelled null", "BATbern9701-olga.organizer confirmed null", "BATbern9701-rita.registered registered null", "BATbern9701-walter.second waitlist 2", "BATbern9701-wanda.first waitlist 1" ],
+  "uploads" : [ "capture-theme-0 associated BATbern9701" ],
+  "mails" : [ ]
+}

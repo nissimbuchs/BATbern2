@@ -309,7 +309,7 @@ The packages below are under `services/event-management-service/src/main/java/ch
 ```mermaid
 flowchart TB
     subgraph api["API layer, controller/ and feature packages"]
-        C1["Events and workflow<br/>EventController, EventWorkflowController,<br/>EventTypeController, AgendaConfigController,<br/>PublishingEngineController"]
+        C1["Events and workflow<br/>EventController, PublicEventController,<br/>EventTopicController, EventWorkflowController,<br/>EventTypeController, AgendaConfigController,<br/>PublishingEngineController"]
         C2["Sessions and agenda<br/>SessionController, GlobalSessionController,<br/>SlotAssignmentController, TimetableController"]
         C3["Speaker workflow<br/>EventSpeakerPoolController, SpeakerStatusController,<br/>SpeakerInvitationController, SpeakerOutreachController,<br/>SpeakerReminderController, SessionSpeakerController"]
         C4["Speaker portal<br/>SpeakerPortal*Controller,<br/>SessionMaterialsController"]
@@ -319,14 +319,15 @@ flowchart TB
         C8["Mail<br/>EmailTemplateController, NewsletterController,<br/>mailcenter/MailConversationController,<br/>EventMailController"]
         C9["AI assist<br/>AiAssistController, AiPromptController,<br/>TopicSimilarityController"]
         C10["Live and Watch<br/>watch/LiveTimingController,<br/>WatchEventController, WatchWebSocketController"]
-        C11["Admin and analytics<br/>AdminSettingsController, AnalyticsController,<br/>PublicSettingsController, NotificationController"]
+        C11["Admin and analytics<br/>AdminSettingsController, AnalyticsController,<br/>EventAnalyticsController, PublicSettingsController,<br/>NotificationController"]
     end
 
     subgraph app["Application services"]
+        S0["EventReadService, EventWriteService<br/>event core; modules plug in through<br/>EventResponseContributor, EventWriteHooks"]
         S1["EventWorkflowStateMachine<br/>8 event states"]
         S2["SpeakerWorkflowService<br/>8 speaker states, ADR-009"]
         S3["SlotAssignmentService,<br/>slotassignment/ conflict detection"]
-        S4["publishing/ PublishingService,<br/>PublicEventShaper, CdnInvalidationService"]
+        S4["publishing/ PublishingService,<br/>PublicEventShaper"]
         S5["RegistrationService,<br/>WaitlistPromotionService"]
         S6["EventTaskService"]
         S7["mailcenter/ compose, inbound,<br/>conversations, delivery status"]
@@ -353,7 +354,7 @@ flowchart TB
         PCSX["PCS, calendar reply contract EMS owns,<br/>HttpCalendarReplyContract"]
     end
 
-    C1 --> S1 & S4
+    C1 --> S0 & S1 & S4
     C2 --> S3
     C3 --> S2
     C4 --> S2
@@ -391,8 +392,9 @@ flowchart TB
   `/api/v1/watch/ws`; whether any client still uses them in production (not verified
   2026-11-04).
 - The **public events read model** has no table of its own: `PublicEventShaper` shapes the
-  public view of events and sessions, served at `/api/v1/public/events`, and
-  `CdnInvalidationService` invalidates the CloudFront paths after publishing.
+  public view of events and sessions, served at `/api/v1/public/events`. Publishing invalidates no
+  CloudFront path: the API answers `no-store` and is not behind CloudFront, and CDN file keys carry
+  the upload id (the dead `CdnInvalidationService` was removed 2026-11-15).
 
 ### Level 3: Component Diagram, Company User Management Service
 

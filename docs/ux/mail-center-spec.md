@@ -2,7 +2,7 @@
 
 **Prototype:** [`mail-center-prototype.html`](mail-center-prototype.html). Open it in a browser; it has no build step and no backend.
 **Status:** approved by the owner on 2026-10-30 (v4), plus the Partners view and shared composer (v5) added the same day.
-**Epic:** [`docs/prd/epic-16-mail-center.md`](../prd/epic-16-mail-center.md)
+**Epic:** [`docs/archive/prd/epic-16-mail-center.md`](../archive/prd/epic-16-mail-center.md)
 
 ## What the prototype is and is not
 

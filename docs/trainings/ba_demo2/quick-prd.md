@@ -6,8 +6,8 @@ inputDocuments:
   - 'docs/prd-enhanced.md'
   - 'docs/prd/epic-8-partner-coordination.md'
   - '_bmad-output/project-context.md'
-  - '_bmad-output/brainstorming/brainstorming-session-2026-02-24.md'
-  - '_bmad-output/brainstorming/brainstorming-session-2026-02-25.md'
+  - '_bmad-output/archive/brainstorming/brainstorming-session-2026-02-24.md'
+  - '_bmad-output/archive/brainstorming/brainstorming-session-2026-02-25.md'
 workflowType: 'prd'
 classification:
   projectType: saas_b2b

@@ -55,7 +55,8 @@ public class EventResponse {
     private Integer qnaWindowDays;
 
     // Teaser images for moderator presentation page (Story 10.22)
-    // Populated by EventController after base DTO construction (N+1 acceptable at BATbern scale).
+    // Populated by EventReadService and its EventResponseContributors after base DTO construction
+    // (N+1 acceptable at BATbern scale).
     // TODO: If list performance degrades, switch to batch-load: findByEventCodeInOrderByDisplayOrderAsc(codes).
     private List<TeaserImageItem> teaserImages;
 

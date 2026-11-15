@@ -1,6 +1,6 @@
 # Plan: SSG / prerender the public homepage (CSR → instant first paint)
 
-**Status:** Stages 2, 1, 3 + CloudFront routing + Stage 5 guardrails/deploy-wiring IMPLEMENTED & locally verified 2026-06-02 (branch `perf/public-homepage-followup`, not committed). NEXT: commit → deploy → measure on beta (§7) → decide Stage 4 (archive).
+**Status:** Stages 2, 1, 3, CloudFront routing and Stage 5 guardrails live via #733 (merged 2026-06-02); the deploy build runs `build:prerender`. Stage 4 (archive) is not recorded as decided.
 **Author:** Amelia (dev agent) — drafted 2026-06-02, revised 2026-06-02 after a code audit + tooling spike.
 **Prereq:** measure real Lighthouse/PSI on **beta.batbern.ch** before the Stage-3 homepage prerender (see §7) so scope is sized from data, not guesses.
 

@@ -1,0 +1,175 @@
+# Pre-deploy gate (P5), step 1 spike: the shipped images in the PRODUCTION profile, sealed.
+# Plan: docs/plans/pre-deploy-gate-plan.md. Driver: scripts/gate/run-gate.sh.
+#
+# - The four service images are the production Dockerfiles' output (scripts/gate/build-images.sh).
+# - SPRING_PROFILES_ACTIVE=staging, as ECS sets it (production runs the staging profile).
+# - Environment = what the CDK stacks set, with external systems pointed at helper containers:
+#   Postgres (empty, Flyway runs the real migrations), S3Mock in place of S3, and a fake AWS that
+#   catches every SES mail and stands in for the Cognito admin API (scripts/gate/fake-aws).
+# - NO AWS credentials: run under `env -u AWS_PROFILE -u AWS_ACCESS_KEY_ID ...`, no ~/.aws mount.
+#   Every AWS client that is not endpoint-overridden fails for lack of credentials.
+# - Gate-only overrides (never set by CDK): BATBERN_SES_ENDPOINT, BATBERN_COGNITO_ENDPOINT (CUMS),
+#   AWS_S3_ENDPOINT, AWS_S3_ENDPOINT_ACCESS_KEY, AWS_S3_ENDPOINT_SECRET_KEY, COGNITO_RESEND_ENABLED=false.
+#
+# Required env (run-gate.sh derives them): GATE_COGNITO_USER_POOL_ID, GATE_COGNITO_CLIENT_ID
+# (from a test token's iss/aud claims), GATE_JWT_SECRET (random per run).
+name: batbern-gate
+
+x-service-env: &service-env
+  SPRING_PROFILES_ACTIVE: staging
+  AWS_REGION: eu-central-1
+  LOG_LEVEL: INFO
+  DATABASE_URL: jdbc:postgresql://postgres:5432/batbern
+  DATABASE_USERNAME: batbern
+  DATABASE_PASSWORD: gate
+  COGNITO_USER_POOL_ID: ${GATE_COGNITO_USER_POOL_ID:?derive from a test token}
+  COGNITO_CLIENT_ID: ${GATE_COGNITO_CLIENT_ID:?derive from a test token}
+  WATCH_JWT_SECRET: ${GATE_JWT_SECRET:?random per run}
+  JWT_SECRET: ${GATE_JWT_SECRET:?random per run}
+  BATBERN_SES_CONFIGURATION_SET_NAME: gate-transactional
+  # --- gate-only overrides (production never sets these) ---
+  BATBERN_SES_ENDPOINT: ${GATE_SES_ENDPOINT-http://fake-aws:8025}
+  AWS_S3_ENDPOINT: ${GATE_S3_ENDPOINT-http://172.17.0.1:19090}
+  AWS_S3_ENDPOINT_ACCESS_KEY: gate
+  AWS_S3_ENDPOINT_SECRET_KEY: gate-s3
+
+x-healthcheck: &healthcheck
+  test: ["CMD-SHELL", "curl -fs http://localhost:8080/actuator/health || exit 1"]
+  interval: 5s
+  timeout: 5s
+  retries: 60
+  start_period: 30s
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: batbern
+      POSTGRES_USER: batbern
+      POSTGRES_PASSWORD: gate
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U batbern -d batbern"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+    mem_limit: 512m
+
+  # MinIO no longer publishes images (Docker Hub and quay.io refuse the pull, checked 2026-11-15),
+  # so Adobe S3Mock stands in for S3. It accepts any credentials and does not check signatures.
+  # Published on the docker0 address so a presigned URL works from the host (Bruno) and from the
+  # containers (the service's own S3 calls) under the same host name.
+  s3:
+    image: adobe/s3mock:4.7.0
+    environment:
+      COM_ADOBE_TESTING_S3MOCK_STORE_INITIAL_BUCKETS: batbern-gate-content
+      initialBuckets: batbern-gate-content
+    ports:
+      - "127.0.0.1:19090:9090"
+      - "172.17.0.1:19090:9090"
+    mem_limit: 512m
+
+  fake-aws:
+    image: python:3.13-alpine
+    command: ["python", "-u", "/app/fake_aws.py", "8025"]
+    volumes:
+      - ./scripts/gate/fake-aws/fake_aws.py:/app/fake_aws.py:ro
+    ports:
+      - "127.0.0.1:18025:8025"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8025/_gate/health || exit 1"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+    mem_limit: 128m
+
+  company-user-management:
+    image: batbern-gate/company-user-management:${GATE_TAG:-spike}
+    environment:
+      <<: *service-env
+      SERVICE_NAME: company-user-management
+      SERVICE_SCOPE: companies-and-users
+      HANDLES_COMPANIES: "true"
+      HANDLES_USERS: "true"
+      S3_CONTENT_BUCKET_NAME: batbern-gate-content
+      CLOUDFRONT_DOMAIN: http://172.17.0.1:19090/batbern-gate-content
+      APP_BASE_URL: https://gate.batbern.invalid
+      # Gate-only: the daily Cognito re-send job would call the production pool (no credentials
+      # here, so it would fail anyway). Existing property, CDK never sets it.
+      COGNITO_RESEND_ENABLED: ${GATE_COGNITO_RESEND_ENABLED-false}
+      # Gate-only: Cognito admin calls (Pattern N user creation) go to the stand-in pool.
+      BATBERN_COGNITO_ENDPOINT: ${GATE_COGNITO_ENDPOINT-http://fake-aws:8025}
+    depends_on:
+      postgres: {condition: service_healthy}
+      fake-aws: {condition: service_healthy}
+    healthcheck: *healthcheck
+    mem_limit: 1024m
+
+  event-management:
+    image: batbern-gate/event-management:${GATE_TAG:-spike}
+    environment:
+      <<: *service-env
+      SERVICE_NAME: event-management
+      JPA_DDL_AUTO: none
+      AWS_S3_BUCKET_NAME: batbern-gate-content
+      CLOUDFRONT_DOMAIN: http://172.17.0.1:19090/batbern-gate-content
+      COMPANY_USER_MANAGEMENT_SERVICE_URL: http://company-user-management:8080
+      APP_BASE_URL: https://gate.batbern.invalid
+      EMAIL_FROM: noreply@batbern.ch
+      EMAIL_REPLY_TO: replies@batbern.ch
+      # SQS listeners (AWS_INBOUND_EMAIL_ENABLED, AWS_INBOUND_EMAIL_FORWARDING_ENABLED,
+      # AWS_BOUNCE_ENABLED, AWS_SES_DELIVERY_STATUS_ENABLED) are left unset on purpose: their
+      # listeners are @ConditionalOnProperty, so they are off. Override by omission.
+    depends_on:
+      postgres: {condition: service_healthy}
+      fake-aws: {condition: service_healthy}
+      # One service migrates at a time: on an EMPTY database the three Flyway runs race on objects
+      # several services create (V5 logos table: "duplicate key ... pg_type_typname_nsp_index",
+      # seen 2026-11-15). Production never migrates an empty database in parallel.
+      company-user-management: {condition: service_healthy}
+    healthcheck: *healthcheck
+    mem_limit: 1536m
+
+  partner-coordination:
+    image: batbern-gate/partner-coordination:${GATE_TAG:-spike}
+    environment:
+      <<: *service-env
+      SERVICE_NAME: partner-coordination
+    depends_on:
+      postgres: {condition: service_healthy}
+      fake-aws: {condition: service_healthy}
+      event-management: {condition: service_healthy}
+    healthcheck: *healthcheck
+    mem_limit: 768m
+
+  api-gateway:
+    image: batbern-gate/api-gateway:${GATE_TAG:-spike}
+    environment:
+      SPRING_PROFILES_ACTIVE: staging
+      APP_ENVIRONMENT: production
+      AWS_REGION: eu-central-1
+      LOG_LEVEL: INFO
+      SERVICE_NAME: api-gateway
+      DATABASE_URL: jdbc:postgresql://postgres:5432/batbern
+      DATABASE_USERNAME: batbern
+      DATABASE_PASSWORD: gate
+      EVENT_MANAGEMENT_SERVICE_URL: http://event-management:8080
+      PARTNER_COORDINATION_SERVICE_URL: http://partner-coordination:8080
+      COMPANY_USER_MANAGEMENT_SERVICE_URL: http://company-user-management:8080
+      COGNITO_USER_POOL_ID: ${GATE_COGNITO_USER_POOL_ID:?derive from a test token}
+      COGNITO_CLIENT_ID: ${GATE_COGNITO_CLIENT_ID:?derive from a test token}
+      WATCH_JWT_SECRET: ${GATE_JWT_SECRET:?random per run}
+      # Production runs Turnstile on. Cloudflare's documented always-pass test keys keep the
+      # filter real; Bruno sends no token, which the filter lets through (fail-open, AC2).
+      TURNSTILE_ENABLED: "true"
+      TURNSTILE_SITE_KEY: 1x00000000000000000000AA
+      TURNSTILE_SECRET_KEY: 1x0000000000000000000000000000000AA
+      FEATURES_SSO_ENABLED: "true"
+      SECURITY_ACTIVE_GATE_ENABLED: "true"
+    ports:
+      - "127.0.0.1:${GATE_GATEWAY_PORT:-18000}:8080"
+    depends_on:
+      company-user-management: {condition: service_healthy}
+      event-management: {condition: service_healthy}
+      partner-coordination: {condition: service_healthy}
+    healthcheck: *healthcheck
+    mem_limit: 768m

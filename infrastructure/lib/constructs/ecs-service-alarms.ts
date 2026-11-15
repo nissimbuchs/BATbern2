@@ -327,14 +327,19 @@ export class EcsServiceAlarms extends Construct {
           namespace: SCHEDULED_JOBS_NAMESPACE,
           metricName: scheduledJobMetricName,
           statistic: 'Sum',
-          period: cdk.Duration.minutes(5),
+          period: cdk.Duration.hours(1),
         }),
         threshold: 0,
-        evaluationPeriods: 1,
+        // The jobs run daily (01:00). One failure in the last 24 hours keeps the alarm on; a 5-minute
+        // window cleared it 5 minutes after the run, and its OK action closed the issue.
+        evaluationPeriods: 24,
+        datapointsToAlarm: 1,
         comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
         treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
       });
       scheduledJobFailureAlarm.addAlarmAction(alarmAction);
+      // OK action as on every alarm (#956): the issue closes when the 24-hour window has no failure,
+      // i.e. a day after the last one (owner 2026-11-15).
       scheduledJobFailureAlarm.addOkAction(alarmAction);
       scheduledJobFailureAlarm.node.addDependency(scheduledJobFilter);
     }

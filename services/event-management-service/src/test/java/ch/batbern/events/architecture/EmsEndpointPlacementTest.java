@@ -10,8 +10,9 @@ import com.tngtech.archunit.lang.ArchRule;
  * in {@link EmsModuleWallsTest}, whose store {@link FrozenRuleKeysTest} pins). Story 17.13: the
  * registration endpoints live in {@code RegistrationController}; {@code EventController} maps none,
  * neither by hand nor by implementing the generated {@code RegistrationsApi}. #1315:
- * {@code RegistrationController} uses no {@code RegistrationRepository}.
- * {@code EmsModuleRulesFixtureTest} proves that both rules fire.
+ * {@code RegistrationController} uses no {@code RegistrationRepository}. Backlog story "EventController keeps
+ * only HTTP": {@code EventController} uses event core and platform only.
+ * {@code EmsModuleRulesFixtureTest} proves that every rule fires.
  */
 @AnalyzeClasses(packages = EmsModuleWallsTest.ROOT, importOptions = ImportOption.DoNotIncludeTests.class)
 class EmsEndpointPlacementTest {
@@ -25,4 +26,9 @@ class EmsEndpointPlacementTest {
     static final ArchRule REGISTRATION_CONTROLLER_USES_NO_REPOSITORY =
             EmsModuleRules.controllerUsesNoRepository(EmsModuleWallsTest.ROOT, "RegistrationController",
                     "RegistrationRepository");
+
+    /** EventController keeps only HTTP: event core services, no repository, no other module. */
+    @ArchTest
+    static final ArchRule EVENT_CONTROLLER_USES_ONLY_EVENT_CORE =
+            EmsModuleRules.controllerUsesOnlyEventCore(EmsModuleWallsTest.ROOT, "EventController");
 }

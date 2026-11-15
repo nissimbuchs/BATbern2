@@ -11,7 +11,7 @@
 # Run 'make help' to see all available targets
 
 .DEFAULT_GOAL := help
-.PHONY: help install build test lint clean docker-up docker-down docker-build verify ci-build ci-test check-outdated update-deps audit-security all build-watch test-watch clean-watch watch-generate-types setup-test-users reports reports-deploy check-frontend-api-paths check-api-type-copies check-test-ratchet check-s2s-client-urls check-i18n-keys lint-api
+.PHONY: help install build test lint clean docker-up docker-down docker-build verify ci-build ci-test check-outdated update-deps audit-security all build-watch test-watch clean-watch watch-generate-types setup-test-users reports reports-deploy check-frontend-api-paths check-api-type-copies check-test-ratchet check-s2s-client-urls check-ems-module-rules check-i18n-keys lint-api
 
 # ═══════════════════════════════════════════════════════════
 # HELP & DOCUMENTATION
@@ -514,6 +514,9 @@ check-test-ratchet: ## Test fidelity ratchet: own-code mock counts may only fall
 
 check-s2s-client-urls: ## No service client calls another service's public /api/v1 URL; the baseline may only shrink (Epic 17 entry 6, ADR-016, same as CI)
 	@cd web-frontend && npm run --silent check:s2s-client-urls
+
+check-ems-module-rules: ## EMS module scripts: comment stripping and the shared naming rules (scripts/architecture/ems-modules.json), same as CI
+	@python3 -I scripts/architecture/test_ems_modules.py
 
 check-i18n-keys: ## Every t('key') in web-frontend/src exists in the en bundles; missing ones may only fall (Epic 17, same as CI)
 	@cd web-frontend && npm run --silent check:i18n-keys

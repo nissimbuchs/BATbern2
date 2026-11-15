@@ -283,7 +283,7 @@ Use the existing `apiClient` instance (same pattern as `speakerPortalService.ts`
 
 ### References
 
-- Epic 9 full specification: [Source: docs/prd/epic-9-speaker-authentication.md]
+- Epic 9 full specification: [Source: docs/archive/prd/epic-9-speaker-authentication.md]
 - Existing `MagicLinkService`: [Source: services/event-management-service/src/main/java/ch/batbern/events/service/MagicLinkService.java]
 - API Gateway SecurityConfig patterns: [Source: docs/architecture/06-backend-architecture.md]
 - JWT auth claim extraction pattern (`custom:role`): [Source: docs/architecture/06-backend-architecture.md]

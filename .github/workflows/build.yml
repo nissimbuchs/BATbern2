@@ -701,6 +701,11 @@ jobs:
         working-directory: ./web-frontend
         run: npm run check:s2s-client-urls
 
+      # EMS module scripts (scripts/architecture): Java comment stripping and the naming rules shared
+      # with EmsModuleNames (ems-modules.json, its examples checked here and by the EMS JUnit test).
+      - name: EMS module rules (Python side)
+        run: make check-ems-module-rules
+
   # Story 17.4: for every operation a PR adds to docs/api/*.openapi.yml, the 3 most similar
   # existing operations, as one PR comment (marked, updated in place on every push). Informative:
   # continue-on-error, and nothing needs this job.

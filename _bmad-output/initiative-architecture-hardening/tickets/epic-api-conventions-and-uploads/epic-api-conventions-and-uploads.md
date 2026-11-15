@@ -39,7 +39,7 @@ There is one endpoint to extend per resource, and one upload mechanism. The sign
 ## References
 
 - parent — `_bmad-output/initiative-architecture-hardening/initiative-architecture-hardening.md`, section Requirements (R14, R15, R16), Constraints, Notes (Decision lines)
-- prd — `docs/prd/epic-17-architecture-hardening.md`, Rules for every story, Story order
+- prd — `docs/archive/prd/epic-17-architecture-hardening.md`, Rules for every story, Story order
 - reference — `docs/architecture/ADR-002-generic-file-upload-service.md`
 - reference — `docs/architecture/ADR-003-meaningful-identifiers-public-apis.md` (Amendment 2026-11, case table)
 - reference — `docs/architecture/ADR-013-rest-api-crud-conventions.md` (sections 1 and 2)

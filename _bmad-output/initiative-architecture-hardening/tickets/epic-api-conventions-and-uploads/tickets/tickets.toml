@@ -14,7 +14,7 @@ covers = ["R14"]
 after = ["1.3", "1.4", "2.0c1", "2.0d"]
 hitl = false
 risk = "high"
-references = ["docs/prd/epic-17-architecture-hardening.md#story-179--api-conventions-i-breaking"]
+references = ["docs/archive/prd/epic-17-architecture-hardening.md#story-179--api-conventions-i-breaking"]
 
 [[entry]]
 id = "9b"
@@ -39,7 +39,7 @@ covers = ["R15"]
 after = ["9b", "1.3b", "3.6"]
 hitl = false
 risk = "high"
-references = ["docs/prd/epic-17-architecture-hardening.md#story-1710--api-conventions-ii-breaking"]
+references = ["docs/archive/prd/epic-17-architecture-hardening.md#story-1710--api-conventions-ii-breaking"]
 notes = ["3.6 is the /internal move of PATCH /users/{u}/profile (epic 3 entry 6, part A of 17.6); repointed from epic-one-service-direction 2026-11-10 when epic 3 was planned.", "Split 2026-11-10 (two sessions): participants and newsletter self-service moved to 10c; decided by agent under owner's blanket go."]
 
 [[entry]]
@@ -52,7 +52,7 @@ covers = ["R15"]
 after = [10]
 hitl = false
 risk = "high"
-references = ["docs/prd/epic-17-architecture-hardening.md#story-1710--api-conventions-ii-breaking"]
+references = ["docs/archive/prd/epic-17-architecture-hardening.md#story-1710--api-conventions-ii-breaking"]
 notes = ["Split from 4.10 on 2026-11-10 (two sessions), decided by agent under owner's blanket go."]
 
 [[entry]]
@@ -91,7 +91,7 @@ covers = ["R16"]
 after = ["1.3", "1.4", "1.3b", "2.0c1", "2.0d", "3.7"]
 hitl = false
 risk = "high"
-references = ["docs/prd/epic-17-architecture-hardening.md#story-1711--one-upload-contract-first-purpose-company-logo", "docs/architecture/ADR-002-generic-file-upload-service.md"]
+references = ["docs/archive/prd/epic-17-architecture-hardening.md#story-1711--one-upload-contract-first-purpose-company-logo", "docs/architecture/ADR-002-generic-file-upload-service.md"]
 notes = ["3.7 is the removal of the logo-request push (epic 3 entry 7, part A of 17.7: EMS pulls logo requests from a CUMS feed; CUMS CompanyLogoRequestService no longer calls EMS); repointed from epic-one-service-direction 2026-11-10 when epic 3 was planned."]
 
 [[entry]]

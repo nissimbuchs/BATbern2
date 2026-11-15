@@ -301,9 +301,11 @@ no-op and returns the same username with `created=false`. A lost create race
 (`DataIntegrityViolationException` on the email constraint) is treated the same way.
 
 **Failure modes**:
-- **Cognito failure on the new-user branch** (anything but `UsernameExistsException`): the
-  `@Transactional` rolls back the user and role rows; EMS gets HTTP 502 and the transition stays at
-  `CONTACTED`. The organizer can retry.
+- **Cognito failure on the new-user branch** (anything but `UsernameExistsException`, a Cognito
+  service error or a client failure such as missing credentials or no connection, `SdkClientException`):
+  the `@Transactional` rolls back the user and role rows; EMS gets HTTP 502 and the transition stays at
+  `CONTACTED`. The organizer can retry. Every `CognitoIntegrationServiceImpl` call maps an unhandled
+  `SdkException` to `CognitoOperationException` (502); before 2026-11-15 a client failure was a 500.
 - **`role_assignments` duplicate**: `RoleService.addRole` detects it and does nothing.
 
 **The temporary password is never persisted**:
@@ -880,7 +882,7 @@ checked 2026-11-04). The **`PreAuthentication` trigger is now redundant** and is
 retirement in the cleanup track, **after** the gateway gate is confirmed live in prod (it is left
 in place for now as defence-in-depth). Active eviction (a `UserDeactivated` signal → evict cache
 key) is a documented FUTURE option, not built; there is no event bus to carry it (Story 17.2 part B). See `ADR-010-federated-identity-via-cognito.md` (D5)
-and `docs/plans/sso-oidc-federation.md` (PR 1 — Part A).
+and `docs/archive/plans/sso-oidc-federation.md` (PR 1 — Part A).
 
 ## Pattern F: Federated sign-in + account linking (Story 12.6, SSO Phase 2)
 
@@ -982,7 +984,7 @@ documented pattern as the `AdminUpdateUserAttributes` grant on PostConfirmation)
 / `PreSignUpFailure` (`BATbern/UserSync`; `PreSignUpFailure` has a CloudWatch alarm). The preSignUp UUID-validation note in the Custom-Attribute Inventory
 above (`custom:companyId` now dormant for self-registration) still holds — the check is
 preserved verbatim because admin-created users may still pass `custom:companyId`. See
-`ADR-010-federated-identity-via-cognito.md` (D3, D7) and `docs/plans/sso-oidc-federation.md`
+`ADR-010-federated-identity-via-cognito.md` (D3, D7) and `docs/archive/plans/sso-oidc-federation.md`
 (§5 Phase 2, §3).
 
 ## Pattern C: ToS/Privacy Consent & Federated Onboarding Gate (Story 12.11)

@@ -876,14 +876,14 @@ Personal Dashboard 📦
 
 > **Phase 3 deferred work: Epic 7 only.** See `CLAUDE.md` MVP Status for authoritative epic-level status. The screen-count totals from earlier revisions assumed Epic 6 + Epic 8 deferrals; those are now delivered, and a precise screen-by-screen reconciliation against the wireframes is out of scope for the documentation alignment that landed this banner. Use the implementation artifacts (`_bmad-output/implementation-artifacts/`) as the authoritative source for screen-level coverage.
 
-**Epic 6 (Speaker Self-Service Portal):** 100% IMPLEMENTED — see `docs/prd/epic-6-speaker-portal-support.md` and `_bmad-output/implementation-artifacts/6-*.md` for delivered stories.
+**Epic 6 (Speaker Self-Service Portal):** 100% IMPLEMENTED — see `docs/prd/epic-6-speaker-portal-support.md` and `_bmad-output/implementation-artifacts/archive/6-*.md` for delivered stories.
 
 **Epic 7 (Attendee Experience):** 20% IMPLEMENTED (Public Only)
 - ✅ Public browsing and registration (Story 4.1.5, 4.1.6)
 - ✅ Archive browsing (Story 4.2)
 - 📦 Personal dashboard, content viewer, library management, mobile PWA — deferred to Phase 3
 
-**Epic 8 (Partner Coordination):** 100% IMPLEMENTED — see `docs/prd/epic-8-partner-coordination.md` and `_bmad-output/implementation-artifacts/8-*.md` for delivered stories.
+**Epic 8 (Partner Coordination):** 100% IMPLEMENTED — see `docs/prd/epic-8-partner-coordination.md` and `_bmad-output/implementation-artifacts/archive/8-*.md` for delivered stories.
 
 ### 10.3 Overall Platform Completion
 
@@ -988,7 +988,7 @@ Epic 6: Speaker Self-Service Portal ✅ DELIVERED 2026-02-16
 │   Stories: 6.0–6.5 (foundation, invitations, response, materials, dashboard, reminders)
 
 Epic 7: Attendee Experience Enhancements 📦 PHASE 3
-│   See: docs/prd/epic-7-attendee-experience-enhancements.md
+│   See: docs/archive/prd/epic-7-attendee-experience-enhancements.md
 │   ROI: Increased content engagement and mobile usage
 │   Decision: Re-evaluate after Phase 2 portals are stable in production
 

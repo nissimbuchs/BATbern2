@@ -189,7 +189,6 @@ describe('EventPublishingTab', () => {
       phase: params.phase,
       published: true,
       publishedAt: '2026-11-10T10:00:00Z',
-      cdnInvalidated: true,
     }));
 
     renderTab();

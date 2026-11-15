@@ -49,7 +49,7 @@ Developers and agents get tests that fail when a caller is wrong. The signal is 
 ## References
 
 - parent — `_bmad-output/initiative-architecture-hardening/initiative-architecture-hardening.md`, section Requirements (R1, R2, R3, R4), Constraints, Notes (Decision lines)
-- prd — `docs/prd/epic-17-architecture-hardening.md`, Rules for every story, Story order
+- prd — `docs/archive/prd/epic-17-architecture-hardening.md`, Rules for every story, Story order
 - reference — `docs/plans/test-fidelity-proposal-2026-11.md`
 
 ## Notes

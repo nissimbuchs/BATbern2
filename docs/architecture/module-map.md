@@ -1,7 +1,9 @@
 # Module map: where code goes, what it may use
 
 Read before adding a class, endpoint or cross-service call. This is the target; today's code
-breaks it in 100 known places (measured 2026-11-07). Do not add new ones.
+breaks it in 76 known places (measured 2026-11-15 with `scripts/architecture/ems-module-target.py`;
+the 100 of 2026-11-07 came from a script that dropped everything after the first `//`; the fixed one
+counts 151 on the same tree with the rules of that day, 144 with today's rules). Do not add new ones.
 
 ## Services: who may call whom
 
@@ -36,8 +38,12 @@ CUMS (identity) is upstream of all. EMS (event) is upstream of PCS (partners).
 | L0 | platform (config, security, clients, exception base) |
 
 - A lower module needs to trigger a higher one? Define an interface in the lower module and
-  implement it above. `AudienceAdapter` is the model.
-- No new endpoints in `EventController`. A new EMS exception extends `DomainException` (platform,
+  implement it above. `AudienceAdapter` is the model. Event core's: `EventResponseContributor` (a
+  module's part of an event read, per `include=`), `EventWriteHooks` (capacity saved, before delete)
+  and `EventThemeAttachment` (theme image); sessions' `SessionVisibility` (public session view,
+  implemented in publishing).
+- No new endpoints in `EventController`; it keeps HTTP only and calls `EventReadService` and
+  `EventWriteService` (event core). A new EMS exception extends `DomainException` (platform,
   `exception/`: status, severity, optional code rendered as `details.code`) and needs no handler:
   `GlobalExceptionHandler` maps the base once. A body with more fields gets a handler in its module's
   own advice built with `DomainErrorResponse` (`exception/SpeakerExceptionHandler`,
@@ -73,6 +79,13 @@ CUMS (identity) is upstream of all. EMS (event) is upstream of PCS (partners).
   `RegistrationController` uses no `RegistrationRepository`: every registration read and write goes
   through a `@Transactional` `RegistrationService` method (#1315); the rule fails when no class has the
   controller's name. Fixture tests in `EmsModuleRulesFixtureTest` prove both rules fire.
+- EMS `architecture/EmsEndpointPlacementTest`, second rule (not frozen, no violation):
+  `EventController` uses event core and platform only: no Spring Data repository, no generated class
+  outside `core`, no class whose module (by the naming rules in `scripts/architecture/ems-modules.json`,
+  read by `ems-module-deps.py`, `ems-module-target.py` and `EmsModuleNames`; its `examples` are asserted
+  by `test_ems_modules.py` and `EmsModuleNamesSharedRulesTest`) is another. The public read model, the
+  analytics and the topic selection have their own controllers (`PublicEventController`,
+  `EventAnalyticsController`, `EventTopicController`). Fixture tests in `EmsModuleRulesFixtureTest`.
 - EMS `architecture/EmsExceptionMappingTest` (not frozen, it has no violation): `GlobalExceptionHandler`
   uses no EMS class but `DomainException` and `DomainErrorResponse`, so a module exception is mapped
   through the base or in the module's advice, never by hand in the platform advice; and every
@@ -84,8 +97,9 @@ CUMS (identity) is upstream of all. EMS (event) is upstream of PCS (partners).
 - Today's violations sit in `src/test/resources/archunit_store`. A new one fails the build; a fixed
   one drops out of the store on the next run: commit that. Never edit the store or its properties
   to accept a new one.
-- Left frozen after 17.5 (each with its owner): mail core 2 lines, `MailPipeline` using
-  `compose.MailRenderer` and `PlaceholderScanner` (17.15); EMS `*Partner*Client*` 0 (entry 8
+- Left frozen after 17.5: mail core 2 lines, `MailPipeline` using `compose.MailRenderer` and
+  `PlaceholderScanner`. They stay frozen as an owner-accepted exception with no owning story (owner
+  2026-11-14: no EMS modularization, 17.15 dropped); the store keeps them from growing. EMS `*Partner*Client*` 0 (entry 8
   deleted `PartnerApiClient(Impl)`, 8b `PartnerMeetingRsvpClient(Impl)`; EMS calls PCS only through
   its calendar reply contract). CUMS
   clients: 0 (entry 7 deleted the Mail Center client pair, 7b the user-merge pair; CUMS calls

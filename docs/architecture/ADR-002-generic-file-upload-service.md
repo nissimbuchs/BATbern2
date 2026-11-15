@@ -928,8 +928,8 @@ Implements the decision of 2026-11-07 for its first two purposes:
   take their uploads from it. Removed: `LogoController`, `GenericLogoService`, `LogoCleanupService`,
   `Logo`, `LogoStatus`, `LogoRepository`, `LogoNotFoundException`.
 - **EMS:** table `event_management_uploads` (V153), `EventThemeImageUploadHandler` (ORGANIZER, target
-  `eventCode`, no import), `UploadsController`, `UploadExpiryJob` (02:15). `EventController` checks a
-  `themeImageUploadId` before saving the event (404 unknown or of another purpose, 409 not
+  `eventCode`, no import), `UploadsController`, `UploadExpiryJob` (02:15). `EventWriteService` checks a
+  `themeImageUploadId` through `EventThemeImageAttachment` before saving the event (404 unknown or of another purpose, 409 not
   CONFIRMED). Removed: the EMS `GenericLogoService`, `Logo`, `LogoStatus`, `LogoRepository`; the
   ArchUnit rule `EmsDataOwnershipTest` holds that no EMS entity maps `logos` or
   `company_user_uploads`.

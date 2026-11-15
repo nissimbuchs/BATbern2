@@ -246,7 +246,7 @@ Two rules the 2026-10-28 review (GHSA-qhqv) added:
   contains is a separate decision. The review found public responses carrying organizer planning
   data (topic staleness and status), who runs and last edited an event, the organizers' email
   addresses, partner contract end dates and an attendee's full email address. Public responses are
-  now projections: `EventController.forAudience`, `PublicEventShaper`, `TopicController.publicProjection`,
+  now projections: `EventReadService.forAudience`, `PublicEventShaper`, `TopicController.publicProjection`,
   the partner list and the registration lookup (email masked). The check cannot see payloads; a
   review of each allowlist entry's response can.
 - **A wildcard `permitAll` matches every literal segment too.** `GET /api/v1/events/*` also matched
@@ -432,7 +432,7 @@ line 422 for `ApiGatewayServiceStack`).
 | Gateway API surface | `api-4xx-ratio` | `AlbAlarms`, fed by MetricFilters over the api-gateway log group |
 | ECS, per service ×6 | `{Service}-High-CPU`, `-High-Memory`, `-Task-Failures`, `-OOM-Kills` | `EcsServiceAlarms`, instantiated by each service stack |
 | Swallowed domain-event listener failures, EMS, CUMS, PCS | `{Service}-Event-Listener-Failures`: any line with the marker `DOMAIN_EVENT_LISTENER_FAILED` in 5 minutes. Log based (MetricFilter on the service log group, metric `BATbern/DomainEvents ListenerFailures-{Service}`), because no service exports Micrometer metrics to CloudWatch | `EcsServiceAlarms` with `serviceLogGroup`, instantiated by each of the three service stacks |
-| Scheduled-job failures, EMS (Story 4.9b) | `EventManagement-Scheduled-Job-Failures`: any line with the marker `SCHEDULED_JOB_FAILED` in 5 minutes, written by `ScheduledJobFailures` when a job (the daily auto-publish) skips an item it could not process. Log based, metric `BATbern/ScheduledJobs ScheduledJobFailures-EventManagement` | `EcsServiceAlarms` with `serviceLogGroup` and `scheduledJobFailures`, in the EMS stack |
+| Scheduled-job failures, EMS (Story 4.9b) | `EventManagement-Scheduled-Job-Failures`: any line with the marker `SCHEDULED_JOB_FAILED` within 24 hours (1-hour periods, 24 evaluated, 1 to alarm, missing data not breaching), written by `ScheduledJobFailures` when a job (the daily auto-publish) skips an item it could not process. Log based, metric `BATbern/ScheduledJobs ScheduledJobFailures-EventManagement`. Its OK action closes the GitHub issue (#956) when 24 hours pass without a failure, a day after the last one | `EcsServiceAlarms` with `serviceLogGroup` and `scheduledJobFailures`, in the EMS stack |
 | RDS | `database-connections`, `database-storage-low`, `database-cpu` | `AlarmConstruct`, in `MonitoringStack` |
 | SES reputation | `bounce-rate-critical` (`Reputation.BounceRate` > 5%), `complaint-rate-critical` | `MonitoringStack` |
 | SES bounce volume | `bounce-rate-warning` — `Bounce` count > 5/hour, NOT the rolling rate (#984) | `MonitoringStack` |

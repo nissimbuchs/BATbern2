@@ -1,0 +1,76 @@
+{
+  "response" : {
+    "status" : 403,
+    "xCacheStatus" : null,
+    "body" : {
+      "correlationId" : "uuid#1",
+      "error" : "Forbidden",
+      "message" : "Access denied - insufficient permissions",
+      "path" : "/api/v1/events/BATbern9701",
+      "severity" : "MEDIUM",
+      "status" : 403,
+      "timestamp" : "ts#1"
+    }
+  },
+  "eventAfter" : {
+    "status" : 200,
+    "xCacheStatus" : "HIT",
+    "body" : {
+      "eventCode" : "BATbern9701",
+      "title" : "Patched title",
+      "eventNumber" : 9701,
+      "date" : "ts#2",
+      "registrationDeadline" : "ts#3",
+      "venueName" : "Progr",
+      "venueAddress" : "Waisenhausplatz 30",
+      "venueCapacity" : 120,
+      "registrationCapacity" : 5,
+      "qnaEnabled" : true,
+      "qnaOpenTrigger" : "EVENT_COMPLETED",
+      "qnaWindowDays" : 5,
+      "confirmedCount" : 5,
+      "waitlistCount" : 0,
+      "spotsRemaining" : 0,
+      "realAttendeeCount" : 4,
+      "organizerUsername" : "olga.organizer",
+      "currentAttendeeCount" : 5,
+      "metadata" : "{\"k\": \"v\"}",
+      "description" : "Patched",
+      "createdAt" : "ts#4",
+      "updatedAt" : "ts#5",
+      "teaserImages" : [ {
+        "id" : "uuid#2",
+        "imageUrl" : "https://cdn.batbern.ch/events/BATbern9701/teaser-0.png",
+        "displayOrder" : 0,
+        "presentationPosition" : "AFTER_TOPIC_REVEAL"
+      }, {
+        "id" : "uuid#3",
+        "imageUrl" : "https://cdn.batbern.ch/events/BATbern9701/teaser-1.png",
+        "displayOrder" : 1,
+        "presentationPosition" : "AFTER_TOPIC_REVEAL"
+      } ],
+      "topicCode" : "capture-upcoming-topic",
+      "eventType" : "FULL_DAY",
+      "typicalStartTime" : "17:30",
+      "typicalEndTime" : "19:00",
+      "workflowState" : "AGENDA_PUBLISHED",
+      "topic" : {
+        "code" : "capture-upcoming-topic",
+        "name" : "Capture Upcoming Topic",
+        "description" : "Capture Upcoming Topic description",
+        "category" : "technical"
+      },
+      "venue" : {
+        "id" : "BATbern9701",
+        "name" : "Progr",
+        "address" : "Waisenhausplatz 30",
+        "capacity" : 120
+      },
+      "topicSelectionNote" : "from the canvas",
+      "currentPublishedPhase" : "AGENDA"
+    }
+  },
+  "registrations" : [ "BATbern9701-carl.confirmed confirmed null", "BATbern9701-cora.cancelled cancelled null", "BATbern9701-olga.organizer confirmed null", "BATbern9701-rita.registered registered null", "BATbern9701-walter.second registered null", "BATbern9701-wanda.first registered null" ],
+  "uploads" : [ "capture-theme-0 associated BATbern9701", "capture-theme-1 associated BATbern9701", "capture-theme-pending pending null" ],
+  "mails" : [ ]
+}

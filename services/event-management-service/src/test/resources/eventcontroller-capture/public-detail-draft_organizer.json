@@ -1,0 +1,15 @@
+{
+  "response" : {
+    "status" : 404,
+    "xCacheStatus" : null,
+    "body" : {
+      "correlationId" : "uuid#1",
+      "error" : "Not Found",
+      "message" : "Event not found with code: BATbern9704",
+      "path" : "/api/v1/public/events/BATbern9704",
+      "severity" : "LOW",
+      "status" : 404,
+      "timestamp" : "ts#1"
+    }
+  }
+}

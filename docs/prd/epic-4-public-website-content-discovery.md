@@ -659,7 +659,7 @@ As an **attendee**, I want to search 20+ years of BATbern content with filtering
 
 **Original Story Locations:**
 - Story 4.1 (Current Event Landing Page): `docs/prd/epic-2-event-creation-publishing-stories.md` Story 2.4
-- Story 4.2 (Historical Archive): `docs/prd/epic-1-foundation-stories.md` Story 1.18
+- Story 4.2 (Historical Archive): `docs/archive/prd/epic-1-foundation-stories.md` Story 1.18
 - Story 4.3 (Content Search): `docs/prd/epic-5-attendee-experience-stories.md` Story 5.1
 
 **Wireframe References:**

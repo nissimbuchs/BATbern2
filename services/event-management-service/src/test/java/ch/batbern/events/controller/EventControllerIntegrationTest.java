@@ -3,7 +3,7 @@ package ch.batbern.events.controller;
 import ch.batbern.shared.test.AbstractIntegrationTest;
 import ch.batbern.events.notification.Notification;
 import ch.batbern.events.notification.NotificationRepository;
-import ch.batbern.events.client.UserApiClient;
+import ch.batbern.events.config.CumsContractHarness;
 import ch.batbern.events.config.TestAwsConfig;
 import ch.batbern.events.config.TestSecurityConfig;
 import ch.batbern.events.domain.Event;
@@ -16,10 +16,7 @@ import ch.batbern.events.domain.SessionUser;
 import ch.batbern.events.domain.Session;
 import ch.batbern.events.domain.SessionUser.SpeakerRole;
 import ch.batbern.events.core.dto.generated.EventType;
-import ch.batbern.events.dto.generated.users.GetOrCreateUserRequest;
 import ch.batbern.shared.types.EventWorkflowState;
-import ch.batbern.events.dto.generated.users.GetOrCreateUserResponse;
-import ch.batbern.events.dto.generated.users.UserResponse;
 import ch.batbern.events.domain.Registration;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.RegistrationRepository;
@@ -27,13 +24,14 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import jakarta.persistence.EntityManager;
+import ch.batbern.shared.test.contract.ContractServer.Reply;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
@@ -53,10 +51,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.startsWith;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.hasSize;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.reset;
-import static org.mockito.Mockito.when;
+import static org.springframework.http.HttpMethod.POST;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
@@ -105,8 +100,9 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
     @Autowired
     private ch.batbern.events.repository.SpeakerPoolRepository speakerPoolRepository;
 
-    @MockitoBean
-    private UserApiClient userApiClient;
+    /** CUMS behind the real UserApiClient (Story 17.0b2; touch rule, EventController story). */
+    @Autowired
+    private CumsContractHarness cums;
 
     @Autowired
     private org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
@@ -125,9 +121,6 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
 
     @BeforeEach
     void setUp() {
-        // Reset mocks to prevent test pollution
-        reset(userApiClient);
-
         // Clear all Spring caches to prevent stale cache entries across @Transactional test rollbacks
         cacheManager.getCacheNames().forEach(name -> {
             org.springframework.cache.Cache cache = cacheManager.getCache(name);
@@ -142,8 +135,8 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
         // Reset counter for each test
         eventNumberCounter = 1000;
 
-        // Mock UserApiClient for registration tests (Story 2.2a)
-        mockUserApiClient();
+        // CUMS answers the attendee lookup of the registration tests (Story 2.2a)
+        answerGetOrCreateUser();
 
         // Create test data
         createTestEvent("BATbern 2025", "2025-05-15T09:00:00Z", "AGENDA_PUBLISHED");
@@ -163,44 +156,38 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
                 .orElseThrow();
     }
 
-    private void mockUserApiClient() {
-        // Mock getOrCreateUser() for registration creation - return user based on request data
-        when(userApiClient.getOrCreateUser(any(GetOrCreateUserRequest.class)))
-                .thenAnswer(invocation -> {
-                    GetOrCreateUserRequest request = invocation.getArgument(0);
-                    String email = request.getEmail();
-                    String username = email.split("@")[0].replace(".", ".");
+    @AfterEach
+    void resetCums() {
+        cums.reset();
+    }
 
-                    UserResponse userResponse = new UserResponse()
-                            .id(username)
-                            .firstName(request.getFirstName())
-                            .lastName(request.getLastName())
-                            .email(request.getEmail())
-                            .companyId("TestCorp");
+    /**
+     * {@code POST /internal/users/get-or-create} answers a user created from the request, with a valid
+     * CUMS username per e-mail ({@link #usernameFor}). The user read ({@code GET /internal/users/{username}})
+     * answers with the harness default.
+     */
+    private void answerGetOrCreateUser() {
+        cums.answer(POST, "/internal/users/get-or-create", call -> {
+            JsonNode request;
+            try {
+                request = objectMapper.readTree(call.body());
+            } catch (Exception e) {
+                throw new IllegalStateException(e);
+            }
+            String email = request.get("email").asText();
+            String user = CumsContractHarness.userJson(usernameFor(email), request.get("firstName").asText(),
+                    request.get("lastName").asText(), email, "TestCorp");
+            return Reply.ok("{\"username\": \"" + usernameFor(email) + "\", \"created\": true,"
+                    + " \"companyUpdated\": false, \"cognitoUserId\": null, \"user\": " + user + "}");
+        });
+    }
 
-                    return new GetOrCreateUserResponse()
-                            .username(username)
-                            .created(true)
-                            .user(userResponse);
-                });
-
-        // Mock getUserByUsername() for registration enrichment - return based on username
-        when(userApiClient.getUserByUsername(anyString()))
-                .thenAnswer(invocation -> {
-                    String username = invocation.getArgument(0);
-
-                    // Create a consistent mock user based on username
-                    String[] parts = username.split("\\.");
-                    String firstName = parts.length > 0 ? capitalize(parts[0]) : "Test";
-                    String lastName = parts.length > 1 ? capitalize(parts[1]) : "User";
-
-                    return new UserResponse()
-                            .id(username)
-                            .firstName(firstName)
-                            .lastName(lastName)
-                            .email(username + "@example.com")
-                            .companyId("TestCorp");
-                });
+    /** A valid CUMS username for a test e-mail: {@code analytics1@example.com} becomes {@code analytics.test.1}. */
+    private static String usernameFor(String email) {
+        String local = email.substring(0, email.indexOf('@')).toLowerCase();
+        String letters = local.replaceAll("[^a-z]", "");
+        String digits = local.replaceAll("[^0-9]", "");
+        return letters + ".test" + (digits.isEmpty() ? "" : "." + digits);
     }
 
     /**
@@ -212,13 +199,6 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
                 + " file_size, content_type, status, expires_at) VALUES (?, 'event-theme-image', ?, 'png', 1024,"
                 + " 'image/png', 'confirmed', now() + interval '1 hour')", uploadId,
                 "logos/temp/" + uploadId + "/theme-" + uploadId + ".png");
-    }
-
-    private String capitalize(String str) {
-        if (str == null || str.isEmpty()) {
-            return str;
-        }
-        return str.substring(0, 1).toUpperCase() + str.substring(1);
     }
 
     /**

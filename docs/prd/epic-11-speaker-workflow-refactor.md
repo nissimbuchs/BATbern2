@@ -3,7 +3,7 @@ stepsCompleted: [step-01-validate-prerequisites, step-02-design-epics, step-03-c
 inputDocuments:
   - docs/plans/speaker-workflow-refactor.md
   - docs/architecture/ADR-009-unified-speaker-workflow.md
-  - docs/prd/epic-9-speaker-authentication.md  # context — to be rewritten in Phase A
+  - docs/archive/prd/epic-9-speaker-authentication.md  # context — to be rewritten in Phase A
   - docs/architecture/06a-workflow-state-machines.md  # context — to be rewritten in Phase A
   - docs/architecture/03-data-architecture.md  # context — to be rewritten in Phase A
   - docs/architecture/04-api-design.md  # context — to be rewritten in Phase A
@@ -225,7 +225,7 @@ Infrastructure (CDK)
         wiring for speaker JWT).
 
 Documentation alignment (Phase A, §1)
-- AR32: Rewrite docs/prd/epic-9-speaker-authentication.md in place per §9.3.
+- AR32: Rewrite docs/archive/prd/epic-9-speaker-authentication.md in place per §9.3.
 - AR33: Rewrite docs/architecture/06a-workflow-state-machines.md speaker section.
 - AR34: Delete Speaker entity section + speakers table SQL from
         docs/architecture/03-data-architecture.md.
@@ -565,7 +565,7 @@ password change,
 **And** no reference to `CONFIRMED`, `SLOT_ASSIGNED`, `OVERFLOW`, `WITHDREW`, or
 `TENTATIVE` remains.
 
-**Given** I read `docs/prd/epic-9-speaker-authentication.md`,
+**Given** I read `docs/archive/prd/epic-9-speaker-authentication.md`,
 **Then** the file has been rewritten in place per the plan §9.3,
 **And** the top of the file carries a `Supersedes prior Epic 9 plan per ADR-009` note,
 **And** the new scope describes: speaker Cognito provisioning at `CONTACTED → READY`,
@@ -1304,7 +1304,7 @@ workflow service), Story 11.C.2 (`UserApiClient.provisionUserWithRole` contract)
 `temporaryPassword` field removed from `ProvisionUserResponse`); Q#2 de + en only
 per CLAUDE.md §Localization (narrowed); Q#3 HTML-only — `.txt` templates deleted;
 Q#4 AdminGetUser status-driven branching at INVITED time. See
-`_bmad-output/implementation-artifacts/11-e-2-cognito-provisioning-at-ready-invitation-email-i18n.md`
+`_bmad-output/implementation-artifacts/archive/11-e-2-cognito-provisioning-at-ready-invitation-email-i18n.md`
 for the binding AC text.
 
 **Acceptance Criteria (per resolved Q#1 Variant B):**
@@ -1693,7 +1693,7 @@ requirements:** FR8 + FR12 + NFR4 + NFR6 + NFR7 + NFR10 + UX-DR17 + UX-DR22  ·
 `event_id` nullable for cross-event tasks); and Phase E (Pattern 3b DB-fallback,
 `<SpeakerRoute>`, multi-role nav) — all already done.
 
-**Story spec:** `_bmad-output/implementation-artifacts/11-g-1-speaker-company-self-service.md`
+**Story spec:** `_bmad-output/implementation-artifacts/archive/11-g-1-speaker-company-self-service.md`
 
 **Acceptance Criteria:**
 

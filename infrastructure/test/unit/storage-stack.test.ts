@@ -219,7 +219,7 @@ describe('StorageStack', () => {
     // Content-addressed media (UUID filenames) must reach the browser with an
     // immutable Cache-Control so repeat visits don't re-download it — PageSpeed
     // flagged "Cache TTL: None" on cdn.batbern.ch assets.
-    // See docs/plans/public-homepage-performance.md (Phase 6).
+    // See docs/archive/plans/public-homepage-performance.md (Phase 6).
 
     test('should_setImmutableCacheControl_on_contentDistribution', () => {
       const app = new App();

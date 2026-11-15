@@ -282,7 +282,7 @@
 > **Status: ✅ Implemented** (scope expanded by Nissim from "footer" to "retire the old domain everywhere").
 > **Swapped** (live/functional): `PublicFooter`, `AboutPage`, `PrivacyPage`, `SupportPage` (+ tests); SES sender in `cognito-stack` + `event/company/partner-management-stack` from-domain (now `batbern.ch`); `users-api.openapi.yml` examples + committed `user-api.types.ts`; `User.java` doc + `UserAdditionalEmailsIntegrationTest` + `RegistrationEmailServiceTest` sample data; `api-gateway` test config; current docs (`README`, `shared-kernel/README`, `docs/user-guide/**`).
 > **✅ SES sender confirmed** (Nissim 2026-06-20): `noreply@batbern.ch` is correct (verified prod sender). Still needs a **CDK deploy** to take effect (infra change, not frontend-only).
-> **Intentionally preserved** (history, not rewritten): `_bmad-output/*` incident artifacts, `docs/plans/user-identity-collision-fix-plan.md`, the 2026-05-20 `email-forwarder.test.ts` regression literal + `sender-auth.ts` comment, decommissioned `apps/BATspa-old/*`, archived wireframes/stories.
+> **Intentionally preserved** (history, not rewritten): `_bmad-output/*` incident artifacts, `docs/archive/plans/user-identity-collision-fix-plan.md`, the 2026-05-20 `email-forwarder.test.ts` regression literal + `sender-auth.ts` comment, decommissioned `apps/BATspa-old/*`, archived wireframes/stories.
 > **Doc follow-up:** `docs/architecture/02,06` + `docs/guides/aws-ses-configuration.md`, `aws-setup-guide.md` still describe the old SES domain — update in a doc pass (they document historical setup steps).
 
 ### (original: Homepage contact → info@batbern.ch)

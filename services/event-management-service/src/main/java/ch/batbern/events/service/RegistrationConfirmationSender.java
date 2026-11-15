@@ -1,6 +1,7 @@
 package ch.batbern.events.service;
 
 import ch.batbern.events.client.UserApiClient;
+import ch.batbern.events.config.AfterCommit;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Registration;
 import ch.batbern.events.dto.generated.users.UserResponse;
@@ -41,7 +42,8 @@ public class RegistrationConfirmationSender {
     }
 
     /**
-     * Queues the confirmation mail. German when the attendee's language is unset or German, English
+     * Queues the confirmation mail, after the commit when called inside a transaction (none for a
+     * registration that rolls back). German when the attendee's language is unset or German, English
      * otherwise (the rule of {@code RegistrationService#notifyRegistrationConfirmed}).
      *
      * @return the attendee the mail goes to, or empty when CUMS has no address for them (nothing sent)
@@ -65,8 +67,8 @@ public class RegistrationConfirmationSender {
         Locale locale = language == null || language.toLowerCase(Locale.ROOT).startsWith("de")
                 ? Locale.GERMAN : Locale.ENGLISH;
 
-        registrationEmailService.sendRegistrationConfirmation(
-                registration, attendee, event, confirmationToken, deregistrationUrl, locale);
+        AfterCommit.run(() -> registrationEmailService.sendRegistrationConfirmation(
+                registration, attendee, event, confirmationToken, deregistrationUrl, locale));
         log.info("Confirmation email queued for registration {} ({})", registration.getRegistrationCode(),
                 locale.getLanguage());
         return Optional.of(attendee);

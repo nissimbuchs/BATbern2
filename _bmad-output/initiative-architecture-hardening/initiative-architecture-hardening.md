@@ -2,16 +2,16 @@
 type: initiative
 title: "BATbern architecture hardening"
 sources:
-  - docs/prd/epic-17-architecture-hardening.md
-  - docs/prd/epic-16-mail-center.md
+  - docs/archive/prd/epic-17-architecture-hardening.md
+  - docs/archive/prd/epic-16-mail-center.md
 companions:
-  - docs/plans/architecture-review-2026-11-actions.md
+  - docs/archive/plans/architecture-review-2026-11-actions.md
   - docs/plans/test-fidelity-proposal-2026-11.md
   - docs/architecture/module-map.md
   - docs/architecture/ADR-016-service-directions-and-service-to-service-calls.md
   - docs/architecture/ADR-002-generic-file-upload-service.md
   - docs/architecture/ADR-003-meaningful-identifiers-public-apis.md
-  - _bmad-output/implementation-artifacts/16-8-shared-composer.md
+  - _bmad-output/implementation-artifacts/archive/16-8-shared-composer.md
 after: []
 risk: high
 ---
@@ -77,7 +77,7 @@ Developers and agents working on BATbern find one endpoint, one transport and on
 - The frontend layer baseline (`web-frontend/scripts/api-layer-baseline.txt`) is empty, or each remaining line says why.
 - Every baseline and store still holding entries names the story or the owner decision behind each group.
 - The Spectral baseline has shrunk by the entries of 17.6, 17.9, 17.9b, 17.10, 17.10b, 17.11 and 17.11a to 17.11d, every line left names its owning story or an owner-accepted exception, and `company-logo` uploads run on `/uploads/company-logo` in production.
-- The EMS module script, re-run, shows fewer violating pairs and references than the 2026-11-07 baseline (28 pairs, 100 references), with the numbers recorded.
+- The EMS module script, re-run, shows fewer violating pairs and references than the 2026-11-07 baseline (28 pairs, 100 references), with the numbers recorded. Corrected 2026-11-15: those numbers came from a script whose comment stripping dropped everything after the first `//` (also `https://` in a string). With the fixed script (Java tokenizer, `scripts/architecture/ems_modules.py`) the same tree `89b3618f` and the same 2026-11-07 rules give 36 pairs / 151 references; with today's rules 34 / 144. The criterion still holds: `fdf9b25b1` 29 / 96, develop after the EventController story 26 / 76.
 - Each story reached production through its own PR and was verified there.
 
 ## Boundaries
@@ -92,14 +92,14 @@ Developers and agents working on BATbern find one endpoint, one transport and on
 
 ## References
 
-- prd — `docs/prd/epic-17-architecture-hardening.md`, sections Decisions taken, Rules for every story, Story order, Stories
-- prd — `docs/prd/epic-16-mail-center.md`, Story 16.8 (clean-up), Decisions taken 2026-11-01 item 2, Constraints
+- prd — `docs/archive/prd/epic-17-architecture-hardening.md`, sections Decisions taken, Rules for every story, Story order, Stories
+- prd — `docs/archive/prd/epic-16-mail-center.md`, Story 16.8 (clean-up), Decisions taken 2026-11-01 item 2, Constraints
 - prd — `docs/prd-enhanced.md` (master PRD; it has no FR for this initiative; §4.2 is out, see Boundaries)
-- plan — `docs/plans/architecture-review-2026-11-actions.md` (action list, measured baseline)
+- plan — `docs/archive/plans/architecture-review-2026-11-actions.md` (action list, measured baseline)
 - plan — `docs/plans/test-fidelity-proposal-2026-11.md` (P1 to P4, the 57-bug classification)
 - architecture — `docs/architecture/module-map.md`, `docs/architecture/ADR-016-service-directions-and-service-to-service-calls.md`, `docs/architecture/ADR-002-generic-file-upload-service.md` (decision 2026-11-07), `docs/architecture/ADR-003-meaningful-identifiers-public-apis.md` (amendment 2026-11)
 - story — 17.1 and 17.3 are v7 story files in `_bmad-output/initiative-architecture-hardening/tickets/epic-dead-surface-and-gates/tickets/` (converted from the v6 files 2026-11-07)
-- story — `_bmad-output/implementation-artifacts/16-8-shared-composer.md`, Part 16.8c, AC18, Dev Notes "Endpoints retired in 16.8c"
+- story — `_bmad-output/implementation-artifacts/archive/16-8-shared-composer.md`, Part 16.8c, AC18, Dev Notes "Endpoints retired in 16.8c"
 
 ## Notes
 
@@ -117,3 +117,9 @@ Developers and agents working on BATbern find one endpoint, one transport and on
 - Decision: 2026-11-08, owner. Backlog story 9b in epic 4, one transition idiom for the event lifecycle (ADR-013 §1), after 17.9; new R24.
 - Decision: 2026-11-08, owner. Entry 3c in epic 1 (PRD 17.3c): a gate against hand-written copies of generated API types, from the last item of `deferred-work.md`; new R25. Built before 17.6: epic 3's wait on epic 1 names it.
 - Decision: 2026-11-14, owner. No EMS modularization: R17, R20 and R21 retired (ids not reused), 17.12, 17.15 and 17.16 dropped, no Spring Modulith migration or package moves. The 26 EMS fixes since 2026-09-14 are behaviour bugs, none from module coupling; the moves would cost about 350 files and four or more production deploys for no user value. Epic 5 keeps 17.13 and 17.14, the splits of `EventController` (2334 lines) and `GlobalExceptionHandler` (1486 lines). Spike and measurements: `tickets/epic-ems-walls/architecture-ems-walls/.memlog.md`.
+- Decision: 2026-11-15, owner. Initiative closed. Every plan in the tree is `done` and live; last PRs #1314 (17.13 + 17.14, one PR at the owner's request, deviating from "own PR per story") and #1316 (six pre-existing registration flaws the 17.13 review found, #1315). Done-when, checked 2026-11-15:
+  - gates: ArchUnit, S2S contract tests and the response conformance run in `build-services`; the ratchet (`test-ratchet`), Spectral (`frontend-static`), the MSW validator (`test-frontend`), the FE path and generated-types checks run in or are `needs` of `build-frontend`; both are required checks on `develop`;
+  - ArchUnit store: EMS->PCS and CUMS->EMS clients 0; EMS keeps 2 mail-core lines (17.15, dropped); frontend layer baseline empty;
+  - EMS module script: 23 pairs / 71 references (baseline 28 / 100); 16 of the 71 come from `EventController` logic, now backlog `_bmad-output/backlog/story-eventcontroller-keeps-only-http.md`. Corrected 2026-11-15 (the script dropped everything after the first `//`, fixed by plan-epic17-close-findings-batch): 29 / 96 (baseline 34 / 144 with today's rules, 36 / 151 with the 2026-11-07 rules), 21 of the 96 from `EventController`; after the EventController story 26 / 76, none from it;
+  - mock ratchet (own-code mocks, frozen 2026-11-08 -> now): 937 -> 584 over the six original categories; the rest shrinks under the touch rule.
+  Follow-ups: open `deferred-work.md` items moved to #1317-#1320; P5 pre-deploy gate is `_bmad-output/backlog/spike-pre-deploy-gate.md` (owner decides).

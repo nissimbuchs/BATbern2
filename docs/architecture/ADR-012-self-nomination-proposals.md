@@ -4,7 +4,7 @@
 **Date**: 2026-06-11
 **Decision Makers**: Winston (architect), Nissim (PO)
 **Related ADRs**: ADR-009 (Unified Speaker Workflow), ADR-003 (Meaningful Identifiers), ADR-004 (Factor User Fields from Domain Entities)
-**Related Story**: Story 7.2 "I Could Speak on That" (`_bmad-output/implementation-artifacts/7-2-i-could-speak-on-that.md`)
+**Related Story**: Story 7.2 "I Could Speak on That" (`_bmad-output/implementation-artifacts/archive/7-2-i-could-speak-on-that.md`)
 **Supersedes**: the V109 schema shape (4 columns added to `speaker_pool`) — see Consequences.
 
 ## Context
