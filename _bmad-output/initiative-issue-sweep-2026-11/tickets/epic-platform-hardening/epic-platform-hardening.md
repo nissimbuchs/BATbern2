@@ -38,3 +38,5 @@ The owner sees the covered issues (R11, R12, R24) closed with the fix live in pr
 ## Notes
 
 - Waits on epic 1 because: the final GATEWAY_API_REQUEST log line of R7, which the masking must keep matching
+- Decision: 2026-11-15, owner: the drop of `pref_in_app_notifications`, `pref_push_notifications` and `pref_notification_frequency` (R27 schema part) ships in epic 2's PR, not epic 1's: epic 1 story 4 removes every use, and a drop in the same rolling deploy would break the old CUMS tasks and any rollback (the #1308/#1309 pattern).
+- Carries a new CUMS migration that drops those three columns; `UserManagementMigrationsTest` asserts them absent.

@@ -60,3 +60,4 @@ The owner sees the covered issues (R29, R2, R3, R4, R5, R6, R7, R8, R9, R10, R27
 - Was waiting on epic 0 because: the named cause of the DLQ failures, in case it needs a code fix here
 - Decision: 2026-11-15: a bug sweep has no cross-layer tracer; story 1 (infra grant) goes first by owner decision, story 4 (riskiest, gates 5-7) second; lanes: frontend auth 2; tasks 3; notifications 4 → 5, 6, 7; cockpit 7 → 8 → 9; gateway 10; ratchet 11; tooling 12; sweep 13 last.
 - Decision: 2026-11-15, owner: gsw-BE mails render in German; breakdown of 13 stories approved.
+- Decision: 2026-11-15, owner: the drop of `pref_in_app_notifications`, `pref_push_notifications` and `pref_notification_frequency` (R27 schema part) ships in epic 2's PR, not epic 1's: epic 1 story 4 removes every use, and a drop in the same rolling deploy would break the old CUMS tasks and any rollback (the #1308/#1309 pattern).
