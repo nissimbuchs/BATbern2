@@ -554,6 +554,20 @@ public class SlotAssignmentControllerIntegrationTest extends AbstractIntegration
                         org.hamcrest.Matchers.not(org.hamcrest.Matchers.hasItem("john-doe-techcorp"))));
     }
 
+    /** Story 17.14: answered 500 CRITICAL before, InvalidSlotAssignmentException had no handler. */
+    @Test
+    @WithMockUser(username = "test.organizer", roles = {"ORGANIZER"})
+    void should_return400_when_targetSlotKeyUnknown() throws Exception {
+        mockMvc.perform(post("/api/v1/events/{eventCode}/sessions/{sessionSlug}/slot",
+                        eventCode, "john-doe-techcorp")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"targetSlotKey\":\"SPEAKER_SLOT-99\",\"mode\":\"ASSIGN\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.severity").value("MEDIUM"))
+                .andExpect(jsonPath("$.message").value(
+                        "Unknown target slot 'SPEAKER_SLOT-99' for event " + eventCode));
+    }
+
     @Test
     @WithMockUser(username = "test.organizer", roles = {"ORGANIZER"})
     void should_swapSessions_when_droppedOntoOccupiedSlot() throws Exception {

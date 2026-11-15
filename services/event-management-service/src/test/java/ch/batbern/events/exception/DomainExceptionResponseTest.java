@@ -64,11 +64,12 @@ class DomainExceptionResponseTest {
 
     static List<Row> rows() {
         return List.of(
-                // Formerly without a handler: their @ResponseStatus never applied (500 CRITICAL).
-                row("AgendaFull", () -> new AgendaFullException("BATbern99"), 500, "Internal Server Error",
-                        "An unexpected error occurred", "CRITICAL", null),
-                row("InvalidSlotAssignment", () -> new InvalidSlotAssignmentException("Slot taken"), 500,
-                        "Internal Server Error", "An unexpected error occurred", "CRITICAL", null),
+                // Answered 500 CRITICAL until 17.14: no handler, so their @ResponseStatus never applied.
+                row("AgendaFull", () -> new AgendaFullException("BATbern99"), 409, "Conflict",
+                        "Agenda is full for event 'BATbern99' — add a slot in Edit event type before inserting.",
+                        "LOW", null),
+                row("InvalidSlotAssignment", () -> new InvalidSlotAssignmentException("Slot taken"), 400,
+                        "Bad Request", "Slot taken", "MEDIUM", null),
 
                 row("AlreadyResponded with time",
                         () -> new AlreadyRespondedException(SpeakerWorkflowState.ACCEPTED, AT), 409, "Conflict",
