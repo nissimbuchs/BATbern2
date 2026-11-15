@@ -199,7 +199,10 @@ if [ "$CHECK_COLLECTIONS_ONLY" = "1" ]; then
     exit 0
 fi
 
-if [ "$ENVIRONMENT" = "development" ] || [ "$ENVIRONMENT" = "local" ] || [ "$ENVIRONMENT" = "test" ]; then
+# gate: the sealed pre-deploy stack (docker-compose.gate.yml, scripts/gate/run-gate.sh), which has
+# no production data and catches every mail in a fake SES, so the dev-only collections run there too.
+if [ "$ENVIRONMENT" = "development" ] || [ "$ENVIRONMENT" = "local" ] || [ "$ENVIRONMENT" = "test" ] \
+    || [ "$ENVIRONMENT" = "gate" ]; then
     collections+=("${dev_only_collections[@]}")
 fi
 
