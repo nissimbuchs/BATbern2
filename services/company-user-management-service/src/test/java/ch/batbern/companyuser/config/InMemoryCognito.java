@@ -1,6 +1,7 @@
 package ch.batbern.companyuser.config;
 
 import software.amazon.awssdk.awscore.exception.AwsErrorDetails;
+import software.amazon.awssdk.core.exception.SdkException;
 import software.amazon.awssdk.services.cognitoidentityprovider.CognitoIdentityProviderClient;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminCreateUserRequest;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminCreateUserResponse;
@@ -61,7 +62,8 @@ import java.util.UUID;
  * <p>Usage: {@code TestAwsConfig} registers one instance as the context's
  * {@code CognitoIdentityProviderClient}. Tests autowire it, {@link #reset()} it in
  * {@code @BeforeEach}, seed logins with {@link #givenLogin(String, UserStatusType)}, make one call
- * fail with {@link #failNext(Operation, CognitoIdentityProviderException)} and assert the effect
+ * fail with {@link #failNext(Operation, SdkException)} (a Cognito service error, or a client failure
+ * such as {@code SdkClientException}) and assert the effect
  * ({@link #login(String)}, {@link #confirmationCodesResent()}), never a call on our service.
  */
 public final class InMemoryCognito implements CognitoIdentityProviderClient {
@@ -138,7 +140,7 @@ public final class InMemoryCognito implements CognitoIdentityProviderClient {
     }
 
     private final Map<String, Login> loginsBySub = new LinkedHashMap<>();
-    private final Map<Operation, Deque<CognitoIdentityProviderException>> failures = new EnumMap<>(Operation.class);
+    private final Map<Operation, Deque<SdkException>> failures = new EnumMap<>(Operation.class);
     private final List<String> confirmationCodesResent = new ArrayList<>();
 
     /** Forgets every login, failure and recorded resend. */
@@ -148,8 +150,12 @@ public final class InMemoryCognito implements CognitoIdentityProviderClient {
         confirmationCodesResent.clear();
     }
 
-    /** The next call of {@code operation} throws {@code exception} (once per call of this method). */
-    public synchronized void failNext(Operation operation, CognitoIdentityProviderException exception) {
+    /**
+     * The next call of {@code operation} throws {@code exception} (once per call of this method): a
+     * service error ({@link #internalError}) or a client-side failure ({@code SdkClientException}:
+     * no credentials, no connection, a timeout).
+     */
+    public synchronized void failNext(Operation operation, SdkException exception) {
         failures.computeIfAbsent(operation, o -> new ArrayDeque<>()).add(exception);
     }
 
@@ -338,7 +344,7 @@ public final class InMemoryCognito implements CognitoIdentityProviderClient {
     // --- helpers ------------------------------------------------------------------------------
 
     private void failIfAsked(Operation operation) {
-        Deque<CognitoIdentityProviderException> queue = failures.get(operation);
+        Deque<SdkException> queue = failures.get(operation);
         if (queue != null && !queue.isEmpty()) {
             throw queue.poll();
         }

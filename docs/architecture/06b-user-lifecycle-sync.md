@@ -301,9 +301,11 @@ no-op and returns the same username with `created=false`. A lost create race
 (`DataIntegrityViolationException` on the email constraint) is treated the same way.
 
 **Failure modes**:
-- **Cognito failure on the new-user branch** (anything but `UsernameExistsException`): the
-  `@Transactional` rolls back the user and role rows; EMS gets HTTP 502 and the transition stays at
-  `CONTACTED`. The organizer can retry.
+- **Cognito failure on the new-user branch** (anything but `UsernameExistsException`, a Cognito
+  service error or a client failure such as missing credentials or no connection, `SdkClientException`):
+  the `@Transactional` rolls back the user and role rows; EMS gets HTTP 502 and the transition stays at
+  `CONTACTED`. The organizer can retry. Every `CognitoIntegrationServiceImpl` call maps an unhandled
+  `SdkException` to `CognitoOperationException` (502); before 2026-11-15 a client failure was a 500.
 - **`role_assignments` duplicate**: `RoleService.addRole` detects it and does nothing.
 
 **The temporary password is never persisted**:

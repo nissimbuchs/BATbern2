@@ -7,6 +7,7 @@ import ch.batbern.shared.utils.LoggingUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import software.amazon.awssdk.core.exception.SdkException;
 import software.amazon.awssdk.services.cognitoidentityprovider.CognitoIdentityProviderClient;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminCreateUserRequest;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminDeleteUserRequest;
@@ -18,7 +19,6 @@ import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminSetUse
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminUpdateUserAttributesRequest;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AliasExistsException;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AttributeType;
-import software.amazon.awssdk.services.cognitoidentityprovider.model.CognitoIdentityProviderException;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.InvalidParameterException;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.InvalidPasswordException;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.MessageActionType;
@@ -31,6 +31,10 @@ import software.amazon.awssdk.services.cognitoidentityprovider.model.UsernameExi
  * <p>Story 11.E.2: {@link #adminCreateUserSilently}, {@link #getUserStatus}, and
  * {@link #adminSetTemporaryPassword} are real Cognito Admin SDK calls used by the
  * speaker-provisioning + invitation flow.
+ *
+ * <p>Every SDK failure that no specific branch maps becomes a {@link CognitoOperationException}
+ * (502): a Cognito service error ({@code CognitoIdentityProviderException}) and a client-side failure
+ * ({@code SdkClientException}: no credentials, no connection, a timeout) alike, never a bare 500.
  */
 @Slf4j
 @Service
@@ -95,7 +99,7 @@ public class CognitoIntegrationServiceImpl implements CognitoIntegrationService 
             throw new ch.batbern.shared.exception.ValidationException(
                     "Cognito rejected the request: " + e.awsErrorDetails().errorCode()
                             + " — check the email format and password policy.");
-        } catch (CognitoIdentityProviderException e) {
+        } catch (SdkException e) {
             log.error("AdminCreateUser failed for {}: {}", LoggingUtils.maskEmail(email), e.getMessage());
             throw new CognitoOperationException("adminCreateUser", LoggingUtils.maskEmail(email), e);
         }
@@ -114,7 +118,7 @@ public class CognitoIntegrationServiceImpl implements CognitoIntegrationService 
         } catch (software.amazon.awssdk.services.cognitoidentityprovider.model.UserNotFoundException e) {
             log.warn("Cognito user not found for {} during AdminGetUser", LoggingUtils.maskEmail(email));
             throw new UserNotFoundException(email);
-        } catch (CognitoIdentityProviderException e) {
+        } catch (SdkException e) {
             log.error("AdminGetUser failed for {}: {}", LoggingUtils.maskEmail(email), e.getMessage());
             throw new CognitoOperationException("adminGetUser", LoggingUtils.maskEmail(email), e);
         }
@@ -133,7 +137,7 @@ public class CognitoIntegrationServiceImpl implements CognitoIntegrationService 
             cognitoClient.adminSetUserPassword(req);
             log.info("Cognito temporary password issued for {} (FORCE_CHANGE_PASSWORD)",
                     LoggingUtils.maskEmail(email));
-        } catch (CognitoIdentityProviderException e) {
+        } catch (SdkException e) {
             log.error("AdminSetUserPassword failed for {}: {}",
                     LoggingUtils.maskEmail(email), e.getMessage());
             throw new CognitoOperationException(
@@ -156,7 +160,7 @@ public class CognitoIntegrationServiceImpl implements CognitoIntegrationService 
                     LoggingUtils.maskEmail(newEmail));
         } catch (AliasExistsException e) {
             throw new EmailHasOtherLoginException(LoggingUtils.maskEmail(newEmail));
-        } catch (CognitoIdentityProviderException e) {
+        } catch (SdkException e) {
             log.error("AdminUpdateUserAttributes (email) failed for {}: {}",
                     LoggingUtils.maskEmail(currentEmail), e.getMessage());
             throw new CognitoOperationException("adminUpdateUserAttributes", LoggingUtils.maskEmail(currentEmail), e);
@@ -168,7 +172,7 @@ public class CognitoIntegrationServiceImpl implements CognitoIntegrationService 
         try {
             cognitoClient.adminDisableUser(AdminDisableUserRequest.builder()
                     .userPoolId(userPoolId).username(email).build());
-        } catch (CognitoIdentityProviderException e) {
+        } catch (SdkException e) {
             throw new CognitoOperationException("adminDisableUser", LoggingUtils.maskEmail(email), e);
         }
     }
@@ -178,7 +182,7 @@ public class CognitoIntegrationServiceImpl implements CognitoIntegrationService 
         try {
             cognitoClient.adminEnableUser(AdminEnableUserRequest.builder()
                     .userPoolId(userPoolId).username(email).build());
-        } catch (CognitoIdentityProviderException e) {
+        } catch (SdkException e) {
             throw new CognitoOperationException("adminEnableUser", LoggingUtils.maskEmail(email), e);
         }
     }
@@ -189,7 +193,7 @@ public class CognitoIntegrationServiceImpl implements CognitoIntegrationService 
             cognitoClient.adminDeleteUser(AdminDeleteUserRequest.builder()
                     .userPoolId(userPoolId).username(email).build());
             log.info("Cognito login deleted for {}", LoggingUtils.maskEmail(email));
-        } catch (CognitoIdentityProviderException e) {
+        } catch (SdkException e) {
             throw new CognitoOperationException("adminDeleteUser", LoggingUtils.maskEmail(email), e);
         }
     }
