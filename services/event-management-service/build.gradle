@@ -47,7 +47,6 @@ dependencies {
     // Service-specific: AWS SDK for S3, CloudFront, and SES
     implementation platform('software.amazon.awssdk:bom:2.57.11')
     implementation 'software.amazon.awssdk:s3'
-    implementation 'software.amazon.awssdk:cloudfront'
     implementation 'software.amazon.awssdk:ses'  // BAT-7: Email notifications
     implementation 'software.amazon.awssdk:cloudwatch'  // Email forwarding metrics (BATbern/EmailForwarder)
     implementation 'software.amazon.awssdk:url-connection-client'

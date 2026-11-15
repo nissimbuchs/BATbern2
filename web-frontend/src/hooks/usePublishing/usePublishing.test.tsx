@@ -87,7 +87,6 @@ describe('usePublishing', () => {
         phase: params.phase,
         published: true,
         publishedAt: '2025-01-15T10:00:00Z',
-        cdnInvalidated: true,
       }));
       const { result } = await renderLoaded();
       expect(api.calls('getPublishing')).toHaveLength(1);
@@ -146,7 +145,6 @@ describe('usePublishing', () => {
         phase: params.phase,
         published: false,
         unpublishedAt: '2025-01-15T11:00:00Z',
-        cdnInvalidated: true,
       }));
       const { result } = await renderLoaded();
 

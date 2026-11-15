@@ -34,7 +34,6 @@ describe('publishingService', () => {
         phase: params.phase,
         published: true,
         publishedAt: '2026-11-08T10:00:00Z',
-        cdnInvalidated: true,
       }));
 
       const result = await publishingService.publishPhase('BATbern61', 'topic');
@@ -48,7 +47,6 @@ describe('publishingService', () => {
         phase: 'topic',
         published: true,
         publishedAt: '2026-11-08T10:00:00Z',
-        cdnInvalidated: true,
       });
     });
 
@@ -104,7 +102,6 @@ describe('publishingService', () => {
         phase: params.phase,
         published: false,
         unpublishedAt: '2026-11-08T11:00:00Z',
-        cdnInvalidated: true,
       }));
 
       const result = await publishingService.unpublishPhase('BATbern61', 'speakers');

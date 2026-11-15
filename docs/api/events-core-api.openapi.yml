@@ -1891,7 +1891,6 @@ paths:
                     phase: speakers
                     published: true
                     publishedAt: "2026-05-14T16:00:00Z"
-                    cdnInvalidated: true
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -1982,7 +1981,6 @@ paths:
                     phase: agenda
                     published: false
                     unpublishedAt: "2026-05-14T16:00:00Z"
-                    cdnInvalidated: true
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -2331,7 +2329,6 @@ components:
         - phase
         - published
         - publishedAt
-        - cdnInvalidated
       properties:
         phase:
           type: string
@@ -2340,15 +2337,12 @@ components:
         publishedAt:
           type: string
           format: date-time
-        cdnInvalidated:
-          type: boolean
     UnpublishPhaseResponse:
       type: object
       required:
         - phase
         - published
         - unpublishedAt
-        - cdnInvalidated
       properties:
         phase:
           type: string
@@ -2357,8 +2351,6 @@ components:
         unpublishedAt:
           type: string
           format: date-time
-        cdnInvalidated:
-          type: boolean
     ValidationStatus:
       type: object
       required:

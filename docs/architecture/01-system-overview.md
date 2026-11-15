@@ -327,7 +327,7 @@ flowchart TB
         S1["EventWorkflowStateMachine<br/>8 event states"]
         S2["SpeakerWorkflowService<br/>8 speaker states, ADR-009"]
         S3["SlotAssignmentService,<br/>slotassignment/ conflict detection"]
-        S4["publishing/ PublishingService,<br/>PublicEventShaper, CdnInvalidationService"]
+        S4["publishing/ PublishingService,<br/>PublicEventShaper"]
         S5["RegistrationService,<br/>WaitlistPromotionService"]
         S6["EventTaskService"]
         S7["mailcenter/ compose, inbound,<br/>conversations, delivery status"]
@@ -392,8 +392,9 @@ flowchart TB
   `/api/v1/watch/ws`; whether any client still uses them in production (not verified
   2026-11-04).
 - The **public events read model** has no table of its own: `PublicEventShaper` shapes the
-  public view of events and sessions, served at `/api/v1/public/events`, and
-  `CdnInvalidationService` invalidates the CloudFront paths after publishing.
+  public view of events and sessions, served at `/api/v1/public/events`. Publishing invalidates no
+  CloudFront path: the API answers `no-store` and is not behind CloudFront, and CDN file keys carry
+  the upload id (the dead `CdnInvalidationService` was removed 2026-11-15).
 
 ### Level 3: Component Diagram, Company User Management Service
 

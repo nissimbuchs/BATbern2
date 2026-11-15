@@ -24,7 +24,7 @@ tests {
     expect(body.phase).to.equal("agenda");
     expect(body.published).to.equal(true);
     expect(body.publishedAt).to.be.a("string");
-    expect(body.cdnInvalidated).to.be.a("boolean");
+    expect(body).to.not.have.property("cdnInvalidated");
   });
 }
 

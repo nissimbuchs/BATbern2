@@ -706,14 +706,12 @@ export interface components {
       published: boolean;
       /** Format: date-time */
       publishedAt: string;
-      cdnInvalidated: boolean;
     };
     UnpublishPhaseResponse: {
       phase: string;
       published: boolean;
       /** Format: date-time */
       unpublishedAt: string;
-      cdnInvalidated: boolean;
     };
     ValidationStatus: {
       isValid: boolean;

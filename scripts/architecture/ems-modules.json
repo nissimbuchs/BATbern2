@@ -34,7 +34,6 @@
     "ConfirmationTokenService": "registrations",
     "OrganizerNotificationService": "notification",
     "DefaultOrganizerNotificationService": "notification",
-    "CdnInvalidationService": "event_core",
     "ArchivalBestEffortSteps": "event_core",
     "GenericLogoService": "media",
     "Logo": "media",
@@ -44,7 +43,7 @@
     "TopicSessionDataController": "topics_ai"
   },
   "target": [
-    {"module": "publishing", "patterns": ["Publish.*", "Publishing.*", "PublicEvent.*", "PublicSession.*", "CdnInvalidationService", "SpeakersPhasePublishedEvent"]},
+    {"module": "publishing", "patterns": ["Publish.*", "Publishing.*", "PublicEvent.*", "PublicSession.*", "SpeakersPhasePublishedEvent"]},
     {"module": "planning", "patterns": ["SlotAssignment.*", "ConflictDetection.*", "PreferenceMatching.*", "SchedulingConflict", "Conflict(Severity|Type)", "AssignmentStrategy", "SessionTiming.*", "SpeakerSlotPreference.*"]},
     {"module": "ai", "patterns": ["Ai.*", "AI.*", "OpenAi.*", ".*Prompt.*"]},
     {"module": "topics_ai", "patterns": ["StalenessScoreService"]},

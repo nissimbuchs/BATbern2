@@ -226,7 +226,7 @@ public class PublishingEngineControllerIntegrationTest extends AbstractIntegrati
                 .andExpect(jsonPath("$.phase").value("topic"))
                 .andExpect(jsonPath("$.published").value(true))
                 .andExpect(jsonPath("$.publishedAt").exists())
-                .andExpect(jsonPath("$.cdnInvalidated").value(true));
+                .andExpect(jsonPath("$.cdnInvalidated").doesNotExist());
 
         // Verify event workflow state updated
         mockMvc.perform(get("/api/v1/events/{eventCode}", eventCode))
@@ -251,7 +251,7 @@ public class PublishingEngineControllerIntegrationTest extends AbstractIntegrati
                 .andExpect(jsonPath("$.phase").value("speakers"))
                 .andExpect(jsonPath("$.published").value(true))
                 .andExpect(jsonPath("$.publishedAt").exists())
-                .andExpect(jsonPath("$.cdnInvalidated").value(true));
+                .andExpect(jsonPath("$.cdnInvalidated").doesNotExist());
 
         // Verify event state updated
         mockMvc.perform(get("/api/v1/events/{eventCode}", eventCode))
@@ -277,7 +277,7 @@ public class PublishingEngineControllerIntegrationTest extends AbstractIntegrati
                 .andExpect(jsonPath("$.phase").value("agenda"))
                 .andExpect(jsonPath("$.published").value(true))
                 .andExpect(jsonPath("$.publishedAt").exists())
-                .andExpect(jsonPath("$.cdnInvalidated").value(true));
+                .andExpect(jsonPath("$.cdnInvalidated").doesNotExist());
 
         // Verify workflow state transition
         mockMvc.perform(get("/api/v1/events/{eventCode}", eventCode))
@@ -303,7 +303,7 @@ public class PublishingEngineControllerIntegrationTest extends AbstractIntegrati
                 .andExpect(jsonPath("$.phase").value("speakers"))
                 .andExpect(jsonPath("$.published").value(false))
                 .andExpect(jsonPath("$.unpublishedAt").exists())
-                .andExpect(jsonPath("$.cdnInvalidated").value(true));
+                .andExpect(jsonPath("$.cdnInvalidated").doesNotExist());
 
         // Verify phase reverted
         mockMvc.perform(get("/api/v1/events/{eventCode}", eventCode))

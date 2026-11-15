@@ -34,7 +34,6 @@ const published = (phase: string) => ({
   phase,
   published: true,
   publishedAt: '2026-11-10T10:00:00Z',
-  cdnInvalidated: true,
 });
 
 describe('PublishingControls', () => {
@@ -190,7 +189,6 @@ describe('PublishingControls', () => {
         phase: params.phase,
         published: false,
         unpublishedAt: '2026-11-10T11:00:00Z',
-        cdnInvalidated: true,
       }));
       render(
         <QueryClientProvider client={queryClient}>

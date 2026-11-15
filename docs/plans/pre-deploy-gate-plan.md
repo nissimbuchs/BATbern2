@@ -226,8 +226,10 @@ measured); Playwright against the gate.
 *Side findings, not changed (owner decision):*
 1. `CdnInvalidationService` reads `aws.cloudfront.enabled` (default `false`) and
    `aws.cloudfront.distribution-id`. CDK sets `CLOUDFRONT_DISTRIBUTION_ID`, which binds to neither, and
-   never sets the enabled flag. So production never invalidates the CDN on publish. Intended or not
-   is the owner's call.
+   never sets the enabled flag. So production never invalidates the CDN on publish. Resolved
+   2026-11-15 (owner): measured that nothing publishing changes is cached (the API answers `no-store`
+   and is not behind CloudFront, CDN file keys carry the upload id), so the dead service, its
+   CloudFront client, the IAM grant and the env var were removed instead of wired up.
 2. `CognitoIntegrationServiceImpl` catches `CognitoIdentityProviderException` only; a client-side
    `SdkClientException` (credentials, network) becomes an unmapped HTTP 500 instead of the mapped 502.
 
