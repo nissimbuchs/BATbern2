@@ -9,7 +9,8 @@ import java.util.UUID;
  * Exception thrown when a speaker assignment is not found
  * Story 1.16.2: Migrate to API-based user data
  *
- * Extends shared-kernel NotFoundException for consistent error handling across services
+ * HTTP 404, severity LOW, without {@code details}: mapped through its {@link DomainException} base
+ * (Story 17.14).
  */
 public class SpeakerAssignmentNotFoundException extends DomainException {
 

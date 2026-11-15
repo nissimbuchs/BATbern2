@@ -41,8 +41,9 @@ CUMS (identity) is upstream of all. EMS (event) is upstream of PCS (partners).
   `exception/`: status, severity, optional code rendered as `details.code`) and needs no handler:
   `GlobalExceptionHandler` maps the base once. A body with more fields gets a handler in its module's
   own advice built with `DomainErrorResponse` (`exception/SpeakerExceptionHandler`,
-  `RegistrationExceptionHandler`, `EventWorkflowExceptionHandler`, `mailcenter/MailCenterExceptionHandler`),
-  `@Order(HIGHEST_PRECEDENCE)` because the global advice has a catch-all (Story 17.14).
+  `RegistrationExceptionHandler`, `EventWorkflowExceptionHandler`), `@Order(HIGHEST_PRECEDENCE)`
+  because the global advice has a catch-all (Story 17.14). `mailcenter/MailCenterExceptionHandler` is
+  the older model: same order, its own `ErrorResponse`.
 
 ## Gates (ArchUnit, frozen, in each service's `test`)
 
@@ -72,9 +73,10 @@ CUMS (identity) is upstream of all. EMS (event) is upstream of PCS (partners).
   Fixture tests in `EmsModuleRulesFixtureTest` prove it fires on both.
 - EMS `architecture/EmsExceptionMappingTest` (not frozen, it has no violation): `GlobalExceptionHandler`
   uses no EMS class but `DomainException` and `DomainErrorResponse`, so a module exception is mapped
-  through the base or in the module's advice, never by hand in the platform advice (Story 17.14).
-  Fixture tests in `EmsModuleRulesFixtureTest` prove it fires. `DomainExceptionResponseTest` pins the
-  response of every EMS domain exception through the real resolver chain.
+  through the base or in the module's advice, never by hand in the platform advice; and every
+  exception in `exception/` extends `DomainException` and has no `@ResponseStatus` (Story 17.14).
+  Fixture tests in `EmsModuleRulesFixtureTest` prove both fire. `DomainExceptionResponseTest` pins the
+  response of every exception in `exception/` through the real resolver chain.
 - `FrozenRuleKeysTest` (EMS, CUMS) fails when a frozen rule is added, renamed or removed without
   its store: ArchUnit would otherwise accept all its current violations on the first run.
 - Today's violations sit in `src/test/resources/archunit_store`. A new one fails the build; a fixed

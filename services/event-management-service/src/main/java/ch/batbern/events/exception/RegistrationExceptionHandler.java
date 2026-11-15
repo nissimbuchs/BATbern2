@@ -51,7 +51,8 @@ public class RegistrationExceptionHandler {
 
     /**
      * Authenticated registration with a profile lacking first or last name (409, which fields): the
-     * frontend shows an inline profile form and retries. The message names no user.
+     * frontend shows an inline profile form and retries. The response message is a fixed text; the
+     * username is in {@code details}, as before.
      */
     @ExceptionHandler(RegistrationProfileIncompleteException.class)
     public ResponseEntity<ErrorResponse> handleProfileIncomplete(

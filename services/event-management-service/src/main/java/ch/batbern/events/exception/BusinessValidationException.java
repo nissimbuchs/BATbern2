@@ -11,8 +11,8 @@ import java.util.Map;
  * Exception thrown when business logic validation fails
  * Story 1.15a.1: Events API Consolidation - AC7
  *
- * Results in HTTP 422 Unprocessable Entity response with error code VALIDATION_ERROR
- * Extends shared-kernel ValidationException for consistent error handling across services
+ * Results in HTTP 422 Unprocessable Entity, severity MEDIUM, without {@code details}: mapped through
+ * its {@link DomainException} base (Story 17.14). The details given to a constructor are not rendered.
  */
 @SuppressWarnings("deprecation") // UNPROCESSABLE_ENTITY keeps the error text "Unprocessable Entity" clients see
 public class BusinessValidationException extends DomainException {
