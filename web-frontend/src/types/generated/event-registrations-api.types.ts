@@ -1450,7 +1450,7 @@ export interface operations {
       };
       403: components['responses']['Forbidden'];
       404: components['responses']['NotFound'];
-      /** @description Registration is not pending (cannot resend) */
+      /** @description Registration is not pending (cannot resend), or the attendee has no e-mail address */
       409: {
         headers: {
           [name: string]: unknown;

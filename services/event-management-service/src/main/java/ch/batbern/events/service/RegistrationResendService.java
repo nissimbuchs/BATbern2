@@ -1,9 +1,7 @@
 package ch.batbern.events.service;
 
-import ch.batbern.events.client.UserApiClient;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Registration;
-import ch.batbern.events.dto.generated.users.UserResponse;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.RegistrationRepository;
 import lombok.extern.slf4j.Slf4j;
@@ -15,7 +13,6 @@ import org.springframework.stereotype.Service;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
-import java.util.Locale;
 
 /**
  * Daily job that re-sends the registration-confirmation email to attendees who registered but
@@ -27,8 +24,9 @@ import java.util.Locale;
  * {@code confirmation_resent_at}. A registration is auto-resent at most {@code max-attempts} times
  * (default 2), with at least {@code after-hours} between resends, so a daily run never floods inboxes.
  *
- * <p>Each resend regenerates fresh confirmation + cancellation JWTs (mirroring the organizer
- * resend endpoint) so the new email always carries a link valid for the full configured window.
+ * <p>Each resend goes through {@link RegistrationConfirmationSender}, like the registration and the
+ * organizer's resend: a fresh confirmation token, so the new email always carries a link valid for the
+ * full configured window, in the attendee's preferred language (#1315).
  *
  * <p>Runs daily at 08:30 (after speaker reminders at 08:00, before deadline reminders at 09:00).
  * Cleanup runs earlier at 03:00, so rows past the cleanup horizon are already gone by the time this
@@ -40,37 +38,28 @@ public class RegistrationResendService {
 
     private final RegistrationRepository registrationRepository;
     private final EventRepository eventRepository;
-    private final ConfirmationTokenService confirmationTokenService;
-    private final RegistrationEmailService registrationEmailService;
-    private final UserApiClient userApiClient;
+    private final RegistrationConfirmationSender confirmationSender;
 
     private final boolean enabled;
     private final long afterHours;
     private final int maxAttempts;
     private final long cleanupAfterHours;
-    private final String appBaseUrl;
 
     public RegistrationResendService(
             RegistrationRepository registrationRepository,
             EventRepository eventRepository,
-            ConfirmationTokenService confirmationTokenService,
-            RegistrationEmailService registrationEmailService,
-            UserApiClient userApiClient,
+            RegistrationConfirmationSender confirmationSender,
             @Value("${app.registration.resend.enabled:true}") boolean enabled,
             @Value("${app.registration.resend.after-hours:48}") long afterHours,
             @Value("${app.registration.resend.max-attempts:2}") int maxAttempts,
-            @Value("${app.registration.cleanup-after-hours:120}") long cleanupAfterHours,
-            @Value("${app.base-url:https://batbern.ch}") String appBaseUrl) {
+            @Value("${app.registration.cleanup-after-hours:120}") long cleanupAfterHours) {
         this.registrationRepository = registrationRepository;
         this.eventRepository = eventRepository;
-        this.confirmationTokenService = confirmationTokenService;
-        this.registrationEmailService = registrationEmailService;
-        this.userApiClient = userApiClient;
+        this.confirmationSender = confirmationSender;
         this.enabled = enabled;
         this.afterHours = afterHours;
         this.maxAttempts = maxAttempts;
         this.cleanupAfterHours = cleanupAfterHours;
-        this.appBaseUrl = appBaseUrl;
     }
 
     /**
@@ -126,26 +115,9 @@ public class RegistrationResendService {
             return false;
         }
 
-        UserResponse userProfile = userApiClient.getUserByUsername(registration.getAttendeeUsername());
-        if (userProfile == null || userProfile.getEmail() == null || userProfile.getEmail().isBlank()) {
-            log.warn("Skipping resend for {} — no resolvable email for attendee {}",
-                    registration.getRegistrationCode(), registration.getAttendeeUsername());
-            return false;
+        if (confirmationSender.send(registration, event).isEmpty()) {
+            return false; // no address: nothing sent, nothing counted
         }
-
-        String confirmationToken = confirmationTokenService.generateConfirmationToken(
-                registration.getId(), event.getEventCode());
-        String deregistrationUrl = registration.getDeregistrationToken() != null
-                ? appBaseUrl + "/deregister?token=" + registration.getDeregistrationToken()
-                : null;
-
-        registrationEmailService.sendRegistrationConfirmation(
-                registration,
-                userProfile,
-                event,
-                confirmationToken,
-                deregistrationUrl,
-                Locale.GERMAN);
 
         int previous = registration.getConfirmationResendCount() == null
                 ? 0 : registration.getConfirmationResendCount();

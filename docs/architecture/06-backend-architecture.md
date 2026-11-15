@@ -1599,6 +1599,10 @@ at an already-deleted row; the service enforces this defensively
 - `RegistrationResendService` (event-management-service, 08:30) re-sends the registration-confirmation
   email — with **fresh** JWTs — to attendees unconfirmed for `> after-hours` (default 48h), capped at
   `max-attempts` (default 2) via `confirmation_resend_count` / `confirmation_resent_at` on `registrations`.
+  It sends through `RegistrationConfirmationSender`, the one sender of the confirmation mail (also used
+  by the anonymous registration and the organizer's resend, #1315): fresh token, deregistration link,
+  the attendee's preferred language (unset or German: German, otherwise English). A registration whose
+  attendee has no address is skipped and not counted; one that fails does not stop the batch.
 - `CognitoConfirmationResendJob` (company-user-management-service, 08:15) re-sends a fresh Cognito
   sign-up code to accounts unconfirmed within a bounded age window (stateless anti-spam, since
   UNCONFIRMED users have no DB row) — see [06b §Unconfirmed Sign-up Resend Job](./06b-user-lifecycle-sync.md).

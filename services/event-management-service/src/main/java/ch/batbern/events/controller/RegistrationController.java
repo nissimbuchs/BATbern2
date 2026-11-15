@@ -1,6 +1,5 @@
 package ch.batbern.events.controller;
 
-import ch.batbern.events.client.UserApiClient;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Registration;
 import ch.batbern.events.dto.RegistrationResponse;
@@ -18,7 +17,6 @@ import ch.batbern.events.registrations.dto.generated.UpdateRegistrationStatusReq
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.security.SecurityContextHelper;
 import ch.batbern.events.service.ConfirmationTokenService;
-import ch.batbern.events.service.RegistrationEmailService;
 import ch.batbern.events.service.RegistrationService;
 import ch.batbern.events.service.WaitlistPromotionService;
 import ch.batbern.shared.api.PaginationMetadata;
@@ -27,7 +25,6 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -37,7 +34,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.time.Instant;
 import java.util.List;
-import java.util.Locale;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -61,13 +58,8 @@ public class RegistrationController implements RegistrationsApi {
     private final RegistrationService registrationService;
     private final EventRepository eventRepository;
     private final ConfirmationTokenService confirmationTokenService;
-    private final RegistrationEmailService registrationEmailService;
     private final WaitlistPromotionService waitlistPromotionService;
-    private final UserApiClient userApiClient;
     private final SecurityContextHelper securityContextHelper;
-
-    @Value("${app.base-url:https://batbern.ch}")
-    private String appBaseUrl;
 
     /**
      * Anonymous registration (Story 2.2a, ADR-005): the attendee needs no account; the registration
@@ -87,10 +79,6 @@ public class RegistrationController implements RegistrationsApi {
         boolean isRepeat = registration.getCreatedAt() != null
                 && registration.getCreatedAt().isBefore(beforeCreate);
         boolean waitlisted = "waitlist".equals(registration.getStatus());
-
-        if (!waitlisted) {
-            sendConfirmation(registration, findEvent(eventCode));
-        }
 
         if (isRepeat) {
             if (waitlisted) {
@@ -234,11 +222,15 @@ public class RegistrationController implements RegistrationsApi {
                             + "Current status: " + registration.getStatus()));
         }
 
-        UserResponse attendee = sendConfirmation(registration, event);
+        Optional<UserResponse> attendee = registrationService.resendConfirmation(registration, event);
+        if (attendee.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(new ResendConfirmationResponse().message("The attendee has no e-mail address"));
+        }
         log.info("Confirmation email resent for registration {}: attendee={}", registrationCode,
-                LoggingUtils.maskEmail(attendee.getEmail()));
+                LoggingUtils.maskEmail(attendee.get().getEmail()));
         return ResponseEntity.ok(new ResendConfirmationResponse().message(
-                "Confirmation email resent to " + attendee.getEmail()));
+                "Confirmation email resent to " + attendee.get().getEmail()));
     }
 
     /**
@@ -303,22 +295,5 @@ public class RegistrationController implements RegistrationsApi {
     /** 404 for an unknown code and for a code of another event alike ({@link RegistrationService#findOfEvent}). */
     private Registration registrationOfEvent(Event event, String registrationCode) {
         return registrationService.findOfEvent(event, registrationCode);
-    }
-
-    /**
-     * Mails the confirmation link (fresh 48 h token, Story 4.1.5c) with the deregistration link
-     * (Story 10.12) to the attendee, in German. Returns the attendee as CUMS knows them.
-     */
-    private UserResponse sendConfirmation(Registration registration, Event event) {
-        String confirmationToken = confirmationTokenService.generateConfirmationToken(
-                registration.getId(), event.getEventCode());
-        UserResponse attendee = userApiClient.getUserByUsername(registration.getAttendeeUsername());
-        String deregistrationUrl = registration.getDeregistrationToken() != null
-                ? appBaseUrl + "/deregister?token=" + registration.getDeregistrationToken()
-                : null;
-        registrationEmailService.sendRegistrationConfirmation(
-                registration, attendee, event, confirmationToken, deregistrationUrl, Locale.GERMAN);
-        log.info("Confirmation email queued for registration {}", registration.getRegistrationCode());
-        return attendee;
     }
 }

@@ -77,6 +77,7 @@ public class RegistrationService {
     private final WaitlistPromotionEmailService waitlistPromotionEmailService; // Story 10.11
     private final WaitlistPromotionService waitlistPromotionService; // Story 10.12
     private final PersonAddresses personAddresses; // #1183
+    private final RegistrationConfirmationSender confirmationSender; // #1315
 
     /**
      * Create a new anonymous registration for an event (ADR-005).
@@ -129,11 +130,12 @@ public class RegistrationService {
         if (existingRegistration.isPresent()) {
             Registration registration = existingRegistration.get();
             if ("registered".equalsIgnoreCase(registration.getStatus())) {
-                // Return existing pending registration - controller will resend confirmation email
-                log.info("Found pending registration for event: {} by user: {}, will resend confirmation email",
+                // #1315: a pending registration gets its confirmation mail again (fresh link); 200.
+                log.info("Found pending registration for event: {} by user: {}, resending confirmation email",
                         eventCode, username);
                 registration.setEventCode(eventCode); // Set transient field for API response
                 registration.setCompanyUpdated(companyUpdated);
+                confirmationSender.send(registration, event);
                 return registration;
             } else if ("waitlist".equalsIgnoreCase(registration.getStatus())) {
                 // Story 10.11 (T10.4): Duplicate waitlist registration — do NOT create another entry.
@@ -227,14 +229,13 @@ public class RegistrationService {
             }
         }
 
-        // Story 10.11 (T10.3): For waitlist registrations, send waitlist-confirmation email now.
-        // Normal registrations: confirmation email sent by controller after token generation.
+        // Story 10.11 (T10.3): a waitlist registration gets the waitlist mail, a pending one the
+        // confirmation link (Story 4.1.5c; #1315 one sender, in the attendee's language).
         if ("waitlist".equals(saved.getStatus())) {
             waitlistPromotionEmailService.sendWaitlistConfirmationEmail(saved);
+        } else {
+            confirmationSender.send(saved, event);
         }
-
-        // Story 4.1.5c: Email sending is the controller's (RegistrationController, needs the JWT token)
-        // Email will be sent after token generation in controller layer
 
         return saved;
     }
@@ -732,6 +733,15 @@ public class RegistrationService {
                 registrationRepository.save(registration);
             }
         }
+    }
+
+    /**
+     * The organizer's resend of the confirmation mail of a pending registration, with a fresh link.
+     *
+     * @return the attendee it goes to, or empty when CUMS has no address for them (nothing sent)
+     */
+    public Optional<UserResponse> resendConfirmation(Registration registration, Event event) {
+        return confirmationSender.send(registration, event);
     }
 
     /** What a confirmation link did: confirmed a pending registration, or found it confirmed already. */
