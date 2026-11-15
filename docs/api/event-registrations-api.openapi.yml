@@ -901,7 +901,10 @@ paths:
         - Event code in URL must match event code in token
 
 
-        **Idempotency**: Can be called multiple times safely. Already confirmed registrations return 200 OK.
+        **Idempotency**: Can be called multiple times safely. Already confirmed registrations return 200 OK
+        ("Registration already confirmed") and are not mailed again. Only a pending (`registered`)
+        registration is confirmed; one that was cancelled, waitlisted, attended or marked no-show after
+        the link was sent answers 409 `REGISTRATION_ALREADY_PROCESSED` and keeps its status (#1315).
 
         '
       operationId: confirmRegistration
@@ -976,6 +979,21 @@ paths:
                 error: Not found
                 message: Registration not found
                 code: REGISTRATION_NOT_FOUND
+        '409':
+          description: The registration is no longer pending (cancelled, waitlist, attended or no_show); nothing changed
+          content:
+            application/json:
+              schema:
+                $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+              example:
+                timestamp: '2026-11-15T10:00:00Z'
+                path: /api/v1/events/BATbern57/registrations/confirm
+                status: 409
+                error: Conflict
+                message: Registration BATbern57-reg-A3X9K2 is cancelled and can no longer be confirmed
+                severity: LOW
+                details:
+                  code: REGISTRATION_ALREADY_PROCESSED
         '500':
           $ref: '#/components/responses/InternalServerError'
   /registrations/deregister/verify:

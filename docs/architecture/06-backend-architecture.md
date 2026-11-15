@@ -1503,6 +1503,13 @@ flowchart TD
     REG -->|"not confirmed"| CLEAN["RegistrationCleanupService deletes it<br/>after 120 h from the last link"]
 ```
 
+**Confirmation link (#1315).** `RegistrationService.confirmRegistration` (one transaction) confirms
+only a pending (`registered`) registration and sends the confirmed mail with the calendar invite. A
+`confirmed` one answers 200 "Registration already confirmed" without a mail. Any other status
+(`cancelled`, `waitlist`, `attended`, `no_show`) was processed after the link was sent: 409
+`REGISTRATION_ALREADY_PROCESSED`, the status stays, so an old link cannot revive a cancelled or
+waitlisted registration.
+
 **Filling the waitlist (#1208).** `WaitlistPromotionService.promoteFromWaitlist(eventId)` promotes, in
 waitlist order, as many people as there are free places: capacity minus `registered` + `confirmed`
 (the same count that puts new sign-ups on the waitlist); no capacity means everyone waiting. Each

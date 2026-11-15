@@ -120,7 +120,8 @@ public class RegistrationController implements RegistrationsApi {
     /**
      * Confirms a pending registration with the token of the confirmation mail (48 h valid; its event
      * code must match the path). Idempotent: a confirmed registration answers "already confirmed"
-     * and is not mailed again.
+     * and is not mailed again; one that was processed since (cancelled, waitlisted, attended,
+     * no-show) answers 409 and stays as it is (#1315).
      */
     @Override
     @PreAuthorize("permitAll()")
@@ -141,31 +142,12 @@ public class RegistrationController implements RegistrationsApi {
         }
 
         UUID registrationId = confirmationTokenService.getRegistrationId(claims);
-        Registration registration = registrationRepository.findById(registrationId)
-                .orElseThrow(() -> new NoSuchElementException("Registration not found: " + registrationId));
-        Event event = eventRepository.findById(registration.getEventId())
-                .orElseThrow(() -> new NoSuchElementException(
-                        "Event not found for registration: " + registrationId));
-        if (!event.getEventCode().equals(eventCode)) {
-            throw new IllegalArgumentException("Registration does not belong to event: " + eventCode);
-        }
-
-        if ("confirmed".equalsIgnoreCase(registration.getStatus())) {
-            return ResponseEntity.ok(new ConfirmRegistration200Response()
-                    .message("Registration already confirmed")
-                    .status(ConfirmRegistration200Response.StatusEnum.CONFIRMED));
-        }
-
-        registration.setStatus("confirmed"); // lower case per DB constraint
-        registration.setUpdatedAt(Instant.now());
-        registrationRepository.save(registration);
-        log.info("Registration confirmed: {} for event: {}", registrationId, eventCode);
-
-        // The pending mail carries no calendar invite; it comes with the confirmed mail.
-        registrationService.notifyRegistrationConfirmed(registration, event);
-
+        String message = switch (registrationService.confirmRegistration(eventCode, registrationId)) {
+            case CONFIRMED -> "Registration confirmed successfully!";
+            case ALREADY_CONFIRMED -> "Registration already confirmed";
+        };
         return ResponseEntity.ok(new ConfirmRegistration200Response()
-                .message("Registration confirmed successfully!")
+                .message(message)
                 .status(ConfirmRegistration200Response.StatusEnum.CONFIRMED));
     }
 

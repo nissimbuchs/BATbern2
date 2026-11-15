@@ -562,6 +562,30 @@ class RegistrationControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isNotFound());
     }
 
+    @ParameterizedTest
+    @ValueSource(strings = {"cancelled", "waitlist", "attended", "no_show"})
+    @DisplayName("#1315: an old confirmation link does not revive a processed registration")
+    void should_return409_when_confirmingProcessedRegistration(String processed) throws Exception {
+        Registration registration = createTestRegistration("john.doe", processed);
+        String token = confirmationTokenService.generateConfirmationToken(registration.getId(), EVENT_CODE);
+
+        mockMvc.perform(post("/api/v1/events/{eventCode}/registrations/confirm", EVENT_CODE).param("token", token))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.details.code").value("REGISTRATION_ALREADY_PROCESSED"));
+
+        assertThat(registrationRepository.findById(registration.getId()).orElseThrow().getStatus())
+                .isEqualTo(processed);
+        // Positive control: a pending registration's link confirms and mails.
+        cums.user("jane.smith", "Jane", "Smith", JANE_MAIL);
+        Registration pending = createTestRegistration("jane.smith", "registered");
+        mockMvc.perform(post("/api/v1/events/{eventCode}/registrations/confirm", EVENT_CODE)
+                        .param("token", confirmationTokenService.generateConfirmationToken(pending.getId(), EVENT_CODE)))
+                .andExpect(status().isOk());
+        sesRecorder.awaitAsyncSends();
+        assertThat(sesRecorder.mailsTo(JANE_MAIL)).hasSize(1);
+        assertThat(sesRecorder.mailsTo(JOHN_MAIL)).isEmpty();
+    }
+
     // ============================================================================
     // Organizer PATCH and DELETE
     // ============================================================================

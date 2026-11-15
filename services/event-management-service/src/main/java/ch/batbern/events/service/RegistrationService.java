@@ -18,6 +18,7 @@ import ch.batbern.events.exception.DuplicateSubscriberException;
 import ch.batbern.events.exception.EventHasRealRegistrationsException;
 import ch.batbern.events.exception.UserServiceException;
 import ch.batbern.shared.utils.EmailAddresses;
+import ch.batbern.events.exception.RegistrationAlreadyProcessedException;
 import ch.batbern.events.exception.RegistrationCapacityExceededException;
 import ch.batbern.events.exception.DeregistrationClosedException;
 import ch.batbern.events.exception.RegistrationClosedException;
@@ -584,6 +585,48 @@ public class RegistrationService {
 
     private static boolean isBlankOrLong(String value) {
         return value == null || value.isBlank() || value.length() > MAX_NAME;
+    }
+
+    /** What a confirmation link did: confirmed a pending registration, or found it confirmed already. */
+    public enum ConfirmationResult { CONFIRMED, ALREADY_CONFIRMED }
+
+    /**
+     * Confirms a pending registration with the (already validated) confirmation link (Story 4.1.5c).
+     * {@code registered} becomes {@code confirmed} and gets the confirmed mail with the calendar
+     * invite; {@code confirmed} answers {@link ConfirmationResult#ALREADY_CONFIRMED} without a mail.
+     * Any other status was processed after the link was sent (cancelled, waitlisted, attended,
+     * no-show): the old link must not revive it (#1315).
+     *
+     * @throws NoSuchElementException                 unknown registration or its event (404)
+     * @throws IllegalArgumentException               the registration belongs to another event (400)
+     * @throws RegistrationAlreadyProcessedException  the registration is no longer pending (409)
+     */
+    @Transactional
+    public ConfirmationResult confirmRegistration(String eventCode, UUID registrationId) {
+        Registration registration = registrationRepository.findById(registrationId)
+                .orElseThrow(() -> new NoSuchElementException("Registration not found: " + registrationId));
+        Event event = eventRepository.findById(registration.getEventId())
+                .orElseThrow(() -> new NoSuchElementException(
+                        "Event not found for registration: " + registrationId));
+        if (!event.getEventCode().equals(eventCode)) {
+            throw new IllegalArgumentException("Registration does not belong to event: " + eventCode);
+        }
+
+        String status = registration.getStatus();
+        if ("confirmed".equals(status)) {
+            return ConfirmationResult.ALREADY_CONFIRMED;
+        }
+        if (!"registered".equals(status)) {
+            throw new RegistrationAlreadyProcessedException(registration.getRegistrationCode(), status);
+        }
+
+        registration.setStatus("confirmed");
+        registrationRepository.save(registration);
+        log.info("Registration confirmed: {} for event: {}", registration.getRegistrationCode(), eventCode);
+
+        // The pending mail carries no calendar invite; it comes with the confirmed mail.
+        notifyRegistrationConfirmed(registration, event);
+        return ConfirmationResult.CONFIRMED;
     }
 
     /**

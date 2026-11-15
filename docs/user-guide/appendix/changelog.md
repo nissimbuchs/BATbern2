@@ -42,6 +42,9 @@ Only items that are not live yet. Everything else is listed under its release be
 
 ### Unreleased — after BATbern60
 
+**Fix — Registrations: six flaws from the review of the registration endpoints (#1315)**:
+- ✅ An old confirmation link no longer revives a registration that was cancelled, moved to the waitlist, or marked attended or no-show since: it answers "already processed" (409) and the registration stays as it is. A confirmed registration still answers "already confirmed", without a second mail.
+
 **Improvement — Visitors see what a free account gives them**:
 - ✅ The "please confirm your registration" mail, the last step of the registration wizard and the two pages after registering no longer promise "exclusive content" or "personalized event recommendations". They list four things an account gives today: questions and comments on the talks (two weeks before to two weeks after the event), topic suggestions for coming events, all your BATbern visits in one place (including registrations from before the account), and your company's logo next to your name.
 - ✅ New public page `/why-an-account` with the same list, linked from the mail, the wizard and the footer. Logged out it offers sign-up; logged in it leads to your profile.
