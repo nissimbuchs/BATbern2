@@ -1,17 +1,18 @@
 package ch.batbern.events.controller;
 
 import ch.batbern.shared.test.AbstractIntegrationTest;
-import ch.batbern.events.client.UserApiClient;
+import ch.batbern.events.config.CumsContractHarness;
 import ch.batbern.events.config.TestAwsConfig;
 import ch.batbern.events.config.TestSecurityConfig;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Registration;
 import ch.batbern.events.core.dto.generated.EventType;
-import ch.batbern.events.dto.generated.users.GetOrCreateUserResponse;
-import ch.batbern.events.dto.generated.users.UserResponse;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.RegistrationRepository;
+import ch.batbern.shared.test.contract.ContractServer.Reply;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -19,7 +20,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,8 +30,7 @@ import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.lenient;
+import static org.springframework.http.HttpMethod.POST;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -61,18 +60,16 @@ public class RegistrationCapacityIntegrationTest extends AbstractIntegrationTest
     @Autowired
     private ObjectMapper objectMapper;
 
-    @MockitoBean
-    private UserApiClient userApiClient;
+    /** CUMS behind the real UserApiClient (Story 17.0b2; touch rule, EventController story). */
+    @Autowired
+    private CumsContractHarness cums;
 
     private static final String EVENT_CODE = "BATbern9001";
     private static final String EVENT_CODE_UNLIMITED = "BATbern9002";
     private static final String PATCHABLE_CODE = "BATbern9101";
 
-    private int userCounter = 0;
-
     @BeforeEach
     void setUp() {
-        userCounter = 0;
         registrationRepository.deleteAll();
         eventRepository.deleteAll();
 
@@ -112,33 +109,40 @@ public class RegistrationCapacityIntegrationTest extends AbstractIntegrationTest
                 .build();
         eventRepository.save(unlimitedEvent);
 
-        // Mock UserApiClient to return different users per call
-        lenient().when(userApiClient.getOrCreateUser(any())).thenAnswer(invocation -> {
-            ch.batbern.events.dto.generated.users.GetOrCreateUserRequest req =
-                    invocation.getArgument(0);
-            String email = req.getEmail() != null ? req.getEmail() : "user" + (++userCounter) + "@test.com";
-            String username = email.replace("@test.com", "").replace(".", "-");
-            UserResponse user = new UserResponse()
-                    .id(username)
-                    .firstName("Test")
-                    .lastName("User")
-                    .email(email)
-                    .companyId("TestCo");
-            return new GetOrCreateUserResponse()
-                    .username(username)
-                    .created(true)
-                    .user(user);
+        // CUMS creates (or finds) the attendee: a valid CUMS username per e-mail (usernameFor). The
+        // user read answers with the harness default, the e-mail <username>@test.com as before.
+        cums.answer(POST, "/internal/users/get-or-create", call -> {
+            JsonNode request = readTree(call.body());
+            String email = request.get("email").asText();
+            String user = CumsContractHarness.userJson(usernameFor(email), request.get("firstName").asText(),
+                    request.get("lastName").asText(), email, "TestCo");
+            return Reply.ok("{\"username\": \"" + usernameFor(email) + "\", \"created\": true,"
+                    + " \"companyUpdated\": false, \"cognitoUserId\": null, \"user\": " + user + "}");
         });
+    }
 
-        lenient().when(userApiClient.getUserByUsername(any())).thenAnswer(invocation -> {
-            String username = invocation.getArgument(0);
-            return new UserResponse()
-                    .id(username)
-                    .firstName("Test")
-                    .lastName("User")
-                    .email(username + "@test.com")
-                    .companyId("TestCo");
-        });
+    @AfterEach
+    void resetCums() {
+        cums.reset();
+    }
+
+    /**
+     * A valid CUMS username ({@code first.last} or {@code first.last.N}) for a test e-mail:
+     * {@code user1@test.com} becomes {@code user.test.1}, {@code late@test.com} {@code late.test}.
+     */
+    private static String usernameFor(String email) {
+        String local = email.substring(0, email.indexOf('@')).toLowerCase();
+        String letters = local.replaceAll("[^a-z]", "");
+        String digits = local.replaceAll("[^0-9]", "");
+        return letters + ".test" + (digits.isEmpty() ? "" : "." + digits);
+    }
+
+    private JsonNode readTree(String body) {
+        try {
+            return objectMapper.readTree(body);
+        } catch (Exception e) {
+            throw new IllegalStateException(e);
+        }
     }
 
     // ── AC2: Capacity enforcement ──────────────────────────────────────────────
@@ -149,9 +153,8 @@ public class RegistrationCapacityIntegrationTest extends AbstractIntegrationTest
         postRegistration(EVENT_CODE, "user1@test.com");
         postRegistration(EVENT_CODE, "user2@test.com"); // fills capacity
 
-        // username derived from email: "user1@test.com" → replace("@test.com","") → "user1"
         Registration reg = registrationRepository.findByEventIdAndAttendeeUsername(
-                eventByCode(EVENT_CODE).getId(), "user1").orElseThrow();
+                eventByCode(EVENT_CODE).getId(), usernameFor("user1@test.com")).orElseThrow();
         // Note: second will be "registered" (fills the 2nd slot), first is also "registered"
         assertThat(reg.getStatus()).isEqualTo("registered");
         assertThat(reg.getWaitlistPosition()).isNull();
