@@ -418,7 +418,7 @@ public class UserService {
      * change (the old account's stale `@oldemployer.ch` email was used for the
      * new registration's confirmation, leading to SES bounces). The batch
      * import path is no longer in active use. See
-     * docs/plans/user-identity-collision-fix-plan.md.
+     * docs/archive/plans/user-identity-collision-fix-plan.md.
      */
     public GetOrCreateUserResponse getOrCreateUser(GetOrCreateUserRequest request) {
         // #1184: no name next to the masked address, it would undo the masking

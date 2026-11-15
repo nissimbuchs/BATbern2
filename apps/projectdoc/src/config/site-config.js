@@ -72,7 +72,6 @@ export default {
       icon: '📚',
       order: 7,
       files: [
-        'front-end-spec.md',
         'test-enhanced-markdown.md',
         'brainstorming-session-results.md'
       ],

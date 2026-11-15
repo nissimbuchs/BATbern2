@@ -43,7 +43,7 @@ export type ConnectionStateCallback = (state: ConnectionState) => void;
  * WebSocket is ONLY available in local development.
  * Staging/Production use polling-based notifications (no WebSocket gateway deployed).
  *
- * See: docs/plans/websocket-aws-infrastructure.md (Status: DEFERRED)
+ * See: docs/archive/plans/websocket-aws-infrastructure.md (Status: DEFERRED)
  */
 function isWebSocketAvailable(): boolean {
   const hostname = window.location.hostname;

@@ -11,12 +11,12 @@ Each target runs as an isolated API session with file-system tools
 interrupt and resume freely.
 
 Usage:
-  python3 scripts/dev/doc-audit-retrospective.py           # run all pending
-  python3 scripts/dev/doc-audit-retrospective.py --list    # show status
-  python3 scripts/dev/doc-audit-retrospective.py --reset   # reset all to pending
-  python3 scripts/dev/doc-audit-retrospective.py --target state-machines
-  python3 scripts/dev/doc-audit-retrospective.py --fix     # apply fixes from findings
-  python3 scripts/dev/doc-audit-retrospective.py --fix --target state-machines
+  python3 docs/archive/plans/doc-audit/scripts/doc-audit-retrospective.py           # run all pending
+  python3 docs/archive/plans/doc-audit/scripts/doc-audit-retrospective.py --list    # show status
+  python3 docs/archive/plans/doc-audit/scripts/doc-audit-retrospective.py --reset   # reset all to pending
+  python3 docs/archive/plans/doc-audit/scripts/doc-audit-retrospective.py --target state-machines
+  python3 docs/archive/plans/doc-audit/scripts/doc-audit-retrospective.py --fix     # apply fixes from findings
+  python3 docs/archive/plans/doc-audit/scripts/doc-audit-retrospective.py --fix --target state-machines
 """
 
 import argparse
@@ -34,8 +34,8 @@ import anthropic
 
 # ── Paths ────────────────────────────────────────────────────────────────────
 REPO_ROOT    = pathlib.Path(__file__).parent.parent.parent.resolve()
-STATUS_FILE  = REPO_ROOT / "docs/plans/doc-audit/status.json"
-FINDINGS_DIR = REPO_ROOT / "docs/plans/doc-audit"
+STATUS_FILE  = REPO_ROOT / "docs/archive/plans/doc-audit/status.json"
+FINDINGS_DIR = REPO_ROOT / "docs/archive/plans/doc-audit"
 MODEL        = "claude-sonnet-4-6"
 MAX_TOKENS   = 8192
 
@@ -84,7 +84,7 @@ TARGETS = [
     {
         "id": "epic-9-speaker-auth",
         "label": "Speaker authentication (Epic 9)",
-        "doc":   "docs/prd/epic-9-speaker-authentication.md",
+        "doc":   "docs/archive/prd/epic-9-speaker-authentication.md",
         "tests": ["services/event-management-service/src/test/java"],
     },
     {
@@ -320,7 +320,7 @@ def save_status(status: dict):
 def build_audit_prompt(target: dict) -> str:
     doc_path   = target["doc"]
     test_paths = target["tests"]
-    findings_file = f"docs/plans/doc-audit/findings-{target['id']}.md"
+    findings_file = f"docs/archive/plans/doc-audit/findings-{target['id']}.md"
     test_paths_str = "\n".join(f"  - {p}" for p in test_paths)
 
     return textwrap.dedent(f"""
@@ -385,7 +385,7 @@ def build_audit_prompt(target: dict) -> str:
 
 
 def build_fix_prompt(target: dict, findings_text: str) -> str:
-    fix_summary_file = f"docs/plans/doc-audit/fix-summary-{target['id']}.md"
+    fix_summary_file = f"docs/archive/plans/doc-audit/fix-summary-{target['id']}.md"
 
     return textwrap.dedent(f"""
     You are applying documentation fixes for BATbern based on a completed audit.

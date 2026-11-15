@@ -240,5 +240,5 @@ If you have existing inline breadcrumb implementations, refactor them to use thi
 ## Related Documentation
 
 - [Story 1.17 - React Frontend Foundation](/docs/stories/1.17.react-frontend-foundation.md)
-- [Front-end Spec - Navigation](/docs/front-end-spec.md)
+- [Front-end Spec - Navigation](/docs/archive/planning/front-end-spec.md)
 - [Wireframe - Main Navigation](/docs/wireframes/story-1.17-main-navigation.md)
