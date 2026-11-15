@@ -68,6 +68,8 @@
 - source_plan: `_bmad-output/initiative-architecture-hardening/tickets/epic-test-fidelity/tickets/story-refactor-sweep-plan.md`
   summary: The EventForm "Auto-Save Functionality" block (6 tests) is `describe.skip` with the note "not implemented", but `EventForm` has auto-save (`handleAutoSave`, 5 s debounce). Unskipped, the block hangs: `vi.useFakeTimers()` stalls `userEvent.type`. Reviving it needs `userEvent.setup({ advanceTimers })` and the MSW harness instead of the `eventApiClient` mock; until then auto-save has no component test.
   evidence: 2026-11-09, unskipped run killed after 300 s (`~/.cache/batbern-test-logs/sweep-fe4.log`); the skip note now says why.
+  moved_to: GitHub issue #1317 (Epic 17 close-out, 2026-11-15).
+
 - source_plan: `_bmad-output/initiative-architecture-hardening/tickets/epic-test-fidelity/tickets/story-production-setup-in-tests-plan.md`
   summary: OWNER DECIDES. `events-core-api` `CreateEventRequest` requires 3 fields (title, date, eventType); the `Event` entity rejects a create without 5 more (venueName, venueAddress, venueCapacity, registrationDeadline, organizerUsername) with a 400. A client following the spec gets 400. Options: declare the 8 required in the spec (contract change: generated types, frontend), or give the 5 defaults in EMS.
   evidence: 17.0b3 findings (plan "Findings (not fixed here)"); spec `docs/api/events-core-api.openapi.yml` `CreateEventRequest.required` re-read 2026-11-09.
@@ -79,6 +81,8 @@
 - source_plan: `_bmad-output/initiative-architecture-hardening/tickets/epic-test-fidelity/tickets/story-production-setup-in-tests-plan.md`
   summary: TOUCH RULE. Unit tests that `@Mock EmailService` and assert with `verify(emailService)` (13 per the 0b3 plan: PCS `PartnerInviteEmailServiceTest`, EMS `*EmailServiceTest`, ...) are not counted by the ratchet; and `DragDropSlotAssignment.test.tsx` mocks 4 own hooks. Each moves to the recorder / MSW harness when a story touches its code.
   evidence: 17.0b3 findings; sweep plan Code Map. Not recounted on 2026-11-09 (a grep heuristic finds 11 to 26 files depending on the pattern, so the 0b3 number stands).
+  moved_to: GitHub issue #1318 (Epic 17 close-out, 2026-11-15).
+
 - source_plan: `_bmad-output/initiative-architecture-hardening/null-vs-optional-options.md`
   summary: Found while validating every CUMS/EMS/PCS integration response against the specs (2026-11-09, temporary recorder, not committed); not nulls, so not changed: (1) Watch pairing `PairingCodeResponse.expiresAt` and `PairedWatch.pairedAt` fail `format: date-time` (no zone; CUMS hand-written records); (2) `PartnerMeetingDTO` from `createPartnerMeeting` lacks the required `createdAt`; (3) `listCompanies` items lack the required `createdAt` in some ITs, and `CompanyResponse.createdBy`/`name` miss their patterns for test-seeded rows (test data or spec, not checked); (4) never set, so always null: `SpeakerResponseResult.eventDate/sessionTitle/dashboardUrl/errorMessage`, `PartnerStatistics.recentPartners/expiringPartnerships`, PCS `CompanyInfo.location`, users-api `Company.website` in `UserService.expandCompany` (marked nullable for now; remove or fill is a choice); (5) many optional properties are always set (e.g. `UserResponse.active`, most `UserPreferences` fields, `RsvpDTO`) and could be `required`. Proposed: keep the recorder as a permanent gate (every IT response conforms to its spec, with a shrinking baseline), which would have caught all of the above.
   evidence: recorder output `~/.cache/batbern-test-logs/conf-{cums,ems,pcs}.tsv` (rack, 2026-11-09); per-schema code reading in the 17.0 follow-up session.
@@ -105,6 +109,9 @@
 - source_plan: `_bmad-output/initiative-architecture-hardening/tickets/epic-one-service-direction/tickets/story-refactor-sweep-plan.md`
   summary: When CUMS times out opening a Mail Center conversation, its WITHDRAWN decision probably reaches EMS before the slow open commits, so the conversation stays OPEN for a request that does not exist.
   evidence: The withdrawal is sent at once after the 10 s read timeout; `RequestConversations.close` then updates 0 rows and the late open creates the conversation. Not measured. Fix: EMS keeps a withdrawal marker per request id that a later open respects. Rare: needs EMS slower than 10 s.
+  moved_to: GitHub issue #1319 (Epic 17 close-out, 2026-11-15).
+
 - source_plan: `_bmad-output/initiative-architecture-hardening/tickets/epic-api-conventions-and-uploads/tickets/story-one-upload-contract-first-purpose-company-logo-plan.md`
   summary: Move the company logo request operations under `/companies/{companyName}/logo-requests/{requestId}`, loaded scoped to the company (exception X1 instead of X2).
   evidence: Owner preferred it 2026-11-12, but the Mail Center panel only knows the request id; it needs `companyName` in the CUMS `/internal/mail-center-requests` contract, an EMS `mail_conversations` column and a backfill of production logo conversations, too much for the upload story.
+  moved_to: GitHub issue #1320 (Epic 17 close-out, 2026-11-15).

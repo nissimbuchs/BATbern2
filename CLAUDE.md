@@ -4,9 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## MVP Status
 
-**Last Updated:** 2026-11-07
+**Last Updated:** 2026-11-15
 
-**Status:** ✅ **MVP 100% COMPLETE & IN PRODUCTION** | **Epics 1-16 closed (9 superseded); Epic 17 open**
+**Status:** ✅ **MVP 100% COMPLETE & IN PRODUCTION** | **Epics 1-17 closed (9 superseded)**
 
 **Epic Status** (epics 1-16: v6 archive `_bmad-output/implementation-artifacts/sprint-status.yaml`; from Epic 17 on: BMAD v7 initiative under `_bmad-output/initiative-*/`):
 - ✅ **Epic 1**: Foundation & Core Infrastructure - 100% COMPLETE
@@ -25,7 +25,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - ✅ **Epic 14**: Event Detail Page — Lifecycle-Aware Redesign - COMPLETE (#788, 2026-06-15)
 - ✅ **Epic 15**: Post-Event #2 Hardening - CLOSED. 15.2, 15.3, 15.5, 15.6, 15.7, 15.9 done; 15.1 P1 live (#800). 15.1 P2/P3 (WebSocket teardown), 15.4, 15.8 archived, not done
 - ✅ **Epic 16**: Mail Center - CLOSED. 16.0–16.11 LIVE (last: #1194, 2026-11-03). 16.8c composer clean-up moved to Epic 17; 16.12, 16.13 archived
-- 📋 **Epic 17**: Architecture hardening - backlog (2026-11-07, from the architecture review and the test-fidelity analysis; includes 16.8c; each story needs owner go) — `docs/prd/epic-17-architecture-hardening.md`, first epic managed with BMAD v7
+- ✅ **Epic 17**: Architecture hardening - CLOSED 2026-11-15 (last: #1314, follow-up #1316). 17.0a–d, 17.1–17.11 (+3b, 3c, 4.9b, 11a–d), 17.13, 17.14, 17.17 and 16.8c live; 17.12, 17.15, 17.16 dropped by owner 2026-11-14 — `docs/prd/epic-17-architecture-hardening.md`, first epic managed with BMAD v7
 
 **Delivered Capabilities:**
 - ✅ All entity CRUD operational (Company, User, Event, Speaker, Partner)
@@ -52,7 +52,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Scope Note:** Overflow Management (Story 5.6) removed from MVP scope - manual speaker selection sufficient for launch. Democratic voting on overflow speakers moved to Phase 2+ backlog.
 
-**Current Phase:** Phase 4 — Epics 1-16 closed; Epic 17 (architecture hardening) is the open work. Unimplemented stories of epics 1-16 were archived by owner decision 2026-11-07 (not needed if not done by now)
+**Current Phase:** Phase 4 — Epics 1-17 closed; open work is in `_bmad-output/backlog/`. Unimplemented stories of epics 1-16 were archived by owner decision 2026-11-07 (not needed if not done by now)
 
 ## Project Overview
 
@@ -67,7 +67,7 @@ BATbern is an enterprise event management platform for Berner Architekten Treffe
 
 ## Current Development Phase
 
-**Phase:** ✅ **MVP COMPLETE** + **Epics 1-16 closed** (v6 archive `sprint-status.yaml`); Epic 17 open (2026-11-07)
+**Phase:** ✅ **MVP COMPLETE** + **Epics 1-17 closed** (v6 archive `sprint-status.yaml`; Epic 17 in `_bmad-output/initiative-architecture-hardening/`)
 
 **Epic Completion Status:**
 - ✅ **Epic 1**: Foundation & Core Infrastructure - **100% COMPLETE**
@@ -86,7 +86,7 @@ BATbern is an enterprise event management platform for Berner Architekten Treffe
 - ✅ **Epic 14**: Event Detail Page Redesign - **COMPLETE** (#788)
 - ✅ **Epic 15**: Post-Event #2 Hardening - **CLOSED** (15.1 P2/P3, 15.4, 15.8 archived)
 - ✅ **Epic 16**: Mail Center - **CLOSED**, 16.0–16.11 live; 16.8c moved to Epic 17, 16.12/16.13 archived
-- 📋 **Epic 17**: Architecture hardening - **BACKLOG** (17.0a–d test fidelity, 17.1–17.16, plus 16.8c; 17.12 is a design task)
+- ✅ **Epic 17**: Architecture hardening - **CLOSED** 2026-11-15 (17.12, 17.15, 17.16 dropped by owner)
 
 **MVP Completion:**
 - ✅ All 5 MVP epics (Epics 1-5) are 100% complete
@@ -95,9 +95,9 @@ BATbern is an enterprise event management platform for Berner Architekten Treffe
 - ✅ Epic 6 Speaker Portal complete (2026-02-16 QA passed)
 - ✅ Epic 8 Partner Coordination complete (2026-02-22)
 
-**When Adding New Features** (open work as of 2026-11-07):
-- Epic 17: architecture hardening, 20 stories in order (test fidelity 17.0a–d, dead surface and gates first), plus 16.8c composer clean-up (after 17.1, one release and owner go) — see `docs/prd/epic-17-architecture-hardening.md`
-- Parked, not a story: pre-deploy gate (P5), after 17.1–17.5 and 17.0a–d — `docs/plans/pre-deploy-gate-plan.md`
+**When Adding New Features** (open work as of 2026-11-15):
+- Backlog tickets in `_bmad-output/backlog/` (each needs owner go), among them `story-eventcontroller-keeps-only-http.md` and `spike-pre-deploy-gate.md` (P5, owner decides; its parking condition 17.1–17.5 + 17.0a–d is met) — plan `docs/plans/pre-deploy-gate-plan.md`
+- Remaining own-code mocks shrink only under the touch rule (ratchet `web-frontend/scripts/test-ratchet-baseline.txt`)
 - Epic 3 production data import still pending (operational task, owner triggers it)
 - Unimplemented stories of epics 1-16 are archived, not open work. Revive one only on owner request, as a new ticket.
 
