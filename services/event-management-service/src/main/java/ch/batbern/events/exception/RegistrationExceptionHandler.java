@@ -24,12 +24,16 @@ import java.util.Map;
 @Slf4j
 public class RegistrationExceptionHandler {
 
-    /** Add participant to a full event without force (409, counts): the dialog offers "add anyway". */
+    /**
+     * A full event (409, counts): the add-participant dialog offers "add anyway"; the organizer's
+     * status change to {@code confirmed} has no force (#1315). The log names the refused request.
+     */
     @ExceptionHandler(RegistrationCapacityExceededException.class)
     public ResponseEntity<ErrorResponse> handleCapacityExceeded(
             RegistrationCapacityExceededException ex,
             HttpServletRequest request) {
-        log.info("Add-participant refused, event at capacity: {}", ex.getMessage());
+        log.info("{} {} refused, event at capacity: {}", request.getMethod(), request.getRequestURI(),
+                ex.getMessage());
         Map<String, Object> details = DomainErrorResponse.codeDetails(ex);
         details.put("activeCount", ex.getActiveCount());
         details.put("capacity", ex.getCapacity());

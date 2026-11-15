@@ -20,12 +20,15 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -961,8 +964,9 @@ class RegistrationControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     @WithMockUser(roles = "ORGANIZER")
+    @ExtendWith(OutputCaptureExtension.class)
     @DisplayName("#1315: registered -> confirmed is refused while the event holds more than its capacity")
-    void should_checkCapacity_when_organizerConfirmsPendingRegistration() throws Exception {
+    void should_checkCapacity_when_organizerConfirmsPendingRegistration(CapturedOutput output) throws Exception {
         Event capped = cappedOtherEvent(); // capacity 1
         Registration john = registrationRepository.save(registration(capped, "john.doe", "registered"));
         Registration jane = registrationRepository.save(registration(capped, "jane.smith", "registered"));
@@ -975,6 +979,10 @@ class RegistrationControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.details.capacity").value(1))
                 .andExpect(jsonPath("$.message").value(not(containsString("force"))));
         assertThat(registrationRepository.findById(john.getId()).orElseThrow().getStatus()).isEqualTo("registered");
+        // The log names the refused operation, not the add-participant dialog.
+        assertThat(output.getOut()).contains("PATCH /api/v1/events/" + OTHER_EVENT_CODE + "/registrations/"
+                + john.getRegistrationCode() + " refused, event at capacity");
+        assertThat(output.getOut()).doesNotContain("Add-participant refused");
 
         // At capacity (John's own place counted): confirmed.
         patchStatus(OTHER_EVENT_CODE, jane.getRegistrationCode(), "{\"status\":\"cancelled\"}")
