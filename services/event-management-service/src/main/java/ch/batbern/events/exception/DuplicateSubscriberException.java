@@ -1,7 +1,7 @@
 package ch.batbern.events.exception;
 
+import ch.batbern.shared.exception.BATbernException.Severity;
 import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.ResponseStatus;
 
 /**
  * Exception thrown when an email is already an active newsletter subscriber.
@@ -9,10 +9,9 @@ import org.springframework.web.bind.annotation.ResponseStatus;
  *
  * Results in HTTP 409 Conflict.
  */
-@ResponseStatus(HttpStatus.CONFLICT)
-public class DuplicateSubscriberException extends RuntimeException {
+public class DuplicateSubscriberException extends DomainException {
 
     public DuplicateSubscriberException(String email) {
-        super("Email is already an active newsletter subscriber: " + email);
+        super(HttpStatus.CONFLICT, Severity.LOW, null, "Email is already an active newsletter subscriber: " + email);
     }
 }

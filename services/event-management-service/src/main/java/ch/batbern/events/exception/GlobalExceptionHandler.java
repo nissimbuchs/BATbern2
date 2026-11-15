@@ -31,10 +31,14 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
- * Global Exception Handler for Event Management Service
- * Story 1.15a.1: Events API Consolidation
+ * Global Exception Handler for Event Management Service (platform, L0).
  *
- * Handles validation errors and converts them to appropriate HTTP responses.
+ * <p>Maps the platform cases: Spring MVC, Spring Security, JPA, the shared-kernel exceptions and the
+ * catch-all. EMS domain exceptions are mapped once through their base {@link DomainException}; it uses
+ * no other EMS class ({@code EmsExceptionMappingTest}, Story 17.14). A module whose exception needs
+ * extra response fields has its own advice ({@code SpeakerExceptionHandler},
+ * {@code RegistrationExceptionHandler}, {@code EventWorkflowExceptionHandler},
+ * {@code mailcenter/MailCenterExceptionHandler}).
  */
 @RestControllerAdvice
 @Slf4j
@@ -65,68 +69,18 @@ public class GlobalExceptionHandler {
     }
 
     /**
-     * Handle AlreadyRespondedException (speaker already responded to invitation)
-     * Returns HTTP 409 Conflict
-     * Story 6.2a: Invitation Response Portal - AC7
+     * Every EMS domain exception (Story 17.14): status, severity and {@code details.code} come from the
+     * exception, so a new exception needs no handler here. One whose body carries more fields has a
+     * handler in its module's advice ({@code @Order(HIGHEST_PRECEDENCE)}), which runs first.
      */
-    @ExceptionHandler(AlreadyRespondedException.class)
-    public ResponseEntity<ErrorResponse> handleAlreadyRespondedException(
-            AlreadyRespondedException ex,
+    @ExceptionHandler(DomainException.class)
+    public ResponseEntity<ErrorResponse> handleDomainException(
+            DomainException ex,
             HttpServletRequest request) {
-        log.warn("Already responded: {}", ex.getMessage());
-
-        Map<String, Object> details = new HashMap<>();
-        details.put("previousResponse", ex.getPreviousResponse().toString());
-        if (ex.getRespondedAt() != null) {
-            details.put("respondedAt", ex.getRespondedAt().toString());
-        }
-
-        ErrorResponse error = ErrorResponse.builder()
-                .timestamp(Instant.now())
-                .path(request.getRequestURI())
-                .status(HttpStatus.CONFLICT.value())
-                .error("Conflict")
-                .message(ex.getMessage())
-                .correlationId(CorrelationIdGenerator.current())
-                .severity("MEDIUM")
-                .details(details)
-                .build();
-
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
-    }
-
-    /**
-     * Handle RegistrationProfileIncompleteException — authenticated user tried to register
-     * for an event but their profile is missing first or last name.
-     *
-     * Returns HTTP 409 Conflict with {@code code = "profile_incomplete"} and
-     * details about which fields are missing. Frontend reads this to show an
-     * inline profile-completion form and retry the registration.
-     */
-    @ExceptionHandler(RegistrationProfileIncompleteException.class)
-    public ResponseEntity<ErrorResponse> handleRegistrationProfileIncompleteException(
-            RegistrationProfileIncompleteException ex,
-            HttpServletRequest request) {
-        log.info("Refused authenticated registration — profile incomplete: {}", ex.getMessage());
-
-        Map<String, Object> details = new HashMap<>();
-        details.put("code", "profile_incomplete");
-        details.put("username", ex.getUsername());
-        details.put("missingFirstName", ex.isMissingFirstName());
-        details.put("missingLastName", ex.isMissingLastName());
-
-        ErrorResponse error = ErrorResponse.builder()
-                .timestamp(Instant.now())
-                .path(request.getRequestURI())
-                .status(HttpStatus.CONFLICT.value())
-                .error("Conflict")
-                .message("Profile incomplete — please add your first and last name before registering")
-                .correlationId(CorrelationIdGenerator.current())
-                .severity("LOW")
-                .details(details)
-                .build();
-
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+        log.warn("Domain exception {} [correlationId={}] {} {}: {}", ex.getStatus().value(),
+                CorrelationIdGenerator.current(), request.getRequestURI(), ex.getClass().getSimpleName(),
+                ex.getMessage());
+        return DomainErrorResponse.of(ex, request);
     }
 
     /**
@@ -226,29 +180,6 @@ public class GlobalExceptionHandler {
     }
 
     /**
-     * Handle EventNotFoundException (event not found by ID)
-     * Returns HTTP 404 Not Found
-     */
-    @ExceptionHandler(EventNotFoundException.class)
-    public ResponseEntity<ErrorResponse> handleEventNotFoundException(
-            EventNotFoundException ex,
-            HttpServletRequest request) {
-        log.warn("Event not found: {}", ex.getMessage());
-
-        ErrorResponse error = ErrorResponse.builder()
-                .timestamp(Instant.now())
-                .path(request.getRequestURI())
-                .status(HttpStatus.NOT_FOUND.value())
-                .error("Not Found")
-                .message(ex.getMessage())
-                .correlationId(CorrelationIdGenerator.current())
-                .severity("LOW")
-                .build();
-
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
-    }
-
-    /**
      * Handle jakarta.persistence.EntityNotFoundException.
      * P2 (Story 11.C.2 review): ContentSubmissionService.submit throws this when speaker
      * or event lookups miss; without a dedicated handler it falls through to the generic
@@ -259,156 +190,6 @@ public class GlobalExceptionHandler {
             jakarta.persistence.EntityNotFoundException ex,
             HttpServletRequest request) {
         log.warn("Entity not found: {}", ex.getMessage());
-
-        ErrorResponse error = ErrorResponse.builder()
-                .timestamp(Instant.now())
-                .path(request.getRequestURI())
-                .status(HttpStatus.NOT_FOUND.value())
-                .error("Not Found")
-                .message(ex.getMessage())
-                .correlationId(CorrelationIdGenerator.current())
-                .severity("LOW")
-                .build();
-
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
-    }
-
-    /**
-     * Handle UserServiceException — cross-service HTTP failures from CUMS.
-     * P2 (Story 11.C.2 review): when CUMS returns 400 (e.g., bio too long, blank field),
-     * UserApiClientImpl re-throws as UserServiceException(status=400). Without a handler
-     * this fell through to 500; map back to the originating status code so the speaker
-     * sees the same 400 as the organizer endpoint would.
-     */
-    @ExceptionHandler(ch.batbern.events.exception.UserServiceException.class)
-    public ResponseEntity<ErrorResponse> handleUserServiceException(
-            ch.batbern.events.exception.UserServiceException ex,
-            HttpServletRequest request) {
-        Integer rawStatus = ex.getStatusCode();
-        int status = (rawStatus != null && rawStatus >= 400 && rawStatus < 600)
-                ? rawStatus
-                : HttpStatus.BAD_GATEWAY.value();
-        HttpStatus httpStatus = HttpStatus.valueOf(status);
-        log.warn("User Management Service error: status={} message={}", status, ex.getMessage());
-
-        ErrorResponse error = ErrorResponse.builder()
-                .timestamp(Instant.now())
-                .path(request.getRequestURI())
-                .status(status)
-                .error(httpStatus.getReasonPhrase())
-                .message(ex.getMessage())
-                .correlationId(CorrelationIdGenerator.current())
-                .severity(status >= 500 ? "HIGH" : "MEDIUM")
-                .build();
-
-        return ResponseEntity.status(httpStatus).body(error);
-    }
-
-    /**
-     * Handle TopicNotFoundException (topic not found)
-     * Returns HTTP 404 Not Found
-     * Story 5.2: Topic Selection Workflow
-     */
-    @ExceptionHandler(TopicNotFoundException.class)
-    public ResponseEntity<ErrorResponse> handleTopicNotFoundException(
-            TopicNotFoundException ex,
-            HttpServletRequest request) {
-        log.warn("Topic not found: {}", ex.getMessage());
-
-        ErrorResponse error = ErrorResponse.builder()
-                .timestamp(Instant.now())
-                .path(request.getRequestURI())
-                .status(HttpStatus.NOT_FOUND.value())
-                .error("Not Found")
-                .message(ex.getMessage())
-                .correlationId(CorrelationIdGenerator.current())
-                .severity("LOW")
-                .build();
-
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
-    }
-
-    /**
-     * Handle UserNotFoundException (user not found via API)
-     * Returns HTTP 404 Not Found
-     */
-    @ExceptionHandler(UserNotFoundException.class)
-    public ResponseEntity<ErrorResponse> handleUserNotFoundException(
-            UserNotFoundException ex,
-            HttpServletRequest request) {
-        log.warn("User not found: {}", ex.getMessage());
-
-        ErrorResponse error = ErrorResponse.builder()
-                .timestamp(Instant.now())
-                .path(request.getRequestURI())
-                .status(HttpStatus.NOT_FOUND.value())
-                .error("Not Found")
-                .message(ex.getMessage())
-                .correlationId(CorrelationIdGenerator.current())
-                .severity("LOW")
-                .build();
-
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
-    }
-
-    /**
-     * Handle SpeakerAssignmentNotFoundException (speaker assignment not found)
-     * Returns HTTP 404 Not Found
-     */
-    @ExceptionHandler(SpeakerAssignmentNotFoundException.class)
-    public ResponseEntity<ErrorResponse> handleSpeakerAssignmentNotFoundException(
-            SpeakerAssignmentNotFoundException ex,
-            HttpServletRequest request) {
-        log.warn("Speaker assignment not found: {}", ex.getMessage());
-
-        ErrorResponse error = ErrorResponse.builder()
-                .timestamp(Instant.now())
-                .path(request.getRequestURI())
-                .status(HttpStatus.NOT_FOUND.value())
-                .error("Not Found")
-                .message(ex.getMessage())
-                .correlationId(CorrelationIdGenerator.current())
-                .severity("LOW")
-                .build();
-
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
-    }
-
-    /**
-     * Handle SessionNotFoundException (session not found by slug)
-     * Returns HTTP 404 Not Found
-     * Story BAT-11 (5.7): Slot Assignment & Progressive Publishing
-     */
-    @ExceptionHandler(SessionNotFoundException.class)
-    public ResponseEntity<ErrorResponse> handleSessionNotFoundException(
-            SessionNotFoundException ex,
-            HttpServletRequest request) {
-        log.warn("Session not found: {}", ex.getMessage());
-
-        ErrorResponse error = ErrorResponse.builder()
-                .timestamp(Instant.now())
-                .path(request.getRequestURI())
-                .status(HttpStatus.NOT_FOUND.value())
-                .error("Not Found")
-                .message(ex.getMessage())
-                .correlationId(CorrelationIdGenerator.current())
-                .severity("LOW")
-                .build();
-
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
-    }
-
-    /**
-     * Handle MaterialNotFoundException (session material not found)
-     * Returns HTTP 404 Not Found
-     *
-     * Story 5.9: Session Materials Upload
-     */
-    @ExceptionHandler(MaterialNotFoundException.class)
-    public ResponseEntity<ErrorResponse> handleMaterialNotFoundException(
-            MaterialNotFoundException ex,
-            HttpServletRequest request) {
-        log.warn("Material not found: {}", ex.getMessage());
 
         ErrorResponse error = ErrorResponse.builder()
                 .timestamp(Instant.now())
@@ -497,36 +278,6 @@ public class GlobalExceptionHandler {
     }
 
     /**
-     * Handle RegistrationCapacityExceededException — organizer added a participant to a full
-     * event without force. Returns HTTP 409 with {@code details.code = "capacity_exceeded"} so
-     * the Add-participant dialog can offer "add anyway" (vs the generic duplicate 409).
-     */
-    @ExceptionHandler(RegistrationCapacityExceededException.class)
-    public ResponseEntity<ErrorResponse> handleRegistrationCapacityExceededException(
-            RegistrationCapacityExceededException ex,
-            HttpServletRequest request) {
-        log.info("Add-participant refused — event at capacity: {}", ex.getMessage());
-
-        Map<String, Object> details = new HashMap<>();
-        details.put("code", "capacity_exceeded");
-        details.put("activeCount", ex.getActiveCount());
-        details.put("capacity", ex.getCapacity());
-
-        ErrorResponse error = ErrorResponse.builder()
-                .timestamp(Instant.now())
-                .path(request.getRequestURI())
-                .status(HttpStatus.CONFLICT.value())
-                .error("Conflict")
-                .message(ex.getMessage())
-                .correlationId(CorrelationIdGenerator.current())
-                .severity("LOW")
-                .details(details)
-                .build();
-
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
-    }
-
-    /**
      * Handle IllegalStateException (business logic constraint violations)
      * Returns HTTP 409 Conflict
      * QA Fix (VALID-001): Handle duplicate registration attempts
@@ -551,29 +302,6 @@ public class GlobalExceptionHandler {
     }
 
     /**
-     * Handle BusinessValidationException (business logic validation failures)
-     * Returns HTTP 422 Unprocessable Entity with VALIDATION_ERROR code
-     */
-    @ExceptionHandler(BusinessValidationException.class)
-    public ResponseEntity<ErrorResponse> handleBusinessValidationException(
-            BusinessValidationException ex,
-            HttpServletRequest request) {
-        log.warn("Business validation error: {}", ex.getMessage());
-
-        ErrorResponse error = ErrorResponse.builder()
-                .timestamp(Instant.now())
-                .path(request.getRequestURI())
-                .status(HttpStatus.UNPROCESSABLE_ENTITY.value())
-                .error("Unprocessable Entity")
-                .message(ex.getMessage())
-                .correlationId(CorrelationIdGenerator.current())
-                .severity("MEDIUM")
-                .build();
-
-        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(error);
-    }
-
-    /**
      * Handle AccessDeniedException (Spring Security access denied)
      * Returns HTTP 403 Forbidden
      * Story 5.9: Session Materials Upload (AC7 - RBAC enforcement)
@@ -591,35 +319,6 @@ public class GlobalExceptionHandler {
                 .error("Forbidden")
                 .message(ex.getMessage())
                 .correlationId(CorrelationIdGenerator.current())
-                .severity("MEDIUM")
-                .build();
-
-        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
-    }
-
-    /**
-     * Handle SpeakerPortalAccessDeniedException — Story 11.E.3.
-     * Returns HTTP 403 Forbidden when a speaker tries to act on a pool row they don't own.
-     * The message is sanitised: the offending eventCode is logged but not echoed to the
-     * client (already in the path; no extra info exposure).
-     */
-    @ExceptionHandler(SpeakerPortalAccessDeniedException.class)
-    public ResponseEntity<ErrorResponse> handleSpeakerPortalAccessDenied(
-            SpeakerPortalAccessDeniedException ex,
-            HttpServletRequest request) {
-        // Code review 2026-05-18 (P21): generate correlation ID once so log + response share it,
-        // letting support tie the WARN line above to the 403 the user reported.
-        String correlationId = CorrelationIdGenerator.current();
-        log.warn("Speaker portal access denied: path={} correlationId={} reason={}",
-                request.getRequestURI(), correlationId, ex.getMessage());
-
-        ErrorResponse error = ErrorResponse.builder()
-                .timestamp(Instant.now())
-                .path(request.getRequestURI())
-                .status(HttpStatus.FORBIDDEN.value())
-                .error("Forbidden")
-                .message(ex.getMessage())
-                .correlationId(correlationId)
                 .severity("MEDIUM")
                 .build();
 
@@ -670,31 +369,6 @@ public class GlobalExceptionHandler {
                 .message(ex.getMessage())
                 .correlationId(CorrelationIdGenerator.current())
                 .severity("MEDIUM")
-                .build();
-
-        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(error);
-    }
-
-    /**
-     * Handle WorkflowValidationException (business rule validation failure for workflow transition)
-     * Returns HTTP 422 Unprocessable Entity
-     * Story 5.1a: Workflow State Machine Foundation - AC12
-     */
-    @ExceptionHandler(WorkflowValidationException.class)
-    public ResponseEntity<ErrorResponse> handleWorkflowValidationException(
-            WorkflowValidationException ex,
-            HttpServletRequest request) {
-        log.warn("Workflow validation error: {}", ex.getMessage());
-
-        ErrorResponse error = ErrorResponse.builder()
-                .timestamp(Instant.now())
-                .path(request.getRequestURI())
-                .status(HttpStatus.UNPROCESSABLE_ENTITY.value())
-                .error("Unprocessable Entity")
-                .message(ex.getMessage())
-                .correlationId(CorrelationIdGenerator.current())
-                .severity("HIGH")
-                .details(ex.getContext())
                 .build();
 
         return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(error);
@@ -802,38 +476,6 @@ public class GlobalExceptionHandler {
     }
 
     /**
-     * Handle ReadyRequiresPromoteException — caller attempted to PUT /status with
-     * newStatus = READY, but READY requires an email payload (User provisioning) and is
-     * reachable only via POST /promote (Story 11.D.1).
-     * Returns HTTP 400 Bad Request with code READY_REQUIRES_PROMOTE_ENDPOINT.
-     * Story 11.B.3 AC5.
-     */
-    @ExceptionHandler(ReadyRequiresPromoteException.class)
-    public ResponseEntity<ErrorResponse> handleReadyRequiresPromoteException(
-            ReadyRequiresPromoteException ex,
-            HttpServletRequest request) {
-        log.warn("READY requires promote endpoint: {}", ex.getMessage());
-
-        Map<String, Object> details = new HashMap<>();
-        details.put("code", "READY_REQUIRES_PROMOTE_ENDPOINT");
-        details.put("rejectedValue", "READY");
-        details.put("alternativeEndpoint", "POST /api/v1/events/{eventCode}/speakers/{speakerId}/promote");
-
-        ErrorResponse error = ErrorResponse.builder()
-                .timestamp(Instant.now())
-                .path(request.getRequestURI())
-                .status(HttpStatus.BAD_REQUEST.value())
-                .error("Bad Request")
-                .message(ex.getMessage())
-                .correlationId(CorrelationIdGenerator.current())
-                .severity("MEDIUM")
-                .details(details)
-                .build();
-
-        return ResponseEntity.badRequest().body(error);
-    }
-
-    /**
      * Handle ObjectOptimisticLockingFailureException (concurrent modification of same entity)
      * Returns HTTP 409 Conflict
      *
@@ -860,464 +502,6 @@ public class GlobalExceptionHandler {
                 .message("The resource was modified by another request. Please refresh and try again.")
                 .correlationId(CorrelationIdGenerator.current())
                 .severity("MEDIUM")
-                .build();
-
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
-    }
-
-    /**
-     * Handle generic exceptions
-     * Returns HTTP 500 Internal Server Error
-     */
-    /**
-     * Handle EventHasRealRegistrationsException (event has real attendees and cannot be deleted)
-     * Returns HTTP 409 Conflict
-     */
-    @ExceptionHandler(EventHasRealRegistrationsException.class)
-    public ResponseEntity<ErrorResponse> handleEventHasRealRegistrationsException(
-            EventHasRealRegistrationsException ex,
-            HttpServletRequest request) {
-        log.warn("Event delete blocked — real registrations exist: {}", ex.getMessage());
-
-        ErrorResponse error = ErrorResponse.builder()
-                .timestamp(Instant.now())
-                .path(request.getRequestURI())
-                .status(HttpStatus.CONFLICT.value())
-                .error("Conflict")
-                .message(ex.getMessage())
-                .correlationId(CorrelationIdGenerator.current())
-                .severity("LOW")
-                .build();
-
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
-    }
-
-    /**
-     * Handle StructuralSessionsAlreadyExistException (structural sessions already generated)
-     * Returns HTTP 409 Conflict
-     */
-    @ExceptionHandler(StructuralSessionsAlreadyExistException.class)
-    public ResponseEntity<ErrorResponse> handleStructuralSessionsAlreadyExistException(
-            StructuralSessionsAlreadyExistException ex,
-            HttpServletRequest request) {
-        log.warn("Structural sessions already exist: {}", ex.getMessage());
-
-        ErrorResponse error = ErrorResponse.builder()
-                .timestamp(Instant.now())
-                .path(request.getRequestURI())
-                .status(HttpStatus.CONFLICT.value())
-                .error("Conflict")
-                .message(ex.getMessage())
-                .correlationId(CorrelationIdGenerator.current())
-                .severity("MEDIUM")
-                .build();
-
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
-    }
-
-    /**
-     * Handle InvalidPromotionStateException (Story 11.D.1):
-     * {@code POST /speakers/{id}/promote} called on a speaker whose current state is not
-     * {@code CONTACTED} or {@code READY}. Returns HTTP 409 Conflict with
-     * {@code details.code = INVALID_PROMOTION_STATE} and {@code details.currentState =
-     * <state>} so the frontend can render a tailored message.
-     */
-    @ExceptionHandler(InvalidPromotionStateException.class)
-    public ResponseEntity<ErrorResponse> handleInvalidPromotionStateException(
-            InvalidPromotionStateException ex,
-            HttpServletRequest request) {
-        log.warn("Invalid promotion state: {}", ex.getMessage());
-
-        Map<String, Object> details = new HashMap<>();
-        details.put("code", "INVALID_PROMOTION_STATE");
-        details.put("currentState", ex.getCurrentState().name());
-
-        ErrorResponse error = ErrorResponse.builder()
-                .timestamp(Instant.now())
-                .path(request.getRequestURI())
-                .status(HttpStatus.CONFLICT.value())
-                .error("Conflict")
-                .message(ex.getMessage())
-                .correlationId(CorrelationIdGenerator.current())
-                .severity("MEDIUM")
-                .details(details)
-                .build();
-
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
-    }
-
-    /**
-     * Handle SelfNominationNotAllowedException (Story 7.2): attendee self-nomination attempted
-     * for an event whose topic is unset or which is unpublished. Returns HTTP 409 Conflict with
-     * {@code details.code = SELF_NOMINATION_NOT_ALLOWED}; no pool row is created (AC4).
-     */
-    @ExceptionHandler(SelfNominationNotAllowedException.class)
-    public ResponseEntity<ErrorResponse> handleSelfNominationNotAllowedException(
-            SelfNominationNotAllowedException ex,
-            HttpServletRequest request) {
-        log.warn("Self-nomination not allowed: {}", ex.getMessage());
-
-        Map<String, Object> details = new HashMap<>();
-        details.put("code", "SELF_NOMINATION_NOT_ALLOWED");
-
-        ErrorResponse error = ErrorResponse.builder()
-                .timestamp(Instant.now())
-                .path(request.getRequestURI())
-                .status(HttpStatus.CONFLICT.value())
-                .error("Conflict")
-                .message(ex.getMessage())
-                .correlationId(CorrelationIdGenerator.current())
-                .severity("LOW")
-                .details(details)
-                .build();
-
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
-    }
-
-    /**
-     * Handle DuplicateSelfNominationException (Story 7.2): an attendee who already self-nominated
-     * for an event tries again. One self-nomination per attendee per event (AC8). Returns HTTP 409
-     * Conflict with {@code details.code = DUPLICATE_SELF_NOMINATION}.
-     */
-    @ExceptionHandler(DuplicateSelfNominationException.class)
-    public ResponseEntity<ErrorResponse> handleDuplicateSelfNominationException(
-            DuplicateSelfNominationException ex,
-            HttpServletRequest request) {
-        log.warn("Duplicate self-nomination: {}", ex.getMessage());
-
-        Map<String, Object> details = new HashMap<>();
-        details.put("code", "DUPLICATE_SELF_NOMINATION");
-
-        ErrorResponse error = ErrorResponse.builder()
-                .timestamp(Instant.now())
-                .path(request.getRequestURI())
-                .status(HttpStatus.CONFLICT.value())
-                .error("Conflict")
-                .message(ex.getMessage())
-                .correlationId(CorrelationIdGenerator.current())
-                .severity("LOW")
-                .details(details)
-                .build();
-
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
-    }
-
-    /**
-     * #1238 E2: unregistering on or after the event day. 409 with
-     * {@code details.code = "DEREGISTRATION_CLOSED"}.
-     */
-    @ExceptionHandler(DeregistrationClosedException.class)
-    public ResponseEntity<ErrorResponse> handleDeregistrationClosedException(
-            DeregistrationClosedException ex,
-            HttpServletRequest request) {
-        log.info("Deregistration closed: {}", ex.getMessage());
-        ErrorResponse error = ErrorResponse.builder()
-                .timestamp(Instant.now())
-                .path(request.getRequestURI())
-                .status(HttpStatus.CONFLICT.value())
-                .error("Conflict")
-                .message(ex.getMessage())
-                .correlationId(CorrelationIdGenerator.current())
-                .severity("LOW")
-                .details(Map.of("code", "DEREGISTRATION_CLOSED"))
-                .build();
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
-    }
-
-    /**
-     * Handle RegistrationClosedException (feedback #1): a public self-registration or waitlist
-     * join was attempted after the registration deadline. Returns HTTP 409 Conflict with
-     * {@code details.code = "REGISTRATION_CLOSED"} and {@code details.deadline} so the public page
-     * can show a "registration closed on {date}" state.
-     */
-    @ExceptionHandler(RegistrationClosedException.class)
-    public ResponseEntity<ErrorResponse> handleRegistrationClosedException(
-            RegistrationClosedException ex,
-            HttpServletRequest request) {
-        log.info("Registration closed: {}", ex.getMessage());
-
-        Map<String, Object> details = new HashMap<>();
-        details.put("code", "REGISTRATION_CLOSED");
-        if (ex.getDeadline() != null) {
-            details.put("deadline", ex.getDeadline().toString());
-        }
-
-        ErrorResponse error = ErrorResponse.builder()
-                .timestamp(Instant.now())
-                .path(request.getRequestURI())
-                .status(HttpStatus.CONFLICT.value())
-                .error("Conflict")
-                .message(ex.getMessage())
-                .correlationId(CorrelationIdGenerator.current())
-                .severity("LOW")
-                .details(details)
-                .build();
-
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
-    }
-
-    /**
-     * Handle ThanksNotAllowedException (Story 7.4): a thank-you was submitted for an event that
-     * is not yet live/completed. Returns HTTP 409 Conflict with
-     * {@code details.code = THANKS_NOT_ALLOWED}; no row is created (AC7).
-     */
-    @ExceptionHandler(ThanksNotAllowedException.class)
-    public ResponseEntity<ErrorResponse> handleThanksNotAllowedException(
-            ThanksNotAllowedException ex,
-            HttpServletRequest request) {
-        log.warn("Thanks not allowed: {}", ex.getMessage());
-
-        Map<String, Object> details = new HashMap<>();
-        details.put("code", "THANKS_NOT_ALLOWED");
-
-        ErrorResponse error = ErrorResponse.builder()
-                .timestamp(Instant.now())
-                .path(request.getRequestURI())
-                .status(HttpStatus.CONFLICT.value())
-                .error("Conflict")
-                .message(ex.getMessage())
-                .correlationId(CorrelationIdGenerator.current())
-                .severity("LOW")
-                .details(details)
-                .build();
-
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
-    }
-
-    /**
-     * Handle ThanksNotFoundException (Story 7.7): an organizer feature-toggle targeted a thank-you
-     * that does not exist for the event. Returns HTTP 404 with {@code details.code = THANKS_NOT_FOUND}.
-     * Explicit handler so the catch-all {@code @ExceptionHandler(Exception.class)} doesn't 500 it.
-     */
-    @ExceptionHandler(ThanksNotFoundException.class)
-    public ResponseEntity<ErrorResponse> handleThanksNotFoundException(
-            ThanksNotFoundException ex,
-            HttpServletRequest request) {
-        log.warn("Thanks not found: {}", ex.getMessage());
-
-        Map<String, Object> details = new HashMap<>();
-        details.put("code", "THANKS_NOT_FOUND");
-
-        ErrorResponse error = ErrorResponse.builder()
-                .timestamp(Instant.now())
-                .path(request.getRequestURI())
-                .status(HttpStatus.NOT_FOUND.value())
-                .error("Not Found")
-                .message(ex.getMessage())
-                .correlationId(CorrelationIdGenerator.current())
-                .severity("LOW")
-                .details(details)
-                .build();
-
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
-    }
-
-    /**
-     * Handle ThanksNotFeaturableException (Story 7.7): an organizer tried to feature an ANONYMOUS
-     * thank-you. Returns HTTP 409 with {@code details.code = THANKS_NOT_FEATURABLE}. Explicit handler
-     * so the catch-all {@code @ExceptionHandler(Exception.class)} doesn't 500 it.
-     */
-    @ExceptionHandler(ThanksNotFeaturableException.class)
-    public ResponseEntity<ErrorResponse> handleThanksNotFeaturableException(
-            ThanksNotFeaturableException ex,
-            HttpServletRequest request) {
-        log.warn("Thanks not featurable: {}", ex.getMessage());
-
-        Map<String, Object> details = new HashMap<>();
-        details.put("code", "THANKS_NOT_FEATURABLE");
-
-        ErrorResponse error = ErrorResponse.builder()
-                .timestamp(Instant.now())
-                .path(request.getRequestURI())
-                .status(HttpStatus.CONFLICT.value())
-                .error("Conflict")
-                .message(ex.getMessage())
-                .correlationId(CorrelationIdGenerator.current())
-                .severity("LOW")
-                .details(details)
-                .build();
-
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
-    }
-
-    /**
-     * Handle QnaWindowFrozenException (Story 7.5): a post was attempted on a closed Q&A window.
-     * Returns HTTP 409 Conflict with {@code details.code = QNA_WINDOW_FROZEN}; no post created (AC5).
-     */
-    @ExceptionHandler(QnaWindowFrozenException.class)
-    public ResponseEntity<ErrorResponse> handleQnaWindowFrozenException(
-            QnaWindowFrozenException ex,
-            HttpServletRequest request) {
-        log.warn("Q&A window frozen: {}", ex.getMessage());
-
-        Map<String, Object> details = new HashMap<>();
-        details.put("code", "QNA_WINDOW_FROZEN");
-
-        ErrorResponse error = ErrorResponse.builder()
-                .timestamp(Instant.now())
-                .path(request.getRequestURI())
-                .status(HttpStatus.CONFLICT.value())
-                .error("Conflict")
-                .message(ex.getMessage())
-                .correlationId(CorrelationIdGenerator.current())
-                .severity("LOW")
-                .details(details)
-                .build();
-
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
-    }
-
-    /**
-     * Handle ThanksRateLimitedException (Story 7.4): anonymous thank-yous for one event from a
-     * single IP exceeded the per-(event,IP) cap (AC3/AC5). Returns HTTP 429 Too Many Requests with
-     * {@code details.code = THANKS_RATE_LIMITED}; the submission is rejected before any row is
-     * inserted, so the aggregate is not incremented.
-     */
-    @ExceptionHandler(ThanksRateLimitedException.class)
-    public ResponseEntity<ErrorResponse> handleThanksRateLimitedException(
-            ThanksRateLimitedException ex,
-            HttpServletRequest request) {
-        log.warn("Thanks rate limited: {}", ex.getMessage());
-
-        Map<String, Object> details = new HashMap<>();
-        details.put("code", "THANKS_RATE_LIMITED");
-
-        ErrorResponse error = ErrorResponse.builder()
-                .timestamp(Instant.now())
-                .path(request.getRequestURI())
-                .status(HttpStatus.TOO_MANY_REQUESTS.value())
-                .error("Too Many Requests")
-                .message(ex.getMessage())
-                .correlationId(CorrelationIdGenerator.current())
-                .severity("LOW")
-                .details(details)
-                .build();
-
-        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(error);
-    }
-
-    /**
-     * Handle SlotCapacityReachedException (READY → INVITED blocked by slot-capacity gate)
-     * Returns HTTP 409 Conflict.
-     * Story 11.B.2: slot-capacity gate replaces removed OVERFLOW state (ADR-009 §0.7).
-     */
-    @ExceptionHandler(SlotCapacityReachedException.class)
-    public ResponseEntity<ErrorResponse> handleSlotCapacityReachedException(
-            SlotCapacityReachedException ex,
-            HttpServletRequest request) {
-        log.warn("Slot capacity reached: {}", ex.getMessage());
-
-        Map<String, Object> details = new HashMap<>();
-        details.put("code", "SLOT_CAPACITY_REACHED");
-        details.put("eventId", ex.getEventId().toString());
-        details.put("acceptedCount", ex.getAcceptedCount());
-        details.put("invitedCount", ex.getInvitedCount());
-        details.put("maxSlots", ex.getMaxSlots());
-
-        ErrorResponse error = ErrorResponse.builder()
-                .timestamp(Instant.now())
-                .path(request.getRequestURI())
-                .status(HttpStatus.CONFLICT.value())
-                .error("Conflict")
-                .message(ex.getMessage())
-                .correlationId(CorrelationIdGenerator.current())
-                .severity("MEDIUM")
-                .details(details)
-                .build();
-
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
-    }
-
-    /**
-     * Handle DuplicateSubscriberException (email already subscribed to newsletter)
-     * Returns HTTP 409 Conflict
-     */
-    @ExceptionHandler(DuplicateSubscriberException.class)
-    public ResponseEntity<ErrorResponse> handleDuplicateSubscriberException(
-            DuplicateSubscriberException ex,
-            HttpServletRequest request) {
-        log.warn("Duplicate newsletter subscriber: {}", ex.getMessage());
-
-        ErrorResponse error = ErrorResponse.builder()
-                .timestamp(Instant.now())
-                .path(request.getRequestURI())
-                .status(HttpStatus.CONFLICT.value())
-                .error("Conflict")
-                .message(ex.getMessage())
-                .correlationId(CorrelationIdGenerator.current())
-                .severity("LOW")
-                .build();
-
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
-    }
-
-    /**
-     * Handle ReservedEmailDomainException — newsletter subscribe attempted with an
-     * RFC 2606 / RFC 6761 reserved domain (e.g. example.com, *.test, *.invalid).
-     * Returns HTTP 400 Bad Request.
-     */
-    @ExceptionHandler(ReservedEmailDomainException.class)
-    public ResponseEntity<ErrorResponse> handleReservedEmailDomainException(
-            ReservedEmailDomainException ex,
-            HttpServletRequest request) {
-        log.warn("Rejected newsletter subscribe — reserved domain: {}", ex.getMessage());
-
-        ErrorResponse error = ErrorResponse.builder()
-                .timestamp(Instant.now())
-                .path(request.getRequestURI())
-                .status(HttpStatus.BAD_REQUEST.value())
-                .error("Bad Request")
-                .message(ex.getMessage())
-                .correlationId(CorrelationIdGenerator.current())
-                .severity("LOW")
-                .build();
-
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
-    }
-
-    /**
-     * Handle DuplicateNewsletterSendException (send already in progress for the same event).
-     * Returns HTTP 409 Conflict.
-     */
-    @ExceptionHandler(DuplicateNewsletterSendException.class)
-    public ResponseEntity<ErrorResponse> handleDuplicateNewsletterSendException(
-            DuplicateNewsletterSendException ex,
-            HttpServletRequest request) {
-        log.warn("Duplicate newsletter send attempt: {}", ex.getMessage());
-
-        ErrorResponse error = ErrorResponse.builder()
-                .timestamp(Instant.now())
-                .path(request.getRequestURI())
-                .status(HttpStatus.CONFLICT.value())
-                .error("Conflict")
-                .message(ex.getMessage())
-                .correlationId(CorrelationIdGenerator.current())
-                .severity("LOW")
-                .build();
-
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
-    }
-
-    /**
-     * Story 7.3 — handle SlidesOnlineAlreadySentException (the one-shot slides-online mail has
-     * already been sent for this event). Returns HTTP 409 Conflict. An explicit handler is
-     * required so the catch-all {@code @ExceptionHandler(Exception.class)} below does not shadow
-     * the exception's {@code @ResponseStatus(CONFLICT)} and translate it into a 500.
-     */
-    @ExceptionHandler(SlidesOnlineAlreadySentException.class)
-    public ResponseEntity<ErrorResponse> handleSlidesOnlineAlreadySentException(
-            SlidesOnlineAlreadySentException ex,
-            HttpServletRequest request) {
-        log.warn("Duplicate slides-online send attempt: {}", ex.getMessage());
-
-        ErrorResponse error = ErrorResponse.builder()
-                .timestamp(Instant.now())
-                .path(request.getRequestURI())
-                .status(HttpStatus.CONFLICT.value())
-                .error("Conflict")
-                .message(ex.getMessage())
-                .correlationId(CorrelationIdGenerator.current())
-                .severity("LOW")
                 .build();
 
         return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
@@ -1406,6 +590,10 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(ex.getStatusCode()).body(error);
     }
 
+    /**
+     * Catch-all: a client mistake no handler maps answers its 4xx ({@link ClientErrorClassifier}),
+     * anything else 500 CRITICAL.
+     */
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGenericException(
             Exception ex,

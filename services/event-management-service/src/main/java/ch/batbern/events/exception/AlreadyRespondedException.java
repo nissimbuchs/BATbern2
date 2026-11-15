@@ -1,8 +1,9 @@
 package ch.batbern.events.exception;
 
-import ch.batbern.shared.types.SpeakerWorkflowState;
+import ch.batbern.shared.exception.BATbernException.Severity;
 import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.ResponseStatus;
+
+import ch.batbern.shared.types.SpeakerWorkflowState;
 
 import java.time.Instant;
 
@@ -13,14 +14,14 @@ import java.time.Instant;
  * Results in HTTP 409 Conflict response.
  * Includes previous response details for display to user.
  */
-@ResponseStatus(HttpStatus.CONFLICT)
-public class AlreadyRespondedException extends RuntimeException {
+public class AlreadyRespondedException extends DomainException {
 
     private final SpeakerWorkflowState previousResponse;
     private final Instant respondedAt;
 
     public AlreadyRespondedException(SpeakerWorkflowState previousResponse, Instant respondedAt) {
-        super(String.format("You have already responded to this invitation with: %s", previousResponse));
+        super(HttpStatus.CONFLICT, Severity.MEDIUM, null,
+                String.format("You have already responded to this invitation with: %s", previousResponse));
         this.previousResponse = previousResponse;
         this.respondedAt = respondedAt;
     }

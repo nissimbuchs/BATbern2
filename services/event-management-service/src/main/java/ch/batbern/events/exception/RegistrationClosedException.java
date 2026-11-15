@@ -1,5 +1,8 @@
 package ch.batbern.events.exception;
 
+import ch.batbern.shared.exception.BATbernException.Severity;
+import org.springframework.http.HttpStatus;
+
 import java.time.Instant;
 
 /**
@@ -14,12 +17,15 @@ import java.time.Instant;
  * ({@code capacity_exceeded}). The organizer add-participant path ({@code addParticipant}) is
  * intentionally NOT subject to this guard.
  */
-public class RegistrationClosedException extends RuntimeException {
+public class RegistrationClosedException extends DomainException {
+
+    static final String CODE = "REGISTRATION_CLOSED";
 
     private final transient Instant deadline;
 
     public RegistrationClosedException(String eventCode, Instant deadline) {
-        super("Registration for event " + eventCode + " closed on " + deadline);
+        super(HttpStatus.CONFLICT, Severity.LOW, CODE,
+                "Registration for event " + eventCode + " closed on " + deadline);
         this.deadline = deadline;
     }
 

@@ -1,5 +1,8 @@
 package ch.batbern.events.exception;
 
+import ch.batbern.shared.exception.BATbernException.Severity;
+import org.springframework.http.HttpStatus;
+
 import ch.batbern.shared.types.SpeakerWorkflowState;
 import lombok.Getter;
 
@@ -21,12 +24,14 @@ import lombok.Getter;
  * @see ReadyRequiresPromoteException
  */
 @Getter
-public class InvalidPromotionStateException extends RuntimeException {
+public class InvalidPromotionStateException extends DomainException {
+
+    static final String CODE = "INVALID_PROMOTION_STATE";
 
     private final SpeakerWorkflowState currentState;
 
     public InvalidPromotionStateException(SpeakerWorkflowState currentState, String message) {
-        super(message);
+        super(HttpStatus.CONFLICT, Severity.MEDIUM, CODE, message);
         this.currentState = currentState;
     }
 }

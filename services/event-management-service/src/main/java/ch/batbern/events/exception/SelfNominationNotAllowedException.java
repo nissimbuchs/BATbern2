@@ -1,5 +1,8 @@
 package ch.batbern.events.exception;
 
+import ch.batbern.shared.exception.BATbernException.Severity;
+import org.springframework.http.HttpStatus;
+
 /**
  * Story 7.2 "I Could Speak on That": thrown when an attendee tries to self-nominate for an
  * event whose topic is not yet set OR which is not yet published.
@@ -10,9 +13,11 @@ package ch.batbern.events.exception;
  * then is rejected as HTTP 409 Conflict by {@code GlobalExceptionHandler} with body
  * {@code details.code = "SELF_NOMINATION_NOT_ALLOWED"}; no pool row is created (AC4).
  */
-public class SelfNominationNotAllowedException extends RuntimeException {
+public class SelfNominationNotAllowedException extends DomainException {
+
+    static final String CODE = "SELF_NOMINATION_NOT_ALLOWED";
 
     public SelfNominationNotAllowedException(String message) {
-        super(message);
+        super(HttpStatus.CONFLICT, Severity.LOW, CODE, message);
     }
 }
