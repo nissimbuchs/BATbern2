@@ -246,7 +246,7 @@ Two rules the 2026-10-28 review (GHSA-qhqv) added:
   contains is a separate decision. The review found public responses carrying organizer planning
   data (topic staleness and status), who runs and last edited an event, the organizers' email
   addresses, partner contract end dates and an attendee's full email address. Public responses are
-  now projections: `EventController.forAudience`, `PublicEventShaper`, `TopicController.publicProjection`,
+  now projections: `EventReadService.forAudience`, `PublicEventShaper`, `TopicController.publicProjection`,
   the partner list and the registration lookup (email masked). The check cannot see payloads; a
   review of each allowlist entry's response can.
 - **A wildcard `permitAll` matches every literal segment too.** `GET /api/v1/events/*` also matched

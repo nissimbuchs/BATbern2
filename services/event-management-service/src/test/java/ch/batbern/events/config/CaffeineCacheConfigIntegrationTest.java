@@ -185,7 +185,7 @@ public class CaffeineCacheConfigIntegrationTest extends AbstractIntegrationTest 
         // RED PHASE: This test MIGHT PASS or FAIL depending on current implementation
         // Tests that first request returns X-Cache-Status: MISS
         //
-        // Note: Current EventController.getEvent() already implements caching
+        // Note: EventReadService.detail() (GET /events/{code}) implements the caching
         // This test verifies the behavior exists
 
         mockMvc.perform(get("/api/v1/events/" + archivedEvent.getEventCode())
@@ -314,7 +314,7 @@ public class CaffeineCacheConfigIntegrationTest extends AbstractIntegrationTest 
         // RED PHASE: This test MIGHT PASS or FAIL
         // Tests that cache is invalidated when event is updated
         //
-        // Current EventController.updateEvent() has @CacheEvict annotation
+        // EventController.updateEvent() carries the @CacheEvict annotation
         // This test verifies it works correctly
 
         // First request - populate cache

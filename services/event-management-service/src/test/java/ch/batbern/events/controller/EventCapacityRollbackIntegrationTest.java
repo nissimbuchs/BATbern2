@@ -80,6 +80,8 @@ class EventCapacityRollbackIntegrationTest extends AbstractIntegrationTest {
 
     @BeforeEach
     void setUp() {
+        // ASCII-only, minimal fixture (17.0d exception): the test is about the write transaction, two
+        // events and two registrations suffice, and no name is searched, sorted or rendered.
         eventRepository.deleteAll();
         sesRecorder.reset();
         cums.user("wanda.waiting", "{\"email\":\"success+wanda-waiting" + SIM + "\"}");

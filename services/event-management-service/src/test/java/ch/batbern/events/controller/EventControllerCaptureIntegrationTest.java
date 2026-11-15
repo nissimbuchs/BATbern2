@@ -423,6 +423,9 @@ class EventControllerCaptureIntegrationTest extends AbstractIntegrationTest {
      * a topic and one session. BATbern9704: a draft (CREATED), no registrations.
      */
     private void fixture() {
+        // ASCII-only, small fixture (17.0d exception): the goldens pin response shape and module
+        // composition, not name handling; names never reach a search or sort here, and changing the
+        // data would change the goldens taken on fdf9b25b1.
         Topic upcomingTopic = topic("capture-upcoming-topic", "Capture Upcoming Topic");
         Topic archivedTopic = topic("capture-archived-topic", "Capture Archived Topic");
 

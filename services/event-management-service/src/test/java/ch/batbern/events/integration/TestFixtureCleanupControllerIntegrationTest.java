@@ -419,7 +419,7 @@ class TestFixtureCleanupControllerIntegrationTest extends AbstractIntegrationTes
         void forceDeletesEventWithRealRegistration_byNumber() throws Exception {
             // This is the exact leak scenario (2026-06-01): a registration-fixture event with a
             // genuine anonymous attendee. The normal DELETE /events/{code} returns 409
-            // (EventController.countRealAttendees > 0), so the per-test teardown silently skips
+            // (RegistrationService.requireNoRealAttendees, real attendees > 0), so the per-test teardown silently skips
             // it and it leaks forever. The events_by_number sweep uses a native repository delete
             // that NEVER invokes the guard, so it removes the event AND cascades the registration.
             Event leaked = buildEvent("BATbern99500", 99500);
