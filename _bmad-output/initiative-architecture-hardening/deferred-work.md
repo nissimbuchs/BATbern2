@@ -68,7 +68,7 @@
 - source_plan: `_bmad-output/initiative-architecture-hardening/tickets/epic-test-fidelity/tickets/story-refactor-sweep-plan.md`
   summary: The EventForm "Auto-Save Functionality" block (6 tests) is `describe.skip` with the note "not implemented", but `EventForm` has auto-save (`handleAutoSave`, 5 s debounce). Unskipped, the block hangs: `vi.useFakeTimers()` stalls `userEvent.type`. Reviving it needs `userEvent.setup({ advanceTimers })` and the MSW harness instead of the `eventApiClient` mock; until then auto-save has no component test.
   evidence: 2026-11-09, unskipped run killed after 300 s (`~/.cache/batbern-test-logs/sweep-fe4.log`); the skip note now says why.
-  moved_to: GitHub issue #1317 (Epic 17 close-out, 2026-11-15).
+  resolved: already 2026-11-09, commit 4cc8d1adf (#1277): the block runs again with `userEvent.setup({ advanceTimers })`; this entry was stale. Its `eventApiClient` and `useAuth` mocks stay counted by the ratchet (touch rule). #1317 closed as already done (2026-11-15 retrospective).
 
 - source_plan: `_bmad-output/initiative-architecture-hardening/tickets/epic-test-fidelity/tickets/story-production-setup-in-tests-plan.md`
   summary: OWNER DECIDES. `events-core-api` `CreateEventRequest` requires 3 fields (title, date, eventType); the `Event` entity rejects a create without 5 more (venueName, venueAddress, venueCapacity, registrationDeadline, organizerUsername) with a 400. A client following the spec gets 400. Options: declare the 8 required in the spec (contract change: generated types, frontend), or give the 5 defaults in EMS.

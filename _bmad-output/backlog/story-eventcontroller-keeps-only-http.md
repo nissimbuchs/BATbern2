@@ -20,7 +20,7 @@ risk: medium
 
 Follow-up of Epic 17 (owner go 2026-11-15, from the close-out review). 17.13 took the registration
 endpoints out of `EventController`; the controller still has 1703 lines for its 12 event endpoints,
-because it carries business logic that reaches into six other EMS modules. It causes 18 of the 71
+because it carries business logic that reaches into six other EMS modules. It causes 16 of the 71
 references the EMS module script still reports (measured 2026-11-15, script run on `develop`
 74dee295e).
 

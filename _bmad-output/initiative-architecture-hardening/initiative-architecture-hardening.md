@@ -120,6 +120,6 @@ Developers and agents working on BATbern find one endpoint, one transport and on
 - Decision: 2026-11-15, owner. Initiative closed. Every plan in the tree is `done` and live; last PRs #1314 (17.13 + 17.14, one PR at the owner's request, deviating from "own PR per story") and #1316 (six pre-existing registration flaws the 17.13 review found, #1315). Done-when, checked 2026-11-15:
   - gates: ArchUnit, S2S contract tests and the response conformance run in `build-services`; the ratchet (`test-ratchet`), Spectral (`frontend-static`), the MSW validator (`test-frontend`), the FE path and generated-types checks run in or are `needs` of `build-frontend`; both are required checks on `develop`;
   - ArchUnit store: EMS->PCS and CUMS->EMS clients 0; EMS keeps 2 mail-core lines (17.15, dropped); frontend layer baseline empty;
-  - EMS module script: 23 pairs / 71 references (baseline 28 / 100); 18 of the 71 come from `EventController` logic, now backlog `_bmad-output/backlog/story-eventcontroller-keeps-only-http.md`;
+  - EMS module script: 23 pairs / 71 references (baseline 28 / 100); 16 of the 71 come from `EventController` logic, now backlog `_bmad-output/backlog/story-eventcontroller-keeps-only-http.md`;
   - mock ratchet (own-code mocks, frozen 2026-11-08 -> now): 937 -> 584 over the six original categories; the rest shrinks under the touch rule.
   Follow-ups: open `deferred-work.md` items moved to #1317-#1320; P5 pre-deploy gate is `_bmad-output/backlog/spike-pre-deploy-gate.md` (owner decides).
