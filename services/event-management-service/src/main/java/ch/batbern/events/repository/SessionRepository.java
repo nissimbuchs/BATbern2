@@ -55,7 +55,7 @@ public interface SessionRepository extends JpaRepository<Session, UUID>, JpaSpec
 
     /**
      * Batch-load sessions with their session users for multiple events in one query.
-     * Used by EventController.buildBatchExpandedResponses() to avoid N+1 session queries.
+     * Used by the batch session expansion of event lists (SessionEventExpansion) to avoid N+1 session queries.
      */
     @Query("SELECT DISTINCT s FROM Session s LEFT JOIN FETCH s.sessionUsers "
            + "WHERE s.eventId IN :eventIds ORDER BY s.startTime, s.sessionSlug")

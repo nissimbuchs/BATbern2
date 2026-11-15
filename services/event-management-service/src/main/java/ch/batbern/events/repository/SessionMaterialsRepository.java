@@ -29,7 +29,7 @@ public interface SessionMaterialsRepository extends JpaRepository<SessionMateria
 
     /**
      * Batch-load materials for multiple sessions in one query.
-     * Used by EventController.buildBatchExpandedResponses() to avoid N+1 material queries.
+     * Used by the batch session expansion of event lists (SessionEventExpansion) to avoid N+1 material queries.
      *
      * @param sessionIds Collection of session UUIDs
      * @return List of materials for all given sessions

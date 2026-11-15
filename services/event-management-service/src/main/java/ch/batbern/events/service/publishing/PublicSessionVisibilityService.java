@@ -4,10 +4,9 @@ import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Session;
 import ch.batbern.events.domain.SpeakerPool;
 import ch.batbern.events.repository.SpeakerPoolRepository;
+import ch.batbern.events.security.CallerRoles;
+import ch.batbern.events.service.SessionVisibility;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,30 +27,23 @@ import java.util.stream.Collectors;
  *   <li>{@link #visibleSessions}: organizers see everything, everyone else the public view. Used
  *       by the session endpoints ({@code /events/{code}/sessions}).</li>
  *   <li>{@link #callerIsOrganizer}: the permission rule of the organizer endpoints
- *       ({@code /events/{code}}, {@code /events}), which give sessions to organizers only.</li>
+ *       ({@code /events/{code}}, {@code /events}), which give sessions to organizers only
+ *       ({@link CallerRoles#isOrganizer}).</li>
  * </ul>
+ *
+ * <p>Implements the sessions module's {@link SessionVisibility}, through which the event read's
+ * session expansion asks for the public view without depending on publishing.
  */
 @Service
 @RequiredArgsConstructor
-public class PublicSessionVisibilityService {
-
-    private static final String ORGANIZER_AUTHORITY = "ROLE_ORGANIZER";
+public class PublicSessionVisibilityService implements SessionVisibility {
 
     private final PublicSessionVisibilityPolicy policy;
     private final SpeakerPoolRepository speakerPoolRepository;
 
     /** True when the current caller holds the ORGANIZER role. */
     public boolean callerIsOrganizer() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || !authentication.isAuthenticated()) {
-            return false;
-        }
-        for (GrantedAuthority authority : authentication.getAuthorities()) {
-            if (ORGANIZER_AUTHORITY.equals(authority.getAuthority())) {
-                return true;
-            }
-        }
-        return false;
+        return CallerRoles.isOrganizer();
     }
 
     /** Organizers see every session; everyone else the public view. */
@@ -64,6 +56,7 @@ public class PublicSessionVisibilityService {
      * Sessions the public website may show, by publishing state only, whoever is asking
      * (bug 2026-10-07: a logged-in organizer saw READY speakers on www.batbern.ch).
      */
+    @Override
     @Transactional(readOnly = true)
     public List<Session> publicSessions(Event event, List<Session> sessions) {
         Instant now = Instant.now();
@@ -74,6 +67,7 @@ public class PublicSessionVisibilityService {
     }
 
     /** Batch variant of {@link #publicSessions} for list endpoints: one pool query for all events. */
+    @Override
     @Transactional(readOnly = true)
     public Map<UUID, List<Session>> publicSessions(Collection<Event> events,
                                                    Map<UUID, List<Session>> sessionsByEventId) {
@@ -96,10 +90,5 @@ public class PublicSessionVisibilityService {
                             : sessions;
                 },
                 (a, b) -> a));
-    }
-
-    /** Cache-key suffix so organizer and non-organizer responses never share a cache entry. */
-    public String audienceCacheSuffix() {
-        return callerIsOrganizer() ? "_organizer" : "_public";
     }
 }

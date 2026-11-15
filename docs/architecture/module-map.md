@@ -36,8 +36,12 @@ CUMS (identity) is upstream of all. EMS (event) is upstream of PCS (partners).
 | L0 | platform (config, security, clients, exception base) |
 
 - A lower module needs to trigger a higher one? Define an interface in the lower module and
-  implement it above. `AudienceAdapter` is the model.
-- No new endpoints in `EventController`. A new EMS exception extends `DomainException` (platform,
+  implement it above. `AudienceAdapter` is the model. Event core's: `EventResponseContributor` (a
+  module's part of an event read, per `include=`), `EventWriteHooks` (capacity saved, before delete)
+  and `EventThemeAttachment` (theme image); sessions' `SessionVisibility` (public session view,
+  implemented in publishing).
+- No new endpoints in `EventController`; it keeps HTTP only and calls `EventReadService` and
+  `EventWriteService` (event core). A new EMS exception extends `DomainException` (platform,
   `exception/`: status, severity, optional code rendered as `details.code`) and needs no handler:
   `GlobalExceptionHandler` maps the base once. A body with more fields gets a handler in its module's
   own advice built with `DomainErrorResponse` (`exception/SpeakerExceptionHandler`,
@@ -73,6 +77,12 @@ CUMS (identity) is upstream of all. EMS (event) is upstream of PCS (partners).
   `RegistrationController` uses no `RegistrationRepository`: every registration read and write goes
   through a `@Transactional` `RegistrationService` method (#1315); the rule fails when no class has the
   controller's name. Fixture tests in `EmsModuleRulesFixtureTest` prove both rules fire.
+- EMS `architecture/EmsEndpointPlacementTest`, second rule (not frozen, no violation):
+  `EventController` uses event core and platform only: no Spring Data repository, no generated class
+  outside `core`, no class whose module (by the naming of `scripts/architecture/ems-module-deps.py`
+  and `ems-module-target.py`, ported in `EmsModuleNames`) is another. The public read model, the
+  analytics and the topic selection have their own controllers (`PublicEventController`,
+  `EventAnalyticsController`, `EventTopicController`). Fixture tests in `EmsModuleRulesFixtureTest`.
 - EMS `architecture/EmsExceptionMappingTest` (not frozen, it has no violation): `GlobalExceptionHandler`
   uses no EMS class but `DomainException` and `DomainErrorResponse`, so a module exception is mapped
   through the base or in the module's advice, never by hand in the platform advice; and every

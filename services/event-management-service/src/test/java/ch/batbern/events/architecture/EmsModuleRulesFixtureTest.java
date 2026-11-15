@@ -2,6 +2,9 @@ package ch.batbern.events.architecture;
 
 import ch.batbern.events.architecture.fixtures.client.PartnerFixtureClient;
 import ch.batbern.events.architecture.fixtures.client.UserFixtureClient;
+import ch.batbern.events.architecture.fixtures.eventcontrollerhttp.FixtureEventRepository;
+import ch.batbern.events.architecture.fixtures.eventcontrollerhttp.SessionFixtureService;
+import ch.batbern.events.architecture.fixtures.eventcontrollerhttp.analytics.api.generated.FixtureReportingApi;
 import ch.batbern.events.architecture.fixtures.eventcoreinherited.FixtureRegistrationsApi;
 import ch.batbern.events.architecture.fixtures.exceptionmapping.exception.FixtureAgendaFullException;
 import ch.batbern.events.architecture.fixtures.exceptionmapping.exception.FixtureNotFoundException;
@@ -48,11 +51,17 @@ class EmsModuleRulesFixtureTest {
 
     private static final JavaClasses ALL = new ClassFileImporter().importPackages(ROOT);
 
-    /** Three fixtures named EventController (the rule goes by simple name), hence qualified. */
+    /** Fixtures named EventController (the rules go by simple name), hence qualified. */
     private static final Class<?> HAND_MAPPED = ch.batbern.events.architecture.fixtures.eventcore.EventController.class;
     private static final Class<?> INHERITING =
             ch.batbern.events.architecture.fixtures.eventcoreinherited.EventController.class;
     private static final Class<?> CLEAN = ch.batbern.events.architecture.fixtures.eventcoreclean.EventController.class;
+
+    /** The "EventController uses event core only" rule: one root that breaks it, one that keeps it. */
+    private static final String HTTP_ROOT = ROOT + ".eventcontrollerhttp";
+    private static final String HTTP_CLEAN_ROOT = ROOT + ".eventcontrollerhttpclean";
+    private static final JavaClasses HTTP = new ClassFileImporter().importPackages(HTTP_ROOT);
+    private static final JavaClasses HTTP_CLEAN = new ClassFileImporter().importPackages(HTTP_CLEAN_ROOT);
 
     /** The exception rules take {@code <root>.exception}: one root that breaks them, one that keeps them. */
     private static final String MAPPING_ROOT = ROOT + ".exceptionmapping";
@@ -205,6 +214,61 @@ class EmsModuleRulesFixtureTest {
                 "RegistrationRepository").check(new ClassFileImporter().importClasses(RegistrationController.class)))
                 .isInstanceOf(AssertionError.class)
                 .hasMessageContaining("failed to check any classes");
+    }
+
+    @Test
+    @DisplayName("should_fail_when_eventControllerUsesRepository")
+    void should_fail_when_eventControllerUsesRepository() {
+        EvaluationResult result = EmsModuleRules.controllerUsesOnlyEventCore(HTTP_ROOT, "EventController")
+                .evaluate(HTTP);
+
+        assertThat(result.getFailureReport().getDetails())
+                .anyMatch(line -> line.contains(HTTP_ROOT + ".EventController")
+                        && line.contains(FixtureEventRepository.class.getName()));
+    }
+
+    @Test
+    @DisplayName("should_fail_when_eventControllerUsesClassOfAnotherModule")
+    void should_fail_when_eventControllerUsesClassOfAnotherModule() {
+        EvaluationResult result = EmsModuleRules.controllerUsesOnlyEventCore(HTTP_ROOT, "EventController")
+                .evaluate(HTTP);
+
+        assertThat(result.getFailureReport().getDetails())
+                .anyMatch(line -> line.contains(SessionFixtureService.class.getName()))
+                .anyMatch(line -> line.contains(FixtureReportingApi.class.getName()));
+    }
+
+    @Test
+    @DisplayName("should_pass_when_eventControllerUsesOnlyEventCoreAndPlatform")
+    void should_pass_when_eventControllerUsesOnlyEventCoreAndPlatform() {
+        // Positive control: the same rule reports the breaking fixture.
+        assertThat(EmsModuleRules.controllerUsesOnlyEventCore(HTTP_ROOT, "EventController")
+                .evaluate(HTTP).hasViolation()).isTrue();
+
+        assertThat(EmsModuleRules.controllerUsesOnlyEventCore(HTTP_CLEAN_ROOT, "EventController")
+                .evaluate(HTTP_CLEAN).hasViolation()).isFalse();
+        assertThatThrownBy(() -> EmsModuleRules.controllerUsesOnlyEventCore(HTTP_CLEAN_ROOT, "RenamedController")
+                .check(HTTP_CLEAN))
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("failed to check any classes");
+    }
+
+    @Test
+    @DisplayName("should_classifyLikeTheModuleScript_when_givenClassNames")
+    void should_classifyLikeTheModuleScript_when_givenClassNames() {
+        assertThat(EmsModuleNames.moduleOf("service", "EventReadService")).isEqualTo(EmsModuleNames.EVENT_CORE);
+        assertThat(EmsModuleNames.moduleOf("security", "CallerRoles")).isEqualTo(EmsModuleNames.PLATFORM);
+        assertThat(EmsModuleNames.moduleOf("service", "SessionEventExpansion")).isEqualTo("sessions");
+        assertThat(EmsModuleNames.moduleOf("service", "RegistrationEventAdapter")).isEqualTo("registrations");
+        assertThat(EmsModuleNames.moduleOf("service", "TeaserImageEventExpansion")).isEqualTo("media");
+        assertThat(EmsModuleNames.moduleOf("service", "TopicEventExpansion")).isEqualTo("topics_ai");
+        assertThat(EmsModuleNames.moduleOf("service", "SpeakerMetricsExpansion")).isEqualTo("speakers");
+        assertThat(EmsModuleNames.moduleOf("service", "EventAnalyticsService")).isEqualTo("analytics");
+        assertThat(EmsModuleNames.moduleOf("publishing", "PublicEventShaper")).isEqualTo("publishing");
+        assertThat(EmsModuleNames.moduleOf("service", "MailPipeline")).isEqualTo("mail_core");
+        assertThat(EmsModuleNames.moduleOf("mailcenter", "ConversationService")).isEqualTo("mail_center");
+        assertThat(EmsModuleNames.moduleOf("notification", "NotificationRepository")).isEqualTo("notif_core");
+        assertThat(EmsModuleNames.moduleOf("service", "AiDescriptionService")).isEqualTo("ai");
     }
 
     @Test

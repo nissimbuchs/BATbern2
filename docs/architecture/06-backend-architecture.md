@@ -180,10 +180,40 @@ so the website never shows an organizer something a visitor would not see.
   never rename one: installed Apple Watch binaries decode the list. `materialsStatus` is `NONE` or
   `COMPLETE`; one file of any type makes a session `COMPLETE`.
 
+`PublicEventController` (publishing) serves these three paths through `PublicEventsService`, which
+builds on the event read of event core (`EventReadService`) in the public session view and shapes
+the result with `PublicEventShaper`.
+
 The older `GET /api/v1/events` and `/events/{code}` return sessions and speakers to organizers only.
 `GET /api/v1/events/current` is unchanged for the Apple Watch, an installed binary that calls the
 path directly: organizers see every session, everyone else gets the public view. It is retired once
 a Watch release has switched to `/public/events/current` (#1070).
+
+#### Event resource: HTTP in the controller, logic in event core
+
+`EventController` implements `EventsApi` only (list, detail, current, create, update, patch,
+delete) and calls two event-core services; `EmsEndpointPlacementTest` holds that it uses event core
+and platform only (no repository, no other module).
+
+- `EventReadService`: list, detail (Caffeine cache `eventWithIncludes`, keyed by code, include and
+  audience; `X-Cache-Status` HIT/MISS), current event, the GHSA-qhqv public projection for
+  non-organizers. The `include=` expansion composes the modules through
+  `EventResponseContributor` beans each module implements: `TopicEventExpansion` (`topics`),
+  `RegistrationEventAdapter` (`registrations`, and the counts every detail carries),
+  `TeaserImageEventExpansion` (teaser images), `SessionEventExpansion` (`sessions`, `speakers`;
+  the public view through the sessions module's `SessionVisibility`, implemented by
+  `PublicSessionVisibilityService`), `SpeakerMetricsExpansion` (`metrics`). `venue` is event
+  core's. An unknown include is logged and ignored; two contributors claiming one include fail the
+  start.
+- `EventWriteService`: create (no transaction of its own, so the REQUIRES_NEW
+  `AutoEnrollmentListener` sees the committed event), PUT and PATCH (event save and
+  `EventWriteHooks.capacitySaved` in one transaction: a raised capacity fills the waitlist or
+  nothing is saved; the theme image is attached after it through `EventThemeAttachment`, a failure
+  there is logged and the write stands), delete (one transaction: `EventWriteHooks.beforeDelete`
+  refuses an event with real attendees with 409, then notifications and event). The cache
+  evictions stay on the controller methods, so they run after the commit.
+- `GET /events/{eventCode}/analytics` is `EventAnalyticsController` (analytics, `EventReportingApi`),
+  `POST /events/{eventCode}/topics` is `EventTopicController` (topics, `EventTopicsApi`).
 
 **Internal service API (`/internal/**`, no JWT):**
 

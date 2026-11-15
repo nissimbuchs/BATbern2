@@ -7,6 +7,7 @@ import ch.batbern.events.analytics.dto.generated.EventAnalyticsMetricsEngagement
 import ch.batbern.events.analytics.dto.generated.EventAnalyticsMetricsRegistrations;
 import ch.batbern.events.analytics.dto.generated.EventAnalyticsMetricsRegistrationsByStatus;
 import ch.batbern.events.analytics.dto.generated.EventAnalyticsTimeframe;
+import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Registration;
 import ch.batbern.events.domain.Session;
 import ch.batbern.events.exception.EventNotFoundException;
@@ -36,6 +37,22 @@ public class EventAnalyticsService {
     private final EventRepository eventRepository;
     private final RegistrationRepository registrationRepository;
     private final SessionRepository sessionRepository;
+
+    /**
+     * Analytics of the event with this code (GET /events/{eventCode}/analytics, moved from
+     * {@code EventController}): the code is looked up for the internal id, and the answer carries the
+     * code, never the UUID (Story 1.16.2).
+     *
+     * @throws EventNotFoundException when no event has this code
+     */
+    public EventAnalytics generateAnalytics(String eventCode, String metrics, String timeframe) {
+        Event event = eventRepository.findByEventCode(eventCode)
+                .orElseThrow(() -> new EventNotFoundException("Event not found with code: " + eventCode));
+
+        EventAnalytics analytics = generateAnalytics(event.getId(), metrics, timeframe);
+        analytics.setEventCode(eventCode);
+        return analytics;
+    }
 
     /**
      * Generate analytics for an event with specified metrics and optional timeframe.

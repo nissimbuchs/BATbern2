@@ -309,7 +309,7 @@ The packages below are under `services/event-management-service/src/main/java/ch
 ```mermaid
 flowchart TB
     subgraph api["API layer, controller/ and feature packages"]
-        C1["Events and workflow<br/>EventController, EventWorkflowController,<br/>EventTypeController, AgendaConfigController,<br/>PublishingEngineController"]
+        C1["Events and workflow<br/>EventController, PublicEventController,<br/>EventTopicController, EventWorkflowController,<br/>EventTypeController, AgendaConfigController,<br/>PublishingEngineController"]
         C2["Sessions and agenda<br/>SessionController, GlobalSessionController,<br/>SlotAssignmentController, TimetableController"]
         C3["Speaker workflow<br/>EventSpeakerPoolController, SpeakerStatusController,<br/>SpeakerInvitationController, SpeakerOutreachController,<br/>SpeakerReminderController, SessionSpeakerController"]
         C4["Speaker portal<br/>SpeakerPortal*Controller,<br/>SessionMaterialsController"]
@@ -319,10 +319,11 @@ flowchart TB
         C8["Mail<br/>EmailTemplateController, NewsletterController,<br/>mailcenter/MailConversationController,<br/>EventMailController"]
         C9["AI assist<br/>AiAssistController, AiPromptController,<br/>TopicSimilarityController"]
         C10["Live and Watch<br/>watch/LiveTimingController,<br/>WatchEventController, WatchWebSocketController"]
-        C11["Admin and analytics<br/>AdminSettingsController, AnalyticsController,<br/>PublicSettingsController, NotificationController"]
+        C11["Admin and analytics<br/>AdminSettingsController, AnalyticsController,<br/>EventAnalyticsController, PublicSettingsController,<br/>NotificationController"]
     end
 
     subgraph app["Application services"]
+        S0["EventReadService, EventWriteService<br/>event core; modules plug in through<br/>EventResponseContributor, EventWriteHooks"]
         S1["EventWorkflowStateMachine<br/>8 event states"]
         S2["SpeakerWorkflowService<br/>8 speaker states, ADR-009"]
         S3["SlotAssignmentService,<br/>slotassignment/ conflict detection"]
@@ -353,7 +354,7 @@ flowchart TB
         PCSX["PCS, calendar reply contract EMS owns,<br/>HttpCalendarReplyContract"]
     end
 
-    C1 --> S1 & S4
+    C1 --> S0 & S1 & S4
     C2 --> S3
     C3 --> S2
     C4 --> S2
