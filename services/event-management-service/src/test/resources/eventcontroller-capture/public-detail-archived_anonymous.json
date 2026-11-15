@@ -1,0 +1,86 @@
+{
+  "response" : {
+    "status" : 200,
+    "xCacheStatus" : null,
+    "body" : {
+      "eventCode" : "BATbern9703",
+      "title" : "Capture Archived Topic Event",
+      "eventNumber" : 9703,
+      "date" : "ts#1",
+      "registrationDeadline" : "ts#2",
+      "venueName" : "Kornhausforum",
+      "venueAddress" : "Kornhausplatz 18, 3011 Bern",
+      "venueCapacity" : 200,
+      "qnaEnabled" : true,
+      "qnaOpenTrigger" : "EVENT_COMPLETED",
+      "qnaWindowDays" : 14,
+      "confirmedCount" : 1,
+      "waitlistCount" : 0,
+      "currentAttendeeCount" : 1,
+      "createdAt" : "ts#3",
+      "updatedAt" : "ts#4",
+      "teaserImages" : [ ],
+      "topicCode" : "capture-archived-topic",
+      "eventType" : "EVENING",
+      "typicalStartTime" : "18:30",
+      "typicalEndTime" : "19:00",
+      "workflowState" : "ARCHIVED",
+      "topic" : {
+        "code" : "capture-archived-topic",
+        "name" : "Capture Archived Topic",
+        "description" : "Capture Archived Topic description",
+        "category" : "technical"
+      },
+      "venue" : {
+        "id" : "BATbern9703",
+        "name" : "Kornhausforum",
+        "address" : "Kornhausplatz 18, 3011 Bern",
+        "capacity" : 200
+      },
+      "sessions" : [ {
+        "sessionSlug" : "archived-talk",
+        "eventCode" : "BATbern9703",
+        "title" : "Archived Talk",
+        "description" : "Archived Talk abstract",
+        "sessionType" : "presentation",
+        "startTime" : "ts#5",
+        "endTime" : "ts#6",
+        "room" : "Saal",
+        "capacity" : null,
+        "language" : "de",
+        "createdAt" : "ts#7",
+        "updatedAt" : "ts#8",
+        "speakers" : [ {
+          "username" : "ari.archived",
+          "firstName" : "Test",
+          "lastName" : "User",
+          "company" : "TestCompany",
+          "companyDisplayName" : "TestCompany",
+          "profilePictureUrl" : "https://cdn.test.com/profile.jpg",
+          "companyLogoUrl" : null,
+          "bio" : "Test user bio",
+          "speakerRole" : "PRIMARY_SPEAKER",
+          "presentationTitle" : null,
+          "isConfirmed" : true
+        } ],
+        "materialsStatus" : "NONE",
+        "materials" : [ ],
+        "materialsCount" : 0
+      } ],
+      "speakers" : [ {
+        "username" : "ari.archived",
+        "firstName" : "Test",
+        "lastName" : "User",
+        "company" : "TestCompany",
+        "companyDisplayName" : "TestCompany",
+        "companyLogoUrl" : null,
+        "profilePictureUrl" : "https://cdn.test.com/profile.jpg",
+        "bio" : "Test user bio",
+        "speakerRole" : "PRIMARY_SPEAKER",
+        "talkTitle" : "Archived Talk",
+        "sessionSlug" : "archived-talk"
+      } ],
+      "currentPublishedPhase" : "AGENDA"
+    }
+  }
+}

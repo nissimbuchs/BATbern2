@@ -1,0 +1,18 @@
+{
+  "response" : {
+    "status" : 400,
+    "xCacheStatus" : null,
+    "body" : {
+      "correlationId" : "uuid#1",
+      "details" : {
+        "getEvent.eventCode" : "must match \"^BATbern[0-9]+$\""
+      },
+      "error" : "Bad Request",
+      "message" : "Validation failed: getEvent.eventCode: must match \"^BATbern[0-9]+$\"",
+      "path" : "/api/v1/events/not-a-code",
+      "severity" : "MEDIUM",
+      "status" : 400,
+      "timestamp" : "ts#1"
+    }
+  }
+}

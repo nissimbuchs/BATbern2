@@ -1,0 +1,77 @@
+{
+  "response" : {
+    "status" : 200,
+    "xCacheStatus" : null,
+    "body" : {
+      "eventCode" : "BATbern9701",
+      "title" : "Capture Upcoming",
+      "eventNumber" : 9701,
+      "date" : "ts#1",
+      "registrationDeadline" : "ts#2",
+      "venueName" : "Kornhausforum",
+      "venueAddress" : "Kornhausplatz 18, 3011 Bern",
+      "venueCapacity" : 200,
+      "registrationCapacity" : 3,
+      "qnaEnabled" : true,
+      "qnaOpenTrigger" : "EVENT_COMPLETED",
+      "qnaWindowDays" : 14,
+      "confirmedCount" : 3,
+      "waitlistCount" : 2,
+      "spotsRemaining" : 0,
+      "currentAttendeeCount" : 5,
+      "description" : "Upcoming description",
+      "createdAt" : "ts#3",
+      "updatedAt" : "ts#4",
+      "themeImageUrl" : "https://cdn.batbern.ch/events/BATbern9701/theme-capture-theme-0.png",
+      "themeImageUploadId" : "capture-theme-0",
+      "teaserImages" : [ {
+        "id" : "uuid#1",
+        "imageUrl" : "https://cdn.batbern.ch/events/BATbern9701/teaser-0.png",
+        "displayOrder" : 0,
+        "presentationPosition" : "AFTER_TOPIC_REVEAL"
+      }, {
+        "id" : "uuid#2",
+        "imageUrl" : "https://cdn.batbern.ch/events/BATbern9701/teaser-1.png",
+        "displayOrder" : 1,
+        "presentationPosition" : "AFTER_TOPIC_REVEAL"
+      } ],
+      "topicCode" : "capture-upcoming-topic",
+      "eventType" : "EVENING",
+      "typicalStartTime" : "17:30",
+      "typicalEndTime" : "19:00",
+      "workflowState" : "AGENDA_PUBLISHED",
+      "topic" : {
+        "code" : "capture-upcoming-topic",
+        "name" : "Capture Upcoming Topic",
+        "description" : "Capture Upcoming Topic description",
+        "category" : "technical"
+      },
+      "venue" : {
+        "id" : "BATbern9701",
+        "name" : "Kornhausforum",
+        "address" : "Kornhausplatz 18, 3011 Bern",
+        "capacity" : 200
+      },
+      "sessions" : [ {
+        "sessionSlug" : "lunch",
+        "eventCode" : "BATbern9701",
+        "title" : "Lunch",
+        "description" : "Lunch abstract",
+        "sessionType" : "lunch",
+        "startTime" : "ts#5",
+        "endTime" : "ts#6",
+        "room" : "Saal",
+        "capacity" : null,
+        "language" : "de",
+        "createdAt" : "ts#7",
+        "updatedAt" : "ts#8",
+        "speakers" : [ ],
+        "materialsStatus" : "NONE",
+        "materials" : [ ],
+        "materialsCount" : 0
+      } ],
+      "speakers" : [ ],
+      "currentPublishedPhase" : "AGENDA"
+    }
+  }
+}

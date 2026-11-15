@@ -1,0 +1,16 @@
+{
+  "response" : {
+    "status" : 400,
+    "xCacheStatus" : null,
+    "body" : {
+      "correlationId" : "uuid#1",
+      "details" : { },
+      "error" : "Bad Request",
+      "message" : "sort must be '-date' or 'date'",
+      "path" : "/api/v1/public/events",
+      "severity" : "MEDIUM",
+      "status" : 400,
+      "timestamp" : "ts#1"
+    }
+  }
+}

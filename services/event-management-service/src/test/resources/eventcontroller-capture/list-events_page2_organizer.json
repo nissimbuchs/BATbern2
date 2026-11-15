@@ -1,0 +1,17 @@
+{
+  "response" : {
+    "status" : 200,
+    "xCacheStatus" : null,
+    "body" : {
+      "data" : [ ],
+      "pagination" : {
+        "page" : 2,
+        "limit" : 50,
+        "totalItems" : 4,
+        "totalPages" : 1,
+        "hasNext" : false,
+        "hasPrev" : true
+      }
+    }
+  }
+}

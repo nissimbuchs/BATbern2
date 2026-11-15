@@ -1,0 +1,16 @@
+{
+  "response" : {
+    "status" : 400,
+    "xCacheStatus" : null,
+    "body" : {
+      "correlationId" : "uuid#1",
+      "details" : { },
+      "error" : "Bad Request",
+      "message" : "Invalid filter JSON: Unexpected character ('n' (code 110)): was expecting double-quote to start field name\n at [Source: REDACTED (`StreamReadFeature.INCLUDE_SOURCE_IN_LOCATION` disabled); line: 1, column: 2]",
+      "path" : "/api/v1/events",
+      "severity" : "MEDIUM",
+      "status" : 400,
+      "timestamp" : "ts#1"
+    }
+  }
+}

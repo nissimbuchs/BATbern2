@@ -1,0 +1,101 @@
+{
+  "response" : {
+    "status" : 200,
+    "xCacheStatus" : null,
+    "body" : {
+      "data" : [ {
+        "eventCode" : "BATbern9703",
+        "title" : "Capture Archived Topic Event",
+        "eventNumber" : 9703,
+        "date" : "ts#1",
+        "registrationDeadline" : "ts#2",
+        "venueName" : "Kornhausforum",
+        "venueAddress" : "Kornhausplatz 18, 3011 Bern",
+        "venueCapacity" : 200,
+        "qnaEnabled" : true,
+        "qnaOpenTrigger" : "EVENT_COMPLETED",
+        "qnaWindowDays" : 14,
+        "currentAttendeeCount" : 0,
+        "createdAt" : "ts#3",
+        "updatedAt" : "ts#4",
+        "topicCode" : "capture-archived-topic",
+        "eventType" : "EVENING",
+        "workflowState" : "ARCHIVED",
+        "topic" : {
+          "code" : "capture-archived-topic",
+          "name" : "Capture Archived Topic",
+          "description" : "Capture Archived Topic description",
+          "category" : "technical"
+        },
+        "sessions" : [ {
+          "sessionSlug" : "archived-talk",
+          "eventCode" : "BATbern9703",
+          "title" : "Archived Talk",
+          "description" : "Archived Talk abstract",
+          "sessionType" : "presentation",
+          "startTime" : "ts#5",
+          "endTime" : "ts#6",
+          "room" : "Saal",
+          "capacity" : null,
+          "language" : "de",
+          "createdAt" : "ts#7",
+          "updatedAt" : "ts#8",
+          "speakers" : [ {
+            "username" : "ari.archived",
+            "firstName" : "Ari",
+            "lastName" : "Archived",
+            "company" : null,
+            "companyDisplayName" : null,
+            "profilePictureUrl" : null,
+            "companyLogoUrl" : null,
+            "bio" : null,
+            "speakerRole" : "PRIMARY_SPEAKER",
+            "presentationTitle" : null,
+            "isConfirmed" : true
+          } ],
+          "materialsStatus" : "NONE"
+        } ],
+        "speakers" : [ {
+          "username" : "ari.archived",
+          "firstName" : "Ari",
+          "lastName" : "Archived",
+          "company" : null,
+          "companyDisplayName" : null,
+          "companyLogoUrl" : null,
+          "profilePictureUrl" : null,
+          "bio" : null,
+          "speakerRole" : "PRIMARY_SPEAKER",
+          "talkTitle" : "Archived Talk",
+          "sessionSlug" : "archived-talk"
+        } ]
+      }, {
+        "eventCode" : "BATbern9702",
+        "title" : "Capture Archived",
+        "eventNumber" : 9702,
+        "date" : "ts#9",
+        "registrationDeadline" : "ts#10",
+        "venueName" : "Kornhausforum",
+        "venueAddress" : "Kornhausplatz 18, 3011 Bern",
+        "venueCapacity" : 200,
+        "qnaEnabled" : true,
+        "qnaOpenTrigger" : "EVENT_COMPLETED",
+        "qnaWindowDays" : 14,
+        "currentAttendeeCount" : 0,
+        "createdAt" : "ts#11",
+        "updatedAt" : "ts#12",
+        "eventType" : "EVENING",
+        "workflowState" : "ARCHIVED",
+        "sessions" : [ ],
+        "speakers" : [ ]
+      } ],
+      "pagination" : {
+        "page" : 1,
+        "limit" : 20,
+        "totalItems" : 2,
+        "totalPages" : 1,
+        "hasNext" : false,
+        "hasPrev" : false
+      }
+    }
+  }
+}

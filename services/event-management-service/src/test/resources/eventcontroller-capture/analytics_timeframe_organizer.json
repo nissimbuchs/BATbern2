@@ -1,0 +1,33 @@
+{
+  "response" : {
+    "status" : 200,
+    "xCacheStatus" : null,
+    "body" : {
+      "eventCode" : "BATbern9701",
+      "timeframe" : {
+        "start" : "ts#1",
+        "end" : "ts#2"
+      },
+      "metrics" : {
+        "registrations" : {
+          "total" : 6,
+          "byStatus" : {
+            "confirmed" : 2,
+            "pending" : 0,
+            "cancelled" : 1
+          }
+        },
+        "attendance" : {
+          "expected" : 2,
+          "actual" : 2,
+          "rate" : 100.0
+        },
+        "engagement" : {
+          "totalSessions" : 4,
+          "totalParticipants" : 6,
+          "averageSessionsPerParticipant" : 0.6666666666666666
+        }
+      }
+    }
+  }
+}

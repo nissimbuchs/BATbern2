@@ -1,0 +1,19 @@
+{
+  "response" : {
+    "status" : 200,
+    "xCacheStatus" : null,
+    "body" : {
+      "eventCode" : "BATbern9701",
+      "metrics" : {
+        "registrations" : {
+          "total" : 6,
+          "byStatus" : {
+            "confirmed" : 2,
+            "pending" : 0,
+            "cancelled" : 1
+          }
+        }
+      }
+    }
+  }
+}

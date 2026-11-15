@@ -1,0 +1,31 @@
+{
+  "response" : {
+    "status" : 403,
+    "xCacheStatus" : null,
+    "body" : {
+      "correlationId" : "uuid#1",
+      "error" : "Forbidden",
+      "message" : "Access denied - insufficient permissions",
+      "path" : "/api/v1/events",
+      "severity" : "MEDIUM",
+      "status" : 403,
+      "timestamp" : "ts#1"
+    }
+  },
+  "eventAfter" : {
+    "status" : 404,
+    "xCacheStatus" : null,
+    "body" : {
+      "correlationId" : "uuid#1",
+      "error" : "Not Found",
+      "message" : "Event not found with code: BATbern9716",
+      "path" : "/api/v1/events/BATbern9716",
+      "severity" : "LOW",
+      "status" : 404,
+      "timestamp" : "ts#2"
+    }
+  },
+  "registrations" : [ ],
+  "uploads" : [ "capture-theme-0 associated BATbern9701", "capture-theme-1 associated BATbern9711", "capture-theme-pending pending null" ],
+  "mails" : [ ]
+}

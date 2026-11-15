@@ -1,0 +1,53 @@
+{
+  "response" : {
+    "status" : 403,
+    "xCacheStatus" : null,
+    "body" : {
+      "correlationId" : "uuid#1",
+      "error" : "Forbidden",
+      "message" : "Access denied - insufficient permissions",
+      "path" : "/api/v1/events/BATbern9704/topics",
+      "severity" : "MEDIUM",
+      "status" : 403,
+      "timestamp" : "ts#1"
+    }
+  },
+  "eventAfter" : {
+    "status" : 200,
+    "xCacheStatus" : "HIT",
+    "body" : {
+      "eventCode" : "BATbern9704",
+      "title" : "Capture Draft",
+      "eventNumber" : 9704,
+      "date" : "ts#2",
+      "registrationDeadline" : "ts#3",
+      "venueName" : "Kornhausforum",
+      "venueAddress" : "Kornhausplatz 18, 3011 Bern",
+      "venueCapacity" : 200,
+      "qnaEnabled" : true,
+      "qnaOpenTrigger" : "EVENT_COMPLETED",
+      "qnaWindowDays" : 14,
+      "confirmedCount" : 0,
+      "waitlistCount" : 0,
+      "realAttendeeCount" : 0,
+      "organizerUsername" : "olga.organizer",
+      "currentAttendeeCount" : 0,
+      "createdAt" : "ts#4",
+      "updatedAt" : "ts#5",
+      "teaserImages" : [ ],
+      "eventType" : "EVENING",
+      "typicalStartTime" : "16:00",
+      "typicalEndTime" : "19:00",
+      "workflowState" : "CREATED",
+      "venue" : {
+        "id" : "BATbern9704",
+        "name" : "Kornhausforum",
+        "address" : "Kornhausplatz 18, 3011 Bern",
+        "capacity" : 200
+      }
+    }
+  },
+  "registrations" : [ ],
+  "uploads" : [ "capture-theme-0 associated BATbern9701" ],
+  "mails" : [ ]
+}
