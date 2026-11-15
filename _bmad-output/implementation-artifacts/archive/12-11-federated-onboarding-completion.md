@@ -58,7 +58,7 @@ This closes the GDPR-relevant gap opened by Epic 12: federated JIT provisioning 
    - Frontend (Vitest+RTL): tabs render; consent write-once UI states (checkbox vs "accepted on"); gate redirect logic in `ProtectedRoute`; newsletter toggle wired to `usePatchMySubscription`; registration newsletter opt-in calls `newsletterService.subscribe`; `userAccountApi.ts:103-134` field-filter extended for `termsAccepted` (it filters to allowed fields — without extending the allowlist the new field is silently dropped!).
    - Playwright (chromium project): smoke — authenticated organizer (already-consented after backfill) can open `/profile`, sees both tabs, is NOT gated.
 
-10. **(Doc-drift, same commit.)** Update `docs/plans/sso-oidc-federation.md` (new follow-up section), `docs/architecture/06b-user-lifecycle-sync.md` (consent fields in the lifecycle), and ADR-010 if it documents the JIT footprint. OpenAPI spec change is itself part of AC3.
+10. **(Doc-drift, same commit.)** Update `docs/archive/plans/sso-oidc-federation.md` (new follow-up section), `docs/architecture/06b-user-lifecycle-sync.md` (consent fields in the lifecycle), and ADR-010 if it documents the JIT footprint. OpenAPI spec change is itself part of AC3.
 
 ## Tasks / Subtasks
 
@@ -124,7 +124,7 @@ _Dismissed (9): GET-path drops `termsAcceptedAt` (false positive — `getUserPro
 - CUMS layering: Controller (generated API) → Service (business logic incl. write-once) → Repository; no logic in mapper.
 
 ### References
-- [Source: docs/plans/sso-oidc-federation.md] (Epic 12 plan), [Source: docs/architecture/ADR-010-federated-identity-via-cognito.md]
+- [Source: docs/archive/plans/sso-oidc-federation.md] (Epic 12 plan), [Source: docs/architecture/ADR-010-federated-identity-via-cognito.md]
 - [Source: _bmad-output/implementation-artifacts/archive/12-3-canonical-jit-provisioning.md] (JIT premise + language-normalization lesson)
 - [Source: _bmad-output/implementation-artifacts/archive/12-8-federated-provisioning-inactive-gating-verify.md] (federated provisioning reality: PostConfirmation creates the row, names from given_name/family_name)
 - [Source: docs/api/users-api.openapi.yml:2140] (UpdateUserRequest)
@@ -260,7 +260,7 @@ Claude Opus 4.8 (1M context) — `claude-opus-4-8[1m]`, via bmad-dev-story, 2026
 **Docs**
 - docs/architecture/06b-user-lifecycle-sync.md
 - docs/architecture/ADR-010-federated-identity-via-cognito.md
-- docs/plans/sso-oidc-federation.md
+- docs/archive/plans/sso-oidc-federation.md
 
 ### Change Log
 

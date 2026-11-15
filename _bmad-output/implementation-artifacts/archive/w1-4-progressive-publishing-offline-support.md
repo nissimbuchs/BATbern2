@@ -279,7 +279,7 @@ BATbern-watch Watch App/
 - [Source: docs/watch-app/ux-design-specification.md#Session-Card-Pages] — Progressive publishing: TOPIC (title only), SPEAKERS (title+speakers), AGENDA (full)
 - [Source: docs/watch-app/prd-batbern-watch.md#Public-Zone] — FR34 (progressive publishing), FR35 (offline cache + "Last updated")
 - [Source: docs/watch-app/prd-batbern-watch.md#Offline-Mode] — NFR7 (<2s cached launch), NFR10 (seamless offline), NFR24 (<50MB cache)
-- [Source: docs/watch-app/epics.md#W1.4] — Story definition and acceptance criteria
+- [Source: docs/archive/watch-app/epics.md#W1.4] — Story definition and acceptance criteria
 - [Source: _bmad-output/implementation-artifacts/archive/w1-3-session-abstract-speaker-bio.md] — Previous story: navigation guards, detail views
 - [Source: _bmad-output/implementation-artifacts/archive/w1-2-session-card-browsing.md] — W1.2: PortraitCache, SessionCardView, PublicViewModel extensions
 - [Source: _bmad-output/implementation-artifacts/archive/w1-1-xcode-project-setup-event-hero-screen.md] — W1.1: Cache-first pattern, PublicEventService, empty state

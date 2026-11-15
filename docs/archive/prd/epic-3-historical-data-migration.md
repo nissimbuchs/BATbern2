@@ -9,7 +9,7 @@
 **Progress Summary:**
 - ✅ Phase 1: Data Analysis & Mapping - COMPLETE
 - ✅ Phase 2: Migration Implementation - 100% COMPLETE (All batch import tools ready)
-- ✅ Phase 3: Validation & Testing - READY (Migration tooling complete; production import to be scheduled by organizers)
+- ✅ Phase 3: Validation & Testing - DONE (all historical data imported into production; epic closed by owner 2026-11-15)
 
 **Completed Batch Imports:**
 - ✅ Companies (via frontend batch import modal)
@@ -310,8 +310,8 @@ As an **organizer**, I want to import historical event participation data from a
 - ✅ Frontend UI implemented with CSV handling - BAT-13
 - ✅ Backend batch endpoint implemented - BAT-14
 - ✅ Integration testing complete - BAT-15
-- ⏳ Production import pending (infrastructure ready)
-- ⏳ Data integrity validation pending (production import)
+- ✅ Production import done (owner, 2026-11-15)
+- Data integrity validation: no separate record here; the owner confirmed the migration complete 2026-11-15
 
 **Estimated Duration:** 2-3 days
 

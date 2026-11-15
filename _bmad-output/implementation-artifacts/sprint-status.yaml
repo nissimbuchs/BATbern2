@@ -2,7 +2,7 @@
 # project: BATbern
 # tracking_system: file-system
 # story_location: _bmad-output/implementation-artifacts/archive
-# epics_source: docs/prd/epic-*.md, docs/archive/prd/epic-*.md + docs/watch-app/epics.md
+# epics_source: docs/prd/epic-*.md, docs/archive/prd/epic-*.md + docs/archive/watch-app/epics.md
 #
 # ARCHIVE INDEX, READ-ONLY (2026-11-15). Epics 1-17 are closed. Unimplemented stories of
 # epics 1-16 were archived by owner decision 2026-11-07 (status 'archived': not built, not
@@ -98,7 +98,7 @@ development_status:
   2-8-4-partner-contact-management: done
   epic-2-retrospective: done
 
-  # Epic 3: Historical Data Migration - COMPLETE (tooling ready, production import pending)
+  # Epic 3: Historical Data Migration - COMPLETE, all historical data imported into production (owner 2026-11-15)
   epic-3: done
   3-1-historical-data-migration: done
   epic-3-retrospective: done
@@ -219,7 +219,7 @@ development_status:
 
   # ============================================================
   # Epic 12: SSO / OIDC Federation — "Sign in with Google" (Apple deferred)
-  # Source: docs/plans/sso-oidc-federation.md + ADR-010. Single real Cognito pool (staging IS prod, §4):
+  # Source: docs/archive/plans/sso-oidc-federation.md + ADR-010. Single real Cognito pool (staging IS prod, §4):
   # every story is independently prod-deployable with deploy -> verify -> next gates. Sequence = dependency order.
   # ============================================================
   epic-12: done

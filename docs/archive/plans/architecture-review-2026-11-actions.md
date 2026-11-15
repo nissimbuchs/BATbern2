@@ -141,7 +141,7 @@ moves (planning, publishing, ai), follow-up reviews (item 9).
      `EventTimeResolver`/`EventWorkflowStateMachine` (5, workflow guard interface in event core),
      `TopicSessionDataService`→topics, `BatbernAiService`→ai (9), `Event→Registration` JPA
      association one-directional.
-   Follow `docs/plans/ems-modularization-extension-points.md`, incrementally.
+   Follow `docs/archive/plans/ems-modularization-extension-points.md`, incrementally.
 7. **Conventions (owner decides)**
    - Amend ADR-003 (owner agreed in principle 2026-11-07): meaningful ID for anything cross-service,
      stored elsewhere, or bookmarked; UUID allowed when no natural name AND never crosses a service

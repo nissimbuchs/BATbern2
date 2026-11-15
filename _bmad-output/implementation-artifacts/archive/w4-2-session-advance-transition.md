@@ -6,7 +6,7 @@ Status: done
 
 > ## ✅ COURSE CORRECTION AMENDMENT APPLIED (2026-02-19)
 >
-> Per approved Sprint Change Proposal (`docs/sprint-change-proposal-2026-02-19.md`).
+> Per approved Sprint Change Proposal (`docs/archive/planning/sprint-change-proposal-2026-02-19.md`).
 > Applied by claude-sonnet-4-6 on 2026-02-19.
 >
 > **Changes applied:**
@@ -63,7 +63,7 @@ so that transitions are seamless.
 
 ## Acceptance Criteria
 
-> **Note (2026-02-19 amendment):** ACs updated to reflect auto-advance replacing the Done button per approved Sprint Change Proposal `docs/sprint-change-proposal-2026-02-19.md`.
+> **Note (2026-02-19 amendment):** ACs updated to reflect auto-advance replacing the Done button per approved Sprint Change Proposal `docs/archive/planning/sprint-change-proposal-2026-02-19.md`.
 
 1. **AC1 — Auto-advance at/past 0:00**: Given a session is at or past 0:00 (i.e., `LiveCountdownViewModel.urgencyLevel == .overtime`), When `shouldAutoAdvance` transitions false→true, Then `LiveCountdownView` automatically sends `WatchAction.endSession(sessionSlug:)` to the server — no organizer tap required. The auto-advance does NOT fire when time remains.
 

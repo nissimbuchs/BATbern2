@@ -588,7 +588,7 @@ claude-opus-4-7[1m]
 **AC10 deferred to user** — `git push origin --delete feature/epic-6` deliberately NOT performed; remains for the team / Phase F operator per PRD line 1166-1168. Should be captured in PR follow-up section by the user.
 
 **Task 4 doc alignment** — Verified that ADR-009, PRD epic-11, and sprint-status comment were already aligned at story creation (per story closing note line 562-563). Two further drifted references found and corrected in the same scope:
-- `docs/prd/epic-9-speaker-authentication.md:51` — Phase A residue (positive grant of AdminAddUserToGroup) rewritten as the negative-assertion four-action list with the Resolved Q#1 anchor.
+- `docs/archive/prd/epic-9-speaker-authentication.md:51` — Phase A residue (positive grant of AdminAddUserToGroup) rewritten as the negative-assertion four-action list with the Resolved Q#1 anchor.
 - `docs/api/users-api.openapi.yml:1390-1395` — provision-user-with-role description's "Cognito wiring will include AdminAddUserToGroup" rewritten to "SPEAKER role is granted via PostgreSQL `user_roles` per ADR-001 — NOT via AdminAddUserToGroup".
 
 Other `AdminAddUserToGroup` mentions in `docs/` are either negative assertions (already correct), revision-history entries, or belong to deferred Story 10.24 / archived stories / point-in-time reports — all out of this story's scope.
@@ -606,7 +606,7 @@ Test code (new file, 1 file):
 - `infrastructure/test/unit/company-management-stack.test.ts` — new file with positive + negative AdminAddUserToGroup IAM regression-guard tests (AC7).
 
 Doc alignment (2 files):
-- `docs/prd/epic-9-speaker-authentication.md` — line 51 rewritten to drop the positive AdminAddUserToGroup mention and list the four actually-called admin actions with negative-assertion explanation.
+- `docs/archive/prd/epic-9-speaker-authentication.md` — line 51 rewritten to drop the positive AdminAddUserToGroup mention and list the four actually-called admin actions with negative-assertion explanation.
 - `docs/api/users-api.openapi.yml` — provision-user-with-role description (lines 1390-1395) rewritten to attribute role-grant to PostgreSQL `user_roles` per ADR-001 (NOT AdminAddUserToGroup).
 
 Sprint tracking (1 file):

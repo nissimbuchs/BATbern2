@@ -94,7 +94,7 @@ AC2 (replay queued actions on reconnect) requires `OfflineActionQueue` and the `
 
 ### References
 
-- [Source: docs/watch-app/epics.md#W5.3] — Story AC definitions (NFR10, NFR21, NFR22, NFR23)
+- [Source: docs/archive/watch-app/epics.md#W5.3] — Story AC definitions (NFR10, NFR21, NFR22, NFR23)
 - [Source: apps/BATbern-watch/BATbern-watch Watch App/Data/ConnectivityMonitor.swift] — `NWPathMonitor` wrapper (Task 1 verification)
 - [Source: apps/BATbern-watch/BATbern-watch Watch App/Data/WebSocketClient.swift] — `scheduleReconnect()`, exponential backoff (Task 2 verification)
 - [Source: apps/BATbern-watch/BATbern-watch Watch App/Data/EventDataController.swift] — `startPeriodicRefresh()` (line 272), `handleConnectivityChange()` (line 284)

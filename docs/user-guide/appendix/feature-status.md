@@ -10,7 +10,7 @@ This page tracks implementation status of all BATbern features. Use this to unde
 
 **Platform Readiness:**
 - **Epics 1-2**: ✅ 100% Complete (Foundation, Entity CRUD)
-- **Epic 3**: ✅ 100% Complete (Historical data migration tooling ready, production import pending a user trigger)
+- **Epic 3**: ✅ 100% Complete (historical data imported into production; closed 2026-11-15)
 - **Epic 4**: ✅ 100% Complete (Public website, 3-step registration wizard, archive browsing, content search, SEO)
 - **Epic 5**: ✅ 100% Complete (event workflow, speaker coordination, auto-publishing, lifecycle automation)
 - **Epic 6**: ✅ 100% Complete (Speaker self-service portal — invitations, response, materials, dashboard, reminders). Note: speaker login was later migrated to AWS Cognito by Epic 11 (magic-link removed).
@@ -32,7 +32,7 @@ This page tracks implementation status of all BATbern features. Use this to unde
 |------|-------|--------|
 | 1 | Foundation & Core Infrastructure | ✅ `[IMPLEMENTED]` |
 | 2 | Entity CRUD & Domain Services | ✅ `[IMPLEMENTED]` |
-| 3 | Historical Data Migration | ✅ `[IMPLEMENTED]` (tooling; prod import pending) |
+| 3 | Historical Data Migration | ✅ `[IMPLEMENTED]` (imported into production) |
 | 4 | Public Website & Content Discovery | ✅ `[IMPLEMENTED]` |
 | 5 | Enhanced Organizer Workflows | ✅ `[IMPLEMENTED]` |
 | 6 | Speaker Self-Service Portal | ✅ `[IMPLEMENTED]` |

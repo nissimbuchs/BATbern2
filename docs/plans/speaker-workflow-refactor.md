@@ -216,7 +216,7 @@ plus `DECLINED` reachable from any non-terminal state.
 | Doc | Change |
 |---|---|
 | `docs/prd-enhanced.md` | Rewrite the "Speaker Workflow (Parallel Per-Speaker Progression)" block in FR2. Update FR3 (automated invitation) and FR17 (intelligent speaker matching) to remove "magic link" terminology in favor of "Cognito with forced password change." Remove `CONFIRMED` and `SLOT_ASSIGNED` from any state lists. |
-| `docs/prd/epic-9-speaker-authentication.md` | **Rewrite in place** against ADR-009. The Epic 9 goal (unified Cognito identity for speakers who are also attendees, zero duplicate accounts) survives; the implementation stories (9.1 JWT magic link, 9.2 on-acceptance account creation, 9.3 dual auth, 9.4 Epic 6 migration) are obsolete. New scope: speaker Cognito provisioning at `CONTACTED → READY`, Cognito-secured speaker portal, multi-role navigation, magic-link teardown. Add a "Supersedes prior Epic 9 plan per ADR-009" note at the top. See §9.3 for the rewrite scope; new story shapes are for Product to write. |
+| `docs/archive/prd/epic-9-speaker-authentication.md` | **Rewrite in place** against ADR-009. The Epic 9 goal (unified Cognito identity for speakers who are also attendees, zero duplicate accounts) survives; the implementation stories (9.1 JWT magic link, 9.2 on-acceptance account creation, 9.3 dual auth, 9.4 Epic 6 migration) are obsolete. New scope: speaker Cognito provisioning at `CONTACTED → READY`, Cognito-secured speaker portal, multi-role navigation, magic-link teardown. Add a "Supersedes prior Epic 9 plan per ADR-009" note at the top. See §9.3 for the rewrite scope; new story shapes are for Product to write. |
 | `docs/architecture/03-data-architecture.md` | **Delete** the entire `Speaker` entity section. Delete the `speakers` table SQL block in "Speaker Coordination Service Database Schema." Add a paragraph in the `User` section explaining that SPEAKER is a role (`user_roles.role = 'SPEAKER'`) and that the only user-level attributes speakers need (`bio` for short CV, `profile_picture_url` for portrait) are existing User fields per ADR-004 — no schema extension required. |
 | `docs/architecture/06a-workflow-state-machines.md` | Rewrite the "Speaker Workflow Management" section with the new state list, new transition diagram, new semantics for `CONTACTED`, and the explicit `CONTACTED → READY` provisioning gate. Delete the parallel-quality/slot-CONFIRMED auto-confirmation discussion. Add a "Derived flags" section for `slot_assigned` and `publishable`. Remove the `SLOT_ASSIGNED` enum-rejection note (it's gone entirely). |
 | `docs/architecture/04-api-design.md` | Update the speaker-portal API spec: remove `?token=` query parameters; document Cognito Bearer auth. Remove `POST /api/v1/auth/speaker-magic-login` and `POST /api/v1/speaker-portal/validate-token`. Add or repurpose an endpoint to perform the `CONTACTED → READY` promotion (with `email` payload). |
@@ -831,7 +831,7 @@ sequencing.
 
 ### 9.3 Epic 9 PRD — rewrite in place
 
-`docs/prd/epic-9-speaker-authentication.md` describes the old plan (JWT magic link,
+`docs/archive/prd/epic-9-speaker-authentication.md` describes the old plan (JWT magic link,
 dual auth, Epic 6 migration). The high-level **goal** (speakers who are also attendees
 access both portals with one Cognito session, zero duplicate accounts) survives under
 ADR-009 — but the implementation stories (9.1–9.4) are now wrong, and Story 9.5 needs
@@ -886,5 +886,5 @@ is proven stable.
 | New work on this refactor | Lives on `feature/speaker-workflow-refactor` (or similar) | From Phase A onward |
 | `feature/speaker-account-creation` branch | Cherry-pick Story 9.5 multi-role-nav UI; delete the rest of the branch | Cherry-pick early on the refactor branch; delete after merge |
 | `feature/epic-6` branch | Cherry-pick `d5cf0fcc` Story 7.1 IAM + auth flow (skip encryption key); delete | Cherry-pick by start of Phase E |
-| `docs/prd/epic-9-speaker-authentication.md` | Rewrite in place per §9.3 | Phase A |
+| `docs/archive/prd/epic-9-speaker-authentication.md` | Rewrite in place per §9.3 | Phase A |
 | Magic-link code on `develop` | Delete in Phase F | Phase F (after Phase E proves Cognito path stable) |

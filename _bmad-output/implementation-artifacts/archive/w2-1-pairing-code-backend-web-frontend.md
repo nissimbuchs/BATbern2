@@ -541,7 +541,7 @@ web-frontend/src/
 
 ### References
 
-- [Source: docs/watch-app/epics.md#W2.1] — Story definition and acceptance criteria
+- [Source: docs/archive/watch-app/epics.md#W2.1] — Story definition and acceptance criteria
 - [Source: docs/watch-app/architecture.md#Authentication-Security] — Pairing code flow design
 - [Source: docs/watch-app/architecture.md#Data-Architecture] — watch_pairings table schema
 - [Source: docs/watch-app/architecture.md#API-Communication-Patterns] — Pairing endpoints specification

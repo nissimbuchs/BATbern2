@@ -11,7 +11,7 @@ tickets in `_bmad-output/backlog/` plus the open GitHub issues.
 
 | Epic | Result |
 |---|---|
-| 1-8 | Foundation, entity CRUD, historical migration (tooling; the production import is still pending, owner triggers it), public website, organizer workflows, speaker portal, attendee touchpoints, partner coordination |
+| 1-8 | Foundation, entity CRUD, historical data migration (all data imported into production; closed by owner 2026-11-15), public website, organizer workflows, speaker portal, attendee touchpoints, partner coordination |
 | 9 | Superseded by Epic 11 (ADR-009) |
 | 10-16 | Additional stories, unified speaker workflow, Google SSO (ADR-010), Spring Boot 4 (4.0.9 live), event detail redesign, post-event #2 hardening, Mail Center |
 | 17 | Architecture hardening, closed 2026-11-15 (last #1314, follow-up #1316); 17.12, 17.15, 17.16 dropped by owner 2026-11-14. First epic run with BMAD v7 |
@@ -44,7 +44,7 @@ in `docs/archive/planning/`, older story files in `docs/stories/archived/`.
 - ✅ Attendee touchpoints (Epic 7): topics from the floor, self-nomination, slides-online mail, thank-the-organizers, per-session Q&A, event history, curated thank-you marquee
 - ✅ Mail Center (Epic 16): outbound log + delivery status, conversations, answers, shared composer, global Mail page; alias forwarding runs in EMS (#1137, forwarder Lambda removed)
 - ✅ Historical archive browsing with content search
-- ✅ Historical data migration tooling (production import pending user trigger)
+- ✅ Historical data migration (all historical data imported into production)
 - ✅ Speaker self-service portal (invitations, response, materials, dashboard, reminders)
 - ✅ Partner coordination (attendance analytics + XLSX export, topic voting, ICS meeting invites per recipient)
 
@@ -53,7 +53,6 @@ in `docs/archive/planning/`, older story files in `docs/stories/archived/`.
   `story-eventcontroller-keeps-only-http.md` and `spike-pre-deploy-gate.md` (P5, owner decides; plan
   `docs/plans/pre-deploy-gate-plan.md`, evidence `docs/plans/test-fidelity-proposal-2026-11.md`)
 - Remaining own-code mocks shrink only under the touch rule (ratchet `web-frontend/scripts/test-ratchet-baseline.txt`)
-- Epic 3 production data import (operational task, owner triggers it)
 
 ## Project Overview
 
@@ -1014,12 +1013,13 @@ genuinely multilingual public.
    > and finds those addresses knows it was seen, evaluated, and decided — not missed. Do not
    > re-escalate it as a new discovery, and do not "fix" it with a force-push.
    >
-   > **Restoring the retired data (Epic 3's import still needs it):** `apps/BATspa-old/src/api`
-   > and `src/archiv` (856 files — 294 PDFs, 410 JPGs) were deleted from `HEAD`, not from
-   > history. `git checkout 2ce77d61 -- apps/BATspa-old/src/archiv` brings them back; prefer a
-   > scratch worktree and do **not** re-commit them. Five migration scripts read those paths
-   > (`scripts/convert-companies-csv*.mjs`, `scripts/staging/generate-staging-*.js`) and will
-   > fail until you do. Full detail: `docs/prd/epic-3-historical-data-migration.md` →
+   > **Historical note, the retired data:** `apps/BATspa-old/src/api` and `src/archiv` (856 files,
+   > 294 PDFs, 410 JPGs) were deleted from `HEAD`, not from history. They were the source of the
+   > Epic 3 migration, which is complete: all historical data is in production (owner, 2026-11-15).
+   > Should anyone ever need them, `git checkout 2ce77d61 -- apps/BATspa-old/src/archiv` brings them
+   > back; use a scratch worktree and do **not** re-commit them. The migration scripts that read those
+   > paths (`scripts/convert-companies-csv*.mjs`, `scripts/staging/generate-staging-*.js`) fail without
+   > them. Full detail: `docs/archive/prd/epic-3-historical-data-migration.md` →
    > "Data Sources".
 
 2. **Test Data Guidelines**:

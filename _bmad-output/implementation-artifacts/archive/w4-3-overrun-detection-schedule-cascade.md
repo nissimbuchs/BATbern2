@@ -6,7 +6,7 @@ Status: done
 
 > **📋 REWRITTEN PER SPRINT CHANGE PROPOSAL (2026-02-19)**
 > Previous story ("Overrun Detection & Schedule Cascade") replaced.
-> See `docs/sprint-change-proposal-2026-02-19.md` for full rationale.
+> See `docs/archive/planning/sprint-change-proposal-2026-02-19.md` for full rationale.
 > Previous story file archived at the bottom of this document (Change Log section).
 
 ---
@@ -583,7 +583,7 @@ services/event-management-service/src/main/java/ch/batbern/events/domain/Session
 
 ### References
 
-- [Source: docs/sprint-change-proposal-2026-02-19.md] — Approved design rationale
+- [Source: docs/archive/planning/sprint-change-proposal-2026-02-19.md] — Approved design rationale
 - [Source: docs/watch-app/epic-4-reuse-map.md#Area-4] — No cascade state, applyServerState only
 - [Source: docs/watch-app/epic-4-reuse-map.md#Area-1] — No parallel overrun flag
 - [Source: _bmad-output/implementation-artifacts/archive/w4-2-session-advance-transition.md] — WebSocket patterns, WatchSessionService base
@@ -664,5 +664,5 @@ Claude Opus 4.6
 
 ## Change Log
 
-- **2026-02-19** (SM — Bob): Story completely rewritten per approved Sprint Change Proposal (`docs/sprint-change-proposal-2026-02-19.md`). Approved by Nissim. Previous story title: "W4.3: Overrun Detection & Schedule Cascade". Previous design: cascade-prompt-on-overrun (O4 CascadePromptView) triggered by Done button tap. New design: Extend button (last 10 min) + Delayed button (first 10 min), sessions auto-advance, no cascade-on-overrun concept.
+- **2026-02-19** (SM — Bob): Story completely rewritten per approved Sprint Change Proposal (`docs/archive/planning/sprint-change-proposal-2026-02-19.md`). Approved by Nissim. Previous story title: "W4.3: Overrun Detection & Schedule Cascade". Previous design: cascade-prompt-on-overrun (O4 CascadePromptView) triggered by Done button tap. New design: Extend button (last 10 min) + Delayed button (first 10 min), sessions auto-advance, no cascade-on-overrun concept.
 - **2026-02-19** (Dev — Amelia): All 11 tasks implemented (watchOS Tasks 1-6 + backend Tasks 7-11). 15 new tests added (7 controller unit + 4 extendSession integration + 4 delayToPrevious integration). Full regression green (1132 event-management tests + 189 api-gateway tests). Status → review.

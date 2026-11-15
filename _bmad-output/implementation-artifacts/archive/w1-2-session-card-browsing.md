@@ -271,7 +271,7 @@ BATbern-watch Watch App/
 - [Source: docs/watch-app/ux-design-specification.md#Navigation-Rules] — Crown scroll from P1 to P2, <100ms transition
 - [Source: docs/watch-app/ux-design-specification.md#Design-System-Foundation] — Typography (SF Pro 13pt titles, 16pt names), colors
 - [Source: docs/watch-app/prd-batbern-watch.md#Public-Zone] — FR30 (Crown scroll sessions), FR33 (multi-speaker grid), FR34 (progressive publishing)
-- [Source: docs/watch-app/epics.md#W1.2] — Story definition and acceptance criteria
+- [Source: docs/archive/watch-app/epics.md#W1.2] — Story definition and acceptance criteria
 - [Source: _bmad-output/implementation-artifacts/archive/w1-1-xcode-project-setup-event-hero-screen.md] — Previous story: project structure, SwiftData models, PublicViewModel, API integration
 
 ## Dev Agent Record

@@ -12,7 +12,7 @@ As a **platform engineer rolling out Google SSO federation onto the single real 
 I want **to verify — against a real, throwaway federated Google identity — that (a) a brand-new Google user is provisioned a correct `user_profiles` row (canonical JIT, default ATTENDEE, names captured) on its first authenticated API call, and (b) a deactivated account is blocked from federated access by the API-Gateway `is_active` gate, NOT by PreAuthentication (which never fires for federated logins)**,
 so that **the two guarantees federated logins cannot inherit from Cognito triggers (DB-row creation via PostConfirmation, inactive-block via PreAuthentication) are confirmed to be carried — on provider-agnostic, request-time paths — by the components PR 1 already built, before the SSO button is dark-launched (Story 12.9).**
 
-This is **Phase 3** of Epic 12 (SSO / OIDC Federation). It is **VERIFY-ONLY — it builds NO code.** PR 1 (Story 12.2 gateway `is_active` gate + Story 12.3 canonical JIT) already moved both guarantees onto provider-agnostic paths, which is precisely why this phase "evaporates" into verification. If either check **fails, the fix lands back in Story 12.2's or 12.3's components — NOT in this story.** Source: `docs/plans/sso-oidc-federation.md` §5 "Phase 3 — Federated provisioning + inactive-gating (VERIFY-ONLY — built in PR 1)" + §6 "Testing strategy → Verification (Phase 3)"; decision record: `docs/architecture/ADR-010-federated-identity-via-cognito.md` §D5 (provisioning + inactive-gating move to provider-agnostic paths).
+This is **Phase 3** of Epic 12 (SSO / OIDC Federation). It is **VERIFY-ONLY — it builds NO code.** PR 1 (Story 12.2 gateway `is_active` gate + Story 12.3 canonical JIT) already moved both guarantees onto provider-agnostic paths, which is precisely why this phase "evaporates" into verification. If either check **fails, the fix lands back in Story 12.2's or 12.3's components — NOT in this story.** Source: `docs/archive/plans/sso-oidc-federation.md` §5 "Phase 3 — Federated provisioning + inactive-gating (VERIFY-ONLY — built in PR 1)" + §6 "Testing strategy → Verification (Phase 3)"; decision record: `docs/architecture/ADR-010-federated-identity-via-cognito.md` §D5 (provisioning + inactive-gating move to provider-agnostic paths).
 
 **Prerequisites (must be merged + deployed to the single real pool BEFORE this verification runs):**
 - **Story 12.3 (canonical JIT)** — PR 1 Part B. `JITUserProvisioningInterceptor` reads names/language from `custom:preferences` exactly as `post-confirmation.ts` did, so *any* authenticated identity (native or federated) provisions a correct `user_profiles` row + default ATTENDEE on first request. *This is the component AC1 verifies.*
@@ -89,7 +89,7 @@ Because both already exist and are provider-agnostic, Phase 3 "evaporates into v
 - **Domain `User.isActive` / `is_active`:** `services/company-user-management-service/.../domain/User.java` (with `deactivation_reason`, lines 182–186); repo finder `UserRepository.findByIsActive` (line 150).
 
 ### Throwaway-identity + staging-IS-production discipline (AC5 — non-negotiable)
-Per `docs/plans/sso-oidc-federation.md` §4 and project memory: there is exactly **one real user pool**; local dev points at it and the staging account (188701360969) **is** production. Therefore:
+Per `docs/archive/plans/sso-oidc-federation.md` §4 and project memory: there is exactly **one real user pool**; local dev points at it and the staging account (188701360969) **is** production. Therefore:
 - Use **disposable** Google test identities only; never a real user's email.
 - **No real outbound comms** (no invitations/confirmations/reminders/cancellations) may be triggered — this verification does not call any invite/notification path; it only authenticates and reads `/users/me`.
 - The **only** write to the pool is the single `is_active` toggle on the throwaway user (reverted, then the test identity is deleted).
@@ -118,11 +118,11 @@ Story 12.3 shipped `services/company-user-management-service/src/test/java/ch/ba
 - The **trigger-retirement cleanup track** (retire PostAuthentication / PreAuthentication / PostConfirmation) — enabled by PR 1 but separate, optional PRs.
 
 ### References
-- [Source: docs/plans/sso-oidc-federation.md#Phase 3 — Federated provisioning + inactive-gating (VERIFY-ONLY — built in PR 1)] (lines 219–227 — builds nothing; verifies JIT row + ATTENDEE + names, and gateway gate block; failures fix back in PR 1; Deploy none, Risk none)
-- [Source: docs/plans/sso-oidc-federation.md#3 The two Cognito gotchas] (PostConfirmation + PreAuthentication do NOT fire for federated → provisioning + inactive-gating must move to provider-agnostic paths)
-- [Source: docs/plans/sso-oidc-federation.md#PR 1 Part A + Part B] (the gateway `is_active` gate + canonical JIT this story verifies)
-- [Source: docs/plans/sso-oidc-federation.md#4 Hard constraint: staging IS production] (single real pool; throwaway identities; no real comms)
-- [Source: docs/plans/sso-oidc-federation.md#6 Testing strategy → Verification (Phase 3)] (real federated identity provisions correctly + deactivated blocked by gateway gate, no new code)
+- [Source: docs/archive/plans/sso-oidc-federation.md#Phase 3 — Federated provisioning + inactive-gating (VERIFY-ONLY — built in PR 1)] (lines 219–227 — builds nothing; verifies JIT row + ATTENDEE + names, and gateway gate block; failures fix back in PR 1; Deploy none, Risk none)
+- [Source: docs/archive/plans/sso-oidc-federation.md#3 The two Cognito gotchas] (PostConfirmation + PreAuthentication do NOT fire for federated → provisioning + inactive-gating must move to provider-agnostic paths)
+- [Source: docs/archive/plans/sso-oidc-federation.md#PR 1 Part A + Part B] (the gateway `is_active` gate + canonical JIT this story verifies)
+- [Source: docs/archive/plans/sso-oidc-federation.md#4 Hard constraint: staging IS production] (single real pool; throwaway identities; no real comms)
+- [Source: docs/archive/plans/sso-oidc-federation.md#6 Testing strategy → Verification (Phase 3)] (real federated identity provisions correctly + deactivated blocked by gateway gate, no new code)
 - [Source: docs/architecture/ADR-010-federated-identity-via-cognito.md#D5] (provisioning + inactive-gating move to provider-agnostic paths — JIT canonical + API-Gateway is_active gate replaces PreAuthentication)
 - [Source: services/company-user-management-service/.../interceptor/JITUserProvisioningInterceptor.java:68,89,102-113,148,153,181-198,274-277] (JIT path AC1 verifies)
 - [Source: services/company-user-management-service/.../service/UserResponseMapper.java:52 (`.active(user.isActive())`)] · [Source: web-frontend/src/types/generated/user-api.types.ts:947 (`active?: boolean`)]

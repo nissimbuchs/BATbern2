@@ -3,7 +3,7 @@ stepsCompleted: [step-01-validate-prerequisites, step-02-design-epics, step-03-c
 inputDocuments:
   - docs/plans/speaker-workflow-refactor.md
   - docs/architecture/ADR-009-unified-speaker-workflow.md
-  - docs/prd/epic-9-speaker-authentication.md  # context — to be rewritten in Phase A
+  - docs/archive/prd/epic-9-speaker-authentication.md  # context — to be rewritten in Phase A
   - docs/architecture/06a-workflow-state-machines.md  # context — to be rewritten in Phase A
   - docs/architecture/03-data-architecture.md  # context — to be rewritten in Phase A
   - docs/architecture/04-api-design.md  # context — to be rewritten in Phase A
@@ -225,7 +225,7 @@ Infrastructure (CDK)
         wiring for speaker JWT).
 
 Documentation alignment (Phase A, §1)
-- AR32: Rewrite docs/prd/epic-9-speaker-authentication.md in place per §9.3.
+- AR32: Rewrite docs/archive/prd/epic-9-speaker-authentication.md in place per §9.3.
 - AR33: Rewrite docs/architecture/06a-workflow-state-machines.md speaker section.
 - AR34: Delete Speaker entity section + speakers table SQL from
         docs/architecture/03-data-architecture.md.
@@ -565,7 +565,7 @@ password change,
 **And** no reference to `CONFIRMED`, `SLOT_ASSIGNED`, `OVERFLOW`, `WITHDREW`, or
 `TENTATIVE` remains.
 
-**Given** I read `docs/prd/epic-9-speaker-authentication.md`,
+**Given** I read `docs/archive/prd/epic-9-speaker-authentication.md`,
 **Then** the file has been rewritten in place per the plan §9.3,
 **And** the top of the file carries a `Supersedes prior Epic 9 plan per ADR-009` note,
 **And** the new scope describes: speaker Cognito provisioning at `CONTACTED → READY`,

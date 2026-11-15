@@ -6,7 +6,7 @@ Status: review
 
 > ## ⚠️ COURSE CORRECTION AMENDMENT REQUIRED (2026-02-19)
 >
-> Per approved Sprint Change Proposal (`docs/sprint-change-proposal-2026-02-19.md`).
+> Per approved Sprint Change Proposal (`docs/archive/planning/sprint-change-proposal-2026-02-19.md`).
 > The following changes must be applied to already-implemented code by the Dev agent.
 >
 > **Required changes:**
@@ -361,7 +361,7 @@ The TEA `testarch-framework` workflow scaffolded test infrastructure before this
 - [Source: docs/watch-app/ux-design-specification.md#Brand-Assets-for-Watch] — Symbol mark extraction, sizing, color
 - [Source: docs/watch-app/ux-design-specification.md#Dual-Zone-Model] — Horizontal paging navigation
 - [Source: docs/watch-app/prd-batbern-watch.md#Public-Zone] — FR29 (event hero), FR34 (progressive publishing), FR35 (offline cache)
-- [Source: docs/watch-app/epics.md#W1.1] — Story definition and acceptance criteria
+- [Source: docs/archive/watch-app/epics.md#W1.1] — Story definition and acceptance criteria
 - [Source: docs/api/events-api.openapi.yml] — Public event endpoint contract
 - [Source: services/event-management-service/.../EventController.java] — Existing public endpoint implementation
 - [Source: apps/BATbern-watch/CLAUDE.md] — Watch app development guide and build commands

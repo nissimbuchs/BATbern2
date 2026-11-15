@@ -38,13 +38,13 @@ Epics 1–10 are referenced only where they constrain 11.G.1.
 **Other epics (out of scope but listed for completeness):**
 - `docs/archive/prd/epic-1-foundation-stories.md`
 - `docs/archive/prd/epic-2-entity-crud-domain-services.md`
-- `docs/prd/epic-3-historical-data-migration.md`
+- `docs/archive/prd/epic-3-historical-data-migration.md`
 - `docs/prd/epic-4-public-website-content-discovery.md`
 - `docs/prd/epic-5-enhanced-organizer-workflows.md`
 - `docs/prd/epic-6-speaker-portal-support.md`
 - `docs/archive/prd/epic-7-attendee-experience-enhancements.md`
 - `docs/prd/epic-8-partner-coordination.md`
-- `docs/prd/epic-9-speaker-authentication.md` (superseded by Epic 11 per ADR-009)
+- `docs/archive/prd/epic-9-speaker-authentication.md` (superseded by Epic 11 per ADR-009)
 - `docs/archive/prd/epic-10-additional-stories.md`
 - `docs/archive/prd/epic-backlog-infrastructure-enhancements.md`
 
@@ -80,7 +80,7 @@ Epics 1–10 are referenced only where they constrain 11.G.1.
 
 #### E. UX / Wireframes / Front-End Spec
 
-- `docs/front-end-spec.md` — top-level FE spec (not story-specific).
+- `docs/archive/planning/front-end-spec.md` — top-level FE spec (not story-specific).
 - `docs/wireframes/` — design assets; no 11.G.1-specific wireframe present (see Issue 3).
 - `docs/wireframes/sitemap.md`, `sitemap-mermaid.md` — site map will need a `/speaker-portal/company` entry.
 
@@ -404,7 +404,7 @@ NFR7 (Epic 11 L116, plus CLAUDE.md "Doc Drift Prevention") requires architecture
 
 ### UX document status
 
-- `docs/front-end-spec.md` (top-level FE spec) — **does not mention** `/speaker-portal/company`, `SpeakerCompanyEditPage`, the side-by-side review panel, or the `[Pending updates (N)]` filter chip. Cross-grep returned zero hits for 11.G.1-specific terms.
+- `docs/archive/planning/front-end-spec.md` (top-level FE spec) — **does not mention** `/speaker-portal/company`, `SpeakerCompanyEditPage`, the side-by-side review panel, or the `[Pending updates (N)]` filter chip. Cross-grep returned zero hits for 11.G.1-specific terms.
 - `docs/wireframes/sitemap.md` — last updated 2026-05-15. Has a top-of-file warning that "screen-level details below each Epic 6 / Epic 8 section may diverge from actual implementation." Does not list `/speaker-portal/company`.
 - `docs/wireframes/sitemap-mermaid.md` — no mention of speaker-portal routes for this feature.
 - `docs/wireframes/` — no 11.G.1-specific image/HTML mockup found.

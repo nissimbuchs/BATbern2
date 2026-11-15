@@ -98,7 +98,7 @@ so that I never lose time awareness during a live event.
 
 ### References
 
-- [Source: docs/watch-app/epics.md#W5.1] — Story AC definitions
+- [Source: docs/archive/watch-app/epics.md#W5.1] — Story AC definitions
 - [Source: docs/watch-app/architecture.md] — Wall-clock timer mandate (NFR10)
 - [Source: apps/BATbern-watch/BATbern-watch Watch App/Data/ConnectivityMonitor.swift] — Target file for debounce
 - [Source: apps/BATbern-watch/BATbern-watch Watch App/Data/EventDataController.swift] — `handleConnectivityChange()`, `isOffline`

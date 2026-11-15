@@ -1,6 +1,6 @@
 # Doc Audit Findings — Speaker Authentication (Epic 9)
 **Audited:** 2026-03-09
-**Doc:** `docs/prd/epic-9-speaker-authentication.md`
+**Doc:** `docs/archive/prd/epic-9-speaker-authentication.md`
 **Tests searched:** `services/speaker-coordination-service/src/test/java`
 
 ## Summary

@@ -38,7 +38,7 @@ The AC are pinned to ADR-009 §0 (target model), ADR-009 §1 (decision rewrites)
 **Given** I read line 209 (Epic 9 phase line) and line 403 (Automated speaker invitation system bullet),
 **Then** "magic link authentication" no longer appears.
 
-### AC2 — `docs/prd/epic-9-speaker-authentication.md`
+### AC2 — `docs/archive/prd/epic-9-speaker-authentication.md`
 
 **Given** the file is rewritten in place per plan §9.3,
 **When** I read the top of the file,
@@ -146,13 +146,13 @@ The AC are pinned to ADR-009 §0 (target model), ADR-009 §1 (decision rewrites)
 **And** the line at 27 (`Complete event workflow (9-state machine + speaker coordination + task system)`) is reviewed — the **EVENT** workflow has 9 states (unchanged); only the **SPEAKER** workflow is being changed (from 12 → 8 states). Leave the line accurate; if any speaker-state count is mentioned elsewhere in CLAUDE.md, update it.
 **And** line 22 + 64 (the Epic 9 status — same text appears twice in the file) are both updated consistently.
 
-### AC12 — `docs/front-end-spec.md`
+### AC12 — `docs/archive/planning/front-end-spec.md`
 
 **Given** I read the file (G6+U1 from readiness review),
 **When** I scroll to line 286 (`Email invitation link → Direct to invitation response page (magic link authentication)`),
 **Then** the parenthetical is changed to `(Cognito session with forced password change on first login)`,
 **And** line 296 (the Mermaid diagram node `A[Email Invitation with Magic Link]`) has its label updated to `A[Email Invitation with Login Link + Temp Password]`,
-**And** any other occurrence of "magic link" in the file is identified by grep and corrected (run `grep -n "magic link\|magic-link" docs/front-end-spec.md` after edits — should return zero hits).
+**And** any other occurrence of "magic link" in the file is identified by grep and corrected (run `grep -n "magic link\|magic-link" docs/archive/planning/front-end-spec.md` after edits — should return zero hits).
 
 ### AC13 — Doc-drift policy compliance
 
@@ -300,7 +300,7 @@ The AC are pinned to ADR-009 §0 (target model), ADR-009 §1 (decision rewrites)
   - [x] 2.5 Update line 403 (magic-link mention in delivered-capabilities bullet).
   - [x] 2.6 Update line 56 (`overflow` and `withdrew` states bullet).
 
-- [x] **Task 3 — `docs/prd/epic-9-speaker-authentication.md`** (AC2)
+- [x] **Task 3 — `docs/archive/prd/epic-9-speaker-authentication.md`** (AC2)
   - [x] 3.1 Add `> **Supersedes prior Epic 9 plan per ADR-009.**` banner at top.
   - [x] 3.2 Replace Status line (line 3) with Epic 11-aligned status.
   - [x] 3.3 Delete the old Story 9.1-9.5 sections (~lines 95-247).
@@ -362,7 +362,7 @@ The AC are pinned to ADR-009 §0 (target model), ADR-009 §1 (decision rewrites)
   - [x] 12.4 Updated the milestone line and current-phase line to reflect Epic 11 supersession.
   - [x] 12.5 Verified the EVENT 9-state machine reference (line 27) is unchanged — only the SPEAKER workflow shrinks (per scope).
 
-- [x] **Task 13 — `docs/front-end-spec.md`** (AC12)
+- [x] **Task 13 — `docs/archive/planning/front-end-spec.md`** (AC12)
   - [x] 13.1 Updated line 286 prose — "magic link authentication" → "Cognito session with forced password change on first login, per ADR-009".
   - [x] 13.2 Updated line 296 Mermaid node label → "Email Invitation with Login Link + Temp Password".
   - [x] 13.3 Final grep `magic link\|magic-link` returns 0 hits.
@@ -409,7 +409,7 @@ _Adversarial code review run 2026-05-15 (Blind Hunter + Edge Case Hunter + Accep
 
 - [x] [Review][Patch] **(MEDIUM) MVP Status note still says "Advanced analytics and voting deferred to Epic 8"** [`docs/wireframes/sitemap.md` ~471`] — APPLIED: MVP Status rewritten to acknowledge Epic 8 delivered (2026-02-22) with attendance analytics, topic voting, and meeting coordination.
 
-- [x] [Review][Patch] **(MEDIUM) Epic-9 Status field still says "IN PROGRESS" despite Supersedes banner** [`docs/prd/epic-9-speaker-authentication.md:7`] — APPLIED: changed to "📦 SUPERSEDED BY EPIC 11 — implementation now tracked in Epic 11 Phases E and F".
+- [x] [Review][Patch] **(MEDIUM) Epic-9 Status field still says "IN PROGRESS" despite Supersedes banner** [`docs/archive/prd/epic-9-speaker-authentication.md:7`] — APPLIED: changed to "📦 SUPERSEDED BY EPIC 11 — implementation now tracked in Epic 11 Phases E and F".
 
 - [x] [Review][Patch] **(MEDIUM) Index says "legacy 12-state model"; other docs say 10-state** [`docs/architecture/index.md:123`] — APPLIED: changed "12-state" to "10-state" for consistency with the rest of the docs.
 
@@ -417,11 +417,11 @@ _Adversarial code review run 2026-05-15 (Blind Hunter + Edge Case Hunter + Accep
 
 - [x] [Review][Patch] **(MEDIUM) ADR-004 supersedes annotation scope too narrow** [`docs/architecture/ADR-004-factor-user-fields-from-domain-entities.md:402, 425, 655`] — APPLIED: added explicit "Superseded by ADR-009 for SPEAKER role" callout at top of §User Role Management; strike-through annotations on the Speaker entity creation workflow + `/speakers/me` examples; ADR-004:655 Implementation Status item annotated as WITHDRAWN per ADR-009.
 
-- [x] [Review][Patch] **(MEDIUM) Reference to "Authentication & Roles section in CLAUDE.md" points to wrong file** [`docs/prd/epic-9-speaker-authentication.md:15, 113`, `docs/architecture/06b-user-lifecycle-sync.md:218`] — APPLIED: all 3 references rewritten to point to canonical architecture docs (`06b-user-lifecycle-sync.md`) instead of the nonexistent CLAUDE.md section.
+- [x] [Review][Patch] **(MEDIUM) Reference to "Authentication & Roles section in CLAUDE.md" points to wrong file** [`docs/archive/prd/epic-9-speaker-authentication.md:15, 113`, `docs/architecture/06b-user-lifecycle-sync.md:218`] — APPLIED: all 3 references rewritten to point to canonical architecture docs (`06b-user-lifecycle-sync.md`) instead of the nonexistent CLAUDE.md section.
 
-- [x] [Review][Patch] **(MEDIUM, P14 from D1) Add Block 0 — CDK + IAM prereq for Story 11.E.1** [`docs/prd/epic-9-speaker-authentication.md`] — APPLIED: inserted Block 0 describing Story 11.E.1's CDK App Client + Cognito admin IAM work as infrastructure prerequisite.
+- [x] [Review][Patch] **(MEDIUM, P14 from D1) Add Block 0 — CDK + IAM prereq for Story 11.E.1** [`docs/archive/prd/epic-9-speaker-authentication.md`] — APPLIED: inserted Block 0 describing Story 11.E.1's CDK App Client + Cognito admin IAM work as infrastructure prerequisite.
 
-- [x] [Review][Patch] **(MEDIUM, P15 from D2) Merge Block 2 + Block 3 into a single block for Story 11.E.3** [`docs/prd/epic-9-speaker-authentication.md`] — APPLIED: merged into a single "Block 2 — Cognito-secured speaker portal + multi-role navigation" with three work-stream sub-sections (backend portal auth, frontend session refactor, multi-role nav). Block 4 renumbered to Block 3.
+- [x] [Review][Patch] **(MEDIUM, P15 from D2) Merge Block 2 + Block 3 into a single block for Story 11.E.3** [`docs/archive/prd/epic-9-speaker-authentication.md`] — APPLIED: merged into a single "Block 2 — Cognito-secured speaker portal + multi-role navigation" with three work-stream sub-sections (backend portal auth, frontend session refactor, multi-role nav). Block 4 renumbered to Block 3.
 
 - [x] [Review][Patch] **(MEDIUM, P16 from D3) Annotate `01-system-overview.md` Speaker Coordination Service section** [`docs/architecture/01-system-overview.md:333-354`] — APPLIED: added "⚠️ Superseded by ADR-009 (Unified Speaker Workflow) — see Epic 11 Phases B/C" banner; the 11-state description retained as historical context.
 
@@ -466,7 +466,7 @@ I read each file before drafting these AC. Here's what's there today:
 | File | Current state | What this story changes |
 |------|---------------|-------------------------|
 | `docs/prd-enhanced.md` | Lines 52-56 list the 12-state speaker workflow incl. `overflow`, `withdrew`, `confirmed`, `slot_assigned`. FR3 (line 75) mentions "magic link"-ish wording. FR17 (line 101) lists overflow management with voting. Lines 209+403 mention magic-link. | Replace with 8-state model; FR3/FR17 reworded; magic-link references removed. |
-| `docs/prd/epic-9-speaker-authentication.md` | 510 lines. Status "IN PROGRESS Story 9.1 done; 9.2-9.5 planned." Stories 9.1 (JWT magic link), 9.2 (account creation), 9.3 (dual auth), 9.4 (migration), 9.5 (multi-role nav) all detailed. | Rewrite in place: add Supersedes banner; remove Stories 9.1-9.5 content; replace with 4 work blocks pointing to Epic 11 Stories 11.E.2/11.E.3/11.F.1; preserve Epic Goal. |
+| `docs/archive/prd/epic-9-speaker-authentication.md` | 510 lines. Status "IN PROGRESS Story 9.1 done; 9.2-9.5 planned." Stories 9.1 (JWT magic link), 9.2 (account creation), 9.3 (dual auth), 9.4 (migration), 9.5 (multi-role nav) all detailed. | Rewrite in place: add Supersedes banner; remove Stories 9.1-9.5 content; replace with 4 work blocks pointing to Epic 11 Stories 11.E.2/11.E.3/11.F.1; preserve Epic Goal. |
 | `docs/architecture/03-data-architecture.md` | Has full `Speaker` entity section (lines 306-451) with TypeScript interface, JPA repository pattern, `enum SpeakerWorkflowState` (12 values), `enum SpeakerAvailability`, relationships, response example, Java service snippet. Also has `speakers` table SQL block. Line 289 mentions Speaker Service. | Delete Speaker entity section + speakers SQL; add SPEAKER-role paragraph to User section. |
 | `docs/architecture/06a-workflow-state-machines.md` | "Speaker Workflow Management (Per Speaker - Parallel)" section starts at line 189. Has 12-state table with `confirmed`, `withdrew`, parallel-quality/slot-confirmed discussion. `SpeakerWorkflowService.updateSpeakerWorkflowState` Java snippet at line 251+. | Rewrite section: 8-state table, new transition diagram, Derived flags subsection, `SpeakerWorkflowService.transition()` skeleton replacing updateSpeakerWorkflowState. |
 | `docs/architecture/04-api-design.md` | Index file pointing to sub-docs (04-api-core, 04-api-event-management, 04-api-speaker-coordination, etc.). No magic-link endpoints listed at top level. | Light touch: ensure §3 Speaker Coordination API summary uses Cognito Bearer; add promote endpoint to summary. |
@@ -476,7 +476,7 @@ I read each file before drafting these AC. Here's what's there today:
 | `docs/architecture/ADR-004-factor-user-fields-from-domain-entities.md` | 803 lines. Has Revision History section near end. Domain Entity Design Patterns at line 282. | Append Revision History entry + Speaker note in Patterns section. |
 | `docs/architecture/index.md` | TOC of 9 architecture docs + Key Architectural Decisions section. No ADR-009 reference yet. | Add ADR-009 to Key Decisions; verify all section refs still resolve. |
 | `CLAUDE.md` | Lines 22, 64, 75 reference Epic 9 status. Line 27 mentions "9-state machine" (EVENT machine — correct, unchanged). | Update Epic 9 lines → Epic 11. |
-| `docs/front-end-spec.md` | Lines 286, 296 reference magic-link. | Update both lines. |
+| `docs/archive/planning/front-end-spec.md` | Lines 286, 296 reference magic-link. | Update both lines. |
 | `docs/wireframes/sitemap.md` | Marks Epic 6 + 8 as DEFERRED TO PHASE 2+ throughout (lines 6, 15-17, 45-47, sections 4.5 / 5 / 5.2 / 6 / 9.2 / 10.2 / 11.2 / 12.2 + Legend section 8). Epic 6 + 8 are actually 100% complete per CLAUDE.md. | Flip top-level status banners + section headings only. Add disclaimer banner. Do not re-audit screen-level wireframe details. |
 | `docs/wireframes/sitemap-mermaid.md` | Same staleness — line 5 Purpose, lines 13-16 colour legend, lines 38-40 root portal nodes, sections 5 / 5.2 / 6 / 6.1 / 8.4 / 9.3 / 10.2 / 13.2 + bottom colour legend. | Flip top-level Mermaid node labels + section headings + chart titles. Add disclaimer banner. Quadrant chart x-axis simplified or replaced with pointer. |
 
@@ -489,7 +489,7 @@ Per the doc-alignment scope:
 - ❌ **Do NOT delete the `OutreachHistory` discussion** in any doc — outreach history is the heart of the `CONTACTED` phase and is preserved (per plan §3.1).
 - ❌ **Do NOT remove ADR-004's existing patterns** — ADR-004 stays in force; this story only **appends** a note about SPEAKER.
 - ❌ **Do NOT alter the PostConfirmation / PreTokenGeneration Lambda sections** in 06b — they remain the standard self-registration path. The new Pattern N is **additional**.
-- ❌ **Do NOT rename or delete `docs/prd/epic-9-speaker-authentication.md`** — the rewrite is **in place**. The file path is referenced by sprint-status.yaml and the readiness report.
+- ❌ **Do NOT rename or delete `docs/archive/prd/epic-9-speaker-authentication.md`** — the rewrite is **in place**. The file path is referenced by sprint-status.yaml and the readiness report.
 - ❌ **Do NOT remove TENTATIVE / OVERFLOW / WITHDREW mentions from ADR-009 itself or from `docs/plans/speaker-workflow-refactor.md`** — those files document why the terms are gone; they must keep the terms in a "removed/legacy" context.
 
 ### Decision points the dev does NOT need to make
@@ -528,7 +528,7 @@ These are pre-decided in ADR-009 and the plan:
 - [Source: docs/architecture/ADR-009-unified-speaker-workflow.md §1 (Documentation Changes)] — the same doc-change table that grounds the AC in this story.
 - [Source: docs/plans/speaker-workflow-refactor.md §1 lines 212-228] — plan's doc-change table.
 - [Source: docs/prd/epic-11-speaker-workflow-refactor.md Story 11.A.1 lines 431-505] — original AC; this story extends with explicit line pointers.
-- [Source: docs/archive/planning/implementation-readiness-report-2026-05-15.md U1 + AC12] — adds `docs/front-end-spec.md` to scope (not in original 11.A.1 but recommended in readiness audit).
+- [Source: docs/archive/planning/implementation-readiness-report-2026-05-15.md U1 + AC12] — adds `docs/archive/planning/front-end-spec.md` to scope (not in original 11.A.1 but recommended in readiness audit).
 - [Source: docs/architecture/ADR-004-factor-user-fields-from-domain-entities.md] — referenced for User-centric design pattern; appended-to in AC8.
 - [Source: docs/architecture/ADR-003-meaningful-identifiers-public-apis.md] — referenced indirectly; speaker_pool uses `username` (meaningful ID), not UUID FK.
 - [Source: CLAUDE.md §"Doc Drift Prevention" lines ~530-540] — `[no-doc]` commit message policy for doc-only PRs.
@@ -559,8 +559,8 @@ claude-opus-4-7 (1M context)
 - Baseline AC14 grep (pre-edit): 523 hits across `docs/**/*.md` for the legacy-term pattern. Captured to `/tmp/baseline-grep-1.log`.
 - Post-edit AC14 grep (excluding ADR-009, Epic 11, plan, this story, implementation-readiness, prd-enhanced REMOVED markers): 232 hits. Captured to `/tmp/post-grep-1.log`.
 - Per-file post-edit hit classification:
-  - `docs/architecture/04-api-speaker-coordination.md` (7 hits), `docs/architecture/06a-workflow-state-machines.md` (3 hits), `docs/prd/epic-9-speaker-authentication.md` (11 hits) — all inside "REMOVED/legacy per ADR-009" annotations. ✅ AC14 compliant.
-  - `docs/plans/doc-audit/*` (45+ hits) — historical audit reports; legitimately reference legacy terms as findings. ✅ Historical.
+  - `docs/architecture/04-api-speaker-coordination.md` (7 hits), `docs/architecture/06a-workflow-state-machines.md` (3 hits), `docs/archive/prd/epic-9-speaker-authentication.md` (11 hits) — all inside "REMOVED/legacy per ADR-009" annotations. ✅ AC14 compliant.
+  - `docs/archive/plans/doc-audit/*` (45+ hits) — historical audit reports; legitimately reference legacy terms as findings. ✅ Historical.
   - `docs/qa/assessments/6.1*` + `docs/qa-gates/6.2*` (~22 hits) — Epic 6 historical QA assessments. ✅ Per story Open Question #3 ("Epic 6 docs out of scope").
   - `docs/user-guide/**` (~30+ hits) — documents the *currently live* magic-link behaviour, which is reverted only after Epic 11 Phase F lands. ✅ Per story Open Question #1.
   - `docs/architecture/epic-6-speaker-onboarding-plan.md` (20 hits) — Epic 6 completed-epic plan. ✅ Per story Open Question #3.
@@ -582,7 +582,7 @@ claude-opus-4-7 (1M context)
 Modified markdown:
 - `CLAUDE.md` (AC11)
 - `docs/prd-enhanced.md` (AC1)
-- `docs/prd/epic-9-speaker-authentication.md` (AC2 — in-place rewrite)
+- `docs/archive/prd/epic-9-speaker-authentication.md` (AC2 — in-place rewrite)
 - `docs/prd/epic-5-enhanced-organizer-workflows.md` (AC14 — added supersession banner to Speaker Workflow section)
 - `docs/architecture/03-data-architecture.md` (AC3 — deleted Speaker entity + speakers SQL; added SPEAKER-role paragraph)
 - `docs/architecture/04-api-design.md` (AC5 — rewrote §3 Speaker Coordination API summary; removed overflow voting from §2 capabilities)
@@ -592,7 +592,7 @@ Modified markdown:
 - `docs/architecture/06b-user-lifecycle-sync.md` (AC7 — added Pattern N: Speaker Provisioning at CONTACTED → READY)
 - `docs/architecture/ADR-004-factor-user-fields-from-domain-entities.md` (AC8 — Revision History entry + Speaker note + historical re-cast)
 - `docs/architecture/index.md` (AC10 — added ADRs subsection)
-- `docs/front-end-spec.md` (AC12 — replaced both magic-link mentions)
+- `docs/archive/planning/front-end-spec.md` (AC12 — replaced both magic-link mentions)
 - `docs/wireframes/sitemap.md` (AC15.1 — top-level Epic 6 + 8 status flip + banner + section refresh)
 - `docs/wireframes/sitemap-mermaid.md` (AC15.2 — top-level Epic 6 + 8 status flip + banner + diagram updates)
 
@@ -611,11 +611,11 @@ Modified non-markdown (in-scope per the story's File List):
 
 These were surfaced during story drafting; the dev agent may proceed with the inferred decision but should flag in PR description if a different call is preferred.
 
-1. **`docs/front-end-spec.md` (Story-stated absent vs readiness-recommended)** — The original 11.A.1 AC in Epic 11 PRD does NOT list `front-end-spec.md`. The readiness audit (U1) added it as an extension because lines 286+296 contain stale magic-link references. **Inferred decision**: include it (additive cleanup, low effort, prevents an immediate post-merge doc-drift PR). Flag if scope creep concern.
+1. **`docs/archive/planning/front-end-spec.md` (Story-stated absent vs readiness-recommended)** — The original 11.A.1 AC in Epic 11 PRD does NOT list `front-end-spec.md`. The readiness audit (U1) added it as an extension because lines 286+296 contain stale magic-link references. **Inferred decision**: include it (additive cleanup, low effort, prevents an immediate post-merge doc-drift PR). Flag if scope creep concern.
 
 2. **`docs/architecture/04-api-speaker-coordination.md` (AC9 — not in original PRD list)** — The plan §1 lists `04-api-design.md` as the file to update. But that file is a top-level index pointing to sub-docs; the actual speaker-portal endpoint detail lives in `04-api-speaker-coordination.md`. **Inferred decision**: update both — index (light touch) and sub-doc (heavy edit) — for internal consistency. Flag if a single-file scope was intended.
 
-3. **Story 9.1 docs and Epic 6 deprecation banners** — Plan §1 line 226 says "Add a deprecation banner pointing to ADR-009" to "Epic 6 and Story 9.1 docs that document the magic-link flow." **Inferred decision**: Out of scope for this story — the Epic 6 docs are part of a completed epic (per CLAUDE.md), and Story 9.1 is being subsumed via the AC2 rewrite of `docs/prd/epic-9-speaker-authentication.md`. The plan §1 line 226 phrasing is ambiguous about which specific files; recommend a follow-up story if needed.
+3. **Story 9.1 docs and Epic 6 deprecation banners** — Plan §1 line 226 says "Add a deprecation banner pointing to ADR-009" to "Epic 6 and Story 9.1 docs that document the magic-link flow." **Inferred decision**: Out of scope for this story — the Epic 6 docs are part of a completed epic (per CLAUDE.md), and Story 9.1 is being subsumed via the AC2 rewrite of `docs/archive/prd/epic-9-speaker-authentication.md`. The plan §1 line 226 phrasing is ambiguous about which specific files; recommend a follow-up story if needed.
 
 4. **`docs/wireframes/sitemap.md` and `docs/wireframes/sitemap-mermaid.md`** — Sitemap originally marked Epic 6 + 8 as DEFERRED to Phase 2+, but both are actually 100% complete per CLAUDE.md. **Decision (confirmed by Nissim 2026-05-15)**: included in scope via AC15. Top-level status banners and section headings flipped to ✅ DELIVERED; Epic 7 remains deferred (now to Phase 3, not "Phase 2+"). Screen-level wireframe details left untouched — a disclaimer banner is added directing readers to `_bmad-output/implementation-artifacts/` for authoritative implementation status. A separate screen-level audit is not part of this story.
 

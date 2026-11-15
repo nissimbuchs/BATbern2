@@ -279,8 +279,8 @@ No new protocol files needed — `ClockProtocol` and `HapticServiceProtocol` alr
 - [Source: docs/watch-app/architecture.md#Frontend-Architecture] — O3 screen in layer diagram, OrganizerViewModel spec
 - [Source: docs/watch-app/architecture.md#Implementation-Patterns] — MVVM, naming, timer design, color system
 - [Source: docs/watch-app/architecture.md#Data-Architecture] — CachedSession schema (no `state` field)
-- [Source: docs/watch-app/epics.md#W3.1] — AC definitions
-- [Source: docs/watch-app/epics.md#NonFunctional] — NFR2 (haptic within 1s), NFR8 (no crash)
+- [Source: docs/archive/watch-app/epics.md#W3.1] — AC definitions
+- [Source: docs/archive/watch-app/epics.md#NonFunctional] — NFR2 (haptic within 1s), NFR8 (no crash)
 - [Source: apps/BATbern-watch/CLAUDE.md#Critical-Architectural-Patterns] — Clock injection, MVVM, async patterns
 - [Source: apps/BATbern-watch/CLAUDE.md#Testing-Strategy] — MockClock pattern, risk-ordered test priority
 

@@ -10,7 +10,7 @@ As a **platform engineer wiring federated identity into the single real Cognito 
 I want **a `UserPoolIdentityProviderGoogle` defined in `cognito-stack.ts` (reading the Google client id/secret from the Secrets Manager secret created in Story 12.4, never inlined), with Google's `email`/`given_name`/`family_name` claims mapped onto the pool's attributes, and `GOOGLE` added to the app client's `supportedIdentityProviders` alongside the existing `COGNITO`**,
 so that **the Cognito hosted-UI can broker a Google OIDC sign-in (testable directly via `/oauth2/authorize?...&identity_provider=Google`) while every existing email/password login keeps working unchanged — a purely additive, invisible-to-users change with a one-line rollback.**
 
-This is **Phase 1** of Epic 12 (SSO / OIDC Federation), per `docs/plans/sso-oidc-federation.md` §5 "Phase 1 — Define the Google IdP + add to client" and ADR-010 §D1/D9. It is **additive and invisible**: there is **no frontend change and no Google button** (that is Stories 12-7/12-9). It **consumes** the Secrets Manager secret stood up by the DONE Story 12.4 runbook (`batbern/staging/sso/google-oauth`). It does **not** build the account-linking trigger — a brand-new Google user signing in at this phase hits the §3 gotchas with no linking trigger yet, so **real federated testing is gated on Phase 2 (Story 12-6)**; this phase tests only the provider/client wiring (via the hosted-UI authorize URL) and, if at all, with throwaway emails.
+This is **Phase 1** of Epic 12 (SSO / OIDC Federation), per `docs/archive/plans/sso-oidc-federation.md` §5 "Phase 1 — Define the Google IdP + add to client" and ADR-010 §D1/D9. It is **additive and invisible**: there is **no frontend change and no Google button** (that is Stories 12-7/12-9). It **consumes** the Secrets Manager secret stood up by the DONE Story 12.4 runbook (`batbern/staging/sso/google-oauth`). It does **not** build the account-linking trigger — a brand-new Google user signing in at this phase hits the §3 gotchas with no linking trigger yet, so **real federated testing is gated on Phase 2 (Story 12-6)**; this phase tests only the provider/client wiring (via the hosted-UI authorize URL) and, if at all, with throwaway emails.
 
 ## Acceptance Criteria
 
@@ -137,9 +137,9 @@ hand-off to Story 12-3/12-6.
   replacement, before deploy. Rollback is a one-line revert (drop `GOOGLE`).
 
 ### References
-- [Source: docs/plans/sso-oidc-federation.md#Phase 1 — Define the Google IdP + add to client] (`:182-196`) — IdP, attribute-mapping, `supportedIdentityProviders`, no-frontend, test-via-authorize-URL, Layer-3, one-line rollback, Phase-2 testing gate
-- [Source: docs/plans/sso-oidc-federation.md#2 ~70% already wired] (`:29-40`) — hosted-UI `:271`(now `:276`), grant+scopes `:247`, callbacks `:220`, SPA no-secret `:243`, provider gap `:259-261`
-- [Source: docs/plans/sso-oidc-federation.md#3 The two Cognito gotchas] (`:42-67`) — federated skips PostConfirmation/PreAuthentication; `AliasExistsException` risk without linking → Phase-2 gate
+- [Source: docs/archive/plans/sso-oidc-federation.md#Phase 1 — Define the Google IdP + add to client] (`:182-196`) — IdP, attribute-mapping, `supportedIdentityProviders`, no-frontend, test-via-authorize-URL, Layer-3, one-line rollback, Phase-2 testing gate
+- [Source: docs/archive/plans/sso-oidc-federation.md#2 ~70% already wired] (`:29-40`) — hosted-UI `:271`(now `:276`), grant+scopes `:247`, callbacks `:220`, SPA no-secret `:243`, provider gap `:259-261`
+- [Source: docs/archive/plans/sso-oidc-federation.md#3 The two Cognito gotchas] (`:42-67`) — federated skips PostConfirmation/PreAuthentication; `AliasExistsException` risk without linking → Phase-2 gate
 - [Source: docs/architecture/ADR-010-federated-identity-via-cognito.md §D1, §D9] — broker model; new Google project, non-sensitive scopes
 - [Source: _bmad-output/implementation-artifacts/archive/12-4-google-cloud-oauth-consent-setup.md] — secret `batbern/staging/sso/google-oauth` (ARN `…google-oauth-TpSKCG`, JSON `{clientId, clientSecret}`); redirect URI `…/oauth2/idpresponse`; DONE + rotated
 - [Source: infrastructure/lib/stacks/cognito-stack.ts:6,157-218,169-174,175-197,234-273,259-261,267-272,276-281] — pool, standard/custom attrs, client, provider list, Story 12.1 readAttributes, hosted-UI domain

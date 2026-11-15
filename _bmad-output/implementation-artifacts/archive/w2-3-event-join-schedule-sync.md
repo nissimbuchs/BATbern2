@@ -1196,7 +1196,7 @@ BATbern-watch Watch App/
 
 ### References
 
-- [Source: docs/watch-app/epics.md#W2.3] — Story definition and acceptance criteria
+- [Source: docs/archive/watch-app/epics.md#W2.3] — Story definition and acceptance criteria
 - [Source: docs/watch-app/architecture.md#API-Communication-Patterns] — Event sync endpoint specification
 - [Source: docs/watch-app/architecture.md#Data-Architecture] — SwiftData models (CachedEvent, CachedSession, CachedSpeaker)
 - [Source: docs/watch-app/architecture.md#Portrait-Cache] — Image optimization strategy (200x200px, ~100KB per speaker)

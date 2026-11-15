@@ -280,7 +280,7 @@ ul.plain{margin:0;padding-left:1.2em;display:flex;flex-direction:column;gap:6px;
       <g class="sb bo"><rect x="410" y="240" width="132" height="15" rx="2"/><text x="415" y="251">17.12 design · dropped</text></g><g class="sb bo"><rect x="548" y="240" width="164" height="15" rx="2"/><text x="553" y="251">17.13, 17.14 · open</text></g>
     </svg>
     </div>
-    <figcaption>File counts per package directory on develop today. The May 2026 plan (<code>docs/plans/ems-modularization-extension-points.md</code>) quoted 39 controllers, about 78 services and migration V107. I don't know how it counted, so the growth to 48 / 104 / V137 is indicative, not exact.</figcaption>
+    <figcaption>File counts per package directory on develop today. The May 2026 plan (<code>docs/archive/plans/ems-modularization-extension-points.md</code>) quoted 39 controllers, about 78 services and migration V107. I don't know how it counted, so the growth to 48 / 104 / V137 is indicative, not exact.</figcaption>
   </figure>
   <p>Splitting EMS into more services would be the wrong move: every one of these modules reads the event. The right move is walls inside one deployable. Five packages already show the pattern works. Registration is the most tangled: 14 of its endpoints are hand-mapped inside <code>EventController</code>.</p>
 </section>

@@ -33,7 +33,7 @@ Step 3 — Scan test files for business-rule assertions NOT covered by the doc:
   - Look for test method names that describe behaviour (`should_`, `when_`, `given_`)
   - If the tested behaviour is not mentioned in the doc → UNDOCUMENTED
 
-Step 4 — Write your findings to `docs/plans/doc-audit/findings-state-machines.md` using this format:
+Step 4 — Write your findings to `docs/archive/plans/doc-audit/findings-state-machines.md` using this format:
 
 ```markdown
 # Doc Audit Findings — Event state machine & lifecycle

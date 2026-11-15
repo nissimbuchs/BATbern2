@@ -293,7 +293,7 @@ BATbern-watch Watch App/
 - [Source: docs/watch-app/ux-design-specification.md#Navigation-Rules] — Tap title → P3, tap speaker (1) → P4, tap speaker (2+) → P5, tap portrait → P6
 - [Source: docs/watch-app/ux-design-specification.md#Anti-Patterns-to-Avoid] — No multi-level navigation during events, no confirmation dialogs
 - [Source: docs/watch-app/prd-batbern-watch.md#Public-Zone] — FR31 (tap for abstract), FR32 (tap for speaker bio), FR33 (multi-speaker grid)
-- [Source: docs/watch-app/epics.md#W1.3] — Story definition and acceptance criteria
+- [Source: docs/archive/watch-app/epics.md#W1.3] — Story definition and acceptance criteria
 - [Source: _bmad-output/implementation-artifacts/archive/w1-2-session-card-browsing.md] — Previous story: SessionCardView tap targets, SpeakerPortraitView, PublicViewModel extensions
 
 ## Dev Agent Record

@@ -6,7 +6,7 @@ Status: done
 
 > ## ⚠️ COURSE CORRECTION AMENDMENT REQUIRED (2026-02-19)
 >
-> Per approved Sprint Change Proposal (`docs/sprint-change-proposal-2026-02-19.md`).
+> Per approved Sprint Change Proposal (`docs/archive/planning/sprint-change-proposal-2026-02-19.md`).
 > The following changes must be applied to already-implemented code by the Dev agent.
 >
 > **Required changes:**
@@ -313,7 +313,7 @@ so that the complication is my primary interface during events.
     ```
   - [x] 4.3 In `ContentView.swift`, listen for the notification and set `selectedZone = .organizer`
 
-- [x] **Task 6: Course Correction Amendment (2026-02-19)** — Apply Sprint Change Proposal (`docs/sprint-change-proposal-2026-02-19.md`)
+- [x] **Task 6: Course Correction Amendment (2026-02-19)** — Apply Sprint Change Proposal (`docs/archive/planning/sprint-change-proposal-2026-02-19.md`)
   - [x] 6.1 Add `enum ComplicationContext: Codable, Equatable, Sendable` with manual Codable (5 cases: noEvent, eventFar, eventDayPreSession, sessionRunning, eventComplete) to `ComplicationDataStore.swift`
   - [x] 6.2 Add `complicationContext: ComplicationContext?` optional field to `ComplicationSnapshot` (optional for backward-compat with pre-amendment data)
   - [x] 6.3 Add `var context: ComplicationContext` computed property to `ComplicationEntry` (falls back to `.noEvent` when nil)
@@ -453,8 +453,8 @@ apps/BATbern-watch/
 
 ### References
 
-- [Source: docs/watch-app/epics.md#W3.3] — AC definitions, FR1, FR2, FR5
-- [Source: docs/watch-app/epics.md#NonFunctional] — NFR1 (complication < 1s), NFR21-22 (battery), NFR5 (launch time)
+- [Source: docs/archive/watch-app/epics.md#W3.3] — AC definitions, FR1, FR2, FR5
+- [Source: docs/archive/watch-app/epics.md#NonFunctional] — NFR1 (complication < 1s), NFR21-22 (battery), NFR5 (launch time)
 - [Source: docs/watch-app/architecture.md#Frontend-Architecture] — C1/C2/C3 layer diagram, WidgetKit timeline strategy
 - [Source: docs/watch-app/architecture.md#Enforcement-Guidelines] — ADR-003, no UUIDs in URLs
 - [Source: apps/BATbern-watch/CLAUDE.md#Architecture-Overview] — Complications/ empty placeholder, WidgetKit decision
@@ -489,7 +489,7 @@ N/A — no integration tests (WidgetKit extension requires Xcode target setup, T
 
 5. **Speaker names**: `formattedSpeakerNames` (last names only, max 2) added to `LiveCountdownViewModel` for the narrow C2 complication. The existing `speakerNames` property (full names, all speakers) is kept for the O3 view.
 
-8. **Course Correction Amendment complete (2026-02-19)**: All 5 amendment changes applied per `docs/sprint-change-proposal-2026-02-19.md`. `ComplicationContext` enum (5 cases, manual Codable/Equatable/Sendable) added to `ComplicationDataStore.swift`. All 3 complication views updated to `switch entry.context`. `ComplicationProvider.resolvedSnapshot()` updated with context-aware staleness (sessionRunning-only guard; non-session contexts always pass through). 8 new `ComplicationContextTests` added. 2 pre-existing W4.3 regressions in `LiveCountdownViewModelTests.swift` fixed. Result: **229 tests pass, 0 warnings, 0 errors**. Ring semantics implemented per proposal: eventDayPreSession=count-UP, sessionRunning=count-DOWN.
+8. **Course Correction Amendment complete (2026-02-19)**: All 5 amendment changes applied per `docs/archive/planning/sprint-change-proposal-2026-02-19.md`. `ComplicationContext` enum (5 cases, manual Codable/Equatable/Sendable) added to `ComplicationDataStore.swift`. All 3 complication views updated to `switch entry.context`. `ComplicationProvider.resolvedSnapshot()` updated with context-aware staleness (sessionRunning-only guard; non-session contexts always pass through). 8 new `ComplicationContextTests` added. 2 pre-existing W4.3 regressions in `LiveCountdownViewModelTests.swift` fixed. Result: **229 tests pass, 0 warnings, 0 errors**. Ring semantics implemented per proposal: eventDayPreSession=count-UP, sessionRunning=count-DOWN.
 
 9. **Code Review fixes (2026-02-20)**: Addressed 2 HIGH (AC1 violations) + 4 MEDIUM findings:
    - **(H2) C1 ring shows full (1.0) during overtime** — `CircularComplication.swift`: `ProgressView(value: entry.isOvertime ? 1.0 : fractionRemaining)`. H1 ("+N" text) was already fixed by `entry.displayMinutes` in a prior commit.

@@ -2,7 +2,7 @@
 
 Status: done
 
-> **This is a JOINT, NO-CODE, NO-DEPLOY runbook** (Epic 12 / SSO "Phase 0", `docs/plans/sso-oidc-federation.md`). Nissim performs the Google Cloud Console clicks; Amelia provides exact values and verifies. Nothing here is wired into CDK — that is Story **12-5** (which reads the secret this runbook stores). **START EARLY:** domain verification + consent-screen publishing have external review latency that can stall 12-5.
+> **This is a JOINT, NO-CODE, NO-DEPLOY runbook** (Epic 12 / SSO "Phase 0", `docs/archive/plans/sso-oidc-federation.md`). Nissim performs the Google Cloud Console clicks; Amelia provides exact values and verifies. Nothing here is wired into CDK — that is Story **12-5** (which reads the secret this runbook stores). **START EARLY:** domain verification + consent-screen publishing have external review latency that can stall 12-5.
 
 ## Goal
 Stand up a Google Cloud project + OAuth 2.0 Web client whose **authorized redirect URI points at our Cognito hosted-UI**, with the consent screen **published to Production**, and store the client **id + secret in AWS Secrets Manager** (never inline in CDK).

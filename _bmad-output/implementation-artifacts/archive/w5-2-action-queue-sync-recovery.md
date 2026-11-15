@@ -116,7 +116,7 @@ so that no actions are lost even during WiFi outages.
 
 ### References
 
-- [Source: docs/watch-app/epics.md#W5.2] — Story AC definitions (NFR11: survives app restart)
+- [Source: docs/archive/watch-app/epics.md#W5.2] — Story AC definitions (NFR11: survives app restart)
 - [Source: apps/BATbern-watch/BATbern-watch Watch App/Data/WebSocketClient.swift] — `sendAction()` target (line 188), `WatchActionDto` encoding (line ~510)
 - [Source: apps/BATbern-watch/BATbern-watch Watch App/Data/EventDataController.swift] — `handleConnectivityChange()` (line 284), `applyServerState()` (line 124), `syncIfNeeded()`
 - [Source: apps/BATbern-watch/BATbern-watch Watch App/Protocols/WebSocketClientProtocol.swift] — `WatchAction` enum, all action types

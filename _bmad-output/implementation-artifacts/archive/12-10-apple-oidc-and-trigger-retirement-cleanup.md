@@ -3,7 +3,7 @@
 Status: backlog
 
 > **DEFERRED — do NOT flip to `ready-for-dev` yet.** This story is the umbrella for two
-> explicitly-deferred bodies of work in `docs/plans/sso-oidc-federation.md`: **Phase 6** (Apple
+> explicitly-deferred bodies of work in `docs/archive/plans/sso-oidc-federation.md`: **Phase 6** (Apple
 > Sign-in + generic corporate OIDC) and the **Cleanup track** (retiring the three now-redundant
 > Cognito triggers). Per the plan, Phase 6 is *"documented, not scheduled,"* and the cleanup
 > track's hard precondition is that the **gateway `is_active` gate (Story 12-2) and canonical JIT
@@ -24,7 +24,7 @@ so that **the auth surface can be reduced to three triggers (`PreSignUp`, `PreTo
 `CustomEmailSender`) without losing account-create or inactive-block guarantees, and a future
 Apple/corporate-OIDC decision starts from a written analysis instead of a blank page.**
 
-This is the **deferred tail of Epic 12**. Source: `docs/plans/sso-oidc-federation.md` §5 "Phase 6"
+This is the **deferred tail of Epic 12**. Source: `docs/archive/plans/sso-oidc-federation.md` §5 "Phase 6"
 + §5 "Cleanup track", §8 Q5 (PostConfirmation full removal). It has **no scheduled delivery date**
 and is intentionally left `backlog`.
 
@@ -147,10 +147,10 @@ Only then delete the trigger. Update `06b` inventory.
 - Staging IS production: each removal deploys behind verification; rollback is re-adding wiring.
 
 ### References
-- [Source: docs/plans/sso-oidc-federation.md#Phase 6 — (Deferred) Apple + generic OIDC]
-- [Source: docs/plans/sso-oidc-federation.md#Cleanup track — trigger retirement]
-- [Source: docs/plans/sso-oidc-federation.md#8. Resolved decisions — Q5 (PostConfirmation full removal) + Q1 (Google only, Apple+OIDC deferred)]
-- [Source: docs/plans/sso-oidc-federation.md#3. The two Cognito gotchas] (why federated logins bypass PostConfirmation + PreAuthentication)
+- [Source: docs/archive/plans/sso-oidc-federation.md#Phase 6 — (Deferred) Apple + generic OIDC]
+- [Source: docs/archive/plans/sso-oidc-federation.md#Cleanup track — trigger retirement]
+- [Source: docs/archive/plans/sso-oidc-federation.md#8. Resolved decisions — Q5 (PostConfirmation full removal) + Q1 (Google only, Apple+OIDC deferred)]
+- [Source: docs/archive/plans/sso-oidc-federation.md#3. The two Cognito gotchas] (why federated logins bypass PostConfirmation + PreAuthentication)
 - ADR-010 (Federated Identity via Cognito) — broker model, Google-first, Apple deferral.
 - Depends on: Story 12-2 (gateway gate) + 12-3 (canonical JIT) **verified in prod via 12-8**;
   Story 12-5 (IdP pattern) + 12-6 (PreSignUp_ExternalProvider linking branch) as templates.

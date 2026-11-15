@@ -10,7 +10,7 @@ As a **platform engineer preparing the auth surface for Google SSO federation**,
 I want **the token/attribute surface realigned with the documented ADR-001 target — frontend reads company/preferences from the DB (`/users/me`) not the JWT, `custom:companyId` is no longer emitted or written, and `custom:role` stops leaking from its stored attribute into tokens**,
 so that **Phase 1's Google attribute-mapping maps into a clean target (no `companyId` to map, `preferences` as a seed only), and the token carries only identity (`sub`, `email`) + authorization (`custom:role`, `custom:username`) per `06b`'s "Minimal target footprint".**
 
-This is **PR 0** of Epic 12 (SSO / OIDC Federation). It is **standalone** — no dependency on any SSO phase — and lands **first** so the later Google attribute-mapping (Story 12.5) targets a clean surface. Source: `docs/plans/sso-oidc-federation.md` §5 "PR 0"; target spec: `docs/architecture/06b-user-lifecycle-sync.md` §"Cognito Custom-Attribute Inventory & Deprecation Status".
+This is **PR 0** of Epic 12 (SSO / OIDC Federation). It is **standalone** — no dependency on any SSO phase — and lands **first** so the later Google attribute-mapping (Story 12.5) targets a clean surface. Source: `docs/archive/plans/sso-oidc-federation.md` §5 "PR 0"; target spec: `docs/architecture/06b-user-lifecycle-sync.md` §"Cognito Custom-Attribute Inventory & Deprecation Status".
 
 ## Acceptance Criteria
 
@@ -100,7 +100,7 @@ This is **PR 0** of Epic 12 (SSO / OIDC Federation). It is **standalone** — no
 - Deploy tiers (infra/CLAUDE.md): step 1+2+4 are code-only/frontend (fast-path/frontend deploy); step 5 is a Cognito change → **Layer-3** (`deploy:staging:layer3-application`). This is why the story is sequenced FE → svc/gw → L3.
 
 ### References
-- [Source: docs/plans/sso-oidc-federation.md#PR 0 — Cognito attribute hygiene] (3 sub-steps, deploy order, risk/rollback)
+- [Source: docs/archive/plans/sso-oidc-federation.md#PR 0 — Cognito attribute hygiene] (3 sub-steps, deploy order, risk/rollback)
 - [Source: docs/architecture/06b-user-lifecycle-sync.md#Cognito Custom-Attribute Inventory & Deprecation Status] (lines 599-664 — inventory, companyId-not-in-token decision, permanence constraint, minimal target footprint)
 - [Source: web-frontend/src/services/auth/authService.ts:318,425,448] · [Source: web-frontend/src/contexts/AuthContext.tsx:72-118] · [Source: web-frontend/src/App.tsx:241]
 - [Source: api-gateway/.../auth/UserContextExtractor.java:79-81] · [Source: api-gateway/.../routing/RequestTransformer.java:37-38]

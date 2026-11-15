@@ -24,7 +24,7 @@ The main BATbern platform uses Epics 1-6 with story numbering like `6.3-content-
 | [architecture.md](architecture.md) | Architecture decisions (BMAD output, pre-public-view) | Needs update |
 | [ux-design-specification.md](ux-design-specification.md) | UX design spec (BMAD output, pre-public-view) | Needs update |
 | [ux-design-directions.html](ux-design-directions.html) | Visual design direction mockups | Complete |
-| [epics.md](epics.md) | Epic breakdown with requirements (BMAD output, pre-public-view) | Needs update |
+| [epics.md](../archive/watch-app/epics.md) | Epic breakdown with requirements (BMAD output, pre-public-view) | Needs update |
 
 ### Stories (W-prefixed)
 Stories live in `stories/` and follow the naming convention `W{epic}.{story}-{description}.md`.

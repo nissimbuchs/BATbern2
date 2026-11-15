@@ -36,7 +36,7 @@ Google's OIDC `picture` claim provides a photo URL on every federated sign-in, b
    - CUMS ITs (Testcontainers, `AbstractIntegrationTest`): claim + NULL picture → S3 put invoked (mock S3Client) + both columns set; claim + existing picture → no-op; claim + prior `picture_import_attempted_at` → no-op; fetch failure → attempt recorded, request still 200, no picture set; no claim → nothing.
    - Async executor behavior unit-tested (import does not block request thread).
 
-8. **(Docs, same commit.)** Annotate `docs/plans/sso-oidc-federation.md` follow-ups and `docs/architecture/06b-user-lifecycle-sync.md` (avatar import in the federated lifecycle). OpenAPI: no API surface change expected (import is implicit); if any response field is added, spec-first + regenerate types.
+8. **(Docs, same commit.)** Annotate `docs/archive/plans/sso-oidc-federation.md` follow-ups and `docs/architecture/06b-user-lifecycle-sync.md` (avatar import in the federated lifecycle). OpenAPI: no API surface change expected (import is implicit); if any response field is added, spec-first + regenerate types.
 
 ## Tasks / Subtasks
 
@@ -50,7 +50,7 @@ Google's OIDC `picture` claim provides a photo URL on every federated sign-in, b
   - [x] Guard against SSRF drift: https-only + host == `googleusercontent.com` or subdomain (endsWith dot-check); `=s96-c` → `=s512-c` variant upgrade. 8 unit tests.
 - [x] **Task 4 — cdn-URL assertion + display verification (AC: 6)** — cdn-URL assertion folded into IT #1 (`startsWith("https://cdn.batbern.ch/profile-pictures/")` + `doesNotContain("googleusercontent")`). Display path verified unchanged: `useUserPortrait.ts:72-83` re-projects `profilePictureUrl`; `ProfilePhotoUpload.tsx:246` renders it as `<img src>`; image-resize Lambda@Edge applies automatically (cdn domain).
 - [x] **Task 5 — deploy order note + manual smoke** — infra (cognito-stack) deploys first; then CUMS. **Note:** a single `develop` push satisfies the ordering automatically — the pipeline detects infra changes and uses layer-based deployment, where Layer 3 (Cognito) deploys before Layer 4 (services). `UpdateUserPoolClient` read/write-attribute changes are in-place (no replacement); `picture` is a built-in standard attribute so there is NO pool Schema change (the PR #735 "Invalid AttributeDataType" trap is avoided by design + regression-tested). **Manual smoke (post-deploy, user-side):** fresh Google sign-in (or existing federated user with no picture and no prior attempt) → picture appears on `/profile` within one request cycle; verify object exists under `profile-pictures/` in `batbern-content-staging`.
-- [x] **Task 6 — docs (AC: 8)** — `docs/plans/sso-oidc-federation.md` §9 (post-GA follow-ups, 12.12 delivered) + `docs/architecture/06b-user-lifecycle-sync.md` Pattern 1c (federated avatar import in the lifecycle). OpenAPI: no surface change — the import is implicit; no response field added; no type regen needed. 06-backend-architecture / 08-operations-security checked: no profile-picture/interceptor content to drift.
+- [x] **Task 6 — docs (AC: 8)** — `docs/archive/plans/sso-oidc-federation.md` §9 (post-GA follow-ups, 12.12 delivered) + `docs/architecture/06b-user-lifecycle-sync.md` Pattern 1c (federated avatar import in the lifecycle). OpenAPI: no surface change — the import is implicit; no response field added; no type regen needed. 06-backend-architecture / 08-operations-security checked: no profile-picture/interceptor content to drift.
 
 ## Dev Notes
 
@@ -73,7 +73,7 @@ Google's OIDC `picture` claim provides a photo URL on every federated sign-in, b
 - Async executor: check whether CUMS already configures one (`@EnableAsync`/TaskExecutor bean) before adding config.
 
 ### References
-- [Source: docs/plans/sso-oidc-federation.md], [Source: docs/architecture/ADR-010-federated-identity-via-cognito.md]
+- [Source: docs/archive/plans/sso-oidc-federation.md], [Source: docs/architecture/ADR-010-federated-identity-via-cognito.md]
 - [Source: _bmad-output/implementation-artifacts/archive/12-5-google-idp-attribute-mapping.md] (mapping constraints: 1 claim → 1 attr)
 - [Source: docs/api/users-api.openapi.yml] (PublicUserResponse.profilePictureUrl)
 
@@ -129,7 +129,7 @@ Claude Opus 4.8 (1M context) via bmad-dev-story, 2026-06-04
 - `services/company-user-management-service/src/test/java/ch/batbern/companyuser/service/FederatedAvatarImportServiceTest.java` — new (11 unit tests)
 - `services/company-user-management-service/src/test/java/ch/batbern/companyuser/controller/LogoControllerTest.java` — modified (@MockitoBean for new WebMvcConfig dep)
 - `services/company-user-management-service/src/test/java/ch/batbern/companyuser/controller/CompanyControllerTest.java` — modified (@MockitoBean for new WebMvcConfig dep)
-- `docs/plans/sso-oidc-federation.md` — modified (§9 post-GA follow-ups)
+- `docs/archive/plans/sso-oidc-federation.md` — modified (§9 post-GA follow-ups)
 - `docs/architecture/06b-user-lifecycle-sync.md` — modified (Pattern 1c)
 - `_bmad-output/implementation-artifacts/archive/12-12-google-profile-picture-import.md` — story file (tasks/record)
 - `_bmad-output/implementation-artifacts/sprint-status.yaml` — status updates

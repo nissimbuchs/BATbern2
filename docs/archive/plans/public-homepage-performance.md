@@ -1,6 +1,6 @@
 # Public Homepage Performance Optimization
 
-> On approval, copy this file to `docs/plans/public-homepage-performance.md` (per the prod-safe-incremental-plans convention) and execute phase-by-phase.
+> On approval, copy this file to `docs/archive/plans/public-homepage-performance.md` (per the prod-safe-incremental-plans convention) and execute phase-by-phase.
 
 ## Context
 

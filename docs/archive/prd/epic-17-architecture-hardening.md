@@ -614,7 +614,7 @@ flow · deviations: none.
 ### Story 17.12 — EMS modularization design (Winston) — DROPPED (owner 2026-11-14)
 
 **Design task, not a dev story.** Output: a short tech design `docs/architecture/ems-modularization.md`
-building on `docs/plans/ems-modularization-extension-points.md`.
+building on `docs/archive/plans/ems-modularization-extension-points.md`.
 
 **Contents:** target package per class for the modules in `module-map.md`; the order of package moves
 (each move is a pure refactor PR); how the 17.5 freeze extends to `layeredArchitecture()` over the

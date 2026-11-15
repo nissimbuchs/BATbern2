@@ -531,7 +531,7 @@ services/event-management-service/src/test/java/ch/batbern/events/watch/WatchEve
 - [Source: apps/BATbern-watch/BATbern-watch Watch App/Data/EventDataController.swift:121–137] — `applyServerState` (add `eventCompleted` handling)
 - [Source: _bmad-output/implementation-artifacts/archive/w4-2-session-advance-transition.md] — W4.2 NextSessionPeekView, sessionEndedEvent, WatchSessionService.endSession patterns
 - [Source: _bmad-output/implementation-artifacts/archive/w4-3-overrun-detection-schedule-cascade.md] — W4.3 cascadeSession, all-session context
-- [Source: docs/watch-app/epics.md#W4.4] — Story ACs and architectural constraints
+- [Source: docs/archive/watch-app/epics.md#W4.4] — Story ACs and architectural constraints
 - [Source: docs/watch-app/architecture.md#Frontend-Architecture] — OrganizerZoneView routing logic, break sessions in session type list
 
 ---

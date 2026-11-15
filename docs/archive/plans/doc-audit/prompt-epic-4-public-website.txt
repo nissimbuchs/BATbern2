@@ -34,7 +34,7 @@ You are performing a retrospective documentation accuracy audit for BATbern.
     - Look for test method names that describe behaviour (`should_`, `when_`, `given_`)
     - If the tested behaviour is not mentioned in the doc → UNDOCUMENTED
 
-  Step 4 — Write your findings to `docs/plans/doc-audit/findings-epic-4-public-website.md` using this format:
+  Step 4 — Write your findings to `docs/archive/plans/doc-audit/findings-epic-4-public-website.md` using this format:
 
   ```markdown
   # Doc Audit Findings — Public website & registration (Epic 4)

@@ -264,8 +264,8 @@ Potentially modified:
 
 ### References
 
-- [Source: docs/watch-app/epics.md#W3.2] — AC definitions, FR11-FR16
-- [Source: docs/watch-app/epics.md#NonFunctional] — NFR2 (haptic within 1s), NFR9 (background haptics), NFR13 (zero missed haptic alerts per event)
+- [Source: docs/archive/watch-app/epics.md#W3.2] — AC definitions, FR11-FR16
+- [Source: docs/archive/watch-app/epics.md#NonFunctional] — NFR2 (haptic within 1s), NFR9 (background haptics), NFR13 (zero missed haptic alerts per event)
 - [Source: docs/watch-app/architecture.md#Implementation-Patterns] — haptic vocabulary (7 patterns)
 - [Source: apps/BATbern-watch/CLAUDE.md#Haptics-7-Pattern-Vocabulary] — WKHapticType mapping reference
 - [Source: apps/BATbern-watch/CLAUDE.md#Testing-Strategy] — P0 priority for HapticScheduler

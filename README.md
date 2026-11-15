@@ -17,9 +17,6 @@ the speaker portal, partner coordination, attendee touchpoints, newsletter and a
 Mail Center. Epic 17 (architecture hardening, closed 2026-11-15) put service-to-service calls on
 `/internal`, enforced API conventions and one upload contract, and added test-fidelity gates.
 
-Still open outside the backlog: the Epic 3 production import of the historical participants (owner
-triggers it).
-
 ## Quick Start
 
 ### Prerequisites

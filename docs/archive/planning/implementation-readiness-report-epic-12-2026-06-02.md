@@ -3,7 +3,7 @@ stepsCompleted: [step-01-document-discovery, step-02-prd-analysis, step-03-epic-
 scope: "Epic 12 — SSO / OIDC Federation (Google)"
 filesIncluded:
   requirements_source:
-    - docs/plans/sso-oidc-federation.md
+    - docs/archive/plans/sso-oidc-federation.md
   architecture:
     - docs/architecture/ADR-010-federated-identity-via-cognito.md
     - docs/architecture/06b-user-lifecycle-sync.md
@@ -34,7 +34,7 @@ filesIncluded:
 ## Step 1 — Document Inventory
 
 ### Requirements source (PRD/Epic substitute)
-- `docs/plans/sso-oidc-federation.md` (22 KB) — **the binding requirements + design spec for Epic 12.** Phased delivery (PR 0, PR 1, Phases 0–6 + cleanup track), §8 Resolved Decisions (owner: Nissim).
+- `docs/archive/plans/sso-oidc-federation.md` (22 KB) — **the binding requirements + design spec for Epic 12.** Phased delivery (PR 0, PR 1, Phases 0–6 + cleanup track), §8 Resolved Decisions (owner: Nissim).
 
 > ⚠️ **STRUCTURAL NOTE (not a blocker):** Epic 12 has **no `docs/prd/epic-12-*.md` file** — unlike every other epic (epic-1…epic-11 each have one). The plan file + ADR-010 jointly play the PRD+epic role. Requirements traceability in this assessment is therefore anchored on the plan's phases/§8 decisions rather than a formal FR/NFR inventory.
 

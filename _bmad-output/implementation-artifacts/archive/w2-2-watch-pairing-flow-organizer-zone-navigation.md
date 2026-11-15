@@ -993,7 +993,7 @@ BATbern-watch Watch App/
 
 ### References
 
-- [Source: docs/watch-app/epics.md#W2.2] — Story definition and acceptance criteria
+- [Source: docs/archive/watch-app/epics.md#W2.2] — Story definition and acceptance criteria
 - [Source: docs/watch-app/architecture.md#Authentication-Security] — Pairing code flow, JWT management, Keychain storage
 - [Source: docs/watch-app/architecture.md#Frontend-Architecture] — Dual-zone navigation, AuthManager design
 - [Source: docs/watch-app/architecture.md#Navigation-Architecture] — TabView horizontal paging, state-dependent entry

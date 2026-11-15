@@ -1204,7 +1204,7 @@ services/event-management-service/
 
 ### References
 
-- [Source: docs/watch-app/epics.md#W2.4] — User story and acceptance criteria
+- [Source: docs/archive/watch-app/epics.md#W2.4] — User story and acceptance criteria
 - [Source: docs/watch-app/architecture.md#FR36-39] — Speaker arrival tracking architectural decisions
 - [Source: docs/watch-app/architecture.md#ArrivalTracker] — Domain layer placement at line 603
 - [Source: docs/watch-app/architecture.md#WebSocket-STOMP] — `/topic/events/{eventCode}/arrivals` topic, SPEAKER_ARRIVED message schema

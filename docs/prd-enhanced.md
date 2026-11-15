@@ -175,7 +175,7 @@ These record what is live in production; each line points to its epic, story or 
 
 **FR39**: Organizers work from a lifecycle-aware event cockpit that shows tasks when they become relevant — Epic 14 (#788), #1105
 
-**FR40**: A watchOS companion app shows the event and lets organizers control session timing — `docs/watch-app/epics.md`
+**FR40**: A watchOS companion app shows the event and lets organizers control session timing — `docs/archive/watch-app/epics.md`
 
 **FR41**: Partner meeting invitations are sent and recorded per recipient — Story 16.9, #1180
 
@@ -406,7 +406,7 @@ The comprehensive epic breakdown follows a CRUD-first approach, prioritizing fun
 **Phase 1: MVP Complete (Weeks 1-35) - ✅ 100% COMPLETE**
 - **[Epic 1: Foundation & Essential Infrastructure](archive/prd/epic-1-foundation-stories.md)** - ✅ **COMPLETE** - Platform foundation with authentication, monitoring, security (9 weeks)
 - **[Epic 2: Entity CRUD & Domain Services](archive/prd/epic-2-entity-crud-domain-services.md)** - ✅ **COMPLETE** - End-to-end CRUD with consolidated RESTful APIs for Event, Speaker, Company, User entities (9 weeks, includes API consolidation 1.15a.1-1.15a.8)
-- **[Epic 3: Historical Data Migration](./prd/epic-3-historical-data-migration.md)** - ✅ **COMPLETE** - Migrate 20+ years of BATbern event data (3 weeks, tooling ready)
+- **[Epic 3: Historical Data Migration](archive/prd/epic-3-historical-data-migration.md)** - ✅ **COMPLETE** - Migrate 20+ years of BATbern event data (3 weeks, tooling ready)
 - **[Epic 4: Public Website & Content Discovery](./prd/epic-4-public-website-content-discovery.md)** - ✅ **COMPLETE** - Public event pages, registration, historical archive browsing (5 weeks)
 - **[Epic 5: Enhanced Organizer Workflows](./prd/epic-5-enhanced-organizer-workflows.md)** - ✅ **COMPLETE** - Event workflow (now 8 states) with parallel speaker coordination, task management, auto-publishing, lifecycle automation (9 weeks)
 
@@ -416,10 +416,10 @@ The comprehensive epic breakdown follows a CRUD-first approach, prioritizing fun
 **Phase 3: Enhanced Experiences**
 - **[Epic 7: Attendee Experience — Right-Sized Contribution & Touchpoints](archive/prd/epic-7-attendee-experience-enhancements.md)** - ✅ **COMPLETE** - Five organizer-voted features (topics from the floor, speaker self-nomination, slides-online mail, thank-the-organizers, per-session Q&A) plus attendee event history (7.6) and the curated thank-you marquee (7.7)
 - **[Epic 8: Partner Coordination](./prd/epic-8-partner-coordination.md)** - ✅ **COMPLETE** (2026-02-22) - Attendance dashboard (table + Excel export), topic suggestions & voting (simple toggle), partner meeting coordination with ICS calendar invites, partner notes
-- **[Epic 9: Speaker Authentication](./prd/epic-9-speaker-authentication.md)** - 📦 **SUPERSEDED** by Epic 11
+- **[Epic 9: Speaker Authentication](archive/prd/epic-9-speaker-authentication.md)** - 📦 **SUPERSEDED** by Epic 11
 - **[Epic 10: Additional Stories](archive/prd/epic-10-additional-stories.md)** - ✅ **COMPLETE** - Administration, email templates, newsletter, presenter, capacity + waitlist, photos, Turnstile, additional emails, alias forwarding (10.6/10.13/10.15 cancelled, 10.24/10.25 deferred)
 - **[Epic 11: Unified Speaker Workflow Refactor](./prd/epic-11-speaker-workflow-refactor.md)** - ✅ **COMPLETE** - 8-state speaker workflow per ADR-009, Cognito speaker auth, magic links removed
-- **[Epic 12: Federated Identity / Google SSO](./plans/sso-oidc-federation.md)** - ✅ **LIVE** 2026-06-04 - ADR-010; no PRD file, the plan is the source
+- **[Epic 12: Federated Identity / Google SSO](archive/plans/sso-oidc-federation.md)** - ✅ **LIVE** 2026-06-04 - ADR-010; no PRD file, the plan is the source
 - **[Epic 13: Spring Boot 4 Migration](./plans/spring-boot-4-migration.md)** - 🔄 SB 4.0.9 live (#797, patch 2026-11-05); 13.4, 13.5 open; no PRD file, the plan is the source
 - **[Epic 14: Event Detail Page — Lifecycle-Aware Redesign](archive/prd/epic-14-event-detail-redesign.md)** - ✅ **COMPLETE** (#788)
 - **[Epic 15: Post-Event #2 Hardening](archive/prd/epic-15-post-event-2-hardening.md)** - 🔄 **IN PROGRESS**
@@ -464,7 +464,7 @@ Each epic document contains:
 - ✅ Company relationships established in Company Management Service
 - ✅ Data integrity validation 100% pass rate
 - ✅ Search indexes built for content discovery
-- 📅 Production data import scheduled (pending user trigger)
+- ✅ Historical data imported into production (Epic 3 closed by owner 2026-11-15)
 
 **Epic 4 Success (Public Website - Week 26)** - ✅ **ACHIEVED**
 - ✅ Public event landing page live with current/upcoming events
@@ -551,4 +551,3 @@ Open work as of 2026-11-04 (source: `_bmad-output/implementation-artifacts/sprin
 3. **Epic 15**: 15.1 P2 (watch off WebSockets) and P3 (WebSocket teardown), 15.4, 15.8
 4. **Epic 16**: 16.8c (after one release, owner go), 16.12, 16.13
 5. **Epic 12**: Story 12.10 (Apple/generic OIDC) after deferred-work cluster A
-6. **Epic 3**: production data import

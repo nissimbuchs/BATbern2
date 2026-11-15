@@ -17,7 +17,7 @@ Reality has diverged from that scaffold:
   (dashboard, feature flags, community topics) are served by EMS / partner-coordination.
 - **EMS** and **CUMS** (company-user-management) carry essentially all backend logic; EMS is
   large enough that it is being internally modularized rather than split further
-  (see `docs/plans/ems-modularization-extension-points.md`, whose explicit anti-goal is
+  (see `docs/archive/plans/ems-modularization-extension-points.md`, whose explicit anti-goal is
   "do not split into more microservices").
 - The corresponding OpenAPI specs `docs/api/speakers-api.openapi.yml` and
   `attendees-api.openapi.yml` have their code-generation tasks **commented out** in the
@@ -67,7 +67,7 @@ dormant ones.**
 - ADR-009 (Unified Speaker Workflow — moved speaker logic into EMS, Epic 11)
 - ADR-006 (OpenAPI contract-first — generation wiring)
 - ADR-013 (REST API CRUD conventions — exempts dormant/un-wired specs)
-- `docs/plans/ems-modularization-extension-points.md` (internal modularization; anti-goal: no new microservices)
+- `docs/archive/plans/ems-modularization-extension-points.md` (internal modularization; anti-goal: no new microservices)
 - `docs/plans/api-consolidation-plan.md` (Phase 2 closed as "won't do" per this ADR)
 
 ## Decision 2026-11-07: remove both stubs and the event bus

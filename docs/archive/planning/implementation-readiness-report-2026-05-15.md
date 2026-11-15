@@ -49,7 +49,7 @@ status: complete
 ### 1.4 UX Specifications
 
 **Whole Documents:**
-- `docs/front-end-spec.md` (96,687 bytes) — global front-end spec (last modified 2026-01-02; predates Epic 11)
+- `docs/archive/planning/front-end-spec.md` (96,687 bytes) — global front-end spec (last modified 2026-01-02; predates Epic 11)
 - Epic-11 UX changes embedded directly in `docs/prd/epic-11-speaker-workflow-refactor.md` §8.9 stories 1-3 + drawer + change requests UX-DR1–UX-DR14
 - `docs/plans/speaker-workflow-refactor.md` §8 contains Kanban / drawer / brainstorm-panel UX detail
 
@@ -97,7 +97,7 @@ status: complete
 |---------|----------|--------|
 | Per-story files in `_bmad-output/implementation-artifacts/archive/11-*.md` | **EXPECTED** | Story files are authored just-in-time via `bmad-create-story` — sprint registration is the gate, not story-file existence. Track readiness at epic+story-summary level only. |
 | Dedicated UX spec for Epic 11 Kanban/drawer changes | **MEDIUM** | UX detail (UX-DR1–UX-DR14, §8.9 stories 1-3) lives inline in epic + plan. Acceptable if §8 detail is sufficient — verified in Step 4. |
-| Updated `docs/front-end-spec.md` reflecting unified workflow UX | **LOW** | front-end-spec.md is org-wide; Phase A Story 11-a-1 covers architecture-doc alignment but **does not list front-end-spec.md**. Possible doc-drift risk — flagged for Step 4. |
+| Updated `docs/archive/planning/front-end-spec.md` reflecting unified workflow UX | **LOW** | front-end-spec.md is org-wide; Phase A Story 11-a-1 covers architecture-doc alignment but **does not list front-end-spec.md**. Possible doc-drift risk — flagged for Step 4. |
 
 ### 2.3 Branch Context
 - Active branch: `feature/speaker-workflow-refactor` (this branch)
@@ -213,7 +213,7 @@ Total: **10 NFRs**.
 | G3 | **NFR9** (Cognito password policy) — story 11.E.1 includes AC "if policy adjustment is required, it is made in CDK." No deterministic check; relies on dev observation. | LOW | Acceptable — generator is the spec, policy follows. |
 | G4 | **AR42 cherry-pick** depends on commit `d5cf0fcc` of `feature/epic-6` branch — **branch + commit availability not verified yet** in any AC. | MEDIUM | Verify in Step 3 (Architecture). If branch is GC'd, the cherry-pick AC becomes blocking. |
 | G5 | **AR41 cherry-pick** depends on commits `73d94688` + `396a9045` of `feature/speaker-account-creation` — same risk as G4. | MEDIUM | Verify in Step 3. |
-| G6 | **`docs/front-end-spec.md`** (Jan 2026, 96 KB) is the org-wide UX spec. Phase A doc-update list does NOT include it. Speaker-workflow UX changes (kanban redesign, drawer, brainstorm) may render parts of it stale. | LOW-MEDIUM | Verify in Step 4 (UX). |
+| G6 | **`docs/archive/planning/front-end-spec.md`** (Jan 2026, 96 KB) is the org-wide UX spec. Phase A doc-update list does NOT include it. Speaker-workflow UX changes (kanban redesign, drawer, brainstorm) may render parts of it stale. | LOW-MEDIUM | Verify in Step 4 (UX). |
 | G7 | **Phase F dependency** ("Phase E stable in prod for ≥1 week") is a process gate, not a code AC. Sprint-status comment captures it; PRD acceptance criterion phrases it informally ("team agrees"). | LOW | Acceptable; explicit by design. |
 | G8 | **DECLINED → DECLINED idempotency / re-decline** behavior not explicit in FR6 or Story 11.B.2 AC. What if an organizer re-declines a speaker already in DECLINED? | LOW | Edge case to confirm in Step 5 (Edge case analysis). |
 
@@ -354,8 +354,8 @@ Spot-check verification — every AR mapped against story coverage:
 
 | # | Issue | Severity | Recommendation |
 |---|-------|----------|----------------|
-| U1 | `docs/front-end-spec.md` lines **286, 296** still describe **magic-link** invitation flow. Phase A Story 11.A.1 does **NOT** update this file. | **MEDIUM** | **Add `docs/front-end-spec.md` to Story 11.A.1 AC**, or create a separate cleanup story. The new Cognito-based flow contradicts these lines. |
-| U2 | `docs/front-end-spec.md` describes the **org-wide event-pipeline kanban** at line 649 — but does NOT describe the new **speaker-coordination kanban** with 8-state columns + primary-action buttons. The new organizer UX (UX-DR1-14) has zero coverage in the org-wide UX spec. | **LOW** | Optional: extend Story 11.A.1 to update §4.3 or add §4.3.5 "Speaker Coordination Kanban" in front-end-spec.md. Alternative: accept that Epic 11 PRD §8 + UX-DRs are the authoritative source, and treat front-end-spec.md as legacy/aspirational. |
+| U1 | `docs/archive/planning/front-end-spec.md` lines **286, 296** still describe **magic-link** invitation flow. Phase A Story 11.A.1 does **NOT** update this file. | **MEDIUM** | **Add `docs/archive/planning/front-end-spec.md` to Story 11.A.1 AC**, or create a separate cleanup story. The new Cognito-based flow contradicts these lines. |
+| U2 | `docs/archive/planning/front-end-spec.md` describes the **org-wide event-pipeline kanban** at line 649 — but does NOT describe the new **speaker-coordination kanban** with 8-state columns + primary-action buttons. The new organizer UX (UX-DR1-14) has zero coverage in the org-wide UX spec. | **LOW** | Optional: extend Story 11.A.1 to update §4.3 or add §4.3.5 "Speaker Coordination Kanban" in front-end-spec.md. Alternative: accept that Epic 11 PRD §8 + UX-DRs are the authoritative source, and treat front-end-spec.md as legacy/aspirational. |
 | U3 | `docs/wireframes/sitemap.md` shows **Epic 6 as "DEFERRED to Phase 2+"** — but Epic 6 is actually 100% COMPLETE (per CLAUDE.md). This is org-wide doc staleness, not Epic 11's fault, but the speaker-portal sitemap entries it lists need a refresh after this refactor. | **LOW** | Out of scope for Epic 11. File a separate doc-cleanup story. |
 | U4 | **No accessibility AC** for new kanban UI changes. Epic 6 carried WCAG 2.1 AA (per CLAUDE.md). UX-DR1–UX-DR14 do not mention WCAG, focus order, screen-reader labels for `⋯` menu, halo affordance, or colour-coded chips (UX-DR7). | **LOW-MEDIUM** | Recommended: add a cross-cutting AC to Story 11.D.2 (card + button) — primary-action button has `aria-label`, time-in-state chip colour-coding has non-colour secondary signal (e.g. icon), tooltip is keyboard-reachable. |
 | U5 | **Drag-drop validation tooltip semantics** — UX-DR9 specifies a toast; for accessibility this should also be announced via `aria-live` region. Not explicit in story AC. | **LOW** | Folded into U4. |
@@ -376,7 +376,7 @@ Spot-check verification — every AR mapped against story coverage:
 - All 23 UX-DRs are mapped to stories with verifiable AC.
 - All UX flows have a corresponding architecture path.
 - 6 alignment issues (U1–U6), 3 warnings (W1–W3) — all LOW–MEDIUM severity.
-- **Single MEDIUM blocker recommendation:** add `docs/front-end-spec.md` lines 286+296 magic-link cleanup to Story 11.A.1 scope (U1).
+- **Single MEDIUM blocker recommendation:** add `docs/archive/planning/front-end-spec.md` lines 286+296 magic-link cleanup to Story 11.A.1 scope (U1).
 
 
 ---
@@ -578,7 +578,7 @@ The 4 🟠 MAJOR issues (M1–M4) are not blockers for Phase A starting, but sho
    Cost: 30 seconds. Eliminates the GC risk entirely.
 
 2. **Add the Story 11.A.1 doc-update missing file** — addresses **U1**:
-   - Extend Story 11.A.1 AC to include cleanup of `docs/front-end-spec.md` lines 286 + 296 (magic-link references).
+   - Extend Story 11.A.1 AC to include cleanup of `docs/archive/planning/front-end-spec.md` lines 286 + 296 (magic-link references).
 
 3. **Verify Phase A independence by starting it** — Story 11.A.1 has zero dependencies and is the lowest-risk story. Doing it first establishes momentum and validates the docs against ADR-009.
 
