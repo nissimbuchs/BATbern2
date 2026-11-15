@@ -416,7 +416,7 @@ This page tracks implementation status of all BATbern features. Use this to unde
 - ✅ Epic 14: Lifecycle-aware event page
 - 🔨 Epic 15: Post-event hardening (LinkedIn post drafts in backlog)
 - 🔨 Epic 16: Mail Center (last composer step open)
-- 📋 Epic 3: Production historical data import (pending a user trigger)
+- ✅ Epic 3: Historical data imported into production (closed 2026-11-15)
 
 ### Planned / Backlog
 

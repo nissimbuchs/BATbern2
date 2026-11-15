@@ -187,7 +187,7 @@ MVP scope: **unchanged or enhanced** — the new model gives organizers proactiv
 
 ### Proposal 1 — W4.2 (Done story): Remove Done Button + Add Auto-Advance + Extend/Delayed Buttons
 
-**Artifact:** `_bmad-output/implementation-artifacts/w4-2-session-advance-transition.md`
+**Artifact:** `_bmad-output/implementation-artifacts/archive/w4-2-session-advance-transition.md`
 
 **Section: Acceptance Criteria**
 
@@ -285,7 +285,7 @@ NEW Task 15: Client-side SESSION_DELAYED routing
 
 ### Proposal 2 — W4.3 (ready-for-dev story): Complete Rewrite
 
-**Artifact:** `_bmad-output/implementation-artifacts/w4-3-overrun-detection-schedule-cascade.md`
+**Artifact:** `_bmad-output/implementation-artifacts/archive/w4-3-overrun-detection-schedule-cascade.md`
 
 **New Story Title:** W4.3: Extend & Delayed Session Controls
 
@@ -307,7 +307,7 @@ See Proposal 1 AC6 and AC7 above (these formally live in W4.2 but the backend wo
 
 ### Proposal 3 — W3.3 (done story): Complication Context-Awareness
 
-**Artifact:** `_bmad-output/implementation-artifacts/w3-3-watch-face-complications.md` (if it exists)
+**Artifact:** `_bmad-output/implementation-artifacts/archive/w3-3-watch-face-complications.md` (if it exists)
 
 **Section: Additional ACs to add**
 
@@ -353,7 +353,7 @@ Then only the BATbern logo is shown.
 
 ### Proposal 4 — W1.1 (done story): No-Event / TBD Event Handling
 
-**Artifact:** `_bmad-output/implementation-artifacts/w1-1-xcode-project-setup-event-hero-screen.md` (if it exists)
+**Artifact:** `_bmad-output/implementation-artifacts/archive/w1-1-xcode-project-setup-event-hero-screen.md` (if it exists)
 
 **Section: AC changes**
 
