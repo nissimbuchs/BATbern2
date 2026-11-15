@@ -11,7 +11,7 @@ import java.time.Instant;
  *
  * <p>Closes BOTH the "registered" and "waitlist" paths — the deadline is checked before the
  * capacity branching, so a full event past its deadline returns this rather than a waitlist
- * placement. Mapped to HTTP 409 Conflict by {@code GlobalExceptionHandler} with
+ * placement. Mapped to HTTP 409 Conflict by {@code RegistrationExceptionHandler} with
  * {@code details.code = "REGISTRATION_CLOSED"} and {@code details.deadline}, so the public page can
  * show a "registration closed on {date}" state. Distinct from the capacity 409
  * ({@code capacity_exceeded}). The organizer add-participant path ({@code addParticipant}) is

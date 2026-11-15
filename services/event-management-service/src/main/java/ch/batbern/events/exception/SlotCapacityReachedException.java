@@ -14,7 +14,7 @@ import java.util.UUID;
  * (per-event agenda override, else the event-type template) — see
  * ADR-009 §0.7 (slot-capacity gate replaces removed {@code OVERFLOW} state).
  *
- * <p>Mapped to HTTP 409 Conflict by {@code GlobalExceptionHandler}: the request is well-formed,
+ * <p>Mapped to HTTP 409 Conflict by {@code SpeakerExceptionHandler}: the request is well-formed,
  * but the world isn't ready for it.
  */
 @Getter

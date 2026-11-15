@@ -10,7 +10,7 @@ import org.springframework.http.HttpStatus;
  * {@code POST /api/v1/events/{eventCode}/speakers/{speakerId}/promote} (Story 11.D.1).
  *
  * <p>Mapped to HTTP 400 Bad Request with code
- * {@code READY_REQUIRES_PROMOTE_ENDPOINT} by {@code GlobalExceptionHandler}: the request
+ * {@code READY_REQUIRES_PROMOTE_ENDPOINT} by {@code SpeakerExceptionHandler}: the request
  * is syntactically valid (Jackson accepts {@code READY} as a SpeakerWorkflowState enum
  * value) but the {@code PUT /status} endpoint has no field to carry the email payload
  * that READY needs.

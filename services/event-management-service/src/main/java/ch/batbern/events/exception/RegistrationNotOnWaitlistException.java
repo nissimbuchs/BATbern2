@@ -5,7 +5,7 @@ import org.springframework.http.HttpStatus;
 
 /**
  * Story 10.11: Thrown when attempting to promote a registration that is not on the waitlist.
- * Maps to HTTP 409 via GlobalExceptionHandler (IllegalStateException → 409).
+ * Maps to HTTP 409 through its {@link DomainException} base.
  */
 public class RegistrationNotOnWaitlistException extends DomainException {
 

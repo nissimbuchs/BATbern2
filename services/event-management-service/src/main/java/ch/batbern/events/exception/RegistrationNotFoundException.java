@@ -5,7 +5,7 @@ import org.springframework.http.HttpStatus;
 
 /**
  * Story 10.11: Thrown when a registration cannot be found by registration code.
- * Maps to HTTP 404 via GlobalExceptionHandler (NotFoundException → 404).
+ * Maps to HTTP 404 through its {@link DomainException} base.
  */
 public class RegistrationNotFoundException extends DomainException {
 

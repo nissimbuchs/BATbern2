@@ -10,7 +10,7 @@ import lombok.Getter;
  * Thrown by {@code SpeakerStatusController.promoteSpeakerToReady} when {@code /promote}
  * is called on a speaker whose current state is neither {@code CONTACTED} nor {@code READY}.
  *
- * <p>Mapped to HTTP 409 Conflict by {@code GlobalExceptionHandler} with body
+ * <p>Mapped to HTTP 409 Conflict by {@code SpeakerExceptionHandler} with body
  * {@code details.code = "INVALID_PROMOTION_STATE"} and
  * {@code details.currentState = <state>} so the frontend can render a tailored message.
  *
