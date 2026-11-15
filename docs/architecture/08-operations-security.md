@@ -92,7 +92,9 @@ sends for an event, so they fall under the same rules as registration data:
   `mail-attachments/` (owner decision 2026-11-01, cap 2026-11-02); larger ones by name only. They are
   deleted with their conversation by the nightly retention job; a 400-day S3 lifecycle rule on the
   prefix is the backstop. The bucket's 7-day rule now applies to `emails/` and `forwarding/` (the
-  only prefixes SES writes). EMS may put and delete only under `mail-attachments/`. Organizers
+  only prefixes SES writes). EMS may put and delete only under `mail-attachments/`; the grant is wired
+  in `bin/batbern-infrastructure.ts` beside its read grant and checked on the synthesized app
+  (`ems-task-role-grants.test.ts`, which also forbids any `events:` action in EMS). Organizers
   download a file through a 5-minute presigned link (`getConversationAttachmentDownloadUrl`). HTML is sanitized at receipt (no images,
   styles or scripts), so opening a mail never loads remote content in an organizer's browser.
 - **Spam and virus scanning (Story 16.7):** the SES receipt rules `RouteReplies`,

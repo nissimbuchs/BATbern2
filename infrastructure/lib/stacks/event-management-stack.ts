@@ -287,23 +287,5 @@ export class EventManagementStack extends cdk.Stack {
         })
       );
     }
-
-    // Grant EventBridge permissions for auto-publish scheduling (Story 5.7 - BAT-11)
-    this.service.taskDefinition.taskRole.addToPrincipalPolicy(
-      new iam.PolicyStatement({
-        effect: iam.Effect.ALLOW,
-        actions: [
-          'events:PutRule',
-          'events:PutTargets',
-          'events:DeleteRule',
-          'events:RemoveTargets',
-          'events:DescribeRule',
-          'events:ListTargetsByRule',
-        ],
-        resources: [
-          `arn:aws:events:${props.config.region}:${cdk.Stack.of(this).account}:rule/batbern-auto-publish-*`,
-        ],
-      })
-    );
   }
 }

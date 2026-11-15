@@ -1,8 +1,6 @@
-import { App } from 'aws-cdk-lib';
+import { App, Stack } from 'aws-cdk-lib';
 import { Template, Match } from 'aws-cdk-lib/assertions';
 import * as sns from 'aws-cdk-lib/aws-sns';
-import * as iam from 'aws-cdk-lib/aws-iam';
-import { Stack } from 'aws-cdk-lib';
 import { InboundEmailStack } from '../../lib/stacks/inbound-email-stack';
 import { stagingConfig } from '../../lib/config/staging-config';
 
@@ -108,28 +106,6 @@ describe('InboundEmailStack', () => {
         ]),
       },
     });
-  });
-
-  test('should_grantEmsWriteAndDelete_onAttachmentPrefixOnly', () => {
-    const roleApp = new App();
-    const env = { account: '123456789012', region: 'eu-west-1' };
-    const roleStack = new Stack(roleApp, 'RoleStack', { env });
-    const role = new iam.Role(roleStack, 'EmsRole', {
-      assumedBy: new iam.ServicePrincipal('ecs-tasks.amazonaws.com'),
-    });
-    const withRole = new InboundEmailStack(roleApp, 'InboundWithRole', {
-      config: stagingConfig,
-      env,
-      emsTaskRole: role,
-    });
-    // The grant lands on the role's own stack.
-    const statements = JSON.stringify([
-      Template.fromStack(roleStack).findResources('AWS::IAM::Policy'),
-      Template.fromStack(withRole).findResources('AWS::IAM::Policy'),
-    ]);
-    expect(statements).toContain('mail-attachments/*');
-    expect(statements).toContain('s3:PutObject');
-    expect(statements).toContain('s3:DeleteObject');
   });
 
   // AC1: SQS queue exists (standard, not FIFO)

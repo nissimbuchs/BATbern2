@@ -52,6 +52,12 @@
 # public for AWS load balancer checks; show-details=when-authorized prevents info leak
 40042	IGNORE	.*
 
+# Full Path Disclosure: the `path` field of our JSON error body echoes the request path, and
+# ZAP reads its `/users/` segment as a home directory (report evidence: `/users/`). No file path is
+# returned (#1178, #1276). OUTOFSCOPE drops only the /users/ hits, so a real disclosure elsewhere
+# still reports (an IGNORE line would ignore the rule on every URL).
+110009	OUTOFSCOPE	.*/users/.*
+
 # ─── SECURITY HEADERS — already set, not visible to ZAP scanner ──────────────
 #
 # All headers below are correctly set in production:
