@@ -4,6 +4,7 @@ import com.tngtech.archunit.base.DescribedPredicate;
 import com.tngtech.archunit.core.domain.JavaAnnotation;
 import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.domain.JavaMethod;
+import com.tngtech.archunit.core.domain.JavaModifier;
 import com.tngtech.archunit.lang.ArchCondition;
 import com.tngtech.archunit.lang.ArchRule;
 import com.tngtech.archunit.lang.ConditionEvents;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseStatus;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -126,32 +128,51 @@ final class EmsModuleRules {
                 .allowEmptyShould(true);
     }
 
-    /** The platform exception base: the only EMS classes {@code GlobalExceptionHandler} may use (17.14). */
+    /** The platform exception base, in {@code <root>.exception} (Story 17.14). */
     static final List<String> EXCEPTION_BASE = List.of("DomainException", "DomainErrorResponse");
 
     /**
-     * Story 17.14: {@code GlobalExceptionHandler} (platform, L0) maps EMS domain exceptions only through
-     * their base {@code DomainException}; it uses no EMS class but {@link #EXCEPTION_BASE}. A module's
-     * exception is mapped by the base or, with extra fields, in the module's own advice. Not frozen:
-     * there is no violation. The rule fails when no {@code GlobalExceptionHandler} is found.
+     * Story 17.14: {@code <root>.exception.GlobalExceptionHandler} (platform, L0) maps EMS domain
+     * exceptions only through their base; it uses no EMS class but {@code <root>.exception.DomainException}
+     * and {@code <root>.exception.DomainErrorResponse} (by fully qualified name) and its own nested
+     * classes. A module's exception is mapped by the base or, with extra fields, in the module's own
+     * advice. Not frozen: there is no violation. The rule fails when the handler is not found.
      */
     static ArchRule globalExceptionHandlerUsesOnlyExceptionBase(String root) {
+        String handler = root + ".exception.GlobalExceptionHandler";
+        List<String> allowed = EXCEPTION_BASE.stream().map(n -> root + ".exception." + n).toList();
         DescribedPredicate<JavaClass> otherEmsClass = new DescribedPredicate<>(
-                "reside under " + root + " and are not " + EXCEPTION_BASE) {
+                "reside under " + root + " and are not " + allowed + " or the handler's nested classes") {
             @Override
             public boolean test(JavaClass type) {
-                String pkg = type.getPackageName();
-                boolean underRoot = pkg.equals(root) || pkg.startsWith(root + ".");
-                boolean handlerItself = type.getName().contains("GlobalExceptionHandler");
-                return underRoot && !handlerItself && !EXCEPTION_BASE.contains(type.getSimpleName());
+                String name = type.getName();
+                boolean underRoot = name.startsWith(root + ".");
+                boolean handlerItself = name.equals(handler) || name.startsWith(handler + "$");
+                return underRoot && !handlerItself && !allowed.contains(name);
             }
         };
-        return noClasses().that().resideInAPackage(root + "..")
-                .and().haveSimpleName("GlobalExceptionHandler")
+        return noClasses().that().haveFullyQualifiedName(handler)
                 .should().dependOnClassesThat(otherEmsClass)
                 .as("Exception mapping: GlobalExceptionHandler uses no EMS class but " + EXCEPTION_BASE
                         + "; domain exceptions are mapped through DomainException or in their module's advice"
                         + " (Story 17.14)");
+    }
+
+    /**
+     * Story 17.14: every concrete exception in {@code <root>.exception} extends
+     * {@code <root>.exception.DomainException}, which carries its status, and none carries
+     * {@code @ResponseStatus}: a status declared any other way would bypass the base mapping. Not frozen:
+     * there is no violation.
+     */
+    static ArchRule exceptionsExtendDomainException(String root) {
+        String base = root + ".exception.DomainException";
+        return classes().that().resideInAPackage(root + ".exception")
+                .and().areAssignableTo(Throwable.class)
+                .and().doNotHaveModifier(JavaModifier.ABSTRACT)
+                .should().beAssignableTo(base)
+                .andShould().notBeAnnotatedWith(ResponseStatus.class)
+                .as("Exception mapping: every exception in exception/ extends DomainException and has no"
+                        + " @ResponseStatus (Story 17.14)");
     }
 
     /** Path segments of the registrations module's endpoints (Story 17.13). */

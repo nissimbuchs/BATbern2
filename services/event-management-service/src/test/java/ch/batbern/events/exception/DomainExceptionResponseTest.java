@@ -38,10 +38,13 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
  *
  * <p>Each row throws one exception from a probe controller through the real {@code DispatcherServlet}
  * resolver chain, with every {@code @ControllerAdvice} of {@code ch.batbern.events} found on the
- * classpath (a new module advice joins without an edit here). It asserts the status and the body
- * exactly: the set of top-level fields, {@code error}, {@code message}, {@code severity}, {@code path}
- * and {@code details}. A guard fails when an exception class of the package has fewer rows than
- * public constructors, so a new exception cannot go unpinned.
+ * classpath (a new module advice joins without an edit here; a scanned advice needs a no-argument
+ * constructor). It asserts the status and the body exactly: the set of top-level fields, {@code error},
+ * {@code message}, {@code severity}, {@code path} and {@code details}.
+ *
+ * <p>The guard counts rows, not constructors: every concrete exception class of the package needs at
+ * least one row, and at least as many rows as it has public constructors. It does not check that each
+ * row uses a different constructor; the rows here do.
  */
 @DisplayName("Domain exception responses")
 class DomainExceptionResponseTest {
@@ -256,20 +259,21 @@ class DomainExceptionResponseTest {
     }
 
     @Test
-    @DisplayName("should_pinEveryConstructor_when_exceptionClassIsInPackage")
-    void should_pinEveryConstructor_when_exceptionClassIsInPackage() {
+    @DisplayName("should_haveRows_when_exceptionClassIsInPackage")
+    void should_haveRows_when_exceptionClassIsInPackage() {
         Map<Class<?>, Long> rowsPerClass = rows().stream()
                 .collect(Collectors.groupingBy(r -> r.exception().get().getClass(), Collectors.counting()));
-        Map<Class<?>, Long> constructorsPerClass = exceptionClasses().stream()
-                .collect(Collectors.toMap(Function.identity(), c -> Arrays.stream(c.getConstructors())
-                        .filter(k -> Modifier.isPublic(k.getModifiers())).count()));
+        Map<Class<?>, Long> requiredRowsPerClass = exceptionClasses().stream()
+                .collect(Collectors.toMap(Function.identity(), c -> Math.max(1L, Arrays.stream(c.getConstructors())
+                        .filter(k -> Modifier.isPublic(k.getModifiers())).count())));
 
         // Positive control: the scan finds the package's exceptions.
-        assertThat(constructorsPerClass).containsKey(EventNotFoundException.class);
-        assertThat(constructorsPerClass).allSatisfy((type, constructors) ->
+        assertThat(requiredRowsPerClass).containsKey(EventNotFoundException.class);
+        assertThat(requiredRowsPerClass).allSatisfy((type, required) ->
                 assertThat(rowsPerClass.getOrDefault(type, 0L))
-                        .as("rows for %s (public constructors: %d)", type.getSimpleName(), constructors)
-                        .isGreaterThanOrEqualTo(constructors));
+                        .as("rows for %s (required: at least 1 and one per public constructor, %d)",
+                                type.getSimpleName(), required)
+                        .isGreaterThanOrEqualTo(required));
     }
 
     private static List<Class<?>> exceptionClasses() {

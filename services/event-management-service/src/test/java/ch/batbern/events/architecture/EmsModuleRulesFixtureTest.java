@@ -3,7 +3,10 @@ package ch.batbern.events.architecture;
 import ch.batbern.events.architecture.fixtures.client.PartnerFixtureClient;
 import ch.batbern.events.architecture.fixtures.client.UserFixtureClient;
 import ch.batbern.events.architecture.fixtures.eventcoreinherited.FixtureRegistrationsApi;
-import ch.batbern.events.architecture.fixtures.exceptionmapping.FixtureAgendaFullException;
+import ch.batbern.events.architecture.fixtures.exceptionmapping.exception.FixtureAgendaFullException;
+import ch.batbern.events.architecture.fixtures.exceptionmapping.exception.FixtureNotFoundException;
+import ch.batbern.events.architecture.fixtures.exceptionmapping.exception.FixtureStatusException;
+import ch.batbern.events.architecture.fixtures.exceptionmapping.exception.GlobalExceptionHandlerSupport;
 import ch.batbern.events.architecture.fixtures.forwarding.FixtureForwarder;
 import ch.batbern.events.architecture.fixtures.mailcenter.FixtureMailCenterService;
 import ch.batbern.events.architecture.fixtures.mailcenter.render.FixtureMailPipeline;
@@ -49,11 +52,11 @@ class EmsModuleRulesFixtureTest {
             ch.batbern.events.architecture.fixtures.eventcoreinherited.EventController.class;
     private static final Class<?> CLEAN = ch.batbern.events.architecture.fixtures.eventcoreclean.EventController.class;
 
-    /** Two fixtures named GlobalExceptionHandler (the rule goes by simple name), hence qualified. */
-    private static final Class<?> HANDLER_MAPPING_BY_HAND =
-            ch.batbern.events.architecture.fixtures.exceptionmapping.GlobalExceptionHandler.class;
-    private static final Class<?> HANDLER_CLEAN =
-            ch.batbern.events.architecture.fixtures.exceptionmappingclean.GlobalExceptionHandler.class;
+    /** The exception rules take {@code <root>.exception}: one root that breaks them, one that keeps them. */
+    private static final String MAPPING_ROOT = ROOT + ".exceptionmapping";
+    private static final String MAPPING_CLEAN_ROOT = ROOT + ".exceptionmappingclean";
+    private static final JavaClasses MAPPING = new ClassFileImporter().importPackages(MAPPING_ROOT);
+    private static final JavaClasses MAPPING_CLEAN = new ClassFileImporter().importPackages(MAPPING_CLEAN_ROOT);
 
     @Test
     @DisplayName("should_fail_when_classOutsideEdgeModuleUsesIt")
@@ -179,27 +182,49 @@ class EmsModuleRulesFixtureTest {
     @Test
     @DisplayName("should_fail_when_globalExceptionHandlerUsesDomainException")
     void should_fail_when_globalExceptionHandlerUsesDomainException() {
-        EvaluationResult result = EmsModuleRules.globalExceptionHandlerUsesOnlyExceptionBase(ROOT).evaluate(ALL);
+        EvaluationResult result = EmsModuleRules.globalExceptionHandlerUsesOnlyExceptionBase(MAPPING_ROOT)
+                .evaluate(MAPPING);
 
         assertThat(result.getFailureReport().getDetails())
-                .anyMatch(line -> line.contains(HANDLER_MAPPING_BY_HAND.getName())
-                        && line.contains(FixtureAgendaFullException.class.getName()))
-                .noneMatch(line -> line.contains(HANDLER_CLEAN.getName()))
-                // The base and the body builder are allowed: the handler's use of them is not reported.
-                .noneMatch(line -> line.contains("handleDomainException"));
+                .anyMatch(line -> line.contains(FixtureAgendaFullException.class.getName()))
+                .anyMatch(line -> line.contains(GlobalExceptionHandlerSupport.class.getName()))
+                .anyMatch(line -> line.contains(MAPPING_ROOT + ".other.DomainException"))
+                // The base, the body builder and the handler's nested class are allowed.
+                .noneMatch(line -> line.contains("handleDomainException"))
+                .noneMatch(line -> line.contains("$Nested"));
     }
 
     @Test
     @DisplayName("should_pass_when_globalExceptionHandlerUsesOnlyExceptionBase")
     void should_pass_when_globalExceptionHandlerUsesOnlyExceptionBase() {
         // Positive control: the same rule reports the handler that maps by hand.
-        assertThat(EmsModuleRules.globalExceptionHandlerUsesOnlyExceptionBase(ROOT)
-                .evaluate(new ClassFileImporter().importPackages(ROOT + ".exceptionmapping"))
-                .hasViolation()).isTrue();
+        assertThat(EmsModuleRules.globalExceptionHandlerUsesOnlyExceptionBase(MAPPING_ROOT)
+                .evaluate(MAPPING).hasViolation()).isTrue();
 
-        assertThat(EmsModuleRules.globalExceptionHandlerUsesOnlyExceptionBase(ROOT)
-                .evaluate(new ClassFileImporter().importPackages(ROOT + ".exceptionmappingclean"))
-                .hasViolation()).isFalse();
+        assertThat(EmsModuleRules.globalExceptionHandlerUsesOnlyExceptionBase(MAPPING_CLEAN_ROOT)
+                .evaluate(MAPPING_CLEAN).hasViolation()).isFalse();
+    }
+
+    @Test
+    @DisplayName("should_fail_when_exceptionDoesNotExtendDomainExceptionOrHasResponseStatus")
+    void should_fail_when_exceptionDoesNotExtendDomainExceptionOrHasResponseStatus() {
+        EvaluationResult result = EmsModuleRules.exceptionsExtendDomainException(MAPPING_ROOT).evaluate(MAPPING);
+
+        assertThat(result.getFailureReport().getDetails())
+                .anyMatch(line -> line.contains(FixtureNotFoundException.class.getName()))
+                .anyMatch(line -> line.contains(FixtureStatusException.class.getName()))
+                .noneMatch(line -> line.contains(FixtureAgendaFullException.class.getName()));
+    }
+
+    @Test
+    @DisplayName("should_pass_when_everyExceptionExtendsDomainException")
+    void should_pass_when_everyExceptionExtendsDomainException() {
+        // Positive control: the same rule reports the breaking fixtures.
+        assertThat(EmsModuleRules.exceptionsExtendDomainException(MAPPING_ROOT)
+                .evaluate(MAPPING).hasViolation()).isTrue();
+
+        assertThat(EmsModuleRules.exceptionsExtendDomainException(MAPPING_CLEAN_ROOT)
+                .evaluate(MAPPING_CLEAN).hasViolation()).isFalse();
     }
 
     @Test

@@ -1,4 +1,4 @@
-package ch.batbern.events.architecture.fixtures.exceptionmapping;
+package ch.batbern.events.architecture.fixtures.exceptionmappingclean.exception;
 
 /** Fixture of the body builder the global handler may use. */
 public final class DomainErrorResponse {
