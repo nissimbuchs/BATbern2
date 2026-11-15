@@ -8,7 +8,7 @@ As an **organizer**,
 I want **partner meeting invites and cancellations to appear in the event's "What went out" with their RSVPs, and to write a plain mail to all partners from the same composer as every other audience**,
 so that **the partner side of an event is visible to the whole team like everything else, and partners stop being the one audience that only has a hard-coded invite**.
 
-> Source: `docs/prd/epic-16-mail-center.md` → **Story 16.9** (owner request 2026-10-30) and owner decision #1163 (2026-10-31: keep the single To: line).
+> Source: `docs/archive/prd/epic-16-mail-center.md` → **Story 16.9** (owner request 2026-10-30) and owner decision #1163 (2026-10-31: keep the single To: line).
 > **Depends on 16.1a** (recorder SPI) and **16.8** (composer, adapters). Start after 16.8a and 16.8b are on `develop`.
 > **UX reference:** `docs/ux/mail-center-spec.md` → "Composer" → "Partner".
 
@@ -120,7 +120,7 @@ Flat JSON mirroring `MailContext` + `OutboundMail`: `sendGroupId`, `eventCode`, 
 
 ### References
 
-- `docs/prd/epic-16-mail-center.md` → Story 16.9
+- `docs/archive/prd/epic-16-mail-center.md` → Story 16.9
 - `_bmad-output/implementation-artifacts/16-1a-record-outbound-mail.md`, `16-8-shared-composer.md`
 - `services/partner-coordination-service/src/main/java/ch/batbern/partners/service/{PartnerMeetingService,PartnerInviteEmailService}.java`
 - `services/partner-coordination-service/src/main/java/ch/batbern/partners/controller/InternalRsvpController.java`

@@ -61,7 +61,7 @@ The public specs carry only what users call, and no service depends on a downstr
 ## References
 
 - parent — `_bmad-output/initiative-architecture-hardening/initiative-architecture-hardening.md`, section Requirements (R11, R12, R13), Constraints, Notes (Decision lines)
-- prd — `docs/prd/epic-17-architecture-hardening.md`, Rules for every story, Story order, Stories 17.6, 17.7, 17.8
+- prd — `docs/archive/prd/epic-17-architecture-hardening.md`, Rules for every story, Story order, Stories 17.6, 17.7, 17.8
 - architecture — `docs/architecture/ADR-016-service-directions-and-service-to-service-calls.md`
 - architecture — `docs/architecture/module-map.md`, sections "Services: who may call whom", "Gates"
 - spec — `docs/api/internal/` (cums, ems, pcs internal specs, 17.0b2)

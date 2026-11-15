@@ -295,7 +295,7 @@ const PresentationPage = React.lazy(() => import('./pages/PresentationPage'));
 
 ### References
 
-- Epic 10 PRD: [Source: docs/prd/epic-10-additional-stories.md#story-108a]
+- Epic 10 PRD: [Source: docs/archive/prd/epic-10-additional-stories.md#story-108a]
 - DomainRouter: [Source: api-gateway/src/main/java/ch/batbern/gateway/routing/DomainRouter.java:99]
 - API Gateway security config: [Source: api-gateway/src/.../config/SecurityConfig.java:220]
 - CUMS security config: [Source: company-user-management-service/src/.../config/SecurityConfig.java:77]

@@ -69,7 +69,7 @@ so that I get the one post-event message I'll actually open — turning 3 websit
 - Template files in `.../resources/email-templates/`; task-template seed + any guard column in `.../resources/db/migration/`; send logic in `.../service/NewsletterEmailService.java` (extend) and `.../controller/NewsletterController.java`.
 
 ### References
-- [Source: docs/prd/epic-7-attendee-experience-enhancements.md#story-73-the-slides-are-online-mail]
+- [Source: docs/archive/prd/epic-7-attendee-experience-enhancements.md#story-73-the-slides-are-online-mail]
 - [Source: services/event-management-service/.../service/EventTaskService.java] [Source: .../domain/TaskTemplate.java] [Source: .../resources/db/migration/V22__Add_task_system.sql]
 - [Source: services/event-management-service/.../service/NewsletterEmailService.java] [Source: .../controller/NewsletterController.java]
 - [Source: services/event-management-service/.../service/EmailTemplateSeedService.java] [Source: .../service/EmailTemplateService.java]

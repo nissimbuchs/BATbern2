@@ -535,7 +535,7 @@ web-frontend/src/components/organizer/Analytics/
 - [Source: services/event-management-service/.../domain/Session.java] — `eventCode`, `eventId` FK
 - [Source: services/event-management-service/.../repository/SessionUserRepository.java#findUserPortraitsByUsernames] — native SQL join to `user_profiles` pattern ("INTENTIONAL ARCHITECTURE BREAK")
 - [Source: services/event-management-service/.../domain/Topic.java] — `category` field
-- [Source: docs/prd/epic-10-additional-stories.md] — epic context
+- [Source: docs/archive/prd/epic-10-additional-stories.md] — epic context
 - [Source: _bmad-output/brainstorming/brainstorming-session-2026-02-25.md] — full design decisions
 
 ## Dev Agent Record

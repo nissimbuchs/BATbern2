@@ -10,7 +10,7 @@ As an **organizer**,
 I want **human replies to our automated mails to reach the team, and a registrant's calendar "Declined" to free their seat**,
 so that **no speaker question or newsletter reply is silently dropped, and people on the waitlist get the seats of people who already said no**.
 
-> Source: `docs/prd/epic-16-mail-center.md` → **Story 16.0**. GitHub issues **#1160** and **#1161**.
+> Source: `docs/archive/prd/epic-16-mail-center.md` → **Story 16.0**. GitHub issues **#1160** and **#1161**.
 > Stand-alone fixes, deployable before the rest of Epic 16. Three parts, **three PRs**: Part A closes #1160, Part B closes #1161, Part C closes #1162. Part A first, it is live data loss. Part C touches the same router as Part A; do it right after A.
 
 ## Acceptance Criteria
@@ -91,7 +91,7 @@ so that **no speaker question or newsletter reply is silently dropped, and peopl
 ### References
 
 - GitHub #1160, #1161 (with comments)
-- `docs/prd/epic-16-mail-center.md`
+- `docs/archive/prd/epic-16-mail-center.md`
 - `services/event-management-service/.../service/InboundEmailRouter.java`
 - `services/event-management-service/.../forwarding/EmailForwardingService.java`, `ForwardedMessageRewriter.java`, `ForwardingAlias.java`, `MailClassifier.java`, `ForwardingMetrics.java`
 - `services/event-management-service/.../service/RegistrationEmailService.java`, `DeregistrationEmailService.java`, `InboundEmailListenerService.java`

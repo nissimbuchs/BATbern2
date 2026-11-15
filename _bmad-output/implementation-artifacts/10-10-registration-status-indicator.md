@@ -308,7 +308,7 @@ const { data, isLoading, error } = useQuery({
 
 ### References
 
-- Story 10.10 spec: [Source: docs/prd/epic-10-additional-stories.md#Story-10.10]
+- Story 10.10 spec: [Source: docs/archive/prd/epic-10-additional-stories.md#Story-10.10]
 - Registration entity & service: [Source: services/event-management-service/src/main/java/ch/batbern/events/service/RegistrationService.java]
 - Registration repository: [Source: services/event-management-service/src/main/java/ch/batbern/events/repository/RegistrationRepository.java]
 - EventCard component: [Source: web-frontend/src/components/public/EventCard.tsx]

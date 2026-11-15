@@ -206,7 +206,7 @@ moves (planning, publishing, ai), follow-up reviews (item 9).
 
 ## Brief for John (Epic 17)
 
-**Done 2026-11-07:** [`docs/prd/epic-17-architecture-hardening.md`](../../prd/epic-17-architecture-hardening.md), stories in `sprint-status.yaml` as backlog. Found while writing it: 17.7 must also cover `/internal/mail-center/logo-requests*` (#1246 added a second CUMS→EMS push of the same kind).
+**Done 2026-11-07:** [`docs/archive/prd/epic-17-architecture-hardening.md`](../prd/epic-17-architecture-hardening.md), stories in `sprint-status.yaml` as backlog. Found while writing it: 17.7 must also cover `/internal/mail-center/logo-requests*` (#1246 added a second CUMS→EMS push of the same kind).
 
 Create Epic 17 "Architecture hardening" and its stories from the table above, in that order. 16.8c
 stays in Epic 16 and sits after 17.1. Read first: this file, `docs/architecture/module-map.md`,

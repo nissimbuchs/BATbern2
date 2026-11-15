@@ -988,7 +988,7 @@ Epic 6: Speaker Self-Service Portal ✅ DELIVERED 2026-02-16
 │   Stories: 6.0–6.5 (foundation, invitations, response, materials, dashboard, reminders)
 
 Epic 7: Attendee Experience Enhancements 📦 PHASE 3
-│   See: docs/prd/epic-7-attendee-experience-enhancements.md
+│   See: docs/archive/prd/epic-7-attendee-experience-enhancements.md
 │   ROI: Increased content engagement and mobile usage
 │   Decision: Re-evaluate after Phase 2 portals are stable in production
 

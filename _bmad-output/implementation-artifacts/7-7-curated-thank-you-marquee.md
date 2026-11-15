@@ -103,7 +103,7 @@ so that **the genuine gratitude attendees leave (Story 7.4) becomes visible soci
 - Frontend public (Tailwind): `src/services/featuredThanksService.ts`, `src/hooks/useFeaturedThanks/`, edits to `src/components/public/Testimonials/{TestimonialSection,TestimonialCard}.tsx`. Frontend organizer (MUI): `src/components/organizer/EventPage/EventAppreciationTab.tsx`.
 
 ### References
-- [Source: docs/prd/epic-7-attendee-experience-enhancements.md#story-74-thank-the-organizers] (FR11 appreciation wall; lines 68-69, 106, 291-345)
+- [Source: docs/archive/prd/epic-7-attendee-experience-enhancements.md#story-74-thank-the-organizers] (FR11 appreciation wall; lines 68-69, 106, 291-345)
 - [Source: _bmad-output/implementation-artifacts/7-4-thank-the-organizers.md] (predecessor — schema, controller, permitAll, organizer-only notes)
 - [Source: services/event-management-service/.../repository/SessionUserRepository.java:204-215] [Source: .../repository/QnaAuthorProjection.java] [Source: .../service/SessionQnaService.java:271-300] [Source: .../dto/QnaPostResponse.java] — enrichment pattern to clone
 - [Source: services/event-management-service/.../domain/OrganizerThanks.java] [Source: .../controller/OrganizerThanksController.java] [Source: .../dto/ThanksNoteResponse.java]

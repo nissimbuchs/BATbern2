@@ -114,7 +114,7 @@ so that **session end/extend/delay always reconcile correctly across multiple Fa
 
 ### References
 
-- [Source: docs/prd/epic-15-post-event-2-hardening.md#Story 15.1] — scope, ACs, phasing P1/P2/P3.
+- [Source: docs/archive/prd/epic-15-post-event-2-hardening.md#Story 15.1] — scope, ACs, phasing P1/P2/P3.
 - [Source: docs/specs/event-2-feedback-quick-spec.md] — item #2 (drop WebSockets, REST polling).
 - [Source: services/event-management-service/src/main/java/ch/batbern/events/watch/WatchSessionService.java] — cascade logic to reuse (END/EXTEND/DELAY).
 - [Source: services/event-management-service/src/main/java/ch/batbern/events/domain/Session.java#L104-L153] — timing fields; no `@Version`.

@@ -139,7 +139,7 @@ Remove the `[Email]` line from the JSDoc comment block.
 - CommitteeSlide uses OrganizerDisplay: [Source: web-frontend/src/pages/presentation/slides/CommitteeSlide.tsx#L14,69]
 - PresentationPage CommitteeSlide usage: [Source: web-frontend/src/pages/PresentationPage.tsx#L421]
 - Public footer contact email (unchanged): [Source: web-frontend/src/components/public/Footer/PublicFooter.tsx#L23]
-- Story spec: [Source: docs/prd/epic-10-additional-stories.md#L1364-1402]
+- Story spec: [Source: docs/archive/prd/epic-10-additional-stories.md#L1364-1402]
 
 ---
 

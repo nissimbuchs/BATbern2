@@ -362,7 +362,7 @@ web-frontend/src/services/deregistrationService.ts
 
 ### References
 
-- Story spec in PRD: [Source: docs/prd/epic-10-additional-stories.md#Story-10.12]
+- Story spec in PRD: [Source: docs/archive/prd/epic-10-additional-stories.md#Story-10.12]
 - Previous story (10.11 — Waitlist): [Source: _bmad-output/implementation-artifacts/10-11-venue-capacity-enforcement-waitlist-management.md]
 - UnsubscribePage (pattern model): [Source: web-frontend/src/pages/public/UnsubscribePage.tsx]
 - RegistrationService (createRegistration + no cancelRegistration): [Source: services/event-management-service/.../service/RegistrationService.java]

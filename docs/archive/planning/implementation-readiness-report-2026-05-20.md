@@ -36,17 +36,17 @@ Epics 1–10 are referenced only where they constrain 11.G.1.
 **Sharded:** none. (Epic 11 is single-file.)
 
 **Other epics (out of scope but listed for completeness):**
-- `docs/prd/epic-1-foundation-stories.md`
-- `docs/prd/epic-2-entity-crud-domain-services.md`
+- `docs/archive/prd/epic-1-foundation-stories.md`
+- `docs/archive/prd/epic-2-entity-crud-domain-services.md`
 - `docs/prd/epic-3-historical-data-migration.md`
 - `docs/prd/epic-4-public-website-content-discovery.md`
 - `docs/prd/epic-5-enhanced-organizer-workflows.md`
 - `docs/prd/epic-6-speaker-portal-support.md`
-- `docs/prd/epic-7-attendee-experience-enhancements.md`
+- `docs/archive/prd/epic-7-attendee-experience-enhancements.md`
 - `docs/prd/epic-8-partner-coordination.md`
 - `docs/prd/epic-9-speaker-authentication.md` (superseded by Epic 11 per ADR-009)
-- `docs/prd/epic-10-additional-stories.md`
-- `docs/prd/epic-backlog-infrastructure-enhancements.md`
+- `docs/archive/prd/epic-10-additional-stories.md`
+- `docs/archive/prd/epic-backlog-infrastructure-enhancements.md`
 
 #### B. Story File (canonical detail)
 
@@ -690,7 +690,7 @@ PM decisions captured 2026-05-20 by Nissim, all 15 issues fixed in-place. New ve
 3. **`_bmad-output/implementation-artifacts/sprint-status.yaml`**:
    - `last_updated` bumped to 2026-05-20 with a one-line summary of the readiness sweep.
    - 11.G.1 status comment fully rewritten to reflect Q1–Q4 PM resolutions, profile-page placement, the new EMS migration on `event_id`, AC13 doc updates, NFR-G1, and 13 (not 12) ACs.
-4. **`docs/implementation-readiness-report-2026-05-20.md`** (this file):
+4. **`docs/archive/planning/implementation-readiness-report-2026-05-20.md`** (this file):
    - This Step 7 appendix added so future readers see the issues + the resolutions.
 
 ### Files NOT modified (deliberate)

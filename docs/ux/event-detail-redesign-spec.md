@@ -19,7 +19,7 @@
 > now surfaces **by due date within `AGENDA_PUBLISHED`**. Event-day controls appear from
 > `AGENDA_PUBLISHED` onward. The canonical 8 states are: `CREATED → TOPIC_SELECTION →
 > SPEAKER_IDENTIFICATION → SLOT_ASSIGNMENT → AGENDA_PUBLISHED → EVENT_LIVE → EVENT_COMPLETED →
-> ARCHIVED`. See the PRD's "Grounding decisions" (`docs/prd/epic-14-event-detail-redesign.md`).
+> ARCHIVED`. See the PRD's "Grounding decisions" (`docs/archive/prd/epic-14-event-detail-redesign.md`).
 
 ---
 

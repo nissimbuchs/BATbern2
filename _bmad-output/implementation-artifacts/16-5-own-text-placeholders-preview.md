@@ -8,7 +8,7 @@ As an **organizer**,
 I want **to write my own subject and text for any audience, insert placeholders such as the speaker's name with one click, and see the result for each real recipient before sending**,
 so that **I can send a one-off message (a room change, a personal note to all speakers) without asking someone to create a template first, and without a broken `{{deadlin}}` reaching anyone**.
 
-> Source: `docs/prd/epic-16-mail-center.md` → **Story 16.5**, decision 5 (Mustache placeholders, one render path) and the 16.8 decision on the registrant one-shot guard.
+> Source: `docs/archive/prd/epic-16-mail-center.md` → **Story 16.5**, decision 5 (Mustache placeholders, one render path) and the 16.8 decision on the registrant one-shot guard.
 > **Depends on 16.8** (built inside the shared composer, once, not per audience) and, for the Partners chips, on 16.9. Do not start before 16.8a and 16.8b are on `develop`.
 > **UX reference:** `docs/ux/mail-center-spec.md` → "Composer" steps 1–3, 5 and 7 ("Als Vorlage speichern").
 
@@ -134,7 +134,7 @@ One PR is enough (`feature/16-5-own-text`): the migration is additive, the toggl
 
 ### References
 
-- `docs/prd/epic-16-mail-center.md` → Story 16.5, decision 5, Story 16.8 decisions
+- `docs/archive/prd/epic-16-mail-center.md` → Story 16.5, decision 5, Story 16.8 decisions
 - `_bmad-output/implementation-artifacts/16-8-shared-composer.md` (adapters, `MailRenderer`, test send, preview fields)
 - `docs/ux/mail-center-spec.md` → Composer
 - `shared-kernel/src/main/java/ch/batbern/shared/service/EmailService.java`

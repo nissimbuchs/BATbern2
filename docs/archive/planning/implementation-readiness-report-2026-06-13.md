@@ -2,7 +2,7 @@
 stepsCompleted: [step-01-document-discovery, step-02-prd-analysis, step-03-epic-coverage-validation, step-04-ux-alignment, step-05-epic-quality-review, step-06-final-assessment]
 status: complete
 filesIncluded:
-  - docs/prd/epic-14-event-detail-redesign.md
+  - docs/archive/prd/epic-14-event-detail-redesign.md
   - docs/ux/event-detail-redesign-spec.md
   - docs/ux/event-detail-redesign-prototype.html
   - docs/ux/event-detail-redesign-mobile.html
@@ -23,7 +23,7 @@ scope: "Epic 14 — Lifecycle-Aware Event-Detail Redesign"
 ## 1. Document Inventory
 
 ### PRD / Epics & Stories
-- `docs/prd/epic-14-event-detail-redesign.md` (66 KB, mod 2026-06-13) — **single source** holding requirements, epics, and stories. No sharded version; no duplicates.
+- `docs/archive/prd/epic-14-event-detail-redesign.md` (66 KB, mod 2026-06-13) — **single source** holding requirements, epics, and stories. No sharded version; no duplicates.
 
 ### UX Design
 - `docs/ux/event-detail-redesign-spec.md` — UX spec
@@ -45,7 +45,7 @@ scope: "Epic 14 — Lifecycle-Aware Event-Detail Redesign"
 
 ## 2. PRD Analysis
 
-**Source:** `docs/prd/epic-14-event-detail-redesign.md` (single whole doc; requirements explicitly enumerated by the PRD author). The PRD reconciles the UX spec's "9-state" assumption to the shipped **8-state** event workflow (no `AGENDA_FINALIZED`; removed in V82) and imposes a **beta-first / dual-serve, frontend-only, additive-backend** delivery constraint.
+**Source:** `docs/archive/prd/epic-14-event-detail-redesign.md` (single whole doc; requirements explicitly enumerated by the PRD author). The PRD reconciles the UX spec's "9-state" assumption to the shipped **8-state** event workflow (no `AGENDA_FINALIZED`; removed in V82) and imposes a **beta-first / dual-serve, frontend-only, additive-backend** delivery constraint.
 
 ### Functional Requirements (47)
 

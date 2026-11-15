@@ -241,7 +241,7 @@ All 20 living feature ideas published as GitHub issues in `nissimbuchs/BATbern2`
 ## Implementation Status — Epic 7 (2026-06-13)
 
 The five highest-voted ideas were built as **Epic 7 — Attendee Experience** and merged to develop.
-Their idea-vote issues are closed (see `docs/prd/epic-7-attendee-experience-enhancements.md` and the
+Their idea-vote issues are closed (see `docs/archive/prd/epic-7-attendee-experience-enhancements.md` and the
 `_bmad-output/implementation-artifacts/7-*.md` story files):
 
 | Idea | Issue | Votes | Story | Feature |

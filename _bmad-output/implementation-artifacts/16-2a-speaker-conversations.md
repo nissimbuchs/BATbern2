@@ -8,7 +8,7 @@ As an **organizer**,
 I want **every human mail a speaker writes to the event's moderator alias, or in reply to a speaker mail, to land in the event's "Needs an answer" list with a status and an assignee**,
 so that **the whole team sees what speakers asked and who is answering, instead of the question sitting in one private inbox**.
 
-> Source: `docs/prd/epic-16-mail-center.md` → **Story 16.2**, split by the owner's sequence ("Decisions taken 2026-10-30" #3: "16.2 + 16.6 for speakers only", then "16.2 for all aliases"). **16.2a** = speakers, **16.2b** = every other alias, no-event mail and registrant replies (`16-2b-all-alias-conversations.md`).
+> Source: `docs/archive/prd/epic-16-mail-center.md` → **Story 16.2**, split by the owner's sequence ("Decisions taken 2026-10-30" #3: "16.2 + 16.6 for speakers only", then "16.2 for all aliases"). **16.2a** = speakers, **16.2b** = every other alias, no-event mail and registrant replies (`16-2b-all-alias-conversations.md`).
 > Depends on 16.0 Part A (moderator Reply-To), 16.1a (`mail_message`), 16.1b (delivery listener), 16.3 (mail page). Followed by **16.6** (answer from the mail center), which builds on the conversation model introduced here.
 > Alias forwarding to private inboxes stays ON (owner decision 2). Nothing in this story changes who receives a forwarded copy.
 > **UX reference:** `docs/ux/mail-center-spec.md` (section 1 "Braucht eine Antwort"), `docs/ux/mail-center-prototype.html` (rows with "Ich übernehme", done items greyed), `docs/ux/mail-center-layouts.html` variant A (inline expand), `docs/ux/mail-center-mobile.html` (full-screen dialog).
@@ -165,7 +165,7 @@ so that **the whole team sees what speakers asked and who is answering, instead 
 
 ### References
 
-- `docs/prd/epic-16-mail-center.md` (Story 16.2, decisions 1–5, constraints)
+- `docs/archive/prd/epic-16-mail-center.md` (Story 16.2, decisions 1–5, constraints)
 - `docs/ux/mail-center-spec.md`, `mail-center-prototype.html`, `mail-center-layouts.html`, `mail-center-mobile.html`
 - `services/event-management-service/src/main/java/ch/batbern/events/forwarding/{EmailForwardingService,EmailForwardingListener,ForwardingAlias,MailClassifier,ForwardingDirectory,ForwardedMessageRewriter}.java`
 - `services/event-management-service/src/main/java/ch/batbern/events/service/{InboundEmailListenerService,InboundEmailRouter,CalendarDeclineService,CalendarInviteUid}.java`

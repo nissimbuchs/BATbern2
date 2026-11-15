@@ -10,7 +10,7 @@ As a **logged-in attendee**,
 I want to suggest a future event topic,
 so that the ~200 practitioners in the room become a sensing network for what BATbern should cover next — and an organizer can reply to ask me *why*.
 
-**Source:** Brainstorming 2026-06-06 idea #05 (GitHub #750, 4 votes). Epic: `docs/prd/epic-7-attendee-experience-enhancements.md` (FR1–FR4). Session thesis #10/#25: gate participation, not consumption — the login exists so a suggestion can become a dialogue.
+**Source:** Brainstorming 2026-06-06 idea #05 (GitHub #750, 4 votes). Epic: `docs/archive/prd/epic-7-attendee-experience-enhancements.md` (FR1–FR4). Session thesis #10/#25: gate participation, not consumption — the login exists so a suggestion can become a dialogue.
 
 ## Acceptance Criteria
 
@@ -77,7 +77,7 @@ so that the ~200 practitioners in the room become a sensing network for what BAT
 - Frontend: components under `src/components/{role}/`, services under `src/services/`, generated types under `src/types/generated/` (committed).
 
 ### References
-- [Source: docs/prd/epic-7-attendee-experience-enhancements.md#story-71-topics-from-the-floor]
+- [Source: docs/archive/prd/epic-7-attendee-experience-enhancements.md#story-71-topics-from-the-floor]
 - [Source: services/partner-coordination-service/.../service/TopicService.java#suggestTopic]
 - [Source: services/partner-coordination-service/.../controller/TopicController.java]
 - [Source: docs/api/partner-topics-api.openapi.yml]

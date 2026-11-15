@@ -5,7 +5,7 @@ created: '2026-06-14'
 status: 'done'
 baseline_commit: '149cc5b9'
 context:
-  - '{project-root}/docs/prd/epic-14-event-detail-redesign.md'
+  - '{project-root}/docs/archive/prd/epic-14-event-detail-redesign.md'
   - '{project-root}/docs/ux/event-detail-redesign-spec.md'
   - '{project-root}/_bmad-output/implementation-artifacts/spec-14-a-event-detail-shell.md'
   - '{project-root}/_bmad-output/implementation-artifacts/spec-14-b-cockpit.md'
@@ -106,7 +106,7 @@ _Cross-cutting_
 - [x] Unit/integration tests (Vitest) for every AC + the I/O matrix (view-key reconciliation, drag one-step/snap-back, redirect, each repointed call site).
 
 **Acceptance Criteria:**
-- The full per-story ACs are defined in `docs/prd/epic-14-event-detail-redesign.md` §"Phase C" (stories 14.C.1–14.C.5, FR14–FR23, AR5/AR6, UX-DR5–UX-DR7) and are authoritative; this spec plans their implementation.
+- The full per-story ACs are defined in `docs/archive/prd/epic-14-event-detail-redesign.md` §"Phase C" (stories 14.C.1–14.C.5, FR14–FR23, AR5/AR6, UX-DR5–UX-DR7) and are authoritative; this spec plans their implementation.
 - **DoD (mandatory per epic, every story):** NFR1 (drag opens same confirm, no real comms in tests), NFR5 (i18n ×10), NFR7 (keyboard + SR for new surfaces), NFR8 (conventions), NFR9/AR9 (diff is `web-frontend/`-only; no backend delta).
 - Given `view=agenda`/`view=slots` deep-links, when arrived from the Cockpit, then the Agenda/Slots sub-view renders (not the kanban fallback) — closing the Phase B latent mismatch.
 - Given the `/slot-assignment` route is retired, when any in-app navigator or external bookmark targets it, then the organizer lands on Speakers · Slots in-tab (speaker context preserved where present) — verified per call site.

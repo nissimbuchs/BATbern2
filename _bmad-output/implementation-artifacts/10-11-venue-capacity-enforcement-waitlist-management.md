@@ -357,7 +357,7 @@ web-frontend/src/components/public/CapacityIndicator.tsx
 
 ### References
 
-- Story spec in PRD: [Source: docs/prd/epic-10-additional-stories.md#Story-10.11]
+- Story spec in PRD: [Source: docs/archive/prd/epic-10-additional-stories.md#Story-10.11]
 - Previous story (10.10 — Registration Status Indicator): [Source: _bmad-output/implementation-artifacts/10-10-registration-status-indicator.md]
 - Registration entity: [Source: services/event-management-service/.../domain/Registration.java]
 - Event entity: [Source: services/event-management-service/.../domain/Event.java]

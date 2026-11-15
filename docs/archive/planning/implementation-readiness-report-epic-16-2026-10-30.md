@@ -1,7 +1,7 @@
 ---
 stepsCompleted: [step-01-document-discovery, step-02-prd-analysis, step-03-epic-coverage-validation, step-04-ux-alignment, step-05-epic-quality-review, step-06-final-assessment]
 scope: Epic 16 Mail Center
-filesIncluded: [docs/prd/epic-16-mail-center.md, docs/prd-enhanced.md, _bmad-output/implementation-artifacts/16-0-stop-losing-replies-and-calendar-declines.md, _bmad-output/implementation-artifacts/16-1-record-every-outbound-mail.md, _bmad-output/implementation-artifacts/16-3-communications-tab-becomes-mail-page.md, _bmad-output/implementation-artifacts/16-4-new-mail-picker.md]
+filesIncluded: [docs/archive/prd/epic-16-mail-center.md, docs/prd-enhanced.md, _bmad-output/implementation-artifacts/16-0-stop-losing-replies-and-calendar-declines.md, _bmad-output/implementation-artifacts/16-1-record-every-outbound-mail.md, _bmad-output/implementation-artifacts/16-3-communications-tab-becomes-mail-page.md, _bmad-output/implementation-artifacts/16-4-new-mail-picker.md]
 ---
 
 # Implementation Readiness Assessment Report
@@ -14,7 +14,7 @@ filesIncluded: [docs/prd/epic-16-mail-center.md, docs/prd-enhanced.md, _bmad-out
 
 | Type | Used |
 |---|---|
-| PRD | `docs/prd/epic-16-mail-center.md` (epic-level PRD), `docs/prd-enhanced.md` (context: FR7, FR12, FR20, NFR3) |
+| PRD | `docs/archive/prd/epic-16-mail-center.md` (epic-level PRD), `docs/prd-enhanced.md` (context: FR7, FR12, FR20, NFR3) |
 | Architecture | None for Epic 16. Decisions in the epic and in story Dev Notes. Background: `docs/architecture/06-backend-architecture.md`, `02-infrastructure-deployment.md`, ADR-008, ADR-013, ADR-015 |
 | Epics & stories | Epic file above; story files `16-0`, `16-1`, `16-3`, `16-4` in `_bmad-output/implementation-artifacts/`; `sprint-status.yaml` |
 | UX | None in repo. Prototype v4 (scratchpad, real data, Tailscale only) |

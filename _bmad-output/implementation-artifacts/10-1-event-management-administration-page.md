@@ -155,7 +155,7 @@ npm test -- --run 2>&1 | tee /tmp/fe-tests.log
 
 ## References
 
-- Epic 10: `docs/prd/epic-10-additional-stories.md`
+- Epic 10: `docs/archive/prd/epic-10-additional-stories.md`
 - Story 10.2 (Email Templates): `docs/stories/archived/epic-10/10-2-email-template-management.md`
 - `docs/architecture/coding-standards.md` — TDD, service layer pattern
 - `docs/guides/service-foundation-pattern.md` — standard service structure

@@ -5,7 +5,7 @@ created: '2026-06-14'
 status: 'done'
 baseline_commit: '326417a5'
 context:
-  - '{project-root}/docs/prd/epic-14-event-detail-redesign.md'
+  - '{project-root}/docs/archive/prd/epic-14-event-detail-redesign.md'
   - '{project-root}/_bmad-output/project-context.md'
 ---
 

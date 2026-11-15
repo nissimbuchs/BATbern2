@@ -432,7 +432,7 @@ npm test -- --run 2>&1 | tee /tmp/fe-tests.log
 
 ## References
 
-- Epic 10: `docs/prd/epic-10-additional-stories.md`
+- Epic 10: `docs/archive/prd/epic-10-additional-stories.md`
 - Story 10.1 (prerequisite): `docs/stories/archived/epic-10/10-1-event-management-administration-page.md`
 - Implementation Readiness Report: `docs/implementation-readiness-report-2026-02-24.md`
 - `docs/architecture/ADR-003-meaningful-identifiers-public-apis.md`

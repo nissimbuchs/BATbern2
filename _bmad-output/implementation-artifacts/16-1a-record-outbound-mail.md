@@ -8,7 +8,7 @@ As an **organizer**,
 I want **every mail the platform sends for an event to be recorded with its exact content, recipients and delivery result**,
 so that **the team can see what went out without asking each other, and the Communications page (16.3) has something to show**.
 
-> Source: `docs/prd/epic-16-mail-center.md` → **Story 16.1a**. Split from 16.1 by the readiness check 2026-10-30: 16.1a records (no infrastructure change), **16.1b** adds delivery status from SES events (CDK + listener).
+> Source: `docs/archive/prd/epic-16-mail-center.md` → **Story 16.1a**. Split from 16.1 by the readiness check 2026-10-30: 16.1a records (no infrastructure change), **16.1b** adds delivery status from SES events (CDK + listener).
 > Record only. No UI and no public read API in this story; 16.3 adds both. Deploy 16.1a shortly before 16.3, so the page has data on day one.
 
 ## Acceptance Criteria
@@ -69,7 +69,7 @@ so that **the team can see what went out without asking each other, and the Comm
 
 ### References
 
-- `docs/prd/epic-16-mail-center.md`
+- `docs/archive/prd/epic-16-mail-center.md`
 - `docs/architecture/ADR-015-test-data-markers-and-email-send-guards.md`
 - `services/event-management-service/.../service/BounceProcessingService.java`
 - `services/event-management-service/.../scheduler/EmailForwardingLogRetentionScheduler.java`

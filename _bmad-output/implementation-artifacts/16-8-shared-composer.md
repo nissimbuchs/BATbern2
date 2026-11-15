@@ -8,7 +8,7 @@ As an **organizer**,
 I want **one composer that works the same for newsletter, registrants, speakers and venue: pick a template, see the mail exactly as each real recipient will get it, send a test to the organizer team, then send**,
 so that **I never have to guess which of six speaker reminders goes out, or what a registrant actually reads, and every send is checked the same way**.
 
-> Source: `docs/prd/epic-16-mail-center.md` → **Story 16.8** (Winston's compose review 2026-10-30) and the owner decisions recorded there and on 2026-10-31.
+> Source: `docs/archive/prd/epic-16-mail-center.md` → **Story 16.8** (Winston's compose review 2026-10-30) and the owner decisions recorded there and on 2026-10-31.
 > Depends on 16.1a (recording), 16.3 (the `/events/{code}/mails` resource), 16.4 (the "+ New mail" picker). All are on `develop` at 15a13959.
 > Followed by 16.9 (Partners adapter + partner-service recording) and 16.5 (own text, built inside this composer).
 > **UX reference:** `docs/ux/mail-center-spec.md` → "Composer" (steps 1–8), layout `docs/ux/mail-center-layouts.html` (variant A, inline) and `docs/ux/mail-center-mobile.html`. Prototype: `docs/ux/mail-center-prototype.html`. Layout reference only; build with MUI.
@@ -222,7 +222,7 @@ Keep: the subscriber endpoints, `/email-templates`, `PUT .../reminders-disabled`
 
 ### References
 
-- `docs/prd/epic-16-mail-center.md` → Story 16.8
+- `docs/archive/prd/epic-16-mail-center.md` → Story 16.8
 - `docs/ux/mail-center-spec.md`, `docs/ux/mail-center-layouts.html`, `docs/ux/mail-center-mobile.html`
 - `docs/architecture/ADR-015-test-data-markers-and-email-send-guards.md`, `ADR-008-simplified-api-gateway-routing.md`, `ADR-013-rest-api-crud-conventions.md`
 - `docs/api/event-mail-api.openapi.yml`

@@ -10,7 +10,7 @@ As a **session speaker, co-speaker, or moderator**,
 I want **to be emailed when attendees post new questions in my session's Q&A — at a cadence I control (live digest, once a day, or off)**,
 so that **I can follow and respond to audience questions without keeping the Q&A page open, while keeping control of my inbox**.
 
-> Source: `docs/prd/epic-15-post-event-2-hardening.md` → **Story 15.7 (Item #11)**.
+> Source: `docs/archive/prd/epic-15-post-event-2-hardening.md` → **Story 15.7 (Item #11)**.
 > Epic 15 = post-Event-#2 architectural hardening. Design principle (Nissim): **no backward
 > compatibility (one prod, one user) — forward solutions only.** But **staging IS production**, so
 > every part of this story must be independently deployable without endangering prod (additive
@@ -186,7 +186,7 @@ so that **I can follow and respond to audience questions without keeping the Q&A
 
 ### References
 
-- [Source: docs/prd/epic-15-post-event-2-hardening.md#Story 15.7]
+- [Source: docs/archive/prd/epic-15-post-event-2-hardening.md#Story 15.7]
 - [Source: services/event-management-service/.../service/SessionQnaService.java#addPost L150-184]
 - [Source: services/event-management-service/.../domain/SessionQnaPost.java#L40-70]
 - [Source: services/event-management-service/.../domain/SessionQnaWindow.java#L46-78; QnaWindowStatus.java; SessionQnaWindowRepository.java#L19-27]

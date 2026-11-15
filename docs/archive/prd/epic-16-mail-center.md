@@ -2,7 +2,7 @@
 
 **Author:** John (PM), with Sally (UX) and Winston (Architect) · **Date:** 2026-10-30 · **Status:** 🔄 16.0–16.11 **LIVE** (2026-10-30 to 2026-11-03: #1164, #1165, #1166, #1174, #1177, #1180, #1189, #1194) except 16.8c clean-up (gated: one release after 16.8 + owner go); 16.12, 16.13 backlog. Approved by the owner 2026-10-30, including the five decisions below
 **Source:** party-mode design session 2026-10-29/30, measured SES traffic of the last 6 months, Winston's compose review 2026-10-30.
-**UX:** [`docs/ux/mail-center-prototype.html`](../ux/mail-center-prototype.html) (anonymized, open in a browser) and [`docs/ux/mail-center-spec.md`](../ux/mail-center-spec.md). Readiness: [`docs/implementation-readiness-report-epic-16-2026-10-30.md`](../implementation-readiness-report-epic-16-2026-10-30.md).
+**UX:** [`docs/ux/mail-center-prototype.html`](../../ux/mail-center-prototype.html) (anonymized, open in a browser) and [`docs/ux/mail-center-spec.md`](../../ux/mail-center-spec.md). Readiness: [`docs/archive/planning/implementation-readiness-report-epic-16-2026-10-30.md`](../planning/implementation-readiness-report-epic-16-2026-10-30.md).
 
 ## Epic goal
 

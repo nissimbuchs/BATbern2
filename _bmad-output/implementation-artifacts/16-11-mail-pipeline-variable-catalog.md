@@ -93,7 +93,7 @@ Modified (EMS test): `controller/VenueCoordinationControllerIntegrationTest.java
 
 Shared kernel: `src/main/java/ch/batbern/shared/utils/LoggingUtils.java`, `src/test/java/ch/batbern/shared/service/EmailServiceTest.java`, `src/test/java/ch/batbern/shared/unit/utils/LoggingUtilsTest.java`.
 
-Docs: `docs/architecture/06-backend-architecture.md`, `docs/user-guide/administration/email-templates.md`, `docs/user-guide/appendix/changelog.md`, `docs/prd/epic-16-mail-center.md`, `_bmad-output/implementation-artifacts/sprint-status.yaml`.
+Docs: `docs/architecture/06-backend-architecture.md`, `docs/user-guide/administration/email-templates.md`, `docs/user-guide/appendix/changelog.md`, `docs/archive/prd/epic-16-mail-center.md`, `_bmad-output/implementation-artifacts/sprint-status.yaml`.
 
 ## Change Log
 

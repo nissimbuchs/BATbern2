@@ -10,7 +10,7 @@ As a **BATbern maintainer responsible for the platform's AI surface**,
 I want **the AI/LLM endpoints mapped to their OWASP-LLM threats with mitigation status, plus automated CI tests that prove prompt-injection containment, untrusted-output handling, and no secret/PII leakage into prompts**,
 so that **the AI features (event description, theme image, abstract analysis, organizer-editable prompts — and the upcoming LinkedIn-draft generator) cannot be turned into an exfiltration or injection vector, and any regression is caught by CI before it reaches production**.
 
-> Source: `docs/prd/epic-15-post-event-2-hardening.md` → **Story 15.9 (Item #9)**.
+> Source: `docs/archive/prd/epic-15-post-event-2-hardening.md` → **Story 15.9 (Item #9)**.
 > Epic 15 = post-Event-#2 architectural hardening. Design principle (Nissim): **no backward
 > compatibility (one prod, one user) — forward solutions only.** But **staging IS production**, so
 > every part of this story must be independently deployable without endangering prod, and **no test
@@ -197,7 +197,7 @@ needed** in CI (and must not be added — tests must not call OpenAI).
 
 ### References
 
-- [Source: docs/prd/epic-15-post-event-2-hardening.md#Story 15.9] and §"Sequencing" (15.8+15.9 paired).
+- [Source: docs/archive/prd/epic-15-post-event-2-hardening.md#Story 15.9] and §"Sequencing" (15.8+15.9 paired).
 - [Source: services/event-management-service/.../service/BatbernAiService.java#L101-265 (flows), L223-230 (applyVariables), L232-265 (chat bodies — no system msg), L277-303 (image), L305-349 (hash + logGeneration)]
 - [Source: services/event-management-service/.../service/TrendingTopicsService.java#L39-117 (static prompt, JSON parse)]
 - [Source: services/event-management-service/.../service/AiPromptService.java; controller/AiPromptController.java#L34 (ORGANIZER); domain/AiPrompt.java; resources/db/migration/V82__add_ai_prompts_table.sql (prompt_text mutable / default_text immutable)]

@@ -5,7 +5,7 @@ created: '2026-06-14'
 baseline_commit: '1348c610'
 status: 'done'
 context:
-  - '{project-root}/docs/prd/epic-14-event-detail-redesign.md'
+  - '{project-root}/docs/archive/prd/epic-14-event-detail-redesign.md'
 ---
 
 ## Intent

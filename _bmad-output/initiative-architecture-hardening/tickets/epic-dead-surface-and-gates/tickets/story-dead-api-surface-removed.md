@@ -78,7 +78,7 @@ Verify: the operation count drops by 6, each removed path answers 404 in product
 
 - parent — `_bmad-output/initiative-architecture-hardening/tickets/epic-dead-surface-and-gates/epic-dead-surface-and-gates.md`, Requirements R1
 - notes — `_bmad-output/initiative-architecture-hardening/tickets/epic-dead-surface-and-gates/tickets/notes-dead-api-surface.md` (code inventory verified 2026-11-07, architecture note draft, verification commands)
-- prd — `docs/prd/epic-17-architecture-hardening.md`, Story 17.1
+- prd — `docs/archive/prd/epic-17-architecture-hardening.md`, Story 17.1
 - plan — `docs/archive/plans/architecture-review-2026-11-actions.md`, item 1
 - architecture — `docs/architecture/ADR-014-backend-service-consolidation.md`, decision 2026-11-07
 

@@ -125,7 +125,7 @@ As a **user of any role**, I want my company affiliation to be properly managed 
 **Estimated Duration:** 2 weeks (reduced from 2.5 weeks due to partner logic removal)
 
 **References:**
-- Core functionality: `docs/prd/epic-1-foundation-stories.md` Story 1.14
+- Core functionality: `docs/archive/prd/epic-1-foundation-stories.md` Story 1.14
 - Story file: `docs/stories/1.14.company-management-service-foundation.md`
 - API consolidation: `docs/stories/1.15a.6.companies-api-consolidation.md`
 - Partner APIs moved to: `docs/stories/1.15a.2.partners-api-consolidation.md` (Epic 8)
@@ -295,7 +295,7 @@ As an **organizer**, I want to access and manage events through consolidated RES
 **Estimated Duration:** 3 weeks (includes API consolidation implementation)
 
 **References:**
-- Core functionality: `docs/prd/epic-1-foundation-stories.md` Story 1.16
+- Core functionality: `docs/archive/prd/epic-1-foundation-stories.md` Story 1.16
 - API consolidation: `docs/stories/1.15a.1.events-api-consolidation.md` (81% endpoint reduction, 90% fewer HTTP requests)
 
 **Important Scope Note:** This story focuses on CRUD with consolidated APIs. The 16-step workflow engine, topic management, and publishing automation are deferred to Epic 5 (Enhanced Organizer Workflows).
@@ -370,7 +370,7 @@ As an **organizer**, I want to manage user roles through consolidated RESTful AP
 **Actual Duration:** Implemented across Stories 2.1b (2 weeks backend) + 2.5.2 (1 week frontend) = 3 weeks total
 
 **References:**
-- Core functionality: `docs/prd/epic-1-foundation-stories.md` Story 1.20
+- Core functionality: `docs/archive/prd/epic-1-foundation-stories.md` Story 1.20
 - API consolidation: `docs/stories/1.15a.7.users-api-consolidation.md`, `docs/stories/1.15a.8.organizers-api-consolidation.md`
 
 ---
@@ -465,7 +465,7 @@ This story implements the frontend consuming all entity CRUD APIs. Wireframes ar
 
 **Estimated Duration:** 3 weeks (expanded from 2.5 weeks to include User Management screen)
 
-**Reference:** See `docs/prd/epic-1-foundation-stories.md` Story 1.17 for full details
+**Reference:** See `docs/archive/prd/epic-1-foundation-stories.md` Story 1.17 for full details
 
 **Important Scope Note:** This story focuses on basic CRUD forms only. Advanced UI features (speaker dashboard, communication hub, mobile PWA) are deferred to Epic 6 and Epic 7.
 
@@ -926,7 +926,7 @@ Story 2.8 was split into four focused stories for better manageability, clearer 
 ## Notes & References
 
 **Original Story Locations:**
-- Story 2.1-2.4 full details: `docs/prd/epic-1-foundation-stories.md` (archived sections)
+- Story 2.1-2.4 full details: `docs/archive/prd/epic-1-foundation-stories.md` (archived sections)
 - Individual story files: `docs/stories/1.14-*.md`, `docs/stories/1.16-*.md`, etc.
 - Wireframes: `docs/wireframes/story-1.14-*.md`, `docs/wireframes/story-1.16-*.md`, etc.
 

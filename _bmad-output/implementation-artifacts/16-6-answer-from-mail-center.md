@@ -8,7 +8,7 @@ As an **organizer**,
 I want **to answer a conversation from the event's mail page, with the answer and the next reply staying in that conversation**,
 so that **the team sees who answered what, and nobody has to forward mail to a private inbox any more**.
 
-> Source: `docs/prd/epic-16-mail-center.md` → **Story 16.6**. Depends on **16.2a** (conversation model, `reply_token`, threader, "Needs an answer" UI) and 16.3. Built for speaker conversations first (owner sequence #3); it works unchanged for the conversations 16.2b adds.
+> Source: `docs/archive/prd/epic-16-mail-center.md` → **Story 16.6**. Depends on **16.2a** (conversation model, `reply_token`, threader, "Needs an answer" UI) and 16.3. Built for speaker conversations first (owner sequence #3); it works unchanged for the conversations 16.2b adds.
 > Owner decision 2: alias forwarding stays ON until this story is live. The final part (AC7–AC9) replaces forwarding with a body-less notification behind a runtime switch, and is switched on **only after the owner's go**.
 
 ## Acceptance Criteria
@@ -111,7 +111,7 @@ so that **the team sees who answered what, and nobody has to forward mail to a p
 
 ### References
 
-- `docs/prd/epic-16-mail-center.md` (Story 16.6, decision 2)
+- `docs/archive/prd/epic-16-mail-center.md` (Story 16.6, decision 2)
 - `_bmad-output/implementation-artifacts/16-2a-speaker-conversations.md`
 - `shared-kernel/src/main/java/ch/batbern/shared/service/EmailService.java`, `shared-kernel/src/main/java/ch/batbern/shared/mail/MailContext.java`
 - `services/event-management-service/src/main/java/ch/batbern/events/forwarding/{EmailForwardingService,ForwardingAlias,ForwardedMessageRewriter,ForwardingRecipientResolver}.java`

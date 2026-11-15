@@ -109,8 +109,8 @@ on the two multi-stack deploy scripts (four stacks left).
   to them (`04-api-core.md`, `04-api-design.md`, `index.md`, `epic-6-speaker-onboarding-plan.md`):
   domain API narratives whose endpoints are served by EMS; the file names are domain names.
 - ADR-002, ADR-004, ADR-009, ADR-013, ADR-014 (decision record and the 2026-11-04 table): history.
-- `docs/assessment/system-quality-assessment.md`, `docs/implementation-readiness-report-*.md`,
-  `docs/qa/**`, `docs/sprint-change-proposal-2026-06-11.md`, `docs/wireframes/sitemap.md`,
+- `docs/assessment/system-quality-assessment.md`, `docs/archive/planning/implementation-readiness-report-*.md`,
+  `docs/qa/**`, `docs/archive/planning/sprint-change-proposal-2026-06-11.md`, `docs/wireframes/sitemap.md`,
   `docs/user-guide/appendix/{changelog,feature-status,glossary}.md`,
   `docs/user-guide/entity-management/speakers.md`: dated reports and changelog entries.
 - `docs/user-guide/attendee-experience/**` and the links to it: the user-guide folder for Epic 7,

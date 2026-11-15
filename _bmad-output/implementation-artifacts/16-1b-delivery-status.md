@@ -10,7 +10,7 @@ As an **organizer**,
 I want **each recorded mail to show which recipients got it and which failed, and why**,
 so that **I can fix a wrong address or call a speaker whose mail bounced, instead of assuming it arrived**.
 
-> Source: `docs/prd/epic-16-mail-center.md` → **Story 16.1b**. Split from 16.1 by the readiness check 2026-10-30. Depends on 16.1a (the `mail_recipient` table and SES Message-IDs).
+> Source: `docs/archive/prd/epic-16-mail-center.md` → **Story 16.1b**. Split from 16.1 by the readiness check 2026-10-30. Depends on 16.1a (the `mail_recipient` table and SES Message-IDs).
 > Contains an infrastructure change: a PR to `develop` deploys the CDK stack to production. Keep the PR infra-clean (see "Infra PR rules" below).
 
 ## Acceptance Criteria

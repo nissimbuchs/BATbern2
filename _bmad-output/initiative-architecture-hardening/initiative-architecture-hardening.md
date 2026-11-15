@@ -2,8 +2,8 @@
 type: initiative
 title: "BATbern architecture hardening"
 sources:
-  - docs/prd/epic-17-architecture-hardening.md
-  - docs/prd/epic-16-mail-center.md
+  - docs/archive/prd/epic-17-architecture-hardening.md
+  - docs/archive/prd/epic-16-mail-center.md
 companions:
   - docs/archive/plans/architecture-review-2026-11-actions.md
   - docs/plans/test-fidelity-proposal-2026-11.md
@@ -92,8 +92,8 @@ Developers and agents working on BATbern find one endpoint, one transport and on
 
 ## References
 
-- prd — `docs/prd/epic-17-architecture-hardening.md`, sections Decisions taken, Rules for every story, Story order, Stories
-- prd — `docs/prd/epic-16-mail-center.md`, Story 16.8 (clean-up), Decisions taken 2026-11-01 item 2, Constraints
+- prd — `docs/archive/prd/epic-17-architecture-hardening.md`, sections Decisions taken, Rules for every story, Story order, Stories
+- prd — `docs/archive/prd/epic-16-mail-center.md`, Story 16.8 (clean-up), Decisions taken 2026-11-01 item 2, Constraints
 - prd — `docs/prd-enhanced.md` (master PRD; it has no FR for this initiative; §4.2 is out, see Boundaries)
 - plan — `docs/archive/plans/architecture-review-2026-11-actions.md` (action list, measured baseline)
 - plan — `docs/plans/test-fidelity-proposal-2026-11.md` (P1 to P4, the 57-bug classification)

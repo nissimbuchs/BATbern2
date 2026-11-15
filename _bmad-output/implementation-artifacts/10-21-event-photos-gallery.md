@@ -946,7 +946,7 @@ cd web-frontend && npx eslint src/components/organizer/EventPage/EventPhotosTab.
 - TestimonialSection (to modify): [Source: web-frontend/src/components/public/Testimonials/TestimonialSection.tsx]
 - EventPage tab structure: [Source: web-frontend/src/components/organizer/EventPage/EventPage.tsx#L58-66]
 - ArchiveEventDetailPage: [Source: web-frontend/src/pages/public/ArchiveEventDetailPage.tsx]
-- Story spec: [Source: docs/prd/epic-10-additional-stories.md#L1482-1556]
+- Story spec: [Source: docs/archive/prd/epic-10-additional-stories.md#L1482-1556]
 - AbstractIntegrationTest pattern: [Source: services/event-management-service/.../controller/AiAssistControllerIntegrationTest.java]
 - CloudFrontUrlBuilder: [Source: shared-kernel/src/main/java/ch/batbern/shared/utils/CloudFrontUrlBuilder.java]
 - Flyway migration dir: [Source: services/event-management-service/src/main/resources/db/migration/] — V78 is next

@@ -637,7 +637,7 @@ This assessment identified **0 critical violations, 4 MAJOR issues, 10 minor con
 5. **Before 11.F.1** — Resolve M4 (branch-deletion audit AC).
 
 **Assessor:** PM Readiness Audit
-**Report saved to:** `docs/implementation-readiness-report-2026-05-15.md`
+**Report saved to:** `docs/archive/planning/implementation-readiness-report-2026-05-15.md`
 **Date:** 2026-05-15
 
 ---

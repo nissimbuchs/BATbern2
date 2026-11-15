@@ -149,7 +149,7 @@ Import in both `BreakSlide.tsx` and `AperoSlide.tsx`.
 - Story 10.8a (functional page): [Source: _bmad-output/implementation-artifacts/10-8a-moderator-presentation-page.md]
 - Framer Motion layout docs: https://www.framer.com/motion/layout-animations/
 - Framer Motion AnimatePresence: https://www.framer.com/motion/animate-presence/
-- Epic 10 PRD: [Source: docs/prd/epic-10-additional-stories.md#story-108b]
+- Epic 10 PRD: [Source: docs/archive/prd/epic-10-additional-stories.md#story-108b]
 
 ## Dev Agent Record
 

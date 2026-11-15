@@ -253,7 +253,7 @@ development_status:
   13-5-unpin-bom-managed-dependency-versions: ready-for-dev  # follow-up (2026-06-19): delegate SB-BOM-managed pins (postgresql override 42.7.7 → BOM 42.7.11) + codify pin policy; NO floating versions
   epic-13-retrospective: optional
 
-  # Epic 14: Event Detail Page — Lifecycle-Aware Redesign - COMPLETE (docs/prd/epic-14-event-detail-redesign.md)
+  # Epic 14: Event Detail Page — Lifecycle-Aware Redesign - COMPLETE (docs/archive/prd/epic-14-event-detail-redesign.md)
   # Shipped as one PR, #788 (merged 2026-06-15). Delivered per phase via tech specs
   # (_bmad-output/implementation-artifacts/spec-14-*.md, all status 'done'), not per-story files.
   epic-14: done
@@ -270,7 +270,7 @@ development_status:
   14-g-mobile-navigation: done
   epic-14-retrospective: optional
 
-  # Epic 15: Post-Event #2 Hardening — IN PROGRESS (docs/prd/epic-15-post-event-2-hardening.md)
+  # Epic 15: Post-Event #2 Hardening — IN PROGRESS (docs/archive/prd/epic-15-post-event-2-hardening.md)
   # Architectural/multi-layer follow-ups from the 2nd live event. Quick-wins (#1,#8b,#12-17) shipped
   # on feature/event-2-feedback-quick-wins (merged #799). 15.6/#790 already fixed (commit 80195136).
   # Each story independently prod-deployable (staging IS prod). Sequencing: 15.5→15.7→15.1→15.2→15.3→15.4→15.8+15.9.
@@ -289,7 +289,7 @@ development_status:
   15-9-owasp-llm-agentic-security-checklist: done
   epic-15-retrospective: optional
 
-  # Epic 16: Mail Center — 16.0–16.11 LIVE by 2026-11-03; 16.8c gated, 16.12/16.13 backlog (docs/prd/epic-16-mail-center.md)
+  # Epic 16: Mail Center — 16.0–16.11 LIVE by 2026-11-03; 16.8c gated, 16.12/16.13 backlog (docs/archive/prd/epic-16-mail-center.md)
   # 16.0 = #1160 + #1161 (two PRs). Start with an explicit story path: older ready-for-dev stories sort first.
   # Sequence (owner decision 3): 16.0 (A, C, B) -> 16.1a -> 16.1b -> 16.3 -> 16.4, then 16.8 -> 16.9, then 16.2 + 16.6 for speakers, then all aliases, 16.5, 16.7.
   # 16.0-16.4 live 2026-10-31 (#1164, #1165, #1166). 16.2 split 2026-11-01: 16.2a speakers, 16.2b all aliases. 16.10 = Mail tab on user + partner detail (owner request 2026-10-31).
@@ -312,7 +312,7 @@ development_status:
   16-13-one-mail-value-for-email-service: backlog
   epic-16-retrospective: optional
 
-  # Epic 17: Architecture hardening — backlog, scope decided by owner 2026-11-07, each story needs owner go (docs/prd/epic-17-architecture-hardening.md)
+  # Epic 17: Architecture hardening — backlog, scope decided by owner 2026-11-07, each story needs owner go (docs/archive/prd/epic-17-architecture-hardening.md)
   # Order: 17.0a-d (test fidelity) alongside 17.1-17.5, then 16.8c (Epic 16, after 17.1), then 17.6-17.11, 17.12 (design, Winston), 17.13-17.16
   epic-17: in-progress
   17-0a-test-rules-and-ratchet: backlog  # test-fidelity proposal P1/P3/P4; owner go 2026-11-07

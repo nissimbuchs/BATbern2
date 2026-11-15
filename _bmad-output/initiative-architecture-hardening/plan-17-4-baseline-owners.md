@@ -125,7 +125,7 @@ in `METHOD /path` (the spec file is not part of the match). Owner format checked
 `<n>.<n>[a-z]`, `#<n>`, or `exception: <reason>`; anything else is `BAD OWNER`.
 
 Also changed beyond the code map: the comment of the CI step in `.github/workflows/build.yml` (names
-the owner check). `docs/prd/epic-17-architecture-hardening.md:373` still says "Stories 17.6, 17.9,
+the owner check). `docs/archive/prd/epic-17-architecture-hardening.md:373` still says "Stories 17.6, 17.9,
 17.10 shrink the baseline"; left as is (17.4 story text, not policy).
 
 Verification run 2026-11-08: vitest `scripts/api-lint.test.ts` 33/33 pass; mutation check (exemption

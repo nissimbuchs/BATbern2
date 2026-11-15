@@ -8,7 +8,7 @@ As an **organizer**,
 I want **the event's Communications tab to show everything that went out for this event, newest first, with the exact mail and its delivery result**,
 so that **I can answer "did the speakers get the slides mail?" in one click instead of asking the team**.
 
-> Source: `docs/prd/epic-16-mail-center.md` → **Story 16.3**. Depends on 16.1a (16.1b for delivered/failed of non-newsletter mail).
+> Source: `docs/archive/prd/epic-16-mail-center.md` → **Story 16.3**. Depends on 16.1a (16.1b for delivered/failed of non-newsletter mail).
 > **Scope:** "Needs an answer" is built by 16.2 (epic updated by the readiness check). This story builds "What went out" and "Handled automatically" and leaves room for it at the top.
 > **UX reference:** `docs/ux/mail-center-prototype.html` (anonymized, Tailwind) and `docs/ux/mail-center-spec.md`. The prototype is a layout reference only: build with the organizer area's MUI components and theme.
 
@@ -48,7 +48,7 @@ so that **I can answer "did the speakers get the slides mail?" in one click inst
 
 ### References
 
-- `docs/prd/epic-16-mail-center.md` (Information architecture)
+- `docs/archive/prd/epic-16-mail-center.md` (Information architecture)
 - `web-frontend/src/components/organizer/EventPage/EventCommunicationsContainer.tsx`
 - `web-frontend/src/components/organizer/EventPage/EventNewsletterTab.tsx`
 - `docs/api/event-newsletter-api.openapi.yml`

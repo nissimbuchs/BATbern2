@@ -528,7 +528,7 @@ These are pre-decided in ADR-009 and the plan:
 - [Source: docs/architecture/ADR-009-unified-speaker-workflow.md §1 (Documentation Changes)] — the same doc-change table that grounds the AC in this story.
 - [Source: docs/plans/speaker-workflow-refactor.md §1 lines 212-228] — plan's doc-change table.
 - [Source: docs/prd/epic-11-speaker-workflow-refactor.md Story 11.A.1 lines 431-505] — original AC; this story extends with explicit line pointers.
-- [Source: docs/implementation-readiness-report-2026-05-15.md U1 + AC12] — adds `docs/front-end-spec.md` to scope (not in original 11.A.1 but recommended in readiness audit).
+- [Source: docs/archive/planning/implementation-readiness-report-2026-05-15.md U1 + AC12] — adds `docs/front-end-spec.md` to scope (not in original 11.A.1 but recommended in readiness audit).
 - [Source: docs/architecture/ADR-004-factor-user-fields-from-domain-entities.md] — referenced for User-centric design pattern; appended-to in AC8.
 - [Source: docs/architecture/ADR-003-meaningful-identifiers-public-apis.md] — referenced indirectly; speaker_pool uses `username` (meaningful ID), not UUID FK.
 - [Source: CLAUDE.md §"Doc Drift Prevention" lines ~530-540] — `[no-doc]` commit message policy for doc-only PRs.
@@ -565,7 +565,7 @@ claude-opus-4-7 (1M context)
   - `docs/user-guide/**` (~30+ hits) — documents the *currently live* magic-link behaviour, which is reverted only after Epic 11 Phase F lands. ✅ Per story Open Question #1.
   - `docs/architecture/epic-6-speaker-onboarding-plan.md` (20 hits) — Epic 6 completed-epic plan. ✅ Per story Open Question #3.
   - `docs/prd/epic-5-enhanced-organizer-workflows.md` — added a one-line "Superseded by ADR-009" banner to the Speaker Workflow section. ✅
-  - `docs/prd/epic-4-public-website-content-discovery.md` + `docs/prd/epic-10-additional-stories.md` `?token=` hits — newsletter unsubscribe / registration deregistration tokens, NOT speaker auth. Out of scope for ADR-009.
+  - `docs/prd/epic-4-public-website-content-discovery.md` + `docs/archive/prd/epic-10-additional-stories.md` `?token=` hits — newsletter unsubscribe / registration deregistration tokens, NOT speaker auth. Out of scope for ADR-009.
 
 ### Completion Notes List
 

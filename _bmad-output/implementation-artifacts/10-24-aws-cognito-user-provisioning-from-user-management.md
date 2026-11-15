@@ -568,7 +568,7 @@ web-frontend/src/types/generated/users-api.types.ts
 
 ### References
 
-- Epic 10 story definition: [Source: docs/prd/epic-10-additional-stories.md#story-1024 (line 1673)]
+- Epic 10 story definition: [Source: docs/archive/prd/epic-10-additional-stories.md#story-1024 (line 1673)]
 - UserController.java (endpoint patterns, @PreAuthorize): [Source: services/company-user-management-service/.../controller/UserController.java]
 - CognitoIntegrationServiceImpl.java (SDK client injection pattern): [Source: services/company-user-management-service/.../service/CognitoIntegrationServiceImpl.java]
 - User.java (cognitoUserId field, isAnonymous() business method): [Source: services/company-user-management-service/.../domain/User.java:74]

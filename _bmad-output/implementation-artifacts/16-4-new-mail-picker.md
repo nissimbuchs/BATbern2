@@ -8,7 +8,7 @@ As an **organizer**,
 I want **one "+ New mail" button on the Communications page that lets me pick the audience and opens the compose flow I already know**,
 so that **sending and seeing what went out live on the same page**.
 
-> Source: `docs/prd/epic-16-mail-center.md` → **Story 16.4**. Depends on 16.3. Can ship in the same PR as 16.3.
+> Source: `docs/archive/prd/epic-16-mail-center.md` → **Story 16.4**. Depends on 16.3. Can ship in the same PR as 16.3.
 
 ## Acceptance Criteria
 
@@ -40,7 +40,7 @@ so that **sending and seeing what went out live on the same page**.
 
 ### References
 
-- `docs/prd/epic-16-mail-center.md`
+- `docs/archive/prd/epic-16-mail-center.md`
 - `web-frontend/src/components/organizer/EventPage/EventCommunicationsContainer.tsx`
 - `web-frontend/src/components/organizer/EventPage/SpeakerBulkComms.tsx`
 

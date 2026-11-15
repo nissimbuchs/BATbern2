@@ -487,7 +487,7 @@ cd web-frontend && npx tsc --noEmit 2>&1 | tee /tmp/typecheck-10-20.log && grep 
 - OpenAPI spec (tags, schemas, conventions): [Source: docs/api/events-api.openapi.yml]
 - AbstractIntegrationTest: [Source: shared-kernel/src/testFixtures/.../AbstractIntegrationTest.java]
 - application.yml S3/cross-service config: [Source: services/event-management-service/src/main/resources/application.yml]
-- Story spec: [Source: docs/prd/epic-10-additional-stories.md#L1405-1479]
+- Story spec: [Source: docs/archive/prd/epic-10-additional-stories.md#L1405-1479]
 
 ---
 

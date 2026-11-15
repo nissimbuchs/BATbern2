@@ -432,7 +432,7 @@ ch.batbern.events.controller.EventTeaserImageController
 
 ### References
 
-- Epic 10 PRD story definition: [Source: docs/prd/epic-10-additional-stories.md#story-1022]
+- Epic 10 PRD story definition: [Source: docs/archive/prd/epic-10-additional-stories.md#story-1022]
 - SpeakerProfilePhotoService (presigned URL pattern): [Source: services/event-management-service/src/main/java/ch/batbern/events/service/SpeakerProfilePhotoService.java]
 - EventPhotoService (multi-image child table pattern): [Source: services/event-management-service/src/main/java/ch/batbern/events/service/EventPhotoService.java]
 - EventPhotoRepository (child table repository pattern): [Source: services/event-management-service/src/main/java/ch/batbern/events/repository/EventPhotoRepository.java]

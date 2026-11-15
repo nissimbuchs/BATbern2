@@ -35,7 +35,7 @@ Enterprise event management platform for Berner Architekten Treffen (BATbern) co
 
 ### Next Steps
 
-- **Epic 17**: architecture hardening, in the order of [`docs/prd/epic-17-architecture-hardening.md`](docs/prd/epic-17-architecture-hardening.md); test fidelity (17.0a–d) and the dead surface and gates (17.1–17.5) come first
+- **Epic 17**: architecture hardening, in the order of [`docs/archive/prd/epic-17-architecture-hardening.md`](docs/archive/prd/epic-17-architecture-hardening.md); test fidelity (17.0a–d) and the dead surface and gates (17.1–17.5) come first
 - **Pre-deploy gate**: parked until 17.1–17.5 and 17.0a–d are done, see [`docs/plans/pre-deploy-gate-plan.md`](docs/plans/pre-deploy-gate-plan.md)
 - **Epic 3: production data import** of the historical participants via the batch import modal
 

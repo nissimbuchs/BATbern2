@@ -8,7 +8,7 @@ As an **organizer running an event**,
 I want **the speaker's company logo shown next to their name on the live-control screen (and the presenter view)**,
 so that **the company is recognizable at a glance during the live session, legibly even on the dark surfaces**.
 
-> Source: `docs/prd/epic-15-post-event-2-hardening.md` → **Story 15.5 (Item #5)**. Same branch as 15.7 (`feature/epic-15-7-qna-notify`).
+> Source: `docs/archive/prd/epic-15-post-event-2-hardening.md` → **Story 15.5 (Item #5)**. Same branch as 15.7 (`feature/epic-15-7-qna-notify`).
 
 ## Acceptance Criteria
 
@@ -57,7 +57,7 @@ The epic suggested a `?w=≤512` thumbnail to dodge the resize-Lambda OOM-503. T
 - No migration. No new i18n keys (logo is an image; alt text uses the company name).
 
 ### References
-- [Source: docs/prd/epic-15-post-event-2-hardening.md#Story 15.5]
+- [Source: docs/archive/prd/epic-15-post-event-2-hardening.md#Story 15.5]
 - [Source: services/event-management-service/.../watch/WatchEventController.java#mapToSpeakerDetail L214-234, userMap L119-137]
 - [Source: services/event-management-service/.../controller/EventController.java#L368,489-491 (mirror)]
 - [Source: services/event-management-service/.../repository/SessionUserRepository.java#findUserPortraitsByUsernames; UserPortraitProjection.java]

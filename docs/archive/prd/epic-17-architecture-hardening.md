@@ -1,8 +1,8 @@
 # Epic 17 — Architecture hardening
 
 **Author:** John (PM), from Winston's architecture review · **Date:** 2026-11-07 · **Status:** ✅ closed 2026-11-15 (17.12, 17.15, 17.16 dropped by owner 2026-11-14), managed as BMAD v7 initiative `_bmad-output/initiative-architecture-hardening/` (five epics, 2026-11-07). Scope decided by the owner 2026-11-07; each story still needs the owner's go before it starts.
-**Source:** [`docs/archive/plans/architecture-review-2026-11-actions.md`](../archive/plans/architecture-review-2026-11-actions.md) (action list, owner decisions, measured baseline). Report: https://claude.ai/artifact/L4gaZoqWMDUnV7vLGcsdbh (private). Stories 17.0a–d: [`docs/plans/test-fidelity-proposal-2026-11.md`](../plans/test-fidelity-proposal-2026-11.md) (Winston, 57 production bugs since 2026-08 classified; added on owner go 2026-11-07).
-**Architecture:** [`module-map.md`](../architecture/module-map.md), [ADR-016](../architecture/ADR-016-service-directions-and-service-to-service-calls.md) (new), ADR-003 amendment 2026-11 (UUIDs in paths), ADR-002 decision 2026-11-07 (one upload contract), ADR-014 decision 2026-11-07 (stubs and bus removed), ADR-008 update.
+**Source:** [`docs/archive/plans/architecture-review-2026-11-actions.md`](../plans/architecture-review-2026-11-actions.md) (action list, owner decisions, measured baseline). Report: https://claude.ai/artifact/L4gaZoqWMDUnV7vLGcsdbh (private). Stories 17.0a–d: [`docs/plans/test-fidelity-proposal-2026-11.md`](../../plans/test-fidelity-proposal-2026-11.md) (Winston, 57 production bugs since 2026-08 classified; added on owner go 2026-11-07).
+**Architecture:** [`module-map.md`](../../architecture/module-map.md), [ADR-016](../../architecture/ADR-016-service-directions-and-service-to-service-calls.md) (new), ADR-003 amendment 2026-11 (UUIDs in paths), ADR-002 decision 2026-11-07 (one upload contract), ADR-014 decision 2026-11-07 (stubs and bus removed), ADR-008 update.
 
 ## Epic goal
 

@@ -685,7 +685,7 @@ services/partner-coordination-service/.../service/PartnerInviteEmailService.java
 
 ### References
 
-- Epic 10 story definition: [Source: docs/prd/epic-10-additional-stories.md#story-1025 (lines 1809-1924)]
+- Epic 10 story definition: [Source: docs/archive/prd/epic-10-additional-stories.md#story-1025 (lines 1809-1924)]
 - **EventTask entity (CRITICAL — correct field names):** [Source: services/event-management-service/src/main/java/ch/batbern/events/domain/EventTask.java]
 - **EventTaskRepository (add existsByTaskName):** [Source: services/event-management-service/src/main/java/ch/batbern/events/repository/EventTaskRepository.java]
 - **TaskDeadlineReminderScheduler (ShedLock + @Scheduled pattern to follow):** [Source: services/event-management-service/src/main/java/ch/batbern/events/scheduler/TaskDeadlineReminderScheduler.java]

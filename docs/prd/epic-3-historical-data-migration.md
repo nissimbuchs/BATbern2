@@ -438,7 +438,7 @@ As an **organizer**, I want to import historical event participation data from a
 ## Notes & References
 
 **Original Story Location:**
-- Full story details: `docs/prd/epic-1-foundation-stories.md` Story 1.15 (archived)
+- Full story details: `docs/archive/prd/epic-1-foundation-stories.md` Story 1.15 (archived)
 - Individual story file: `docs/stories/1.15-*.md`
 
 **Data Sources:**

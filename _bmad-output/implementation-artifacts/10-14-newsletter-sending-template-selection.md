@@ -461,7 +461,7 @@ Use MUI `Link` (already imported from `@mui/material` in the existing import blo
 
 ### References
 
-- Story spec: [Source: docs/prd/epic-10-additional-stories.md#Story-10.14]
+- Story spec: [Source: docs/archive/prd/epic-10-additional-stories.md#Story-10.14]
 - `NewsletterEmailService` (current hardcoded TEMPLATE_KEY): [Source: services/event-management-service/.../service/NewsletterEmailService.java:48]
 - `NewsletterSendRequest.java` (current fields): [Source: services/event-management-service/.../dto/NewsletterSendRequest.java]
 - `NewsletterController.java` (send + preview endpoints): [Source: services/event-management-service/.../controller/NewsletterController.java:174-205]

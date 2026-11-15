@@ -8,7 +8,7 @@ As an **organizer**,
 I want **human mail to `info@`, `events@`, `support@` and every `batbern{N}-*@` alias, and human replies to registrant and newsletter mails, to become conversations like the speakers' do**,
 so that **every question that needs a person is in one place, with or without an event, before forwarding to private inboxes is switched off**.
 
-> Source: `docs/prd/epic-16-mail-center.md` → **Story 16.2**, second half of the owner's sequence (#3 step 5: "16.2 for all aliases"), and decision 5 ("Registrant replies stay with #1160 option 1 until 16.2 covers all aliases").
+> Source: `docs/archive/prd/epic-16-mail-center.md` → **Story 16.2**, second half of the owner's sequence (#3 step 5: "16.2 for all aliases"), and decision 5 ("Registrant replies stay with #1160 option 1 until 16.2 covers all aliases").
 > Depends on **16.2a** (model, parser, classifier, threader, counts, UI section) and **16.6** (answers work for any conversation). The global list that shows conversations **without an event** is **16.7**; until 16.7 ships, such conversations are stored and forwarded as today, but not listed in the UI.
 > Forwarding stays ON. 16.6's switch group `contact` may only be turned on after this story and 16.7.
 
@@ -75,7 +75,7 @@ About 6 human mails a week across all inbound, about 51 alias forwards in 6 mont
 
 ### References
 
-- `docs/prd/epic-16-mail-center.md` (Story 16.2, decision 5, Story 16.9 inbound note)
+- `docs/archive/prd/epic-16-mail-center.md` (Story 16.2, decision 5, Story 16.9 inbound note)
 - `_bmad-output/implementation-artifacts/16-2a-speaker-conversations.md`, `16-6-answer-from-mail-center.md`, `16-7-global-mail-navigation.md`
 - `services/event-management-service/src/main/java/ch/batbern/events/forwarding/{ForwardingAlias,EmailForwardingService,ForwardingDirectory,ForwardedMessageRewriter}.java`
 - `services/event-management-service/src/main/java/ch/batbern/events/service/{InboundEmailRouter,RegistrationEmailService,NewsletterEmailService}.java`

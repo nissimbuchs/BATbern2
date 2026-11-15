@@ -8,7 +8,7 @@ As an **organizer**,
 I want **one "Mail" entry in the top navigation with everything that needs an answer across all events, the mail that belongs to no event, and the spam**,
 so that **I can see at a glance whether anything is waiting, put an `info@` mail on the right event, and trust that spam and viruses never reach "Needs an answer"**.
 
-> Source: `docs/prd/epic-16-mail-center.md` → **Story 16.7** (with the API note, owner decision 2026-10-31: no second mail resource; sent mail across events is `GET /mails` with the same schema and filters as `GET /events/{code}/mails`, plus `eventCode` and "no event").
+> Source: `docs/archive/prd/epic-16-mail-center.md` → **Story 16.7** (with the API note, owner decision 2026-10-31: no second mail resource; sent mail across events is `GET /mails` with the same schema and filters as `GET /events/{code}/mails`, plus `eventCode` and "no event").
 > Depends on **16.2a** (conversations, threader, classifier, counts) and in practice **16.2b** (no-event conversations exist only from there). Contains a **CDK change** (SES spam and virus scanning).
 > **`GET /mails` is introduced by whichever of 16.7 and 16.10 is built first.** The contract is defined here (Task 3); if 16.10 is built first, it builds Task 3 and this story reuses it.
 > **UX reference:** `docs/ux/mail-center-spec.md` ("Global 'Mail'"), `docs/ux/mail-center-prototype.html` (badge, "Offen", "Ohne Event · info@, support@" with "Event zuordnen", "Spam"), `docs/ux/mail-center-mobile.html`.
@@ -98,7 +98,7 @@ so that **I can see at a glance whether anything is waiting, put an `info@` mail
 
 ### References
 
-- `docs/prd/epic-16-mail-center.md` (Story 16.7, API note)
+- `docs/archive/prd/epic-16-mail-center.md` (Story 16.7, API note)
 - `docs/ux/mail-center-spec.md`, `mail-center-prototype.html`, `mail-center-mobile.html`
 - `_bmad-output/implementation-artifacts/16-2a-speaker-conversations.md`, `16-2b-all-alias-conversations.md`, `16-10-mail-tab-user-partner-detail.md`
 - `infrastructure/lib/stacks/inbound-email-stack.ts`, `infrastructure/test/unit/inbound-email-stack.test.ts`

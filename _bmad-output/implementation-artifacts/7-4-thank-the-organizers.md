@@ -73,7 +73,7 @@ so that the people who've run BATbern for 20 years — free, ad-free, on their o
 - Controller/service/entity under `.../controller`, `.../service`, `.../domain`; migration under `.../resources/db/migration`.
 
 ### References
-- [Source: docs/prd/epic-7-attendee-experience-enhancements.md#story-74-thank-the-organizers]
+- [Source: docs/archive/prd/epic-7-attendee-experience-enhancements.md#story-74-thank-the-organizers]
 - [Source: services/event-management-service/.../controller/EventPhotoController.java]
 - [Source: api-gateway/.../security/TurnstileVerificationFilter.java] [Source: .../config/TurnstileProperties.java] [Source: .../config/ConfigController.java]
 - [Source: api-gateway/.../security/RateLimitingFilter.java]

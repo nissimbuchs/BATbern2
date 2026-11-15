@@ -33,7 +33,7 @@ columns are currently dead parallel state.
 
 ## 2. Impact Analysis
 
-- **Epic**: `docs/prd/epic-7-attendee-experience-enhancements.md` — FR5–FR7 unchanged in intent;
+- **Epic**: `docs/archive/prd/epic-7-attendee-experience-enhancements.md` — FR5–FR7 unchanged in intent;
   storage mechanism corrected. No FR rewrite needed.
 - **Story 7.2**: reopened from `done`; ACs 2/7/8 + Tasks 1/2/5/6 amended; new tasks for the
   proposal table, promote-picker fix, carry-into-session, and the guard test.

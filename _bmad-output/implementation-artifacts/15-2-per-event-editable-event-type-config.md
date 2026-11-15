@@ -134,7 +134,7 @@ Today, a session is "assigned to a slot" purely by its **`Session.startTime` Ins
 
 ### References
 
-- [Source: docs/prd/epic-15-post-event-2-hardening.md#Story 15.2] — scope, ACs, "depends on/pairs with 15.3", phasing.
+- [Source: docs/archive/prd/epic-15-post-event-2-hardening.md#Story 15.2] — scope, ACs, "depends on/pairs with 15.3", phasing.
 - [Source: docs/specs/event-2-feedback-quick-spec.md#3 + 7] — item #3 decision (copy-on-edit, same knobs + apéro/2-breaks), current-state pointers, P1/P2/P3 phasing.
 - [Source: services/event-management-service/src/main/java/ch/batbern/events/service/TimetableService.java#L78-L213] — `computeTimeline` to generalize (parity oracle).
 - [Source: services/event-management-service/src/main/java/ch/batbern/events/service/StructuralSessionService.java#L43-L171] — structural-session persistence; APERITIF plumbing.

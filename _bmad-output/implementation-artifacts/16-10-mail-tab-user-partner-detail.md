@@ -8,7 +8,7 @@ As an **organizer**,
 I want **a "Mail" tab on a user's detail page and on a partner's detail page that lists every mail we sent to them and every mail they sent us**,
 so that **before I write to a speaker, registrant or partner I can see in one place what they already received and asked, across all events**.
 
-> Source: owner request 2026-10-31 (memory note "Mail tab on user + partner detail", to be added to Epic 16). Not yet in `docs/prd/epic-16-mail-center.md`; the lead adds it.
+> Source: owner request 2026-10-31 (memory note "Mail tab on user + partner detail", to be added to Epic 16). Not yet in `docs/archive/prd/epic-16-mail-center.md`; the lead adds it.
 > Depends on **16.1a** (outbound record), **16.2a** PR 1 (inbound columns: `mail_message.from_address`, `direction = 'IN'`), and `GET /mails` (defined in **16.7** Task 3). **Whichever of 16.7 and 16.10 is built first builds `GET /mails` and `GET /mails/{mailKey}`** exactly as specified in 16.7 AC9/AC10; the other one reuses it.
 > Partner meeting invites and cancellations appear here once **16.9** records them (partner-coordination → `POST /internal/mails`); no work in this story for that, as long as 16.9 writes one `mail_recipient` per address.
 > **UX:** the same rows and inline detail as the event page (`communications/MailSentList`, `MailDetail`), full-screen dialog on mobile. No new visual pattern.

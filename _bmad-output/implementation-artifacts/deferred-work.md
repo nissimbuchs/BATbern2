@@ -202,7 +202,7 @@ Everything else: test-hardening, kanban/modal UX papercuts, sprint-status YAML h
 
 ## Deferred from: quick-dev scoping of Epic 14 (2026-06-13)
 
-`/bmad-quick-dev` was pointed at `docs/prd/epic-14-event-detail-redesign.md` (the full epic = 24
+`/bmad-quick-dev` was pointed at `docs/archive/prd/epic-14-event-detail-redesign.md` (the full epic = 24
 stories, FR1–FR47, 7 ordered phases A–G). Per quick-dev's single-goal scope rule, **Phase A (the
 8-tab lifecycle-aware shell — Stories 14.A.1 + 14.A.2 + 14.A.3)** was carved off as the active goal
 (spec `spec-14-a-event-detail-shell.md`). The remaining phases are deferred — each is a natural
@@ -239,7 +239,7 @@ additive-and-backward-compatible backend only, recompose-don't-rewrite. (Full de
 
 ## Deferred from: quick-dev scope-split on Epic 14 (2026-06-14) — Phase C selected, D–G deferred
 
-Epic 14 (`docs/prd/epic-14-event-detail-redesign.md`) was scoped into quick-dev as **Phase C — Speakers & Agenda** (stories 14.C.1–C.5). The following later phases are independently-shippable goals deferred to their own runs:
+Epic 14 (`docs/archive/prd/epic-14-event-detail-redesign.md`) was scoped into quick-dev as **Phase C — Speakers & Agenda** (stories 14.C.1–C.5). The following later phases are independently-shippable goals deferred to their own runs:
 
 - **Phase D — Registrations** [FR24–28 · NFR3 · UX-DR9] — header (count chip, capacity bar, badge exports, Enrol organizers & partners), search + status segmented control, participant table + row actions, **waitlist-as-filter** (queue-ordered + inline Promote), and **pagination/virtualization** (~200 rows not virtualized today).
 - **Phase E — Communications** [FR29–34 · UX-DR8] — one compose surface with a **4-audience switch** (Newsletter · Registrants · Speakers · Venue & Caterer), **wiring the existing-but-unwired `useSendReminder`** for speaker bulk comms, and the Venue & Caterer audience moved here from Settings.

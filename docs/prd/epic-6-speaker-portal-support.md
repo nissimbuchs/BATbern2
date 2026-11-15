@@ -148,7 +148,7 @@ Speaker Coordination Service was moved from Epic 2 to Epic 6 because:
 
 **References:**
 - Original story: Epic 2, Story 2.3
-- Core functionality: `docs/prd/epic-1-foundation-stories.md` Story 1.19
+- Core functionality: `docs/archive/prd/epic-1-foundation-stories.md` Story 1.19
 - API consolidation: `docs/stories/1.15a.3.speakers-api-consolidation.md`
 - ADR-003: `docs/architecture/ADR-003-meaningful-identifiers-public-apis.md`
 - Event-management-service: Reference implementation for HTTP clients with JWT propagation

@@ -486,7 +486,7 @@ web-frontend/src/components/organizer/EventPage/EmailTemplateQuickEditDrawer.tsx
 
 ### References
 
-- Story spec: [Source: docs/prd/epic-10-additional-stories.md#Story-10.13]
+- Story spec: [Source: docs/archive/prd/epic-10-additional-stories.md#Story-10.13]
 - `EmailTemplateSeedService` (current deriveCategory): [Source: services/event-management-service/.../service/EmailTemplateSeedService.java]
 - `EmailTemplateSeedServiceTest` (existing tests to extend): [Source: services/event-management-service/src/test/java/.../service/EmailTemplateSeedServiceTest.java]
 - `EmailTemplatesTab.tsx` (REGISTRATION filter already present): [Source: web-frontend/src/components/organizer/Admin/EmailTemplatesTab.tsx:190]

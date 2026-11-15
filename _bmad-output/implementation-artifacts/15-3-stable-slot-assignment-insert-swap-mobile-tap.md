@@ -118,8 +118,8 @@ Today the slot-assignment UI identifies slots by an **HH:MM string match** (`toT
 - No migration files.
 
 ### References
-- [Source: docs/prd/epic-15-post-event-2-hardening.md#Story 15.3] — scope, ACs, hand-off block.
-- [Source: docs/prd/epic-15-post-event-2-hardening.md#Story 15.2 (As-built)] — slotKey-less state, computeTimeline generalization, V122 head, the warning.
+- [Source: docs/archive/prd/epic-15-post-event-2-hardening.md#Story 15.3] — scope, ACs, hand-off block.
+- [Source: docs/archive/prd/epic-15-post-event-2-hardening.md#Story 15.2 (As-built)] — slotKey-less state, computeTimeline generalization, V122 head, the warning.
 - [Source: _bmad-output/implementation-artifacts/15-2-per-event-editable-event-type-config.md] — AgendaConfigResolver, apéro structural type.
 - [Source: docs/specs/event-2-feedback-quick-spec.md] — items #6 (mobile tap) + #7 (stable slots).
 - [Source: _bmad-output/project-context.md] — ADR-003/004, Flyway never-edit, contract-first, i18n 10-locale, no-MUI-on-public, TDD/Testcontainers.

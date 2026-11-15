@@ -105,7 +105,7 @@ _Code review 2026-06-10 (bmad-code-review, Claude Opus 4.8 1M) — 3 adversarial
 - `speaker_pool` dropped `username`/`email` columns in V103; identity post-READY is via `PrimarySpeakerResolver`. Pre-READY rows (IDENTIFIED) have no session_users row — do not assume one.
 
 ### References
-- [Source: docs/prd/epic-7-attendee-experience-enhancements.md#story-72-i-could-speak-on-that]
+- [Source: docs/archive/prd/epic-7-attendee-experience-enhancements.md#story-72-i-could-speak-on-that]
 - [Source: services/event-management-service/.../service/SpeakerWorkflowService.java#transition]
 - [Source: services/event-management-service/.../controller/SpeakerStatusController.java#promote]
 - [Source: services/event-management-service/.../domain/SpeakerPool.java] [Source: .../domain/Event.java]
@@ -168,7 +168,7 @@ Claude Opus 4.8 (1M context) — bmad-dev-story, 2026-06-10.
 | Date | Change |
 |------|--------|
 | 2026-06-10 | Implemented Story 7.2 "I Could Speak on That" — attendee speaker self-nomination. Backend (V109 migration + entity/DTO/service/controller/exceptions in event-management-service), OpenAPI + regenerated types, attendee Tailwind panel on upcoming-event cards, organizer self-nominated badge + proposed talk, i18n in 10 locales. 11 backend + 6 frontend tests; no regressions. Status → review. |
-| 2026-06-11 | **Reopened (status done → in progress).** ADR-012 ratified: the proposed talk must NOT live as content columns on `speaker_pool` (reverses 11.E.8). Move pitch to new `session_proposals` table; rewrite V109 (dev-only exception, unpushed); fix promote-picker SPEAKER filter; carry proposal into the canonical session at READY; add schema-fitness guard. See "ADR-012 Amendment" section + `docs/sprint-change-proposal-2026-06-11.md`. Handed to Amelia. |
+| 2026-06-11 | **Reopened (status done → in progress).** ADR-012 ratified: the proposed talk must NOT live as content columns on `speaker_pool` (reverses 11.E.8). Move pitch to new `session_proposals` table; rewrite V109 (dev-only exception, unpushed); fix promote-picker SPEAKER filter; carry proposal into the canonical session at READY; add schema-fitness guard. See "ADR-012 Amendment" section + `docs/archive/planning/sprint-change-proposal-2026-06-11.md`. Handed to Amelia. |
 
 ## Open Questions
 
@@ -190,7 +190,7 @@ _Resolved with the PM 2026-06-10._
 
 _Ratified with the architect (Winston) + PO (Nissim). Authoritative for the remaining work; see
 `docs/architecture/ADR-012-self-nomination-proposals.md` and
-`docs/sprint-change-proposal-2026-06-11.md`. Branch is unpushed; nothing deployed._
+`docs/archive/planning/sprint-change-proposal-2026-06-11.md`. Branch is unpushed; nothing deployed._
 
 **Why:** V109 stored the proposed talk as `proposed_session_title` / `proposed_abstract` columns
 on `speaker_pool` — content on the workflow-state table, reversing 11.E.8 / V103. A self-nomination

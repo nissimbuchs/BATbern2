@@ -474,7 +474,7 @@ After this story lands on `develop` and auto-deploys to staging:
 - `services/event-management-service/src/test/java/ch/batbern/events/service/SpeakerInvitationEmailServiceTest.java` (Phase 7 — 4-arg verify sweep + 2 new CC tests)
 - `services/event-management-service/src/test/java/ch/batbern/events/service/SpeakerAcceptanceEmailServiceTest.java` (Phase 7 — 4-arg verify sweep)
 - `services/event-management-service/src/test/java/ch/batbern/events/controller/SpeakerInvitationControllerIntegrationTest.java` (Phase 7 — 4-arg stub signature)
-- `docs/prd/epic-10-additional-stories.md` (Phase 6/7 — Story 10.32 Scope + DoD extended with partner-meeting and EMS-sender sweep)
+- `docs/archive/prd/epic-10-additional-stories.md` (Phase 6/7 — Story 10.32 Scope + DoD extended with partner-meeting and EMS-sender sweep)
 - `docs/prd/epic-8-partner-coordination.md` (Phase 6 — recipient resolution now includes additional emails)
 - `docs/architecture/06d-notification-system.md` (Phase 7 — new subsection "Additional-email CC fan-out (Story 10.32)" documents the overload matrix and explicit exclusions)
 - `docs/user-guide/partner-portal/meetings.md` (Phase 6 — partners receive at primary + additional emails; troubleshooting note)

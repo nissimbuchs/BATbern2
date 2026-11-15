@@ -258,7 +258,7 @@ web-frontend/public/locales/gsw-BE/events.json                           (descri
 
 ### References
 
-- Epic 10 story definition: [Source: docs/prd/epic-10-additional-stories.md#story-1023 (line 1624)]
+- Epic 10 story definition: [Source: docs/archive/prd/epic-10-additional-stories.md#story-1023 (line 1624)]
 - EventResponse.java description field: [Source: services/event-management-service/src/main/java/ch/batbern/events/dto/EventResponse.java:37]
 - Generated TypeScript Event type: [Source: web-frontend/src/types/generated/events-api.types.ts — `Event.description?: string`]
 - HomePage.tsx (insertion point): [Source: web-frontend/src/pages/public/HomePage.tsx]

@@ -67,7 +67,7 @@ so that the open questions that currently have nowhere to live get answered — 
 - Controller/service/entity/repository under their packages; scheduled job under `.../scheduled` or `.../service`; migration under `.../resources/db/migration`.
 
 ### References
-- [Source: docs/prd/epic-7-attendee-experience-enhancements.md#story-75-the-apero-continues]
+- [Source: docs/archive/prd/epic-7-attendee-experience-enhancements.md#story-75-the-apero-continues]
 - [Source: services/event-management-service/.../service/EventWorkflowScheduledService.java#processCompletedEvents]
 - [Source: services/event-management-service/.../config/ShedLockConfig.java] [Source: .../controller/SessionMaterialsController.java]
 - [Source: services/event-management-service/.../domain/Session.java] [Source: .../security/SecurityContextHelper.java]
