@@ -11,12 +11,15 @@ Standard library only.
   GET  /_gate/users      the stand-in pool's users, as JSON
   GET  /_gate/messages   every mail received, as JSON (to, cc, bcc, from, subject, text, html)
   GET  /_gate/requests   every SES API request received (action, host header), as JSON
-  DELETE /_gate/messages clear mails, requests and the stand-in pool
+  POST /_gate/users      register a user in the stand-in pool: {"email", "sub", "attributes": {}}
+                         (the seed registers the test users under their real token sub)
+  DELETE /_gate/messages clear mails and requests; the stand-in pool is kept
   GET  /_gate/health     200
 """
 import base64
 import email
 import email.policy
+import email.utils
 import json
 import sys
 import threading
@@ -38,6 +41,11 @@ def members(form, prefix):
         out.append(form[f"{prefix}.member.{i}"])
         i += 1
     return out
+
+
+def addresses(headers):
+    """Header values -> bare addresses; display names may contain commas."""
+    return [addr for _, addr in email.utils.getaddresses([str(h) for h in (headers or [])]) if addr]
 
 
 def parse_send_email(form):
@@ -73,8 +81,8 @@ def parse_send_raw_email(form):
     return {
         "action": "SendRawEmail",
         "from": form.get("Source") or msg.get("From"),
-        "to": [a.strip() for a in (msg.get("To") or "").split(",") if a.strip()],
-        "cc": [a.strip() for a in (msg.get("Cc") or "").split(",") if a.strip()],
+        "to": addresses(msg.get_all("To")),
+        "cc": addresses(msg.get_all("Cc")),
         "destinations": destinations,
         "subject": str(msg.get("Subject")),
         "text": text,
@@ -119,13 +127,20 @@ class Handler(BaseHTTPRequestHandler):
             with LOCK:
                 MESSAGES.clear()
                 REQUESTS.clear()
-                USERS.clear()
             return self._json(200, {"cleared": True})
         self._json(404, {"error": "not found"})
 
     def do_POST(self):
         length = int(self.headers.get("Content-Length") or 0)
         body = self.rfile.read(length).decode()
+        if self.path == "/_gate/users":
+            user = json.loads(body or "{}")
+            email_key = user["email"].lower()
+            attrs = dict(user.get("attributes") or {}, email=user["email"], sub=user["sub"])
+            with LOCK:
+                USERS[email_key] = {"sub": user["sub"], "attributes": attrs, "enabled": True,
+                                    "status": "CONFIRMED", "created": time.time()}
+            return self._json(201, {"registered": email_key})
         target = self.headers.get("X-Amz-Target") or ""
         if target.startswith("AWSCognitoIdentityProviderService."):
             return self._cognito(target.split(".", 1)[1], json.loads(body or "{}"))

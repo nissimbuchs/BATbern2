@@ -21,39 +21,40 @@ import java.time.Duration;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * The optional S3 endpoint override (pre-deploy gate, P5 spike: MinIO). Inactive when the endpoint
- * is blank, which is the production case: the builders are then left exactly as the caller made them.
+ * The optional S3 endpoint override (pre-deploy gate, P5 spike: S3 stand-in, S3Mock in the gate).
+ * Inactive when the endpoint is blank, which is the production case: the builders are then left
+ * exactly as the caller made them.
  */
 class S3EndpointOverrideTest {
 
-    private static final S3EndpointOverride MINIO =
-        new S3EndpointOverride("http://172.17.0.1:19000", "gate", "gate-minio");
+    private static final S3EndpointOverride S3_STAND_IN =
+        new S3EndpointOverride("http://172.17.0.1:19090", "gate", "gate-s3");
 
     @Test
-    @DisplayName("should_pointClientAtMinio_when_endpointSet")
-    void should_pointClientAtMinio_when_endpointSet() {
+    @DisplayName("should_pointClientAtS3StandIn_when_endpointSet")
+    void should_pointClientAtS3StandIn_when_endpointSet() {
         S3ClientBuilder builder = S3Client.builder().region(Region.EU_CENTRAL_1);
 
-        try (S3Client client = MINIO.applyTo(builder).build()) {
-            assertThat(MINIO.active()).isTrue();
+        try (S3Client client = S3_STAND_IN.applyTo(builder).build()) {
+            assertThat(S3_STAND_IN.active()).isTrue();
             assertThat(client.serviceClientConfiguration().endpointOverride())
-                .contains(URI.create("http://172.17.0.1:19000"));
+                .contains(URI.create("http://172.17.0.1:19090"));
             assertThat(client.serviceClientConfiguration().credentialsProvider())
                 .isInstanceOf(StaticCredentialsProvider.class);
         }
     }
 
     @Test
-    @DisplayName("should_presignPathStyleUrlOnMinio_when_endpointSet")
-    void should_presignPathStyleUrlOnMinio_when_endpointSet() {
-        try (S3Presigner presigner = MINIO.applyTo(S3Presigner.builder().region(Region.EU_CENTRAL_1)).build()) {
+    @DisplayName("should_presignPathStyleUrlOnS3StandIn_when_endpointSet")
+    void should_presignPathStyleUrlOnS3StandIn_when_endpointSet() {
+        try (S3Presigner presigner = S3_STAND_IN.applyTo(S3Presigner.builder().region(Region.EU_CENTRAL_1)).build()) {
             URL url = presigner.presignPutObject(PutObjectPresignRequest.builder()
                 .signatureDuration(Duration.ofMinutes(5))
                 .putObjectRequest(PutObjectRequest.builder().bucket("bucket").key("a/b.png").build())
                 .build()).url();
 
             assertThat(url.getHost()).isEqualTo("172.17.0.1");
-            assertThat(url.getPort()).isEqualTo(19000);
+            assertThat(url.getPort()).isEqualTo(19090);
             assertThat(url.getPath()).isEqualTo("/bucket/a/b.png");
         }
     }
@@ -63,7 +64,7 @@ class S3EndpointOverrideTest {
     @ValueSource(strings = {"  "})
     @DisplayName("should_leaveBuildersUntouched_when_endpointBlank")
     void should_leaveBuildersUntouched_when_endpointBlank(String endpoint) {
-        S3EndpointOverride none = new S3EndpointOverride(endpoint, "gate", "gate-minio");
+        S3EndpointOverride none = new S3EndpointOverride(endpoint, "gate", "gate-s3");
         S3ClientBuilder builder = S3Client.builder().region(Region.EU_CENTRAL_1)
             .credentialsProvider(AnonymousCredentialsProvider.create());
 

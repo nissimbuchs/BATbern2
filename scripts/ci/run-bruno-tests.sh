@@ -127,6 +127,8 @@ collections=(
 
 # Run only on development/local/test. speaker-portal-api requires the E2E token helper
 # endpoint (@Profile dev/local/test only), so it cannot pass against staging/production.
+# (The pre-deploy gate spike, 2026-11-15, ran it green in the staging profile, 35/35 tests; why it
+# passes without that endpoint was not investigated. See docs/plans/pre-deploy-gate-plan.md.)
 # event-publishing-api publishes phases (public website, CDN invalidation, EventPublishedEvent
 # and organizer notices), which must never happen on staging = production (Story 4.9b).
 # participants-api writes registrations, creates users and sends an organizer-added mail;
@@ -201,6 +203,9 @@ fi
 
 # gate: the sealed pre-deploy stack (docker-compose.gate.yml, scripts/gate/run-gate.sh), which has
 # no production data and catches every mail in a fake SES, so the dev-only collections run there too.
+# Tokens for `gate`: no ~/.batbern/gate*.json exists. Export ORGANIZER_AUTH_TOKEN,
+# SPEAKER_AUTH_TOKEN and PARTNER_AUTH_TOKEN (the staging test users' ID tokens, as
+# scripts/gate/run-gate.sh does) and pass the organizer token as the auth_token argument.
 if [ "$ENVIRONMENT" = "development" ] || [ "$ENVIRONMENT" = "local" ] || [ "$ENVIRONMENT" = "test" ] \
     || [ "$ENVIRONMENT" = "gate" ]; then
     collections+=("${dev_only_collections[@]}")

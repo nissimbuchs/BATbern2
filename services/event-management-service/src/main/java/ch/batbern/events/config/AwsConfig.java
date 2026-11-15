@@ -24,7 +24,7 @@ import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 @Slf4j
 public class AwsConfig {
 
-    /** Pre-deploy gate only (MinIO); blank in production, where the CDK stacks never set it. */
+    /** Pre-deploy gate only (S3 stand-in, S3Mock in the gate); blank in production, where CDK never sets it. */
     private final S3EndpointOverride s3EndpointOverride;
 
     public AwsConfig(@Value("${aws.s3.endpoint:}") String s3Endpoint,

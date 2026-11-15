@@ -29,7 +29,7 @@ public class AwsConfig {
     @Value("${aws.region:eu-central-1}")
     private String awsRegion;
 
-    /** Pre-deploy gate only (MinIO); blank in production, where the CDK stacks never set it. */
+    /** Pre-deploy gate only (S3 stand-in, S3Mock in the gate); blank in production, where CDK never sets it. */
     @Value("${aws.s3.endpoint:}")
     private String s3Endpoint;
 

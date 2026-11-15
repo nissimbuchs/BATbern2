@@ -105,7 +105,10 @@ and is a heavy build: nothing else heavy runs on rack in parallel.
 measured unless it says "estimate" or "not verified".
 
 How to repeat it: `scripts/gate/build-images.sh` (the four images, one at a time), then
-`scripts/gate/run-gate.sh` (clean `up`, health, seed, all 23 Bruno collections, mail check, `down -v`).
+`scripts/gate/run-gate.sh` (clean `up`, health, seed, all Bruno collections, mail check, `down -v`).
+`run-gate.sh` exits non-zero unless every Bruno collection passed, the fake AWS received at least one
+`SendRawEmail`, and no service log holds an AWS credentials error (`SdkClientException`,
+`Unable to load credentials`); with today's 23 known failures (below) it therefore exits 1.
 Stack: `docker-compose.gate.yml`. Results land in `~/.cache/batbern-gate/run-<timestamp>/`.
 
 *Outcome in one line:* the shipped images start in the production profile with no AWS credentials and
@@ -125,7 +128,7 @@ lazily; none is called while the context starts. The SQS listeners are off becau
 | SES (every mail) | `SdkClientException: Unable to load credentials` on send | `BATBERN_SES_ENDPOINT` → fake AWS container (`batbern.ses.endpoint`, `AwsSesConfig`), placeholder credentials only on that client | `AwsSesConfigTest` (blank = production client); `grep` of `infrastructure/lib` and `.github/workflows`: 0 hits |
 | Cognito admin API in CUMS (Pattern N: `adminCreateUser` when a speaker is promoted, `adminGetUser`, `adminSetUserPassword`) | `SdkClientException` → HTTP 500 on `POST /internal/users/provision`; 10 speaker requests failed in the first run | `BATBERN_COGNITO_ENDPOINT` → in-memory stand-in pool in the fake AWS container (`batbern.cognito.endpoint`, CUMS `CognitoConfig`) | `CognitoConfigTest`; grep: 0 hits |
 | S3 (uploads, presigned PUT, media) | presign/upload fails for lack of credentials | `AWS_S3_ENDPOINT` + `AWS_S3_ENDPOINT_ACCESS_KEY/SECRET_KEY` → S3Mock (`S3EndpointOverride` in shared-kernel, used by the EMS and CUMS `AwsConfig`) | `S3EndpointOverrideTest`; grep: 0 hits |
-| CUMS daily Cognito re-send job (08:15) and reconciliation (02:00) | would call the production pool, fail closed without credentials | `COGNITO_RESEND_ENABLED=false` (existing property); reconciliation is not reached in a run of a few minutes | existing default `true`, CDK does not set it |
+| CUMS daily Cognito re-send job (08:15) and reconciliation (02:00) | without the Cognito override both would call the production pool and fail closed. In the gate CUMS has one Cognito client, pointed at the stand-in, so both call the fake | re-send: `COGNITO_RESEND_ENABLED=false` (existing property). Reconciliation stays on and calls the stand-in: the seed registers the three test users in the stand-in pool under their real `sub`, so `reconcileOrphanedDbUsers` keeps them active. Residual: a user created in the database without going through the stand-in (not the case for any seeded or Bruno-created user observed) would be deactivated if a stack stays up across 02:00; a normal run lasts minutes | re-send: existing default `true`, CDK does not set it |
 | SQS listeners (inbound mail, forwarding, bounces, delivery status) | none | override by omission: CDK's `AWS_*_ENABLED` flags not set | `@ConditionalOnProperty`, default `false` |
 | CloudFront invalidation (EMS) | none: `aws.cloudfront.enabled` defaults to `false` and is never set | none needed | see side finding 1 |
 | Gateway Cognito client (password reset) | not exercised by Bruno; would fail closed | none | not verified |
@@ -199,6 +202,10 @@ refused `@example.com` (reserved domain) before that. In the final run the fake 
 `SendRawEmail` registration confirmations with To, subject and HTML body (seed: the speaker test user
 on event 59; Bruno: `participants-api/04` to a `@batbern-test.ch` address). Nothing can have gone to
 AWS: no credentials in the containers, and the SES client's endpoint is the fake.
+That final run still cleared the fake right after the seed, so the seed's (asynchronous) mail being
+in the list was timing, not design. `run-gate.sh` now clears the fake before the seed, so the list
+deterministically holds the seed's mail and Bruno's, and it fails the run when no `SendRawEmail`
+arrived. This version of the script has not been run against the stack.
 
 *Recommendation.* Build the GitHub job (step 2), as non-required first: the stack starts, the
 dependency list is short and every override is a blank-default property. Make it required after it
