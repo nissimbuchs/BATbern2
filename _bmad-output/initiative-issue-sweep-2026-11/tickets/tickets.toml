@@ -1,0 +1,68 @@
+# Epics of initiative-issue-sweep-2026-11, in build order. One epic is one PR is one production deploy (C2).
+
+[[epic]]
+id = 0
+slug = "epic-dlq-recovery"
+title = "The mails stuck in the DLQs reach someone"
+description = "The 5 DLQ messages (forwarding 4, replies 1) are read, each delivered by a redrive or handed to an organizer before SQS drops them around 2026-11-19, the cause of each failure is named, and both DLQ alarms are back to OK. A code fix for the cause, if any, rides in epic 1."
+covers = ["R1"]
+
+[[epic]]
+id = 1
+slug = "epic-bug-sweep"
+title = "The bugs that need no decision are fixed"
+description = "The claim link, trigger states, Live Control language, bell, cockpit card routing, quiet hours, mail fallback language, gsw-BE, dates, cron time zones, the #1223 UI defects, the gateway 4xx log, the EmailService ratchet category, the dev tooling bugs, the ZAP ignore, the leftover EventBridge IAM grant, the browser notification push and the unread notification preferences are fixed or removed and live; it also carries the code fix for the DLQ failure cause that epic 0 names, if any, and hands its versions and dev-tooling fixes to epic 7 to document."
+covers = ["R2", "R3", "R4", "R5", "R6", "R7", "R8", "R9", "R10", "R27"]
+after = [{ epic = 0, needs = "the named cause of the DLQ failures, in case it needs a code fix here" }]
+
+[[epic]]
+id = 2
+slug = "epic-platform-hardening"
+title = "Dependencies follow the BOM, logs carry no addresses, alarms mean something"
+description = "No version is pinned below the Spring Boot BOM, the log encoders mask e-mail addresses for every service with every CloudWatch metric filter still matching, and the latency and availability alarms stop firing on deploys and single night-time errors; all three touch the runtime of every service, so they ship and are watched together. The stale EventBridge comment in SharedObjectMapperConfig goes too (owner kept the mapper as is, #1254)."
+covers = ["R11", "R12", "R24"]
+after = [{ epic = 1, needs = "the final GATEWAY_API_REQUEST log line of R7, which the masking must keep matching" }]
+
+[[epic]]
+id = 3
+slug = "epic-decided-features"
+title = "Double opt-in, the homepage speaking call and clean outreach history"
+description = "Newsletter subscriptions need confirmation, the upcoming-event cards offer self-nomination to every visitor while the topic phase is open, and the speaker outreach history holds usernames."
+covers = ["R14", "R15", "R16"]
+
+[[epic]]
+id = 4
+slug = "epic-company-merge"
+title = "Duplicate companies are found and merged"
+description = "Organizers merge duplicate companies with every reference moved and an alias kept, and a rename moves references the same way."
+covers = ["R17"]
+
+[[epic]]
+id = 5
+slug = "epic-materials-visibility"
+title = "Only public materials are published"
+description = "Speakers and organizers mark each material public or not, and no anonymous response or download exposes a non-public one."
+covers = ["R19"]
+
+[[epic]]
+id = 6
+slug = "epic-gdpr-delete"
+title = "Deleting a person reaches every service"
+description = "A GDPR delete in CUMS removes or anonymizes the person's rows in EMS and PCS through the user-references contract, per the owner-approved row list, and the gateway stubs no longer claim deletions that did not happen."
+covers = ["R20"]
+after = [{ epic = 3, needs = "outreach history keyed by username (R16), which the delete row list relies on" }, { epic = 4, needs = "the company-merge additions to cums-internal.openapi.yml, so both contract changes do not collide" }]
+
+[[epic]]
+id = 7
+slug = "epic-docs-and-spec-hygiene"
+title = "Docs and specs describe the running system"
+description = "The remaining doc-audit findings are fixed, the doc-drift check detects drift again, a restore runbook exists, and every spec operation has an implementation."
+covers = ["R21", "R22", "R28"]
+after = [{ epic = 1, needs = "the code fixes the docs describe (versions, dev tooling)" }]
+
+[[epic]]
+id = 8
+slug = "epic-infra-window"
+title = "The gateway sees the visitor and is reachable only through the HTTP API"
+description = "In a maintenance window in the week of 2026-11-16, evening picked by the owner: the ALB is internal behind a VPC link with a trusted client-IP header, images build with the wrapper's Gradle, and the content bucket CORS is current. Production stays on on-demand Fargate."
+covers = ["R23", "R25"]
