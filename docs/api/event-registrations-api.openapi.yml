@@ -210,8 +210,9 @@ paths:
       responses:
         '200':
           description: |
-            The attendee is already on the waitlist (Story 10.11): nothing is created, the waitlist
-            confirmation mail is sent again.
+            The attendee is already registered and has not confirmed yet (#1315), or is already on
+            the waitlist (Story 10.11): nothing is created, the confirmation mail with a new link, or
+            the waitlist mail, is sent again. A confirmed attendee gets 409 and no mail.
           content:
             application/json:
               schema:
@@ -221,6 +222,12 @@ paths:
                   summary: already on the waitlist
                   value:
                     message: You are already on the waitlist for this event. A new confirmation email has been sent.
+                    email: anna.vorlage@example.com
+                    companyUpdated: false
+                alreadyRegistered:
+                  summary: registered, not confirmed yet
+                  value:
+                    message: You are already registered for this event. A new confirmation email has been sent.
                     email: anna.vorlage@example.com
                     companyUpdated: false
         '201':
@@ -664,15 +671,29 @@ paths:
       tags:
       - Registrations
       summary: Update registration
-      description: 'Partially update a registration (e.g. set the status).
+      description: |
+        Organizer status change of a registration (#1315). One transaction: the status and its
+        side effects (waitlist promotion, renumbering) are written together or not at all. No
+        status, or the current status, changes nothing (200). Any other change not in this table
+        answers 409 `REGISTRATION_TRANSITION_NOT_ALLOWED`:
 
+        | From | To | Effect |
+        |---|---|---|
+        | registered | confirmed | refused (409 `capacity_exceeded`) while more registrations hold a place than the capacity allows |
+        | registered, confirmed | cancelled | the freed place goes to the first on the waitlist (promotion mail) |
+        | registered, confirmed | attended, no_show | status only |
+        | waitlist | confirmed | as `POST .../promote`: the registration becomes `registered` (waitlist position cleared, promotion mail, no capacity check); the response says `REGISTERED` |
+        | waitlist | cancelled | leaves the waitlist, the positions behind it move up; nobody is promoted |
+        | attended, no_show | confirmed, cancelled | correction after the event: status only, no capacity check, no promotion |
+        | attended | no_show, and no_show to attended | status only |
+        | cancelled | anything | 409 |
+
+        Nothing changes to `registered` or `waitlist` by this request.
 
         **Story**: 4.1.6 - Uses registrationCode
 
         **Security**: ORGANIZER role required. Attendees cancel through the token-based
         deregistration flow or `DELETE /events/{eventCode}/my-registration`.
-
-        '
       operationId: updateRegistration
       parameters:
       - name: eventCode
@@ -733,13 +754,47 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+        '409':
+          description: The change is not in the transition table, or confirming would exceed the capacity; nothing changed
+          content:
+            application/json:
+              schema:
+                $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+              examples:
+                transitionNotAllowed:
+                  summary: Not in the transition table
+                  value:
+                    timestamp: '2026-11-15T10:00:00Z'
+                    path: /api/v1/events/BATbern142/registrations/BATbern142-reg-A3X9K2
+                    status: 409
+                    error: Conflict
+                    message: Registration BATbern142-reg-A3X9K2 cannot change from cancelled to confirmed
+                    severity: LOW
+                    details:
+                      code: REGISTRATION_TRANSITION_NOT_ALLOWED
+                capacityExceeded:
+                  summary: Confirming would exceed the capacity
+                  value:
+                    timestamp: '2026-11-15T10:00:00Z'
+                    path: /api/v1/events/BATbern142/registrations/BATbern142-reg-A3X9K2
+                    status: 409
+                    error: Conflict
+                    message: Event BATbern142 holds 254 registrations for 253 places; confirming this one would keep it over capacity
+                    severity: LOW
+                    details:
+                      code: capacity_exceeded
+                      activeCount: 254
+                      capacity: 253
         '500':
           $ref: '#/components/responses/InternalServerError'
     delete:
       tags:
       - Registrations
       summary: Delete registration
-      description: 'Permanently delete a registration from the event.
+      description: 'Permanently delete a registration from the event. In the same transaction
+        (#1315): deleting a registration that holds a place (registered, confirmed) gives the place
+        to the first on the waitlist (promotion mail); deleting a waitlisted one closes its gap in the
+        waitlist positions and promotes nobody; any other status is only deleted.
 
 
         **Story**: 4.1.6
@@ -866,7 +921,7 @@ paths:
                   value:
                     message: Sample text for the API example.
         '409':
-          description: Registration is not pending (cannot resend)
+          description: Registration is not pending (cannot resend), or the attendee has no e-mail address
           content:
             application/json:
               schema:
@@ -901,7 +956,10 @@ paths:
         - Event code in URL must match event code in token
 
 
-        **Idempotency**: Can be called multiple times safely. Already confirmed registrations return 200 OK.
+        **Idempotency**: Can be called multiple times safely. Already confirmed registrations return 200 OK
+        ("Registration already confirmed") and are not mailed again. Only a pending (`registered`)
+        registration is confirmed; one that was cancelled, waitlisted, attended or marked no-show after
+        the link was sent answers 409 `REGISTRATION_ALREADY_PROCESSED` and keeps its status (#1315).
 
         '
       operationId: confirmRegistration
@@ -976,6 +1034,21 @@ paths:
                 error: Not found
                 message: Registration not found
                 code: REGISTRATION_NOT_FOUND
+        '409':
+          description: The registration is no longer pending (cancelled, waitlist, attended or no_show); nothing changed
+          content:
+            application/json:
+              schema:
+                $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+              example:
+                timestamp: '2026-11-15T10:00:00Z'
+                path: /api/v1/events/BATbern57/registrations/confirm
+                status: 409
+                error: Conflict
+                message: Registration BATbern57-reg-A3X9K2 is cancelled and can no longer be confirmed
+                severity: LOW
+                details:
+                  code: REGISTRATION_ALREADY_PROCESSED
         '500':
           $ref: '#/components/responses/InternalServerError'
   /registrations/deregister/verify:
@@ -1643,12 +1716,21 @@ components:
           example: Vegetarian meal preference
     UpdateRegistrationStatusRequest:
       type: object
-      description: 'Organizer status change for a registration (e.g. confirm/cancel).
-        The deployed PATCH handler reads only `status`; a cancel triggers waitlist promotion.'
+      description: 'Organizer status change for a registration (e.g. confirm/cancel). Only `status`
+        is read; no status, or the current one, changes nothing. The allowed transitions are listed
+        on `updateRegistration` (#1315).'
       properties:
         status:
           type: string
-          description: New registration status (registered, waitlist, confirmed, cancelled, attended, no_show)
+          description: New registration status, lower case (the response carries it upper case).
+            Any other value answers 400.
+          enum:
+          - registered
+          - waitlist
+          - confirmed
+          - cancelled
+          - attended
+          - no_show
           example: confirmed
     ResendConfirmationResponse:
       type: object

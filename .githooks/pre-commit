@@ -131,7 +131,11 @@ if [ -n "$API_TYPE_TRIGGERS" ]; then
         # Regenerates in place, then diffs against what is committed. If types are current
         # this is a no-op; if not, it fails AND leaves the corrected files in the working
         # tree, so the fix is `git add src/types/generated/`.
-        npm run check:api-types || TESTS_FAILED=1
+        # Without GIT_DIR: git exports it to hooks in a linked worktree, and with GIT_DIR set
+        # but no GIT_WORK_TREE, git takes the cwd (web-frontend/) as the top of the work tree,
+        # so `git diff src/types/generated/` looked at a path that does not exist and passed.
+        # Measured 2026-11-15 (#1315): a spec change committed without its regenerated types.
+        env -u GIT_DIR npm run check:api-types || TESTS_FAILED=1
         cd ..
     fi
 fi

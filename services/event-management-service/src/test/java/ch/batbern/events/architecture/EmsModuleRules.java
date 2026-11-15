@@ -196,6 +196,21 @@ final class EmsModuleRules {
                         + REGISTRATION_PATHS + ", directly or inherited (Story 17.13)");
     }
 
+    /**
+     * #1315: the named controller does not use the named repository; its reads and writes go through
+     * the module's service, which owns the transaction ({@code RegistrationController} and
+     * {@code RegistrationRepository}). Both by simple name under {@code root}. Not frozen: there is no
+     * violation. Fails when no class has the controller's name (a rename must carry the rule along).
+     */
+    static ArchRule controllerUsesNoRepository(String root, String controllerSimpleName, String repositorySimpleName) {
+        return noClasses().that().resideInAPackage(root + "..")
+                .and().haveSimpleName(controllerSimpleName)
+                .should().dependOnClassesThat().haveSimpleName(repositorySimpleName)
+                .allowEmptyShould(false)
+                .as("Endpoint placement: " + controllerSimpleName + " uses no " + repositorySimpleName
+                        + "; it reads and writes through its service (#1315)");
+    }
+
     static ArchCondition<JavaClass> mapNoPathContaining(List<String> segments) {
         return new ArchCondition<>("map no path containing " + segments) {
             @Override

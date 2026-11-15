@@ -1,12 +1,10 @@
 package ch.batbern.events.controller;
 
-import ch.batbern.events.client.UserApiClient;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Registration;
 import ch.batbern.events.dto.RegistrationResponse;
 import ch.batbern.events.dto.generated.users.UserResponse;
 import ch.batbern.events.exception.EventNotFoundException;
-import ch.batbern.events.exception.RegistrationNotFoundException;
 import ch.batbern.events.registrations.api.generated.RegistrationsApi;
 import ch.batbern.events.registrations.dto.generated.ConfirmRegistration200Response;
 import ch.batbern.events.registrations.dto.generated.CreateMyRegistration201Response;
@@ -17,10 +15,8 @@ import ch.batbern.events.registrations.dto.generated.MyRegistrationResponse;
 import ch.batbern.events.registrations.dto.generated.ResendConfirmationResponse;
 import ch.batbern.events.registrations.dto.generated.UpdateRegistrationStatusRequest;
 import ch.batbern.events.repository.EventRepository;
-import ch.batbern.events.repository.RegistrationRepository;
 import ch.batbern.events.security.SecurityContextHelper;
 import ch.batbern.events.service.ConfirmationTokenService;
-import ch.batbern.events.service.RegistrationEmailService;
 import ch.batbern.events.service.RegistrationService;
 import ch.batbern.events.service.WaitlistPromotionService;
 import ch.batbern.shared.api.PaginationMetadata;
@@ -29,7 +25,6 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -39,8 +34,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.time.Instant;
 import java.util.List;
-import java.util.Locale;
-import java.util.NoSuchElementException;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -62,22 +56,16 @@ import java.util.UUID;
 public class RegistrationController implements RegistrationsApi {
 
     private final RegistrationService registrationService;
-    private final RegistrationRepository registrationRepository;
     private final EventRepository eventRepository;
     private final ConfirmationTokenService confirmationTokenService;
-    private final RegistrationEmailService registrationEmailService;
     private final WaitlistPromotionService waitlistPromotionService;
-    private final UserApiClient userApiClient;
     private final SecurityContextHelper securityContextHelper;
-
-    @Value("${app.base-url:https://batbern.ch}")
-    private String appBaseUrl;
 
     /**
      * Anonymous registration (Story 2.2a, ADR-005): the attendee needs no account; the registration
-     * starts as {@code registered} and is confirmed by the e-mailed link. A waitlisted registration
-     * gets its waitlist mail from {@link RegistrationService} instead. A repeated waitlist
-     * registration answers 200 (its mail was sent again), any other repeat 409.
+     * starts as {@code registered} and is confirmed by the e-mailed link; {@link RegistrationService}
+     * sends it, or the waitlist mail. A repeat of a pending or waitlisted registration answers 200
+     * (its mail was sent again, #1315), a repeat of a confirmed one 409 without a mail.
      */
     @Override
     @PreAuthorize("permitAll()")
@@ -92,10 +80,6 @@ public class RegistrationController implements RegistrationsApi {
                 && registration.getCreatedAt().isBefore(beforeCreate);
         boolean waitlisted = "waitlist".equals(registration.getStatus());
 
-        if (!waitlisted) {
-            sendConfirmation(registration, findEvent(eventCode));
-        }
-
         if (isRepeat) {
             if (waitlisted) {
                 // Story 10.11 (T10.4): the waitlist mail was sent again by RegistrationService.
@@ -105,10 +89,12 @@ public class RegistrationController implements RegistrationsApi {
                         "You are already on the waitlist for this event. A new confirmation email has been sent.",
                         request.getEmail(), registration.getCompanyUpdated()));
             }
-            log.info("Duplicate registration attempt for event: {} by user: {} (status: {})",
-                    eventCode, registration.getAttendeeUsername(), registration.getStatus());
-            throw new IllegalStateException("User " + registration.getAttendeeUsername()
-                    + " is already registered for event " + eventCode);
+            // #1315: still pending; RegistrationService sent the confirmation link again (was: mail, then 409).
+            log.info("Repeated pending registration for event: {} by user: {}, confirmation link resent",
+                    eventCode, registration.getAttendeeUsername());
+            return ResponseEntity.ok(new CreateRegistrationResponse(
+                    "You are already registered for this event. A new confirmation email has been sent.",
+                    request.getEmail(), registration.getCompanyUpdated()));
         }
 
         // BATbern59 badge fix: companyUpdated drives the UI's "we updated your company" notice.
@@ -120,7 +106,8 @@ public class RegistrationController implements RegistrationsApi {
     /**
      * Confirms a pending registration with the token of the confirmation mail (48 h valid; its event
      * code must match the path). Idempotent: a confirmed registration answers "already confirmed"
-     * and is not mailed again.
+     * and is not mailed again; one that was processed since (cancelled, waitlisted, attended,
+     * no-show) answers 409 and stays as it is (#1315).
      */
     @Override
     @PreAuthorize("permitAll()")
@@ -141,31 +128,12 @@ public class RegistrationController implements RegistrationsApi {
         }
 
         UUID registrationId = confirmationTokenService.getRegistrationId(claims);
-        Registration registration = registrationRepository.findById(registrationId)
-                .orElseThrow(() -> new NoSuchElementException("Registration not found: " + registrationId));
-        Event event = eventRepository.findById(registration.getEventId())
-                .orElseThrow(() -> new NoSuchElementException(
-                        "Event not found for registration: " + registrationId));
-        if (!event.getEventCode().equals(eventCode)) {
-            throw new IllegalArgumentException("Registration does not belong to event: " + eventCode);
-        }
-
-        if ("confirmed".equalsIgnoreCase(registration.getStatus())) {
-            return ResponseEntity.ok(new ConfirmRegistration200Response()
-                    .message("Registration already confirmed")
-                    .status(ConfirmRegistration200Response.StatusEnum.CONFIRMED));
-        }
-
-        registration.setStatus("confirmed"); // lower case per DB constraint
-        registration.setUpdatedAt(Instant.now());
-        registrationRepository.save(registration);
-        log.info("Registration confirmed: {} for event: {}", registrationId, eventCode);
-
-        // The pending mail carries no calendar invite; it comes with the confirmed mail.
-        registrationService.notifyRegistrationConfirmed(registration, event);
-
+        String message = switch (registrationService.confirmRegistration(eventCode, registrationId)) {
+            case CONFIRMED -> "Registration confirmed successfully!";
+            case ALREADY_CONFIRMED -> "Registration already confirmed";
+        };
         return ResponseEntity.ok(new ConfirmRegistration200Response()
-                .message("Registration confirmed successfully!")
+                .message(message)
                 .status(ConfirmRegistration200Response.StatusEnum.CONFIRMED));
     }
 
@@ -197,9 +165,9 @@ public class RegistrationController implements RegistrationsApi {
     }
 
     /**
-     * Organizer status change. Attendees cancel through the deregistration link or
-     * {@code DELETE /events/{eventCode}/my-registration}. Any transition to {@code cancelled}
-     * (waitlist included) frees a place and promotes from the waitlist (Story 10.12).
+     * Organizer status change by the transition table of {@link RegistrationService#changeStatus}
+     * (#1315), in one transaction with its waitlist effects. Attendees cancel through the
+     * deregistration link or {@code DELETE /events/{eventCode}/my-registration}.
      */
     @Override
     @PreAuthorize("hasRole('ORGANIZER')")
@@ -207,31 +175,22 @@ public class RegistrationController implements RegistrationsApi {
             String eventCode, String registrationCode, UpdateRegistrationStatusRequest updates) {
         log.debug("PATCH /api/v1/events/{}/registrations/{}", eventCode, registrationCode);
 
-        Registration registration = registrationOfEvent(eventCode, registrationCode);
-        boolean becomingCancelled = false;
-        if (updates.getStatus() != null) {
-            String previousStatus = registration.getStatus();
-            registration.setStatus(updates.getStatus());
-            becomingCancelled = "cancelled".equalsIgnoreCase(updates.getStatus())
-                    && !"cancelled".equalsIgnoreCase(previousStatus);
-        }
-        registration = registrationRepository.save(registration);
-
-        if (becomingCancelled) {
-            waitlistPromotionService.promoteFromWaitlist(registration.getEventId());
-        }
-
+        String target = updates.getStatus() != null ? updates.getStatus().getValue() : null;
+        Registration registration = registrationService.changeStatus(findEvent(eventCode), registrationCode, target);
         registration.setEventCode(eventCode);
         return ResponseEntity.ok(registrationService.enrichRegistrationWithUserData(registration));
     }
 
-    /** Organizer delete of a registration (no waitlist promotion; a cancel is the PATCH). */
+    /**
+     * Organizer delete of a registration; a freed place goes to the waitlist, a waitlisted one
+     * closes its gap ({@link RegistrationService#deleteByOrganizer}, #1315).
+     */
     @Override
     @PreAuthorize("hasRole('ORGANIZER')")
     public ResponseEntity<Void> deleteRegistration(String eventCode, String registrationCode) {
         log.debug("DELETE /api/v1/events/{}/registrations/{}", eventCode, registrationCode);
 
-        registrationRepository.delete(registrationOfEvent(eventCode, registrationCode));
+        registrationService.deleteByOrganizer(findEvent(eventCode), registrationCode);
         return ResponseEntity.noContent().build();
     }
 
@@ -265,11 +224,15 @@ public class RegistrationController implements RegistrationsApi {
                             + "Current status: " + registration.getStatus()));
         }
 
-        UserResponse attendee = sendConfirmation(registration, event);
+        Optional<UserResponse> attendee = registrationService.resendConfirmation(registration, event);
+        if (attendee.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(new ResendConfirmationResponse().message("The attendee has no e-mail address"));
+        }
         log.info("Confirmation email resent for registration {}: attendee={}", registrationCode,
-                LoggingUtils.maskEmail(attendee.getEmail()));
+                LoggingUtils.maskEmail(attendee.get().getEmail()));
         return ResponseEntity.ok(new ResendConfirmationResponse().message(
-                "Confirmation email resent to " + attendee.getEmail()));
+                "Confirmation email resent to " + attendee.get().getEmail()));
     }
 
     /**
@@ -314,11 +277,7 @@ public class RegistrationController implements RegistrationsApi {
 
         String username = securityContextHelper.getCurrentUsername();
         Event event = findEvent(eventCode);
-        Registration registration = registrationRepository
-                .findByEventIdAndAttendeeUsername(event.getId(), username)
-                .filter(r -> !"cancelled".equalsIgnoreCase(r.getStatus()))
-                .orElseThrow(() -> new NoSuchElementException(
-                        "No active registration found for user " + username + " at event " + eventCode));
+        Registration registration = registrationService.findActiveOfUser(event, username);
 
         registrationService.cancelRegistration(registration);
         log.info("Authenticated cancellation: registration {} cancelled for user {} at event {}",
@@ -335,30 +294,8 @@ public class RegistrationController implements RegistrationsApi {
         return registrationOfEvent(findEvent(eventCode), registrationCode);
     }
 
-    /**
-     * The registration with this code, if it belongs to this event: 404 otherwise, the same answer
-     * for an unknown code and for a code of another event (its existence is not revealed).
-     */
+    /** 404 for an unknown code and for a code of another event alike ({@link RegistrationService#findOfEvent}). */
     private Registration registrationOfEvent(Event event, String registrationCode) {
-        return registrationRepository.findByRegistrationCode(registrationCode)
-                .filter(registration -> event.getId().equals(registration.getEventId()))
-                .orElseThrow(() -> new RegistrationNotFoundException(registrationCode));
-    }
-
-    /**
-     * Mails the confirmation link (fresh 48 h token, Story 4.1.5c) with the deregistration link
-     * (Story 10.12) to the attendee, in German. Returns the attendee as CUMS knows them.
-     */
-    private UserResponse sendConfirmation(Registration registration, Event event) {
-        String confirmationToken = confirmationTokenService.generateConfirmationToken(
-                registration.getId(), event.getEventCode());
-        UserResponse attendee = userApiClient.getUserByUsername(registration.getAttendeeUsername());
-        String deregistrationUrl = registration.getDeregistrationToken() != null
-                ? appBaseUrl + "/deregister?token=" + registration.getDeregistrationToken()
-                : null;
-        registrationEmailService.sendRegistrationConfirmation(
-                registration, attendee, event, confirmationToken, deregistrationUrl, Locale.GERMAN);
-        log.info("Confirmation email queued for registration {}", registration.getRegistrationCode());
-        return attendee;
+        return registrationService.findOfEvent(event, registrationCode);
     }
 }

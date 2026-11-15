@@ -12,6 +12,8 @@ import ch.batbern.events.architecture.fixtures.mailcenter.FixtureMailCenterServi
 import ch.batbern.events.architecture.fixtures.mailcenter.render.FixtureMailPipeline;
 import ch.batbern.events.architecture.fixtures.mailcenter.variables.FixtureMailVariable;
 import ch.batbern.events.architecture.fixtures.notification.FixtureNotifier;
+import ch.batbern.events.architecture.fixtures.registrationcontroller.RegistrationController;
+import ch.batbern.events.architecture.fixtures.registrationcontroller.RegistrationRepository;
 import ch.batbern.events.architecture.fixtures.registrations.FixtureRegistrationService;
 import ch.batbern.events.architecture.fixtures.uploads.FixtureCumsUploadEntity;
 import ch.batbern.events.architecture.fixtures.uploads.FixtureLogoEntity;
@@ -177,6 +179,32 @@ class EmsModuleRulesFixtureTest {
         assertThat(EmsModuleRules.noRegistrationEndpointIn(ROOT, "EventController")
                 .evaluate(new ClassFileImporter().importClasses(CLEAN))
                 .hasViolation()).isFalse();
+    }
+
+    @Test
+    @DisplayName("should_fail_when_controllerUsesRepository")
+    void should_fail_when_controllerUsesRepository() {
+        EvaluationResult result = EmsModuleRules.controllerUsesNoRepository(ROOT, "RegistrationController",
+                "RegistrationRepository").evaluate(new ClassFileImporter().importClasses(
+                        RegistrationController.class, RegistrationRepository.class));
+
+        assertThat(result.getFailureReport().getDetails())
+                .anyMatch(line -> line.contains(RegistrationController.class.getName())
+                        && line.contains(RegistrationRepository.class.getName()));
+    }
+
+    @Test
+    @DisplayName("should_fail_when_noClassHasTheControllerName")
+    void should_fail_when_noClassHasTheControllerName() {
+        // Positive control: a controller of that name that uses no repository passes.
+        assertThat(EmsModuleRules.controllerUsesNoRepository(ROOT, "FixtureRegistrationService",
+                "RegistrationRepository").evaluate(new ClassFileImporter().importClasses(
+                        FixtureRegistrationService.class)).hasViolation()).isFalse();
+
+        assertThatThrownBy(() -> EmsModuleRules.controllerUsesNoRepository(ROOT, "RenamedController",
+                "RegistrationRepository").check(new ClassFileImporter().importClasses(RegistrationController.class)))
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("failed to check any classes");
     }
 
     @Test

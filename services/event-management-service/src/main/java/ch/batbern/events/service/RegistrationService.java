@@ -18,10 +18,13 @@ import ch.batbern.events.exception.DuplicateSubscriberException;
 import ch.batbern.events.exception.EventHasRealRegistrationsException;
 import ch.batbern.events.exception.UserServiceException;
 import ch.batbern.shared.utils.EmailAddresses;
+import ch.batbern.events.exception.RegistrationAlreadyProcessedException;
 import ch.batbern.events.exception.RegistrationCapacityExceededException;
 import ch.batbern.events.exception.DeregistrationClosedException;
 import ch.batbern.events.exception.RegistrationClosedException;
+import ch.batbern.events.exception.RegistrationNotFoundException;
 import ch.batbern.events.exception.RegistrationProfileIncompleteException;
+import ch.batbern.events.exception.RegistrationStatusTransitionException;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.RegistrationRepository;
 import ch.batbern.events.specification.RegistrationSpecification;
@@ -74,6 +77,7 @@ public class RegistrationService {
     private final WaitlistPromotionEmailService waitlistPromotionEmailService; // Story 10.11
     private final WaitlistPromotionService waitlistPromotionService; // Story 10.12
     private final PersonAddresses personAddresses; // #1183
+    private final RegistrationConfirmationSender confirmationSender; // #1315
 
     /**
      * Create a new anonymous registration for an event (ADR-005).
@@ -126,11 +130,12 @@ public class RegistrationService {
         if (existingRegistration.isPresent()) {
             Registration registration = existingRegistration.get();
             if ("registered".equalsIgnoreCase(registration.getStatus())) {
-                // Return existing pending registration - controller will resend confirmation email
-                log.info("Found pending registration for event: {} by user: {}, will resend confirmation email",
+                // #1315: a pending registration gets its confirmation mail again (fresh link); 200.
+                log.info("Found pending registration for event: {} by user: {}, resending confirmation email",
                         eventCode, username);
                 registration.setEventCode(eventCode); // Set transient field for API response
                 registration.setCompanyUpdated(companyUpdated);
+                confirmationSender.send(registration, event);
                 return registration;
             } else if ("waitlist".equalsIgnoreCase(registration.getStatus())) {
                 // Story 10.11 (T10.4): Duplicate waitlist registration — do NOT create another entry.
@@ -224,14 +229,13 @@ public class RegistrationService {
             }
         }
 
-        // Story 10.11 (T10.3): For waitlist registrations, send waitlist-confirmation email now.
-        // Normal registrations: confirmation email sent by controller after token generation.
+        // Story 10.11 (T10.3): a waitlist registration gets the waitlist mail, a pending one the
+        // confirmation link (Story 4.1.5c; #1315 one sender, in the attendee's language).
         if ("waitlist".equals(saved.getStatus())) {
             waitlistPromotionEmailService.sendWaitlistConfirmationEmail(saved);
+        } else {
+            confirmationSender.send(saved, event);
         }
-
-        // Story 4.1.5c: Email sending is the controller's (RegistrationController, needs the JWT token)
-        // Email will be sent after token generation in controller layer
 
         return saved;
     }
@@ -587,6 +591,202 @@ public class RegistrationService {
     }
 
     /**
+     * The organizer's status changes (#1315): from a status to the statuses it may change to. The
+     * current status is always allowed (no change); nothing else is. Nothing changes to
+     * {@code registered} or {@code waitlist} here: those are set by registration and promotion.
+     * {@code attended} and {@code no_show} reach {@code confirmed} and {@code cancelled} as
+     * corrections after the event; BATbern60 attendance was recorded from {@code registered}.
+     * The side effects are in {@link #changeStatus}.
+     */
+    static final Map<String, Set<String>> STATUS_TRANSITIONS = Map.of(
+            "registered", Set.of("confirmed", "cancelled", "attended", "no_show"),
+            "waitlist", Set.of("confirmed", "cancelled"),
+            "confirmed", Set.of("cancelled", "attended", "no_show"),
+            "attended", Set.of("confirmed", "cancelled", "no_show"),
+            "no_show", Set.of("confirmed", "cancelled", "attended"),
+            "cancelled", Set.of());
+
+    /**
+     * The registration with this code, if it belongs to this event: 404 otherwise, the same answer
+     * for an unknown code and for a code of another event (its existence is not revealed).
+     */
+    @Transactional(readOnly = true)
+    public Registration findOfEvent(Event event, String registrationCode) {
+        return registrationRepository.findByRegistrationCode(registrationCode)
+                .filter(registration -> event.getId().equals(registration.getEventId()))
+                .orElseThrow(() -> new RegistrationNotFoundException(registrationCode));
+    }
+
+    /**
+     * The user's registration for the event that is not cancelled, for their own cancellation
+     * ({@code DELETE /events/{code}/my-registration}).
+     *
+     * @throws NoSuchElementException none (404)
+     */
+    @Transactional(readOnly = true)
+    public Registration findActiveOfUser(Event event, String username) {
+        return registrationRepository.findByEventIdAndAttendeeUsername(event.getId(), username)
+                .filter(registration -> !"cancelled".equalsIgnoreCase(registration.getStatus()))
+                .orElseThrow(() -> new NoSuchElementException("No active registration found for user " + username
+                        + " at event " + event.getEventCode()));
+    }
+
+    /**
+     * Organizer status change ({@code PATCH /events/{code}/registrations/{registrationCode}}), by the
+     * table {@link #STATUS_TRANSITIONS}, in one transaction with its side effects (#1315):
+     * <ul>
+     *   <li>{@code registered} to {@code confirmed}: refused while more registrations hold a place
+     *       than the capacity allows (this one counted);</li>
+     *   <li>{@code registered} or {@code confirmed} to {@code cancelled}: the freed place goes to the
+     *       waitlist ({@link WaitlistPromotionService#promoteFromWaitlist}, which joins this
+     *       transaction);</li>
+     *   <li>{@code waitlist} to {@code confirmed}: the promote endpoint
+     *       ({@link WaitlistPromotionService#manuallyPromote}); the registration ends {@code registered};</li>
+     *   <li>{@code waitlist} to {@code cancelled}: leaves the queue, the positions behind it move up;</li>
+     *   <li>every other allowed change sets the status only.</li>
+     * </ul>
+     * No target, or the current status, writes nothing.
+     *
+     * @param target the new status, lower case (the spec enum), or {@code null}
+     * @return the registration as it is now
+     * @throws RegistrationNotFoundException          no registration with this code in this event (404)
+     * @throws RegistrationStatusTransitionException   the change is not in the table (409)
+     * @throws RegistrationCapacityExceededException   confirming would keep the event over capacity (409)
+     */
+    @Transactional
+    public Registration changeStatus(Event event, String registrationCode, String target) {
+        Registration registration = findOfEvent(event, registrationCode);
+        String from = registration.getStatus();
+        if (target == null || target.equals(from)) {
+            return registration;
+        }
+        if (!STATUS_TRANSITIONS.getOrDefault(from, Set.of()).contains(target)) {
+            throw new RegistrationStatusTransitionException(registrationCode, from, target);
+        }
+
+        if ("waitlist".equals(from)) {
+            if ("confirmed".equals(target)) {
+                waitlistPromotionService.manuallyPromote(registrationCode); // same entity, now registered
+            } else {
+                registration.setStatus(target);
+                registration.setWaitlistPosition(null);
+                registrationRepository.save(registration);
+                renumberWaitlist(event.getId());
+            }
+        } else {
+            if ("registered".equals(from) && "confirmed".equals(target)) {
+                assertCapacityForConfirmation(event);
+            }
+            registration.setStatus(target);
+            registrationRepository.save(registration);
+            if ("cancelled".equals(target) && Registration.CAPACITY_STATUSES.contains(from)) {
+                waitlistPromotionService.promoteFromWaitlist(event.getId());
+            }
+        }
+        log.info("Organizer changed registration {} from {} to {}", registrationCode, from, registration.getStatus());
+        return registration;
+    }
+
+    /**
+     * Organizer delete ({@code DELETE /events/{code}/registrations/{registrationCode}}), in one
+     * transaction with its waitlist effect (#1315): a place holder ({@code registered},
+     * {@code confirmed}) frees its place for the waitlist; a waitlisted registration leaves the
+     * queue and the positions behind it move up; any other status is only deleted.
+     *
+     * @throws RegistrationNotFoundException no registration with this code in this event (404)
+     */
+    @Transactional
+    public void deleteByOrganizer(Event event, String registrationCode) {
+        Registration registration = findOfEvent(event, registrationCode);
+        String status = registration.getStatus();
+        registrationRepository.delete(registration);
+        if (Registration.CAPACITY_STATUSES.contains(status)) {
+            waitlistPromotionService.promoteFromWaitlist(event.getId());
+        } else if ("waitlist".equals(status)) {
+            renumberWaitlist(event.getId());
+        }
+        log.info("Organizer deleted registration {} ({}) of event {}", registrationCode, status, event.getEventCode());
+    }
+
+    /** The event's place holders, the pending one to confirm counted, fit its capacity. */
+    private void assertCapacityForConfirmation(Event event) {
+        Integer capacity = event.getRegistrationCapacity();
+        if (capacity == null) {
+            return;
+        }
+        long holders = registrationRepository.countByEventIdAndStatusIn(event.getId(), Registration.CAPACITY_STATUSES);
+        if (holders > capacity) {
+            throw RegistrationCapacityExceededException.forConfirmation(event.getEventCode(), holders, capacity);
+        }
+    }
+
+    /**
+     * Numbers the event's waitlist 1, 2, 3, ... in its current order, after an organizer took a
+     * registration off it (#1315). The query flushes the change that left the queue first.
+     */
+    private void renumberWaitlist(UUID eventId) {
+        List<Registration> waiting = registrationRepository.findWaitlistByEventIdOrdered(eventId);
+        for (int i = 0; i < waiting.size(); i++) {
+            Registration registration = waiting.get(i);
+            if (!Integer.valueOf(i + 1).equals(registration.getWaitlistPosition())) {
+                registration.setWaitlistPosition(i + 1);
+                registrationRepository.save(registration);
+            }
+        }
+    }
+
+    /**
+     * The organizer's resend of the confirmation mail of a pending registration, with a fresh link.
+     *
+     * @return the attendee it goes to, or empty when CUMS has no address for them (nothing sent)
+     */
+    public Optional<UserResponse> resendConfirmation(Registration registration, Event event) {
+        return confirmationSender.send(registration, event);
+    }
+
+    /** What a confirmation link did: confirmed a pending registration, or found it confirmed already. */
+    public enum ConfirmationResult { CONFIRMED, ALREADY_CONFIRMED }
+
+    /**
+     * Confirms a pending registration with the (already validated) confirmation link (Story 4.1.5c).
+     * {@code registered} becomes {@code confirmed} and gets the confirmed mail with the calendar
+     * invite; {@code confirmed} answers {@link ConfirmationResult#ALREADY_CONFIRMED} without a mail.
+     * Any other status was processed after the link was sent (cancelled, waitlisted, attended,
+     * no-show): the old link must not revive it (#1315).
+     *
+     * @throws NoSuchElementException                 unknown registration or its event (404)
+     * @throws IllegalArgumentException               the registration belongs to another event (400)
+     * @throws RegistrationAlreadyProcessedException  the registration is no longer pending (409)
+     */
+    @Transactional
+    public ConfirmationResult confirmRegistration(String eventCode, UUID registrationId) {
+        Registration registration = registrationRepository.findById(registrationId)
+                .orElseThrow(() -> new NoSuchElementException("Registration not found: " + registrationId));
+        Event event = eventRepository.findById(registration.getEventId())
+                .orElseThrow(() -> new NoSuchElementException(
+                        "Event not found for registration: " + registrationId));
+        if (!event.getEventCode().equals(eventCode)) {
+            throw new IllegalArgumentException("Registration does not belong to event: " + eventCode);
+        }
+
+        String status = registration.getStatus();
+        if ("confirmed".equals(status)) {
+            return ConfirmationResult.ALREADY_CONFIRMED;
+        }
+        if (!"registered".equals(status)) {
+            throw new RegistrationAlreadyProcessedException(registration.getRegistrationCode(), status);
+        }
+
+        registration.setStatus("confirmed");
+        registrationRepository.save(registration);
+        log.info("Registration confirmed: {} for event: {}", registration.getRegistrationCode(), eventCode);
+
+        // The pending mail carries no calendar invite; it comes with the confirmed mail.
+        notifyRegistrationConfirmed(registration, event);
+        return ConfirmationResult.CONFIRMED;
+    }
+
+    /**
      * Soft-cancel a registration and trigger waitlist promotion.
      * <p>
      * Story 10.12 (AC4, AC5): Cancels a registration by setting status = "cancelled"
@@ -603,8 +803,8 @@ public class RegistrationService {
     /**
      * Send the "registration confirmed" mail (with the calendar invite) for a registration that has
      * just moved from pending to confirmed. Called by both confirmation paths: the confirmation link
-     * and the ACCEPT email reply. Never throws: a failed lookup or send must not undo the
-     * confirmation, which is already persisted.
+     * and the ACCEPT email reply, each inside its transaction after the status change. Never throws:
+     * a failed lookup or send must not roll back the confirmation.
      *
      * @param registration the confirmed registration
      * @param event        the registration's event
@@ -624,32 +824,40 @@ public class RegistrationService {
 
     /**
      * Confirm a registration by email address and event code.
-     * Called when an attendee replies with an ACCEPT keyword (Story 10.17).
-     * Replicates the same status change as clicking the confirmation link in the email.
+     * Called when an attendee replies with an ACCEPT keyword (Story 10.17), with the rule of the
+     * confirmation link ({@link #confirmRegistration}, #1315): only a pending ({@code registered})
+     * registration becomes {@code confirmed} and gets the confirmed mail; a confirmed one is left
+     * alone. Any other status ({@code waitlist}, {@code attended}, {@code no_show},
+     * {@code cancelled}) was processed after the mail was sent: nothing changes, nothing is sent.
      * <p>
-     * Anti-enumeration: silent no-op if no matching active registration is found.
+     * Anti-enumeration: silent no-op (logged) if no pending registration is found; the reply path
+     * answers nobody either way.
      *
      * @param email     attendee email address
      * @param eventCode event code (e.g. "BATbern42")
      */
     @Transactional
     public void confirmByEmail(String email, String eventCode) {
-        registrationRepository.findByAttendeeEmailAndEventCode(email, eventCode)
-                .filter(r -> !"confirmed".equalsIgnoreCase(r.getStatus())
-                          && !"cancelled".equalsIgnoreCase(r.getStatus()))
-                .ifPresentOrElse(
-                        registration -> {
-                            registration.setStatus("confirmed");
-                            registration.setUpdatedAt(java.time.Instant.now());
-                            registrationRepository.save(registration);
-                            log.info("Registration confirmed via email reply: {} for event: {}",
-                                    registration.getRegistrationCode(), eventCode);
-                            eventRepository.findByEventCode(eventCode)
-                                    .ifPresent(event -> notifyRegistrationConfirmed(registration, event));
-                        },
-                        () -> log.info("confirmByEmail: no active registration found for {}*** / {}",
-                                email.substring(0, Math.min(5, email.length())), eventCode)
-            );
+        String sender = email.substring(0, Math.min(5, email.length())) + "***";
+        Optional<Registration> found = registrationRepository.findByAttendeeEmailAndEventCode(email, eventCode);
+        if (found.isEmpty()) {
+            log.info("confirmByEmail: no registration found for {} / {}", sender, eventCode);
+            return;
+        }
+        Registration registration = found.get();
+        String status = registration.getStatus();
+        if (!"registered".equals(status)) {
+            log.info("confirmByEmail: registration {} is {}, not pending; ACCEPT reply from {} ignored (#1315)",
+                    registration.getRegistrationCode(), status, sender);
+            return;
+        }
+        registration.setStatus("confirmed");
+        registration.setUpdatedAt(Instant.now());
+        registrationRepository.save(registration);
+        log.info("Registration confirmed via email reply: {} for event: {}",
+                registration.getRegistrationCode(), eventCode);
+        eventRepository.findByEventCode(eventCode)
+                .ifPresent(event -> notifyRegistrationConfirmed(registration, event));
     }
 
     /**

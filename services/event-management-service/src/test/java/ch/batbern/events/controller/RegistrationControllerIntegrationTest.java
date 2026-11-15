@@ -20,23 +20,33 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -252,12 +262,34 @@ class RegistrationControllerIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @DisplayName("QA Fix (VALID-001): should_return409_when_duplicateRegistrationAttempted")
-    void should_return409_when_duplicateRegistrationAttempted() throws Exception {
+    @DisplayName("#1315: a repeated pending registration answers 200 and mails a new confirmation link once")
+    void should_return200AndResendConfirmation_when_pendingRegistrationRepeated() throws Exception {
         mockMvc.perform(post("/api/v1/events/{eventCode}/registrations", EVENT_CODE)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(NEW_REGISTRATION))
                 .andExpect(status().isCreated());
+        sesRecorder.awaitAsyncSends();
+        sesRecorder.reset();
+
+        mockMvc.perform(post("/api/v1/events/{eventCode}/registrations", EVENT_CODE)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(NEW_REGISTRATION))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value(
+                        "You are already registered for this event. A new confirmation email has been sent."))
+                .andExpect(jsonPath("$.email").value("john.doe@example.com"));
+
+        sesRecorder.awaitAsyncSends();
+        assertThat(sesRecorder.mailsTo(JOHN_MAIL)).singleElement()
+                .satisfies(mail -> assertThat(mail.html()).contains(CONFIRM_LINK));
+        assertThat(registrationRepository.findAll().stream()
+                .filter(r -> testEvent.getId().equals(r.getEventId()))).hasSize(1);
+    }
+
+    @Test
+    @DisplayName("QA Fix (VALID-001): a repeated confirmed registration answers 409 and mails nothing")
+    void should_return409AndMailNothing_when_confirmedRegistrationRepeated() throws Exception {
+        createTestRegistration("john.doe", "confirmed");
 
         mockMvc.perform(post("/api/v1/events/{eventCode}/registrations", EVENT_CODE)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -267,6 +299,63 @@ class RegistrationControllerIntegrationTest extends AbstractIntegrationTest {
 
         assertThat(registrationRepository.findAll().stream()
                 .filter(r -> testEvent.getId().equals(r.getEventId()))).hasSize(1);
+        // Positive control: a new registration in the same event is mailed.
+        cums.user("jane.smith", "Jane", "Smith", JANE_MAIL);
+        mockMvc.perform(post("/api/v1/events/{eventCode}/registrations", EVENT_CODE)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"firstName\": \"Jane\", \"lastName\": \"Smith\", \"email\": \""
+                                + JANE_MAIL + "\", \"termsAccepted\": true}"))
+                .andExpect(status().isCreated());
+        sesRecorder.awaitAsyncSends();
+        assertThat(sesRecorder.mailsTo(JANE_MAIL)).hasSize(1);
+        assertThat(sesRecorder.mailsTo(JOHN_MAIL)).isEmpty();
+    }
+
+    @ParameterizedTest
+    @CsvSource({"en,Please confirm your registration", "de,Bitte bestätigen", "'',Bitte bestätigen"})
+    @DisplayName("#1315: the confirmation mail of a registration is in the attendee's language, German by default")
+    void should_mailConfirmationInPreferredLanguage_when_registering(String language, String subject)
+            throws Exception {
+        String address = givenLanguage("john.doe", language);
+
+        mockMvc.perform(post("/api/v1/events/{eventCode}/registrations", EVENT_CODE)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(NEW_REGISTRATION))
+                .andExpect(status().isCreated());
+
+        sesRecorder.awaitAsyncSends();
+        assertThat(sesRecorder.mailsTo(address)).singleElement()
+                .satisfies(mail -> assertThat(mail.subject()).startsWith(subject));
+    }
+
+    @ParameterizedTest
+    @CsvSource({"en,Please confirm your registration", "de,Bitte bestätigen", "'',Bitte bestätigen"})
+    @WithMockUser(roles = "ORGANIZER")
+    @DisplayName("#1315: the organizer's resend is in the attendee's language, German by default")
+    void should_resendConfirmationInPreferredLanguage(String language, String subject) throws Exception {
+        String address = givenLanguage("john.doe", language);
+        Registration pending = createTestRegistration("john.doe", "registered");
+
+        mockMvc.perform(post("/api/v1/events/{eventCode}/registrations/{registrationCode}/resend-confirmation",
+                        EVENT_CODE, pending.getRegistrationCode()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("Confirmation email resent to " + address));
+
+        sesRecorder.awaitAsyncSends();
+        assertThat(sesRecorder.mailsTo(address)).singleElement()
+                .satisfies(mail -> assertThat(mail.subject()).startsWith(subject));
+    }
+
+    /**
+     * CUMS answers this user with this language ({@code <username>@test.com}), or, for an empty
+     * language, with no settings (John at his simulator address).
+     */
+    private String givenLanguage(String username, String language) {
+        if (language.isEmpty()) {
+            return JOHN_MAIL;
+        }
+        cums.userWithLanguage(username, language);
+        return username + "@test.com";
     }
 
     @Test
@@ -562,6 +651,30 @@ class RegistrationControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isNotFound());
     }
 
+    @ParameterizedTest
+    @ValueSource(strings = {"cancelled", "waitlist", "attended", "no_show"})
+    @DisplayName("#1315: an old confirmation link does not revive a processed registration")
+    void should_return409_when_confirmingProcessedRegistration(String processed) throws Exception {
+        Registration registration = createTestRegistration("john.doe", processed);
+        String token = confirmationTokenService.generateConfirmationToken(registration.getId(), EVENT_CODE);
+
+        mockMvc.perform(post("/api/v1/events/{eventCode}/registrations/confirm", EVENT_CODE).param("token", token))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.details.code").value("REGISTRATION_ALREADY_PROCESSED"));
+
+        assertThat(registrationRepository.findById(registration.getId()).orElseThrow().getStatus())
+                .isEqualTo(processed);
+        // Positive control: a pending registration's link confirms and mails.
+        cums.user("jane.smith", "Jane", "Smith", JANE_MAIL);
+        Registration pending = createTestRegistration("jane.smith", "registered");
+        mockMvc.perform(post("/api/v1/events/{eventCode}/registrations/confirm", EVENT_CODE)
+                        .param("token", confirmationTokenService.generateConfirmationToken(pending.getId(), EVENT_CODE)))
+                .andExpect(status().isOk());
+        sesRecorder.awaitAsyncSends();
+        assertThat(sesRecorder.mailsTo(JANE_MAIL)).hasSize(1);
+        assertThat(sesRecorder.mailsTo(JOHN_MAIL)).isEmpty();
+    }
+
     // ============================================================================
     // Organizer PATCH and DELETE
     // ============================================================================
@@ -737,6 +850,284 @@ class RegistrationControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isNotFound());
         sesRecorder.awaitAsyncSends();
         assertThat(sesRecorder.mails()).isEmpty();
+    }
+
+    // ============================================================================
+    // Organizer status change: the transition table (#1315)
+    // ============================================================================
+
+    private static final List<String> STATUSES =
+            List.of("registered", "waitlist", "confirmed", "cancelled", "attended", "no_show");
+
+    /** The 36 pairs; the table of docs/architecture/06-backend-architecture.md, "Organizer status changes (#1315)". */
+    static Stream<Arguments> everyTransition() {
+        Map<String, Set<String>> allowed = Map.of(
+                "registered", Set.of("confirmed", "cancelled", "attended", "no_show"),
+                "waitlist", Set.of("confirmed", "cancelled"),
+                "confirmed", Set.of("cancelled", "attended", "no_show"),
+                "attended", Set.of("confirmed", "cancelled", "no_show"),
+                "no_show", Set.of("confirmed", "cancelled", "attended"),
+                "cancelled", Set.of());
+        return STATUSES.stream().flatMap(from -> STATUSES.stream().map(to -> {
+            boolean ok = from.equals(to) || allowed.get(from).contains(to);
+            // waitlist -> confirmed is the promote endpoint: the registration ends as registered.
+            String end = !ok ? from : "waitlist".equals(from) && "confirmed".equals(to) ? "registered" : to;
+            return Arguments.of(from, to, ok ? 200 : 409, end);
+        }));
+    }
+
+    @ParameterizedTest(name = "{0} -> {1}: {2}, ends {3}")
+    @MethodSource("everyTransition")
+    @WithMockUser(roles = "ORGANIZER")
+    @DisplayName("#1315: every status pair answers 200 or 409 as the table says, never 500")
+    void should_followTransitionTable_when_organizerPatchesStatus(String from, String to, int expected, String end)
+            throws Exception {
+        Registration registration = registration(testEvent, "john.doe", from);
+        if ("waitlist".equals(from)) {
+            registration.setWaitlistPosition(1);
+        }
+        registration = registrationRepository.save(registration);
+
+        var result = patchStatus(EVENT_CODE, registration.getRegistrationCode(), "{\"status\":\"" + to + "\"}")
+                .andExpect(status().is(expected));
+        if (expected == 409) {
+            result.andExpect(jsonPath("$.details.code").value("REGISTRATION_TRANSITION_NOT_ALLOWED"));
+        } else {
+            result.andExpect(jsonPath("$.status").value(end.toUpperCase(Locale.ROOT)));
+        }
+        assertThat(registrationRepository.findById(registration.getId()).orElseThrow().getStatus()).isEqualTo(end);
+    }
+
+    @ParameterizedTest
+    @CsvSource({"cancelled,confirmed", "registered,waitlist", "confirmed,waitlist", "confirmed,registered"})
+    @WithMockUser(roles = "ORGANIZER")
+    @DisplayName("#1315: a transition outside the table answers 409, changes nothing and mails nobody")
+    void should_return409AndMailNobody_when_transitionNotInTable(String from, String to) throws Exception {
+        Registration registration = createTestRegistration("john.doe", from);
+        Instant updatedAt = registrationRepository.findById(registration.getId()).orElseThrow().getUpdatedAt();
+
+        patchStatus(EVENT_CODE, registration.getRegistrationCode(), "{\"status\":\"" + to + "\"}")
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.details.code").value("REGISTRATION_TRANSITION_NOT_ALLOWED"))
+                .andExpect(jsonPath("$.message").value(containsString(from + " to " + to)));
+
+        Registration unchanged = registrationRepository.findById(registration.getId()).orElseThrow();
+        assertThat(unchanged.getStatus()).isEqualTo(from);
+        assertThat(unchanged.getUpdatedAt()).isEqualTo(updatedAt);
+        // Positive control: the one PATCH that mails (waitlist -> confirmed) reaches Jane.
+        cums.user("jane.smith", "Jane", "Smith", JANE_MAIL);
+        Registration waiting = registration(testEvent, "jane.smith", "waitlist");
+        waiting.setWaitlistPosition(1);
+        waiting = registrationRepository.save(waiting);
+        patchStatus(EVENT_CODE, waiting.getRegistrationCode(), "{\"status\":\"confirmed\"}").andExpect(status().isOk());
+        sesRecorder.awaitAsyncSends();
+        assertThat(sesRecorder.mailsTo(JANE_MAIL)).hasSize(1);
+        assertThat(sesRecorder.mailsTo(JOHN_MAIL)).isEmpty();
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"CONFIRMED", "foo", ""})
+    @WithMockUser(roles = "ORGANIZER")
+    @DisplayName("#1315: a status outside the lower-case enum answers 400 (was 500 or a stored bad value)")
+    void should_return400_when_statusNotInEnum(String value) throws Exception {
+        Registration registration = createTestRegistration("john.doe", "registered");
+
+        patchStatus(EVENT_CODE, registration.getRegistrationCode(), "{\"status\":\"" + value + "\"}")
+                .andExpect(status().isBadRequest());
+
+        assertThat(registrationRepository.findById(registration.getId()).orElseThrow().getStatus())
+                .isEqualTo("registered");
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"{}", "{\"status\":\"confirmed\"}"})
+    @WithMockUser(roles = "ORGANIZER")
+    @DisplayName("#1315: no status or the same status writes nothing and mails nobody")
+    void should_writeNothing_when_statusMissingOrUnchanged(String body) throws Exception {
+        Registration registration = createTestRegistration("john.doe", "confirmed");
+        Instant updatedAt = registrationRepository.findById(registration.getId()).orElseThrow().getUpdatedAt();
+
+        patchStatus(EVENT_CODE, registration.getRegistrationCode(), body)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("CONFIRMED"));
+
+        assertThat(registrationRepository.findById(registration.getId()).orElseThrow().getUpdatedAt())
+                .isEqualTo(updatedAt);
+        // Positive control: a real change writes.
+        patchStatus(EVENT_CODE, registration.getRegistrationCode(), "{\"status\":\"attended\"}")
+                .andExpect(status().isOk());
+        assertThat(registrationRepository.findById(registration.getId()).orElseThrow().getUpdatedAt())
+                .isAfter(updatedAt);
+        sesRecorder.awaitAsyncSends();
+        assertThat(sesRecorder.mails()).isEmpty();
+    }
+
+    @Test
+    @WithMockUser(roles = "ORGANIZER")
+    @ExtendWith(OutputCaptureExtension.class)
+    @DisplayName("#1315: registered -> confirmed is refused while the event holds more than its capacity")
+    void should_checkCapacity_when_organizerConfirmsPendingRegistration(CapturedOutput output) throws Exception {
+        Event capped = cappedOtherEvent(); // capacity 1
+        Registration john = registrationRepository.save(registration(capped, "john.doe", "registered"));
+        Registration jane = registrationRepository.save(registration(capped, "jane.smith", "registered"));
+
+        // Two hold a place, one fits: confirming John would keep the event over capacity.
+        patchStatus(OTHER_EVENT_CODE, john.getRegistrationCode(), "{\"status\":\"confirmed\"}")
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.details.code").value("capacity_exceeded"))
+                .andExpect(jsonPath("$.details.activeCount").value(2))
+                .andExpect(jsonPath("$.details.capacity").value(1))
+                .andExpect(jsonPath("$.message").value(not(containsString("force"))));
+        assertThat(registrationRepository.findById(john.getId()).orElseThrow().getStatus()).isEqualTo("registered");
+        // The log names the refused operation, not the add-participant dialog.
+        assertThat(output.getOut()).contains("PATCH /api/v1/events/" + OTHER_EVENT_CODE + "/registrations/"
+                + john.getRegistrationCode() + " refused, event at capacity");
+        assertThat(output.getOut()).doesNotContain("Add-participant refused");
+
+        // At capacity (John's own place counted): confirmed.
+        patchStatus(OTHER_EVENT_CODE, jane.getRegistrationCode(), "{\"status\":\"cancelled\"}")
+                .andExpect(status().isOk());
+        patchStatus(OTHER_EVENT_CODE, john.getRegistrationCode(), "{\"status\":\"confirmed\"}")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("CONFIRMED"));
+    }
+
+    @Test
+    @WithMockUser(roles = "ORGANIZER")
+    @DisplayName("#1315: waitlist -> confirmed is the promote endpoint: registered, position cleared, mail")
+    void should_promote_when_organizerConfirmsWaitlistedRegistration() throws Exception {
+        Event capped = cappedOtherEvent(); // capacity 1, already full: the promotion ignores it
+        registrationRepository.save(registration(capped, "jane.smith", "confirmed"));
+        Registration waiting = registration(capped, "john.doe", "waitlist");
+        waiting.setWaitlistPosition(1);
+        waiting = registrationRepository.save(waiting);
+
+        patchStatus(OTHER_EVENT_CODE, waiting.getRegistrationCode(), "{\"status\":\"confirmed\"}")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("REGISTERED"))
+                .andExpect(jsonPath("$.waitlistPosition").value(nullValue()));
+
+        Registration promoted = registrationRepository.findById(waiting.getId()).orElseThrow();
+        assertThat(promoted.getStatus()).isEqualTo("registered");
+        assertThat(promoted.getWaitlistPosition()).isNull();
+        sesRecorder.awaitAsyncSends();
+        assertThat(sesRecorder.mailsTo(JOHN_MAIL)).singleElement()
+                .satisfies(mail -> assertThat(mail.subject()).contains("Warteliste"));
+    }
+
+    @Test
+    @WithMockUser(roles = "ORGANIZER")
+    @DisplayName("#1315: waitlist -> cancelled leaves the queue, renumbers it and promotes nobody")
+    void should_renumberWaitlist_when_organizerCancelsWaitlistedRegistration() throws Exception {
+        Event capped = event(OTHER_EVENT_CODE, 1714);
+        capped.setRegistrationCapacity(2);
+        capped = eventRepository.save(capped);
+        registrationRepository.save(registration(capped, "jane.smith", "confirmed")); // one place free
+        Registration first = waiting(capped, "anna.erste", 1);
+        Registration second = waiting(capped, "ben.zweite", 2);
+        Registration third = waiting(capped, "carl.dritte", 3);
+
+        patchStatus(OTHER_EVENT_CODE, second.getRegistrationCode(), "{\"status\":\"cancelled\"}")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("CANCELLED"));
+
+        Registration left = registrationRepository.findById(second.getId()).orElseThrow();
+        assertThat(left.getStatus()).isEqualTo("cancelled");
+        assertThat(left.getWaitlistPosition()).isNull();
+        // Nobody moves up: a waitlisted registration held no place.
+        assertThat(registrationRepository.findById(first.getId()).orElseThrow())
+                .satisfies(r -> assertThat(r.getStatus()).isEqualTo("waitlist"))
+                .satisfies(r -> assertThat(r.getWaitlistPosition()).isEqualTo(1));
+        assertThat(registrationRepository.findById(third.getId()).orElseThrow())
+                .satisfies(r -> assertThat(r.getStatus()).isEqualTo("waitlist"))
+                .satisfies(r -> assertThat(r.getWaitlistPosition()).isEqualTo(2));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"registered", "confirmed"})
+    @WithMockUser(roles = "ORGANIZER")
+    @DisplayName("#1315: cancelling a place holder promotes the first waiting in the same request")
+    void should_promoteFromWaitlist_when_organizerCancelsPlaceHolder(String holder) throws Exception {
+        Event capped = cappedOtherEvent(); // capacity 1
+        Registration leaving = registrationRepository.save(registration(capped, "jane.smith", holder));
+        Registration waiting = waiting(capped, "john.doe", 1);
+
+        patchStatus(OTHER_EVENT_CODE, leaving.getRegistrationCode(), "{\"status\":\"cancelled\"}")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("CANCELLED"));
+
+        assertThat(registrationRepository.findById(leaving.getId()).orElseThrow().getStatus()).isEqualTo("cancelled");
+        assertThat(registrationRepository.findById(waiting.getId()).orElseThrow().getStatus()).isEqualTo("registered");
+        sesRecorder.awaitAsyncSends();
+        assertThat(sesRecorder.mailsTo(JOHN_MAIL)).hasSize(1); // the promotion mail
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"registered", "confirmed"})
+    @WithMockUser(roles = "ORGANIZER")
+    @DisplayName("#1315: deleting a place holder gives the place to the first waiting")
+    void should_promoteFromWaitlist_when_organizerDeletesPlaceHolder(String holder) throws Exception {
+        Event capped = cappedOtherEvent(); // capacity 1
+        Registration leaving = registrationRepository.save(registration(capped, "jane.smith", holder));
+        Registration first = waiting(capped, "john.doe", 1);
+        Registration second = waiting(capped, "ben.zweite", 2);
+
+        mockMvc.perform(delete("/api/v1/events/{eventCode}/registrations/{registrationCode}",
+                        OTHER_EVENT_CODE, leaving.getRegistrationCode()))
+                .andExpect(status().isNoContent());
+
+        assertThat(registrationRepository.findById(leaving.getId())).isEmpty();
+        assertThat(registrationRepository.findById(first.getId()).orElseThrow().getStatus()).isEqualTo("registered");
+        assertThat(registrationRepository.findById(second.getId()).orElseThrow().getStatus()).isEqualTo("waitlist");
+        sesRecorder.awaitAsyncSends();
+        assertThat(sesRecorder.mailsTo(JOHN_MAIL)).singleElement()
+                .satisfies(mail -> assertThat(mail.subject()).contains("Warteliste"));
+    }
+
+    @Test
+    @WithMockUser(roles = "ORGANIZER")
+    @DisplayName("#1315: deleting a waitlisted registration renumbers the queue and promotes nobody")
+    void should_renumberWaitlist_when_organizerDeletesWaitlistedRegistration() throws Exception {
+        Event capped = event(OTHER_EVENT_CODE, 1714);
+        capped.setRegistrationCapacity(2);
+        capped = eventRepository.save(capped);
+        registrationRepository.save(registration(capped, "jane.smith", "confirmed")); // one place free
+        Registration first = waiting(capped, "anna.erste", 1);
+        Registration second = waiting(capped, "john.doe", 2);
+
+        mockMvc.perform(delete("/api/v1/events/{eventCode}/registrations/{registrationCode}",
+                        OTHER_EVENT_CODE, first.getRegistrationCode()))
+                .andExpect(status().isNoContent());
+
+        assertThat(registrationRepository.findById(first.getId())).isEmpty();
+        assertThat(registrationRepository.findById(second.getId()).orElseThrow())
+                .satisfies(r -> assertThat(r.getStatus()).isEqualTo("waitlist"))
+                .satisfies(r -> assertThat(r.getWaitlistPosition()).isEqualTo(1));
+        sesRecorder.awaitAsyncSends();
+        assertThat(sesRecorder.mailsTo(JOHN_MAIL)).isEmpty();
+        // Positive control: deleting the place holder now promotes John, with the mail.
+        Registration holder = registrationRepository.findByEventIdAndAttendeeUsername(capped.getId(), "jane.smith")
+                .orElseThrow();
+        mockMvc.perform(delete("/api/v1/events/{eventCode}/registrations/{registrationCode}",
+                        OTHER_EVENT_CODE, holder.getRegistrationCode()))
+                .andExpect(status().isNoContent());
+        sesRecorder.awaitAsyncSends();
+        assertThat(sesRecorder.mailsTo(JOHN_MAIL)).hasSize(1);
+    }
+
+    private ResultActions patchStatus(String eventCode, String registrationCode,
+            String body) throws Exception {
+        return mockMvc.perform(patch("/api/v1/events/{eventCode}/registrations/{registrationCode}",
+                        eventCode, registrationCode)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(body));
+    }
+
+    /** A waitlisted registration at this position. */
+    private Registration waiting(Event event, String username, int position) {
+        Registration registration = registration(event, username, "waitlist");
+        registration.setWaitlistPosition(position);
+        return registrationRepository.save(registration);
     }
 
     // ============================================================================

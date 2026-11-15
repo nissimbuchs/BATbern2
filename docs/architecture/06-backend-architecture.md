@@ -1491,9 +1491,9 @@ flowchart TD
     DL -->|"yes"| CLOSED["RegistrationClosedException"]
     DL -->|"no"| USR["CUMS get-or-create user by email"]
     USR --> DUP{"existing registration<br/>for this user?"}
-    DUP -->|"registered"| RESEND["resend the confirmation mail"]
-    DUP -->|"waitlist"| RESENDW["resend the waitlist mail"]
-    DUP -->|"confirmed"| REJ["409 already registered"]
+    DUP -->|"registered"| RESEND["200, resend the confirmation mail"]
+    DUP -->|"waitlist"| RESENDW["200, resend the waitlist mail"]
+    DUP -->|"confirmed"| REJ["409 already registered, no mail"]
     DUP -->|"cancelled"| DEL["delete the cancelled row,<br/>register again"]
     DUP -->|"none"| CAP{"capacity set and registered<br/>+ confirmed reaches capacity?"}
     DEL --> CAP
@@ -1503,6 +1503,18 @@ flowchart TD
     REG -->|"not confirmed"| CLEAN["RegistrationCleanupService deletes it<br/>after 120 h from the last link"]
 ```
 
+**Confirmation link (#1315).** `RegistrationService.confirmRegistration` (one transaction) confirms
+only a pending (`registered`) registration and sends the confirmed mail with the calendar invite. A
+`confirmed` one answers 200 "Registration already confirmed" without a mail. Any other status
+(`cancelled`, `waitlist`, `attended`, `no_show`) was processed after the link was sent: 409
+`REGISTRATION_ALREADY_PROCESSED`, the status stays, so an old link cannot revive a cancelled or
+waitlisted registration.
+The ACCEPT e-mail reply (`InboundEmailRouter` → `RegistrationService.confirmByEmail`) follows the same
+rule: it confirms only a `registered` registration (confirmed mail with the calendar invite), leaves a
+confirmed one alone, and ignores any other status without a change or a mail. The reply path answers
+the sender in no case (a refusal is logged, the reply is counted as a keyword ACCEPT in the Mail Center
+and not forwarded), as for a reply that matches no registration.
+
 **Filling the waitlist (#1208).** `WaitlistPromotionService.promoteFromWaitlist(eventId)` promotes, in
 waitlist order, as many people as there are free places: capacity minus `registered` + `confirmed`
 (the same count that puts new sign-ups on the waitlist); no capacity means everyone waiting. Each
@@ -1511,7 +1523,7 @@ Remaining positions are not renumbered.
 
 ```mermaid
 flowchart LR
-    C1["attendee or organizer cancels<br/>RegistrationService.cancelRegistration,<br/>DeregistrationService, organizer status PATCH"] --> P["promoteFromWaitlist"]
+    C1["attendee or organizer cancels<br/>RegistrationService.cancelRegistration,<br/>DeregistrationService, organizer status PATCH,<br/>organizer DELETE of a place holder"] --> P["promoteFromWaitlist"]
     C2["organizer PATCH /events/{code}<br/>with registrationCapacity in the body,<br/>also when unchanged"] --> P
     C3["organizer PUT /events/{code}<br/>when the capacity changed"] --> P
     P --> F{"free = capacity - registered - confirmed"}
@@ -1519,6 +1531,36 @@ flowchart LR
     F -->|"places free"| M["first free entries of the waitlist:<br/>status registered, promotion mail"]
     MAN["organizer: Promote to Registered<br/>manuallyPromote, ignores capacity"] --> M
 ```
+
+**Organizer status changes (#1315).** `PATCH /events/{code}/registrations/{registrationCode}` takes
+a lower-case status from the spec enum (anything else is 400) and runs
+`RegistrationService.changeStatus`, one transaction with its side effects, by the table
+`STATUS_TRANSITIONS`. No status, or the current one, writes nothing. A change not in the table is
+409 `REGISTRATION_TRANSITION_NOT_ALLOWED`.
+
+| From \ To | registered | waitlist | confirmed | cancelled | attended | no_show |
+|---|---|---|---|---|---|---|
+| registered | no change | 409 | capacity check | promote | yes | yes |
+| waitlist | 409 | no change | as `POST .../promote`: ends `registered`, promotion mail | leaves the queue, renumber | 409 | 409 |
+| confirmed | 409 | 409 | no change | promote | yes | yes |
+| attended | 409 | 409 | yes (correction) | yes, no promotion | no change | yes |
+| no_show | 409 | 409 | yes (correction) | yes, no promotion | yes | no change |
+| cancelled | 409 | 409 | 409 | no change | 409 | 409 |
+
+- *Capacity check*: refused (409 `capacity_exceeded`, `activeCount`, `capacity`) while `registered` +
+  `confirmed` exceed the capacity; the registration to confirm already counts. Corrections from
+  `attended` or `no_show` take no capacity check: the event is over.
+- *Promote*: `promoteFromWaitlist(eventId)`, joining the transaction, only when the registration held
+  a place (`registered`, `confirmed`). Unlike an attendee's cancellation, the organizer's has no
+  deadline rule (#1238 E2).
+- *Renumber*: the remaining waitlist is numbered 1, 2, 3 again; nobody is promoted, the registration
+  held no place. Promotion itself still does not renumber.
+- The organizer's `DELETE /events/{code}/registrations/{registrationCode}`
+  (`RegistrationService.deleteByOrganizer`, one transaction) does the same: deleting a place holder
+  promotes, deleting a waitlisted registration renumbers, any other status is only deleted.
+- BATbern60 attendance was recorded through this PATCH from `registered` (1 attended, 8 no-show), so
+  `registered` to `attended`/`no_show` stays allowed. The organizer menu offers Cancel for every
+  status but cancelled.
 
 Saving the capacity again unchanged is how an organizer fills places that are already free. A
 participant an organizer adds over the capacity (`force`) leaves `free` at or below zero, so a later
@@ -1562,6 +1604,10 @@ at an already-deleted row; the service enforces this defensively
 - `RegistrationResendService` (event-management-service, 08:30) re-sends the registration-confirmation
   email — with **fresh** JWTs — to attendees unconfirmed for `> after-hours` (default 48h), capped at
   `max-attempts` (default 2) via `confirmation_resend_count` / `confirmation_resent_at` on `registrations`.
+  It sends through `RegistrationConfirmationSender`, the one sender of the confirmation mail (also used
+  by the anonymous registration and the organizer's resend, #1315): fresh token, deregistration link,
+  the attendee's preferred language (unset or German: German, otherwise English). A registration whose
+  attendee has no address is skipped and not counted; one that fails does not stop the batch.
 - `CognitoConfirmationResendJob` (company-user-management-service, 08:15) re-sends a fresh Cognito
   sign-up code to accounts unconfirmed within a bounded age window (stateless anti-spam, since
   UNCONFIRMED users have no DB row) — see [06b §Unconfirmed Sign-up Resend Job](./06b-user-lifecycle-sync.md).

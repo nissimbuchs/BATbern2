@@ -252,7 +252,7 @@ export interface paths {
     post?: never;
     /**
      * Delete registration
-     * @description Permanently delete a registration from the event.
+     * @description Permanently delete a registration from the event. In the same transaction (#1315): deleting a registration that holds a place (registered, confirmed) gives the place to the first on the waitlist (promotion mail); deleting a waitlisted one closes its gap in the waitlist positions and promotes nobody; any other status is only deleted.
      *
      *     **Story**: 4.1.6
      *     **Security**: ORGANIZER role required.
@@ -262,10 +262,28 @@ export interface paths {
     head?: never;
     /**
      * Update registration
-     * @description Partially update a registration (e.g. set the status).
+     * @description Organizer status change of a registration (#1315). One transaction: the status and its
+     *     side effects (waitlist promotion, renumbering) are written together or not at all. No
+     *     status, or the current status, changes nothing (200). Any other change not in this table
+     *     answers 409 `REGISTRATION_TRANSITION_NOT_ALLOWED`:
+     *
+     *     | From | To | Effect |
+     *     |---|---|---|
+     *     | registered | confirmed | refused (409 `capacity_exceeded`) while more registrations hold a place than the capacity allows |
+     *     | registered, confirmed | cancelled | the freed place goes to the first on the waitlist (promotion mail) |
+     *     | registered, confirmed | attended, no_show | status only |
+     *     | waitlist | confirmed | as `POST .../promote`: the registration becomes `registered` (waitlist position cleared, promotion mail, no capacity check); the response says `REGISTERED` |
+     *     | waitlist | cancelled | leaves the waitlist, the positions behind it move up; nobody is promoted |
+     *     | attended, no_show | confirmed, cancelled | correction after the event: status only, no capacity check, no promotion |
+     *     | attended | no_show, and no_show to attended | status only |
+     *     | cancelled | anything | 409 |
+     *
+     *     Nothing changes to `registered` or `waitlist` by this request.
      *
      *     **Story**: 4.1.6 - Uses registrationCode
-     *     **Security**: ORGANIZER role required. Attendees cancel through the token-based deregistration flow or `DELETE /events/{eventCode}/my-registration`.
+     *
+     *     **Security**: ORGANIZER role required. Attendees cancel through the token-based
+     *     deregistration flow or `DELETE /events/{eventCode}/my-registration`.
      */
     patch: operations['updateRegistration'];
     trace?: never;
@@ -338,7 +356,7 @@ export interface paths {
      *     - Registration ID extracted from token claims
      *     - Event code in URL must match event code in token
      *
-     *     **Idempotency**: Can be called multiple times safely. Already confirmed registrations return 200 OK.
+     *     **Idempotency**: Can be called multiple times safely. Already confirmed registrations return 200 OK ("Registration already confirmed") and are not mailed again. Only a pending (`registered`) registration is confirmed; one that was cancelled, waitlisted, attended or marked no-show after the link was sent answers 409 `REGISTRATION_ALREADY_PROCESSED` and keeps its status (#1315).
      */
     post: operations['confirmRegistration'];
     delete?: never;
@@ -718,13 +736,14 @@ export interface components {
        */
       specialRequests?: string;
     };
-    /** @description Organizer status change for a registration (e.g. confirm/cancel). The deployed PATCH handler reads only `status`; a cancel triggers waitlist promotion. */
+    /** @description Organizer status change for a registration (e.g. confirm/cancel). Only `status` is read; no status, or the current one, changes nothing. The allowed transitions are listed on `updateRegistration` (#1315). */
     UpdateRegistrationStatusRequest: {
       /**
-       * @description New registration status (registered, waitlist, confirmed, cancelled, attended, no_show)
+       * @description New registration status, lower case (the response carries it upper case). Any other value answers 400.
        * @example confirmed
+       * @enum {string}
        */
-      status?: string;
+      status?: 'registered' | 'waitlist' | 'confirmed' | 'cancelled' | 'attended' | 'no_show';
     };
     ResendConfirmationResponse: {
       /** @description Human-readable result message */
@@ -1003,8 +1022,9 @@ export interface operations {
     };
     responses: {
       /**
-       * @description The attendee is already on the waitlist (Story 10.11): nothing is created, the waitlist
-       *     confirmation mail is sent again.
+       * @description The attendee is already registered and has not confirmed yet (#1315), or is already on
+       *     the waitlist (Story 10.11): nothing is created, the confirmation mail with a new link, or
+       *     the waitlist mail, is sent again. A confirmed attendee gets 409 and no mail.
        */
       200: {
         headers: {
@@ -1348,6 +1368,15 @@ export interface operations {
       401: components['responses']['Unauthorized'];
       403: components['responses']['Forbidden'];
       404: components['responses']['NotFound'];
+      /** @description The change is not in the transition table, or confirming would exceed the capacity; nothing changed */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
       500: components['responses']['InternalServerError'];
     };
   };
@@ -1422,7 +1451,7 @@ export interface operations {
       };
       403: components['responses']['Forbidden'];
       404: components['responses']['NotFound'];
-      /** @description Registration is not pending (cannot resend) */
+      /** @description Registration is not pending (cannot resend), or the attendee has no e-mail address */
       409: {
         headers: {
           [name: string]: unknown;
@@ -1485,6 +1514,28 @@ export interface operations {
            *       "error": "Not found",
            *       "message": "Registration not found",
            *       "code": "REGISTRATION_NOT_FOUND"
+           *     }
+           */
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      /** @description The registration is no longer pending (cancelled, waitlist, attended or no_show); nothing changed */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "timestamp": "2026-11-15T10:00:00Z",
+           *       "path": "/api/v1/events/BATbern57/registrations/confirm",
+           *       "status": 409,
+           *       "error": "Conflict",
+           *       "message": "Registration BATbern57-reg-A3X9K2 is cancelled and can no longer be confirmed",
+           *       "severity": "LOW",
+           *       "details": {
+           *         "code": "REGISTRATION_ALREADY_PROCESSED"
+           *       }
            *     }
            */
           'application/json': components['schemas']['ErrorResponse'];
