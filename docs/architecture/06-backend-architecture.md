@@ -1509,6 +1509,11 @@ only a pending (`registered`) registration and sends the confirmed mail with the
 (`cancelled`, `waitlist`, `attended`, `no_show`) was processed after the link was sent: 409
 `REGISTRATION_ALREADY_PROCESSED`, the status stays, so an old link cannot revive a cancelled or
 waitlisted registration.
+The ACCEPT e-mail reply (`InboundEmailRouter` → `RegistrationService.confirmByEmail`) follows the same
+rule: it confirms only a `registered` registration (confirmed mail with the calendar invite), leaves a
+confirmed one alone, and ignores any other status without a change or a mail. The reply path answers
+the sender in no case (a refusal is logged, the reply is counted as a keyword ACCEPT in the Mail Center
+and not forwarded), as for a reply that matches no registration.
 
 **Filling the waitlist (#1208).** `WaitlistPromotionService.promoteFromWaitlist(eventId)` promotes, in
 waitlist order, as many people as there are free places: capacity minus `registered` + `confirmed`

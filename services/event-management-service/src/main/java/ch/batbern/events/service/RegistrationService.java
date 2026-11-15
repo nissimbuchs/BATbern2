@@ -824,32 +824,40 @@ public class RegistrationService {
 
     /**
      * Confirm a registration by email address and event code.
-     * Called when an attendee replies with an ACCEPT keyword (Story 10.17).
-     * Replicates the same status change as clicking the confirmation link in the email.
+     * Called when an attendee replies with an ACCEPT keyword (Story 10.17), with the rule of the
+     * confirmation link ({@link #confirmRegistration}, #1315): only a pending ({@code registered})
+     * registration becomes {@code confirmed} and gets the confirmed mail; a confirmed one is left
+     * alone. Any other status ({@code waitlist}, {@code attended}, {@code no_show},
+     * {@code cancelled}) was processed after the mail was sent: nothing changes, nothing is sent.
      * <p>
-     * Anti-enumeration: silent no-op if no matching active registration is found.
+     * Anti-enumeration: silent no-op (logged) if no pending registration is found; the reply path
+     * answers nobody either way.
      *
      * @param email     attendee email address
      * @param eventCode event code (e.g. "BATbern42")
      */
     @Transactional
     public void confirmByEmail(String email, String eventCode) {
-        registrationRepository.findByAttendeeEmailAndEventCode(email, eventCode)
-                .filter(r -> !"confirmed".equalsIgnoreCase(r.getStatus())
-                          && !"cancelled".equalsIgnoreCase(r.getStatus()))
-                .ifPresentOrElse(
-                        registration -> {
-                            registration.setStatus("confirmed");
-                            registration.setUpdatedAt(java.time.Instant.now());
-                            registrationRepository.save(registration);
-                            log.info("Registration confirmed via email reply: {} for event: {}",
-                                    registration.getRegistrationCode(), eventCode);
-                            eventRepository.findByEventCode(eventCode)
-                                    .ifPresent(event -> notifyRegistrationConfirmed(registration, event));
-                        },
-                        () -> log.info("confirmByEmail: no active registration found for {}*** / {}",
-                                email.substring(0, Math.min(5, email.length())), eventCode)
-            );
+        String sender = email.substring(0, Math.min(5, email.length())) + "***";
+        Optional<Registration> found = registrationRepository.findByAttendeeEmailAndEventCode(email, eventCode);
+        if (found.isEmpty()) {
+            log.info("confirmByEmail: no registration found for {} / {}", sender, eventCode);
+            return;
+        }
+        Registration registration = found.get();
+        String status = registration.getStatus();
+        if (!"registered".equals(status)) {
+            log.info("confirmByEmail: registration {} is {}, not pending; ACCEPT reply from {} ignored (#1315)",
+                    registration.getRegistrationCode(), status, sender);
+            return;
+        }
+        registration.setStatus("confirmed");
+        registration.setUpdatedAt(Instant.now());
+        registrationRepository.save(registration);
+        log.info("Registration confirmed via email reply: {} for event: {}",
+                registration.getRegistrationCode(), eventCode);
+        eventRepository.findByEventCode(eventCode)
+                .ifPresent(event -> notifyRegistrationConfirmed(registration, event));
     }
 
     /**
