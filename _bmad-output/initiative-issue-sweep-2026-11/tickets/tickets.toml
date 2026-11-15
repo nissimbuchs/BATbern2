@@ -13,7 +13,6 @@ slug = "epic-bug-sweep"
 title = "The bugs that need no decision are fixed"
 description = "The claim link, trigger states, Live Control language, bell, cockpit card routing, quiet hours, mail fallback language, gsw-BE, dates, cron time zones, the #1223 UI defects, the gateway 4xx log, the EmailService ratchet category, the dev tooling bugs, the ZAP ignore, the leftover EventBridge IAM grant, the browser notification push and the unread notification preferences are fixed or removed and live; it also carries the code fix for the DLQ failure cause that epic 0 names, if any, and hands its versions and dev-tooling fixes to epic 7 to document."
 covers = ["R29", "R2", "R3", "R4", "R5", "R6", "R7", "R8", "R9", "R10", "R27"]
-after = [{ epic = 0, needs = "the named cause of the DLQ failures: the missing mail-attachments put grant (R29), the first commit here" }]
 
 [[epic]]
 id = 2
