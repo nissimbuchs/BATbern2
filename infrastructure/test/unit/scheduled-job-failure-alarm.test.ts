@@ -119,20 +119,24 @@ describe('Scheduled-job failure alarm', () => {
       });
     });
 
-    test('should_alarmOnAnyFailureInFiveMinutes_when_metricFilterMatches', () => {
+    // The jobs run daily (01:00): a 5-minute window cleared the alarm, and its OK action closed the
+    // GitHub issue (#956), 5 minutes after a nightly failure. The window now spans the job interval,
+    // and a skipped item does not recover by time passing: no OK action, a human closes the issue.
+    test('should_alarmOnAnyFailureWithinADay_andNotAutoClose_when_metricFilterMatches', () => {
       template.hasResourceProperties('AWS::CloudWatch::Alarm', {
         AlarmName: 'batbern-staging-EventManagement-Scheduled-Job-Failures',
         Namespace: 'BATbern/ScheduledJobs',
         MetricName: 'ScheduledJobFailures-EventManagement',
         Dimensions: Match.absent(),
         Statistic: 'Sum',
-        Period: 300,
-        EvaluationPeriods: 1,
+        Period: 3600,
+        EvaluationPeriods: 24,
+        DatapointsToAlarm: 1,
         Threshold: 0,
         ComparisonOperator: 'GreaterThanThreshold',
         TreatMissingData: 'notBreaching',
         AlarmActions: [ALARM_TOPIC_ARN],
-        OKActions: [ALARM_TOPIC_ARN],
+        OKActions: Match.absent(),
       });
     });
   });
