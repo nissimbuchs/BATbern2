@@ -1,6 +1,8 @@
 # Checks emsdeps.json against the proposed layered EMS module target; prints violations.
 # Usage (same cwd, after ems-module-deps.py wrote <dir>/emsdeps.json): python3 ems-module-target.py <dir>
 import json,sys,re,os,collections
+sys.path.insert(0,os.path.dirname(os.path.abspath(__file__)))
+from ems_modules import strip_comments
 S=sys.argv[1]; d=json.load(open(f'{S}/emsdeps.json')); cls=dict(d['classes'])
 def re_(names,mod):
     for n in list(cls):
@@ -25,7 +27,7 @@ for dd,_,fs in os.walk('.'):
         if f.endswith('.java'): paths[f[:-5]]=os.path.join(dd,f)
 viol=collections.defaultdict(set); ok=collections.Counter()
 for n,p in paths.items():
-    src=re.sub(r'//.*|/\*.*?\*/','',open(p).read(),flags=re.S); a=cls[n]
+    src=strip_comments(open(p).read()); a=cls[n]
     for t in set(tok.findall(src)):
         if t in cls and t!=n and cls[t]!=a:
             b=cls[t]

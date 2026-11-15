@@ -33,6 +33,9 @@ deferred:
     location: >-
       scripts/architecture/ems-module-deps.py, scripts/architecture/ems-module-target.py
     severity: medium
+    resolved: >-
+      2026-11-15, plan-epic17-close-findings-batch item 2: the scripts strip comments with a Java tokenizer
+      (scripts/architecture/ems_modules.py, test_ems_modules.py). Corrected numbers: 29 / 96 -> 26 / 76.
   - summary: >-
       EmsModuleNames (Java port of the scripts' naming rules) can drift from the scripts unnoticed.
     evidence: |-
@@ -117,17 +120,21 @@ deferred:
   `details` come from unordered maps); generated registration codes (`-reg-XXXXXX`) are tokenised. The
   create row registers an organizer in the CUMS harness so auto-enrolment (REQUIRES_NEW listener) is
   pinned too. After the refactor the capture is green with no golden changed.
-- **Module script, before/after** (`ems-module-target.py`, run from the EMS source root):
-  before 23 pairs / 71 refs (16 from `EventController`); after **20 pairs / 56 refs**, no `EventController`
+- **Module script, before/after** (`ems-module-target.py`, run from the EMS source root). Corrected
+  2026-11-15 (comment tokenizer, see the next bullet): before **29 pairs / 96 refs** (21 from
+  `EventController`), after **26 pairs / 76 refs**, no `EventController` reference. The numbers below come
+  from the buggy script and stay for the record: before 23 pairs / 71 refs (16 from `EventController`); after **20 pairs / 56 refs**, no `EventController`
   reference. Removed: the 16 `EventController->…` refs. Added: one, `EventWriteService->QnaOpenTrigger`
   (event_core -> sessions): `QnaOpenTrigger` is a field enum of `Event`, classified sessions only because
   its name contains `Qna`; the moved `toHandPatch` adapter needs it (the hand `PatchEventRequest` already
   carries the same ref). The pair event_core -> sessions existed before.
-- **Script quirk (finding, not fixed):** `ems-module-deps.py` and `ems-module-target.py` strip comments with
+- **Script quirk (finding, fixed 2026-11-15 by plan-epic17-close-findings-batch item 2):** `ems-module-deps.py` and `ems-module-target.py` strip comments with
   `//.*|/\*.*?\*/` under `re.S`, so the first `//` (a line comment, or `https://` in a string) swallows the
   rest of the file: only text before it is counted. The old `EventController`'s 16 refs were its imports
   and fields only (its `Session`, `Topic` etc. after line 210 were never counted). Fixing it changes every
-  baseline number; left for the owner (the scripts are the review's measuring tool).
+  baseline number; left for the owner (the scripts are the review's measuring tool). Fixed since: the
+  scripts strip comments with a Java tokenizer (`scripts/architecture/ems_modules.py`), which keeps string,
+  char and text-block literals; corrected numbers above.
 - `PublicSessionVisibilityService.audienceCacheSuffix()` had no caller left: removed; the suffix lives in
   `CallerRoles.audienceCacheSuffix()` (same rule). `callerIsOrganizer()` stays (SessionController,
   TopicController) and delegates to `CallerRoles`.
@@ -211,7 +218,7 @@ Working rules on rack (hard): one heavy job at a time (Gradle, `git commit` hook
 - Full EMS suite with `checkstyleMain checkstyleTest`, `--rerun`: BUILD SUCCESSFUL, 2974 tests, 0 failures, 0 errors, 6 skipped; no response-conformance STALE.
 - Capture goldens: no change since `487df5837`.
 - `make check-test-ratchet`: clean (be-mock-s2s-client 38 -> 36 by this story).
-- Module script: 23 pairs / 71 refs -> 20 / 56, `EventController` 16 -> 0, one new ref `EventWriteService->QnaOpenTrigger`. With full-line comment stripping (script bug, deferred): 29 / 96 -> 26 / 76, `EventController` 21 -> 0.
+- Module script: 23 pairs / 71 refs -> 20 / 56, `EventController` 16 -> 0, one new ref `EventWriteService->QnaOpenTrigger`. With full-line comment stripping (script bug, deferred): 29 / 96 -> 26 / 76, `EventController` 21 -> 0. Confirmed 2026-11-15 by the fixed script (tokenizer): 29 / 96 -> 26 / 76, `EventController` 21 -> 0; the 23 / 71 -> 20 / 56 came from the buggy script.
 - Local dev (EMS restarted on the refactor): Bruno events-crud-api 17/17 requests, event-publishing-api 14/14, event-topics-api 15/15, event-full-workflow-api 24/24, event-media-api 26/26, no skipped files. Playwright archive-browsing, archive-event-detail, archive-filtering, archive-infinite-scroll, organizer/topic-selection, organizer/event-registrations-management: 29 passed, 1 skipped.
 
 **Residual risks:** the date test was only seen green, never red; `EventTopicController` via `EventTopicsApi` now requires `Content-Type: application/json` (a non-JSON POST gets 415, before the hand mapping took it); a failing write hook answers 409 (`IllegalStateException` mapping). The working copy is not clean by design: another agent's retrospective files and four one-line edits to `_bmad-output` files (not from this run) stay uncommitted.

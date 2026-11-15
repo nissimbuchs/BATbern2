@@ -77,7 +77,7 @@ Developers and agents working on BATbern find one endpoint, one transport and on
 - The frontend layer baseline (`web-frontend/scripts/api-layer-baseline.txt`) is empty, or each remaining line says why.
 - Every baseline and store still holding entries names the story or the owner decision behind each group.
 - The Spectral baseline has shrunk by the entries of 17.6, 17.9, 17.9b, 17.10, 17.10b, 17.11 and 17.11a to 17.11d, every line left names its owning story or an owner-accepted exception, and `company-logo` uploads run on `/uploads/company-logo` in production.
-- The EMS module script, re-run, shows fewer violating pairs and references than the 2026-11-07 baseline (28 pairs, 100 references), with the numbers recorded.
+- The EMS module script, re-run, shows fewer violating pairs and references than the 2026-11-07 baseline (28 pairs, 100 references), with the numbers recorded. Corrected 2026-11-15: those numbers came from a script whose comment stripping dropped everything after the first `//` (also `https://` in a string). With the fixed script (Java tokenizer, `scripts/architecture/ems_modules.py`) the same tree `89b3618f` and the same 2026-11-07 rules give 36 pairs / 151 references; with today's rules 34 / 144. The criterion still holds: `fdf9b25b1` 29 / 96, develop after the EventController story 26 / 76.
 - Each story reached production through its own PR and was verified there.
 
 ## Boundaries
@@ -120,6 +120,6 @@ Developers and agents working on BATbern find one endpoint, one transport and on
 - Decision: 2026-11-15, owner. Initiative closed. Every plan in the tree is `done` and live; last PRs #1314 (17.13 + 17.14, one PR at the owner's request, deviating from "own PR per story") and #1316 (six pre-existing registration flaws the 17.13 review found, #1315). Done-when, checked 2026-11-15:
   - gates: ArchUnit, S2S contract tests and the response conformance run in `build-services`; the ratchet (`test-ratchet`), Spectral (`frontend-static`), the MSW validator (`test-frontend`), the FE path and generated-types checks run in or are `needs` of `build-frontend`; both are required checks on `develop`;
   - ArchUnit store: EMS->PCS and CUMS->EMS clients 0; EMS keeps 2 mail-core lines (17.15, dropped); frontend layer baseline empty;
-  - EMS module script: 23 pairs / 71 references (baseline 28 / 100); 16 of the 71 come from `EventController` logic, now backlog `_bmad-output/backlog/story-eventcontroller-keeps-only-http.md`;
+  - EMS module script: 23 pairs / 71 references (baseline 28 / 100); 16 of the 71 come from `EventController` logic, now backlog `_bmad-output/backlog/story-eventcontroller-keeps-only-http.md`. Corrected 2026-11-15 (the script dropped everything after the first `//`, fixed by plan-epic17-close-findings-batch): 29 / 96 (baseline 34 / 144 with today's rules, 36 / 151 with the 2026-11-07 rules), 21 of the 96 from `EventController`; after the EventController story 26 / 76, none from it;
   - mock ratchet (own-code mocks, frozen 2026-11-08 -> now): 937 -> 584 over the six original categories; the rest shrinks under the touch rule.
   Follow-ups: open `deferred-work.md` items moved to #1317-#1320; P5 pre-deploy gate is `_bmad-output/backlog/spike-pre-deploy-gate.md` (owner decides).
