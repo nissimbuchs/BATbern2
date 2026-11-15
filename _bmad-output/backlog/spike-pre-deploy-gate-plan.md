@@ -3,16 +3,16 @@ title: 'Pre-deploy gate (P5): local spike on rack'
 type: 'chore'
 ticket: '5'
 created: '2026-11-15'
-status: 'done'
+status: 'built'
 baseline_revision: '9e9ecdaab08190d76cc63d9691215bb86f82f0d4'
 route: 'full'
 route_source: 'auto'
 risk: 'high'
-review: ''
-review_source: ''
-lenses_ran: []
+review: 'quick'
+review_source: 'pinned'
+lenses_ran: ['quick']
 review_loop_iteration: 0
-followup_review_recommended: false
+followup_review_recommended: true
 context:
   - '{project-root}/_bmad-output/backlog/spike-pre-deploy-gate.md'
   - '{project-root}/docs/plans/pre-deploy-gate-plan.md'
@@ -110,6 +110,23 @@ deferred: []
 
 ## Review Triage Log
 
+### 2026-11-15 — Review pass
+- verdicts: 13 findings — high 0, medium 6, low 5, false 0, maybe-false 0 (plus 2 low rejected)
+- findings:
+  - `medium` `patch` Doc row claimed CUMS reconciliation/resend jobs hit the production pool; in the gate the single Cognito client points at the stand-in — row corrected (2527dc9c2).
+  - `medium` `patch` Seeded test users absent from the stand-in pool and the mail clear wiped USERS, so the 02:00 reconciliation would deactivate them — seed registers them via `POST /_gate/users`, clear keeps USERS (2527dc9c2).
+  - `medium` `patch` `run-gate.sh` cleared the fake after the async seed mail, so the doc's mail claim rested on a race — clear moved before the seed; re-run confirmed both mails (2527dc9c2, re-run 14:28).
+  - `medium` `patch` Fake-SES proof not reproduced by the script — run fails unless ≥1 SendRawEmail and no credential error in the stack log (2527dc9c2).
+  - `low` `patch` `seed.sh` `call` accepted 4xx/000 and null usernames — fails on 000/≥400 with explicit expected codes, null check (2527dc9c2).
+  - `low` `patch` `run-bruno.sh` relative results dir broke — resolved to absolute (2527dc9c2).
+  - `medium` `patch` Script exit codes unrelated to Bruno results — run-bruno/run-gate exit 1 on failures; re-run exited 1 with the 23 known failures (2527dc9c2).
+  - `medium` `patch` Hard-coded collection list escaped the completeness guard — derived from `bruno-tests/*/` (23) (2527dc9c2).
+  - `low` `patch` `run-bruno-tests.sh` gate env token source undocumented, stale speaker-portal-api comment — documented/annotated (2527dc9c2).
+  - `low` `patch` Fake split To/Cc on commas — `email.utils.getaddresses` (2527dc9c2).
+  - `low` `reject` Fake `ListUsers` treats `^=` as exact match — no gate caller observed using `^=`; fix adds a branch to a spike stand-in.
+  - `low` `reject` `S3EndpointOverride` with endpoint but blank keys fails at startup with an SDK error — gate-only misconfiguration, loud failure, guard adds complexity.
+  - `low` `patch` Stale "MinIO" wording after the switch to S3Mock — reworded, test renamed (2527dc9c2).
+
 ## Design Notes
 
 Architecture note: modules touched: shared-kernel config (`AwsSesConfig`), possibly EMS/CUMS/gateway `config` for gate-only endpoint overrides; new deps: none (fake SES and MinIO are containers); new endpoints: none; reused: `LocalAwsConfig` MinIO pattern, `SesRecorder`-style parsing idea for reading the fake; deviation: none.
@@ -124,3 +141,14 @@ Property naming: prefer one prefix for gate-only keys (e.g. `batbern.ses.endpoin
 - `make check-test-ratchet` -- expected: no RAISED, no STALE
 - `grep -rn "<each gate-only env var>" infrastructure/lib` -- expected: no match
 - `docker ps -a --filter name=gate; docker volume ls | grep -i gate` -- expected: empty at the end
+
+## Auto Run Result
+
+Status: built
+
+- **Change:** P5 step 1 spike. Production images of gateway, CUMS, EMS, PCS (amd64) run in profile `staging` in `docker-compose.gate.yml` with Postgres, S3Mock and a fake AWS (SES + Cognito admin stand-in), no AWS credentials. Gate-only, blank-default overrides: `BATBERN_SES_ENDPOINT` (shared-kernel `AwsSesConfig`), `AWS_S3_ENDPOINT` + keys (`S3EndpointOverride`, EMS/CUMS `AwsConfig`), `BATBERN_COGNITO_ENDPOINT` (CUMS `CognitoConfig`); existing `COGNITO_RESEND_ENABLED=false`; SQS listener flags left unset. Result written to `docs/plans/pre-deploy-gate-plan.md`.
+- **Files:** compose file, `scripts/gate/*` (build, seed, fake AWS, run, Bruno runner), `bruno-tests/environments/gate.bru`, `scripts/ci/run-bruno-tests.sh` (gate env), `bruno-tests/users-api/03b` (bio null vs empty bug the gate caught), the Java overrides with tests, the plan doc.
+- **Review:** 11 patched (6 medium, 5 low), 0 deferred, 2 low rejected (reasons above).
+- **Follow-up review recommended:** true — two or more medium entries were patched; the specific unverified risk is the gate scripts' behaviour on a GitHub ARM runner (docker0 address for S3Mock, arm64 images), which only step 2 can show.
+- **Verification:** subagent: shared-kernel 692, CUMS 943, EMS 2968 tests green; ratchet clean; checkstyle via hooks. After patches: `:shared-kernel:test` + EMS/CUMS compile green; `make check-test-ratchet` clean; full gate re-run 14:28 (build 62/62/36/63 s, healthy 50 s, Bruno 126 s, total 180 s, 2 mails in fake, 0 credential errors, same 23 failures, exit 1 as designed); containers, volumes and gate images removed.
+- **Residual risks:** CI ARM runner not tried; 23 Bruno failures (21 CORS checks that need the AWS API Gateway, 2 upload-host assertions) must be resolved before the job can go green; Cognito stand-in fidelity limited to the operations reached; side findings (CDN invalidation never enabled in prod; CUMS 500 vs 502 on SdkClientException) await owner decision.

@@ -205,7 +205,10 @@ AWS: no credentials in the containers, and the SES client's endpoint is the fake
 That final run still cleared the fake right after the seed, so the seed's (asynchronous) mail being
 in the list was timing, not design. `run-gate.sh` now clears the fake before the seed, so the list
 deterministically holds the seed's mail and Bruno's, and it fails the run when no `SendRawEmail`
-arrived. This version of the script has not been run against the stack.
+arrived. This version was re-run once on 2026-11-15 14:28 (fresh image build of the same commit,
+62/62/36/63 s): healthy after 50 s, seed 3 s, Bruno 126 s, total 180 s; the fake held both
+`SendRawEmail` mails (seed speaker, `participants-api/04`); 0 credential errors in the stack log; the
+same 23 failed checks in the same 5 collections; exit 1 as designed; stack torn down.
 
 *Recommendation.* Build the GitHub job (step 2), as non-required first: the stack starts, the
 dependency list is short and every override is a blank-default property. Make it required after it
