@@ -194,13 +194,16 @@ public class RegistrationController implements RegistrationsApi {
         return ResponseEntity.ok(registrationService.enrichRegistrationWithUserData(registration));
     }
 
-    /** Organizer delete of a registration (no waitlist promotion; a cancel is the PATCH). */
+    /**
+     * Organizer delete of a registration; a freed place goes to the waitlist, a waitlisted one
+     * closes its gap ({@link RegistrationService#deleteByOrganizer}, #1315).
+     */
     @Override
     @PreAuthorize("hasRole('ORGANIZER')")
     public ResponseEntity<Void> deleteRegistration(String eventCode, String registrationCode) {
         log.debug("DELETE /api/v1/events/{}/registrations/{}", eventCode, registrationCode);
 
-        registrationRepository.delete(registrationOfEvent(eventCode, registrationCode));
+        registrationService.deleteByOrganizer(findEvent(eventCode), registrationCode);
         return ResponseEntity.noContent().build();
     }
 

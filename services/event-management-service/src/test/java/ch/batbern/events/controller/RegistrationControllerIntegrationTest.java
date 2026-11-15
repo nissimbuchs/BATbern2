@@ -975,6 +975,59 @@ class RegistrationControllerIntegrationTest extends AbstractIntegrationTest {
         assertThat(sesRecorder.mailsTo(JOHN_MAIL)).hasSize(1); // the promotion mail
     }
 
+    @ParameterizedTest
+    @ValueSource(strings = {"registered", "confirmed"})
+    @WithMockUser(roles = "ORGANIZER")
+    @DisplayName("#1315: deleting a place holder gives the place to the first waiting")
+    void should_promoteFromWaitlist_when_organizerDeletesPlaceHolder(String holder) throws Exception {
+        Event capped = cappedOtherEvent(); // capacity 1
+        Registration leaving = registrationRepository.save(registration(capped, "jane.smith", holder));
+        Registration first = waiting(capped, "john.doe", 1);
+        Registration second = waiting(capped, "ben.zweite", 2);
+
+        mockMvc.perform(delete("/api/v1/events/{eventCode}/registrations/{registrationCode}",
+                        OTHER_EVENT_CODE, leaving.getRegistrationCode()))
+                .andExpect(status().isNoContent());
+
+        assertThat(registrationRepository.findById(leaving.getId())).isEmpty();
+        assertThat(registrationRepository.findById(first.getId()).orElseThrow().getStatus()).isEqualTo("registered");
+        assertThat(registrationRepository.findById(second.getId()).orElseThrow().getStatus()).isEqualTo("waitlist");
+        sesRecorder.awaitAsyncSends();
+        assertThat(sesRecorder.mailsTo(JOHN_MAIL)).singleElement()
+                .satisfies(mail -> assertThat(mail.subject()).contains("Warteliste"));
+    }
+
+    @Test
+    @WithMockUser(roles = "ORGANIZER")
+    @DisplayName("#1315: deleting a waitlisted registration renumbers the queue and promotes nobody")
+    void should_renumberWaitlist_when_organizerDeletesWaitlistedRegistration() throws Exception {
+        Event capped = event(OTHER_EVENT_CODE, 1714);
+        capped.setRegistrationCapacity(2);
+        capped = eventRepository.save(capped);
+        registrationRepository.save(registration(capped, "jane.smith", "confirmed")); // one place free
+        Registration first = waiting(capped, "anna.erste", 1);
+        Registration second = waiting(capped, "john.doe", 2);
+
+        mockMvc.perform(delete("/api/v1/events/{eventCode}/registrations/{registrationCode}",
+                        OTHER_EVENT_CODE, first.getRegistrationCode()))
+                .andExpect(status().isNoContent());
+
+        assertThat(registrationRepository.findById(first.getId())).isEmpty();
+        assertThat(registrationRepository.findById(second.getId()).orElseThrow())
+                .satisfies(r -> assertThat(r.getStatus()).isEqualTo("waitlist"))
+                .satisfies(r -> assertThat(r.getWaitlistPosition()).isEqualTo(1));
+        sesRecorder.awaitAsyncSends();
+        assertThat(sesRecorder.mailsTo(JOHN_MAIL)).isEmpty();
+        // Positive control: deleting the place holder now promotes John, with the mail.
+        Registration holder = registrationRepository.findByEventIdAndAttendeeUsername(capped.getId(), "jane.smith")
+                .orElseThrow();
+        mockMvc.perform(delete("/api/v1/events/{eventCode}/registrations/{registrationCode}",
+                        OTHER_EVENT_CODE, holder.getRegistrationCode()))
+                .andExpect(status().isNoContent());
+        sesRecorder.awaitAsyncSends();
+        assertThat(sesRecorder.mailsTo(JOHN_MAIL)).hasSize(1);
+    }
+
     private ResultActions patchStatus(String eventCode, String registrationCode,
             String body) throws Exception {
         return mockMvc.perform(patch("/api/v1/events/{eventCode}/registrations/{registrationCode}",

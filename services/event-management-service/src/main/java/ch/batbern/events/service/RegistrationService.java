@@ -672,6 +672,27 @@ public class RegistrationService {
         return registration;
     }
 
+    /**
+     * Organizer delete ({@code DELETE /events/{code}/registrations/{registrationCode}}), in one
+     * transaction with its waitlist effect (#1315): a place holder ({@code registered},
+     * {@code confirmed}) frees its place for the waitlist; a waitlisted registration leaves the
+     * queue and the positions behind it move up; any other status is only deleted.
+     *
+     * @throws RegistrationNotFoundException no registration with this code in this event (404)
+     */
+    @Transactional
+    public void deleteByOrganizer(Event event, String registrationCode) {
+        Registration registration = findOfEvent(event, registrationCode);
+        String status = registration.getStatus();
+        registrationRepository.delete(registration);
+        if (Registration.CAPACITY_STATUSES.contains(status)) {
+            waitlistPromotionService.promoteFromWaitlist(event.getId());
+        } else if ("waitlist".equals(status)) {
+            renumberWaitlist(event.getId());
+        }
+        log.info("Organizer deleted registration {} ({}) of event {}", registrationCode, status, event.getEventCode());
+    }
+
     /** The event's place holders, the pending one to confirm counted, fit its capacity. */
     private void assertCapacityForConfirmation(Event event) {
         Integer capacity = event.getRegistrationCapacity();

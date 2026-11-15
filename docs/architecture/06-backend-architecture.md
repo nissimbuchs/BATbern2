@@ -1518,7 +1518,7 @@ Remaining positions are not renumbered.
 
 ```mermaid
 flowchart LR
-    C1["attendee or organizer cancels<br/>RegistrationService.cancelRegistration,<br/>DeregistrationService, organizer status PATCH"] --> P["promoteFromWaitlist"]
+    C1["attendee or organizer cancels<br/>RegistrationService.cancelRegistration,<br/>DeregistrationService, organizer status PATCH,<br/>organizer DELETE of a place holder"] --> P["promoteFromWaitlist"]
     C2["organizer PATCH /events/{code}<br/>with registrationCapacity in the body,<br/>also when unchanged"] --> P
     C3["organizer PUT /events/{code}<br/>when the capacity changed"] --> P
     P --> F{"free = capacity - registered - confirmed"}
@@ -1550,6 +1550,9 @@ a lower-case status from the spec enum (anything else is 400) and runs
   deadline rule (#1238 E2).
 - *Renumber*: the remaining waitlist is numbered 1, 2, 3 again; nobody is promoted, the registration
   held no place. Promotion itself still does not renumber.
+- The organizer's `DELETE /events/{code}/registrations/{registrationCode}`
+  (`RegistrationService.deleteByOrganizer`, one transaction) does the same: deleting a place holder
+  promotes, deleting a waitlisted registration renumbers, any other status is only deleted.
 - BATbern60 attendance was recorded through this PATCH from `registered` (1 attended, 8 no-show), so
   `registered` to `attended`/`no_show` stays allowed. The organizer menu offers Cancel for every
   status but cancelled.

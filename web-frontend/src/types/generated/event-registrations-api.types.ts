@@ -252,7 +252,7 @@ export interface paths {
     post?: never;
     /**
      * Delete registration
-     * @description Permanently delete a registration from the event.
+     * @description Permanently delete a registration from the event. In the same transaction (#1315): deleting a registration that holds a place (registered, confirmed) gives the place to the first on the waitlist (promotion mail); deleting a waitlisted one closes its gap in the waitlist positions and promotes nobody; any other status is only deleted.
      *
      *     **Story**: 4.1.6
      *     **Security**: ORGANIZER role required.
