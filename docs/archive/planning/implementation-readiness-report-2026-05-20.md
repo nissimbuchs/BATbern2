@@ -10,7 +10,7 @@ status: complete
 
 **Date:** 2026-05-20
 **Project:** BATbern
-**Scope:** Story 11.G.1 (`_bmad-output/implementation-artifacts/11-g-1-speaker-company-self-service.md`)
+**Scope:** Story 11.G.1 (`_bmad-output/implementation-artifacts/archive/11-g-1-speaker-company-self-service.md`)
 **Epic:** 11 — Unified Speaker Workflow Refactor (Phase G — Speaker-side company self-service)
 **Assessor role:** Product Manager (requirements traceability + planning-gap detection)
 
@@ -50,7 +50,7 @@ Epics 1–10 are referenced only where they constrain 11.G.1.
 
 #### B. Story File (canonical detail)
 
-- `_bmad-output/implementation-artifacts/11-g-1-speaker-company-self-service.md` (342 lines) — referenced from Epic 11 §"Phase G" as "Story spec:" pointer. Status: **draft** in story frontmatter; **ready-for-dev** in `_bmad-output/implementation-artifacts/sprint-status.yaml` L198 (see Issue 1 below).
+- `_bmad-output/implementation-artifacts/archive/11-g-1-speaker-company-self-service.md` (342 lines) — referenced from Epic 11 §"Phase G" as "Story spec:" pointer. Status: **draft** in story frontmatter; **ready-for-dev** in `_bmad-output/implementation-artifacts/sprint-status.yaml` L198 (see Issue 1 below).
 
 #### C. Plan / Design Documents
 
@@ -152,7 +152,7 @@ named) and references existing surfaces (`CompanyForm.tsx`, `CompanyDetailView.t
 | Type | Path | Status | Notes |
 |---|---|---|---|
 | Epic | `docs/prd/epic-11-speaker-workflow-refactor.md` | ✅ Present | Phase G §L1546+ |
-| Story | `_bmad-output/implementation-artifacts/11-g-1-speaker-company-self-service.md` | ⚠️ Status mismatch | `draft` in file vs `ready-for-dev` in sprint-status |
+| Story | `_bmad-output/implementation-artifacts/archive/11-g-1-speaker-company-self-service.md` | ⚠️ Status mismatch | `draft` in file vs `ready-for-dev` in sprint-status |
 | Plan | `~/.claude/plans/i-just-want-to-jiggly-iverson.md` | ⚠️ Outside repo | Approved design plan not committed |
 | Refactor plan | `docs/plans/speaker-workflow-refactor.md` | ✅ Present | Phase G explicitly out of scope |
 | Architecture | `docs/architecture/*.md` (multiple) | ✅ Present | Doc updates needed (see Steps 2–5) |
@@ -664,7 +664,7 @@ PM decisions captured 2026-05-20 by Nissim, all 15 issues fixed in-place. New ve
 
 ### Files modified in this resolution pass
 
-1. **`_bmad-output/implementation-artifacts/11-g-1-speaker-company-self-service.md`** (story file):
+1. **`_bmad-output/implementation-artifacts/archive/11-g-1-speaker-company-self-service.md`** (story file):
    - Status: `draft` → `ready-for-dev`
    - User story: rewritten to reflect profile-page placement.
    - Header: Phase E inheritance now stated honestly; inherited requirements (FR8/FR12/NFR4/6/7/10, UX-DR17/22) enumerated.
@@ -726,7 +726,7 @@ PM decisions captured 2026-05-20 by Nissim, all 15 issues fixed in-place. New ve
 
 🟢 **READY for dev pickup.** All 15 issues resolved. Story file (now 13 ACs) is consistent with the actual codebase schema, names real components and migrations, has explicit doc-update obligations in AC13, and carries PM-binding decisions on all 4 Open Questions. Epic 11 PRD's formal requirements inventory now lists FR-G1 / NFR-G1 / AR-G1 / AR-G2 / UX-DR-G1, and the Coverage Maps trace each to Story 11.G.1.
 
-Next concrete step: dev pickup via `/bmad-dev-story` for `_bmad-output/implementation-artifacts/11-g-1-speaker-company-self-service.md`.
+Next concrete step: dev pickup via `/bmad-dev-story` for `_bmad-output/implementation-artifacts/archive/11-g-1-speaker-company-self-service.md`.
 
 ---
 

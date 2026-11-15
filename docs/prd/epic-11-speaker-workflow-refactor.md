@@ -1304,7 +1304,7 @@ workflow service), Story 11.C.2 (`UserApiClient.provisionUserWithRole` contract)
 `temporaryPassword` field removed from `ProvisionUserResponse`); Q#2 de + en only
 per CLAUDE.md §Localization (narrowed); Q#3 HTML-only — `.txt` templates deleted;
 Q#4 AdminGetUser status-driven branching at INVITED time. See
-`_bmad-output/implementation-artifacts/11-e-2-cognito-provisioning-at-ready-invitation-email-i18n.md`
+`_bmad-output/implementation-artifacts/archive/11-e-2-cognito-provisioning-at-ready-invitation-email-i18n.md`
 for the binding AC text.
 
 **Acceptance Criteria (per resolved Q#1 Variant B):**
@@ -1693,7 +1693,7 @@ requirements:** FR8 + FR12 + NFR4 + NFR6 + NFR7 + NFR10 + UX-DR17 + UX-DR22  ·
 `event_id` nullable for cross-event tasks); and Phase E (Pattern 3b DB-fallback,
 `<SpeakerRoute>`, multi-role nav) — all already done.
 
-**Story spec:** `_bmad-output/implementation-artifacts/11-g-1-speaker-company-self-service.md`
+**Story spec:** `_bmad-output/implementation-artifacts/archive/11-g-1-speaker-company-self-service.md`
 
 **Acceptance Criteria:**
 

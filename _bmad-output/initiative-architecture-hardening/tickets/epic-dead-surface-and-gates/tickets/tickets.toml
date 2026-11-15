@@ -106,7 +106,7 @@ covers = ["R6"]
 after = [1, 3, 4, "3c"]
 hitl = false
 risk = "medium"
-references = ["_bmad-output/implementation-artifacts/16-8-shared-composer.md"]
+references = ["_bmad-output/implementation-artifacts/archive/16-8-shared-composer.md"]
 notes = ["Owner 2026-11-07: newsletter status and retry endpoints are retired too."]
 
 [[entry]]

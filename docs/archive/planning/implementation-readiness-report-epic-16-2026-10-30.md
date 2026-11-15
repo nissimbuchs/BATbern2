@@ -1,7 +1,7 @@
 ---
 stepsCompleted: [step-01-document-discovery, step-02-prd-analysis, step-03-epic-coverage-validation, step-04-ux-alignment, step-05-epic-quality-review, step-06-final-assessment]
 scope: Epic 16 Mail Center
-filesIncluded: [docs/archive/prd/epic-16-mail-center.md, docs/prd-enhanced.md, _bmad-output/implementation-artifacts/16-0-stop-losing-replies-and-calendar-declines.md, _bmad-output/implementation-artifacts/16-1-record-every-outbound-mail.md, _bmad-output/implementation-artifacts/16-3-communications-tab-becomes-mail-page.md, _bmad-output/implementation-artifacts/16-4-new-mail-picker.md]
+filesIncluded: [docs/archive/prd/epic-16-mail-center.md, docs/prd-enhanced.md, _bmad-output/implementation-artifacts/archive/16-0-stop-losing-replies-and-calendar-declines.md, _bmad-output/implementation-artifacts/16-1-record-every-outbound-mail.md, _bmad-output/implementation-artifacts/archive/16-3-communications-tab-becomes-mail-page.md, _bmad-output/implementation-artifacts/archive/16-4-new-mail-picker.md]
 ---
 
 # Implementation Readiness Assessment Report

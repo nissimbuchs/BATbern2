@@ -8,16 +8,16 @@ filesIncluded:
     - docs/architecture/ADR-010-federated-identity-via-cognito.md
     - docs/architecture/06b-user-lifecycle-sync.md
   stories:
-    - _bmad-output/implementation-artifacts/12-1-cognito-attribute-hygiene.md
-    - _bmad-output/implementation-artifacts/12-2-gateway-is-active-gate.md
-    - _bmad-output/implementation-artifacts/12-3-canonical-jit-provisioning.md
-    - _bmad-output/implementation-artifacts/12-4-google-cloud-oauth-consent-setup.md
-    - _bmad-output/implementation-artifacts/12-5-google-idp-attribute-mapping.md
-    - _bmad-output/implementation-artifacts/12-6-account-linking-presignup-trigger.md
-    - _bmad-output/implementation-artifacts/12-7-frontend-callback-route-and-service.md
-    - _bmad-output/implementation-artifacts/12-8-federated-provisioning-inactive-gating-verify.md
-    - _bmad-output/implementation-artifacts/12-9-continue-with-google-button-feature-flag.md
-    - _bmad-output/implementation-artifacts/12-10-apple-oidc-and-trigger-retirement-cleanup.md
+    - _bmad-output/implementation-artifacts/archive/12-1-cognito-attribute-hygiene.md
+    - _bmad-output/implementation-artifacts/archive/12-2-gateway-is-active-gate.md
+    - _bmad-output/implementation-artifacts/archive/12-3-canonical-jit-provisioning.md
+    - _bmad-output/implementation-artifacts/archive/12-4-google-cloud-oauth-consent-setup.md
+    - _bmad-output/implementation-artifacts/archive/12-5-google-idp-attribute-mapping.md
+    - _bmad-output/implementation-artifacts/archive/12-6-account-linking-presignup-trigger.md
+    - _bmad-output/implementation-artifacts/archive/12-7-frontend-callback-route-and-service.md
+    - _bmad-output/implementation-artifacts/archive/12-8-federated-provisioning-inactive-gating-verify.md
+    - _bmad-output/implementation-artifacts/archive/12-9-continue-with-google-button-feature-flag.md
+    - _bmad-output/implementation-artifacts/archive/12-10-apple-oidc-and-trigger-retirement-cleanup.md
   sprint_tracking:
     - _bmad-output/implementation-artifacts/sprint-status.yaml
   ux_design: []

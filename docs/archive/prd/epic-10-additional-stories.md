@@ -220,9 +220,9 @@ services/event-management-service/.../repository/EventTaskRepository.java — fi
 
 ### Story 10.4: Blob Topic Selector
 
-**Story file**: `_bmad-output/implementation-artifacts/10-4-blob-topic-selector.md`
-**Spec**: `_bmad-output/implementation-artifacts/blob-topic-selector-spec.md`
-**Brainstorm**: `_bmad-output/brainstorming/brainstorming-session-2026-02-24.md`
+**Story file**: `_bmad-output/implementation-artifacts/archive/10-4-blob-topic-selector.md`
+**Spec**: `_bmad-output/implementation-artifacts/archive/blob-topic-selector-spec.md`
+**Brainstorm**: `_bmad-output/archive/brainstorming/brainstorming-session-2026-02-24.md`
 **Status**: ✅ done (sprint-status 2026-11-04)
 **Prerequisite**: None (independent of 10.1–10.3)
 
@@ -317,8 +317,8 @@ docs/api/events.openapi.yml                         — topic-session-data + top
 
 ### Story 10.5: Analytics Dashboard
 
-**Story file**: `_bmad-output/implementation-artifacts/10-5-analytics-dashboard.md`
-**Brainstorm**: `_bmad-output/brainstorming/brainstorming-session-2026-02-25.md`
+**Story file**: `_bmad-output/implementation-artifacts/archive/10-5-analytics-dashboard.md`
+**Brainstorm**: `_bmad-output/archive/brainstorming/brainstorming-session-2026-02-25.md`
 **Status**: ✅ done (sprint-status 2026-11-04)
 **Prerequisite**: None (independent — no backend changes conflict with other stories)
 
@@ -407,7 +407,7 @@ public/locales/en/organizer.json + de/organizer.json     — analytics.* keys
 
 ### Story 10.7: Newsletter Subscription & Sending
 
-**Story file**: `_bmad-output/implementation-artifacts/10-7-newsletter-subscription-and-sending.md`
+**Story file**: `_bmad-output/implementation-artifacts/archive/10-7-newsletter-subscription-and-sending.md`
 **Status**: ✅ done (sprint-status 2026-11-04)
 **Prerequisites**: Story 10.2 (Email Template Management — provides `EmailTemplateService`, `EmailTemplateSeedService`, `NEWSLETTER` category, `batbern-default` layout)
 
@@ -512,7 +512,7 @@ See `docs/archive/plans/newsletter-robustness-v87-plan.md` for full details.
 
 ### Story 10.8a: Moderator Presentation Page — Functional
 
-**Story file**: `_bmad-output/implementation-artifacts/10-8a-moderator-presentation-page.md`
+**Story file**: `_bmad-output/implementation-artifacts/archive/10-8a-moderator-presentation-page.md`
 **Status**: ✅ done (sprint-status 2026-11-04)
 **Prerequisite**: None (independent — uses existing public event APIs)
 
@@ -561,7 +561,7 @@ Single-row `presentation_settings` table — Flyway **V10** in company-user-mana
 
 ### Story 10.8b: Moderator Presentation Page — Animations
 
-**Story file**: `_bmad-output/implementation-artifacts/10-8b-moderator-presentation-page-animations.md`
+**Story file**: `_bmad-output/implementation-artifacts/archive/10-8b-moderator-presentation-page-animations.md`
 **Status**: ✅ done (sprint-status 2026-11-04)
 **Prerequisite**: Story 10.8a complete and deployed
 
@@ -589,7 +589,7 @@ As an **event moderator**, I want the presentation page to have polished, fluid 
 
 ### Story 10.9: i18n Cleanup — Deduplication, Hardcoded Text, Test Resilience & Unused Key Removal
 
-**Story file**: `_bmad-output/implementation-artifacts/10-9-i18n-cleanup.md`
+**Story file**: `_bmad-output/implementation-artifacts/archive/10-9-i18n-cleanup.md`
 **Plan**: `docs/archive/plans/i18n-cleanup-plan.md`
 **Status**: ✅ done (sprint-status 2026-11-04)
 **Prerequisite**: None (independent — frontend-only, no backend or DB changes)
@@ -1941,7 +1941,7 @@ services/partner-coordination-service/.../repository/PartnerMeetingRepository.ja
 
 ### Story 10.26: SES Email Forwarding & Role-Based Distribution Lists
 
-**Story file**: `_bmad-output/implementation-artifacts/10-26-ses-email-forwarding-distribution-lists.md`
+**Story file**: `_bmad-output/implementation-artifacts/archive/10-26-ses-email-forwarding-distribution-lists.md`
 **Status**: ✅ done (sprint-status 2026-11-04)
 **Prerequisites**: Story 10.17 (InboundEmailStack, SES receipt rules)
 
@@ -1999,7 +1999,7 @@ web-frontend/src/services/adminSettingsService.ts                               
 
 ### Story 10.27: iCal RSVP Tracking for Partner Meeting Invites
 
-**Story file**: `_bmad-output/implementation-artifacts/10-27-ical-rsvp-tracking-partner-meetings.md`
+**Story file**: `_bmad-output/implementation-artifacts/archive/10-27-ical-rsvp-tracking-partner-meetings.md`
 **Status**: ✅ done (sprint-status 2026-11-04)
 
 Short pointer: the full story (scope, ACs, dev notes) lives in the story file only.
@@ -2008,7 +2008,7 @@ Short pointer: the full story (scope, ACs, dev notes) lives in the story file on
 
 ### Story 10.28: Newsletter Subscriber Management Page
 
-**Story file**: `_bmad-output/implementation-artifacts/10-28-newsletter-subscriber-management.md`
+**Story file**: `_bmad-output/implementation-artifacts/archive/10-28-newsletter-subscriber-management.md`
 **Status**: ✅ done (sprint-status 2026-11-04)
 
 Short pointer: an organizer admin page listing newsletter subscribers (paginated, searchable, sortable) with unsubscribe, re-subscribe and delete. Full story in the story file.
@@ -2017,7 +2017,7 @@ Short pointer: an organizer admin page listing newsletter subscribers (paginated
 
 ### Story 10.29: SES Bounce Processing & Newsletter List Hygiene
 
-**Story file**: `_bmad-output/implementation-artifacts/10-29-ses-bounce-processing-newsletter-list-hygiene.md`
+**Story file**: `_bmad-output/implementation-artifacts/archive/10-29-ses-bounce-processing-newsletter-list-hygiene.md`
 **Status**: ✅ done (sprint-status 2026-11-04)
 **Prerequisites**: Story 10.7 (newsletter sending), Story 10.28 (subscriber management page)
 
@@ -2074,7 +2074,7 @@ web-frontend/src/components/organizer/NewsletterSubscribers/                   �
 
 ### Story 10.30: Speaker Drawer Redesign — Tabbed Layout, Organizer Assignment, Mobile UX
 
-**Story file**: `_bmad-output/implementation-artifacts/10-30-speaker-drawer-redesign.md`
+**Story file**: `_bmad-output/implementation-artifacts/archive/10-30-speaker-drawer-redesign.md`
 **Status**: ✅ done (sprint-status 2026-11-04)
 
 **User Story:**
@@ -2143,7 +2143,7 @@ web-frontend/src/components/organizer/SpeakerStatus/QualityReviewDrawer.tsx — 
 
 ### Story 10.31: Bot Protection — Cloudflare Turnstile for Newsletter & Event Registration
 
-**Story file**: `_bmad-output/implementation-artifacts/10-31-bot-protection-turnstile.md`
+**Story file**: `_bmad-output/implementation-artifacts/archive/10-31-bot-protection-turnstile.md`
 **Status**: ✅ done (sprint-status 2026-11-04)
 **Source**: [GH#582](../../issues/582)
 
@@ -2268,7 +2268,7 @@ web-frontend/.../Registration/__tests__/RegistrationWizard.test.tsx — verify h
 
 ### Story 10.32: Additional Email Addresses per User Profile
 
-**Story file**: `_bmad-output/implementation-artifacts/10-32-additional-user-emails.md`
+**Story file**: `_bmad-output/implementation-artifacts/archive/10-32-additional-user-emails.md`
 **Status**: ✅ done (sprint-status 2026-11-04)
 **Prerequisites**: Story 10.26 (SES email forwarding + sender-auth Lambda)
 

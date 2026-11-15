@@ -75,11 +75,11 @@
 
 ⏺ Read 1 file (ctrl+o to expand)
 
-⏺ Bash(mkdir -p /Users/nissim/dev/bat/BATbern-main/_bmad-output/brainstorming)
+⏺ Bash(mkdir -p /Users/nissim/dev/bat/BATbern-main/_bmad-output/archive/brainstorming)
   ⎿  Done
 
-⏺ Write(_bmad-output/brainstorming/brainstorming-session-2026-02-24.md)
-  ⎿  Wrote 15 lines to _bmad-output/brainstorming/brainstorming-session-2026-02-24.md
+⏺ Write(_bmad-output/archive/brainstorming/brainstorming-session-2026-02-24.md)
+  ⎿  Wrote 15 lines to _bmad-output/archive/brainstorming/brainstorming-session-2026-02-24.md
        1 ---
        2 stepsCompleted: []
        3 inputDocuments: []
@@ -723,11 +723,11 @@
 
 📊 Mary: Done. Nothing lost. Two files saved:       
                                                                                                                                          
-  _bmad-output/brainstorming/brainstorming-session-2026-02-24.md                                                                         
+  _bmad-output/archive/brainstorming/brainstorming-session-2026-02-24.md                                                                         
   The full session record — concept, all blob types, interaction language, visual design, session flow, the complete 58-topic taxonomy
   with clusters, and all key decisions made.                                                                                             
                                                            
-  _bmad-output/implementation-artifacts/blob-topic-selector-spec.md
+  _bmad-output/implementation-artifacts/archive/blob-topic-selector-spec.md
   Implementation-ready spec with 27 acceptance criteria, full API contract (3 new endpoints + 1 PATCH), D3 component structure, semantic
   similarity taxonomy, access control, and implementation notes.
 
@@ -800,7 +800,7 @@
   🎊 Party Mode Session Complete! 🎊
 
   Two artifacts waiting for you:
-  - _bmad-output/brainstorming/brainstorming-session-2026-02-24.md
-  - _bmad-output/implementation-artifacts/blob-topic-selector-spec.md
+  - _bmad-output/archive/brainstorming/brainstorming-session-2026-02-24.md
+  - _bmad-output/implementation-artifacts/archive/blob-topic-selector-spec.md
 
   Back to Mary's analyst menu whenever you're ready. 📊

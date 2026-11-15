@@ -1,7 +1,7 @@
 ---
 stepsCompleted: [1, 2, 3]
 inputDocuments:
-  - _bmad-output/brainstorming/brainstorming-session-2026-06-06.md
+  - _bmad-output/archive/brainstorming/brainstorming-session-2026-06-06.md
   - docs/prd-enhanced.md
   - _bmad-output/project-context.md
 ---
@@ -115,7 +115,7 @@ Give attendees a voice and a return channel via five organizer-voted features th
 
 ### Story 7.1: Topics From the Floor
 
-**Story file**: `_bmad-output/implementation-artifacts/7-1-topics-from-the-floor.md`
+**Story file**: `_bmad-output/implementation-artifacts/archive/7-1-topics-from-the-floor.md`
 **Status**: ✅ done (#776)
 **Source idea**: #05 "Topics From the Floor" — 4 votes (GitHub #750)
 **Service**: `partner-coordination-service`
@@ -172,7 +172,7 @@ partner-coordination-service
 
 ### Story 7.2: "I Could Speak on That"
 
-**Story file**: `_bmad-output/implementation-artifacts/7-2-i-could-speak-on-that.md`
+**Story file**: `_bmad-output/implementation-artifacts/archive/7-2-i-could-speak-on-that.md`
 **Status**: ✅ done (#776)
 **Source idea**: #06 "I Could Speak on That" — 4 votes (GitHub #751)
 **Service**: `event-management-service` (unified speaker workflow per Epic 11 / ADR-009 — NOT speaker-coordination-service)
@@ -238,7 +238,7 @@ event-management-service
 
 ### Story 7.3: "The Slides Are Online" Mail
 
-**Story file**: `_bmad-output/implementation-artifacts/7-3-slides-online-mail.md`
+**Story file**: `_bmad-output/implementation-artifacts/archive/7-3-slides-online-mail.md`
 **Status**: ✅ done (#776)
 **Source idea**: #07 "The Slides Are Online" Mail — 3 votes (GitHub #752)
 **Service**: `event-management-service` + AWS SES
@@ -293,7 +293,7 @@ Organizer opens task → POST /api/v1/events/{eventCode}/newsletter/send
 
 ### Story 7.4: Thank-the-Organizers
 
-**Story file**: `_bmad-output/implementation-artifacts/7-4-thank-the-organizers.md`
+**Story file**: `_bmad-output/implementation-artifacts/archive/7-4-thank-the-organizers.md`
 **Status**: ✅ done (#776)
 **Source idea**: #02 Thank-the-Organizers Button — 3 votes (GitHub #747)
 **Service**: `event-management-service`
@@ -351,7 +351,7 @@ event-management-service
 
 ### Story 7.5: The Apéro Continues
 
-**Story file**: `_bmad-output/implementation-artifacts/7-5-the-apero-continues.md`
+**Story file**: `_bmad-output/implementation-artifacts/archive/7-5-the-apero-continues.md`
 **Status**: ✅ done (#776)
 **Source idea**: #01 The Apéro Continues — 3 votes (GitHub #746)
 **Service**: `event-management-service` → archive
@@ -422,7 +422,7 @@ event-management-service
 
 ### Story 7.6: Attendee Event History Dashboard
 
-**Story file**: `_bmad-output/implementation-artifacts/7-6-attendee-event-history.md`
+**Story file**: `_bmad-output/implementation-artifacts/archive/7-6-attendee-event-history.md`
 **Status**: ✅ done (#776)
 **Source**: Nissim, 2026-06-11 (added after the vote)
 
@@ -430,7 +430,7 @@ A logged-in attendee gets `/attendee/dashboard` listing every event they registe
 
 ### Story 7.7: Curated Thank-You Notes in the Partner Marquee
 
-**Story file**: `_bmad-output/implementation-artifacts/7-7-curated-thank-you-marquee.md`
+**Story file**: `_bmad-output/implementation-artifacts/archive/7-7-curated-thank-you-marquee.md`
 **Status**: ✅ done (#785)
 **Source**: FR11 "appreciation wall"; decided with PM 2026-06-13
 

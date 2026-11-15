@@ -31,7 +31,7 @@
 
 ### Story 8.1: Partner Attendance Dashboard
 
-**Story file**: `_bmad-output/implementation-artifacts/8-1-partner-analytics-dashboard.md`
+**Story file**: `_bmad-output/implementation-artifacts/archive/8-1-partner-analytics-dashboard.md`
 **Status**: ✅ done (sprint-status; deployed 2026-02-22)
 
 **User Story:**
@@ -84,7 +84,7 @@ partner-coordination-service
 
 ### Story 8.2: Topic Suggestions & Voting
 
-**Story file**: `_bmad-output/implementation-artifacts/8-2-topic-voting-system.md`
+**Story file**: `_bmad-output/implementation-artifacts/archive/8-2-topic-voting-system.md`
 **Status**: ✅ done (sprint-status; deployed 2026-02-22)
 
 **User Story:**
@@ -130,7 +130,7 @@ All data lives in `partner-coordination-service` DB. No cross-service calls need
 
 ### Story 8.3: Partner Meeting Coordination
 
-**Story file**: `_bmad-output/implementation-artifacts/8-3-automated-meeting-coordination.md`
+**Story file**: `_bmad-output/implementation-artifacts/archive/8-3-automated-meeting-coordination.md`
 **Status**: ✅ done (sprint-status; deployed 2026-02-22)
 
 **User Story:**
@@ -200,7 +200,7 @@ PartnerMeetingController (202 Accepted immediately)
 
 ### Story 8.4: Partner Notes
 
-**Story file**: `_bmad-output/implementation-artifacts/8-4-partner-notes.md`
+**Story file**: `_bmad-output/implementation-artifacts/archive/8-4-partner-notes.md`
 **Status**: ✅ done (sprint-status; deployed 2026-02-22)
 
 **User Story:**

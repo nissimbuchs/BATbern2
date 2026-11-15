@@ -49,7 +49,7 @@ So this is **not a helpdesk**. It is a per-event log with a short "needs an answ
 5. 16.7 + 16.10: live 2026-11-03 (#1194)
 6. 16.8c clean-up: one release after 16.8, owner go, and after Epic 17 story 17.1 (which removes `slides-online/send`, owner 2026-11-07). 16.12, 16.13: backlog
 
-All story files exist in `_bmad-output/implementation-artifacts/16-*.md` (written 2026-11-01).
+All story files exist in `_bmad-output/implementation-artifacts/archive/16-*.md` (written 2026-11-01).
 
 `sprint-status.yaml` lists older `ready-for-dev` stories (11-e-5, 11-g-1, 13-5) ahead of Epic 16. Always start with the explicit story path, never with "next story".
 
@@ -86,7 +86,7 @@ All story files exist in `_bmad-output/implementation-artifacts/16-*.md` (writte
 
 ### Story 16.0 — Stop losing replies and calendar declines (#1160, #1161, #1162)
 
-Story file: `_bmad-output/implementation-artifacts/16-0-stop-losing-replies-and-calendar-declines.md`. Three parts, three PRs.
+Story file: `_bmad-output/implementation-artifacts/archive/16-0-stop-losing-replies-and-calendar-declines.md`. Three parts, three PRs.
 
 **Part A (#1160):**
 - Speaker mails carry Reply-To `batbern{N}-moderator@`.
@@ -105,7 +105,7 @@ Story file: `_bmad-output/implementation-artifacts/16-0-stop-losing-replies-and-
 
 ### Story 16.1a — Record every outbound mail
 
-Story file: `_bmad-output/implementation-artifacts/16-1a-record-outbound-mail.md`.
+Story file: `_bmad-output/implementation-artifacts/archive/16-1a-record-outbound-mail.md`.
 
 **Scope:**
 - `mail_message` + `mail_recipient` tables in EMS.
@@ -120,7 +120,7 @@ Story file: `_bmad-output/implementation-artifacts/16-1a-record-outbound-mail.md
 
 ### Story 16.1b — Delivery status from SES events
 
-Story file: `_bmad-output/implementation-artifacts/16-1b-delivery-status.md`. Depends on 16.1a. Contains a CDK change.
+Story file: `_bmad-output/implementation-artifacts/archive/16-1b-delivery-status.md`. Depends on 16.1a. Contains a CDK change.
 
 **Scope:** an SQS queue on the existing transactional SES events topic; an EMS listener sets `DELIVERED` / `FAILED` (with reason) per recipient; statuses never move backwards; newsletter suppression untouched.
 
@@ -326,7 +326,7 @@ The speaker reminder templates **are** editable in the admin template editor. Th
 
 ### Story 16.11 — One mail pipeline and variable catalog
 
-**Owner decision 2026-11-01**, after Winston's review of the 16.5 render design. Story file: `_bmad-output/implementation-artifacts/16-11-mail-pipeline-variable-catalog.md`. **Depends on:** 16.8. **Blocks:** 16.5.
+**Owner decision 2026-11-01**, after Winston's review of the 16.5 render design. Story file: `_bmad-output/implementation-artifacts/archive/16-11-mail-pipeline-variable-catalog.md`. **Depends on:** 16.8. **Blocks:** 16.5.
 
 Every template-based mail renders through one pipeline (`MailContent` resolved once per send → catalog variables → `MailRenderer`), and one `MailVariableCatalog` defines every variable name, scope and alias. Any template may use every variable its mail has the data for. Golden-file tests pin today's output first. Visible changes, decided by the owner: `eventDate` in the long form everywhere, `supportUrl` = `{baseUrl}/support`. Also fixes the newsletter re-reading its template for every subscriber. Replaces the `TemplateSource` that 16.8 planned and did not build.
 

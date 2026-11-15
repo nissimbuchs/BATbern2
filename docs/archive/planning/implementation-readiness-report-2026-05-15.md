@@ -95,7 +95,7 @@ status: complete
 ### 2.2 Missing Documents
 | Missing | Severity | Impact |
 |---------|----------|--------|
-| Per-story files in `_bmad-output/implementation-artifacts/11-*.md` | **EXPECTED** | Story files are authored just-in-time via `bmad-create-story` — sprint registration is the gate, not story-file existence. Track readiness at epic+story-summary level only. |
+| Per-story files in `_bmad-output/implementation-artifacts/archive/11-*.md` | **EXPECTED** | Story files are authored just-in-time via `bmad-create-story` — sprint registration is the gate, not story-file existence. Track readiness at epic+story-summary level only. |
 | Dedicated UX spec for Epic 11 Kanban/drawer changes | **MEDIUM** | UX detail (UX-DR1–UX-DR14, §8.9 stories 1-3) lives inline in epic + plan. Acceptable if §8 detail is sufficient — verified in Step 4. |
 | Updated `docs/front-end-spec.md` reflecting unified workflow UX | **LOW** | front-end-spec.md is org-wide; Phase A Story 11-a-1 covers architecture-doc alignment but **does not list front-end-spec.md**. Possible doc-drift risk — flagged for Step 4. |
 

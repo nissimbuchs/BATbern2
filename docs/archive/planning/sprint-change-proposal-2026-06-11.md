@@ -54,7 +54,7 @@ nothing deployed). The promote-picker fix is independently valuable and ships in
 
 ## 4. Detailed Change Proposals
 
-See the amended story file `_bmad-output/implementation-artifacts/7-2-i-could-speak-on-that.md`
+See the amended story file `_bmad-output/implementation-artifacts/archive/7-2-i-could-speak-on-that.md`
 (section "ADR-012 Amendment (2026-06-11)") for the concrete AC/task edits. Summary:
 
 - **Migration (V109 rewrite)**: `speaker_pool` gets only `source`; new `session_proposals`

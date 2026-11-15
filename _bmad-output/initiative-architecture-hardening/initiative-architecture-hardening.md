@@ -11,7 +11,7 @@ companions:
   - docs/architecture/ADR-016-service-directions-and-service-to-service-calls.md
   - docs/architecture/ADR-002-generic-file-upload-service.md
   - docs/architecture/ADR-003-meaningful-identifiers-public-apis.md
-  - _bmad-output/implementation-artifacts/16-8-shared-composer.md
+  - _bmad-output/implementation-artifacts/archive/16-8-shared-composer.md
 after: []
 risk: high
 ---
@@ -99,7 +99,7 @@ Developers and agents working on BATbern find one endpoint, one transport and on
 - plan — `docs/plans/test-fidelity-proposal-2026-11.md` (P1 to P4, the 57-bug classification)
 - architecture — `docs/architecture/module-map.md`, `docs/architecture/ADR-016-service-directions-and-service-to-service-calls.md`, `docs/architecture/ADR-002-generic-file-upload-service.md` (decision 2026-11-07), `docs/architecture/ADR-003-meaningful-identifiers-public-apis.md` (amendment 2026-11)
 - story — 17.1 and 17.3 are v7 story files in `_bmad-output/initiative-architecture-hardening/tickets/epic-dead-surface-and-gates/tickets/` (converted from the v6 files 2026-11-07)
-- story — `_bmad-output/implementation-artifacts/16-8-shared-composer.md`, Part 16.8c, AC18, Dev Notes "Endpoints retired in 16.8c"
+- story — `_bmad-output/implementation-artifacts/archive/16-8-shared-composer.md`, Part 16.8c, AC18, Dev Notes "Endpoints retired in 16.8c"
 
 ## Notes
 

@@ -425,7 +425,7 @@ As an organizer, I want sessions to advance automatically when time expires and 
 
 As an organizer, I want to extend the current session's time before it runs out, or restore time to the previous session if we transitioned too early, so that the schedule stays accurate without the stress of reacting to overruns.
 
-> **Rewritten 2026-02-19** per Sprint Change Proposal. Previous story ("Overrun Detection & Schedule Cascade") replaced. Story file: `_bmad-output/implementation-artifacts/w4-3-overrun-detection-schedule-cascade.md`
+> **Rewritten 2026-02-19** per Sprint Change Proposal. Previous story ("Overrun Detection & Schedule Cascade") replaced. Story file: `_bmad-output/implementation-artifacts/archive/w4-3-overrun-detection-schedule-cascade.md`
 
 **AC:**
 - Given a session has ≤ 10 minutes remaining (not yet overtime) When I view O3 Then an "Extend" button appears; it disappears when > 10 min remain or when the session reaches overtime

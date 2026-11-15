@@ -60,7 +60,7 @@ The owner and every later story get a smaller platform, a cleaner EMS and fronte
 
 - parent — `_bmad-output/initiative-architecture-hardening/initiative-architecture-hardening.md`, section Requirements (R5, R6, R7, R8, R9, R10, R25), Constraints, Notes (Decision lines)
 - prd — `docs/archive/prd/epic-17-architecture-hardening.md`, Rules for every story, Story order, Stories 17.1 to 17.5
-- story — `_bmad-output/implementation-artifacts/16-8-shared-composer.md`, Part 16.8c, AC18, Dev Notes "Endpoints retired in 16.8c" (v6 archive, covers 16.8a to c)
+- story — `_bmad-output/implementation-artifacts/archive/16-8-shared-composer.md`, Part 16.8c, AC18, Dev Notes "Endpoints retired in 16.8c" (v6 archive, covers 16.8a to c)
 
 ## Notes
 
