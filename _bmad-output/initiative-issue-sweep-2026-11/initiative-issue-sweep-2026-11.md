@@ -62,6 +62,7 @@ The owner sees every issue from 2026-09-15 on closed with its fix live, closed a
 - C6 (coding-standards Test fidelity rules, CLAUDE.md TDD): test first; mocks at the process boundary only; touched tests move off own-code mocks.
 - C7 (CLAUDE.md localization): new UI keys in all 10 locales; mail templates DE and EN only.
 - C8 (CLAUDE.md Quality Standards): one heavy build at a time on rack; build output through `tee` with `pipefail`.
+- C9 (owner 2026-11-15, supersedes the CLAUDE.md Ownership "record as an issue" exceptions for this initiative): a bug or defect found on the way is fixed right away in the current epic's PR, in its own commit, test first. No new GitHub issue and no `deferred-work.md` entry; review findings are patched, not deferred. When the fix needs an owner decision, a production data change or a maintenance window (C3 to C5), ask the owner in the session and fix it after the answer. Goal: the open GitHub issue count goes down, never up.
 
 ## Done when
 

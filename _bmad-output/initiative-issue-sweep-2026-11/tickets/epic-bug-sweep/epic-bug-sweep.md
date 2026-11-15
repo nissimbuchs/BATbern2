@@ -47,7 +47,7 @@ The owner sees the covered issues (R29, R2, R3, R4, R5, R6, R7, R8, R9, R10, R27
 
 ## Boundaries
 
-- Only the requirements it covers; anything found on the way is fixed in its own commit or filed (CLAUDE.md Ownership).
+- Only the requirements it covers, plus every bug or defect found on the way: fixed in this epic's PR, in its own commit, test first (C9). No GitHub issue and no deferred-work entry for it.
 
 ## References
 

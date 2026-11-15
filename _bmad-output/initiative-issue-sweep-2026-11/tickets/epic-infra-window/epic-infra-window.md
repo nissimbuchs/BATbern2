@@ -28,7 +28,7 @@ The owner sees the covered issues (R23, R25) closed with the fix live in product
 
 ## Boundaries
 
-- Only the requirements it covers; anything found on the way is fixed in its own commit or filed (CLAUDE.md Ownership).
+- Only the requirements it covers, plus every bug or defect found on the way: fixed in this epic's PR, in its own commit, test first (C9). No GitHub issue and no deferred-work entry for it.
 
 ## References
 
