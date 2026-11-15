@@ -70,7 +70,9 @@ CUMS (identity) is upstream of all. EMS (event) is upstream of PCS (partners).
   maps no `/registrations` or `/my-registration` path, neither by hand nor through an implemented
   interface (the generated `RegistrationsApi`); the registration endpoints live in
   `RegistrationController`, the counts and the delete guard in `RegistrationService` (Story 17.13).
-  Fixture tests in `EmsModuleRulesFixtureTest` prove it fires on both.
+  `RegistrationController` uses no `RegistrationRepository`: every registration read and write goes
+  through a `@Transactional` `RegistrationService` method (#1315); the rule fails when no class has the
+  controller's name. Fixture tests in `EmsModuleRulesFixtureTest` prove both rules fire.
 - EMS `architecture/EmsExceptionMappingTest` (not frozen, it has no violation): `GlobalExceptionHandler`
   uses no EMS class but `DomainException` and `DomainErrorResponse`, so a module exception is mapped
   through the base or in the module's advice, never by hand in the platform advice; and every

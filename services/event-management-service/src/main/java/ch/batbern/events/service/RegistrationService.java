@@ -617,6 +617,20 @@ public class RegistrationService {
     }
 
     /**
+     * The user's registration for the event that is not cancelled, for their own cancellation
+     * ({@code DELETE /events/{code}/my-registration}).
+     *
+     * @throws NoSuchElementException none (404)
+     */
+    @Transactional(readOnly = true)
+    public Registration findActiveOfUser(Event event, String username) {
+        return registrationRepository.findByEventIdAndAttendeeUsername(event.getId(), username)
+                .filter(registration -> !"cancelled".equalsIgnoreCase(registration.getStatus()))
+                .orElseThrow(() -> new NoSuchElementException("No active registration found for user " + username
+                        + " at event " + event.getEventCode()));
+    }
+
+    /**
      * Organizer status change ({@code PATCH /events/{code}/registrations/{registrationCode}}), by the
      * table {@link #STATUS_TRANSITIONS}, in one transaction with its side effects (#1315):
      * <ul>

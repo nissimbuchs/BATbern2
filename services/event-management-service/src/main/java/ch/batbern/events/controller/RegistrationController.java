@@ -16,7 +16,6 @@ import ch.batbern.events.registrations.dto.generated.MyRegistrationResponse;
 import ch.batbern.events.registrations.dto.generated.ResendConfirmationResponse;
 import ch.batbern.events.registrations.dto.generated.UpdateRegistrationStatusRequest;
 import ch.batbern.events.repository.EventRepository;
-import ch.batbern.events.repository.RegistrationRepository;
 import ch.batbern.events.security.SecurityContextHelper;
 import ch.batbern.events.service.ConfirmationTokenService;
 import ch.batbern.events.service.RegistrationEmailService;
@@ -39,7 +38,6 @@ import org.springframework.web.bind.annotation.RestController;
 import java.time.Instant;
 import java.util.List;
 import java.util.Locale;
-import java.util.NoSuchElementException;
 import java.util.UUID;
 
 /**
@@ -61,7 +59,6 @@ import java.util.UUID;
 public class RegistrationController implements RegistrationsApi {
 
     private final RegistrationService registrationService;
-    private final RegistrationRepository registrationRepository;
     private final EventRepository eventRepository;
     private final ConfirmationTokenService confirmationTokenService;
     private final RegistrationEmailService registrationEmailService;
@@ -286,11 +283,7 @@ public class RegistrationController implements RegistrationsApi {
 
         String username = securityContextHelper.getCurrentUsername();
         Event event = findEvent(eventCode);
-        Registration registration = registrationRepository
-                .findByEventIdAndAttendeeUsername(event.getId(), username)
-                .filter(r -> !"cancelled".equalsIgnoreCase(r.getStatus()))
-                .orElseThrow(() -> new NoSuchElementException(
-                        "No active registration found for user " + username + " at event " + eventCode));
+        Registration registration = registrationService.findActiveOfUser(event, username);
 
         registrationService.cancelRegistration(registration);
         log.info("Authenticated cancellation: registration {} cancelled for user {} at event {}",
