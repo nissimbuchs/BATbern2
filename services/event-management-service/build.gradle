@@ -1023,3 +1023,9 @@ ext.responseConformanceSpecs = [
     'docs/api/internal/ems-internal.openapi.yml'
 ]
 apply from: "${rootProject.projectDir}/gradle/response-conformance.gradle"
+
+// The EMS module naming rules (shared with scripts/architecture/ems-module-*.py) are read by the
+// architecture tests (EmsModuleNames): a changed file re-runs the suite (not up to date).
+tasks.named('test', Test) {
+    inputs.file(rootProject.file('scripts/architecture/ems-modules.json')).withPropertyName('emsModuleRules')
+}

@@ -1,4 +1,7 @@
 # Shared helpers of the EMS module scripts (ems-module-deps.py, ems-module-target.py).
+import json
+import os
+import re
 
 
 def strip_comments(src):
@@ -32,3 +35,37 @@ def strip_comments(src):
         else:
             out.append(c); i += 1
     return ''.join(out)
+
+
+RULES_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'ems-modules.json')
+
+
+def load_rules(path=RULES_FILE):
+    """The naming rules of ems-modules.json (shared with the EMS ArchUnit rules, EmsModuleNames)."""
+    with open(path) as f:
+        return json.load(f)
+
+
+def base_module(rules, pkg, name):
+    """Module as ems-module-deps.py assigns it: first matching rule, then the overrides."""
+    module = 'platform'
+    for rule in rules['rules']:
+        if (any(pkg.startswith(p) for p in rule['packages'])
+                or any(name.startswith(k) for k in rule['startsWith'])
+                or any(k in name for k in rule['contains'])):
+            module = rule['module']
+            break
+    return rules['overrides'].get(name, module)
+
+
+def target_module(rules, name, module):
+    """Module as ems-module-target.py reassigns it: the last matching target group, then the renames."""
+    for target in rules['target']:
+        if any(re.fullmatch(p, name) for p in target['patterns']):
+            module = target['module']
+    return rules['renames'].get(module, module)
+
+
+def module_of(rules, pkg, name):
+    """Final module of a top-level EMS class (first package segment below the EMS root, simple name)."""
+    return target_module(rules, name, base_module(rules, pkg, name))

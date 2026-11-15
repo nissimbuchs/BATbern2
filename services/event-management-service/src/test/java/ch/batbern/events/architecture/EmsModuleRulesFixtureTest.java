@@ -254,24 +254,6 @@ class EmsModuleRulesFixtureTest {
     }
 
     @Test
-    @DisplayName("should_classifyLikeTheModuleScript_when_givenClassNames")
-    void should_classifyLikeTheModuleScript_when_givenClassNames() {
-        assertThat(EmsModuleNames.moduleOf("service", "EventReadService")).isEqualTo(EmsModuleNames.EVENT_CORE);
-        assertThat(EmsModuleNames.moduleOf("security", "CallerRoles")).isEqualTo(EmsModuleNames.PLATFORM);
-        assertThat(EmsModuleNames.moduleOf("service", "SessionEventExpansion")).isEqualTo("sessions");
-        assertThat(EmsModuleNames.moduleOf("service", "RegistrationEventAdapter")).isEqualTo("registrations");
-        assertThat(EmsModuleNames.moduleOf("service", "TeaserImageEventExpansion")).isEqualTo("media");
-        assertThat(EmsModuleNames.moduleOf("service", "TopicEventExpansion")).isEqualTo("topics_ai");
-        assertThat(EmsModuleNames.moduleOf("service", "SpeakerMetricsExpansion")).isEqualTo("speakers");
-        assertThat(EmsModuleNames.moduleOf("service", "EventAnalyticsService")).isEqualTo("analytics");
-        assertThat(EmsModuleNames.moduleOf("publishing", "PublicEventShaper")).isEqualTo("publishing");
-        assertThat(EmsModuleNames.moduleOf("service", "MailPipeline")).isEqualTo("mail_core");
-        assertThat(EmsModuleNames.moduleOf("mailcenter", "ConversationService")).isEqualTo("mail_center");
-        assertThat(EmsModuleNames.moduleOf("notification", "NotificationRepository")).isEqualTo("notif_core");
-        assertThat(EmsModuleNames.moduleOf("service", "AiDescriptionService")).isEqualTo("ai");
-    }
-
-    @Test
     @DisplayName("should_fail_when_globalExceptionHandlerUsesDomainException")
     void should_fail_when_globalExceptionHandlerUsesDomainException() {
         EvaluationResult result = EmsModuleRules.globalExceptionHandlerUsesOnlyExceptionBase(MAPPING_ROOT)

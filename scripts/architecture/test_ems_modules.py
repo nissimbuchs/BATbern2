@@ -57,6 +57,34 @@ class StripCommentsTest(unittest.TestCase):
         self.assertEqual(self.strip(src), src)
 
 
+class SharedRulesTest(unittest.TestCase):
+    """ems-modules.json is the one copy of the naming rules; EmsModuleNamesSharedRulesTest checks the
+    same examples on the Java side, so the two interpreters cannot disagree on them."""
+
+    def test_every_example_classifies_as_recorded(self):
+        from ems_modules import load_rules, module_of
+        rules = load_rules()
+        self.assertTrue(rules['examples'])
+        for key, expected in rules['examples'].items():
+            pkg, name = key.split('/')
+            with self.subTest(key=key):
+                self.assertEqual(module_of(rules, pkg, name), expected)
+
+    def test_classification_follows_the_file(self):
+        from ems_modules import load_rules, module_of
+        rules = load_rules()
+        self.assertEqual(module_of(rules, 'service', 'EventAnalyticsService'), 'analytics')
+        for rule in rules['rules']:
+            if rule['module'] == 'analytics':
+                rule['contains'] = ['Attendance']
+        self.assertEqual(module_of(rules, 'service', 'EventAnalyticsService'), 'event_core')
+
+    def test_scripts_read_the_file(self):
+        for script in (DEPS, TARGET):
+            with open(script) as f:
+                self.assertIn('load_rules()', f.read())
+
+
 class ScriptsCountAfterUrlTest(unittest.TestCase):
     """A URL in a string before other code must not hide the rest of the file."""
 

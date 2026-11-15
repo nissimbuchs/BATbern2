@@ -81,8 +81,9 @@ CUMS (identity) is upstream of all. EMS (event) is upstream of PCS (partners).
   controller's name. Fixture tests in `EmsModuleRulesFixtureTest` prove both rules fire.
 - EMS `architecture/EmsEndpointPlacementTest`, second rule (not frozen, no violation):
   `EventController` uses event core and platform only: no Spring Data repository, no generated class
-  outside `core`, no class whose module (by the naming of `scripts/architecture/ems-module-deps.py`
-  and `ems-module-target.py`, ported in `EmsModuleNames`) is another. The public read model, the
+  outside `core`, no class whose module (by the naming rules in `scripts/architecture/ems-modules.json`,
+  read by `ems-module-deps.py`, `ems-module-target.py` and `EmsModuleNames`; its `examples` are asserted
+  by `test_ems_modules.py` and `EmsModuleNamesSharedRulesTest`) is another. The public read model, the
   analytics and the topic selection have their own controllers (`PublicEventController`,
   `EventAnalyticsController`, `EventTopicController`). Fixture tests in `EmsModuleRulesFixtureTest`.
 - EMS `architecture/EmsExceptionMappingTest` (not frozen, it has no violation): `GlobalExceptionHandler`

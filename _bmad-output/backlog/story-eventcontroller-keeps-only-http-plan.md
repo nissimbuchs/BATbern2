@@ -43,6 +43,10 @@ deferred:
     location: >-
       services/event-management-service/src/test/java/ch/batbern/events/architecture/EmsModuleNames.java
     severity: low
+    resolved: >-
+      2026-11-15, plan-epic17-close-findings-batch item 3: one rules file scripts/architecture/ems-modules.json,
+      read by both scripts and EmsModuleNames; its examples are asserted by test_ems_modules.py and
+      EmsModuleNamesSharedRulesTest.
 ---
 
 <intent-contract>
