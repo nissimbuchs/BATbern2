@@ -45,7 +45,6 @@ be-mock-s2s-client	services/event-management-service/src/test/java/ch/batbern/ev
 be-mock-s2s-client	services/event-management-service/src/test/java/ch/batbern/events/service/ParticipantsCollectorTest.java	1
 be-mock-s2s-client	services/event-management-service/src/test/java/ch/batbern/events/service/ParticipantsExportServiceTest.java	1
 be-mock-s2s-client	services/event-management-service/src/test/java/ch/batbern/events/service/PrimarySpeakerResolverTest.java	1
-be-mock-s2s-client	services/event-management-service/src/test/java/ch/batbern/events/service/QnaNotificationServiceIntegrationTest.java	1
 be-mock-s2s-client	services/event-management-service/src/test/java/ch/batbern/events/service/RegistrationServiceAuthenticatedTest.java	1
 be-mock-s2s-client	services/event-management-service/src/test/java/ch/batbern/events/service/SessionUserServiceTest.java	1
 be-mock-s2s-client	services/event-management-service/src/test/java/ch/batbern/events/service/SpeakerAutoRegistrationServiceTest.java	1

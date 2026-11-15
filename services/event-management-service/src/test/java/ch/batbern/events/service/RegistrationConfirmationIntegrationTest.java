@@ -87,7 +87,8 @@ class RegistrationConfirmationIntegrationTest extends AbstractIntegrationTest {
     // ── notifyRegistrationConfirmed ─────────────────────────────────────────
 
     @ParameterizedTest
-    @CsvSource({"en,Registration confirmed", "de,Anmeldung bestätigt", "'',Anmeldung bestätigt"})
+    @CsvSource({"en,Registration confirmed", "fr,Registration confirmed", "de,Anmeldung bestätigt",
+        "'',Anmeldung bestätigt"})
     @DisplayName("the confirmed mail is in the attendee's language, German by default")
     void should_sendConfirmedMailInPreferredLanguage(String language, String subject) {
         String address = "john.lang@test.com"; // userWithLanguage answers <username>@test.com

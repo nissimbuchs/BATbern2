@@ -5,6 +5,7 @@ import ch.batbern.events.config.AfterCommit;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Registration;
 import ch.batbern.events.dto.generated.users.UserResponse;
+import ch.batbern.events.mailcenter.render.MailLocales;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -64,8 +65,7 @@ public class RegistrationConfirmationSender {
                 ? appBaseUrl + "/deregister?token=" + registration.getDeregistrationToken()
                 : null;
         String language = userApiClient.getPreferredLanguage(username);
-        Locale locale = language == null || language.toLowerCase(Locale.ROOT).startsWith("de")
-                ? Locale.GERMAN : Locale.ENGLISH;
+        Locale locale = MailLocales.fromPreference(language);
 
         AfterCommit.run(() -> registrationEmailService.sendRegistrationConfirmation(
                 registration, attendee, event, confirmationToken, deregistrationUrl, locale));

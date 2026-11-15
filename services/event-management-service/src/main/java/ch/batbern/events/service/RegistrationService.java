@@ -5,6 +5,7 @@ import ch.batbern.events.client.UserApiClient;
 import ch.batbern.events.config.AfterCommit;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Registration;
+import ch.batbern.events.mailcenter.render.MailLocales;
 import ch.batbern.events.registrations.dto.generated.AddParticipantsResponse;
 import ch.batbern.events.registrations.dto.generated.CreateRegistrationRequest;
 import ch.batbern.events.registrations.dto.generated.ParticipantImportPerson;
@@ -815,8 +816,7 @@ public class RegistrationService {
         try {
             UserResponse user = userApiClient.getUserByUsername(registration.getAttendeeUsername());
             String pref = userApiClient.getPreferredLanguage(registration.getAttendeeUsername());
-            Locale locale = (pref == null || pref.toLowerCase(Locale.ROOT).startsWith("de"))
-                    ? Locale.GERMAN : Locale.ENGLISH;
+            Locale locale = MailLocales.fromPreference(pref);
             AfterCommit.run(() ->
                     registrationEmailService.sendRegistrationConfirmed(registration, user, event, locale));
         } catch (Exception e) {
@@ -1029,8 +1029,7 @@ public class RegistrationService {
         // NOT the waitlist-promotion email (no "confirm please", no waitlist story, no reg code).
         if (notify) {
             String pref = userApiClient.getPreferredLanguage(username);
-            Locale locale = (pref != null && pref.toLowerCase(Locale.ROOT).startsWith("de"))
-                    ? Locale.GERMAN : Locale.ENGLISH;
+            Locale locale = MailLocales.fromPreference(pref);
             AfterCommit.run(() -> registrationEmailService.sendOrganizerAddedConfirmation(saved, user, event, locale));
         }
 

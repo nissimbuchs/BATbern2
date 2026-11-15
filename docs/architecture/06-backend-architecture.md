@@ -686,8 +686,14 @@ sequenceDiagram
   Phases are `POST …/phases/{phase}/publish|unpublish` (`topic`, `speakers`, `agenda`; unknown: 400),
   each evicting the event and archive caches and invalidating the CDN paths of the phase; status
   and auto-publish schedule are one resource, `GET`/`PATCH /events/{eventCode}/publishing`.
-  No `zone` is set on these crons, so they run in the JVM time zone (not verified 2026-11-04 which
-  zone the containers use).
+  Every cron of CUMS and EMS carries `zone = "Europe/Zurich"` (#1222): the containers run on UTC
+  and no `TZ` is set, on purpose, so the code states the zone. Before, 15 crons ran 1-2 hours
+  earlier than their Swiss times. `ScheduledZoneGuardTest` (one per service, guard in the
+  shared-kernel test fixtures) fails the build for a cron without it; `fixedRate`/`fixedDelay`
+  jobs are not affected. Jobs that count calendar days take the date in Europe/Zurich from the `Clock` bean
+  (`ClockConfig`), never from the JVM zone: the 01:00 auto-publish run is 23:00 UTC of the day
+  before in summer, so a UTC date would publish one Swiss day late. Same for the speaker reminder
+  tiers and their days-remaining value.
 - Not implemented: overflow management and voting (removed by ADR-009, replaced by the slot-capacity
   gate at `READY → INVITED`).
 
@@ -997,7 +1003,7 @@ flowchart TD
     AUTO["Automatic sends: schedulers,<br/>workflow hooks, registration"] --> SVC
     MCS --> AD["AudienceAdapter per audience<br/>newsletter, registrants, speakers, venue"]
     AD --> SVC["Existing send services<br/>NewsletterEmailService, SlidesOnlineEmailService,<br/>SpeakerReminderEmailService, ..."]
-    SVC --> PIPE["MailPipeline: template from store,<br/>DE fallback, classpath fallback"]
+    SVC --> PIPE["MailPipeline: DE or EN by MailLocales,<br/>template from store, DE fallback, classpath fallback"]
     PIPE --> VAR["MailVariableFactory + MailVariables<br/>catalog MailVariable"]
     VAR --> REN["MailRenderer: content variables,<br/>layout, variables again, subject"]
     REN --> ES["shared-kernel EmailService<br/>with MailContext"]
@@ -1403,6 +1409,13 @@ Every template-based mail in event-management renders the same way:
   one place; `storedTemplate` for store-only mails with the default layout) and renders it with
   `MailRenderer.render` (content variables → layout → variables again → subject). The eight copied
   `loadHtmlContent` methods are gone.
+- **Mail language** (#1222): `MailLocales` (mail core, `mailcenter/render`) is the one rule. A
+  `de*` or `gsw*` preference and no preference are German, every other language is English
+  (CLAUDE.md, Localization: email templates exist in DE and EN only). `MailPipeline` applies it to
+  every locale it is given, and the services that read a user's preference (speaker reminders,
+  deregistration, Q&A digest, Mail Center notices, slides-online) use the same function. Until
+  #1222 the pipeline sent every locale but `en` in German, and the slides-online mail sent German
+  to other languages by Story 7.3 AC4; the owner moved it to the common rule on 2026-11-15.
 - **Finished notices** (#1235): `render` keeps a `{{name}}` or `{{#name}}…{{/name}}` whose variable
   is not in the map, because the newsletter and slides fill per-recipient values in a second pass
   and the composer shows leftovers to the organizer. Mails to one recipient that get no second

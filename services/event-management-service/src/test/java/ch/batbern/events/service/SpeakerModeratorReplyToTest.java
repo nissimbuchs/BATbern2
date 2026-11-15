@@ -19,8 +19,10 @@ import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
@@ -81,7 +83,7 @@ class SpeakerModeratorReplyToTest {
     void should_offerSessionTitle_inReminderVariables() {
         SpeakerReminderEmailService service = new SpeakerReminderEmailService(
                 emailService, MailPipelines.over(emailService, emailTemplateService), primarySpeakerResolver,
-                moderatorReplyAddress, sessionRepository);
+                moderatorReplyAddress, sessionRepository, Clock.systemUTC());
         ReflectionTestUtils.setField(service, "baseUrl", "https://batbern.ch");
         UUID sessionId = UUID.randomUUID();
         Session session = new Session();
@@ -94,5 +96,18 @@ class SpeakerModeratorReplyToTest {
         assertThat(service.variables(speaker, event, LocalDate.of(2026, 11, 20), Locale.GERMAN))
                 .containsEntry("sessionTitle", "Clean Architecture in Practice")
                 .containsEntry("speakerName", "Test Speaker");
+    }
+
+    @Test
+    @DisplayName("#1222: days remaining count from the Swiss date, not the UTC date")
+    void should_countDaysRemainingFromSwissDate_when_utcIsStillYesterday() {
+        // 2026-07-01 00:30 in Zurich, still 2026-06-30 in UTC
+        Clock clock = Clock.fixed(Instant.parse("2026-06-30T22:30:00Z"), ZoneOffset.UTC);
+        SpeakerReminderEmailService service = new SpeakerReminderEmailService(
+                emailService, MailPipelines.over(emailService, emailTemplateService), primarySpeakerResolver,
+                moderatorReplyAddress, sessionRepository, clock);
+
+        assertThat(service.variables(speaker, event, LocalDate.of(2026, 7, 8), Locale.GERMAN))
+                .containsEntry("daysRemaining", "7");
     }
 }

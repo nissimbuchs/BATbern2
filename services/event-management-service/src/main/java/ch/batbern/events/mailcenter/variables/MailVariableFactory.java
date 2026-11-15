@@ -1,6 +1,7 @@
 package ch.batbern.events.mailcenter.variables;
 
 import ch.batbern.events.domain.Event;
+import ch.batbern.events.mailcenter.render.MailLocales;
 import ch.batbern.events.service.EventTimeResolver;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -46,9 +47,9 @@ public class MailVariableFactory {
                 .put(MailVariable.ORGANIZER_EMAIL, organizerEmail);
     }
 
-    /** SYSTEM plus the variables of an event, in {@code locale} ({@code de} unless {@code en}). */
+    /** SYSTEM plus the variables of an event, in German or English by {@link MailLocales} (#1222). */
     public MailVariables event(Event event, String locale) {
-        boolean de = !"en".equalsIgnoreCase(locale);
+        boolean de = Locale.GERMAN.equals(MailLocales.fromPreference(locale));
         String code = event.getEventCode();
         return system()
                 .put(MailVariable.EVENT_CODE, code)

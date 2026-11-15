@@ -21,8 +21,8 @@ public class UploadConfig {
     public UploadService<EventManagementUpload> uploadService(EventManagementUploadRepository repository,
             List<UploadPurposeHandler> handlers, S3Client s3Client, S3Presigner s3Presigner,
             @Value("${aws.s3.bucket-name:batbern-development-company-logos}") String bucket,
-            @Value("${aws.cloudfront.domain:https://cdn.batbern.ch}") String cdnDomain) {
+            @Value("${aws.cloudfront.domain:https://cdn.batbern.ch}") String cdnDomain, Clock clock) {
         return new UploadService<>(repository, EventManagementUpload::new, handlers, s3Client, s3Presigner,
-                new UploadService.UploadStorage(bucket, cdnDomain), Clock.systemUTC());
+                new UploadService.UploadStorage(bucket, cdnDomain), clock);
     }
 }

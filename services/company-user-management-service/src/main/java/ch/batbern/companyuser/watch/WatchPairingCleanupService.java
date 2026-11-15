@@ -26,7 +26,7 @@ public class WatchPairingCleanupService {
 
     private final WatchPairingRepository watchPairingRepository;
 
-    @Scheduled(cron = "0 0 3 * * *")
+    @Scheduled(cron = "0 0 3 * * *", zone = "Europe/Zurich")
     @SchedulerLock(
             name = "cleanupExpiredWatchPairingCodes",
             lockAtMostFor = "10m",

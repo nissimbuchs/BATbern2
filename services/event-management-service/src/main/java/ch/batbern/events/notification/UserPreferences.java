@@ -19,4 +19,6 @@ public class UserPreferences {
     private boolean emailNotificationsEnabled;
     private String quietHoursStart;  // "22:00"
     private String quietHoursEnd;    // "07:00"
+    /** IANA zone the quiet hours are meant in ({@code Europe/Zurich}); {@code null} means Zurich. */
+    private String timezone;
 }

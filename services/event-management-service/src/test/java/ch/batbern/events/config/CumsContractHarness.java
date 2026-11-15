@@ -167,6 +167,11 @@ public final class CumsContractHarness implements AutoCloseable {
      * defaults overlaid with these values ({@code UserApiClient#getPreferences}).
      */
     public void userWithSettings(String username, Map<String, Object> overrides) {
+        userWithSettings(username, username + "@test.com", overrides);
+    }
+
+    /** As {@link #userWithSettings(String, Map)}, with this e-mail address. */
+    public void userWithSettings(String username, String email, Map<String, Object> overrides) {
         Map<String, Object> settings = new LinkedHashMap<>();
         settings.put("theme", "auto");
         settings.put("language", "de");
@@ -183,7 +188,7 @@ public final class CumsContractHarness implements AutoCloseable {
         settings.put("allowCalendarSync", false);
         settings.put("twoFactorEnabled", false);
         settings.putAll(overrides);
-        user(username, toJson(Map.of("settings", settings)));
+        user(username, toJson(Map.of("email", email, "settings", settings)));
     }
 
     /** Answers {@code GET /internal/users/{username}} with 404. */

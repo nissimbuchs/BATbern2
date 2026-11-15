@@ -121,6 +121,7 @@ class RegistrationResendServiceIntegrationTest extends AbstractIntegrationTest {
 
     @ParameterizedTest
     @CsvSource({"en,anna.resend@test.com,Please confirm your registration",
+                "fr,anna.resend@test.com,Please confirm your registration",
                 "de,anna.resend@test.com,Bitte bestätigen",
                 "'',success+anna.resend@simulator.amazonses.com,Bitte bestätigen"})
     @DisplayName("#1315: the resent mail is in the attendee's language, German by default (was always German)")

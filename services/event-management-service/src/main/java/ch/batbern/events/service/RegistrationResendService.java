@@ -65,7 +65,7 @@ public class RegistrationResendService {
     /**
      * Scheduled resend job. ShedLock ensures a single ECS instance runs it.
      */
-    @Scheduled(cron = "${app.registration.resend.cron:0 30 8 * * *}")
+    @Scheduled(cron = "${app.registration.resend.cron:0 30 8 * * *}", zone = "Europe/Zurich")
     @SchedulerLock(
             name = "resendUnconfirmedRegistrations",
             lockAtLeastFor = "PT1M",

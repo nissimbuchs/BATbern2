@@ -5,6 +5,7 @@ import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Registration;
 import ch.batbern.events.exception.UserNotFoundException;
 import ch.batbern.events.mailcenter.render.MailContent;
+import ch.batbern.events.mailcenter.render.MailLocales;
 import ch.batbern.events.mailcenter.render.MailPipeline;
 import ch.batbern.events.mailcenter.render.RenderedMail;
 import ch.batbern.events.mailcenter.variables.MailVariable;
@@ -121,6 +122,6 @@ public class DeregistrationEmailService {
         if (username == null || username.isBlank()) {
             return "de";
         }
-        return EmailLocales.fromPreference(userApiClient.getPreferredLanguage(username)).getLanguage();
+        return MailLocales.fromPreference(userApiClient.getPreferredLanguage(username)).getLanguage();
     }
 }

@@ -3,6 +3,7 @@ package ch.batbern.events.service;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.OutreachHistory;
 import ch.batbern.events.domain.SpeakerPool;
+import ch.batbern.events.mailcenter.render.MailLocales;
 import ch.batbern.events.mailcenter.render.ModeratorReplyAddress;
 import ch.batbern.events.mailcenter.render.RenderedMail;
 import ch.batbern.events.repository.OutreachHistoryRepository;
@@ -19,7 +20,6 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.Collection;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -56,7 +56,7 @@ public class SpeakerOwnTextMailService {
      */
     public Map<String, String> variables(SpeakerPool speaker, Event event, String lang) {
         return reminderEmailService.variables(speaker, event, deadline(speaker, event),
-                "en".equals(lang) ? Locale.ENGLISH : Locale.GERMAN);
+                MailLocales.fromPreference(lang));
     }
 
     LocalDate deadline(SpeakerPool speaker, Event event) {

@@ -309,6 +309,7 @@ public class UserApiClientImpl implements UserApiClient {
                 .emailNotificationsEnabled(!Boolean.FALSE.equals(prefs.getEmailNotifications()))
                 .quietHoursStart(prefs.getQuietHoursStart())
                 .quietHoursEnd(prefs.getQuietHoursEnd())
+                .timezone(prefs.getTimezone())
                 .build();
     }
 

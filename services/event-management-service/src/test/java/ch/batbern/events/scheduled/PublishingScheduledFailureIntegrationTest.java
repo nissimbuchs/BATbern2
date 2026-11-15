@@ -36,6 +36,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringBootTest
 class PublishingScheduledFailureIntegrationTest extends AbstractIntegrationTest {
 
+    /** The job counts Swiss days (#1222). */
+    private static final ZoneId ZURICH = ZoneId.of("Europe/Zurich");
+
     private static final String FAILING = "BATbern97101";
     private static final String HEALTHY = "BATbern97102";
 
@@ -75,7 +78,7 @@ class PublishingScheduledFailureIntegrationTest extends AbstractIntegrationTest 
 
     @Test
     void should_countTheFailureAndGoOn_when_oneEventCannotBePublished() {
-        Instant in30Days = LocalDate.now().plusDays(30).atStartOfDay(ZoneId.systemDefault()).toInstant();
+        Instant in30Days = LocalDate.now(ZURICH).plusDays(30).atStartOfDay(ZURICH).toInstant();
         Event failing = createEvent(FAILING, 97101, in30Days);
         Event healthy = createEvent(HEALTHY, 97102, in30Days);
         double before = failures();

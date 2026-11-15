@@ -1,6 +1,7 @@
 package ch.batbern.events.service;
 
 import ch.batbern.events.mailcenter.render.MailContent;
+import ch.batbern.events.mailcenter.render.MailLocales;
 import ch.batbern.events.mailcenter.render.MailPipeline;
 import ch.batbern.events.mailcenter.render.RenderedMail;
 import ch.batbern.shared.service.EmailService;
@@ -37,7 +38,7 @@ public class InboundEmailConfirmationEmailService {
      */
     public void sendUnsubscribeConfirmation(String email, String locale) {
         try {
-            String resolvedLocale = "de".equals(locale) ? "de" : "en";
+            String resolvedLocale = MailLocales.languageOf(locale);
             MailContent content = mailPipeline.template("unsubscribe-confirmation", resolvedLocale);
             if (content.bodyHtml().isBlank()) {
                 log.warn("unsubscribe-confirmation template not found — skipping confirmation email to: {}***",

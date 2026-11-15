@@ -8,6 +8,7 @@ import ch.batbern.events.domain.SessionQnaNotification;
 import ch.batbern.events.domain.SessionQnaPost;
 import ch.batbern.events.domain.SessionQnaWindow;
 import ch.batbern.events.domain.SessionUser;
+import ch.batbern.events.mailcenter.render.MailLocales;
 import ch.batbern.events.mailcenter.render.MailPipeline;
 import ch.batbern.events.mailcenter.variables.MailVariable;
 import ch.batbern.events.mailcenter.variables.MailVariables;
@@ -31,7 +32,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -106,7 +106,7 @@ public class QnaNotificationService {
      * later failure roll back an already-sent recipient's water mark and re-send the digest on the
      * next flush. Reads here run in Spring Data's default per-call transactions.
      */
-    @Scheduled(cron = "${qna.scheduled.notify.cron:0 */5 * * * *}")
+    @Scheduled(cron = "${qna.scheduled.notify.cron:0 */5 * * * *}", zone = "Europe/Zurich")
     @SchedulerLock(name = "qnaDigestFlush", lockAtMostFor = "15m", lockAtLeastFor = "30s")
     public void flushPending() {
         List<SessionQnaWindow> openWindows = windowRepository.findByStatus(QnaWindowStatus.OPEN);
@@ -233,13 +233,9 @@ public class QnaNotificationService {
         }
     }
 
-    /** DE+EN only (CLAUDE.md email rule): {@code de*} → German, anything else → English. */
+    /** DE+EN only (CLAUDE.md email rule), by the one rule: {@code de*} and {@code gsw*} German. */
     private String localeFor(String preferredLanguage) {
-        if (preferredLanguage != null
-                && preferredLanguage.toLowerCase(Locale.ROOT).startsWith("de")) {
-            return "de";
-        }
-        return "en";
+        return MailLocales.languageOf(preferredLanguage);
     }
 
     private RenderedMail renderMail(SessionQnaWindow window, Session session, Event event,

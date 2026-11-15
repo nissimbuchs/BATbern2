@@ -79,7 +79,7 @@ public class UserReconciliationService {
      * ADR-001: Unidirectional sync (Cognito → Database only)
      * ShedLock ensures only ONE ECS instance executes this job
      */
-    @Scheduled(cron = "0 0 2 * * *")
+    @Scheduled(cron = "0 0 2 * * *", zone = "Europe/Zurich")
     @SchedulerLock(
             name = "reconcileUsersScheduled",
             lockAtMostFor = "1h",

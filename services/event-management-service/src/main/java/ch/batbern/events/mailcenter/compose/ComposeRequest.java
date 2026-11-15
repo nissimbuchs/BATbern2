@@ -1,6 +1,7 @@
 package ch.batbern.events.mailcenter.compose;
 
 import ch.batbern.events.mailcenter.render.MailContent;
+import ch.batbern.events.mailcenter.render.MailLocales;
 import ch.batbern.events.mailcenter.render.OwnText;
 import ch.batbern.shared.mail.MailContext;
 
@@ -43,7 +44,7 @@ public record ComposeRequest(
 
     public ComposeRequest {
         contentSource = contentSource == null ? MailContext.ContentSource.TEMPLATE : contentSource;
-        locale = "en".equalsIgnoreCase(locale) ? "en" : "de";
+        locale = MailLocales.languageOf(locale);
         venueRecipients = venueRecipients == null ? List.of() : List.copyOf(venueRecipients);
         templateKey = templateKey == null || templateKey.isBlank() ? null : templateKey;
         speakerStatuses = speakerStatuses == null ? List.of() : List.copyOf(speakerStatuses);

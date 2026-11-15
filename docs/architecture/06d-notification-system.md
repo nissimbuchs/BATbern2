@@ -221,9 +221,9 @@ sequenceDiagram
     else send
         NS->>DB: INSERT status PENDING
         NS->>CUMS: getUserByUsername, cached, for the email address
-        NS->>ES: sendHtmlEmail with MailContext audience ORGANIZERS, async
+        NS->>ES: sendHtmlEmailSync with MailContext audience ORGANIZERS
         NS->>DB: UPDATE status SENT, sent_at
-        Note over NS,DB: SENT means handed to the async sender. An SES error later is logged by EmailService and recorded in the Mail Center, not in this row. FAILED is set only when the lookup or the hand-over throws.
+        Note over NS,DB: The send is synchronous (#1222). SENT means SES accepted the mail. A mail SES refuses, or a failed address lookup, sets FAILED with failed_at and the reason.
     end
 ```
 
@@ -301,6 +301,7 @@ longer mapped by any code (#1222) and are dropped by a later migration.
   `user_profiles.pref_qna_notification_frequency`.
 - `quietHoursStart` (string: "22:00")
 - `quietHoursEnd` (string: "07:00")
+- `timezone` (IANA zone id, default `Europe/Zurich`): the zone the quiet hours are meant in (#1222)
 
 ### Preferences Access
 
@@ -308,46 +309,41 @@ Which preferences are actually read (checked 2026-11-04):
 
 | Preference | Read by |
 |---|---|
-| `emailNotifications`, `quietHoursStart/End` | `NotificationService.shouldSend`, so only the `SPEAKER_ESCALATION` mail |
+| `emailNotifications`, `quietHoursStart/End`, `timezone` | `NotificationService.shouldSend`, so only the `SPEAKER_ESCALATION` mail |
 | `qnaNotificationFrequency` | `QnaNotificationService` (Q&A digest) |
-| `language` | most mail senders for the DE/EN choice, `LanguageSync` in the SPA |
+| `language` | most mail senders for the DE/EN choice (`MailLocales`: `de*`, `gsw*` and none German, every other language English), `LanguageSync` in the SPA |
 
 Registration, reminder, waitlist and Mail Center mails do not consult `emailNotifications` or
 quiet hours. The IN_APP feed is written for every organizer; there is no per-user switch.
 
 ```java
-// NotificationService (EMS), as in the source
+// NotificationService (EMS), shortened
 private boolean shouldSend(UserPreferences prefs, NotificationRequest request) {
     if ("EMAIL".equals(request.getChannel()) && !prefs.isEmailNotificationsEnabled()) {
         return false;
     }
-    if (isInQuietHours(prefs)) {
-        return false;
-    }
-    return true;
+    return !isInQuietHours(prefs, clock.instant());   // Clock bean (ClockConfig), UTC
 }
 
-private boolean isInQuietHours(UserPreferences prefs) {
-    if (prefs.getQuietHoursStart() == null || prefs.getQuietHoursEnd() == null) {
-        return false;
+static boolean isInQuietHours(UserPreferences prefs, Instant now) {
+    // no window, blank or unparsable times: never quiet
+    LocalTime local = now.atZone(zoneOf(prefs.getTimezone())).toLocalTime();  // Zurich when unset
+    if (start.isBefore(end)) {          // same-day window, 09:00-17:00
+        return !local.isBefore(start) && local.isBefore(end);
     }
-    LocalTime now = LocalTime.now();            // JVM clock, see the note on time zones below
-    LocalTime start = LocalTime.parse(prefs.getQuietHoursStart());
-    LocalTime end = LocalTime.parse(prefs.getQuietHoursEnd());
-    if (start.isBefore(end)) {
-        return now.isAfter(start) || now.isBefore(end);
-    } else {
-        return now.isAfter(start) && now.isBefore(end);
+    if (start.isAfter(end)) {           // across midnight, 22:00-07:00
+        return !local.isBefore(start) || local.isBefore(end);
     }
+    return false;                       // start == end: no window
 }
 ```
 
-> **Bug, kept as found (2026-11-04):** the two branches are swapped. For the usual overnight
-> window 22:00-07:00 (`start` after `end`) the else branch requires `now > 22:00 AND now < 07:00`,
-> which is never true, so overnight quiet hours never suppress anything. For a same-day window
-> such as 12:00-14:00 the first branch is `now > 12:00 OR now < 14:00`, true at every time of
-> day, so that user never gets the mail. The code comments carry the same mix-up. Impact today
-> is limited to the escalation mail; the doc does not fix code.
+Quiet hours are read on the recipient's wall clock: the settings `timezone` (an IANA id), Europe/Zurich
+when it is unset or unknown, since the containers run on UTC. The start belongs to the window, the
+end does not (22:00-07:00 suppresses at 22:00 and sends at 07:00). Until #1222 the two branches
+were swapped and the JVM clock was read: an overnight window never suppressed, a same-day window
+suppressed all day. `NotificationQuietHoursTest` covers every case. Impact is limited to the
+escalation mail, the only caller.
 
 ### UserApiClient (HTTP Integration)
 
@@ -639,8 +635,8 @@ flowchart LR
         J2["01:00 PublishingScheduledService: auto-publish speakers and agenda, no mail, no lock"]
         J2b["02:00 EventWorkflowScheduledService: EVENT_COMPLETED to ARCHIVED, unread notifications marked READ"]
         J3["03:00 RegistrationCleanupService: delete never-confirmed registrations"]
-        J4["03:15 and 03:30 Zurich: forwarding log and mail message retention"]
-        J5["05:30 Zurich TaskActivationScheduler: activate due tasks, no mail"]
+        J4["03:15 and 03:30: forwarding log and mail message retention"]
+        J5["05:30 TaskActivationScheduler: activate due tasks, no mail"]
     end
     subgraph Morning["Morning mail window"]
         M1["08:00 SpeakerReminderScheduler: speaker reminders TIER_1-3 + organizer escalation"]
@@ -658,12 +654,11 @@ flowchart LR
     Night --> Morning --> Continuous --> Evening
 ```
 
-**Time zone.** Only the jobs marked "Zurich" declare `zone = "Europe/Zurich"`. The others run on
-the JVM clock. No `TZ` or `user.timezone` is set in the Dockerfiles (base image
-`eclipse-temurin:21-jre-alpine`) or the CDK task definitions (checked by grep), so on ECS they
-presumably run on UTC, one or two hours before the Swiss time the comments state (not verified
-2026-11-04 on a running task). The `application.yml` comments saying "Europe/Zurich" for the
-00:01 and 23:59 jobs describe the intent, not the configuration.
+**Time zone.** Every cron declares `zone = "Europe/Zurich"` (#1222), so the times above are Swiss
+times. The tasks run on UTC: no `TZ` or `user.timezone` is set in the Dockerfiles or the CDK task
+definitions, and none is added, the code states the zone. Until #1222 only the retention and task
+activation jobs did, and the other 15 ran one or two hours early. `ScheduledZoneGuardTest` in CUMS
+and EMS fails the build for a cron without the zone.
 
 Attendee recovery runs in two steps: `CognitoConfirmationResendJob` (CUMS) re-triggers Cognito's
 sign-up code, because Cognito's code expires after 24 h and cannot be extended, and
@@ -733,7 +728,7 @@ the 2026-11-02 rows carry them.
 
 **Note**: This scheduler bypasses `NotificationService` entirely; it delegates directly to `TaskReminderEmailService`, so **no record is written to the notifications table** for task reminders. The mail itself carries a `MailTrigger` and is recorded in the Mail Center.
 
-**Schedule**: daily at **08:00** by default (`batbern.task-reminders.cron`, JVM clock; earlier
+**Schedule**: daily at **08:00** by default (`batbern.task-reminders.cron`, Europe/Zurich; earlier
 versions of this document said 09:00).
 
 **Locale**: All task reminder emails are rendered in `Locale.GERMAN`; user language preference is not consulted.

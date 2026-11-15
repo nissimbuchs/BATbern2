@@ -3,14 +3,14 @@ title: 'Quiet hours, mail language and job times are right'
 type: 'bugfix'
 ticket: '5'
 created: '2026-11-15'
-status: 'in-progress'
-baseline_revision: 'b46b2b8d001755167368ad97266f5bb4a74560d5'
+status: 'built'
+baseline_revision: '9af360297bae0dc882a9c99fff4cd7431b5d49a7'
 route: 'full'
 route_source: 'auto'
 risk: 'medium'
-review: ''
-review_source: ''
-lenses_ran: []
+review: 'quick'
+review_source: 'pinned'
+lenses_ran: ['quick']
 review_loop_iteration: 0
 context: []
 ---
@@ -44,6 +44,8 @@ context: []
 | Mail locale | `de`, `de-CH`, `gsw-BE`, null, blank | DE template | — |
 | Cron without zone | any `@Scheduled(cron=…)` lacking `zone` | guard test fails | — |
 
+**Decision (owner 2026-11-15):** the slides-online mail follows the common rule too; Story 7.3 AC4's German fallback for other languages is superseded.
+
 </frozen-after-approval>
 
 ## Code Map
@@ -74,6 +76,15 @@ context: []
 
 Architecture note: modules touched: EMS notify core (L1), mail core (L1, `mailcenter/render`), platform config (Clock bean), EMS client, CUMS jobs. New dependency: none across modules (the locale rule moves into mail core, which services already use). No endpoints. Reused: `CumsContractHarness`, `SesRecorder`. Deviations: none.
 
+## Implementation Notes
+
+- Implementer: quiet hours on the recipient's clock (settings timezone, else Europe/Zurich) via a `Clock` bean (`config/ClockConfig.java`, reused by `UploadConfig`); `MailLocales` in mail core replaces `service/EmailLocales`; 15 crons got `zone`; guard `ScheduledZoneGuard` (shared-kernel test fixtures) with a fixture per service. RED measured: 13 tests fail on the old code.
+- Same bug fixed on the way: `ConversationNotices` and `ConversationAssignmentNotifier` sent German to `fr`; `QnaNotificationService.localeFor` sent `gsw-BE` English (and no preference now German).
+- Owner decision applied by the orchestrator: `SlidesOnlineEmailService.resolveLocale` uses `MailLocales`; `SlidesOnlineIntegrationTest` expects English for `fr` (red before, green after); doc 06 updated.
+- Orchestrator fixed a Checkstyle line-length violation in `MailPipeline` the implementer missed.
+- Open, by design: a `gsw-BE` CUMS user cannot exist until story 6 widens `pref_language`; the first production run of the 15 jobs moves 1-2 h later (Swiss time), so a job may run twice or skip once on deploy day.
+- Full suites after the implementer's last edit: EMS 3030, CUMS 966, 0 failures.
+
 ## Verification
 
 **Commands:**
@@ -81,3 +92,16 @@ Architecture note: modules touched: EMS notify core (L1), mail core (L1, `mailce
 - `make check-test-ratchet` -- no RAISED line.
 
 **Rack rules:** one heavy build at a time (never two Gradle/Vitest runs in parallel), Gradle `--max-workers=4`, output via `set -o pipefail; ... | tee ~/.cache/batbern-test-logs/<name>.log`. Do not commit or push; leave the changes in the working tree. A bug found on the way is fixed too and reported (initiative C9).
+
+## Review Triage Log
+
+Quick review, 10 findings: all real, all patched by the implementer (re-engaged), none deferred (C9).
+- high, patched: the zoned 01:00 auto-publish run is 23:00 UTC the day before in summer, while `autoPublish` took "today" in UTC, so it published a Swiss day late. Today and the event day now in Europe/Zurich from the `Clock`; test at 01:05 Zurich in summer. Audit of all 15 jobs found the same class in `SpeakerReminderService` and `SpeakerReminderEmailService` (fixed, tests at a UTC-yesterday instant); the rest compare `Instant`s or already use Zurich.
+- medium, patched: `MailVariableFactory` kept a second locale rule (fr: English text, German dates). Uses `MailLocales`.
+- medium, patched: own locale rules in `RegistrationConfirmationSender`, `RegistrationService` (2), `SpeakerOwnTextMailService`, `ComposeRequest`, `InboundEmailConfirmationEmailService` replaced by `MailLocales`; SesRecorder tests where they send (organizer-added participant with no language now German).
+- medium, patched: `QnaNotificationServiceIntegrationTest` moved off the `UserApiClient` mock onto `CumsContractHarness` (ratchet -1).
+- medium, patched: AC `gsw-BE` German through the SesRecorder cannot run through CUMS until story 6 widens `pref_language`; covered by `MailLocalesTest` and the pipeline IT, recorded here.
+- low, patched: Conversation notice and assignment mails got a language IT (fr, en English; de German).
+- low, patched: quiet-hours ITs set the `Clock` (`MutableClock` in shared-kernel test fixtures, `TestClockConfig` in EMS).
+- low, patched: 06d note under the diagram, slides-online user guide, `recipientLocale` Javadoc.
+Verification after the patches (orchestrator): EMS 3055, CUMS 966, 0 failures; PCS and gateway test compile; ratchet clean.

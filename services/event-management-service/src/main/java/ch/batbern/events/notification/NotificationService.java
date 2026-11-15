@@ -9,8 +9,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
+import java.time.DateTimeException;
 import java.time.Instant;
 import java.time.LocalTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeParseException;
 import java.util.Locale;
 
 /**
@@ -27,9 +31,12 @@ import java.util.Locale;
 @RequiredArgsConstructor
 public class NotificationService {
 
+    private static final ZoneId DEFAULT_ZONE = ZoneId.of("Europe/Zurich");
+
     private final NotificationRepository notificationRepository;
     private final EmailService emailService;
     private final UserApiClient userApiClient;
+    private final Clock clock;
 
     /**
      * Create notification record and send via email
@@ -74,14 +81,14 @@ public class NotificationService {
 
             // Update status after delivery
             notification.setStatus("SENT");
-            notification.setSentAt(Instant.now());
+            notification.setSentAt(clock.instant());
             notificationRepository.save(notification);
 
             log.info("Notification sent successfully: {}", notification.getId());
 
         } catch (Exception e) {
             notification.setStatus("FAILED");
-            notification.setFailedAt(Instant.now());
+            notification.setFailedAt(clock.instant());
             notification.setFailureReason(e.getMessage());
             notificationRepository.save(notification);
 
@@ -99,7 +106,7 @@ public class NotificationService {
         }
 
         // Check quiet hours
-        if (isInQuietHours(prefs)) {
+        if (isInQuietHours(prefs, clock.instant())) {
             return false;
         }
 
@@ -107,23 +114,46 @@ public class NotificationService {
     }
 
     /**
-     * Check if current time is within user's quiet hours
+     * Whether {@code now} falls in the recipient's quiet hours, read on the wall clock of their
+     * time zone (settings {@code timezone}, Zurich when unset or unknown; the server runs on UTC).
+     * The window includes its start and excludes its end; a start after the end spans midnight
+     * (22:00-07:00). No window, or start equal to end, means never quiet (#1222).
      */
-    private boolean isInQuietHours(UserPreferences prefs) {
-        if (prefs.getQuietHoursStart() == null || prefs.getQuietHoursEnd() == null) {
+    static boolean isInQuietHours(UserPreferences prefs, Instant now) {
+        if (prefs.getQuietHoursStart() == null || prefs.getQuietHoursEnd() == null
+                || prefs.getQuietHoursStart().isBlank() || prefs.getQuietHoursEnd().isBlank()) {
             return false;
         }
-
-        LocalTime now = LocalTime.now();
-        LocalTime start = LocalTime.parse(prefs.getQuietHoursStart());
-        LocalTime end = LocalTime.parse(prefs.getQuietHoursEnd());
-
+        LocalTime start;
+        LocalTime end;
+        try {
+            start = LocalTime.parse(prefs.getQuietHoursStart());
+            end = LocalTime.parse(prefs.getQuietHoursEnd());
+        } catch (DateTimeParseException e) {
+            log.warn("Quiet hours not understood ({}-{}); sending", prefs.getQuietHoursStart(),
+                    prefs.getQuietHoursEnd());
+            return false;
+        }
+        LocalTime local = now.atZone(zoneOf(prefs.getTimezone())).toLocalTime();
         if (start.isBefore(end)) {
-            // Normal range (e.g., 22:00-07:00 next day)
-            return now.isAfter(start) || now.isBefore(end);
-        } else {
-            // Range crossing midnight
-            return now.isAfter(start) && now.isBefore(end);
+            // Same-day window, e.g. 09:00-17:00
+            return !local.isBefore(start) && local.isBefore(end);
+        }
+        if (start.isAfter(end)) {
+            // Window across midnight, e.g. 22:00-07:00
+            return !local.isBefore(start) || local.isBefore(end);
+        }
+        return false;
+    }
+
+    private static ZoneId zoneOf(String timezone) {
+        if (timezone == null || timezone.isBlank()) {
+            return DEFAULT_ZONE;
+        }
+        try {
+            return ZoneId.of(timezone);
+        } catch (DateTimeException e) {
+            return DEFAULT_ZONE;
         }
     }
 

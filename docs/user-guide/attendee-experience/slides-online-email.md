@@ -47,11 +47,10 @@ AWS SES  →  DE / EN "slides-online" template
 
 | Recipient's language preference | Email language |
 |---------------------------------|----------------|
-| Starts with `de` (e.g. `de`, `gsw-BE`) | German |
-| `en` | English |
-| Anything else | German (fallback) |
+| Starts with `de` or `gsw` (e.g. `de`, `gsw-BE`), or no preference | German |
+| `en` and every other language (e.g. `fr`, `it`) | English |
 
-The template exists in **German and English only** — consistent with the platform's email-template localization rule. Recipients who have **globally opted out** of email are excluded from the send.
+The template exists in **German and English only**, consistent with the platform's email-template localization rule; since 2026-11-15 the slides-online mail follows the same rule as every other mail (before, other languages got German). Recipients who have **globally opted out** of email are excluded from the send.
 
 ## What's in scope (and what isn't)
 

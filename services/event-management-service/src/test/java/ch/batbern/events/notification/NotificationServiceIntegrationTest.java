@@ -4,6 +4,7 @@ import ch.batbern.events.config.CumsContractHarness;
 import ch.batbern.events.config.TestAwsConfig;
 import ch.batbern.events.config.TestSecurityConfig;
 import ch.batbern.shared.test.AbstractIntegrationTest;
+import ch.batbern.shared.test.MutableClock;
 import ch.batbern.shared.test.mail.SesRecorder;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -12,6 +13,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 
@@ -39,6 +41,8 @@ class NotificationServiceIntegrationTest extends AbstractIntegrationTest {
     private CumsContractHarness cums;
     @Autowired
     private SesRecorder sesRecorder;
+    @Autowired
+    private MutableClock clock;
 
     @BeforeEach
     void setUp() {
@@ -48,6 +52,7 @@ class NotificationServiceIntegrationTest extends AbstractIntegrationTest {
 
     @AfterEach
     void cleanUp() {
+        clock.reset();
         sesRecorder.awaitAsyncSends();
         cums.reset();
         notificationRepository.deleteAll(notificationRepository.findAll().stream()
@@ -114,6 +119,37 @@ class NotificationServiceIntegrationTest extends AbstractIntegrationTest {
             assertThat(row.getFailedAt()).isNotNull();
             assertThat(row.getFailureReason()).isNotBlank();
             assertThat(row.getSentAt()).isNull();
+        });
+    }
+
+    @Test
+    @DisplayName("#1222: no mail and no row inside the quiet hours, read in the recipient's time zone")
+    void should_skipNotification_when_insideQuietHoursOfRecipientZone() {
+        // 23:30 in Auckland, 11:30 in Zurich: inside 22:00-07:00 only in the recipient's zone
+        clock.setInstant(Instant.parse("2027-01-15T10:30:00Z"));
+        cums.userWithSettings(USERNAME, Map.of("timezone", "Pacific/Auckland",
+                "quietHoursStart", "22:00", "quietHoursEnd", "07:00"));
+
+        notificationService.createAndSendEmailNotification(request());
+
+        assertThat(sesRecorder.mails()).isEmpty();
+        assertThat(rows()).isEmpty();
+    }
+
+    @Test
+    @DisplayName("#1222: mails as usual outside the quiet hours")
+    void should_mailRecipient_when_outsideQuietHours() {
+        // 11:30 in Zurich: outside 22:00-07:00 (the old swapped check suppressed it)
+        clock.setInstant(Instant.parse("2027-01-15T10:30:00Z"));
+        cums.userWithSettings(USERNAME, Map.of("timezone", "Europe/Zurich",
+                "quietHoursStart", "22:00", "quietHoursEnd", "07:00"));
+
+        notificationService.createAndSendEmailNotification(request());
+
+        assertThat(sesRecorder.mailsTo(USERNAME + "@test.com")).hasSize(1);
+        assertThat(rows()).singleElement().satisfies(row -> {
+            assertThat(row.getStatus()).isEqualTo("SENT");
+            assertThat(row.getSentAt()).isEqualTo(Instant.parse("2027-01-15T10:30:00Z"));
         });
     }
 }
