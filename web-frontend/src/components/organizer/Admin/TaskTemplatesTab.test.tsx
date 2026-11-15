@@ -1,149 +1,103 @@
 /**
- * TaskTemplatesTab Tests (Story 10.1 - Task 4)
+ * TaskTemplatesTab (Story 10.1, #1218): the default and custom lists, the dialogs, delete.
  *
- * Tests:
- * - AC4: Renders default and custom template sections
- * - AC4: Create button opens CustomTaskModal
- * - AC4: Edit button opens TaskTemplateEditModal
- * - AC4: Delete calls taskService.deleteTemplate after confirm
- * - AC4: Delete failure shows Snackbar error
+ * Real i18next, auth helper and dialogs; the network is the MSW harness, so the list, the delete
+ * and its failure are answered by the spec and read back with `api.calls`.
  */
-
-import { render, screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { HttpResponse } from 'msw';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { TaskTemplatesTab } from './TaskTemplatesTab';
+import { renderWithAuth } from '@/test/auth';
+import { api } from '@/test/msw/api';
+import type { TaskTemplateResponse } from '@/services/taskService';
 
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string, fallback?: string) => fallback ?? key,
-  }),
-}));
+const DEFAULT_ID = '0b9e1c2d-3f4a-4b5c-8d6e-7f8091a2b3c4';
+const CUSTOM_ID = '1c2d3e4f-5a6b-4c7d-9e8f-0a1b2c3d4e5f';
 
-vi.mock('@/hooks/useAuth', () => ({
-  useAuth: () => ({ user: { username: 'testorganizer', role: 'organizer' } }),
-}));
-
-vi.mock('@/services/taskService', () => ({
-  taskService: {
-    listAllTemplates: vi.fn().mockResolvedValue([
-      {
-        id: 'tmpl-1',
-        name: 'Default Task',
-        isDefault: true,
-        triggerState: 'DRAFT',
-        dueDateType: 'immediate',
-        dueDateOffsetDays: null,
-      },
-      {
-        id: 'tmpl-2',
-        name: 'Custom Task',
-        isDefault: false,
-        triggerState: 'PUBLISHED',
-        dueDateType: 'relative_to_event',
-        dueDateOffsetDays: 7,
-      },
-    ]),
-    deleteTemplate: vi.fn(),
+const templates: TaskTemplateResponse[] = [
+  {
+    id: DEFAULT_ID,
+    name: 'Default Task',
+    isDefault: true,
+    triggerState: 'agenda_published',
+    dueDateType: 'immediate',
+    dueDateOffsetDays: null,
+    activationLeadDays: null,
+    createdByUsername: null,
+    createdAt: '2026-11-01T08:00:00Z',
+    updatedAt: '2026-11-01T08:00:00Z',
   },
-}));
-
-vi.mock('@/components/organizer/Tasks/CustomTaskModal', () => ({
-  CustomTaskModal: ({ open, onClose }: { open: boolean; onClose: () => void }) =>
-    open ? (
-      <div data-testid="custom-task-modal">
-        <button onClick={onClose}>Close</button>
-      </div>
-    ) : null,
-}));
-
-vi.mock('./TaskTemplateEditModal', () => ({
-  TaskTemplateEditModal: ({ open, onClose }: { open: boolean; onClose: () => void }) =>
-    open ? (
-      <div data-testid="task-template-edit-modal">
-        <button onClick={onClose}>Close</button>
-      </div>
-    ) : null,
-}));
-
-vi.mock('@components/shared/BATbernLoader', () => ({
-  BATbernLoader: () => <div data-testid="loader" />,
-}));
-
-const createQueryClient = () => new QueryClient({ defaultOptions: { queries: { retry: false } } });
-
-const renderTab = () =>
-  render(
-    <QueryClientProvider client={createQueryClient()}>
-      <TaskTemplatesTab />
-    </QueryClientProvider>
-  );
+  {
+    id: CUSTOM_ID,
+    name: 'Custom Task',
+    isDefault: false,
+    triggerState: 'speakers_published',
+    dueDateType: 'relative_to_event',
+    dueDateOffsetDays: 7,
+    activationLeadDays: null,
+    createdByUsername: null,
+    createdAt: '2026-11-01T08:00:00Z',
+    updatedAt: '2026-11-01T08:00:00Z',
+  },
+];
 
 describe('TaskTemplatesTab', () => {
-  beforeEach(async () => {
-    vi.clearAllMocks();
-    const { taskService } = await import('@/services/taskService');
-    vi.mocked(taskService.deleteTemplate).mockResolvedValue(undefined);
+  beforeEach(() => {
+    api.on('listAllTemplates', () => templates);
     vi.spyOn(window, 'confirm').mockReturnValue(true);
   });
 
-  it('renders default templates section', async () => {
-    renderTab();
-    await waitFor(() => expect(screen.getByText('Default Task')).toBeInTheDocument());
-    expect(screen.getByTestId('default-templates-list')).toBeInTheDocument();
+  it('should_listDefaultAndCustomTemplates_withTranslatedTriggers', async () => {
+    renderWithAuth(<TaskTemplatesTab />);
+
+    const defaults = await screen.findByTestId('default-templates-list');
+    expect(within(defaults).getByText('Default Task')).toBeInTheDocument();
+    expect(within(defaults).getByText('Agenda Published')).toBeInTheDocument();
+    const custom = screen.getByTestId('custom-templates-list');
+    expect(within(custom).getByText('Custom Task')).toBeInTheDocument();
+    expect(within(custom).getByText('Speakers published')).toBeInTheDocument();
   });
 
-  it('renders custom templates section', async () => {
-    renderTab();
-    await waitFor(() => expect(screen.getByText('Custom Task')).toBeInTheDocument());
-    expect(screen.getByTestId('custom-templates-list')).toBeInTheDocument();
-  });
-
-  it('opens CustomTaskModal when Add Template clicked', async () => {
+  it('should_openTheCreateDialog_when_addTemplateClicked', async () => {
     const user = userEvent.setup();
-    renderTab();
-    await waitFor(() => screen.getByTestId('add-template-btn'));
-    await user.click(screen.getByTestId('add-template-btn'));
-    expect(screen.getByTestId('custom-task-modal')).toBeInTheDocument();
+    renderWithAuth(<TaskTemplatesTab />);
+    await user.click(await screen.findByTestId('add-template-btn'));
+    expect(await screen.findByRole('dialog')).toBeInTheDocument();
   });
 
-  it('opens TaskTemplateEditModal when Edit clicked', async () => {
+  it('should_openTheEditDialog_withTheTemplate_when_editClicked', async () => {
     const user = userEvent.setup();
-    renderTab();
-    await waitFor(() => screen.getByTestId('edit-template-tmpl-2'));
-    await user.click(screen.getByTestId('edit-template-tmpl-2'));
-    expect(screen.getByTestId('task-template-edit-modal')).toBeInTheDocument();
+    renderWithAuth(<TaskTemplatesTab />);
+    await user.click(await screen.findByTestId(`edit-template-${CUSTOM_ID}`));
+    expect(await screen.findByTestId('template-name-input')).toHaveValue('Custom Task');
   });
 
-  it('calls deleteTemplate after window.confirm', async () => {
+  it('should_deleteTheTemplate_when_confirmed', async () => {
     const user = userEvent.setup();
-    renderTab();
-    await waitFor(() => screen.getByTestId('delete-template-tmpl-2'));
-    await user.click(screen.getByTestId('delete-template-tmpl-2'));
-    const { taskService } = await import('@/services/taskService');
-    await waitFor(() => expect(taskService.deleteTemplate).toHaveBeenCalledWith('tmpl-2'));
+    renderWithAuth(<TaskTemplatesTab />);
+    await user.click(await screen.findByTestId(`delete-template-${CUSTOM_ID}`));
+    await waitFor(() => expect(api.calls('deleteTemplate')).toHaveLength(1));
+    expect(api.calls('deleteTemplate')[0].params.templateId).toBe(CUSTOM_ID);
   });
 
-  it('does not call deleteTemplate when confirm is cancelled', async () => {
+  it('should_notDelete_when_confirmCancelled', async () => {
     vi.spyOn(window, 'confirm').mockReturnValue(false);
     const user = userEvent.setup();
-    renderTab();
-    await waitFor(() => screen.getByTestId('delete-template-tmpl-2'));
-    await user.click(screen.getByTestId('delete-template-tmpl-2'));
-    const { taskService } = await import('@/services/taskService');
-    expect(taskService.deleteTemplate).not.toHaveBeenCalled();
+    renderWithAuth(<TaskTemplatesTab />);
+    await user.click(await screen.findByTestId(`delete-template-${CUSTOM_ID}`));
+    expect(window.confirm).toHaveBeenCalled();
+    expect(api.calls('deleteTemplate')).toHaveLength(0);
   });
 
-  it('shows snackbar error when delete fails', async () => {
-    const { taskService } = await import('@/services/taskService');
-    vi.mocked(taskService.deleteTemplate).mockRejectedValue(new Error('server error'));
+  it('should_showAnError_when_deleteFails', async () => {
+    api.on('deleteTemplate', () => HttpResponse.json({ message: 'boom' }, { status: 500 }));
     const user = userEvent.setup();
-    renderTab();
-    await waitFor(() => screen.getByTestId('delete-template-tmpl-2'));
-    await user.click(screen.getByTestId('delete-template-tmpl-2'));
-    await waitFor(() =>
-      expect(screen.getByText('Failed to delete template. Please try again.')).toBeInTheDocument()
-    );
+    renderWithAuth(<TaskTemplatesTab />);
+    await user.click(await screen.findByTestId(`delete-template-${CUSTOM_ID}`));
+    expect(
+      await screen.findByText('Failed to delete template. Please try again.')
+    ).toBeInTheDocument();
   });
 });

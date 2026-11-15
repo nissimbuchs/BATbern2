@@ -100,7 +100,14 @@ export const TaskTemplatesTab: React.FC = () => {
           <ListItem key={template.id} divider>
             <ListItemText primary={template.name} secondary={dueDateSummary(template)} />
             <ListItemSecondaryAction>
-              <Chip label={template.triggerState} size="small" variant="outlined" />
+              <Chip
+                label={t(
+                  `events:tasks.workflowStates.${template.triggerState}`,
+                  template.triggerState
+                )}
+                size="small"
+                variant="outlined"
+              />
             </ListItemSecondaryAction>
           </ListItem>
         ))}
@@ -135,7 +142,14 @@ export const TaskTemplatesTab: React.FC = () => {
           <ListItem key={template.id} divider>
             <ListItemText primary={template.name} secondary={dueDateSummary(template)} />
             <ListItemSecondaryAction sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Chip label={template.triggerState} size="small" variant="outlined" />
+              <Chip
+                label={t(
+                  `events:tasks.workflowStates.${template.triggerState}`,
+                  template.triggerState
+                )}
+                size="small"
+                variant="outlined"
+              />
               <IconButton
                 size="small"
                 onClick={() => setEditTemplate(template)}

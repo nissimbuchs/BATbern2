@@ -693,13 +693,16 @@
     "noEvent": "Ei tapahtumaa (tallenna mallina)",
     "triggerStateHelp": "Tapahtuman tila, joka aktivoi tämän tehtävän",
     "workflowStates": {
+      "created": "Luotu",
       "topic_selection": "Aiheen valinta",
-      "speaker_brainstorming": "Puhujien ideointi",
-      "speaker_outreach": "Puhujien kontaktointi",
+      "speaker_identification": "Puhujien tunnistaminen",
+      "slot_assignment": "Paikkamäärittely",
       "agenda_published": "Ohjelma julkaistu",
       "event_live": "Tapahtuma live",
-      "post_event_wrap_up": "Tapahtuman jälkikokoelma",
-      "archived": "Arkistoitu"
+      "event_completed": "Tapahtuma suoritettu",
+      "archived": "Arkistoitu",
+      "speakers_published": "Puhujat julkaistu",
+      "speaker_outreach": "Puhujien kontaktointi"
     },
     "dueDateType": "Eräpäivätyyppi",
     "dueDateTypes": {

@@ -693,13 +693,16 @@
     "noEvent": "Nessun evento (salva come modello)",
     "triggerStateHelp": "Lo stato dell'evento che attiva questa attività",
     "workflowStates": {
+      "created": "Creato",
       "topic_selection": "Selezione argomento",
-      "speaker_brainstorming": "Brainstorming relatori",
-      "speaker_outreach": "Contatto relatori",
+      "speaker_identification": "Identificazione relatori",
+      "slot_assignment": "Assegnazione slot",
       "agenda_published": "Agenda pubblicata",
       "event_live": "Evento in diretta",
-      "post_event_wrap_up": "Riepilogo post-evento",
-      "archived": "Archiviato"
+      "event_completed": "Evento completato",
+      "archived": "Archiviato",
+      "speakers_published": "Relatori pubblicati",
+      "speaker_outreach": "Contatto relatori"
     },
     "dueDateType": "Tipo di scadenza",
     "dueDateTypes": {

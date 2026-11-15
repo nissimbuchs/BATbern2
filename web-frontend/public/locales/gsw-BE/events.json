@@ -699,13 +699,16 @@
     "noEvent": "Kei Veranstatig (als Vorlage spychere)",
     "triggerStateHelp": "Dr Veranstautigsstatus, wo die Ufgab aktiviert",
     "workflowStates": {
+      "created": "Erstellt",
       "topic_selection": "Themenauswau",
-      "speaker_brainstorming": "Redner-Ideessammlig",
-      "speaker_outreach": "Rednerkontakt",
+      "speaker_identification": "Redneridentifikation",
+      "slot_assignment": "Slot-Zuwiisig",
       "agenda_published": "Agenda veröffentlicht",
       "event_live": "Veranstatig läuft",
-      "post_event_wrap_up": "Nachbearbeitung",
-      "archived": "Archiviert"
+      "event_completed": "Veranstatig abgschlosse",
+      "archived": "Archiviert",
+      "speakers_published": "Redner veröffentlecht",
+      "speaker_outreach": "Rednerkontakt"
     },
     "dueDateType": "Fälligkeitsdatumtyp",
     "dueDateTypes": {

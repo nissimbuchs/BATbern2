@@ -693,13 +693,16 @@
     "noEvent": "Aucun événement (enregistrer comme modèle)",
     "triggerStateHelp": "L'état de l'événement qui active cette tâche",
     "workflowStates": {
+      "created": "Créé",
       "topic_selection": "Sélection du sujet",
-      "speaker_brainstorming": "Brainstorming des intervenants",
-      "speaker_outreach": "Démarchage des intervenants",
+      "speaker_identification": "Identification des intervenants",
+      "slot_assignment": "Attribution des créneaux",
       "agenda_published": "Agenda publié",
       "event_live": "Événement en direct",
-      "post_event_wrap_up": "Bilan post-événement",
-      "archived": "Archivé"
+      "event_completed": "Événement terminé",
+      "archived": "Archivé",
+      "speakers_published": "Intervenants publiés",
+      "speaker_outreach": "Démarchage des intervenants"
     },
     "dueDateType": "Type d'échéance",
     "dueDateTypes": {

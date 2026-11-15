@@ -697,13 +697,16 @@
     "noEvent": "Keine Veranstaltung (als Vorlage speichern)",
     "triggerStateHelp": "Der Workflow-Status, der diese Aufgabe aktiviert",
     "workflowStates": {
+      "created": "Erstellt",
       "topic_selection": "Themenauswahl",
-      "speaker_brainstorming": "Referenten-Brainstorming",
-      "speaker_outreach": "Referentenansprache",
+      "speaker_identification": "Referenten-Identifikation",
+      "slot_assignment": "Slot-Zuweisung",
       "agenda_published": "Agenda veröffentlicht",
       "event_live": "Veranstaltung live",
-      "post_event_wrap_up": "Nachbereitung",
-      "archived": "Archiviert"
+      "event_completed": "Veranstaltung abgeschlossen",
+      "archived": "Archiviert",
+      "speakers_published": "Referenten veröffentlicht",
+      "speaker_outreach": "Referentenansprache"
     },
     "dueDateType": "Fälligkeitstyp",
     "dueDateTypes": {

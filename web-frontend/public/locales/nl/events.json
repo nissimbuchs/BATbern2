@@ -693,13 +693,16 @@
     "noEvent": "Geen evenement (opslaan als sjabloon)",
     "triggerStateHelp": "De evenementstatus die deze taak activeert",
     "workflowStates": {
+      "created": "Aangemaakt",
       "topic_selection": "Onderwerpkeuze",
-      "speaker_brainstorming": "Sprekersbrainstorm",
-      "speaker_outreach": "Sprekersbenadering",
+      "speaker_identification": "Sprekeridentificatie",
+      "slot_assignment": "Slottoewijzing",
       "agenda_published": "Agenda gepubliceerd",
       "event_live": "Evenement live",
-      "post_event_wrap_up": "Afsluiting na evenement",
-      "archived": "Gearchiveerd"
+      "event_completed": "Evenement voltooid",
+      "archived": "Gearchiveerd",
+      "speakers_published": "Sprekers gepubliceerd",
+      "speaker_outreach": "Sprekersbenadering"
     },
     "dueDateType": "Type vervaldatum",
     "dueDateTypes": {

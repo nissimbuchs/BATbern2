@@ -13,6 +13,7 @@ import {
   DialogContent,
   DialogTitle,
   FormControl,
+  FormHelperText,
   InputLabel,
   MenuItem,
   Select,
@@ -27,18 +28,7 @@ import {
   TaskTemplateResponse,
   UpdateTaskTemplateRequest,
 } from '@/services/taskService';
-
-const TRIGGER_STATES = [
-  'DRAFT',
-  'SCHEDULED',
-  'PUBLISHED',
-  'REGISTRATION_OPEN',
-  'REGISTRATION_CLOSED',
-  'SPEAKER_INVITED',
-  'EVENT_LIVE',
-  'EVENT_COMPLETED',
-  'ARCHIVED',
-];
+import { TRIGGER_STATES, isTriggerState } from '@/components/organizer/Tasks/triggerStates';
 
 const DUE_DATE_TYPES = ['immediate', 'relative_to_event', 'absolute'];
 
@@ -59,7 +49,10 @@ export const TaskTemplateEditModal: React.FC<TaskTemplateEditModalProps> = ({
   const isFullScreen = useMediaQuery(theme.breakpoints.down('md'));
 
   const [name, setName] = useState(template.name);
-  const [triggerState, setTriggerState] = useState(template.triggerState);
+  // A template saved before #1218 may carry a state the backend no longer accepts: the organizer
+  // picks a valid one before saving.
+  const validTrigger = (value: string) => (isTriggerState(value) ? value : '');
+  const [triggerState, setTriggerState] = useState(validTrigger(template.triggerState));
   const [dueDateType, setDueDateType] = useState(template.dueDateType);
   const [dueDateOffsetDays, setDueDateOffsetDays] = useState<number | ''>(
     template.dueDateOffsetDays ?? ''
@@ -69,7 +62,7 @@ export const TaskTemplateEditModal: React.FC<TaskTemplateEditModalProps> = ({
   useEffect(() => {
     if (open) {
       setName(template.name);
-      setTriggerState(template.triggerState);
+      setTriggerState(validTrigger(template.triggerState));
       setDueDateType(template.dueDateType);
       setDueDateOffsetDays(template.dueDateOffsetDays ?? '');
     }
@@ -115,8 +108,13 @@ export const TaskTemplateEditModal: React.FC<TaskTemplateEditModalProps> = ({
         />
 
         <FormControl fullWidth>
-          <InputLabel>{t('admin.taskTemplates.triggerState', 'Trigger State')}</InputLabel>
+          <InputLabel id="template-trigger-state-label">
+            {t('admin.taskTemplates.triggerState', 'Trigger State')}
+          </InputLabel>
           <Select
+            labelId="template-trigger-state-label"
+            required
+            error={!triggerState}
             value={triggerState}
             label={t('admin.taskTemplates.triggerState', 'Trigger State')}
             onChange={(e) => setTriggerState(e.target.value)}
@@ -124,15 +122,23 @@ export const TaskTemplateEditModal: React.FC<TaskTemplateEditModalProps> = ({
           >
             {TRIGGER_STATES.map((state) => (
               <MenuItem key={state} value={state}>
-                {state}
+                {t(`events:tasks.workflowStates.${state}`, state)}
               </MenuItem>
             ))}
           </Select>
+          <FormHelperText error={!triggerState}>
+            {triggerState
+              ? t('events:tasks.triggerStateHelp')
+              : t('events:tasks.errors.triggerStateRequired')}
+          </FormHelperText>
         </FormControl>
 
         <FormControl fullWidth>
-          <InputLabel>{t('admin.taskTemplates.dueDateType', 'Due Date Type')}</InputLabel>
+          <InputLabel id="template-due-date-type-label">
+            {t('admin.taskTemplates.dueDateType', 'Due Date Type')}
+          </InputLabel>
           <Select
+            labelId="template-due-date-type-label"
             value={dueDateType}
             label={t('admin.taskTemplates.dueDateType', 'Due Date Type')}
             onChange={(e) => setDueDateType(e.target.value)}
@@ -166,7 +172,7 @@ export const TaskTemplateEditModal: React.FC<TaskTemplateEditModalProps> = ({
         <Button
           variant="contained"
           onClick={handleSave}
-          disabled={saving || !name.trim()}
+          disabled={saving || !name.trim() || !triggerState}
           data-testid="template-edit-save"
         >
           {t('actions.save')}

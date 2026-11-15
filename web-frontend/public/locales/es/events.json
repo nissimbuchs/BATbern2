@@ -693,13 +693,16 @@
     "noEvent": "Sin evento (guardar como plantilla)",
     "triggerStateHelp": "El estado del evento que activa esta tarea",
     "workflowStates": {
+      "created": "Creado",
       "topic_selection": "Selección de tema",
-      "speaker_brainstorming": "Lluvia de ideas de ponentes",
-      "speaker_outreach": "Contacto con ponentes",
+      "speaker_identification": "Identificación de ponentes",
+      "slot_assignment": "Asignación de espacios",
       "agenda_published": "Agenda publicada",
       "event_live": "Evento en vivo",
-      "post_event_wrap_up": "Resumen post-evento",
-      "archived": "Archivado"
+      "event_completed": "Evento completado",
+      "archived": "Archivado",
+      "speakers_published": "Ponentes publicados",
+      "speaker_outreach": "Contacto con ponentes"
     },
     "dueDateType": "Tipo de vencimiento",
     "dueDateTypes": {

@@ -693,13 +693,16 @@
     "noEvent": "Nagin eveniment (salvar sco maletg)",
     "triggerStateHelp": "Il status dal eveniment che activa questa incumbensa",
     "workflowStates": {
+      "created": "Creà",
       "topic_selection": "Tscherner tema",
-      "speaker_brainstorming": "Brainstorming da referents",
-      "speaker_outreach": "Contact cun referents",
+      "speaker_identification": "Identificaziun da referents",
+      "slot_assignment": "Attribuziun da slots",
       "agenda_published": "Agenda publicada",
       "event_live": "Eveniment en direct",
-      "post_event_wrap_up": "Resumé suenter l'eveniment",
-      "archived": "Archivà"
+      "event_completed": "Eveniment cumplì",
+      "archived": "Archivà",
+      "speakers_published": "Referents publitgads",
+      "speaker_outreach": "Contact cun referents"
     },
     "dueDateType": "Tip da scadenza",
     "dueDateTypes": {

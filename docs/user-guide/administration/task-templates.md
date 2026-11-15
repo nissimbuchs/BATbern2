@@ -117,14 +117,10 @@ Custom templates are your own additions. They appear in the template list of the
 New custom templates get the same activation rule as the default ones: 14 days before the due date,
 except for triggers at or after the event.
 
-<div class="alert warning">
-⚠️ <strong>Trigger State lists are out of date.</strong> The create dialog offers some old state
-names (<em>Speaker Brainstorming</em>, <em>Speaker Outreach</em>, <em>Post Event Wrap-Up</em>) that
-the platform rejects when you save; use <em>Topic Selection</em>, <em>Agenda Published</em>,
-<em>Event Live</em> or <em>Archived</em>. The edit dialog does not list the real event states at
-all, so change only the name or due date there; to change a trigger, delete the template and create
-it again.
-</div>
+Both dialogs offer the same triggers: every event state (*Created* to *Archived*) and
+**Speakers published**. A template saved earlier with a state that no longer exists (for example
+*Speaker Outreach*) never activates by its trigger; the edit dialog then shows the field empty and
+saves only after you pick a valid trigger.
 
 ---
 
