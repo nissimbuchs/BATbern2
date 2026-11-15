@@ -422,7 +422,7 @@ Backend: company-user-management-service follows the layered architecture:
 
 ### References
 
-- Epic 10 story spec: [Source: docs/prd/epic-10-additional-stories.md#story-108-moderator-presentation-page]
+- Epic 10 story spec: [Source: docs/archive/prd/epic-10-additional-stories.md#story-108-moderator-presentation-page]
 - Full feature spec with 43 ACs: [Source: _bmad-output/implementation-artifacts/10-8-moderator-presentation-page.md]
 - DomainRouter routing rules: [Source: api-gateway/src/main/java/ch/batbern/gateway/routing/DomainRouter.java:99]
 - API Gateway security config: [Source: api-gateway/src/main/java/ch/batbern/gateway/config/SecurityConfig.java:220]

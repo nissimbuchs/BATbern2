@@ -34,7 +34,6 @@ Only items that are not live yet. Everything else is listed under its release be
 - 📋 Epic 13 close-out: Jackson 3 switch-over, dependency versions handed back to the Spring Boot BOM
 - 📋 Epic 15: LinkedIn post drafts (Story 15.8)
 - 📋 Apple / generic OIDC SSO (Story 12-10) — extends "Continue with Google" with additional providers
-- 📋 Epic 3: production import of the historical data (pending a user trigger)
 
 ---
 

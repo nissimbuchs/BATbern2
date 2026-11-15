@@ -6,7 +6,7 @@ Accepted (2026-11-07, owner decision after the architecture review of 2026-11)
 ## Context
 
 BATbern runs three services: CUMS (identity, companies), EMS (the event and everything around it)
-and partner-coordination (PCS). The 2026-11 review (`docs/plans/architecture-review-2026-11-actions.md`)
+and partner-coordination (PCS). The 2026-11 review (`docs/archive/plans/architecture-review-2026-11-actions.md`)
 measured how they call each other on develop `e7f76baf`:
 
 - **Two cycles.** EMS calls CUMS and CUMS calls EMS (profile merge, merge-request conversations).
@@ -115,4 +115,4 @@ measured how they call each other on develop `e7f76baf`:
 - ADR-004 (no user fields in domain entities; enrich via CUMS)
 - ADR-008 (gateway; its 2026-10-27 token sentence is superseded by decision 3 here)
 - ADR-014 (service consolidation; stub and bus removal decided 2026-11-07)
-- `docs/plans/architecture-review-2026-11-actions.md`, `docs/architecture/module-map.md`
+- `docs/archive/plans/architecture-review-2026-11-actions.md`, `docs/architecture/module-map.md`

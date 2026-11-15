@@ -1,6 +1,6 @@
 # Plan: `beta.batbern.ch` — a frontend canary on production data
 
-**Status:** Draft (not started)
+**Status:** Live. Shipped with #733 (merged 2026-06-02); publish with `scripts/deploy/publish-beta-frontend.sh`.
 **Author:** Amelia (dev agent) — 2026-06-02
 **Branch origin:** discussed while on `perf/public-homepage-followup` (the lazy-Amplify perf work is the first intended payload for beta)
 

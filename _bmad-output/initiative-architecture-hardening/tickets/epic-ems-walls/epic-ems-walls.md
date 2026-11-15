@@ -42,7 +42,7 @@ A change to registrations or to an exception no longer edits `EventController` o
 ## References
 
 - parent — `_bmad-output/initiative-architecture-hardening/initiative-architecture-hardening.md`, Requirements R18, R19, Constraints, Notes (Decision 2026-11-14)
-- prd — `docs/prd/epic-17-architecture-hardening.md`, Stories 17.13 and 17.14
+- prd — `docs/archive/prd/epic-17-architecture-hardening.md`, Stories 17.13 and 17.14
 - reference — `docs/architecture/module-map.md`, "EMS modules" (no new endpoints in `EventController`, exceptions in their own module)
 - record — `_bmad-output/initiative-architecture-hardening/tickets/epic-ems-walls/architecture-ems-walls/.memlog.md` (Modulith spike, measurements, the 2026-11-14 decision)
 

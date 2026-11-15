@@ -4,40 +4,18 @@ Enterprise event management platform for Berner Architekten Treffen (BATbern) co
 
 ## Project Status
 
-**Last Updated:** 2026-11-07
+**Last Updated:** 2026-11-15
 
-**Current Phase:** In production at www.batbern.ch. Epics 1–16 are closed; Epic 17 (architecture hardening) is the open work. Stories of epics 1–16 that were never implemented are archived, not planned. A separate iOS/watchOS companion app (BATbern Watch) is also live.
+**In production at www.batbern.ch. Epics 1-17 are closed.** Open work is the tickets in
+[`_bmad-output/backlog/`](_bmad-output/backlog/) and the open GitHub issues. Stories of epics 1-16 that
+were never implemented are archived by owner decision, not planned. A separate iOS/watchOS companion
+app (BATbern Watch) is also live.
 
-**MVP Status:** ✅ **IN PRODUCTION**. All 5 MVP epics (1–5) are live, plus the post-MVP work: speaker portal, partner coordination, "Continue with Google" SSO, admin and newsletter tooling, attendee contribution features, the organizer cockpit and the Mail Center.
-
-### Epic Progress Summary
-
-| Epic | Status | Key Accomplishments |
-|------|--------|---------------------|
-| **Epic 1: Foundation & Core Infrastructure** | ✅ Complete | Shared Kernel, API Gateway, Auth, User Mgmt, CI/CD, Monitoring |
-| **Epic 2: Entity CRUD & Domain Services** | ✅ Complete | Company, User, Event, Partner Management (backend + frontend) |
-| **Epic 3: Historical Data Migration** | ✅ Complete | Batch import tooling ready; production data import pending trigger |
-| **Epic 4: Public Website & Content Discovery** | ✅ Complete | Event landing pages, 3-step registration wizard, archive browsing, content search, SEO |
-| **Epic 5: Enhanced Organizer Workflows** | ✅ Complete | Event workflow state machine, speaker coordination, auto-publishing, lifecycle automation |
-| **Epic 6: Speaker Self-Service Portal** | ✅ Complete | Invitations, response portal, material submission, dashboard (WCAG 2.1 AA), reminders |
-| **Epic 7: Attendee Experience: Contribution & Touchpoints** | ✅ Complete | Topics from the floor, speaker self-nomination, slides-online mail, thank-the-organizers, per-session Q&A, attendee event history, thank-you marquee |
-| **Epic 8: Partner Coordination** | ✅ Complete | Attendance analytics + XLSX export, topic voting, meeting coordination (ICS), partner notes, iCal RSVP tracking |
-| **Epic 9: Speaker Authentication** | ⛔ Superseded | Original magic-link plan replaced by Epic 11 (unified workflow) + Epic 12 (SSO) |
-| **Epic 10: Admin Tools, Newsletter & Public Enhancements** | ✅ Complete | Administration page, newsletter system, registration status/waitlist/deregistration, photo gallery, teaser images, moderator presentation, Turnstile, legacy BAT export/import, additional user emails |
-| **Epic 11: Unified Speaker Workflow Refactor** | ✅ Complete | 8-state workflow (ADR-009), `SpeakerWorkflowService` sole writer, Cognito speaker auth (magic-link torn down), kanban redesign, speaker company self-service |
-| **Epic 12: Federated Identity / Google SSO** | ✅ Complete | "Continue with Google" live (account linking, JIT provisioning, ToS consent, avatar import); Apple/generic OIDC archived |
-| **Epic 13: Spring Boot 4 Migration** | ✅ Closed | Spring Boot 4.0.9 live (CVE patch 2026-11-05); Jackson 3 switch and BOM unpinning archived |
-| **Epic 14: Event Detail Page Redesign** | ✅ Complete | Lifecycle-aware organizer cockpit with tasks at the right time |
-| **Epic 15: Post-Event #2 Hardening** | ✅ Closed | Live control on REST polling, hardening fixes; WebSocket teardown archived |
-| **Epic 16: Mail Center** | ✅ Closed | Outbound log + delivery status, conversations, answers, shared composer, global Mail page; composer clean-up (16.8c) moved to Epic 17 |
-| **Epic 17: Architecture Hardening** | 📋 Backlog | Test fidelity (17.0a–d), dead API surface and gates, service-to-service calls via `/internal`, API conventions, one upload contract, EMS modularization |
-| **BATbern Watch App** (separate iOS/watchOS track) | ✅ Complete | Public event companion, pairing & organizer access, live countdown & haptics, session control, offline resilience |
-
-### Next Steps
-
-- **Epic 17**: architecture hardening, in the order of [`docs/prd/epic-17-architecture-hardening.md`](docs/prd/epic-17-architecture-hardening.md); test fidelity (17.0a–d) and the dead surface and gates (17.1–17.5) come first
-- **Pre-deploy gate**: parked until 17.1–17.5 and 17.0a–d are done, see [`docs/plans/pre-deploy-gate-plan.md`](docs/plans/pre-deploy-gate-plan.md)
-- **Epic 3: production data import** of the historical participants via the batch import modal
+Delivered: entity CRUD, Cognito auth with roles checked in the services, "Continue with Google" SSO,
+the public website with registration, waitlist and archive search, the organizer workflow and cockpit,
+the speaker portal, partner coordination, attendee touchpoints, newsletter and admin tooling, and the
+Mail Center. Epic 17 (architecture hardening, closed 2026-11-15) put service-to-service calls on
+`/internal`, enforced API conventions and one upload contract, and added test-fidelity gates.
 
 ## Quick Start
 
@@ -519,6 +497,15 @@ All secrets stored in GitHub Secrets and AWS Secrets Manager.
 - [Deployment Guide](docs/deployment/)
 - [CI/CD Pipeline Guide](docs/deployment/cicd-pipeline-guide.md)
 
+### Plans, Epics and History
+- [Plans](docs/plans/): open plans and living design notes (deploy gates, beta canary, cost rules)
+- [Epic files](docs/prd/) still cited by CI, scripts or migrations; [PRD](docs/prd-enhanced.md)
+- [Backlog](_bmad-output/backlog/): open tickets
+- Archive, read-only: [closed epics](docs/archive/prd/), [done plans](docs/archive/plans/),
+  [v6 planning reports](docs/archive/planning/), [epics 1-16 story files](_bmad-output/implementation-artifacts/archive/)
+  with the index [`sprint-status.yaml`](_bmad-output/implementation-artifacts/sprint-status.yaml),
+  [Epic 17 initiative](_bmad-output/initiative-architecture-hardening/), [older story files](docs/stories/archived/)
+
 ## Contributing
 
 1. Create feature branch from `develop`
@@ -540,11 +527,12 @@ installed as skills in `.claude/skills/` (pinned in `skills-lock.json`).
 
 - **Install or update:** `npx skills add bmad-code-org/BMAD-METHOD --skill '*' --agent claude-code -y`, then
   ask the `bmad` skill for `bmad setup`. Requires [uv](https://docs.astral.sh/uv/).
-- **Backlog:** Sofia (`bmad-agent-po`) keeps initiatives, epics and tickets in `_bmad-output/initiative-*/`.
+- **Backlog:** Sofia (`bmad-agent-po`) keeps loose tickets in `_bmad-output/backlog/` and initiatives in
+  `_bmad-output/initiative-*/`. No initiative is active; the closed Epic 17 initiative stays as its record.
 - **Build a story:** `bmad-build`; review with `bmad-code-review`.
 - **Team customizations:** `_bmad/custom/*.toml`, never the skill files.
-- **History:** epics 1–16 (story files, `sprint-status.yaml`) are a read-only BMAD v6 archive in
-  `_bmad-output/implementation-artifacts/`.
+- **History:** epics 1-16 are a read-only BMAD v6 archive: index
+  `_bmad-output/implementation-artifacts/sprint-status.yaml`, story files in `archive/` beside it.
 
 ### Commit Convention
 ```

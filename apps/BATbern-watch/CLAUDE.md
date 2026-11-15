@@ -409,7 +409,7 @@ All design and architecture documentation lives in `../../docs/watch-app/`:
 - **[prd-batbern-watch.md](../../docs/watch-app/prd-batbern-watch.md)** — Functional and non-functional requirements
 - **[architecture.md](../../docs/watch-app/architecture.md)** — Technical decisions, component design, API contracts
 - **[ux-design-specification.md](../../docs/watch-app/ux-design-specification.md)** — Layouts, typography, color system, haptic vocabulary
-- **[epics.md](../../docs/watch-app/epics.md)** — Epic breakdown and story decomposition
+- **[epics.md](../../docs/archive/watch-app/epics.md)** — Epic breakdown and story decomposition
 
 **When implementing new features:** Always consult these docs first. They define requirements, NFRs, and architectural constraints.
 

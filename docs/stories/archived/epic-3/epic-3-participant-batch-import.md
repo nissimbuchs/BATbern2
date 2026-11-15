@@ -14,7 +14,7 @@
    - Updated Phase 2 to reflect frontend batch import approach (not Spring Batch)
    - Added Story 3.2: Participant/Attendee Batch Import
    - Updated status from 33% → 85% complete
-   - File: `/docs/prd/epic-3-historical-data-migration.md`
+   - File: `/docs/archive/prd/epic-3-historical-data-migration.md`
 
 2. **Batch Import Template Extracted**
    - Created reusable template for all batch imports
@@ -312,7 +312,7 @@ npm install papaparse @types/papaparse
 
 ## References
 
-- **Epic 3**: `/docs/prd/epic-3-historical-data-migration.md`
+- **Epic 3**: `/docs/archive/prd/epic-3-historical-data-migration.md`
 - **Story 3.2**: Participant/Attendee Batch Import (in Epic 3)
 - **Batch Import Template**: `/docs/templates/frontend/batch-import-pattern.md`
 - **CSV Data**: `/apps/BATspa-old/src/api/anmeldungen.csv`

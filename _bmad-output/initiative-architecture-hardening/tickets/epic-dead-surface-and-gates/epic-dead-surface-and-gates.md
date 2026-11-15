@@ -59,8 +59,8 @@ The owner and every later story get a smaller platform, a cleaner EMS and fronte
 ## References
 
 - parent — `_bmad-output/initiative-architecture-hardening/initiative-architecture-hardening.md`, section Requirements (R5, R6, R7, R8, R9, R10, R25), Constraints, Notes (Decision lines)
-- prd — `docs/prd/epic-17-architecture-hardening.md`, Rules for every story, Story order, Stories 17.1 to 17.5
-- story — `_bmad-output/implementation-artifacts/16-8-shared-composer.md`, Part 16.8c, AC18, Dev Notes "Endpoints retired in 16.8c" (v6 archive, covers 16.8a to c)
+- prd — `docs/archive/prd/epic-17-architecture-hardening.md`, Rules for every story, Story order, Stories 17.1 to 17.5
+- story — `_bmad-output/implementation-artifacts/archive/16-8-shared-composer.md`, Part 16.8c, AC18, Dev Notes "Endpoints retired in 16.8c" (v6 archive, covers 16.8a to c)
 
 ## Notes
 
@@ -76,7 +76,7 @@ The owner and every later story get a smaller platform, a cleaner EMS and fronte
 - Decision: 2026-11-07, owner. 17.4's similarity comment needs no separate proof: no test PR, and no end-to-end check of the comment. It is informative, not blocking. The story's ordinary unit tests cover the script, and the first real PR that adds an operation shows it. This drops the PRD's 17.4 AC3 test-PR guard.
 - Decision: 2026-11-07, owner. 17.2 ships in one branch and one PR with 17.0a (epic 2); the PR deploys on a date the owner picks that is not an event day.
 - Decision: 2026-11-07, owner. 17.2 splits into entry 2 (stub services) and 2b (event bus), built in that order into the 17.0a PR. Production steps, each announced with the owner's go: empty the two stub ECR repos before the PR, remove the two required checks before merge, delete the three orphaned stacks after the deploy. `flyway_schema_history_speaker_coordination` stays in the database. 2b adds an integration test for each of the 4 in-process listeners (the PRD counted 2).
-- Decision: 2026-11-08, owner. Epic 17 exists to make the architecture cleaner, not to document or freeze it: "With every story it should get better." Gate stories freeze only what needs a later story's design or a cross-service change, name that story per frozen group, and fix the rest in the same story. A baseline or store committed at the end of a story is smaller than at its start, or the story says why. This replaces the earlier Boundaries line that left all shrinking to epics 3, 4 and 5. Source: `docs/prd/epic-17-architecture-hardening.md`, Rules for every story, "Leave the architecture cleaner"; Story 17.5 renamed "ArchUnit freeze and first wall fixes" with AC4.
+- Decision: 2026-11-08, owner. Epic 17 exists to make the architecture cleaner, not to document or freeze it: "With every story it should get better." Gate stories freeze only what needs a later story's design or a cross-service change, name that story per frozen group, and fix the rest in the same story. A baseline or store committed at the end of a story is smaller than at its start, or the story says why. This replaces the earlier Boundaries line that left all shrinking to epics 3, 4 and 5. Source: `docs/archive/prd/epic-17-architecture-hardening.md`, Rules for every story, "Leave the architecture cleaner"; Story 17.5 renamed "ArchUnit freeze and first wall fixes" with AC4.
 - Decision: 2026-11-08, owner. The 13 frontend files that 17.3 froze in `web-frontend/scripts/api-layer-baseline.txt` (15 counted by grep, 13 by the scan) get their calls moved into the service layer, baseline to zero where possible. New entry 3b, built right after 17.5. 17.3's own Boundaries stay as built.
 - Assumption: 2026-11-08. The new entry's id is `3b`, after the `2b` precedent and the initiative's rule that ids keep the 17.x number, rather than the script's counter `169`.
 - Assumption: 2026-11-08. 3b waits only on 17.3 (`after = [3]`); its place after 17.5 in the table is build order, not a code dependency.

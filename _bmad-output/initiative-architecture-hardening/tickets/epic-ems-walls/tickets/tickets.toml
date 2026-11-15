@@ -11,7 +11,7 @@ covers = ["R1"]
 after = ["2.0a", "4.10c"]
 hitl = false
 risk = "medium"
-references = ["docs/prd/epic-17-architecture-hardening.md#story-1713--registrations-out-of-eventcontroller"]
+references = ["docs/archive/prd/epic-17-architecture-hardening.md#story-1713--registrations-out-of-eventcontroller"]
 
 [[entry]]
 id = 14
@@ -23,4 +23,4 @@ covers = ["R2"]
 after = [13]
 hitl = false
 risk = "medium"
-references = ["docs/prd/epic-17-architecture-hardening.md#story-1714--domain-exception-base"]
+references = ["docs/archive/prd/epic-17-architecture-hardening.md#story-1714--domain-exception-base"]

@@ -16,7 +16,7 @@ Welcome to the BATbern Organizer Guide. This documentation provides complete cov
 | ------------------------------------------ | ----------------- | ----------------------------------------------------------------------------------------------------- |
 | **Epic 1: Foundation**                     | ✅ Complete        | Infrastructure, Authentication, API Gateway, Monitoring                                               |
 | **Epic 2: Entity CRUD**                    | ✅ Complete        | Company, User, Event, Partner Management                                                               |
-| **Epic 3: Data Migration**                 | ✅ Complete        | Historical data import tooling (production import pending)                                             |
+| **Epic 3: Data Migration**                 | ✅ Complete        | Historical data imported into production (closed 2026-11-15)                                                |
 | **Epic 4: Public Website**                 | ✅ Complete        | Landing pages, Registration flow, Archive Browsing, Content Search, SEO                               |
 | **Epic 5: Organizer Workflows**            | ✅ Complete        | 8-state event workflow, Speaker workflow, Task system, Auto-publishing, Lifecycle automation          |
 | **Epic 6: Speaker Portal**                 | ✅ Complete        | Cognito-authenticated invitations, self-service response/content submission, dashboard (WCAG 2.1 AA)  |

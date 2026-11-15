@@ -13,7 +13,7 @@
 **This wireframe has been updated with a modern dark theme design.** The implementation files are:
 - **Primary Implementation**: `/docs/wireframes/batbern-newdesign-accessible.html` - Full React component with WCAG 2.1 AA accessibility
 - **Analysis Document**: `/docs/wireframes/newdesign-integration-analysis.md` - Comprehensive integration guide and recommendations
-- **Front-End Spec**: Updated in `/docs/front-end-spec.md` Section 4.3.1 with dark theme details
+- **Front-End Spec**: Updated in `/docs/archive/planning/front-end-spec.md` Section 4.3.1 with dark theme details
 
 **Key Changes from Original Wireframe**:
 - Modern dark theme (zinc-950 background, blue-400 accents) replacing light theme

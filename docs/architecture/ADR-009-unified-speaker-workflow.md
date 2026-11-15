@@ -86,7 +86,7 @@ event-management-service schema unless noted):
 | `speaker_selection_votes` table           | Overflow voting tables — `OVERFLOW` state removed (see §0.7), slot-capacity gate replaces. |
 | `magic_link_tokens` table[^magic-link-tokens] | Magic-link auth replaced by Cognito FORCE_CHANGE_PASSWORD flow. Dropped by Flyway V104 in Story 11.F.1. |
 
-[^magic-link-tokens]: The colloquial label `magic_link_tokens` refers to the actual EMS table `speaker_invitation_tokens` (created in `services/event-management-service/src/main/resources/db/migration/V43__Create_speaker_invitation_tokens.sql`, dropped in `V104__drop_speaker_invitation_tokens_table.sql`). The default schema-ownership note at the head of this table — "all in the event-management-service schema unless noted" — applies here without override. Resolves the schema-ownership clarification asked in `_bmad-output/implementation-artifacts/deferred-work.md` line 14.
+[^magic-link-tokens]: The colloquial label `magic_link_tokens` refers to the actual EMS table `speaker_invitation_tokens` (created in `services/event-management-service/src/main/resources/db/migration/V43__Create_speaker_invitation_tokens.sql`, dropped in `V104__drop_speaker_invitation_tokens_table.sql`). The default schema-ownership note at the head of this table — "all in the event-management-service schema unless noted" — applies here without override. Resolves the schema-ownership clarification asked in `_bmad-output/implementation-artifacts/archive/deferred-work.md` line 14.
 
 _Implemented by Stories 11.B.3 (Flyway V93), 11.C.1 (Flyway V94), 11.F.1 (Flyway V104)._
 
