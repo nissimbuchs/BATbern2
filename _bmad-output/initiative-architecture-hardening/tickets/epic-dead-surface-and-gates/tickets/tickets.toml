@@ -69,7 +69,7 @@ covers = ["R5"]
 after = []
 hitl = false
 risk = "low"
-references = ["docs/plans/architecture-review-2026-11.html"]
+references = ["docs/archive/plans/architecture-review-2026-11.html"]
 notes = ["The 5 already-vertical EMS packages: mailcenter, forwarding, usermerge, watch, notification (review report, EMS figure). The rule is no new client toward a DOWNSTREAM service (PRD, ADR-016); the action list says upstream, which is a slip."]
 
 [[entry]]

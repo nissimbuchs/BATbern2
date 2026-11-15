@@ -745,7 +745,7 @@ Completed in 2 sessions (2026-02-25):
   - Added retry capability for PARTIAL/FAILED sends (POST /sends/{sendId}/retry)
   - Added progress polling endpoint (GET /sends/{sendId}/status) + frontend LinearProgress UI
   - All tests green: 19/19 unit, 26/26 integration, 15/15 frontend; 0 checkstyle/typecheck errors
-  - Plan saved to docs/plans/newsletter-robustness-v87-plan.md
+  - Plan saved to docs/archive/plans/newsletter-robustness-v87-plan.md
 - 2026-02-25: Story picked up for development (Amelia / dev agent)
 - 2026-02-28: Code review fixes applied (Amelia / dev agent — CR session):
   - C1: Created NewsletterRecipientId.java + NewsletterRecipient.java + NewsletterRecipientRepository.java; wired recipientRepository into NewsletterEmailService.sendNewsletter() to populate newsletter_recipients per AC10

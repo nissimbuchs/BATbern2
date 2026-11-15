@@ -506,7 +506,7 @@ docs/api/events.openapi.yml                                          ← newslet
 Redesigned `sendNewsletter()` as fire-and-forget with single `@Async` background job + paginated processing (50/page).
 Added: V87 migration (status tracking), duplicate-send prevention (409), SES rate limiting (70ms/email),
 retry for PARTIAL/FAILED sends, progress polling endpoint, frontend LinearProgress UI.
-See `docs/plans/newsletter-robustness-v87-plan.md` for full details.
+See `docs/archive/plans/newsletter-robustness-v87-plan.md` for full details.
 
 ---
 
@@ -590,7 +590,7 @@ As an **event moderator**, I want the presentation page to have polished, fluid 
 ### Story 10.9: i18n Cleanup — Deduplication, Hardcoded Text, Test Resilience & Unused Key Removal
 
 **Story file**: `_bmad-output/implementation-artifacts/10-9-i18n-cleanup.md`
-**Plan**: `docs/plans/i18n-cleanup-plan.md`
+**Plan**: `docs/archive/plans/i18n-cleanup-plan.md`
 **Status**: ✅ done (sprint-status 2026-11-04)
 **Prerequisite**: None (independent — frontend-only, no backend or DB changes)
 

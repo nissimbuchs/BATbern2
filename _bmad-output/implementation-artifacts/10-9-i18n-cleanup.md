@@ -8,7 +8,7 @@ As a **frontend developer and future contributor**,
 I want the translation system to be clean, consistent, and test-resilient,
 so that adding a new language or renaming a translation value never causes surprises in tests or the UI.
 
-> **Source plan:** `docs/plans/i18n-cleanup-plan.md` — read this file first.
+> **Source plan:** `docs/archive/plans/i18n-cleanup-plan.md` — read this file first.
 > **Phases must be executed in order** — Phase 1 establishes canonical keys; Phase 2 finishes adding all keys; Phase 3 makes tests language-agnostic (which also makes Phase 4's scanner more accurate); Phase 4 then deletes what remains unused.
 
 ---
@@ -365,7 +365,7 @@ These two files are intentionally kept in German and excluded from Phase 2 scope
 | Full unused keys list (830) | `/tmp/unused_keys.txt` |
 | Full duplicates report | `/tmp/duplicates_report.txt` |
 | Full hardcoded text detail | `/tmp/hardcoded_prod_detail.txt` |
-| Plan document | `docs/plans/i18n-cleanup-plan.md` |
+| Plan document | `docs/archive/plans/i18n-cleanup-plan.md` |
 | EN locale files | `web-frontend/public/locales/en/*.json` |
 | All locale files | `web-frontend/public/locales/` |
 | i18n config | `web-frontend/src/i18n/config.ts` |
@@ -419,7 +419,7 @@ If a new **namespace** were needed (not required for this story), it would requi
 
 ### References
 
-- [Source: docs/plans/i18n-cleanup-plan.md] — full plan with all lists, tables, and Sub-task 1.1/1.2 entries
+- [Source: docs/archive/plans/i18n-cleanup-plan.md] — full plan with all lists, tables, and Sub-task 1.1/1.2 entries
 - [Source: web-frontend/src/i18n/config.ts] — i18n initialization, locale bundles, namespace declarations
 - [Source: web-frontend/src/test/setup.ts] — test i18n initialization (real i18n, `changeLanguage('en')`)
 - [Source: web-frontend/public/locales/] — all locale JSON files for all 9 languages

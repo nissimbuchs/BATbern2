@@ -115,7 +115,7 @@ All infrastructure code updated to use `isProduction` flag pattern.
 | `docs/architecture/08-operations-security.md` | Removed staging SLA tier, updated CSP CDN domains | ✅ |
 | `docs/architecture/tech-stack.md` | Removed `cdn.staging.batbern.ch` reference | ✅ |
 | `docs/testing/e2e-testing-guide.md` | All URLs updated to production domains | ✅ |
-| `docs/plans/environment-consolidation-plan.md` | This file — tracks full plan and progress | ✅ |
+| `docs/archive/plans/environment-consolidation-plan.md` | This file — tracks full plan and progress | ✅ |
 
 ### Phase 8: Database URL Migration — COMPLETE ✅ (2026-03-11)
 

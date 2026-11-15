@@ -5,9 +5,9 @@ multi-agent review of the column-drop PR before merging to `develop` (which
 auto-deploys to staging = production).
 
 Companion artefacts:
-- `docs/plans/v103-staging-preflight-cleanup.sql` — manual data cleanup to run
+- `docs/archive/plans/v103-staging-preflight-cleanup.sql` — manual data cleanup to run
   via the bastion tunnel BEFORE merging.
-- `docs/plans/v104-rollback-emergency.sql` — emergency restore migration; cherry-pick
+- `docs/archive/plans/v104-rollback-emergency.sql` — emergency restore migration; cherry-pick
   as `V104__*.sql` onto a hotfix branch if rollback is needed.
 
 ---
@@ -22,11 +22,11 @@ This is the highest-risk PR of the Epic 11 refactor. Context for reviewers:
 1. WHY THIS IS RISKY
    - Flyway V103 does ALTER TABLE DROP COLUMN on speaker_pool.username and
      speaker_pool.email — irreversible without restoring from RDS snapshot or
-     applying the V104 rollback drafted at docs/plans/v104-rollback-emergency.sql.
+     applying the V104 rollback drafted at docs/archive/plans/v104-rollback-emergency.sql.
    - We deploy directly to production (single AWS account, no real staging env).
    - Staging is at Flyway V92 — V93 through V103 (TEN migrations) will run
      sequentially on first EMS boot post-merge. Pre-flight checks against the
-     prod DB are in docs/plans/v103-staging-preflight-cleanup.sql.
+     prod DB are in docs/archive/plans/v103-staging-preflight-cleanup.sql.
    - The refactor touches 30+ files across the EMS service layer, repository,
      controllers, and ~25 test files (44 files / +673 −285).
    - All EMS tests pass locally (1565/1565), but the local DB shape is not

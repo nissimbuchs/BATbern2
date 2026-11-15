@@ -5,7 +5,7 @@ sources:
   - docs/prd/epic-17-architecture-hardening.md
   - docs/prd/epic-16-mail-center.md
 companions:
-  - docs/plans/architecture-review-2026-11-actions.md
+  - docs/archive/plans/architecture-review-2026-11-actions.md
   - docs/plans/test-fidelity-proposal-2026-11.md
   - docs/architecture/module-map.md
   - docs/architecture/ADR-016-service-directions-and-service-to-service-calls.md
@@ -95,7 +95,7 @@ Developers and agents working on BATbern find one endpoint, one transport and on
 - prd — `docs/prd/epic-17-architecture-hardening.md`, sections Decisions taken, Rules for every story, Story order, Stories
 - prd — `docs/prd/epic-16-mail-center.md`, Story 16.8 (clean-up), Decisions taken 2026-11-01 item 2, Constraints
 - prd — `docs/prd-enhanced.md` (master PRD; it has no FR for this initiative; §4.2 is out, see Boundaries)
-- plan — `docs/plans/architecture-review-2026-11-actions.md` (action list, measured baseline)
+- plan — `docs/archive/plans/architecture-review-2026-11-actions.md` (action list, measured baseline)
 - plan — `docs/plans/test-fidelity-proposal-2026-11.md` (P1 to P4, the 57-bug classification)
 - architecture — `docs/architecture/module-map.md`, `docs/architecture/ADR-016-service-directions-and-service-to-service-calls.md`, `docs/architecture/ADR-002-generic-file-upload-service.md` (decision 2026-11-07), `docs/architecture/ADR-003-meaningful-identifiers-public-apis.md` (amendment 2026-11)
 - story — 17.1 and 17.3 are v7 story files in `_bmad-output/initiative-architecture-hardening/tickets/epic-dead-surface-and-gates/tickets/` (converted from the v6 files 2026-11-07)

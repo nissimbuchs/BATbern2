@@ -30,7 +30,7 @@
 -- Apply with the bastion tunnel running:
 --   source /tmp/staging-pg-creds.sh
 --   PGPASSWORD="$STAGING_PG_PASSWORD" psql -h localhost -p 5433 \
---     -U "$STAGING_PG_USER" -d batbern -f docs/plans/v103-staging-preflight-cleanup.sql
+--     -U "$STAGING_PG_USER" -d batbern -f docs/archive/plans/v103-staging-preflight-cleanup.sql
 -- =============================================================================
 
 BEGIN;

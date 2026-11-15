@@ -3,7 +3,7 @@
 **Author:** Winston (System Architect)
 **Date:** 2026-05-29
 **Status:** Draft for review — to be sharded into BMad epics/stories
-**Related:** [`multi-tenant-saas-transformation.md`](./multi-tenant-saas-transformation.md) (productization — deferred),
+**Related:** [`multi-tenant-saas-transformation.md`](../archive/plans/multi-tenant-saas-transformation.md) (productization — deferred),
 [`speaker-workflow-refactor.md`](./speaker-workflow-refactor.md) (Epic 11), ADR-003, ADR-004, ADR-006, ADR-009
 
 ---

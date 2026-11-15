@@ -178,5 +178,5 @@ Three options for the existing data — pick one based on appetite:
 ## References
 
 - Today's incident commit + investigation: `a3ac0a97 fix(email): stop iMIP calendar replies from fan-out to organizers`, `85b97894 fix(security): block reserved-domain SES sends + per-IP anon POST limits (Tier 1)`
-- Related abuse-defense plan (different concern, same incident day): `docs/plans/registration-abuse-defense-plan.md`
+- Related abuse-defense plan (different concern, same incident day): `docs/archive/plans/registration-abuse-defense-plan.md`
 - Slack/email thread from Daniel Berger, 2026-05-18 16:41 GMT+2

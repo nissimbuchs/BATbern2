@@ -82,7 +82,7 @@ Verify: a fixture call to an unknown path fails the `build-frontend` check, and 
 - parent — `_bmad-output/initiative-architecture-hardening/tickets/epic-dead-surface-and-gates/epic-dead-surface-and-gates.md`, Requirements R3
 - notes — `_bmad-output/initiative-architecture-hardening/tickets/epic-dead-surface-and-gates/tickets/notes-frontend-path-contract-check.md` (inventory, CI job names, design choice, prototype numbers)
 - prd — `docs/prd/epic-17-architecture-hardening.md`, Story 17.3
-- plan — `docs/plans/architecture-review-2026-11-actions.md`, items 2 and 8
+- plan — `docs/archive/plans/architecture-review-2026-11-actions.md`, items 2 and 8
 - plan — `docs/plans/test-fidelity-proposal-2026-11.md`, P2.2 (the validator that reuses the matcher)
 - architecture — `docs/architecture/module-map.md`, Placement (API calls only in `services/`)
 
