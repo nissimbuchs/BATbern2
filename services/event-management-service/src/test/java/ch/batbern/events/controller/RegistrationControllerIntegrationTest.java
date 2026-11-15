@@ -856,7 +856,7 @@ class RegistrationControllerIntegrationTest extends AbstractIntegrationTest {
     private static final List<String> STATUSES =
             List.of("registered", "waitlist", "confirmed", "cancelled", "attended", "no_show");
 
-    /** The 36 pairs; the table of docs/architecture/06-backend-architecture.md, "Status changes". */
+    /** The 36 pairs; the table of docs/architecture/06-backend-architecture.md, "Organizer status changes (#1315)". */
     static Stream<Arguments> everyTransition() {
         Map<String, Set<String>> allowed = Map.of(
                 "registered", Set.of("confirmed", "cancelled", "attended", "no_show"),

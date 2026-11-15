@@ -803,8 +803,8 @@ public class RegistrationService {
     /**
      * Send the "registration confirmed" mail (with the calendar invite) for a registration that has
      * just moved from pending to confirmed. Called by both confirmation paths: the confirmation link
-     * and the ACCEPT email reply. Never throws: a failed lookup or send must not undo the
-     * confirmation, which is already persisted.
+     * and the ACCEPT email reply, each inside its transaction after the status change. Never throws:
+     * a failed lookup or send must not roll back the confirmation.
      *
      * @param registration the confirmed registration
      * @param event        the registration's event
