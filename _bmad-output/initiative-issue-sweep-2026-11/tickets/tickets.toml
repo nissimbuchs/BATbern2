@@ -4,7 +4,7 @@
 id = 0
 slug = "epic-dlq-recovery"
 title = "The mails stuck in the DLQs reach someone"
-description = "The 5 DLQ messages (forwarding 4, replies 1) are read, each delivered by a redrive or handed to an organizer before SQS drops them around 2026-11-19, the cause of each failure is named, and both DLQ alarms are back to OK. A code fix for the cause, if any, rides in epic 1."
+description = "The 5 DLQ messages (forwarding 4, replies 1) are read and the cause of each failure is named (done 2026-11-15: raw mails already deleted, missing mail-attachments put grant); the messages expire around 2026-11-20 and both DLQ alarms are back to OK. The code fix rides in epic 1 (R29)."
 covers = ["R1"]
 
 [[epic]]
@@ -12,8 +12,8 @@ id = 1
 slug = "epic-bug-sweep"
 title = "The bugs that need no decision are fixed"
 description = "The claim link, trigger states, Live Control language, bell, cockpit card routing, quiet hours, mail fallback language, gsw-BE, dates, cron time zones, the #1223 UI defects, the gateway 4xx log, the EmailService ratchet category, the dev tooling bugs, the ZAP ignore, the leftover EventBridge IAM grant, the browser notification push and the unread notification preferences are fixed or removed and live; it also carries the code fix for the DLQ failure cause that epic 0 names, if any, and hands its versions and dev-tooling fixes to epic 7 to document."
-covers = ["R2", "R3", "R4", "R5", "R6", "R7", "R8", "R9", "R10", "R27"]
-after = [{ epic = 0, needs = "the named cause of the DLQ failures, in case it needs a code fix here" }]
+covers = ["R29", "R2", "R3", "R4", "R5", "R6", "R7", "R8", "R9", "R10", "R27"]
+after = [{ epic = 0, needs = "the named cause of the DLQ failures: the missing mail-attachments put grant (R29), the first commit here" }]
 
 [[epic]]
 id = 2

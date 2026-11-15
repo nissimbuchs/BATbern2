@@ -22,7 +22,8 @@ The owner sees every issue from 2026-09-15 on closed with its fix live, closed a
 
 ## Requirements
 
-- R1 (#1229, #1232): every message in the forwarding and replies DLQs is inspected and either delivered to its recipient or handed to an organizer, and both DLQ alarms are back to OK.
+- R1 (#1229, #1232): every message in the forwarding and replies DLQs is inspected, its cause named, and both DLQ alarms are back to OK once the messages expire (about 2026-11-20); the 5 raw mails were already deleted, so none can be delivered (checked 2026-11-15).
+- R29 (#1229, #1232, epic 0 finding): EMS can store and delete inbound mail attachments under `mail-attachments/` in the inbound bucket, proven by a CDK test on the EMS task role policy, so an inbound mail with a kept attachment no longer lands in a DLQ.
 - R2 (#1217): a signed-in user of any role who opens the claim-profile link from the claim mail reaches the claim page, not /dashboard.
 - R3 (#1218): every trigger state the create-task and edit-template dialogs offer is accepted by the backend on save, and every state the backend accepts can be chosen.
 - R4 (#1219): Live Control shows its labels in the UI language (10 locales); the bell shows the unread count; the Speaker Lineup newsletter card opens Communications.
@@ -92,6 +93,7 @@ The owner sees every issue from 2026-09-15 on closed with its fix live, closed a
 - Decision: 2026-11-15, owner: retire the 04-api narratives for an index per spec, delete `patchSessionQnaWindow` (#1212); retire the doc-drift resolver (#1214.8); strike FR7, 14, 15, 18, 20 and rewrite §4.2 to the real bucket (#1210). All in epic 7.
 - Decision: 2026-11-15, owner: #1260 files stay on the CDN, URLs of non-public ones never handed out; #1320 dropped (R18 retired); production stays on-demand Fargate; the #1152 window is an evening in the week of 2026-11-16, picked once the PR is ready.
 - Decision: 2026-11-15: R24 moves to epic 2, which owns `alb-alarms.ts`, so epic 8 waits on nothing and fits this week's window.
+- Decision: 2026-11-15, owner: the mail-attachments grant fix is the first commit of epic 1, no separate hotfix; the DLQ messages are left to expire, not purged.
 - Assumption: an epic that adds a Flyway migration takes the next free version when it rebases on develop; epics 1, 3, 4, 5 may each add one.
 - Decision: 2026-11-15: #1070 out of scope, removal dated early 2027 by the owner (2026-11-03).
 - Decision: 2026-11-15: #1119 A4 and #1124 stay outside the epics until the owner decides; #1124 is a per-spec series.
