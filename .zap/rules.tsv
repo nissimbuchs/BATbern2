@@ -1,7 +1,9 @@
 # ZAP Alert Rule Overrides for BATbern
-# Format: alertId	action	url	[parameter	[attack	[evidence	[confidence]]]]
-# Actions: IGNORE | WARN | FAIL
-# url: regex pattern matching URLs to apply the rule to (use .* for all URLs)
+# Format: alertId	action	third-column (tab separated)
+# Actions: IGNORE | INFO | WARN | FAIL apply to the rule on EVERY URL; their third column is only
+#   a message shown in the report, not a URL filter (zap_common.load_config).
+# OUTOFSCOPE: the third column is a URL regex; only matching instances of the rule are dropped.
+#   Use it to suppress a rule on some URLs while it still reports everywhere else.
 #
 # Run `zap-api-scan.py --help` for full option list.
 # Alert IDs: https://www.zaproxy.org/docs/alerts/
@@ -111,13 +113,15 @@
 # ─── INTENTIONAL URL TOKENS — email link flows ────────────────────────────────
 #
 # These ?token= query parameters are JWT one-time tokens distributed via email
-# links (registration confirm, cancel, deregister, newsletter unsubscribe).
+# links (registration confirm, cancel, deregister, newsletter unsubscribe,
+# additional-email verification).
 # Putting the token in the URL is the standard pattern for email-triggered flows
 # and is intentional by design. The tokens are short-lived and single-use.
-10024	IGNORE	.*/registrations/confirm.*
-10024	IGNORE	.*/registrations/cancel.*
-10024	IGNORE	.*/registrations/deregister/verify.*
-10024	IGNORE	.*/newsletter/unsubscribe/verify.*
+10024	OUTOFSCOPE	.*/registrations/confirm.*
+10024	OUTOFSCOPE	.*/registrations/cancel.*
+10024	OUTOFSCOPE	.*/registrations/deregister/verify.*
+10024	OUTOFSCOPE	.*/newsletter/unsubscribe/verify.*
+10024	OUTOFSCOPE	.*/users/additional-emails/verify.*
 
 # ─── INFORMATIONAL — WARN (non-blocking, report only) ─────────────────────────
 
