@@ -74,6 +74,23 @@ class NotificationServiceIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
+    @DisplayName("mails the recipient and records the row as SENT")
+    void should_mailRecipientAndRecordSent_when_emailNotificationsOn() {
+        cums.user(USERNAME, "Nora", "Recipient", EMAIL);
+
+        notificationService.createAndSendEmailNotification(request());
+
+        assertThat(sesRecorder.mailsTo(EMAIL)).singleElement()
+                .satisfies(mail -> assertThat(mail.subject()).isEqualTo("Speaker Follow-up Required"));
+        assertThat(rows()).singleElement().satisfies(row -> {
+            assertThat(row.getStatus()).isEqualTo("SENT");
+            assertThat(row.getSentAt()).isNotNull();
+            assertThat(row.getChannel()).isEqualTo("EMAIL");
+            assertThat(row.getPriority()).isEqualTo("HIGH");
+        });
+    }
+
+    @Test
     @DisplayName("an opted-out recipient gets no mail and no row")
     void should_skipNotification_when_userOptedOut() {
         cums.userWithSettings(USERNAME, Map.of("emailNotifications", false));
@@ -82,5 +99,21 @@ class NotificationServiceIntegrationTest extends AbstractIntegrationTest {
 
         assertThat(sesRecorder.mails()).isEmpty();
         assertThat(rows()).isEmpty();
+    }
+
+    @Test
+    @DisplayName("a mail SES refuses is recorded as FAILED with the reason")
+    void should_recordFailed_when_sesRefuses() {
+        cums.user(USERNAME, "Nora", "Recipient", EMAIL);
+        sesRecorder.failWith(() -> SesRecorder.sesError("MessageRejected", "AWS SES error"));
+
+        notificationService.createAndSendEmailNotification(request());
+
+        assertThat(rows()).singleElement().satisfies(row -> {
+            assertThat(row.getStatus()).isEqualTo("FAILED");
+            assertThat(row.getFailedAt()).isNotNull();
+            assertThat(row.getFailureReason()).isNotBlank();
+            assertThat(row.getSentAt()).isNull();
+        });
     }
 }

@@ -67,8 +67,9 @@ public class NotificationService {
             // Build HTML content (simple for now, can add Thymeleaf templates later)
             String htmlBody = buildEmailContent(notification);
 
-            // Send via shared EmailService
-            emailService.sendHtmlEmail(mailContext(request), email, null, notification.getSubject(), htmlBody,
+            // Synchronous: the status below says whether SES took the mail. The @Async send it
+            // used before returned at once, so a refused mail was recorded as SENT.
+            emailService.sendHtmlEmailSync(mailContext(request), email, null, notification.getSubject(), htmlBody,
                     null);
 
             // Update status after delivery
