@@ -2,8 +2,8 @@
 
 Read before adding a class, endpoint or cross-service call. This is the target; today's code
 breaks it in 76 known places (measured 2026-11-15 with `scripts/architecture/ems-module-target.py`;
-the 100 of 2026-11-07 came from a script that dropped everything after the first `//`, the same tree
-counts 144 with the fixed one). Do not add new ones.
+the 100 of 2026-11-07 came from a script that dropped everything after the first `//`; the fixed one
+counts 151 on the same tree with the rules of that day, 144 with today's rules). Do not add new ones.
 
 ## Services: who may call whom
 
