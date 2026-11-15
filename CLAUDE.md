@@ -2,30 +2,28 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## MVP Status
+## Status
 
 **Last Updated:** 2026-11-15
 
-**Status:** ✅ **MVP 100% COMPLETE & IN PRODUCTION** | **Epics 1-17 closed (9 superseded)**
+**MVP complete and in production (www.batbern.ch). Epics 1-17 are closed.** Open work is the
+tickets in `_bmad-output/backlog/` plus the open GitHub issues.
 
-**Epic Status** (epics 1-16: v6 archive `_bmad-output/implementation-artifacts/sprint-status.yaml`; from Epic 17 on: BMAD v7 initiative under `_bmad-output/initiative-*/`):
-- ✅ **Epic 1**: Foundation & Core Infrastructure - 100% COMPLETE
-- ✅ **Epic 2**: Entity CRUD & Domain Services - 100% COMPLETE
-- ✅ **Epic 3**: Historical Data Migration - 100% COMPLETE (tooling ready, production import pending)
-- ✅ **Epic 4**: Public Website & Content Discovery - 100% COMPLETE
-- ✅ **Epic 5**: Enhanced Organizer Workflows - 100% COMPLETE (Auto-publishing & lifecycle automation delivered via BAT-16)
-- ✅ **Epic 6**: Speaker Self-Service Portal - 100% COMPLETE (all stories 6.0-6.5 deployed)
-- ✅ **Epic 7**: Attendee Experience — Right-Sized Contribution & Touchpoints - COMPLETE (Stories 7.1–7.7; #776, #777, #785)
-- ✅ **Epic 8**: Partner Coordination - 100% COMPLETE (attendance analytics, topic voting, meeting coordination, partner notes)
-- 📦 **Epic 9**: Speaker Authentication - SUPERSEDED by Epic 11 (ADR-009)
-- ✅ **Epic 10**: Additional Stories - COMPLETE (10.6, 10.13, 10.15 cancelled; 10.24, 10.25 deferred)
-- ✅ **Epic 11**: Unified Speaker Workflow Refactor - COMPLETE (Phase F magic-link teardown landed in Story 11.F.1, 2026-05-25). Leftovers 11.E.5, 11.G.1, 11.F.2 archived
-- ✅ **Epic 12**: Federated Identity / Google SSO (ADR-010) - COMPLETE (Google OIDC login live 2026-06-04; Apple/generic OIDC + Cognito trigger retirement, Story 12.10, archived)
-- ✅ **Epic 13**: Spring Boot 4 Migration - CLOSED. SB 4.0.7 live 2026-06-19 (#797), 4.0.9 2026-11-05 (CVE fixes). 13.4 Jackson 3 flag flip (`preferred-json-mapper: jackson2` still set in all services) and 13.5 unpin BOM versions archived, not done
-- ✅ **Epic 14**: Event Detail Page — Lifecycle-Aware Redesign - COMPLETE (#788, 2026-06-15)
-- ✅ **Epic 15**: Post-Event #2 Hardening - CLOSED. 15.2, 15.3, 15.5, 15.6, 15.7, 15.9 done; 15.1 P1 live (#800). 15.1 P2/P3 (WebSocket teardown), 15.4, 15.8 archived, not done
-- ✅ **Epic 16**: Mail Center - CLOSED. 16.0–16.11 LIVE (last: #1194, 2026-11-03). 16.8c composer clean-up moved to Epic 17; 16.12, 16.13 archived
-- ✅ **Epic 17**: Architecture hardening - CLOSED 2026-11-15 (last: #1314, follow-up #1316). 17.0a–d, 17.1–17.11 (+3b, 3c, 4.9b, 11a–d), 17.13, 17.14, 17.17 and 16.8c live; 17.12, 17.15, 17.16 dropped by owner 2026-11-14 — `docs/archive/prd/epic-17-architecture-hardening.md`, first epic managed with BMAD v7
+| Epic | Result |
+|---|---|
+| 1-8 | Foundation, entity CRUD, historical migration (tooling; the production import is still pending, owner triggers it), public website, organizer workflows, speaker portal, attendee touchpoints, partner coordination |
+| 9 | Superseded by Epic 11 (ADR-009) |
+| 10-16 | Additional stories, unified speaker workflow, Google SSO (ADR-010), Spring Boot 4 (4.0.9 live), event detail redesign, post-event #2 hardening, Mail Center |
+| 17 | Architecture hardening, closed 2026-11-15 (last #1314, follow-up #1316); 17.12, 17.15, 17.16 dropped by owner 2026-11-14. First epic run with BMAD v7 |
+
+Unimplemented stories of epics 1-16 were archived by owner decision 2026-11-07: they are not open
+work. Revive one only on owner request, as a new ticket. Per-story detail and what was archived:
+`_bmad-output/implementation-artifacts/sprint-status.yaml` (epics 1-16) and
+`_bmad-output/initiative-architecture-hardening/` (Epic 17).
+
+**Where the history lives:** story files of epics 1-16 in `_bmad-output/implementation-artifacts/archive/`,
+closed epic files in `docs/archive/prd/`, done plans in `docs/archive/plans/`, v6 planning reports
+in `docs/archive/planning/`, older story files in `docs/stories/archived/`.
 
 **Delivered Capabilities:**
 - ✅ All entity CRUD operational (Company, User, Event, Speaker, Partner)
@@ -50,9 +48,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - ✅ Speaker self-service portal (invitations, response, materials, dashboard, reminders)
 - ✅ Partner coordination (attendance analytics + XLSX export, topic voting, ICS meeting invites per recipient)
 
-**Scope Note:** Overflow Management (Story 5.6) removed from MVP scope - manual speaker selection sufficient for launch. Democratic voting on overflow speakers moved to Phase 2+ backlog.
-
-**Current Phase:** Phase 4 — Epics 1-17 closed; open work is in `_bmad-output/backlog/`. Unimplemented stories of epics 1-16 were archived by owner decision 2026-11-07 (not needed if not done by now)
+**Open work** (as of 2026-11-15):
+- Backlog tickets in `_bmad-output/backlog/`, each needs owner go. Among them
+  `story-eventcontroller-keeps-only-http.md` and `spike-pre-deploy-gate.md` (P5, owner decides; plan
+  `docs/plans/pre-deploy-gate-plan.md`, evidence `docs/plans/test-fidelity-proposal-2026-11.md`)
+- Remaining own-code mocks shrink only under the touch rule (ratchet `web-frontend/scripts/test-ratchet-baseline.txt`)
+- Epic 3 production data import (operational task, owner triggers it)
 
 ## Project Overview
 
@@ -64,42 +65,6 @@ BATbern is an enterprise event management platform for Berner Architekten Treffe
 - **Domain Services**: event management (EMS, also hosts speaker and attendee logic), company/user management (CUMS), partner coordination. The former speaker and attendee stub services were removed by Story 17.2 (ADR-014)
 - **Infrastructure**: AWS CDK for Infrastructure as Code
 - **Frontend**: React 19 + TypeScript SPA with role-based adaptive UI
-
-## Current Development Phase
-
-**Phase:** ✅ **MVP COMPLETE** + **Epics 1-17 closed** (v6 archive `sprint-status.yaml`; Epic 17 in `_bmad-output/initiative-architecture-hardening/`)
-
-**Epic Completion Status:**
-- ✅ **Epic 1**: Foundation & Core Infrastructure - **100% COMPLETE**
-- ✅ **Epic 2**: Entity CRUD & Domain Services - **100% COMPLETE**
-- ✅ **Epic 3**: Historical Data Migration - **100% COMPLETE** (tooling ready, production import pending)
-- ✅ **Epic 4**: Public Website & Content Discovery - **100% COMPLETE**
-- ✅ **Epic 5**: Enhanced Organizer Workflows - **100% COMPLETE** (BAT-16 delivered auto-publishing & lifecycle automation)
-- ✅ **Epic 6**: Speaker Self-Service Portal - **100% COMPLETE** (all stories 6.0-6.5 deployed, 6.4 WCAG 2.1 AA)
-- ✅ **Epic 7**: Attendee Experience — Right-Sized Contribution & Touchpoints - **COMPLETE** (Stories 7.1–7.7)
-- ✅ **Epic 8**: Partner Coordination - **100% COMPLETE** (analytics, topic voting, meeting coordination, partner notes)
-- 📦 **Epic 9**: Speaker Authentication - **SUPERSEDED** by Epic 11
-- ✅ **Epic 10**: Additional Stories - **COMPLETE** (10.6, 10.13, 10.15 cancelled; 10.24, 10.25 deferred)
-- ✅ **Epic 11**: Unified Speaker Workflow Refactor - **100% COMPLETE** (Phase F magic-link teardown landed in Story 11.F.1, 2026-05-25; supersedes prior Epic 9 plan)
-- ✅ **Epic 12**: Federated Identity / Google SSO - **COMPLETE** (Google OIDC login live 2026-06-04 per ADR-010; deferred tail — Apple/generic OIDC + trigger retirement — parked as backlog Story 12.10)
-- ✅ **Epic 13**: Spring Boot 4 Migration - **CLOSED**, SB 4.0.9 live (#797, patch 2026-11-05); 13.4, 13.5 archived
-- ✅ **Epic 14**: Event Detail Page Redesign - **COMPLETE** (#788)
-- ✅ **Epic 15**: Post-Event #2 Hardening - **CLOSED** (15.1 P2/P3, 15.4, 15.8 archived)
-- ✅ **Epic 16**: Mail Center - **CLOSED**, 16.0–16.11 live; 16.8c moved to Epic 17, 16.12/16.13 archived
-- ✅ **Epic 17**: Architecture hardening - **CLOSED** 2026-11-15 (17.12, 17.15, 17.16 dropped by owner)
-
-**MVP Completion:**
-- ✅ All 5 MVP epics (Epics 1-5) are 100% complete
-- ✅ All core functionality delivered and tested
-- ✅ Platform in production (www.batbern.ch)
-- ✅ Epic 6 Speaker Portal complete (2026-02-16 QA passed)
-- ✅ Epic 8 Partner Coordination complete (2026-02-22)
-
-**When Adding New Features** (open work as of 2026-11-15):
-- Backlog tickets in `_bmad-output/backlog/` (each needs owner go), among them `story-eventcontroller-keeps-only-http.md` and `spike-pre-deploy-gate.md` (P5, owner decides; its parking condition 17.1–17.5 + 17.0a–d is met) — plan `docs/plans/pre-deploy-gate-plan.md`
-- Remaining own-code mocks shrink only under the touch rule (ratchet `web-frontend/scripts/test-ratchet-baseline.txt`)
-- Epic 3 production data import still pending (operational task, owner triggers it)
-- Unimplemented stories of epics 1-16 are archived, not open work. Revive one only on owner request, as a new ticket.
 
 ## Build System
 
@@ -881,10 +846,12 @@ npm run type-check
 - Team overrides live in `_bmad/custom/*.toml`, never in the skill files (overwritten on update). v7 does
   not load `_bmad-output/project-context.md` by itself; the overrides name it.
 - Stories are built with `bmad-build` (successor of v6 create-story, dev-story, quick-dev); the backlog is
-  Sofia's (`bmad-agent-po`), in `_bmad-output/initiative-*/`.
-- Epics 1-16 (story files, `sprint-status.yaml`) stay as a read-only v6 archive in
-  `_bmad-output/implementation-artifacts/`. Do not run the v6 to v7 artifact migration: the v6 planning
-  folder was `docs/`, and the migration would move all of it, OpenAPI specs included.
+  Sofia's (`bmad-agent-po`): loose tickets in `_bmad-output/backlog/`, an initiative in
+  `_bmad-output/initiative-*/`. No initiative is active since Epic 17 closed; the closed
+  `initiative-architecture-hardening/` stays in place as its record.
+- Epics 1-16 stay as a read-only v6 archive: `_bmad-output/implementation-artifacts/sprint-status.yaml`
+  is the index, the story files are in `archive/` beside it. Do not run the v6 to v7 artifact migration:
+  the v6 planning folder was `docs/`, and the migration would move all of it, OpenAPI specs included.
 
 ## Important Context Files
 
