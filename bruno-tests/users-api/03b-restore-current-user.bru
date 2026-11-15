@@ -81,7 +81,9 @@ tests {
   test("should restore original bio", function() {
     const body = res.getBody();
     const expected = bru.getVar("originalBio");
-    expect(body.bio).to.equal(expected);
+    // 01 stores a missing bio as "" (it is sent back as a string); the service answers an
+    // empty bio as null. Found by the pre-deploy gate, whose test user has no bio.
+    expect(body.bio || "").to.equal(expected);
   });
 }
 
