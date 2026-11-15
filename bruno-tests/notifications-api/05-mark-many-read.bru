@@ -1,5 +1,5 @@
 meta {
-  name: Mark many read (PATCH /notifications); an unknown id is ignored
+  name: Mark many read (PATCH /notifications); unknown and already-read ids are not counted
   type: http
   seq: 5
 }
@@ -26,12 +26,15 @@ assert {
 }
 
 tests {
-  test("only the caller's notification is counted", function() {
-    expect(res.getBody().markedCount).to.equal(1);
+  test("an unknown id and a notification already read change nothing", function() {
+    expect(res.getBody().success).to.equal(true);
+    expect(res.getBody().markedCount).to.equal(0);
   });
 }
 
 docs {
   Story 4.10b: replaces PUT /notifications/batch-read. Ids that are not the caller's (here one
-  that does not exist) are ignored.
+  that does not exist) are ignored. markedCount counts the notifications that changed (spec), and
+  {{notifId}} was already marked read by 03, so nothing changes here. The positive bulk case
+  (several unread, counted) is covered by NotificationControllerIntegrationTest.
 }
