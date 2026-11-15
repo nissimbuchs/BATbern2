@@ -1491,9 +1491,9 @@ flowchart TD
     DL -->|"yes"| CLOSED["RegistrationClosedException"]
     DL -->|"no"| USR["CUMS get-or-create user by email"]
     USR --> DUP{"existing registration<br/>for this user?"}
-    DUP -->|"registered"| RESEND["resend the confirmation mail"]
-    DUP -->|"waitlist"| RESENDW["resend the waitlist mail"]
-    DUP -->|"confirmed"| REJ["409 already registered"]
+    DUP -->|"registered"| RESEND["200, resend the confirmation mail"]
+    DUP -->|"waitlist"| RESENDW["200, resend the waitlist mail"]
+    DUP -->|"confirmed"| REJ["409 already registered, no mail"]
     DUP -->|"cancelled"| DEL["delete the cancelled row,<br/>register again"]
     DUP -->|"none"| CAP{"capacity set and registered<br/>+ confirmed reaches capacity?"}
     DEL --> CAP

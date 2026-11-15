@@ -63,9 +63,9 @@ public class RegistrationController implements RegistrationsApi {
 
     /**
      * Anonymous registration (Story 2.2a, ADR-005): the attendee needs no account; the registration
-     * starts as {@code registered} and is confirmed by the e-mailed link. A waitlisted registration
-     * gets its waitlist mail from {@link RegistrationService} instead. A repeated waitlist
-     * registration answers 200 (its mail was sent again), any other repeat 409.
+     * starts as {@code registered} and is confirmed by the e-mailed link; {@link RegistrationService}
+     * sends it, or the waitlist mail. A repeat of a pending or waitlisted registration answers 200
+     * (its mail was sent again, #1315), a repeat of a confirmed one 409 without a mail.
      */
     @Override
     @PreAuthorize("permitAll()")
@@ -89,10 +89,12 @@ public class RegistrationController implements RegistrationsApi {
                         "You are already on the waitlist for this event. A new confirmation email has been sent.",
                         request.getEmail(), registration.getCompanyUpdated()));
             }
-            log.info("Duplicate registration attempt for event: {} by user: {} (status: {})",
-                    eventCode, registration.getAttendeeUsername(), registration.getStatus());
-            throw new IllegalStateException("User " + registration.getAttendeeUsername()
-                    + " is already registered for event " + eventCode);
+            // #1315: still pending; RegistrationService sent the confirmation link again (was: mail, then 409).
+            log.info("Repeated pending registration for event: {} by user: {}, confirmation link resent",
+                    eventCode, registration.getAttendeeUsername());
+            return ResponseEntity.ok(new CreateRegistrationResponse(
+                    "You are already registered for this event. A new confirmation email has been sent.",
+                    request.getEmail(), registration.getCompanyUpdated()));
         }
 
         // BATbern59 badge fix: companyUpdated drives the UI's "we updated your company" notice.

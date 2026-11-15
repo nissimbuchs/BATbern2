@@ -210,8 +210,9 @@ paths:
       responses:
         '200':
           description: |
-            The attendee is already on the waitlist (Story 10.11): nothing is created, the waitlist
-            confirmation mail is sent again.
+            The attendee is already registered and has not confirmed yet (#1315), or is already on
+            the waitlist (Story 10.11): nothing is created, the confirmation mail with a new link, or
+            the waitlist mail, is sent again. A confirmed attendee gets 409 and no mail.
           content:
             application/json:
               schema:
@@ -221,6 +222,12 @@ paths:
                   summary: already on the waitlist
                   value:
                     message: You are already on the waitlist for this event. A new confirmation email has been sent.
+                    email: anna.vorlage@example.com
+                    companyUpdated: false
+                alreadyRegistered:
+                  summary: registered, not confirmed yet
+                  value:
+                    message: You are already registered for this event. A new confirmation email has been sent.
                     email: anna.vorlage@example.com
                     companyUpdated: false
         '201':

@@ -15,6 +15,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -115,6 +117,24 @@ class RegistrationResendServiceIntegrationTest extends AbstractIntegrationTest {
                         .param("token", token.group(1)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.message").value("Registration confirmed successfully!"));
+    }
+
+    @ParameterizedTest
+    @CsvSource({"en,anna.resend@test.com,Please confirm your registration",
+                "de,anna.resend@test.com,Bitte bestätigen",
+                "'',success+anna.resend@simulator.amazonses.com,Bitte bestätigen"})
+    @DisplayName("#1315: the resent mail is in the attendee's language, German by default (was always German)")
+    void should_resendInPreferredLanguage(String language, String address, String subject) {
+        if (!language.isEmpty()) {
+            cums.userWithLanguage("anna.resend", language);
+        }
+        pendingSince("anna.resend", 72);
+
+        runJob();
+
+        sesRecorder.awaitAsyncSends();
+        assertThat(sesRecorder.mailsTo(address)).singleElement()
+                .satisfies(mail -> assertThat(mail.subject()).startsWith(subject));
     }
 
     @Test

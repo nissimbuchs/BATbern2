@@ -1022,8 +1022,9 @@ export interface operations {
     };
     responses: {
       /**
-       * @description The attendee is already on the waitlist (Story 10.11): nothing is created, the waitlist
-       *     confirmation mail is sent again.
+       * @description The attendee is already registered and has not confirmed yet (#1315), or is already on
+       *     the waitlist (Story 10.11): nothing is created, the confirmation mail with a new link, or
+       *     the waitlist mail, is sent again. A confirmed attendee gets 409 and no mail.
        */
       200: {
         headers: {

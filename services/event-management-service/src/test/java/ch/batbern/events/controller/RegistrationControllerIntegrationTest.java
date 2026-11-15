@@ -259,12 +259,34 @@ class RegistrationControllerIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @DisplayName("QA Fix (VALID-001): should_return409_when_duplicateRegistrationAttempted")
-    void should_return409_when_duplicateRegistrationAttempted() throws Exception {
+    @DisplayName("#1315: a repeated pending registration answers 200 and mails a new confirmation link once")
+    void should_return200AndResendConfirmation_when_pendingRegistrationRepeated() throws Exception {
         mockMvc.perform(post("/api/v1/events/{eventCode}/registrations", EVENT_CODE)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(NEW_REGISTRATION))
                 .andExpect(status().isCreated());
+        sesRecorder.awaitAsyncSends();
+        sesRecorder.reset();
+
+        mockMvc.perform(post("/api/v1/events/{eventCode}/registrations", EVENT_CODE)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(NEW_REGISTRATION))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value(
+                        "You are already registered for this event. A new confirmation email has been sent."))
+                .andExpect(jsonPath("$.email").value("john.doe@example.com"));
+
+        sesRecorder.awaitAsyncSends();
+        assertThat(sesRecorder.mailsTo(JOHN_MAIL)).singleElement()
+                .satisfies(mail -> assertThat(mail.html()).contains(CONFIRM_LINK));
+        assertThat(registrationRepository.findAll().stream()
+                .filter(r -> testEvent.getId().equals(r.getEventId()))).hasSize(1);
+    }
+
+    @Test
+    @DisplayName("QA Fix (VALID-001): a repeated confirmed registration answers 409 and mails nothing")
+    void should_return409AndMailNothing_when_confirmedRegistrationRepeated() throws Exception {
+        createTestRegistration("john.doe", "confirmed");
 
         mockMvc.perform(post("/api/v1/events/{eventCode}/registrations", EVENT_CODE)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -274,6 +296,63 @@ class RegistrationControllerIntegrationTest extends AbstractIntegrationTest {
 
         assertThat(registrationRepository.findAll().stream()
                 .filter(r -> testEvent.getId().equals(r.getEventId()))).hasSize(1);
+        // Positive control: a new registration in the same event is mailed.
+        cums.user("jane.smith", "Jane", "Smith", JANE_MAIL);
+        mockMvc.perform(post("/api/v1/events/{eventCode}/registrations", EVENT_CODE)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"firstName\": \"Jane\", \"lastName\": \"Smith\", \"email\": \""
+                                + JANE_MAIL + "\", \"termsAccepted\": true}"))
+                .andExpect(status().isCreated());
+        sesRecorder.awaitAsyncSends();
+        assertThat(sesRecorder.mailsTo(JANE_MAIL)).hasSize(1);
+        assertThat(sesRecorder.mailsTo(JOHN_MAIL)).isEmpty();
+    }
+
+    @ParameterizedTest
+    @CsvSource({"en,Please confirm your registration", "de,Bitte bestätigen", "'',Bitte bestätigen"})
+    @DisplayName("#1315: the confirmation mail of a registration is in the attendee's language, German by default")
+    void should_mailConfirmationInPreferredLanguage_when_registering(String language, String subject)
+            throws Exception {
+        String address = givenLanguage("john.doe", language);
+
+        mockMvc.perform(post("/api/v1/events/{eventCode}/registrations", EVENT_CODE)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(NEW_REGISTRATION))
+                .andExpect(status().isCreated());
+
+        sesRecorder.awaitAsyncSends();
+        assertThat(sesRecorder.mailsTo(address)).singleElement()
+                .satisfies(mail -> assertThat(mail.subject()).startsWith(subject));
+    }
+
+    @ParameterizedTest
+    @CsvSource({"en,Please confirm your registration", "de,Bitte bestätigen", "'',Bitte bestätigen"})
+    @WithMockUser(roles = "ORGANIZER")
+    @DisplayName("#1315: the organizer's resend is in the attendee's language, German by default")
+    void should_resendConfirmationInPreferredLanguage(String language, String subject) throws Exception {
+        String address = givenLanguage("john.doe", language);
+        Registration pending = createTestRegistration("john.doe", "registered");
+
+        mockMvc.perform(post("/api/v1/events/{eventCode}/registrations/{registrationCode}/resend-confirmation",
+                        EVENT_CODE, pending.getRegistrationCode()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("Confirmation email resent to " + address));
+
+        sesRecorder.awaitAsyncSends();
+        assertThat(sesRecorder.mailsTo(address)).singleElement()
+                .satisfies(mail -> assertThat(mail.subject()).startsWith(subject));
+    }
+
+    /**
+     * CUMS answers this user with this language ({@code <username>@test.com}), or, for an empty
+     * language, with no settings (John at his simulator address).
+     */
+    private String givenLanguage(String username, String language) {
+        if (language.isEmpty()) {
+            return JOHN_MAIL;
+        }
+        cums.userWithLanguage(username, language);
+        return username + "@test.com";
     }
 
     @Test
