@@ -3,7 +3,7 @@ title: 'The attendee dashboard shows the next three events, registered or not'
 type: 'feature'
 ticket: '3'
 created: '2026-11-13'
-status: 'built'
+status: done
 baseline_revision: '33b706b3d'
 route: 'oneshot'
 route_source: 'auto'

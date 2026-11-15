@@ -1,5 +1,8 @@
 package ch.batbern.events.exception;
 
+import ch.batbern.shared.exception.BATbernException.Severity;
+import org.springframework.http.HttpStatus;
+
 /**
  * Thrown when a caller attempts to transition a speaker to {@code READY} via
  * {@code PUT /api/v1/events/{eventCode}/speakers/{speakerId}/status} — the {@code READY}
@@ -7,7 +10,7 @@ package ch.batbern.events.exception;
  * {@code POST /api/v1/events/{eventCode}/speakers/{speakerId}/promote} (Story 11.D.1).
  *
  * <p>Mapped to HTTP 400 Bad Request with code
- * {@code READY_REQUIRES_PROMOTE_ENDPOINT} by {@code GlobalExceptionHandler}: the request
+ * {@code READY_REQUIRES_PROMOTE_ENDPOINT} by {@code SpeakerExceptionHandler}: the request
  * is syntactically valid (Jackson accepts {@code READY} as a SpeakerWorkflowState enum
  * value) but the {@code PUT /status} endpoint has no field to carry the email payload
  * that READY needs.
@@ -18,14 +21,19 @@ package ch.batbern.events.exception;
  *
  * @see SlotCapacityReachedException
  */
-public class ReadyRequiresPromoteException extends RuntimeException {
+public class ReadyRequiresPromoteException extends DomainException {
+
+    static final String CODE = "READY_REQUIRES_PROMOTE_ENDPOINT";
+
+    /** The endpoint that reaches READY, named in the response. */
+    static final String ALTERNATIVE_ENDPOINT = "POST /api/v1/events/{eventCode}/speakers/{speakerId}/promote";
 
     /**
      * @param eventCode the event code (e.g., "BATbern56") — included in the message for
      *                  client-side error context.
      */
     public ReadyRequiresPromoteException(String eventCode) {
-        super(String.format(
+        super(HttpStatus.BAD_REQUEST, Severity.MEDIUM, CODE, String.format(
                 "Speakers cannot be transitioned to READY via PUT /status"
                         + " — READY requires an email payload for provisioning."
                         + " Use POST /api/v1/events/%s/speakers/{speakerId}/promote"

@@ -1,5 +1,8 @@
 package ch.batbern.events.exception;
 
+import ch.batbern.shared.exception.BATbernException.Severity;
+import org.springframework.http.HttpStatus;
+
 import java.util.Collections;
 import java.util.Map;
 
@@ -13,27 +16,28 @@ import java.util.Map;
  *
  * Story 5.1a: Workflow State Machine Foundation - AC5
  */
-public class WorkflowValidationException extends RuntimeException {
+@SuppressWarnings("deprecation") // UNPROCESSABLE_ENTITY keeps the error text "Unprocessable Entity" clients see
+public class WorkflowValidationException extends DomainException {
 
     private final Map<String, Object> context;
 
     public WorkflowValidationException(String message) {
-        super(message);
+        super(HttpStatus.UNPROCESSABLE_ENTITY, Severity.HIGH, null, message);
         this.context = Collections.emptyMap();
     }
 
     public WorkflowValidationException(String message, Map<String, Object> context) {
-        super(message);
+        super(HttpStatus.UNPROCESSABLE_ENTITY, Severity.HIGH, null, message);
         this.context = context != null ? context : Collections.emptyMap();
     }
 
     public WorkflowValidationException(String message, Throwable cause) {
-        super(message, cause);
+        super(HttpStatus.UNPROCESSABLE_ENTITY, Severity.HIGH, null, message, cause);
         this.context = Collections.emptyMap();
     }
 
     public WorkflowValidationException(String message, Map<String, Object> context, Throwable cause) {
-        super(message, cause);
+        super(HttpStatus.UNPROCESSABLE_ENTITY, Severity.HIGH, null, message, cause);
         this.context = context != null ? context : Collections.emptyMap();
     }
 

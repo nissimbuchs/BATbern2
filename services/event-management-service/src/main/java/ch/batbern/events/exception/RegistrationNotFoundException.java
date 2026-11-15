@@ -1,14 +1,15 @@
 package ch.batbern.events.exception;
 
-import ch.batbern.shared.exception.NotFoundException;
+import ch.batbern.shared.exception.BATbernException.Severity;
+import org.springframework.http.HttpStatus;
 
 /**
  * Story 10.11: Thrown when a registration cannot be found by registration code.
- * Maps to HTTP 404 via GlobalExceptionHandler (NotFoundException → 404).
+ * Maps to HTTP 404 through its {@link DomainException} base.
  */
-public class RegistrationNotFoundException extends NotFoundException {
+public class RegistrationNotFoundException extends DomainException {
 
     public RegistrationNotFoundException(String registrationCode) {
-        super("Registration", registrationCode);
+        super(HttpStatus.NOT_FOUND, Severity.LOW, null, "Registration with ID '" + registrationCode + "' not found");
     }
 }

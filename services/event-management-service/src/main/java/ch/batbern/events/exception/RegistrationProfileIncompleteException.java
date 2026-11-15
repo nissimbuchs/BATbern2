@@ -1,5 +1,8 @@
 package ch.batbern.events.exception;
 
+import ch.batbern.shared.exception.BATbernException.Severity;
+import org.springframework.http.HttpStatus;
+
 /**
  * Thrown by the authenticated quick-register flow when the user's profile is
  * missing first or last name.
@@ -13,14 +16,17 @@ package ch.batbern.events.exception;
  * The frontend reads {@code code = "profile_incomplete"} on the 409 response
  * and prompts the user inline to complete their profile before retrying.
  */
-public class IncompleteProfileException extends RuntimeException {
+public class RegistrationProfileIncompleteException extends DomainException {
+
+    static final String CODE = "profile_incomplete";
 
     private final String username;
     private final boolean missingFirstName;
     private final boolean missingLastName;
 
-    public IncompleteProfileException(String username, boolean missingFirstName, boolean missingLastName) {
-        super("Profile incomplete for user " + username
+    public RegistrationProfileIncompleteException(
+            String username, boolean missingFirstName, boolean missingLastName) {
+        super(HttpStatus.CONFLICT, Severity.LOW, CODE, "Profile incomplete for user " + username
                 + " (missing"
                 + (missingFirstName ? " firstName" : "")
                 + (missingLastName ? " lastName" : "")

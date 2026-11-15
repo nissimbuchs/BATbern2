@@ -1,5 +1,8 @@
 package ch.batbern.events.exception;
 
+import ch.batbern.shared.exception.BATbernException.Severity;
+import org.springframework.http.HttpStatus;
+
 import lombok.Getter;
 
 import java.util.UUID;
@@ -11,11 +14,13 @@ import java.util.UUID;
  * (per-event agenda override, else the event-type template) — see
  * ADR-009 §0.7 (slot-capacity gate replaces removed {@code OVERFLOW} state).
  *
- * <p>Mapped to HTTP 409 Conflict by {@code GlobalExceptionHandler}: the request is well-formed,
+ * <p>Mapped to HTTP 409 Conflict by {@code SpeakerExceptionHandler}: the request is well-formed,
  * but the world isn't ready for it.
  */
 @Getter
-public class SlotCapacityReachedException extends RuntimeException {
+public class SlotCapacityReachedException extends DomainException {
+
+    static final String CODE = "SLOT_CAPACITY_REACHED";
 
     private final UUID eventId;
     private final long acceptedCount;
@@ -23,7 +28,7 @@ public class SlotCapacityReachedException extends RuntimeException {
     private final int maxSlots;
 
     public SlotCapacityReachedException(UUID eventId, long acceptedCount, long invitedCount, int maxSlots) {
-        super(String.format(
+        super(HttpStatus.CONFLICT, Severity.MEDIUM, CODE, String.format(
                 "Slot capacity reached for event %s: %d accepted + %d invited >= %d slots",
                 eventId, acceptedCount, invitedCount, maxSlots));
         this.eventId = eventId;

@@ -48,6 +48,7 @@ import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.startsWith;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
@@ -1278,94 +1279,9 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
     // ============================================================================
 
     // ============================================================================
-    // AC11: Get Event Registrations
+    // AC11, AC12: registration list, create, update and delete moved to
+    // RegistrationControllerIntegrationTest with the endpoints (Story 17.13)
     // ============================================================================
-
-    @Test
-    @DisplayName("should_listRegistrations_when_requested")
-    @WithMockUser(roles = "ORGANIZER")
-    void should_listRegistrations_when_requested() throws Exception {
-        Event savedEvent = seededAgendaPublishedEvent();
-
-        // Story 3.2: Response format uses paginated wrapper {data: [], pagination: {}}
-        mockMvc.perform(get("/api/v1/events/" + savedEvent.getEventCode() + "/registrations")
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data").isArray())
-                .andExpect(jsonPath("$.pagination").exists())
-                .andExpect(jsonPath("$.pagination.totalItems").isNumber());
-    }
-
-    @Test
-    @DisplayName("should_filterRegistrations_when_filterProvided")
-    @WithMockUser(roles = "ORGANIZER")
-    void should_filterRegistrations_when_filterProvided() throws Exception {
-        Event savedEvent = seededAgendaPublishedEvent();
-
-        // Story 3.2: Response format uses paginated wrapper {data: [], pagination: {}}
-        // Note: The API uses query params (status, search, companyId), not a JSON filter param
-        mockMvc.perform(get("/api/v1/events/" + savedEvent.getEventCode() + "/registrations")
-                        .param("status", "CONFIRMED")
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data").isArray())
-                .andExpect(jsonPath("$.pagination").exists());
-    }
-
-    @Test
-    @DisplayName("should_return404_when_listingRegistrationsForNonExistentEvent")
-    @WithMockUser(roles = "ORGANIZER")
-    void should_return404_when_listingRegistrationsForNonExistentEvent() throws Exception {
-        mockMvc.perform(get("/api/v1/events/non-existent-id/registrations")
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isNotFound());
-    }
-
-    // ============================================================================
-    // AC12: Manage Event Registrations (POST/PATCH/DELETE)
-    // ============================================================================
-
-    @Test
-    @DisplayName("should_createRegistration_when_validData")
-    void should_createRegistration_when_validData() throws Exception {
-        // Feedback #1: register against a FUTURE-dated event so the registration-deadline guard
-        // allows it (the shared @BeforeEach events are intentionally past-dated for list/filter tests).
-        Event savedEvent = createTestEvent("BATbern RegCreate", "2027-06-15T09:00:00Z", "AGENDA_PUBLISHED");
-
-        String newRegistration = """
-                {
-                    "firstName": "John",
-                    "lastName": "Doe",
-                    "email": "john.doe@example.com",
-                    "termsAccepted": true
-                }
-                """;
-
-        mockMvc.perform(post("/api/v1/events/" + savedEvent.getEventCode() + "/registrations")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(newRegistration))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.message").value("Registration submitted successfully. Check your email to confirm."))
-                .andExpect(jsonPath("$.email").value("john.doe@example.com")); // Story 4.1.5c: Minimal response
-    }
-
-    @Test
-    @DisplayName("should_return400_when_creatingRegistrationWithInvalidData")
-    void should_return400_when_creatingRegistrationWithInvalidData() throws Exception {
-        Event savedEvent = seededAgendaPublishedEvent();
-
-        String invalidRegistration = """
-                {
-                    "email": "invalid-email",
-                }
-                """;
-
-        mockMvc.perform(post("/api/v1/events/" + savedEvent.getEventCode() + "/registrations")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(invalidRegistration))
-                .andExpect(status().isBadRequest());
-    }
-
 
     // ============================================================================
     // AC13: Event Analytics
@@ -2726,6 +2642,27 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
                 // Then: currentAttendeeCount = 3 (cancelled excluded via ACTIVE_STATUSES)
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data[0].currentAttendeeCount").value(3));
+    }
+
+    @Test
+    @DisplayName("should_countEachEventOnItsOwn_when_listIncludesRegistrations")
+    void should_countEachEventOnItsOwn_when_listIncludesRegistrations() throws Exception {
+        // Story 17.13: one grouped count for the whole page; an event without registrations is 0.
+        eventRepository.deleteAll();
+        Event busy = createTestEvent("Busy Event", "2024-06-15T09:00:00Z", "CREATED");
+        Event empty = createTestEvent("Empty Event", "2024-07-15T09:00:00Z", "CREATED");
+        createRegistration(busy.getId(), "registered");
+        createRegistration(busy.getId(), "confirmed");
+        createRegistration(busy.getId(), "cancelled");
+        entityManager.flush();
+
+        mockMvc.perform(get("/api/v1/events?include=registrations"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data", hasSize(2)))
+                .andExpect(jsonPath("$.data[?(@.eventCode == '" + busy.getEventCode() + "')].currentAttendeeCount")
+                        .value(contains(2)))
+                .andExpect(jsonPath("$.data[?(@.eventCode == '" + empty.getEventCode() + "')].currentAttendeeCount")
+                        .value(contains(0)));
     }
 
     // ============================================================================

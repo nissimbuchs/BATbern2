@@ -1,15 +1,27 @@
 package ch.batbern.events.architecture;
 
 import com.tngtech.archunit.base.DescribedPredicate;
+import com.tngtech.archunit.core.domain.JavaAnnotation;
 import com.tngtech.archunit.core.domain.JavaClass;
+import com.tngtech.archunit.core.domain.JavaMethod;
+import com.tngtech.archunit.core.domain.JavaModifier;
 import com.tngtech.archunit.lang.ArchCondition;
 import com.tngtech.archunit.lang.ArchRule;
 import com.tngtech.archunit.lang.ConditionEvents;
 import com.tngtech.archunit.lang.SimpleConditionEvent;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseStatus;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 import static com.tngtech.archunit.base.DescribedPredicate.not;
 import static com.tngtech.archunit.core.domain.JavaClass.Predicates.resideInAnyPackage;
@@ -114,6 +126,109 @@ final class EmsModuleRules {
                 .andShould(notMapTable("logos"))
                 .as("Data ownership: no EMS entity maps an upload table of another service (Story 17.11, #1307)")
                 .allowEmptyShould(true);
+    }
+
+    /** The platform exception base, in {@code <root>.exception} (Story 17.14). */
+    static final List<String> EXCEPTION_BASE = List.of("DomainException", "DomainErrorResponse");
+
+    /**
+     * Story 17.14: {@code <root>.exception.GlobalExceptionHandler} (platform, L0) maps EMS domain
+     * exceptions only through their base; it uses no EMS class but {@code <root>.exception.DomainException}
+     * and {@code <root>.exception.DomainErrorResponse} (by fully qualified name) and its own nested
+     * classes. A module's exception is mapped by the base or, with extra fields, in the module's own
+     * advice. Not frozen: there is no violation. The rule fails when the handler is not found.
+     */
+    static ArchRule globalExceptionHandlerUsesOnlyExceptionBase(String root) {
+        String handler = root + ".exception.GlobalExceptionHandler";
+        List<String> allowed = EXCEPTION_BASE.stream().map(n -> root + ".exception." + n).toList();
+        DescribedPredicate<JavaClass> otherEmsClass = new DescribedPredicate<>(
+                "reside under " + root + " and are not " + allowed + " or the handler's nested classes") {
+            @Override
+            public boolean test(JavaClass type) {
+                String name = type.getName();
+                boolean underRoot = name.startsWith(root + ".");
+                boolean handlerItself = name.equals(handler) || name.startsWith(handler + "$");
+                return underRoot && !handlerItself && !allowed.contains(name);
+            }
+        };
+        return noClasses().that().haveFullyQualifiedName(handler)
+                .should().dependOnClassesThat(otherEmsClass)
+                .as("Exception mapping: GlobalExceptionHandler uses no EMS class but " + EXCEPTION_BASE
+                        + "; domain exceptions are mapped through DomainException or in their module's advice"
+                        + " (Story 17.14)");
+    }
+
+    /**
+     * Story 17.14: every concrete exception in {@code <root>.exception} extends
+     * {@code <root>.exception.DomainException}, which carries its status, and none carries
+     * {@code @ResponseStatus}: a status declared any other way would bypass the base mapping. Not frozen:
+     * there is no violation.
+     */
+    static ArchRule exceptionsExtendDomainException(String root) {
+        String base = root + ".exception.DomainException";
+        return classes().that().resideInAPackage(root + ".exception")
+                .and().areAssignableTo(Throwable.class)
+                .and().doNotHaveModifier(JavaModifier.ABSTRACT)
+                .should().beAssignableTo(base)
+                .andShould().notBeAnnotatedWith(ResponseStatus.class)
+                .as("Exception mapping: every exception in exception/ extends DomainException and has no"
+                        + " @ResponseStatus (Story 17.14)");
+    }
+
+    /** Path segments of the registrations module's endpoints (Story 17.13). */
+    static final List<String> REGISTRATION_PATHS = List.of("/registrations", "/my-registration");
+
+    private static final Set<String> MAPPING_ANNOTATIONS = Set.of(
+            RequestMapping.class.getName(), GetMapping.class.getName(), PostMapping.class.getName(),
+            PutMapping.class.getName(), PatchMapping.class.getName(), DeleteMapping.class.getName());
+
+    /**
+     * Story 17.13: the registration endpoints live in {@code RegistrationController} ("no new endpoints
+     * in {@code EventController}", module map). The named controller maps no path containing
+     * {@link #REGISTRATION_PATHS}, neither by its own mapping annotations nor through a superclass or an
+     * implemented interface (a generated {@code RegistrationsApi}). Not frozen: there is no violation.
+     */
+    static ArchRule noRegistrationEndpointIn(String root, String controllerSimpleName) {
+        return classes().that().resideInAPackage(root + "..")
+                .and().haveSimpleName(controllerSimpleName)
+                .should(mapNoPathContaining(REGISTRATION_PATHS))
+                .as("Endpoint placement: " + controllerSimpleName + " maps no registration endpoint "
+                        + REGISTRATION_PATHS + ", directly or inherited (Story 17.13)");
+    }
+
+    static ArchCondition<JavaClass> mapNoPathContaining(List<String> segments) {
+        return new ArchCondition<>("map no path containing " + segments) {
+            @Override
+            public void check(JavaClass javaClass, ConditionEvents events) {
+                List<JavaClass> types = new ArrayList<>();
+                types.add(javaClass);
+                types.addAll(javaClass.getAllRawSuperclasses());
+                types.addAll(javaClass.getAllRawInterfaces());
+                for (JavaClass type : types) {
+                    report(javaClass, type.getName(), type.getAnnotations(), events);
+                    for (JavaMethod method : type.getMethods()) {
+                        report(javaClass, method.getFullName(), method.getAnnotations(), events);
+                    }
+                }
+            }
+
+            private void report(JavaClass javaClass, String where,
+                    Set<? extends JavaAnnotation<?>> annotations, ConditionEvents events) {
+                for (JavaAnnotation<?> annotation : annotations) {
+                    if (!MAPPING_ANNOTATIONS.contains(annotation.getRawType().getName())) {
+                        continue;
+                    }
+                    for (String attribute : List.of("value", "path")) {
+                        for (String path : annotation.get(attribute).map(v -> (String[]) v).orElse(new String[0])) {
+                            if (segments.stream().anyMatch(path::contains)) {
+                                events.add(SimpleConditionEvent.violated(javaClass, "Class <"
+                                        + javaClass.getName() + "> maps " + path + " (" + where + ")"));
+                            }
+                        }
+                    }
+                }
+            }
+        };
     }
 
     static ArchCondition<JavaClass> notMapTable(String table) {

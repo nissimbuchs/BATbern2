@@ -110,21 +110,20 @@ Protective and cheap first, then decoupling, then restructuring.
 | 17.9b | One transition idiom for the event lifecycle (breaking) | 17.9 | dev |
 | 17.10b | API conventions III (breaking) | 17.10 | dev |
 | 17.11a–d | Upload purposes profile-picture, event-photo, teaser-image, session-material | 17.11, 17.10b (17.11c, d after 17.11b) | dev |
-| 17.12 | EMS modularization design | 17.5 | **design (Winston)** |
-| 17.13 | Registrations out of `EventController` | 17.12 | dev |
-| 17.14 | Domain exception base | 17.12 | dev |
-| 17.15 | Mail core / mail center split | 17.12, 16.8c | dev |
-| 17.16 | Event-core extension points | 17.12 | dev |
+| ~~17.12~~ | EMS modularization design | – | **dropped** (owner 2026-11-14) |
+| 17.13 | Registrations out of `EventController` | 17.0a, 17.10c | dev |
+| 17.14 | Domain exception base | 17.13 | dev |
+| ~~17.15~~ | Mail core / mail center split | – | **dropped** (owner 2026-11-14) |
+| ~~17.16~~ | Event-core extension points | – | **dropped** (owner 2026-11-14) |
 | 17.17 | Exhaustive search (owner go 2026-11-08) | – | dev |
 
-**29 stories** (17.0a–d, 17.1–17.17, 17.3b, 17.3c, 17.9b, 17.10b, 17.11a–d); 17.12 is a design task. 17.1–17.5 do not wait for 17.0a–d and
+**26 stories** (17.0a–d, 17.1–17.17 without 17.12, 17.15 and 17.16, 17.3b, 17.3c, 17.9b, 17.10b, 17.11a–d). 17.12, 17.15 and 17.16 were dropped by the owner on 2026-11-14: no EMS modularization (no Spring Modulith migration, no module package moves), because the EMS fixes of the two months before were behaviour bugs, none caused by module coupling, and the moves would cost about 350 files and four or more production deploys for no user value. 17.13 and 17.14 stay as targeted splits of the two largest EMS files. 17.1–17.5 do not wait for 17.0a–d and
 can run alongside them; 17.1, 17.2, 17.5 and 17.0a have no dependencies. 17.6 to 17.11 can run in
 parallel once their dependencies are in, as long as only one PR is open at a time. Winston's estimate
 (not measured): 17.0a–d are about 5–6 stories of work, so 17.0b and 17.0c may each split into two
 PRs (as 16.8a/b did).
 
-**Not stories yet:** the upload purpose mail-attachment, the remaining EMS module moves (planning, publishing, ai)
-after 17.12, and the follow-up reviews (database, frontend, schema, Spring gateway, Watch API; action
+**Not stories yet:** the upload purpose mail-attachment, and the follow-up reviews (database, frontend, schema, Spring gateway, Watch API; action
 list item 9). Since 2026-11-08 (owner) the purposes profile-picture, event-photo, teaser-image and
 session-material incl. speaker portal are backlog stories 17.11a–d, each built after 17.11 proves the
 pattern, 17.10b (API conventions III) and 17.9b own their Spectral baseline lines, and 17.9b folds
@@ -612,7 +611,7 @@ flow · deviations: none.
 
 ---
 
-### Story 17.12 — EMS modularization design (Winston)
+### Story 17.12 — EMS modularization design (Winston) — DROPPED (owner 2026-11-14)
 
 **Design task, not a dev story.** Output: a short tech design `docs/architecture/ems-modularization.md`
 building on `docs/plans/ems-modularization-extension-points.md`.
@@ -629,12 +628,12 @@ they start; the freeze baseline for the full layering is defined (count and how 
 
 ### Story 17.13 — Registrations out of `EventController`
 
-**Scope:** a `RegistrationController` implementing the generated registrations interface; the 14
-hand-mapped registration endpoints move there with their tests. No path changes.
+**Scope:** a `RegistrationController` implementing the generated registrations interface; the 10
+hand-mapped registration endpoints (14 before 17.10c folded some, measured 2026-11-14) move there with their tests. No path changes.
 
 **Acceptance criteria:**
 1. `EventController` has no registration endpoints and implements no registrations interface.
-   Guard: ArchUnit rule; script re-run shows the `EventController` violations reduced (was 27).
+   Guard: ArchUnit rule; script re-run shows `event_core -> registrations` reduced (12 references on 2026-11-14, 10 of them in `EventController`).
 2. All registration paths behave as before. Guard: existing integration tests, Bruno, Playwright
    registration wizard; contract check unchanged.
 
@@ -653,7 +652,9 @@ exceptions extend it; `GlobalExceptionHandler` maps the base class and imports n
 
 ---
 
-### Story 17.15 — Mail core / mail center split
+### Story 17.15 — Mail core / mail center split — DROPPED (owner 2026-11-14)
+
+The 2 frozen mail-core lines of the ArchUnit store (`MailPipeline` using `compose.MailRenderer` and `PlaceholderScanner`) stay frozen with no owning story.
 
 **Scope:** delivery status becomes a projection owned by the mail center; mail core (`MailPipeline`,
 delivery) publishes in-process events, the mail center listens. `MailDeliveryStatusService`,
@@ -668,7 +669,7 @@ delivery) publishes in-process events, the mail center listens. `MailDeliverySta
 
 ---
 
-### Story 17.16 — Event-core extension points
+### Story 17.16 — Event-core extension points — DROPPED (owner 2026-11-14)
 
 **Scope:** workflow guards as an interface in event core, implemented by sessions and speakers;
 `EventTimeResolver` and `EventWorkflowStateMachine` stop depending on higher modules;

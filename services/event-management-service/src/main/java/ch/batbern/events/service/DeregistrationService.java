@@ -30,7 +30,7 @@ import java.util.stream.Stream;
  * Three deregistration flows:
  * 1. Token-based (verify → confirm): attendee clicks link from email → /deregister?token=
  * 2. By-email: attendee requests link via email input on event page
- * 3. Organizer soft-cancel: organizer cancels via the admin UI (handled by EventController)
+ * 3. Organizer soft-cancel: organizer cancels via the admin UI (PATCH status in RegistrationController)
  * <p>
  * Anti-enumeration: by-email flow always returns success to prevent email discovery.
  * ADR-005: Works for both anonymous and authenticated registrants.

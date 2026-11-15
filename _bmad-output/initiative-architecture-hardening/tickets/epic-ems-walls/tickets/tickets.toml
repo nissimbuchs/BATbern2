@@ -1,0 +1,26 @@
+# Epic 5 stories in build order. Ids keep the Epic 17 story number. 17.12, 17.15 and 17.16 were dropped by the
+# owner on 2026-11-14 before they had entries (see the epic's Notes); their ids are not reused.
+
+[[entry]]
+id = 13
+type = "story"
+title = "Registrations out of EventController"
+description = "17.13: the 10 hand-mapped registration endpoints in EventController (POST/GET /events/{eventCode}/registrations, POST .../registrations/confirm, PATCH and DELETE .../registrations/{registrationCode}, POST .../{registrationCode}/promote and .../resend-confirmation, GET/POST/DELETE /events/{eventCode}/my-registration) move to a RegistrationController with their tests and helpers; paths, payloads, @PreAuthorize rules and status codes unchanged. Registration code still in EventController's private helpers (includes=registrations, archive counts) moves to the registration service where it is registration logic. An ArchUnit rule (not frozen: it has no violation after the move) fails a registration path mapped in EventController."
+verify = "EventController has no /registrations or /my-registration mapping and the new ArchUnit rule passes (its fixture test proves it fires); scripts/architecture/ems-module-target.py re-run shows event_core -> registrations reduced from 12 references (EventController 10), before and after recorded; the EMS integration tests, Bruno registration collection and the Playwright registration wizard pass on local dev; the 17.3 contract check and Spectral are unchanged; the story reached production through its PR and a registration on www.batbern.ch works."
+covers = ["R1"]
+after = ["2.0a", "4.10c"]
+hitl = false
+risk = "medium"
+references = ["docs/prd/epic-17-architecture-hardening.md#story-1713--registrations-out-of-eventcontroller"]
+
+[[entry]]
+id = 14
+type = "story"
+title = "Domain exception base"
+description = "17.14: a base exception in EMS platform code carries the HTTP status and the error code; every domain exception in ch.batbern.events.exception (about 40) extends it, and GlobalExceptionHandler maps the base class once instead of one @ExceptionHandler per domain exception (57 today). Handlers that do more than map status and code (response bodies with extra fields, logging rules) stay as explicit handlers next to their module, the mailcenter/MailCenterExceptionHandler model. An ArchUnit rule (not frozen) fails a GlobalExceptionHandler dependency on a domain exception class."
+verify = "A parameterized test over every domain exception asserts its status and error code are the ones it had before (captured from the current handler first), and ClientErrorContract.verify passes; the new ArchUnit rule passes and its fixture test proves it fires; ems-module-target.py re-run shows the 13 GlobalExceptionHandler references gone, before and after recorded; EMS integration tests and Bruno pass on local dev; the story reached production through its PR."
+covers = ["R2"]
+after = [13]
+hitl = false
+risk = "medium"
+references = ["docs/prd/epic-17-architecture-hardening.md#story-1714--domain-exception-base"]

@@ -1,7 +1,7 @@
 package ch.batbern.events.exception;
 
+import ch.batbern.shared.exception.BATbernException.Severity;
 import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.ResponseStatus;
 
 /**
  * Story 7.3 — thrown when an organizer attempts to send the "slides are online" mail for an
@@ -11,10 +11,9 @@ import org.springframework.web.bind.annotation.ResponseStatus;
  * {@link DuplicateNewsletterSendException}): together they ensure the one-shot, event-triggered
  * slides-online mail can never be sent twice for the same event. Results in HTTP 409 Conflict.
  */
-@ResponseStatus(HttpStatus.CONFLICT)
-public class SlidesOnlineAlreadySentException extends RuntimeException {
+public class SlidesOnlineAlreadySentException extends DomainException {
 
     public SlidesOnlineAlreadySentException(String message) {
-        super(message);
+        super(HttpStatus.CONFLICT, Severity.LOW, null, message);
     }
 }

@@ -15,16 +15,22 @@ import ch.batbern.events.dto.generated.users.GetOrCreateUserResponse;
 import ch.batbern.events.dto.generated.users.UserResponse;
 import ch.batbern.events.dto.RegistrationResponse;
 import ch.batbern.events.exception.DuplicateSubscriberException;
+import ch.batbern.events.exception.EventHasRealRegistrationsException;
 import ch.batbern.events.exception.UserServiceException;
 import ch.batbern.shared.utils.EmailAddresses;
 import ch.batbern.events.exception.RegistrationCapacityExceededException;
 import ch.batbern.events.exception.DeregistrationClosedException;
 import ch.batbern.events.exception.RegistrationClosedException;
+import ch.batbern.events.exception.RegistrationProfileIncompleteException;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.RegistrationRepository;
+import ch.batbern.events.specification.RegistrationSpecification;
+import ch.batbern.shared.api.DeterministicPaging;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,6 +40,7 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Locale;
 import java.util.HashMap;
 import java.util.List;
@@ -223,7 +230,7 @@ public class RegistrationService {
             waitlistPromotionEmailService.sendWaitlistConfirmationEmail(saved);
         }
 
-        // Story 4.1.5c: Email sending moved to EventController (needs JWT token)
+        // Story 4.1.5c: Email sending is the controller's (RegistrationController, needs the JWT token)
         // Email will be sent after token generation in controller layer
 
         return saved;
@@ -260,6 +267,76 @@ public class RegistrationService {
             return response;
         });
     }
+
+    /**
+     * One event's registrations, filtered in SQL (status, search over the denormalized attendee
+     * fields, company), sorted by last and first name with the id as tie-breaker (#1131), each
+     * enriched with the attendee from CUMS. Story 17.13, moved from {@code EventController}.
+     *
+     * @param page 1-based page number
+     */
+    // No transaction: one short query, then up to 100 CUMS calls that must not hold a DB connection.
+    public Page<RegistrationResponse> listForEvent(Event event, List<String> statuses, String search,
+            String companyId, int page, int limit) {
+        Specification<Registration> spec = RegistrationSpecification.buildSpecification(
+                event.getId(), statuses, search, companyId);
+        Pageable pageable = DeterministicPaging.pageRequest(page - 1, limit,
+                Sort.by(Sort.Order.asc("attendeeLastName"), Sort.Order.asc("attendeeFirstName")));
+        return registrationRepository.findAll(spec, pageable).map(registration -> {
+            registration.setEventCode(event.getEventCode()); // transient field
+            return enrichRegistrationWithUserData(registration);
+        });
+    }
+
+    /**
+     * Live registration counts of one event (Story 10.11), moved from {@code EventController}
+     * (Story 17.13). Plain counts that need no transaction of their own. Called inside
+     * {@code createEvent} they run in its transaction, right after the event is saved; that is why
+     * {@link RegistrationRepository#countRealAttendees} uses flushMode COMMIT.
+     */
+    public RegistrationCounts countsFor(UUID eventId) {
+        return new RegistrationCounts(
+                registrationRepository.countByEventIdAndStatusIn(eventId, Registration.CONFIRMED_STATUSES),
+                registrationRepository.countByEventIdAndStatus(eventId, "waitlist"),
+                registrationRepository.countRealAttendees(eventId, Registration.ACTIVE_STATUSES));
+    }
+
+    /**
+     * Active registrations (registered, confirmed, ...) per event, in one query; an event without
+     * any maps to 0. Drives {@code currentAttendeeCount} of {@code include=registrations}.
+     */
+    public Map<UUID, Long> activeCounts(Collection<UUID> eventIds) {
+        Map<UUID, Long> counts = new HashMap<>();
+        eventIds.forEach(id -> counts.put(id, 0L));
+        if (!eventIds.isEmpty()) {
+            registrationRepository.countPerEventByStatusIn(eventIds, Registration.ACTIVE_STATUSES)
+                    .forEach(row -> counts.put(row.getEventId(), row.getRegistrations()));
+        }
+        return counts;
+    }
+
+    /**
+     * An event with real attendees cannot be deleted (409): only self-registered attendees count.
+     * Programmatic registrations (organizers and partners enrolled at creation, auto-registered
+     * speakers) never block, otherwise no event would be deletable; the delete cascades them.
+     *
+     * @throws EventHasRealRegistrationsException when the event has real attendees
+     */
+    public void requireNoRealAttendees(String eventCode, UUID eventId) {
+        long realAttendees = registrationRepository.countRealAttendees(eventId, Registration.ACTIVE_STATUSES);
+        if (realAttendees > 0) {
+            throw new EventHasRealRegistrationsException(eventCode, realAttendees);
+        }
+    }
+
+    /**
+     * Registration counts of one event.
+     *
+     * @param confirmed     registrations that hold a place ({@link Registration#CONFIRMED_STATUSES})
+     * @param waitlisted    registrations on the waitlist
+     * @param realAttendees active registrations that are not programmatic enrollments
+     */
+    public record RegistrationCounts(long confirmed, long waitlisted, long realAttendees) {}
 
     /**
      * Enrich registration with user data from User Management Service (ADR-004).
@@ -519,8 +596,7 @@ public class RegistrationService {
      * Called by:
      * - DeregistrationService (token-based self-service flow)
      * - DeregistrationService (by-email flow — sends link, promotion happens on actual cancel)
-     * - EventController (organizer cancel — replaces hard-delete)
-     * - EventController JWT-token cancel endpoint (anonymous cancellation flow)
+     * - RegistrationController ({@code DELETE /events/{eventCode}/my-registration}, signed-in attendee)
      *
      * @param registration The registration to cancel (must not be null, must have eventId)
      */
@@ -625,7 +701,7 @@ public class RegistrationService {
 
         // Mark this as a programmatic registration so it is NOT counted as a real attendee
         // (organizers/partners are auto-enrolled on every event — they must never block the
-        // event from being deleted; see EventController.deleteEvent + realAttendeeCount).
+        // event from being deleted; see requireNoRealAttendees + realAttendeeCount).
         Map<String, Object> metadata = new HashMap<>();
         metadata.put(Registration.AUTO_REGISTERED_FROM_KEY, Registration.TRIGGER_STAKEHOLDER_ENROLLMENT);
 
@@ -802,7 +878,7 @@ public class RegistrationService {
             boolean missingLast = userProfile.getLastName() == null
                     || userProfile.getLastName().isBlank();
             if (missingFirst || missingLast) {
-                throw new ch.batbern.events.exception.IncompleteProfileException(
+                throw new RegistrationProfileIncompleteException(
                         username, missingFirst, missingLast);
             }
         }

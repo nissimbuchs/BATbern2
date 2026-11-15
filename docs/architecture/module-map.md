@@ -37,9 +37,13 @@ CUMS (identity) is upstream of all. EMS (event) is upstream of PCS (partners).
 
 - A lower module needs to trigger a higher one? Define an interface in the lower module and
   implement it above. `AudienceAdapter` is the model.
-- No new endpoints in `EventController`. New exceptions go in their own module, not in
-  `GlobalExceptionHandler`; a module's own advice is the model (`mailcenter/MailCenterExceptionHandler`,
-  `@Order(HIGHEST_PRECEDENCE)` because the global advice has a catch-all).
+- No new endpoints in `EventController`. A new EMS exception extends `DomainException` (platform,
+  `exception/`: status, severity, optional code rendered as `details.code`) and needs no handler:
+  `GlobalExceptionHandler` maps the base once. A body with more fields gets a handler in its module's
+  own advice built with `DomainErrorResponse` (`exception/SpeakerExceptionHandler`,
+  `RegistrationExceptionHandler`, `EventWorkflowExceptionHandler`), `@Order(HIGHEST_PRECEDENCE)`
+  because the global advice has a catch-all (Story 17.14). `mailcenter/MailCenterExceptionHandler` is
+  the older model: same order, its own `ErrorResponse`.
 
 ## Gates (ArchUnit, frozen, in each service's `test`)
 
@@ -62,6 +66,17 @@ CUMS (identity) is upstream of all. EMS (event) is upstream of PCS (partners).
   CUMS V31 / EMS V154, #1307); EMS keeps its files in `event_management_uploads` (Story 17.11). The
   fixture test `EmsModuleRulesFixtureTest.should_fail_when_entityMapsUploadTableOfAnotherService`
   proves the rule fires.
+- EMS `architecture/EmsEndpointPlacementTest` (not frozen, it has no violation): `EventController`
+  maps no `/registrations` or `/my-registration` path, neither by hand nor through an implemented
+  interface (the generated `RegistrationsApi`); the registration endpoints live in
+  `RegistrationController`, the counts and the delete guard in `RegistrationService` (Story 17.13).
+  Fixture tests in `EmsModuleRulesFixtureTest` prove it fires on both.
+- EMS `architecture/EmsExceptionMappingTest` (not frozen, it has no violation): `GlobalExceptionHandler`
+  uses no EMS class but `DomainException` and `DomainErrorResponse`, so a module exception is mapped
+  through the base or in the module's advice, never by hand in the platform advice; and every
+  exception in `exception/` extends `DomainException` and has no `@ResponseStatus` (Story 17.14).
+  Fixture tests in `EmsModuleRulesFixtureTest` prove both fire. `DomainExceptionResponseTest` pins the
+  response of every exception in `exception/` through the real resolver chain.
 - `FrozenRuleKeysTest` (EMS, CUMS) fails when a frozen rule is added, renamed or removed without
   its store: ArchUnit would otherwise accept all its current violations on the first run.
 - Today's violations sit in `src/test/resources/archunit_store`. A new one fails the build; a fixed
@@ -88,6 +103,7 @@ CUMS (identity) is upstream of all. EMS (event) is upstream of PCS (partners).
 | Admin or feature setting | `AdminSettingsService` (`/admin/settings/{key}`) | a new settings resource |
 | Scheduled job | `@Scheduled` + ShedLock | unlocked scheduler. Audience mails are organizer-sent only (#1179) |
 | Error → HTTP status | `ClientErrorClassifier` | another catch-all |
+| EMS domain error → HTTP response | extend `DomainException` (status, severity, `details.code`); extra fields in the module advice with `DomainErrorResponse` | an `@ExceptionHandler` in `GlobalExceptionHandler`, `@ResponseStatus` |
 
 ## API rules
 

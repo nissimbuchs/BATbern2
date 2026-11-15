@@ -1,9 +1,7 @@
 package ch.batbern.events.exception;
 
-import ch.batbern.shared.exception.BATbernException;
-import ch.batbern.shared.exception.ErrorCode;
+import ch.batbern.shared.exception.BATbernException.Severity;
 import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.ResponseStatus;
 
 /**
  * Exception thrown when structural sessions (moderation/break/lunch) already exist
@@ -11,14 +9,12 @@ import org.springframework.web.bind.annotation.ResponseStatus;
  *
  * HTTP Status: 409 CONFLICT
  */
-@ResponseStatus(HttpStatus.CONFLICT)
-public class StructuralSessionsAlreadyExistException extends BATbernException {
+public class StructuralSessionsAlreadyExistException extends DomainException {
 
     public StructuralSessionsAlreadyExistException(String eventCode) {
-        super(ErrorCode.ERR_CONFLICT,
+        super(HttpStatus.CONFLICT, Severity.MEDIUM, null,
                 String.format(
                         "Structural sessions already exist for event '%s'. Use overwrite=true to replace them.",
-                        eventCode),
-                Severity.LOW);
+                        eventCode));
     }
 }

@@ -1,9 +1,7 @@
 package ch.batbern.events.exception;
 
-import ch.batbern.shared.exception.BATbernException;
-import ch.batbern.shared.exception.ErrorCode;
+import ch.batbern.shared.exception.BATbernException.Severity;
 import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.ResponseStatus;
 
 /**
  * Exception thrown when an event cannot be deleted because it still has real (self-registered)
@@ -16,15 +14,13 @@ import org.springframework.web.bind.annotation.ResponseStatus;
  *
  * HTTP Status: 409 CONFLICT
  */
-@ResponseStatus(HttpStatus.CONFLICT)
-public class EventHasRealRegistrationsException extends BATbernException {
+public class EventHasRealRegistrationsException extends DomainException {
 
     public EventHasRealRegistrationsException(String eventCode, long realAttendeeCount) {
-        super(ErrorCode.ERR_CONFLICT,
+        super(HttpStatus.CONFLICT, Severity.LOW, null,
                 String.format(
                         "Event '%s' has %d real attendee registration(s) and cannot be deleted. "
                                 + "Cancel the event instead.",
-                        eventCode, realAttendeeCount),
-                Severity.LOW);
+                        eventCode, realAttendeeCount));
     }
 }

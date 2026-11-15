@@ -64,8 +64,8 @@ public class RegistrationCapacityIntegrationTest extends AbstractIntegrationTest
     @MockitoBean
     private UserApiClient userApiClient;
 
-    private static final String EVENT_CODE = "BATbern10k";
-    private static final String EVENT_CODE_UNLIMITED = "BATbern10kU";
+    private static final String EVENT_CODE = "BATbern9001";
+    private static final String EVENT_CODE_UNLIMITED = "BATbern9002";
     private static final String PATCHABLE_CODE = "BATbern9101";
 
     private int userCounter = 0;
@@ -242,12 +242,12 @@ public class RegistrationCapacityIntegrationTest extends AbstractIntegrationTest
     @Test
     @DisplayName("feedback #1: public register after the deadline → 409 REGISTRATION_CLOSED, no row")
     void register_afterDeadline_returns409Closed() throws Exception {
-        Event closed = savePastDeadlineEvent("BATbern10kC", 9003, 2);
+        Event closed = savePastDeadlineEvent("BATbern9003", 9003, 2);
 
         String body = objectMapper.writeValueAsString(Map.of(
                 "firstName", "Late", "lastName", "Comer", "email", "late@test.com",
                 "termsAccepted", true));
-        mockMvc.perform(post("/api/v1/events/{eventCode}/registrations", "BATbern10kC")
+        mockMvc.perform(post("/api/v1/events/{eventCode}/registrations", "BATbern9003")
                         .contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.details.code", is("REGISTRATION_CLOSED")));
@@ -261,14 +261,14 @@ public class RegistrationCapacityIntegrationTest extends AbstractIntegrationTest
     @DisplayName("feedback #1: waitlist join after the deadline → 409 REGISTRATION_CLOSED (not waitlisted)")
     void register_afterDeadline_whenFull_closesWaitlistToo() throws Exception {
         // Capacity 1, already filled (rows inserted directly — they pre-date the closed deadline).
-        Event closed = savePastDeadlineEvent("BATbern10kCF", 9004, 1);
+        Event closed = savePastDeadlineEvent("BATbern9004", 9004, 1);
         createRegisteredRegistration(closed, "early.bird");
 
         // A late arrival would normally be waitlisted (event full) — but the deadline closes it.
         String body = objectMapper.writeValueAsString(Map.of(
                 "firstName", "Late", "lastName", "Waiter", "email", "latewl@test.com",
                 "termsAccepted", true));
-        mockMvc.perform(post("/api/v1/events/{eventCode}/registrations", "BATbern10kCF")
+        mockMvc.perform(post("/api/v1/events/{eventCode}/registrations", "BATbern9004")
                         .contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.details.code", is("REGISTRATION_CLOSED")));
@@ -468,7 +468,7 @@ public class RegistrationCapacityIntegrationTest extends AbstractIntegrationTest
                 .andExpect(status().isOk());
     }
 
-    /** Capacity 2; a code the PATCH path pattern accepts (the BATbern10k fixture does not). */
+    /** Capacity 2: the event of the capacity-raise tests (PATCH /events/{eventCode}). */
     private Event cappedEvent() {
         return eventRepository.save(Event.builder()
                 .eventCode(PATCHABLE_CODE)

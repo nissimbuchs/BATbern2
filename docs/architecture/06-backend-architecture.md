@@ -389,19 +389,46 @@ interface ErrorResponse {
 Shared kernel (`shared-kernel/.../exception/`): abstract `BATbernException` (carries an `ErrorCode`)
 with `NotFoundException`, `ValidationException`, `InvalidStateTransitionException`,
 `ServiceException` and `UnauthorizedException`. Services add their own exceptions in
-`{service}/exception/` (EMS for example `EventNotFoundException`, `BusinessValidationException`,
-`WorkflowValidationException`, `RegistrationCapacityExceededException`,
-`RegistrationClosedException`); the gateway has `RateLimitExceededException`.
+`{service}/exception/`; the gateway has `RateLimitExceededException`.
+
+EMS (Story 17.14): every exception in `ch.batbern.events.exception` extends the platform base
+`DomainException`, which carries the HTTP status, the severity (`BATbernException.Severity`) and an
+optional code, rendered as `details.code` (for example `THANKS_RATE_LIMITED`, `REGISTRATION_CLOSED`).
+The top-level `errorCode` stays unset in EMS bodies. `DomainErrorResponse` builds the body. No
+exception in `exception/` uses `@ResponseStatus`, a shared-kernel exception, `ResponseStatusException`
+or `IllegalStateException` to carry its status any more (`EmsExceptionMappingTest`); exceptions and
+controller-local handlers outside that package (mail center, usermerge, publishing,
+`NotificationController`) are not covered yet. A new exception in `exception/` picks its status,
+severity and code in its constructor and needs no handler; `DomainExceptionResponseTest` pins the
+response of each exception in the package (at least one row per class and per public constructor)
+and fails for a class without a row.
 
 ### Global Exception Handler
 
 Each service has its own `GlobalExceptionHandler` (`@RestControllerAdvice` in EMS, CUMS and PCS;
-`@ControllerAdvice` in the gateway). The EMS handler has 60 `@ExceptionHandler` methods, among them
-`MethodArgumentNotValidException`, `ConstraintViolationException`, `PropertyReferenceException`,
-`HttpMessageNotReadableException` and `MethodArgumentTypeMismatchException` (all 400),
-`AccessDeniedException` / `AuthorizationDeniedException` (403),
-`ObjectOptimisticLockingFailureException` (409), and a final `@ExceptionHandler(Exception.class)`
-(500, severity CRITICAL).
+`@ControllerAdvice` in the gateway). The EMS handler maps the platform cases:
+`ValidationException`, `MethodArgumentNotValidException`, `ConstraintViolationException`,
+`PropertyReferenceException`, `HttpMessageNotReadableException` (400, with the
+`SpeakerWorkflowState` branch), `MethodArgumentTypeMismatchException` (404),
+`AccessDeniedException` / `AuthorizationDeniedException` (403), JPA `EntityNotFoundException`,
+`NoSuchElementException`, `NotFoundException` (404), `IllegalArgumentException` (400),
+`IllegalStateException` and `ObjectOptimisticLockingFailureException` (409),
+`InvalidStateTransitionException` (422), no handler (404), wrong verb (405),
+`ResponseStatusException`, and a final `@ExceptionHandler(Exception.class)` (500, severity CRITICAL,
+4xx for client mistakes through `ClientErrorClassifier`). EMS domain exceptions reach it through one
+`@ExceptionHandler(DomainException.class)`, which logs status, correlation ID, path, class and
+message at WARN. `EmsExceptionMappingTest` keeps it that way: the handler uses no EMS class but
+`DomainException` and `DomainErrorResponse`.
+
+A body with more than `details.code` is built in the module's own advice, ordered
+`@Order(HIGHEST_PRECEDENCE)` so it runs before the global catch-all: `SpeakerExceptionHandler`
+(`AlreadyRespondedException`, `InvalidPromotionStateException`, `ReadyRequiresPromoteException`,
+`SlotCapacityReachedException`), `RegistrationExceptionHandler` (`RegistrationCapacityExceededException`,
+`RegistrationClosedException`, `RegistrationProfileIncompleteException`, logged at INFO),
+`EventWorkflowExceptionHandler` (`WorkflowValidationException`, `details` is the rule context, `{}`
+when empty), all three built with `DomainErrorResponse`, and `mailcenter/MailCenterExceptionHandler`,
+which builds its own `ErrorResponse` for the mail center's exceptions (they are not in `exception/`).
+EMS modules are not packages, so the first three sit in `exception/`, named after their module.
 
 Not implemented (named in earlier versions): `InvalidEventStateException`,
 `SpeakerAlreadyInvitedException`, an `ErrorMessageResolver` and a `MetricRegistry` in the handler.

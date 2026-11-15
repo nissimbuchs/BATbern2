@@ -1,5 +1,8 @@
 package ch.batbern.events.exception;
 
+import ch.batbern.shared.exception.BATbernException.Severity;
+import org.springframework.http.HttpStatus;
+
 import java.time.Instant;
 
 /**
@@ -8,18 +11,21 @@ import java.time.Instant;
  *
  * <p>Closes BOTH the "registered" and "waitlist" paths — the deadline is checked before the
  * capacity branching, so a full event past its deadline returns this rather than a waitlist
- * placement. Mapped to HTTP 409 Conflict by {@code GlobalExceptionHandler} with
+ * placement. Mapped to HTTP 409 Conflict by {@code RegistrationExceptionHandler} with
  * {@code details.code = "REGISTRATION_CLOSED"} and {@code details.deadline}, so the public page can
  * show a "registration closed on {date}" state. Distinct from the capacity 409
  * ({@code capacity_exceeded}). The organizer add-participant path ({@code addParticipant}) is
  * intentionally NOT subject to this guard.
  */
-public class RegistrationClosedException extends RuntimeException {
+public class RegistrationClosedException extends DomainException {
+
+    static final String CODE = "REGISTRATION_CLOSED";
 
     private final transient Instant deadline;
 
     public RegistrationClosedException(String eventCode, Instant deadline) {
-        super("Registration for event " + eventCode + " closed on " + deadline);
+        super(HttpStatus.CONFLICT, Severity.LOW, CODE,
+                "Registration for event " + eventCode + " closed on " + deadline);
         this.deadline = deadline;
     }
 
