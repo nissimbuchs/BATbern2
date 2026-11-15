@@ -6,7 +6,6 @@ import ch.batbern.shared.mail.MailTrigger;
 import ch.batbern.shared.service.EmailService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,7 +30,6 @@ public class NotificationService {
     private final NotificationRepository notificationRepository;
     private final EmailService emailService;
     private final UserApiClient userApiClient;
-    private final SimpMessagingTemplate messagingTemplate;
 
     /**
      * Create notification record and send via email
@@ -160,30 +158,5 @@ public class NotificationService {
         html.append("</body></html>");
 
         return html.toString();
-    }
-
-    /**
-     * Push notification to user's WebSocket topic for real-time updates
-     *
-     * Sends notification to: /topic/notifications/{username}
-     * Frontend subscribes to this topic to receive live updates
-     */
-    public void pushNotificationViaWebSocket(Notification notification) {
-        try {
-            String destination = "/topic/notifications/" + notification.getRecipientUsername();
-
-            ch.batbern.events.notifications.dto.generated.NotificationResponse response =
-                    NotificationMapper.toResponse(notification);
-
-            messagingTemplate.convertAndSend(destination, response);
-
-            log.debug("Pushed notification via WebSocket to {}: {}",
-                    destination, notification.getNotificationType());
-
-        } catch (Exception e) {
-            log.error("Failed to push notification via WebSocket for user {}: {}",
-                    notification.getRecipientUsername(), e.getMessage());
-            // Don't fail the notification if WebSocket push fails
-        }
     }
 }

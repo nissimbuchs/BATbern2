@@ -84,7 +84,6 @@ class UserSettingsControllerIntegrationTest extends AbstractIntegrationTest {
                 .preferences(UserPreferences.builder()
                         .theme("light")
                         .language("de")
-                        .notificationFrequency("immediate")
                         .qnaNotificationFrequency("daily")
                         .quietHoursStart(LocalTime.of(22, 0))
                         .quietHoursEnd(LocalTime.of(7, 0))
@@ -104,13 +103,45 @@ class UserSettingsControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.theme").value("light"))
                 .andExpect(jsonPath("$.language").value("de"))
-                .andExpect(jsonPath("$.notificationFrequency").value("immediate"))
                 .andExpect(jsonPath("$.qnaNotificationFrequency").value("daily"))
                 .andExpect(jsonPath("$.quietHoursStart").value("22:00"))
                 .andExpect(jsonPath("$.quietHoursEnd").value("07:00"))
                 .andExpect(jsonPath("$.profileVisibility").value("public"))
                 .andExpect(jsonPath("$.showActivityHistory").value(true))
                 .andExpect(jsonPath("$.timezone").value("Europe/Zurich"));
+    }
+
+    /** #1222 items 3 and 4: in-app, push and frequency were stored and never read; they are gone. */
+    @Test
+    @WithMockUser(username = "max.muster")
+    void should_notExposeRemovedNotificationPreferences_when_get() throws Exception {
+        mockMvc.perform(get(URL))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.emailNotifications").value(true))
+                .andExpect(jsonPath("$.inAppNotifications").doesNotExist())
+                .andExpect(jsonPath("$.pushNotifications").doesNotExist())
+                .andExpect(jsonPath("$.notificationFrequency").doesNotExist());
+    }
+
+    @Test
+    @WithMockUser(username = "max.muster")
+    void should_saveEmailNotificationsAndKeepTheRest_when_patchedAlone() throws Exception {
+        mockMvc.perform(patch(URL)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"emailNotifications": false}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.emailNotifications").value(false))
+                .andExpect(jsonPath("$.qnaNotificationFrequency").value("daily"))
+                .andExpect(jsonPath("$.quietHoursStart").value("22:00"))
+                .andExpect(jsonPath("$.theme").value("light"))
+                .andExpect(jsonPath("$.inAppNotifications").doesNotExist());
+
+        User stored = userRepository.findByUsername("max.muster").orElseThrow();
+        assertThat(stored.getPreferences().isEmailNotifications()).isFalse();
+        assertThat(stored.getPreferences().getQnaNotificationFrequency()).isEqualTo("daily");
+        assertThat(stored.getPreferences().getTheme()).isEqualTo("light");
     }
 
     @Test
@@ -150,7 +181,6 @@ class UserSettingsControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.theme").value("dark"))
                 .andExpect(jsonPath("$.timezone").value("America/New_York"))
                 .andExpect(jsonPath("$.language").value("de"))
-                .andExpect(jsonPath("$.notificationFrequency").value("immediate"))
                 .andExpect(jsonPath("$.qnaNotificationFrequency").value("daily"))
                 .andExpect(jsonPath("$.showActivityHistory").value(true));
 
@@ -167,9 +197,7 @@ class UserSettingsControllerIntegrationTest extends AbstractIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"theme": "auto", "language": "en", "timezone": "Asia/Tokyo",
-                                 "emailNotifications": false, "inAppNotifications": false,
-                                 "pushNotifications": true, "notificationFrequency": "weekly_digest",
-                                 "qnaNotificationFrequency": "off",
+                                 "emailNotifications": false, "qnaNotificationFrequency": "off",
                                  "quietHoursStart": "23:30", "quietHoursEnd": "06:15",
                                  "profileVisibility": "private", "showEmail": true, "showCompany": false,
                                  "showActivityHistory": false, "allowMessaging": false,
@@ -183,9 +211,6 @@ class UserSettingsControllerIntegrationTest extends AbstractIntegrationTest {
         assertThat(p.getTheme()).isEqualTo("auto");
         assertThat(p.getLanguage()).isEqualTo("en");
         assertThat(p.isEmailNotifications()).isFalse();
-        assertThat(p.isInAppNotifications()).isFalse();
-        assertThat(p.isPushNotifications()).isTrue();
-        assertThat(p.getNotificationFrequency()).isEqualTo("weekly_digest");
         assertThat(p.getQnaNotificationFrequency()).isEqualTo("off");
         assertThat(p.getQuietHoursStart()).isEqualTo(LocalTime.of(23, 30));
         assertThat(p.getQuietHoursEnd()).isEqualTo(LocalTime.of(6, 15));

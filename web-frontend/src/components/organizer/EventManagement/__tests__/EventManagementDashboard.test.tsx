@@ -2,18 +2,15 @@
  * EventManagementDashboard (Story 2.5.3, AC1 + AC2)
  *
  * The real tree runs against the MSW harness (17.0c2): `useEvents`, `useNotifications`, the
- * notification WebSocket hook and client, the persisted `eventStore`, the children (EventSearch,
+ * persisted `eventStore`, the children (EventSearch,
  * EventList/EventCard, EventPagination, QuickActions, TaskWidget, TeamActivityFeed, EventForm)
  * and en i18n. `GET /events`, `GET /notifications` and `GET /tasks/my-tasks` are checked against
  * the specs and answered with typed bodies. Auth comes from the real `AuthContext` (`renderWithAuth`).
- *
- * The only mocks are the third-party STOMP/SockJS packages (a network boundary, plan Decision 3):
- * jsdom's hostname is `localhost`, so our `notificationWebSocketClient` really connects; the fake
- * `Client` records its config so a test can play the server (connect, push a message).
+ * No mocks. Notifications are read over REST only; there is no push (#1222).
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { act, screen, waitFor, within } from '@testing-library/react';
+import { describe, it, expect, beforeEach } from 'vitest';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { HttpResponse, delay } from 'msw';
 import { api } from '@/test/msw/api';
@@ -22,37 +19,6 @@ import { renderWithAuth, signedInAs } from '@/test/auth';
 import { anEventTask, daysFromNow, futureEvent, type Event } from '@/test/fixtures';
 import { useEventStore } from '@/stores/eventStore';
 import { EventManagementDashboard } from '../EventManagementDashboard';
-
-// --- Boundary: the third-party STOMP/SockJS packages -------------------------------------------
-
-interface FakeStompConfig {
-  onConnect?: () => void;
-  webSocketFactory?: () => unknown;
-}
-
-const stomp = vi.hoisted(() => ({
-  configs: [] as FakeStompConfig[],
-  subscriptions: [] as Array<{ topic: string; callback: (message: { body: string }) => void }>,
-  activations: 0,
-}));
-
-vi.mock('@stomp/stompjs', () => ({
-  Client: class {
-    constructor(config: FakeStompConfig) {
-      stomp.configs.push(config);
-    }
-    activate() {
-      stomp.activations += 1;
-    }
-    deactivate() {}
-    subscribe(topic: string, callback: (message: { body: string }) => void) {
-      stomp.subscriptions.push({ topic, callback });
-      return { unsubscribe: () => {} };
-    }
-  },
-}));
-
-vi.mock('sockjs-client', () => ({ default: vi.fn() }));
 
 // --- Data ----------------------------------------------------------------------------------------
 
@@ -145,9 +111,6 @@ describe('EventManagementDashboard Component', () => {
       isCreateModalOpen: false,
       isEditModalOpen: false,
     });
-    stomp.configs.length = 0;
-    stomp.subscriptions.length = 0;
-    stomp.activations = 0;
 
     api.on('listEvents', () => eventPage([bb61, bb62]));
     api.on('listNotifications', () => notificationPage([aNotification()]));
@@ -317,40 +280,6 @@ describe('EventManagementDashboard Component', () => {
       expect(query.get('status')).toBe('UNREAD');
       expect(query.get('page')).toBe('1');
       expect(query.get('limit')).toBe('10');
-    });
-
-    it('should_refetchNotifications_when_realTimeNotificationArrives', async () => {
-      renderDashboard();
-      const section = await screen.findByTestId('team-activity-section');
-      await within(section).findByText('Lukas Meier assigned you a task');
-      expect(api.calls('listNotifications')).toHaveLength(1);
-
-      // Our client connected for the signed-in organizer through the STOMP package.
-      await waitFor(() => expect(stomp.activations).toBe(1));
-      api.on('listNotifications', () =>
-        notificationPage([
-          aNotification({
-            id: 'c1d2e3f4-0000-4000-8000-000000000002',
-            subject: 'Sara Brunner accepted the invitation',
-            body: 'Speaker accepted for BATbern61',
-            notificationType: 'SPEAKER_ACCEPTED',
-          }),
-          aNotification(),
-        ])
-      );
-
-      // The server confirms the connection, then pushes a notification on the user's topic.
-      act(() => stomp.configs[0].onConnect?.());
-      await waitFor(() => expect(stomp.subscriptions).toHaveLength(1));
-      expect(stomp.subscriptions[0].topic).toBe(`/topic/notifications/${ORGANIZER}`);
-      act(() =>
-        stomp.subscriptions[0].callback({ body: JSON.stringify(aNotification({ id: 'x' })) })
-      );
-
-      expect(
-        await within(section).findByText('Sara Brunner accepted the invitation')
-      ).toBeInTheDocument();
-      expect(api.calls('listNotifications')).toHaveLength(2);
     });
   });
 

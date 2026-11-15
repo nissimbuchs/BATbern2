@@ -102,9 +102,7 @@ class UserManagementMigrationsTest extends AbstractIntegrationTest {
                 "pref_theme",
                 "pref_language",
                 "pref_email_notifications",
-                "pref_in_app_notifications",
-                "pref_push_notifications",
-                "pref_notification_frequency"
+                "pref_qna_notification_frequency"
         );
     }
 

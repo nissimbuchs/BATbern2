@@ -66,7 +66,7 @@ function createPostConfirmationEvent(
           language: 'en',
           newsletterOptIn: false,
           theme: 'light',
-          notifications: { email: true, sms: false, push: true },
+          notifications: { email: true, sms: false },
           privacy: { showProfile: true, allowMessages: true },
         }),
         ...overrides.request?.userAttributes,

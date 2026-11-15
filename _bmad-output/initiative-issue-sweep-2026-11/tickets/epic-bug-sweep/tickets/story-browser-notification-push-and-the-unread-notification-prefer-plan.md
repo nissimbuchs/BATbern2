@@ -3,14 +3,14 @@ title: 'Browser notification push and the unread notification preferences are go
 type: 'refactor'
 ticket: '4'
 created: '2026-11-15'
-status: 'in-progress'
-baseline_revision: '26e0102b40799bf19cf68f63f04668d5d1010302'
+status: 'built'
+baseline_revision: '171e4fc8c819c4ec57a3789018bd57bfcee77a25'
 route: 'full'
 route_source: 'auto'
 risk: 'medium'
-review: ''
-review_source: ''
-lenses_ran: []
+review: 'quick'
+review_source: 'pinned'
+lenses_ran: ['quick']
 review_loop_iteration: 0
 context: []
 ---
@@ -58,11 +58,11 @@ context: []
 ## Tasks & Acceptance
 
 **Execution:**
-- [ ] specs -- remove fields, regenerate types -- contract first
-- [ ] CUMS -- RED: settings IT asserts the three keys are absent from GET and that PATCH with `emailNotifications` still saves; remove fields from entity, service, tests
-- [ ] EMS -- RED: listener test asserts no STOMP send (no `SimpMessagingTemplate` bean use outside watch, ArchUnit-free: constructor no longer takes it); remove push, prefs fields, harness fields
-- [ ] frontend -- RED: settings tab test asserts email and Q&A controls present, in-app/push/frequency absent; remove client, hook, deps, fields, controls, locale keys
-- [ ] docs -- 06d, 04, 06b
+- [x] specs -- remove fields, regenerate types -- contract first
+- [x] CUMS -- RED: settings IT asserts the three keys are absent from GET and that PATCH with `emailNotifications` still saves; remove fields from entity, service, tests
+- [x] EMS -- RED: listener test asserts no STOMP send (no `SimpMessagingTemplate` bean use outside watch, ArchUnit-free: constructor no longer takes it); remove push, prefs fields, harness fields
+- [x] frontend -- RED: settings tab test asserts email and Q&A controls present, in-app/push/frequency absent; remove client, hook, deps, fields, controls, locale keys
+- [x] docs -- 06d, 04, 06b
 
 **Acceptance Criteria:**
 - Given the repo, when grepping `src`, `services`, `docs/api` for the three preference names (Q&A frequency excluded) and for `notificationWebSocketClient|useNotificationWebSocket|/topic/notifications`, then nothing is found.
@@ -72,6 +72,22 @@ context: []
 ## Design Notes
 
 Architecture note: modules touched: EMS notification (L1 notify core), EMS client, CUMS user settings, frontend organizer dashboard and account. No new dependencies; one dependency removed (EMS notification no longer uses the STOMP template). No new endpoints; `PATCH /users/me/settings` and `GET /internal/users/{username}?include=settings` lose fields. Reused: the existing settings IT and MSW harness. Deviations: none.
+
+## Implementation Notes
+
+- Escalation mail fix found by de-mocking: `NotificationService` sent through the `@Async` `sendHtmlEmail` and then set `SENT`, so a mail SES refused was recorded as `SENT`. It now calls the new `EmailService.sendHtmlEmailSync(MailContext, ...)` (keeps the configuration set). Measured: 2 of 3 new tests fail with the async call. Committed separately (C9).
+- `NotificationServiceTest` and `OrganizerNotificationListenerTest` are replaced by integration tests on PostgreSQL, the CUMS harness and the `SesRecorder`. `UserAccountPage.test.tsx` runs on the MSW harness; the ratchet baseline lost 4 entries.
+- Also changed: `vite.config.ts` (stomp chunk rule), the Playwright settings spec, docs 06 and coding-standards, which named the push.
+- Verified by the orchestrator after the implementer: EMS notification and Watch tests (152), shared-kernel (692), frontend type-check, 85 Vitest files (1182 tests), `npm run build`, ratchet. The full EMS (2977) and CUMS (948) suites ran in the implementer's session.
+
+## Review Triage Log
+
+Quick review, 5 findings: 2 low patched, 1 low handled by a commit split, 2 rejected.
+- low, separate commit: the sync escalation mail is outside the intent. It is a real bug fix (refused mail recorded as SENT), so per C9 it stays, in its own commit with its own tests. The SES round trip inside the transaction is accepted: escalations are a few per event.
+- false, rejected: "AC 1 grep finds the names". The hits are the absence assertions the RED tasks asked for; nothing else matches.
+- low, rejected: eight shared Company/Layout tests were edited (fixture field removed) but keep `vi.mock('@/hooks/useAuth')`. The touch rule covers the tests of the changed screen, which these are not. Moving them is more than a direct correction, and the ratchet keeps them from growing.
+- low, patched: `docs/specs/event-2-feedback-quick-spec.md` still planned removing the frontend STOMP client and the deps. Now says they are gone (#1222).
+- low, patched: `infrastructure/lib/lambda/triggers/post-confirmation.ts` still typed `notifications.push`. Removed with its test fixture; 41 tests pass.
 
 ## Verification
 

@@ -38,7 +38,6 @@ export function anAuthUser(overrides: Partial<UserContext> = {}): UserContext {
     preferences: {
       language: 'en',
       theme: 'light',
-      notifications: { email: true, sms: false, push: false },
       privacy: { showProfile: true, allowMessages: true },
     },
     termsAcceptedAt: '2026-01-15T09:00:00Z',

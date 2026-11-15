@@ -180,8 +180,7 @@ class UserApiClientImplInternalContractTest {
         UserPreferences prefs = client.getPreferences("anna.meier");
 
         assertThat(prefs.isEmailNotificationsEnabled()).isTrue();
-        assertThat(prefs.isPushNotificationsEnabled()).isFalse();
-        assertThat(prefs.getNotificationFrequency()).isEqualTo("immediate");
+        assertThat(prefs.getQuietHoursStart()).isNull();
         cums.verify();
     }
 

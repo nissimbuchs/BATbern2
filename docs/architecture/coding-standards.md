@@ -585,9 +585,9 @@ signed-in or signed-out state into the real `AuthContext`, so `useAuth` and ever
 real, and `hasRole`, `hasPermission` and `canAccess` are the provider's own rules
 (`src/contexts/authRules.ts`). Never `vi.mock('@/hooks/useAuth')`. Zustand stores run for real: set
 the state a test needs with `useXStore.setState(...)` and reset it in `beforeEach` (a persisted
-store also needs `localStorage.clear()`). A STOMP/SockJS connection is a network boundary: mock
-the third-party packages (`@stomp/stompjs`, `sockjs-client`) or rely on the condition the client
-already uses to stay off, never our own WebSocket hook or client.
+store also needs `localStorage.clear()`). The SPA has no WebSocket client since #1222; should one
+return, the connection is a network boundary: mock the third-party package or rely on the
+condition the client already uses to stay off, never our own WebSocket hook or client.
 
 New examples come from the local anonymized database:
 `cd web-frontend && node ../scripts/dev/capture-spec-examples.ts` against `make dev-native-up`

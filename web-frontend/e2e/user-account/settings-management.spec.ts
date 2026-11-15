@@ -52,16 +52,18 @@ test.describe('Settings Management', { tag: '@gate' }, () => {
       await expect(page.getByTestId('notification-settings-panel')).toBeVisible();
     });
 
-    test('should_displayChannelToggles_when_notificationsOpen', async ({ page }) => {
+    test('should_displayEmailToggle_when_notificationsOpen', async ({ page }) => {
       await expect(page.getByTestId('channel-email')).toBeVisible();
-      await expect(page.getByTestId('channel-in-app')).toBeVisible();
-      await expect(page.getByTestId('channel-push')).toBeVisible();
+      // #1222: in-app and push were stored and never read, so they are no longer offered.
+      await expect(page.getByTestId('channel-in-app')).toHaveCount(0);
+      await expect(page.getByTestId('channel-push')).toHaveCount(0);
     });
 
-    test('should_displayFrequencySelector_when_notificationsOpen', async ({ page }) => {
-      await expect(page.getByTestId('frequency-immediate')).toBeVisible();
-      await expect(page.getByTestId('frequency-daily')).toBeVisible();
-      await expect(page.getByTestId('frequency-weekly')).toBeVisible();
+    test('should_displayQnaFrequencySelector_when_notificationsOpen', async ({ page }) => {
+      await expect(page.getByTestId('qna-frequency-live')).toBeVisible();
+      await expect(page.getByTestId('qna-frequency-daily')).toBeVisible();
+      await expect(page.getByTestId('qna-frequency-off')).toBeVisible();
+      await expect(page.getByTestId('frequency-immediate')).toHaveCount(0);
     });
   });
 

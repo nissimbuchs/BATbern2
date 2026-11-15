@@ -1453,7 +1453,7 @@ export interface components {
     };
     /**
      * @description The user's settings, one object (Story 4.9 merged the former UserPreferences into it).
-     *     Display: theme, language, timezone. Notifications: channels, frequency, Q&A digest, quiet
+     *     Display: theme, language, timezone. Notifications: e-mail on or off, Q&A digest, quiet
      *     hours. Privacy: visibility and contact options.
      */
     UserSettings: {
@@ -1475,15 +1475,6 @@ export interface components {
       timezone: string | null;
       /** @default true */
       emailNotifications: boolean;
-      /** @default true */
-      inAppNotifications: boolean;
-      /** @default false */
-      pushNotifications: boolean;
-      /**
-       * @default immediate
-       * @enum {string}
-       */
-      notificationFrequency: 'immediate' | 'daily_digest' | 'weekly_digest';
       /**
        * @description How often this user is emailed about new questions in the Q&A of sessions
        *     where they are speaker / co-speaker / moderator (Story 15.7).
@@ -1537,10 +1528,6 @@ export interface components {
       /** @description IANA zone id, e.g. Europe/Zurich */
       timezone?: string;
       emailNotifications?: boolean;
-      inAppNotifications?: boolean;
-      pushNotifications?: boolean;
-      /** @enum {string} */
-      notificationFrequency?: 'immediate' | 'daily_digest' | 'weekly_digest';
       /** @enum {string} */
       qnaNotificationFrequency?: 'live' | 'daily' | 'off';
       /** @description HH:mm; an empty string clears it (no quiet hours) */

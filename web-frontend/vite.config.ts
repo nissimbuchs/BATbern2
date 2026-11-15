@@ -27,7 +27,8 @@ import { viteStaticCopy } from 'vite-plugin-static-copy';
 // https://vitejs.dev/config/
 export default defineConfig({
   define: {
-    // Polyfill for sockjs-client which expects Node.js global
+    // Node.js `global` for dependencies that expect it. Added for sockjs-client, kept when that
+    // was removed (#1222) because no audit showed that no other dependency reads it.
     global: 'globalThis',
   },
   plugins: [
@@ -337,15 +338,11 @@ export default defineConfig({
           // blanket `vendor` chunk shipped to every visitor:
           //   - motion/motion-dom: framer-motion's actual v12 package — the regex above only
           //     matched the `framer-motion` alias, so ~326 KB stayed eager. Presentation only.
-          //   - @stomp/stompjs + sockjs-client: notification WebSocket — authenticated only.
           //   - react-dropzone + file-selector: file upload (profile picture / admin import).
           //   - ics: calendar-invite generation (partner/organizer meetings).
           // Returning undefined lets Rollup co-locate each with the lazy route chunk that
           // imports it — same safe carve-out pattern as `tone`/recharts above.
-          if (
-            /[\\/]node_modules[\\/]@stomp[\\/]stompjs[\\/]/.test(id) ||
-            /[\\/]node_modules[\\/](sockjs-client|react-dropzone|file-selector|ics)[\\/]/.test(id)
-          )
+          if (/[\\/]node_modules[\\/](react-dropzone|file-selector|ics)[\\/]/.test(id))
             return undefined;
           // AWS Amplify + its AWS SDK / Cognito / Smithy transitive tree (~426 KB) is the
           // largest dependency the blanket `vendor` chunk shipped to every public-homepage

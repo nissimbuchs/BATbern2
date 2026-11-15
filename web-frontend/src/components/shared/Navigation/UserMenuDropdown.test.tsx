@@ -26,11 +26,6 @@ const mockUser: UserContext = {
   preferences: {
     language: 'de',
     theme: 'light',
-    notifications: {
-      email: true,
-      sms: false,
-      push: true,
-    },
     privacy: {
       showProfile: true,
       allowMessages: true,

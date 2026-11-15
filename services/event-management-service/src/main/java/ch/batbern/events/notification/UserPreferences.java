@@ -17,9 +17,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class UserPreferences {
     private boolean emailNotificationsEnabled;
-    private boolean inAppNotificationsEnabled;
-    private boolean pushNotificationsEnabled;
-    private String notificationFrequency;  // realtime, daily_digest, weekly_digest
     private String quietHoursStart;  // "22:00"
     private String quietHoursEnd;    // "07:00"
 }

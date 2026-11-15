@@ -159,14 +159,19 @@ public final class CumsContractHarness implements AutoCloseable {
      * language ({@code UserApiClient#getPreferredLanguage}); every other setting is its default.
      */
     public void userWithLanguage(String username, String language) {
+        userWithSettings(username, Map.of("language", language));
+    }
+
+    /**
+     * Answers {@code GET /internal/users/{username}} with a user whose settings are the CUMS
+     * defaults overlaid with these values ({@code UserApiClient#getPreferences}).
+     */
+    public void userWithSettings(String username, Map<String, Object> overrides) {
         Map<String, Object> settings = new LinkedHashMap<>();
         settings.put("theme", "auto");
-        settings.put("language", language);
+        settings.put("language", "de");
         settings.put("timezone", "Europe/Zurich");
         settings.put("emailNotifications", true);
-        settings.put("inAppNotifications", true);
-        settings.put("pushNotifications", false);
-        settings.put("notificationFrequency", "immediate");
         settings.put("qnaNotificationFrequency", "live");
         settings.put("quietHoursStart", null);
         settings.put("quietHoursEnd", null);
@@ -177,6 +182,7 @@ public final class CumsContractHarness implements AutoCloseable {
         settings.put("allowMessaging", true);
         settings.put("allowCalendarSync", false);
         settings.put("twoFactorEnabled", false);
+        settings.putAll(overrides);
         user(username, toJson(Map.of("settings", settings)));
     }
 

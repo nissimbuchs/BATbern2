@@ -35,18 +35,6 @@ public class UserPreferences {
     @Builder.Default
     private boolean emailNotifications = true;
 
-    @Column(name = "pref_in_app_notifications")
-    @Builder.Default
-    private boolean inAppNotifications = true;
-
-    @Column(name = "pref_push_notifications")
-    @Builder.Default
-    private boolean pushNotifications = false;
-
-    @Column(name = "pref_notification_frequency", length = 20)
-    @Builder.Default
-    private String notificationFrequency = "immediate";
-
     /**
      * Q&A notification cadence (Story 15.7): live | daily | off. Controls how often the user is
      * emailed about new questions in sessions where they are speaker / co-speaker / moderator.

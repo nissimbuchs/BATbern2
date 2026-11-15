@@ -150,11 +150,6 @@ async function hydrateUserFromDb(user: UserContext): Promise<UserContext> {
         preferences: {
           language: normalizeLanguage(p.language, hydrated.preferences?.language ?? 'en'),
           theme: p.theme === 'dark' ? 'dark' : 'light',
-          notifications: {
-            email: p.emailNotifications,
-            sms: false,
-            push: p.pushNotifications,
-          },
           privacy: {
             showProfile: true,
             allowMessages: true,

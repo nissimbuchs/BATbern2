@@ -826,16 +826,6 @@ UserPreferences:
     emailNotifications:
       type: boolean
       default: true
-    inAppNotifications:
-      type: boolean
-      default: true
-    pushNotifications:
-      type: boolean
-      default: false
-    notificationFrequency:
-      type: string
-      enum: [immediate, daily_digest, weekly_digest]
-      default: immediate
     quietHoursStart:
       type: string
       pattern: '^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$'

@@ -27,9 +27,6 @@ const settings = (over: Partial<UserSettingsResponse> = {}): UserSettingsRespons
   language: 'de',
   timezone: 'Europe/Zurich',
   emailNotifications: true,
-  inAppNotifications: true,
-  pushNotifications: false,
-  notificationFrequency: 'immediate',
   qnaNotificationFrequency: 'live',
   quietHoursStart: null,
   quietHoursEnd: null,
@@ -95,7 +92,6 @@ describe('getUserProfile', () => {
       settings: settings({
         theme: 'dark',
         timezone: 'America/New_York',
-        notificationFrequency: 'daily_digest',
         qnaNotificationFrequency: 'off',
         emailNotifications: false,
         profileVisibility: 'members_only',
@@ -108,8 +104,7 @@ describe('getUserProfile', () => {
     expect(result.preferences).toEqual({
       theme: 'DARK',
       timezone: 'America/New_York',
-      notificationChannels: { email: false, inApp: true, push: false },
-      notificationFrequency: 'DAILY_DIGEST',
+      notificationChannels: { email: false },
       qnaNotificationFrequency: 'OFF',
     });
     expect(result.settings).toEqual({
@@ -171,23 +166,19 @@ describe('updateUserPreferences (PATCH /users/me/settings)', () => {
     expect(result.timezone).toBe('Europe/Berlin');
   });
 
-  it('sends the notification channels and frequencies', async () => {
+  it('sends the e-mail channel and the Q&A frequency', async () => {
     api.on('updateUserSettings', ({ body }) => settings({ ...body }));
 
     const result = await updateUserPreferences({
-      notificationChannels: { email: false, inApp: true, push: true },
-      notificationFrequency: 'WEEKLY_DIGEST',
+      notificationChannels: { email: false },
       qnaNotificationFrequency: 'DAILY',
     });
 
     expect(api.calls('updateUserSettings')[0].body).toEqual({
       emailNotifications: false,
-      inAppNotifications: true,
-      pushNotifications: true,
-      notificationFrequency: 'weekly_digest',
       qnaNotificationFrequency: 'daily',
     });
-    expect(result.notificationFrequency).toBe('WEEKLY_DIGEST');
+    expect(result.notificationChannels).toEqual({ email: false });
     expect(result.qnaNotificationFrequency).toBe('DAILY');
   });
 });

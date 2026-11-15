@@ -10,11 +10,6 @@ export type UserRole = 'organizer' | 'speaker' | 'partner' | 'attendee';
 export interface UserContextPreferences {
   language: 'en' | 'de' | 'fr' | 'it';
   theme: 'light' | 'dark';
-  notifications: {
-    email: boolean;
-    sms: boolean;
-    push: boolean;
-  };
   privacy: {
     showProfile: boolean;
     allowMessages: boolean;

@@ -38,8 +38,6 @@ be-mock-s2s-client	services/event-management-service/src/test/java/ch/batbern/ev
 be-mock-s2s-client	services/event-management-service/src/test/java/ch/batbern/events/mailcenter/MailGoldenTest.java	1
 be-mock-s2s-client	services/event-management-service/src/test/java/ch/batbern/events/mailcenter/OwnTextComposerIntegrationTest.java	1
 be-mock-s2s-client	services/event-management-service/src/test/java/ch/batbern/events/mailcenter/compose/PartnerAudienceAdapterTest.java	1
-be-mock-s2s-client	services/event-management-service/src/test/java/ch/batbern/events/notification/NotificationServiceTest.java	1
-be-mock-s2s-client	services/event-management-service/src/test/java/ch/batbern/events/notification/OrganizerNotificationListenerTest.java	1
 be-mock-s2s-client	services/event-management-service/src/test/java/ch/batbern/events/service/DeregistrationEmailServiceTest.java	1
 be-mock-s2s-client	services/event-management-service/src/test/java/ch/batbern/events/service/DeregistrationServiceTest.java	1
 be-mock-s2s-client	services/event-management-service/src/test/java/ch/batbern/events/service/DistributionListServiceTest.java	1
@@ -212,7 +210,6 @@ fe-mock-components	web-frontend/src/components/shared/Company/__tests__/CompanyD
 fe-mock-components	web-frontend/src/components/shared/Company/__tests__/CompanyManagementScreen.test.tsx	1
 fe-mock-components	web-frontend/src/components/shared/__tests__/OrganizerChip.test.tsx	1
 fe-mock-components	web-frontend/src/pages/PartnerCompanyPage.test.tsx	1
-fe-mock-components	web-frontend/src/pages/UserAccountPage/UserAccountPage.test.tsx	2
 fe-mock-components	web-frontend/src/pages/organizer/OrganizerAnalyticsPage.test.tsx	4
 fe-mock-components	web-frontend/src/pages/public/ClaimProfilePage.test.tsx	1
 fe-mock-components	web-frontend/src/pages/public/__tests__/ArchivePage.test.tsx	2
@@ -308,7 +305,6 @@ fe-mock-hooks	web-frontend/src/hooks/useMyRegistration.test.ts	1
 fe-mock-hooks	web-frontend/src/hooks/useTurnstile/useTurnstile.test.ts	1
 fe-mock-hooks	web-frontend/src/pages/PartnerCompanyPage.test.tsx	1
 fe-mock-hooks	web-frontend/src/pages/PresentationPage.test.tsx	2
-fe-mock-hooks	web-frontend/src/pages/UserAccountPage/UserAccountPage.test.tsx	2
 fe-mock-hooks	web-frontend/src/pages/public/__tests__/ArchivePage.test.tsx	1
 fe-mock-hooks	web-frontend/src/pages/public/__tests__/DeregistrationPage.test.tsx	1
 fe-mock-hooks	web-frontend/src/pages/public/__tests__/UnsubscribePage.test.tsx	1

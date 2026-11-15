@@ -1505,8 +1505,8 @@ sequenceDiagram
 ## Real-time Notifications and Escalation
 
 Two channels exist: **email** (SES through the shared `EmailService`) and **in-app** rows for
-organizers (`OrganizerNotificationListener` writes one `IN_APP` row per organizer per domain event and
-pushes it over STOMP to `/topic/notifications/{username}`). Escalation is limited to
+organizers (`OrganizerNotificationListener` writes one `IN_APP` row per organizer per domain event; the
+SPA reads them over REST, nothing is pushed since #1222). Escalation is limited to
 `SpeakerReminderService`: after the third unanswered reminder the organizer gets a
 `SPEAKER_ESCALATION` mail. Users set email on or off, quiet hours and the Q&A digest cadence in their
 preferences. No SMS channel and no escalation rule engine exist.

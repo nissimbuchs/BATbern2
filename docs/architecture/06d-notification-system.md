@@ -36,7 +36,6 @@ flowchart LR
     ONL --> NT[("notifications, channel IN_APP, status UNREAD")]
     NT --> REST["GET /api/v1/notifications, organizer only"]
     REST --> FEED["TeamActivityFeed, NotificationsPage"]
-    ONL -. "STOMP push, reaches only localhost dev" .-> FEED
     SR --> SRE["SpeakerReminderEmailService"]
     SR -->|"TIER_3 reminder sent"| NS["NotificationService.createAndSendEmailNotification"]
     NS --> NTE[("notifications, channel EMAIL, SPEAKER_ESCALATION")]
@@ -154,16 +153,16 @@ Status values in use: `PENDING`, `SENT`, `FAILED` (email), `UNREAD`, `READ` (in-
 - **`NotificationService.createAndSendEmailNotification(NotificationRequest)`**: reads the
   recipient's preferences from CUMS (`UserApiClient.getPreferences`), skips the send when email
   notifications are disabled or the recipient is in quiet hours, saves a `PENDING` row, sends
-  via `EmailService.sendHtmlEmail(...)` with a `MailContext` (so the send is recorded in the
-  Mail Center, Story 16.1a), then sets `SENT` or `FAILED`. Its only caller in `src/main` is
+  synchronously via `EmailService.sendHtmlEmailSync(...)` with a `MailContext` (so the send is
+  recorded in the Mail Center, Story 16.1a), then sets `SENT` or `FAILED` from what SES answered.
+  Until #1222 it used the `@Async` send, which returned at once, so a mail SES refused was still
+  recorded as `SENT`. Its only caller in `src/main` is
   `SpeakerReminderService` (type `SPEAKER_ESCALATION`, priority `HIGH`).
-- **`NotificationService.pushNotificationViaWebSocket(Notification)`**: sends the row to the STOMP
-  destination `/topic/notifications/{username}`. Failures are logged and ignored.
 - **`OrganizerNotificationListener`**: listens to domain events and writes one `IN_APP` row per
   organizer per event (see the correction above), with `notification_type` set to the domain
   event type and a priority derived from the event type name (`Cancelled`/`Failed`/`Error` HIGH,
-  `Deadline`/`Urgent` URGENT, `Updated`/`Modified` LOW, else NORMAL). It then calls
-  `pushNotificationViaWebSocket`.
+  `Deadline`/`Urgent` URGENT, `Updated`/`Modified` LOW, else NORMAL). Nothing is pushed: the
+  organizer reads the rows over REST (#1222 removed the STOMP push that reached only localhost).
 - **`NotificationController`**: REST read and status API for the rows.
 
 There is no `EventPublishedEvent` listener any more (#1179): publishing the agenda used to mail
@@ -188,7 +187,6 @@ sequenceDiagram
     CUMS-->>L: organizer usernames
     loop each organizer
         L->>DB: INSERT channel IN_APP, status UNREAD, type = event type, priority from type name
-        L->>L: pushNotificationViaWebSocket, failure only logged
     end
     UI->>DB: GET /api/v1/notifications (the caller's own) via NotificationController, React Query staleTime 1 min
     UI->>DB: PATCH /notifications/id or /notifications with status READ, DELETE /notifications/id
@@ -282,24 +280,22 @@ so that nobody looks for it:
   last login"), and the `getLastLogin` client call they needed;
 - **Thymeleaf** notification templates under `resources/templates/notifications/`, including
   `event_published.html` (templates are HTML files in `email-templates/`, stored in the database);
-- **real-time push in staging and production** (the WebSocket client connects on localhost only,
-  see below);
-- reading the `inAppNotifications`, `pushNotifications` and `notificationFrequency` preferences
-  (stored, never evaluated).
+- **real-time push** of in-app notifications. The STOMP push to `/topic/notifications/{username}`
+  and its browser client connected on localhost only and were removed (#1222, see below);
+- in-app, push and frequency preferences. They were stored and never evaluated, and #1222 removed
+  them from the API, the services and the profile page.
 
 ## User Notification Preferences
 
 **Storage**: one column per preference on `user_profiles` in CUMS (`pref_email_notifications`,
-`pref_in_app_notifications`, `pref_push_notifications`, `pref_notification_frequency`,
 `pref_quiet_hours_start`, `pref_quiet_hours_end`, `pref_qna_notification_frequency`, plus
 `pref_language` and `pref_theme`). There is no `user_preferences` JSONB column. Users edit them
-through `PATCH /api/v1/users/me/settings` (one settings resource since Story 4.9).
+through `PATCH /api/v1/users/me/settings` (one settings resource since Story 4.9). The columns
+`pref_in_app_notifications`, `pref_push_notifications` and `pref_notification_frequency` are no
+longer mapped by any code (#1222) and are dropped by a later migration.
 
 **Fields** (API names):
 - `emailNotifications` (boolean)
-- `inAppNotifications` (boolean)
-- `pushNotifications` (boolean)
-- `notificationFrequency` (string: "realtime", "daily_digest", "weekly_digest")
 - `qnaNotificationFrequency` (string: "live" | "daily" | "off", default "live") — Story 15.7;
   per-user cadence for the Q&A new-questions digest (see Scheduled Notification Jobs). Stored as
   `user_profiles.pref_qna_notification_frequency`.
@@ -315,10 +311,9 @@ Which preferences are actually read (checked 2026-11-04):
 | `emailNotifications`, `quietHoursStart/End` | `NotificationService.shouldSend`, so only the `SPEAKER_ESCALATION` mail |
 | `qnaNotificationFrequency` | `QnaNotificationService` (Q&A digest) |
 | `language` | most mail senders for the DE/EN choice, `LanguageSync` in the SPA |
-| `inAppNotifications`, `pushNotifications`, `notificationFrequency` | nothing: stored and editable, no code path reads them |
 
 Registration, reminder, waitlist and Mail Center mails do not consult `emailNotifications` or
-quiet hours. The IN_APP feed ignores `inAppNotifications`.
+quiet hours. The IN_APP feed is written for every organizer; there is no per-user switch.
 
 ```java
 // NotificationService (EMS), as in the source
@@ -382,32 +377,20 @@ public List<String> getOrganizerUsernames() {
 > **Not implemented:** `getLastLogin` and the `/users/{username}/last-login` endpoint shown in
 > earlier versions. They served the lazy in-app model, which was never built.
 
-## Real-Time Notifications (WebSocket push: local development only)
+## Real-Time Notifications: none
 
-What the code does: `OrganizerNotificationListener` calls
-`NotificationService.pushNotificationViaWebSocket`, which publishes to
-`/topic/notifications/{username}` via `SimpMessagingTemplate`. EMS registers the STOMP endpoint
-`/ws` with Spring's **in-memory simple broker** (`WebSocketConfig`, `enableSimpleBroker`). On
-the frontend, `EventManagementDashboard` subscribes through `useNotificationWebSocket`
-(`web-frontend/src/hooks/useNotificationWebSocket.ts`, `services/notificationWebSocketClient.ts`)
-and invalidates the notifications query when a message arrives.
+There is no push of in-app notifications. The organizer sees new rows when `useNotifications`
+refetches (stale after one minute, on focus or reload).
 
-```mermaid
-flowchart LR
-    L["OrganizerNotificationListener"] --> DB[("notifications row")]
-    L --> PUSH["SimpMessagingTemplate, in-memory broker of this EMS task"]
-    PUSH -->|"localhost only: SockJS to EMS port, gateway port + 2"| WS["useNotificationWebSocket"]
-    WS -->|"invalidate query"| RQ["useNotifications, React Query"]
-    DB -->|"GET /api/v1/notifications, staleTime 1 min, refetch on reload"| RQ
-    PUSH -.->|"cloud: isWebSocketAvailable is false, client never connects"| X["no push"]
-```
-
-In staging and production the push never reaches a browser: `isWebSocketAvailable()` returns
-true only for `localhost`/`127.0.0.1`, and `getWebSocketUrl()` throws "WebSocket not available in
-cloud environments" (checked in the source 2026-11-04). The organizer sees new rows when the
-query refetches (stale after one minute, on focus or reload). Even if a cloud client connected,
-the simple broker lives in one EMS task, so a push would reach only clients of that task; Story
-15.1 replaced WebSockets with REST polling for the live agenda for that reason (V119 comment).
+Until #1222 `OrganizerNotificationListener` also sent each row to
+`/topic/notifications/{username}` over STOMP, and `EventManagementDashboard` subscribed through
+`useNotificationWebSocket`. The browser client connected on `localhost` only, so staging and
+production never got a push, and the in-memory simple broker lives in one EMS task, so a cloud
+push would have reached only clients of that task (the reason Story 15.1 replaced WebSockets with
+REST polling for the live agenda). #1222 removed the server push, the hook, the client and the
+`@stomp/stompjs` and `sockjs-client` packages. The STOMP endpoint `/ws` and its broker stay: the
+watch uses them for live timing, presence and arrivals (`WebSocketConfig`,
+`WatchWebSocketController`).
 
 ## Email Notification Templates
 

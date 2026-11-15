@@ -68,7 +68,6 @@ interface UserPreferences {
   notifications?: {
     email?: boolean;
     sms?: boolean;
-    push?: boolean;
   };
   privacy?: {
     showProfile?: boolean;

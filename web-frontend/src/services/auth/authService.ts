@@ -326,7 +326,6 @@ class AuthService {
               notifications: {
                 email: true,
                 sms: false,
-                push: true,
               },
               privacy: {
                 showProfile: true,
@@ -552,7 +551,6 @@ class AuthService {
     const preferences: UserContextPreferences = {
       language: 'en',
       theme: 'light',
-      notifications: { email: true, sms: false, push: true },
       privacy: { showProfile: true, allowMessages: true },
     };
 

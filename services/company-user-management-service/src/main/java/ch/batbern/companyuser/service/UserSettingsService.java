@@ -90,15 +90,6 @@ public class UserSettingsService {
         if (request.getEmailNotifications() != null) {
             prefs.setEmailNotifications(request.getEmailNotifications());
         }
-        if (request.getInAppNotifications() != null) {
-            prefs.setInAppNotifications(request.getInAppNotifications());
-        }
-        if (request.getPushNotifications() != null) {
-            prefs.setPushNotifications(request.getPushNotifications());
-        }
-        if (request.getNotificationFrequency() != null) {
-            prefs.setNotificationFrequency(request.getNotificationFrequency().getValue());
-        }
         if (request.getQnaNotificationFrequency() != null) {
             prefs.setQnaNotificationFrequency(request.getQnaNotificationFrequency().getValue());
         }
@@ -156,10 +147,6 @@ public class UserSettingsService {
                         prefs.getLanguage()))
                 .timezone(settings.getTimezone())
                 .emailNotifications(prefs.isEmailNotifications())
-                .inAppNotifications(prefs.isInAppNotifications())
-                .pushNotifications(prefs.isPushNotifications())
-                .notificationFrequency(ch.batbern.companyuser.dto.generated.UserSettings
-                        .NotificationFrequencyEnum.fromValue(prefs.getNotificationFrequency()))
                 .qnaNotificationFrequency(ch.batbern.companyuser.dto.generated.UserSettings
                         .QnaNotificationFrequencyEnum.fromValue(prefs.getQnaNotificationFrequency() != null
                                 ? prefs.getQnaNotificationFrequency() : "live"))

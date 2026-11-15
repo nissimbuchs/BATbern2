@@ -79,7 +79,7 @@
 3. **Consumers poll adaptively:**
    - Presenter / live-control / public countdown: poll every **3–5s while the event is LIVE**, back off to 30–60s when not live or tab hidden. Use `If-None-Match` so unchanged polls are 304s (near-zero cost).
    - Watch app: same `live-timing` endpoint, poll ~5s while screen active / session running; longer when wrist down. Reuse the existing `OfflineActionQueue` for action replay.
-4. **Teardown (forward, no compat):** remove `WebSocketConfig`, the `/ws` + `/api/v1/watch/ws` endpoints, `JwtStompInterceptor`, the frontend STOMP/SockJS client, and the watch `WebSocketClient/Service`. Drop the `sockjs/stompjs` deps.
+4. **Teardown (forward, no compat):** remove `WebSocketConfig`, the `/ws` + `/api/v1/watch/ws` endpoints, `JwtStompInterceptor`, and the watch `WebSocketClient/Service`. (The frontend STOMP/SockJS notification client and the `sockjs/stompjs` deps are already gone, #1222.)
 
 **Data/API.** New `live-timing` GET + `actions` POST in events OpenAPI; remove the WS contract. No DB change (timing already persisted on sessions).
 

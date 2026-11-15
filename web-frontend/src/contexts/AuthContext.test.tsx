@@ -278,7 +278,6 @@ describe('AuthContext — Multi-Role Support (Story 9.5)', () => {
           language: 'fr',
           theme: 'dark',
           emailNotifications: false,
-          pushNotifications: false,
         },
       });
 

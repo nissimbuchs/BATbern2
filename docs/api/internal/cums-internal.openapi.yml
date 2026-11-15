@@ -100,9 +100,6 @@ paths:
                       theme: auto
                       language: en
                       emailNotifications: true
-                      inAppNotifications: true
-                      pushNotifications: false
-                      notificationFrequency: immediate
                       qnaNotificationFrequency: daily
                       quietHoursStart: null
                       quietHoursEnd: null

@@ -12,18 +12,16 @@
  * - Quick actions sidebar
  */
 
-import React, { useEffect } from 'react';
+import React from 'react';
 import { Paper, Typography, Box, Stack, Alert, Container } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import { useTranslation } from 'react-i18next';
 import { BATbernLoader } from '@components/shared/BATbernLoader';
 import { useNavigate } from 'react-router-dom';
-import { useQueryClient } from '@tanstack/react-query';
 import { useEvents } from '@/hooks/useEvents';
 import { useNotifications } from '@/hooks/useNotifications';
 import { useAuth } from '@/hooks/useAuth';
 import { useEventStore } from '@/stores/eventStore';
-import { useNotificationWebSocket } from '@/hooks/useNotificationWebSocket';
 import { EventList } from './EventList';
 import { EventSearch } from './EventSearch';
 import { TaskWidget } from '../Tasks/TaskWidget';
@@ -36,7 +34,6 @@ import type { EventFilters } from '@/types/event.types';
 export const EventManagementDashboard: React.FC = () => {
   const { t } = useTranslation('events');
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
   const { user } = useAuth();
   const {
     filters,
@@ -72,24 +69,6 @@ export const EventManagementDashboard: React.FC = () => {
     { page: 1, limit: 10 },
     { enabled: !!user }
   );
-
-  // Real-time WebSocket notifications (Story BAT-7)
-  const { onNotification, isConnected } = useNotificationWebSocket(user?.username);
-
-  // Subscribe to real-time notification updates
-  useEffect(() => {
-    if (!isConnected) {
-      return;
-    }
-
-    const unsubscribe = onNotification((notification) => {
-      console.log('Real-time notification received:', notification);
-      // Invalidate notifications query to refetch with new notification
-      queryClient.invalidateQueries({ queryKey: ['notifications'] });
-    });
-
-    return unsubscribe;
-  }, [isConnected, onNotification, queryClient]);
 
   const handleFiltersChange = (newFilters: EventFilters) => {
     setFilters(newFilters);

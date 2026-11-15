@@ -21,7 +21,6 @@ vi.mock('@/hooks/useAuth', () => ({
       preferences: {
         language: 'de',
         theme: 'light',
-        notifications: { email: true, sms: false, push: true },
         privacy: { showProfile: true, allowMessages: true },
       },
       issuedAt: 0,
