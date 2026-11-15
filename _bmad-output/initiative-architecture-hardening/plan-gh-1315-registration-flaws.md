@@ -17,14 +17,7 @@ context:
   - '{project-root}/docs/architecture/module-map.md'
   - '{project-root}/docs/architecture/coding-standards.md'
 warnings: ['multiple-goals', 'oversized']
-deferred:
-  - summary: >-
-      The ACCEPT e-mail reply (RegistrationService.confirmByEmail) still confirms a waitlisted, attended or no-show registration; the sibling of item 1.
-    evidence: |-
-      confirmByEmail filters out only confirmed and cancelled, so a waitlisted attendee who replies ACCEPT gets confirmed without capacity check and keeps a waitlist_position. Pre-existing, not touched by #1315 (the plan kept confirmByEmail unchanged because its tests are mock-based and the touch rule would pull them onto the harness). Fix: the same rule as confirmRegistration (only registered), with RegistrationServiceConfirmationTest moved to the harness.
-    location: >-
-      services/event-management-service/src/main/java/ch/batbern/events/service/RegistrationService.java confirmByEmail
-    severity: medium
+deferred: []
 ---
 
 <intent-contract>
@@ -127,7 +120,7 @@ deferred:
 - verdicts: 5 findings — high 0, medium 1, low 4, false 0, maybe-false 0
 - findings:
   - `[low]` `[reject]` No test for the no-address path (resend job skip, organizer 409) — CUMS `UserResponse.email` is required in the spec (users-api `required: [.., email]`) and the contract harness validates answers, so the path is defensive and not reachable with a spec-valid CUMS; a test would need contract-violating data. Not met in everyday use.
-  - `[medium]` `[defer]` `confirmByEmail` (ACCEPT reply) still confirms waitlist/attended/no_show — pre-existing, not caused by this change; recorded in `deferred` and reported to the owner.
+  - `[medium]` `[defer]` `confirmByEmail` (ACCEPT reply) still confirms waitlist/attended/no_show — pre-existing, not caused by this change; recorded in `deferred` and reported to the owner. Resolved on coordinator request by 5941b9aab (same rule as the link, tests on the harness); removed from `deferred`.
   - `[low]` `[reject]` Repeated pending registration answers "a new confirmation email has been sent" even when CUMS has no address — same unreachable no-address precondition as the first row; fixing it adds a branch.
   - `[low]` `[patch]` Test Javadoc names section "Status changes" — corrected to "Organizer status changes (#1315)".
   - `[low]` `[patch]` `notifyRegistrationConfirmed` Javadoc said the confirmation is already persisted — reworded: called inside the caller's transaction, never throws so the confirmation is not rolled back.
@@ -170,4 +163,4 @@ Rack rules: one heavy job at a time; Gradle `--max-workers=4`; foreground; `set 
 - **Follow-up review recommended:** false (patched: 2 low, 0 medium, 0 high).
 - **Verification:** full EMS suite 2945 tests, 0 failures (RegistrationControllerIntegrationTest 122, RegistrationResendServiceIntegrationTest 7, EmsEndpointPlacementTest 2, DomainExceptionResponseTest 61, RegistrationCapacityIntegrationTest 18, all after the last code commit); checkstyle re-run after the review patches (comments only); `make check-test-ratchet` and `make check-frontend-api-paths` clean; type-check, lint:api, Vitest 530/530; local-dev Bruno 24+18+17 requests green; Playwright 11/12 in a 2-worker run, the failing cancel test 6/6 alone (parallel `@e2e.batbern.invalid` user sweep by participant-import/event-participants specs, inferred from code, not proven).
 - **Residual risks:** confirmation mail now sent inside the create transaction (a CUMS failure rolls the new registration back); rollback of status+promotion shown by the transaction boundary, not a test; refused PATCH confirmation logs "Add-participant refused".
-
+- **Follow-up (coordinator request, 2026-11-15):** 5941b9aab `confirmByEmail` follows the link rule (refusal silent and logged, as for an unmatched reply; `RegistrationServiceConfirmationTest` replaced by `RegistrationConfirmationIntegrationTest`, ratchet -1); cc24d0c63 the capacity refusal log names method and path. Full EMS suite 2951 tests, 0 failures, 6 skipped; checkstyle and `make check-test-ratchet` clean.
