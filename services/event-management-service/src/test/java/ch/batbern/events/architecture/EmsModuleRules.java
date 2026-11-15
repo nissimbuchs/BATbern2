@@ -126,6 +126,34 @@ final class EmsModuleRules {
                 .allowEmptyShould(true);
     }
 
+    /** The platform exception base: the only EMS classes {@code GlobalExceptionHandler} may use (17.14). */
+    static final List<String> EXCEPTION_BASE = List.of("DomainException", "DomainErrorResponse");
+
+    /**
+     * Story 17.14: {@code GlobalExceptionHandler} (platform, L0) maps EMS domain exceptions only through
+     * their base {@code DomainException}; it uses no EMS class but {@link #EXCEPTION_BASE}. A module's
+     * exception is mapped by the base or, with extra fields, in the module's own advice. Not frozen:
+     * there is no violation. The rule fails when no {@code GlobalExceptionHandler} is found.
+     */
+    static ArchRule globalExceptionHandlerUsesOnlyExceptionBase(String root) {
+        DescribedPredicate<JavaClass> otherEmsClass = new DescribedPredicate<>(
+                "reside under " + root + " and are not " + EXCEPTION_BASE) {
+            @Override
+            public boolean test(JavaClass type) {
+                String pkg = type.getPackageName();
+                boolean underRoot = pkg.equals(root) || pkg.startsWith(root + ".");
+                boolean handlerItself = type.getName().contains("GlobalExceptionHandler");
+                return underRoot && !handlerItself && !EXCEPTION_BASE.contains(type.getSimpleName());
+            }
+        };
+        return noClasses().that().resideInAPackage(root + "..")
+                .and().haveSimpleName("GlobalExceptionHandler")
+                .should().dependOnClassesThat(otherEmsClass)
+                .as("Exception mapping: GlobalExceptionHandler uses no EMS class but " + EXCEPTION_BASE
+                        + "; domain exceptions are mapped through DomainException or in their module's advice"
+                        + " (Story 17.14)");
+    }
+
     /** Path segments of the registrations module's endpoints (Story 17.13). */
     static final List<String> REGISTRATION_PATHS = List.of("/registrations", "/my-registration");
 

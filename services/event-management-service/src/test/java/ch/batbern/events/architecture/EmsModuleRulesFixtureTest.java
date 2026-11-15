@@ -3,6 +3,7 @@ package ch.batbern.events.architecture;
 import ch.batbern.events.architecture.fixtures.client.PartnerFixtureClient;
 import ch.batbern.events.architecture.fixtures.client.UserFixtureClient;
 import ch.batbern.events.architecture.fixtures.eventcoreinherited.FixtureRegistrationsApi;
+import ch.batbern.events.architecture.fixtures.exceptionmapping.FixtureAgendaFullException;
 import ch.batbern.events.architecture.fixtures.forwarding.FixtureForwarder;
 import ch.batbern.events.architecture.fixtures.mailcenter.FixtureMailCenterService;
 import ch.batbern.events.architecture.fixtures.mailcenter.render.FixtureMailPipeline;
@@ -47,6 +48,12 @@ class EmsModuleRulesFixtureTest {
     private static final Class<?> INHERITING =
             ch.batbern.events.architecture.fixtures.eventcoreinherited.EventController.class;
     private static final Class<?> CLEAN = ch.batbern.events.architecture.fixtures.eventcoreclean.EventController.class;
+
+    /** Two fixtures named GlobalExceptionHandler (the rule goes by simple name), hence qualified. */
+    private static final Class<?> HANDLER_MAPPING_BY_HAND =
+            ch.batbern.events.architecture.fixtures.exceptionmapping.GlobalExceptionHandler.class;
+    private static final Class<?> HANDLER_CLEAN =
+            ch.batbern.events.architecture.fixtures.exceptionmappingclean.GlobalExceptionHandler.class;
 
     @Test
     @DisplayName("should_fail_when_classOutsideEdgeModuleUsesIt")
@@ -166,6 +173,32 @@ class EmsModuleRulesFixtureTest {
 
         assertThat(EmsModuleRules.noRegistrationEndpointIn(ROOT, "EventController")
                 .evaluate(new ClassFileImporter().importClasses(CLEAN))
+                .hasViolation()).isFalse();
+    }
+
+    @Test
+    @DisplayName("should_fail_when_globalExceptionHandlerUsesDomainException")
+    void should_fail_when_globalExceptionHandlerUsesDomainException() {
+        EvaluationResult result = EmsModuleRules.globalExceptionHandlerUsesOnlyExceptionBase(ROOT).evaluate(ALL);
+
+        assertThat(result.getFailureReport().getDetails())
+                .anyMatch(line -> line.contains(HANDLER_MAPPING_BY_HAND.getName())
+                        && line.contains(FixtureAgendaFullException.class.getName()))
+                .noneMatch(line -> line.contains(HANDLER_CLEAN.getName()))
+                // The base and the body builder are allowed: the handler's use of them is not reported.
+                .noneMatch(line -> line.contains("handleDomainException"));
+    }
+
+    @Test
+    @DisplayName("should_pass_when_globalExceptionHandlerUsesOnlyExceptionBase")
+    void should_pass_when_globalExceptionHandlerUsesOnlyExceptionBase() {
+        // Positive control: the same rule reports the handler that maps by hand.
+        assertThat(EmsModuleRules.globalExceptionHandlerUsesOnlyExceptionBase(ROOT)
+                .evaluate(new ClassFileImporter().importPackages(ROOT + ".exceptionmapping"))
+                .hasViolation()).isTrue();
+
+        assertThat(EmsModuleRules.globalExceptionHandlerUsesOnlyExceptionBase(ROOT)
+                .evaluate(new ClassFileImporter().importPackages(ROOT + ".exceptionmappingclean"))
                 .hasViolation()).isFalse();
     }
 
