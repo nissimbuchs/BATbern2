@@ -35,14 +35,6 @@ import {
  */
 const describeE2E = process.env.TEST_E2E === 'true' ? describe : describe.skip;
 
-/**
- * The scheduled-job failure alarms (ecs-service-alarms.ts, alarm 5) deliberately have no OK action:
- * a skipped item does not recover by time passing, so a human closes their GitHub issue. The only
- * exception to the #956 "every alarm announces its recovery" rule.
- */
-const isScheduledJobFailureAlarm = (a: MetricAlarm): boolean =>
-  (a.AlarmName ?? '').endsWith('-Scheduled-Job-Failures');
-
 describeE2E('Incident Response E2E Tests', () => {
   let cloudwatchClient: CloudWatchClient;
   let snsClient: SNSClient;
@@ -157,7 +149,7 @@ describeE2E('Incident Response E2E Tests', () => {
       // #956: alarms carry an OK action so the GitHub issue closes on recovery. Without it an
       // operator has to close every issue by hand and the backlog fills with resolved incidents.
       const noOkAction = alarms
-        .filter((a) => (a.OKActions ?? []).length === 0 && !isScheduledJobFailureAlarm(a))
+        .filter((a) => (a.OKActions ?? []).length === 0)
         .map((a) => a.AlarmName);
 
       expect(noOkAction).toEqual([]);

@@ -133,9 +133,9 @@ transition, a notification) did not happen. The alarm is a CloudWatch metric fil
 ### Scheduled job failures
 
 **Alarm:** `EventManagement-Scheduled-Job-Failures`. Fires on the first recorded failure and stays
-in ALARM for 24 hours (1-hour periods, 24 evaluated), the interval of the daily job. It has no OK
-action: the GitHub issue it opens stays open when the alarm returns to OK, because the skipped item is
-still unhandled. Close the issue yourself after step 2.
+in ALARM for 24 hours (1-hour periods, 24 evaluated), the interval of the daily job. Its OK action
+closes the GitHub issue when a day passes without a failure, whether or not the skipped item was
+handled: do step 2 within that day.
 
 A scheduled job that cannot process one item records it in `ScheduledJobFailures` (EMS) and goes
 on with the next one. Today that is the daily auto-publish (01:00): an event whose speakers or

@@ -43,14 +43,6 @@ import { SNSClient } from '@aws-sdk/client-sns';
  */
 const describeE2E = process.env.TEST_E2E === 'true' ? describe : describe.skip;
 
-/**
- * The scheduled-job failure alarms (ecs-service-alarms.ts, alarm 5) deliberately have no OK action:
- * a skipped item does not recover by time passing, so a human closes their GitHub issue. The only
- * exception to the #956 "every alarm announces its recovery" rule.
- */
-const isScheduledJobFailureAlarm = (a: MetricAlarm): boolean =>
-  (a.AlarmName ?? '').endsWith('-Scheduled-Job-Failures');
-
 describeE2E('Alert Scenarios E2E Tests', () => {
   let cloudwatchClient: CloudWatchClient;
   const environment = process.env.TEST_ENVIRONMENT || 'dev';
@@ -128,14 +120,9 @@ describeE2E('Alert Scenarios E2E Tests', () => {
     test('should_notifyOnAlarmAndRecovery_when_alarmDeployed', async () => {
       // #956: without an OK action the github-issues Lambda can never close the issue it
       // opened, so alarm issues accumulate forever.
-      // The one deliberate exception: the scheduled-job failure alarms (ecs-service-alarms.ts, alarm
-      // 5) have no OK action, because a skipped item does not recover by time passing; a human closes
-      // their issue.
       const alarms = await allAlarms();
       const missingActions = alarms
-        .filter(
-          (a) => !a.AlarmActions?.length || (!a.OKActions?.length && !isScheduledJobFailureAlarm(a))
-        )
+        .filter((a) => !a.AlarmActions?.length || !a.OKActions?.length)
         .map((a) => a.AlarmName);
 
       expect(missingActions).toEqual([]);

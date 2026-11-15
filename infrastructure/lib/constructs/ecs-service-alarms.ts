@@ -338,8 +338,9 @@ export class EcsServiceAlarms extends Construct {
         treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
       });
       scheduledJobFailureAlarm.addAlarmAction(alarmAction);
-      // No OK action (unlike alarms 3 and 4): a skipped item does not recover by time passing, so the
-      // issue (#956) stays open until a human has handled the item and closes it.
+      // OK action as on every alarm (#956): the issue closes when the 24-hour window has no failure,
+      // i.e. a day after the last one (owner 2026-11-15).
+      scheduledJobFailureAlarm.addOkAction(alarmAction);
       scheduledJobFailureAlarm.node.addDependency(scheduledJobFilter);
     }
 
