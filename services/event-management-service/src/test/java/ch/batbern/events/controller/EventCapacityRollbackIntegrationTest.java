@@ -41,7 +41,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  *
  * <p>Commits like production (no test transaction): the write's own transaction is what is tested. A
  * test hook, registered after the registrations module's real one, throws for {@link #FAILING} only;
- * {@link #HEALTHY} is the positive control.
+ * {@link #HEALTHY} is the positive control. The promotion mail goes out after the commit only: the
+ * healthy write mails the waiter once, the rolled-back one not at all.
  */
 @Import({TestSecurityConfig.class, TestAwsConfig.class, EventCapacityRollbackIntegrationTest.FailingHook.class})
 @DisplayName("Event capacity write rolls back with its waitlist fill")
@@ -50,6 +51,7 @@ class EventCapacityRollbackIntegrationTest extends AbstractIntegrationTest {
     private static final String FAILING = "BATbern9750";
     private static final String HEALTHY = "BATbern9751";
     private static final String SIM = "@simulator.amazonses.com";
+    private static final String WANDA = "success+wanda-waiting" + SIM;
 
     @Autowired
     private MockMvc mockMvc;
@@ -84,7 +86,7 @@ class EventCapacityRollbackIntegrationTest extends AbstractIntegrationTest {
         // events and two registrations suffice, and no name is searched, sorted or rendered.
         eventRepository.deleteAll();
         sesRecorder.reset();
-        cums.user("wanda.waiting", "{\"email\":\"success+wanda-waiting" + SIM + "\"}");
+        cums.user("wanda.waiting", "{\"email\":\"" + WANDA + "\"}");
         for (String code : new String[] {FAILING, HEALTHY}) {
             Event event = eventRepository.save(event(code));
             registration(event, "rita.registered", "registered", null);
@@ -100,14 +102,17 @@ class EventCapacityRollbackIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @DisplayName("should_rollBackCapacityAndPromotion_when_capacityHookFailsOnPatch")
-    void should_rollBackCapacityAndPromotion_when_capacityHookFailsOnPatch() throws Exception {
+    @DisplayName("should_rollBackCapacityPromotionAndMail_when_capacityHookFailsOnPatch")
+    void should_rollBackCapacityPromotionAndMail_when_capacityHookFailsOnPatch() throws Exception {
         // Positive control: the same PATCH on the healthy event saves the capacity and promotes
         mockMvc.perform(patch("/api/v1/events/" + HEALTHY).with(user("olga.organizer").roles("ORGANIZER"))
                         .contentType(MediaType.APPLICATION_JSON).content("{\"registrationCapacity\":3}"))
                 .andExpect(status().isOk());
         assertThat(capacity(HEALTHY)).isEqualTo(3);
         assertThat(registrationStatus(HEALTHY, "wanda.waiting")).isEqualTo("registered");
+        sesRecorder.awaitAsyncSends();
+        assertThat(sesRecorder.mailsTo(WANDA)).hasSize(1);
+        sesRecorder.reset();
 
         mockMvc.perform(patch("/api/v1/events/" + FAILING).with(user("olga.organizer").roles("ORGANIZER"))
                         .contentType(MediaType.APPLICATION_JSON).content("{\"registrationCapacity\":3}"))
@@ -116,16 +121,21 @@ class EventCapacityRollbackIntegrationTest extends AbstractIntegrationTest {
 
         assertThat(capacity(FAILING)).isEqualTo(1);
         assertThat(registrationStatus(FAILING, "wanda.waiting")).isEqualTo("waitlist");
+        sesRecorder.awaitAsyncSends();
+        assertThat(sesRecorder.mailsTo(WANDA)).as("no promotion mail for a rolled-back promotion").isEmpty();
     }
 
     @Test
-    @DisplayName("should_rollBackCapacityAndPromotion_when_capacityHookFailsOnPut")
-    void should_rollBackCapacityAndPromotion_when_capacityHookFailsOnPut() throws Exception {
+    @DisplayName("should_rollBackCapacityPromotionAndMail_when_capacityHookFailsOnPut")
+    void should_rollBackCapacityPromotionAndMail_when_capacityHookFailsOnPut() throws Exception {
         mockMvc.perform(put("/api/v1/events/" + HEALTHY).with(user("olga.organizer").roles("ORGANIZER"))
                         .contentType(MediaType.APPLICATION_JSON).content(putBody("Healthy")))
                 .andExpect(status().isOk());
         assertThat(capacity(HEALTHY)).isEqualTo(3);
         assertThat(registrationStatus(HEALTHY, "wanda.waiting")).isEqualTo("registered");
+        sesRecorder.awaitAsyncSends();
+        assertThat(sesRecorder.mailsTo(WANDA)).hasSize(1);
+        sesRecorder.reset();
 
         mockMvc.perform(put("/api/v1/events/" + FAILING).with(user("olga.organizer").roles("ORGANIZER"))
                         .contentType(MediaType.APPLICATION_JSON).content(putBody("Not saved")))
@@ -136,6 +146,8 @@ class EventCapacityRollbackIntegrationTest extends AbstractIntegrationTest {
         assertThat(failing.getRegistrationCapacity()).isEqualTo(1);
         assertThat(failing.getTitle()).isEqualTo("Rollback " + FAILING);
         assertThat(registrationStatus(FAILING, "wanda.waiting")).isEqualTo("waitlist");
+        sesRecorder.awaitAsyncSends();
+        assertThat(sesRecorder.mailsTo(WANDA)).as("no promotion mail for a rolled-back promotion").isEmpty();
     }
 
     private Integer capacity(String eventCode) {

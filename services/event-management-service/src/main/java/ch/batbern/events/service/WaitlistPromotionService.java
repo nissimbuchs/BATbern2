@@ -1,5 +1,6 @@
 package ch.batbern.events.service;
 
+import ch.batbern.events.config.AfterCommit;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Registration;
 import ch.batbern.events.exception.RegistrationNotFoundException;
@@ -37,7 +38,8 @@ public class WaitlistPromotionService {
      * <p>Free places = registration capacity minus the active registrations (registered +
      * confirmed, the same count that puts a new registration on the waitlist). No capacity
      * (unlimited) means everyone waiting is promoted. Each promoted person gets the
-     * waitlist-promotion mail. Called after a cancellation and whenever an organizer saves the
+     * waitlist-promotion mail once the transaction commits (none for a promotion that rolls back).
+     * Called after a cancellation and whenever an organizer saves the
      * capacity, so raising it from 220 to 250 promotes the next 30.
      *
      * <p>Remaining waitlist positions are not renumbered.
@@ -69,7 +71,7 @@ public class WaitlistPromotionService {
             promoted.setStatus("registered");
             promoted.setWaitlistPosition(null);
             registrationRepository.save(promoted);
-            waitlistPromotionEmailService.sendPromotionEmail(promoted);
+            AfterCommit.run(() -> waitlistPromotionEmailService.sendPromotionEmail(promoted));
             log.info("Promoted registration {} from waitlist for event {}",
                     promoted.getRegistrationCode(), event.getEventCode());
         }
@@ -82,7 +84,8 @@ public class WaitlistPromotionService {
 
     /**
      * Manually promote a specific registration from waitlist to registered.
-     * Called from the organizer UI "Promote to Registered" action.
+     * Called from the organizer UI "Promote to Registered" action. The promotion mail goes out after
+     * the commit.
      *
      * @param registrationCode Public registration code
      * @throws RegistrationNotFoundException     when code does not exist → 404
@@ -101,7 +104,7 @@ public class WaitlistPromotionService {
         registration.setWaitlistPosition(null);
         registrationRepository.save(registration);
 
-        waitlistPromotionEmailService.sendPromotionEmail(registration);
+        AfterCommit.run(() -> waitlistPromotionEmailService.sendPromotionEmail(registration));
         log.info("Manually promoted registration {} from waitlist", registrationCode);
     }
 }

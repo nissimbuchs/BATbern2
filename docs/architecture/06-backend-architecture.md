@@ -1551,6 +1551,16 @@ waitlist order, as many people as there are free places: capacity minus `registe
 promoted person becomes `registered` (waitlist position cleared) and gets the waitlist-promotion mail.
 Remaining positions are not renumbered.
 
+**Registration mails go out after the commit.** Every mail of the registration module (waitlist
+promotion and waitlist confirmation, the pending confirmation link, the confirmed mail with the
+calendar invite, the organizer's "added" mail) is queued through `config/AfterCommit.run`: it runs
+once the surrounding transaction has committed, right away when there is none (the daily resend job,
+unit tests), and never for a change that rolls back. So a capacity PUT or PATCH whose write hook fails
+promotes nobody and mails nobody (`EventCapacityRollbackIntegrationTest`,
+`RegistrationMailAfterCommitIntegrationTest`). The lookups the mail needs (CUMS user, language,
+confirmation token) still run inside the transaction. Not deferred (yet): the deregistration-link mail
+of `DeregistrationService`, sent inside the transaction that records its once-per-window claim.
+
 ```mermaid
 flowchart LR
     C1["attendee or organizer cancels<br/>RegistrationService.cancelRegistration,<br/>DeregistrationService, organizer status PATCH,<br/>organizer DELETE of a place holder"] --> P["promoteFromWaitlist"]

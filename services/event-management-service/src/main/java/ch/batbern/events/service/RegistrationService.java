@@ -2,6 +2,7 @@ package ch.batbern.events.service;
 
 import ch.batbern.shared.utils.LoggingUtils;
 import ch.batbern.events.client.UserApiClient;
+import ch.batbern.events.config.AfterCommit;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Registration;
 import ch.batbern.events.registrations.dto.generated.AddParticipantsResponse;
@@ -144,7 +145,7 @@ public class RegistrationService {
                         + " will resend waitlist-confirmation email", eventCode, username);
                 registration.setEventCode(eventCode);
                 registration.setCompanyUpdated(companyUpdated);
-                waitlistPromotionEmailService.sendWaitlistConfirmationEmail(registration);
+                AfterCommit.run(() -> waitlistPromotionEmailService.sendWaitlistConfirmationEmail(registration));
                 return registration;
             } else if ("cancelled".equalsIgnoreCase(registration.getStatus())) {
                 // Story 10.10 (T4.6): Allow re-registration for cancelled users.
@@ -232,7 +233,7 @@ public class RegistrationService {
         // Story 10.11 (T10.3): a waitlist registration gets the waitlist mail, a pending one the
         // confirmation link (Story 4.1.5c; #1315 one sender, in the attendee's language).
         if ("waitlist".equals(saved.getStatus())) {
-            waitlistPromotionEmailService.sendWaitlistConfirmationEmail(saved);
+            AfterCommit.run(() -> waitlistPromotionEmailService.sendWaitlistConfirmationEmail(saved));
         } else {
             confirmationSender.send(saved, event);
         }
@@ -803,8 +804,9 @@ public class RegistrationService {
     /**
      * Send the "registration confirmed" mail (with the calendar invite) for a registration that has
      * just moved from pending to confirmed. Called by both confirmation paths: the confirmation link
-     * and the ACCEPT email reply, each inside its transaction after the status change. Never throws:
-     * a failed lookup or send must not roll back the confirmation.
+     * and the ACCEPT email reply, each inside its transaction after the status change; the mail itself
+     * goes out after the commit (none for a confirmation that rolls back). Never throws: a failed lookup
+     * must not roll back the confirmation.
      *
      * @param registration the confirmed registration
      * @param event        the registration's event
@@ -815,7 +817,8 @@ public class RegistrationService {
             String pref = userApiClient.getPreferredLanguage(registration.getAttendeeUsername());
             Locale locale = (pref == null || pref.toLowerCase(Locale.ROOT).startsWith("de"))
                     ? Locale.GERMAN : Locale.ENGLISH;
-            registrationEmailService.sendRegistrationConfirmed(registration, user, event, locale);
+            AfterCommit.run(() ->
+                    registrationEmailService.sendRegistrationConfirmed(registration, user, event, locale));
         } catch (Exception e) {
             log.error("Could not send registration-confirmed email for registration {}",
                     registration.getRegistrationCode(), e);
@@ -1028,7 +1031,7 @@ public class RegistrationService {
             String pref = userApiClient.getPreferredLanguage(username);
             Locale locale = (pref != null && pref.toLowerCase(Locale.ROOT).startsWith("de"))
                     ? Locale.GERMAN : Locale.ENGLISH;
-            registrationEmailService.sendOrganizerAddedConfirmation(saved, user, event, locale);
+            AfterCommit.run(() -> registrationEmailService.sendOrganizerAddedConfirmation(saved, user, event, locale));
         }
 
         return saved;
@@ -1144,7 +1147,7 @@ public class RegistrationService {
         if ("confirmed".equals(registrationStatus)) {
             notifyRegistrationConfirmed(saved, event);
         } else {
-            waitlistPromotionEmailService.sendWaitlistConfirmationEmail(saved);
+            AfterCommit.run(() -> waitlistPromotionEmailService.sendWaitlistConfirmationEmail(saved));
         }
         return saved;
     }
