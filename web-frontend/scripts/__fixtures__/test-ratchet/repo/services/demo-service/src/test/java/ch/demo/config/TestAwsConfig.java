@@ -12,8 +12,8 @@ import static org.mockito.Mockito.mock;
 
 // Counted (be-mock-in-process 3): EmailService and CognitoIntegrationService inside the config,
 // SlugService in the nested @Configuration; UserApiClient as an S2S client (be-mock-s2s-client 1).
-// Not counted: S3Client (AWS SDK), HttpClient (JDK), the mock in the helper class below (not a
-// configuration), and the commented one.
+// The mock(EmailService.class) in the helper class below (not a configuration) counts as
+// be-mock-email-service 1. Not counted: S3Client (AWS SDK), HttpClient (JDK), and the commented one.
 @TestConfiguration
 public class TestAwsConfig {
 

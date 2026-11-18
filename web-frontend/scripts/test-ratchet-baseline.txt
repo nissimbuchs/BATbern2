@@ -3,6 +3,17 @@
 # Rules: docs/architecture/coding-standards.md, section "Test fidelity rules".
 # Per test file: own-code mocks and class-level @Transactional ITs. Counts may only fall.
 # Format: <category> TAB <path> TAB <count>, sorted, zero counts omitted.
+be-mock-email-service	services/event-management-service/src/test/java/ch/batbern/events/forwarding/EmailForwardingServiceTest.java	38
+be-mock-email-service	services/event-management-service/src/test/java/ch/batbern/events/mailcenter/compose/PartnerAudienceAdapterTest.java	2
+be-mock-email-service	services/event-management-service/src/test/java/ch/batbern/events/mailcenter/compose/SpeakerAudienceAdapterTest.java	1
+be-mock-email-service	services/event-management-service/src/test/java/ch/batbern/events/service/DeregistrationEmailServiceTest.java	1
+be-mock-email-service	services/event-management-service/src/test/java/ch/batbern/events/service/NewsletterEmailServiceTest.java	1
+be-mock-email-service	services/event-management-service/src/test/java/ch/batbern/events/service/RegistrationEmailServiceTest.java	14
+be-mock-email-service	services/event-management-service/src/test/java/ch/batbern/events/service/SpeakerAcceptanceEmailServiceTest.java	12
+be-mock-email-service	services/event-management-service/src/test/java/ch/batbern/events/service/SpeakerInvitationEmailServiceTest.java	13
+be-mock-email-service	services/event-management-service/src/test/java/ch/batbern/events/service/SpeakerModeratorReplyToTest.java	1
+be-mock-email-service	services/event-management-service/src/test/java/ch/batbern/events/service/TaskReminderEmailServiceTest.java	15
+be-mock-email-service	services/partner-coordination-service/src/test/java/ch/batbern/partners/service/PartnerInviteEmailServiceTest.java	7
 be-mock-in-process	services/event-management-service/src/test/java/ch/batbern/events/controller/DeregistrationControllerIntegrationTest.java	3
 be-mock-in-process	services/event-management-service/src/test/java/ch/batbern/events/controller/SessionQnaIntegrationTest.java	1
 be-mock-in-process	services/event-management-service/src/test/java/ch/batbern/events/forwarding/CalendarDeclineServiceIntegrationTest.java	1
