@@ -262,7 +262,7 @@ flowchart LR
 The persisted stores use Zustand's `persist` middleware with the localStorage keys
 `event-store`, `company-store`, `partner-store`, `user-management-store`,
 `event-participant-store` and `newsletter-subscriber-store`. `uiStore` writes its few values to
-localStorage by hand (`batbern-ui-locale`, `batbern-ui-sidebar`, ...).
+localStorage by hand (`batbern-ui-sidebar`, `batbern-ui-active-nav-role`).
 
 > **Not built:** the 2025 design sketched a single `AppState` tree holding auth, UI and domain
 > lists (`events.eventList`, `speakers.invitations`, `attendees.bookmarks`, ...) in one store.
@@ -1860,10 +1860,9 @@ account settings (not verified 2026-11-04).
 
 ### State Management Integration
 
-`uiStore` has a `locale` field with `setLocale`, which only writes `batbern-ui-locale` to
-localStorage. It does **not** call `i18n.changeLanguage`, and no component reads it to drive the
-UI language (checked by grep, 2026-11-04). The language source of truth is i18next plus
-`batbern-language` in localStorage, and `settings.language` in CUMS for signed-in users.
+`uiStore` holds no language. Its former `locale` field was never read and was removed
+(2026-11-18). The language source of truth is i18next plus `batbern-language` in localStorage,
+and `settings.language` in CUMS for signed-in users.
 
 **Persistence**:
 - LocalStorage: `batbern-language` (written by the `languageChanged` handler and the switcher)

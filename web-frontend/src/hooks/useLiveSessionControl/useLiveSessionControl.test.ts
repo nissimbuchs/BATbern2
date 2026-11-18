@@ -9,6 +9,8 @@
  * - sendExtend / sendDelay POST the action; no-op without an active session
  * - connectionStatus transitions on poll success/failure
  * - Offline action queue: a failed POST is retried on the next poll
+ * - Browser offline: 'offline' at mount, an immediate poll when 'online' fires mid-poll,
+ *   window listeners removed on unmount
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
@@ -300,5 +302,73 @@ describe('useLiveSessionControl (REST polling)', () => {
 
     await waitFor(() => expect(result.current.connectionStatus).toBe('reconnecting'));
     expect(mockPost).toHaveBeenCalledTimes(1);
+  });
+
+  // ── Browser offline / online ────────────────────────────────────────────────
+
+  describe('browser network state', () => {
+    afterEach(() => {
+      vi.restoreAllMocks();
+    });
+
+    it('should report offline from mount when navigator.onLine is false, also after a failed poll', async () => {
+      vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false);
+      mockGet.mockRejectedValue(new Error('network down') as never);
+
+      const { result } = renderHook(() => useLiveSessionControl('BAT142'));
+
+      expect(result.current.connectionStatus).toBe('offline');
+      await waitFor(() => expect(result.current.isLoadingInitial).toBe(false));
+      expect(mockGet).toHaveBeenCalledTimes(1);
+      expect(result.current.connectionStatus).toBe('offline');
+    });
+
+    it('should poll again at once when online fires while a poll is in flight', async () => {
+      let answerFirstPoll!: (value: unknown) => void;
+      mockGet.mockImplementationOnce(
+        (() =>
+          new Promise((resolve) => {
+            answerFirstPoll = resolve;
+          })) as never
+      );
+
+      renderHook(() => useLiveSessionControl('BAT142'));
+      await waitFor(() => expect(mockGet).toHaveBeenCalledTimes(1));
+
+      // Online arrives mid-poll: no second, overlapping poll is started.
+      act(() => {
+        window.dispatchEvent(new Event('online'));
+      });
+      expect(mockGet).toHaveBeenCalledTimes(1);
+
+      // When the poll in flight ends, the next one runs with no delay (not after 15 s idle,
+      // which waitFor's 1 s would never reach) and only once.
+      await act(async () => {
+        answerFirstPoll(makeSnapshot([]));
+      });
+      await waitFor(() => expect(mockGet).toHaveBeenCalledTimes(2));
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      expect(mockGet).toHaveBeenCalledTimes(2);
+    });
+
+    it('should remove its online/offline listeners on unmount', async () => {
+      const removeSpy = vi.spyOn(window, 'removeEventListener');
+      const { unmount } = renderHook(() => useLiveSessionControl('BAT142'));
+      await waitFor(() => expect(mockGet).toHaveBeenCalledTimes(1));
+
+      unmount();
+
+      const removed = removeSpy.mock.calls.map(([type]) => type);
+      // Two 'online' listeners (status + immediate poll) and one 'offline' listener.
+      expect(removed.filter((t) => t === 'online')).toHaveLength(2);
+      expect(removed.filter((t) => t === 'offline')).toHaveLength(1);
+
+      // An online event after unmount starts no poll.
+      act(() => {
+        window.dispatchEvent(new Event('online'));
+      });
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      expect(mockGet).toHaveBeenCalledTimes(1);
+    });
   });
 });

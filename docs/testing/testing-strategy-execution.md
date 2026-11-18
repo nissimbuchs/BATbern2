@@ -272,7 +272,7 @@ npm run test:e2e           # E2E tests (requires running app)
 
 **For Unit Tests:**
 - Java 21
-- Node.js 20
+- Node.js 22
 - No special setup
 
 **For Integration Tests:**

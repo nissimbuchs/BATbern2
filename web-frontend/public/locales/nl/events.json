@@ -1507,7 +1507,7 @@
       "connecting": "Verbinden...",
       "offline": "Offline"
     },
-    "offlineHint": "Live-updates niet beschikbaar. Laad de pagina opnieuw.",
+    "offlineHint": "Live-updates niet beschikbaar. De pagina maakt vanzelf opnieuw verbinding zodra het netwerk terug is.",
     "noActiveSession": "Geen actieve sessie",
     "nextSession": "Volgende sessie",
     "urgency": {

@@ -1507,7 +1507,7 @@
       "connecting": "接続中...",
       "offline": "オフライン"
     },
-    "offlineHint": "ライブ更新を利用できません。ページを再読み込みしてください。",
+    "offlineHint": "ライブ更新を利用できません。ネットワークが復旧すると、ページは自動的に再接続します。",
     "noActiveSession": "進行中のセッションはありません",
     "nextSession": "次のセッション",
     "urgency": {

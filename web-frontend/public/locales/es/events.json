@@ -1507,7 +1507,7 @@
       "connecting": "Conectando...",
       "offline": "Sin conexión"
     },
-    "offlineHint": "Actualizaciones en directo no disponibles. Recarga la página.",
+    "offlineHint": "Actualizaciones en directo no disponibles. La página se reconecta sola cuando vuelva la red.",
     "noActiveSession": "Ninguna sesión activa",
     "nextSession": "Siguiente sesión",
     "urgency": {

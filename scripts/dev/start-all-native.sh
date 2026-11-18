@@ -121,12 +121,12 @@ check_prerequisites() {
     # Check Node.js
     if ! command -v node &> /dev/null; then
         echo -e "${RED}  ✗ Node.js not found${NC}"
-        echo "    Install: https://nodejs.org/ (Node.js 20+ required)"
+        echo "    Install: https://nodejs.org/ (Node.js 22 required)"
         errors=$((errors + 1))
     else
         NODE_VERSION=$(node -v | cut -d'v' -f2 | cut -d'.' -f1)
-        if [ "$NODE_VERSION" -lt 20 ]; then
-            echo -e "${RED}  ✗ Node.js version $NODE_VERSION found, but Node.js 20+ required${NC}"
+        if [ "$NODE_VERSION" -lt 22 ]; then
+            echo -e "${RED}  ✗ Node.js version $NODE_VERSION found, but Node.js 22 required${NC}"
             errors=$((errors + 1))
         else
             echo -e "${GREEN}  ✓ Node.js $(node -v)${NC}"

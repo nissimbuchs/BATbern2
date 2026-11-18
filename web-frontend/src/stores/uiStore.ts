@@ -2,17 +2,14 @@
  * UI Store
  * Story 1.17, Task 5b: Zustand UI store implementation
  *
- * Manages UI state including locale, sidebar state, notification drawer, and user menu.
- * Persists locale and sidebar state to localStorage.
+ * Manages UI state: sidebar, notification drawer, user menu and the nav role filter.
+ * Persists sidebar state and nav role to localStorage. The UI language lives in i18next.
  */
 
 import { create } from 'zustand';
 import type { UserRole } from '@/types/auth';
 
-type Locale = 'de' | 'en';
-
 interface UIState {
-  locale: Locale;
   sidebarCollapsed: boolean;
   notificationDrawerOpen: boolean;
   userMenuOpen: boolean;
@@ -21,7 +18,6 @@ interface UIState {
 }
 
 interface UIActions {
-  setLocale: (locale: Locale) => void;
   toggleSidebar: () => void;
   setSidebarCollapsed: (collapsed: boolean) => void;
   setNotificationDrawerOpen: (open: boolean) => void;
@@ -33,25 +29,10 @@ interface UIActions {
 type UIStore = UIState & UIActions;
 
 const initialState: UIState = {
-  locale: 'de', // German as default
   sidebarCollapsed: false,
   notificationDrawerOpen: false,
   userMenuOpen: false,
   activeNavRole: null,
-};
-
-// Initialize locale from localStorage if available
-const getInitialLocale = (): Locale => {
-  const stored = localStorage.getItem('batbern-ui-locale');
-  if (stored) {
-    try {
-      const parsed = JSON.parse(stored);
-      return parsed === 'en' ? 'en' : 'de';
-    } catch {
-      return 'de';
-    }
-  }
-  return 'de';
 };
 
 const getInitialSidebarState = (): boolean => {
@@ -68,16 +49,10 @@ const getInitialActiveNavRole = (): UserRole | null => {
 };
 
 export const useUIStore = create<UIStore>()((set) => ({
-  locale: getInitialLocale(),
   sidebarCollapsed: getInitialSidebarState(),
   notificationDrawerOpen: false,
   userMenuOpen: false,
   activeNavRole: getInitialActiveNavRole(),
-
-  setLocale: (locale) => {
-    localStorage.setItem('batbern-ui-locale', JSON.stringify(locale));
-    set(() => ({ locale }));
-  },
 
   toggleSidebar: () =>
     set((state) => {
@@ -105,7 +80,6 @@ export const useUIStore = create<UIStore>()((set) => ({
   },
 
   reset: () => {
-    localStorage.removeItem('batbern-ui-locale');
     localStorage.removeItem('batbern-ui-sidebar');
     localStorage.removeItem('batbern-ui-active-nav-role');
     set(() => ({ ...initialState }));

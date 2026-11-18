@@ -1510,7 +1510,7 @@
       "connecting": "Verbinde...",
       "offline": "Offline"
     },
-    "offlineHint": "Live-Updates nid verfüegbar. Bitte d Siite nöi lade.",
+    "offlineHint": "Live-Updates nid verfüegbar. D Siite verbindet sech vo sälber wider, sobald ds Netz wider da isch.",
     "noActiveSession": "Kei aktivi Session",
     "nextSession": "Nächschti Session",
     "urgency": {

@@ -10,6 +10,9 @@
  * - Exposes extend/delay actions identical to the Watch app (EXTEND_SESSION,
  *   DELAY_TO_PREVIOUS) via POST .../live-timing/actions.
  * - Button visibility logic mirrors Watch: extend while active, delay in first 10 min.
+ * - connectionStatus is 'offline' while the browser reports no network (`navigator.onLine`,
+ *   `online`/`offline` window events); back online it polls at once and shows the poll state again.
+ *   A poll that succeeds also clears it: the network answered, whatever the browser last reported.
  *
  * Auth: Cognito organizer JWT (apiClient adds it). The authenticated poll also refreshes
  * server-side organizer presence. Replaces the previous STOMP/WebSocket implementation —
@@ -85,6 +88,9 @@ function sortSessions(sessions: WatchSessionDetail[]): WatchSessionDetail[] {
 export function useLiveSessionControl(eventCode: string | undefined): LiveSessionControlState {
   const [sessions, setSessions] = useState<WatchSessionDetail[]>([]);
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('connecting');
+  const [isBrowserOnline, setIsBrowserOnline] = useState(() =>
+    typeof navigator === 'undefined' ? true : navigator.onLine
+  );
   const [isActionInFlight, setIsActionInFlight] = useState(false);
   const [isLoadingInitial, setIsLoadingInitial] = useState(true);
   const [currentTime, setCurrentTime] = useState(Date.now());
@@ -115,6 +121,18 @@ export function useLiveSessionControl(eventCode: string | undefined): LiveSessio
     return () => clearInterval(id);
   }, []);
 
+  // Browser network state: 'offline' overrides the poll state until the browser is back online.
+  useEffect(() => {
+    const goOnline = () => setIsBrowserOnline(true);
+    const goOffline = () => setIsBrowserOnline(false);
+    window.addEventListener('online', goOnline);
+    window.addEventListener('offline', goOffline);
+    return () => {
+      window.removeEventListener('online', goOnline);
+      window.removeEventListener('offline', goOffline);
+    };
+  }, []);
+
   // Dispatch a timing action over REST; queue + flag reconnecting if it fails.
   const dispatchAction = useCallback(
     async (payload: LiveTimingActionRequest) => {
@@ -140,6 +158,9 @@ export function useLiveSessionControl(eventCode: string | undefined): LiveSessio
 
     let cancelled = false;
     let timeoutId: ReturnType<typeof setTimeout> | null = null;
+    let inFlight = false;
+    // Set when the browser comes back online during a poll: the next poll then runs at once.
+    let pollNowRequested = false;
 
     const computeInterval = (): number => {
       if (typeof document !== 'undefined' && document.hidden) return POLL_INTERVAL_HIDDEN;
@@ -150,6 +171,7 @@ export function useLiveSessionControl(eventCode: string | undefined): LiveSessio
 
     const poll = async () => {
       if (cancelled) return;
+      inFlight = true;
       try {
         const result = await liveTimingService.getLiveTiming(eventCode, etagRef.current);
         if (cancelled) return;
@@ -160,6 +182,8 @@ export function useLiveSessionControl(eventCode: string | undefined): LiveSessio
           etagRef.current = result.etag;
         }
         setConnectionStatus('connected');
+        // The server answered, so the network is there even if no 'online' event came.
+        setIsBrowserOnline(true);
 
         // Flush a queued action now that connectivity is back.
         if (pendingActionRef.current) {
@@ -170,17 +194,33 @@ export function useLiveSessionControl(eventCode: string | undefined): LiveSessio
       } catch {
         if (!cancelled) setConnectionStatus('reconnecting');
       } finally {
+        inFlight = false;
         if (!cancelled) {
           setIsLoadingInitial(false);
-          timeoutId = setTimeout(poll, computeInterval());
+          const delay = pollNowRequested ? 0 : computeInterval();
+          pollNowRequested = false;
+          timeoutId = setTimeout(poll, delay);
         }
       }
     };
+
+    // Back online: poll now instead of waiting up to POLL_INTERVAL_IDLE for the next turn.
+    const pollNow = () => {
+      if (cancelled) return;
+      if (inFlight) {
+        pollNowRequested = true;
+        return;
+      }
+      if (timeoutId) clearTimeout(timeoutId);
+      void poll();
+    };
+    window.addEventListener('online', pollNow);
 
     void poll();
 
     return () => {
       cancelled = true;
+      window.removeEventListener('online', pollNow);
       if (timeoutId) clearTimeout(timeoutId);
     };
   }, [eventCode, applySnapshot]);
@@ -251,7 +291,7 @@ export function useLiveSessionControl(eventCode: string | undefined): LiveSessio
     elapsedSeconds,
     shouldShowExtend,
     shouldShowDelay,
-    connectionStatus,
+    connectionStatus: isBrowserOnline ? connectionStatus : 'offline',
     sendExtend,
     sendDelay,
     isActionInFlight,

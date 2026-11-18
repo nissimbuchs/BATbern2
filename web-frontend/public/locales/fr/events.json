@@ -1507,7 +1507,7 @@
       "connecting": "Connexion...",
       "offline": "Hors ligne"
     },
-    "offlineHint": "Mises à jour en direct indisponibles. Veuillez recharger la page.",
+    "offlineHint": "Mises à jour en direct indisponibles. La page se reconnecte d'elle-même dès le retour du réseau.",
     "noActiveSession": "Aucune session active",
     "nextSession": "Session suivante",
     "urgency": {

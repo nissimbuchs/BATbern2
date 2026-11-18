@@ -129,7 +129,7 @@ docker compose up api-gateway
 
 - Docker Desktop installed and running
 - Java 21 installed
-- Node.js 20+ installed
+- Node.js 22 installed
 - AWS CLI v2 configured (for staging Cognito access)
 - PostgreSQL client tools (psql) - optional but recommended
 

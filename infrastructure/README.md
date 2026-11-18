@@ -27,7 +27,7 @@ BATbern uses a **consolidated single-account** setup for production, with local-
 
 ## Prerequisites
 
-- Node.js 20+ and npm
+- Node.js 22 and npm
 - AWS CLI v2 configured with appropriate credentials
 - AWS CDK v2.110+ (`npm install -g aws-cdk`)
 - TypeScript 5.3+

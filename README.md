@@ -21,7 +21,7 @@ Mail Center. Epic 17 (architecture hardening, closed 2026-11-15) put service-to-
 
 ### Prerequisites
 - Java 21 LTS
-- Node.js 20+
+- Node.js 22
 - Docker Desktop
 - AWS CLI v2
 - AWS CDK v2.110+

@@ -62,7 +62,7 @@ jobs:
           role-to-assume: arn:aws:iam::188701360969:role/batbern-staging-github-actions-role
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Set up Node.js 20
+      - name: Set up Node.js 22
         uses: actions/setup-node@v6
         with:
           node-version: '22'
@@ -1520,7 +1520,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v7
 
-      - name: Set up Node.js 20
+      - name: Set up Node.js 22
         uses: actions/setup-node@v6
         with:
           node-version: '22'

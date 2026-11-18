@@ -168,7 +168,7 @@ jobs:
           role-to-assume: arn:aws:iam::422940799530:role/batbern-production-github-actions-role
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Set up Node.js 20
+      - name: Set up Node.js 22
         uses: actions/setup-node@v6
         with:
           node-version: '22'

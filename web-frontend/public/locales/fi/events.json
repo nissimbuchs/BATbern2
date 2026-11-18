@@ -1507,7 +1507,7 @@
       "connecting": "Yhdistetään...",
       "offline": "Offline"
     },
-    "offlineHint": "Live-päivitykset eivät ole käytettävissä. Lataa sivu uudelleen.",
+    "offlineHint": "Live-päivitykset eivät ole käytettävissä. Sivu yhdistää uudelleen itsestään, kun verkko palaa.",
     "noActiveSession": "Ei aktiivista sessiota",
     "nextSession": "Seuraava sessio",
     "urgency": {

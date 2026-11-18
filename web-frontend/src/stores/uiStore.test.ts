@@ -19,13 +19,6 @@ describe('UI Store', () => {
   });
 
   describe('Initial State', () => {
-    test('should_haveDefaultLocale_when_storeInitialized', () => {
-      const { result } = renderHook(() => useUIStore());
-
-      // Default should be 'de' (German)
-      expect(result.current.locale).toBe('de');
-    });
-
     test('should_haveSidebarCollapsedFalse_when_storeInitialized', () => {
       const { result } = renderHook(() => useUIStore());
 
@@ -42,29 +35,6 @@ describe('UI Store', () => {
       const { result } = renderHook(() => useUIStore());
 
       expect(result.current.userMenuOpen).toBe(false);
-    });
-  });
-
-  describe('setLocale Action', () => {
-    test('should_updateLocale_when_setLocaleCalled', () => {
-      const { result } = renderHook(() => useUIStore());
-
-      act(() => {
-        result.current.setLocale('en');
-      });
-
-      expect(result.current.locale).toBe('en');
-    });
-
-    test('should_persistLocaleToLocalStorage_when_localeChanged', () => {
-      const { result } = renderHook(() => useUIStore());
-
-      act(() => {
-        result.current.setLocale('en');
-      });
-
-      const storedLocale = localStorage.getItem('batbern-ui-locale');
-      expect(storedLocale).toBe('"en"');
     });
   });
 
@@ -143,69 +113,6 @@ describe('UI Store', () => {
   });
 
   describe('State Persistence', () => {
-    test('should_loadLocaleFromLocalStorage_when_storeInitialized', () => {
-      // Clear and reset first
-      localStorage.clear();
-      const { reset, setLocale } = useUIStore.getState();
-      act(() => {
-        reset();
-      });
-
-      // Set locale in localStorage
-      localStorage.setItem('batbern-ui-locale', '"en"');
-
-      // Manually trigger locale update to simulate store re-initialization
-      act(() => {
-        setLocale('en');
-      });
-
-      const { result } = renderHook(() => useUIStore());
-
-      expect(result.current.locale).toBe('en');
-    });
-
-    test('should_defaultToDe_when_invalidJsonInLocalStorage', () => {
-      // Clear and reset first
-      localStorage.clear();
-      const { reset, setLocale } = useUIStore.getState();
-      act(() => {
-        reset();
-      });
-
-      // Set invalid JSON in localStorage
-      localStorage.setItem('batbern-ui-locale', 'invalid-json{');
-
-      // Manually trigger locale update with default to simulate store initialization with corrupt data
-      act(() => {
-        setLocale('de');
-      });
-
-      const { result } = renderHook(() => useUIStore());
-
-      expect(result.current.locale).toBe('de');
-    });
-
-    test('should_defaultToDe_when_invalidLocaleValueInLocalStorage', () => {
-      // Clear and reset first
-      localStorage.clear();
-      const { reset, setLocale } = useUIStore.getState();
-      act(() => {
-        reset();
-      });
-
-      // Set invalid locale value in localStorage (valid JSON but not 'en' or 'de')
-      localStorage.setItem('batbern-ui-locale', '"fr"');
-
-      // Manually trigger locale update with default
-      act(() => {
-        setLocale('de');
-      });
-
-      const { result } = renderHook(() => useUIStore());
-
-      expect(result.current.locale).toBe('de');
-    });
-
     test('should_persistSidebarState_when_sidebarToggled', () => {
       const { result } = renderHook(() => useUIStore());
 
@@ -258,7 +165,6 @@ describe('UI Store', () => {
 
       // Set some state
       act(() => {
-        result.current.setLocale('en');
         result.current.setSidebarCollapsed(true);
         result.current.setNotificationDrawerOpen(true);
         result.current.setUserMenuOpen(true);
@@ -269,7 +175,6 @@ describe('UI Store', () => {
         result.current.reset();
       });
 
-      expect(result.current.locale).toBe('de');
       expect(result.current.sidebarCollapsed).toBe(false);
       expect(result.current.notificationDrawerOpen).toBe(false);
       expect(result.current.userMenuOpen).toBe(false);
@@ -280,12 +185,10 @@ describe('UI Store', () => {
 
       // Set some state that persists to localStorage
       act(() => {
-        result.current.setLocale('en');
         result.current.setSidebarCollapsed(true);
       });
 
       // Verify localStorage has values
-      expect(localStorage.getItem('batbern-ui-locale')).toBeTruthy();
       expect(localStorage.getItem('batbern-ui-sidebar')).toBeTruthy();
 
       // Reset
@@ -294,7 +197,6 @@ describe('UI Store', () => {
       });
 
       // Verify localStorage is cleared
-      expect(localStorage.getItem('batbern-ui-locale')).toBeNull();
       expect(localStorage.getItem('batbern-ui-sidebar')).toBeNull();
     });
   });

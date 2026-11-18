@@ -1521,7 +1521,7 @@
       "connecting": "Verbinde...",
       "offline": "Offline"
     },
-    "offlineHint": "Live-Updates nicht verfügbar. Bitte Seite neu laden.",
+    "offlineHint": "Live-Updates nicht verfügbar. Die Seite verbindet sich von selbst wieder, sobald das Netzwerk zurück ist.",
     "noActiveSession": "Keine aktive Session",
     "nextSession": "Nächste Session",
     "urgency": {

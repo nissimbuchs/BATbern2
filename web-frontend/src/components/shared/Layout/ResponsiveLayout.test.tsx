@@ -42,11 +42,9 @@ vi.mock('@/hooks/useAuth', () => ({
 // Mock UI store
 vi.mock('@/stores/uiStore', () => ({
   useUIStore: vi.fn(() => ({
-    locale: 'de',
     sidebarCollapsed: false,
     notificationDrawerOpen: false,
     userMenuOpen: false,
-    setLocale: vi.fn(),
     toggleSidebar: vi.fn(),
     setSidebarCollapsed: vi.fn(),
     setNotificationDrawerOpen: vi.fn(),

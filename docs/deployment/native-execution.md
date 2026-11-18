@@ -38,7 +38,7 @@ This guide covers **Native Execution**, a lightweight alternative to Docker Comp
 ### Required Software
 
 - **Java 21 LTS** - [Download from Adoptium](https://adoptium.net/)
-- **Node.js 20+** - [Download from nodejs.org](https://nodejs.org/)
+- **Node.js 22** - [Download from nodejs.org](https://nodejs.org/)
 - **Gradle 8.5+** - Usually bundled via `./gradlew`
 - **npm 10+** - Bundled with Node.js
 - **AWS CLI v2** - [Installation Guide](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html)

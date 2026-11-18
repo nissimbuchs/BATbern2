@@ -187,7 +187,7 @@ BATbern-main/
 
 ### Local Development Setup
 
-**Prerequisites**: Java 21, Node.js 20+, Docker Desktop, AWS CLI v2 (for staging Cognito), jq
+**Prerequisites**: Java 21, Node.js 22, Docker Desktop, AWS CLI v2 (for staging Cognito), jq
 
 ```bash
 # Recommended: Local PostgreSQL + Native Services
@@ -824,8 +824,8 @@ docker compose down -v
 # Clean build
 make clean && make build
 
-# Rebuild shared kernel
-cd shared-kernel && ./gradlew clean build publishToMavenLocal
+# Rebuild shared kernel (from the repository root)
+./gradlew :shared-kernel:clean :shared-kernel:build :shared-kernel:publishToMavenLocal
 ```
 
 ### Frontend Issues
