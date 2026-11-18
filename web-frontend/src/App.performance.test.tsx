@@ -41,12 +41,6 @@ describe('Performance Optimization - Code Splitting', () => {
       expect(dashboardModule.default).toBeDefined();
     });
 
-    it('should_useLazyLoading_when_renderingSpeakersRoute', async () => {
-      // Verify Speakers component is in separate file
-      const speakersModule = await import('./pages/Speakers');
-      expect(speakersModule.default).toBeDefined();
-    });
-
     it('should_useLazyLoading_when_renderingPartnersRoute', async () => {
       // Verify Partners component is in separate file
       const partnersModule = await import('./pages/OrganizerPartners');

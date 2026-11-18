@@ -109,6 +109,27 @@ describe('PublicNavigation', () => {
     });
   });
 
+  // #1223 item 10: the closed drawer was only moved off the right edge, so its user strip
+  // ("BS success…") showed at the edge of the speaker portal and attendee dashboard, and its
+  // links still took keyboard focus. Closed, it is now invisible and inert.
+  describe('Mobile drawer', () => {
+    it('is invisible and inert while closed, and usable once opened', async () => {
+      const user = userEvent.setup();
+      renderNav(authenticatedAs(['speaker']));
+
+      const drawer = screen.getByTestId('public-nav-drawer');
+      expect(drawer).toHaveAttribute('inert');
+      expect(drawer).toHaveClass('invisible');
+      expect(within(drawer).getByText('test@example.com')).toBeInTheDocument();
+
+      await user.click(screen.getByRole('button', { name: 'Open menu' }));
+
+      expect(drawer).not.toHaveAttribute('inert');
+      expect(drawer).not.toHaveClass('invisible');
+      expect(drawer).toHaveAttribute('aria-hidden', 'false');
+    });
+  });
+
   // Story 2 of 2026-11-13: "What's new" for every logged-in user, whatever the role.
   describe('What\u2019s new', () => {
     const settingsSeenAt = (whatsNewSeenAt?: string) =>

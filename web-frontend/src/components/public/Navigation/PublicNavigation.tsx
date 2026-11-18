@@ -266,12 +266,17 @@ export const PublicNavigation = ({
         aria-hidden="true"
       />
 
-      {/* Slide-in panel — starts below navbar, height fits content */}
+      {/* Slide-in panel — starts below navbar, height fits content. Closed, it is invisible and
+          inert, not only moved off the right edge: there its user strip showed at the edge of the
+          page (#1223 item 10) and its links took keyboard focus. Visibility flips after the
+          slide-out, so the closing animation still shows. */}
       <div
-        className={`fixed top-24 right-0 z-50 w-72 bg-background border border-border rounded-bl-lg shadow-xl flex flex-col transition-transform duration-300 ease-in-out ${
-          mobileMenuOpen ? 'translate-x-0' : 'translate-x-full'
+        className={`fixed top-24 right-0 z-50 w-72 bg-background border border-border rounded-bl-lg shadow-xl flex flex-col transition-[translate,transform,visibility] duration-300 ease-in-out ${
+          mobileMenuOpen ? 'translate-x-0 visible' : 'translate-x-full invisible'
         }`}
         aria-hidden={!mobileMenuOpen}
+        inert={!mobileMenuOpen}
+        data-testid="public-nav-drawer"
       >
         {/* Nav links — Portal + My Sessions live here (2026-05-20 Q#2b) so the mobile
             slide-in matches the desktop bar layout. Visibility rules mirror the desktop

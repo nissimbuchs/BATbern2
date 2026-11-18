@@ -159,7 +159,7 @@ graph TB
     Dashboard --> EventTypes[Event Type Config<br/>✅ IMPLEMENTED<br/>/organizer/event-types]
     Dashboard --> Topics[Topic Management<br/>✅ IMPLEMENTED<br/>/organizer/topics]
     Dashboard --> Tasks[Task Board<br/>✅ Kanban<br/>/organizer/tasks]
-    Dashboard --> Speakers[Speaker Mgmt<br/>🔄 Placeholder<br/>/organizer/speakers]
+    Dashboard --> Speakers[Speaker Mgmt<br/>⤴ Redirect to Users<br/>/organizer/speakers]
     Dashboard --> Partners[Partner Directory<br/>✅ IMPLEMENTED<br/>/organizer/partners]
     Dashboard --> Companies[Company Mgmt<br/>✅ IMPLEMENTED<br/>/organizer/companies/*]
     Dashboard --> Users[User Management<br/>✅ IMPLEMENTED<br/>/organizer/users/*]

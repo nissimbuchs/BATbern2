@@ -540,7 +540,9 @@ class EventApiClient {
   }
 
   /**
-   * Client-side validation: Registration deadline must be before event date
+   * Client-side validation: the registration deadline is on or before the event date, the rule
+   * the event form checks too (eventFormSchema). This said "before" alone, so a deadline on the
+   * event day passed the form and failed here as an unexplained "Failed to save event".
    */
   private validateRegistrationDeadline(eventDate: string, deadline: string | undefined): void {
     // registrationDeadline is optional on create/update — skip validation when absent.
@@ -550,8 +552,8 @@ class EventApiClient {
     const eventDateTime = new Date(eventDate);
     const deadlineDateTime = new Date(deadline);
 
-    if (deadlineDateTime >= eventDateTime) {
-      throw new Error('Registration deadline must be before event date');
+    if (deadlineDateTime > eventDateTime) {
+      throw new Error('Registration deadline must be on or before the event date');
     }
   }
 
@@ -605,6 +607,11 @@ class EventApiClient {
       // Conflict - extract backend error message (e.g., duplicate registration)
       const errorData = axiosError.response.data as { message?: string; error?: string };
       message = errorData.message || errorData.error || 'Conflict: Resource already exists';
+    } else if (status === 422) {
+      // Business rule refused (EMS BusinessValidationException), e.g. the event number is taken:
+      // the server's message says which rule, so keep it.
+      const errorData = axiosError.response.data as { message?: string; error?: string };
+      message = errorData.message || errorData.error || 'Validation failed';
     } else if (status === 500) {
       message = 'Server Error: Please try again later';
     }

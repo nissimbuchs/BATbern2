@@ -43,10 +43,8 @@ vi.mock('@/services/api/partnerApi', () => ({
 // Mock store state
 const mockStoreState = {
   activeTab: 0,
-  showEditModal: false,
   showNoteModal: false,
   setActiveTab: vi.fn(),
-  setShowEditModal: vi.fn(),
   setShowNoteModal: vi.fn(),
 };
 
@@ -465,15 +463,13 @@ describe('PartnerDetailScreen - Role-Based Rendering (Story 8.0)', () => {
     } as any);
   });
 
-  const renderAsRole = (role: string, activeTab = 5) => {
-    mockUseAuth.mockReturnValue({ user: { username: 'testuser', role } });
+  const renderAsRole = (role: string | null, activeTab = 5) => {
+    mockUseAuth.mockReturnValue({ user: role ? { username: 'testuser', role } : null });
     vi.mocked(usePartnerDetailStore).mockImplementation((selector: any) => {
       const state = {
         activeTab,
-        showEditModal: false,
         showNoteModal: false,
         setActiveTab: vi.fn(),
-        setShowEditModal: vi.fn(),
         setShowNoteModal: vi.fn(),
       };
       return typeof selector === 'function' ? selector(state) : state;
@@ -520,6 +516,28 @@ describe('PartnerDetailScreen - Role-Based Rendering (Story 8.0)', () => {
     await waitFor(() => {
       expect(screen.queryByTestId('edit-partner-button')).not.toBeInTheDocument();
     });
+  });
+
+  // #1223 item 12: the tier is changed by organizers only (allow-list): not by a partner, and not
+  // while the user is still unknown (the screen falls back to the organizer view then).
+  it('should_showChangeTier_when_organizerRole', async () => {
+    renderAsRole('organizer', 0);
+
+    expect(await screen.findByRole('button', { name: /Change Tier/i })).toBeInTheDocument();
+  });
+
+  it('should_hideChangeTier_when_partnerRole', async () => {
+    renderAsRole('partner', 0);
+
+    await screen.findByText(/Partnership Details/i);
+    expect(screen.queryByRole('button', { name: /Change Tier/i })).not.toBeInTheDocument();
+  });
+
+  it('should_hideChangeTier_when_userNotYetKnown', async () => {
+    renderAsRole(null, 0);
+
+    await screen.findByText(/Partnership Details/i);
+    expect(screen.queryByRole('button', { name: /Change Tier/i })).not.toBeInTheDocument();
   });
 
   it('should_showAddNoteButton_when_organizerRole', async () => {

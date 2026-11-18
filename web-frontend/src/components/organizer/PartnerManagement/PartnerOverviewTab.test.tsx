@@ -10,7 +10,7 @@
  * - Recent Activity Panel (last event, topic votes, next meeting)
  */
 
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { PartnerOverviewTab } from './PartnerOverviewTab';
@@ -18,14 +18,7 @@ import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { I18nextProvider } from 'react-i18next';
 import i18n from '@/i18n/config';
 import type { PartnerResponse } from '@/services/api/partnerApi';
-
-// Mock partner detail store
-const mockSetShowEditModal = vi.fn();
-vi.mock('@/stores/partnerDetailStore', () => ({
-  usePartnerDetailStore: () => ({
-    setShowEditModal: mockSetShowEditModal,
-  }),
-}));
+import { usePartnerModalStore } from '@/stores/partnerModalStore';
 
 const theme = createTheme();
 
@@ -40,17 +33,18 @@ const renderWithProviders = (component: React.ReactElement) => {
 
 // Mock partner data
 const mockPartnerData: PartnerResponse = {
-  id: 'p-123',
   companyName: 'GoogleZH',
   partnershipLevel: 'PLATINUM',
   partnershipStartDate: '2024-01-01',
+  partnershipEndDate: null,
   isActive: true,
+  contacts: null,
   company: {
-    id: 'c-456',
+    companyName: 'GoogleZH',
     name: 'Google Zurich',
+    displayName: 'Google Zurich',
     industry: 'Technology',
     website: 'https://google.com',
-    location: 'Zurich, Switzerland',
     logoUrl: 'https://cdn.example.com/google-logo.png',
   },
 };
@@ -58,7 +52,7 @@ const mockPartnerData: PartnerResponse = {
 describe('PartnerOverviewTab', () => {
   describe('AC4.1: should_renderOverviewTab_when_tabActivated', () => {
     it('renders the overview tab with partnership details', () => {
-      renderWithProviders(<PartnerOverviewTab partner={mockPartnerData} />);
+      renderWithProviders(<PartnerOverviewTab partner={mockPartnerData} canChangeTier />);
 
       // Should have Partnership Details section
       expect(screen.getByRole('heading', { name: /Partnership Details/i })).toBeInTheDocument();
@@ -73,32 +67,47 @@ describe('PartnerOverviewTab', () => {
 
   describe('AC4.2: should_displayPartnershipDetails_when_partnerLoaded', () => {
     it('displays partnership tier with emoji', () => {
-      renderWithProviders(<PartnerOverviewTab partner={mockPartnerData} />);
+      renderWithProviders(<PartnerOverviewTab partner={mockPartnerData} canChangeTier />);
 
       expect(screen.getByText(/💎 PLATINUM/i)).toBeInTheDocument();
     });
 
     it('displays tier start date', () => {
-      renderWithProviders(<PartnerOverviewTab partner={mockPartnerData} />);
+      renderWithProviders(<PartnerOverviewTab partner={mockPartnerData} canChangeTier />);
 
       expect(screen.getByText(/Jan 1, 2024/i)).toBeInTheDocument();
     });
+  });
 
-    it('displays Change Tier button', async () => {
+  // #1223 item 12 (owner 2026-11-15): partners see their tier read-only; organizers change it.
+  // On the way: the button set a flag of partnerDetailStore that no component read, so it did
+  // nothing for organizers either. It now opens the partner edit modal, which holds the tier.
+  describe('Change tier', () => {
+    beforeEach(() => usePartnerModalStore.getState().closeModal());
+
+    it('opens the edit modal with this partner when an organizer clicks it', async () => {
       const user = userEvent.setup();
-      renderWithProviders(<PartnerOverviewTab partner={mockPartnerData} />);
+      renderWithProviders(<PartnerOverviewTab partner={mockPartnerData} canChangeTier />);
 
-      const changeTierButton = screen.getByRole('button', { name: /Change Tier/i });
-      expect(changeTierButton).toBeInTheDocument();
+      await user.click(screen.getByRole('button', { name: /Change Tier/i }));
 
-      await user.click(changeTierButton);
-      expect(mockSetShowEditModal).toHaveBeenCalledWith(true);
+      const modal = usePartnerModalStore.getState();
+      expect(modal.isOpen).toBe(true);
+      expect(modal.mode).toBe('edit');
+      expect(modal.partnerToEdit).toBe(mockPartnerData);
+    });
+
+    it('is not offered to a partner, who sees the tier read-only', () => {
+      renderWithProviders(<PartnerOverviewTab partner={mockPartnerData} canChangeTier={false} />);
+
+      expect(screen.getByText(/💎 PLATINUM/i)).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /Change Tier/i })).not.toBeInTheDocument();
     });
   });
 
   describe('AC4.3: should_displayBenefitsList_when_tierSet', () => {
     it('displays benefits for PLATINUM tier', () => {
-      renderWithProviders(<PartnerOverviewTab partner={mockPartnerData} />);
+      renderWithProviders(<PartnerOverviewTab partner={mockPartnerData} canChangeTier />);
 
       expect(screen.getByText(/Logo placement on website/i)).toBeInTheDocument();
       expect(screen.getByText(/Newsletter mentions/i)).toBeInTheDocument();
@@ -107,7 +116,7 @@ describe('PartnerOverviewTab', () => {
     });
 
     it('displays benefits with checkmarks', () => {
-      renderWithProviders(<PartnerOverviewTab partner={mockPartnerData} />);
+      renderWithProviders(<PartnerOverviewTab partner={mockPartnerData} canChangeTier />);
 
       // Should have checkmark icon (✓) before each benefit
       const benefitsSection = screen.getByText(/Logo placement on website/i).closest('div');
@@ -120,7 +129,7 @@ describe('PartnerOverviewTab', () => {
         partnershipLevel: 'STRATEGIC',
       };
 
-      renderWithProviders(<PartnerOverviewTab partner={strategicPartner} />);
+      renderWithProviders(<PartnerOverviewTab partner={strategicPartner} canChangeTier />);
 
       expect(screen.getByText(/ROI analytics dashboard/i)).toBeInTheDocument();
       expect(screen.getByText(/Dedicated account manager/i)).toBeInTheDocument();

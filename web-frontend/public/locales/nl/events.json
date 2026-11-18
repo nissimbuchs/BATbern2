@@ -889,7 +889,6 @@
     "saving": "Opslaan...",
     "saved": "Laatst opgeslagen om {{time}}",
     "failed": "Automatisch opslaan mislukt",
-    "conflict": "Gelijktijdige bewerking gedetecteerd. Laad opnieuw en probeer opnieuw.",
     "enabled": "Automatisch opslaan ingeschakeld"
   },
   "topics": {

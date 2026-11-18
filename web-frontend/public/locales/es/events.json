@@ -889,7 +889,6 @@
     "saving": "Guardando...",
     "saved": "Último guardado a las {{time}}",
     "failed": "Error en el guardado automático",
-    "conflict": "Edición simultánea detectada. Recargue e inténtelo de nuevo.",
     "enabled": "Guardado automático activado"
   },
   "topics": {

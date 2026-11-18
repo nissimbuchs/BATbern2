@@ -889,7 +889,6 @@
     "saving": "Salvataggio...",
     "saved": "Ultimo salvataggio alle {{time}}",
     "failed": "Salvataggio automatico fallito",
-    "conflict": "Modifica simultanea rilevata. Ricarica e riprova.",
     "enabled": "Salvataggio automatico attivato"
   },
   "topics": {

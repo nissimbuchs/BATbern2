@@ -893,7 +893,6 @@
     "saving": "Wird gspycheret...",
     "saved": "Zuletzt gspycheret um {{time}}",
     "failed": "Auto-Spychere fehlgschlage",
-    "conflict": "Gleichzytige Bearbeitig erkannt. Bitte neu lade und nomol versuche.",
     "enabled": "Auto-Spychere aktiviert"
   },
   "topics": {

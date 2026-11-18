@@ -889,7 +889,6 @@
     "saving": "Enregistrement...",
     "saved": "Dernière sauvegarde à {{time}}",
     "failed": "Échec de la sauvegarde automatique",
-    "conflict": "Modification simultanée détectée. Veuillez recharger et réessayer.",
     "enabled": "Sauvegarde automatique activée"
   },
   "topics": {

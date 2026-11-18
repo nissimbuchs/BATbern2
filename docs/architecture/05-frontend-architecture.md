@@ -1509,7 +1509,7 @@ Guards: **P** = `ProtectedRoute` (any authenticated role, then the path-prefix c
 /organizer/event-types                    # redirects to /organizer/admin?tab=0
 /organizer/topics                   P
 /organizer/tasks                    P
-/organizer/speakers                 P
+/organizer/speakers                       # redirects to /organizer/users (placeholder retired, #1223)
 /organizer/partners                 P
 /organizer/partners/:companyName    P
 /organizer/partner-topics           P
@@ -1527,7 +1527,7 @@ Guards: **P** = `ProtectedRoute` (any authenticated role, then the path-prefix c
 /speaker-portal/content/:eventCode  S
 /speaker-portal/respond                   # redirects to /speaker-portal/dashboard (old mail links)
 /speaker-portal/profile[/:eventCode]      # redirect to /profile (Story 12.11)
-/speakers                           S
+/speakers                                 # redirects to /speaker-portal/dashboard (placeholder retired, #1223)
 /speaker/company/*                  S
 
 # Partner

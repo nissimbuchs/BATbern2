@@ -889,7 +889,6 @@
     "saving": "Tallennetaan...",
     "saved": "Viimeksi tallennettu {{time}}",
     "failed": "Automaattinen tallennus epäonnistui",
-    "conflict": "Samanaikainen muokkaus havaittu. Lataa uudelleen ja yritä uudelleen.",
     "enabled": "Automaattinen tallennus käytössä"
   },
   "topics": {

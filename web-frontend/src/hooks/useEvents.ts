@@ -54,6 +54,28 @@ export const useEvents = (
 };
 
 /**
+ * useNextEventNumber - the number a new event gets by default: the highest existing event number
+ * plus one, archived events included; 1 when there is no event yet (#1223 item 7). One row of
+ * `GET /events` sorted by number, so no endpoint of its own. Under `['events']`, so creating an
+ * event invalidates it.
+ */
+export const useNextEventNumber = (enabled: boolean): UseQueryResult<number, Error> => {
+  return useQuery({
+    queryKey: ['events', 'next-number'],
+    queryFn: async () => {
+      const page = await eventApiClient.getEvents(
+        { page: 1, limit: 1 },
+        { includeArchived: true },
+        { sort: '-eventNumber' }
+      );
+      return (page.data[0]?.eventNumber ?? 0) + 1;
+    },
+    enabled,
+    staleTime: 0,
+  });
+};
+
+/**
  * useEvent - Fetch single event with optional resource expansion
  * Cache: 15 minutes (full event with includes cached longer)
  *

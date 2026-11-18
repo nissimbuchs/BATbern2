@@ -28,7 +28,6 @@
     "src/components/organizer/PartnerManagement/PartnerDetailHeader.test.tsx",
     "src/components/organizer/PartnerManagement/PartnerDetailScreen.accessibility.test.tsx",
     "src/components/organizer/PartnerManagement/PartnerDetailScreen.responsive.test.tsx",
-    "src/components/organizer/PartnerManagement/PartnerOverviewTab.test.tsx",
     "src/components/organizer/PartnerManagement/PartnershipDatePicker.test.tsx",
     "src/components/organizer/PartnerManagement/TierBenefitsPreview.test.tsx",
     "src/components/organizer/PartnerManagement/__tests__/PartnerCard.test.tsx",

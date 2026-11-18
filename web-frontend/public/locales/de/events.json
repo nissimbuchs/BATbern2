@@ -893,7 +893,6 @@
     "saving": "Speichern...",
     "saved": "Zuletzt gespeichert um {{time}}",
     "failed": "Automatisches Speichern fehlgeschlagen",
-    "conflict": "Gleichzeitige Bearbeitung erkannt. Bitte laden Sie neu und versuchen Sie es erneut.",
     "enabled": "Automatisches Speichern aktiviert"
   },
   "topics": {

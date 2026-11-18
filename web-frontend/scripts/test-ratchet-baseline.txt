@@ -228,7 +228,6 @@ fe-mock-hooks	web-frontend/src/components/auth/ResetPasswordForm/ResetPasswordFo
 fe-mock-hooks	web-frontend/src/components/organizer/Admin/EmailTemplateEditModal.test.tsx	1
 fe-mock-hooks	web-frontend/src/components/organizer/Admin/EmailTemplatesTab.test.tsx	1
 fe-mock-hooks	web-frontend/src/components/organizer/Admin/EventTypesTab.test.tsx	1
-fe-mock-hooks	web-frontend/src/components/organizer/EventManagement/__tests__/EventForm.test.tsx	1
 fe-mock-hooks	web-frontend/src/components/organizer/EventManagement/__tests__/SessionSpeakersTab.test.tsx	1
 fe-mock-hooks	web-frontend/src/components/organizer/EventManagement/__tests__/TeamActivityFeed.test.tsx	1
 fe-mock-hooks	web-frontend/src/components/organizer/EventPage/AiAssistDrawer.test.tsx	1
@@ -405,7 +404,6 @@ fe-mock-services	web-frontend/src/components/auth/ResendConfirmationAction/Resen
 fe-mock-services	web-frontend/src/components/organizer/Admin/AdminSettingsTab.test.tsx	1
 fe-mock-services	web-frontend/src/components/organizer/Admin/EmailTemplatePreviewModal.test.tsx	1
 fe-mock-services	web-frontend/src/components/organizer/Admin/MailCenterSwitchSettings.test.tsx	1
-fe-mock-services	web-frontend/src/components/organizer/EventManagement/__tests__/EventForm.test.tsx	1
 fe-mock-services	web-frontend/src/components/organizer/EventManagement/__tests__/WorkflowProgressBar.5.1a.test.tsx	1
 fe-mock-services	web-frontend/src/components/organizer/EventPage/EventParticipantList.test.tsx	1
 fe-mock-services	web-frontend/src/components/organizer/EventPage/EventParticipantsTab.test.tsx	1

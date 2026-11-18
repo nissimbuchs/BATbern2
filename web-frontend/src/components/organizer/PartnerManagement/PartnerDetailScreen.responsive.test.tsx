@@ -29,10 +29,8 @@ const mockUsePartnerNotes = vi.mocked(usePartnerNotes);
 // Mock store
 const mockStoreState = {
   activeTab: 0,
-  showEditModal: false,
   showNoteModal: false,
   setActiveTab: vi.fn(),
-  setShowEditModal: vi.fn(),
   setShowNoteModal: vi.fn(),
 };
 

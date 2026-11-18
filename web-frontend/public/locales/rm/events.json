@@ -889,7 +889,6 @@
     "saving": "Salvar...",
     "saved": "Ultima salvaziun a las {{time}}",
     "failed": "Salvaziun automatica fallida",
-    "conflict": "Midada simultanea detectada. Rechargiar e emprova puspè.",
     "enabled": "Salvaziun automatica activada"
   },
   "topics": {

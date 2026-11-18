@@ -75,7 +75,8 @@ const EVERY_ROLE_PATHS = ['/dashboard', '/profile', '/account', '/attendee', '/c
 
 // Role-based path access, on top of EVERY_ROLE_PATHS
 const PATH_ACCESS: Record<UserRole, string[]> = {
-  organizer: ['/events', '/speakers', '/partners', '/analytics', '/organizer'],
+  // '/speakers' is gone: it only redirects now (#1223 item 8); speakers are under /organizer/users.
+  organizer: ['/events', '/partners', '/analytics', '/organizer'],
   speaker: ['/events', '/materials', '/speaker', '/speaker-portal'],
   partner: ['/analytics', '/organizer/analytics', '/events', '/partner'],
   attendee: ['/events', '/content', '/search'],

@@ -486,7 +486,8 @@ describe('useAuth Hook', () => {
 
       expect(result.current.canAccess('/dashboard')).toBe(true);
       expect(result.current.canAccess('/events')).toBe(true);
-      expect(result.current.canAccess('/speakers')).toBe(true);
+      // '/speakers' only redirects now (#1223 item 8); the organizer path list no longer names it.
+      expect(result.current.canAccess('/speakers')).toBe(false);
       expect(result.current.canAccess('/organizer/events')).toBe(true);
       expect(result.current.canAccess('/analytics')).toBe(true);
     });

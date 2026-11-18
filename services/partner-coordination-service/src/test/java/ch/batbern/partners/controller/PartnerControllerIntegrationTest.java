@@ -657,6 +657,27 @@ class PartnerControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isForbidden());
     }
 
+    // #1223 item 12 (owner 2026-11-15): a partner sees its tier read-only. The portal no longer
+    // offers "Change tier"; the API refuses the change too, also for the partner's own company.
+    @Test
+    @WithMockUser(username = "partner.google", roles = "PARTNER")
+    void should_return403AndKeepTier_when_partnerChangesOwnTier() throws Exception {
+        createTestPartner("GoogleZH", PartnershipLevel.BRONZE);
+        users.put("partner.google", "partner.google", "GoogleZH");
+        Map<String, Object> request = new HashMap<>();
+        request.put("partnershipLevel", "STRATEGIC");
+
+        mockMvc.perform(patch("/api/v1/partners/GoogleZH")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isForbidden());
+
+        mockMvc.perform(get("/api/v1/partners/GoogleZH")
+                        .with(user("organizer.user").roles("ORGANIZER")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.partnershipLevel").value("BRONZE"));
+    }
+
     @Test
     @WithMockUser(username = "some.attendee", roles = "ATTENDEE")
     void should_return403_when_attendeeReadsPartnerStatistics() throws Exception {

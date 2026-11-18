@@ -893,7 +893,6 @@
     "saving": "Saving...",
     "saved": "Last saved at {{time}}",
     "failed": "Auto-save failed",
-    "conflict": "Concurrent edit detected. Please reload and try again.",
     "enabled": "Auto-save enabled"
   },
   "topics": {
