@@ -23,17 +23,20 @@
       "attention": {
         "title": "Needs your attention",
         "addTask": "Add task",
-        "open": "Open {{tab}} →",
-        "go": "Open →",
+        "open": "{{tab}} openen",
+        "go": "Openen",
         "retry": "Retry",
         "loadError": "Couldn't load your tasks.",
         "allCaught": "You're all caught up — nothing needs your attention right now.",
         "triggerNotReached": "Trigger nog niet bereikt"
       },
       "due": {
-        "overdue": "Overdue · {{days}} days",
+        "overdue_one": "Te laat · {{count}} dag",
+        "overdue_other": "Te laat · {{count}} dagen",
         "overdueNow": "Achterstallig",
-        "dueSoon": "Due in {{days}} days",
+        "dueToday": "Vandaag te doen",
+        "dueSoon_one": "Over {{count}} dag te doen",
+        "dueSoon_other": "Over {{count}} dagen te doen",
         "upcoming": "Upcoming",
         "live": "Now · event is live",
         "eventDay": "Evenementdag · {{date}}"
@@ -670,12 +673,19 @@
     "eventTasksDescription": "Configureer taken die automatisch worden aangemaakt en geactiveerd naarmate het evenement de workflowstatussen doorloopt.",
     "defaultTemplates": "Standaard taaksjablonen",
     "defaultTemplatesDescription": "Dit zijn de standaard evenementplanningsstaken. Alle zijn voorgeselecteerd en worden aangemaakt wanneer u het evenement opslaat.",
+    "defaultTemplatesDescriptionLive": "Dit zijn de standaard planningstaken voor het evenement. Aanvinken maakt de taak direct aan; uitvinken verwijdert de taak.",
     "taskExists": "Taak bestaat",
     "assignTo": "Toewijzen aan",
     "triggerState": "Trigger",
     "dueDate": "Vervaldatum",
     "immediate": "Onmiddellijk",
-    "days": "dagen",
+    "offset": {
+      "before_one": "{{count}} dag voor het evenement",
+      "before_other": "{{count}} dagen voor het evenement",
+      "after_one": "{{count}} dag na het evenement",
+      "after_other": "{{count}} dagen na het evenement",
+      "eventDay": "Op de dag van het evenement"
+    },
     "customTemplates": "Aangepaste taaksjablonen",
     "customTemplatesDescription": "Deze sjablonen zijn gemaakt door uw team. Selecteer de sjablonen die u voor dit evenement wilt opnemen.",
     "customTasks": "Aangepaste taken",
@@ -1198,12 +1208,16 @@
     },
     "quickActions": {
       "title": "Snelle acties",
-      "total": "{{count}} totale sessies",
-      "assigned": "{{count}} toegewezen",
-      "pending": "{{count}} in behandeling",
+      "total_one": "{{count}} sessie in totaal",
+      "total_other": "{{count}} totale sessies",
+      "assigned_one": "{{count}} toegewezen",
+      "assigned_other": "{{count}} toegewezen",
+      "pending_one": "{{count}} in behandeling",
+      "pending_other": "{{count}} in behandeling",
       "allAssigned": "Alle tijden toegewezen!",
       "goToPublishing": "Ga naar tabblad Publicatie",
-      "sessionsAssignedAnnouncement": "{{count}} sessies succesvol toegewezen"
+      "sessionsAssignedAnnouncement_one": "{{count}} sessie succesvol toegewezen",
+      "sessionsAssignedAnnouncement_other": "{{count}} sessies succesvol toegewezen"
     },
     "actions": {
       "autoAssign": "Automatisch toewijzen",

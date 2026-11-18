@@ -26,18 +26,13 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/hooks/useAuth';
 import { taskService, TaskTemplateResponse } from '@/services/taskService';
 import { CustomTaskModal } from '@/components/organizer/Tasks/CustomTaskModal';
+import { templateDueLabel } from '@/components/organizer/Tasks/templateDueLabel';
 import { TaskTemplateEditModal } from './TaskTemplateEditModal';
 import { BATbernLoader } from '@components/shared/BATbernLoader';
 
-const dueDateSummary = (template: TaskTemplateResponse): string => {
-  if (template.dueDateType === 'relative_to_event' && template.dueDateOffsetDays !== null) {
-    return `${template.dueDateOffsetDays}d before event`;
-  }
-  return template.dueDateType ?? '—';
-};
-
 export const TaskTemplatesTab: React.FC = () => {
   const { t } = useTranslation();
+  const { t: tEvents } = useTranslation('events');
   const queryClient = useQueryClient();
   const { user } = useAuth();
 
@@ -98,7 +93,7 @@ export const TaskTemplatesTab: React.FC = () => {
       <List dense data-testid="default-templates-list">
         {defaultTemplates.map((template) => (
           <ListItem key={template.id} divider>
-            <ListItemText primary={template.name} secondary={dueDateSummary(template)} />
+            <ListItemText primary={template.name} secondary={templateDueLabel(tEvents, template)} />
             <ListItemSecondaryAction>
               <Chip
                 label={t(
@@ -140,7 +135,7 @@ export const TaskTemplatesTab: React.FC = () => {
       <List dense data-testid="custom-templates-list">
         {customTemplates.map((template) => (
           <ListItem key={template.id} divider>
-            <ListItemText primary={template.name} secondary={dueDateSummary(template)} />
+            <ListItemText primary={template.name} secondary={templateDueLabel(tEvents, template)} />
             <ListItemSecondaryAction sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <Chip
                 label={t(

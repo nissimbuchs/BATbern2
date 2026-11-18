@@ -23,17 +23,20 @@
       "attention": {
         "title": "Needs your attention",
         "addTask": "Add task",
-        "open": "Open {{tab}} →",
-        "go": "Open →",
+        "open": "Abrir {{tab}}",
+        "go": "Abrir",
         "retry": "Retry",
         "loadError": "Couldn't load your tasks.",
         "allCaught": "You're all caught up — nothing needs your attention right now.",
         "triggerNotReached": "Disparador aún no alcanzado"
       },
       "due": {
-        "overdue": "Overdue · {{days}} days",
+        "overdue_one": "Vencida · {{count}} día",
+        "overdue_other": "Vencida · {{count}} días",
         "overdueNow": "Vencido",
-        "dueSoon": "Due in {{days}} days",
+        "dueToday": "Vence hoy",
+        "dueSoon_one": "Vence en {{count}} día",
+        "dueSoon_other": "Vence en {{count}} días",
         "upcoming": "Upcoming",
         "live": "Now · event is live",
         "eventDay": "Día del evento · {{date}}"
@@ -670,12 +673,19 @@
     "eventTasksDescription": "Configure las tareas que se crearán y activarán automáticamente a medida que el evento avance por los estados del flujo de trabajo.",
     "defaultTemplates": "Plantillas de tareas predeterminadas",
     "defaultTemplatesDescription": "Estas son las tareas estándar de planificación de eventos. Todas están preseleccionadas y se crearán al guardar el evento.",
+    "defaultTemplatesDescriptionLive": "Estas son las tareas estándar de planificación del evento. Al marcar una, la tarea se crea de inmediato; al desmarcarla, se elimina.",
     "taskExists": "La tarea existe",
     "assignTo": "Asignar a",
     "triggerState": "Disparador",
     "dueDate": "Vencimiento",
     "immediate": "Inmediato",
-    "days": "días",
+    "offset": {
+      "before_one": "{{count}} día antes del evento",
+      "before_other": "{{count}} días antes del evento",
+      "after_one": "{{count}} día después del evento",
+      "after_other": "{{count}} días después del evento",
+      "eventDay": "El día del evento"
+    },
     "customTemplates": "Plantillas de tareas personalizadas",
     "customTemplatesDescription": "Estas plantillas fueron creadas por su equipo. Seleccione las que desea incluir para este evento.",
     "customTasks": "Tareas personalizadas",
@@ -1198,12 +1208,16 @@
     },
     "quickActions": {
       "title": "Acciones rápidas",
-      "total": "{{count}} sesiones en total",
-      "assigned": "{{count}} asignadas",
-      "pending": "{{count}} pendientes",
+      "total_one": "{{count}} sesión en total",
+      "total_other": "{{count}} sesiones en total",
+      "assigned_one": "{{count}} asignada",
+      "assigned_other": "{{count}} asignadas",
+      "pending_one": "{{count}} pendiente",
+      "pending_other": "{{count}} pendientes",
       "allAssigned": "¡Todos los horarios asignados!",
       "goToPublishing": "Ir a la pestaña de Publicación",
-      "sessionsAssignedAnnouncement": "{{count}} sesiones asignadas correctamente"
+      "sessionsAssignedAnnouncement_one": "{{count}} sesión asignada correctamente",
+      "sessionsAssignedAnnouncement_other": "{{count}} sesiones asignadas correctamente"
     },
     "actions": {
       "autoAssign": "Asignación automática",

@@ -8,6 +8,10 @@
  * - Bulk timing assignment
  * - Conflict detection and management
  * - Optimistic updates with rollback
+ *
+ * The hook knows the tray (the sessions without a slot), not the event's session count: the
+ * counters are derived from the event's sessions by the caller (#1223: a total taken from the
+ * first tray load read 0 whenever every session was already slotted).
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
@@ -31,8 +35,6 @@ export interface UseSlotAssignmentReturn {
   error: string | null;
   conflict: TimingConflictError | null;
   conflictAnalysis: ConflictAnalysisResponse | null;
-  assignedCount: number;
-  totalSessions: number;
 
   // Actions
   assignTiming: (sessionSlug: string, timing: SessionTimingRequest) => Promise<void>;
@@ -58,7 +60,6 @@ export const useSlotAssignment = (eventCode: string): UseSlotAssignmentReturn =>
   const [error, setError] = useState<string | null>(null);
   const [conflict, setConflict] = useState<TimingConflictError | null>(null);
   const [conflictAnalysis, setConflictAnalysis] = useState<ConflictAnalysisResponse | null>(null);
-  const [totalSessions, setTotalSessions] = useState<number>(0);
   // The latest tray, for rollback snapshots. Capturing the snapshot inside a setState updater
   // only works when React runs the updater eagerly; with a pending update on the fiber it runs
   // at render time, after a fast failure has already "rolled back" to an empty tray.
@@ -75,10 +76,6 @@ export const useSlotAssignment = (eventCode: string): UseSlotAssignmentReturn =>
     try {
       const sessions = await slotAssignmentService.getUnassignedSessions(eventCode);
       setUnassignedSessions(sessions);
-      // If this is first load, set total sessions. Functional update: reading `totalSessions`
-      // here made it a dependency, so the first load changed this callback and the mount
-      // effect fetched a second time (skeleton flash, duplicate request).
-      setTotalSessions((prev) => (prev === 0 ? sessions.length : prev));
     } catch (err) {
       const errorMessage =
         err instanceof Error ? err.message : 'Failed to fetch unassigned sessions';
@@ -280,9 +277,6 @@ export const useSlotAssignment = (eventCode: string): UseSlotAssignmentReturn =>
     fetchUnassignedSessions();
   }, [fetchUnassignedSessions]);
 
-  // Calculate assigned count
-  const assignedCount = totalSessions - unassignedSessions.length;
-
   return {
     // State
     unassignedSessions,
@@ -290,8 +284,6 @@ export const useSlotAssignment = (eventCode: string): UseSlotAssignmentReturn =>
     error,
     conflict,
     conflictAnalysis,
-    assignedCount,
-    totalSessions,
 
     // Actions
     assignTiming,

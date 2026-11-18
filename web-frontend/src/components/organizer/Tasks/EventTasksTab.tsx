@@ -9,7 +9,8 @@
  * - Assignee dropdown for each template
  * - Custom tasks section with edit/delete actions
  * - "Add Custom Task" button opens CustomTaskModal
- * - Tasks created with status="pending" on event save
+ * - Tasks created with status="pending" on event save (event form), or as soon as a template
+ *   is ticked (`createsOnToggle`, the live Details → Tasks view)
  */
 
 import React, { useState } from 'react';
@@ -43,6 +44,7 @@ import { taskService, type EventTaskResponse } from '@/services/taskService';
 import { CustomTaskModal } from './CustomTaskModal';
 import { OrganizerSelect, useOrganizers } from '@/components/shared/OrganizerSelect';
 import { OrganizerChip } from '@/components/shared/OrganizerChip';
+import { templateDueLabel } from './templateDueLabel';
 
 interface EventTasksTabProps {
   eventId: string | null; // Null for new event creation
@@ -56,6 +58,11 @@ interface EventTasksTabProps {
   onAddCustomTask: () => void;
   onEditCustomTask: (task: EventTaskResponse) => void;
   onDeleteCustomTask: (taskId: string) => void;
+  /**
+   * True where ticking a template creates its task at once (the live Details → Tasks view of an
+   * existing event); false in the event form, which creates the ticked tasks on save (#1223).
+   */
+  createsOnToggle?: boolean;
 }
 
 export const EventTasksTab: React.FC<EventTasksTabProps> = ({
@@ -69,6 +76,7 @@ export const EventTasksTab: React.FC<EventTasksTabProps> = ({
   onAssigneeChange,
   onEditCustomTask,
   onDeleteCustomTask,
+  createsOnToggle = false,
 }) => {
   const { t } = useTranslation('events');
   const [isCustomTaskModalOpen, setIsCustomTaskModalOpen] = useState(false);
@@ -112,7 +120,9 @@ export const EventTasksTab: React.FC<EventTasksTabProps> = ({
       <Stack spacing={2}>
         <Typography variant="h6">{t('tasks.defaultTemplates')}</Typography>
         <Typography variant="body2" color="text.secondary">
-          {t('tasks.defaultTemplatesDescription')}
+          {createsOnToggle
+            ? t('tasks.defaultTemplatesDescriptionLive')
+            : t('tasks.defaultTemplatesDescription')}
         </Typography>
 
         <Paper variant="outlined" sx={{ p: 2 }}>
@@ -180,10 +190,7 @@ export const EventTasksTab: React.FC<EventTasksTabProps> = ({
                               )}
                             </Typography>
                             <Typography variant="caption">
-                              <strong>{t('tasks.dueDate')}:</strong>{' '}
-                              {template.dueDateType === 'immediate'
-                                ? t('tasks.immediate')
-                                : `${template.dueDateOffsetDays} ${t('tasks.days')}`}
+                              <strong>{t('tasks.dueDate')}:</strong> {templateDueLabel(t, template)}
                             </Typography>
                           </Stack>
                         }
@@ -290,9 +297,7 @@ export const EventTasksTab: React.FC<EventTasksTabProps> = ({
                                 </Typography>
                                 <Typography variant="caption">
                                   <strong>{t('tasks.dueDate')}:</strong>{' '}
-                                  {template.dueDateType === 'immediate'
-                                    ? t('tasks.immediate')
-                                    : `${template.dueDateOffsetDays} ${t('tasks.days')}`}
+                                  {templateDueLabel(t, template)}
                                 </Typography>
                               </Stack>
                             }

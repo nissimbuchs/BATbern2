@@ -117,11 +117,9 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({
   const queryClient = useQueryClient();
 
   const {
-    unassignedSessions,
+    unassignedSessions: unassignedFromServer,
     isLoading: sessionsLoading,
     conflict,
-    assignedCount,
-    totalSessions,
     assignToSlot,
     unassignTiming,
     clearConflict,
@@ -158,6 +156,22 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({
     if (!event?.sessions) return [];
     return event.sessions.filter((session) => session.startTime && session.endTime);
   }, [event?.sessions]);
+
+  // The tray and the Pending count hold speaker sessions only, by the same rule as the total
+  // (the backend's unassigned list excludes structural sessions too; this keeps the counters
+  // consistent, Total = Assigned + Pending, whatever the list carries).
+  const unassignedSessions = useMemo(
+    () => unassignedFromServer.filter((s) => !isStructuralSession(s.sessionType)),
+    [unassignedFromServer]
+  );
+
+  // Counters (#1223): every speaker session of the event counts, slotted or not; the tray holds
+  // the ones without a slot. Structural sessions (moderation, breaks) have no speaker slot.
+  const totalSessions = useMemo(
+    () => (event?.sessions ?? []).filter((s) => !isStructuralSession(s.sessionType)).length,
+    [event?.sessions]
+  );
+  const assignedCount = totalSessions - unassignedSessions.length;
 
   // Assigned (non-structural) speaker sessions — for display in timeline cells
   const assignedSessions = useMemo(
@@ -614,6 +628,7 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({
               <UnassignedSpeakersList
                 sessions={filteredSessions}
                 totalSessions={totalSessions}
+                unassignedCount={unassignedSessions.length}
                 onDragStart={handleDragStart}
                 activeFilter={speakerFilter}
                 onFilterChange={setSpeakerFilter}

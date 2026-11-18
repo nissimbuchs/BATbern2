@@ -23,17 +23,20 @@
       "attention": {
         "title": "Needs your attention",
         "addTask": "Add task",
-        "open": "Open {{tab}} →",
-        "go": "Open →",
+        "open": "Apri {{tab}}",
+        "go": "Apri",
         "retry": "Retry",
         "loadError": "Couldn't load your tasks.",
         "allCaught": "You're all caught up — nothing needs your attention right now.",
         "triggerNotReached": "Trigger non ancora raggiunto"
       },
       "due": {
-        "overdue": "Overdue · {{days}} days",
+        "overdue_one": "Scaduta · {{count}} giorno",
+        "overdue_other": "Scaduta · {{count}} giorni",
         "overdueNow": "In ritardo",
-        "dueSoon": "Due in {{days}} days",
+        "dueToday": "Scade oggi",
+        "dueSoon_one": "Scade tra {{count}} giorno",
+        "dueSoon_other": "Scade tra {{count}} giorni",
         "upcoming": "Upcoming",
         "live": "Now · event is live",
         "eventDay": "Giorno dell’evento · {{date}}"
@@ -670,12 +673,19 @@
     "eventTasksDescription": "Configura le attività che verranno create e attivate automaticamente man mano che l'evento avanza negli stati del workflow.",
     "defaultTemplates": "Modelli di attività predefiniti",
     "defaultTemplatesDescription": "Queste sono le attività standard di pianificazione eventi. Tutte sono preselezionate e verranno create quando salvi l'evento.",
+    "defaultTemplatesDescriptionLive": "Queste sono le attività standard di pianificazione dell’evento. Selezionarne una la crea subito; deselezionarla la elimina.",
     "taskExists": "L'attività esiste",
     "assignTo": "Assegna a",
     "triggerState": "Trigger",
     "dueDate": "Scadenza",
     "immediate": "Immediato",
-    "days": "giorni",
+    "offset": {
+      "before_one": "{{count}} giorno prima dell’evento",
+      "before_other": "{{count}} giorni prima dell’evento",
+      "after_one": "{{count}} giorno dopo l’evento",
+      "after_other": "{{count}} giorni dopo l’evento",
+      "eventDay": "Il giorno dell’evento"
+    },
     "customTemplates": "Modelli di attività personalizzati",
     "customTemplatesDescription": "Questi modelli sono stati creati dal tuo team. Seleziona quelli che vuoi includere per questo evento.",
     "customTasks": "Attività personalizzate",
@@ -1198,12 +1208,16 @@
     },
     "quickActions": {
       "title": "Azioni rapide",
-      "total": "{{count}} sessioni totali",
-      "assigned": "{{count}} assegnate",
-      "pending": "{{count}} in attesa",
+      "total_one": "{{count}} sessione totale",
+      "total_other": "{{count}} sessioni totali",
+      "assigned_one": "{{count}} assegnata",
+      "assigned_other": "{{count}} assegnate",
+      "pending_one": "{{count}} in attesa",
+      "pending_other": "{{count}} in attesa",
       "allAssigned": "Tutti gli orari assegnati!",
       "goToPublishing": "Vai alla scheda Pubblicazione",
-      "sessionsAssignedAnnouncement": "{{count}} sessioni assegnate con successo"
+      "sessionsAssignedAnnouncement_one": "{{count}} sessione assegnata con successo",
+      "sessionsAssignedAnnouncement_other": "{{count}} sessioni assegnate con successo"
     },
     "actions": {
       "autoAssign": "Assegnazione automatica",

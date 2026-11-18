@@ -23,17 +23,20 @@
       "attention": {
         "title": "Needs your attention",
         "addTask": "Add task",
-        "open": "Open {{tab}} →",
-        "go": "Open →",
+        "open": "Open {{tab}}",
+        "go": "Open",
         "retry": "Retry",
         "loadError": "Couldn't load your tasks.",
         "allCaught": "You're all caught up — nothing needs your attention right now.",
         "triggerNotReached": "Trigger not reached yet"
       },
       "due": {
-        "overdue": "Overdue · {{days}} days",
+        "overdue_one": "Overdue · {{count}} day",
+        "overdue_other": "Overdue · {{count}} days",
         "overdueNow": "Overdue",
-        "dueSoon": "Due in {{days}} days",
+        "dueToday": "Due today",
+        "dueSoon_one": "Due in {{count}} day",
+        "dueSoon_other": "Due in {{count}} days",
         "upcoming": "Upcoming",
         "live": "Now · event is live",
         "eventDay": "Event day · {{date}}"
@@ -674,12 +677,19 @@
     "eventTasksDescription": "Configure tasks that will be automatically created and activated as the event progresses through workflow states.",
     "defaultTemplates": "Default Task Templates",
     "defaultTemplatesDescription": "These are the standard event planning tasks. All are pre-selected and will be created when you save the event.",
+    "defaultTemplatesDescriptionLive": "These are the standard event planning tasks. Ticking one creates its task right away; unticking it removes the task.",
     "taskExists": "Task exists",
     "assignTo": "Assign To",
     "triggerState": "Trigger",
     "dueDate": "Due",
     "immediate": "Immediate",
-    "days": "days",
+    "offset": {
+      "before_one": "{{count}} day before the event",
+      "before_other": "{{count}} days before the event",
+      "after_one": "{{count}} day after the event",
+      "after_other": "{{count}} days after the event",
+      "eventDay": "On the event day"
+    },
     "customTemplates": "Custom Task Templates",
     "customTemplatesDescription": "These templates were created by your team. Select any you want to include for this event.",
     "customTasks": "Custom Tasks",
@@ -1212,12 +1222,16 @@
     },
     "quickActions": {
       "title": "Quick Actions",
-      "total": "{{count}} Total Sessions",
-      "assigned": "{{count}} Assigned",
-      "pending": "{{count}} Pending",
+      "total_one": "{{count}} Total Session",
+      "total_other": "{{count}} Total Sessions",
+      "assigned_one": "{{count}} Assigned",
+      "assigned_other": "{{count}} Assigned",
+      "pending_one": "{{count}} Pending",
+      "pending_other": "{{count}} Pending",
       "allAssigned": "All timings assigned!",
       "goToPublishing": "Go to Publishing Tab",
-      "sessionsAssignedAnnouncement": "{{count}} sessions assigned successfully"
+      "sessionsAssignedAnnouncement_one": "{{count}} session assigned successfully",
+      "sessionsAssignedAnnouncement_other": "{{count}} sessions assigned successfully"
     },
     "actions": {
       "autoAssign": "Auto-Assign",

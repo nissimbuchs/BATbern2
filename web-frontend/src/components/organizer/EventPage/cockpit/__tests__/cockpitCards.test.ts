@@ -81,6 +81,22 @@ describe('classifyDue', () => {
   it('beyond 7 days → upcoming', () => {
     expect(classifyDue('2026-07-30T12:00:00Z', NOW).severity).toBe('upcoming');
   });
+
+  // #1223: days count Swiss calendar days, not 24h periods from the exact instant.
+  // NOW is 2026-06-13 14:00 in Zurich.
+  it('due later today (Zurich) → due today, 0 days', () => {
+    expect(classifyDue('2026-06-13T14:00:00Z', NOW)).toEqual({ severity: 'dueSoon', days: 0 });
+  });
+  it('due earlier today (Zurich) → still due today, not overdue', () => {
+    expect(classifyDue('2026-06-13T06:00:00Z', NOW)).toEqual({ severity: 'dueSoon', days: 0 });
+  });
+  it('due yesterday (Zurich), even late in the day → overdue by 1 day', () => {
+    expect(classifyDue('2026-06-12T21:30:00Z', NOW)).toEqual({ severity: 'overdue', days: -1 });
+  });
+  it('due tomorrow just after midnight (Zurich) → 1 day', () => {
+    // 2026-06-13T22:30Z is 00:30 on 14 June in Zurich
+    expect(classifyDue('2026-06-13T22:30:00Z', NOW)).toEqual({ severity: 'dueSoon', days: 1 });
+  });
 });
 
 describe('resolveTaskTarget', () => {

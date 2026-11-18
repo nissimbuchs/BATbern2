@@ -179,6 +179,7 @@ export const EventTasksLiveTab: React.FC<EventTasksLiveTabProps> = ({ event, eve
         }}
         onEditCustomTask={(task) => setEditingTask(task)}
         onDeleteCustomTask={handleDeleteCustom}
+        createsOnToggle
       />
 
       {editingTask && (

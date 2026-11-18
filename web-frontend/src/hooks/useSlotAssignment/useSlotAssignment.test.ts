@@ -104,7 +104,6 @@ describe('useSlotAssignment', () => {
       expect(result.current.isLoading).toBe(true);
       await waitFor(() => expect(result.current.isLoading).toBe(false));
       expect(result.current.unassignedSessions).toEqual(unassigned);
-      expect(result.current.totalSessions).toBe(2);
       expect(result.current.error).toBeNull();
       expect(api.calls('getUnassignedSessions')[0].params.eventCode).toBe(EVENT);
     });
@@ -137,8 +136,6 @@ describe('useSlotAssignment', () => {
       expect(call.params).toEqual({ eventCode: EVENT, sessionSlug: 'session-1' });
       expect(call.body).toEqual(timing);
       expect(result.current.unassignedSessions.map((s) => s.sessionSlug)).toEqual(['session-2']);
-      expect(result.current.assignedCount).toBe(1);
-      expect(result.current.totalSessions).toBe(2);
       expect(result.current.error).toBeNull();
     });
 
@@ -259,7 +256,6 @@ describe('useSlotAssignment', () => {
 
       expect(api.calls('bulkAssignTiming')[0].body).toEqual(bulkRequest);
       expect(result.current.unassignedSessions).toHaveLength(0);
-      expect(result.current.assignedCount).toBe(2);
     });
 
     it('should_rollbackAndSetError_when_bulkAssignmentFailsWithGenericError', async () => {
@@ -396,9 +392,6 @@ describe('useSlotAssignment', () => {
 
       expect(api.calls('getUnassignedSessions')).toHaveLength(2);
       expect(result.current.unassignedSessions).toEqual([unassigned[1]]);
-      // The total is the first load's: the progress counts what was assigned since.
-      expect(result.current.totalSessions).toBe(2);
-      expect(result.current.assignedCount).toBe(1);
     });
   });
 });

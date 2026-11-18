@@ -23,17 +23,20 @@
       "attention": {
         "title": "Needs your attention",
         "addTask": "Add task",
-        "open": "Open {{tab}} →",
-        "go": "Open →",
+        "open": "Ouvrir {{tab}}",
+        "go": "Ouvrir",
         "retry": "Retry",
         "loadError": "Couldn't load your tasks.",
         "allCaught": "You're all caught up — nothing needs your attention right now.",
         "triggerNotReached": "Déclencheur pas encore atteint"
       },
       "due": {
-        "overdue": "Overdue · {{days}} days",
+        "overdue_one": "En retard · {{count}} jour",
+        "overdue_other": "En retard · {{count}} jours",
         "overdueNow": "En retard",
-        "dueSoon": "Due in {{days}} days",
+        "dueToday": "À faire aujourd’hui",
+        "dueSoon_one": "Échéance dans {{count}} jour",
+        "dueSoon_other": "Échéance dans {{count}} jours",
         "upcoming": "Upcoming",
         "live": "Now · event is live",
         "eventDay": "Jour de l’événement · {{date}}"
@@ -670,12 +673,19 @@
     "eventTasksDescription": "Configurez les tâches qui seront automatiquement créées et activées au fur et à mesure de la progression de l'événement dans les états du workflow.",
     "defaultTemplates": "Modèles de tâches par défaut",
     "defaultTemplatesDescription": "Ce sont les tâches standard de planification d'événements. Toutes sont présélectionnées et seront créées lors de la sauvegarde de l'événement.",
+    "defaultTemplatesDescriptionLive": "Ce sont les tâches standard de planification d’événements. Cocher une tâche la crée immédiatement ; la décocher la supprime.",
     "taskExists": "La tâche existe",
     "assignTo": "Assigner à",
     "triggerState": "Déclencheur",
     "dueDate": "Échéance",
     "immediate": "Immédiat",
-    "days": "jours",
+    "offset": {
+      "before_one": "{{count}} jour avant l’événement",
+      "before_other": "{{count}} jours avant l’événement",
+      "after_one": "{{count}} jour après l’événement",
+      "after_other": "{{count}} jours après l’événement",
+      "eventDay": "Le jour de l’événement"
+    },
     "customTemplates": "Modèles de tâches personnalisés",
     "customTemplatesDescription": "Ces modèles ont été créés par votre équipe. Sélectionnez ceux que vous souhaitez inclure pour cet événement.",
     "customTasks": "Tâches personnalisées",
@@ -1198,12 +1208,16 @@
     },
     "quickActions": {
       "title": "Actions rapides",
-      "total": "{{count}} sessions au total",
-      "assigned": "{{count}} assignées",
-      "pending": "{{count}} en attente",
+      "total_one": "{{count}} session au total",
+      "total_other": "{{count}} sessions au total",
+      "assigned_one": "{{count}} assignée",
+      "assigned_other": "{{count}} assignées",
+      "pending_one": "{{count}} en attente",
+      "pending_other": "{{count}} en attente",
       "allAssigned": "Tous les horaires sont assignés !",
       "goToPublishing": "Aller à l'onglet Publication",
-      "sessionsAssignedAnnouncement": "{{count}} sessions assignées avec succès"
+      "sessionsAssignedAnnouncement_one": "{{count}} session assignée avec succès",
+      "sessionsAssignedAnnouncement_other": "{{count}} sessions assignées avec succès"
     },
     "actions": {
       "autoAssign": "Attribution automatique",

@@ -60,6 +60,31 @@ describe('TaskTemplatesTab', () => {
     expect(within(custom).getByText('Speakers published')).toBeInTheDocument();
   });
 
+  it.each([
+    // #1223 item 5: "-90d before event"; the slides newsletter (+1) read "1d before event".
+    ['Mailing: Save the date', -90, '90 days before the event'],
+    ['Newsletter: Slides Are Online', 1, '1 day after the event'],
+    ['Event day briefing', 0, 'On the event day'],
+    ['Call for speakers', -1, '1 day before the event'],
+    ['Feedback survey', 14, '14 days after the event'],
+  ])('should_describeTheOffset_when_%s_isDue_%i', async (name, offset, text) => {
+    api.on('listAllTemplates', () => [
+      { ...templates[0], name, dueDateType: 'relative_to_event', dueDateOffsetDays: offset },
+    ]);
+    renderWithAuth(<TaskTemplatesTab />);
+
+    const defaults = await screen.findByTestId('default-templates-list');
+    expect(within(defaults).getByText(text)).toBeInTheDocument();
+    expect(defaults).not.toHaveTextContent(/-\d+d|\dd before/);
+  });
+
+  it('should_sayImmediately_when_templateIsDueImmediately', async () => {
+    renderWithAuth(<TaskTemplatesTab />);
+
+    const defaults = await screen.findByTestId('default-templates-list');
+    expect(within(defaults).getByText('Immediate')).toBeInTheDocument();
+  });
+
   it('should_openTheCreateDialog_when_addTemplateClicked', async () => {
     const user = userEvent.setup();
     renderWithAuth(<TaskTemplatesTab />);

@@ -3,14 +3,14 @@ title: 'Cockpit and slot defects of #1223 fixed'
 type: 'bugfix'
 ticket: '8'
 created: '2026-11-18'
-status: 'in-progress'
-baseline_revision: 'd4d23d1a2e15abb127fb78fad6cfdd0dba5cfcd4'
+status: 'built'
+baseline_revision: '61b87574328bf107872b8f1c92ec20dc7bae2616'
 route: 'full'
 route_source: 'auto'
 risk: 'low'
-review: ''
-review_source: ''
-lenses_ran: []
+review: 'quick'
+review_source: 'pinned'
+lenses_ran: ['quick']
 review_loop_iteration: 0
 context: []
 ---
@@ -56,8 +56,8 @@ context: []
 ## Tasks & Acceptance
 
 **Execution:**
-- [ ] RED: one test per item (layout assertion or Playwright-style width check for item 9 if jsdom cannot measure: assert the label is not inside an element with `noWrap`/ellipsis styles, or the styles allow wrapping)
-- [ ] fixes, 10 locales for text changes
+- [x] RED: one test per item (layout assertion or Playwright-style width check for item 9 if jsdom cannot measure: assert the label is not inside an element with `noWrap`/ellipsis styles, or the styles allow wrapping)
+- [x] fixes, 10 locales for text changes
 
 **Acceptance Criteria:**
 - Every matrix row has a test that failed before its fix.
@@ -73,3 +73,17 @@ Architecture note: frontend only (cockpit, slots, task templates, event form). N
 - `make check-test-ratchet`, `make check-i18n-keys` -- clean.
 
 **Rack rules:** one heavy build at a time, Vitest `--maxWorkers=4`, output via `set -o pipefail; ... | tee ~/.cache/batbern-test-logs/<name>.log`. Do not commit or push. A bug found on the way is fixed too and reported (initiative C9).
+
+## Implementation Notes
+
+- Item 1 root cause: `useSlotAssignment` took the total from the first unassigned load (empty when all are slotted). Total now counts the event's speaker sessions; assigned = total − unassigned. Same class in `UnassignedSpeakersList` (progress from the filtered cards) fixed. Item 6: the event form shows Tasks only when editing, so the two texts are "form" vs "live view". Item 9: filter buttons wrap at 375px (style assertion; not checked in a browser).
+- Also fixed: "Due in 1 days" / "Overdue · 1 days" plurals; `EventTasksTab` tooltips showed "-90 days"; three tests de-mocked (ratchet −5 then more).
+- Verification (orchestrator): type-check, lint, Vitest 231 files / 2529 tests over organizer, SlotAssignment, hooks, i18n; ratchet; i18n keys.
+
+## Review Triage Log
+
+Quick review, 3 findings, all patched; plus the implementer's two leftovers patched (C9).
+- medium, patched: "Due today" came from exact-time ceil, so a task due later today read "Due in 1 day" and turned "Due today" only once overdue. `classifyDue` counts Zurich calendar days; tests at later/earlier today, yesterday, tomorrow.
+- low, patched: a null offset printed `relative_to_event`; treated as 0, "On the event day".
+- low, patched: Total excluded structural sessions while Pending counted all unassigned; same filter on both, clamps removed, test with an untimed break.
+- leftovers patched: plural keys for the slot bar and its screen-reader message in 10 locales; unused `tasks.days` removed.

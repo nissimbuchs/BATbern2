@@ -129,12 +129,17 @@ export interface DueInfo {
   days?: number;
 }
 
-/** Classify a task's due date into severity + day count (now injected for tests). */
+/**
+ * Classify a task's due date into severity + day count (now injected for tests). `days` is the
+ * number of Zurich calendar days from today: 0 = due today, negative = overdue.
+ */
 export function classifyDue(dueDate: string | null | undefined, now: number): DueInfo {
   if (!dueDate) return { severity: 'upcoming' };
   const due = new Date(dueDate).getTime();
   if (Number.isNaN(due)) return { severity: 'upcoming' };
-  const days = Math.ceil((due - now) / DAY_MS);
+  // Swiss calendar days, not 24h periods from the exact instant (#1223): a task due today reads
+  // "Due today" all day, and one due yesterday is overdue.
+  const days = Math.round((Date.parse(zurichDay(due)) - Date.parse(zurichDay(now))) / DAY_MS);
   if (days < 0) return { severity: 'overdue', days };
   if (days <= DUE_SOON_DAYS) return { severity: 'dueSoon', days };
   return { severity: 'upcoming', days };

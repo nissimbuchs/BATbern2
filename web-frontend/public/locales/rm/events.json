@@ -23,17 +23,20 @@
       "attention": {
         "title": "Needs your attention",
         "addTask": "Add task",
-        "open": "Open {{tab}} →",
-        "go": "Open →",
+        "open": "Avrir {{tab}}",
+        "go": "Avrir",
         "retry": "Retry",
         "loadError": "Couldn't load your tasks.",
         "allCaught": "You're all caught up — nothing needs your attention right now.",
         "triggerNotReached": "Trigger anc betg cuntanschì"
       },
       "due": {
-        "overdue": "Overdue · {{days}} days",
+        "overdue_one": "Scadì · {{count}} di",
+        "overdue_other": "Scadì · {{count}} dis",
         "overdueNow": "Surpassà",
-        "dueSoon": "Due in {{days}} days",
+        "dueToday": "Scada oz",
+        "dueSoon_one": "Scada en {{count}} di",
+        "dueSoon_other": "Scada en {{count}} dis",
         "upcoming": "Upcoming",
         "live": "Now · event is live",
         "eventDay": "Di da l’occurrenza · {{date}}"
@@ -670,12 +673,19 @@
     "eventTasksDescription": "Configura las incumbensas che vegnan creadas ed activadas automaticamain cun il progress dal eveniment tras ils status dal workflow.",
     "defaultTemplates": "Maletgs d'incumbensas standard",
     "defaultTemplatesDescription": "Quests èn ils incumbensas standard per la planisaziun d'eveniments. Tuts èn pre-tschernids e vegnan creads cura che ti salvesches il eveniment.",
+    "defaultTemplatesDescriptionLive": "Quai èn las incumbensas da planisaziun standard. Marcar ina la crea immediatamain; la demarcar la stizza.",
     "taskExists": "Incumbensa exista",
     "assignTo": "Attribuir a",
     "triggerState": "Trigger",
     "dueDate": "Scadenza",
     "immediate": "Immediat",
-    "days": "dis",
+    "offset": {
+      "before_one": "{{count}} di avant l’eveniment",
+      "before_other": "{{count}} dis avant l’eveniment",
+      "after_one": "{{count}} di suenter l’eveniment",
+      "after_other": "{{count}} dis suenter l’eveniment",
+      "eventDay": "Il di da l’eveniment"
+    },
     "customTemplates": "Maletgs d'incumbensas persunalisads",
     "customTemplatesDescription": "Quests maletgs èn vegnids creads da tia equipa. Tscherna quels che ti vuls includer per quest eveniment.",
     "customTasks": "Incumbensas persunalisadas",
@@ -1198,12 +1208,16 @@
     },
     "quickActions": {
       "title": "Acziuns rumadas",
-      "total": "{{count}} sessiuns en total",
-      "assigned": "{{count}} attribuidas",
-      "pending": "{{count}} en spetga",
+      "total_one": "{{count}} sessiun en total",
+      "total_other": "{{count}} sessiuns en total",
+      "assigned_one": "{{count}} attribuida",
+      "assigned_other": "{{count}} attribuidas",
+      "pending_one": "{{count}} en spetga",
+      "pending_other": "{{count}} en spetga",
       "allAssigned": "Tuts ils oraris attribuids!",
       "goToPublishing": "Ir a la tab Publicaziun",
-      "sessionsAssignedAnnouncement": "{{count}} sessiuns attribuidas cun success"
+      "sessionsAssignedAnnouncement_one": "{{count}} sessiun attribuida cun success",
+      "sessionsAssignedAnnouncement_other": "{{count}} sessiuns attribuidas cun success"
     },
     "actions": {
       "autoAssign": "Attribuziun automatica",

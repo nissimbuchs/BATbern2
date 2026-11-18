@@ -23,17 +23,20 @@
       "attention": {
         "title": "Erfordert Ihre Aufmerksamkeit",
         "addTask": "Aufgabe hinzufügen",
-        "open": "{{tab}} öffnen →",
-        "go": "Öffnen →",
+        "open": "{{tab}} öffnen",
+        "go": "Öffnen",
         "retry": "Erneut versuchen",
         "loadError": "Aufgaben konnten nicht geladen werden.",
         "allCaught": "Alles erledigt — im Moment ist nichts zu tun.",
         "triggerNotReached": "Trigger noch nicht erreicht"
       },
       "due": {
-        "overdue": "Überfällig · {{days}} Tage",
+        "overdue_one": "Überfällig · {{count}} Tag",
+        "overdue_other": "Überfällig · {{count}} Tage",
         "overdueNow": "Überfällig",
-        "dueSoon": "Fällig in {{days}} Tagen",
+        "dueToday": "Heute fällig",
+        "dueSoon_one": "Fällig in {{count}} Tag",
+        "dueSoon_other": "Fällig in {{count}} Tagen",
         "upcoming": "Demnächst",
         "live": "Jetzt · Anlass ist live",
         "eventDay": "Veranstaltungstag · {{date}}"
@@ -674,12 +677,19 @@
     "eventTasksDescription": "Konfigurieren Sie Aufgaben, die automatisch erstellt und aktiviert werden, wenn die Veranstaltung die Workflow-Zustände durchläuft.",
     "defaultTemplates": "Standard-Aufgabenvorlagen",
     "defaultTemplatesDescription": "Dies sind die Standard-Planungsaufgaben. Alle sind vorausgewählt und werden erstellt, wenn Sie die Veranstaltung speichern.",
+    "defaultTemplatesDescriptionLive": "Dies sind die Standard-Planungsaufgaben. Ein Häkchen erstellt die Aufgabe sofort, das Entfernen des Häkchens löscht sie.",
     "taskExists": "Aufgabe existiert",
     "assignTo": "Zuweisen an",
     "triggerState": "Auslöser",
     "dueDate": "Fällig",
     "immediate": "Sofort",
-    "days": "Tage",
+    "offset": {
+      "before_one": "{{count}} Tag vor dem Anlass",
+      "before_other": "{{count}} Tage vor dem Anlass",
+      "after_one": "{{count}} Tag nach dem Anlass",
+      "after_other": "{{count}} Tage nach dem Anlass",
+      "eventDay": "Am Anlasstag"
+    },
     "customTemplates": "Benutzerdefinierte Aufgabenvorlagen",
     "customTemplatesDescription": "Diese Vorlagen wurden von Ihrem Team erstellt. Wählen Sie diejenigen aus, die Sie für diese Veranstaltung einschließen möchten.",
     "customTasks": "Benutzerdefinierte Aufgaben",
@@ -1212,12 +1222,16 @@
     },
     "quickActions": {
       "title": "Schnellzugriff",
-      "total": "{{count}} Sessions gesamt",
-      "assigned": "{{count}} zugewiesen",
-      "pending": "{{count}} ausstehend",
+      "total_one": "{{count}} Session gesamt",
+      "total_other": "{{count}} Sessions gesamt",
+      "assigned_one": "{{count}} zugewiesen",
+      "assigned_other": "{{count}} zugewiesen",
+      "pending_one": "{{count}} ausstehend",
+      "pending_other": "{{count}} ausstehend",
       "allAssigned": "Alle Zeitslots vergeben!",
       "goToPublishing": "Zum Veröffentlichungs-Tab",
-      "sessionsAssignedAnnouncement": "{{count}} Sessions erfolgreich zugewiesen"
+      "sessionsAssignedAnnouncement_one": "{{count}} Session erfolgreich zugewiesen",
+      "sessionsAssignedAnnouncement_other": "{{count}} Sessions erfolgreich zugewiesen"
     },
     "actions": {
       "autoAssign": "Auto-Zuweisung",
