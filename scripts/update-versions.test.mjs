@@ -5,10 +5,12 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { createRequire } from 'node:module';
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const SCRIPT = path.join(ROOT, 'scripts', 'update-versions.js');
 const REAL_VERSIONS = path.join(ROOT, 'docs', 'versions.json');
+const { readGradleVersion, readNodeVersion } = createRequire(import.meta.url)(SCRIPT);
 
 /**
  * Tests for scripts/update-versions.js — #991.
@@ -131,4 +133,79 @@ test('the checked-in versions.json is currently in sync', () => {
   // pass for the wrong reason.
   const { code, stdout } = run(REAL_VERSIONS, ['--check']);
   assert.equal(code, 0, `docs/versions.json has drifted:\n${stdout}`);
+});
+
+/**
+ * #1211: Gradle and Node were hard-coded ('8.x', '20'), so versions.json claimed Gradle 8 and
+ * Node 20 while the estate ran Gradle 9 and Node 22, and --check passed because generator and
+ * file agreed on the same wrong value. They are now read from the wrapper and the workflows.
+ */
+
+function tempDir() {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'batbern-versions-src-'));
+  return { dir, cleanup: () => fs.rmSync(dir, { recursive: true, force: true }) };
+}
+
+test('Gradle version comes from the wrapper distributionUrl', () => {
+  const { dir, cleanup } = tempDir();
+  try {
+    const wrapper = path.join(dir, 'gradle-wrapper.properties');
+    fs.writeFileSync(wrapper, [
+      'distributionBase=GRADLE_USER_HOME',
+      'distributionUrl=https\\://services.gradle.org/distributions/gradle-9.8.2-bin.zip',
+      '',
+    ].join('\n'));
+    assert.equal(readGradleVersion(wrapper), '9.x');
+
+    fs.writeFileSync(wrapper, 'distributionUrl=https\\://services.gradle.org/distributions/gradle-10.0-all.zip\n');
+    assert.equal(readGradleVersion(wrapper), '10.x');
+
+    assert.equal(readGradleVersion(path.join(dir, 'missing.properties')), null);
+  } finally {
+    cleanup();
+  }
+});
+
+test('Node version comes from the active workflows, ignoring disabled files and comments', () => {
+  const { dir, cleanup } = tempDir();
+  try {
+    fs.writeFileSync(path.join(dir, 'build.yml'), "      - uses: actions/setup-node@v6\n        with:\n          node-version: '22'\n");
+    fs.writeFileSync(path.join(dir, 'other.yaml'), '          node-version: 22.11.0\n          # node-version: 18\n');
+    fs.writeFileSync(path.join(dir, 'old.yml.disabled'), "          node-version: '20'\n");
+    assert.equal(readNodeVersion(dir, path.join(dir, 'no-nvmrc')), '22');
+  } finally {
+    cleanup();
+  }
+});
+
+test('Node version: workflows that disagree fail with the files named', () => {
+  const { dir, cleanup } = tempDir();
+  try {
+    fs.writeFileSync(path.join(dir, 'a.yml'), "          node-version: '22'\n");
+    fs.writeFileSync(path.join(dir, 'b.yml'), "          node-version: '24'\n");
+    assert.throws(() => readNodeVersion(dir, path.join(dir, 'no-nvmrc')), /22 \(a\.yml\); 24 \(b\.yml\)/);
+  } finally {
+    cleanup();
+  }
+});
+
+test('Node version: .nvmrc wins over the workflows', () => {
+  const { dir, cleanup } = tempDir();
+  try {
+    fs.writeFileSync(path.join(dir, 'a.yml'), "          node-version: '22'\n");
+    const nvmrc = path.join(dir, '.nvmrc');
+    fs.writeFileSync(nvmrc, 'v24.1.0\n');
+    assert.equal(readNodeVersion(dir, nvmrc), '24');
+  } finally {
+    cleanup();
+  }
+});
+
+test('the checked-in versions.json states the real Gradle wrapper and CI Node versions', () => {
+  // Pins the reported truth itself, not only the readers: this repo runs the wrapper's Gradle
+  // and the workflows' Node, and the file must say so.
+  const real = JSON.parse(fs.readFileSync(REAL_VERSIONS, 'utf8'));
+  assert.equal(real.backend.gradle, readGradleVersion());
+  assert.equal(real.infrastructure.node, readNodeVersion());
+  assert.notEqual(real.backend.gradle, '8.x');
 });

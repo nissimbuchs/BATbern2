@@ -253,8 +253,8 @@ make test-java
 # Run only TypeScript tests
 make test-node
 
-# Run with coverage reports
-make test-coverage
+# Run with coverage reports (make test-java / test-node both write them)
+make test
 
 # Run specific service tests
 cd services/company-user-management-service

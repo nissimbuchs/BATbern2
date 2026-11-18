@@ -36,6 +36,12 @@ const BACKEND_GRADLE = path.join(ROOT_DIR, 'api-gateway', 'build.gradle');
 const ROOT_GRADLE = path.join(ROOT_DIR, 'build.gradle');
 const SETTINGS_GRADLE = path.join(ROOT_DIR, 'settings.gradle');
 const INFRA_PACKAGE = path.join(ROOT_DIR, 'infrastructure', 'package.json');
+// Gradle and Node used to be hard-coded ('8.x', '20'), so versions.json kept claiming Gradle 8
+// and Node 20 long after the estate moved to Gradle 9 and Node 22, and --check passed because
+// the generator agreed with the stale file (#1211). Both are now read from where they are pinned.
+const GRADLE_WRAPPER = path.join(ROOT_DIR, 'gradle', 'wrapper', 'gradle-wrapper.properties');
+const NVMRC = path.join(ROOT_DIR, '.nvmrc');
+const WORKFLOWS_DIR = path.join(ROOT_DIR, '.github', 'workflows');
 
 // Parse command line arguments
 const args = process.argv.slice(2);
@@ -86,6 +92,57 @@ function extractGradleBomVersion(line) {
   const match = line.match(/:bom:([^'")]+)/);
   if (!match) return null;
   return extractVersion(match[1]);
+}
+
+/**
+ * Gradle version from the wrapper's distributionUrl, e.g. ".../gradle-9.8.2-bin.zip" -> "9.x".
+ * Returns null when the file or the URL is missing, which fails generation.
+ */
+function readGradleVersion(wrapperFile = GRADLE_WRAPPER) {
+  let content;
+  try {
+    content = fs.readFileSync(wrapperFile, 'utf8');
+  } catch {
+    return null;
+  }
+  const match = content.match(/^distributionUrl=.*gradle-(\d+)[\d.]*-(?:bin|all)\.zip\s*$/m);
+  return match ? `${match[1]}.x` : null;
+}
+
+/**
+ * Node major version CI runs on.
+ *
+ * `.nvmrc` wins when it exists. Otherwise every `node-version:` in the active workflows
+ * (`.github/workflows/*.yml|*.yaml`; `*.disabled` files never run and are ignored) must name
+ * the same major; that major is the answer. Several majors are not something one line in
+ * versions.json can state truthfully, so that throws with the files that disagree.
+ */
+function readNodeVersion(workflowsDir = WORKFLOWS_DIR, nvmrcFile = NVMRC) {
+  if (fs.existsSync(nvmrcFile)) {
+    const match = fs.readFileSync(nvmrcFile, 'utf8').trim().match(/^v?(\d+)/);
+    if (!match) throw new Error(`${nvmrcFile} does not start with a Node major version`);
+    return match[1];
+  }
+
+  const majors = new Map(); // major -> [file, ...]
+  for (const name of fs.readdirSync(workflowsDir).sort()) {
+    if (!/\.ya?ml$/.test(name)) continue;
+    const content = fs.readFileSync(path.join(workflowsDir, name), 'utf8');
+    for (const m of content.matchAll(/^[ \t]*node-version:[ \t]*['"]?v?(\d+)/gm)) {
+      const files = majors.get(m[1]) || [];
+      if (!files.includes(name)) files.push(name);
+      majors.set(m[1], files);
+    }
+  }
+
+  if (majors.size === 0) {
+    throw new Error(`no node-version found in ${workflowsDir} and no ${nvmrcFile}`);
+  }
+  if (majors.size > 1) {
+    const detail = [...majors].map(([major, files]) => `${major} (${files.join(', ')})`).join('; ');
+    throw new Error(`workflows disagree on the Node version: ${detail}`);
+  }
+  return [...majors.keys()][0];
 }
 
 /**
@@ -141,7 +198,7 @@ function extractBackendVersions() {
       'spring-boot': null,
       junit: null,
       testcontainers: null,
-      gradle: '8.x', // Would need to read gradle-wrapper.properties for exact version
+      gradle: readGradleVersion(),
       mockito: null,
       'aws-sdk': null,
       openapi: '3.x'
@@ -182,6 +239,11 @@ function extractBackendVersions() {
       }
     });
 
+    if (!versions.gradle) {
+      console.error(`Error reading the Gradle version from ${GRADLE_WRAPPER}`);
+      return null;
+    }
+
     return versions;
   } catch (error) {
     console.error(`Error reading backend build.gradle: ${error.message}`);
@@ -201,10 +263,10 @@ function extractInfrastructureVersions() {
       'aws-cdk': extractVersion(deps['aws-cdk-lib'] || deps['aws-cdk']),
       typescript: extractVersion(deps.typescript),
       jest: extractVersion(deps.jest),
-      node: '20' // Typically specified in .nvmrc or CI config
+      node: readNodeVersion()
     };
   } catch (error) {
-    console.error(`Error reading infrastructure package.json: ${error.message}`);
+    console.error(`Error reading infrastructure versions: ${error.message}`);
     return null;
   }
 }
@@ -361,5 +423,9 @@ function main() {
   }
 }
 
-// Run the script
-main();
+// Run the script when executed, not when the test suite requires the readers.
+if (require.main === module) {
+  main();
+}
+
+module.exports = { extractVersion, readGradleVersion, readNodeVersion };

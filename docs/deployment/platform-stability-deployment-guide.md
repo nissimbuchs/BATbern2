@@ -175,15 +175,20 @@ AWS_PROFILE=batbern-staging aws logs tail /aws/ecs/BATbern-staging/event-managem
 # Monitor ECS service status
 AWS_PROFILE=batbern-staging aws ecs describe-services \
   --cluster batbern-staging \
-  --services $(aws ecs list-services --cluster batbern-staging --query 'serviceArns' --output text) \
+  --services $(AWS_PROFILE=batbern-staging aws ecs list-services --cluster batbern-staging --query 'serviceArns' --output text) \
   --query 'services[*].{Name:serviceName,Status:status,Running:runningCount,Desired:desiredCount}'
 
-# Check for recent OOM events
-AWS_PROFILE=batbern-staging aws logs insights query \
+# Check for recent OOM events (GNU date; on macOS use `date -v-24H +%s`)
+QUERY_ID=$(AWS_PROFILE=batbern-staging aws logs start-query \
   --log-group-names /aws/ecs/BATbern-staging/event-management \
-  --start-time $(date -v-24H +%s) \
+  --start-time $(date -d '24 hours ago' +%s) \
   --end-time $(date +%s) \
-  --query-string 'fields @timestamp, @message | filter @message like /exit code 137/ | sort @timestamp desc'
+  --query-string 'fields @timestamp, @message | filter @message like /exit code 137/ | sort @timestamp desc' \
+  --query queryId --output text)
+
+# Get results after 3-5 seconds
+sleep 5
+AWS_PROFILE=batbern-staging aws logs get-query-results --query-id "$QUERY_ID"
 ```
 
 **1 week:**

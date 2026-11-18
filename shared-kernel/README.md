@@ -1,41 +1,51 @@
 # BATbern Shared Kernel
 
-[![CI/CD](https://github.com/batbern/shared-kernel/actions/workflows/ci.yml/badge.svg)](https://github.com/batbern/shared-kernel/actions/workflows/ci.yml)
-[![Coverage](https://codecov.io/gh/batbern/shared-kernel/branch/main/graph/badge.svg)](https://codecov.io/gh/batbern/shared-kernel)
-[![License](https://img.shields.io/badge/license-proprietary-red.svg)](LICENSE)
+Shared domain types, events, and utilities for the BATbern platform services (`api-gateway`,
+`services/*`). It is a Gradle module of this monorepo, not a separate repository; the services
+consume it as a project dependency.
 
-Shared domain types, events, and utilities for the BATbern platform microservices ecosystem.
+## What is in it
 
-## Overview
+Every class under `src/main/java/ch/batbern/shared`, by package (listed from the source tree
+2026-11-18; regenerate the table from the tree when a package changes, never by hand):
 
-The Shared Kernel provides common Domain-Driven Design (DDD) building blocks that are shared across all BATbern platform microservices:
+| Package | Classes |
+|---|---|
+| `api` | `DeterministicPaging`, `FieldSelector`, `FilterCriteria`, `FilterOperator`, `FilterParser`, `IncludeParser`, `PaginationMetadata`, `PaginationParams`, `PaginationUtils`, `SortCriteria`, `SortDirection`, `SortParser` |
+| `config` | `AwsSesConfig`, `S3EndpointOverride`, `SharedObjectMapperConfig` |
+| `contract` | `ContractCallFailedException`, `ContractCalls`, `ContractRefusedException` |
+| `dto` | `ErrorResponse`, `PaginatedResponse` |
+| `events` | `DomainEvent`, `DomainEventPublisher`, `EventCreatedEvent`, `EventWorkflowTransitionEvent`, `SessionTimingAssignedEvent`, `SpeakerAcceptedEvent`, `SpeakerAddedToPoolEvent`, `SpeakerInvitationSentEvent`, `SpeakerInvitedEvent`, `SpeakerPromotedToReadyEvent`, `SpeakerResponseReceivedEvent`, `SpeakerWorkflowStateChangeEvent`, `SpringDomainEventPublisher` |
+| `exception` | `BATbernException`, `ClientErrorClassifier`, `ErrorCode`, `InvalidStateTransitionException`, `NotFoundException`, `ServiceException`, `UnauthorizedException`, `ValidationException` |
+| `exceptions` | `DomainException`, `ValidationException` |
+| `mail` | `ComposedMail`, `MailContext`, `MailRedaction`, `MailTrigger`, `OutboundMail`, `OutboundMailRecorder` |
+| `search` | `SearchPredicates`, `SearchTerms` |
+| `security` | `AuditLog`, `AuditLoggingAspect`, `ClientIp`, `JwtRolesConverter`, `S2sHeaders` |
+| `service` | `CapturedEmail`, `EmailService`, `IcsCalendarService`, `LocalEmailCapture`, `ReservedEmailRecipientException`, `SlugGenerationService`, `TestMarkedEmailException` |
+| `types` | `EventWorkflowState`, `Role`, `SpeakerResponseType`, `SpeakerWorkflowState` |
+| `upload` | `ImageUrlFetcher`, `UploadException`, `UploadPurposeHandler`, `UploadRecord`, `UploadRecordRepository`, `UploadRules`, `UploadService`, `UploadStatus`, `UploadStatusConverter` |
+| `util` | `CorrelationIdGenerator`, `EmailContentTestMarker`, `ReservedEmailDomain` |
+| `utils` | `CloudFrontUrlBuilder`, `DateTimeUtils`, `EmailAddresses`, `LogContext`, `LoggingUtils`, `S3Links`, `ValidationUtils` |
 
-- **Domain Value Objects**: Strongly-typed identifiers (EventId, SpeakerId, CompanyId, UserId)
-- **Domain Events**: in-process domain events (`DomainEventPublisher` → Spring `ApplicationEventPublisher`)
-- **Common Utilities**: Validation, error handling, logging, and date/time utilities
-- **Swiss Compliance**: Built-in Swiss timezone handling
+`exception` (the `BATbernException` hierarchy with `ErrorCode`) and `exceptions` (`DomainException`)
+both exist and both carry a `ValidationException`; import the one the surrounding code uses.
+
+There are no typed ID wrappers (`EventId`, `UserId` and the like do not exist). Cross-service
+references use meaningful string IDs (`eventCode`, `username`, `companyName`, ADR-003); UUIDs
+stay inside one service.
 
 ## Requirements
 
-- Java 21 or higher
-- Gradle 8.5 or higher
+- Java 21
+- Gradle from the repository's wrapper (`./gradlew` at the root, see
+  `gradle/wrapper/gradle-wrapper.properties`)
 
-## Installation
-
-### Maven
-
-```xml
-<dependency>
-    <groupId>ch.batbern</groupId>
-    <artifactId>shared-kernel</artifactId>
-    <version>1.0.0</version>
-</dependency>
-```
-
-### Gradle
+## Using it from a service
 
 ```groovy
-implementation 'ch.batbern:shared-kernel:1.0.0'
+// <service>/build.gradle
+implementation project(':shared-kernel')
+testImplementation testFixtures(project(':shared-kernel'))   // ClientErrorContract, test probes
 ```
 
 ## Usage
@@ -51,9 +61,6 @@ import ch.batbern.shared.types.SpeakerResponseType;
 EventWorkflowState state = EventWorkflowState.AGENDA_PUBLISHED;
 SpeakerWorkflowState speaker = SpeakerWorkflowState.ACCEPTED;
 ```
-
-There are no typed ID wrappers. Cross-service references use meaningful string IDs
-(`eventCode`, `username`, `companyName`, ADR-003); UUIDs stay inside one service.
 
 ### Domain Events
 
@@ -196,32 +203,28 @@ export AWS_REGION=eu-central-1
 
 ### Running Tests
 
+Run from the repository root:
+
 ```bash
 # Run all tests
-./gradlew test
+./gradlew :shared-kernel:test
 
 # Run specific test class
-./gradlew test --tests "*ValidationUtilsTest"
+./gradlew :shared-kernel:test --tests "*ValidationUtilsTest"
 
 # Run with coverage
-./gradlew test jacocoTestReport
+./gradlew :shared-kernel:test :shared-kernel:jacocoTestReport
 
-# Check coverage threshold (90%)
-./gradlew jacocoTestCoverageVerification
+# Check the coverage threshold (minimum 0.60 instruction coverage, shared-kernel/build.gradle)
+./gradlew :shared-kernel:jacocoTestCoverageVerification
 ```
 
 ## Architecture
 
-### Domain-Driven Design
+### Domain events
 
-The Shared Kernel follows DDD principles:
-- **Value Objects**: Immutable objects with validation
-- **Domain Events**: Capture business events
-- **Ubiquitous Language**: Swiss-specific terminology
-
-### Event Sourcing
-
-All domain events extend `DomainEvent` and include:
+There is no event sourcing; events are notifications inside one service. All domain events
+extend `DomainEvent` and include:
 - Aggregate ID
 - Event type and version
 - Occurrence timestamp
@@ -236,25 +239,16 @@ leaves the service; cross-service calls go through `/internal/**` (ADR-016).
 
 ### Building from Source
 
+From the repository root (all Gradle commands run there):
+
 ```bash
-# Clone the repository
-git clone https://github.com/batbern/shared-kernel.git
-cd shared-kernel
-
-# Build the project
-./gradlew build
-
-# Publish to local Maven repository
-./gradlew publishToMavenLocal
+./gradlew :shared-kernel:build
+./gradlew :shared-kernel:publishToMavenLocal
 ```
 
 ### Code Style
 
-The project follows Java best practices:
-- Immutable value objects
-- Builder pattern for complex objects
-- Comprehensive null checks
-- Meaningful exception messages
+See `docs/architecture/coding-standards.md`.
 
 ## Versioning
 

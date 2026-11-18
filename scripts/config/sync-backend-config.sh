@@ -154,10 +154,8 @@ if [ $? -ne 0 ]; then
     echo "Deploy the Cognito stack: cd infrastructure && npm run deploy:${ENVIRONMENT}"
     COGNITO_USER_POOL_ID="NOT_DEPLOYED"
     COGNITO_CLIENT_ID="NOT_DEPLOYED"
-    COGNITO_DOMAIN_URL="NOT_DEPLOYED"
 else
     COGNITO_CLIENT_ID=$(get_stack_output "${COGNITO_STACK}" "UserPoolClientId")
-    COGNITO_DOMAIN_URL=$(get_stack_output "${COGNITO_STACK}" "UserPoolDomainUrl")
     echo -e "${GREEN}✓${NC} Cognito User Pool ID: ${COGNITO_USER_POOL_ID}"
     echo -e "${GREEN}✓${NC} Cognito Client ID: ${COGNITO_CLIENT_ID}"
 fi
@@ -201,7 +199,6 @@ cat "${TEMPLATE_FILE}" | \
     sed "s|{{DB_PASSWORD}}|${DB_PASSWORD}|g" | \
     sed "s|{{COGNITO_USER_POOL_ID}}|${COGNITO_USER_POOL_ID}|g" | \
     sed "s|{{COGNITO_CLIENT_ID}}|${COGNITO_CLIENT_ID}|g" | \
-    sed "s|{{COGNITO_DOMAIN_URL}}|${COGNITO_DOMAIN_URL}|g" | \
     sed "s|{{ENABLE_COGNITO_AUTH}}|true|g" \
     > "${OUTPUT_FILE}"
 
