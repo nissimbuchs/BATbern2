@@ -1607,6 +1607,20 @@ by `src/i18n/config.ts` (static JSON imports, no HTTP backend).
 New UI keys must be populated in all ten locales (see CLAUDE.md, "Localization"). Backend email
 templates are a separate rule: DE and EN only.
 
+- **One list**: `src/i18n/languages.ts` (`UI_LANGUAGES`) is what the language switchers
+  (`LanguageSwitcher`, the user menu) offer, labelled from `common:language.*`, and what the
+  users-api `language` setting accepts, `gsw-BE` included (#1222; `config.test.ts` checks it
+  against the bundled resources). `mailLanguage()` maps a UI language to the mail language
+  (German for `de`/`gsw-BE`, English otherwise), as the backend does.
+- **Dates follow the UI language** (#1222 item 6, #1223 item 4): `intlLocale()`
+  (`src/utils/date/intlLocale.ts`) is the only place that names a locale. `en` is `en-US`
+  ("Oct 22, 2026"), `de` and `gsw-BE` are `de-CH`, `fr`/`it`/`rm` their `-CH` form (`rm` falls
+  back to `de-CH` where the runtime has no Romansh), every other language its plain tag. Every
+  `toLocaleDateString`, `toLocaleString`, `toLocaleTimeString` and `Intl.DateTimeFormat` that
+  shows a date passes `intlLocale(i18n.language)` or `uiIntlLocale()`; date-fns takes
+  `dateFnsLocale()`, the same rule. `zurichDay()` (`en-CA`, ISO `YYYY-MM-DD`) is a machine key
+  for comparing Bern calendar days, never shown.
+
 ### Library Stack
 
 Versions as declared in `web-frontend/package.json` (develop c4593449):
@@ -1645,8 +1659,8 @@ web-frontend/
 │       └── localesComplete.test.ts  # fails on "[MISSING]" placeholders
 ```
 
-Formatting helpers live in `src/utils/date/` (`formatDate`, `formatDateTime`), not in
-`src/i18n/`.
+Formatting helpers live in `src/utils/date/` (`formatDate`, `formatDateTime`, `intlLocale`,
+`dateFnsLocale`, `zurichDay`), not in `src/i18n/`.
 
 **Namespace Strategy** (as built): every namespace of every locale is part of the bundle and
 available from the first render; nothing is lazy-loaded per route or role. The 2025 design

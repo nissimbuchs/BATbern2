@@ -35,6 +35,7 @@ import { TopicHeatMap } from '@/components/TopicHeatMap';
 import { topicService } from '@/services/topicService';
 import { FULLY_AVAILABLE_STALENESS } from '@/types/topic.types';
 import type { Topic } from '@/types/topic.types';
+import { uiIntlLocale } from '@/utils/date/intlLocale';
 
 export interface TopicDetailsPanelProps {
   topic: Topic;
@@ -228,7 +229,7 @@ export const TopicDetailsPanel: React.FC<TopicDetailsPanelProps> = ({
           {topic.lastUsedDate && (
             <Typography variant="body2">
               {t('topicBacklog.details.lastUsed', 'Last Used')}:{' '}
-              {new Date(topic.lastUsedDate).toLocaleDateString()}
+              {new Date(topic.lastUsedDate).toLocaleDateString(uiIntlLocale())}
             </Typography>
           )}
           <Typography variant="body2">

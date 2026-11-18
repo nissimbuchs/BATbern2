@@ -13,10 +13,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Unit tests for {@link AdditionalEmailVerificationEmailService}'s locale →
- * template/subject selection. Any German variant ({@code de}, {@code de-CH}, …)
- * must use the German template + subject; everything else (including {@code fr},
- * {@code gsw-BE}, and {@code null}) falls back to English per the email-template
- * DE+EN-only localization rule.
+ * template/subject selection. Any German variant ({@code de}, {@code de-CH}, …) and Swiss
+ * German ({@code gsw-BE}, owner 2026-11-15, #1222) must use the German template + subject;
+ * everything else (including {@code fr} and {@code null}) falls back to English per the
+ * email-template DE+EN-only localization rule.
  */
 @DisplayName("AdditionalEmailVerificationEmailService — locale resolution")
 class AdditionalEmailVerificationEmailServiceTest {
@@ -48,7 +48,7 @@ class AdditionalEmailVerificationEmailServiceTest {
         "de-DE  | Bestätigen Sie Ihre BATbern E-Mail-Adresse",
         "DE     | Bestätigen Sie Ihre BATbern E-Mail-Adresse",
         "fr     | Confirm your BATbern email address",
-        "gsw-BE | Confirm your BATbern email address",
+        "gsw-BE | Bestätigen Sie Ihre BATbern E-Mail-Adresse",
         "en     | Confirm your BATbern email address",
     })
     @DisplayName("should_selectSubjectByLocalePrefix")

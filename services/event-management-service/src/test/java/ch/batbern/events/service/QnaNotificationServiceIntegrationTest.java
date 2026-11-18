@@ -49,8 +49,7 @@ import static org.mockito.Mockito.when;
  * <p>The real {@link EmailService} renders and sends to the {@link SesRecorder} (17.0b3): the tests
  * assert what SES received, recipient and body. CUMS is the {@link CumsContractHarness}: the real
  * {@code UserApiClient} reads each recipient's address, cadence and language (#1222, touch rule).
- * {@code gsw-BE} cannot go through it: CUMS stores a two-letter language and the internal spec's
- * enum has no {@code gsw}; {@code MailLocalesTest} covers it.
+ * Swiss German through CUMS: {@code RecipientLanguageMailIntegrationTest}.
  *
  * <p><b>Not {@code @Transactional}.</b> The service under test is intentionally non-transactional
  * and persists each recipient's throttle row via a {@code REQUIRES_NEW} writer — so setup data must
@@ -402,7 +401,6 @@ class QnaNotificationServiceIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    // gsw-BE: MailLocalesTest; CUMS stores a two-letter language only
     @DisplayName("#1222: a German preference renders the German template")
     void should_renderGerman_when_germanLocale() {
         recipient(SPEAKER, "de", "live");

@@ -285,7 +285,6 @@ fe-mock-hooks	web-frontend/src/components/public/Hero/__tests__/HeroSection.test
 fe-mock-hooks	web-frontend/src/components/public/Navigation/__tests__/ThankOrganizersNavButton.test.tsx	3
 fe-mock-hooks	web-frontend/src/components/public/Registration/__tests__/RegistrationWizard.test.tsx	4
 fe-mock-hooks	web-frontend/src/components/public/Testimonials/__tests__/TestimonialSection.test.tsx	3
-fe-mock-hooks	web-frontend/src/components/public/__tests__/UpcomingEventsSection.test.tsx	2
 fe-mock-hooks	web-frontend/src/components/shared/Company/CompanyBatchImportModal.test.tsx	1
 fe-mock-hooks	web-frontend/src/components/shared/Company/__tests__/Accessibility.test.tsx	4
 fe-mock-hooks	web-frontend/src/components/shared/Company/__tests__/CompanyDetailView.test.tsx	1
@@ -382,10 +381,8 @@ fe-mock-i18n	web-frontend/src/components/public/PublicLayout.test.tsx	1
 fe-mock-i18n	web-frontend/src/components/public/Registration/__tests__/RegistrationWizard.test.tsx	1
 fe-mock-i18n	web-frontend/src/components/public/Testimonials/__tests__/TestimonialSection.test.tsx	1
 fe-mock-i18n	web-frontend/src/components/public/__tests__/DeregistrationEntry.test.tsx	1
-fe-mock-i18n	web-frontend/src/components/public/__tests__/EventCard.test.tsx	1
 fe-mock-i18n	web-frontend/src/components/public/__tests__/FilterSheet.test.tsx	1
 fe-mock-i18n	web-frontend/src/components/public/__tests__/FilterSidebar.test.tsx	1
-fe-mock-i18n	web-frontend/src/components/public/__tests__/UpcomingEventsSection.test.tsx	1
 fe-mock-i18n	web-frontend/src/components/shared/Company/CompanyBatchImportModal.test.tsx	1
 fe-mock-i18n	web-frontend/src/components/shared/Company/CompanyCard.test.tsx	1
 fe-mock-i18n	web-frontend/src/components/shared/Layout/Accessibility.test.tsx	1
@@ -447,12 +444,10 @@ fe-mock-services	web-frontend/src/components/organizer/UserManagement/MergeProfi
 fe-mock-services	web-frontend/src/components/organizer/UserManagement/UserDetailModal.test.tsx	1
 fe-mock-services	web-frontend/src/components/partner/PartnerAttendanceDashboard.test.tsx	1
 fe-mock-services	web-frontend/src/components/partner/TopicListPage.test.tsx	1
-fe-mock-services	web-frontend/src/components/public/Event/EventProgram.test.tsx	1
 fe-mock-services	web-frontend/src/components/public/Event/SessionCards.test.tsx	1
 fe-mock-services	web-frontend/src/components/public/Event/SpeakerGrid.test.tsx	1
 fe-mock-services	web-frontend/src/components/public/Registration/__tests__/CompanyAutocomplete.test.tsx	1
 fe-mock-services	web-frontend/src/components/public/Registration/__tests__/RegistrationWizard.test.tsx	2
-fe-mock-services	web-frontend/src/components/public/__tests__/UpcomingEventsSection.test.tsx	2
 fe-mock-services	web-frontend/src/components/shared/Company/CompanyBatchImportModal.test.tsx	1
 fe-mock-services	web-frontend/src/components/shared/Company/__tests__/CompanySearch.test.tsx	1
 fe-mock-services	web-frontend/src/components/shared/Navigation/MobileDrawer.test.tsx	1

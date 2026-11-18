@@ -22,6 +22,7 @@ import {
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { getRsvps, type RsvpDTO } from '@/services/api/partnerMeetingsApi';
+import { uiIntlLocale } from '@/utils/date/intlLocale';
 
 interface PartnerMeetingRsvpPanelProps {
   meetingId: string;
@@ -107,7 +108,7 @@ const PartnerMeetingRsvpPanel: React.FC<PartnerMeetingRsvpPanelProps> = ({
                   />
                   <ListItemText
                     primary={rsvp.attendeeEmail}
-                    secondary={new Date(rsvp.respondedAt).toLocaleString()}
+                    secondary={new Date(rsvp.respondedAt).toLocaleString(uiIntlLocale())}
                   />
                 </ListItem>
               ))}

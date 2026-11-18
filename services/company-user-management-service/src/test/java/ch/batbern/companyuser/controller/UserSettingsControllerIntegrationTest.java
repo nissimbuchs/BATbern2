@@ -251,6 +251,41 @@ class UserSettingsControllerIntegrationTest extends AbstractIntegrationTest {
         assertThat(stored.getTheme()).isEqualTo("dark");
     }
 
+    /**
+     * #1222 item 5: Swiss German ships as UI locale {@code gsw-BE}; the column was
+     * {@code VARCHAR(2)} and the spec enum two-letter only, so it could not be saved.
+     */
+    @Test
+    @WithMockUser(username = "max.muster")
+    void should_storeAndReturnSwissGerman_when_patchedWithGswBe() throws Exception {
+        mockMvc.perform(patch(URL).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"language\": \"gsw-BE\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.language").value("gsw-BE"));
+
+        mockMvc.perform(get(URL))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.language").value("gsw-BE"));
+        mockMvc.perform(get("/api/v1/users/me").param("include", "settings"))
+                .andExpect(jsonPath("$.settings.language").value("gsw-BE"));
+        assertThat(userRepository.findByUsername("max.muster").orElseThrow().getPreferences().getLanguage())
+                .isEqualTo("gsw-BE");
+    }
+
+    /**
+     * A row written with a raw sign-up tag (post-confirmation Lambda before #1222 normalized it)
+     * must not break the settings read: {@code de-CH} reads back as {@code de}.
+     */
+    @Test
+    @WithMockUser(username = "max.muster")
+    void should_readGerman_when_storedLanguageIsARegionTag() throws Exception {
+        jdbcTemplate.update("UPDATE user_profiles SET pref_language = 'de-CH' WHERE username = 'max.muster'");
+
+        mockMvc.perform(get(URL))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.language").value("de"));
+    }
+
     @ParameterizedTest
     @ValueSource(strings = {
         "{\"theme\": \"neon\"}",

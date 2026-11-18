@@ -24,6 +24,7 @@ import { SpeakerDisplay } from './SpeakerDisplay';
 import { SessionQnaThread } from './SessionQnaThread';
 import { eventApiClient } from '@/services/eventApiClient';
 import { isStructuralSession } from '@/utils/sessionTypes';
+import { uiIntlLocale } from '@/utils/date/intlLocale';
 
 const isStructural = (session: SessionUI) => isStructuralSession(session.sessionType);
 
@@ -164,8 +165,15 @@ export const EventProgram = ({
 
     // Convert map to sorted array
     return Array.from(slotMap.entries())
-      .map(([time, sessions]) => ({ time, sessions }))
-      .sort((a, b) => a.time.localeCompare(b.time));
+      .map(([key, sessions]) => ({
+        key,
+        time: new Date(sessions[0].startTime!).toLocaleTimeString(uiIntlLocale(), {
+          hour: '2-digit',
+          minute: '2-digit',
+        }),
+        sessions,
+      }))
+      .sort((a, b) => a.key.localeCompare(b.key));
   }, [sessions]);
 
   const formatSessionDuration = (
@@ -179,7 +187,9 @@ export const EventProgram = ({
     try {
       const start = new Date(startTime);
       const end = new Date(endTime);
-      return `${format(start, 'HH:mm')} - ${format(end, 'HH:mm')}`;
+      const time = (d: Date) =>
+        d.toLocaleTimeString(uiIntlLocale(), { hour: '2-digit', minute: '2-digit' });
+      return `${time(start)} - ${time(end)}`;
     } catch {
       return '';
     }
@@ -200,7 +210,7 @@ export const EventProgram = ({
         {/* Timeline items */}
         <div className="space-y-8">
           {timeSlots.map((slot, slotIndex) => (
-            <div key={slot.time} className="relative">
+            <div key={slot.key} className="relative">
               {/* Time indicator */}
               <div className="flex items-start gap-6">
                 <div className="flex items-center justify-center w-16 h-16 rounded-full bg-zinc-900 border-2 border-blue-400 flex-shrink-0 relative z-10">

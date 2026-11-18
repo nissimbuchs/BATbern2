@@ -56,6 +56,7 @@ import type {
   ImportStatus,
   UpdateFieldSelection,
 } from '@/types/eventImport.types';
+import { uiIntlLocale } from '@/utils/date/intlLocale';
 
 /**
  * Get the appropriate icon for an import status
@@ -535,7 +536,7 @@ export const EventBatchImportModal: React.FC<EventBatchImportModalProps> = ({
                       </TableCell>
                       <TableCell>
                         <Typography variant="body2">
-                          {new Date(candidate.apiPayload.date).toLocaleDateString('de-CH', {
+                          {new Date(candidate.apiPayload.date).toLocaleDateString(uiIntlLocale(), {
                             year: 'numeric',
                             month: 'short',
                             day: 'numeric',

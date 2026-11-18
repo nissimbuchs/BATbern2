@@ -13,6 +13,7 @@ import { useQuery } from '@tanstack/react-query';
 import { BATbernLoader } from '@components/shared/BATbernLoader';
 import { useTranslation } from 'react-i18next';
 import { getRegistrationView } from './homePagePhase';
+import { uiIntlLocale } from '@/utils/date/intlLocale';
 
 const RegistrationPage = () => {
   const { t } = useTranslation('events');
@@ -70,7 +71,7 @@ const RegistrationPage = () => {
               </h1>
               {event.date && (
                 <p className="text-lg text-zinc-400">
-                  {new Date(event.date).toLocaleDateString('de-CH', {
+                  {new Date(event.date).toLocaleDateString(uiIntlLocale(), {
                     weekday: 'long',
                     year: 'numeric',
                     month: 'long',

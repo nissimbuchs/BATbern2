@@ -8,6 +8,7 @@ import React, { useState } from 'react';
 import { Box, Button, Typography } from '@mui/material';
 import WatchIcon from '@mui/icons-material/Watch';
 import type { PairedWatch } from '@/types/watch';
+import { uiIntlLocale } from '@/utils/date/intlLocale';
 
 interface PairedWatchCardProps {
   watch: PairedWatch;
@@ -17,7 +18,7 @@ interface PairedWatchCardProps {
 
 const PairedWatchCard: React.FC<PairedWatchCardProps> = ({ watch, onUnpair, isUnpairing }) => {
   const [confirmPending, setConfirmPending] = useState(false);
-  const formattedDate = new Date(watch.pairedAt).toLocaleDateString('en-GB', {
+  const formattedDate = new Date(watch.pairedAt).toLocaleDateString(uiIntlLocale(), {
     year: 'numeric',
     month: 'short',
     day: 'numeric',

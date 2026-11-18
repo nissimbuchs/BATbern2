@@ -8,6 +8,7 @@ import { useMutation } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { authService } from '@/services/auth/authService';
 import { subscribe as subscribeToNewsletter } from '@/services/newsletterService';
+import { mailLanguage } from '@/i18n/languages';
 
 export interface RegistrationFormData {
   firstName: string;
@@ -63,7 +64,7 @@ export const useRegistration = () => {
           await subscribeToNewsletter({
             email: data.email,
             firstName,
-            language: i18n.language?.startsWith('de') ? 'de' : 'en',
+            language: mailLanguage(i18n.language),
           });
         } catch (error) {
           console.warn('[useRegistration] Newsletter subscribe failed (non-blocking)', error);

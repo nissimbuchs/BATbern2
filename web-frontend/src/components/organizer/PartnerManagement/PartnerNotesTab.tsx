@@ -22,6 +22,7 @@ import { usePartnerNotes } from '@/hooks/usePartnerNotes';
 import { usePartnerDetailStore } from '@/stores/partnerDetailStore';
 import { useBreakpoints } from '@/hooks/useBreakpoints';
 import type { PartnerNoteDTO } from '@/services/api/partnerNotesApi';
+import { uiIntlLocale } from '@/utils/date/intlLocale';
 
 type UserRole = 'ORGANIZER' | 'PARTNER' | 'SPEAKER' | 'ATTENDEE';
 
@@ -45,7 +46,7 @@ type Note = PartnerNoteDTO;
 // Format date for display
 const formatDate = (dateString: string): string => {
   const date = new Date(dateString);
-  return date.toLocaleDateString('en-US', {
+  return date.toLocaleDateString(uiIntlLocale(), {
     year: 'numeric',
     month: 'short',
     day: 'numeric',

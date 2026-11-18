@@ -72,6 +72,7 @@ import {
   type EventFormData,
   type PartialEventFormData,
 } from './eventFormSchema';
+import { uiIntlLocale } from '@/utils/date/intlLocale';
 
 // mapWorkflowStateToStatus function removed - no longer needed
 // Backend now uses workflowState directly (Phase 1-2 migration complete)
@@ -630,7 +631,7 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
                   {autoSaveStatus === 'saved' && lastSavedAt && (
                     <Chip
                       label={t('autoSave.saved', {
-                        time: lastSavedAt.toLocaleTimeString(),
+                        time: lastSavedAt.toLocaleTimeString(uiIntlLocale()),
                       })}
                       size="small"
                       color="success"

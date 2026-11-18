@@ -5,6 +5,7 @@ import type { components } from '@/types/generated/event-watch-api.types';
 import { ExtendSessionSheet } from './ExtendSessionSheet';
 import { DelaySessionSheet } from './DelaySessionSheet';
 import { LogoBadge } from '@/components/shared/LogoBadge/LogoBadge';
+import { uiIntlLocale } from '@/utils/date/intlLocale';
 
 type WatchSessionDetail = components['schemas']['WatchSessionDetail'];
 type WatchSpeaker = WatchSessionDetail['speakers'][number];
@@ -33,7 +34,7 @@ function formatCountdown(seconds: number): string {
 
 function formatTime(iso: string | null | undefined): string {
   if (!iso) return '';
-  return new Date(iso).toLocaleTimeString('de-CH', { hour: '2-digit', minute: '2-digit' });
+  return new Date(iso).toLocaleTimeString(uiIntlLocale(), { hour: '2-digit', minute: '2-digit' });
 }
 
 function speakerNames(session: WatchSessionDetail): string {

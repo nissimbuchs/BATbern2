@@ -57,6 +57,7 @@ import {
   type ComposerState,
   type ContentSource,
 } from './types';
+import { intlLocale } from '@/utils/date/intlLocale';
 
 const AUTOMATIC = '__automatic__';
 const NOTES_DEBOUNCE_MS = 400;
@@ -100,7 +101,7 @@ function alreadySentOf(error: unknown): string | null {
 function formatSentAt(sentAt: string, language: string): string {
   const date = new Date(sentAt);
   if (!sentAt || Number.isNaN(date.getTime())) return sentAt;
-  return date.toLocaleString(language, {
+  return date.toLocaleString(intlLocale(language), {
     dateStyle: 'medium',
     timeStyle: 'short',
     timeZone: 'Europe/Zurich',

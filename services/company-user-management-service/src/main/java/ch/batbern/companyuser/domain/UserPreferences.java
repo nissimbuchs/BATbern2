@@ -27,7 +27,7 @@ public class UserPreferences {
     @Builder.Default
     private String theme = "auto";
 
-    @Column(name = "pref_language", length = 2)
+    @Column(name = "pref_language", length = 10)
     @Builder.Default
     private String language = "de";
 

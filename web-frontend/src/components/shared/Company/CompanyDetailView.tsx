@@ -41,6 +41,7 @@ import { useUserList } from '@/hooks/useUserManagement';
 import UserTable from '@/components/organizer/UserManagement/UserTable';
 import UserCard from '@/components/organizer/UserManagement/UserCard';
 import UserPagination from '@/components/organizer/UserManagement/UserPagination';
+import { uiIntlLocale } from '@/utils/date/intlLocale';
 
 type CompanyDetail = components['schemas']['CompanyResponse'];
 
@@ -246,7 +247,7 @@ const CompanySessionsPanel: React.FC<{ companyName: string }> = ({ companyName }
           ? `${session.eventCode} · ${session.eventTitle}`
           : session.eventCode;
         const dateLabel = session.eventDate
-          ? new Date(session.eventDate).toLocaleDateString('de-CH', {
+          ? new Date(session.eventDate).toLocaleDateString(uiIntlLocale(), {
               year: 'numeric',
               month: 'short',
               day: 'numeric',

@@ -30,16 +30,17 @@ import EmailIcon from '@mui/icons-material/Email';
 import ReplyIcon from '@mui/icons-material/Reply';
 import AttachFileIcon from '@mui/icons-material/AttachFile';
 import { CapturedEmailWithSource, devEmailService } from '@/services/devEmailService';
+import { uiIntlLocale } from '@/utils/date/intlLocale';
 
 function formatTime(isoString: string): string {
-  return new Date(isoString).toLocaleTimeString('de-CH', {
+  return new Date(isoString).toLocaleTimeString(uiIntlLocale(), {
     hour: '2-digit',
     minute: '2-digit',
   });
 }
 
 function formatDateTime(isoString: string): string {
-  return new Date(isoString).toLocaleString('de-CH', {
+  return new Date(isoString).toLocaleString(uiIntlLocale(), {
     day: '2-digit',
     month: '2-digit',
     year: 'numeric',

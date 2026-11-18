@@ -7,6 +7,7 @@ import ch.batbern.companyuser.exception.UserNotFoundException;
 import ch.batbern.companyuser.repository.ProfileMergeRequestRepository;
 import ch.batbern.companyuser.repository.UserRepository;
 import ch.batbern.companyuser.security.SecurityContextHelper;
+import ch.batbern.companyuser.domain.UserLanguages;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -14,7 +15,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Locale;
 import java.util.UUID;
 
 /**
@@ -161,10 +161,8 @@ public class ProfileMergeRequestService {
     }
 
     private static String locale(User user) {
-        if (user.getPreferences() != null && user.getPreferences().getLanguage() != null) {
-            return user.getPreferences().getLanguage().toLowerCase(Locale.ROOT).startsWith("de") ? "de" : "en";
-        }
-        return "de";
+        return UserLanguages.mailLanguage(
+                user.getPreferences() != null ? user.getPreferences().getLanguage() : null, "de");
     }
 
     private static String nullToEmpty(String s) {

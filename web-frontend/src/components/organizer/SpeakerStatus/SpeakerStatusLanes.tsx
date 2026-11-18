@@ -47,7 +47,7 @@ import {
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { formatDistanceToNow } from 'date-fns';
-import { de, enUS } from 'date-fns/locale';
+import { dateFnsLocale } from '@/utils/date/dateFnsLocale';
 import { UserAvatar } from '@/components/shared/UserAvatar';
 import { OrganizerChip } from '@/components/shared/OrganizerChip';
 import {
@@ -85,6 +85,7 @@ import {
 import { PHASE_COLUMNS, resolveColumnDrop, type PhaseColumn, type PhaseKey } from './phaseColumns';
 import type { SpeakerPoolEntry, SpeakerWorkflowState } from '@/types/speakerPool.types';
 import type { SessionUI } from '@/types/event.types';
+import { intlLocale } from '@/utils/date/intlLocale';
 
 export interface SpeakerStatusLanesProps {
   eventCode: string;
@@ -840,7 +841,7 @@ const SpeakerCard: React.FC<SpeakerCardProps> = ({
 
   // Time-in-state chip.
   const statusChangedAt = getStatusChangedAt(speaker);
-  const locale = i18n.language === 'de' ? de : enUS;
+  const locale = dateFnsLocale(i18n.language);
   const statusChangedDate = statusChangedAt ? new Date(statusChangedAt) : null;
   const isValidStatusChangedDate =
     statusChangedDate !== null && !Number.isNaN(statusChangedDate.getTime());
@@ -848,7 +849,7 @@ const SpeakerCard: React.FC<SpeakerCardProps> = ({
     ? formatDistanceToNow(statusChangedDate, { locale, addSuffix: false })
     : null;
   const statusChangedAbsolute = isValidStatusChangedDate
-    ? statusChangedDate.toLocaleString(i18n.language)
+    ? statusChangedDate.toLocaleString(intlLocale(i18n.language))
     : '';
 
   const chipSeverity: ThresholdSeverity = isValidStatusChangedDate
@@ -884,7 +885,7 @@ const SpeakerCard: React.FC<SpeakerCardProps> = ({
   // card nudges to assign one (FR17, "⚠ Needs a slot →" → onAssignSessionSlot).
   const isQualityReviewed = speaker.status === 'QUALITY_REVIEWED';
   const slotTimeLabel = session?.startTime
-    ? new Date(session.startTime).toLocaleTimeString(i18n.language, {
+    ? new Date(session.startTime).toLocaleTimeString(intlLocale(i18n.language), {
         hour: '2-digit',
         minute: '2-digit',
       })

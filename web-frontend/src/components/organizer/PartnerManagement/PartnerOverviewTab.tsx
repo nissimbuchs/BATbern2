@@ -11,6 +11,7 @@ import { CheckCircle } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { usePartnerDetailStore } from '@/stores/partnerDetailStore';
 import type { PartnerResponse } from '@/services/api/partnerApi';
+import { intlLocale } from '@/utils/date/intlLocale';
 
 interface PartnerOverviewTabProps {
   partner: PartnerResponse;
@@ -49,7 +50,7 @@ export const PartnerOverviewTab: React.FC<PartnerOverviewTabProps> = ({ partner 
   const benefitKeys = TIER_BENEFIT_KEYS[partner.partnershipLevel] || [];
 
   const formattedStartDate = new Date(partner.partnershipStartDate).toLocaleDateString(
-    i18n.language,
+    intlLocale(i18n.language),
     { year: 'numeric', month: 'short', day: 'numeric' }
   );
 

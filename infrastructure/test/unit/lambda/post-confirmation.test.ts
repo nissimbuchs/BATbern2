@@ -34,7 +34,7 @@ jest.mock('@aws-sdk/client-cognito-identity-provider', () => ({
 }));
 jest.mock('../../../lib/lambda/triggers/common/database');
 
-import { handler } from '../../../lib/lambda/triggers/post-confirmation';
+import { handler, normalizeLanguage } from '../../../lib/lambda/triggers/post-confirmation';
 import { getDbClient, executeTransaction } from '../../../lib/lambda/triggers/common/database';
 import { AdminUpdateUserAttributesCommand } from '@aws-sdk/client-cognito-identity-provider';
 
@@ -126,6 +126,45 @@ describe('PostConfirmation Lambda Trigger - Unit Tests', () => {
   // ============================================================================
 
   describe('User Creation', () => {
+    // #1222: pref_language takes only the users-api enum values (VARCHAR(10) since V34)
+    it.each([
+      ['de', 'de'],
+      ['de-CH', 'de'],
+      ['en-US', 'en'],
+      ['FR_ch', 'fr'],
+      ['gsw-BE', 'gsw-BE'],
+      ['gsw', 'gsw-BE'],
+      ['xx', 'de'],
+      ['', 'de'],
+      [undefined, 'de'],
+    ])('should_normalizeLanguage_when_signUpTagIs %s', (raw, expected) => {
+      expect(normalizeLanguage(raw)).toBe(expected);
+    });
+
+    it('should_storeASupportedLanguage_when_signUpSendsARegionTag (#1222)', async () => {
+      const event = createPostConfirmationEvent();
+      event.request.userAttributes['custom:preferences'] = JSON.stringify({
+        firstName: 'John',
+        lastName: 'Doe',
+        language: 'de-CH',
+      });
+      mockDbClient.query
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // BEGIN
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // SELECT existing user by email
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // username collision check
+        .mockResolvedValueOnce({ rows: [{ id: 'user-123' }], rowCount: 1 }) // INSERT
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // COMMIT
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }); // role check
+
+      await handler(event, createLambdaContext(), {} as any);
+
+      const insert = mockDbClient.query.mock.calls.find(
+        ([sql]: unknown[]) => typeof sql === 'string' && sql.includes('INSERT INTO user_profiles')
+      ) as unknown as [string, unknown[]];
+      expect(insert[1]).toContain('de');
+      expect(insert[1]).not.toContain('de-CH');
+    });
+
     it('should_matchExistingUserCaseInsensitively_when_checkingForDuplicate (#1099)', async () => {
       const event = createPostConfirmationEvent();
       const context = createLambdaContext();

@@ -13,7 +13,6 @@
     "src/components/auth/ResetPasswordForm/ResetPasswordForm.test.tsx",
     "src/components/organizer/Admin/EmailTemplateEditModal.test.tsx",
     "src/components/organizer/Admin/EmailTemplatePreviewModal.test.tsx",
-    "src/components/organizer/Admin/TaskTemplateEditModal.test.tsx",
     "src/components/organizer/Analytics/DataTable.test.tsx",
     "src/components/organizer/EventManagement/__tests__/WorkflowProgressBar.5.1a.test.tsx",
     "src/components/organizer/EventPage/EventParticipantFilters.test.tsx",

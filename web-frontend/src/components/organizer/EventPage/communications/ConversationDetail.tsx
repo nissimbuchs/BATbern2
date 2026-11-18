@@ -43,6 +43,7 @@ import { CompanyLogoRequestPanel } from './CompanyLogoRequestPanel';
 import { ConversationReplyBox } from './ConversationReplyBox';
 import { EventSelect } from './EventSelect';
 import { MailBodyFrame } from './MailBodyFrame';
+import { intlLocale } from '@/utils/date/intlLocale';
 
 /**
  * The start of a mail's own text for its collapsed line: quoted earlier mails (blockquote) dropped,
@@ -230,7 +231,7 @@ export const ConversationDetail: React.FC<ConversationDetailProps> = ({ conversa
                 {message.direction === 'IN' && message.fromName && message.fromAddress
                   ? ` <${message.fromAddress}>`
                   : ''}{' '}
-                · {new Date(message.sentAt).toLocaleString(i18n.language)}
+                · {new Date(message.sentAt).toLocaleString(intlLocale(i18n.language))}
                 {!open && attachments.length > 0 && (
                   <AttachmentIcon fontSize="inherit" sx={{ ml: 0.5, verticalAlign: 'middle' }} />
                 )}

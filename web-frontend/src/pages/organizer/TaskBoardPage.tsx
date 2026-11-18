@@ -46,7 +46,8 @@ import {
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { de, enUS, type Locale } from 'date-fns/locale';
+import { type Locale } from 'date-fns/locale';
+import { dateFnsLocale } from '@/utils/date/dateFnsLocale';
 import {
   DndContext,
   DragEndEvent,
@@ -71,7 +72,7 @@ const TaskBoardPage: React.FC = () => {
   const { t, i18n } = useTranslation('organizer');
   const { isMobile } = useBreakpoints();
   const queryClient = useQueryClient();
-  const locale = i18n.language === 'de' ? de : enUS;
+  const locale = dateFnsLocale(i18n.language);
   const { user } = useAuth();
   const organizerUsername = user?.username || '';
 

@@ -4,3 +4,5 @@
  */
 
 export * from './dateFormat';
+export { intlLocale } from './intlLocale';
+export { dateFnsLocale } from './dateFnsLocale';

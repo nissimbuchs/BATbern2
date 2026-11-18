@@ -12,8 +12,8 @@ import {
   Delete as DeleteIcon,
   CheckCircle as CheckCircleIcon,
 } from '@mui/icons-material';
-import { format } from 'date-fns';
 import type { User } from '@/types/userAccount.types';
+import { uiIntlLocale } from '@/utils/date/intlLocale';
 
 interface ProfileHeaderProps {
   user: User;
@@ -40,7 +40,10 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({ user, onPhotoUpload, onPh
 
   const formatMemberSince = (dateString: string): string => {
     try {
-      return format(new Date(dateString), 'MMMM yyyy');
+      return new Date(dateString).toLocaleDateString(uiIntlLocale(), {
+        month: 'long',
+        year: 'numeric',
+      });
     } catch {
       return dateString;
     }

@@ -5,6 +5,7 @@ import ch.batbern.companyuser.domain.User;
 import ch.batbern.companyuser.domain.UserPreferences;
 import ch.batbern.companyuser.repository.UserRepository;
 import ch.batbern.shared.service.SlugGenerationService;
+import ch.batbern.companyuser.domain.UserLanguages;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.Getter;
@@ -27,7 +28,6 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
 
@@ -368,15 +368,6 @@ public class UserReconciliationService {
     private static final ObjectMapper PREFERENCES_MAPPER = new ObjectMapper();
 
     /**
-     * Supported UI language codes that fit the {@code pref_language VARCHAR(2)} column.
-     * Kept in sync with {@code JITUserProvisioningInterceptor.SUPPORTED_LANGUAGE_CODES}
-     * (the two language-capture paths mirror each other — Story 12.3 AC7); {@code gsw-BE}
-     * is intentionally absent so Swiss-German falls back to the {@code @PrePersist} default.
-     */
-    private static final Set<String> SUPPORTED_LANGUAGE_CODES =
-            Set.of("de", "en", "fr", "it", "rm", "es", "fi", "nl", "ja");
-
-    /**
      * Read first/last name from the Cognito `custom:preferences` JSON attribute.
      * Mirrors {@code JITUserProvisioningInterceptor#extractNamesFromPreferences}
      * so reconciliation and JIT stay in sync on what they extract.
@@ -426,22 +417,12 @@ public class UserReconciliationService {
     }
 
     /**
-     * Normalize a raw language value to a supported 2-char code, or null. Mirrors
-     * {@code JITUserProvisioningInterceptor.normalizeLanguage} — see Story 12.3 review:
-     * an over-length BCP-47 tag (e.g. {@code gsw-BE}) would overflow {@code pref_language
-     * VARCHAR(2)} and, because {@code createMissingUser}'s {@code @Transactional} is a no-op
-     * (private self-invocation), abort the WHOLE nightly batch at the outer commit. We take
-     * the primary subtag, lowercase it, and accept it only if supported; else null → default.
-     *
-     * @param raw the language value parsed from {@code custom:preferences} (may be null)
-     * @return a supported 2-char code, or null to fall back to the default
+     * A supported language code for the raw sign-up value, or null so the {@code @PrePersist}
+     * default applies (Story 12.3 AC7, #1222): {@link UserLanguages#normalize}, the same rule as
+     * JIT provisioning. An over-length tag would otherwise abort the whole nightly batch.
      */
     private String normalizeLanguage(String raw) {
-        if (raw == null) {
-            return null;
-        }
-        String primary = raw.trim().toLowerCase(Locale.ROOT).split("[-_]", 2)[0];
-        return SUPPORTED_LANGUAGE_CODES.contains(primary) ? primary : null;
+        return UserLanguages.normalize(raw);
     }
 
     /**

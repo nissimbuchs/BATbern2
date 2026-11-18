@@ -30,6 +30,7 @@
  */
 
 import type { EventTaskResponse } from '@/services/taskService';
+import { zurichDay } from '@/utils/date/zurichDay';
 import {
   WORKFLOW_STATE_ORDER,
   getWorkflowStepNumber,
@@ -215,14 +216,6 @@ export function sortTasksByDue<T extends EventTaskResponse>(tasks: T[]): T[] {
 /* ------------------------------------------------------------------ *
  * Event day (Europe/Zurich calendar day)
  * ------------------------------------------------------------------ */
-
-const zurichDay = (ms: number) =>
-  new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'Europe/Zurich',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).format(new Date(ms));
 
 /** Is `now` on the event's calendar day in Bern? */
 export function isEventDay(eventDate: string | null | undefined, now: number): boolean {

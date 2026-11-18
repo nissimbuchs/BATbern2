@@ -51,7 +51,8 @@ import {
 import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
-import { de, enUS, type Locale } from 'date-fns/locale';
+import { type Locale } from 'date-fns/locale';
+import { dateFnsLocale } from '@/utils/date/dateFnsLocale';
 import { taskService, type EventTaskResponse } from '@/services/taskService';
 import { CustomTaskModal } from './CustomTaskModal';
 import { OrganizerChip } from '@/components/shared/OrganizerChip';
@@ -71,7 +72,7 @@ export const TaskBoardModal: React.FC<TaskBoardModalProps> = ({
   const queryClient = useQueryClient();
   const theme = useTheme();
   const isFullScreen = useMediaQuery(theme.breakpoints.down('md'));
-  const locale = i18n.language === 'de' ? de : enUS;
+  const locale = dateFnsLocale(i18n.language);
 
   const [filter, setFilter] = useState<'all' | 'mine'>('mine');
   const [sortBy, setSortBy] = useState<'dueDate' | 'createdAt'>('dueDate');

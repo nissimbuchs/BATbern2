@@ -4,11 +4,14 @@
  * Updated: 2025-10-08 - Testing deploy workflow with correct commit SHA
  */
 
+import type { UiLanguage } from '@/i18n/languages';
+
 export type UserRole = 'organizer' | 'speaker' | 'partner' | 'attendee';
 
 /** Preferences held in the auth context (not the wire `UserSettings` of user-api). */
 export interface UserContextPreferences {
-  language: 'en' | 'de' | 'fr' | 'it';
+  /** A UI language (all 10, gsw-BE included, #1222). */
+  language: UiLanguage;
   theme: 'light' | 'dark';
   privacy: {
     showProfile: boolean;

@@ -457,12 +457,12 @@ class UserReconciliationServiceTest {
         assertThat(saved.getPreferences().getLanguage()).isEqualTo("fr");
     }
 
-    // Story 12.3 review: pref_language is VARCHAR(2). An over-length BCP-47 tag (gsw-BE)
-    // would overflow the column and — because createMissingUser's @Transactional is a no-op
-    // (private self-invocation) — abort the WHOLE nightly batch at the outer commit.
-    // normalizeLanguage falls it back to the @PrePersist default "de" instead.
+    // Story 12.3 review: an over-length tag would overflow pref_language and, because
+    // createMissingUser's @Transactional is a no-op (private self-invocation), abort the WHOLE
+    // nightly batch at the outer commit; UserLanguages.normalize prevents that. #1222: Swiss German
+    // (gsw-BE) is a supported code and fits VARCHAR(10) since V34, so it is kept.
     @Test
-    void should_fallBackToDefault_when_languageIsUnsupportedRegionTag() {
+    void should_keepSwissGerman_when_languageIsGswBe() {
         when(userRepository.findByIsActive(true)).thenReturn(List.of());
         UserType cognitoUser = createCognitoUserWithPreferences(
                 "cognito-id-gsw", "hans@example.ch",
@@ -476,8 +476,7 @@ class UserReconciliationServiceTest {
 
         ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
         verify(userRepository).save(userCaptor.capture());
-        // No supported 2-char code -> preferences unset -> default "de" at persist.
-        assertThat(userCaptor.getValue().getPreferences()).isNull();
+        assertThat(userCaptor.getValue().getPreferences().getLanguage()).isEqualTo("gsw-BE");
     }
 
     /**

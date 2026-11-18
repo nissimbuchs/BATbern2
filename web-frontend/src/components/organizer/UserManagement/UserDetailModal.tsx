@@ -18,6 +18,7 @@ import { useTranslation } from 'react-i18next';
 import { useBreakpoints } from '@/hooks/useBreakpoints';
 import CompanyLogo from '@/components/shared/Company/CompanyLogo';
 import type { User } from '../../../types/user.types';
+import { uiIntlLocale } from '@/utils/date/intlLocale';
 
 interface UserDetailModalProps {
   user: User | null;
@@ -154,14 +155,18 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({ user, open, onClose, 
             <Typography variant="subtitle2" color="text.secondary" gutterBottom>
               {t('modal.userDetail.createdAt')}
             </Typography>
-            <Typography variant="body2">{new Date(user.createdAt).toLocaleDateString()}</Typography>
+            <Typography variant="body2">
+              {new Date(user.createdAt).toLocaleDateString(uiIntlLocale())}
+            </Typography>
           </Grid>
 
           <Grid size={{ xs: 12, sm: 6 }}>
             <Typography variant="subtitle2" color="text.secondary" gutterBottom>
               {t('modal.userDetail.updatedAt')}
             </Typography>
-            <Typography variant="body2">{new Date(user.updatedAt).toLocaleDateString()}</Typography>
+            <Typography variant="body2">
+              {new Date(user.updatedAt).toLocaleDateString(uiIntlLocale())}
+            </Typography>
           </Grid>
         </Grid>
       </DialogContent>

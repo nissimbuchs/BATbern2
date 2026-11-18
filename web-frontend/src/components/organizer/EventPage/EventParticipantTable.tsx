@@ -38,6 +38,7 @@ import { useBreakpoints } from '@/hooks/useBreakpoints';
 import type { EventParticipant, RegistrationStatus } from '../../../types/eventParticipant.types';
 import CompanyCell from '../UserManagement/CompanyCell';
 import RegistrationActionsMenu from './RegistrationActionsMenu';
+import { uiIntlLocale } from '@/utils/date/intlLocale';
 
 interface EventParticipantTableProps {
   participants: EventParticipant[];
@@ -169,7 +170,7 @@ const EventParticipantTable: React.FC<EventParticipantTableProps> = ({
 
   const formatDate = (dateString: string): string => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('de-CH', {
+    return date.toLocaleDateString(uiIntlLocale(), {
       day: '2-digit',
       month: 'short',
       year: 'numeric',

@@ -122,7 +122,7 @@ describe('EventsParticipatedTable', () => {
     expect(screen.getByText('BATbern56')).toBeInTheDocument();
     expect(screen.getByText('Resilient Systems')).toBeInTheDocument();
     // Swiss de-CH date format (dd.mm.yyyy) preserved in the card view.
-    expect(screen.getByText('10.03.2026')).toBeInTheDocument();
+    expect(screen.getByText('03/10/2026')).toBeInTheDocument(); // UI language en (#1222)
     // Status text rendered (ATTENDED → translated label).
     expect(screen.getByText('Attended')).toBeInTheDocument();
   });

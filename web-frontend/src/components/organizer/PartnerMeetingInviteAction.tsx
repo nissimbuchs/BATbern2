@@ -22,6 +22,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { sendInvite, type PartnerMeetingDTO } from '@/services/api/partnerMeetingsApi';
 import { useBreakpoints } from '@/hooks/useBreakpoints';
+import { uiIntlLocale } from '@/utils/date/intlLocale';
 
 interface PartnerMeetingInviteActionProps {
   meeting: PartnerMeetingDTO;
@@ -56,7 +57,7 @@ const PartnerMeetingInviteAction: React.FC<PartnerMeetingInviteActionProps> = ({
   });
 
   const inviteSentDate = meeting.inviteSentAt
-    ? new Date(meeting.inviteSentAt).toLocaleDateString()
+    ? new Date(meeting.inviteSentAt).toLocaleDateString(uiIntlLocale())
     : null;
 
   return (

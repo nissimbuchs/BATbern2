@@ -24,9 +24,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * #1119 (A3), #1222: a template mail goes out in the recipient's language from their CUMS
  * preference, German for German, English for everyone else. Driven through the deregistration-link
- * mail; what SES receives is asserted, not a mocked {@code EmailService}. CUMS cannot store
- * {@code gsw-BE} today (the spec's language enum, #1222 item 5); Swiss German is covered by
- * {@code MailPipelineLocaleIntegrationTest} and {@code QnaNotificationServiceIntegrationTest}.
+ * mail; what SES receives is asserted, not a mocked {@code EmailService}. Swiss German
+ * ({@code gsw-BE}, storable in CUMS since #1222 item 5) gets the German mail.
  */
 @Import({TestSecurityConfig.class, TestAwsConfig.class})
 @DisplayName("Template mail in the recipient's language")
@@ -58,7 +57,8 @@ class RecipientLanguageMailIntegrationTest extends AbstractIntegrationTest {
         "fr, Cancel Your Registration",
         "en, Cancel Your Registration",
         "it, Cancel Your Registration",
-        "de, Abmeldung von"
+        "de, Abmeldung von",
+        "gsw-BE, Abmeldung von"
     })
     void should_mailInRecipientLanguage_when_preferenceSet(String language, String subjectStart) {
         cums.userWithLanguage(USERNAME, language);

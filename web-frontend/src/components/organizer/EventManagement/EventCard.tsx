@@ -34,7 +34,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
-import { de, enUS } from 'date-fns/locale';
+import { dateFnsLocale } from '@/utils/date/dateFnsLocale';
 import type { Event, EventUI } from '@/types/event.types';
 import {
   WORKFLOW_STATE_ORDER,
@@ -65,7 +65,7 @@ export const EventCard: React.FC<EventCardProps> = ({ event, onEdit, onCardClick
   const attendeeCount = event.currentAttendeeCount ?? 0;
   const attendeePercentage = capacity > 0 ? Math.round((attendeeCount / capacity) * 100) : 0;
 
-  const locale = i18n.language === 'de' ? de : enUS;
+  const locale = dateFnsLocale(i18n.language);
   const eventDate = eventUI.eventDate || event.date;
   const formattedDate = format(new Date(eventDate), 'dd MMM yyyy', { locale });
 

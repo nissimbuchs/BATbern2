@@ -22,6 +22,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { FULLY_AVAILABLE_STALENESS } from '@/types/topic.types';
 import type { Topic, PaginationMetadata } from '@/types/topic.types';
+import { uiIntlLocale } from '@/utils/date/intlLocale';
 
 export interface TopicListProps {
   topics: Topic[];
@@ -127,7 +128,7 @@ export const TopicList: React.FC<TopicListProps> = ({
                         <>
                           {' • '}
                           {t('topicBacklog.lastUsed', 'Last used')}:{' '}
-                          {new Date(topic.lastUsedDate).toLocaleDateString()}
+                          {new Date(topic.lastUsedDate).toLocaleDateString(uiIntlLocale())}
                         </>
                       )}
                       {topic.usageCount && topic.usageCount > 0 && (

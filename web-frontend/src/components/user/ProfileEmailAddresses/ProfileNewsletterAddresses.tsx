@@ -6,13 +6,14 @@
 
 import { useTranslation } from 'react-i18next';
 import { useMySubscriptions, usePatchMySubscription } from '@/hooks/useNewsletter/useNewsletter';
+import { mailLanguage } from '@/i18n/languages';
 
 export function ProfileNewsletterAddresses() {
   const { t, i18n } = useTranslation('common');
   const { data, isLoading } = useMySubscriptions();
   const patch = usePatchMySubscription();
   // Only a new subscription takes the UI language; an existing one keeps its own (PATCH partial).
-  const language = i18n.language?.startsWith('de') ? 'de' : 'en';
+  const language = mailLanguage(i18n.language);
 
   if (isLoading) {
     return null;

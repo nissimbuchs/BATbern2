@@ -38,6 +38,7 @@ import * as attendeeDashboardService from '@/services/attendeeDashboardService';
 import type { AttendeeEventCard } from '@/services/attendeeDashboardService';
 import { WhatsNewCard } from '@/features/whatsNew/WhatsNewCard';
 import { scrollToFragment } from '@/features/whatsNew/scrollToFragment';
+import { uiIntlLocale } from '@/utils/date/intlLocale';
 
 /** Cards in the upcoming list (one row): registered ones first, unregistered ones fill up. */
 const UPCOMING_CARDS = 3;
@@ -65,7 +66,9 @@ function useScrollToFragment() {
 function formatDate(iso?: string): string {
   if (!iso) return '';
   const d = new Date(iso);
-  return Number.isNaN(d.getTime()) ? '' : d.toLocaleDateString(undefined, { dateStyle: 'medium' });
+  return Number.isNaN(d.getTime())
+    ? ''
+    : d.toLocaleDateString(uiIntlLocale(), { dateStyle: 'medium' });
 }
 
 function EventCard({ event, linkPrefix }: { event: AttendeeEventCard; linkPrefix: string }) {

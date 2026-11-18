@@ -53,6 +53,7 @@ import type { User } from '@/types/userAccount.types';
 import { useAuth } from '@/hooks/useAuth';
 import ProfilePhotoUpload from '@/components/speaker-portal/ProfilePhotoUpload';
 import { CompanyLogoSection } from '@/components/user/CompanyLogoRequest/CompanyLogoSection';
+import { intlLocale } from '@/utils/date/intlLocale';
 
 type PageState = 'loading' | 'form' | 'error';
 
@@ -532,7 +533,7 @@ const ProfilePage = () => {
                       <CheckCircle2 className="inline h-4 w-4 text-green-400 mr-2" />
                       {t('profile.consentAcceptedOn', {
                         date: new Date(user.termsAcceptedAt as string).toLocaleDateString(
-                          i18n.language
+                          intlLocale(i18n.language)
                         ),
                       })}
                     </p>

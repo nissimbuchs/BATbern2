@@ -1463,10 +1463,12 @@ export interface components {
        */
       theme: 'light' | 'dark' | 'auto';
       /**
+       * @description The UI language, one of the 10 UI locales; `gsw-BE` is Swiss German (Bärndütsch).
+       *     Mails go out in German for `de` and `gsw-BE`, in English for every other language.
        * @default de
        * @enum {string}
        */
-      language: 'de' | 'en' | 'fr' | 'it' | 'rm' | 'es' | 'fi' | 'nl' | 'ja';
+      language: 'de' | 'en' | 'fr' | 'it' | 'rm' | 'es' | 'fi' | 'nl' | 'ja' | 'gsw-BE';
       /**
        * @description IANA zone id
        * @default Europe/Zurich
@@ -1523,8 +1525,11 @@ export interface components {
     UpdateUserSettingsRequest: {
       /** @enum {string} */
       theme?: 'light' | 'dark' | 'auto';
-      /** @enum {string} */
-      language?: 'de' | 'en' | 'fr' | 'it' | 'rm' | 'es' | 'fi' | 'nl' | 'ja';
+      /**
+       * @description One of the 10 UI locales; `gsw-BE` is Swiss German.
+       * @enum {string}
+       */
+      language?: 'de' | 'en' | 'fr' | 'it' | 'rm' | 'es' | 'fi' | 'nl' | 'ja' | 'gsw-BE';
       /** @description IANA zone id, e.g. Europe/Zurich */
       timezone?: string;
       emailNotifications?: boolean;

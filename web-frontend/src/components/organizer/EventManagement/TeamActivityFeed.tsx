@@ -44,7 +44,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
-import { de, enUS } from 'date-fns/locale';
+import { dateFnsLocale } from '@/utils/date/dateFnsLocale';
 import type { Notification, NotificationType } from '@/types/notification';
 import { useMarkAsRead, useBatchMarkAsRead, useDeleteNotification } from '@/hooks/useNotifications';
 
@@ -143,7 +143,7 @@ export const TeamActivityFeed: React.FC<TeamActivityFeedProps> = ({
   limit,
 }) => {
   const { t, i18n } = useTranslation('common');
-  const locale = i18n.language === 'de' ? de : enUS;
+  const locale = dateFnsLocale(i18n.language);
   const navigate = useNavigate();
   const markAsReadMutation = useMarkAsRead();
   const batchMarkAsReadMutation = useBatchMarkAsRead();

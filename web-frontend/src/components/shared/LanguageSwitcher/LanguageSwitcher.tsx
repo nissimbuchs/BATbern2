@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Globe } from 'lucide-react';
 import { updateUserSettings, type UserLanguage } from '../../../services/api/userApi';
 import { useAuth } from '../../../hooks/useAuth';
+import { UI_LANGUAGES } from '@/i18n/languages';
 
 /**
  * Language selector. Tailwind + a native <select> (no MUI): this control sits in the
@@ -12,20 +13,14 @@ import { useAuth } from '../../../hooks/useAuth';
  * dark public nav and the light auth pages where it is also used.
  */
 const LanguageSwitcher: React.FC = () => {
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation('common');
   const { isAuthenticated } = useAuth();
 
-  const languages = [
-    { code: 'de', label: 'DE — Deutsch' },
-    { code: 'en', label: 'EN — English' },
-    { code: 'fr', label: 'FR — Français' },
-    { code: 'it', label: 'IT — Italiano' },
-    { code: 'rm', label: 'RM — Rumantsch' },
-    { code: 'es', label: 'ES — Español' },
-    { code: 'fi', label: 'FI — Suomi' },
-    { code: 'nl', label: 'NL — Nederlands' },
-    { code: 'ja', label: 'JA — 日本語' },
-  ];
+  // Every UI language, labelled from the locales (`common:language.*`), gsw-BE included (#1222).
+  const languages = UI_LANGUAGES.map((code) => ({
+    code,
+    label: `${code.toUpperCase()} — ${t(`language.${code}`)}`,
+  }));
 
   const handleLanguageChange = async (event: React.ChangeEvent<HTMLSelectElement>) => {
     const newLang = event.target.value;

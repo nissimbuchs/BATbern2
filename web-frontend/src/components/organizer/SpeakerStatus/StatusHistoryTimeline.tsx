@@ -24,8 +24,8 @@ import { Paper, Typography, Box, Chip, Alert } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { speakerStatusService } from '@/services/speakerStatusService';
-import { format } from 'date-fns';
 import type { SpeakerWorkflowState } from '@/types/speakerPool.types';
+import { uiIntlLocale } from '@/utils/date/intlLocale';
 
 export interface StatusHistoryTimelineProps {
   speakerId: string;
@@ -98,7 +98,12 @@ export const StatusHistoryTimeline: React.FC<StatusHistoryTimelineProps> = ({
           return (
             <TimelineItem key={item.id}>
               <TimelineOppositeContent sx={{ m: 'auto 0' }} variant="body2" color="text.secondary">
-                {item.changedAt ? format(new Date(item.changedAt), 'PPp') : ''}
+                {item.changedAt
+                  ? new Date(item.changedAt).toLocaleString(uiIntlLocale(), {
+                      dateStyle: 'medium',
+                      timeStyle: 'short',
+                    })
+                  : ''}
               </TimelineOppositeContent>
 
               <TimelineSeparator>

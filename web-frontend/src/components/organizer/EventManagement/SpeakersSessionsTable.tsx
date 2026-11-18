@@ -58,6 +58,7 @@ import { UserAvatar } from '@/components/shared/UserAvatar';
 import { SessionEditModal, type SessionUpdateData } from './SessionEditModal';
 import type { SessionUI } from '@/types/event.types';
 import { isStructuralSession, type StructuralSessionType } from '@/utils/sessionTypes';
+import { intlLocale } from '@/utils/date/intlLocale';
 
 interface SpeakersSessionsTableProps {
   sessions: SessionUI[];
@@ -157,7 +158,7 @@ export const SpeakersSessionsTable: React.FC<SpeakersSessionsTableProps> = ({
       if (isNaN(date.getTime())) {
         return isoTimestamp; // Fallback to raw string if invalid
       }
-      return date.toLocaleTimeString(i18n.language, {
+      return date.toLocaleTimeString(intlLocale(i18n.language), {
         hour: '2-digit',
         minute: '2-digit',
         hour12: false, // Use 24-hour format

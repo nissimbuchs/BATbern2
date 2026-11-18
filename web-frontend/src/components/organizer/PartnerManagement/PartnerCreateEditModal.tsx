@@ -30,9 +30,10 @@ import { PartnershipDatePicker } from './PartnershipDatePicker';
 import { TierBenefitsPreview } from './TierBenefitsPreview';
 import type { CreatePartnerFormData, UpdatePartnerFormData } from '@/schemas/partnerSchema';
 import type { components } from '@/types/generated/company-api.types';
+import { dateFnsLocale } from '@/utils/date/dateFnsLocale';
 
 export const PartnerCreateEditModal: React.FC = () => {
-  const { t } = useTranslation('partners');
+  const { t, i18n } = useTranslation('partners');
   const theme = useTheme();
   const fullScreen = useMediaQuery(theme.breakpoints.down('md'));
   const { isOpen, mode, partnerToEdit, closeModal } = usePartnerModalStore();
@@ -155,7 +156,7 @@ export const PartnerCreateEditModal: React.FC = () => {
   if (!isOpen) return null;
 
   return (
-    <LocalizationProvider dateAdapter={AdapterDateFns}>
+    <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={dateFnsLocale(i18n.language)}>
       <Dialog
         open={isOpen}
         onClose={handleClose}

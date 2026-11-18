@@ -30,6 +30,7 @@ import { useMailMessage } from '@/hooks/useMailMessages/useMailMessages';
 import type { MailRecipientEntry } from '@/services/mailMessageService';
 import { FullScreenDetailDialog } from './FullScreenDetailDialog';
 import { MailBodyFrame } from './MailBodyFrame';
+import { intlLocale } from '@/utils/date/intlLocale';
 
 interface MailDetailProps {
   /** Without it the mail is loaded by its key alone (`GET /mails/{mailKey}`, Story 16.7). */
@@ -94,7 +95,7 @@ export const MailDetail: React.FC<MailDetailProps> = ({ eventCode, mailKey }) =>
           // Story 16.10 AC5: a received mail names its sender and links to its conversation
           <Stack spacing={0.5}>
             <Typography variant="caption" color="text.secondary">
-              {new Date(detail.message.sentAt).toLocaleString(i18n.language)} ·{' '}
+              {new Date(detail.message.sentAt).toLocaleString(intlLocale(i18n.language))} ·{' '}
               {t('mailCenter.receivedFrom', {
                 sender: detail.message.fromName
                   ? `${detail.message.fromName} <${detail.message.fromAddress ?? ''}>`
@@ -114,7 +115,7 @@ export const MailDetail: React.FC<MailDetailProps> = ({ eventCode, mailKey }) =>
           </Stack>
         ) : (
           <Typography variant="caption" color="text.secondary">
-            {new Date(detail.message.sentAt).toLocaleString(i18n.language)} ·{' '}
+            {new Date(detail.message.sentAt).toLocaleString(intlLocale(i18n.language))} ·{' '}
             {detail.message.senderUsername ?? t('eventPage.mail.automatic')} ·{' '}
             {t('eventPage.mail.delivered', { count: detail.message.deliveredCount })}
             {detail.message.failedCount > 0 &&

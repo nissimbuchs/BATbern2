@@ -3,14 +3,14 @@ title: 'gsw-BE can be chosen and saved, dates follow the UI language'
 type: 'bugfix'
 ticket: '6'
 created: '2026-11-18'
-status: 'in-progress'
-baseline_revision: 'c068dec31a16163bd538fa3f4af66aa1ae217218'
+status: 'built'
+baseline_revision: '359c6e8ccc1b8f6cf8939cb9c2c1dd67ea0dc4a5'
 route: 'full'
 route_source: 'auto'
 risk: 'medium'
-review: ''
-review_source: ''
-lenses_ran: []
+review: 'quick'
+review_source: 'pinned'
+lenses_ran: ['quick']
 review_loop_iteration: 0
 context: []
 ---
@@ -54,12 +54,12 @@ context: []
 ## Tasks & Acceptance
 
 **Execution:**
-- [ ] RED: CUMS IT saves and reads back `gsw-BE` and rejects `xx`; component tests for the Registrations tab and the homepage in `en` show "Oct 22, 2026"; a unit test for the locale mapping
-- [ ] spec, types, migration, entity
-- [ ] switchers and auth/context language types
-- [ ] locale helper; every date formatter in `src` through it
-- [ ] EMS: gsw-BE CUMS user → German mail through the SesRecorder
-- [ ] docs
+- [x] RED: CUMS IT saves and reads back `gsw-BE` and rejects `xx`; component tests for the Registrations tab and the homepage in `en` show "Oct 22, 2026"; a unit test for the locale mapping
+- [x] spec, types, migration, entity
+- [x] switchers and auth/context language types
+- [x] locale helper; every date formatter in `src` through it
+- [x] EMS: gsw-BE CUMS user → German mail through the SesRecorder
+- [x] docs
 
 **Acceptance Criteria:**
 - Given a grep over `web-frontend/src` (tests excluded), when looking for a hard-coded date locale (`'de-CH'`, `'de'` passed to a date formatter), then only the mapping helper names one.
@@ -76,3 +76,23 @@ Architecture note: modules touched: CUMS user settings (schema, entity, spec), f
 - `make check-test-ratchet`, `make check-i18n-keys` -- clean.
 
 **Rack rules:** one heavy build at a time (never two Gradle/Vitest runs in parallel), Gradle `--max-workers=4`, Vitest `--maxWorkers=4`, output via `set -o pipefail; ... | tee ~/.cache/batbern-test-logs/<name>.log`. Run checkstyleMain and checkstyleTest for every service touched. Do not commit or push; leave the changes in the working tree. A bug found on the way is fixed too and reported (initiative C9).
+
+## Implementation Notes
+
+- One CUMS rule `domain/UserLanguages` replaces seven places that chose a user's language (JIT and reconciliation stored `gsw-BE` as `de`; five mail paths sent Swiss German users English). The post-confirmation Lambda normalizes the same way; `UserSettingsService.toDto` reads an unknown stored value as its normalized code instead of throwing.
+- Frontend: `i18n/languages.ts` lists the 10 UI languages for every switcher; `utils/date/intlLocale.ts` (+ `dateFnsLocale.ts`) is the one UI-language → date-locale mapping, applied to ~60 files incl. date pickers and display times (English UI now shows 12-hour times, en-US). `mailLanguage()` fixes three `startsWith('de')` choices that sent gsw-BE English.
+- `tsconfig.test-harness.json` still excluded `TaskTemplateEditModal.test.tsx` after story 3 (type-check red on HEAD): removed from the list.
+- Verification after review fixes (orchestrator): CUMS 989, EMS 3056 (before the fixes, untouched since), full Vitest 474 files / 5994 tests, type-check, lint, ratchet, i18n keys green; post-confirmation Lambda 51 tests (implementer).
+
+## Review Triage Log
+
+Quick review, 9 findings: 8 patched, 1 rejected.
+- high, patched: the post-confirmation Lambda wrote the raw sign-up language (e.g. `de-CH`) into the widened column and `toDto` threw on it. Lambda normalizes; read tolerant; tests on both sides.
+- low, patched: `types/user.ts` language type lacked gsw-BE.
+- low, patched: `EventCard.test.tsx` kept `vi.mock('react-i18next')` (touch rule); now real i18next.
+- medium, patched: partnership date pickers had no `adapterLocale` (English everywhere).
+- low, patched: `EmailTemplatesTab` fixed `dd.MM.yyyy`; re-grep fixed three `HH:mm` display times.
+- low, patched: `EventsParticipatedTable` formatted into state, stale after a language switch.
+- low, patched: V34 now updates the column comment.
+- low, patched: `UserLanguages` one list, tested against both generated `LanguageEnum`s.
+- false, rejected: "homepage not tested with Oct 22, 2026". The homepage uses the long format by design ("Friday, November 6, 2026"), tested in en.

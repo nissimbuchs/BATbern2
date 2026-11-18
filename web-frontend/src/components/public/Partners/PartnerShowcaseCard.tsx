@@ -5,8 +5,8 @@
  */
 
 import { Card } from '@/components/public/ui/card';
-import { format } from 'date-fns';
 import { buildCdnImageUrl } from '@/utils/cdnImage';
+import { uiIntlLocale } from '@/utils/date/intlLocale';
 
 interface PartnerShowcaseCardProps {
   companyName: string;
@@ -23,7 +23,10 @@ export const PartnerShowcaseCard = ({
   website,
 }: PartnerShowcaseCardProps) => {
   const initials = companyName.substring(0, 2).toUpperCase();
-  const formattedDate = format(new Date(partnershipStartDate), 'MMM yyyy');
+  const formattedDate = new Date(partnershipStartDate).toLocaleDateString(uiIntlLocale(), {
+    month: 'short',
+    year: 'numeric',
+  });
 
   const handleClick = () => {
     if (website) {

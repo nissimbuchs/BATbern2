@@ -19,6 +19,7 @@ import { ArrowForward as ArrowForwardIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { OrganizerChip } from '@/components/shared/OrganizerChip';
 import type { CockpitCard, CardTarget, CardSeverity } from './cockpitCards';
+import { intlLocale } from '@/utils/date/intlLocale';
 
 interface AttentionCardProps {
   card: CockpitCard;
@@ -60,7 +61,7 @@ export const AttentionCard: React.FC<AttentionCardProps> = ({ card, onNavigate }
       dueText =
         eventDay.getTime() > today.getTime()
           ? t('eventPage.cockpit.due.eventDay', 'Event day · {{date}}', {
-              date: eventDate.toLocaleDateString(i18n.language, {
+              date: eventDate.toLocaleDateString(intlLocale(i18n.language), {
                 day: 'numeric',
                 month: 'short',
                 year: 'numeric',

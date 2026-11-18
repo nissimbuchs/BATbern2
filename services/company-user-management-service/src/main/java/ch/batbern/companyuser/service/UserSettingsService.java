@@ -1,6 +1,7 @@
 package ch.batbern.companyuser.service;
 
 import ch.batbern.companyuser.domain.User;
+import ch.batbern.companyuser.domain.UserLanguages;
 import ch.batbern.companyuser.domain.UserPreferences;
 import ch.batbern.companyuser.domain.UserSettings;
 import ch.batbern.companyuser.dto.generated.UpdateUserSettingsRequest;
@@ -144,7 +145,7 @@ public class UserSettingsService {
         return new ch.batbern.companyuser.dto.generated.UserSettings()
                 .theme(ch.batbern.companyuser.dto.generated.UserSettings.ThemeEnum.fromValue(prefs.getTheme()))
                 .language(ch.batbern.companyuser.dto.generated.UserSettings.LanguageEnum.fromValue(
-                        prefs.getLanguage()))
+                        readableLanguage(user.getUsername(), prefs.getLanguage())))
                 .timezone(settings.getTimezone())
                 .emailNotifications(prefs.isEmailNotifications())
                 .qnaNotificationFrequency(ch.batbern.companyuser.dto.generated.UserSettings
@@ -162,6 +163,22 @@ public class UserSettingsService {
                 .twoFactorEnabled(settings.isTwoFactorEnabled())
                 .whatsNewSeenAt(settings.getWhatsNewSeenAt() != null
                         ? settings.getWhatsNewSeenAt().atOffset(ZoneOffset.UTC) : null);
+    }
+
+    /**
+     * The stored language as a value of the spec enum. A row written before the enum check (a raw
+     * sign-up tag such as {@code de-CH} from the post-confirmation Lambda) must not break the
+     * settings read: it is reduced by {@link UserLanguages#normalize}, else the default {@code de}.
+     */
+    private static String readableLanguage(String username, String stored) {
+        if (stored != null && UserLanguages.SUPPORTED.contains(stored)) {
+            return stored;
+        }
+        String normalized = UserLanguages.normalize(stored);
+        String language = normalized != null ? normalized : UserLanguages.DEFAULT;
+        log.warn("Stored language '{}' of user {} is not a supported value, read as '{}'",
+                stored, username, language);
+        return language;
     }
 
     private User currentUser() {

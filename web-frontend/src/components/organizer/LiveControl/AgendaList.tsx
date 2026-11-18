@@ -1,6 +1,7 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
 import type { components } from '@/types/generated/event-watch-api.types';
+import { uiIntlLocale } from '@/utils/date/intlLocale';
 
 type WatchSessionDetail = components['schemas']['WatchSessionDetail'];
 
@@ -12,7 +13,7 @@ const BREAK_TYPES = new Set(['break', 'lunch', 'networking']);
 
 function formatTime(iso: string | null | undefined): string {
   if (!iso) return '—';
-  return new Date(iso).toLocaleTimeString('de-CH', { hour: '2-digit', minute: '2-digit' });
+  return new Date(iso).toLocaleTimeString(uiIntlLocale(), { hour: '2-digit', minute: '2-digit' });
 }
 
 function speakerNames(session: WatchSessionDetail): string {

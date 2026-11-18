@@ -7,8 +7,8 @@
  */
 import { type JSX } from 'react';
 
-import { format } from 'date-fns';
 import type { components } from '@/types/generated/events-core-api.types';
+import { uiIntlLocale } from '@/utils/date/intlLocale';
 
 type Event = components['schemas']['Event'];
 
@@ -66,7 +66,13 @@ export function UpcomingEventsSlide({ events }: UpcomingEventsSlideProps): JSX.E
 }
 
 function EventCard({ event }: { event: Event }): JSX.Element {
-  const dateStr = event.date ? format(new Date(event.date), 'dd. MMMM yyyy') : '—';
+  const dateStr = event.date
+    ? new Date(event.date).toLocaleDateString(uiIntlLocale(), {
+        day: '2-digit',
+        month: 'long',
+        year: 'numeric',
+      })
+    : '—';
   const hasTitle = Boolean(event.title);
   const titleDisplay = event.title ?? 'Thema folgt';
 

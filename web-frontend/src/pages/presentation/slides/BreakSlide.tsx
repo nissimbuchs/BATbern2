@@ -12,10 +12,10 @@
  */
 import { type JSX } from 'react';
 
-import { format } from 'date-fns';
 import type { PresentationSession } from '@/services/presentationService';
 import { BATbernLoader } from '@/components/shared/BATbernLoader';
 import animStyles from '../presentation-animations.module.css';
+import { uiIntlLocale } from '@/utils/date/intlLocale';
 
 interface BreakSlideProps {
   firstPostBreakSession?: PresentationSession | null;
@@ -37,7 +37,10 @@ const BEAN_CONFIGS = [
 
 export function BreakSlide({ firstPostBreakSession }: BreakSlideProps): JSX.Element {
   const resumeTime = firstPostBreakSession?.startTime
-    ? format(new Date(firstPostBreakSession.startTime), 'HH:mm')
+    ? new Date(firstPostBreakSession.startTime).toLocaleTimeString(uiIntlLocale(), {
+        hour: '2-digit',
+        minute: '2-digit',
+      })
     : null;
 
   return (

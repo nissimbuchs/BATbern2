@@ -22,6 +22,7 @@
 
 import type { EventDetail } from '@/types/event.types';
 import type { RegistrationStatus } from '@/types/eventParticipant.types';
+import { zurichDay } from '@/utils/date/zurichDay';
 
 type PublishedPhase = 'TOPIC' | 'SPEAKERS' | 'AGENDA';
 
@@ -299,17 +300,9 @@ export interface RegistrationView {
 }
 
 const COMPLETED_STATES = ['EVENT_COMPLETED', 'ARCHIVED'];
-const BERN_DAY = new Intl.DateTimeFormat('en-CA', {
-  timeZone: 'Europe/Zurich',
-  year: 'numeric',
-  month: '2-digit',
-  day: '2-digit',
-});
 
 /** Calendar day (YYYY-MM-DD) in Bern for an instant. */
-function bernDay(instant: number): string {
-  return BERN_DAY.format(new Date(instant));
-}
+const bernDay = (instant: number): string => zurichDay(instant);
 
 /** True once the event's calendar day has begun in Bern (E2: no unregistering from then on). */
 export function isEventDayReached(

@@ -104,6 +104,27 @@ class JITProvisioningIntegrationTest extends AbstractIntegrationTest {
         assertThat(jitEvents).isEqualTo(1);
     }
 
+    /** #1222 item 5: Swiss German from the sign-up form is kept, the column fits it since V34. */
+    @Test
+    @DisplayName("fresh identity signed up in Swiss German → pref_language=gsw-BE")
+    void should_keepSwissGerman_when_freshIdentitySignedUpInGswBe() throws Exception {
+        String sub = "jit-fresh-sub-gsw";
+        String email = "hans.berner@example.ch";
+        String preferences = "{\"firstName\":\"Hans\",\"lastName\":\"Berner\",\"language\":\"gsw-BE\"}";
+
+        mockMvc.perform(get("/api/v1/users/me")
+                        .with(jwt()
+                                .jwt(j -> j.subject(sub)
+                                        .claim("email", email)
+                                        .claim("custom:preferences", preferences))
+                                .authorities(Collections.emptyList())))
+                .andExpect(status().isOk());
+
+        User created = userRepository.findByCognitoUserId(sub).orElseThrow();
+        userRepository.flush();
+        assertThat(created.getPreferences().getLanguage()).isEqualTo("gsw-BE");
+    }
+
     @Test
     @DisplayName("fresh identity with no custom:preferences → row defaults to pref_language=de")
     void should_defaultLanguageToDe_when_freshIdentityHasNoPreferences() throws Exception {
