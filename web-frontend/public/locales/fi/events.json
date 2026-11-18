@@ -1486,5 +1486,38 @@
         "text": "Haluaisitko pitää esityksen? Ehdota itseäsi tapahtuman sivulla."
       }
     }
+  },
+  "liveControl": {
+    "title": "Live-ohjaus",
+    "connection": {
+      "connected": "Yhdistetty",
+      "connecting": "Yhdistetään...",
+      "offline": "Offline"
+    },
+    "offlineHint": "Live-päivitykset eivät ole käytettävissä. Lataa sivu uudelleen.",
+    "noActiveSession": "Ei aktiivista sessiota",
+    "nextSession": "Seuraava sessio",
+    "urgency": {
+      "overtime": "Yliaika",
+      "twoMinutesLeft": "2 min jäljellä",
+      "fiveMinutesLeft": "5 min jäljellä",
+      "onTrack": "Aikataulussa"
+    },
+    "delay": "← Viivästä",
+    "adjustTime": "↔ Säädä aikaa",
+    "agenda": {
+      "title": "Ohjelma",
+      "empty": "Ei sessioita saatavilla"
+    },
+    "delaySheet": {
+      "title": "Annetaanko edelliselle sessiolle lisää aikaa?"
+    },
+    "adjustSheet": {
+      "title": "Säädä session kestoa",
+      "shorten": "Lyhennä",
+      "extend": "Pidennä"
+    },
+    "cancel": "Peruuta",
+    "minutes": "{{minutes}} min"
   }
 }

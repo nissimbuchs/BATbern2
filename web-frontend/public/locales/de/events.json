@@ -1500,5 +1500,38 @@
         "text": "Möchten Sie ein Referat halten? Schlagen Sie sich auf der Seite des Anlasses selbst vor."
       }
     }
+  },
+  "liveControl": {
+    "title": "Live Steuerung",
+    "connection": {
+      "connected": "Verbunden",
+      "connecting": "Verbinde...",
+      "offline": "Offline"
+    },
+    "offlineHint": "Live-Updates nicht verfügbar. Bitte Seite neu laden.",
+    "noActiveSession": "Keine aktive Session",
+    "nextSession": "Nächste Session",
+    "urgency": {
+      "overtime": "Überzeit",
+      "twoMinutesLeft": "2 Min noch",
+      "fiveMinutesLeft": "5 Min noch",
+      "onTrack": "Im Plan"
+    },
+    "delay": "← Verzögern",
+    "adjustTime": "↔ Zeit anpassen",
+    "agenda": {
+      "title": "Programm",
+      "empty": "Keine Sessions verfügbar"
+    },
+    "delaySheet": {
+      "title": "Vorherige Session mehr Zeit geben?"
+    },
+    "adjustSheet": {
+      "title": "Session Zeit anpassen",
+      "shorten": "Kürzen",
+      "extend": "Verlängern"
+    },
+    "cancel": "Abbrechen",
+    "minutes": "{{minutes}} min"
   }
 }

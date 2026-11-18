@@ -3,14 +3,14 @@ title: "Live Control speaks the UI language, the bell counts, the lineup card op
 type: 'bugfix'
 ticket: '7'
 created: '2026-11-18'
-status: 'in-progress'
-baseline_revision: '203d1a882a8ad1756ce52430ac6d5ee01710c62a'
+status: 'built'
+baseline_revision: '388ccf46282c36e9ecd1d113c7023f46968c8f29'
 route: 'full'
 route_source: 'auto'
 risk: 'low'
-review: ''
-review_source: ''
-lenses_ran: []
+review: 'quick'
+review_source: 'pinned'
+lenses_ran: ['quick']
 review_loop_iteration: 0
 context: []
 ---
@@ -52,10 +52,10 @@ context: []
 ## Tasks & Acceptance
 
 **Execution:**
-- [ ] RED: component test Live Control in en shows English labels; layout/header test shows the unread count from the MSW harness; `resolveTaskTarget` test for the matrix rows
-- [ ] i18n keys + components
-- [ ] bell wiring
-- [ ] rule order
+- [x] RED: component test Live Control in en shows English labels; layout/header test shows the unread count from the MSW harness; `resolveTaskTarget` test for the matrix rows
+- [x] i18n keys + components
+- [x] bell wiring
+- [x] rule order
 
 **Acceptance Criteria:**
 - Given `grep` over the Live Control components (tests excluded), when looking for German literals, then none is left.
@@ -71,3 +71,18 @@ Architecture note: frontend only (Live Control, layout, cockpit card rules). No 
 - `make check-test-ratchet`, `make check-i18n-keys` -- clean.
 
 **Rack rules:** one heavy build at a time, Vitest `--maxWorkers=4`, output via `set -o pipefail; ... | tee ~/.cache/batbern-test-logs/<name>.log`. Do not commit or push. A bug found on the way is fixed too and reported (initiative C9).
+
+## Implementation Notes
+
+- `components/shared/Layout/AuthLayout.tsx` (new) feeds the header from `useNotifications({status:'UNREAD'},{page:1,limit:10})`, the dashboard's cache entry. Deviation from the Boundaries' `enabled: !!user`: only organizers fetch, because `NotificationController` is `hasRole('ORGANIZER')` and others would get 403.
+- Found and fixed: the header read `notifications.unreadCount`, which `GET /notifications` never returns; the count is `pagination.totalItems`.
+- Live Control: `events:liveControl.*` in 10 locales. Cockpit: a `/newsletter/i` rule first; only "Newsletter: Speaker Lineup" changes target.
+- Verification (orchestrator): type-check, lint, ratchet, i18n keys; Vitest 50 files / 493 tests before the review fixes, 12 files / 140 after.
+
+## Review Triage Log
+
+Quick review, 4 findings: 3 patched, 1 rejected.
+- low, patched: organizer-only bell is a deviation not recorded in the plan. Recorded above.
+- low, patched: no test rendered `LiveControlPage` or opened the delay sheet. Page test (en, MSW, real auth) and delay-sheet test added.
+- low, patched: `AppHeader` comment called the prop test-only; rewritten.
+- low, rejected: the bell refreshes only on focus, remount or invalidation (2-min stale time). REST source by design (no push, no polling, initiative C1); now stated in `AuthLayout`'s comment.

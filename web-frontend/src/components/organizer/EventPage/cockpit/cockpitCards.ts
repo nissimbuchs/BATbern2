@@ -152,6 +152,9 @@ export function classifyDue(dueDate: string | null | undefined, now: number): Du
  * Unmatched tasks get no jump button (graceful — the card still shows).
  */
 const TASK_TARGET_RULES: Array<{ re: RegExp; target: CardTarget }> = [
+  // Every newsletter task is sent from Communications, whatever its subject: "Newsletter:
+  // Speaker Lineup" must not fall into the speaker rule below (#1219).
+  { re: /newsletter/i, target: { kind: 'tab', tab: 'communications' } },
   { re: /moderat/i, target: { kind: 'tab', tab: 'details' } },
   { re: /q\s*&\s*a|q&a|apéro|apero|session q/i, target: { kind: 'tab', tab: 'details' } },
   { re: /photo|foto/i, target: { kind: 'tab', tab: 'wrapup' } },
@@ -165,9 +168,9 @@ const TASK_TARGET_RULES: Array<{ re: RegExp; target: CardTarget }> = [
   { re: /speaker|referent|pool|line.?up/i, target: { kind: 'tab', tab: 'speakers', view: 'pool' } },
   // Name tags → Participants tab, which hosts the name-badge export (#688).
   { re: /namensschild|name.?tag|badge/i, target: { kind: 'tab', tab: 'registrations' } },
-  // Communications catch-alls (newsletter / registrant notice / venue & caterer / partner / slides)
+  // Communications catch-alls (registrant notice / venue & caterer / partner / slides)
   {
-    re: /newsletter|registrant|notice|kommunikat|teilnehmer|catering|caterer|venue|location|booking|partner|slides|präsentation online/i,
+    re: /registrant|notice|kommunikat|teilnehmer|catering|caterer|venue|location|booking|partner|slides|präsentation online/i,
     target: { kind: 'tab', tab: 'communications' },
   },
 ];

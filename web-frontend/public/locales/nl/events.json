@@ -1486,5 +1486,38 @@
         "text": "Wil je een presentatie geven? Stel jezelf voor op de pagina van het evenement."
       }
     }
+  },
+  "liveControl": {
+    "title": "Live-besturing",
+    "connection": {
+      "connected": "Verbonden",
+      "connecting": "Verbinden...",
+      "offline": "Offline"
+    },
+    "offlineHint": "Live-updates niet beschikbaar. Laad de pagina opnieuw.",
+    "noActiveSession": "Geen actieve sessie",
+    "nextSession": "Volgende sessie",
+    "urgency": {
+      "overtime": "Overtijd",
+      "twoMinutesLeft": "Nog 2 min",
+      "fiveMinutesLeft": "Nog 5 min",
+      "onTrack": "Op schema"
+    },
+    "delay": "← Uitstellen",
+    "adjustTime": "↔ Tijd aanpassen",
+    "agenda": {
+      "title": "Programma",
+      "empty": "Geen sessies beschikbaar"
+    },
+    "delaySheet": {
+      "title": "Vorige sessie meer tijd geven?"
+    },
+    "adjustSheet": {
+      "title": "Sessieduur aanpassen",
+      "shorten": "Inkorten",
+      "extend": "Verlengen"
+    },
+    "cancel": "Annuleren",
+    "minutes": "{{minutes}} min"
   }
 }

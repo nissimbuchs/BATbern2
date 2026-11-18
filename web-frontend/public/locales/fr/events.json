@@ -1486,5 +1486,38 @@
         "text": "Vous aimeriez donner une présentation ? Proposez-vous sur la page de l'événement."
       }
     }
+  },
+  "liveControl": {
+    "title": "Pilotage en direct",
+    "connection": {
+      "connected": "Connecté",
+      "connecting": "Connexion...",
+      "offline": "Hors ligne"
+    },
+    "offlineHint": "Mises à jour en direct indisponibles. Veuillez recharger la page.",
+    "noActiveSession": "Aucune session active",
+    "nextSession": "Session suivante",
+    "urgency": {
+      "overtime": "Dépassement",
+      "twoMinutesLeft": "Encore 2 min",
+      "fiveMinutesLeft": "Encore 5 min",
+      "onTrack": "Dans les temps"
+    },
+    "delay": "← Retarder",
+    "adjustTime": "↔ Ajuster le temps",
+    "agenda": {
+      "title": "Programme",
+      "empty": "Aucune session disponible"
+    },
+    "delaySheet": {
+      "title": "Donner plus de temps à la session précédente ?"
+    },
+    "adjustSheet": {
+      "title": "Ajuster la durée de la session",
+      "shorten": "Raccourcir",
+      "extend": "Prolonger"
+    },
+    "cancel": "Annuler",
+    "minutes": "{{minutes}} min"
   }
 }

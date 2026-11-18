@@ -1486,5 +1486,38 @@
         "text": "発表してみませんか？イベントページから自薦できます。"
       }
     }
+  },
+  "liveControl": {
+    "title": "ライブ操作",
+    "connection": {
+      "connected": "接続済み",
+      "connecting": "接続中...",
+      "offline": "オフライン"
+    },
+    "offlineHint": "ライブ更新を利用できません。ページを再読み込みしてください。",
+    "noActiveSession": "進行中のセッションはありません",
+    "nextSession": "次のセッション",
+    "urgency": {
+      "overtime": "時間超過",
+      "twoMinutesLeft": "残り2分",
+      "fiveMinutesLeft": "残り5分",
+      "onTrack": "予定どおり"
+    },
+    "delay": "← 遅らせる",
+    "adjustTime": "↔ 時間を調整",
+    "agenda": {
+      "title": "プログラム",
+      "empty": "利用できるセッションはありません"
+    },
+    "delaySheet": {
+      "title": "前のセッションに時間を追加しますか？"
+    },
+    "adjustSheet": {
+      "title": "セッション時間を調整",
+      "shorten": "短縮",
+      "extend": "延長"
+    },
+    "cancel": "キャンセル",
+    "minutes": "{{minutes}} 分"
   }
 }

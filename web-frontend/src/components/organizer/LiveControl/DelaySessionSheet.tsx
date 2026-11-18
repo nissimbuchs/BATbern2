@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/public/ui/sheet';
 import { Button } from '@/components/public/ui/button';
 
@@ -17,6 +18,7 @@ export const DelaySessionSheet: React.FC<DelaySessionSheetProps> = ({
   onDelay,
   disabled = false,
 }) => {
+  const { t } = useTranslation('events');
   const [sending, setSending] = useState(false);
 
   useEffect(() => {
@@ -34,7 +36,7 @@ export const DelaySessionSheet: React.FC<DelaySessionSheetProps> = ({
       <SheetContent side="bottom" className="dark rounded-t-2xl pb-10 border-border">
         <SheetHeader className="mb-6">
           <SheetTitle className="text-center text-xl text-foreground">
-            Vorherige Session mehr Zeit geben?
+            {t('liveControl.delaySheet.title')}
           </SheetTitle>
         </SheetHeader>
         <div className="flex flex-col gap-3 max-w-sm mx-auto">
@@ -45,7 +47,7 @@ export const DelaySessionSheet: React.FC<DelaySessionSheetProps> = ({
               onClick={() => handleDelay(minutes)}
               className="w-full py-4 rounded-xl text-lg font-bold bg-amber-500 text-white hover:bg-amber-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              +{minutes} min
+              +{t('liveControl.minutes', { minutes })}
             </button>
           ))}
           <Button
@@ -53,7 +55,7 @@ export const DelaySessionSheet: React.FC<DelaySessionSheetProps> = ({
             onClick={onClose}
             className="w-full mt-1 text-muted-foreground hover:text-foreground"
           >
-            Abbrechen
+            {t('liveControl.cancel')}
           </Button>
         </div>
       </SheetContent>

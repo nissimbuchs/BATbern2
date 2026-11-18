@@ -98,10 +98,29 @@ describe('resolveTaskTarget', () => {
     ['Namensschilder drucken', 'registrations'],
     ['Print name tags', 'registrations'],
     ['Name badges', 'registrations'],
+    // #1219: every newsletter task opens Communications, the lineup one included
+    ['Newsletter: Speaker Lineup', 'communications'],
+    ['Newsletter: Topic Announcement', 'communications'],
+    ['Newsletter: Final Agenda', 'communications'],
+    ['Newsletter: Slides Are Online', 'communications'],
+    ['Speaker Briefing', 'speakers'],
+    ['Thank-you slides', 'wrapup'],
   ])('maps "%s" → %s tab', (name, tab) => {
     const target = resolveTaskTarget(task({ taskName: name }));
     expect(target?.kind).toBe('tab');
     expect(target && target.kind === 'tab' && target.tab).toBe(tab);
+  });
+
+  it('"Speaker Briefing" opens the speaker pool, the lineup newsletter does not (#1219)', () => {
+    expect(resolveTaskTarget(task({ taskName: 'Speaker Briefing' }))).toEqual({
+      kind: 'tab',
+      tab: 'speakers',
+      view: 'pool',
+    });
+    expect(resolveTaskTarget(task({ taskName: 'Newsletter: Speaker Lineup' }))).toEqual({
+      kind: 'tab',
+      tab: 'communications',
+    });
   });
 
   it('unmatched task → no target (graceful)', () => {

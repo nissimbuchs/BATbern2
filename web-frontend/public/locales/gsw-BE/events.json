@@ -1489,5 +1489,38 @@
         "text": "Weit Dir es Referat ha? Schlöht Nech uf der Site vom Alass sälber vor."
       }
     }
+  },
+  "liveControl": {
+    "title": "Live Stüürig",
+    "connection": {
+      "connected": "Verbunde",
+      "connecting": "Verbinde...",
+      "offline": "Offline"
+    },
+    "offlineHint": "Live-Updates nid verfüegbar. Bitte d Siite nöi lade.",
+    "noActiveSession": "Kei aktivi Session",
+    "nextSession": "Nächschti Session",
+    "urgency": {
+      "overtime": "Überziit",
+      "twoMinutesLeft": "No 2 Min",
+      "fiveMinutesLeft": "No 5 Min",
+      "onTrack": "Im Plan"
+    },
+    "delay": "← Verzögere",
+    "adjustTime": "↔ Ziit apasse",
+    "agenda": {
+      "title": "Programm",
+      "empty": "Kei Sessions verfüegbar"
+    },
+    "delaySheet": {
+      "title": "Vorherige Session meh Ziit gä?"
+    },
+    "adjustSheet": {
+      "title": "Session-Ziit apasse",
+      "shorten": "Chürze",
+      "extend": "Verlängere"
+    },
+    "cancel": "Abbräche",
+    "minutes": "{{minutes}} min"
   }
 }

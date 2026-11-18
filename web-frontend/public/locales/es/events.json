@@ -1486,5 +1486,38 @@
         "text": "¿Quieres dar una charla? Proponte en la página del evento."
       }
     }
+  },
+  "liveControl": {
+    "title": "Control en directo",
+    "connection": {
+      "connected": "Conectado",
+      "connecting": "Conectando...",
+      "offline": "Sin conexión"
+    },
+    "offlineHint": "Actualizaciones en directo no disponibles. Recarga la página.",
+    "noActiveSession": "Ninguna sesión activa",
+    "nextSession": "Siguiente sesión",
+    "urgency": {
+      "overtime": "Tiempo excedido",
+      "twoMinutesLeft": "Quedan 2 min",
+      "fiveMinutesLeft": "Quedan 5 min",
+      "onTrack": "A tiempo"
+    },
+    "delay": "← Retrasar",
+    "adjustTime": "↔ Ajustar tiempo",
+    "agenda": {
+      "title": "Programa",
+      "empty": "No hay sesiones disponibles"
+    },
+    "delaySheet": {
+      "title": "¿Dar más tiempo a la sesión anterior?"
+    },
+    "adjustSheet": {
+      "title": "Ajustar la duración de la sesión",
+      "shorten": "Acortar",
+      "extend": "Alargar"
+    },
+    "cancel": "Cancelar",
+    "minutes": "{{minutes}} min"
   }
 }

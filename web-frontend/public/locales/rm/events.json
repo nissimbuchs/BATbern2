@@ -1486,5 +1486,38 @@
         "text": "Vulais vus tegnair in referat? Propona vus sez sin la pagina da l'arranschament."
       }
     }
+  },
+  "liveControl": {
+    "title": "Controlla live",
+    "connection": {
+      "connected": "Connectà",
+      "connecting": "Connectar...",
+      "offline": "Offline"
+    },
+    "offlineHint": "Actualisaziuns live betg disponiblas. Chargiai danovamain la pagina.",
+    "noActiveSession": "Nagina sessiun activa",
+    "nextSession": "Proxima sessiun",
+    "urgency": {
+      "overtime": "Surtemp",
+      "twoMinutesLeft": "Anc 2 min",
+      "fiveMinutesLeft": "Anc 5 min",
+      "onTrack": "A temp"
+    },
+    "delay": "← Retardar",
+    "adjustTime": "↔ Adattar il temp",
+    "agenda": {
+      "title": "Program",
+      "empty": "Naginas sessiuns disponiblas"
+    },
+    "delaySheet": {
+      "title": "Dar dapli temp a la sessiun precedenta?"
+    },
+    "adjustSheet": {
+      "title": "Adattar la durada da la sessiun",
+      "shorten": "Scursanir",
+      "extend": "Prolungar"
+    },
+    "cancel": "Interrumper",
+    "minutes": "{{minutes}} min"
   }
 }

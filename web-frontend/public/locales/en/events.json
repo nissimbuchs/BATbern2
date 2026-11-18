@@ -1500,5 +1500,38 @@
         "text": "Would you like to give a talk? Nominate yourself on the event page."
       }
     }
+  },
+  "liveControl": {
+    "title": "Live Control",
+    "connection": {
+      "connected": "Connected",
+      "connecting": "Connecting...",
+      "offline": "Offline"
+    },
+    "offlineHint": "Live updates unavailable. Please reload the page.",
+    "noActiveSession": "No active session",
+    "nextSession": "Next session",
+    "urgency": {
+      "overtime": "Overtime",
+      "twoMinutesLeft": "2 min left",
+      "fiveMinutesLeft": "5 min left",
+      "onTrack": "On time"
+    },
+    "delay": "← Delay",
+    "adjustTime": "↔ Adjust time",
+    "agenda": {
+      "title": "Programme",
+      "empty": "No sessions available"
+    },
+    "delaySheet": {
+      "title": "Give the previous session more time?"
+    },
+    "adjustSheet": {
+      "title": "Adjust session time",
+      "shorten": "Shorten",
+      "extend": "Extend"
+    },
+    "cancel": "Cancel",
+    "minutes": "{{minutes}} min"
   }
 }

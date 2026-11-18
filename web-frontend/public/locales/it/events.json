@@ -1486,5 +1486,38 @@
         "text": "Vuoi tenere una presentazione? Proponiti sulla pagina dell'evento."
       }
     }
+  },
+  "liveControl": {
+    "title": "Controllo live",
+    "connection": {
+      "connected": "Connesso",
+      "connecting": "Connessione...",
+      "offline": "Offline"
+    },
+    "offlineHint": "Aggiornamenti live non disponibili. Ricarica la pagina.",
+    "noActiveSession": "Nessuna sessione attiva",
+    "nextSession": "Prossima sessione",
+    "urgency": {
+      "overtime": "Fuori tempo",
+      "twoMinutesLeft": "Ancora 2 min",
+      "fiveMinutesLeft": "Ancora 5 min",
+      "onTrack": "In orario"
+    },
+    "delay": "← Ritarda",
+    "adjustTime": "↔ Regola il tempo",
+    "agenda": {
+      "title": "Programma",
+      "empty": "Nessuna sessione disponibile"
+    },
+    "delaySheet": {
+      "title": "Dare più tempo alla sessione precedente?"
+    },
+    "adjustSheet": {
+      "title": "Regola la durata della sessione",
+      "shorten": "Accorcia",
+      "extend": "Prolunga"
+    },
+    "cancel": "Annulla",
+    "minutes": "{{minutes}} min"
   }
 }

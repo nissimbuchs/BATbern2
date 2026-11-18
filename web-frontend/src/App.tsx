@@ -29,8 +29,9 @@ import { AuthProvider } from '@/contexts/AuthContext';
 // <MuiLayout> boundary (auth / organizer / speaker / partner / registration flow) is
 // visited. See MuiLayout.tsx. The public routes below are Tailwind-only siblings.
 const MuiLayout = React.lazy(() => import('@/MuiLayout'));
-const BaseLayout = React.lazy(() =>
-  import('@components/shared/Layout/BaseLayout').then((m) => ({ default: m.BaseLayout }))
+// Layout wrapper for authenticated routes: BaseLayout with the notification bell fed (#1219)
+const AuthLayout = React.lazy(() =>
+  import('@components/shared/Layout/AuthLayout').then((m) => ({ default: m.AuthLayout }))
 );
 const AuthPageLayout = React.lazy(() =>
   import('@components/shared/Layout/AuthPageLayout').then((m) => ({ default: m.AuthPageLayout }))
@@ -193,11 +194,6 @@ const PageLoader = () => (
     <BATbernLoader size={96} />
   </div>
 );
-
-// Layout wrapper for authenticated routes
-const AuthLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  return <BaseLayout>{children}</BaseLayout>;
-};
 
 // Login page component with navigation logic
 const LoginPage: React.FC = () => {

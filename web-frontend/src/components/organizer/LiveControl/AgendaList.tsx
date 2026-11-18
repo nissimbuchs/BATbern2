@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import type { components } from '@/types/generated/event-watch-api.types';
 import { uiIntlLocale } from '@/utils/date/intlLocale';
@@ -25,6 +26,7 @@ function speakerNames(session: WatchSessionDetail): string {
 }
 
 function SessionRow({ session }: { session: WatchSessionDetail }) {
+  const { t } = useTranslation('events');
   const isActive = session.status === 'ACTIVE';
   const isDone = session.status === 'COMPLETED';
   const isBreak = BREAK_TYPES.has(session.sessionType ?? '');
@@ -67,7 +69,9 @@ function SessionRow({ session }: { session: WatchSessionDetail }) {
         {speakers && !isDone && <p className="text-sm text-muted-foreground mt-0.5">{speakers}</p>}
         <p className="text-sm text-muted-foreground/60 font-mono mt-0.5">
           {formatTime(session.scheduledStartTime)}
-          {session.durationMinutes != null ? ` · ${session.durationMinutes} min` : ''}
+          {session.durationMinutes != null
+            ? ` · ${t('liveControl.minutes', { minutes: session.durationMinutes })}`
+            : ''}
         </p>
       </div>
     </div>
@@ -75,14 +79,17 @@ function SessionRow({ session }: { session: WatchSessionDetail }) {
 }
 
 export const AgendaList: React.FC<AgendaListProps> = ({ sessions }) => {
+  const { t } = useTranslation('events');
   if (sessions.length === 0) {
-    return <p className="text-center text-muted-foreground py-6">Keine Sessions verfügbar</p>;
+    return (
+      <p className="text-center text-muted-foreground py-6">{t('liveControl.agenda.empty')}</p>
+    );
   }
 
   return (
     <div>
       <p className="text-xs font-semibold text-muted-foreground uppercase tracking-[0.2em] mb-2">
-        Programm
+        {t('liveControl.agenda.title')}
       </p>
       <div className="border-t border-border mb-2" />
       <div>
