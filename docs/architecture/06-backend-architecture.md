@@ -395,6 +395,12 @@ returns the downstream status and body as they are, minus duplicated security he
 gateway raises itself (route not found, rate limit, Turnstile, deactivated account) come from the
 gateway's own `GlobalExceptionHandler` and filters.
 
+The gateway's access line (`GATEWAY_API_REQUEST`, `ClientErrorMetricsFilter`) carries the status the
+client got, the passed-through downstream one included. `ProxyController` answers with a
+`CompletableFuture`, so the line for a proxied request is written by an `AsyncListener` when the
+request completes, not when the filter chain returns (#1313). The `api-4xx-ratio` alarm counts from
+it: `08-operations-security.md`.
+
 ### Error Response Format
 
 `shared-kernel/.../dto/ErrorResponse.java`, flat (no `error` wrapper object):

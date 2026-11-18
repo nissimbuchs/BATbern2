@@ -6,6 +6,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import jakarta.servlet.AsyncEvent;
+import org.springframework.mock.web.MockAsyncContext;
 import org.springframework.mock.web.MockFilterChain;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
@@ -267,6 +269,94 @@ class ClientErrorMetricsFilterTest {
 
         assertThat(errors()).isZero();
         assertThat(requests()).isZero();
+    }
+
+    // ── #1313: proxied requests finish asynchronously ─────────────────────────────────
+
+    /** Runs a request whose handler starts async processing, as ProxyController does. */
+    private MockAsyncContext startAsync(String path) throws Exception {
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", path);
+        request.setRequestURI(path);
+        request.addHeader("Authorization", "Bearer test-token");
+        request.setAsyncSupported(true);
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        // The status at async start: nothing has been decided yet, so it reads 200.
+        filter.doFilter(request, response, (req, res) -> req.startAsync(req, res));
+        return (MockAsyncContext) request.getAsyncContext();
+    }
+
+    @Test
+    void should_recordFinalStatus_when_asyncRequestCompletes() throws Exception {
+        MockAsyncContext async = startAsync("/api/v1/events/BATbern60");
+
+        assertThat(requests())
+                .as("nothing may be recorded at async start, where the status is still 200")
+                .isZero();
+
+        ((MockHttpServletResponse) async.getResponse()).setStatus(404);
+        async.complete();
+
+        assertThat(errors()).isEqualTo(1d);
+        assertThat(requests()).isEqualTo(1d);
+    }
+
+    @Test
+    void should_recordOnce_when_asyncRequestTimesOutOrFailsBeforeCompleting() throws Exception {
+        // The servlet spec calls onComplete after onTimeout/onError, and only onComplete sees the
+        // status that was finally sent. One line per request, whatever the path to completion.
+        MockAsyncContext async = startAsync("/api/v1/events/BATbern60");
+
+        ((MockHttpServletResponse) async.getResponse()).setStatus(408);
+        for (var listener : async.getListeners()) {
+            listener.onTimeout(new AsyncEvent(async));
+            listener.onError(new AsyncEvent(async, new IllegalStateException("downstream gone")));
+        }
+        async.complete();
+
+        assertThat(requests()).isEqualTo(1d);
+        assertThat(errors())
+                .as("the final 408, not the 200 at async start")
+                .isEqualTo(1d);
+    }
+
+    @Test
+    void should_recordOnceWithFinalStatus_when_asyncIsStartedTwice() throws Exception {
+        // A second startAsync opens a new context and calls onStartAsync on the first cycle's
+        // listeners, which are not carried over (servlet spec; MockHttpServletRequest does the same).
+        MockAsyncContext first = startAsync("/api/v1/events/BATbern60");
+        MockHttpServletRequest request = (MockHttpServletRequest) first.getRequest();
+        MockAsyncContext second = (MockAsyncContext) request.startAsync(request, first.getResponse());
+
+        assertThat(requests()).isZero();
+
+        ((MockHttpServletResponse) second.getResponse()).setStatus(404);
+        second.complete();
+
+        assertThat(requests()).isEqualTo(1d);
+        assertThat(errors()).isEqualTo(1d);
+    }
+
+    @Test
+    void should_recordAndNotFailTheRequest_when_listenerCannotBeRegistered() throws Exception {
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/v1/events/BATbern60");
+        request.setRequestURI("/api/v1/events/BATbern60");
+        request.addHeader("Authorization", "Bearer test-token");
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        MockAsyncContext refusing = new MockAsyncContext(request, response) {
+            @Override
+            public void addListener(jakarta.servlet.AsyncListener listener) {
+                throw new IllegalStateException("async context already completed");
+            }
+        };
+
+        filter.doFilter(request, response, (req, res) -> {
+            request.setAsyncStarted(true);
+            request.setAsyncContext(refusing);
+        });
+
+        assertThat(requests())
+                .as("falls back to recording at once rather than losing the line")
+                .isEqualTo(1d);
     }
 
     // ── Behaviour of the filter itself ─────────────────────────────────────────────────

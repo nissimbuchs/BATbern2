@@ -431,7 +431,7 @@ line 422 for `ApiGatewayServiceStack`).
 | Watched | Alarms | Defined in |
 |---|---|---|
 | ALB (platform ingress) | `alb-5xx`, `alb-latency-p95`, `alb-availability`, `alb-unhealthy-targets` | `AlbAlarms`, instantiated by `ApiGatewayServiceStack` |
-| Gateway API surface | `api-4xx-ratio` | `AlbAlarms`, fed by MetricFilters over the api-gateway log group |
+| Gateway API surface | `api-4xx-ratio`: share of authenticated `/api/` requests answered 4xx, gateway-local and downstream alike (downstream counted since #1313), over 50% for 3 of 3 periods at 10+ requests | `AlbAlarms`, fed by MetricFilters over the api-gateway log group |
 | ECS, per service ×6 | `{Service}-High-CPU`, `-High-Memory`, `-Task-Failures`, `-OOM-Kills` | `EcsServiceAlarms`, instantiated by each service stack |
 | Swallowed domain-event listener failures, EMS, CUMS, PCS | `{Service}-Event-Listener-Failures`: any line with the marker `DOMAIN_EVENT_LISTENER_FAILED` in 5 minutes. Log based (MetricFilter on the service log group, metric `BATbern/DomainEvents ListenerFailures-{Service}`), because no service exports Micrometer metrics to CloudWatch | `EcsServiceAlarms` with `serviceLogGroup`, instantiated by each of the three service stacks |
 | Scheduled-job failures, EMS (Story 4.9b) | `EventManagement-Scheduled-Job-Failures`: any line with the marker `SCHEDULED_JOB_FAILED` within 24 hours (1-hour periods, 24 evaluated, 1 to alarm, missing data not breaching), written by `ScheduledJobFailures` when a job (the daily auto-publish) skips an item it could not process. Log based, metric `BATbern/ScheduledJobs ScheduledJobFailures-EventManagement`. Its OK action closes the GitHub issue (#956) when 24 hours pass without a failure, a day after the last one | `EcsServiceAlarms` with `serviceLogGroup` and `scheduledJobFailures`, in the EMS stack |
@@ -620,6 +620,31 @@ while the nightly E2E suite runs. No constant survives a 30× swing — high eno
 unreachable at midday, which is a dead alarm and the #970 failure mode; low enough for midday pages
 every night. The nightly suite's own 4xx peak measured 32 in a bin against 988 requests, about 3%,
 so a ratio separates them and a count cannot.
+
+**It sees the status the client got, downstream errors included (#1313).** Proxied requests
+complete asynchronously: `ProxyController` returns a `CompletableFuture`, so the filter chain
+returns at the start of async processing, while the status still reads 200. Until #1313 the line was
+written there, so every proxied request logged `status=200` (production, 7 days, as measured in the issue: 56,808
+`status=200`, 17 correct 404s, all gateway-local, against 11,712 downstream 4xx) and the alarm saw
+only the gateway's own 4xx. The filter now registers an `AsyncListener` and writes the line in
+`onComplete`, which the servlet spec calls after `onTimeout`/`onError` too, so it is still one line per
+request, with the status actually sent. Synchronous requests are recorded as before.
+`ClientErrorMetricsFilterIntegrationTest` proxies to a stub answering 200, 404 and 500 and pins it.
+
+What that does to the alarm was replayed before shipping, over the api-gateway log group for
+2026-11-12 00:10 to 2026-11-18 21:30 UTC, read-only Logs Insights, JSON rendering only. Denominator:
+the existing `GATEWAY_API_REQUEST` lines (36,181; unchanged by the fix). Numerator: an upper bound,
+the gateway-local 4xx (22) plus **every** `Downstream service … returned error: 4xx` line in the same
+5-minute window (9,690: 4,179× 404, 3,881× 400, 821× 429, 375× 409, 186× 401, 142× 403, rest small),
+capped at the window's request count. An upper bound because the downstream line runs on the async
+thread with no MDC, so it cannot be split into authenticated and anonymous; no proxied 4xx reaches
+the client by any other path (`Received response from` logged only 200/201/202/204 in the same
+window). Result: of 169 windows with 10+ requests, the highest ratio was 39.2%, the highest value the
+ratio stayed above for three consecutive windows 28.6%, against the 50% threshold. **The alarm would
+not have fired once**, even under the bound, so neither the threshold nor the counted statuses were
+changed. Over the week the bound comes to 1,026 of 36,181 authenticated requests (2.8%): at least
+8,686 of the 9,712 4xx exceeded the authenticated request count of their window, so they were
+anonymous traffic and never enter the ratio.
 
 **Both filter patterns require `@timestamp`.** The gateway's `logback-spring.xml` writes every event
 into this log group **twice** — the `LogstashEncoder` JSON line via stdout and the ECS `awslogs`
