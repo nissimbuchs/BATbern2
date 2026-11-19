@@ -15,6 +15,7 @@
       "label": "Status",
       "all": "All",
       "active": "Active",
+      "pending": "Unbestätiget",
       "unsubscribed": "Unsubscribed"
     },
     "clearAll": "Clear Filters"
@@ -33,6 +34,8 @@
   },
   "status": {
     "active": "Active",
+    "pending": "Unbestätiget",
+    "pendingHint": "D Aamäudig isch no nid per Link bestätiget; überchunnt ke Newsletter",
     "unsubscribed": "Unsubscribed"
   },
   "actions": {

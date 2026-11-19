@@ -57,6 +57,7 @@ class NewsletterSubscriberServiceTest {
                 .source("explicit")
                 .unsubscribeToken("token-abc")
                 .subscribedAt(Instant.now())
+                .confirmedAt(Instant.now())
                 .build();
 
         alreadyUnsubscribedSubscriber = NewsletterSubscriber.builder()
@@ -113,7 +114,7 @@ class NewsletterSubscriberServiceTest {
         })
         void subscribe_reservedDomain_throws(String email) {
             assertThatThrownBy(() -> newsletterSubscriberService
-                    .subscribe(email, "Test", "de", "explicit", null))
+                    .requestSubscription(email, "Test", "de"))
                     .isInstanceOf(ReservedEmailDomainException.class);
 
             verify(subscriberRepository, never()).findByEmailIgnoreCase(any());
@@ -128,14 +129,9 @@ class NewsletterSubscriberServiceTest {
             "user@gmail.com",
             "user@example.ch"
         })
-        void subscribe_validDomain_doesNotThrow(String email) {
-            when(subscriberRepository.findByEmailIgnoreCase(email)).thenReturn(Optional.empty());
-            when(subscriberRepository.save(any(NewsletterSubscriber.class)))
-                    .thenAnswer(inv -> inv.getArgument(0));
-
-            newsletterSubscriberService.subscribe(email, "Test", "de", "explicit", null);
-
-            verify(subscriberRepository).save(any(NewsletterSubscriber.class));
+        void subscribe_validDomain_isNotReserved(String email) {
+            // The subscribe itself (row, confirmation mail) runs in NewsletterControllerIntegrationTest.
+            assertThat(NewsletterSubscriberService.isReservedDomain(email)).isFalse();
         }
     }
 
@@ -209,6 +205,8 @@ class NewsletterSubscriberServiceTest {
 
             assertThat(result.getUnsubscribedAt()).isNull();
             assertThat(result.getSubscribedAt()).isNotNull();
+            assertThat(result.getConfirmedAt()).as("#1288: active at once, confirmed if it never was").isNotNull();
+            assertThat(result.isActive()).isTrue();
             verify(subscriberRepository).save(alreadyUnsubscribedSubscriber);
         }
 
@@ -292,13 +290,12 @@ class NewsletterSubscriberServiceTest {
         @Test
         @DisplayName("should_excludeSuppressedFromActiveCount")
         void should_excludeSuppressedFromActiveCount() {
-            when(subscriberRepository.countByUnsubscribedAtIsNullAndSuppressedAtIsNull())
-                    .thenReturn(42L);
+            when(subscriberRepository.countActive()).thenReturn(42L);
 
             long count = newsletterSubscriberService.getActiveCount();
 
             assertThat(count).isEqualTo(42L);
-            verify(subscriberRepository).countByUnsubscribedAtIsNullAndSuppressedAtIsNull();
+            verify(subscriberRepository).countActive();
         }
 
         @Test

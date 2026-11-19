@@ -1273,7 +1273,7 @@
       "title": "BATbernで最新情報をキャッチ",
       "placeholder": "your@email.com",
       "button": "登録する",
-      "success": "ありがとうございます！登録が完了しました。",
+      "checkInbox": "あと少しです。お送りしたリンクから購読を確認してください。",
       "alreadySubscribed": "既に登録済みです。",
       "error": "問題が発生しました。もう一度お試しください。",
       "emailInvalid": "有効なメールアドレスを入力してください。"
@@ -1286,6 +1286,14 @@
       "success": "正常に登録解除されました。",
       "resubscribeLink": "再登録する",
       "invalidToken": "この登録解除リンクは無効であるか、既に使用されています。"
+    },
+    "confirm": {
+      "title": "ニュースレター購読の確認",
+      "message": "BATbern ニュースレターの受信を希望することを確認してください。",
+      "button": "購読を確認する",
+      "success": "ありがとうございます。ニュースレターの購読が確認されました。",
+      "homeLink": "ホームページへ",
+      "invalidToken": "この確認リンクは無効か、すでに使用されています。"
     }
   },
   "speakersTable": {

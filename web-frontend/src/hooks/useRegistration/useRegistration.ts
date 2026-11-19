@@ -58,7 +58,8 @@ export const useRegistration = () => {
       // custom:preferences and silently dropped (nothing consumed it). Newsletter consent
       // lives in EMS `newsletter_subscribers` (Story 10.7), so subscribe via the existing
       // public endpoint — same approach as NewsletterSubscribeWidget. Best-effort: a
-      // subscribe failure (or 409 already-subscribed) must never fail the registration.
+      // subscribe failure must never fail the registration. #1288: the address gets a
+      // confirmation link by mail; the subscription is active once its owner follows it.
       if (data.newsletterOptIn) {
         try {
           await subscribeToNewsletter({

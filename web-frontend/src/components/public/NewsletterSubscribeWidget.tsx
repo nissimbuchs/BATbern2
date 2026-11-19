@@ -2,7 +2,9 @@
  * NewsletterSubscribeWidget (Story 10.7 — AC4)
  *
  * Footer widget for subscribing anonymous visitors to the BATbern newsletter.
- * Shows success / already-subscribed / error inline states.
+ * Shows check-your-inbox / already-subscribed / error inline states. Double opt-in (#1288): the
+ * server answers 200 for every valid address and mails a confirmation link, so success means
+ * "check your inbox", not "subscribed".
  */
 
 import { useState } from 'react';
@@ -14,11 +16,12 @@ import { Button } from '@/components/public/ui/button';
 import { useNewsletterSubscribe, useMySubscriptions } from '@/hooks/useNewsletter/useNewsletter';
 import { useAuth } from '@/hooks/useAuth/useAuth';
 import { useTurnstile } from '@/hooks/useTurnstile';
+import { mailLanguage } from '@/i18n/languages';
 
-type WidgetState = 'idle' | 'submitting' | 'success' | 'already-subscribed' | 'error';
+type WidgetState = 'idle' | 'submitting' | 'success' | 'error';
 
 export function NewsletterSubscribeWidget() {
-  const { t } = useTranslation('events');
+  const { t, i18n } = useTranslation('events');
   const [email, setEmail] = useState('');
   const [emailError, setEmailError] = useState('');
   const [widgetState, setWidgetState] = useState<WidgetState>('idle');
@@ -60,15 +63,13 @@ export function NewsletterSubscribeWidget() {
 
     getToken().then((turnstileToken) => {
       subscribeMutation.mutate(
-        { request: { email }, turnstileToken },
+        { request: { email, language: mailLanguage(i18n.language) }, turnstileToken },
         {
           onSuccess: () => {
             setWidgetState('success');
           },
           onError: (error) => {
-            if (axios.isAxiosError(error) && error.response?.status === 409) {
-              setWidgetState('already-subscribed');
-            } else if (
+            if (
               axios.isAxiosError(error) &&
               error.response?.status === 403 &&
               (error.response.data?.error === 'turnstile_required' ||
@@ -88,21 +89,13 @@ export function NewsletterSubscribeWidget() {
   if (widgetState === 'success') {
     return (
       <div className="py-4 text-center text-sm text-green-700 dark:text-green-400">
-        {t('newsletter.widget.success')}
+        {t('newsletter.widget.checkInbox')}
       </div>
     );
   }
 
   // Known-subscribed authenticated visitor: never show the form.
   if (isAuthenticated && anySubscribed) {
-    return (
-      <div className="py-4 text-center text-sm text-muted-foreground">
-        {t('newsletter.widget.alreadySubscribed')}
-      </div>
-    );
-  }
-
-  if (widgetState === 'already-subscribed') {
     return (
       <div className="py-4 text-center text-sm text-muted-foreground">
         {t('newsletter.widget.alreadySubscribed')}

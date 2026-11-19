@@ -136,6 +136,17 @@ class ProductionSecurityFilterChainTest {
     }
 
     @Test
+    @DisplayName("#1288 should_reachService_when_anonymousPostsNewsletterConfirmation")
+    void should_reachService_when_anonymousPostsNewsletterConfirmation() throws Exception {
+        // The confirmation link of the double opt-in is public by exact path, POST only; the
+        // organizer's subscriber list next to it stays closed (positive and negative in one).
+        mockMvc.perform(post("/api/v1/newsletter/confirmations")).andExpect(status().isOk());
+        mockMvc.perform(post("/api/v1/newsletter/subscribers")).andExpect(status().isOk());
+        mockMvc.perform(get("/api/v1/newsletter/confirmations")).andExpect(status().isUnauthorized());
+        mockMvc.perform(get("/api/v1/newsletter/subscribers")).andExpect(status().isUnauthorized());
+    }
+
+    @Test
     @DisplayName("should_return401_when_anonymousCallsRetiredMagicLinkEndpoint")
     void should_return401_when_anonymousCallsRetiredMagicLinkEndpoint() throws Exception {
         // The magic-link portal was removed in 11.F.1; its permitAll rules outlived it.

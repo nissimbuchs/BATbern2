@@ -1,20 +1,22 @@
 package ch.batbern.events.service;
 
-import ch.batbern.shared.utils.LoggingUtils;
+import ch.batbern.events.config.AfterCommit;
 import ch.batbern.events.domain.NewsletterSubscriber;
 import ch.batbern.events.newsletter.dto.generated.NewsletterAddressSubscription;
 import ch.batbern.events.newsletter.dto.generated.SubscriberResponse;
-import ch.batbern.events.exception.DuplicateSubscriberException;
 import ch.batbern.events.exception.ReservedEmailDomainException;
 import ch.batbern.events.repository.NewsletterSubscriberRepository;
 import ch.batbern.events.specification.NewsletterSubscriberSpecification;
 import ch.batbern.shared.api.DeterministicPaging;
+import ch.batbern.shared.utils.LoggingUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -31,7 +33,10 @@ import java.util.UUID;
  * Service for newsletter subscription management (Story 10.7).
  *
  * <p>Handles subscribe/unsubscribe/reactivate logic, token verification,
- * and authenticated user subscription management.
+ * and authenticated user subscription management. Double opt-in (#1288): an anonymous or
+ * registration subscription stays pending ({@code confirmedAt} null, no newsletter) until its owner
+ * confirms it; a signed-in owner's own confirmed address and an organizer's resubscribe are active
+ * at once.
  */
 @Slf4j
 @Service
@@ -69,75 +74,235 @@ public class NewsletterSubscriberService {
     }
 
     private final NewsletterSubscriberRepository subscriberRepository;
+    private final NewsletterConfirmationEmailService confirmationEmailService;
+    private final Clock clock;
+
+    /** #1288: at most one confirmation mail per address in this window. */
+    static final Duration CONFIRMATION_MAIL_INTERVAL = Duration.ofHours(1);
 
     /**
-     * Subscribe an email to the newsletter.
+     * #1288, double opt-in: an anonymous subscribe ({@code POST /newsletter/subscribers}). A new,
+     * pending or unsubscribed address becomes (or stays) pending, keeps or gets its confirmation
+     * token, and gets the confirmation mail after the commit, in {@code language} ({@code en}, else
+     * German), at most once per {@link #CONFIRMATION_MAIL_INTERVAL}. An active or suppressed address
+     * is left exactly as it is and gets no mail, so the
+     * caller cannot change or learn anything about someone else's subscription.
      *
-     * <ul>
-     *   <li>New email → create with a fresh UUID token</li>
-     *   <li>Previously unsubscribed email → reactivate (clear unsubscribedAt, preserve token)</li>
-     *   <li>Already active subscriber → throw {@link DuplicateSubscriberException} (409)</li>
-     * </ul>
-     *
-     * @param email    subscriber email
-     * @param firstName optional first name
-     * @param language  "de" or "en" (defaults to "de" if blank)
-     * @param source    "explicit" | "registration" | "account"
-     * @param username  cognito username for authenticated users; null for anonymous
-     * @return saved subscriber entity
+     * @throws ReservedEmailDomainException for an RFC 2606 / RFC 6761 address (400)
      */
-    @Transactional(noRollbackFor = {DuplicateSubscriberException.class, ReservedEmailDomainException.class})
-    public NewsletterSubscriber subscribe(String email, String firstName, String language,
-                                          String source, String username) {
+    @Transactional(noRollbackFor = ReservedEmailDomainException.class)
+    public void requestSubscription(String email, String firstName, String language) {
+        String address = normalise(email);
+        String mailLanguage = "en".equals(language) ? "en" : "de";
+
+        NewsletterSubscriber sub = subscriberRepository.findByEmailIgnoreCase(address).orElse(null);
+        if (sub != null && (sub.isActive() || sub.getSuppressedAt() != null)) {
+            log.info("Newsletter subscribe for an active or suppressed address {}: unchanged, no mail",
+                    LoggingUtils.maskEmail(address));
+            return;
+        }
+        if (sub == null) {
+            sub = newRow(address, firstName, mailLanguage, "explicit", null);
+        } else {
+            // Pending or unsubscribed: the language of the newest request, the same link as before.
+            sub.setLanguage(mailLanguage);
+        }
+        if (sub.getConfirmationToken() == null) {
+            sub.setConfirmationToken(UUID.randomUUID().toString());
+        }
+        boolean mail = claimConfirmationMail(sub);
+        NewsletterSubscriber saved = subscriberRepository.save(sub);
+        if (mail) {
+            log.info("Newsletter subscription of {} awaits confirmation; confirmation mail follows",
+                    LoggingUtils.maskEmail(address));
+            AfterCommit.run(() -> confirmationEmailService.send(saved));
+        } else {
+            log.info("Newsletter subscription of {} awaits confirmation; mail already sent within the last hour",
+                    LoggingUtils.maskEmail(address));
+        }
+    }
+
+    /**
+     * #1288: an organizer confirmed a registration of this address. That does not prove the address,
+     * so a pending registration opt-in is not activated: its owner gets the confirmation mail instead
+     * (at most once per {@link #CONFIRMATION_MAIL_INTERVAL}).
+     */
+    @Transactional
+    public void requestConfirmationOfRegistrationOptIn(String email) {
+        if (email == null || email.isBlank()) {
+            return;
+        }
+        subscriberRepository.findByEmailIgnoreCase(email.trim())
+                .filter(sub -> sub.getConfirmationToken() != null)
+                .filter(sub -> "registration".equals(sub.getSource()))
+                .filter(sub -> sub.getSuppressedAt() == null)
+                .filter(this::claimConfirmationMail)
+                .ifPresent(sub -> {
+                    NewsletterSubscriber saved = subscriberRepository.save(sub);
+                    log.info("Newsletter opt-in of {}: registration confirmed by an organizer, mail follows",
+                            LoggingUtils.maskEmail(sub.getEmail()));
+                    AfterCommit.run(() -> confirmationEmailService.send(saved));
+                });
+    }
+
+    /** True, and the send time recorded, when no confirmation mail went out in the last hour. */
+    private boolean claimConfirmationMail(NewsletterSubscriber sub) {
+        Instant now = clock.instant();
+        Instant last = sub.getConfirmationSentAt();
+        if (last != null && last.isAfter(now.minus(CONFIRMATION_MAIL_INTERVAL))) {
+            return false;
+        }
+        sub.setConfirmationSentAt(now);
+        return true;
+    }
+
+    /**
+     * #1288: the newsletter box of a registration. Like {@link #requestSubscription} the address
+     * stays pending, but no mail is sent: the registration's own confirmation link proves the
+     * address, and {@link #confirmFromRegistration} activates it. An active or suppressed address is
+     * left as it is.
+     *
+     * @throws ReservedEmailDomainException for an RFC 2606 / RFC 6761 address
+     */
+    @Transactional(noRollbackFor = ReservedEmailDomainException.class)
+    public void subscribeFromRegistration(String email, String displayName, String username) {
+        String address = normalise(email);
+        NewsletterSubscriber sub = subscriberRepository.findByEmailIgnoreCase(address).orElse(null);
+        if (sub != null && (sub.isActive() || sub.getSuppressedAt() != null)) {
+            log.debug("Newsletter opt-in of a registration: {} already active or suppressed, unchanged",
+                    LoggingUtils.maskEmail(address));
+            return;
+        }
+        if (sub == null) {
+            sub = newRow(address, displayName, "de", "registration", username);
+        } else {
+            sub.setSource("registration");
+            if (sub.getUsername() == null) {
+                sub.setUsername(username);
+            }
+        }
+        if (sub.getConfirmationToken() == null) {
+            sub.setConfirmationToken(UUID.randomUUID().toString());
+        }
+        subscriberRepository.save(sub);
+        log.info("Newsletter opt-in of a registration for {} awaits the registration's confirmation",
+                LoggingUtils.maskEmail(address));
+    }
+
+    /**
+     * #1288: a registration was confirmed by its owner. The newsletter opt-in made with it
+     * ({@link #subscribeFromRegistration}: awaiting confirmation, source {@code registration}) becomes
+     * active. Any other row of the address is left alone: confirming a registration without the box
+     * does not subscribe, and an anonymous request still needs its own link.
+     */
+    @Transactional
+    public void confirmFromRegistration(String email) {
+        if (email == null || email.isBlank()) {
+            return;
+        }
+        subscriberRepository.findByEmailIgnoreCase(email.trim())
+                .filter(sub -> sub.getConfirmationToken() != null)
+                .filter(sub -> "registration".equals(sub.getSource()))
+                .filter(sub -> sub.getSuppressedAt() == null)
+                .ifPresent(sub -> {
+                    activate(sub);
+                    subscriberRepository.save(sub);
+                    log.info("Newsletter opt-in of {} active: its registration was confirmed",
+                            LoggingUtils.maskEmail(sub.getEmail()));
+                });
+    }
+
+    /**
+     * #1288: the link of the confirmation mail. The subscription becomes active and the token is
+     * used up.
+     *
+     * @throws NoSuchElementException unknown or already used token (404), nothing changes
+     */
+    @Transactional
+    public void confirm(String token) {
+        NewsletterSubscriber sub = (token == null || token.isBlank() ? Optional.<NewsletterSubscriber>empty()
+                : subscriberRepository.findByConfirmationToken(token))
+                .orElseThrow(() -> new NoSuchElementException("Unknown or used newsletter confirmation token"));
+        activate(sub);
+        subscriberRepository.save(sub);
+        log.info("Newsletter subscription of {} confirmed by its owner", LoggingUtils.maskEmail(sub.getEmail()));
+    }
+
+    /**
+     * Subscribe on a trusted request, active at once: the signed-in owner of a confirmed address
+     * (4.10c). A new address is created active, an unsubscribed or pending one is activated, an
+     * active one stays as it is.
+     */
+    private void subscribeTrusted(String email, String language, String source, String username) {
+        String address = normalise(email);
+        Optional<NewsletterSubscriber> existing = subscriberRepository.findByEmailIgnoreCase(address);
+        if (existing.isEmpty()) {
+            NewsletterSubscriber sub = newRow(address, null,
+                    language != null && !language.isBlank() ? language : "de", source, username);
+            activate(sub);
+            subscriberRepository.save(sub);
+            log.info("Created newsletter subscriber: {}", LoggingUtils.maskEmail(address));
+            return;
+        }
+        NewsletterSubscriber sub = existing.get();
+        if (sub.getConfirmedAt() != null && sub.getUnsubscribedAt() == null) {
+            log.debug("Address of {} already subscribed, unchanged", username);
+            return;
+        }
+        activate(sub);
+        sub.setSource(source);
+        if (username != null) {
+            sub.setUsername(username);
+        }
+        subscriberRepository.save(sub);
+        log.info("Reactivated newsletter subscriber: {}", LoggingUtils.maskEmail(address));
+    }
+
+    /**
+     * Unsubscribed from now, and an outstanding confirmation link is void (#1288): an old link must
+     * not subscribe again an address its owner, an organizer or an inbound reply removed.
+     */
+    private static void unsubscribe(NewsletterSubscriber sub) {
+        sub.setUnsubscribedAt(Instant.now());
+        sub.setConfirmationToken(null);
+    }
+
+    /** Active from now: confirmed (the first time only), no longer unsubscribed, the link used up. */
+    private static void activate(NewsletterSubscriber sub) {
+        Instant now = Instant.now();
+        if (sub.getConfirmedAt() == null) {
+            sub.setConfirmedAt(now);
+        }
+        if (sub.getUnsubscribedAt() != null) {
+            sub.setUnsubscribedAt(null);
+            sub.setSubscribedAt(now);
+        }
+        sub.setConfirmationToken(null);
+    }
+
+    /** Rejects reserved domains, then lower-cases: one row per address (#1099). */
+    private static String normalise(String email) {
         // Block RFC 2606 / RFC 6761 reserved domains so test fixtures and scanners
         // (e.g. zaproxy@example.com, speaker-test-…@example.com) can't pollute prod.
         if (isReservedDomain(email)) {
             log.warn("Rejected newsletter subscribe for reserved domain: {}", LoggingUtils.maskEmail(email));
             throw new ReservedEmailDomainException(email);
         }
-        // Addresses are stored lower-cased and matched case-insensitively (#1099): "X@ace.ch" and
-        // "x@ace.ch" are one subscriber, not two rows that each get the newsletter.
-        email = email.trim().toLowerCase(Locale.ROOT);
+        return email.trim().toLowerCase(Locale.ROOT);
+    }
 
-        // Infer name from email when not provided (e.g. "david.baumgartner@ace.ch" → "David Baumgartner")
-        String resolvedName = (firstName != null && !firstName.isBlank()) ? firstName : inferNameFromEmail(email);
-
-        Optional<NewsletterSubscriber> existing = subscriberRepository.findByEmailIgnoreCase(email);
-
-        if (existing.isPresent()) {
-            NewsletterSubscriber sub = existing.get();
-            if (sub.getUnsubscribedAt() == null) {
-                // Already active — 409
-                throw new DuplicateSubscriberException(email);
-            }
-            // Reactivate: clear unsubscribedAt, preserve original token
-            sub.setUnsubscribedAt(null);
-            sub.setSubscribedAt(Instant.now());
-            if (resolvedName != null && !resolvedName.isBlank()) {
-                sub.setFirstName(resolvedName);
-            }
-            if (language != null && !language.isBlank()) {
-                sub.setLanguage(language);
-            }
-            sub.setSource(source != null ? source : "explicit");
-            if (username != null) {
-                sub.setUsername(username);
-            }
-            log.info("Reactivated newsletter subscriber: {}", LoggingUtils.maskEmail(email));
-            return subscriberRepository.save(sub);
-        }
-
-        // New subscriber
-        NewsletterSubscriber sub = NewsletterSubscriber.builder()
-                .email(email)
-                .firstName(resolvedName)
-                .language(language != null && !language.isBlank() ? language : "de")
-                .source(source != null ? source : "explicit")
+    /** A new, not yet confirmed row; the name is inferred from the address when none is given. */
+    private static NewsletterSubscriber newRow(String address, String firstName, String language, String source,
+                                               String username) {
+        String name = (firstName != null && !firstName.isBlank()) ? firstName : inferNameFromEmail(address);
+        return NewsletterSubscriber.builder()
+                .email(address)
+                .firstName(name)
+                .language(language)
+                .source(source)
                 .username(username)
                 .unsubscribeToken(UUID.randomUUID().toString())
                 .build();
-        log.info("Created newsletter subscriber: {}", LoggingUtils.maskEmail(email));
-        return subscriberRepository.save(sub);
     }
 
     /**
@@ -164,7 +329,7 @@ public class NewsletterSubscriberService {
     public void unsubscribeByToken(String token) {
         NewsletterSubscriber sub = subscriberRepository.findByUnsubscribeToken(token)
                 .orElseThrow(() -> new NoSuchElementException("Unsubscribe token not found: " + token));
-        sub.setUnsubscribedAt(Instant.now());
+        unsubscribe(sub);
         subscriberRepository.save(sub);
         log.info("Unsubscribed newsletter subscriber via token: {}", LoggingUtils.maskEmail(sub.getEmail()));
     }
@@ -187,7 +352,7 @@ public class NewsletterSubscriberService {
             result.add(NewsletterAddressSubscription.builder()
                     .email(address)
                     .primary(address.equals(primary))
-                    .subscribed(row.map(s -> s.getUnsubscribedAt() == null).orElse(false))
+                    .subscribed(row.map(NewsletterSubscriberService::isSubscribed).orElse(false))
                     .language(row.map(NewsletterSubscriber::getLanguage).orElse(null))
                     .build());
         }
@@ -208,12 +373,17 @@ public class NewsletterSubscriberService {
         return staleRows(username, own).stream().map(NewsletterSubscriber::getEmail).toList();
     }
 
+    /** Subscribed as the account shows it: confirmed and not unsubscribed; pending is not (#1288). */
+    private static boolean isSubscribed(NewsletterSubscriber sub) {
+        return sub.getConfirmedAt() != null && sub.getUnsubscribedAt() == null;
+    }
+
     private List<NewsletterSubscriber> staleRows(String username, Collection<String> own) {
         if (username == null) {
             return List.of();
         }
         return subscriberRepository.findAllByUsername(username).stream()
-                .filter(s -> s.getUnsubscribedAt() == null)
+                .filter(NewsletterSubscriberService::isSubscribed)
                 .filter(s -> !own.contains(s.getEmail().toLowerCase(Locale.ROOT)))
                 .toList();
     }
@@ -230,16 +400,13 @@ public class NewsletterSubscriberService {
     @Transactional
     public void patchAddressSubscription(String username, String email, Boolean subscribed, String language) {
         if (Boolean.TRUE.equals(subscribed)) {
-            try {
-                subscribe(email, null, language, "account", username);
-            } catch (DuplicateSubscriberException e) {
-                log.debug("Address of {} already subscribed, ignoring", username);
-            }
+            // #1288: the caller checked that the address is the user's own, confirmed one.
+            subscribeTrusted(email, language, "account", username);
         } else if (Boolean.FALSE.equals(subscribed)) {
             subscriberRepository.findByEmailIgnoreCase(email)
                     .filter(s -> s.getUnsubscribedAt() == null)
                     .ifPresent(s -> {
-                        s.setUnsubscribedAt(Instant.now());
+                        unsubscribe(s);
                         subscriberRepository.save(s);
                         log.info("Authenticated user {} unsubscribed one address from the newsletter", username);
                     });
@@ -254,16 +421,16 @@ public class NewsletterSubscriberService {
         }
     }
 
-    /** Returns total count of active (non-unsubscribed, non-suppressed) subscribers. */
+    /** Count of active subscribers: confirmed (#1288), not unsubscribed, not suppressed. */
     @Transactional(readOnly = true)
     public long getActiveCount() {
-        return subscriberRepository.countByUnsubscribedAtIsNullAndSuppressedAtIsNull();
+        return subscriberRepository.countActive();
     }
 
-    /** Returns all active subscribers (for bulk send). Excludes suppressed (Story 10.29). */
+    /** All active subscribers (for bulk send): confirmed, not unsubscribed, not suppressed. */
     @Transactional(readOnly = true)
     public List<NewsletterSubscriber> findActiveSubscribers() {
-        return subscriberRepository.findByUnsubscribedAtIsNullAndSuppressedAtIsNull();
+        return subscriberRepository.findAllActive();
     }
 
     /**
@@ -275,7 +442,7 @@ public class NewsletterSubscriberService {
         subscriberRepository.findByEmailIgnoreCase(email)
                 .filter(sub -> sub.getUnsubscribedAt() == null)
                 .ifPresent(sub -> {
-                    sub.setUnsubscribedAt(Instant.now());
+                    unsubscribe(sub);
                     subscriberRepository.save(sub);
                     log.info("Unsubscribed newsletter subscriber via inbound email: {}",
                             LoggingUtils.maskEmail(sub.getEmail()));
@@ -297,6 +464,7 @@ public class NewsletterSubscriberService {
                 .bounceCount(sub.getBounceCount())
                 .lastBouncedAt(toOffset(sub.getLastBouncedAt()))
                 .suppressedAt(toOffset(sub.getSuppressedAt()))
+                .confirmedAt(toOffset(sub.getConfirmedAt()))
                 .build();
     }
 
@@ -315,7 +483,7 @@ public class NewsletterSubscriberService {
      * Find subscribers with filtering, search, sorting, and pagination.
      *
      * @param search   every word in e-mail, first name or username (folded, any order)
-     * @param status   "active", "unsubscribed", or "all"
+     * @param status   "active", "pending", "unsubscribed", "suppressed" or "all"
      * @param sortBy   field name (whitelisted)
      * @param sortDir  "asc" or "desc"
      * @param params   pagination params (1-based page + limit)
@@ -367,13 +535,14 @@ public class NewsletterSubscriberService {
         if (sub.getUnsubscribedAt() != null) {
             throw new IllegalStateException("Subscriber is already unsubscribed: " + sub.getEmail());
         }
-        sub.setUnsubscribedAt(Instant.now());
+        unsubscribe(sub);
         log.info("Organizer unsubscribed subscriber: {}", LoggingUtils.maskEmail(sub.getEmail()));
         return subscriberRepository.save(sub);
     }
 
     /**
-     * Re-subscribe a subscriber by ID (organizer action).
+     * Re-subscribe a subscriber by ID (organizer action): active at once, confirmed if it never was
+     * (#1288).
      *
      * @throws NoSuchElementException if not found
      * @throws IllegalStateException if already active (409)
@@ -385,8 +554,7 @@ public class NewsletterSubscriberService {
         if (sub.getUnsubscribedAt() == null) {
             throw new IllegalStateException("Subscriber is already active: " + sub.getEmail());
         }
-        sub.setUnsubscribedAt(null);
-        sub.setSubscribedAt(Instant.now());
+        activate(sub);
         log.info("Organizer re-subscribed subscriber: {}", LoggingUtils.maskEmail(sub.getEmail()));
         return subscriberRepository.save(sub);
     }

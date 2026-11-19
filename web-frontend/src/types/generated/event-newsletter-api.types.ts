@@ -105,6 +105,29 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/newsletter/confirmations': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Confirm a newsletter subscription with the token of its confirmation mail (public)
+     * @description Double opt-in (#1288). The confirmation page `/newsletter/confirm?token=…` posts the token
+     *     of the confirmation mail here. The subscription becomes active (`confirmedAt` set,
+     *     `unsubscribedAt` cleared) and the token is used up. An unknown or used token answers 404
+     *     and changes nothing.
+     */
+    post: operations['confirmNewsletterSubscription'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/newsletter/my-subscriptions': {
     parameters: {
       query?: never;
@@ -151,10 +174,15 @@ export interface paths {
      * @description Anonymous, the website's subscribe form (Story 10.7, path since 4.10c). When Turnstile is
      *     on, the gateway checks the Cloudflare token in the `X-Turnstile-Token` header: an invalid
      *     token answers 403, a missing one is let through (fail-open, Story 10.31 AC2, for blocked
-     *     widgets). The gateway allows 5 anonymous calls per client IP in 5 minutes (429). A
-     *     previously unsubscribed address is reactivated. No mail is sent: there is no confirmation
-     *     (double opt-in is the owner's decision, #1288). The other operations of this collection
-     *     are the organizer's.
+     *     widgets). The gateway allows 5 anonymous calls per client IP in 5 minutes (429).
+     *
+     *     Double opt-in (#1288): a new, pending or unsubscribed address becomes pending
+     *     (`confirmedAt` null, no newsletter) and gets a confirmation mail in the request's language
+     *     (`en`, otherwise German) whose link leads to `/newsletter/confirm?token=…`; posting that
+     *     token to `POST /newsletter/confirmations` activates it. A pending address asked again gets
+     *     the mail again with the same link. An active or suppressed address is left unchanged and
+     *     gets no mail. The answer is 200 for every valid address, so it does not reveal whether an
+     *     address is subscribed. The other operations of this collection are the organizer's.
      */
     post: operations['createNewsletterSubscriber'];
     delete?: never;
@@ -245,6 +273,9 @@ export interface components {
        */
       language?: 'de' | 'en';
     };
+    NewsletterConfirmationRequest: {
+      token: string;
+    };
     NewsletterUnsubscribeRequest: {
       token: string;
     };
@@ -271,6 +302,11 @@ export interface components {
        * @description Non-null means subscriber is excluded from sends
        */
       suppressedAt: string | null;
+      /**
+       * Format: date-time
+       * @description When the owner confirmed the subscription (double opt-in,
+       */
+      confirmedAt: string | null;
     };
     /** @description Email template with full content and metadata */
     EmailTemplateResponse: {
@@ -749,6 +785,49 @@ export interface operations {
       };
     };
   };
+  confirmNewsletterSubscription: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        /**
+         * @example {
+         *       "token": "3f1c2a9e-7b4d-4e8a-9c21-5d6e7f809a1b"
+         *     }
+         */
+        'application/json': components['schemas']['NewsletterConfirmationRequest'];
+      };
+    };
+    responses: {
+      /** @description Subscription active; no body */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Token missing */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      /** @description Token unknown or already used */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
   getMyNewsletterSubscriptions: {
     parameters: {
       query?: never;
@@ -814,8 +893,8 @@ export interface operations {
         limit?: number;
         /** @description Case-insensitive partial match against email or first name */
         search?: string;
-        /** @description Filter by subscription status */
-        status?: 'all' | 'active' | 'unsubscribed';
+        /** @description Filter by subscription status: active (confirmed, neither unsubscribed nor suppressed), pending (not yet confirmed, not unsubscribed, not suppressed; gets no newsletter), unsubscribed, suppressed */
+        status?: 'all' | 'active' | 'pending' | 'unsubscribed' | 'suppressed';
         /** @description Sort spec (single field; prefix with - for descending). Whitelisted server-side to: email, firstName, subscribedAt, unsubscribedAt, source, language. */
         sort?: string;
       };
@@ -861,7 +940,7 @@ export interface operations {
       };
     };
     responses: {
-      /** @description Subscribed (new or reactivated); no body */
+      /** @description Accepted; a confirmation mail went out if the address needs one. No body */
       200: {
         headers: {
           [name: string]: unknown;
@@ -879,15 +958,6 @@ export interface operations {
       };
       /** @description Turnstile token invalid (gateway) */
       403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['ErrorResponse'];
-        };
-      };
-      /** @description Address already actively subscribed */
-      409: {
         headers: {
           [name: string]: unknown;
         };

@@ -15,6 +15,7 @@
       "label": "Status",
       "all": "All",
       "active": "Active",
+      "pending": "Sin confirmar",
       "unsubscribed": "Unsubscribed"
     },
     "clearAll": "Clear Filters"
@@ -33,6 +34,8 @@
   },
   "status": {
     "active": "Active",
+    "pending": "Sin confirmar",
+    "pendingHint": "La suscripción aún no se ha confirmado con el enlace; no recibe el boletín",
     "unsubscribed": "Unsubscribed"
   },
   "actions": {

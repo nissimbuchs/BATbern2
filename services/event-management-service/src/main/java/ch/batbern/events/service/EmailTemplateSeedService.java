@@ -171,6 +171,12 @@ public class EmailTemplateSeedService {
         if (templateKey.equals("accept-confirmation") || templateKey.equals("unsubscribe-confirmation")) {
             return "REGISTRATION";
         }
+        // #1288: the double opt-in mail goes to one address that asked for the newsletter. Same
+        // edit-only category, checked before "newsletter-": in NEWSLETTER the composer would offer it
+        // as a newsletter to every subscriber.
+        if (templateKey.equals("newsletter-confirmation")) {
+            return "REGISTRATION";
+        }
         // Story 16.6: notifications to organizers about conversations (assigned, new mail).
         if (templateKey.startsWith("mailcenter-")) {
             return "MAIL_CENTER";

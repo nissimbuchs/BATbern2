@@ -1,0 +1,27 @@
+meta {
+  name: Anonymous subscribe — the same address again answers 200
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/newsletter/subscribers
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "email": "{{newsletterEmail}}"
+  }
+}
+
+assert {
+  res.status: eq 200
+}
+
+docs {
+  Issue 1288: every valid address answers 200, so the answer does not reveal whether an
+  address is subscribed (was 409 for an active one). The pending row of 01 stays one
+  row and gets its confirmation link again.
+}

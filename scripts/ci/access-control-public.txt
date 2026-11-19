@@ -46,7 +46,8 @@ POST   /registrations/deregister                 # deregistration link; signed t
 POST   /registrations/deregister/by-email        # "send me my deregistration link"; mails only the registered address
 
 # --- Newsletter ----------------------------------------------------------------------------------
-POST   /newsletter/subscribers                   # subscribe form; Turnstile-checked, 5 per IP in 5 min; sends no mail, no double opt-in (#1288)
+POST   /newsletter/subscribers                   # subscribe form; Turnstile-checked, 5 per IP in 5 min; pending until confirmed by mail (double opt-in, #1288)
+POST   /newsletter/confirmations                 # confirmation link of the double opt-in; random single-use token
 GET    /newsletter/unsubscribe/verify            # unsubscribe link; signed token
 POST   /newsletter/unsubscribe                   # unsubscribe link; signed token
 

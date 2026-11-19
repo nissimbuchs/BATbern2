@@ -15,6 +15,7 @@
       "label": "Status",
       "all": "All",
       "active": "Active",
+      "pending": "Vahvistamaton",
       "unsubscribed": "Unsubscribed"
     },
     "clearAll": "Clear Filters"
@@ -33,6 +34,8 @@
   },
   "status": {
     "active": "Active",
+    "pending": "Vahvistamaton",
+    "pendingHint": "Tilausta ei ole vielä vahvistettu linkillä; ei saa uutiskirjettä",
     "unsubscribed": "Unsubscribed"
   },
   "actions": {

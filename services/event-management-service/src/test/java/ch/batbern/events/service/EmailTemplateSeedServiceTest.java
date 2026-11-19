@@ -82,6 +82,13 @@ class EmailTemplateSeedServiceTest {
     }
 
     @Test
+    @DisplayName("#1288: the double opt-in mail is REGISTRATION, never a NEWSLETTER the composer could send to all")
+    void should_deriveRegistrationCategory_forNewsletterConfirmation() {
+        assertThat(emailTemplateSeedService.deriveCategory("newsletter-event")).isEqualTo("NEWSLETTER");
+        assertThat(emailTemplateSeedService.deriveCategory("newsletter-confirmation")).isEqualTo("REGISTRATION");
+    }
+
+    @Test
     @DisplayName("should derive REGISTRATION category for registration-* template keys")
     void should_deriveCategory_forRegistrationKey() {
         String category = emailTemplateSeedService.deriveCategory("registration-confirmation");

@@ -15,6 +15,7 @@
       "label": "Status",
       "all": "Alle",
       "active": "Aktiv",
+      "pending": "Unbestätigt",
       "unsubscribed": "Abgemeldet",
       "suppressed": "Unterdrückt"
     },
@@ -35,6 +36,8 @@
   },
   "status": {
     "active": "Aktiv",
+    "pending": "Unbestätigt",
+    "pendingHint": "Die Anmeldung ist noch nicht per Link bestätigt; erhält keinen Newsletter",
     "unsubscribed": "Abgemeldet",
     "suppressed": "Unterdrückt"
   },

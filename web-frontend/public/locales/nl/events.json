@@ -1273,7 +1273,7 @@
       "title": "Blijf op de hoogte met BATbern",
       "placeholder": "uw@email.com",
       "button": "Abonneren",
-      "success": "Bedankt! U bent nu geabonneerd.",
+      "checkInbox": "Bijna klaar: bevestig uw abonnement met de link die we u zojuist hebben gestuurd.",
       "alreadySubscribed": "U bent al geabonneerd.",
       "error": "Er ging iets mis. Probeer opnieuw.",
       "emailInvalid": "Voer een geldig e-mailadres in."
@@ -1286,6 +1286,14 @@
       "success": "U bent succesvol afgemeld.",
       "resubscribeLink": "Opnieuw abonneren",
       "invalidToken": "Deze afmeldlink is ongeldig of is al gebruikt."
+    },
+    "confirm": {
+      "title": "Bevestig uw nieuwsbriefabonnement",
+      "message": "Bevestig dat u de BATbern-nieuwsbrief wilt ontvangen.",
+      "button": "Abonnement bevestigen",
+      "success": "Bedankt! Uw nieuwsbriefabonnement is bevestigd.",
+      "homeLink": "Naar de startpagina",
+      "invalidToken": "Deze bevestigingslink is ongeldig of is al gebruikt."
     }
   },
   "speakersTable": {

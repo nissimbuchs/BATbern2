@@ -1273,7 +1273,7 @@
       "title": "Rimani aggiornato con BATbern",
       "placeholder": "tua@email.com",
       "button": "Iscriviti",
-      "success": "Grazie! Sei ora iscritto.",
+      "checkInbox": "Quasi fatto: conferma l'iscrizione con il link che ti abbiamo appena inviato.",
       "alreadySubscribed": "Sei già iscritto.",
       "error": "Qualcosa è andato storto. Riprova.",
       "emailInvalid": "Inserisci un indirizzo e-mail valido."
@@ -1286,6 +1286,14 @@
       "success": "Iscrizione annullata con successo.",
       "resubscribeLink": "Iscriviti di nuovo",
       "invalidToken": "Questo link di annullamento iscrizione non è valido o è già stato utilizzato."
+    },
+    "confirm": {
+      "title": "Conferma l'iscrizione alla newsletter",
+      "message": "Conferma di voler ricevere la newsletter BATbern.",
+      "button": "Conferma iscrizione",
+      "success": "Grazie! La tua iscrizione alla newsletter è confermata.",
+      "homeLink": "Vai alla pagina iniziale",
+      "invalidToken": "Questo link di conferma non è valido o è già stato utilizzato."
     }
   },
   "speakersTable": {

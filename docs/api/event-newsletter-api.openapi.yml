@@ -364,6 +364,37 @@ paths:
           description: Successfully unsubscribed
         '404':
           description: Token not found
+  /newsletter/confirmations:
+    post:
+      tags:
+      - Newsletter
+      summary: Confirm a newsletter subscription with the token of its confirmation mail (public)
+      description: |
+        Double opt-in (#1288). The confirmation page `/newsletter/confirm?token=…` posts the token
+        of the confirmation mail here. The subscription becomes active (`confirmedAt` set,
+        `unsubscribedAt` cleared) and the token is used up. An unknown or used token answers 404
+        and changes nothing.
+      operationId: confirmNewsletterSubscription
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewsletterConfirmationRequest'
+            example:
+              token: 3f1c2a9e-7b4d-4e8a-9c21-5d6e7f809a1b
+      responses:
+        '200':
+          description: Subscription active; no body
+        '400':
+          description: Token missing
+          content:
+            application/json:
+              schema:
+                $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+        '404':
+          description: Token unknown or already used
   /newsletter/my-subscriptions:
     get:
       tags:
@@ -456,10 +487,15 @@ paths:
         Anonymous, the website's subscribe form (Story 10.7, path since 4.10c). When Turnstile is
         on, the gateway checks the Cloudflare token in the `X-Turnstile-Token` header: an invalid
         token answers 403, a missing one is let through (fail-open, Story 10.31 AC2, for blocked
-        widgets). The gateway allows 5 anonymous calls per client IP in 5 minutes (429). A
-        previously unsubscribed address is reactivated. No mail is sent: there is no confirmation
-        (double opt-in is the owner's decision, #1288). The other operations of this collection
-        are the organizer's.
+        widgets). The gateway allows 5 anonymous calls per client IP in 5 minutes (429).
+
+        Double opt-in (#1288): a new, pending or unsubscribed address becomes pending
+        (`confirmedAt` null, no newsletter) and gets a confirmation mail in the request's language
+        (`en`, otherwise German) whose link leads to `/newsletter/confirm?token=…`; posting that
+        token to `POST /newsletter/confirmations` activates it. A pending address asked again gets
+        the mail again with the same link. An active or suppressed address is left unchanged and
+        gets no mail. The answer is 200 for every valid address, so it does not reveal whether an
+        address is subscribed. The other operations of this collection are the organizer's.
       operationId: createNewsletterSubscriber
       security: []
       requestBody:
@@ -474,7 +510,7 @@ paths:
               language: de
       responses:
         '200':
-          description: Subscribed (new or reactivated); no body
+          description: Accepted; a confirmation mail went out if the address needs one. No body
         '400':
           description: Invalid or reserved address
           content:
@@ -483,12 +519,6 @@ paths:
                 $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
         '403':
           description: Turnstile token invalid (gateway)
-          content:
-            application/json:
-              schema:
-                $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
-        '409':
-          description: Address already actively subscribed
           content:
             application/json:
               schema:
@@ -523,13 +553,15 @@ paths:
           type: string
       - name: status
         in: query
-        description: Filter by subscription status
+        description: 'Filter by subscription status: active (confirmed, neither unsubscribed nor suppressed), pending (not yet confirmed, not unsubscribed, not suppressed; gets no newsletter), unsubscribed, suppressed'
         schema:
           type: string
           enum:
           - all
           - active
+          - pending
           - unsubscribed
+          - suppressed
           default: all
       - name: sort
         in: query
@@ -566,6 +598,7 @@ paths:
                         language: de
                         source: explicit
                         subscribedAt: "2026-11-03T15:50:15.533757Z"
+                        confirmedAt: "2026-11-03T15:50:15.533757Z"
                         unsubscribedAt: null
                         bounceType: null
                         bounceCount: 0
@@ -578,6 +611,7 @@ paths:
                         language: de
                         source: explicit
                         subscribedAt: "2026-11-03T15:17:20.799099Z"
+                        confirmedAt: "2026-11-03T15:17:20.799099Z"
                         unsubscribedAt: null
                         bounceType: null
                         bounceCount: 0
@@ -625,6 +659,7 @@ paths:
                     language: de
                     source: explicit
                     subscribedAt: "2026-11-03T15:50:15.533757Z"
+                    confirmedAt: "2026-11-03T15:50:15.533757Z"
                     unsubscribedAt: null
                     bounceType: null
                     bounceCount: 0
@@ -677,6 +712,7 @@ paths:
                     language: de
                     source: explicit
                     subscribedAt: "2026-11-03T15:50:15.533757Z"
+                    confirmedAt: "2026-11-03T15:50:15.533757Z"
                     unsubscribedAt: null
                     bounceType: null
                     bounceCount: 0
@@ -729,6 +765,7 @@ paths:
                     language: de
                     source: explicit
                     subscribedAt: "2026-11-03T15:50:15.533757Z"
+                    confirmedAt: "2026-11-03T15:50:15.533757Z"
                     unsubscribedAt: null
                     bounceType: null
                     bounceCount: 0
@@ -800,6 +837,15 @@ components:
           - de
           - en
           default: de
+    NewsletterConfirmationRequest:
+      type: object
+      required:
+      - token
+      properties:
+        token:
+          type: string
+          minLength: 1
+          maxLength: 255
     NewsletterUnsubscribeRequest:
       type: object
       required:
@@ -822,6 +868,7 @@ components:
       - bounceCount
       - lastBouncedAt
       - suppressedAt
+      - confirmedAt
       properties:
         id:
           type: string
@@ -862,6 +909,11 @@ components:
           format: date-time
           nullable: true
           description: Non-null means subscriber is excluded from sends
+        confirmedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: When the owner confirmed the subscription (double opt-in, #1288). Null while pending; a pending subscriber gets no newsletter. Subscriptions from before the double opt-in count as confirmed at their subscribedAt
     EmailTemplateResponse:
       type: object
       description: Email template with full content and metadata

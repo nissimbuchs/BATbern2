@@ -219,6 +219,7 @@ class NewsletterSendIterationIntegrationTest extends AbstractIntegrationTest {
                 .language("de")
                 .source("explicit")
                 .unsubscribeToken("tok-" + UUID.randomUUID())
+                .confirmedAt(Instant.now())
                 .unsubscribedAt(unsubscribedAt)
                 .suppressedAt(suppressedAt)
                 .build());

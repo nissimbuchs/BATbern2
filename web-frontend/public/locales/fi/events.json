@@ -1273,7 +1273,7 @@
       "title": "Pysy ajan tasalla BATbernin kanssa",
       "placeholder": "sinun@sahkoposti.fi",
       "button": "Tilaa",
-      "success": "Kiitos! Olet nyt tilaaja.",
+      "checkInbox": "Melkein valmista: vahvista tilauksesi linkillä, jonka juuri lähetimme sinulle.",
       "alreadySubscribed": "Olet jo tilaaja.",
       "error": "Jokin meni pieleen. Yritä uudelleen.",
       "emailInvalid": "Anna kelvollinen sähköpostiosoite."
@@ -1286,6 +1286,14 @@
       "success": "Tilauksesi on peruutettu onnistuneesti.",
       "resubscribeLink": "Tilaa uudelleen",
       "invalidToken": "Tämä tilauksen peruutuslinkki on virheellinen tai sitä on jo käytetty."
+    },
+    "confirm": {
+      "title": "Vahvista uutiskirjeen tilaus",
+      "message": "Vahvista, että haluat vastaanottaa BATbernin uutiskirjeen.",
+      "button": "Vahvista tilaus",
+      "success": "Kiitos! Uutiskirjeen tilauksesi on vahvistettu.",
+      "homeLink": "Siirry etusivulle",
+      "invalidToken": "Tämä vahvistuslinkki on virheellinen tai sitä on jo käytetty."
     }
   },
   "speakersTable": {

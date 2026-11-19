@@ -15,6 +15,7 @@
       "label": "Status",
       "all": "All",
       "active": "Active",
+      "pending": "Non confermato",
       "unsubscribed": "Unsubscribed"
     },
     "clearAll": "Clear Filters"
@@ -33,6 +34,8 @@
   },
   "status": {
     "active": "Active",
+    "pending": "Non confermato",
+    "pendingHint": "L'iscrizione non è ancora confermata tramite link; non riceve la newsletter",
     "unsubscribed": "Unsubscribed"
   },
   "actions": {

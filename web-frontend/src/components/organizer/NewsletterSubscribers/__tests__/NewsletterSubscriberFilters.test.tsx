@@ -76,6 +76,16 @@ describe('NewsletterSubscriberFilters', () => {
     expect(filters.status).toBe('active');
   });
 
+  it('should_filterByPending_when_unconfirmedRadioClicked', async () => {
+    const user = userEvent.setup();
+    renderComponent();
+
+    await user.click(screen.getByLabelText('Unconfirmed'));
+
+    expect(screen.getByTestId('filter-pending')).toBeInTheDocument();
+    expect(useNewsletterSubscriberStore.getState().filters.status).toBe('pending');
+  });
+
   it('should_renderSuppressedRadio_when_mounted', () => {
     renderComponent();
 

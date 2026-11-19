@@ -5,7 +5,6 @@ import ch.batbern.events.config.TestSecurityConfig;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.NewsletterSubscriber;
 import ch.batbern.events.domain.Registration;
-import ch.batbern.events.exception.DuplicateSubscriberException;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.NewsletterRecipientRepository;
 import ch.batbern.events.repository.NewsletterSendRepository;
@@ -66,21 +65,23 @@ class EmailCaseInsensitiveMatchingIntegrationTest extends AbstractIntegrationTes
     @Test
     @DisplayName("subscribe stores the address lower-cased")
     void should_storeLowerCasedEmail_when_subscribing() {
-        NewsletterSubscriber sub = newsletterSubscriberService.subscribe(
-                " Case.Test@BATbern.ch ", "Case", "de", "explicit", null);
+        newsletterSubscriberService.requestSubscription(" Case.Test@BATbern.ch ", "Case", "de");
 
-        assertThat(sub.getEmail()).isEqualTo("case.test@batbern.ch");
+        assertThat(subscriberRepository.findAll()).singleElement()
+                .extracting(NewsletterSubscriber::getEmail).isEqualTo("case.test@batbern.ch");
     }
 
     @Test
-    @DisplayName("subscribing again with different capitalisation is a duplicate, not a second row")
-    void should_rejectDuplicate_when_sameEmailDiffersOnlyInCase() {
-        newsletterSubscriberService.subscribe("case.test@batbern.ch", "Case", "de", "explicit", null);
+    @DisplayName("subscribing again with different capitalisation is the same row, not a second one")
+    void should_keepOneRow_when_sameEmailDiffersOnlyInCase() {
+        newsletterSubscriberService.requestSubscription("case.test@batbern.ch", "Case", "de");
 
-        assertThatThrownBy(() -> newsletterSubscriberService.subscribe(
-                "Case.Test@batbern.ch", "Case", "de", "explicit", null))
-                .isInstanceOf(DuplicateSubscriberException.class);
-        assertThat(subscriberRepository.count()).isEqualTo(1);
+        newsletterSubscriberService.requestSubscription("Case.Test@batbern.ch", "Case", "en");
+
+        assertThat(subscriberRepository.findAll()).singleElement().satisfies(sub -> {
+            assertThat(sub.getEmail()).isEqualTo("case.test@batbern.ch");
+            assertThat(sub.getLanguage()).isEqualTo("en");
+        });
     }
 
     @Test

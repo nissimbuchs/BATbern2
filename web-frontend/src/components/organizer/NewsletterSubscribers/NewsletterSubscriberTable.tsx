@@ -76,8 +76,13 @@ const NewsletterSubscriberTable: React.FC<NewsletterSubscriberTableProps> = ({
     }
   };
 
-  const isActive = (sub: SubscriberResponse) => !sub.unsubscribedAt && !sub.suppressedAt;
   const isSuppressed = (sub: SubscriberResponse) => !!sub.suppressedAt;
+  // #1288 double opt-in: not unsubscribed, not suppressed, but not yet confirmed by its owner.
+  const isPending = (sub: SubscriberResponse) =>
+    !sub.confirmedAt && !sub.unsubscribedAt && !sub.suppressedAt;
+  const isActive = (sub: SubscriberResponse) =>
+    !!sub.confirmedAt && !sub.unsubscribedAt && !sub.suppressedAt;
+  const isUnsubscribed = (sub: SubscriberResponse) => !!sub.unsubscribedAt && !sub.suppressedAt;
 
   if (subscribers.length === 0) {
     return (
@@ -98,6 +103,15 @@ const NewsletterSubscriberTable: React.FC<NewsletterSubscriberTableProps> = ({
           data-testid={`suppressed-chip-${sub.id}`}
         />
       </Tooltip>
+    ) : isPending(sub) ? (
+      <Tooltip title={t('status.pendingHint')}>
+        <Chip
+          label={t('status.pending')}
+          color="info"
+          size="small"
+          data-testid={`pending-chip-${sub.id}`}
+        />
+      </Tooltip>
     ) : (
       <Chip
         label={isActive(sub) ? t('status.active') : t('status.unsubscribed')}
@@ -113,7 +127,7 @@ const NewsletterSubscriberTable: React.FC<NewsletterSubscriberTableProps> = ({
       sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 0.5 }}
       data-testid={`actions-${sub.id}`}
     >
-      {isActive(sub) && (
+      {(isActive(sub) || isPending(sub)) && (
         <Tooltip title={t('actions.unsubscribe')}>
           <IconButton
             size="small"
@@ -125,7 +139,7 @@ const NewsletterSubscriberTable: React.FC<NewsletterSubscriberTableProps> = ({
           </IconButton>
         </Tooltip>
       )}
-      {!isActive(sub) && !isSuppressed(sub) && (
+      {isUnsubscribed(sub) && (
         <Tooltip title={t('actions.resubscribe')}>
           <IconButton
             size="small"

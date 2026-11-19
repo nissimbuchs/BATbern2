@@ -102,6 +102,7 @@ class EmsProductionSecurityFilterChainTest {
         "POST, /api/v1/events/BATbern60/registrations",
         "POST, /api/v1/events/BATbern60/registrations/confirm",
         "POST, /api/v1/newsletter/subscribers",
+        "POST, /api/v1/newsletter/confirmations",
         "GET,  /api/v1/newsletter/unsubscribe/verify",
         "POST, /api/v1/newsletter/unsubscribe",
         "POST, /api/v1/events/BATbern60/thanks",

@@ -40,7 +40,7 @@ const NewsletterSubscriberFilters: React.FC = () => {
 
   const handleStatusChange = useCallback(
     (_: React.ChangeEvent<HTMLInputElement>, value: string) => {
-      setFilters({ status: value as 'all' | 'active' | 'unsubscribed' | 'suppressed' });
+      setFilters({ status: value as 'all' | 'active' | 'pending' | 'unsubscribed' | 'suppressed' });
     },
     [setFilters]
   );
@@ -76,6 +76,12 @@ const NewsletterSubscriberFilters: React.FC = () => {
               value="active"
               control={<Radio size="small" />}
               label={t('filters.status.active')}
+            />
+            <FormControlLabel
+              value="pending"
+              control={<Radio size="small" />}
+              label={t('filters.status.pending')}
+              data-testid="filter-pending"
             />
             <FormControlLabel
               value="unsubscribed"

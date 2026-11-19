@@ -3,7 +3,7 @@
  *
  * The real apiClient sends each call; the harness checks it against
  * `docs/api/event-newsletter-api.openapi.yml` and answers with the spec example or an override.
- * Covered: subscribe (POST /newsletter/subscribers since 4.10c), verifyUnsubscribeToken,
+ * Covered: subscribe (POST /newsletter/subscribers since 4.10c), confirmSubscription (#1288), verifyUnsubscribeToken,
  * unsubscribeByToken, getMySubscriptions, patchMySubscription (per address, partial).
  */
 import { describe, it, expect } from 'vitest';
@@ -11,6 +11,7 @@ import { HttpResponse } from 'msw';
 import { api } from '@/test/msw/api';
 import {
   subscribe,
+  confirmSubscription,
   verifyUnsubscribeToken,
   unsubscribeByToken,
   getMySubscriptions,
@@ -63,10 +64,26 @@ describe('newsletterService', () => {
       ).toBeNull();
     });
 
-    it('rejects with 409 when the address is already subscribed', async () => {
-      api.on('createNewsletterSubscriber', () => problem(409));
+    it('rejects with 400 for a reserved address', async () => {
+      api.on('createNewsletterSubscriber', () => problem(400));
 
-      expect(await statusOf(subscribe({ email: 'dup@example.com' }))).toBe(409);
+      expect(await statusOf(subscribe({ email: 'dup@example.com' }))).toBe(400);
+    });
+  });
+
+  describe('confirmSubscription (#1288)', () => {
+    it('POSTs the token to /newsletter/confirmations', async () => {
+      await confirmSubscription('confirm-token');
+
+      expect(api.calls('confirmNewsletterSubscription')[0].body).toEqual({
+        token: 'confirm-token',
+      });
+    });
+
+    it('rejects with 404 for an unknown or used token', async () => {
+      api.on('confirmNewsletterSubscription', () => new HttpResponse(null, { status: 404 }));
+
+      expect(await statusOf(confirmSubscription('used'))).toBe(404);
     });
   });
 

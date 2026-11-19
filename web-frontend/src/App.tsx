@@ -168,6 +168,8 @@ const SpeakerDashboardPage = React.lazy(() => import('@pages/speaker-portal/Spea
 
 // Story 10.7: Newsletter unsubscribe page
 const UnsubscribePage = React.lazy(() => import('@pages/public/UnsubscribePage'));
+// #1288: the confirmation link of the newsletter double opt-in
+const NewsletterConfirmPage = React.lazy(() => import('@pages/public/NewsletterConfirmPage'));
 
 // Additional-email verification (v2): public token-credentialed verify page
 const VerifyAdditionalEmailPage = React.lazy(
@@ -351,6 +353,8 @@ function App() {
 
                     {/* Story 10.7: Newsletter unsubscribe */}
                     <Route path="/unsubscribe" element={<UnsubscribePage />} />
+                    {/* #1288: Newsletter double opt-in confirmation link */}
+                    <Route path="/newsletter/confirm" element={<NewsletterConfirmPage />} />
 
                     {/* Additional-email verification (v2): public token-credentialed verify */}
                     <Route path="/verify-email" element={<VerifyAdditionalEmailPage />} />

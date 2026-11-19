@@ -4,6 +4,7 @@ import ch.batbern.shared.utils.LoggingUtils;
 import ch.batbern.events.newsletter.api.generated.NewsletterApi;
 import ch.batbern.events.newsletter.dto.generated.ListNewsletterSubscribers200Response;
 import ch.batbern.events.newsletter.dto.generated.MyNewsletterSubscriptionsResponse;
+import ch.batbern.events.newsletter.dto.generated.NewsletterConfirmationRequest;
 import ch.batbern.events.newsletter.dto.generated.NewsletterSubscribeRequest;
 import ch.batbern.events.newsletter.dto.generated.NewsletterUnsubscribeRequest;
 import ch.batbern.events.newsletter.dto.generated.PatchMyNewsletterSubscriptionRequest;
@@ -39,7 +40,8 @@ import java.util.UUID;
  * so verb/path/validation annotations are inherited from the interface (Phase 7 — ADR-006).
  *
  * <p>Public endpoints (no auth): subscribe ({@code POST /newsletter/subscribers}, Turnstile and
- * rate limit at the gateway), unsubscribe verify/confirm.
+ * rate limit at the gateway), its confirmation ({@code POST /newsletter/confirmations}, double
+ * opt-in, #1288), unsubscribe verify/confirm.
  * Authenticated: {@code /newsletter/my-subscriptions} GET and PATCH, per address (4.10c).
  * ORGANIZER-only: subscriber management. Sending, preview and retry are the Mail Center composer's
  * ({@code /events/{eventCode}/mails}, Story 16.8; the old endpoints went with 16.8c).
@@ -58,26 +60,41 @@ public class NewsletterController implements NewsletterApi {
 
     /**
      * AC2: Subscribe to the newsletter (no auth), {@code POST /newsletter/subscribers} since 4.10c.
-     * 200 on success, 409 if already subscribed, 400 for a reserved domain. Sends no mail.
+     * Double opt-in (#1288): the address stays pending and gets a confirmation mail, unless it is
+     * already active or suppressed. 200 for every valid address, so the answer reveals nothing about
+     * a subscription; 400 for a reserved domain.
      */
     @Override
     @PreAuthorize("permitAll()")
     public ResponseEntity<Void> createNewsletterSubscriber(NewsletterSubscribeRequest request) {
         log.info("Newsletter subscribe request for email: {}", LoggingUtils.maskEmail(request.getEmail()));
-        subscriberService.subscribe(
+        subscriberService.requestSubscription(
                 request.getEmail(),
                 request.getFirstName(),
-                request.getLanguage() != null ? request.getLanguage().getValue() : null,
-                "explicit",
-                null
-        );
+                request.getLanguage() != null ? request.getLanguage().getValue() : null);
         return ResponseEntity.ok().build();
+    }
+
+    /**
+     * #1288: the confirmation page posts the token of the confirmation mail. 200 and the
+     * subscription is active; 404 for an unknown or used token, nothing changes.
+     */
+    @Override
+    @PreAuthorize("permitAll()")
+    public ResponseEntity<Void> confirmNewsletterSubscription(NewsletterConfirmationRequest request) {
+        log.info("Newsletter confirmation via token");
+        try {
+            subscriberService.confirm(request.getToken());
+            return ResponseEntity.ok().build();
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.notFound().build();
+        }
     }
 
     /** AC3: Verify an unsubscribe token (no auth). 200 with {email} on valid token, 404 otherwise. */
     @Override
     public ResponseEntity<VerifyUnsubscribeToken200Response> verifyUnsubscribeToken(String token) {
-        log.debug("Newsletter unsubscribe verify for token: {}", token);
+        log.debug("Newsletter unsubscribe verify via token");
         Optional<String> email = subscriberService.verifyToken(token);
         return email.map(e -> ResponseEntity.ok(new VerifyUnsubscribeToken200Response().email(e)))
                 .orElse(ResponseEntity.notFound().build());

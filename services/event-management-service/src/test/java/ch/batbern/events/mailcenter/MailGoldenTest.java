@@ -6,6 +6,7 @@ import ch.batbern.events.config.TestSecurityConfig;
 import ch.batbern.events.core.dto.generated.EventType;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.MailConversation;
+import ch.batbern.events.domain.NewsletterSubscriber;
 import ch.batbern.events.forwarding.EmailForwardingService;
 import ch.batbern.events.mailcenter.inbound.InboundMailCenter;
 import ch.batbern.events.domain.EventTask;
@@ -21,6 +22,7 @@ import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.service.AdminSettingsService;
 import ch.batbern.events.service.DeregistrationEmailService;
 import ch.batbern.events.service.InboundEmailConfirmationEmailService;
+import ch.batbern.events.service.NewsletterConfirmationEmailService;
 import ch.batbern.events.service.NewsletterEmailService;
 import ch.batbern.events.service.PrimarySpeakerResolver;
 import ch.batbern.events.service.QnaNotificationService;
@@ -120,6 +122,8 @@ class MailGoldenTest extends AbstractIntegrationTest {
     @Autowired
     private NewsletterEmailService newsletterEmailService;
     @Autowired
+    private NewsletterConfirmationEmailService newsletterConfirmationEmailService;
+    @Autowired
     private SlidesOnlineEmailService slidesOnlineEmailService;
     @Autowired
     private VenueCoordinationService venueCoordinationService;
@@ -185,6 +189,9 @@ class MailGoldenTest extends AbstractIntegrationTest {
                     () -> registrationEmailService.sendRegistrationConfirmed(reg, profile, event, locale));
             check("unsubscribe-confirmation-" + l,
                     () -> inboundEmailConfirmationEmailService.sendUnsubscribeConfirmation("success+u931" + SIM, l));
+            check("newsletter-confirmation-" + l, () -> newsletterConfirmationEmailService.send(
+                    NewsletterSubscriber.builder().email("success+n931" + SIM).language(l)
+                            .unsubscribeToken("unsub-931").confirmationToken("confirm-931").build()));
             check("speaker-invitation-" + l, () -> speakerInvitationEmailService.sendInvitationEmail(
                     speaker(), event, "https://batbern.ch/login", credentials(), locale));
             check("speaker-acceptance-" + l,

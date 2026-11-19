@@ -91,7 +91,8 @@ newsletter one operation per intent:
   `/newsletter/my-subscription` and the PUT without a replacement contract (§1) are gone.
 - **Subscribe** is a create on the collection, `POST /newsletter/subscribers` (was the verb path
   `POST /newsletter/subscribe`), public by exact path in the gateway and EMS; Turnstile and the
-  per-IP rate limit moved with it. It still sends no mail (double opt-in: #1288).
+  per-IP rate limit moved with it. It sent no mail then; since #1288 it is a double opt-in
+  (pending, confirmation mail, `POST /newsletter/confirmations`).
 - Lint: baseline 101 to 98 entries, owner groups G06 and G10 removed.
 
 **Story 4.10b (2026-11, API conventions III part 1, EMS, breaking, no aliases)** gave the last EMS

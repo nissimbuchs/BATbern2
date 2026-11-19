@@ -60,6 +60,13 @@ export function useVerifyUnsubscribeToken(
   });
 }
 
+/** #1288: confirm a newsletter subscription with the token of its confirmation mail. */
+export function useConfirmSubscription(): UseMutationResult<void, Error, string> {
+  return useMutation({
+    mutationFn: newsletterService.confirmSubscription,
+  });
+}
+
 /** Unsubscribe by token. */
 export function useUnsubscribeByToken(): UseMutationResult<void, Error, string> {
   return useMutation({
