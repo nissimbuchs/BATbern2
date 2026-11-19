@@ -367,7 +367,9 @@ speaker went through this event's path. A session's speaker (`/sessions/{slug}/s
 is a user's assignment to a session, keyed by username, and not this key.
 
 The outreach record names the organizer by username (`organizer_username`); before 4.10 the
-controller wrote the e-mail address there. Rows written before keep the address.
+controller wrote the e-mail address there. V157 (#1287) moved each such address to the username of
+the one account that owns it (primary or verified additional address, any case); an address with
+no owner or several owners stays, and the migration logs both counts.
 
 ## Error Handling Strategy
 
