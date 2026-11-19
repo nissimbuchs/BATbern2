@@ -3,7 +3,7 @@ title: "Live Control speaks the UI language, the bell counts, the lineup card op
 type: 'bugfix'
 ticket: '7'
 created: '2026-11-18'
-status: 'built'
+status: 'done'
 baseline_revision: '388ccf46282c36e9ecd1d113c7023f46968c8f29'
 route: 'full'
 route_source: 'auto'

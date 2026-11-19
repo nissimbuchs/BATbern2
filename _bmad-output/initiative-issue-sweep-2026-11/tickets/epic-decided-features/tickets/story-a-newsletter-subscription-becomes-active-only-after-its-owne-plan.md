@@ -3,7 +3,7 @@ title: 'A newsletter subscription becomes active only after its owner confirms i
 type: 'feature'
 ticket: '4'
 created: '2026-11-19'
-status: 'built'
+status: 'done'
 baseline_revision: 'ffb9172626795735c3da86ff076811b45051f5fc'
 route: 'full'
 route_source: 'auto'
