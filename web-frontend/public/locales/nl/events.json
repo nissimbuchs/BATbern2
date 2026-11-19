@@ -1293,7 +1293,7 @@
       "button": "Abonnement bevestigen",
       "success": "Bedankt! Uw nieuwsbriefabonnement is bevestigd.",
       "homeLink": "Naar de startpagina",
-      "invalidToken": "Deze bevestigingslink is ongeldig of is al gebruikt."
+      "invalidToken": "Deze bevestigingslink is ongeldig, verlopen (links zijn 7 dagen geldig) of al gebruikt. Meld u opnieuw aan."
     }
   },
   "speakersTable": {

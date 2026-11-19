@@ -8,7 +8,9 @@
 ALTER TABLE newsletter_subscribers
     ADD COLUMN confirmed_at TIMESTAMP WITH TIME ZONE,
     ADD COLUMN confirmation_token VARCHAR(255),
-    ADD COLUMN confirmation_sent_at TIMESTAMP WITH TIME ZONE;
+    ADD COLUMN confirmation_sent_at TIMESTAMP WITH TIME ZONE,
+    -- when the open request was made (a token issued or reused); its expiry counts from here or the last mail
+    ADD COLUMN confirmation_requested_at TIMESTAMP WITH TIME ZONE;
 
 CREATE UNIQUE INDEX uq_newsletter_subscribers_confirmation_token
     ON newsletter_subscribers (confirmation_token);

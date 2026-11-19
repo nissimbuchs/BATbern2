@@ -1307,7 +1307,7 @@
       "button": "Confirm subscription",
       "success": "Thank you! Your newsletter subscription is confirmed.",
       "homeLink": "Go to the homepage",
-      "invalidToken": "This confirmation link is invalid or has already been used."
+      "invalidToken": "This confirmation link is invalid, has expired (links work for 7 days) or has already been used. To subscribe, please sign up again."
     }
   },
   "speakersTable": {

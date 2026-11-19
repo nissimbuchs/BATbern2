@@ -80,6 +80,16 @@ public class NewsletterSubscriberService {
     /** #1288: at most one confirmation mail per address in this window. */
     static final Duration CONFIRMATION_MAIL_INTERVAL = Duration.ofHours(1);
 
+    /** How long a confirmation link works, counted from its last mail (story 3.5; the mail names it). */
+    static final Duration CONFIRMATION_WINDOW = Duration.ofDays(7);
+
+    /**
+     * A registration's opt-in gets no mail of its own: it waits for the registration's link, which
+     * can be resent and stays confirmable for about 9 days (48h resends plus the 5-day cleanup). It
+     * expires only after that, unless an organizer's confirmation sent the newsletter mail.
+     */
+    static final Duration REGISTRATION_OPT_IN_WINDOW = Duration.ofDays(14);
+
     /**
      * #1288, double opt-in: an anonymous subscribe ({@code POST /newsletter/subscribers}). A new,
      * pending or unsubscribed address becomes (or stays) pending, keeps or gets its confirmation
@@ -110,6 +120,7 @@ public class NewsletterSubscriberService {
         if (sub.getConfirmationToken() == null) {
             sub.setConfirmationToken(UUID.randomUUID().toString());
         }
+        sub.setConfirmationRequestedAt(clock.instant());
         boolean mail = claimConfirmationMail(sub);
         NewsletterSubscriber saved = subscriberRepository.save(sub);
         if (mail) {
@@ -184,6 +195,7 @@ public class NewsletterSubscriberService {
         if (sub.getConfirmationToken() == null) {
             sub.setConfirmationToken(UUID.randomUUID().toString());
         }
+        sub.setConfirmationRequestedAt(clock.instant());
         subscriberRepository.save(sub);
         log.info("Newsletter opt-in of a registration for {} awaits the registration's confirmation",
                 LoggingUtils.maskEmail(address));
@@ -213,16 +225,64 @@ public class NewsletterSubscriberService {
     }
 
     /**
+     * Story 3.5: requests nobody confirmed within {@link #CONFIRMATION_WINDOW} expire. A row that was
+     * never confirmed and is neither unsubscribed nor suppressed is deleted; an unsubscribed row keeps
+     * its opt-out and only loses the expired token. Confirmed and suppressed rows stay as they are.
+     *
+     * @return {deleted, tokens cleared}
+     */
+    @Transactional
+    public int[] expireUnconfirmedRequests() {
+        Instant now = clock.instant();
+        int deleted = 0;
+        int cleared = 0;
+        for (NewsletterSubscriber sub : subscriberRepository.findByConfirmationTokenIsNotNull()) {
+            if (!requestExpired(sub, now)) {
+                continue;
+            }
+            if (sub.getConfirmedAt() == null && sub.getUnsubscribedAt() == null && sub.getSuppressedAt() == null) {
+                subscriberRepository.delete(sub);
+                deleted++;
+            } else if (sub.getUnsubscribedAt() != null && sub.getSuppressedAt() == null) {
+                sub.setConfirmationToken(null);
+                subscriberRepository.save(sub);
+                cleared++;
+            }
+        }
+        return new int[] {deleted, cleared};
+    }
+
+    /**
+     * The window counts from the later of the last confirmation mail and the request (rows from before
+     * the request time existed: their subscription). A registration's opt-in without a mail waits for
+     * the registration's link and gets {@link #REGISTRATION_OPT_IN_WINDOW}.
+     */
+    private static boolean requestExpired(NewsletterSubscriber sub, Instant now) {
+        Instant sent = sub.getConfirmationSentAt();
+        Instant requested = sub.getConfirmationRequestedAt();
+        Instant start = sent == null ? requested : requested == null || sent.isAfter(requested) ? sent : requested;
+        if (start == null) {
+            start = sub.getSubscribedAt();
+        }
+        Duration window = sent == null && "registration".equals(sub.getSource())
+                ? REGISTRATION_OPT_IN_WINDOW : CONFIRMATION_WINDOW;
+        return start != null && start.plus(window).isBefore(now);
+    }
+
+    /**
      * #1288: the link of the confirmation mail. The subscription becomes active and the token is
      * used up.
      *
-     * @throws NoSuchElementException unknown or already used token (404), nothing changes
+     * @throws NoSuchElementException unknown, already used or expired token (404), nothing changes
      */
     @Transactional
     public void confirm(String token) {
+        Instant now = clock.instant();
         NewsletterSubscriber sub = (token == null || token.isBlank() ? Optional.<NewsletterSubscriber>empty()
                 : subscriberRepository.findByConfirmationToken(token))
-                .orElseThrow(() -> new NoSuchElementException("Unknown or used newsletter confirmation token"));
+                .filter(found -> !requestExpired(found, now))
+                .orElseThrow(() -> new NoSuchElementException(
+                        "Unknown, used or expired newsletter confirmation token"));
         activate(sub);
         subscriberRepository.save(sub);
         log.info("Newsletter subscription of {} confirmed by its owner", LoggingUtils.maskEmail(sub.getEmail()));

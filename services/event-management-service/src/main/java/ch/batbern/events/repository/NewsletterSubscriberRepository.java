@@ -30,6 +30,9 @@ public interface NewsletterSubscriberRepository extends JpaRepository<Newsletter
 
     Optional<NewsletterSubscriber> findByUnsubscribeToken(String unsubscribeToken);
 
+    /** Open confirmation requests (story 3.5 expiry); a few dozen rows at most. */
+    List<NewsletterSubscriber> findByConfirmationTokenIsNotNull();
+
     /** #1288: the subscription whose confirmation link carries this token. */
     Optional<NewsletterSubscriber> findByConfirmationToken(String confirmationToken);
 

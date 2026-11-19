@@ -1293,7 +1293,7 @@
       "button": "Confirmar suscripción",
       "success": "¡Gracias! Su suscripción al boletín está confirmada.",
       "homeLink": "Ir a la página de inicio",
-      "invalidToken": "Este enlace de confirmación no es válido o ya se ha utilizado."
+      "invalidToken": "Este enlace de confirmación no es válido, ha caducado (los enlaces son válidos 7 días) o ya se ha utilizado. Vuelva a suscribirse."
     }
   },
   "speakersTable": {

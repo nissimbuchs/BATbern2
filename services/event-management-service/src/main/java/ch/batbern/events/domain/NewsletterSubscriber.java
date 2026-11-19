@@ -88,6 +88,10 @@ public class NewsletterSubscriber {
     @Column(name = "confirmation_sent_at")
     private Instant confirmationSentAt;
 
+    /** #1288 story 3.5: when the open request was made; its window counts from here or the last mail. */
+    @Column(name = "confirmation_requested_at")
+    private Instant confirmationRequestedAt;
+
     // Story 10.29: Bounce tracking fields (V91 migration)
     /** Bounce type: 'hard', 'soft', 'complaint', or null if never bounced. */
     @Column(name = "bounce_type", length = 20)

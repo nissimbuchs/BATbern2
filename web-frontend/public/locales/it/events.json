@@ -1293,7 +1293,7 @@
       "button": "Conferma iscrizione",
       "success": "Grazie! La tua iscrizione alla newsletter è confermata.",
       "homeLink": "Vai alla pagina iniziale",
-      "invalidToken": "Questo link di conferma non è valido o è già stato utilizzato."
+      "invalidToken": "Questo link di conferma non è valido, è scaduto (i link valgono 7 giorni) o è già stato utilizzato. Si prega di iscriversi di nuovo."
     }
   },
   "speakersTable": {

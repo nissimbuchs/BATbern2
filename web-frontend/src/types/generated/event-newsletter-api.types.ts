@@ -118,7 +118,7 @@ export interface paths {
      * Confirm a newsletter subscription with the token of its confirmation mail (public)
      * @description Double opt-in (#1288). The confirmation page `/newsletter/confirm?token=…` posts the token
      *     of the confirmation mail here. The subscription becomes active (`confirmedAt` set,
-     *     `unsubscribedAt` cleared) and the token is used up. An unknown or used token answers 404
+     *     `unsubscribedAt` cleared) and the token is used up. An unknown, used or expired token (7 days after its last mail) answers 404
      *     and changes nothing.
      */
     post: operations['confirmNewsletterSubscription'];
@@ -819,7 +819,7 @@ export interface operations {
           'application/json': components['schemas']['ErrorResponse'];
         };
       };
-      /** @description Token unknown or already used */
+      /** @description Token unknown, already used or expired */
       404: {
         headers: {
           [name: string]: unknown;

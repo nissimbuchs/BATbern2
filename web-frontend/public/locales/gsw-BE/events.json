@@ -1296,7 +1296,7 @@
       "button": "Aamäudig bestätige",
       "success": "Merci! Öii Newsletter-Aamäudig isch bestätiget.",
       "homeLink": "Zur Startsite",
-      "invalidToken": "Dä Bestätigungslink isch ungültig oder isch scho brucht worde."
+      "invalidToken": "Dä Bestätigungslink isch ungültig, abgloffe (Links gälte 7 Täg) oder isch scho brucht worde. Bitte mäldet Euch nomau aa."
     }
   },
   "speakersTable": {

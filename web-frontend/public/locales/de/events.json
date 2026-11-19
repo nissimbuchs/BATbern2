@@ -1307,7 +1307,7 @@
       "button": "Anmeldung bestätigen",
       "success": "Danke! Ihre Newsletter-Anmeldung ist bestätigt.",
       "homeLink": "Zur Startseite",
-      "invalidToken": "Dieser Bestätigungslink ist ungültig oder wurde bereits verwendet."
+      "invalidToken": "Dieser Bestätigungslink ist ungültig, abgelaufen (Links gelten 7 Tage) oder wurde bereits verwendet. Bitte melden Sie sich erneut an."
     }
   },
   "speakersTable": {

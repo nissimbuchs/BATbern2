@@ -921,7 +921,13 @@ unsubscribed, not suppressed) gets nothing; the organizer list shows it under `p
 
 Every unsubscribe (link, account, organizer, inbound reply) also clears the confirmation token, so
 an old confirmation link cannot subscribe the address again. Rows that existed before V158 count as confirmed at their `subscribed_at`. The confirmation mail
-names a 7-day window; expiring unconfirmed rows is a separate story.
+names a 7-day window, counted from the later of the last confirmation mail and the request
+(`confirmation_requested_at`): a later link answers 404. A registration's opt-in without a mail of
+its own waits 14 days for the registration's link (resends and cleanup keep a registration
+confirmable for about 9 days). `NewsletterConfirmationExpiryScheduler` (03:45 Europe/Zurich, ShedLock) deletes
+requests past the window that were never confirmed and are neither unsubscribed nor suppressed, and
+clears the expired token of an unsubscribed row, which stays as the record of the opt-out.
+Suppressed rows are never touched.
 
 ## Newsletter Async Processing
 

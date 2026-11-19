@@ -47,7 +47,7 @@ describe('NewsletterConfirmPage', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Confirm subscription' }));
 
     expect(
-      await screen.findByText('This confirmation link is invalid or has already been used.')
+      await screen.findByText(/This confirmation link is invalid, has expired/)
     ).toBeInTheDocument();
     expect(screen.queryByText(/is confirmed/)).not.toBeInTheDocument();
   });
@@ -56,7 +56,7 @@ describe('NewsletterConfirmPage', () => {
     renderPage('/newsletter/confirm');
 
     expect(
-      await screen.findByText('This confirmation link is invalid or has already been used.')
+      await screen.findByText(/This confirmation link is invalid, has expired/)
     ).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Confirm subscription' })).not.toBeInTheDocument();
     expect(api.calls('confirmNewsletterSubscription')).toHaveLength(0);

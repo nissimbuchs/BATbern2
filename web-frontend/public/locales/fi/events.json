@@ -1293,7 +1293,7 @@
       "button": "Vahvista tilaus",
       "success": "Kiitos! Uutiskirjeen tilauksesi on vahvistettu.",
       "homeLink": "Siirry etusivulle",
-      "invalidToken": "Tämä vahvistuslinkki on virheellinen tai sitä on jo käytetty."
+      "invalidToken": "Tämä vahvistuslinkki on virheellinen, vanhentunut (linkit ovat voimassa 7 päivää) tai sitä on jo käytetty. Tilaa uudelleen."
     }
   },
   "speakersTable": {
