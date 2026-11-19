@@ -1,14 +1,20 @@
 /**
  * SpeakerSelfNominatePanel — Story 7.2 "I Could Speak on That".
  *
- * An "I could speak on that" button on an upcoming-event card. Visible only to logged-in users
- * (the caller also gates on topic-set + published). Clicking opens a small form (title + abstract)
- * that self-nominates the attendee as a speaker FOR THAT event — the card supplies the eventCode,
- * so no event picker is needed and multiple simultaneous open events each get their own button.
+ * An "I could speak on that" button for one event (the caller gates on the server's
+ * `selfNominationOpen`). A logged-in click opens a small form (title + abstract) that
+ * self-nominates the attendee as a speaker FOR THAT event — the caller supplies the eventCode, so
+ * no event picker is needed and multiple simultaneous open events each get their own button.
  *
- * Tailwind-only by design: the upcoming-event card lives on the public (no-MUI) homepage. The form
- * lives in a Radix Dialog (rendered in a portal) so its clicks don't bubble to the card's <Link>;
- * the trigger button stops propagation + prevents default for the same reason.
+ * Anonymous visitors, who are most visitors, see the same button (#1263). Their click goes to
+ * `/login` with the return target `/?nominate=<eventCode>`: a fixed internal path plus the code,
+ * nothing taken from the current URL. Back on the homepage, the card or hero whose code matches
+ * gets `autoOpen` and opens its form once. `hideWhenSignedOut` keeps the button hidden from
+ * anonymous visitors where that return does not lead back (the hero on an event's own page).
+ *
+ * Tailwind-only by design: the upcoming-event card lives on the public (no-MUI) homepage. The
+ * form lives in a Radix Dialog (rendered in a portal). The button is never inside a link: the card
+ * puts it in its own footer, beside the link (no nested interactive elements).
  *
  * Identity (name + company) is auto-filled server-side from the attendee's profile — the body
  * carries only the proposed talk. One self-nomination per attendee per event (the backend rejects
@@ -18,7 +24,8 @@
  * `details.code`, NOT the bare status, and surface the generic error for the not-allowed case.
  */
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useMutation } from '@tanstack/react-query';
 import { Mic } from 'lucide-react';
@@ -61,15 +68,36 @@ interface SpeakerSelfNominatePanelProps {
   eventCode: string;
   /** Optional topic name shown in the dialog for context. */
   topicName?: string;
+  /**
+   * Open the form once on mount, for a logged-in visitor: the return from the login that an
+   * anonymous click started (`/?nominate=<eventCode>`). Ignored while signed out.
+   */
+  autoOpen?: boolean;
+  /** Called once after `autoOpen` opened the form (the caller removes its `nominate` param). */
+  onAutoOpened?: () => void;
+  /** Render nothing for anonymous visitors (the hero on an event's own page). */
+  hideWhenSignedOut?: boolean;
+}
+
+/** Where the login sends an anonymous visitor back to: the homepage, with this event's code. */
+function selfNominateReturnState(eventCode: string) {
+  return {
+    from: { pathname: '/', search: `?${new URLSearchParams({ nominate: eventCode }).toString()}` },
+  };
 }
 
 export const SpeakerSelfNominatePanel = ({
   eventCode,
   topicName,
+  autoOpen = false,
+  onAutoOpened,
+  hideWhenSignedOut = false,
 }: SpeakerSelfNominatePanelProps) => {
   const { t } = useTranslation('common');
   const { isAuthenticated } = useAuth();
+  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
+  const autoOpened = useRef(false);
   const [title, setTitle] = useState('');
   const [abstract, setAbstract] = useState('');
   const [done, setDone] = useState(false);
@@ -92,8 +120,17 @@ export const SpeakerSelfNominatePanel = ({
     },
   });
 
-  // Login gate: the button is for logged-in attendees only.
-  if (!isAuthenticated) {
+  // Back from the login: open the form once. A later change of autoOpen (the param is cleared)
+  // does not close it.
+  useEffect(() => {
+    if (autoOpen && isAuthenticated && !autoOpened.current) {
+      autoOpened.current = true;
+      setOpen(true);
+      onAutoOpened?.();
+    }
+  }, [autoOpen, isAuthenticated, onAutoOpened]);
+
+  if (!isAuthenticated && hideWhenSignedOut) {
     return null;
   }
 
@@ -120,11 +157,12 @@ export const SpeakerSelfNominatePanel = ({
           variant="outline"
           className="w-full"
           data-testid="self-nominate-button"
-          onClick={(e) => {
-            // The card is a <Link> — don't navigate when opening the form.
-            e.preventDefault();
-            e.stopPropagation();
-            setOpen(true);
+          onClick={() => {
+            if (isAuthenticated) {
+              setOpen(true);
+            } else {
+              navigate('/login', { state: selfNominateReturnState(eventCode) });
+            }
           }}
         >
           <Mic className="h-4 w-4 mr-2" />

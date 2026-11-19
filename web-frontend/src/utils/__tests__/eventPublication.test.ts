@@ -12,29 +12,15 @@ describe('isPublishedPhase', () => {
 });
 
 describe('canOfferSelfNomination', () => {
-  test('true ONLY during the TOPIC phase (topic published, speakers not yet)', () => {
-    expect(
-      canOfferSelfNomination({ topic: { name: 'Architecture' }, currentPublishedPhase: 'TOPIC' })
-    ).toBe(true);
+  test('true when the server reports self-nomination open', () => {
+    expect(canOfferSelfNomination({ selfNominationOpen: true })).toBe(true);
   });
 
-  test('false once the speaker lineup is published (SPEAKERS / AGENDA) — window closed', () => {
-    expect(
-      canOfferSelfNomination({ topic: { name: 'Architecture' }, currentPublishedPhase: 'SPEAKERS' })
-    ).toBe(false);
-    expect(
-      canOfferSelfNomination({ topic: { name: 'Architecture' }, currentPublishedPhase: 'AGENDA' })
-    ).toBe(false);
+  test('false when the server reports it closed', () => {
+    expect(canOfferSelfNomination({ selfNominationOpen: false })).toBe(false);
   });
 
-  test('false when the event is unpublished (NONE) even with a topic', () => {
-    expect(
-      canOfferSelfNomination({ topic: { name: 'Architecture' }, currentPublishedPhase: 'NONE' })
-    ).toBe(false);
-  });
-
-  test('false when no topic object is set', () => {
-    expect(canOfferSelfNomination({ topic: null, currentPublishedPhase: 'TOPIC' })).toBe(false);
-    expect(canOfferSelfNomination({ currentPublishedPhase: 'TOPIC' })).toBe(false);
+  test('false when the flag is absent (organizer endpoints, preview)', () => {
+    expect(canOfferSelfNomination({})).toBe(false);
   });
 });

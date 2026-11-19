@@ -28,11 +28,13 @@ interface EventCardProps {
   /** Optional registration status for this event (Story 10.10, AC5) */
   myRegistrationStatus?: RegistrationStatus | null;
   /**
-   * Story 7.2 "I Could Speak on That": show the attendee speaker self-nomination button on
-   * upcoming-event cards. The button is login-gated internally; the card additionally only
-   * renders it once the event's topic is set + published (the backend is authoritative).
+   * Story 7.2 "I Could Speak on That": upcoming-event cards offer the speaking call while the
+   * server reports `selfNominationOpen`. The card is then split (owner, 2026-11-08): the upper part
+   * links to the event, the lower part is the self-nomination button in place of "View details".
    */
   enableSelfNomination?: boolean;
+  /** Open this card's self-nomination form once (the return from login, `?nominate=<code>`). */
+  autoOpenSelfNomination?: boolean;
 }
 
 const STATUS_CHIP_STYLES: Record<RegistrationStatus, string> = {
@@ -50,14 +52,13 @@ export function EventCard({
   linkPrefix = '/archive/',
   myRegistrationStatus,
   enableSelfNomination = false,
+  autoOpenSelfNomination = false,
 }: EventCardProps) {
   const { t } = useTranslation();
   const { t: tEvents } = useTranslation('events');
 
-  // Story 7.2: surface the self-nomination button only while the self-nomination window is open
-  // — during the TOPIC publishing phase (topic published, speakers not yet). canOfferSelfNomination
-  // is the single source of truth (shared with the homepage hero + mirrored by the backend guard);
-  // the button itself is additionally login-gated.
+  // Story 7.2: the self-nomination button only while the server reports the window open
+  // (`selfNominationOpen`, #1263); canOfferSelfNomination is shared with the homepage hero.
   const showSelfNominate = enableSelfNomination && canOfferSelfNomination(event);
 
   // Talks only (moderation/break/lunch/networking don't belong on a card)
@@ -79,7 +80,185 @@ export function EventCard({
     day: 'numeric',
   });
 
-  const cardLink = (
+  // Image, header, sessions and lineup: the part of the card that links to the event.
+  const cardHeadAndPreview = (
+    <>
+      {/* Theme Image */}
+      {event.themeImageUrl && (
+        <div
+          className={`overflow-hidden ${viewMode === 'list' ? 'flex-shrink-0 w-48' : 'w-full h-48'}`}
+        >
+          {/* Resize + WebP via the CDN Lambda — cards display at ~192px tall and are
+              below the fold, so serve a small responsive image (lazy) instead of the
+              full-resolution origin. A raw AI-theme PNG here was 2.7 MB on the homepage
+              (Lighthouse 2026-06-02); buildCdnImageUrl drops it to a few tens of KB. */}
+          <img
+            src={
+              buildCdnImageUrl(event.themeImageUrl, { w: 768, fit: 'cover' }) ?? event.themeImageUrl
+            }
+            srcSet={
+              buildCdnImageSrcSet(event.themeImageUrl, [384, 768], { fit: 'cover' }) ?? undefined
+            }
+            sizes="(min-width: 1024px) 384px, (min-width: 768px) 50vw, 100vw"
+            alt={`${event.title} theme image`}
+            className="w-full h-full object-cover"
+            loading="lazy"
+            data-testid="event-card-image"
+          />
+        </div>
+      )}
+
+      <CardHeader>
+        <div className="flex items-start justify-between gap-4 mb-2">
+          {/* Event Code (e.g., BATbern57) */}
+          <Badge
+            variant="outline"
+            className="bg-blue-400/10 text-blue-400 border-blue-400/20 font-mono"
+          >
+            {event.eventCode}
+          </Badge>
+
+          {/* Topic Badge */}
+          {event.topic && typeof event.topic === 'object' && (
+            <Badge className="bg-zinc-800 text-zinc-300" data-testid="event-card-topic">
+              {event.topic.name}
+            </Badge>
+          )}
+
+          {/* Registration Status Chip (Story 10.10, AC5) */}
+          {myRegistrationStatus && (
+            <Badge
+              variant="outline"
+              className={STATUS_CHIP_STYLES[myRegistrationStatus]}
+              data-testid="event-card-status-chip"
+            >
+              {tEvents(`eventCard.statusChip.${myRegistrationStatus.toLowerCase()}`)}
+            </Badge>
+          )}
+        </div>
+
+        {/* Event Title */}
+        <CardTitle className="font-light text-xl text-zinc-100" data-testid="event-card-title">
+          {event.title}
+        </CardTitle>
+
+        {/* Date and Venue */}
+        <div className="space-y-1 mt-2">
+          <p className="text-sm text-zinc-400" data-testid="event-card-date">
+            {formattedDate}
+          </p>
+          {event.venueName && <p className="text-sm text-zinc-400">{event.venueName}</p>}
+        </div>
+      </CardHeader>
+    </>
+  );
+  const cardPreview = (
+    <>
+      {/* Session Preview - Show all sessions */}
+      {displayedSessions.length > 0 && (
+        <div className="space-y-3">
+          <div className={`grid gap-4 ${viewMode === 'list' ? 'grid-cols-2' : 'grid-cols-1'}`}>
+            {displayedSessions.map((session, index) => (
+              <div
+                key={session.sessionId || session.id || `session-${index}`}
+                className="border-t border-zinc-800 pt-3 first:border-t-0 first:pt-0"
+              >
+                {/* Session Title */}
+                <p className="text-sm font-medium text-zinc-200 mb-2">{session.title}</p>
+
+                {/* Speakers with companies */}
+                {session.speakers && session.speakers.length > 0 ? (
+                  <div
+                    className={`grid gap-6 ${viewMode === 'list' ? 'grid-cols-2' : 'grid-cols-1'}`}
+                  >
+                    {session.speakers.map((speaker, speakerIndex) => (
+                      <SpeakerDisplay
+                        key={speaker.username || `speaker-${index}-${speakerIndex}`}
+                        speaker={speaker}
+                        size="small"
+                        showProfilePicture={true}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-xs text-zinc-500">Keine Referenten</p>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Lineup - SPEAKERS phase: who speaks, no talk titles yet */}
+      {lineup.length > 0 && (
+        <div
+          className={`grid gap-6 ${viewMode === 'list' ? 'grid-cols-2' : 'grid-cols-1'}`}
+          data-testid="event-card-lineup"
+        >
+          {lineup.map((speaker) => (
+            <SpeakerDisplay
+              key={speaker.username}
+              speaker={{
+                username: speaker.username,
+                firstName: speaker.firstName,
+                lastName: speaker.lastName,
+                company: speaker.company,
+                companyDisplayName: speaker.companyDisplayName,
+                companyLogoUrl: speaker.companyLogoUrl,
+                profilePictureUrl: speaker.profilePictureUrl,
+                bio: null,
+                presentationTitle: null,
+                speakerRole: 'PRIMARY_SPEAKER',
+                isConfirmed: true,
+              }}
+              size="small"
+              showProfilePicture={true}
+            />
+          ))}
+        </div>
+      )}
+    </>
+  );
+
+  const cardClassName =
+    'group bg-zinc-700 border-zinc-600 hover:border-zinc-500 transition-colors h-full';
+
+  // Story 7.2 (#1263): while self-nomination is open, the card is split. The upper part is one
+  // link to the event, the lower part the self-nomination button in place of "View details": two
+  // tab stops, no interactive element inside another, exactly one call to action.
+  if (showSelfNominate) {
+    return (
+      <Card
+        className={`${cardClassName} flex flex-col overflow-hidden ${viewMode === 'list' ? 'w-full' : ''}`}
+      >
+        <Link
+          to={`${linkPrefix}${event.eventCode}`}
+          className="block flex-1 rounded-t-xl"
+          data-testid="event-card"
+        >
+          <div
+            className={viewMode === 'grid' ? 'grid-card' : 'list-card'}
+            data-testid={`event-card-${event.eventCode}`}
+            data-view-mode={viewMode}
+          >
+            {cardHeadAndPreview}
+            <CardContent className="space-y-4">{cardPreview}</CardContent>
+          </div>
+        </Link>
+        <div className="px-6 pb-6">
+          <div className="pt-4 border-t border-zinc-800">
+            <SpeakerSelfNominatePanel
+              eventCode={event.eventCode}
+              topicName={event.topic?.name}
+              autoOpen={autoOpenSelfNomination}
+            />
+          </div>
+        </div>
+      </Card>
+    );
+  }
+
+  return (
     <Link
       to={`${linkPrefix}${event.eventCode}`}
       className={`block ${viewMode === 'list' ? 'w-full' : ''}`}
@@ -90,144 +269,10 @@ export function EventCard({
         data-testid={`event-card-${event.eventCode}`}
         data-view-mode={viewMode}
       >
-        <Card className="group bg-zinc-700 border-zinc-600 hover:border-zinc-500 transition-colors h-full">
-          {/* Theme Image */}
-          {event.themeImageUrl && (
-            <div
-              className={`overflow-hidden ${viewMode === 'list' ? 'flex-shrink-0 w-48' : 'w-full h-48'}`}
-            >
-              {/* Resize + WebP via the CDN Lambda — cards display at ~192px tall and are
-                  below the fold, so serve a small responsive image (lazy) instead of the
-                  full-resolution origin. A raw AI-theme PNG here was 2.7 MB on the homepage
-                  (Lighthouse 2026-06-02); buildCdnImageUrl drops it to a few tens of KB. */}
-              <img
-                src={
-                  buildCdnImageUrl(event.themeImageUrl, { w: 768, fit: 'cover' }) ??
-                  event.themeImageUrl
-                }
-                srcSet={
-                  buildCdnImageSrcSet(event.themeImageUrl, [384, 768], { fit: 'cover' }) ??
-                  undefined
-                }
-                sizes="(min-width: 1024px) 384px, (min-width: 768px) 50vw, 100vw"
-                alt={`${event.title} theme image`}
-                className="w-full h-full object-cover"
-                loading="lazy"
-                data-testid="event-card-image"
-              />
-            </div>
-          )}
-
-          <CardHeader>
-            <div className="flex items-start justify-between gap-4 mb-2">
-              {/* Event Code (e.g., BATbern57) */}
-              <Badge
-                variant="outline"
-                className="bg-blue-400/10 text-blue-400 border-blue-400/20 font-mono"
-              >
-                {event.eventCode}
-              </Badge>
-
-              {/* Topic Badge */}
-              {event.topic && typeof event.topic === 'object' && (
-                <Badge className="bg-zinc-800 text-zinc-300" data-testid="event-card-topic">
-                  {event.topic.name}
-                </Badge>
-              )}
-
-              {/* Registration Status Chip (Story 10.10, AC5) */}
-              {myRegistrationStatus && (
-                <Badge
-                  variant="outline"
-                  className={STATUS_CHIP_STYLES[myRegistrationStatus]}
-                  data-testid="event-card-status-chip"
-                >
-                  {tEvents(`eventCard.statusChip.${myRegistrationStatus.toLowerCase()}`)}
-                </Badge>
-              )}
-            </div>
-
-            {/* Event Title */}
-            <CardTitle className="font-light text-xl text-zinc-100" data-testid="event-card-title">
-              {event.title}
-            </CardTitle>
-
-            {/* Date and Venue */}
-            <div className="space-y-1 mt-2">
-              <p className="text-sm text-zinc-400" data-testid="event-card-date">
-                {formattedDate}
-              </p>
-              {event.venueName && <p className="text-sm text-zinc-400">{event.venueName}</p>}
-            </div>
-          </CardHeader>
-
+        <Card className={cardClassName}>
+          {cardHeadAndPreview}
           <CardContent className="space-y-4">
-            {/* Session Preview - Show all sessions */}
-            {displayedSessions.length > 0 && (
-              <div className="space-y-3">
-                <div
-                  className={`grid gap-4 ${viewMode === 'list' ? 'grid-cols-2' : 'grid-cols-1'}`}
-                >
-                  {displayedSessions.map((session, index) => (
-                    <div
-                      key={session.sessionId || session.id || `session-${index}`}
-                      className="border-t border-zinc-800 pt-3 first:border-t-0 first:pt-0"
-                    >
-                      {/* Session Title */}
-                      <p className="text-sm font-medium text-zinc-200 mb-2">{session.title}</p>
-
-                      {/* Speakers with companies */}
-                      {session.speakers && session.speakers.length > 0 ? (
-                        <div
-                          className={`grid gap-6 ${viewMode === 'list' ? 'grid-cols-2' : 'grid-cols-1'}`}
-                        >
-                          {session.speakers.map((speaker, speakerIndex) => (
-                            <SpeakerDisplay
-                              key={speaker.username || `speaker-${index}-${speakerIndex}`}
-                              speaker={speaker}
-                              size="small"
-                              showProfilePicture={true}
-                            />
-                          ))}
-                        </div>
-                      ) : (
-                        <p className="text-xs text-zinc-500">Keine Referenten</p>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Lineup - SPEAKERS phase: who speaks, no talk titles yet */}
-            {lineup.length > 0 && (
-              <div
-                className={`grid gap-6 ${viewMode === 'list' ? 'grid-cols-2' : 'grid-cols-1'}`}
-                data-testid="event-card-lineup"
-              >
-                {lineup.map((speaker) => (
-                  <SpeakerDisplay
-                    key={speaker.username}
-                    speaker={{
-                      username: speaker.username,
-                      firstName: speaker.firstName,
-                      lastName: speaker.lastName,
-                      company: speaker.company,
-                      companyDisplayName: speaker.companyDisplayName,
-                      companyLogoUrl: speaker.companyLogoUrl,
-                      profilePictureUrl: speaker.profilePictureUrl,
-                      bio: null,
-                      presentationTitle: null,
-                      speakerRole: 'PRIMARY_SPEAKER',
-                      isConfirmed: true,
-                    }}
-                    size="small"
-                    showProfilePicture={true}
-                  />
-                ))}
-              </div>
-            )}
-
+            {cardPreview}
             {/* View Details Link */}
             <div className="pt-2 border-t border-zinc-800">
               <span className="text-blue-400 hover:text-blue-300 text-sm font-medium transition-colors">
@@ -239,18 +284,4 @@ export function EventCard({
       </div>
     </Link>
   );
-
-  // Story 7.2: when self-nomination is enabled for this card, render the button below the
-  // card (outside the <Link>, so the button is not a nested interactive element). The panel
-  // is login-gated internally.
-  if (showSelfNominate) {
-    return (
-      <div className={`flex flex-col gap-2 ${viewMode === 'list' ? 'w-full' : ''}`}>
-        {cardLink}
-        <SpeakerSelfNominatePanel eventCode={event.eventCode} topicName={event.topic?.name} />
-      </div>
-    );
-  }
-
-  return cardLink;
 }
