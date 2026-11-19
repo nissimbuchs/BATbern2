@@ -104,6 +104,13 @@ class UserManagementMigrationsTest extends AbstractIntegrationTest {
                 "pref_email_notifications",
                 "pref_qna_notification_frequency"
         );
+        // #1222 items 3/4: the unread preferences were removed from code in one deploy, their
+        // columns in the next (V35)
+        assertThat(prefColumns).doesNotContain(
+                "pref_in_app_notifications",
+                "pref_push_notifications",
+                "pref_notification_frequency"
+        );
     }
 
     @Test
