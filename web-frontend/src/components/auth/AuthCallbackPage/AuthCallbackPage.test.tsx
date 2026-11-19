@@ -6,6 +6,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { AuthCallbackPage } from './AuthCallbackPage';
+import { rememberLoginTarget } from '@/utils/auth/loginTarget';
 
 const mockNavigate = vi.fn();
 vi.mock('react-router-dom', async () => {
@@ -62,6 +63,22 @@ describe('AuthCallbackPage', () => {
       expect(mockNavigate).toHaveBeenCalledWith('/dashboard', { replace: true });
     });
     expect(mockCompleteFederatedSignIn).toHaveBeenCalledTimes(1);
+  });
+
+  it('should_returnToTheRememberedPage_when_federatedSignInSucceeds', async () => {
+    // set by the login page before it left for the Google hosted UI
+    rememberLoginTarget({ from: { pathname: '/', search: '?nominate=BATbern61' } });
+    mockCompleteFederatedSignIn.mockResolvedValue({ kind: 'success' });
+
+    render(
+      <MemoryRouter>
+        <AuthCallbackPage />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(mockNavigate).toHaveBeenCalledWith('/?nominate=BATbern61', { replace: true });
+    });
   });
 
   it('should_navigateToLogin_when_federatedSignInFails', async () => {

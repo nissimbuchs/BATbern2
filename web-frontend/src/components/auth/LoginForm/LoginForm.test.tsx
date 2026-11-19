@@ -6,6 +6,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { takeRememberedLoginTarget } from '@/utils/auth/loginTarget';
 import { LoginForm } from './LoginForm';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { I18nextProvider } from 'react-i18next';
@@ -79,7 +80,10 @@ const mockConfig: AppConfig = {
 // `config` override (Story 12.9) lets a test toggle features.sso to exercise the gated button.
 const renderWithTheme = (
   component: React.ReactElement,
-  { route = '/login', config = mockConfig }: { route?: string; config?: AppConfig } = {}
+  {
+    route = '/login',
+    config = mockConfig,
+  }: { route?: string | { pathname: string; state: unknown }; config?: AppConfig } = {}
 ) => {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
@@ -433,6 +437,26 @@ describe('LoginForm Component', () => {
 
       expect(mockSignInWithFederated).toHaveBeenCalledTimes(1);
       expect(mockSignInWithFederated).toHaveBeenCalledWith('Google');
+    });
+
+    it('should_rememberWhereToReturn_when_googleButtonClicked', async () => {
+      // The hosted UI round trip loses the router state; /auth/callback reads the remembered
+      // target instead (the homepage speaking call, the #1183 D claim link).
+      sessionStorage.clear();
+      const user = userEvent.setup();
+      await act(async () => {
+        renderWithTheme(<LoginForm />, {
+          config: ssoOnConfig,
+          route: {
+            pathname: '/login',
+            state: { from: { pathname: '/', search: '?nominate=BATbern61' } },
+          },
+        });
+      });
+
+      await user.click(await screen.findByRole('button', { name: /continue with google/i }));
+
+      expect(takeRememberedLoginTarget()).toBe('/?nominate=BATbern61');
     });
   });
 

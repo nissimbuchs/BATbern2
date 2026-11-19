@@ -1468,6 +1468,12 @@ Guards: **P** = `ProtectedRoute` (any authenticated role, then the path-prefix c
 **S** = `SpeakerRoute` (speaker role), **Pa** = `PartnerRoute` (organizer or partner),
 **O** = `ProtectedRoute allowedRoles={['organizer']}`. Unmarked routes are public.
 
+**Return after login** (`utils/auth/loginTarget.ts`): a guard or a page that sends the visitor to
+`/login` puts `{ from: location }` into the router state, and the login returns there (internal
+paths only, else `/dashboard`). "Continue with Google" and the sign-up link leave the app and lose
+that state, so the target is kept in `sessionStorage` for that trip (this tab, one hour, checked
+again when read) and taken by `/auth/callback` or by the login after verification.
+
 ```
 # Public website (Tailwind-only, no MUI)
 /                                         # Homepage, current event

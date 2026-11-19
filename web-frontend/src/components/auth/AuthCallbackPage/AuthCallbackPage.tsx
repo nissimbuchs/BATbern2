@@ -15,6 +15,7 @@ import { useAuth } from '@hooks/useAuth';
 import { useOptionalConfig } from '@/contexts/useConfig';
 import { authService } from '@/services/auth/authService';
 import { BATbernLoader } from '@components/shared/BATbernLoader';
+import { takeRememberedLoginTarget } from '@/utils/auth/loginTarget';
 
 // Story 12.8 F6: one-shot guard for the post-link auto-retry (see effect below).
 // sessionStorage so it survives the round-trip to the hosted UI but never leaks across tabs.
@@ -101,7 +102,13 @@ export const AuthCallbackPage: React.FC = () => {
       const outcome = await completeFederatedSignIn();
       // hydrateUserFromDb is awaited inside completeFederatedSignIn, so isAuthenticated
       // and preferences.language are already in state before we navigate.
-      navigate(outcome.kind === 'success' ? '/dashboard' : '/login', { replace: true });
+      // back to the page that sent the visitor to the login (remembered before the hosted UI)
+      navigate(
+        outcome.kind === 'success' ? (takeRememberedLoginTarget() ?? '/dashboard') : '/login',
+        {
+          replace: true,
+        }
+      );
     })();
   }, [config, completeFederatedSignIn, navigate, searchParams]);
 
