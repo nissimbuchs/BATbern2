@@ -80,6 +80,7 @@
         "talkTitle" : "Archived Talk",
         "sessionSlug" : "archived-talk"
       } ],
+      "selfNominationOpen" : false,
       "currentPublishedPhase" : "AGENDA"
     }
   }

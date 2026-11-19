@@ -44,6 +44,7 @@ public class PublicEventShaper {
         dto.setOrganizerUsername(null);
         dto.setUpdatedBy(null);
         dto.setRealAttendeeCount(null);
+        dto.setSelfNominationOpen(event.isSelfNominationOpen());
         return dto;
     }
 
@@ -62,6 +63,7 @@ public class PublicEventShaper {
         dto.setOrganizerUsername(null);
         dto.setUpdatedBy(null);
         dto.setRealAttendeeCount(null);
+        dto.setSelfNominationOpen(event.isSelfNominationOpen());
         return dto;
     }
 

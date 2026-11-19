@@ -164,7 +164,9 @@ so the website never shows an organizer something a visitor would not see.
   sessions. Completed, archived and past events: unfiltered.
 - **What shape:** `PublicEventShaper` derives `speakers[]` from the visible sessions. In the SPEAKERS
   phase it empties the session list and omits talk titles, so the lineup is public before the
-  programme is.
+  programme is. It also sets `selfNominationOpen` from `Event.isSelfNominationOpen()` (topic set,
+  topic phase published), the rule the self-nomination endpoint enforces, so the homepage cards
+  need no phase logic of their own (#1263).
 - `GET /public/events/{code}` returns 404 unless the event is publicly visible.
   `GET /public/events?scope=upcoming|archive` serves the upcoming list and the archive (search,
   topic filter and sort apply to `archive` only).

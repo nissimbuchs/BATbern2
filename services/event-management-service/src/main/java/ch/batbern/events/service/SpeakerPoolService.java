@@ -175,9 +175,7 @@ public class SpeakerPoolService {
         // when the topic is published until the speakers are published. Once the lineup is
         // published (speakers/agenda) the program is set and no further nominations are accepted.
         // Local repository read (events + speaker_pool share one DB), no cross-service call.
-        boolean topicSet = event.getTopicCode() != null && !event.getTopicCode().isBlank();
-        boolean topicPhaseOpen = "topic".equalsIgnoreCase(event.getCurrentPublishedPhase());
-        if (!topicSet || !topicPhaseOpen) {
+        if (!event.isSelfNominationOpen()) {
             throw new ch.batbern.events.exception.SelfNominationNotAllowedException(
                     "Self-nomination is not open for " + eventCode
                             + " — it is only open while the topic is published and before the "
