@@ -213,8 +213,18 @@ public class LoggingUtils {
         return "***";
     }
 
+    // Letters, digits and combining marks of any script: CUMS stores IDN addresses (x@müller.ch, also
+    // in NFD form), which an ASCII-only class left in clear text. '*' is in no class, so a masked
+    // a***@x.ch never matches again. Linear on any input (it runs on every log line, under the
+    // appender lock): the lookbehind starts a match only at the beginning of a run of local-part
+    // characters, and the local part (64) and each domain label (63) are bounded as in RFC 5321, so a
+    // long token, or a long %-encoded one where every '%' opens a new run, is not rescanned per position.
+    // At most 10 labels after the first: an unbounded group repetition recursed per label and threw
+    // StackOverflowError on "a@b.b.b.…" (8 K labels) inside the log call.
+    private static final String WORD = "\\p{L}\\p{N}\\p{M}";
     private static final java.util.regex.Pattern ADDRESS_IN_TEXT = java.util.regex.Pattern.compile(
-            "([A-Za-z0-9._+-])[A-Za-z0-9._%+-]*(@|%40)([A-Za-z0-9-]+(?:\\.[A-Za-z0-9-]+)*\\.[A-Za-z]{2,})");
+            "(?<![" + WORD + "._+-])([" + WORD + "._+-])[" + WORD + "._%+-]{0,63}(@|%40)"
+                    + "([" + WORD + "-]{1,63}(?:\\.[" + WORD + "-]{1,63}){0,9}\\.[\\p{L}\\p{M}]{2,63})");
 
     /**
      * Every address inside free text masked ({@code a***@example.ch}): URL paths and query strings

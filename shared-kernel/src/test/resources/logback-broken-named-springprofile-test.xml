@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- LogbackConfigUnderTest: a real error whose text mentions "springProfile" (CUMS has a context
+     property of that name) must still fail the load. -->
+<configuration>
+    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+    <include resource="ch/batbern/shared/logging/email-masking-conversion-rules.xml"/>
+    <include resource="org/springframework/boot/logging/logback/console-appender.xml"/>
+    <appender name="springProfile" class="ch.batbern.missing.springProfile"/>
+    <logger name="ch.batbern.broken">
+        <appender-ref ref="springProfile"/>
+    </logger>
+    <root level="INFO">
+        <appender-ref ref="CONSOLE"/>
+    </root>
+</configuration>

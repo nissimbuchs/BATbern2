@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    #1202: masks every e-mail address once, in the encoder, for the plain-text console line of
+    Spring Boot (EMS, PCS). Include it AFTER org/springframework/boot/logging/logback/defaults.xml
+    and BEFORE the appender: it replaces the converters behind the words CONSOLE_LOG_PATTERN uses
+    for the message (%m) and the exception (%wEx, Spring Boot's default
+    LOG_EXCEPTION_CONVERSION_WORD), so the line keeps its shape and only the addresses change.
+    The JSON services (gateway, CUMS) use ch.batbern.shared.logging.EmailValueMasker instead.
+-->
+<included>
+    <conversionRule conversionWord="m" class="ch.batbern.shared.logging.EmailMaskingMessageConverter"/>
+    <conversionRule conversionWord="msg" class="ch.batbern.shared.logging.EmailMaskingMessageConverter"/>
+    <conversionRule conversionWord="message" class="ch.batbern.shared.logging.EmailMaskingMessageConverter"/>
+    <conversionRule conversionWord="wEx" class="ch.batbern.shared.logging.EmailMaskingThrowableConverter"/>
+</included>

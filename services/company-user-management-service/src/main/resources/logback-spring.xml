@@ -28,6 +28,12 @@
 
             <!-- Timestamp format -->
             <timestampPattern>yyyy-MM-dd'T'HH:mm:ss.SSSX</timestampPattern>
+
+            <!-- #1202: every string value (message, arguments, stack_trace, MDC) with e-mail
+                 addresses masked, once, here; field names stay. -->
+            <decorator class="net.logstash.logback.mask.MaskingJsonGeneratorDecorator">
+                <valueMasker class="ch.batbern.shared.logging.EmailValueMasker"/>
+            </decorator>
         </encoder>
     </appender>
 

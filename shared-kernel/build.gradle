@@ -76,6 +76,11 @@ dependencies {
     // Logging
     implementation 'org.slf4j:slf4j-api'
     implementation 'ch.qos.logback:logback-classic'
+    // #1202: EmailValueMasker implements logstash's ValueMasker. implementation, not compileOnly:
+    // every class of the shared kernel must load in every service (EMS's ScheduledZoneGuardTest loads
+    // them all and failed on the masker without the encoder). Gateway, CUMS and PCS declare it anyway;
+    // Jackson 3, which it needs, is already on every service's runtime classpath (Spring Boot 4).
+    implementation 'net.logstash.logback:logstash-logback-encoder:9.0'
 
     // Database
     implementation 'org.postgresql:postgresql' // BOM-managed (#1231)

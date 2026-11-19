@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- LogbackConfigUnderTest: Spring's own elements are skipped by plain Joran and tolerated. -->
+<configuration>
+    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+    <include resource="ch/batbern/shared/logging/email-masking-conversion-rules.xml"/>
+    <springProperty scope="context" name="springProfile" source="spring.profiles.active"/>
+    <springProfile name="local">
+        <logger name="ch.batbern" level="INFO"/>
+    </springProfile>
+    <include resource="org/springframework/boot/logging/logback/console-appender.xml"/>
+    <root level="INFO">
+        <appender-ref ref="CONSOLE"/>
+    </root>
+</configuration>

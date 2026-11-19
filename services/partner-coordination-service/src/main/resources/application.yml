@@ -148,7 +148,11 @@ logging:
     # INFO: production runs this base document (+ staging); Security DEBUG logs every request URL (#1184).
     org.springframework.security: INFO
   pattern:
-    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+    # %wEx at the end (#1202): without a throwable word logback appends its plain
+    # ThrowableProxyConverter, which does not mask, so stack traces and "Caused by:" lines reached
+    # CloudWatch with addresses. %wEx is the masking converter of logback-spring.xml; the message
+    # line itself is unchanged.
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n%wEx"
     file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
 
 # SpringDoc OpenAPI Configuration

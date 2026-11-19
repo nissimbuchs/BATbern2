@@ -73,11 +73,25 @@ mappings:
       - "docs/architecture/08-operations-security.md"
       - "docs/architecture/06-backend-architecture.md"
 
+  # ── Deploy workflow (#1144) ──────────────────────────────────────────────────
+  - source_pattern: ".github/workflows/deploy-staging.yml"
+    docs:
+      - "docs/deployment/cicd-pipeline-guide.md"
+
   # ── Shared Kernel ────────────────────────────────────────────────────────────
   - source_pattern: "shared-kernel/"
     docs:
       - "docs/architecture/06-backend-architecture.md"
       - "docs/architecture/06a-workflow-state-machines.md"
+
+  # ── Log masking (#1202) ──────────────────────────────────────────────────────
+  # The encoder-level e-mail masking and its one rule; described in "E-mail addresses in logs".
+  - source_pattern: "shared-kernel/src/main/java/ch/batbern/shared/logging/"
+    docs:
+      - "docs/architecture/08-operations-security.md"
+  - source_pattern: "shared-kernel/src/main/resources/ch/batbern/shared/logging/"
+    docs:
+      - "docs/architecture/08-operations-security.md"
 
   # ── Search (Story 17.17) ─────────────────────────────────────────────────────
   # The fold, the term parser and every search specification: the field sets and semantics
