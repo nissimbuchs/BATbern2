@@ -11,6 +11,11 @@
             <includeMdc>true</includeMdc>
             <includeContext>true</includeContext>
             <customFields>{"application":"${applicationName}","environment":"${environment}"}</customFields>
+            <!-- #1202: every string value (message, arguments, stack_trace, MDC) with e-mail
+                 addresses masked, once, here; field names stay. -->
+            <decorator class="net.logstash.logback.mask.MaskingJsonGeneratorDecorator">
+                <valueMasker class="ch.batbern.shared.logging.EmailValueMasker"/>
+            </decorator>
         </encoder>
     </appender>
 

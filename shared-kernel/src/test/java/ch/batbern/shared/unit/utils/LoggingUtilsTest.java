@@ -7,10 +7,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Nested;
 import org.slf4j.MDC;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 
 class LoggingUtilsTest {
 
@@ -314,6 +316,55 @@ class LoggingUtilsTest {
                     .isEqualTo("Email 'x***@sub.example.org' is already registered, also b***@example.net");
             assertThat(LoggingUtils.maskEmailsIn("/api/v1/events/BATbern60/sessions")).isEqualTo("/api/v1/events/BATbern60/sessions");
             assertThat(LoggingUtils.maskEmailsIn(null)).isNull();
+        }
+
+        @Test
+        @DisplayName("should mask an address with an IDN domain (CUMS stores x@müller.ch)")
+        void should_maskEmailsIn_when_domainIsInternationalized() {
+            assertThat(LoggingUtils.maskEmailsIn("Duplicate key: anna.meier@müller.ch"))
+                    .isEqualTo("Duplicate key: a***@müller.ch");
+            assertThat(LoggingUtils.maskEmailsIn("to jürg@bücher.example.ch and x@b.ch"))
+                    .isEqualTo("to j***@bücher.example.ch and x***@b.ch");
+        }
+
+        @Test
+        @DisplayName("should mask an address written with combining marks (NFD umlauts)")
+        void should_maskEmailsIn_when_textIsDecomposed() {
+            // "jürg@müller.ch" in NFD: u + U+0308 COMBINING DIAERESIS, as macOS and some mail clients send it.
+            assertThat(LoggingUtils.maskEmailsIn("to ju\u0308rg@mu\u0308ller.ch"))
+                    .isEqualTo("to j***@mu\u0308ller.ch");
+            assertThat(LoggingUtils.maskEmailsIn("to x@mu\u0308ller.ch")).isEqualTo("to x***@mu\u0308ller.ch");
+        }
+
+        @Test
+        @DisplayName("should mask an address behind a percent-encoded quote")
+        void should_maskEmailsIn_when_precededByPercentEncoding() {
+            assertThat(LoggingUtils.maskEmailsIn("q=%22anna@example.ch%22")).doesNotContain("anna@");
+        }
+
+        @Test
+        @DisplayName("should stay linear on a long token without an address (runs on every log line)")
+        void should_finishQuickly_when_longTokenPrecedesAnAt() {
+            // Measured before the fix: a 16 KB token + '@' took ~1.45 s per line (each start position
+            // rescanned the run), under the ConsoleAppender lock.
+            String run = "a".repeat(16_384) + "@";
+            String encoded = "%20x".repeat(4_096) + "@";
+            String domainless = "a@" + "b".repeat(16_384);
+            String dotted = "a@" + "b.".repeat(8_192) + "1";
+            assertTimeoutPreemptively(Duration.ofMillis(200), () -> {
+                assertThat(LoggingUtils.maskEmailsIn(run)).isEqualTo(run);
+                assertThat(LoggingUtils.maskEmailsIn(encoded)).isEqualTo(encoded);
+                assertThat(LoggingUtils.maskEmailsIn(domainless)).isEqualTo(domainless);
+                assertThat(LoggingUtils.maskEmailsIn(dotted)).isEqualTo(dotted);
+            });
+        }
+
+        @Test
+        @DisplayName("should leave already masked text as it is (the encoder masks again)")
+        void should_beIdempotent_when_textIsAlreadyMasked() {
+            String once = LoggingUtils.maskEmailsIn("a.b@example.ch, c%40example.org, jürg@bücher.ch");
+            assertThat(once).isEqualTo("a***@example.ch, c***%40example.org, j***@bücher.ch");
+            assertThat(LoggingUtils.maskEmailsIn(once)).isEqualTo(once);
         }
 
         @Test

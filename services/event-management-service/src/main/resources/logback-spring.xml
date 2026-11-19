@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    #1202: Spring Boot's default console logging, with every e-mail address masked once, in the
+    encoder (message, arguments, exception messages, Caused by: lines).
+
+    This is the configuration Spring Boot builds programmatically when a service has no logback
+    file (defaults.xml + console-appender.xml + root INFO on CONSOLE), plus the shared masking
+    rules from the shared kernel between the two includes. The line keeps its shape (the
+    CONSOLE_LOG_PATTERN of defaults.xml, %m and %wEx included): CloudWatch queries and the metric
+    filters of ecs-service-alarms.ts match literal markers inside the message.
+
+    Levels stay in application.yml / application.properties (logging.level.*); a <logger> here
+    would be inert or, worse, keep a level the properties cannot override (#990, #1184).
+-->
+<configuration>
+    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+    <include resource="ch/batbern/shared/logging/email-masking-conversion-rules.xml"/>
+    <include resource="org/springframework/boot/logging/logback/console-appender.xml"/>
+    <root level="INFO">
+        <appender-ref ref="CONSOLE"/>
+    </root>
+</configuration>

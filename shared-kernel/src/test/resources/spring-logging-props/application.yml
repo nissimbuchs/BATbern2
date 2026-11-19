@@ -1,0 +1,23 @@
+spring:
+  application:
+    name: fixture
+logging:
+  pattern:
+    console: "%d - %msg%n"
+  exception-conversion-word: "%wEx"
+---
+spring:
+  config:
+    activate:
+      on-profile: staging
+logging:
+  pattern:
+    level: "%5p [staging]"
+---
+spring:
+  config:
+    activate:
+      on-profile: local
+logging:
+  pattern:
+    console: "LOCAL ONLY %m%n"

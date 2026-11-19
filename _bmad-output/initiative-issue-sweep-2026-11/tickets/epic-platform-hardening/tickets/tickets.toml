@@ -1,0 +1,47 @@
+# Stories of epic-platform-hardening, in build order. One PR for the whole epic (initiative C2); each story is one commit or a few.
+
+[[entry]]
+id = 1
+type = "story"
+title = "The unread notification preference columns are dropped"
+description = "A new CUMS migration drops pref_in_app_notifications, pref_push_notifications and pref_notification_frequency from user_profiles (or wherever they live); epic 1 story 4 removed every use and is live, so old tasks no longer read them. UserManagementMigrationsTest asserts them absent."
+verify = "The migration test finds the three columns absent; the CUMS suite and the provider contract tests pass; after deploy CUMS starts with the new Flyway version."
+covers = ["R27"]
+after = []
+hitl = false
+risk = "low"
+notes = ["Owner 2026-11-15: the drop ships in epic 2, one deploy after the code stopped using the columns (#1308/#1309 pattern)."]
+
+[[entry]]
+id = 2
+type = "story"
+title = "No dependency is pinned below the Spring Boot BOM"
+description = "Removes the explicit versions of postgresql (build.gradle buildscript and runtimeOnly, shared-kernel), guava and the httpcore5 pin wherever they sit, so the Spring Boot BOM manages them; every other explicit version of a BOM-managed artifact is audited the same way. Deletes the stale EventBridge comment in SharedObjectMapperConfig (#1254, owner kept the mapper as is)."
+verify = "The resolved versions (gradle dependencyInsight) equal the BOM's for every formerly pinned artifact; a Trivy rootfs scan of the built jars shows none of the 28 HIGH findings of #1231; all Java suites pass."
+covers = ["R11"]
+after = []
+hitl = false
+risk = "medium"
+
+[[entry]]
+id = 3
+type = "story"
+title = "No e-mail address reaches CloudWatch from any service"
+description = "Masks address-shaped strings once in the log encoder of every service (gateway, EMS, CUMS, PCS): message, arguments and stack trace, via a masking component in shared-kernel used by the JSON and the plain-text log configs; a test per service logs an address through its real logback config and finds it masked. Every CloudWatch metric filter and Logs Insights query in infrastructure still matches the rendered lines."
+verify = "A per-service test through the real logback config shows message, argument and stack-trace addresses masked; a test renders the GATEWAY_API_REQUEST and every other metric-filter line and matches it against the filter patterns from the CDK templates; after deploy each metric filter still counts and a Logs Insights search for address shapes over the first hour finds none."
+covers = ["R12"]
+after = []
+hitl = false
+risk = "high"
+
+[[entry]]
+id = 4
+type = "story"
+title = "The latency alarm stays quiet during a deploy, the availability alarm needs volume"
+description = "The deploy job switches the actions of alb-latency-p95 off before the service rollout and back on after it (also on failure), with the IAM grant for the CI role; the availability alarm gets a minimum request volume as the latency alarm has; alb-5xx keeps reporting single errors."
+verify = "CDK tests show the availability expression with the minimum volume and alb-5xx unchanged; the workflow re-enables the actions in an always() step; a replay of the last 30 days of production metrics through the new availability rule shows which past firings it would keep."
+covers = ["R24"]
+after = []
+hitl = false
+risk = "medium"
+notes = ["#1144 recommendation taken: suppression in the deploy job (no lost signal outside deploys) plus a minimum volume."]

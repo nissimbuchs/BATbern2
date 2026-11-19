@@ -135,8 +135,38 @@ text, not arguments. Fixed:
 - **Guard gaps.** The scan now also covers `LOG.`, `logger.`, `LOGGER.` and camel-case names
   (`normalizedEmail`).
 
-Not covered yet: an exception message elsewhere that contains an address, and stack traces. The
-class fix is masking in the log encoder for all services (#1202, planned for the week after BATbern60).
+**Masked in the encoder (#1202).** Since then every service also masks once, where the line is
+written, so an address in an exception message, a `Caused by:` line, a framework line or an argument
+that no call site masked does not reach CloudWatch either. One rule for all: `LoggingUtils.maskEmailsIn`
+(idempotent, so a call site that already masked stays `a***@example.ch`; it also covers `%40` and IDN
+domains such as `x@müller.ch`).
+- **JSON services (gateway, CUMS).** The `LogstashEncoder` in `logback-spring.xml` carries a
+  `MaskingJsonGeneratorDecorator` with `ch.batbern.shared.logging.EmailValueMasker`: every string
+  value (message, arguments, `stack_trace`, MDC) is masked, field names stay.
+- **Plain-text services (EMS, PCS).** Their `logback-spring.xml` is Spring Boot's console logging
+  (`defaults.xml` + `console-appender.xml`) with
+  `ch/batbern/shared/logging/email-masking-conversion-rules.xml` included between the two. It
+  replaces the converters behind `%m`/`%msg` (`EmailMaskingMessageConverter`) and `%wEx`
+  (`EmailMaskingThrowableConverter`), so the line keeps its shape and only the addresses change.
+  EMS renders Spring Boot's default line. PCS renders its own `logging.pattern.console`
+  (`%d{yyyy-MM-dd HH:mm:ss} - %msg%n%wEx`); the `%wEx` was added by #1202, because a pattern
+  without a throwable word makes logback append its plain `ThrowableProxyConverter`, which does not
+  mask. Any `logging.pattern.console` must end in `%wEx`.
+- **The metric filters still match.** The masks touch only the address, never the literal terms
+  the CloudWatch metric filters look for (`GATEWAY_API_REQUEST`, `@timestamp`, `clientError=true`,
+  `DOMAIN_EVENT_LISTENER_FAILED`, `SCHEDULED_JOB_FAILED`).
+- **Tests.** `LogEncoderMaskingTest` in each service loads that service's real `logback-spring.xml`
+  with the `logging.pattern.*` of its real `application.yml`/`.properties` (base and `staging`
+  documents, what production runs), through `LogbackConfigUnderTest` in the shared-kernel test
+  fixtures: a logger context of its own; any logback configuration problem, and any pattern whose
+  converter chain renders the message or an exception without masking, fails the test. It checks
+  message, argument and exception masking, plus the metric-filter terms for the gateway, EMS and PCS.
+- **Cost.** The rule runs on every line under the appender lock, so it is linear on any input: a
+  match starts only at the beginning of a run of address characters, and the local part (64) and the
+  domain labels (63, at most 11) are bounded.
+
+The call-site masking above stays: it is what keeps an address out of a line that is not written
+through these encoders (local tools, test output), and `LogAddressGuardTest` keeps guarding it.
 
 ### AI / LLM Security (OWASP-LLM, Story 15.9)
 - The AI surface lives in `event-management-service` (event description, theme image, abstract
@@ -430,7 +460,7 @@ line 422 for `ApiGatewayServiceStack`).
 
 | Watched | Alarms | Defined in |
 |---|---|---|
-| ALB (platform ingress) | `alb-5xx`, `alb-latency-p95`, `alb-availability`, `alb-unhealthy-targets` | `AlbAlarms`, instantiated by `ApiGatewayServiceStack` |
+| ALB (platform ingress) | `alb-5xx` (reports single errors), `alb-latency-p95` (actions disabled by `deploy-staging.yml` from the first service rollout of a deploy or auto-rollback until an `always()` step re-enables them, after resetting an alarm that fired while muted to OK, #1144), `alb-availability` (ratio below 99.9% only at 100+ requests per 5 minutes, `alarms.availabilityMinRequests` in `staging-config.ts`, #1144), `alb-unhealthy-targets` | `AlbAlarms`, instantiated by `ApiGatewayServiceStack` |
 | Gateway API surface | `api-4xx-ratio`: share of authenticated `/api/` requests answered 4xx, gateway-local and downstream alike (downstream counted since #1313), over 50% for 3 of 3 periods at 10+ requests | `AlbAlarms`, fed by MetricFilters over the api-gateway log group |
 | ECS, per service ×6 | `{Service}-High-CPU`, `-High-Memory`, `-Task-Failures`, `-OOM-Kills` | `EcsServiceAlarms`, instantiated by each service stack |
 | Swallowed domain-event listener failures, EMS, CUMS, PCS | `{Service}-Event-Listener-Failures`: any line with the marker `DOMAIN_EVENT_LISTENER_FAILED` in 5 minutes. Log based (MetricFilter on the service log group, metric `BATbern/DomainEvents ListenerFailures-{Service}`), because no service exports Micrometer metrics to CloudWatch | `EcsServiceAlarms` with `serviceLogGroup`, instantiated by each of the three service stacks |

@@ -153,13 +153,15 @@ jobs:
           fi
 
           # Check for infrastructure changes (requires full deployment)
+          # `lib/config` holds per-environment settings (alarm thresholds, capacity); without
+          # it a config-only change was classified code-only and never deployed (#1144).
           # Note: the `lambda` alternation (no `lib/` prefix) catches
           # `infrastructure/lambda/**` (e.g. the former email-forwarder) and the other
           # standalone Lambdas that live outside `infrastructure/lib/`.
           # Without it, a pure-Lambda-code change is classified as
           # code-only, deploy chooses fast-path, Lambda is never
           # republished. See 2026-05-22 Story 10.32 post-merge incident.
-          if echo "$CHANGED_FILES" | grep -qE "^infrastructure/(lib/stacks|lib/lambda|lib/constructs|bin|lambda)/|^infrastructure/package"; then
+          if echo "$CHANGED_FILES" | grep -qE "^infrastructure/(lib/stacks|lib/lambda|lib/constructs|lib/config|bin|lambda)/|^infrastructure/package"; then
             echo "✓ Infrastructure code changes detected - will deploy all stacks"
             INFRASTRUCTURE_CHANGED=true
             echo "infrastructure=true" >> $GITHUB_OUTPUT
@@ -394,6 +396,14 @@ jobs:
 
           echo "code_only=$CODE_ONLY" >> $GITHUB_OUTPUT
 
+      # #1144: alb-latency-p95 flapped through every rolling deploy (JVM warmup of each
+      # replaced task). Its actions are off from the first service rollout until the
+      # always() step after the last one (scripts/ci/latency-alarm-actions.sh).
+      - name: Silence latency alarm during fast-path rollout
+        if: steps.deployment-strategy.outputs.code_only == 'true'
+        continue-on-error: true
+        run: ./scripts/ci/latency-alarm-actions.sh disable "${{ env.ENVIRONMENT }}"
+
       - name: Fast-path code deployment
         if: steps.deployment-strategy.outputs.code_only == 'true'
         run: |
@@ -616,6 +626,14 @@ jobs:
         with:
           role-to-assume: arn:aws:iam::188701360969:role/batbern-staging-github-actions-role
           aws-region: ${{ env.AWS_REGION }}
+
+      # #1144: alb-latency-p95 flapped through every rolling deploy (JVM warmup of each
+      # replaced task). Its actions are off from the first service rollout until the
+      # always() step after the last one (scripts/ci/latency-alarm-actions.sh).
+      - name: Silence latency alarm during service rollout
+        if: steps.deployment-strategy.outputs.code_only != 'true'
+        continue-on-error: true
+        run: ./scripts/ci/latency-alarm-actions.sh disable "${{ env.ENVIRONMENT }}"
 
       # Pre-deploy application stacks that consume Storage exports before updating Storage.
       # When a cross-stack CDK reference is removed (e.g. EventManagement stops importing
@@ -967,26 +985,28 @@ jobs:
 
       - name: Wait for ECS services to stabilize
         if: steps.deployment-strategy.outputs.code_only != 'true'
-        run: |
-          if aws ecs describe-clusters --clusters batbern-staging --region ${{ env.AWS_REGION }} 2>/dev/null; then
-            services=(
-              "event-management-service"
-              "partner-coordination-service"
-              "company-user-management-service"
-            )
+        # All four services by their real names (BATbern-staging-<Service>-Service<hash>); the
+        # inline version asked for `event-management-service` etc., which ECS reports as
+        # MISSING, so it waited for nothing and never covered the API gateway.
+        run: ./scripts/ci/wait-ecs-services-stable.sh "${{ env.ENVIRONMENT }}"
 
-            for service in "${services[@]}"; do
-              if aws ecs describe-services --cluster batbern-staging --services ${service} --region ${{ env.AWS_REGION }} 2>/dev/null | grep -q "ACTIVE"; then
-                echo "Waiting for $service to stabilize..."
-                aws ecs wait services-stable \
-                  --cluster batbern-staging \
-                  --services ${service} \
-                  --region ${{ env.AWS_REGION }} || echo "::warning::Service ${service} not found or not stable"
-              fi
-            done
-          else
-            echo "::warning::ECS cluster batbern-staging not found yet"
-          fi
+      # #1144: re-enable after the last rollout, also when the deploy failed or was cancelled,
+      # so the latency alarm can never stay mute. Fresh credentials first: the layered path
+      # outlives the role session and a failed run skips the ordinary re-auth steps.
+      - name: Re-authenticate before re-enabling latency alarm
+        if: always()
+        continue-on-error: true
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::188701360969:role/batbern-staging-github-actions-role
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Re-enable latency alarm
+        if: always()
+        continue-on-error: true
+        # Resets the alarm to OK first if it went to ALARM while muted (actions fire on state
+        # changes only), so a breach that persists past the rollout still mails.
+        run: ./scripts/ci/latency-alarm-actions.sh enable "${{ env.ENVIRONMENT }}"
 
       - name: Verify SES IAM permissions (simulate-principal-policy)
         if: steps.deployment-strategy.outputs.code_only != 'true'
@@ -1418,6 +1438,11 @@ jobs:
           role-to-assume: arn:aws:iam::188701360969:role/batbern-staging-github-actions-role
           aws-region: ${{ env.AWS_REGION }}
 
+      # #1144: the rollback rolls services too; mute alb-latency-p95 for it like the deploy does.
+      - name: Silence latency alarm during rollback
+        continue-on-error: true
+        run: ./scripts/ci/latency-alarm-actions.sh disable "${{ env.ENVIRONMENT }}"
+
       - name: Roll back to staging-stable
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
@@ -1473,6 +1498,25 @@ jobs:
           else
             echo "::warning::Could not resolve CloudFront distribution id (export staging-FrontendDistributionId) — frontend restored but cache not invalidated"
           fi
+
+      # rollback-deployment.sh only registers the new task definitions; wait for the services
+      # to settle before the latency alarm speaks again.
+      - name: Wait for ECS services to stabilize after rollback
+        if: always()
+        run: ./scripts/ci/wait-ecs-services-stable.sh "${{ env.ENVIRONMENT }}"
+
+      - name: Re-authenticate before re-enabling latency alarm
+        if: always()
+        continue-on-error: true
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::188701360969:role/batbern-staging-github-actions-role
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Re-enable latency alarm
+        if: always()
+        continue-on-error: true
+        run: ./scripts/ci/latency-alarm-actions.sh enable "${{ env.ENVIRONMENT }}"
 
       - name: Notify rollback
         if: always()

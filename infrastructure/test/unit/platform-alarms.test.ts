@@ -4,6 +4,12 @@ import * as logs from 'aws-cdk-lib/aws-logs';
 import * as sns from 'aws-cdk-lib/aws-sns';
 import { EcsServiceAlarms } from '../../lib/constructs/ecs-service-alarms';
 import { AlbAlarms } from '../../lib/constructs/alb-alarms';
+import * as ec2 from 'aws-cdk-lib/aws-ec2';
+import * as ecs from 'aws-cdk-lib/aws-ecs';
+import * as cognito from 'aws-cdk-lib/aws-cognito';
+import { ApiGatewayServiceStack } from '../../lib/stacks/api-gateway-service-stack';
+import { stagingConfig } from '../../lib/config/staging-config';
+import { EnvironmentConfig } from '../../lib/config/environment-config';
 
 /**
  * Issue #970: the nine alarms produced by AlarmConstruct had never evaluated a single
@@ -103,13 +109,16 @@ describe('Platform alarms (#970)', () => {
     const albFullName = 'app/BATber-Servi-XlmJ3ScSHcvA/1234567890abcdef';
     const tgFullName = 'targetgroup/BATbe-Targe-ABCDEF/abcdef1234567890';
 
-    const withAlb = (opts: { logGroup?: boolean } = {}) => {
+    const withAlb = (
+      opts: { logGroup?: boolean; thresholds?: { availabilityMinRequests?: number } } = {}
+    ) => {
       const { stack, topic } = makeStack();
       new AlbAlarms(stack, 'AlbAlarms', {
         environment: 'staging',
         loadBalancerFullName: albFullName,
         targetGroupFullName: tgFullName,
         alarmTopic: topic,
+        thresholds: opts.thresholds,
         apiGatewayLogGroup: opts.logGroup
           ? new logs.LogGroup(stack, 'GatewayLogGroup', {
               logGroupName: '/aws/ecs/BATbern-staging/api-gateway',
@@ -230,6 +239,44 @@ describe('Platform alarms (#970)', () => {
             Expression: Match.stringLikeRegexp('IF\\(.*requests.*'),
           }),
         ]),
+      });
+    });
+
+    // #1144: at ~40 requests per 5 minutes a single 500 drops the ratio below 99.9 %, so
+    // the alarm fired on lone night-time errors (8 OK->ALARM transitions in 30 days).
+    // Replayed over 30 days of production metrics: a floor of 100 requests leaves exactly
+    // one firing (2026-10-26 09:15, 49 5xx in 38,539 requests), the real outage. Single
+    // errors stay visible through alb-5xx.
+    const availabilityExpression = (template: Template): string => {
+      const alarms = Object.values(template.findResources('AWS::CloudWatch::Alarm')).filter(
+        (r) => r.Properties?.AlarmName === 'batbern-staging-alb-availability'
+      );
+      expect(alarms).toHaveLength(1);
+      const metrics = alarms[0].Properties.Metrics as Array<{ Expression?: string }>;
+      return metrics.find((m) => m.Expression)?.Expression ?? '';
+    };
+
+    test('should_requireMinimumVolume_when_availabilityAlarmCreated', () => {
+      expect(availabilityExpression(withAlb())).toBe(
+        'IF(requests >= 100, (1 - (target5xx + elb5xx) / requests) * 100, 100)'
+      );
+    });
+
+    test('should_respectAvailabilityMinRequestsOverride_when_provided', () => {
+      expect(
+        availabilityExpression(withAlb({ thresholds: { availabilityMinRequests: 250 } }))
+      ).toBe('IF(requests >= 250, (1 - (target5xx + elb5xx) / requests) * 100, 100)');
+    });
+
+    test('should_keepServerErrorAlarmUnchanged_when_availabilityGetsVolumeFloor', () => {
+      // alb-5xx is what still reports single errors; the volume floor must not reach it.
+      withAlb().hasResourceProperties('AWS::CloudWatch::Alarm', {
+        AlarmName: 'batbern-staging-alb-5xx',
+        Threshold: 10, // environment 'staging' without isProduction: the non-prod default
+        EvaluationPeriods: 2,
+        DatapointsToAlarm: 2,
+        ComparisonOperator: 'GreaterThanThreshold',
+        Metrics: Match.arrayWith([Match.objectLike({ Expression: 'target5xx + elb5xx' })]),
       });
     });
 
@@ -360,6 +407,62 @@ describe('Platform alarms (#970)', () => {
         .filter(([, r]) => !r.Properties?.AlarmActions || !r.Properties?.OKActions)
         .map(([logicalId]) => logicalId);
       expect(missing).toEqual([]);
+    });
+  });
+
+  describe('Availability volume floor from the environment config (#1144)', () => {
+    // The floor is an environment setting (lib/config/*-config.ts), not a constant buried in
+    // the construct: the gateway stack must pass it through.
+    const availabilityExpressionFor = (config: EnvironmentConfig): string => {
+      const previousTag = process.env.IMAGE_TAG;
+      process.env.IMAGE_TAG = 'test-tag';
+      try {
+        const app = new App();
+        const env = { account: '123456789012', region: 'eu-central-1' };
+        const support = new Stack(app, 'Support', { env });
+        const vpc = new ec2.Vpc(support, 'Vpc', { maxAzs: 2 });
+        const cluster = new ecs.Cluster(support, 'Cluster', { vpc });
+        const dbSg = new ec2.SecurityGroup(support, 'DbSg', { vpc });
+        const userPool = new cognito.UserPool(support, 'Pool');
+        const userPoolClient = userPool.addClient('Client');
+        const alarmTopic = new sns.Topic(support, 'AlarmTopic');
+
+        const stack = new ApiGatewayServiceStack(app, 'TestApiGatewayService', {
+          config,
+          env,
+          cluster,
+          vpc,
+          databaseSecurityGroup: dbSg,
+          userPool,
+          userPoolClient,
+          alarmTopic,
+        });
+
+        const alarms = Object.values(
+          Template.fromStack(stack).findResources('AWS::CloudWatch::Alarm')
+        ).filter((r) => r.Properties?.AlarmName === `batbern-${config.envName}-alb-availability`);
+        expect(alarms).toHaveLength(1);
+        const metrics = alarms[0].Properties.Metrics as Array<{ Expression?: string }>;
+        return metrics.find((m) => m.Expression)?.Expression ?? '';
+      } finally {
+        if (previousTag === undefined) {
+          delete process.env.IMAGE_TAG;
+        } else {
+          process.env.IMAGE_TAG = previousTag;
+        }
+      }
+    };
+
+    test('should_setAvailabilityMinRequestsTo100_when_stagingConfig', () => {
+      expect(stagingConfig.alarms?.availabilityMinRequests).toBe(100);
+    });
+
+    test('should_passConfiguredFloorToAvailabilityAlarm_when_gatewayStackBuilt', () => {
+      const config: EnvironmentConfig = {
+        ...stagingConfig,
+        alarms: { ...stagingConfig.alarms, availabilityMinRequests: 150 },
+      };
+      expect(availabilityExpressionFor(config)).toMatch(/^IF\(requests >= 150, /);
     });
   });
 });

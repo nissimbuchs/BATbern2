@@ -62,6 +62,12 @@ export const stagingConfig: EnvironmentConfig = {
     authCertificateArn:
       'arn:aws:acm:us-east-1:188701360969:certificate/a3efe1f4-fab4-4e42-b7e8-9d4c70af6891', // Pre-created for auth.batbern.ch (Cognito hosted-UI custom domain, Story 12.9 DF-1)
   },
+  alarms: {
+    // #1144: at ~40 requests per 5 minutes one 500 broke 99.9 %. Replayed over 30 days of
+    // production ALB metrics (2026-11-19): 100 keeps the one real outage (2026-10-26, 49 5xx
+    // in 38,539 requests) and drops the three lone errors. alb-5xx still reports those.
+    availabilityMinRequests: 100,
+  },
   tags: {
     Environment: 'production',
     Project: 'BATbern',

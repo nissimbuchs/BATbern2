@@ -202,6 +202,33 @@ Practical consequences:
   monthly batch (`dependabot-batch-merge.yml`, #1076) collects the green ones into
   `deps/batch-YYYY-MM`, and one person-opened PR from that branch is the month's single deploy.
 
+#### The latency alarm is muted while the services roll (#1144)
+
+`batbern-staging-alb-latency-p95` used to mail through every rolling deploy (JVM warmup of each
+replaced task, about 45 minutes and 22 mails). Every job that rolls ECS services now mutes it with
+`scripts/ci/latency-alarm-actions.sh`:
+
+| Job | Muted before | Re-enabled after |
+|---|---|---|
+| `deploy-to-staging`, fast path | `Fast-path code deployment` | `Wait for in-progress CloudFormation stacks` |
+| `deploy-to-staging`, layered and selective | `Pre-deploy EventManagement` (layered) or the first `Selective Deploy` | `Wait for ECS services to stabilize` |
+| `rollback-on-test-failure` | `Roll back to staging-stable` | `Wait for ECS services to stabilize after rollback` |
+
+The re-enable step is `if: always()` with its own `always()` re-authentication, so a failed or
+cancelled run re-enables the alarm too. If the alarm went to ALARM while muted, the script resets it
+to OK before enabling (actions fire on state changes only), so a breach that persists past the
+rollout mails on the next evaluation. All toggles are `continue-on-error` and only warn: the IAM
+grant (`github-workflow-runtime`, that alarm's ARN only) arrives with the CICD stack in Layer 0. A
+warning "Could not re-enable" in a run means the alarm is still mute; re-enable it by hand.
+
+`Wait for ECS services to stabilize` (`scripts/ci/wait-ecs-services-stable.sh`) looks the four
+services up by their real names (`BATbern-staging-<Service>-Service<hash>`, API gateway included)
+and fails if one resolves to nothing. Before #1144 it asked for `event-management-service` etc.,
+which ECS reports as MISSING, so it waited for nothing.
+
+`test/unit/deploy-latency-alarm-silence.test.ts` finds every job that rolls services by the commands
+it runs and pins the order, the plain `always()`, and both scripts' behaviour against a stub `aws`.
+
 #### Three concurrent PRs: the middle deploy is silently cancelled (#967)
 
 `deploy-staging.yml` sets `concurrency: {group: deploy-staging, cancel-in-progress: false}`. The

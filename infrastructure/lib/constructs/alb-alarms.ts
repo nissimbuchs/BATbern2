@@ -48,6 +48,11 @@ export interface AlbAlarmsProps {
     readonly latencyMinRequests?: number;
     /** Availability floor as a percentage, e.g. 99.9. */
     readonly availabilityPercent?: number;
+    /**
+     * Minimum requests in a 5-minute window before the availability ratio evaluates.
+     * Below this one error is enough to break 99.9 %, and alb-5xx already reports it.
+     */
+    readonly availabilityMinRequests?: number;
     /** Share of served API requests returning 4xx, as a percentage, before alarming. */
     readonly apiClientErrorPercent?: number;
     /**
@@ -98,6 +103,9 @@ export class AlbAlarms extends Construct {
       latencyP95Seconds: props.thresholds?.latencyP95Seconds ?? 0.5,
       latencyMinRequests: props.thresholds?.latencyMinRequests ?? 20,
       availabilityPercent: props.thresholds?.availabilityPercent ?? 99.9,
+      // #1144: replayed over 30 days of production metrics, 100 keeps the one real outage
+      // (2026-10-26, 49 5xx in 38,539 requests) and drops the three lone night-time errors.
+      availabilityMinRequests: props.thresholds?.availabilityMinRequests ?? 100,
       apiClientErrorPercent: props.thresholds?.apiClientErrorPercent ?? 50,
       apiClientErrorMinRequests: props.thresholds?.apiClientErrorMinRequests ?? 10,
     };
@@ -373,11 +381,19 @@ export class AlbAlarms extends Construct {
     // The IF() guard matters. With no traffic, requests = 0 and the division would yield
     // no datapoint; returning 100 instead states the truth — a system serving no requests
     // is not failing them — and keeps quiet periods out of the alarm.
+    //
+    // #1144: the guard is a minimum VOLUME, not just "any traffic". At the usual ~40
+    // requests per window a single 500 is 97.5 %, so the alarm fired on lone night-time
+    // errors. Below the floor the ratio means nothing; single errors are alb-5xx's job.
     const availability = new cloudwatch.Alarm(this, 'Availability', {
       alarmName: `batbern-${env}-alb-availability`,
-      alarmDescription: `Successful-request ratio below ${thresholds.availabilityPercent}%`,
+      alarmDescription:
+        `Successful-request ratio below ${thresholds.availabilityPercent}% over at least ` +
+        `${thresholds.availabilityMinRequests} requests per window (single errors: alb-5xx)`,
       metric: new cloudwatch.MathExpression({
-        expression: 'IF(requests > 0, (1 - (target5xx + elb5xx) / requests) * 100, 100)',
+        expression:
+          `IF(requests >= ${thresholds.availabilityMinRequests}, ` +
+          '(1 - (target5xx + elb5xx) / requests) * 100, 100)',
         usingMetrics: {
           requests: albMetric('RequestCount', 'Sum'),
           target5xx: albMetric('HTTPCode_Target_5XX_Count', 'Sum'),

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- The shape the gateway and CUMS use (#1202): LogstashEncoder with the shared value masker. -->
+<configuration>
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+            <includeMdc>true</includeMdc>
+            <decorator class="net.logstash.logback.mask.MaskingJsonGeneratorDecorator">
+                <valueMasker class="ch.batbern.shared.logging.EmailValueMasker"/>
+            </decorator>
+        </encoder>
+    </appender>
+    <root level="INFO">
+        <appender-ref ref="CONSOLE"/>
+    </root>
+</configuration>

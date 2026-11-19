@@ -42,7 +42,7 @@ dependencies {
 
     // Service-specific: Testing libraries
     testImplementation 'io.rest-assured:rest-assured:6.3.0'
-    testImplementation 'org.awaitility:awaitility:4.3.0'
+    testImplementation 'org.awaitility:awaitility'
     // Epic 13 (SB4): @RestClientTest moved to the spring-boot-restclient-test module.
     testImplementation 'org.springframework.boot:spring-boot-restclient-test'
     // Story 17.0b3: TestAwsConfig registers the SesRecorder's SesClient (EmailService runs for real).
