@@ -990,19 +990,6 @@ jobs:
         # MISSING, so it waited for nothing and never covered the API gateway.
         run: ./scripts/ci/wait-ecs-services-stable.sh "${{ env.ENVIRONMENT }}"
 
-            for service in "${services[@]}"; do
-              if aws ecs describe-services --cluster batbern-staging --services ${service} --region ${{ env.AWS_REGION }} 2>/dev/null | grep -q "ACTIVE"; then
-                echo "Waiting for $service to stabilize..."
-                aws ecs wait services-stable \
-                  --cluster batbern-staging \
-                  --services ${service} \
-                  --region ${{ env.AWS_REGION }} || echo "::warning::Service ${service} not found or not stable"
-              fi
-            done
-          else
-            echo "::warning::ECS cluster batbern-staging not found yet"
-          fi
-
       # #1144: re-enable after the last rollout, also when the deploy failed or was cancelled,
       # so the latency alarm can never stay mute. Fresh credentials first: the layered path
       # outlives the role session and a failed run skips the ordinary re-auth steps.
