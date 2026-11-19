@@ -26,6 +26,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -355,9 +356,27 @@ class ParticipantsControllerIntegrationTest extends AbstractIntegrationTest {
         sesRecorder.awaitAsyncSends();
         assertThat(sesRecorder.mails()).singleElement().satisfies(mail -> {
             assertThat(mail.isAddressedTo(jane)).isTrue();
-            // the organizer-added confirmation, not the waitlist promotion
-            assertThat(mail.subject()).startsWith("Registration confirmed");
+            // the organizer-added confirmation, not the waitlist promotion; no language set: German
+            // (#1222, was English)
+            assertThat(mail.subject()).startsWith("Anmeldebestätigung");
         });
+    }
+
+    @ParameterizedTest
+    @CsvSource({"fr,Registration confirmed", "en,Registration confirmed", "de,Anmeldebestätigung"})
+    @DisplayName("#1222: the organizer-added mail is German for German, English for every other language")
+    @WithMockUser(username = ORGANIZER_USERNAME, roles = {"ORGANIZER"})
+    void should_mailInAttendeeLanguage_when_organizerAdds(String language, String subject) throws Exception {
+        cums.userWithLanguage("jane.doe", language); // answers jane.doe@test.com
+
+        mockMvc.perform(post("/api/v1/events/{eventCode}/participants", EVENT_CODE)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"username\":\"jane.doe\"}"))
+                .andExpect(status().isCreated());
+
+        sesRecorder.awaitAsyncSends();
+        assertThat(sesRecorder.mailsTo("jane.doe@test.com")).singleElement()
+                .satisfies(mail -> assertThat(mail.subject()).startsWith(subject));
     }
 
     @Test

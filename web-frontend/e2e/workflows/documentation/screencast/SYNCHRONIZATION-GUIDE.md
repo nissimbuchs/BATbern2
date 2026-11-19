@@ -17,7 +17,7 @@ The Playwright screencast executes in ~5-10 minutes, but the German voiceover au
 ## Prerequisites
 
 - Python 3.8+ with pip
-- Node.js 20+ with npm
+- Node.js 22 with npm
 - ElevenLabs API key (get from https://elevenlabs.io)
 - Audio file: `narration-raw-de.m4a` (generated from ElevenLabs TTS)
 - Script file: `script-for-tts-de-funny-with-emotions.txt`

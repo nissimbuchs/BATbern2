@@ -8,6 +8,7 @@ import ch.batbern.events.domain.NewsletterSend;
 import ch.batbern.events.domain.Registration;
 import ch.batbern.events.exception.DuplicateNewsletterSendException;
 import ch.batbern.events.exception.SlidesOnlineAlreadySentException;
+import ch.batbern.events.mailcenter.render.MailLocales;
 import ch.batbern.events.mailcenter.render.MailContent;
 import ch.batbern.events.mailcenter.render.MailPipeline;
 import ch.batbern.events.mailcenter.render.OwnText;
@@ -382,7 +383,7 @@ public class SlidesOnlineEmailService {
         return name.isEmpty() ? nullToEmpty(registration.getAttendeeUsername()) : name;
     }
 
-    /** The registrant's language (AC4). */
+    /** The registrant's language, by the common mail rule ({@code MailLocales}, #1222; replaces AC4). */
     public String recipientLocale(Registration registration) {
         return resolveLocale(registration.getAttendeeUsername());
     }
@@ -422,22 +423,12 @@ public class SlidesOnlineEmailService {
     }
 
     /**
-     * AC4: {@code de*} → {@code de}, {@code en} → {@code en}, everything else / unknown → {@code de}
-     * (German fallback — intentionally German, not English, for this feature).
+     * The registrant's mail language by the one rule ({@link MailLocales}): German for {@code de*},
+     * {@code gsw*} and no preference, English for every other language. Story 7.3 AC4 sent German
+     * to other languages; the owner moved this mail to the common rule on 2026-11-15 (#1222).
      */
     String resolveLocale(String username) {
-        String pref = userApiClient.getPreferredLanguage(username);
-        if (pref == null) {
-            return "de";
-        }
-        String lower = pref.toLowerCase(Locale.ROOT);
-        if (lower.startsWith("de")) {
-            return "de";
-        }
-        if (lower.equals("en")) {
-            return "en";
-        }
-        return "de";
+        return MailLocales.languageOf(userApiClient.getPreferredLanguage(username));
     }
 
     // ── Rendering ────────────────────────────────────────────────────────────────

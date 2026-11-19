@@ -13,6 +13,7 @@ import { useTranslation } from 'react-i18next';
 import { Link as RouterLink } from 'react-router-dom';
 import { getMeetings } from '@/services/api/partnerMeetingsApi';
 import PartnerMeetingInviteAction from '@/components/organizer/PartnerMeetingInviteAction';
+import { intlLocale } from '@/utils/date/intlLocale';
 
 interface PartnerMeetingsComposeProps {
   eventCode: string;
@@ -52,8 +53,8 @@ export const PartnerMeetingsCompose: React.FC<PartnerMeetingsComposeProps> = ({
           <Box sx={{ mb: 1 }}>
             <Typography variant="subtitle2">
               {t(`eventPage.mail.partners.type.${meeting.meetingType}`)} ·{' '}
-              {new Date(meeting.meetingDate).toLocaleDateString(i18n.language)}, {meeting.startTime}
-              –{meeting.endTime}
+              {new Date(meeting.meetingDate).toLocaleDateString(intlLocale(i18n.language))},{' '}
+              {meeting.startTime}–{meeting.endTime}
             </Typography>
             {meeting.location && (
               <Typography variant="caption" color="text.secondary">

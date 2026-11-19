@@ -17,6 +17,7 @@ import {
   useUploadProfilePicture,
   useRemoveProfilePicture,
 } from '@/hooks/useUserAccount/useUserAccount';
+import { uiIntlLocale } from '@/utils/date/intlLocale';
 
 type Company = components['schemas']['CompanySearchResponse'];
 
@@ -247,7 +248,7 @@ const UserProfileTab: React.FC<UserProfileTabProps> = ({ user, activity }) => {
             <Box key={item.id} sx={{ mb: 2 }} data-testid="activity-item">
               <Typography variant="body2">{item.description}</Typography>
               <Typography variant="caption" color="text.secondary" data-testid="activity-timestamp">
-                {new Date(item.timestamp).toLocaleString()}
+                {new Date(item.timestamp).toLocaleString(uiIntlLocale())}
               </Typography>
             </Box>
           ))

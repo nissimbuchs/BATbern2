@@ -214,6 +214,16 @@ public class EmailService {
     }
 
     /**
+     * Synchronous counterpart of {@link #sendHtmlEmail(MailContext, String, List, String, String, String)}
+     * with the configured SES Configuration Set: for a caller that records whether the mail went out,
+     * which an {@code @Async} send cannot tell it.
+     */
+    public void sendHtmlEmailSync(MailContext context, String to, List<String> cc, String subject,
+            String htmlBody, String replyTo) {
+        sendHtmlEmailSync(context, to, cc, subject, htmlBody, configurationSetName, replyTo);
+    }
+
+    /**
      * Story 16.1a: the synchronous send every HTML overload ends in. With a non-null
      * {@code context} the send is recorded after SES answers and tagged {@code mail_group}.
      */

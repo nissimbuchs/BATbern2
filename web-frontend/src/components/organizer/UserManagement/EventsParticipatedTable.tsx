@@ -24,11 +24,13 @@ import { useTranslation } from 'react-i18next';
 import { useBreakpoints } from '@/hooks/useBreakpoints';
 import axios from 'axios';
 import { getRegistrationsForAttendee } from '@/services/api/eventRegistrationService';
+import { intlLocale } from '@/utils/date/intlLocale';
 
 interface EventParticipation {
   eventCode: string;
   title: string;
-  date: string;
+  /** Raw ISO date, formatted at render in the current UI language (#1222). */
+  eventDate: string | null;
   status: string;
 }
 
@@ -37,11 +39,20 @@ interface EventsParticipatedTableProps {
 }
 
 export const EventsParticipatedTable: React.FC<EventsParticipatedTableProps> = ({ userId }) => {
-  const { t } = useTranslation('userManagement');
+  const { t, i18n } = useTranslation('userManagement');
   const { isMobile } = useBreakpoints();
   const [events, setEvents] = useState<EventParticipation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const formatDate = (eventDate: string | null) =>
+    eventDate
+      ? new Date(eventDate).toLocaleDateString(intlLocale(i18n.language), {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric',
+        })
+      : t('userDetail.eventsTable.dateTBD');
 
   useEffect(() => {
     const fetchEventParticipations = async () => {
@@ -52,17 +63,11 @@ export const EventsParticipatedTable: React.FC<EventsParticipatedTableProps> = (
         // Fetch registrations for this user using the new endpoint
         const registrations = await getRegistrationsForAttendee(userId);
 
-        // Transform response to table data with Swiss date format (de-CH)
+        // Transform response to table data; the date is formatted at render (#1222)
         const participations: EventParticipation[] = registrations.map((reg) => ({
           eventCode: reg.eventCode || 'N/A',
           title: reg.eventTitle || reg.eventCode || t('userDetail.eventsTable.untitledEvent'),
-          date: reg.eventDate
-            ? new Date(reg.eventDate).toLocaleDateString('de-CH', {
-                day: '2-digit',
-                month: '2-digit',
-                year: 'numeric',
-              })
-            : t('userDetail.eventsTable.dateTBD'),
+          eventDate: reg.eventDate ?? null,
           status: reg.status || 'REGISTERED',
         }));
 
@@ -123,7 +128,7 @@ export const EventsParticipatedTable: React.FC<EventsParticipatedTableProps> = (
                 </Typography>
                 <Typography variant="body2">{event.title}</Typography>
                 <Typography variant="body2" color="text.secondary">
-                  {event.date}
+                  {formatDate(event.eventDate)}
                 </Typography>
                 <Typography variant="body2" color={statusColor(event.status)}>
                   {t(`userDetail.eventsTable.statusValues.${event.status}`, event.status)}
@@ -156,7 +161,7 @@ export const EventsParticipatedTable: React.FC<EventsParticipatedTableProps> = (
                 </Typography>
               </TableCell>
               <TableCell>{event.title}</TableCell>
-              <TableCell>{event.date}</TableCell>
+              <TableCell>{formatDate(event.eventDate)}</TableCell>
               <TableCell>
                 <Typography variant="body2" color={statusColor(event.status)}>
                   {t(`userDetail.eventsTable.statusValues.${event.status}`, event.status)}

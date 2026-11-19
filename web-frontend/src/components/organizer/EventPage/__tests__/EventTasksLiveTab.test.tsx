@@ -3,134 +3,155 @@
  *
  * The template checklist made live: toggling a template creates/deletes its task
  * instance immediately, assignee changes persist, a state-carrying delete confirms.
+ * #1223: the intro says so (it read "will be created when you save the event").
+ *
+ * Real EventTasksTab, taskService, organizer directory and i18next on the MSW harness.
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { EventTasksLiveTab } from '../EventTasksLiveTab';
+import { describe, it, expect, beforeEach } from 'vitest';
+import { screen, waitFor, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { api } from '@/test/msw/api';
+import { renderWithAuth } from '@/test/auth';
+import { aUser, anEventTask } from '@/test/fixtures';
 import type { Event } from '@/types/event.types';
-import { taskService } from '@/services/taskService';
+import type { TaskTemplateResponse } from '@/services/taskService';
+import { EventTasksLiveTab } from '../EventTasksLiveTab';
 
-vi.mock('@/services/taskService', () => ({
-  taskService: {
-    listEventTasks: vi.fn(),
-    createTasksFromTemplates: vi.fn().mockResolvedValue([]),
-    deleteTask: vi.fn().mockResolvedValue(undefined),
-    updateTask: vi.fn().mockResolvedValue({}),
-  },
-}));
-vi.mock('../../Tasks/CustomTaskModal', () => ({ CustomTaskModal: () => null }));
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string, opts?: string | Record<string, unknown>) =>
-      typeof opts === 'string' ? opts : ((opts?.defaultValue as string) ?? key),
-  }),
-}));
+const EVENT_CODE = 'BAT54';
+const event = { eventCode: EVENT_CODE, organizerUsername: 'amelia' } as unknown as Event;
 
-// Stub the presentational EventTasksTab to expose the live handlers as buttons.
-vi.mock('@/components/organizer/Tasks/EventTasksTab', () => ({
-  EventTasksTab: ({
-    selectedTemplates,
-    onTemplateToggle,
-    onAssigneeChange,
-  }: {
-    selectedTemplates: string[];
-    onTemplateToggle: (id: string, checked: boolean) => void;
-    onAssigneeChange: (id: string, assignee: string) => void;
-  }) => (
-    <div>
-      <div data-testid="selected">{selectedTemplates.join(',')}</div>
-      <button data-testid="toggle-on" onClick={() => onTemplateToggle('tpl-new', true)} />
-      <button data-testid="toggle-off-clean" onClick={() => onTemplateToggle('tpl-clean', false)} />
-      <button
-        data-testid="toggle-off-stateful"
-        onClick={() => onTemplateToggle('tpl-state', false)}
-      />
-      <button data-testid="reassign" onClick={() => onAssigneeChange('tpl-clean', 'bob')} />
-    </div>
-  ),
-}));
+const TPL_NEW = '0b9e1c2d-3f4a-4b5c-8d6e-7f8091a2b301';
+const TPL_CLEAN = '0b9e1c2d-3f4a-4b5c-8d6e-7f8091a2b302';
+const TPL_STATE = '0b9e1c2d-3f4a-4b5c-8d6e-7f8091a2b303';
 
-const event = { eventCode: 'BAT54', organizerUsername: 'amelia' } as unknown as Event;
+const template = (id: string, name: string): TaskTemplateResponse => ({
+  id,
+  name,
+  isDefault: true,
+  triggerState: 'created',
+  dueDateType: 'relative_to_event',
+  dueDateOffsetDays: -30,
+  activationLeadDays: null,
+  createdByUsername: null,
+  createdAt: '2026-11-01T08:00:00Z',
+  updatedAt: '2026-11-01T08:00:00Z',
+});
 
-const TASKS = [
-  {
-    id: 't-clean',
-    templateId: 'tpl-clean',
-    status: 'pending',
-    notes: null,
-    assignedOrganizerUsername: null,
-    taskName: 'Clean',
-  },
-  {
-    id: 't-state',
-    templateId: 'tpl-state',
-    status: 'completed',
-    notes: 'done note',
-    assignedOrganizerUsername: null,
-    taskName: 'Stateful',
-  },
+const TEMPLATES = [
+  template(TPL_NEW, 'Newsletter: Save the date'),
+  template(TPL_CLEAN, 'Book the venue'),
+  template(TPL_STATE, 'Catering coordination'),
 ];
 
-function renderTab() {
-  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  return render(
-    <QueryClientProvider client={qc}>
-      <EventTasksLiveTab event={event} eventCode="BAT54" />
-    </QueryClientProvider>
-  );
-}
+const TASKS = [
+  anEventTask({
+    id: '7d1f0c2a-5b3e-4c1d-9a8f-000000000011',
+    eventCode: EVENT_CODE,
+    templateId: TPL_CLEAN,
+    taskName: 'Book the venue',
+    status: 'pending',
+  }),
+  anEventTask({
+    id: '7d1f0c2a-5b3e-4c1d-9a8f-000000000012',
+    eventCode: EVENT_CODE,
+    templateId: TPL_STATE,
+    taskName: 'Catering coordination',
+    status: 'completed',
+    notes: 'done note',
+  }),
+];
+
+const checkboxOf = async (templateId: string) =>
+  within(await screen.findByTestId(`task-template-${templateId}`)).getByRole('checkbox');
+
+const renderTab = () => renderWithAuth(<EventTasksLiveTab event={event} eventCode={EVENT_CODE} />);
 
 beforeEach(() => {
-  vi.clearAllMocks();
-  vi.mocked(taskService.listEventTasks).mockResolvedValue(TASKS as never);
+  api.on('listAllTemplates', () => TEMPLATES);
+  api.on('listEventTasks', () => TASKS);
+  api.on('listUsers', () => ({
+    data: [aUser({ id: 'bob.muster', firstName: 'Bob', lastName: 'Muster', roles: ['ORGANIZER'] })],
+    pagination: {
+      page: 1,
+      limit: 100,
+      totalItems: 1,
+      totalPages: 1,
+      hasNext: false,
+      hasPrev: false,
+    },
+  }));
 });
 
 describe('EventTasksLiveTab', () => {
-  it('derives selected templates from live tasks', async () => {
+  it('ticks the templates that have a task', async () => {
     renderTab();
-    await waitFor(() =>
-      expect(screen.getByTestId('selected')).toHaveTextContent('tpl-clean,tpl-state')
-    );
+
+    await waitFor(async () => expect(await checkboxOf(TPL_CLEAN)).toBeChecked());
+    expect(await checkboxOf(TPL_STATE)).toBeChecked();
+    expect(await checkboxOf(TPL_NEW)).not.toBeChecked();
+    expect(api.calls('listEventTasks')[0].params.eventCode).toBe(EVENT_CODE);
+  });
+
+  it('says that ticking creates the task at once (#1223)', async () => {
+    renderTab();
+
+    expect(await screen.findByText(/Ticking one creates its task right away/)).toBeInTheDocument();
+    expect(screen.queryByText(/when you save the event/)).not.toBeInTheDocument();
   });
 
   it('toggling a template ON creates its task instance live', async () => {
+    const user = userEvent.setup();
     renderTab();
-    await screen.findByTestId('toggle-on');
-    fireEvent.click(screen.getByTestId('toggle-on'));
-    await waitFor(() =>
-      expect(taskService.createTasksFromTemplates).toHaveBeenCalledWith('BAT54', {
-        templates: [{ templateId: 'tpl-new', assignedOrganizerUsername: undefined }],
-      })
-    );
+    await waitFor(async () => expect(await checkboxOf(TPL_CLEAN)).toBeChecked());
+
+    await user.click(await checkboxOf(TPL_NEW));
+
+    await waitFor(() => expect(api.calls('createTasksFromTemplates')).toHaveLength(1));
+    const [call] = api.calls('createTasksFromTemplates');
+    expect(call.params.eventCode).toBe(EVENT_CODE);
+    expect(call.body).toEqual({ templates: [{ templateId: TPL_NEW }] });
   });
 
   it('toggling a stateless template OFF deletes it immediately (no confirm)', async () => {
+    const user = userEvent.setup();
     renderTab();
-    await screen.findByTestId('toggle-off-clean');
-    fireEvent.click(screen.getByTestId('toggle-off-clean'));
-    await waitFor(() => expect(taskService.deleteTask).toHaveBeenCalledWith('t-clean'));
+    await waitFor(async () => expect(await checkboxOf(TPL_CLEAN)).toBeChecked());
+
+    await user.click(await checkboxOf(TPL_CLEAN));
+
+    await waitFor(() => expect(api.calls('deleteTask')).toHaveLength(1));
+    expect(api.calls('deleteTask')[0].params.taskId).toBe(TASKS[0].id);
+    expect(screen.queryByTestId('tasks-confirm-delete')).not.toBeInTheDocument();
   });
 
   it('toggling a state-carrying template OFF asks for confirmation first', async () => {
+    const user = userEvent.setup();
     renderTab();
-    await screen.findByTestId('toggle-off-stateful');
-    fireEvent.click(screen.getByTestId('toggle-off-stateful'));
-    // confirm dialog appears; delete NOT called yet
+    await waitFor(async () => expect(await checkboxOf(TPL_STATE)).toBeChecked());
+
+    await user.click(await checkboxOf(TPL_STATE));
+
     expect(await screen.findByTestId('tasks-confirm-delete')).toBeInTheDocument();
-    expect(taskService.deleteTask).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByTestId('tasks-confirm-delete'));
-    await waitFor(() => expect(taskService.deleteTask).toHaveBeenCalledWith('t-state'));
+    expect(api.calls('deleteTask')).toHaveLength(0);
+    await user.click(screen.getByTestId('tasks-confirm-delete'));
+    await waitFor(() => expect(api.calls('deleteTask')).toHaveLength(1));
+    expect(api.calls('deleteTask')[0].params.taskId).toBe(TASKS[1].id);
   });
 
   it('changing an assignee persists via updateTask', async () => {
+    const user = userEvent.setup();
     renderTab();
-    await screen.findByTestId('reassign');
-    fireEvent.click(screen.getByTestId('reassign'));
-    await waitFor(() =>
-      expect(taskService.updateTask).toHaveBeenCalledWith('t-clean', {
-        assignedOrganizerUsername: 'bob',
-      })
+    await waitFor(async () => expect(await checkboxOf(TPL_CLEAN)).toBeChecked());
+
+    const select = within(await screen.findByTestId(`task-assignee-${TPL_CLEAN}`)).getByRole(
+      'combobox'
     );
+    await user.click(select);
+    await user.click(await screen.findByTestId('organizer-option-bob.muster'));
+
+    await waitFor(() => expect(api.calls('updateTask')).toHaveLength(1));
+    const [call] = api.calls('updateTask');
+    expect(call.params.taskId).toBe(TASKS[0].id);
+    expect(call.body).toEqual({ assignedOrganizerUsername: 'bob.muster' });
   });
 });

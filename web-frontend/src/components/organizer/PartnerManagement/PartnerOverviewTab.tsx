@@ -9,11 +9,17 @@ import React from 'react';
 import { Box, Card, CardContent, Typography, Button, Divider, Stack } from '@mui/material';
 import { CheckCircle } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
-import { usePartnerDetailStore } from '@/stores/partnerDetailStore';
+import { usePartnerModalStore } from '@/stores/partnerModalStore';
 import type { PartnerResponse } from '@/services/api/partnerApi';
+import { intlLocale } from '@/utils/date/intlLocale';
 
 interface PartnerOverviewTabProps {
   partner: PartnerResponse;
+  /**
+   * Organizers change the tier; a partner sees it read-only (owner 2026-11-15, #1223 item 12).
+   * The API agrees: `PATCH /partners/{companyName}` is organizer-only.
+   */
+  canChangeTier: boolean;
 }
 
 // Partnership tier emojis
@@ -41,15 +47,18 @@ const TIER_BENEFIT_KEYS: Record<string, string[]> = {
   BRONZE: ['eventAccess'],
 };
 
-export const PartnerOverviewTab: React.FC<PartnerOverviewTabProps> = ({ partner }) => {
+export const PartnerOverviewTab: React.FC<PartnerOverviewTabProps> = ({
+  partner,
+  canChangeTier,
+}) => {
   const { t, i18n } = useTranslation('partners');
-  const { setShowEditModal } = usePartnerDetailStore();
+  const openEditModal = usePartnerModalStore((state) => state.openEditModal);
 
   const tierEmoji = TIER_EMOJIS[partner.partnershipLevel] || '';
   const benefitKeys = TIER_BENEFIT_KEYS[partner.partnershipLevel] || [];
 
   const formattedStartDate = new Date(partner.partnershipStartDate).toLocaleDateString(
-    i18n.language,
+    intlLocale(i18n.language),
     { year: 'numeric', month: 'short', day: 'numeric' }
   );
 
@@ -95,9 +104,12 @@ export const PartnerOverviewTab: React.FC<PartnerOverviewTabProps> = ({ partner 
               </Stack>
             </Box>
 
-            <Button variant="outlined" onClick={() => setShowEditModal(true)} fullWidth>
-              {t('detail.overviewTab.changeTier')}
-            </Button>
+            {/* The edit modal holds the tier; the button set a flag nothing read before. */}
+            {canChangeTier && (
+              <Button variant="outlined" onClick={() => openEditModal(partner)} fullWidth>
+                {t('detail.overviewTab.changeTier')}
+              </Button>
+            )}
           </Stack>
         </CardContent>
       </Card>

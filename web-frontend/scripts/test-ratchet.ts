@@ -34,6 +34,16 @@
  *       inside a test `@Configuration` / `@TestConfiguration` class: a shared `@Primary` mock bean
  *       replaces the real one in every test that imports the config (Story 17.0b3; how the
  *       `EmailService` mocks in the services' `TestAwsConfig` escaped the count).
+ *   be-mock-email-service
+ *       a unit test that mocks the shared-kernel `EmailService` instead of running it into the
+ *       `SesRecorder` (#1318): `@Mock` / `@Spy` fields of type `EmailService`,
+ *       `mock(EmailService.class)` / `spy(EmailService.class)` / `spy(new EmailService(...))`
+ *       (`Mockito.` prefix optional), and every `verify(x` / `verifyNoInteractions(x` /
+ *       `verifyNoMoreInteractions(x` whose first argument is a variable the file declares as
+ *       `EmailService` or assigns a mock or spy of it (also on a `@MockitoBean` / `@MockitoSpyBean
+ *       EmailService`: the verify is the forbidden assertion). Not counted here: the `@MockitoBean`
+ *       / `@MockitoSpyBean EmailService` itself and `mock(EmailService.class)` inside a test configuration class, which are
+ *       `be-mock-in-process` already (one construct, one category); other `*EmailService` types.
  *   be-transactional-it
  *       class-level `@Transactional` on a test class that extends `AbstractIntegrationTest` or is
  *       named `*IntegrationTest` / `*IT`.
@@ -51,6 +61,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { maskComments } from './lib/mask-comments.ts';
 
 export const CATEGORIES = [
+  'be-mock-email-service',
   'be-mock-in-process',
   'be-mock-s2s-client',
   'be-transactional-it',
@@ -383,6 +394,42 @@ export function configurationMockTypes(masked: string): string[] {
     .map((m) => simpleName(m[1]));
 }
 
+const EMAIL_SERVICE = 'EmailService';
+const MOCK_OR_SPY_CALL =
+  /\b(?:Mockito\s*\.\s*)?(mock|spy)\s*\(\s*(?:([\w.]+)\s*\.\s*class\b|new\s+([\w.]+)\s*\()/g;
+const VERIFY_CALL =
+  /\b(?:verify|verifyNoInteractions|verifyNoMoreInteractions)\s*\(\s*(?:this\s*\.\s*)?([A-Za-z_$][\w$]*)\s*[,)]/g;
+const EMAIL_SERVICE_DECL = /\b(?:[\w.]+\.)?EmailService\s+([A-Za-z_$][\w$]*)\s*[;=,)]/g;
+const EMAIL_SERVICE_ASSIGN =
+  /\b([A-Za-z_$][\w$]*)\s*=\s*(?:Mockito\s*\.\s*)?(?:mock|spy)\s*\(\s*(?:new\s+)?(?:[\w.]+\.)?EmailService\s*[.(]/g;
+
+/**
+ * Mocks, spies and verifications of the shared-kernel `EmailService` in a masked Java source that
+ * no other category counts (#1318): `@Mock` / `@Spy` fields, `mock(...)` / `spy(...)` calls outside
+ * a test configuration class, and `verify(...)` of `emailService` or an `EmailService` variable.
+ */
+export function emailServiceMockCount(masked: string): number {
+  let count = annotatedTypes(masked, /@(?:[\w.]+\.)?(?:Mock|Spy)\b/g).filter(
+    (t) => t === EMAIL_SERVICE
+  ).length;
+  const bodies = configurationClassBodies(masked);
+  for (const m of masked.matchAll(MOCK_OR_SPY_CALL)) {
+    const type = simpleName(m[2] ?? m[3] ?? '');
+    if (type !== EMAIL_SERVICE) continue;
+    // mock(X.class) in a configuration class is be-mock-in-process (configurationMockTypes).
+    const inConfig = bodies.some(([from, to]) => m.index >= from && m.index < to);
+    if (m[1] === 'mock' && m[2] && inConfig) continue;
+    count++;
+  }
+  // Only variables the file declares as EmailService (field, local, parameter) or assigns a mock
+  // or spy of it: a foreign `RegistrationEmailService emailService` is not counted.
+  const names = new Set<string>();
+  for (const m of masked.matchAll(EMAIL_SERVICE_DECL)) names.add(m[1]);
+  for (const m of masked.matchAll(EMAIL_SERVICE_ASSIGN)) names.add(m[1]);
+  for (const m of masked.matchAll(VERIFY_CALL)) if (names.has(m[1])) count++;
+  return count;
+}
+
 /** True for a type that leaves the process (a boundary type, the AWS SDK, or the JDK). */
 function isBoundary(type: string, fqn: string): boolean {
   return (
@@ -411,6 +458,8 @@ export function scanJavaTest(source: string): Map<Category, number> {
     if (isBoundary(type, imports.get(type) ?? '') || type.endsWith('Client')) continue;
     add('be-mock-in-process');
   }
+  const emailMocks = emailServiceMockCount(masked);
+  if (emailMocks > 0) counts.set('be-mock-email-service', emailMocks);
   if (isTransactionalIt(masked)) add('be-transactional-it');
   return counts;
 }

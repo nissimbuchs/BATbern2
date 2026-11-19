@@ -5,6 +5,7 @@ import { AlertTriangle, ArrowLeft, Loader2 } from 'lucide-react';
 import { Button } from '@/components/public/ui/button';
 import { deleteMyRegistration } from '@/services/registrationService';
 import type { MyRegistrationResponse } from '@/hooks/useMyRegistration';
+import { uiIntlLocale } from '@/utils/date/intlLocale';
 
 interface AttendeeUnregisterPanelProps {
   eventCode: string;
@@ -38,7 +39,7 @@ export const AttendeeUnregisterPanel = ({
   };
 
   const formattedDate = registration.registrationDate
-    ? new Date(registration.registrationDate).toLocaleDateString()
+    ? new Date(registration.registrationDate).toLocaleDateString(uiIntlLocale())
     : null;
 
   return (

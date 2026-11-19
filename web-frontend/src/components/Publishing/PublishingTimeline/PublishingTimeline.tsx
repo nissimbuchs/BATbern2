@@ -35,7 +35,7 @@ export const PublishingTimeline: React.FC<PublishingTimelineProps> = ({
   scheduledDates = {},
 }) => {
   const { t, i18n } = useTranslation('events');
-  const locale = i18n.language === 'de' ? 'de' : 'en';
+  const locale = i18n.language;
   const phases = PHASE_KEYS.map((key) => ({ key, label: t(`publishing.phases.${key}`) }));
 
   const getPhaseClass = (phaseKey: string): string => {

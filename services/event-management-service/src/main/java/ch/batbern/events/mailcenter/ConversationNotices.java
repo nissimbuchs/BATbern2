@@ -5,6 +5,7 @@ import ch.batbern.events.domain.Event;
 import ch.batbern.events.forwarding.EmailForwardingService;
 import ch.batbern.events.forwarding.ForwardingDirectory;
 import ch.batbern.events.mailcenter.inbound.InboundMailCenter;
+import ch.batbern.events.mailcenter.render.MailLocales;
 import ch.batbern.events.mailcenter.render.MailPipeline;
 import ch.batbern.events.mailcenter.render.RenderedMail;
 import ch.batbern.events.mailcenter.variables.MailVariable;
@@ -63,7 +64,7 @@ public class ConversationNotices {
         try {
             return directory.organizerUsernameFor(recipient)
                     .map(userApiClient::getPreferredLanguage)
-                    .filter("en"::equals)
+                    .map(MailLocales::languageOf)
                     .orElse("de");
         } catch (RuntimeException e) {
             log.debug("Notice language for a recipient not resolved: {}", e.toString());

@@ -23,17 +23,20 @@
       "attention": {
         "title": "Needs your attention",
         "addTask": "Add task",
-        "open": "Open {{tab}} →",
-        "go": "Open →",
+        "open": "Apri {{tab}}",
+        "go": "Apri",
         "retry": "Retry",
         "loadError": "Couldn't load your tasks.",
         "allCaught": "You're all caught up — nothing needs your attention right now.",
         "triggerNotReached": "Trigger non ancora raggiunto"
       },
       "due": {
-        "overdue": "Overdue · {{days}} days",
+        "overdue_one": "Scaduta · {{count}} giorno",
+        "overdue_other": "Scaduta · {{count}} giorni",
         "overdueNow": "In ritardo",
-        "dueSoon": "Due in {{days}} days",
+        "dueToday": "Scade oggi",
+        "dueSoon_one": "Scade tra {{count}} giorno",
+        "dueSoon_other": "Scade tra {{count}} giorni",
         "upcoming": "Upcoming",
         "live": "Now · event is live",
         "eventDay": "Giorno dell’evento · {{date}}"
@@ -670,12 +673,19 @@
     "eventTasksDescription": "Configura le attività che verranno create e attivate automaticamente man mano che l'evento avanza negli stati del workflow.",
     "defaultTemplates": "Modelli di attività predefiniti",
     "defaultTemplatesDescription": "Queste sono le attività standard di pianificazione eventi. Tutte sono preselezionate e verranno create quando salvi l'evento.",
+    "defaultTemplatesDescriptionLive": "Queste sono le attività standard di pianificazione dell’evento. Selezionarne una la crea subito; deselezionarla la elimina.",
     "taskExists": "L'attività esiste",
     "assignTo": "Assegna a",
     "triggerState": "Trigger",
     "dueDate": "Scadenza",
     "immediate": "Immediato",
-    "days": "giorni",
+    "offset": {
+      "before_one": "{{count}} giorno prima dell’evento",
+      "before_other": "{{count}} giorni prima dell’evento",
+      "after_one": "{{count}} giorno dopo l’evento",
+      "after_other": "{{count}} giorni dopo l’evento",
+      "eventDay": "Il giorno dell’evento"
+    },
     "customTemplates": "Modelli di attività personalizzati",
     "customTemplatesDescription": "Questi modelli sono stati creati dal tuo team. Seleziona quelli che vuoi includere per questo evento.",
     "customTasks": "Attività personalizzate",
@@ -693,13 +703,16 @@
     "noEvent": "Nessun evento (salva come modello)",
     "triggerStateHelp": "Lo stato dell'evento che attiva questa attività",
     "workflowStates": {
+      "created": "Creato",
       "topic_selection": "Selezione argomento",
-      "speaker_brainstorming": "Brainstorming relatori",
-      "speaker_outreach": "Contatto relatori",
+      "speaker_identification": "Identificazione relatori",
+      "slot_assignment": "Assegnazione slot",
       "agenda_published": "Agenda pubblicata",
       "event_live": "Evento in diretta",
-      "post_event_wrap_up": "Riepilogo post-evento",
-      "archived": "Archiviato"
+      "event_completed": "Evento completato",
+      "archived": "Archiviato",
+      "speakers_published": "Relatori pubblicati",
+      "speaker_outreach": "Contatto relatori"
     },
     "dueDateType": "Tipo di scadenza",
     "dueDateTypes": {
@@ -876,7 +889,6 @@
     "saving": "Salvataggio...",
     "saved": "Ultimo salvataggio alle {{time}}",
     "failed": "Salvataggio automatico fallito",
-    "conflict": "Modifica simultanea rilevata. Ricarica e riprova.",
     "enabled": "Salvataggio automatico attivato"
   },
   "topics": {
@@ -1195,12 +1207,16 @@
     },
     "quickActions": {
       "title": "Azioni rapide",
-      "total": "{{count}} sessioni totali",
-      "assigned": "{{count}} assegnate",
-      "pending": "{{count}} in attesa",
+      "total_one": "{{count}} sessione totale",
+      "total_other": "{{count}} sessioni totali",
+      "assigned_one": "{{count}} assegnata",
+      "assigned_other": "{{count}} assegnate",
+      "pending_one": "{{count}} in attesa",
+      "pending_other": "{{count}} in attesa",
       "allAssigned": "Tutti gli orari assegnati!",
       "goToPublishing": "Vai alla scheda Pubblicazione",
-      "sessionsAssignedAnnouncement": "{{count}} sessioni assegnate con successo"
+      "sessionsAssignedAnnouncement_one": "{{count}} sessione assegnata con successo",
+      "sessionsAssignedAnnouncement_other": "{{count}} sessioni assegnate con successo"
     },
     "actions": {
       "autoAssign": "Assegnazione automatica",
@@ -1483,5 +1499,38 @@
         "text": "Vuoi tenere una presentazione? Proponiti sulla pagina dell'evento."
       }
     }
+  },
+  "liveControl": {
+    "title": "Controllo live",
+    "connection": {
+      "connected": "Connesso",
+      "connecting": "Connessione...",
+      "offline": "Offline"
+    },
+    "offlineHint": "Aggiornamenti live non disponibili. La pagina si riconnette da sola quando la rete torna disponibile.",
+    "noActiveSession": "Nessuna sessione attiva",
+    "nextSession": "Prossima sessione",
+    "urgency": {
+      "overtime": "Fuori tempo",
+      "twoMinutesLeft": "Ancora 2 min",
+      "fiveMinutesLeft": "Ancora 5 min",
+      "onTrack": "In orario"
+    },
+    "delay": "← Ritarda",
+    "adjustTime": "↔ Regola il tempo",
+    "agenda": {
+      "title": "Programma",
+      "empty": "Nessuna sessione disponibile"
+    },
+    "delaySheet": {
+      "title": "Dare più tempo alla sessione precedente?"
+    },
+    "adjustSheet": {
+      "title": "Regola la durata della sessione",
+      "shorten": "Accorcia",
+      "extend": "Prolunga"
+    },
+    "cancel": "Annulla",
+    "minutes": "{{minutes}} min"
   }
 }

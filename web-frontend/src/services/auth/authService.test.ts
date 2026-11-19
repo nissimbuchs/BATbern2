@@ -366,7 +366,6 @@ describe('AuthService', () => {
               notifications: {
                 email: true,
                 sms: false,
-                push: true,
               },
               privacy: {
                 showProfile: true,

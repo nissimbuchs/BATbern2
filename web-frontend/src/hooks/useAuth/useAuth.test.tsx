@@ -101,7 +101,6 @@ describe('useAuth Hook', () => {
       preferences: {
         language: 'en' as const,
         theme: 'light' as const,
-        notifications: { email: true, sms: false, push: true },
         privacy: { showProfile: true, allowMessages: true },
       },
       issuedAt: Math.floor(Date.now() / 1000),
@@ -251,7 +250,6 @@ describe('useAuth Hook', () => {
         preferences: {
           language: 'en' as const,
           theme: 'light' as const,
-          notifications: { email: true, sms: false, push: true },
           privacy: { showProfile: true, allowMessages: true },
         },
         issuedAt: Math.floor(Date.now() / 1000),
@@ -289,7 +287,6 @@ describe('useAuth Hook', () => {
         preferences: {
           language: 'en' as const,
           theme: 'light' as const,
-          notifications: { email: true, sms: false, push: true },
           privacy: { showProfile: true, allowMessages: true },
         },
         issuedAt: Math.floor(Date.now() / 1000),
@@ -326,7 +323,6 @@ describe('useAuth Hook', () => {
         preferences: {
           language: 'en' as const,
           theme: 'light' as const,
-          notifications: { email: true, sms: false, push: true },
           privacy: { showProfile: true, allowMessages: true },
         },
         issuedAt: Math.floor(Date.now() / 1000),
@@ -363,7 +359,6 @@ describe('useAuth Hook', () => {
         preferences: {
           language: 'en' as const,
           theme: 'light' as const,
-          notifications: { email: true, sms: false, push: true },
           privacy: { showProfile: true, allowMessages: true },
         },
         issuedAt: Math.floor(Date.now() / 1000),
@@ -400,7 +395,6 @@ describe('useAuth Hook', () => {
         preferences: {
           language: 'en' as const,
           theme: 'light' as const,
-          notifications: { email: true, sms: false, push: true },
           privacy: { showProfile: true, allowMessages: true },
         },
         issuedAt: Math.floor(Date.now() / 1000),
@@ -472,7 +466,6 @@ describe('useAuth Hook', () => {
         preferences: {
           language: 'en' as const,
           theme: 'light' as const,
-          notifications: { email: true, sms: false, push: true },
           privacy: { showProfile: true, allowMessages: true },
         },
         issuedAt: Math.floor(Date.now() / 1000),
@@ -493,7 +486,8 @@ describe('useAuth Hook', () => {
 
       expect(result.current.canAccess('/dashboard')).toBe(true);
       expect(result.current.canAccess('/events')).toBe(true);
-      expect(result.current.canAccess('/speakers')).toBe(true);
+      // '/speakers' only redirects now (#1223 item 8); the organizer path list no longer names it.
+      expect(result.current.canAccess('/speakers')).toBe(false);
       expect(result.current.canAccess('/organizer/events')).toBe(true);
       expect(result.current.canAccess('/analytics')).toBe(true);
     });
@@ -510,7 +504,6 @@ describe('useAuth Hook', () => {
         preferences: {
           language: 'en' as const,
           theme: 'light' as const,
-          notifications: { email: true, sms: false, push: true },
           privacy: { showProfile: true, allowMessages: true },
         },
         issuedAt: Math.floor(Date.now() / 1000),
@@ -643,7 +636,6 @@ describe('useAuth Hook', () => {
         preferences: {
           language: 'en' as const,
           theme: 'light' as const,
-          notifications: { email: true, sms: false, push: true },
           privacy: { showProfile: true, allowMessages: true },
         },
         issuedAt: Math.floor(Date.now() / 1000),
@@ -694,7 +686,6 @@ describe('useAuth Hook', () => {
         preferences: {
           language: 'en' as const,
           theme: 'light' as const,
-          notifications: { email: true, sms: false, push: true },
           privacy: { showProfile: true, allowMessages: true },
         },
         issuedAt: Math.floor(Date.now() / 1000),
@@ -738,7 +729,6 @@ describe('useAuth Hook', () => {
         preferences: {
           language: 'en' as const,
           theme: 'light' as const,
-          notifications: { email: true, sms: false, push: true },
           privacy: { showProfile: true, allowMessages: true },
         },
         issuedAt: Math.floor(Date.now() / 1000),
@@ -780,7 +770,6 @@ describe('useAuth Hook', () => {
         preferences: {
           language: 'en' as const,
           theme: 'light' as const,
-          notifications: { email: true, sms: false, push: true },
           privacy: { showProfile: true, allowMessages: true },
         },
         issuedAt: Math.floor(Date.now() / 1000),
@@ -890,7 +879,6 @@ describe('useAuth Hook', () => {
         preferences: {
           language: 'en' as const,
           theme: 'light' as const,
-          notifications: { email: true, sms: false, push: true },
           privacy: { showProfile: true, allowMessages: true },
         },
         issuedAt: Math.floor(Date.now() / 1000),

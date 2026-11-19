@@ -40,7 +40,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import SaveIcon from '@mui/icons-material/Save';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { format, parseISO } from 'date-fns';
+import { parseISO } from 'date-fns';
 import CompanyLogo from '@/components/shared/Company/CompanyLogo';
 import { TopicSuggestionForm } from '@/components/partner/TopicSuggestionForm';
 import {
@@ -50,6 +50,7 @@ import {
   updateTopicStatus,
   type TopicDTO,
 } from '@/services/api/partnerTopicsApi';
+import { uiIntlLocale } from '@/utils/date/intlLocale';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -358,7 +359,13 @@ const TopicStatusPanel: React.FC = () => {
 
                     {/* Created date (parity with table Date column) */}
                     <Typography variant="caption" color="text.secondary">
-                      {topic.createdAt ? format(parseISO(topic.createdAt), 'd MMM yyyy') : '–'}
+                      {topic.createdAt
+                        ? parseISO(topic.createdAt).toLocaleDateString(uiIntlLocale(), {
+                            day: 'numeric',
+                            month: 'short',
+                            year: 'numeric',
+                          })
+                        : '–'}
                     </Typography>
 
                     {/* Status select */}
@@ -458,7 +465,13 @@ const TopicStatusPanel: React.FC = () => {
                     {/* Date column */}
                     <TableCell>
                       <Typography variant="body2" color="text.secondary" noWrap>
-                        {topic.createdAt ? format(parseISO(topic.createdAt), 'd MMM yyyy') : '–'}
+                        {topic.createdAt
+                          ? parseISO(topic.createdAt).toLocaleDateString(uiIntlLocale(), {
+                              day: 'numeric',
+                              month: 'short',
+                              year: 'numeric',
+                            })
+                          : '–'}
                       </Typography>
                     </TableCell>
 

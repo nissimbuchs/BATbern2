@@ -148,13 +148,13 @@ class SlidesOnlineIntegrationTest extends AbstractIntegrationTest {
     // ── AC2/AC3/AC4: send → active registrants only, opt-out excluded, per-recipient locale ──
 
     @Test
-    @DisplayName("AC2-4: sends to active registrants only, excludes opt-outs, per-recipient DE/EN/German-fallback")
+    @DisplayName("AC2-4: sends to active registrants only, excludes opt-outs, per-recipient DE/EN, other languages English")
     void send_activeRegistrantsOnly_optOutExcluded_perRecipientLocale() {
         Event event = saveEvent(EVENT_CODE, Instant.parse("2026-03-06T15:00:00Z"));
 
         saveRegistration(event.getId(), "att.en", sim("en"), "registered");   // EN
         saveRegistration(event.getId(), "att.de", sim("de"), "confirmed");    // DE
-        saveRegistration(event.getId(), "att.fr", sim("fr"), "confirmed");    // fr → German fallback
+        saveRegistration(event.getId(), "att.fr", sim("fr"), "confirmed");    // fr → English (one mail rule, owner 2026-11-15)
         saveRegistration(event.getId(), "att.attd", sim("attended"), "attended"); // INCLUDED: post-event status
         saveRegistration(event.getId(), "att.cancel", sim("cancel"), "cancelled"); // excluded (status)
         saveRegistration(event.getId(), "att.wait", sim("wait"), "waitlist");      // excluded (status)
@@ -183,10 +183,10 @@ class SlidesOnlineIntegrationTest extends AbstractIntegrationTest {
                 .containsExactlyInAnyOrder(sim("en"), sim("de"), sim("fr"), sim("attended"));
         assertThat(subjectByEmail).doesNotContainKeys(sim("cancel"), sim("wait"), sim("opt"));
 
-        // Per-recipient locale: en → English subject; de + fr(fallback) → German subject.
+        // Per-recipient locale: en and fr → English subject; de → German subject.
         assertThat(subjectByEmail.get(sim("en"))).contains("The slides are online");
         assertThat(subjectByEmail.get(sim("de"))).contains("Die Folien sind online");
-        assertThat(subjectByEmail.get(sim("fr"))).contains("Die Folien sind online");
+        assertThat(subjectByEmail.get(sim("fr"))).contains("The slides are online");
         assertThat(subjectByEmail.get(sim("attended"))).contains("The slides are online");
 
         NewsletterSend completed = sendRepository.findById(send.getId()).orElseThrow();

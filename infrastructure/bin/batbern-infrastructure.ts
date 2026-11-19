@@ -311,6 +311,15 @@ if (EnvironmentHelper.shouldDeployWebInfrastructure(config.envName)) {
     eventManagementStack.service.taskDefinition.taskRole
   );
   inboundEmailStack.inboundBucket.grantRead(eventManagementStack.service.taskDefinition.taskRole);
+  // Kept inbound attachments: written at receipt, deleted by the retention job (Story 16.6).
+  inboundEmailStack.inboundBucket.grantPut(
+    eventManagementStack.service.taskDefinition.taskRole,
+    'mail-attachments/*'
+  );
+  inboundEmailStack.inboundBucket.grantDelete(
+    eventManagementStack.service.taskDefinition.taskRole,
+    'mail-attachments/*'
+  );
   // Alias forwarding moved from the forwarder Lambda into EMS: consume the forwarding queue
   // (CloudWatch metric permission is granted inside EventManagementStack).
   inboundEmailStack.forwardingQueue.grantConsumeMessages(

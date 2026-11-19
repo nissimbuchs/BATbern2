@@ -24,7 +24,7 @@ import {
   Notifications as NotificationsIcon,
 } from '@mui/icons-material';
 import { formatDistanceToNow } from 'date-fns';
-import { de, enUS } from 'date-fns/locale';
+import { dateFnsLocale } from '@/utils/date/dateFnsLocale';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/hooks/useAuth';
 import {
@@ -36,7 +36,7 @@ import {
 
 const NotificationsPage: React.FC = () => {
   const { t, i18n } = useTranslation('common');
-  const locale = i18n.language === 'de' ? de : enUS;
+  const locale = dateFnsLocale(i18n.language);
   const { user } = useAuth();
   const [hideRead, setHideRead] = useState(false);
 

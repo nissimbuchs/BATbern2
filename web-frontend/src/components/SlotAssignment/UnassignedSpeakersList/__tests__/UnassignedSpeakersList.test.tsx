@@ -135,6 +135,40 @@ describe('UnassignedSpeakersList Component (Story 5.7 - Task 4a RED Phase)', () 
       expect(screen.getByTestId('unassigned-badge')).toBeInTheDocument();
     });
 
+    it('should_countTheTray_notTheFilteredCards_when_unassignedCountGiven', () => {
+      // #1223: with the "Assigned" filter the list shows 7 slotted cards; 3 still have no slot.
+      const slottedCards = Array.from({ length: 7 }, (_, i) => ({
+        ...mockUnassignedSessions[0],
+        sessionSlug: `slotted-${i}`,
+        title: `Slotted ${i}`,
+      }));
+      renderWithProviders(
+        <UnassignedSpeakersList
+          sessions={slottedCards}
+          totalSessions={10}
+          unassignedCount={3}
+          activeFilter="assigned"
+        />
+      );
+
+      expect(screen.getByText('7 of 10 assigned (70%)')).toBeInTheDocument();
+      expect(screen.getByTestId('unassigned-badge')).toHaveTextContent('3 Remaining');
+    });
+
+    it('should_notClaimAllAssigned_when_assignedFilterIsEmpty', () => {
+      renderWithProviders(
+        <UnassignedSpeakersList
+          sessions={[]}
+          totalSessions={3}
+          unassignedCount={3}
+          activeFilter="assigned"
+        />
+      );
+
+      expect(screen.queryByTestId('empty-state')).not.toBeInTheDocument();
+      expect(screen.getByText('0 of 3 assigned (0%)')).toBeInTheDocument();
+    });
+
     it('should_showEmptyState_when_noUnassignedSessions', () => {
       // Given: All sessions are assigned (empty list)
       renderWithProviders(<UnassignedSpeakersList sessions={[]} totalSessions={10} />);

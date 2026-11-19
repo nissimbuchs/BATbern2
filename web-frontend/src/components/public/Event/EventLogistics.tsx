@@ -4,9 +4,9 @@
  */
 
 import { Calendar, Clock, MapPin, Tag } from 'lucide-react';
-import { format } from 'date-fns';
 import type { EventDetail } from '@/types/event.types';
 import { useTranslation } from 'react-i18next';
+import { uiIntlLocale } from '@/utils/date/intlLocale';
 
 interface EventLogisticsProps {
   event: EventDetail;
@@ -29,7 +29,9 @@ export const EventLogistics = ({ event }: EventLogisticsProps) => {
           <Calendar className="h-5 w-5 text-primary mt-1 flex-shrink-0" />
           <div>
             <p className="text-sm text-zinc-400">{t('common:labels.date')}</p>
-            <p className="text-lg font-light text-zinc-100">{format(eventDate, 'PPP')}</p>
+            <p className="text-lg font-light text-zinc-100">
+              {eventDate.toLocaleDateString(uiIntlLocale(), { dateStyle: 'long' })}
+            </p>
           </div>
         </div>
       )}

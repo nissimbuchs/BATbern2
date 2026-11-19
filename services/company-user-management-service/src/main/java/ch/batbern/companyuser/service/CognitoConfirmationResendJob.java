@@ -69,7 +69,7 @@ public class CognitoConfirmationResendJob {
         this.windowHours = windowHours;
     }
 
-    @Scheduled(cron = "${cognito.resend.cron:0 15 8 * * *}")
+    @Scheduled(cron = "${cognito.resend.cron:0 15 8 * * *}", zone = "Europe/Zurich")
     @SchedulerLock(
             name = "resendUnconfirmedCognitoSignups",
             lockAtLeastFor = "PT1M",

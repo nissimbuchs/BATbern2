@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import i18n from './config';
+import { UI_LANGUAGES } from './languages';
 
 describe('i18n Configuration', () => {
   beforeEach(() => {
@@ -87,5 +88,9 @@ describe('i18n Configuration', () => {
       // Suspense is disabled in test mode to avoid React 19 test rendering issues
       expect(i18n.options.react?.useSuspense).toBe(false);
     });
+  });
+
+  it('ships exactly the UI languages the switchers offer and the settings accept', () => {
+    expect(Object.keys(i18n.options.resources ?? {}).sort()).toEqual([...UI_LANGUAGES].sort());
   });
 });

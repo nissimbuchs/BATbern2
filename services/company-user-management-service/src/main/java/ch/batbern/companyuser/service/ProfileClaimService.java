@@ -9,6 +9,7 @@ import ch.batbern.companyuser.repository.ProfileMergeRequestRepository;
 import ch.batbern.companyuser.repository.UserRepository;
 import ch.batbern.companyuser.security.SecurityContextHelper;
 import ch.batbern.shared.utils.LoggingUtils;
+import ch.batbern.companyuser.domain.UserLanguages;
 import io.jsonwebtoken.ExpiredJwtException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -16,7 +17,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
 import java.util.regex.Pattern;
@@ -217,10 +217,8 @@ public class ProfileClaimService {
     }
 
     private static String locale(User user) {
-        if (user.getPreferences() != null && user.getPreferences().getLanguage() != null) {
-            return user.getPreferences().getLanguage().toLowerCase(Locale.ROOT).startsWith("de") ? "de" : "en";
-        }
-        return "de";
+        return UserLanguages.mailLanguage(
+                user.getPreferences() != null ? user.getPreferences().getLanguage() : null, "de");
     }
 
     /** 403 CLAIM_OTHER_ACCOUNT: the link was requested under another login. */

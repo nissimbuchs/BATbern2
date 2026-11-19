@@ -4,6 +4,7 @@ import ch.batbern.events.client.UserApiClient;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.MailConversation;
 import ch.batbern.events.dto.generated.users.UserResponse;
+import ch.batbern.events.mailcenter.render.MailLocales;
 import ch.batbern.events.mailcenter.render.MailPipeline;
 import ch.batbern.events.mailcenter.render.RenderedMail;
 import ch.batbern.events.mailcenter.variables.MailVariable;
@@ -44,7 +45,7 @@ public class ConversationAssignmentNotifier {
                         conversation.getConversationKey());
                 return;
             }
-            String locale = "en".equals(userApiClient.getPreferredLanguage(assignee)) ? "en" : "de";
+            String locale = MailLocales.languageOf(userApiClient.getPreferredLanguage(assignee));
             Optional<Event> event = Optional.ofNullable(conversation.getEventCode())
                     .flatMap(eventRepository::findByEventCode);
             MailVariables variables = event.map(e -> mailPipeline.variables().event(e, locale))

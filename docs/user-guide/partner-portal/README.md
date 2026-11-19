@@ -38,6 +38,7 @@ After login, partners are routed to their company dashboard showing all three po
 | Meetings | Receive .ics calendar invite via email only | All meetings + management tools |
 | Meeting RSVPs | Accept/Decline from their own calendar client | Aggregated accept/decline/tentative responses per meeting |
 | Partner notes | **Hidden entirely** | All notes for all partners |
+| Partnership tier | Read-only on My Company | Changes it with "Change Tier" (edit dialog) |
 | Other partners' data | Not visible | All partners |
 
 ## Portal Sections

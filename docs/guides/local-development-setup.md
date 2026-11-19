@@ -23,7 +23,7 @@ Local Development Environment:
 
 - Docker Desktop installed and running
 - Java 21 installed
-- Node.js 20+ installed
+- Node.js 22 installed (the version CI uses, see `docs/versions.json`)
 - AWS CLI configured with `batbern-dev` profile (for Cognito access)
 - PostgreSQL client tools (psql) - optional but recommended
 
@@ -59,13 +59,9 @@ COGNITO_USER_POOL_ID=eu-central-1_camJHQhZ8
 COGNITO_CLIENT_ID=5h9421vo002bi7udjdu5orp7u3
 ```
 
-**Frontend configuration** is in `web-frontend/.env.local`:
-
-```bash
-VITE_COGNITO_USER_POOL_ID=eu-central-1_camJHQhZ8
-VITE_COGNITO_WEB_CLIENT_ID=5h9421vo002bi7udjdu5orp7u3
-VITE_COGNITO_DOMAIN=batbern-development-auth.auth.eu-central-1.amazoncognito.com
-```
+**Frontend configuration** needs no Cognito variables: the SPA loads the user pool, client ID
+and feature flags at startup from `GET /api/v1/config` on the gateway
+(`web-frontend/src/config/runtime-config.ts`), so it uses whatever the backend `.env` above sets.
 
 ### 3. Start Services
 
@@ -330,9 +326,9 @@ aws sts get-caller-identity --profile batbern-staging
 **Note**: The `.env` file should already be configured for staging Cognito (configured during initial setup). If not, update it:
 
 ```bash
-COGNITO_USER_POOL_ID=eu-central-1_camJHQhZ8
-COGNITO_CLIENT_ID=5h9421vo002bi7udjdu5orp7u3
-COGNITO_DOMAIN_URL=https://batbern-staging-auth.auth.eu-central-1.amazoncognito.com
+# Same values as .env.example
+COGNITO_USER_POOL_ID=eu-central-1_FtgfxgQRF
+COGNITO_CLIENT_ID=1b53lci6qpqsmdn0u3e8s4knvv
 ```
 
 ## Cost Comparison

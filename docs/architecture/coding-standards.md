@@ -585,9 +585,9 @@ signed-in or signed-out state into the real `AuthContext`, so `useAuth` and ever
 real, and `hasRole`, `hasPermission` and `canAccess` are the provider's own rules
 (`src/contexts/authRules.ts`). Never `vi.mock('@/hooks/useAuth')`. Zustand stores run for real: set
 the state a test needs with `useXStore.setState(...)` and reset it in `beforeEach` (a persisted
-store also needs `localStorage.clear()`). A STOMP/SockJS connection is a network boundary: mock
-the third-party packages (`@stomp/stompjs`, `sockjs-client`) or rely on the condition the client
-already uses to stay off, never our own WebSocket hook or client.
+store also needs `localStorage.clear()`). The SPA has no WebSocket client since #1222; should one
+return, the connection is a network boundary: mock the third-party package or rely on the
+condition the client already uses to stay off, never our own WebSocket hook or client.
 
 New examples come from the local anonymized database:
 `cd web-frontend && node ../scripts/dev/capture-spec-examples.ts` against `make dev-native-up`
@@ -702,11 +702,12 @@ baseline `web-frontend/scripts/test-ratchet-baseline.txt`:
 
 | Category | Counts |
 |---|---|
-| `fe-mock-services` / `fe-mock-hooks` / `fe-mock-components` | `vi.mock(` / `vi.doMock(` of own code in `web-frontend/src/**/*.{test,spec}.ts(x)`, and `vi.spyOn(x, …)` where `x` is imported from own code, by resolved path: `src/services`; `src/hooks` or a `use[A-Z]...` module; `src/components`, `src/pages` or a PascalCase module |
-| `fe-mock-i18n` | `vi.mock('react-i18next')` / `vi.doMock('react-i18next')`: a per-file i18n stub instead of the real i18next with `en` (17.0c1; the stub dropped interpolation in #959 and hides missing keys) |
-| `be-mock-s2s-client` | `@MockitoBean` (and `@MockitoSpyBean`: a spy stubs and verifies own code like a mock) of a type ending in `Client` that is not a boundary type (`UserApiClient`, `UserServiceClient`, ...), and `mock(XClient.class)` / `Mockito.mock(XClient.class)` / a `@Mock XClient` field of such a type anywhere in test sources (a shared `@Primary` mock such as the EMS `TestUserApiClientConfig` that 17.0b1 retired) |
+| `be-mock-email-service` | a unit test that mocks the shared-kernel `EmailService` instead of running it into the `SesRecorder` (#1318): `@Mock` / `@Spy` fields of type `EmailService`, `mock(EmailService.class)` / `spy(EmailService.class)` / `spy(new EmailService(…))` (with or without `Mockito.`), and every `verify(…)` / `verifyNoInteractions(…)` / `verifyNoMoreInteractions(…)` whose first argument is a variable the file declares as `EmailService` (field, local, parameter) or assigns a mock or spy of it. A `@MockitoBean` / `@MockitoSpyBean EmailService`: the bean itself stays in `be-mock-in-process`; verify calls on it count here. `mock(EmailService.class)` inside a test configuration class stays in `be-mock-in-process` only; other `*EmailService` types are not counted |
 | `be-mock-in-process` | any other `@MockitoBean` / `@MockitoSpyBean` that is not a boundary type, and `mock(X.class)` of such a type inside a test `@Configuration` / `@TestConfiguration` class (a shared mock bean, such as the `EmailService` mocks the services' `TestAwsConfig` held until 17.0b3) |
+| `be-mock-s2s-client` | `@MockitoBean` (and `@MockitoSpyBean`: a spy stubs and verifies own code like a mock) of a type ending in `Client` that is not a boundary type (`UserApiClient`, `UserServiceClient`, ...), and `mock(XClient.class)` / `Mockito.mock(XClient.class)` / a `@Mock XClient` field of such a type anywhere in test sources (a shared `@Primary` mock such as the EMS `TestUserApiClientConfig` that 17.0b1 retired) |
 | `be-transactional-it` | class-level `@Transactional` on a test class that extends `AbstractIntegrationTest` or is named `*IntegrationTest` / `*IT` |
+| `fe-mock-components` / `fe-mock-hooks` / `fe-mock-services` | `vi.mock(` / `vi.doMock(` of own code in `web-frontend/src/**/*.{test,spec}.ts(x)`, and `vi.spyOn(x, …)` where `x` is imported from own code, by resolved path: `src/services`; `src/hooks` or a `use[A-Z]...` module; `src/components`, `src/pages` or a PascalCase module |
+| `fe-mock-i18n` | `vi.mock('react-i18next')` / `vi.doMock('react-i18next')`: a per-file i18n stub instead of the real i18next with `en` (17.0c1; the stub dropped interpolation in #959 and hides missing keys) |
 
 Boundary types, never counted: `SesClient`, `SesV2Client`, `S3Client`, `S3Presigner`,
 `CognitoIdentityProviderClient`, `SqsClient`, `Clock`, `JwtDecoder`, and any

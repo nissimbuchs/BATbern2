@@ -108,6 +108,27 @@ export type PartialEventFormData = {
   [K in keyof EventFormData]?: EventFormData[K];
 };
 
+/**
+ * The form's raw values run through each field's schema, the conversion the zodResolver applies
+ * on save: a number input yields "57", the schema's `z.coerce.number` makes it 57. A field that
+ * does not pass its schema is left out, so auto-save never sends a value the save would refuse.
+ * Auto-save used the raw snapshot and sent `eventNumber: "57"` (#1223 sweep).
+ */
+export function coerceFormFields(
+  schema: ReturnType<typeof createEventSchema>,
+  data: Record<string, unknown>
+): PartialEventFormData {
+  const shape = schema.shape as Record<string, z.ZodType>;
+  const coerced: Record<string, unknown> = {};
+  Object.entries(data).forEach(([key, value]) => {
+    const field = shape[key];
+    if (!field) return;
+    const parsed = field.safeParse(value);
+    if (parsed.success) coerced[key] = parsed.data;
+  });
+  return coerced as PartialEventFormData;
+}
+
 /** Return only the fields that differ from the initial snapshot (for PATCH). */
 export function getChangedFields(
   currentData: PartialEventFormData,

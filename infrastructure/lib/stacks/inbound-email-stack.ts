@@ -19,7 +19,6 @@ import { EnvironmentConfig } from '../config/environment-config';
 
 export interface InboundEmailStackProps extends cdk.StackProps {
   config: EnvironmentConfig;
-  emsTaskRole?: iam.IRole;
   /** Route53 hosted zone for the inbound domain (used for SES identity DNS verification). */
   hostedZone?: route53.IHostedZone;
 
@@ -438,16 +437,6 @@ export class InboundEmailStack extends cdk.Stack {
         ttl: cdk.Duration.hours(1),
         comment: 'SES inbound email for forwarding distribution lists (Story 10.26)',
       });
-    }
-
-    // Grant EMS task role permissions to consume messages and read email objects
-    if (props.emsTaskRole) {
-      inboundQueue.grantConsumeMessages(props.emsTaskRole);
-      forwardingQueue.grantConsumeMessages(props.emsTaskRole);
-      inboundBucket.grantRead(props.emsTaskRole);
-      // Story 16.6: kept inbound attachments (written at receipt, deleted by the retention job)
-      inboundBucket.grantPut(props.emsTaskRole, 'mail-attachments/*');
-      inboundBucket.grantDelete(props.emsTaskRole, 'mail-attachments/*');
     }
 
     // CloudFormation outputs for EMS env var injection

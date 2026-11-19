@@ -2,30 +2,27 @@
  * Date Formatting Utilities
  * Story 1.17, Task 2b: Date/time formatting with date-fns locales
  *
- * Supports German (de) and English (en) locales with fallback to German as default
+ * `locale` is the UI language (i18next code); the date-fns locale comes from `dateFnsLocale`, the
+ * same rule as `intlLocale` (#1222 item 6). English and the German family (de, gsw-BE, rm) keep
+ * their explicit formats, every other language its date-fns long format.
  */
 
 import { format, formatDistance, formatDistanceToNow, parseISO, parse, isValid } from 'date-fns';
-import { de, enUS, type Locale } from 'date-fns/locale';
+import { type Locale } from 'date-fns/locale';
+import { dateFnsLocale } from './dateFnsLocale';
+import { primaryLanguage } from './intlLocale';
 
-// Supported locales
-const locales = {
-  de,
-  en: enUS,
-} as const;
-
-type SupportedLocale = keyof typeof locales;
-
-/**
- * Get date-fns locale object for a given locale code
- * Falls back to German (de) for unsupported locales or missing locale
- */
 function getLocale(locale?: string | null): Locale {
-  if (!locale) {
-    return locales.de;
-  }
-  const normalizedLocale = locale.toLowerCase() as SupportedLocale;
-  return locales[normalizedLocale] || locales.de;
+  return dateFnsLocale(locale);
+}
+
+type Family = 'en' | 'de' | 'other';
+
+function family(locale: string): Family {
+  const primary = primaryLanguage(locale);
+  if (primary === 'en') return 'en';
+  if (getLocale(locale).code === 'de') return 'de';
+  return 'other';
 }
 
 /**
@@ -50,7 +47,7 @@ export function formatDate(date: Date, locale: string, formatString?: string): s
   const localeObj = getLocale(locale);
 
   // Default format strings per locale
-  const defaultFormat = locale === 'en' ? 'MMMM d, yyyy' : 'd. MMMM yyyy';
+  const defaultFormat = { en: 'MMMM d, yyyy', de: 'd. MMMM yyyy', other: 'PPP' }[family(locale)];
 
   return format(date, formatString || defaultFormat, { locale: localeObj });
 }
@@ -76,14 +73,11 @@ export function formatTime(date: Date, locale: string, includeSeconds = false): 
   const localeObj = getLocale(locale);
 
   // German uses 24-hour format, English uses 12-hour format
-  const timeFormat =
-    locale === 'en'
-      ? includeSeconds
-        ? 'h:mm:ss a'
-        : 'h:mm a'
-      : includeSeconds
-        ? 'HH:mm:ss'
-        : 'HH:mm';
+  const timeFormat = {
+    en: includeSeconds ? 'h:mm:ss a' : 'h:mm a',
+    de: includeSeconds ? 'HH:mm:ss' : 'HH:mm',
+    other: includeSeconds ? 'pp' : 'p',
+  }[family(locale)];
 
   return format(date, timeFormat, { locale: localeObj });
 }
@@ -108,7 +102,11 @@ export function formatDateTime(date: Date, locale: string): string {
   const localeObj = getLocale(locale);
 
   // Combined date and time format
-  const dateTimeFormat = locale === 'en' ? 'MMMM d, yyyy, h:mm a' : 'd. MMMM yyyy, HH:mm';
+  const dateTimeFormat = {
+    en: 'MMMM d, yyyy, h:mm a',
+    de: 'd. MMMM yyyy, HH:mm',
+    other: 'PPP, p',
+  }[family(locale)];
 
   return format(date, dateTimeFormat, { locale: localeObj });
 }

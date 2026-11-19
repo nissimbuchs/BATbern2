@@ -30,6 +30,7 @@
  */
 
 import type { EventTaskResponse } from '@/services/taskService';
+import { zurichDay } from '@/utils/date/zurichDay';
 import {
   WORKFLOW_STATE_ORDER,
   getWorkflowStepNumber,
@@ -128,12 +129,17 @@ export interface DueInfo {
   days?: number;
 }
 
-/** Classify a task's due date into severity + day count (now injected for tests). */
+/**
+ * Classify a task's due date into severity + day count (now injected for tests). `days` is the
+ * number of Zurich calendar days from today: 0 = due today, negative = overdue.
+ */
 export function classifyDue(dueDate: string | null | undefined, now: number): DueInfo {
   if (!dueDate) return { severity: 'upcoming' };
   const due = new Date(dueDate).getTime();
   if (Number.isNaN(due)) return { severity: 'upcoming' };
-  const days = Math.ceil((due - now) / DAY_MS);
+  // Swiss calendar days, not 24h periods from the exact instant (#1223): a task due today reads
+  // "Due today" all day, and one due yesterday is overdue.
+  const days = Math.round((Date.parse(zurichDay(due)) - Date.parse(zurichDay(now))) / DAY_MS);
   if (days < 0) return { severity: 'overdue', days };
   if (days <= DUE_SOON_DAYS) return { severity: 'dueSoon', days };
   return { severity: 'upcoming', days };
@@ -151,6 +157,9 @@ export function classifyDue(dueDate: string | null | undefined, now: number): Du
  * Unmatched tasks get no jump button (graceful — the card still shows).
  */
 const TASK_TARGET_RULES: Array<{ re: RegExp; target: CardTarget }> = [
+  // Every newsletter task is sent from Communications, whatever its subject: "Newsletter:
+  // Speaker Lineup" must not fall into the speaker rule below (#1219).
+  { re: /newsletter/i, target: { kind: 'tab', tab: 'communications' } },
   { re: /moderat/i, target: { kind: 'tab', tab: 'details' } },
   { re: /q\s*&\s*a|q&a|apéro|apero|session q/i, target: { kind: 'tab', tab: 'details' } },
   { re: /photo|foto/i, target: { kind: 'tab', tab: 'wrapup' } },
@@ -164,9 +173,9 @@ const TASK_TARGET_RULES: Array<{ re: RegExp; target: CardTarget }> = [
   { re: /speaker|referent|pool|line.?up/i, target: { kind: 'tab', tab: 'speakers', view: 'pool' } },
   // Name tags → Participants tab, which hosts the name-badge export (#688).
   { re: /namensschild|name.?tag|badge/i, target: { kind: 'tab', tab: 'registrations' } },
-  // Communications catch-alls (newsletter / registrant notice / venue & caterer / partner / slides)
+  // Communications catch-alls (registrant notice / venue & caterer / partner / slides)
   {
-    re: /newsletter|registrant|notice|kommunikat|teilnehmer|catering|caterer|venue|location|booking|partner|slides|präsentation online/i,
+    re: /registrant|notice|kommunikat|teilnehmer|catering|caterer|venue|location|booking|partner|slides|präsentation online/i,
     target: { kind: 'tab', tab: 'communications' },
   },
 ];
@@ -215,14 +224,6 @@ export function sortTasksByDue<T extends EventTaskResponse>(tasks: T[]): T[] {
 /* ------------------------------------------------------------------ *
  * Event day (Europe/Zurich calendar day)
  * ------------------------------------------------------------------ */
-
-const zurichDay = (ms: number) =>
-  new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'Europe/Zurich',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).format(new Date(ms));
 
 /** Is `now` on the event's calendar day in Bern? */
 export function isEventDay(eventDate: string | null | undefined, now: number): boolean {

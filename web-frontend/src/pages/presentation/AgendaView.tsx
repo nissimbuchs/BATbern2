@@ -9,10 +9,10 @@
  */
 import { type JSX } from 'react';
 
-import { format } from 'date-fns';
 import type { PresentationSession } from '@/services/presentationService';
 import styles from './AgendaView.module.css';
 import { centerFontSize } from './agendaFontSize';
+import { uiIntlLocale } from '@/utils/date/intlLocale';
 
 const SPEAKER_SESSION_TYPES = new Set(['keynote', 'presentation', 'workshop', 'panel_discussion']);
 const BREAK_SESSION_TYPES = new Set(['break', 'lunch', 'networking']);
@@ -29,7 +29,7 @@ function formatTime(iso?: string | null): string {
     return '??:??';
   }
   try {
-    return format(new Date(iso), 'HH:mm');
+    return new Date(iso).toLocaleTimeString(uiIntlLocale(), { hour: '2-digit', minute: '2-digit' });
   } catch {
     return '??:??';
   }

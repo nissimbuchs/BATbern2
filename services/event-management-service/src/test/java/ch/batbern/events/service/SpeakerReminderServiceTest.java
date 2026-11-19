@@ -21,9 +21,11 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
@@ -75,6 +77,10 @@ class SpeakerReminderServiceTest {
 
     private ReminderProperties reminderProperties;
 
+    /** 2026-07-02 00:30 in Zurich, still 2026-07-01 in UTC: the job counts Swiss days (#1222). */
+    private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-07-01T22:30:00Z"), ZoneOffset.UTC);
+    private static final LocalDate TODAY = LocalDate.of(2026, 7, 2);
+
     @InjectMocks
     private SpeakerReminderService speakerReminderService;
 
@@ -104,7 +110,7 @@ class SpeakerReminderServiceTest {
                 outreachHistoryRepository, sessionContentHistoryRepository,
                 reminderEmailService,
                 notificationService, reminderProperties,
-                primarySpeakerResolver, userApiClient
+                primarySpeakerResolver, userApiClient, CLOCK
         );
 
         testEvent = Event.builder()
@@ -119,7 +125,7 @@ class SpeakerReminderServiceTest {
                 .eventId(eventId)
                 .speakerName("John Doe")
                 .status(SpeakerWorkflowState.INVITED)
-                .responseDeadline(LocalDate.now().plusDays(14)) // exactly TIER_1
+                .responseDeadline(TODAY.plusDays(14)) // exactly TIER_1
                 .remindersDisabled(false)
                 .build();
 
@@ -143,32 +149,32 @@ class SpeakerReminderServiceTest {
         @Test
         @DisplayName("should return TIER_1 when exactly 14 days before deadline")
         void shouldReturnTier1_when14DaysBeforeDeadline() {
-            LocalDate deadline = LocalDate.now().plusDays(14);
-            String tier = speakerReminderService.findMatchingTier(LocalDate.now(), deadline);
+            LocalDate deadline = TODAY.plusDays(14);
+            String tier = speakerReminderService.findMatchingTier(TODAY, deadline);
             assertThat(tier).isEqualTo("TIER_1");
         }
 
         @Test
         @DisplayName("should return TIER_2 when exactly 7 days before deadline")
         void shouldReturnTier2_when7DaysBeforeDeadline() {
-            LocalDate deadline = LocalDate.now().plusDays(7);
-            String tier = speakerReminderService.findMatchingTier(LocalDate.now(), deadline);
+            LocalDate deadline = TODAY.plusDays(7);
+            String tier = speakerReminderService.findMatchingTier(TODAY, deadline);
             assertThat(tier).isEqualTo("TIER_2");
         }
 
         @Test
         @DisplayName("should return TIER_3 when exactly 3 days before deadline")
         void shouldReturnTier3_when3DaysBeforeDeadline() {
-            LocalDate deadline = LocalDate.now().plusDays(3);
-            String tier = speakerReminderService.findMatchingTier(LocalDate.now(), deadline);
+            LocalDate deadline = TODAY.plusDays(3);
+            String tier = speakerReminderService.findMatchingTier(TODAY, deadline);
             assertThat(tier).isEqualTo("TIER_3");
         }
 
         @Test
         @DisplayName("should return null when no tier matches")
         void shouldReturnNull_whenNoTierMatches() {
-            LocalDate deadline = LocalDate.now().plusDays(10); // Not 14, 7, or 3
-            String tier = speakerReminderService.findMatchingTier(LocalDate.now(), deadline);
+            LocalDate deadline = TODAY.plusDays(10); // Not 14, 7, or 3
+            String tier = speakerReminderService.findMatchingTier(TODAY, deadline);
             assertThat(tier).isNull();
         }
     }
@@ -180,24 +186,24 @@ class SpeakerReminderServiceTest {
         @Test
         @DisplayName("should detect closest tier for manual trigger")
         void shouldDetectClosestTier() {
-            LocalDate deadline = LocalDate.now().plusDays(8); // closest to TIER_2 (7)
-            String tier = speakerReminderService.autoDetectTier(LocalDate.now(), deadline);
+            LocalDate deadline = TODAY.plusDays(8); // closest to TIER_2 (7)
+            String tier = speakerReminderService.autoDetectTier(TODAY, deadline);
             assertThat(tier).isEqualTo("TIER_2");
         }
 
         @Test
         @DisplayName("should detect TIER_1 for 12 days before deadline")
         void shouldDetectTier1For12Days() {
-            LocalDate deadline = LocalDate.now().plusDays(12); // closest to TIER_1 (14)
-            String tier = speakerReminderService.autoDetectTier(LocalDate.now(), deadline);
+            LocalDate deadline = TODAY.plusDays(12); // closest to TIER_1 (14)
+            String tier = speakerReminderService.autoDetectTier(TODAY, deadline);
             assertThat(tier).isEqualTo("TIER_1");
         }
 
         @Test
         @DisplayName("should detect TIER_3 for 1 day before deadline")
         void shouldDetectTier3For1Day() {
-            LocalDate deadline = LocalDate.now().plusDays(1); // closest to TIER_3 (3)
-            String tier = speakerReminderService.autoDetectTier(LocalDate.now(), deadline);
+            LocalDate deadline = TODAY.plusDays(1); // closest to TIER_3 (3)
+            String tier = speakerReminderService.autoDetectTier(TODAY, deadline);
             assertThat(tier).isEqualTo("TIER_3");
         }
     }
@@ -280,7 +286,8 @@ class SpeakerReminderServiceTest {
         }
 
         @Test
-        @DisplayName("should process response reminder for INVITED speaker at TIER_1")
+        // The fixed clock is 00:30 Zurich, the UTC date one day earlier: TIER_1 only on the Swiss date
+        @DisplayName("should process response reminder for INVITED speaker at TIER_1 (Swiss date, #1222)")
         void shouldProcessResponseReminder() {
             when(eventRepository.findByDateAfter(any(Instant.class))).thenReturn(List.of(testEvent));
             when(speakerPoolRepository.findByEventId(eventId)).thenReturn(List.of(testSpeaker));
@@ -321,7 +328,7 @@ class SpeakerReminderServiceTest {
         @DisplayName("should process content reminder for ACCEPTED speaker with PENDING content")
         void shouldProcessContentReminder() {
             testSpeaker.setStatus(SpeakerWorkflowState.ACCEPTED);
-            testSpeaker.setContentDeadline(LocalDate.now().plusDays(7)); // TIER_2
+            testSpeaker.setContentDeadline(TODAY.plusDays(7)); // TIER_2
             testSpeaker.setResponseDeadline(null); // no response deadline
 
             when(eventRepository.findByDateAfter(any(Instant.class))).thenReturn(List.of(testEvent));
@@ -341,7 +348,7 @@ class SpeakerReminderServiceTest {
         @Test
         @DisplayName("should skip speaker with non-matching deadline")
         void shouldSkipNonMatchingDeadline() {
-            testSpeaker.setResponseDeadline(LocalDate.now().plusDays(10)); // No tier matches
+            testSpeaker.setResponseDeadline(TODAY.plusDays(10)); // No tier matches
 
             when(eventRepository.findByDateAfter(any(Instant.class))).thenReturn(List.of(testEvent));
             when(speakerPoolRepository.findByEventId(eventId)).thenReturn(List.of(testSpeaker));

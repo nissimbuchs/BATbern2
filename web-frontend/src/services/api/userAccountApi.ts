@@ -67,10 +67,7 @@ const toPreferencesView = (settings: WireSettings): UserPreferencesView => ({
   timezone: settings.timezone || 'Europe/Zurich',
   notificationChannels: {
     email: settings.emailNotifications,
-    inApp: settings.inAppNotifications,
-    push: settings.pushNotifications,
   },
-  notificationFrequency: mapNotificationFrequency(settings.notificationFrequency),
   qnaNotificationFrequency: mapQnaNotificationFrequency(settings.qnaNotificationFrequency),
 });
 
@@ -87,13 +84,6 @@ const toSettingsView = (settings: WireSettings): UserSettingsView => ({
 const mapTheme = (theme?: string): 'LIGHT' | 'DARK' | 'AUTO' => {
   if (!theme) return 'LIGHT';
   return theme.toUpperCase() as 'LIGHT' | 'DARK' | 'AUTO';
-};
-
-const mapNotificationFrequency = (
-  freq?: string
-): 'IMMEDIATE' | 'DAILY_DIGEST' | 'WEEKLY_DIGEST' => {
-  if (!freq) return 'IMMEDIATE';
-  return freq.toUpperCase() as 'IMMEDIATE' | 'DAILY_DIGEST' | 'WEEKLY_DIGEST';
 };
 
 const mapProfileVisibility = (visibility?: string): 'PUBLIC' | 'MEMBERS_ONLY' | 'PRIVATE' => {
@@ -170,9 +160,6 @@ export const updateUserPreferences = async (
     theme: lower(preferences.theme),
     timezone: preferences.timezone,
     emailNotifications: preferences.notificationChannels?.email,
-    inAppNotifications: preferences.notificationChannels?.inApp,
-    pushNotifications: preferences.notificationChannels?.push,
-    notificationFrequency: lower(preferences.notificationFrequency),
     qnaNotificationFrequency: lower(preferences.qnaNotificationFrequency),
   };
   return toPreferencesView(await patchUserSettings(changes));

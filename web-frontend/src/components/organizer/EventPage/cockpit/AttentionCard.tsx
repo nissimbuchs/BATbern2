@@ -4,7 +4,7 @@
  * One "Needs your attention" card, laid out vertically like the prototype `.task`:
  * a severity colour strip, the task name, a meta row (due chip + assignee avatar),
  * and — when the card deep-links somewhere — a description line of what pressing it
- * does ("Open Speakers & Agenda →").
+ * does ("Open Speakers & Agenda", followed by an arrow icon).
  *
  * The WHOLE card is the button: clicking it NAVIGATES only — it never triggers a
  * side-effect (NFR1); any consequential action lives behind the destination tab's
@@ -19,6 +19,7 @@ import { ArrowForward as ArrowForwardIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { OrganizerChip } from '@/components/shared/OrganizerChip';
 import type { CockpitCard, CardTarget, CardSeverity } from './cockpitCards';
+import { intlLocale } from '@/utils/date/intlLocale';
 
 interface AttentionCardProps {
   card: CockpitCard;
@@ -60,7 +61,7 @@ export const AttentionCard: React.FC<AttentionCardProps> = ({ card, onNavigate }
       dueText =
         eventDay.getTime() > today.getTime()
           ? t('eventPage.cockpit.due.eventDay', 'Event day · {{date}}', {
-              date: eventDate.toLocaleDateString(i18n.language, {
+              date: eventDate.toLocaleDateString(intlLocale(i18n.language), {
                 day: 'numeric',
                 month: 'short',
                 year: 'numeric',
@@ -78,27 +79,36 @@ export const AttentionCard: React.FC<AttentionCardProps> = ({ card, onNavigate }
         ? t('eventPage.cockpit.due.overdueNow', 'Overdue')
         : t('eventPage.cockpit.due.upcoming', 'Upcoming');
   } else if (card.severity === 'overdue') {
-    dueText = t('eventPage.cockpit.due.overdue', 'Overdue · {{days}} days', {
-      days: Math.abs(card.dueDays),
+    dueText = t('eventPage.cockpit.due.overdue', {
+      count: Math.abs(card.dueDays),
+      defaultValue: 'Overdue · {{count}} days',
     });
   } else if (card.severity === 'dueSoon') {
-    dueText = t('eventPage.cockpit.due.dueSoon', 'Due in {{days}} days', { days: card.dueDays });
+    // #1223: a task due today read "Due in 0 days".
+    dueText =
+      card.dueDays === 0
+        ? t('eventPage.cockpit.due.dueToday', 'Due today')
+        : t('eventPage.cockpit.due.dueSoon', {
+            count: card.dueDays,
+            defaultValue: 'Due in {{count}} days',
+          });
   } else {
     dueText = t('eventPage.cockpit.due.upcoming', 'Upcoming');
   }
 
-  // Action description: tab name for tab targets, generic "Open" for routes.
+  // Action description: tab name for tab targets, generic "Open" for routes. The arrow is the
+  // icon after the text; the text carries none (#1223: "Open Registrations → →").
   const target = card.target;
   let actionLabel: string | undefined;
   if (target?.kind === 'tab') {
-    actionLabel = t('eventPage.cockpit.attention.open', 'Open {{tab}} →', {
+    actionLabel = t('eventPage.cockpit.attention.open', 'Open {{tab}}', {
       tab: t(
         `eventPage.tabs.${target.tab === 'speakers' ? 'speakersAgenda' : target.tab}`,
         target.tab
       ),
     });
   } else if (target?.kind === 'route') {
-    actionLabel = t('eventPage.cockpit.attention.go', 'Open →');
+    actionLabel = t('eventPage.cockpit.attention.go', 'Open');
   }
 
   const cardSx = {

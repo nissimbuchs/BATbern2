@@ -48,7 +48,8 @@ const AppHeader = React.memo(function AppHeader({
   const { hasNew: whatsNewHasNew } = useWhatsNew();
 
   const user = userProp || storeUser;
-  // Use prop if provided (for testing), otherwise would use hook data when backend is ready
+  // The caller's unread notifications, fed by AuthLayout (organizers only; read over REST and
+  // refreshed on window focus, remount or a ['notifications'] invalidation, no push).
   const notificationsData = notificationsProp;
   const unreadCount = notificationsData?.unreadCount ?? 0;
 

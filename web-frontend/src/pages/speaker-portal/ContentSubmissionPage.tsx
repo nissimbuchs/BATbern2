@@ -24,6 +24,7 @@ import { speakerPortalService, ContentSubmitResponse } from '@/services/speakerP
 import PresentationUpload from '@/components/speaker-portal/PresentationUpload';
 import { User, LayoutDashboard } from 'lucide-react';
 import { BATbernLoader } from '@components/shared/BATbernLoader';
+import { uiIntlLocale } from '@/utils/date/intlLocale';
 
 // Constants
 const MAX_TITLE_LENGTH = 200;
@@ -448,7 +449,7 @@ export default function ContentSubmissionPage() {
                     <>
                       {' '}
                       {t('speakerPortal.content.on')}{' '}
-                      {new Date(contentInfo.reviewedAt).toLocaleDateString()}
+                      {new Date(contentInfo.reviewedAt).toLocaleDateString(uiIntlLocale())}
                     </>
                   )}
                 </p>
@@ -559,7 +560,7 @@ export default function ContentSubmissionPage() {
                 ) : lastSavedAt ? (
                   <span>
                     {t('speakerPortal.content.lastSaved', {
-                      time: new Date(lastSavedAt).toLocaleTimeString(),
+                      time: new Date(lastSavedAt).toLocaleTimeString(uiIntlLocale()),
                     })}
                   </span>
                 ) : isDirty ? (

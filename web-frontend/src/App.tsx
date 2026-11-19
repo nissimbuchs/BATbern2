@@ -22,6 +22,7 @@ import { ProtectedRoute, SpeakerRoute, PartnerRoute } from '@components/auth/Pro
 import { setNavigationCallback } from '@/services/api/apiClient';
 import { LanguageSync } from '@components/shared/LanguageSync/LanguageSync';
 import { AuthProvider } from '@/contexts/AuthContext';
+import { retiredRouteRedirects } from '@/routes/retiredRoutes';
 
 // MUI is kept OUT of the eager entry chunk so the public homepage never downloads it
 // (~158 KB vendor-mui). The MUI theme provider, the MUI-using layouts, and the
@@ -29,8 +30,9 @@ import { AuthProvider } from '@/contexts/AuthContext';
 // <MuiLayout> boundary (auth / organizer / speaker / partner / registration flow) is
 // visited. See MuiLayout.tsx. The public routes below are Tailwind-only siblings.
 const MuiLayout = React.lazy(() => import('@/MuiLayout'));
-const BaseLayout = React.lazy(() =>
-  import('@components/shared/Layout/BaseLayout').then((m) => ({ default: m.BaseLayout }))
+// Layout wrapper for authenticated routes: BaseLayout with the notification bell fed (#1219)
+const AuthLayout = React.lazy(() =>
+  import('@components/shared/Layout/AuthLayout').then((m) => ({ default: m.AuthLayout }))
 );
 const AuthPageLayout = React.lazy(() =>
   import('@components/shared/Layout/AuthPageLayout').then((m) => ({ default: m.AuthPageLayout }))
@@ -81,7 +83,6 @@ const LogoutPage = React.lazy(() =>
 
 // Route-level code splitting with React.lazy() (Task 13b)
 const Dashboard = React.lazy(() => import('@pages/Dashboard'));
-const Speakers = React.lazy(() => import('@pages/Speakers'));
 const OrganizerPartners = React.lazy(() => import('@pages/OrganizerPartners'));
 const OrganizerPartnerDetail = React.lazy(() => import('@pages/OrganizerPartnerDetail'));
 
@@ -193,11 +194,6 @@ const PageLoader = () => (
     <BATbernLoader size={96} />
   </div>
 );
-
-// Layout wrapper for authenticated routes
-const AuthLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  return <BaseLayout>{children}</BaseLayout>;
-};
 
 // Login page component with navigation logic
 const LoginPage: React.FC = () => {
@@ -597,28 +593,8 @@ function App() {
                       }
                     />
 
-                    {/* Story 6.0: Organizer Speaker Management */}
-                    <Route
-                      path="/organizer/speakers"
-                      element={
-                        <ProtectedRoute>
-                          <AuthLayout>
-                            <Speakers />
-                          </AuthLayout>
-                        </ProtectedRoute>
-                      }
-                    />
-
-                    <Route
-                      path="/speakers"
-                      element={
-                        <SpeakerRoute>
-                          <AuthLayout>
-                            <Speakers />
-                          </AuthLayout>
-                        </SpeakerRoute>
-                      }
-                    />
+                    {/* #1223 item 8: the speaker placeholder pages redirect to the real ones */}
+                    {retiredRouteRedirects()}
 
                     {/* Partner Management Routes */}
                     <Route

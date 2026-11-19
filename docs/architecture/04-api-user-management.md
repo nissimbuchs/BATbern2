@@ -355,6 +355,15 @@ and replaced the full-replace PUT with a partial PATCH (ADR-013). The storage is
 the other settings; before, the frontend sent it to `/users/me/preferences`, which dropped it.
 Other services read the settings with `?include=settings` on `/internal/users/{username}`.
 
+`language` is one of the 10 UI locales, `gsw-BE` (Swiss German) included since #1222: column
+`pref_language` is `VARCHAR(10)` (V34), anything else answers 400. JIT provisioning and the nightly
+reconciliation keep `gsw-BE` from the sign-up form and reduce other tags to their primary subtag
+(`fr-CH` is `fr`), `UserLanguages.normalize`; the Cognito post-confirmation Lambda
+(`post-confirmation.ts`, `normalizeLanguage`) applies the same rule before it writes the row, with
+`de` as default. A stored value outside the enum (an older raw tag such as `de-CH`) is read as its
+normalized code or `de` and logged, so the settings read never fails. Mails go out in German for `de*` and `gsw*`, in
+English otherwise (`UserLanguages.mailLanguage` in CUMS, `MailLocales` in EMS).
+
 `whatsNewSeenAt` (column `settings_whats_new_seen_at`, V32) is when the user last closed the
 "What's new" card on the attendee dashboard; absent means never. The frontend sends "now" when the
 card is closed; a time ahead of the server clock is stored as the server's now. The
@@ -821,21 +830,11 @@ UserPreferences:
       default: auto
     language:
       type: string
-      enum: [de, en, fr, it]
+      enum: [de, en, fr, it, rm, es, fi, nl, ja, gsw-BE]
       default: de
     emailNotifications:
       type: boolean
       default: true
-    inAppNotifications:
-      type: boolean
-      default: true
-    pushNotifications:
-      type: boolean
-      default: false
-    notificationFrequency:
-      type: string
-      enum: [immediate, daily_digest, weekly_digest]
-      default: immediate
     quietHoursStart:
       type: string
       pattern: '^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$'

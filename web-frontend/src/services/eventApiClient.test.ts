@@ -57,8 +57,17 @@ describe('Event API client', () => {
     it('rejects a registration deadline after the event date', async () => {
       await expect(
         eventApiClient.createEvent(validEvent({ registrationDeadline: inDays(70) }))
-      ).rejects.toThrow(/Registration deadline must be before event date/);
+      ).rejects.toThrow(/Registration deadline must be on or before the event date/);
       expect(api.allCalls()).toEqual([]);
+    });
+
+    // The event form allows a deadline on the event day; the client refused it (#1223 sweep).
+    it('accepts a registration deadline on the event date', async () => {
+      const day = inDays(60);
+
+      await eventApiClient.createEvent(validEvent({ date: day, registrationDeadline: day }));
+
+      expect(api.calls('createEvent')).toHaveLength(1);
     });
 
     it('rejects a negative capacity', async () => {
@@ -75,7 +84,7 @@ describe('Event API client', () => {
         registrationDeadline: inDays(70),
       };
       await expect(eventApiClient.updateEvent('BATbern56', updates)).rejects.toThrow(
-        /Registration deadline must be before event date/
+        /Registration deadline must be on or before the event date/
       );
       expect(api.allCalls()).toEqual([]);
     });
@@ -257,6 +266,13 @@ describe('Event API client', () => {
       [403, { error: 'turnstile_required' }, 'turnstile_required'],
       [404, {}, 'Not Found: The requested event was not found'],
       [409, { message: 'Already registered' }, 'Already registered'],
+      [
+        422,
+        {
+          message: "Validation failed for field 'eventCode': Event code already exists: BATbern64",
+        },
+        "Validation failed for field 'eventCode': Event code already exists: BATbern64",
+      ],
       [500, {}, 'Server Error: Please try again later'],
     ])('maps %i to a readable message', async (status, body, message) => {
       failWith(status, body);

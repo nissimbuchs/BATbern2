@@ -36,7 +36,6 @@ flowchart LR
     ONL --> NT[("notifications, channel IN_APP, status UNREAD")]
     NT --> REST["GET /api/v1/notifications, organizer only"]
     REST --> FEED["TeamActivityFeed, NotificationsPage"]
-    ONL -. "STOMP push, reaches only localhost dev" .-> FEED
     SR --> SRE["SpeakerReminderEmailService"]
     SR -->|"TIER_3 reminder sent"| NS["NotificationService.createAndSendEmailNotification"]
     NS --> NTE[("notifications, channel EMAIL, SPEAKER_ESCALATION")]
@@ -154,16 +153,16 @@ Status values in use: `PENDING`, `SENT`, `FAILED` (email), `UNREAD`, `READ` (in-
 - **`NotificationService.createAndSendEmailNotification(NotificationRequest)`**: reads the
   recipient's preferences from CUMS (`UserApiClient.getPreferences`), skips the send when email
   notifications are disabled or the recipient is in quiet hours, saves a `PENDING` row, sends
-  via `EmailService.sendHtmlEmail(...)` with a `MailContext` (so the send is recorded in the
-  Mail Center, Story 16.1a), then sets `SENT` or `FAILED`. Its only caller in `src/main` is
+  synchronously via `EmailService.sendHtmlEmailSync(...)` with a `MailContext` (so the send is
+  recorded in the Mail Center, Story 16.1a), then sets `SENT` or `FAILED` from what SES answered.
+  Until #1222 it used the `@Async` send, which returned at once, so a mail SES refused was still
+  recorded as `SENT`. Its only caller in `src/main` is
   `SpeakerReminderService` (type `SPEAKER_ESCALATION`, priority `HIGH`).
-- **`NotificationService.pushNotificationViaWebSocket(Notification)`**: sends the row to the STOMP
-  destination `/topic/notifications/{username}`. Failures are logged and ignored.
 - **`OrganizerNotificationListener`**: listens to domain events and writes one `IN_APP` row per
   organizer per event (see the correction above), with `notification_type` set to the domain
   event type and a priority derived from the event type name (`Cancelled`/`Failed`/`Error` HIGH,
-  `Deadline`/`Urgent` URGENT, `Updated`/`Modified` LOW, else NORMAL). It then calls
-  `pushNotificationViaWebSocket`.
+  `Deadline`/`Urgent` URGENT, `Updated`/`Modified` LOW, else NORMAL). Nothing is pushed: the
+  organizer reads the rows over REST (#1222 removed the STOMP push that reached only localhost).
 - **`NotificationController`**: REST read and status API for the rows.
 
 There is no `EventPublishedEvent` listener any more (#1179): publishing the agenda used to mail
@@ -188,7 +187,6 @@ sequenceDiagram
     CUMS-->>L: organizer usernames
     loop each organizer
         L->>DB: INSERT channel IN_APP, status UNREAD, type = event type, priority from type name
-        L->>L: pushNotificationViaWebSocket, failure only logged
     end
     UI->>DB: GET /api/v1/notifications (the caller's own) via NotificationController, React Query staleTime 1 min
     UI->>DB: PATCH /notifications/id or /notifications with status READ, DELETE /notifications/id
@@ -223,9 +221,9 @@ sequenceDiagram
     else send
         NS->>DB: INSERT status PENDING
         NS->>CUMS: getUserByUsername, cached, for the email address
-        NS->>ES: sendHtmlEmail with MailContext audience ORGANIZERS, async
+        NS->>ES: sendHtmlEmailSync with MailContext audience ORGANIZERS
         NS->>DB: UPDATE status SENT, sent_at
-        Note over NS,DB: SENT means handed to the async sender. An SES error later is logged by EmailService and recorded in the Mail Center, not in this row. FAILED is set only when the lookup or the hand-over throws.
+        Note over NS,DB: The send is synchronous (#1222). SENT means SES accepted the mail. A mail SES refuses, or a failed address lookup, sets FAILED with failed_at and the reason.
     end
 ```
 
@@ -282,29 +280,28 @@ so that nobody looks for it:
   last login"), and the `getLastLogin` client call they needed;
 - **Thymeleaf** notification templates under `resources/templates/notifications/`, including
   `event_published.html` (templates are HTML files in `email-templates/`, stored in the database);
-- **real-time push in staging and production** (the WebSocket client connects on localhost only,
-  see below);
-- reading the `inAppNotifications`, `pushNotifications` and `notificationFrequency` preferences
-  (stored, never evaluated).
+- **real-time push** of in-app notifications. The STOMP push to `/topic/notifications/{username}`
+  and its browser client connected on localhost only and were removed (#1222, see below);
+- in-app, push and frequency preferences. They were stored and never evaluated, and #1222 removed
+  them from the API, the services and the profile page.
 
 ## User Notification Preferences
 
 **Storage**: one column per preference on `user_profiles` in CUMS (`pref_email_notifications`,
-`pref_in_app_notifications`, `pref_push_notifications`, `pref_notification_frequency`,
 `pref_quiet_hours_start`, `pref_quiet_hours_end`, `pref_qna_notification_frequency`, plus
 `pref_language` and `pref_theme`). There is no `user_preferences` JSONB column. Users edit them
-through `PATCH /api/v1/users/me/settings` (one settings resource since Story 4.9).
+through `PATCH /api/v1/users/me/settings` (one settings resource since Story 4.9). The columns
+`pref_in_app_notifications`, `pref_push_notifications` and `pref_notification_frequency` are no
+longer mapped by any code (#1222) and are dropped by a later migration.
 
 **Fields** (API names):
 - `emailNotifications` (boolean)
-- `inAppNotifications` (boolean)
-- `pushNotifications` (boolean)
-- `notificationFrequency` (string: "realtime", "daily_digest", "weekly_digest")
 - `qnaNotificationFrequency` (string: "live" | "daily" | "off", default "live") — Story 15.7;
   per-user cadence for the Q&A new-questions digest (see Scheduled Notification Jobs). Stored as
   `user_profiles.pref_qna_notification_frequency`.
 - `quietHoursStart` (string: "22:00")
 - `quietHoursEnd` (string: "07:00")
+- `timezone` (IANA zone id, default `Europe/Zurich`): the zone the quiet hours are meant in (#1222)
 
 ### Preferences Access
 
@@ -312,47 +309,41 @@ Which preferences are actually read (checked 2026-11-04):
 
 | Preference | Read by |
 |---|---|
-| `emailNotifications`, `quietHoursStart/End` | `NotificationService.shouldSend`, so only the `SPEAKER_ESCALATION` mail |
+| `emailNotifications`, `quietHoursStart/End`, `timezone` | `NotificationService.shouldSend`, so only the `SPEAKER_ESCALATION` mail |
 | `qnaNotificationFrequency` | `QnaNotificationService` (Q&A digest) |
-| `language` | most mail senders for the DE/EN choice, `LanguageSync` in the SPA |
-| `inAppNotifications`, `pushNotifications`, `notificationFrequency` | nothing: stored and editable, no code path reads them |
+| `language` | most mail senders for the DE/EN choice (`MailLocales`: `de*`, `gsw*` and none German, every other language English), `LanguageSync` in the SPA |
 
 Registration, reminder, waitlist and Mail Center mails do not consult `emailNotifications` or
-quiet hours. The IN_APP feed ignores `inAppNotifications`.
+quiet hours. The IN_APP feed is written for every organizer; there is no per-user switch.
 
 ```java
-// NotificationService (EMS), as in the source
+// NotificationService (EMS), shortened
 private boolean shouldSend(UserPreferences prefs, NotificationRequest request) {
     if ("EMAIL".equals(request.getChannel()) && !prefs.isEmailNotificationsEnabled()) {
         return false;
     }
-    if (isInQuietHours(prefs)) {
-        return false;
-    }
-    return true;
+    return !isInQuietHours(prefs, clock.instant());   // Clock bean (ClockConfig), UTC
 }
 
-private boolean isInQuietHours(UserPreferences prefs) {
-    if (prefs.getQuietHoursStart() == null || prefs.getQuietHoursEnd() == null) {
-        return false;
+static boolean isInQuietHours(UserPreferences prefs, Instant now) {
+    // no window, blank or unparsable times: never quiet
+    LocalTime local = now.atZone(zoneOf(prefs.getTimezone())).toLocalTime();  // Zurich when unset
+    if (start.isBefore(end)) {          // same-day window, 09:00-17:00
+        return !local.isBefore(start) && local.isBefore(end);
     }
-    LocalTime now = LocalTime.now();            // JVM clock, see the note on time zones below
-    LocalTime start = LocalTime.parse(prefs.getQuietHoursStart());
-    LocalTime end = LocalTime.parse(prefs.getQuietHoursEnd());
-    if (start.isBefore(end)) {
-        return now.isAfter(start) || now.isBefore(end);
-    } else {
-        return now.isAfter(start) && now.isBefore(end);
+    if (start.isAfter(end)) {           // across midnight, 22:00-07:00
+        return !local.isBefore(start) || local.isBefore(end);
     }
+    return false;                       // start == end: no window
 }
 ```
 
-> **Bug, kept as found (2026-11-04):** the two branches are swapped. For the usual overnight
-> window 22:00-07:00 (`start` after `end`) the else branch requires `now > 22:00 AND now < 07:00`,
-> which is never true, so overnight quiet hours never suppress anything. For a same-day window
-> such as 12:00-14:00 the first branch is `now > 12:00 OR now < 14:00`, true at every time of
-> day, so that user never gets the mail. The code comments carry the same mix-up. Impact today
-> is limited to the escalation mail; the doc does not fix code.
+Quiet hours are read on the recipient's wall clock: the settings `timezone` (an IANA id), Europe/Zurich
+when it is unset or unknown, since the containers run on UTC. The start belongs to the window, the
+end does not (22:00-07:00 suppresses at 22:00 and sends at 07:00). Until #1222 the two branches
+were swapped and the JVM clock was read: an overnight window never suppressed, a same-day window
+suppressed all day. `NotificationQuietHoursTest` covers every case. Impact is limited to the
+escalation mail, the only caller.
 
 ### UserApiClient (HTTP Integration)
 
@@ -382,32 +373,20 @@ public List<String> getOrganizerUsernames() {
 > **Not implemented:** `getLastLogin` and the `/users/{username}/last-login` endpoint shown in
 > earlier versions. They served the lazy in-app model, which was never built.
 
-## Real-Time Notifications (WebSocket push: local development only)
+## Real-Time Notifications: none
 
-What the code does: `OrganizerNotificationListener` calls
-`NotificationService.pushNotificationViaWebSocket`, which publishes to
-`/topic/notifications/{username}` via `SimpMessagingTemplate`. EMS registers the STOMP endpoint
-`/ws` with Spring's **in-memory simple broker** (`WebSocketConfig`, `enableSimpleBroker`). On
-the frontend, `EventManagementDashboard` subscribes through `useNotificationWebSocket`
-(`web-frontend/src/hooks/useNotificationWebSocket.ts`, `services/notificationWebSocketClient.ts`)
-and invalidates the notifications query when a message arrives.
+There is no push of in-app notifications. The organizer sees new rows when `useNotifications`
+refetches (stale after one minute, on focus or reload).
 
-```mermaid
-flowchart LR
-    L["OrganizerNotificationListener"] --> DB[("notifications row")]
-    L --> PUSH["SimpMessagingTemplate, in-memory broker of this EMS task"]
-    PUSH -->|"localhost only: SockJS to EMS port, gateway port + 2"| WS["useNotificationWebSocket"]
-    WS -->|"invalidate query"| RQ["useNotifications, React Query"]
-    DB -->|"GET /api/v1/notifications, staleTime 1 min, refetch on reload"| RQ
-    PUSH -.->|"cloud: isWebSocketAvailable is false, client never connects"| X["no push"]
-```
-
-In staging and production the push never reaches a browser: `isWebSocketAvailable()` returns
-true only for `localhost`/`127.0.0.1`, and `getWebSocketUrl()` throws "WebSocket not available in
-cloud environments" (checked in the source 2026-11-04). The organizer sees new rows when the
-query refetches (stale after one minute, on focus or reload). Even if a cloud client connected,
-the simple broker lives in one EMS task, so a push would reach only clients of that task; Story
-15.1 replaced WebSockets with REST polling for the live agenda for that reason (V119 comment).
+Until #1222 `OrganizerNotificationListener` also sent each row to
+`/topic/notifications/{username}` over STOMP, and `EventManagementDashboard` subscribed through
+`useNotificationWebSocket`. The browser client connected on `localhost` only, so staging and
+production never got a push, and the in-memory simple broker lives in one EMS task, so a cloud
+push would have reached only clients of that task (the reason Story 15.1 replaced WebSockets with
+REST polling for the live agenda). #1222 removed the server push, the hook, the client and the
+`@stomp/stompjs` and `sockjs-client` packages. The STOMP endpoint `/ws` and its broker stay: the
+watch uses them for live timing, presence and arrivals (`WebSocketConfig`,
+`WatchWebSocketController`).
 
 ## Email Notification Templates
 
@@ -656,8 +635,8 @@ flowchart LR
         J2["01:00 PublishingScheduledService: auto-publish speakers and agenda, no mail, no lock"]
         J2b["02:00 EventWorkflowScheduledService: EVENT_COMPLETED to ARCHIVED, unread notifications marked READ"]
         J3["03:00 RegistrationCleanupService: delete never-confirmed registrations"]
-        J4["03:15 and 03:30 Zurich: forwarding log and mail message retention"]
-        J5["05:30 Zurich TaskActivationScheduler: activate due tasks, no mail"]
+        J4["03:15 and 03:30: forwarding log and mail message retention"]
+        J5["05:30 TaskActivationScheduler: activate due tasks, no mail"]
     end
     subgraph Morning["Morning mail window"]
         M1["08:00 SpeakerReminderScheduler: speaker reminders TIER_1-3 + organizer escalation"]
@@ -675,12 +654,11 @@ flowchart LR
     Night --> Morning --> Continuous --> Evening
 ```
 
-**Time zone.** Only the jobs marked "Zurich" declare `zone = "Europe/Zurich"`. The others run on
-the JVM clock. No `TZ` or `user.timezone` is set in the Dockerfiles (base image
-`eclipse-temurin:21-jre-alpine`) or the CDK task definitions (checked by grep), so on ECS they
-presumably run on UTC, one or two hours before the Swiss time the comments state (not verified
-2026-11-04 on a running task). The `application.yml` comments saying "Europe/Zurich" for the
-00:01 and 23:59 jobs describe the intent, not the configuration.
+**Time zone.** Every cron declares `zone = "Europe/Zurich"` (#1222), so the times above are Swiss
+times. The tasks run on UTC: no `TZ` or `user.timezone` is set in the Dockerfiles or the CDK task
+definitions, and none is added, the code states the zone. Until #1222 only the retention and task
+activation jobs did, and the other 15 ran one or two hours early. `ScheduledZoneGuardTest` in CUMS
+and EMS fails the build for a cron without the zone.
 
 Attendee recovery runs in two steps: `CognitoConfirmationResendJob` (CUMS) re-triggers Cognito's
 sign-up code, because Cognito's code expires after 24 h and cannot be extended, and
@@ -750,7 +728,7 @@ the 2026-11-02 rows carry them.
 
 **Note**: This scheduler bypasses `NotificationService` entirely; it delegates directly to `TaskReminderEmailService`, so **no record is written to the notifications table** for task reminders. The mail itself carries a `MailTrigger` and is recorded in the Mail Center.
 
-**Schedule**: daily at **08:00** by default (`batbern.task-reminders.cron`, JVM clock; earlier
+**Schedule**: daily at **08:00** by default (`batbern.task-reminders.cron`, Europe/Zurich; earlier
 versions of this document said 09:00).
 
 **Locale**: All task reminder emails are rendered in `Locale.GERMAN`; user language preference is not consulted.

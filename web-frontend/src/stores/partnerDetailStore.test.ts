@@ -29,13 +29,6 @@ describe('Partner Detail Store', () => {
       expect(result.current.activeTab).toBe(0);
     });
 
-    // Test: should_haveEditModalClosedFalse_when_storeInitialized
-    test('should_haveEditModalClosedFalse_when_storeInitialized', () => {
-      const { result } = renderHook(() => usePartnerDetailStore());
-
-      expect(result.current.showEditModal).toBe(false);
-    });
-
     // Test: should_haveNoteModalClosedFalse_when_storeInitialized
     test('should_haveNoteModalClosedFalse_when_storeInitialized', () => {
       const { result } = renderHook(() => usePartnerDetailStore());
@@ -85,36 +78,6 @@ describe('Partner Detail Store', () => {
     });
   });
 
-  describe('setShowEditModal Action', () => {
-    // Test 1: should_openEditModal_when_setShowEditModalCalled
-    test('should_openEditModal_when_setShowEditModalCalled', () => {
-      const { result } = renderHook(() => usePartnerDetailStore());
-
-      act(() => {
-        result.current.setShowEditModal(true);
-      });
-
-      expect(result.current.showEditModal).toBe(true);
-    });
-
-    // Test 2: should_closeEditModal_when_setShowEditModalFalse
-    test('should_closeEditModal_when_setShowEditModalFalse', () => {
-      const { result } = renderHook(() => usePartnerDetailStore());
-
-      // First open
-      act(() => {
-        result.current.setShowEditModal(true);
-      });
-
-      // Then close
-      act(() => {
-        result.current.setShowEditModal(false);
-      });
-
-      expect(result.current.showEditModal).toBe(false);
-    });
-  });
-
   describe('setShowNoteModal Action', () => {
     // Test 1: should_openNoteModal_when_setShowNoteModalCalled
     test('should_openNoteModal_when_setShowNoteModalCalled', () => {
@@ -153,7 +116,6 @@ describe('Partner Detail Store', () => {
       // Change all state values
       act(() => {
         result.current.setActiveTab(3);
-        result.current.setShowEditModal(true);
         result.current.setShowNoteModal(true);
       });
 
@@ -164,7 +126,6 @@ describe('Partner Detail Store', () => {
 
       // Verify all back to initial state
       expect(result.current.activeTab).toBe(0);
-      expect(result.current.showEditModal).toBe(false);
       expect(result.current.showNoteModal).toBe(false);
     });
   });
@@ -175,7 +136,6 @@ describe('Partner Detail Store', () => {
       const { result } = renderHook(() => usePartnerDetailStore());
 
       expect(result.current.setActiveTab).toBeDefined();
-      expect(result.current.setShowEditModal).toBeDefined();
       expect(result.current.setShowNoteModal).toBeDefined();
       expect(result.current.reset).toBeDefined();
     });

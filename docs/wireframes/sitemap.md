@@ -359,10 +359,9 @@ Notification Center ✅ [IMPLEMENTED IN MVP - REFERENCED]
 
 ### 4.5 Speaker Management ✅ COMPLETE (Epic 6)
 ```
-🎯 Speaker Management Screen 🔄 [ORGANIZER PLACEHOLDER]
-│   Route: /organizer/speakers
-│   File: web-frontend/src/pages/Speakers.tsx
-│   Note: Organizer-side placeholder only — speaker self-service is delivered via §6 Speaker Portal (Epic 6).
+🎯 Speaker Management Screen ⤴ [RETIRED PLACEHOLDER, #1223]
+│   Route: /organizer/speakers redirects to /organizer/users (/speakers to /speaker-portal/dashboard)
+│   Note: the placeholder page is removed — speaker self-service is delivered via §6 Speaker Portal (Epic 6).
 │   MVP Approach: Organizers manage speakers manually via:
 │   ├── Event Page → Speakers Tab (speaker assignments)
 │   ├── Slot Assignment Page (speaker-to-slot mapping)

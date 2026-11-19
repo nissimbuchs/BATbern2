@@ -49,6 +49,8 @@ import type {
   MailMessageSummary,
 } from '@/services/mailMessageService';
 import { MailDetail, MailDetailDialog } from './MailDetail';
+import { zurichDay } from '@/utils/date/zurichDay';
+import { intlLocale } from '@/utils/date/intlLocale';
 
 const FILTERS: Array<MailAudience | 'ALL'> = [
   'ALL',
@@ -86,11 +88,6 @@ interface MailSentListProps {
 interface OpenMail {
   mailKey: string;
   title: string;
-}
-
-/** yyyy-MM-dd of the send in Europe/Zurich, the day the server groups by. */
-function zurichDay(iso: string): string {
-  return new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Zurich' }).format(new Date(iso));
 }
 
 export const MailSentList: React.FC<MailSentListProps> = ({
@@ -396,7 +393,7 @@ const MailRowContent: React.FC<{ row: MailMessageSummary; showEvent: boolean }> 
 }) => {
   const { t, i18n } = useTranslation('events');
   const received = row.direction === 'IN';
-  const sentAt = new Date(row.sentAt).toLocaleString(i18n.language, {
+  const sentAt = new Date(row.sentAt).toLocaleString(intlLocale(i18n.language), {
     dateStyle: 'medium',
     timeStyle: 'short',
   });

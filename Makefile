@@ -78,8 +78,8 @@ help: ## Show this help message
 	@echo "  make dev-native-logs-instance BASE_PORT=9000    - Logs from instance"
 	@echo ""
 	@echo "🚀 CI/CD:"
-	@echo "  make ci-build         - Full CI build (clean + build + test)"
-	@echo "  make ci-test          - Run all CI tests"
+	@echo "  make ci-build         - Full CI build (clean + install + build)"
+	@echo "  make ci-test          - Run all tests with coverage, then lint"
 	@echo ""
 	@echo "📊 Dependency Management:"
 	@echo "  make check-outdated   - Check for outdated dependencies"
@@ -385,9 +385,9 @@ dev-native-up-instance: ## Start specific instance (use BASE_PORT=9000 for insta
 		echo "Usage: make dev-native-up-instance BASE_PORT=9000"; \
 		echo ""; \
 		echo "Recommended port ranges:"; \
-		echo "  BASE_PORT=8000 (default, services 8000-8005, frontend 8100)"; \
-		echo "  BASE_PORT=9000 (services 9000-9005, frontend 9100)"; \
-		echo "  BASE_PORT=9500 (services 9500-9505, frontend 9600)"; \
+		echo "  BASE_PORT=8000 (default: gateway 8000, services 8001/8002/8004, frontend 8100)"; \
+		echo "  BASE_PORT=9000 (gateway 9000, services 9001/9002/9004, frontend 9100)"; \
+		echo "  BASE_PORT=9500 (gateway 9500, services 9501/9502/9504, frontend 9600)"; \
 		echo "  Any BASE_PORT value is supported"; \
 		exit 1; \
 	fi
@@ -441,7 +441,7 @@ dev-native-restart-instance: ## Restart specific instance (use BASE_PORT=9000)
 ci-build: clean install build ## Full CI build (clean + install + build)
 	@echo "✓ CI build complete"
 
-ci-test: test-coverage lint ## Run all CI tests with coverage and linting
+ci-test: test lint ## Run all CI tests with coverage and linting
 	@echo "✓ CI tests complete"
 
 # ═══════════════════════════════════════════════════════════

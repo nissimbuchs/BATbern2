@@ -26,7 +26,6 @@ vi.mock('@/hooks/useAuth', () => ({
       preferences: {
         language: 'de',
         theme: 'light',
-        notifications: { email: true, sms: false, push: true },
         privacy: { showProfile: true, allowMessages: true },
       },
       issuedAt: 0,
@@ -43,11 +42,9 @@ vi.mock('@/hooks/useAuth', () => ({
 // Mock UI store
 vi.mock('@/stores/uiStore', () => ({
   useUIStore: vi.fn(() => ({
-    locale: 'de',
     sidebarCollapsed: false,
     notificationDrawerOpen: false,
     userMenuOpen: false,
-    setLocale: vi.fn(),
     toggleSidebar: vi.fn(),
     setSidebarCollapsed: vi.fn(),
     setNotificationDrawerOpen: vi.fn(),

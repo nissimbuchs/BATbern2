@@ -6,6 +6,7 @@ import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.OutreachHistory;
 import ch.batbern.events.domain.SpeakerPool;
 import ch.batbern.events.domain.SpeakerReminderLog;
+import ch.batbern.events.mailcenter.render.MailLocales;
 import ch.batbern.events.notification.NotificationRequest;
 import ch.batbern.events.notification.NotificationService;
 import ch.batbern.events.repository.EventRepository;
@@ -20,6 +21,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -53,7 +55,10 @@ public class SpeakerReminderService {
     private final ReminderProperties reminderProperties;
     private final PrimarySpeakerResolver primarySpeakerResolver;
     private final UserApiClient userApiClient;
+    private final Clock clock;
 
+    /** Deadlines are Swiss dates; the server runs on UTC (#1222). */
+    private static final ZoneId ZURICH = ZoneId.of("Europe/Zurich");
     private static final String REMINDER_TYPE_RESPONSE = "RESPONSE";
     private static final String REMINDER_TYPE_CONTENT = "CONTENT";
     private static final String TRIGGERED_BY_SYSTEM = "SYSTEM";
@@ -73,13 +78,13 @@ public class SpeakerReminderService {
 
         log.info("Starting speaker deadline reminder processing");
 
-        LocalDate today = LocalDate.now();
+        LocalDate today = today();
         int responseReminders = 0;
         int contentReminders = 0;
         int skipped = 0;
 
         // Get all events with future dates
-        List<Event> activeEvents = eventRepository.findByDateAfter(Instant.now());
+        List<Event> activeEvents = eventRepository.findByDateAfter(clock.instant());
         MailTrigger run = MailTrigger.system();
 
         for (Event event : activeEvents) {
@@ -162,6 +167,11 @@ public class SpeakerReminderService {
                     || !sessionContentHistoryRepository.existsBySessionId(speaker.getSessionId()));
     }
 
+    /** Today's Swiss date. */
+    private LocalDate today() {
+        return LocalDate.ofInstant(clock.instant(), ZURICH);
+    }
+
     /** The deadline a manual reminder refers to; the event date when none is set. */
     public LocalDate deadlineFor(SpeakerPool speaker, Event event, String reminderType) {
         LocalDate deadline = REMINDER_TYPE_RESPONSE.equals(reminderType)
@@ -169,7 +179,7 @@ public class SpeakerReminderService {
                 : speaker.getContentDeadline();
         if (deadline == null) {
             // Fallback to event date for manual reminders without an explicit deadline
-            deadline = event.getDate().atZone(ZoneId.of("Europe/Zurich")).toLocalDate();
+            deadline = event.getDate().atZone(ZURICH).toLocalDate();
             log.info("No {} deadline set for speaker {}, using event date {} as fallback",
                     reminderType.toLowerCase(), speaker.getId(), deadline);
         }
@@ -195,7 +205,7 @@ public class SpeakerReminderService {
                 continue;
             }
             LocalDate deadline = deadlineFor(speaker, event, reminderType);
-            String effectiveTier = tier != null ? tier : autoDetectTier(LocalDate.now(), deadline);
+            String effectiveTier = tier != null ? tier : autoDetectTier(today(), deadline);
             sendAndLogReminder(speaker, event, reminderType, effectiveTier, deadline, triggeredBy, mailTrigger);
             templateKeys.add(SpeakerReminderEmailService.templateKey(reminderType, effectiveTier));
         }
@@ -340,7 +350,7 @@ public class SpeakerReminderService {
                 .orElse(null);
         return username == null
                 ? Locale.GERMAN
-                : EmailLocales.fromPreference(userApiClient.getPreferredLanguage(username));
+                : MailLocales.fromPreference(userApiClient.getPreferredLanguage(username));
     }
 
     private void sendOrganizerEscalation(SpeakerPool speaker, Event event, String reminderType) {

@@ -14,6 +14,7 @@ import { EventCard } from '@/components/public/EventCard';
 import { Card, CardHeader, CardTitle } from '@/components/public/ui/card';
 import { Badge } from '@/components/public/ui/badge';
 import type { EventDetailUI } from '@/types/event.types';
+import { uiIntlLocale } from '@/utils/date/intlLocale';
 
 /**
  * Per-card wrapper that calls useMyRegistration individually (rules of hooks).
@@ -45,7 +46,7 @@ export function PlannedEventCard({
   title: string;
   date: string;
 }) {
-  const formattedDate = new Date(date).toLocaleDateString('de-CH', {
+  const formattedDate = new Date(date).toLocaleDateString(uiIntlLocale(), {
     year: 'numeric',
     month: 'long',
     day: 'numeric',

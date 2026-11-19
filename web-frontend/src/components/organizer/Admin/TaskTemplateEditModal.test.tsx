@@ -1,114 +1,108 @@
 /**
- * TaskTemplateEditModal Tests (Story 10.1 - Task 4)
+ * TaskTemplateEditModal (Story 10.1, #1218).
  *
- * Tests:
- * - AC4: Renders fields pre-populated from template
- * - AC4: Shows offset days field only when dueDateType is relative_to_event
- * - AC4: Calls taskService.updateTemplate on save
- * - AC4: Save button disabled when name is empty
- * - AC4: min=0 enforced on offset days input
+ * Real i18next and the MSW harness: the PUT is checked against the spec and read back from
+ * `api.calls`. The offered trigger states are compared with the set the backend accepts, every
+ * `EventWorkflowState` of the spec in lower case plus `speakers_published`.
  */
-
-import { render, screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { vi, describe, it, expect, beforeEach } from 'vitest';
+import { vi, describe, it, expect } from 'vitest';
 import { TaskTemplateEditModal } from './TaskTemplateEditModal';
+import { renderWithProviders } from '@/test/test-utils';
+import { api } from '@/test/msw/api';
+import { backendTriggerStates } from '@/test/triggerStates';
 import type { TaskTemplateResponse } from '@/services/taskService';
 
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string, fallback?: string) => fallback ?? key,
-  }),
-}));
-
-vi.mock('@/services/taskService', () => ({
-  taskService: {
-    updateTemplate: vi.fn(),
-  },
-}));
+const TEMPLATE_ID = '3f2a9c4e-1b7d-4e8a-9c3f-2d1e5b6a7c8d';
 
 const baseTemplate: TaskTemplateResponse = {
-  id: 'tmpl-1',
+  id: TEMPLATE_ID,
   name: 'My Template',
   isDefault: false,
-  triggerState: 'DRAFT',
+  triggerState: 'topic_selection',
   dueDateType: 'immediate',
   dueDateOffsetDays: null,
+  activationLeadDays: null,
+  createdByUsername: null,
+  createdAt: '2026-11-01T08:00:00Z',
+  updatedAt: '2026-11-01T08:00:00Z',
 };
 
-const createQueryClient = () => new QueryClient({ defaultOptions: { queries: { retry: false } } });
+const renderModal = (template = baseTemplate, onClose = vi.fn()) =>
+  renderWithProviders(<TaskTemplateEditModal open onClose={onClose} template={template} />);
 
-const renderModal = (template = baseTemplate, open = true, onClose = vi.fn()) =>
-  render(
-    <QueryClientProvider client={createQueryClient()}>
-      <TaskTemplateEditModal open={open} onClose={onClose} template={template} />
-    </QueryClientProvider>
-  );
+const openTriggerSelect = async () => {
+  const user = userEvent.setup();
+  await user.click(screen.getByLabelText(/trigger state/i));
+  return { user, listbox: await screen.findByRole('listbox') };
+};
 
 describe('TaskTemplateEditModal', () => {
-  beforeEach(async () => {
-    vi.clearAllMocks();
-    const { taskService } = await import('@/services/taskService');
-    vi.mocked(taskService.updateTemplate).mockResolvedValue({} as never);
+  it('should_offerExactlyTheBackendTriggerStates_when_triggerSelectOpened', async () => {
+    renderModal();
+    const { listbox } = await openTriggerSelect();
+
+    const offered = within(listbox)
+      .getAllByRole('option')
+      .map((option) => option.getAttribute('data-value'));
+    expect([...offered].sort()).toEqual([...backendTriggerStates()].sort());
+    expect(within(listbox).getByRole('option', { name: 'Speaker Identification' })).toBeVisible();
   });
 
-  it('renders name field pre-populated', () => {
-    renderModal();
-    expect(screen.getByTestId('template-name-input')).toHaveValue('My Template');
+  it('should_saveTheChangedTrigger_when_saveClicked', async () => {
+    api.on('updateTemplate', ({ body }) => ({ ...baseTemplate, ...body }));
+    const onClose = vi.fn();
+    renderModal(baseTemplate, onClose);
+
+    const { user, listbox } = await openTriggerSelect();
+    await user.click(within(listbox).getByRole('option', { name: 'Slot Assignment' }));
+    await user.click(screen.getByRole('button', { name: /save/i }));
+
+    await waitFor(() => expect(onClose).toHaveBeenCalled());
+    expect(api.calls('updateTemplate')[0].body).toEqual({
+      name: 'My Template',
+      triggerState: 'slot_assignment',
+      dueDateType: 'immediate',
+    });
   });
 
-  it('does not show offset days field when dueDateType is immediate', () => {
-    renderModal();
+  it('should_requireANewTrigger_when_templateHasALegacyState', async () => {
+    renderModal({ ...baseTemplate, triggerState: 'speaker_outreach' });
+    const save = screen.getByRole('button', { name: /save/i });
+    expect(save).toBeDisabled();
+    expect(screen.getByText('Trigger state is required')).toBeInTheDocument();
+
+    const { user, listbox } = await openTriggerSelect();
+    await user.click(within(listbox).getByRole('option', { name: 'Topic Selection' }));
+
+    expect(save).toBeEnabled();
+    expect(screen.queryByText('Trigger state is required')).not.toBeInTheDocument();
+  });
+
+  it('should_showOffsetDays_only_when_relativeToEvent', () => {
+    const { unmount } = renderModal();
     expect(screen.queryByTestId('template-offset-days-input')).not.toBeInTheDocument();
-  });
+    unmount();
 
-  it('shows offset days field when dueDateType is relative_to_event', () => {
     renderModal({ ...baseTemplate, dueDateType: 'relative_to_event', dueDateOffsetDays: 7 });
-    expect(screen.getByTestId('template-offset-days-input')).toBeInTheDocument();
+    expect(screen.getByTestId('template-offset-days-input')).toHaveAttribute('min', '0');
   });
 
-  it('offset days input has min=0', () => {
-    renderModal({ ...baseTemplate, dueDateType: 'relative_to_event', dueDateOffsetDays: 7 });
-    const input = screen.getByTestId('template-offset-days-input');
-    expect(input).toHaveAttribute('min', '0');
-  });
-
-  it('disables Save when name is empty', async () => {
+  it('should_disableSave_when_nameIsEmpty', async () => {
     const user = userEvent.setup();
     renderModal();
-    const nameInput = screen.getByTestId('template-name-input');
-    await user.clear(nameInput);
+    expect(screen.getByRole('button', { name: /save/i })).toBeEnabled();
+
+    await user.clear(screen.getByTestId('template-name-input'));
+
     expect(screen.getByRole('button', { name: /save/i })).toBeDisabled();
   });
 
-  it('calls updateTemplate with correct data on save', async () => {
-    const user = userEvent.setup();
-    renderModal();
-    await user.click(screen.getByRole('button', { name: /save/i }));
-    const { taskService } = await import('@/services/taskService');
-    await waitFor(() =>
-      expect(taskService.updateTemplate).toHaveBeenCalledWith('tmpl-1', {
-        name: 'My Template',
-        triggerState: 'DRAFT',
-        dueDateType: 'immediate',
-        dueDateOffsetDays: undefined,
-      })
-    );
-  });
-
-  it('calls onClose after successful save', async () => {
+  it('should_close_when_cancelClicked', async () => {
     const onClose = vi.fn();
     const user = userEvent.setup();
-    renderModal(baseTemplate, true, onClose);
-    await user.click(screen.getByRole('button', { name: /save/i }));
-    await waitFor(() => expect(onClose).toHaveBeenCalled());
-  });
-
-  it('calls onClose when Cancel clicked', async () => {
-    const onClose = vi.fn();
-    const user = userEvent.setup();
-    renderModal(baseTemplate, true, onClose);
+    renderModal(baseTemplate, onClose);
     await user.click(screen.getByRole('button', { name: /cancel/i }));
     expect(onClose).toHaveBeenCalled();
   });

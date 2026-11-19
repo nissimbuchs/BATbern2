@@ -25,9 +25,7 @@ class UserPreferencesTest {
         assertThat(prefs.getTheme()).isEqualTo("auto");
         assertThat(prefs.getLanguage()).isEqualTo("de");
         assertThat(prefs.isEmailNotifications()).isTrue();
-        assertThat(prefs.isInAppNotifications()).isTrue();
-        assertThat(prefs.isPushNotifications()).isFalse();
-        assertThat(prefs.getNotificationFrequency()).isEqualTo("immediate");
+        assertThat(prefs.getQnaNotificationFrequency()).isEqualTo("live");
     }
 
     @Test
@@ -64,13 +62,11 @@ class UserPreferencesTest {
 
         // When
         prefs.setEmailNotifications(false);
-        prefs.setInAppNotifications(false);
-        prefs.setPushNotifications(true);
+        prefs.setQnaNotificationFrequency("off");
 
         // Then
         assertThat(prefs.isEmailNotifications()).isFalse();
-        assertThat(prefs.isInAppNotifications()).isFalse();
-        assertThat(prefs.isPushNotifications()).isTrue();
+        assertThat(prefs.getQnaNotificationFrequency()).isEqualTo("off");
     }
 
     @Test
@@ -98,9 +94,7 @@ class UserPreferencesTest {
                 .theme("light")
                 .language("fr")
                 .emailNotifications(false)
-                .inAppNotifications(true)
-                .pushNotifications(true)
-                .notificationFrequency("daily_digest")
+                .qnaNotificationFrequency("daily")
                 .quietHoursStart(LocalTime.of(23, 0))
                 .quietHoursEnd(LocalTime.of(7, 0))
                 .build();
@@ -109,9 +103,7 @@ class UserPreferencesTest {
         assertThat(prefs.getTheme()).isEqualTo("light");
         assertThat(prefs.getLanguage()).isEqualTo("fr");
         assertThat(prefs.isEmailNotifications()).isFalse();
-        assertThat(prefs.isInAppNotifications()).isTrue();
-        assertThat(prefs.isPushNotifications()).isTrue();
-        assertThat(prefs.getNotificationFrequency()).isEqualTo("daily_digest");
+        assertThat(prefs.getQnaNotificationFrequency()).isEqualTo("daily");
         assertThat(prefs.getQuietHoursStart()).isEqualTo(LocalTime.of(23, 0));
         assertThat(prefs.getQuietHoursEnd()).isEqualTo(LocalTime.of(7, 0));
     }

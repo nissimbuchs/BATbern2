@@ -30,7 +30,7 @@ public class SpeakerReminderScheduler {
      * ShedLock ensures only one instance runs in multi-node deployment.
      * Lock is held for minimum 5 minutes, maximum 30 minutes.
      */
-    @Scheduled(cron = "${batbern.reminders.cron:0 0 8 * * *}")
+    @Scheduled(cron = "${batbern.reminders.cron:0 0 8 * * *}", zone = "Europe/Zurich")
     @SchedulerLock(
             name = "SpeakerReminderScheduler_processReminders",
             lockAtLeastFor = "PT5M",

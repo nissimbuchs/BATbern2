@@ -562,18 +562,15 @@ class JITUserProvisioningInterceptorTest {
         assertThat(userCaptor.getValue().getPreferences()).isNull();
     }
 
-    // Story 12.3 review: pref_language is VARCHAR(2). A raw BCP-47 tag (gsw-BE, fr-CH —
-    // the frontend sends i18n.language verbatim and federated SSO delivers region-tagged
-    // codes) would overflow the column and abort the JIT INSERT, silently dropping
-    // provisioning for that identity. normalizeLanguage takes the primary subtag, lowercases
-    // it, and accepts only supported 2-char codes; anything else falls back to default "de".
+    // Story 12.3 review: a raw BCP-47 tag (fr-CH: the frontend sends i18n.language verbatim and
+    // federated SSO delivers region-tagged codes) is normalized to a supported code
+    // (UserLanguages.normalize) so it never overflows pref_language. #1222: Swiss German is a
+    // supported code itself (gsw-BE, VARCHAR(10) since V34) and is kept.
 
     @Test
-    void should_fallBackToDefault_when_languageIsUnsupportedRegionTag() throws Exception {
+    void should_keepSwissGerman_when_languageIsGswBe() throws Exception {
         String cognitoUserId = "gsw-cognito-id";
         String email = "swiss.german@example.ch";
-        // gsw-BE is a supported UI locale but its primary subtag "gsw" has no 2-char form
-        // and would overflow VARCHAR(2) -> must fall back to the @PrePersist default "de".
         String preferences = "{\"firstName\":\"Hans\",\"lastName\":\"Muster\",\"language\":\"gsw-BE\"}";
         Jwt jwt = createJwt(cognitoUserId, email, null, null, preferences);
         JwtAuthenticationToken authentication = createJwtAuthentication(
@@ -589,8 +586,7 @@ class JITUserProvisioningInterceptorTest {
 
         ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
         verify(userRepository).save(userCaptor.capture());
-        // No supported 2-char code -> preferences unset -> default "de" at persist.
-        assertThat(userCaptor.getValue().getPreferences()).isNull();
+        assertThat(userCaptor.getValue().getPreferences().getLanguage()).isEqualTo("gsw-BE");
     }
 
     @Test

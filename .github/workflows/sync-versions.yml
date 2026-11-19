@@ -48,6 +48,10 @@ on:
       - 'infrastructure/package.json'
       - 'docs/versions.json'
       - 'scripts/update-versions.js'
+      - 'scripts/update-versions.test.mjs'
+      - 'gradle/wrapper/gradle-wrapper.properties'
+      - '.nvmrc'
+      - '.github/workflows/**'
 
   push:
     branches:
@@ -61,6 +65,10 @@ on:
       - 'infrastructure/package.json'
       - 'docs/versions.json'
       - 'scripts/update-versions.js'
+      - 'scripts/update-versions.test.mjs'
+      - 'gradle/wrapper/gradle-wrapper.properties'
+      - '.nvmrc'
+      - '.github/workflows/**'
 
   workflow_dispatch:
 

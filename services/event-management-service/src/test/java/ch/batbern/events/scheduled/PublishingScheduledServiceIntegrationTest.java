@@ -14,6 +14,8 @@ import ch.batbern.events.repository.SpeakerPoolRepository;
 import ch.batbern.events.service.publishing.PublishingService;
 import ch.batbern.shared.types.EventWorkflowState;
 import ch.batbern.shared.types.SpeakerWorkflowState;
+import ch.batbern.shared.test.MutableClock;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,6 +45,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Transactional
 public class PublishingScheduledServiceIntegrationTest extends AbstractIntegrationTest {
 
+    /** The job counts Swiss days (#1222). */
+    private static final ZoneId ZURICH = ZoneId.of("Europe/Zurich");
+
     @Autowired
     private PublishingScheduledService publishingScheduledService;
 
@@ -64,8 +69,32 @@ public class PublishingScheduledServiceIntegrationTest extends AbstractIntegrati
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
+    @Autowired
+    private MutableClock clock;
+
     // Use timestamp-based sequence to ensure uniqueness across test runs
     private int eventNumberSequence = (int) (System.currentTimeMillis() % 50000) + 50000;
+
+    @AfterEach
+    void resetClock() {
+        clock.reset();
+    }
+
+    /**
+     * #1222: the job runs at 01:00 Zurich, in summer 23:00 UTC of the day before. It counts the
+     * days from the Swiss date, so an event 30 Swiss days ahead gets its speakers published.
+     */
+    @Test
+    void should_countSwissDays_when_runJustAfterOneInSummer() {
+        clock.setInstant(Instant.parse("2027-06-30T23:05:00Z")); // 2027-07-01 01:05 in Zurich
+        Event event = createEvent("BAT-SPEAKERS-SUMMER", Instant.parse("2027-07-31T16:00:00Z"), null);
+        createAcceptedSpeaker(event);
+
+        publishingScheduledService.autoPublishSpeakers();
+
+        assertThat(eventRepository.findById(event.getId()).orElseThrow().getCurrentPublishedPhase())
+                .isEqualTo("speakers");
+    }
 
     @BeforeEach
     void setUp() {
@@ -79,8 +108,8 @@ public class PublishingScheduledServiceIntegrationTest extends AbstractIntegrati
     @Test
     void should_autoPublishSpeakers_when_eventIsThirtyDaysAway() {
         // Given: Event happening 30 days from now with no published phase
-        Instant eventDate = LocalDate.now().plusDays(30)
-                .atStartOfDay(ZoneId.systemDefault())
+        Instant eventDate = LocalDate.now(ZURICH).plusDays(30)
+                .atStartOfDay(ZURICH)
                 .toInstant();
 
         Event event = createEvent("BAT-SPEAKERS-30", eventDate, null);
@@ -101,8 +130,8 @@ public class PublishingScheduledServiceIntegrationTest extends AbstractIntegrati
     @Test
     void should_notAutoPublishSpeakers_when_alreadyPublished() {
         // Given: Event 30 days away with speakers already published
-        Instant eventDate = LocalDate.now().plusDays(30)
-                .atStartOfDay(ZoneId.systemDefault())
+        Instant eventDate = LocalDate.now(ZURICH).plusDays(30)
+                .atStartOfDay(ZURICH)
                 .toInstant();
 
         Event event = createEvent("BAT-SPEAKERS-DONE", eventDate, "speakers");
@@ -123,8 +152,8 @@ public class PublishingScheduledServiceIntegrationTest extends AbstractIntegrati
     @Test
     void should_notAutoPublishSpeakers_when_autoPublishDisabled() {
         // Given: Event 30 days away with auto-publish disabled
-        Instant eventDate = LocalDate.now().plusDays(30)
-                .atStartOfDay(ZoneId.systemDefault())
+        Instant eventDate = LocalDate.now(ZURICH).plusDays(30)
+                .atStartOfDay(ZURICH)
                 .toInstant();
 
         Event event = createEvent("BAT-SPEAKERS-DISABLED", eventDate, null);
@@ -151,8 +180,8 @@ public class PublishingScheduledServiceIntegrationTest extends AbstractIntegrati
     @Test
     void should_autoPublishAgenda_when_eventIsFourteenDaysAwayAndTimingComplete() {
         // Given: Event 14 days away with speakers published and all sessions timed
-        Instant eventDate = LocalDate.now().plusDays(14)
-                .atStartOfDay(ZoneId.systemDefault())
+        Instant eventDate = LocalDate.now(ZURICH).plusDays(14)
+                .atStartOfDay(ZURICH)
                 .toInstant();
 
         Event event = createEvent("BAT-AGENDA-14", eventDate, "speakers");
@@ -173,8 +202,8 @@ public class PublishingScheduledServiceIntegrationTest extends AbstractIntegrati
     @Test
     void should_notAutoPublishAgenda_when_sessionsLackTiming() {
         // Given: Event 14 days away with speakers published but sessions without timing
-        Instant eventDate = LocalDate.now().plusDays(14)
-                .atStartOfDay(ZoneId.systemDefault())
+        Instant eventDate = LocalDate.now(ZURICH).plusDays(14)
+                .atStartOfDay(ZURICH)
                 .toInstant();
 
         Event event = createEvent("BAT-AGENDA-NO-TIMING", eventDate, "speakers");
@@ -195,8 +224,8 @@ public class PublishingScheduledServiceIntegrationTest extends AbstractIntegrati
     @Test
     void should_notAutoPublishAgenda_when_speakersNotPublished() {
         // Given: Event 14 days away with topic phase (speakers not published)
-        Instant eventDate = LocalDate.now().plusDays(14)
-                .atStartOfDay(ZoneId.systemDefault())
+        Instant eventDate = LocalDate.now(ZURICH).plusDays(14)
+                .atStartOfDay(ZURICH)
                 .toInstant();
 
         Event event = createEvent("BAT-AGENDA-NO-SPEAKERS", eventDate, "topic");
@@ -216,8 +245,8 @@ public class PublishingScheduledServiceIntegrationTest extends AbstractIntegrati
     @Test
     void should_notAutoPublishAgenda_when_autoPublishDisabled() {
         // Given: Event 14 days away with auto-publish agenda disabled
-        Instant eventDate = LocalDate.now().plusDays(14)
-                .atStartOfDay(ZoneId.systemDefault())
+        Instant eventDate = LocalDate.now(ZURICH).plusDays(14)
+                .atStartOfDay(ZURICH)
                 .toInstant();
 
         Event event = createEvent("BAT-AGENDA-DISABLED", eventDate, "speakers");
@@ -244,8 +273,8 @@ public class PublishingScheduledServiceIntegrationTest extends AbstractIntegrati
     @Test
     void should_notAutoPublishAgenda_when_noSessions() {
         // Given: Event 14 days away with no sessions
-        Instant eventDate = LocalDate.now().plusDays(14)
-                .atStartOfDay(ZoneId.systemDefault())
+        Instant eventDate = LocalDate.now(ZURICH).plusDays(14)
+                .atStartOfDay(ZURICH)
                 .toInstant();
 
         Event event = createEvent("BAT-AGENDA-NO-SESSIONS", eventDate, "speakers");
@@ -344,7 +373,7 @@ public class PublishingScheduledServiceIntegrationTest extends AbstractIntegrati
     }
 
     private static Instant startOfDayIn(int days) {
-        return LocalDate.now().plusDays(days).atStartOfDay(ZoneId.systemDefault()).toInstant();
+        return LocalDate.now(ZURICH).plusDays(days).atStartOfDay(ZURICH).toInstant();
     }
 
     // ============================================

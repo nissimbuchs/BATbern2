@@ -10,6 +10,7 @@
 
 import React from 'react';
 import { useParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useLiveSessionControl } from '@/hooks/useLiveSessionControl/useLiveSessionControl';
 import type { ConnectionStatus } from '@/hooks/useLiveSessionControl/useLiveSessionControl';
 import { ActiveSessionCard } from '@/components/organizer/LiveControl/ActiveSessionCard';
@@ -17,40 +18,42 @@ import { AgendaList } from '@/components/organizer/LiveControl/AgendaList';
 import { cn } from '@/lib/utils';
 
 function ConnectionBadge({ status }: { status: ConnectionStatus }) {
+  const { t } = useTranslation('events');
   const base = 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold';
   switch (status) {
     case 'connected':
       return (
         <span className={cn(base, 'bg-green-500/20 text-green-400 border border-green-500/30')}>
           <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
-          Verbunden
+          {t('liveControl.connection.connected')}
         </span>
       );
     case 'reconnecting':
       return (
         <span className={cn(base, 'bg-amber-500/20 text-amber-400 border border-amber-500/30')}>
           <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-          Verbinde...
+          {t('liveControl.connection.connecting')}
         </span>
       );
     case 'offline':
       return (
         <span className={cn(base, 'bg-red-500/20 text-red-400 border border-red-500/30')}>
           <span className="w-1.5 h-1.5 rounded-full bg-red-400" />
-          Offline
+          {t('liveControl.connection.offline')}
         </span>
       );
     default:
       return (
         <span className={cn(base, 'bg-muted text-muted-foreground border border-border')}>
           <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground animate-pulse" />
-          Verbinde...
+          {t('liveControl.connection.connecting')}
         </span>
       );
   }
 }
 
 const LiveControlPage: React.FC = () => {
+  const { t } = useTranslation('events');
   const { eventCode } = useParams<{ eventCode: string }>();
 
   const {
@@ -76,7 +79,7 @@ const LiveControlPage: React.FC = () => {
         <div className="flex items-center justify-between mb-4">
           <div>
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-[0.2em]">
-              Live Steuerung
+              {t('liveControl.title')}
             </p>
             <p className="text-sm font-medium text-primary">{eventCode}</p>
           </div>
@@ -107,7 +110,7 @@ const LiveControlPage: React.FC = () => {
 
         {connectionStatus === 'offline' && (
           <p className="mt-4 text-center text-sm text-muted-foreground">
-            Live-Updates nicht verfügbar. Bitte Seite neu laden.
+            {t('liveControl.offlineHint')}
           </p>
         )}
       </div>

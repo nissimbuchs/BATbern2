@@ -31,6 +31,7 @@ const READ_ONLY_IT = 'services/demo-service/src/test/java/ch/demo/ReadOnlyIT.jav
 const SLUG_CONFIG = 'shared-kernel/src/testFixtures/java/ch/shared/TestSlugConfig.java';
 const UNIT = 'services/demo-service/src/test/java/ch/demo/SomeUnitTest.java';
 const AWS_CONFIG = 'services/demo-service/src/test/java/ch/demo/config/TestAwsConfig.java';
+const MAIL_UNIT = 'services/demo-service/src/test/java/ch/demo/MailUnitTest.java';
 
 const asObject = (m: Map<string, number>) => Object.fromEntries([...m].sort());
 
@@ -38,6 +39,7 @@ describe('listTestFiles', () => {
   it('reads frontend *.test.ts(x) and *.spec.ts(x), and Java under src/test*, nothing else', () => {
     expect(listTestFiles(repo)).toEqual([
       'services/demo-service/src/test/java/ch/demo/DemoIntegrationTest.java',
+      MAIL_UNIT,
       'services/demo-service/src/test/java/ch/demo/MethodLevelIntegrationTest.java',
       'services/demo-service/src/test/java/ch/demo/ReadOnlyIT.java',
       'services/demo-service/src/test/java/ch/demo/SomeUnitTest.java',
@@ -243,7 +245,9 @@ describe('scanJavaTest', () => {
 
   it('counts mock(OwnType.class) inside a test configuration class, not outside or of the boundary', () => {
     // Story 17.0b3: the services' TestAwsConfig handed a mocked EmailService to every test.
+    // The plain mock(EmailService.class) outside the config is be-mock-email-service (#1318).
     expect(asObject(scanJavaTest(read(AWS_CONFIG)))).toEqual({
+      'be-mock-email-service': 1,
       'be-mock-in-process': 3,
       'be-mock-s2s-client': 1,
     });
@@ -283,6 +287,90 @@ describe('scanJavaTest', () => {
     expect(asObject(scanJavaTest(source))).toEqual({
       'be-mock-in-process': 2,
       'be-mock-s2s-client': 2,
+    });
+  });
+
+  it('counts @Mock EmailService and verify(emailService ...), not in comments or strings (#1318)', () => {
+    expect(asObject(scanJavaTest(read(MAIL_UNIT)))).toEqual({ 'be-mock-email-service': 3 });
+  });
+
+  it('counts every way a unit test mocks, spies or verifies EmailService (#1318)', () => {
+    const source = [
+      'import ch.batbern.shared.service.EmailService;',
+      'class SomeServiceTest {',
+      '  @Mock(strictness = Mock.Strictness.LENIENT) private EmailService emailService;',
+      '  @Spy EmailService spied = new EmailService();',
+      '  @org.mockito.Mock ch.batbern.shared.service.EmailService qualified;',
+      '  EmailService a = mock(EmailService.class);',
+      '  EmailService b = Mockito.mock(ch.batbern.shared.service.EmailService.class);',
+      '  EmailService c = spy(EmailService.class);',
+      '  EmailService d = Mockito.spy(new EmailService());',
+      '  void t() {',
+      '    verify(emailService).sendHtmlEmail(any(), any(), any());',
+      '    Mockito.verify(this.emailService, times(2)).send(any());',
+      '    verify(\n      emailService,\n      never()).send(any());',
+      '    verifyNoInteractions(emailService);',
+      '    verifyNoMoreInteractions(spied);',
+      '    verify(a).send(any());',
+      '  }',
+      '}',
+    ].join('\n');
+    // 3 fields + 4 mock/spy calls + 6 verifications
+    expect(asObject(scanJavaTest(source))).toEqual({ 'be-mock-email-service': 13 });
+  });
+
+  it('does not count other *EmailService types, other verifications or a real EmailService', () => {
+    const source = [
+      'class RegistrationTest {',
+      '  @Mock WaitlistPromotionEmailService waitlistPromotionEmailService;',
+      '  EmailService real = new EmailService();',
+      '  RegistrationEmailService r = mock(RegistrationEmailService.class);',
+      '  void t() {',
+      '    verify(waitlistPromotionEmailService).send(any());',
+      '    verify(emailServiceFactory).create();',
+      '    verify(repository).save(any());',
+      '  }',
+      '}',
+    ].join('\n');
+    expect(scanJavaTest(source).size).toBe(0);
+  });
+
+  it('does not count verify on a foreign *EmailService that is named emailService', () => {
+    const source = [
+      'class RegistrationTest {',
+      '  @Mock RegistrationEmailService emailService;',
+      '  void t() { verify(emailService).send(any()); verifyNoInteractions(emailService); }',
+      '}',
+    ].join('\n');
+    expect(scanJavaTest(source).size).toBe(0);
+  });
+
+  it('counts verify on a variable assigned a mock or spy of EmailService', () => {
+    const source = [
+      'class LocalMockTest {',
+      '  void t() {',
+      '    var mailer = Mockito.mock(EmailService.class);',
+      '    var spied = spy(new EmailService());',
+      '    verify(mailer).send(any());',
+      '    verify(spied).send(any());',
+      '  }',
+      '}',
+    ].join('\n');
+    // 2 mock/spy calls + 2 verifications
+    expect(asObject(scanJavaTest(source))).toEqual({ 'be-mock-email-service': 4 });
+  });
+
+  it('counts @MockitoBean EmailService once, as be-mock-in-process; its verify calls as be-mock-email-service', () => {
+    const source = [
+      'class MailIntegrationTest {',
+      '  @MockitoBean private EmailService emailService;',
+      '  @MockitoSpyBean EmailService spyBean;',
+      '  void t() { verify(emailService).send(any()); }',
+      '}',
+    ].join('\n');
+    expect(asObject(scanJavaTest(source))).toEqual({
+      'be-mock-email-service': 1,
+      'be-mock-in-process': 2,
     });
   });
 
@@ -329,7 +417,8 @@ describe('compare (I/O matrix)', () => {
     expect(result.exitCode).toBe(0);
     expect(result.problems).toEqual([]);
     expect(result.summary).toBe(
-      'Test ratchet: be-mock-in-process 4 files/6, be-mock-s2s-client 3 files/4, ' +
+      'Test ratchet: be-mock-email-service 2 files/4, be-mock-in-process 4 files/6, ' +
+        'be-mock-s2s-client 3 files/4, ' +
         'be-transactional-it 2 files/2, fe-mock-components 2 files/5, fe-mock-hooks 3 files/6, ' +
         'fe-mock-i18n 1 files/1, fe-mock-services 2 files/4.'
     );
@@ -362,6 +451,52 @@ describe('compare (I/O matrix)', () => {
     );
     expect(compare(raised, baseline, files).problems[0]).toBe(
       `RAISED       be-mock-s2s-client  ${DEMO_IT}  baseline 2, actual 3`
+    );
+  });
+
+  it('Rise: a new unit test file with @Mock EmailService', () => {
+    const newFile = 'services/demo-service/src/test/java/ch/demo/NewMailTest.java';
+    const sources = [
+      ...files.map((f) => ({ file: f, source: read(f) })),
+      { file: newFile, source: 'class NewMailTest { @Mock EmailService emailService; }' },
+    ];
+    const result = compare(scanSources(sources), baseline, [...files, newFile]);
+    expect(result.exitCode).toBe(1);
+    expect(result.problems[0]).toBe(
+      `RAISED       be-mock-email-service  ${newFile}  baseline 0, actual 1`
+    );
+  });
+
+  it('Rise: an existing file gains a verify(emailService)', () => {
+    const raised = scanSources(
+      sourcesWith(MAIL_UNIT, '\nclass Y { void z() { verify(emailService).x(); } }\n')
+    );
+    expect(compare(raised, baseline, files).problems[0]).toBe(
+      `RAISED       be-mock-email-service  ${MAIL_UNIT}  baseline 3, actual 4`
+    );
+  });
+
+  it('EmailService file at its count, and mentions in comments or strings: exit 0', () => {
+    const extra =
+      '\n// verify(emailService).x();\nclass Y { String s = "@Mock EmailService e"; }\n';
+    expect(baseline).toContain(`be-mock-email-service\t${MAIL_UNIT}\t3`);
+    expect(compare(scanSources(sourcesWith(MAIL_UNIT, extra)), baseline, files).exitCode).toBe(0);
+  });
+
+  it('Fall: one verify(emailService) fewer is stale', () => {
+    const fallen = scanSources(
+      files.map((f) => ({
+        file: f,
+        source:
+          f === MAIL_UNIT
+            ? read(f).replace('verify(emailService, never()).sendHtmlEmail(null, null, null);', '')
+            : read(f),
+      }))
+    );
+    const result = compare(fallen, baseline, files);
+    expect(result.exitCode).toBe(1);
+    expect(result.problems[0]).toBe(
+      `STALE        be-mock-email-service  ${MAIL_UNIT}  baseline 3, actual 2`
     );
   });
 

@@ -27,6 +27,7 @@ import { getMyPartnerCompany } from '@/services/api/partnerApi';
 import { getUserProfile } from '@/services/api/userApi';
 import { hasCognitoSession } from '@/utils/auth/cognitoSession';
 import { canAccessPath, userHasPermission, userHasRole } from './authRules';
+import { isUiLanguage } from '@/i18n/languages';
 
 /**
  * Discriminated outcome of a sign-in attempt. Epic 11 bug fix 2026-05-19 — the
@@ -105,19 +106,15 @@ export const AuthContext = createContext<UseAuthReturn | undefined>(undefined);
  * Silently no-ops on any failure, preserving the token-derived user as-is.
  */
 /**
- * Coerce a backend locale to the frontend `UserContextPreferences.language` union. The backend
- * `UserSettings` language enum carries more locales (rm/es/fi/nl/ja/…) than the frontend
- * 4-locale union, so a blind cast would put an out-of-union value into a typed field.
- * Values outside the union fall back to the prior value, then 'en'.
+ * Coerce a backend locale to the frontend `UserContextPreferences.language` union (the 10 UI
+ * languages, which the users-api `language` enum matches since #1222). Values outside it fall
+ * back to the prior value, then 'en'.
  */
-const FE_LANGUAGES: readonly UserContext['preferences']['language'][] = ['en', 'de', 'fr', 'it'];
 function normalizeLanguage(
   lang: string | undefined,
   fallback: UserContext['preferences']['language'] = 'en'
 ): UserContext['preferences']['language'] {
-  return (FE_LANGUAGES as readonly string[]).includes(lang ?? '')
-    ? (lang as UserContext['preferences']['language'])
-    : fallback;
+  return isUiLanguage(lang) ? lang : fallback;
 }
 
 async function hydrateUserFromDb(user: UserContext): Promise<UserContext> {
@@ -150,11 +147,6 @@ async function hydrateUserFromDb(user: UserContext): Promise<UserContext> {
         preferences: {
           language: normalizeLanguage(p.language, hydrated.preferences?.language ?? 'en'),
           theme: p.theme === 'dark' ? 'dark' : 'light',
-          notifications: {
-            email: p.emailNotifications,
-            sms: false,
-            push: p.pushNotifications,
-          },
           privacy: {
             showProfile: true,
             allowMessages: true,

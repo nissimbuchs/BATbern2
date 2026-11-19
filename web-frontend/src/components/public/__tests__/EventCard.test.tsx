@@ -3,37 +3,16 @@
  *
  * Tests for event archive card component
  * Covers AC1, AC4: Event cards with session preview, speaker/company display
+ *
+ * Real i18next (English, `src/test/setup.ts`), no own-code mocks.
  */
 
-import { describe, test, expect, vi } from 'vitest';
+import { describe, test, expect } from 'vitest';
 import { screen } from '@testing-library/react';
 import { render } from '@/test/test-utils';
 import { EventCard } from '../EventCard';
 import type { EventDetail } from '@/types/event.types';
 import { aSessionResponse, aSessionSpeaker, anEventDetail } from '@/test/fixtures';
-
-// Mock i18n
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string, params?: Record<string, unknown>) => {
-      const translations: Record<string, string> = {
-        'archive.card.sessions': 'sessions',
-        'archive.card.viewDetails': 'View Details',
-        'archive.card.andMore': 'and {{count}} more',
-      };
-      let translation = translations[key] || key;
-
-      // Handle parameter interpolation
-      if (params) {
-        Object.entries(params).forEach(([paramKey, value]) => {
-          translation = translation.replace(`{{${paramKey}}}`, String(value));
-        });
-      }
-
-      return translation;
-    },
-  }),
-}));
 
 describe('EventCard Component', () => {
   const mockSessions = [
@@ -157,9 +136,8 @@ describe('EventCard Component', () => {
     test('should_renderEventDate_when_provided', () => {
       renderWithRouter(<EventCard event={mockEvent} viewMode="grid" />);
 
-      // Date should be formatted in Swiss German (de-CH locale: "15. Dezember 2024")
-      // Use more specific matcher to avoid matching "2024" in title
-      expect(screen.getByText(/15.*Dezember.*2024/)).toBeInTheDocument();
+      // The date follows the UI language (#1222 item 6), English in the tests: "December 15, 2024"
+      expect(screen.getByText('December 15, 2024')).toBeInTheDocument();
     });
 
     test('should_renderTopicBadge_when_topicProvided', () => {

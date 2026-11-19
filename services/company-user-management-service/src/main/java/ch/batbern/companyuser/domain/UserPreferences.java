@@ -27,25 +27,13 @@ public class UserPreferences {
     @Builder.Default
     private String theme = "auto";
 
-    @Column(name = "pref_language", length = 2)
+    @Column(name = "pref_language", length = 10)
     @Builder.Default
     private String language = "de";
 
     @Column(name = "pref_email_notifications")
     @Builder.Default
     private boolean emailNotifications = true;
-
-    @Column(name = "pref_in_app_notifications")
-    @Builder.Default
-    private boolean inAppNotifications = true;
-
-    @Column(name = "pref_push_notifications")
-    @Builder.Default
-    private boolean pushNotifications = false;
-
-    @Column(name = "pref_notification_frequency", length = 20)
-    @Builder.Default
-    private String notificationFrequency = "immediate";
 
     /**
      * Q&A notification cadence (Story 15.7): live | daily | off. Controls how often the user is

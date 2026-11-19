@@ -17,6 +17,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/public/ui
 import { Button } from '@/components/public/ui/button';
 import { useVerifyDeregistrationToken, useDeregisterByToken } from '@/hooks/useDeregistration';
 import { isEventDayReached } from './homePagePhase';
+import { uiIntlLocale } from '@/utils/date/intlLocale';
 
 type PageState = 'verifying' | 'ready' | 'confirmed' | 'invalid' | 'alreadyCancelled' | 'closed';
 
@@ -64,7 +65,7 @@ export default function DeregistrationPage() {
 
   // Format event date for display
   const formattedDate = verifyData?.eventDate
-    ? new Date(verifyData.eventDate).toLocaleDateString(undefined, {
+    ? new Date(verifyData.eventDate).toLocaleDateString(uiIntlLocale(), {
         year: 'numeric',
         month: 'long',
         day: 'numeric',

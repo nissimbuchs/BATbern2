@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent } from '@/components/public/ui/card';
 import { cn } from '@/lib/utils';
 import type { components } from '@/types/generated/event-watch-api.types';
 import { ExtendSessionSheet } from './ExtendSessionSheet';
 import { DelaySessionSheet } from './DelaySessionSheet';
 import { LogoBadge } from '@/components/shared/LogoBadge/LogoBadge';
+import { uiIntlLocale } from '@/utils/date/intlLocale';
 
 type WatchSessionDetail = components['schemas']['WatchSessionDetail'];
 type WatchSpeaker = WatchSessionDetail['speakers'][number];
@@ -33,7 +35,7 @@ function formatCountdown(seconds: number): string {
 
 function formatTime(iso: string | null | undefined): string {
   if (!iso) return '';
-  return new Date(iso).toLocaleTimeString('de-CH', { hour: '2-digit', minute: '2-digit' });
+  return new Date(iso).toLocaleTimeString(uiIntlLocale(), { hour: '2-digit', minute: '2-digit' });
 }
 
 function speakerNames(session: WatchSessionDetail): string {
@@ -55,6 +57,7 @@ export const ActiveSessionCard: React.FC<ActiveSessionCardProps> = ({
   sendExtend,
   sendDelay,
 }) => {
+  const { t } = useTranslation('events');
   const [extendOpen, setExtendOpen] = useState(false);
   const [delayOpen, setDelayOpen] = useState(false);
 
@@ -63,11 +66,13 @@ export const ActiveSessionCard: React.FC<ActiveSessionCardProps> = ({
       <Card className="mb-4 border-border bg-card text-card-foreground">
         <CardContent className="py-10 text-center">
           <div className="text-4xl mb-3">⏱</div>
-          <p className="text-xl font-semibold text-muted-foreground">Keine aktive Session</p>
+          <p className="text-xl font-semibold text-muted-foreground">
+            {t('liveControl.noActiveSession')}
+          </p>
           {nextSession && (
             <div className="mt-5">
               <p className="text-sm text-muted-foreground uppercase tracking-widest mb-2">
-                Nächste Session
+                {t('liveControl.nextSession')}
               </p>
               <p className="text-xl font-bold text-foreground">{nextSession.title}</p>
               {speakerNames(nextSession) && (
@@ -126,15 +131,15 @@ export const ActiveSessionCard: React.FC<ActiveSessionCardProps> = ({
         ? 'border-orange-500'
         : 'border-primary/40';
 
-  // Status label matching Watch (German)
+  // Status label matching the Watch states, in the UI language (shown in capitals by CSS)
   const urgencyLabel =
     urgency === 'overtime'
-      ? 'ÜBERZEIT'
+      ? t('liveControl.urgency.overtime')
       : urgency === 'critical' || urgency === 'warning'
-        ? '2 MIN NOCH'
+        ? t('liveControl.urgency.twoMinutesLeft')
         : urgency === 'caution'
-          ? '5 MIN NOCH'
-          : 'IM PLAN';
+          ? t('liveControl.urgency.fiveMinutesLeft')
+          : t('liveControl.urgency.onTrack');
 
   const urgencyLabelColor =
     urgency === 'overtime'
@@ -230,7 +235,7 @@ export const ActiveSessionCard: React.FC<ActiveSessionCardProps> = ({
                 onClick={() => setDelayOpen(true)}
                 className="flex-1 py-4 rounded-xl text-base font-bold border-2 border-amber-500 text-amber-400 hover:bg-amber-500/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
-                ← Verzögern
+                {t('liveControl.delay')}
               </button>
             )}
             {shouldShowExtend && (
@@ -238,7 +243,7 @@ export const ActiveSessionCard: React.FC<ActiveSessionCardProps> = ({
                 onClick={() => setExtendOpen(true)}
                 className="flex-1 py-4 rounded-xl text-base font-bold border-2 border-primary text-primary hover:bg-primary/10 transition-colors"
               >
-                ↔ Zeit anpassen
+                {t('liveControl.adjustTime')}
               </button>
             )}
           </div>

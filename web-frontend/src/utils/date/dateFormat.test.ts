@@ -207,4 +207,23 @@ describe('Date Formatting Utilities with i18n', () => {
       expect(typeof result).toBe('string');
     });
   });
+
+  describe('every UI language (#1222 item 6)', () => {
+    const date = new Date(2026, 9, 22, 14, 30);
+
+    test('should_formatSwissGermanLikeGerman_when_gswBe', () => {
+      expect(formatDate(date, 'gsw-BE')).toBe('22. Oktober 2026');
+      expect(formatTime(date, 'gsw-BE')).toBe('14:30');
+    });
+
+    test('should_formatInTheLanguage_when_neitherGermanNorEnglish', () => {
+      expect(formatDate(date, 'fr')).toBe('22 octobre 2026');
+      expect(formatDate(date, 'it')).toBe('22 ottobre 2026');
+      expect(formatTime(date, 'fr')).toBe('14:30');
+    });
+
+    test('should_formatEnglish_when_regionTaggedEnglish', () => {
+      expect(formatDate(date, 'en-GB')).toBe('October 22, 2026');
+    });
+  });
 });

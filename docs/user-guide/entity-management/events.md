@@ -93,7 +93,8 @@ Click **New Event** under **Quick Actions**. The dialog **Create New Event** ope
 
 **Fill in the Info tab**
 
-- **Event Number** and **Title**
+- **Event Number** and **Title**. The number is filled in with the next free one (the highest
+  existing number plus one, archived events included); change it if needed
 - **Description**
 - **Event Date** and **Registration Deadline**
 - **Event Type** - Full-Day, Afternoon or Evening

@@ -47,7 +47,7 @@ import {
 import { AutoAwesome } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/hooks/useAuth';
-import { useCreateEvent, useUpdateEvent } from '@/hooks/useEvents';
+import { useCreateEvent, useNextEventNumber, useUpdateEvent } from '@/hooks/useEvents';
 import { useAiGenerateDescription } from '@/hooks/useAiAssist';
 import { useFeatureFlags } from '@/hooks/useFeatureFlags';
 import { topicService } from '@/services/topicService';
@@ -65,6 +65,7 @@ import type { EventTaskResponse } from '@/services/taskService';
 import { taskService } from '@/services/taskService';
 import {
   createEventSchema,
+  coerceFormFields,
   SERVER_REQUIRED_FIELDS,
   normalizeEventType,
   transformDatesForApi,
@@ -72,6 +73,7 @@ import {
   type EventFormData,
   type PartialEventFormData,
 } from './eventFormSchema';
+import { uiIntlLocale } from '@/utils/date/intlLocale';
 
 // mapWorkflowStateToStatus function removed - no longer needed
 // Backend now uses workflowState directly (Phase 1-2 migration complete)
@@ -79,6 +81,32 @@ import {
 // normalizeEventType, createEventSchema, EventFormData, PartialEventFormData,
 // transformDatesForApi and getChangedFields now live in ./eventFormSchema
 // (shared with the Details · Info in-tab editor — Story 14.F.2).
+
+/** The HTTP status of an error from eventApiClient (`status`) or a raw axios error (`response`). */
+const errorStatus = (error: unknown): number | undefined => {
+  const err = error as { status?: number; response?: { status?: number } } | null;
+  return err?.status ?? err?.response?.status;
+};
+
+/** Statuses whose eventApiClient error keeps the server's message (transformError). */
+const SERVER_REASON_STATUSES = [409, 422];
+
+/**
+ * The server's reason for a failed save, if it gave one: the body message of a raw axios error
+ * (workflowService), or the message eventApiClient keeps for a 409 or 422 (e.g. EMS answers a
+ * taken event number with 422). Its other errors carry a generic text only, so they get the
+ * form's own message.
+ */
+const saveErrorMessage = (error: unknown): string | undefined => {
+  const bodyMessage = (error as { response?: { data?: { message?: string } } } | null)?.response
+    ?.data?.message;
+  if (bodyMessage) return bodyMessage;
+  const status = errorStatus(error);
+  if (status !== undefined && SERVER_REASON_STATUSES.includes(status) && error instanceof Error) {
+    return error.message || undefined;
+  }
+  return undefined;
+};
 
 /** Confirmed without a target: create and Save attach it through `themeImageUploadId` (Story 17.11). */
 const THEME_IMAGE_UPLOAD = uploadTarget('event-theme-image');
@@ -226,13 +254,24 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
   const {
     control,
     handleSubmit,
-    formState: { errors, isDirty },
+    formState: { errors, isDirty, dirtyFields },
     watch,
     getValues,
     reset,
+    resetField,
     setValue,
     trigger,
   } = form;
+
+  // #1223 item 7: a new event starts with the next free number, not 1. It becomes the field's
+  // default (so the form stays clean) unless the organizer has typed a number already.
+  const { data: nextEventNumber } = useNextEventNumber(open && mode === 'create');
+  const eventNumberTyped = !!dirtyFields.eventNumber;
+  useEffect(() => {
+    if (open && mode === 'create' && nextEventNumber !== undefined && !eventNumberTyped) {
+      resetField('eventNumber', { defaultValue: nextEventNumber });
+    }
+  }, [open, mode, nextEventNumber, eventNumberTyped, resetField]);
 
   // AI description generation (Story 10.16)
   const { aiContentEnabled } = useFeatureFlags();
@@ -256,11 +295,12 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
     });
   };
 
-  // Reset form when modal opens in create mode
+  // Reset form when modal opens in create mode. It runs after the next-number effect above, so it
+  // starts from the known next number, not 1 (on reopening, that number is already cached).
   useEffect(() => {
     if (open && mode === 'create') {
       reset({
-        eventNumber: 1,
+        eventNumber: nextEventNumber ?? 1,
         title: '',
         description: '',
         date: '',
@@ -272,6 +312,8 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
         eventType: 'FULL_DAY',
       });
     }
+    // Only on opening: a later next number arrives through the effect above.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, mode, reset]);
 
   // Store initial form data for partial update comparison
@@ -307,8 +349,9 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
 
   useEffect(() => {
     if (mode === 'edit' && isDirty && event && hasEditPermission) {
+      // Through the schema like the save path: number inputs hold strings ("57").
       const changedFields = getChangedFields(
-        JSON.parse(debouncedFormSnapshot) as PartialEventFormData
+        coerceFormFields(eventSchema, JSON.parse(debouncedFormSnapshot))
       );
       if (Object.keys(changedFields).length > 0) {
         handleAutoSave(changedFields);
@@ -352,12 +395,7 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
       setInitialFormData(getValues()); // Update initial data after successful save
     } catch (error: unknown) {
       setAutoSaveStatus('error');
-      const err = error as { response?: { status: number } };
-      if (err.response?.status === 409) {
-        setApiError(t('autoSave.conflict'));
-      } else {
-        setApiError(t('autoSave.failed'));
-      }
+      setApiError(saveErrorMessage(error) ?? t('autoSave.failed'));
     }
   };
 
@@ -412,8 +450,7 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
       onSuccess?.();
       onClose();
     } catch (error: unknown) {
-      const err = error as { response?: { data?: { message?: string } } };
-      setApiError(err.response?.data?.message || t('errors.saveFailed'));
+      setApiError(saveErrorMessage(error) ?? t('errors.saveFailed'));
     }
   };
 
@@ -527,8 +564,7 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
       onSuccess?.(updatedEvent);
       onClose();
     } catch (error: unknown) {
-      const err = error as { response?: { data?: { message?: string } } };
-      setApiError(err.response?.data?.message || t('errors.saveFailed'));
+      setApiError(saveErrorMessage(error) ?? t('errors.saveFailed'));
     }
   };
 
@@ -630,7 +666,7 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
                   {autoSaveStatus === 'saved' && lastSavedAt && (
                     <Chip
                       label={t('autoSave.saved', {
-                        time: lastSavedAt.toLocaleTimeString(),
+                        time: lastSavedAt.toLocaleTimeString(uiIntlLocale()),
                       })}
                       size="small"
                       color="success"

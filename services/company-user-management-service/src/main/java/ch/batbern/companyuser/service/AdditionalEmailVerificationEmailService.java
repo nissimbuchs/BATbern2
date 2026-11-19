@@ -2,6 +2,7 @@ package ch.batbern.companyuser.service;
 
 import ch.batbern.shared.service.EmailService;
 import ch.batbern.shared.utils.LoggingUtils;
+import ch.batbern.companyuser.domain.UserLanguages;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -65,14 +66,12 @@ public class AdditionalEmailVerificationEmailService {
     }
 
     /**
-     * Email templates exist only in de + en. Any German variant (de, de-DE,
-     * de-CH, …) resolves to de; any other locale (including null and gsw-BE)
-     * resolves to en.
+     * Email templates exist only in de + en. Any German variant (de, de-DE, de-CH, …) and Swiss
+     * German (gsw-BE) resolve to de; any other locale, and null, resolve to en
+     * ({@link UserLanguages#mailLanguage}).
      */
     private String resolveLocale(String requestedLocale) {
-        return requestedLocale != null
-                && requestedLocale.toLowerCase(java.util.Locale.ROOT).startsWith("de")
-                ? "de" : "en";
+        return UserLanguages.mailLanguage(requestedLocale, "en");
     }
 
     private String loadHtml(String locale) {

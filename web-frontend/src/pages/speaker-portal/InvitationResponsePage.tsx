@@ -38,6 +38,7 @@ import {
   SpeakerResponsePreferences,
   SpeakerResponseResult,
 } from '@/services/speakerPortalService';
+import { uiIntlLocale } from '@/utils/date/intlLocale';
 
 type PageState = 'loading' | 'form' | 'success' | 'error' | 'already_responded';
 
@@ -359,7 +360,7 @@ const InvitationResponsePage = () => {
             <p className="text-zinc-400 mb-8">
               {t('speakerPortal.invitationResponse.alreadyRespondedOn', {
                 date: invitation.previousResponseDate
-                  ? new Date(invitation.previousResponseDate).toLocaleDateString('de-CH')
+                  ? new Date(invitation.previousResponseDate).toLocaleDateString(uiIntlLocale())
                   : '—',
               })}
             </p>

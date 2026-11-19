@@ -4,6 +4,11 @@
  * Story 5.7 — original drag-and-drop slot assignment behaviour.
  * Epic 14 Phase C (14.C.5) — reworked to a 2-column in-tab layout with a top
  * action bar (no viewport lock) plus an optional `focusSpeakerId` highlight.
+ * #1223 — the counters count every speaker session of the event (they read 0 when all were
+ * slotted), and the pool filter labels fit a phone.
+ *
+ * Runs the real hooks (`useSlotAssignment`, `useEvent`, `useTimetable`, `useBreakpoints`) and
+ * services against the MSW harness; only the viewport (`window.matchMedia`) is set per test.
  *
  * Coverage:
  * - AC5: Drag-and-drop UI to drag speaker cards to time slots
@@ -13,316 +18,359 @@
  * - 14.C.5: 2-column layout, top action bar, no 100vh lock, focusSpeakerId
  */
 
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { BrowserRouter } from 'react-router-dom';
-import { I18nextProvider } from 'react-i18next';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import i18n from '@/i18n/config';
-import { DragDropSlotAssignment } from '../DragDropSlotAssignment';
-import { useSlotAssignment } from '@/hooks/useSlotAssignment/useSlotAssignment';
-import type { Session } from '@/types/event.types';
-import { aSession, aSessionSpeaker } from '@/test/fixtures';
+import { screen, fireEvent, waitFor, within } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { HttpResponse } from 'msw';
+import { DragDropSlotAssignment } from '../DragDropSlotAssignment';
+import { aSessionResponse, aSessionSpeaker, anEvent, daysFromNow } from '@/test/fixtures';
 import { api } from '@/test/msw/api';
+import type { ResponseBody } from '@/test/msw/api';
+import { renderWithAuth } from '@/test/auth';
 
-// Mock useSlotAssignment hook
-vi.mock('@/hooks/useSlotAssignment/useSlotAssignment', () => ({
-  useSlotAssignment: vi.fn(),
-}));
+type EventDetail = ResponseBody<'getEvent', 200>;
+type SessionResponse = NonNullable<EventDetail['sessions']>[number];
+type Timetable = ResponseBody<'getEventTimetable', 200>;
 
-// Mock useEvent hook
-vi.mock('@/hooks/useEvents', () => ({
-  useEvent: vi.fn(),
-}));
+const EVENT_CODE = 'BATbern142';
+/** The event day as YYYY-MM-DD, relative to the clock (no fixed calendar date). */
+const DAY = daysFromNow(30).slice(0, 10);
+
+/** Local wall-clock instant on the event day (no 'Z': the grid labels are local HH:MM). */
+const at = (hour: number) => `${DAY}T${String(hour).padStart(2, '0')}:00:00`;
 
 /**
- * Generates a mock TimetableResponse with hourly SPEAKER_SLOTs from 09:00 to 19:00
- * on the given date string (YYYY-MM-DD). Strings are without 'Z' so Date treats them
- * as local time and toTimeStr produces the expected "09:00"..."19:00" labels.
+ * A timetable with hourly SPEAKER_SLOTs from 09:00 to 19:00 on the event day. `occupants` maps a
+ * slot index (0-based) to the slug of the session that holds it.
  */
-const buildMockTimetable = (dateStr: string = '2025-12-15') => ({
-  slots: Array.from({ length: 11 }, (_, i) => {
-    const h = 9 + i;
-    const pad = (n: number) => String(n).padStart(2, '0');
-    return {
-      type: 'SPEAKER_SLOT' as const,
-      slotKey: `SPEAKER_SLOT-${i + 1}`,
-      startTime: `${dateStr}T${pad(h)}:00:00`,
-      endTime: `${dateStr}T${pad(h + 1)}:00:00`,
-      title: null,
-      slotIndex: i + 1,
-      sessionSlug: null,
-      assignedSessionSlug: null,
-    };
-  }),
+const aTimetable = (occupants: Record<number, string> = {}): Timetable => ({
+  slots: Array.from({ length: 11 }, (_, i) => ({
+    type: 'SPEAKER_SLOT' as const,
+    slotKey: `SPEAKER_SLOT-${i + 1}`,
+    startTime: at(9 + i),
+    endTime: at(10 + i),
+    title: null,
+    slotIndex: i + 1,
+    sessionSlug: null,
+    assignedSessionSlug: occupants[i] ?? null,
+  })),
   unassignedSessions: [],
 });
 
-// Mock useTimetable hook (replaces useEventType — slot grid is now backend-driven)
-vi.mock('@/hooks/useTimetable/useTimetable', () => ({
-  useTimetable: vi.fn(),
-}));
+const speakerOf = (username: string, firstName: string, lastName: string, company: string) => ({
+  ...aSessionSpeaker(),
+  username,
+  firstName,
+  lastName,
+  company,
+  speakerRole: 'PRIMARY_SPEAKER' as const,
+  isConfirmed: true,
+});
 
-// Mobile detection — desktop by default so existing tests are unaffected; the
-// 14.G.3 block flips it to mobile.
-let mockIsMobile = false;
-vi.mock('@/hooks/useBreakpoints', () => ({
-  useBreakpoints: () => ({ isMobile: mockIsMobile, isTablet: false, isDesktop: !mockIsMobile }),
-}));
-
-// Mock DnD library
-vi.mock('@dnd-kit/core', () => ({
-  DndContext: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-  useDraggable: () => ({
-    attributes: {},
-    listeners: {},
-    setNodeRef: () => {},
-    transform: null,
-  }),
-  useDroppable: () => ({
-    setNodeRef: () => {},
-    isOver: false,
-  }),
-}));
-
-const mockUnassignedSessions: Session[] = [
-  {
-    ...aSession(),
-    sessionSlug: 'session-1',
-    eventCode: 'BATbern142',
+const unslotted = (slug: string, title: string, speaker = speakerOf('x', 'X', 'Y', 'Z')) =>
+  aSessionResponse({
+    sessionSlug: slug,
+    eventCode: EVENT_CODE,
     language: 'de',
-    title: 'John Doe - Acme Corp',
+    title,
     startTime: null,
     endTime: null,
     room: null,
-    speakers: [
-      {
-        ...aSessionSpeaker(),
-        username: 'john.doe',
-        firstName: 'John',
-        lastName: 'Doe',
-        company: 'Acme Corp',
-        speakerRole: 'PRIMARY_SPEAKER',
-        isConfirmed: true,
-      },
-    ],
-  },
-  {
-    ...aSession(),
-    sessionSlug: 'session-2',
-    eventCode: 'BATbern142',
-    language: 'de',
-    title: 'Jane Smith - Tech Inc',
-    startTime: null,
-    endTime: null,
-    room: null,
-    speakers: [
-      {
-        ...aSessionSpeaker(),
-        username: 'jane.smith',
-        firstName: 'Jane',
-        lastName: 'Smith',
-        company: 'Tech Inc',
-        speakerRole: 'PRIMARY_SPEAKER',
-        isConfirmed: true,
-      },
-    ],
-  },
-];
-
-const renderWithProviders = (ui: React.ReactElement) => {
-  const queryClient = new QueryClient({
-    defaultOptions: {
-      queries: {
-        retry: false,
-      },
-    },
+    speakers: [speaker],
   });
 
-  return render(
-    <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <I18nextProvider i18n={i18n}>{ui}</I18nextProvider>
-      </BrowserRouter>
-    </QueryClientProvider>
+const slotted = (
+  slug: string,
+  title: string,
+  hour: number,
+  speakers: SessionResponse['speakers'] = []
+) =>
+  aSessionResponse({
+    sessionSlug: slug,
+    eventCode: EVENT_CODE,
+    language: 'de',
+    title,
+    startTime: at(hour),
+    endTime: at(hour + 1),
+    room: 'Main Hall',
+    speakers,
+  });
+
+const john = unslotted(
+  'session-1',
+  'John Doe - Acme Corp',
+  speakerOf('john.doe', 'John', 'Doe', 'Acme Corp')
+);
+const jane = unslotted(
+  'session-2',
+  'Jane Smith - Tech Inc',
+  speakerOf('jane.smith', 'Jane', 'Smith', 'Tech Inc')
+);
+
+/** A structural session: on the agenda, but no speaker slot to fill. */
+const moderation = aSessionResponse({
+  sessionSlug: 'moderation-start',
+  eventCode: EVENT_CODE,
+  title: 'Moderation',
+  sessionType: 'moderation',
+  startTime: at(8),
+  endTime: at(9),
+  room: 'Main Hall',
+});
+
+const anEventDetail = (sessions: SessionResponse[]): EventDetail => ({
+  ...anEvent({ eventCode: EVENT_CODE, eventNumber: 142, date: `${DAY}T16:00:00.000Z` }),
+  eventType: 'FULL_DAY',
+  sessions,
+});
+
+/** Answers the three reads the view makes: the event with its sessions, the grid, the tray. */
+const serve = ({
+  sessions = [john, jane] as SessionResponse[],
+  timetable = aTimetable(),
+}: { sessions?: SessionResponse[]; timetable?: Timetable } = {}) => {
+  api.on('getEvent', () => anEventDetail(sessions));
+  api.on('getEventTimetable', () => timetable);
+  api.on('getUnassignedSessions', () =>
+    sessions.filter((s) => !s.startTime && s.sessionType !== 'moderation')
   );
 };
 
+const problem = (status: number, message: string) =>
+  HttpResponse.json({ timestamp: daysFromNow(0), status, error: 'Error', message }, { status });
+
+const renderView = (focusSpeakerId?: string) =>
+  renderWithAuth(<DragDropSlotAssignment eventCode={EVENT_CODE} focusSpeakerId={focusSpeakerId} />);
+
+/** Renders and waits until the reads have landed (the action bar replaces the skeleton). */
+const renderLoaded = async (focusSpeakerId?: string) => {
+  const result = renderView(focusSpeakerId);
+  await screen.findByTestId('slot-action-bar');
+  await screen.findByTestId('timeline-grid');
+  return result;
+};
+
+/** Viewport: `width` px wide. MUI's `useMediaQuery` reads `window.matchMedia`. */
+const setViewportWidth = (width: number) => {
+  window.matchMedia = vi.fn((query: string) => {
+    const max = /max-width:\s*([\d.]+)px/.exec(query);
+    const min = /min-width:\s*([\d.]+)px/.exec(query);
+    const matches = (!max || width <= Number(max[1])) && (!min || width >= Number(min[1]));
+    return {
+      matches,
+      media: query,
+      onchange: null,
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    };
+  }) as unknown as typeof window.matchMedia;
+};
+
+/** The injected emotion CSS for an element's css-* class (jsdom evaluates no media query). */
+const cssOf = (el: HTMLElement): string => {
+  const cls = Array.from(el.classList).find((c) => c.startsWith('css-'));
+  if (!cls) return '';
+  let combined = '';
+  document.querySelectorAll('style').forEach((styleEl) => {
+    const css = styleEl.textContent ?? '';
+    if (css.includes(`.${cls}`)) combined += css + '\n';
+  });
+  return combined;
+};
+
+const originalMatchMedia = window.matchMedia;
+
 describe('DragDropSlotAssignment Component', () => {
-  const mockEventCode = 'BATbern142';
+  beforeEach(() => {
+    setViewportWidth(1280);
+    serve();
+  });
 
-  // Default mock return value for useSlotAssignment
-  const mockUseSlotAssignment = {
-    unassignedSessions: mockUnassignedSessions,
-    isLoading: false,
-    error: null,
-    conflict: null,
-    conflictAnalysis: null,
-    assignedCount: 3,
-    totalSessions: 10,
-    assignTiming: vi.fn().mockResolvedValue(undefined),
-    assignToSlot: vi.fn().mockResolvedValue(undefined),
-    unassignTiming: vi.fn().mockResolvedValue(undefined),
-    bulkAssignTiming: vi.fn().mockResolvedValue(undefined),
-    detectConflicts: vi.fn().mockResolvedValue(undefined),
-    clearConflict: vi.fn(),
-    refreshSessions: vi.fn().mockResolvedValue(undefined),
-    clearAllTimings: vi.fn().mockResolvedValue(undefined),
-    autoAssignTimings: vi.fn().mockResolvedValue(undefined),
-  };
-
-  beforeEach(async () => {
-    vi.clearAllMocks();
-
-    // Set default mock implementation for useSlotAssignment
-    vi.mocked(useSlotAssignment).mockReturnValue(mockUseSlotAssignment);
-
-    // Mock useEvent to return event with sessions
-    const { useEvent } = await import('@/hooks/useEvents');
-    vi.mocked(useEvent).mockReturnValue({
-      data: {
-        eventCode: mockEventCode,
-        eventType: 'FULL_DAY',
-        date: '2025-12-15',
-        sessions: mockUnassignedSessions,
-      },
-      isLoading: false,
-      isError: false,
-      error: null,
-      refetch: vi.fn(),
-    } as any);
-
-    // Mock useTimetable — backend-driven slot grid (11 hourly SPEAKER_SLOTs 09:00-19:00)
-    const { useTimetable } = await import('@/hooks/useTimetable/useTimetable');
-    vi.mocked(useTimetable).mockReturnValue({
-      data: buildMockTimetable('2025-12-15'),
-      isLoading: false,
-      isError: false,
-      error: null,
-      refetch: vi.fn(),
-    } as any);
+  afterEach(() => {
+    window.matchMedia = originalMatchMedia;
   });
 
   describe('Component Rendering (14.C.5 two-column in-tab layout)', () => {
-    it('should_renderTwoColumnLayoutWithTopActionBar_when_initialized', () => {
-      // 14.C.5: 2 columns (tray + timeline) + a top action bar above them.
-      renderWithProviders(<DragDropSlotAssignment eventCode={mockEventCode} />);
+    it('should_renderTwoColumnLayoutWithTopActionBar_when_initialized', async () => {
+      await renderLoaded();
 
-      // Then: the unassigned tray, the timeline, and the new top action bar exist.
       expect(screen.getByTestId('speaker-pool-sidebar')).toBeInTheDocument();
       expect(screen.getByTestId('session-timeline-grid')).toBeInTheDocument();
       expect(screen.getByTestId('slot-action-bar')).toBeInTheDocument();
+      expect(api.calls('getUnassignedSessions')[0].params.eventCode).toBe(EVENT_CODE);
+      expect(api.calls('getEventTimetable')[0].params.eventCode).toBe(EVENT_CODE);
     });
 
-    it('should_notRenderSeparateQuickActionsPanel_when_initialized', () => {
-      // 14.C.5: the right-hand 3rd column ("quick-actions-panel") is retired;
-      // its actions move into the top action bar.
-      renderWithProviders(<DragDropSlotAssignment eventCode={mockEventCode} />);
+    it('should_notRenderSeparateQuickActionsPanel_when_initialized', async () => {
+      await renderLoaded();
 
       expect(screen.queryByTestId('quick-actions-panel')).not.toBeInTheDocument();
     });
 
-    it('should_notLockToViewportHeight_when_renderedInTab', () => {
-      // 14.C.5: the `height: { md: '100vh' }` viewport lock is removed so the
-      // component sizes to its content when mounted inside the Speakers tab.
-      const { container } = renderWithProviders(
-        <DragDropSlotAssignment eventCode={mockEventCode} />
-      );
+    it('should_notLockToViewportHeight_when_renderedInTab', async () => {
+      const { container } = await renderLoaded();
 
       const css = Array.from(container.ownerDocument.querySelectorAll('style'))
         .map((s) => s.textContent ?? '')
         .join('\n');
-
-      // The viewport-height lock must not survive anywhere in the injected styles.
       expect(/height:\s*100vh/.test(css)).toBe(false);
     });
 
-    it('should_displayProgressIndicator_when_sessionsLoaded', () => {
-      // AC12: Progress tracking (e.g., "3 of 10 assigned (30%)")
-      renderWithProviders(<DragDropSlotAssignment eventCode={mockEventCode} />);
+    it('should_showLoadingState_when_fetchingData', () => {
+      renderView();
 
-      // Then: Shows progress text (3 Assigned in the top action bar)
-      expect(screen.getByText(/3 Assigned/i)).toBeInTheDocument();
-    });
-
-    it('should_showLoadingState_when_fetchingData', async () => {
-      // Given: Data is loading
-      const { useEvent } = await import('@/hooks/useEvents');
-      vi.mocked(useEvent).mockReturnValue({
-        data: undefined,
-        isLoading: true, // Override to show loading state
-        isError: false,
-        error: null,
-        refetch: vi.fn(),
-      } as any);
-
-      renderWithProviders(<DragDropSlotAssignment eventCode={mockEventCode} />);
-
-      // Then: Shows loading skeleton
+      // Before the reads answer, the skeleton stands in for the view.
       expect(screen.getByTestId('loading-skeleton')).toBeInTheDocument();
     });
   });
 
-  describe('Unassigned Speakers List', () => {
-    it('should_displayUnassignedSessions_when_loaded', () => {
-      // AC12: Show unassigned speakers list
-      renderWithProviders(<DragDropSlotAssignment eventCode={mockEventCode} />);
+  describe('Session counters (#1223)', () => {
+    it('should_countEverySpeakerSession_when_allAreSlotted', async () => {
+      // BATbern60's case: every session has a slot, the tray is empty.
+      const a = slotted('sess-a', 'Talk A', 9);
+      const b = slotted('sess-b', 'Talk B', 10);
+      const c = slotted('sess-c', 'Talk C', 11);
+      serve({
+        sessions: [a, b, c, moderation],
+        timetable: aTimetable({ 0: 'sess-a', 1: 'sess-b', 2: 'sess-c' }),
+      });
 
-      // Then: Displays both unassigned speakers
+      await renderLoaded();
+
+      expect(screen.getByText('3 Total Sessions')).toBeInTheDocument();
+      expect(screen.getByText('3 Assigned')).toBeInTheDocument();
+      expect(screen.getByText('0 Pending')).toBeInTheDocument();
+      expect(screen.getByText('3 of 3 assigned (100%)')).toBeInTheDocument();
+      expect(screen.getByText('All timings assigned!')).toBeInTheDocument();
+    });
+
+    it('should_countSlottedAndPending_when_someAreSlotted', async () => {
+      const a = slotted('sess-a', 'Talk A', 9);
+      serve({ sessions: [a, john, jane, moderation], timetable: aTimetable({ 0: 'sess-a' }) });
+
+      await renderLoaded();
+
+      expect(screen.getByText('3 Total Sessions')).toBeInTheDocument();
+      expect(screen.getByText('1 Assigned')).toBeInTheDocument();
+      expect(screen.getByText('2 Pending')).toBeInTheDocument();
+      expect(screen.getByText('1 of 3 assigned (33%)')).toBeInTheDocument();
+      expect(screen.queryByText('All timings assigned!')).not.toBeInTheDocument();
+    });
+
+    it('should_countOnlySpeakerSessions_when_anUntimedBreakIsUnassigned', async () => {
+      // A structural session without a time has no speaker slot: it is neither pending nor in
+      // the tray, so Total = Assigned + Pending holds.
+      const a = slotted('sess-a', 'Talk A', 9);
+      const untimedBreak = aSessionResponse({
+        sessionSlug: 'coffee-break',
+        eventCode: EVENT_CODE,
+        title: 'Coffee break',
+        sessionType: 'break',
+        startTime: null,
+        endTime: null,
+      });
+      serve({ sessions: [a, john, untimedBreak], timetable: aTimetable({ 0: 'sess-a' }) });
+      api.on('getUnassignedSessions', () => [john, untimedBreak]);
+
+      await renderLoaded();
+
+      expect(screen.getByText('2 Total Sessions')).toBeInTheDocument();
+      expect(screen.getByText('1 Assigned')).toBeInTheDocument();
+      expect(screen.getByText('1 Pending')).toBeInTheDocument();
+      expect(screen.getByText('1 of 2 assigned (50%)')).toBeInTheDocument();
+      const pool = screen.getByTestId('speaker-pool-sidebar');
+      expect(within(pool).queryByText('Coffee break')).not.toBeInTheDocument();
+    });
+
+    it('should_sayOneSession_when_thereIsOne', async () => {
+      const a = slotted('sess-a', 'Talk A', 9);
+      serve({ sessions: [a], timetable: aTimetable({ 0: 'sess-a' }) });
+
+      await renderLoaded();
+
+      expect(screen.getByText('1 Total Session')).toBeInTheDocument();
+      expect(screen.getByRole('status', { hidden: true })).toHaveTextContent(
+        '1 session assigned successfully'
+      );
+    });
+
+    it('should_keepTheProgress_when_poolFilterChanges', async () => {
+      const a = slotted('sess-a', 'Talk A', 9);
+      serve({ sessions: [a, john, jane], timetable: aTimetable({ 0: 'sess-a' }) });
+      await renderLoaded();
+
+      fireEvent.click(screen.getByTestId('filter-all'));
+
+      // The filter changes which cards show, not how many sessions are assigned.
+      expect(screen.getByText('1 of 3 assigned (33%)')).toBeInTheDocument();
+      expect(screen.getByTestId('unassigned-badge')).toHaveTextContent('2 Remaining');
+    });
+  });
+
+  describe('Unassigned Speakers List', () => {
+    it('should_displayUnassignedSessions_when_loaded', async () => {
+      await renderLoaded();
+
       expect(screen.getByText('John Doe - Acme Corp')).toBeInTheDocument();
       expect(screen.getByText('Jane Smith - Tech Inc')).toBeInTheDocument();
     });
 
     it('should_showDraggableIndicator_when_hoveringOverSpeakerCard', async () => {
-      // AC5: Draggable speaker cards with grab handle
-      renderWithProviders(<DragDropSlotAssignment eventCode={mockEventCode} />);
+      await renderLoaded();
 
       const speakerCard = screen.getByText('John Doe - Acme Corp').closest('[draggable]');
-
-      // When: Mouse enters speaker card
       fireEvent.mouseEnter(speakerCard!);
 
-      // Then: Shows grab handle cursor
       await waitFor(() => {
         expect(speakerCard).toHaveStyle({ cursor: 'grab' });
       });
     });
 
-    it('should_filterUnassignedSessions_when_filterApplied', () => {
-      // Given: Filter options [All] [Assigned] [Unassigned]
-      renderWithProviders(<DragDropSlotAssignment eventCode={mockEventCode} />);
+    it('should_filterUnassignedSessions_when_filterApplied', async () => {
+      const a = slotted('sess-a', 'Talk A', 9);
+      serve({ sessions: [a, john, jane], timetable: aTimetable({ 0: 'sess-a' }) });
+      await renderLoaded();
 
-      // When: User clicks [Unassigned] filter
-      const unassignedFilter = screen.getByRole('button', { name: /unassigned/i });
-      fireEvent.click(unassignedFilter);
+      fireEvent.click(screen.getByTestId('filter-unassigned'));
 
-      // Then: Shows only unassigned sessions
-      expect(screen.getByText('John Doe - Acme Corp')).toBeInTheDocument();
-      expect(screen.getByText('Jane Smith - Tech Inc')).toBeInTheDocument();
+      const pool = screen.getByTestId('speaker-pool-sidebar');
+      expect(within(pool).getByText('John Doe - Acme Corp')).toBeInTheDocument();
+      expect(within(pool).getByText('Jane Smith - Tech Inc')).toBeInTheDocument();
+      expect(within(pool).queryByText('Talk A')).not.toBeInTheDocument();
+    });
+
+    it('should_keepFilterLabelsVisible_when_phoneWidth', async () => {
+      // #1223 item 9: at 375px the three equal-width filter buttons are ~90px wide, and the
+      // upper-case "UNASSIGNED" (longer in de/fi) did not fit. jsdom measures nothing, so the
+      // test asserts the styles that let a label fit: no upper-casing, no min width, wrapping.
+      setViewportWidth(375);
+      await renderLoaded();
+
+      for (const id of ['filter-all', 'filter-assigned', 'filter-unassigned']) {
+        const css = cssOf(screen.getByTestId(id));
+        expect(css).toMatch(/text-transform:\s*none/);
+        expect(css).toMatch(/white-space:\s*normal/);
+        expect(css).toMatch(/overflow-wrap:\s*anywhere/);
+        expect(css).toMatch(/min-width:\s*0/);
+      }
     });
   });
 
   describe('Focus speaker (14.C.5 carry speaker context)', () => {
     it('should_highlightMatchingUnassignedSession_when_focusSpeakerIdMatches', async () => {
-      renderWithProviders(
-        <DragDropSlotAssignment eventCode={mockEventCode} focusSpeakerId="jane.smith" />
-      );
+      await renderLoaded('jane.smith');
 
-      // The matching session card carries a focus marker that the tray scrolls to.
       await waitFor(() => {
         expect(screen.getByTestId('focused-session-session-2')).toBeInTheDocument();
       });
-      // The non-matching session is NOT marked.
       expect(screen.queryByTestId('focused-session-session-1')).not.toBeInTheDocument();
     });
 
-    it('should_renderNormally_when_focusSpeakerIdHasNoMatch', () => {
-      renderWithProviders(
-        <DragDropSlotAssignment eventCode={mockEventCode} focusSpeakerId="nobody.here" />
-      );
+    it('should_renderNormally_when_focusSpeakerIdHasNoMatch', async () => {
+      await renderLoaded('nobody.here');
 
-      // No error, no focus marker, both sessions still render.
       expect(screen.queryByTestId('focused-session-session-1')).not.toBeInTheDocument();
       expect(screen.queryByTestId('focused-session-session-2')).not.toBeInTheDocument();
       expect(screen.getByText('John Doe - Acme Corp')).toBeInTheDocument();
@@ -331,247 +379,126 @@ describe('DragDropSlotAssignment Component', () => {
   });
 
   describe('Session Timeline Grid', () => {
-    it('should_displayTimelineGrid_when_initialized', () => {
-      // AC6: Visual timeline showing all slots and assignments
-      renderWithProviders(<DragDropSlotAssignment eventCode={mockEventCode} />);
+    it('should_displayTimelineGrid_when_initialized', async () => {
+      await renderLoaded();
 
-      // Then: Shows timeline with time slots
       expect(screen.getByTestId('timeline-grid')).toBeInTheDocument();
-      expect(screen.getByText(/09:00/)).toBeInTheDocument(); // Morning slot
-      expect(screen.getByText(/14:00/)).toBeInTheDocument(); // Afternoon slot
+      expect(screen.getByText(/09:00/)).toBeInTheDocument();
+      expect(screen.getByText(/14:00/)).toBeInTheDocument();
     });
 
     it('should_showDropZones_when_draggingSession', async () => {
-      // AC5: Droppable zones for each slot
-      const { container } = renderWithProviders(
-        <DragDropSlotAssignment eventCode={mockEventCode} />
-      );
+      const { container } = await renderLoaded();
 
       const speakerCard = screen.getByText('John Doe - Acme Corp').closest('[draggable]');
-
-      // When: Drag starts and hovers over a slot
       fireEvent.dragStart(speakerCard!);
+      fireEvent.dragOver(screen.getByTestId('slot-09:00-Main-Hall'));
 
-      // Simulate dragging over the first slot (09:00-Main-Hall)
-      const firstSlot = screen.getByTestId('slot-09:00-Main-Hall');
-      fireEvent.dragOver(firstSlot);
-
-      // Then: Drop zones become visible and highlighted with drop-zone-active class
       await waitFor(() => {
-        const dropZones = container.querySelectorAll('.drop-zone-active');
-        expect(dropZones.length).toBeGreaterThan(0);
+        expect(container.querySelectorAll('.drop-zone-active').length).toBeGreaterThan(0);
       });
     });
 
-    it('should_highlightPreferenceMatch_when_draggingOverMatchingSlot', async () => {
-      // AC11: Highlight when slot matches speaker preference
-      renderWithProviders(<DragDropSlotAssignment eventCode={mockEventCode} />);
+    it.each([
+      ['09:00', 'preference-match-high', /90% match/],
+      ['13:00', 'preference-match-medium', /65% match/],
+      ['19:00', 'preference-match-low', /20% match/],
+    ])('should_highlightPreference_when_draggingOver %s', async (time, cls, label) => {
+      // AC11: green 80-100%, yellow 50-79%, red below 50%
+      await renderLoaded();
 
       const speakerCard = screen.getByText('John Doe - Acme Corp').closest('[draggable]');
       fireEvent.dragStart(speakerCard!);
+      const slot = screen.getByTestId(`slot-${time}-Main-Hall`);
+      fireEvent.dragOver(slot);
 
-      // When: Drag over morning slot (matches preference)
-      const morningSlot = screen.getByTestId('slot-09:00-Main-Hall');
-      fireEvent.dragOver(morningSlot);
-
-      // Then: Slot highlights green (80-100% match)
       await waitFor(() => {
-        expect(morningSlot).toHaveClass('preference-match-high');
-        expect(screen.getByText(/90% match/)).toBeInTheDocument();
-      });
-    });
-
-    it('should_showYellowHighlight_when_partialPreferenceMatch', async () => {
-      // AC11: Color-coded highlights (yellow for 50-79% match)
-      renderWithProviders(<DragDropSlotAssignment eventCode={mockEventCode} />);
-
-      const speakerCard = screen.getByText('John Doe - Acme Corp').closest('[draggable]');
-      fireEvent.dragStart(speakerCard!);
-
-      // When: Drag over early afternoon slot (partial match)
-      const afternoonSlot = screen.getByTestId('slot-13:00-Main-Hall');
-      fireEvent.dragOver(afternoonSlot);
-
-      // Then: Slot highlights yellow (50-79% match)
-      await waitFor(() => {
-        expect(afternoonSlot).toHaveClass('preference-match-medium');
-        expect(screen.getByText(/65% match/)).toBeInTheDocument();
-      });
-    });
-
-    it('should_showRedHighlight_when_poorPreferenceMatch', async () => {
-      // AC11: Color-coded highlights (red for <50% match)
-      renderWithProviders(<DragDropSlotAssignment eventCode={mockEventCode} />);
-
-      const speakerCard = screen.getByText('John Doe - Acme Corp').closest('[draggable]');
-      fireEvent.dragStart(speakerCard!);
-
-      // When: Drag over evening slot (poor match)
-      const eveningSlot = screen.getByTestId('slot-19:00-Main-Hall');
-      fireEvent.dragOver(eveningSlot);
-
-      // Then: Slot highlights red (<50% match)
-      await waitFor(() => {
-        expect(eveningSlot).toHaveClass('preference-match-low');
-        expect(screen.getByText(/20% match/)).toBeInTheDocument();
+        expect(slot).toHaveClass(cls);
+        expect(screen.getByText(label)).toBeInTheDocument();
       });
     });
   });
 
   describe('Drag and Drop Interaction', () => {
     it('should_assignToSlotByKey_when_sessionDroppedOnEmptySlot', async () => {
-      // AC1/AC5: dropping a pool speaker on an empty slot ASSIGNs it by stable slotKey
-      renderWithProviders(<DragDropSlotAssignment eventCode={mockEventCode} />);
+      api.on('assignSessionToSlot', () => aTimetable({ 0: 'session-1' }));
+      await renderLoaded();
 
       const speakerCard = screen.getByText('John Doe - Acme Corp').closest('[draggable]');
       const targetSlot = screen.getByTestId('slot-09:00-Main-Hall');
-
-      // When: Session is dropped on the first (empty) slot
       fireEvent.dragStart(speakerCard!);
       fireEvent.dragOver(targetSlot);
       fireEvent.drop(targetSlot);
 
-      // Then: assignToSlot is called addressing the slot by slotKey, mode ASSIGN
-      await waitFor(() => {
-        expect(mockUseSlotAssignment.assignToSlot).toHaveBeenCalledWith('session-1', {
-          targetSlotKey: 'SPEAKER_SLOT-1',
-          mode: 'ASSIGN',
-        });
-      });
+      await waitFor(() => expect(api.calls('assignSessionToSlot')).toHaveLength(1));
+      const [call] = api.calls('assignSessionToSlot');
+      expect(call.params).toEqual({ eventCode: EVENT_CODE, sessionSlug: 'session-1' });
+      expect(call.body).toEqual({ targetSlotKey: 'SPEAKER_SLOT-1', mode: 'ASSIGN' });
     });
 
-    it('should_updateUnassignedCount_when_sessionAssigned', async () => {
-      // AC12: Real-time updates to unassigned count
-      renderWithProviders(<DragDropSlotAssignment eventCode={mockEventCode} />);
-
-      // Initial pending count shows 2 unassigned sessions
+    it('should_updatePendingCount_when_sessionAssigned', async () => {
+      api.on('assignSessionToSlot', () => aTimetable({ 0: 'session-1' }));
+      await renderLoaded();
       expect(screen.getByText('2 Pending')).toBeInTheDocument();
 
       const speakerCard = screen.getByText('John Doe - Acme Corp').closest('[draggable]');
       const targetSlot = screen.getByTestId('slot-09:00-Main-Hall');
-
-      // When: One session is assigned via drag & drop
       fireEvent.dragStart(speakerCard!);
       fireEvent.dragOver(targetSlot);
       fireEvent.drop(targetSlot);
 
-      // Then: assignToSlot is called (optimistic update handled by useSlotAssignment hook)
-      await waitFor(() => {
-        expect(mockUseSlotAssignment.assignToSlot).toHaveBeenCalled();
-      });
+      expect(await screen.findByText('1 Pending')).toBeInTheDocument();
+      expect(screen.getByText('1 Assigned')).toBeInTheDocument();
+      expect(screen.getByText('2 Total Sessions')).toBeInTheDocument();
     });
 
     it('should_rollbackOnError_when_assignmentFails', async () => {
-      // Given: Optimistic UI update is applied
-      renderWithProviders(<DragDropSlotAssignment eventCode={mockEventCode} />);
+      api.on('assignSessionToSlot', () => problem(500, 'Database unavailable'));
+      await renderLoaded();
 
       const speakerCard = screen.getByText('John Doe - Acme Corp').closest('[draggable]');
       const targetSlot = screen.getByTestId('slot-09:00-Main-Hall');
-
-      // When: Assignment fails (API error)
       fireEvent.dragStart(speakerCard!);
       fireEvent.drop(targetSlot);
 
-      // Then: Session returns to unassigned list
+      await waitFor(() => expect(api.calls('assignSessionToSlot')).toHaveLength(1));
+      // The optimistic removal is undone: the session is back in the tray.
       await waitFor(() => {
-        expect(screen.getByText('John Doe - Acme Corp')).toBeInTheDocument();
         expect(screen.getByTestId('speaker-pool-sidebar')).toContainElement(
           screen.getByText('John Doe - Acme Corp')
         );
       });
+      expect(screen.getByText('2 Pending')).toBeInTheDocument();
     });
 
     it('should_insert_when_poolSpeakerDroppedOnOccupiedSlot', async () => {
-      // AC1: dragging a pool speaker onto an occupied slot INSERTs (push + reflow)
-      const { useEvent } = await import('@/hooks/useEvents');
-      const occupant: Session = {
-        ...aSession(),
-        sessionSlug: 'occupant-session',
-        eventCode: mockEventCode,
-        language: 'de',
-        title: 'Occupant Talk',
-        startTime: '2025-12-15T09:00:00',
-        endTime: '2025-12-15T10:00:00',
-        room: 'Main Hall',
-        speakers: [],
-      };
-      vi.mocked(useEvent).mockReturnValue({
-        data: {
-          eventCode: mockEventCode,
-          date: '2025-12-15',
-          sessions: [...mockUnassignedSessions, occupant],
-        },
-        isLoading: false,
-        isError: false,
-        error: null,
-        refetch: vi.fn(),
-      } as any);
-      const { useTimetable } = await import('@/hooks/useTimetable/useTimetable');
-      const tt = buildMockTimetable('2025-12-15');
-      (tt.slots[0] as { assignedSessionSlug: string | null }).assignedSessionSlug =
-        'occupant-session';
-      vi.mocked(useTimetable).mockReturnValue({
-        data: tt,
-        isLoading: false,
-        isError: false,
-        error: null,
-        refetch: vi.fn(),
-      } as any);
-
-      renderWithProviders(<DragDropSlotAssignment eventCode={mockEventCode} />);
+      const occupant = slotted('occupant-session', 'Occupant Talk', 9);
+      serve({
+        sessions: [john, jane, occupant],
+        timetable: aTimetable({ 0: 'occupant-session' }),
+      });
+      api.on('assignSessionToSlot', () => aTimetable({ 0: 'session-1' }));
+      await renderLoaded();
 
       const speakerCard = screen.getByText('John Doe - Acme Corp').closest('[draggable]');
-      const targetSlot = screen.getByTestId('slot-09:00-Main-Hall');
       fireEvent.dragStart(speakerCard!);
-      fireEvent.drop(targetSlot);
+      fireEvent.drop(screen.getByTestId('slot-09:00-Main-Hall'));
 
-      await waitFor(() => {
-        expect(mockUseSlotAssignment.assignToSlot).toHaveBeenCalledWith('session-1', {
-          targetSlotKey: 'SPEAKER_SLOT-1',
-          mode: 'INSERT',
-        });
+      await waitFor(() => expect(api.calls('assignSessionToSlot')).toHaveLength(1));
+      expect(api.calls('assignSessionToSlot')[0].body).toEqual({
+        targetSlotKey: 'SPEAKER_SLOT-1',
+        mode: 'INSERT',
       });
     });
 
     it('should_previewReflow_when_draggingPoolSpeakerOverOccupiedSlot', async () => {
-      // 15.3: dragging over an occupied slot previews the insert (dropped session shown in the
-      // target, occupant marked moved) + an "insert" hint — before committing.
-      const { useEvent } = await import('@/hooks/useEvents');
-      const occupant: Session = {
-        ...aSession(),
-        sessionSlug: 'occupant-session',
-        eventCode: mockEventCode,
-        language: 'de',
-        title: 'Occupant Talk',
-        startTime: '2025-12-15T09:00:00',
-        endTime: '2025-12-15T10:00:00',
-        room: 'Main Hall',
-        speakers: [],
-      };
-      vi.mocked(useEvent).mockReturnValue({
-        data: {
-          eventCode: mockEventCode,
-          date: '2025-12-15',
-          sessions: [...mockUnassignedSessions, occupant],
-        },
-        isLoading: false,
-        isError: false,
-        error: null,
-        refetch: vi.fn(),
-      } as any);
-      const { useTimetable } = await import('@/hooks/useTimetable/useTimetable');
-      const tt = buildMockTimetable('2025-12-15');
-      (tt.slots[0] as { assignedSessionSlug: string | null }).assignedSessionSlug =
-        'occupant-session';
-      vi.mocked(useTimetable).mockReturnValue({
-        data: tt,
-        isLoading: false,
-        isError: false,
-        error: null,
-        refetch: vi.fn(),
-      } as any);
-
-      renderWithProviders(<DragDropSlotAssignment eventCode={mockEventCode} />);
+      // 15.3: dragging over an occupied slot previews the insert before committing.
+      const occupant = slotted('occupant-session', 'Occupant Talk', 9);
+      serve({
+        sessions: [john, jane, occupant],
+        timetable: aTimetable({ 0: 'occupant-session' }),
+      });
+      await renderLoaded();
 
       const speakerCard = screen.getByText('John Doe - Acme Corp').closest('[draggable]');
       const targetSlot = screen.getByTestId('slot-09:00-Main-Hall');
@@ -579,172 +506,85 @@ describe('DragDropSlotAssignment Component', () => {
       fireEvent.dragOver(targetSlot);
 
       await waitFor(() => {
-        // insert hint labels the action
         expect(screen.getByTestId('drop-hint')).toBeInTheDocument();
-        // the target now previews the dragged session, and a cell is flagged as moved
         expect(targetSlot).toHaveTextContent('John Doe - Acme Corp');
         expect(document.querySelector('[data-preview-moved="true"]')).toBeTruthy();
       });
     });
 
     it('should_unassign_when_removeButtonClickedOnAssignedSlot', async () => {
-      // 15.3: each assigned slot has a ✕ that returns the session to the pool
-      const { useEvent } = await import('@/hooks/useEvents');
-      const occupant: Session = {
-        ...aSession(),
+      const occupant = slotted('occupant-session', 'Occupant Talk', 9);
+      serve({
+        sessions: [john, jane, occupant],
+        timetable: aTimetable({ 0: 'occupant-session' }),
+      });
+      api.on('unassignTiming', () => ({ ...occupant, startTime: null, endTime: null }));
+      await renderLoaded();
+
+      fireEvent.click(screen.getByTestId('remove-slot-occupant-session'));
+
+      await waitFor(() => expect(api.calls('unassignTiming')).toHaveLength(1));
+      expect(api.calls('unassignTiming')[0].params).toEqual({
+        eventCode: EVENT_CODE,
         sessionSlug: 'occupant-session',
-        eventCode: mockEventCode,
-        language: 'de',
-        title: 'Occupant Talk',
-        startTime: '2025-12-15T09:00:00',
-        endTime: '2025-12-15T10:00:00',
-        room: 'Main Hall',
-        speakers: [],
-      };
-      vi.mocked(useEvent).mockReturnValue({
-        data: {
-          eventCode: mockEventCode,
-          date: '2025-12-15',
-          sessions: [...mockUnassignedSessions, occupant],
-        },
-        isLoading: false,
-        isError: false,
-        error: null,
-        refetch: vi.fn(),
-      } as any);
-      const { useTimetable } = await import('@/hooks/useTimetable/useTimetable');
-      const tt = buildMockTimetable('2025-12-15');
-      (tt.slots[0] as { assignedSessionSlug: string | null }).assignedSessionSlug =
-        'occupant-session';
-      vi.mocked(useTimetable).mockReturnValue({
-        data: tt,
-        isLoading: false,
-        isError: false,
-        error: null,
-        refetch: vi.fn(),
-      } as any);
-
-      renderWithProviders(<DragDropSlotAssignment eventCode={mockEventCode} />);
-
-      const removeBtn = screen.getByTestId('remove-slot-occupant-session');
-      fireEvent.click(removeBtn);
-
-      await waitFor(() => {
-        expect(mockUseSlotAssignment.unassignTiming).toHaveBeenCalledWith('occupant-session');
       });
     });
 
     it('should_swap_when_assignedSpeakerDroppedOnOccupiedSlot', async () => {
-      // AC2: dragging an already-assigned speaker onto another occupied slot SWAPs
-      const { useEvent } = await import('@/hooks/useEvents');
-      const a: Session = {
-        ...aSession(),
-        sessionSlug: 'sess-a',
-        eventCode: mockEventCode,
-        language: 'de',
-        title: 'A',
-        startTime: '2025-12-15T09:00:00',
-        endTime: '2025-12-15T10:00:00',
-        room: 'Main Hall',
-        speakers: [],
-      };
-      const b: Session = {
-        ...aSession(),
-        sessionSlug: 'sess-b',
-        eventCode: mockEventCode,
-        language: 'de',
-        title: 'B',
-        startTime: '2025-12-15T10:00:00',
-        endTime: '2025-12-15T11:00:00',
-        room: 'Main Hall',
-        speakers: [],
-      };
-      vi.mocked(useEvent).mockReturnValue({
-        data: { eventCode: mockEventCode, date: '2025-12-15', sessions: [a, b] },
-        isLoading: false,
-        isError: false,
-        error: null,
-        refetch: vi.fn(),
-      } as any);
-      const { useTimetable } = await import('@/hooks/useTimetable/useTimetable');
-      const tt = buildMockTimetable('2025-12-15');
-      (tt.slots[0] as { assignedSessionSlug: string | null }).assignedSessionSlug = 'sess-a';
-      (tt.slots[1] as { assignedSessionSlug: string | null }).assignedSessionSlug = 'sess-b';
-      vi.mocked(useTimetable).mockReturnValue({
-        data: tt,
-        isLoading: false,
-        isError: false,
-        error: null,
-        refetch: vi.fn(),
-      } as any);
-
-      renderWithProviders(<DragDropSlotAssignment eventCode={mockEventCode} />);
+      const a = slotted('sess-a', 'A', 9);
+      const b = slotted('sess-b', 'B', 10);
+      serve({ sessions: [a, b], timetable: aTimetable({ 0: 'sess-a', 1: 'sess-b' }) });
+      api.on('assignSessionToSlot', () => aTimetable({ 0: 'sess-b', 1: 'sess-a' }));
+      await renderLoaded();
 
       // Drag the assigned 'A' cell (09:00) onto the occupied 10:00 slot → SWAP
-      const sourceCell = screen.getByTestId('slot-09:00-Main-Hall');
-      const targetCell = screen.getByTestId('slot-10:00-Main-Hall');
-      fireEvent.dragStart(sourceCell);
-      fireEvent.drop(targetCell);
+      fireEvent.dragStart(screen.getByTestId('slot-09:00-Main-Hall'));
+      fireEvent.drop(screen.getByTestId('slot-10:00-Main-Hall'));
 
-      await waitFor(() => {
-        expect(mockUseSlotAssignment.assignToSlot).toHaveBeenCalledWith('sess-a', {
-          targetSlotKey: 'SPEAKER_SLOT-2',
-          mode: 'SWAP',
-        });
-      });
+      await waitFor(() => expect(api.calls('assignSessionToSlot')).toHaveLength(1));
+      const [call] = api.calls('assignSessionToSlot');
+      expect(call.params.sessionSlug).toBe('sess-a');
+      expect(call.body).toEqual({ targetSlotKey: 'SPEAKER_SLOT-2', mode: 'SWAP' });
     });
   });
 
   describe('Top Action Bar (14.C.5)', () => {
-    it('should_displaySessionSummary_when_rendered', () => {
-      // Given: Event has 10 total sessions, 3 assigned, 2 unassigned/pending
-      renderWithProviders(<DragDropSlotAssignment eventCode={mockEventCode} />);
-
-      // Then: Shows session summary in the top action bar
-      expect(screen.getByText('10 Total Sessions')).toBeInTheDocument();
-      expect(screen.getByText('3 Assigned')).toBeInTheDocument();
-      expect(screen.getByText('2 Pending')).toBeInTheDocument();
-    });
-
-    it('should_renderAllThreeActionButtons_when_rendered', () => {
-      renderWithProviders(<DragDropSlotAssignment eventCode={mockEventCode} />);
+    it('should_renderAllThreeActionButtons_when_rendered', async () => {
+      await renderLoaded();
 
       expect(screen.getByTestId('generate-structural-button')).toBeInTheDocument();
       expect(screen.getByTestId('auto-assign-button')).toBeInTheDocument();
-      // Clear-all button (the action-bar variant).
       expect(screen.getByRole('button', { name: /clear all/i })).toBeInTheDocument();
     });
 
-    it('should_openAutoAssignModal_when_autoAssignClicked', () => {
+    it('should_openAutoAssignModal_when_autoAssignClicked', async () => {
       // AC13: Bulk auto-assignment feature
-      renderWithProviders(<DragDropSlotAssignment eventCode={mockEventCode} />);
+      await renderLoaded();
 
-      const autoAssignButton = screen.getByRole('button', { name: /auto.*assign/i });
-      fireEvent.click(autoAssignButton);
+      fireEvent.click(screen.getByRole('button', { name: /auto.*assign/i }));
 
       expect(screen.getByRole('dialog')).toBeInTheDocument();
     });
 
-    it('should_clearAllAssignments_when_clearButtonClicked', () => {
-      renderWithProviders(<DragDropSlotAssignment eventCode={mockEventCode} />);
+    it('should_clearAllAssignments_when_clearButtonClicked', async () => {
+      await renderLoaded();
 
-      const clearButton = screen.getByRole('button', { name: /clear all/i });
-      fireEvent.click(clearButton);
+      fireEvent.click(screen.getByRole('button', { name: /clear all/i }));
 
       expect(screen.getByRole('dialog')).toBeInTheDocument();
       expect(screen.getByText(/are you sure/i)).toBeInTheDocument();
     });
 
     it('should_offerOverwrite_when_structuralSessionsAlreadyExist', async () => {
-      // The real slotAssignmentService answers on the MSW harness: its 409 reaches the component
-      // as the AxiosError, which switches the dialog to the overwrite question.
+      // The service's 409 reaches the component as the AxiosError, which switches the dialog to
+      // the overwrite question.
       api.on('generateStructuralSessions', () =>
         HttpResponse.json(
           { status: 409, error: 'Conflict', message: 'Structural sessions already exist' },
           { status: 409 }
         )
       );
-      renderWithProviders(<DragDropSlotAssignment eventCode={mockEventCode} />);
+      await renderLoaded();
 
       fireEvent.click(screen.getByTestId('generate-structural-button'));
       fireEvent.click(screen.getByTestId('generate-structural-confirm'));
@@ -763,7 +603,7 @@ describe('DragDropSlotAssignment Component', () => {
           { status: 500 }
         )
       );
-      renderWithProviders(<DragDropSlotAssignment eventCode={mockEventCode} />);
+      await renderLoaded();
 
       fireEvent.click(screen.getByTestId('generate-structural-button'));
       fireEvent.click(screen.getByTestId('generate-structural-confirm'));
@@ -772,201 +612,97 @@ describe('DragDropSlotAssignment Component', () => {
       expect(screen.queryByTestId('generate-structural-overwrite-confirm')).not.toBeInTheDocument();
     });
 
-    it('should_labelActionBarForScreenReaders_when_rendered', () => {
+    it('should_labelActionBarForScreenReaders_when_rendered', async () => {
       // NFR7: the top action bar is a labelled toolbar region.
-      renderWithProviders(<DragDropSlotAssignment eventCode={mockEventCode} />);
+      await renderLoaded();
 
-      const bar = screen.getByTestId('slot-action-bar');
-      expect(bar).toHaveAttribute('aria-label');
-    });
-  });
-
-  describe('Success States', () => {
-    it('should_showSuccessBanner_when_allSessionsAssigned', async () => {
-      // Given: All sessions are already assigned (totalSessions === assignedCount)
-      vi.mocked(useSlotAssignment).mockReturnValue({
-        ...mockUseSlotAssignment,
-        assignedCount: 10, // Same as totalSessions
-        unassignedSessions: [], // No unassigned sessions
-      });
-
-      renderWithProviders(<DragDropSlotAssignment eventCode={mockEventCode} />);
-
-      // Then: Success banner appears with link to Publishing tab
-      expect(screen.getByText('All timings assigned!')).toBeInTheDocument();
-      expect(screen.getByText('Go to Publishing Tab')).toBeInTheDocument();
+      expect(screen.getByTestId('slot-action-bar')).toHaveAttribute('aria-label');
     });
   });
 
   describe('Responsive timeline (organizer mobile)', () => {
-    /**
-     * The timeline grid is now FLUID on every viewport — the fixed
-     * minWidth ({ xs: 560, md: 800 }) was removed (round 3) so the grid
-     * fills the available width with no horizontal scroll forced by a min
-     * width. jsdom never evaluates media queries, so we inspect the injected
-     * emotion stylesheet for the element's css-* class.
-     */
-    const cssForClass = (className: string): string => {
-      let combined = '';
-      document.querySelectorAll('style').forEach((styleEl) => {
-        const css = styleEl.textContent ?? '';
-        if (css.includes(`.${className}`)) combined += css + '\n';
-      });
-      return combined;
-    };
-
-    const emotionClass = (el: HTMLElement): string => {
-      const cssClass = Array.from(el.classList).find((c) => c.startsWith('css-'));
-      return cssClass ?? '';
-    };
-
-    it('should_notSetFixedMinWidthOnTimelineGrid_when_rendered', () => {
-      renderWithProviders(<DragDropSlotAssignment eventCode={mockEventCode} />);
+    it('should_notSetFixedMinWidthOnTimelineGrid_when_rendered', async () => {
+      await renderLoaded();
 
       // The inner grid wrapper must no longer carry any fixed min-width rule.
-      const scroller = screen.getByTestId('timeline-grid');
-      const inner = scroller.firstElementChild as HTMLElement;
+      const inner = screen.getByTestId('timeline-grid').firstElementChild as HTMLElement;
       expect(inner).toBeTruthy();
-
-      // No emotion class at all is the cleanest signal of "no sx min-width".
-      const cls = emotionClass(inner);
-      const css = cls ? cssForClass(cls) : '';
-
-      // Neither the old xs (560px) nor md (800px) min-width may survive.
+      const css = cssOf(inner);
       expect(/min-width:\s*560px/.test(css)).toBe(false);
       expect(/min-width:\s*800px/.test(css)).toBe(false);
     });
 
     it('should_wrapSessionTitle_whiteSpaceNormal_atXs', async () => {
-      // Provide an event session assigned to the 09:00 Main Hall slot so the
-      // session-title Typography actually renders in a timeline cell.
-      const assignedSession: Session = {
-        ...aSession(),
-        sessionSlug: 'assigned-session',
-        eventCode: mockEventCode,
-        language: 'de',
-        title: 'A Very Long Session Title That Must Wrap On Phones',
-        startTime: '2025-12-15T09:00:00',
-        endTime: '2025-12-15T10:00:00',
-        room: 'Main Hall',
-        speakers: [
-          {
-            ...aSessionSpeaker(),
-            username: 'john.doe',
-            firstName: 'John',
-            lastName: 'Doe',
-            company: 'Acme Corp',
-            speakerRole: 'PRIMARY_SPEAKER',
-            isConfirmed: true,
-          },
-        ],
-      };
-      const { useEvent } = await import('@/hooks/useEvents');
-      vi.mocked(useEvent).mockReturnValue({
-        data: {
-          eventCode: mockEventCode,
-          eventType: 'FULL_DAY',
-          date: '2025-12-15',
-          sessions: [...mockUnassignedSessions, assignedSession],
-        },
-        isLoading: false,
-        isError: false,
-        error: null,
-        refetch: vi.fn(),
-      } as any);
+      const long = slotted(
+        'assigned-session',
+        'A Very Long Session Title That Must Wrap On Phones',
+        9,
+        [speakerOf('john.doe', 'John', 'Doe', 'Acme Corp')]
+      );
+      serve({
+        sessions: [john, jane, long],
+        timetable: aTimetable({ 0: 'assigned-session' }),
+      });
+      await renderLoaded();
 
-      // Story 15.3: cell occupancy comes from the timetable's assignedSessionSlug, not
-      // from session.startTime matching — mark slot-1 (09:00) as occupied.
-      const { useTimetable } = await import('@/hooks/useTimetable/useTimetable');
-      const occupiedTimetable = buildMockTimetable('2025-12-15');
-      (occupiedTimetable.slots[0] as { assignedSessionSlug: string | null }).assignedSessionSlug =
-        'assigned-session';
-      vi.mocked(useTimetable).mockReturnValue({
-        data: occupiedTimetable,
-        isLoading: false,
-        isError: false,
-        error: null,
-        refetch: vi.fn(),
-      } as any);
-
-      renderWithProviders(<DragDropSlotAssignment eventCode={mockEventCode} />);
-
-      const titleEl = screen.getByText(
-        'A Very Long Session Title That Must Wrap On Phones'
-      ) as HTMLElement;
-      const css = cssForClass(emotionClass(titleEl));
-
+      const titleEl = screen.getByText('A Very Long Session Title That Must Wrap On Phones');
       // xs base (min-width:0px) -> white-space:normal (wraps on phones)
       expect(
-        new RegExp(
-          `@media\\s*\\(min-width:\\s*0px\\)\\s*\\{[^}]*white-space:\\s*normal[^}]*\\}`
-        ).test(css)
+        /@media\s*\(min-width:\s*0px\)\s*\{[^}]*white-space:\s*normal[^}]*\}/.test(cssOf(titleEl))
       ).toBe(true);
     });
   });
 
   describe('Accessibility', () => {
-    it('should_supportKeyboardNavigation_when_tabPressed', () => {
-      // Given: Component supports keyboard navigation
-      renderWithProviders(<DragDropSlotAssignment eventCode={mockEventCode} />);
+    it('should_supportKeyboardNavigation_when_tabPressed', async () => {
+      await renderLoaded();
 
       const speakerCard = screen
         .getByText('John Doe - Acme Corp')
         .closest<HTMLElement>('[role="article"]');
-
-      // When: User tabs to speaker card
       speakerCard?.focus();
 
-      // Then: Card is focusable and has aria-label
       expect(speakerCard).toHaveAttribute('aria-label');
       expect(speakerCard).toHaveAttribute('tabindex', '0');
     });
 
     it('should_announceAssignment_when_screenReaderEnabled', async () => {
-      // Given: Component is rendered with assignedCount > 0 (from mockUseSlotAssignment)
-      renderWithProviders(<DragDropSlotAssignment eventCode={mockEventCode} />);
+      const a = slotted('sess-a', 'Talk A', 9);
+      const b = slotted('sess-b', 'Talk B', 10);
+      serve({ sessions: [a, b, john], timetable: aTimetable({ 0: 'sess-a', 1: 'sess-b' }) });
+      await renderLoaded();
 
-      // Then: ARIA live region announces the current assignment count
-      const announcement = screen.getByRole('status', { hidden: true });
-      expect(announcement).toHaveTextContent('3 sessions assigned successfully');
+      // ARIA live region announces the current assignment count
+      expect(screen.getByRole('status', { hidden: true })).toHaveTextContent(
+        '2 sessions assigned successfully'
+      );
     });
   });
 
   describe('Mobile tap-to-assign (14.G.3)', () => {
-    beforeEach(() => {
-      mockIsMobile = true;
-    });
-    afterEach(() => {
-      mockIsMobile = false;
-    });
-
     it('arms empty slots after a tray session is tapped, then assigns on slot tap', async () => {
-      renderWithProviders(<DragDropSlotAssignment eventCode={mockEventCode} />);
+      setViewportWidth(375);
+      api.on('assignSessionToSlot', () => aTimetable({ 0: 'session-1' }));
+      await renderLoaded();
 
-      // No slot is armed before a session is picked up.
       expect(document.querySelector('[data-armed="true"]')).toBeNull();
 
-      // Tap a tray session → empty slots become armed tap targets.
       fireEvent.click(screen.getByTestId('tray-session-session-1'));
       await waitFor(() => {
         expect(document.querySelector('[data-armed="true"]')).toBeTruthy();
       });
 
-      // Tap an armed (empty) slot → ASSIGNs the picked-up session by slotKey.
-      const armed = document.querySelector('[data-armed="true"]') as HTMLElement;
-      fireEvent.click(armed);
-      await waitFor(() => {
-        expect(mockUseSlotAssignment.assignToSlot).toHaveBeenCalledWith(
-          'session-1',
-          expect.objectContaining({ mode: 'ASSIGN' })
-        );
-      });
+      fireEvent.click(document.querySelector('[data-armed="true"]') as HTMLElement);
+      await waitFor(() => expect(api.calls('assignSessionToSlot')).toHaveLength(1));
+      expect(api.calls('assignSessionToSlot')[0].params.sessionSlug).toBe('session-1');
+      expect(api.calls('assignSessionToSlot')[0].body).toMatchObject({ mode: 'ASSIGN' });
     });
 
-    it('does not arm slots on desktop (drag-drop unchanged)', () => {
-      mockIsMobile = false;
-      renderWithProviders(<DragDropSlotAssignment eventCode={mockEventCode} />);
+    it('does not arm slots on desktop (drag-drop unchanged)', async () => {
+      await renderLoaded();
+
       fireEvent.click(screen.getByTestId('tray-session-session-1'));
+
       expect(document.querySelector('[data-armed="true"]')).toBeNull();
     });
   });

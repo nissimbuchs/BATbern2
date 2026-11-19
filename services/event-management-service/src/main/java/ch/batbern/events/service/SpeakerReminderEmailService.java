@@ -17,7 +17,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.time.Clock;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -41,11 +43,13 @@ public class SpeakerReminderEmailService {
     private final PrimarySpeakerResolver primarySpeakerResolver;
     private final ModeratorReplyAddress moderatorReplyAddress;
     private final SessionRepository sessionRepository;
+    private final Clock clock;
 
     @Value("${app.base-url:https://batbern.ch}")
     private String baseUrl;
 
 
+    private static final ZoneId ZURICH = ZoneId.of("Europe/Zurich");
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd.MM.yyyy");
 
     /**
@@ -215,7 +219,8 @@ public class SpeakerReminderEmailService {
 
     private Map<String, String> variables(String speakerName, String sessionTitle, Event event, LocalDate deadline,
             String lang) {
-        long daysRemaining = ChronoUnit.DAYS.between(LocalDate.now(), deadline);
+        // Swiss date: the reminder job runs on a UTC server (#1222)
+        long daysRemaining = ChronoUnit.DAYS.between(LocalDate.ofInstant(clock.instant(), ZURICH), deadline);
         // Story 11.F.1: Cognito-only dashboard link (no magic-link token query param).
         String portalLink = baseUrl + "/speaker-portal/dashboard";
 

@@ -253,8 +253,8 @@ make test-java
 # Run only TypeScript tests
 make test-node
 
-# Run with coverage reports
-make test-coverage
+# Run with coverage reports (make test-java / test-node both write them)
+make test
 
 # Run specific service tests
 cd services/company-user-management-service
@@ -272,7 +272,7 @@ npm run test:e2e           # E2E tests (requires running app)
 
 **For Unit Tests:**
 - Java 21
-- Node.js 20
+- Node.js 22
 - No special setup
 
 **For Integration Tests:**

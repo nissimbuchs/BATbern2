@@ -38,7 +38,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import LightbulbIcon from '@mui/icons-material/Lightbulb';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { format, parseISO } from 'date-fns';
+import { parseISO } from 'date-fns';
 import {
   deleteTopic,
   getTopics,
@@ -48,6 +48,7 @@ import {
 } from '@/services/api/partnerTopicsApi';
 import { TopicSuggestionForm } from '@/components/partner/TopicSuggestionForm';
 import { useBreakpoints } from '@/hooks/useBreakpoints';
+import { uiIntlLocale } from '@/utils/date/intlLocale';
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 
@@ -221,7 +222,13 @@ export const PartnerTopicsTab: React.FC<Props> = ({ companyName }) => {
                   </TableCell>
                   <TableCell>
                     <Typography variant="body2" color="text.secondary" noWrap>
-                      {topic.createdAt ? format(parseISO(topic.createdAt), 'd MMM yyyy') : '–'}
+                      {topic.createdAt
+                        ? parseISO(topic.createdAt).toLocaleDateString(uiIntlLocale(), {
+                            day: 'numeric',
+                            month: 'short',
+                            year: 'numeric',
+                          })
+                        : '–'}
                     </Typography>
                   </TableCell>
                   <TableCell align="right">

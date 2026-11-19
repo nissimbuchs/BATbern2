@@ -307,12 +307,9 @@ public class UserApiClientImpl implements UserApiClient {
                 : new ch.batbern.events.dto.generated.users.UserSettings();
         return ch.batbern.events.notification.UserPreferences.builder()
                 .emailNotificationsEnabled(!Boolean.FALSE.equals(prefs.getEmailNotifications()))
-                .inAppNotificationsEnabled(!Boolean.FALSE.equals(prefs.getInAppNotifications()))
-                .pushNotificationsEnabled(Boolean.TRUE.equals(prefs.getPushNotifications()))
-                .notificationFrequency(prefs.getNotificationFrequency() != null
-                        ? prefs.getNotificationFrequency().getValue() : null)
                 .quietHoursStart(prefs.getQuietHoursStart())
                 .quietHoursEnd(prefs.getQuietHoursEnd())
+                .timezone(prefs.getTimezone())
                 .build();
     }
 

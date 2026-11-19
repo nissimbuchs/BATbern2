@@ -49,6 +49,7 @@ import {
   MailDetailDialog,
 } from '@/components/organizer/EventPage/communications/MailDetail';
 import { MailSentList } from '@/components/organizer/EventPage/communications/MailSentList';
+import { intlLocale } from '@/utils/date/intlLocale';
 
 const SPAM_PAGE_SIZE = 50;
 
@@ -274,7 +275,7 @@ interface SpamRowProps {
 
 const SpamRow: React.FC<SpamRowProps> = ({ row, isOpen, inline, onToggle, onNotSpam, pending }) => {
   const { t, i18n } = useTranslation('events');
-  const at = new Date(row.sentAt).toLocaleString(i18n.language, {
+  const at = new Date(row.sentAt).toLocaleString(intlLocale(i18n.language), {
     dateStyle: 'medium',
     timeStyle: 'short',
   });

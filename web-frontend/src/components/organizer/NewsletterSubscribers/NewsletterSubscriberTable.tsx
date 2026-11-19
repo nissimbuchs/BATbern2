@@ -37,6 +37,7 @@ import Box from '@mui/material/Box';
 import { useTranslation } from 'react-i18next';
 import { useBreakpoints } from '@/hooks/useBreakpoints';
 import type { components } from '@/types/generated/event-newsletter-api.types';
+import { uiIntlLocale } from '@/utils/date/intlLocale';
 
 type SubscriberResponse = components['schemas']['SubscriberResponse'];
 
@@ -242,7 +243,9 @@ const NewsletterSubscriberTable: React.FC<NewsletterSubscriberTableProps> = ({
                 <Chip label={sub.source} size="small" variant="outlined" />
               </TableCell>
               <TableCell sx={hideOnXsSx('subscribedAt')}>
-                {sub.subscribedAt ? new Date(sub.subscribedAt).toLocaleDateString() : '—'}
+                {sub.subscribedAt
+                  ? new Date(sub.subscribedAt).toLocaleDateString(uiIntlLocale())
+                  : '—'}
               </TableCell>
               <TableCell>{renderStatusChip(sub)}</TableCell>
               <TableCell align="right">{renderActions(sub)}</TableCell>

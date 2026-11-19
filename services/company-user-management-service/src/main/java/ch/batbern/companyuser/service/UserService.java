@@ -42,6 +42,7 @@ import ch.batbern.shared.api.DeterministicPaging;
 import ch.batbern.shared.events.DomainEventPublisher;
 import ch.batbern.shared.service.SlugGenerationService;
 import ch.batbern.shared.utils.LoggingUtils;
+import ch.batbern.companyuser.domain.UserLanguages;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
@@ -1183,18 +1184,13 @@ public class UserService {
     }
 
     /**
-     * Resolve the user's language preference (de/en) for verification email
-     * locale selection. Anything other than 'de' resolves to 'en' (the email
-     * templates only exist in de + en per the project localization rule).
+     * The user's mail language (de/en) for the verification email: German and Swiss German get
+     * the German template, every other language English (templates exist in de + en only,
+     * {@link UserLanguages#mailLanguage}); no preference is English, as before.
      */
     private String resolveUserLocale(User user) {
-        if (user.getPreferences() != null && user.getPreferences().getLanguage() != null) {
-            String language = user.getPreferences().getLanguage();
-            // Any German variant (de, de-DE, de-CH, …) gets the German template; everything
-            // else (including gsw-BE per the email-template DE+EN-only rule) falls back to en.
-            return language.toLowerCase(Locale.ROOT).startsWith("de") ? "de" : "en";
-        }
-        return "en";
+        return UserLanguages.mailLanguage(
+                user.getPreferences() != null ? user.getPreferences().getLanguage() : null, "en");
     }
 
     /**

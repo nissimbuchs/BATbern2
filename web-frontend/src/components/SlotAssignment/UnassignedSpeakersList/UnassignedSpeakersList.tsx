@@ -24,8 +24,16 @@ import { useTranslation } from 'react-i18next';
 import type { Session } from '@/types/event.types';
 
 export interface UnassignedSpeakersListProps {
+  /** The cards to show: the unassigned sessions, or what the active filter selects. */
   sessions: Session[];
+  /** Every speaker session of the event, slotted or not. */
   totalSessions: number;
+  /**
+   * How many speaker sessions have no slot yet. Defaults to `sessions.length`, which is right
+   * only while the list shows the unassigned sessions; with the "All" or "Assigned" filter the
+   * caller passes the tray size, so the progress does not follow the filter (#1223).
+   */
+  unassignedCount?: number;
   onDragStart?: (session: Session) => (e: React.DragEvent) => void;
   activeFilter?: 'all' | 'assigned' | 'unassigned';
   onFilterChange?: (filter: 'all' | 'assigned' | 'unassigned') => void;
@@ -44,9 +52,24 @@ export interface UnassignedSpeakersListProps {
   selectedSessionSlug?: string | null;
 }
 
+/**
+ * #1223: on a phone the three equal filter buttons are about 90px wide, and the upper-cased
+ * "UNASSIGNED" (longer still in de and fi) was cut off. Mixed case, no minimum width, and
+ * wrapping keep every label whole.
+ */
+const FILTER_BUTTON_SX = {
+  minWidth: 0,
+  px: 0.5,
+  textTransform: 'none',
+  whiteSpace: 'normal',
+  overflowWrap: 'anywhere',
+  lineHeight: 1.25,
+} as const;
+
 export const UnassignedSpeakersList: React.FC<UnassignedSpeakersListProps> = ({
   sessions,
   totalSessions,
+  unassignedCount = sessions.length,
   onDragStart,
   activeFilter = 'unassigned',
   onFilterChange,
@@ -65,7 +88,7 @@ export const UnassignedSpeakersList: React.FC<UnassignedSpeakersListProps> = ({
   }, [focusSessionSlug, sessions]);
 
   const { t } = useTranslation('events');
-  const assignedCount = totalSessions - sessions.length;
+  const assignedCount = totalSessions - unassignedCount;
   const progressPercent = totalSessions > 0 ? Math.round((assignedCount / totalSessions) * 100) : 0;
 
   // Loading skeleton
@@ -110,10 +133,10 @@ export const UnassignedSpeakersList: React.FC<UnassignedSpeakersListProps> = ({
         </Box>
 
         {/* Unassigned Badge */}
-        {sessions.length > 0 && (
+        {unassignedCount > 0 && (
           <Chip
             data-testid="unassigned-badge"
-            label={t('slotAssignment.speakerPool.remaining', { count: sessions.length })}
+            label={t('slotAssignment.speakerPool.remaining', { count: unassignedCount })}
             color="warning"
             size="small"
             sx={{ mb: 2 }}
@@ -124,6 +147,7 @@ export const UnassignedSpeakersList: React.FC<UnassignedSpeakersListProps> = ({
         <ButtonGroup size="small" fullWidth data-testid="filter-buttons">
           <Button
             data-testid="filter-all"
+            sx={FILTER_BUTTON_SX}
             onClick={() => onFilterChange?.('all')}
             variant={activeFilter === 'all' ? 'contained' : 'outlined'}
             className={activeFilter === 'all' ? 'filter-active' : ''}
@@ -132,6 +156,7 @@ export const UnassignedSpeakersList: React.FC<UnassignedSpeakersListProps> = ({
           </Button>
           <Button
             data-testid="filter-assigned"
+            sx={FILTER_BUTTON_SX}
             onClick={() => onFilterChange?.('assigned')}
             variant={activeFilter === 'assigned' ? 'contained' : 'outlined'}
             className={activeFilter === 'assigned' ? 'filter-active' : ''}
@@ -140,6 +165,7 @@ export const UnassignedSpeakersList: React.FC<UnassignedSpeakersListProps> = ({
           </Button>
           <Button
             data-testid="filter-unassigned"
+            sx={FILTER_BUTTON_SX}
             onClick={() => onFilterChange?.('unassigned')}
             variant={activeFilter === 'unassigned' ? 'contained' : 'outlined'}
             className={activeFilter === 'unassigned' ? 'filter-active' : ''}
@@ -151,7 +177,7 @@ export const UnassignedSpeakersList: React.FC<UnassignedSpeakersListProps> = ({
 
       {/* Speaker Cards */}
       <Box sx={{ flex: 1, overflowY: 'auto', p: 2 }}>
-        {sessions.length === 0 ? (
+        {sessions.length === 0 && unassignedCount === 0 ? (
           // Empty State
           <Box
             data-testid="empty-state"

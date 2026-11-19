@@ -31,6 +31,7 @@ import type { CreateRegistrationRequest } from '@/types/event.types';
 import { Loader2, CheckCircle2, Mail, ArrowLeft, AlertCircle, Building2 } from 'lucide-react';
 import { DeregistrationByEmailModal } from '@/components/public/DeregistrationByEmailModal';
 import { useTurnstile } from '@/hooks/useTurnstile';
+import { intlLocale } from '@/utils/date/intlLocale';
 
 export interface RegistrationWizardProps {
   /** Event code for registration */
@@ -295,7 +296,7 @@ export const RegistrationWizard = ({
   if (!isRegistrationLoading && myRegistration != null) {
     const isCancelled = myRegistration.status === 'CANCELLED';
     const formattedDate = myRegistration.registrationDate
-      ? new Date(myRegistration.registrationDate).toLocaleDateString(i18n.language, {
+      ? new Date(myRegistration.registrationDate).toLocaleDateString(intlLocale(i18n.language), {
           year: 'numeric',
           month: 'long',
           day: 'numeric',

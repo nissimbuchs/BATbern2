@@ -68,7 +68,6 @@ interface UserPreferences {
   notifications?: {
     email?: boolean;
     sms?: boolean;
-    push?: boolean;
   };
   privacy?: {
     showProfile?: boolean;
@@ -122,6 +121,20 @@ function isFederatedSignIn(userName: string, attributes: UserAttributes): boolea
     return true;
   }
   return /^google_/i.test(userName);
+}
+
+/**
+ * The users-api `language` enum (CUMS `UserLanguages`, #1222). `pref_language` is VARCHAR(10), so a
+ * raw sign-up tag (`de-CH`, `en-US`, a stale localStorage value) would be stored as is and break
+ * the user's settings reads; it is reduced to a supported code by the same rule as CUMS.
+ */
+const TWO_LETTER_LANGUAGES = ['de', 'en', 'fr', 'it', 'rm', 'es', 'fi', 'nl', 'ja'];
+
+/** `gsw*` is `gsw-BE`, otherwise the primary subtag if supported, else the default `de`. */
+export function normalizeLanguage(raw?: string): string {
+  const primary = (raw ?? '').trim().toLowerCase().split(/[-_]/, 1)[0];
+  if (primary === 'gsw') return 'gsw-BE';
+  return TWO_LETTER_LANGUAGES.includes(primary) ? primary : 'de';
 }
 
 /**
@@ -240,7 +253,7 @@ async function createUser(
   // Extract user profile data from preferences
   const firstName = preferences.firstName || 'User';
   const lastName = preferences.lastName || 'User';
-  const language = preferences.language || 'de';
+  const language = normalizeLanguage(preferences.language);
   // #1102: derive from the names as entered (any script), falling back to the email; the 'User'
   // defaults above are for the name columns only and must not turn into `user.user`.
   const username = generateUsername(preferences.firstName, preferences.lastName, email);

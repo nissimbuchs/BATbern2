@@ -45,17 +45,7 @@ import {
 } from '@/services/taskService';
 import { OrganizerSelect } from '@/components/shared/OrganizerSelect';
 import { useEvents } from '@/hooks/useEvents';
-
-// Event workflow states — lowercase matches what the backend stores in task_templates
-const WORKFLOW_STATE_VALUES = [
-  'topic_selection',
-  'speaker_brainstorming',
-  'speaker_outreach',
-  'agenda_published',
-  'event_live',
-  'post_event_wrap_up',
-  'archived',
-] as const;
+import { TRIGGER_STATES } from './triggerStates';
 
 const DUE_DATE_TYPE_VALUES = ['immediate', 'relative_to_event', 'absolute'] as const;
 
@@ -330,7 +320,7 @@ export const CustomTaskModal: React.FC<CustomTaskModalProps> = ({
               required
               fullWidth
             >
-              {WORKFLOW_STATE_VALUES.map((value) => (
+              {TRIGGER_STATES.map((value) => (
                 <MenuItem key={value} value={value}>
                   {t(`tasks.workflowStates.${value}`)}
                 </MenuItem>

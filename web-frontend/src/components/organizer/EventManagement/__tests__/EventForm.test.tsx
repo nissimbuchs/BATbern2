@@ -16,38 +16,25 @@
 
 import React from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { act, render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { act, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { BrowserRouter } from 'react-router-dom';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { HttpResponse } from 'msw';
 import { I18nextProvider } from 'react-i18next';
 import i18n from '@/i18n/config';
 import { EventForm } from '../EventForm';
 import type { Event } from '@/types/event.types';
 import { anEvent } from '@/test/fixtures';
+import { renderWithAuth, signedInAs } from '@/test/auth';
+import { api } from '@/test/msw/api';
 
-// Mock API client
-vi.mock('@/services/eventApiClient', () => ({
-  eventApiClient: {
-    createEvent: vi.fn(),
-    updateEvent: vi.fn(),
-    patchEvent: vi.fn(),
-  },
-}));
-
-// Mock auth hook (from Story 1.17)
-const mockUseAuth = vi.fn(() => ({
-  user: { username: 'john.doe', role: 'organizer' },
-  isAuthenticated: true,
-}));
-
-vi.mock('@/hooks/useAuth', () => ({
-  useAuth: () => mockUseAuth(),
-}));
+// Real AuthContext (signed-in organizer), real eventApiClient and hooks on the MSW harness
+// (#1223 item 7 left the own-code mocks, C6).
+const renderForm = (ui: React.ReactElement) =>
+  renderWithAuth(<I18nextProvider i18n={i18n}>{ui}</I18nextProvider>, {
+    auth: signedInAs('organizer', { username: 'john.doe' }),
+  });
 
 describe('EventForm Component', () => {
-  let queryClient: QueryClient;
-
   const mockEvent: Event = anEvent({
     eventCode: 'BATbern56',
     eventNumber: 56,
@@ -64,78 +51,213 @@ describe('EventForm Component', () => {
     createdBy: 'john.doe',
   });
 
-  const createWrapper = () => {
-    queryClient = new QueryClient({
-      defaultOptions: {
-        queries: { retry: false },
-        mutations: { retry: false },
+  /**
+   * EMS's answer to a broken business rule, e.g. a taken event number: a 422 with the
+   * DomainErrorResponse body (BusinessValidationException, EventWriteService).
+   */
+  const unprocessable = (path: string, message: string) =>
+    HttpResponse.json(
+      {
+        timestamp: '2026-11-18T21:00:00Z',
+        path,
+        status: 422,
+        error: 'Unprocessable Entity',
+        message,
+        correlationId: 'corr-422',
+        severity: 'MEDIUM',
       },
-    });
-
-    return ({ children }: { children: React.ReactNode }) => (
-      <QueryClientProvider client={queryClient}>
-        <I18nextProvider i18n={i18n}>
-          <BrowserRouter>{children}</BrowserRouter>
-        </I18nextProvider>
-      </QueryClientProvider>
+      { status: 422 }
     );
-  };
 
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
-  afterEach(() => {
-    queryClient.clear();
-  });
+  /** The PATCH bodies the form sent, oldest first. */
+  const patches = () => api.calls('patchEvent');
 
   describe('Create Mode (AC3)', () => {
     it('should_displayCreateTitle_when_createMode', () => {
-      render(<EventForm mode="create" open={true} onClose={vi.fn()} />, {
-        wrapper: createWrapper(),
-      });
+      renderForm(<EventForm mode="create" open={true} onClose={vi.fn()} />);
 
       expect(screen.getByText(/create.*event/i)).toBeInTheDocument();
     });
 
     it('should_renderEmptyForm_when_createMode', () => {
-      render(<EventForm mode="create" open={true} onClose={vi.fn()} />, {
-        wrapper: createWrapper(),
-      });
+      renderForm(<EventForm mode="create" open={true} onClose={vi.fn()} />);
 
       const titleInput = screen.getByLabelText(/title/i) as HTMLInputElement;
       expect(titleInput.value).toBe('');
     });
 
-    it('should_displaySaveDraftButton_when_createMode', () => {
-      render(<EventForm mode="create" open={true} onClose={vi.fn()} />, {
-        wrapper: createWrapper(),
+    // #1223 item 7: the number was always "1"; a new event gets the next free number.
+    it('should_prefillNextEventNumber_when_createMode', async () => {
+      api.on('listEvents', () => ({
+        data: [anEvent({ eventCode: 'BATbern63', eventNumber: 63, workflowState: 'ARCHIVED' })],
+        pagination: {
+          page: 1,
+          limit: 1,
+          totalItems: 63,
+          totalPages: 63,
+          hasNext: true,
+          hasPrev: false,
+        },
+      }));
+
+      renderForm(<EventForm mode="create" open={true} onClose={vi.fn()} />);
+
+      const numberInput = screen.getByLabelText(/event number/i) as HTMLInputElement;
+      await waitFor(() => expect(numberInput.value).toBe('64'));
+      // The highest number over every event, archived included: one row, sorted by number.
+      const query = api.calls('listEvents')[0].query;
+      expect(query.get('sort')).toBe('-eventNumber');
+      expect(query.get('limit')).toBe('1');
+      expect(query.get('includeArchived')).toBe('true');
+    });
+
+    it('should_prefillNextEventNumber_when_dialogIsOpenedAgain', async () => {
+      api.on('listEvents', () => ({
+        data: [anEvent({ eventCode: 'BATbern63', eventNumber: 63 })],
+        pagination: {
+          page: 1,
+          limit: 1,
+          totalItems: 63,
+          totalPages: 63,
+          hasNext: true,
+          hasPrev: false,
+        },
+      }));
+      const form = (open: boolean) => (
+        <I18nextProvider i18n={i18n}>
+          <EventForm mode="create" open={open} onClose={vi.fn()} />
+        </I18nextProvider>
+      );
+      const { rerenderWithAuth } = renderWithAuth(form(true), {
+        auth: signedInAs('organizer', { username: 'john.doe' }),
       });
+      await waitFor(() =>
+        expect((screen.getByLabelText(/event number/i) as HTMLInputElement).value).toBe('64')
+      );
+
+      rerenderWithAuth(form(false));
+      rerenderWithAuth(form(true));
+
+      // The create-mode reset on opening must not put the 1 back over the known next number.
+      await waitFor(() => expect(api.calls('listEvents').length).toBeGreaterThanOrEqual(2));
+      await waitFor(() =>
+        expect((screen.getByLabelText(/event number/i) as HTMLInputElement).value).toBe('64')
+      );
+    });
+
+    it('should_prefillOne_when_noEventExistsYet', async () => {
+      api.on('listEvents', () => ({
+        data: [],
+        pagination: {
+          page: 1,
+          limit: 1,
+          totalItems: 0,
+          totalPages: 0,
+          hasNext: false,
+          hasPrev: false,
+        },
+      }));
+
+      renderForm(<EventForm mode="create" open={true} onClose={vi.fn()} />);
+
+      await waitFor(() => expect(api.calls('listEvents')).toHaveLength(1));
+      const numberInput = screen.getByLabelText(/event number/i) as HTMLInputElement;
+      await waitFor(() => expect(numberInput.value).toBe('1'));
+    });
+
+    it('should_keepTypedEventNumber_when_nextNumberArrivesLater', async () => {
+      let answer: () => void = () => {};
+      api.on(
+        'listEvents',
+        () =>
+          new Promise<Response>((resolve) => {
+            answer = () =>
+              resolve(
+                HttpResponse.json({
+                  data: [anEvent({ eventNumber: 63 })],
+                  pagination: {
+                    page: 1,
+                    limit: 1,
+                    totalItems: 63,
+                    totalPages: 63,
+                    hasNext: true,
+                    hasPrev: false,
+                  },
+                })
+              );
+          })
+      );
+      renderForm(<EventForm mode="create" open={true} onClose={vi.fn()} />);
+      const numberInput = screen.getByLabelText(/event number/i) as HTMLInputElement;
+      await waitFor(() => expect(api.calls('listEvents')).toHaveLength(1));
+
+      await userEvent.clear(numberInput);
+      await userEvent.type(numberInput, '70');
+      await act(async () => answer());
+
+      expect(numberInput.value).toBe('70');
+    });
+
+    // Found on the way: the form read `response.data.message`, which eventApiClient's errors
+    // never carry, and the client dropped the message of a 422, so a refused create (number
+    // taken by now) only said "save failed".
+    it('should_showServerReason_when_createIsRefusedBecauseTheNumberIsTaken', async () => {
+      api.on('createEvent', () =>
+        unprocessable(
+          '/api/v1/events',
+          "Validation failed for field 'eventCode': Event code already exists: BATbern64"
+        )
+      );
+      renderForm(<EventForm mode="create" open={true} onClose={vi.fn()} />);
+
+      const eventDate = new Date();
+      eventDate.setDate(eventDate.getDate() + 60);
+      const day = eventDate.toISOString().split('T')[0];
+      await userEvent.type(screen.getByLabelText(/title/i), 'Architektur im Wandel');
+      await userEvent.type(screen.getByLabelText(/description/i), 'Ein Abend über Architektur');
+      await userEvent.type(screen.getByLabelText(/event.*date/i), day);
+      await userEvent.type(screen.getByLabelText(/registration.*deadline/i), day);
+      await userEvent.type(screen.getByLabelText(/venue name/i), 'Zentrum Paul Klee');
+      await userEvent.type(screen.getByLabelText(/venue address/i), 'Monument im Fruchtland 3');
+      await userEvent.click(screen.getByRole('button', { name: /save.*create/i }));
+
+      expect(
+        await screen.findByText(
+          "Validation failed for field 'eventCode': Event code already exists: BATbern64"
+        )
+      ).toBeInTheDocument();
+      expect(api.calls('createEvent')).toHaveLength(1);
+    });
+
+    it('should_notAskForNextNumber_when_editMode', async () => {
+      renderForm(<EventForm mode="edit" open={true} onClose={vi.fn()} event={mockEvent} />);
+
+      await waitFor(() => expect(screen.getByLabelText(/title/i)).toBeInTheDocument());
+      expect(api.calls('listEvents')).toHaveLength(0);
+      expect((screen.getByLabelText(/event number/i) as HTMLInputElement).value).toBe('56');
+    });
+
+    it('should_displaySaveDraftButton_when_createMode', () => {
+      renderForm(<EventForm mode="create" open={true} onClose={vi.fn()} />);
 
       expect(screen.getByRole('button', { name: /save.*draft/i })).toBeInTheDocument();
     });
 
     it('should_displaySaveCreateButton_when_createMode', () => {
-      render(<EventForm mode="create" open={true} onClose={vi.fn()} />, {
-        wrapper: createWrapper(),
-      });
+      renderForm(<EventForm mode="create" open={true} onClose={vi.fn()} />);
 
       expect(screen.getByRole('button', { name: /save.*create/i })).toBeInTheDocument();
     });
 
     it('should_displayCancelButton_when_createMode', () => {
-      render(<EventForm mode="create" open={true} onClose={vi.fn()} />, {
-        wrapper: createWrapper(),
-      });
+      renderForm(<EventForm mode="create" open={true} onClose={vi.fn()} />);
 
       expect(screen.getByRole('button', { name: /cancel/i })).toBeInTheDocument();
     });
 
     it('should_closeModal_when_cancelClicked', async () => {
       const onClose = vi.fn();
-      render(<EventForm mode="create" open={true} onClose={onClose} />, {
-        wrapper: createWrapper(),
-      });
+      renderForm(<EventForm mode="create" open={true} onClose={onClose} />);
 
       const cancelButton = screen.getByRole('button', { name: /cancel/i });
       await userEvent.click(cancelButton);
@@ -146,26 +268,20 @@ describe('EventForm Component', () => {
 
   describe('Edit Mode (AC4)', () => {
     it('should_displayEditTitle_when_editMode', () => {
-      render(<EventForm mode="edit" open={true} onClose={vi.fn()} event={mockEvent} />, {
-        wrapper: createWrapper(),
-      });
+      renderForm(<EventForm mode="edit" open={true} onClose={vi.fn()} event={mockEvent} />);
 
       expect(screen.getByText(/edit.*event/i)).toBeInTheDocument();
     });
 
     it('should_prefillForm_when_editModeWithEvent', () => {
-      render(<EventForm mode="edit" open={true} onClose={vi.fn()} event={mockEvent} />, {
-        wrapper: createWrapper(),
-      });
+      renderForm(<EventForm mode="edit" open={true} onClose={vi.fn()} event={mockEvent} />);
 
       const titleInput = screen.getByLabelText(/title/i) as HTMLInputElement;
       expect(titleInput.value).toBe('Cloud Computing 2025');
     });
 
     it('should_prefillDescription_when_editModeWithEvent', () => {
-      render(<EventForm mode="edit" open={true} onClose={vi.fn()} event={mockEvent} />, {
-        wrapper: createWrapper(),
-      });
+      renderForm(<EventForm mode="edit" open={true} onClose={vi.fn()} event={mockEvent} />);
 
       const descriptionInput = screen.getByLabelText(/description/i) as HTMLTextAreaElement;
       expect(descriptionInput.value).toBe('Annual cloud computing event');
@@ -174,9 +290,7 @@ describe('EventForm Component', () => {
     it.skip('should_prefillEventDate_when_editModeWithEvent - MUI DatePicker does not expose value in test DOM', () => {
       // SKIPPED: MUI DatePicker doesn't populate input.value attribute in JSDOM
       // The component correctly prefills the date, but testing requires E2E or custom matchers
-      render(<EventForm mode="edit" open={true} onClose={vi.fn()} event={mockEvent} />, {
-        wrapper: createWrapper(),
-      });
+      renderForm(<EventForm mode="edit" open={true} onClose={vi.fn()} event={mockEvent} />);
 
       const dateInput = screen.getByLabelText(/event.*date/i) as HTMLInputElement;
       expect(dateInput.value).toContain('2025-04-15');
@@ -185,35 +299,27 @@ describe('EventForm Component', () => {
     it.skip('should_prefillEventType_when_editModeWithEvent - MUI Select label association issue', () => {
       // SKIPPED: MUI Select label is not properly associated with form control in test environment
       // The component works correctly but requires better test setup or E2E testing
-      render(<EventForm mode="edit" open={true} onClose={vi.fn()} event={mockEvent} />, {
-        wrapper: createWrapper(),
-      });
+      renderForm(<EventForm mode="edit" open={true} onClose={vi.fn()} event={mockEvent} />);
 
       const typeSelect = screen.getByLabelText(/event.*type/i) as HTMLSelectElement;
       expect(typeSelect.value).toBe('full_day');
     });
 
     it('should_prefillCapacity_when_editModeWithEvent', () => {
-      render(<EventForm mode="edit" open={true} onClose={vi.fn()} event={mockEvent} />, {
-        wrapper: createWrapper(),
-      });
+      renderForm(<EventForm mode="edit" open={true} onClose={vi.fn()} event={mockEvent} />);
 
       const capacityInput = screen.getByLabelText(/capacity/i) as HTMLInputElement;
       expect(capacityInput.value).toBe('200');
     });
 
     it('should_displaySaveButton_when_editMode', () => {
-      render(<EventForm mode="edit" open={true} onClose={vi.fn()} event={mockEvent} />, {
-        wrapper: createWrapper(),
-      });
+      renderForm(<EventForm mode="edit" open={true} onClose={vi.fn()} event={mockEvent} />);
 
       expect(screen.getByRole('button', { name: /^save$/i })).toBeInTheDocument();
     });
 
     it('should_notDisplaySaveDraftButton_when_editMode', () => {
-      render(<EventForm mode="edit" open={true} onClose={vi.fn()} event={mockEvent} />, {
-        wrapper: createWrapper(),
-      });
+      renderForm(<EventForm mode="edit" open={true} onClose={vi.fn()} event={mockEvent} />);
 
       expect(screen.queryByRole('button', { name: /save.*draft/i })).not.toBeInTheDocument();
     });
@@ -221,9 +327,7 @@ describe('EventForm Component', () => {
 
   describe('Form Validation - Required Fields (AC3)', () => {
     it('should_showTitleError_when_titleEmpty', async () => {
-      render(<EventForm mode="create" open={true} onClose={vi.fn()} />, {
-        wrapper: createWrapper(),
-      });
+      renderForm(<EventForm mode="create" open={true} onClose={vi.fn()} />);
 
       const saveButton = screen.getByRole('button', { name: /save.*create/i });
       await userEvent.click(saveButton);
@@ -234,9 +338,7 @@ describe('EventForm Component', () => {
     });
 
     it('should_showTitleMinLengthError_when_titleTooShort', async () => {
-      render(<EventForm mode="create" open={true} onClose={vi.fn()} />, {
-        wrapper: createWrapper(),
-      });
+      renderForm(<EventForm mode="create" open={true} onClose={vi.fn()} />);
 
       const titleInput = screen.getByLabelText(/title/i);
       await userEvent.type(titleInput, 'Short'); // Less than 10 chars
@@ -250,9 +352,7 @@ describe('EventForm Component', () => {
     });
 
     it('should_showDescriptionError_when_descriptionEmpty', async () => {
-      render(<EventForm mode="create" open={true} onClose={vi.fn()} />, {
-        wrapper: createWrapper(),
-      });
+      renderForm(<EventForm mode="create" open={true} onClose={vi.fn()} />);
 
       const saveButton = screen.getByRole('button', { name: /save.*create/i });
       await userEvent.click(saveButton);
@@ -265,26 +365,20 @@ describe('EventForm Component', () => {
 
   describe('Form Validation - Fields the server requires (CreateEventRequest)', () => {
     it('should_showDeadlineRequiredError_when_registrationDeadlineEmpty', async () => {
-      const { eventApiClient } = await import('@/services/eventApiClient');
-      render(<EventForm mode="create" open={true} onClose={vi.fn()} />, {
-        wrapper: createWrapper(),
-      });
+      renderForm(<EventForm mode="create" open={true} onClose={vi.fn()} />);
 
       await userEvent.click(screen.getByRole('button', { name: /save.*create/i }));
 
       await waitFor(() => {
         expect(screen.getByText('Registration deadline is required')).toBeInTheDocument();
       });
-      expect(eventApiClient.createEvent).not.toHaveBeenCalled();
+      expect(api.calls('createEvent')).toHaveLength(0);
     });
 
     it('should_validateServerFields_when_savingDraft', async () => {
       // A draft is an event in state CREATED: the server stores it only with the eight
       // required fields, so the draft button checks them instead of sending a sure 400.
-      const { eventApiClient } = await import('@/services/eventApiClient');
-      render(<EventForm mode="create" open={true} onClose={vi.fn()} />, {
-        wrapper: createWrapper(),
-      });
+      renderForm(<EventForm mode="create" open={true} onClose={vi.fn()} />);
 
       await userEvent.click(screen.getByRole('button', { name: /save.*draft/i }));
 
@@ -292,15 +386,13 @@ describe('EventForm Component', () => {
         expect(screen.getByText('Registration deadline is required')).toBeInTheDocument();
       });
       expect(screen.getByText('Venue name is required')).toBeInTheDocument();
-      expect(eventApiClient.createEvent).not.toHaveBeenCalled();
+      expect(api.calls('createEvent')).toHaveLength(0);
     });
   });
 
   describe('Form Validation - Date Rules (AC3)', () => {
     it.skip('should_showDateError_when_eventDateTooSoon - 30-day rule not yet implemented', async () => {
-      render(<EventForm mode="create" open={true} onClose={vi.fn()} />, {
-        wrapper: createWrapper(),
-      });
+      renderForm(<EventForm mode="create" open={true} onClose={vi.fn()} />);
 
       const titleInput = screen.getByLabelText(/title/i);
       await userEvent.type(titleInput, 'Test Event 2025');
@@ -326,9 +418,7 @@ describe('EventForm Component', () => {
       // SKIPPED: Validation compares DateTime (with hours/minutes) not just dates
       // If current time is 10:00 AM and test date is midnight, "now+30days at 10:00 AM" > "testdate at 00:00"
       // Would need to normalize dates to start-of-day in validation logic
-      render(<EventForm mode="create" open={true} onClose={vi.fn()} />, {
-        wrapper: createWrapper(),
-      });
+      renderForm(<EventForm mode="create" open={true} onClose={vi.fn()} />);
 
       const titleInput = screen.getByLabelText(/title/i);
       await userEvent.type(titleInput, 'Test Event 2025');
@@ -353,9 +443,7 @@ describe('EventForm Component', () => {
     });
 
     it.skip('should_showDeadlineError_when_deadlineTooCloseToEvent - 7-day rule not yet implemented', async () => {
-      render(<EventForm mode="create" open={true} onClose={vi.fn()} />, {
-        wrapper: createWrapper(),
-      });
+      renderForm(<EventForm mode="create" open={true} onClose={vi.fn()} />);
 
       const titleInput = screen.getByLabelText(/title/i);
       await userEvent.type(titleInput, 'Test Event 2025');
@@ -384,9 +472,7 @@ describe('EventForm Component', () => {
     });
 
     it('should_allowDeadline_when_onOrBeforeEventDate', async () => {
-      render(<EventForm mode="create" open={true} onClose={vi.fn()} />, {
-        wrapper: createWrapper(),
-      });
+      renderForm(<EventForm mode="create" open={true} onClose={vi.fn()} />);
 
       // Set event date 60 days in future
       const eventDate = new Date();
@@ -410,9 +496,7 @@ describe('EventForm Component', () => {
 
   describe('Form Validation - Capacity Rules (AC3)', () => {
     it('should_showCapacityError_when_capacityZero', async () => {
-      render(<EventForm mode="create" open={true} onClose={vi.fn()} />, {
-        wrapper: createWrapper(),
-      });
+      renderForm(<EventForm mode="create" open={true} onClose={vi.fn()} />);
 
       const capacityInput = screen.getByLabelText(/capacity/i);
       await userEvent.clear(capacityInput);
@@ -427,9 +511,7 @@ describe('EventForm Component', () => {
     });
 
     it('should_showCapacityError_when_capacityNegative', async () => {
-      render(<EventForm mode="create" open={true} onClose={vi.fn()} />, {
-        wrapper: createWrapper(),
-      });
+      renderForm(<EventForm mode="create" open={true} onClose={vi.fn()} />);
 
       const capacityInput = screen.getByLabelText(/capacity/i);
       await userEvent.clear(capacityInput);
@@ -444,9 +526,7 @@ describe('EventForm Component', () => {
     });
 
     it('should_allowCapacity_when_capacityPositive', async () => {
-      render(<EventForm mode="create" open={true} onClose={vi.fn()} />, {
-        wrapper: createWrapper(),
-      });
+      renderForm(<EventForm mode="create" open={true} onClose={vi.fn()} />);
 
       const capacityInput = screen.getByLabelText(/capacity/i);
       await userEvent.clear(capacityInput);
@@ -483,18 +563,14 @@ describe('EventForm Component', () => {
     };
 
     it('should_enableAutoSave_when_editMode', () => {
-      render(<EventForm mode="edit" open={true} onClose={vi.fn()} event={mockEvent} />, {
-        wrapper: createWrapper(),
-      });
+      renderForm(<EventForm mode="edit" open={true} onClose={vi.fn()} event={mockEvent} />);
 
       // Auto-save indicator should be visible (always enabled)
       expect(screen.getByText(/auto.*save/i)).toBeInTheDocument();
     });
 
     it('should_notAllowDisablingAutoSave_when_editMode', () => {
-      render(<EventForm mode="edit" open={true} onClose={vi.fn()} event={mockEvent} />, {
-        wrapper: createWrapper(),
-      });
+      renderForm(<EventForm mode="edit" open={true} onClose={vi.fn()} event={mockEvent} />);
 
       // Should NOT have toggle to disable auto-save (per AC20: always enabled, NOT configurable)
       expect(
@@ -504,58 +580,40 @@ describe('EventForm Component', () => {
     });
 
     it('should_triggerAutoSave_when_fieldChangedAfter5Seconds', async () => {
-      const { eventApiClient } = await import('@/services/eventApiClient');
-      (eventApiClient.patchEvent as ReturnType<typeof vi.fn>).mockResolvedValue(mockEvent);
-
-      render(<EventForm mode="edit" open={true} onClose={vi.fn()} event={mockEvent} />, {
-        wrapper: createWrapper(),
-      });
+      renderForm(<EventForm mode="edit" open={true} onClose={vi.fn()} event={mockEvent} />);
       await editTitle();
 
       // Wait 5 seconds (auto-save debounce time)
       await act(() => vi.advanceTimersByTimeAsync(5000));
 
-      await waitFor(() => {
-        expect(eventApiClient.patchEvent).toHaveBeenCalledWith(
-          'BATbern56',
-          expect.objectContaining({
-            title: 'Updated Title',
-          })
-        );
-      });
-      expect(eventApiClient.patchEvent).toHaveBeenCalledTimes(1);
+      await waitFor(() => expect(patches()).toHaveLength(1));
+      expect(patches()[0].params.eventCode).toBe('BATbern56');
+      expect(patches()[0].body).toEqual(expect.objectContaining({ title: 'Updated Title' }));
     });
 
     it('should_notTriggerAutoSave_when_before5Seconds', async () => {
-      const { eventApiClient } = await import('@/services/eventApiClient');
-      (eventApiClient.patchEvent as ReturnType<typeof vi.fn>).mockResolvedValue(mockEvent);
-
-      render(<EventForm mode="edit" open={true} onClose={vi.fn()} event={mockEvent} />, {
-        wrapper: createWrapper(),
-      });
+      renderForm(<EventForm mode="edit" open={true} onClose={vi.fn()} event={mockEvent} />);
       await editTitle();
 
       // Wait only 3 seconds (before 5-second debounce)
       await act(() => vi.advanceTimersByTimeAsync(3000));
 
-      expect(eventApiClient.patchEvent).not.toHaveBeenCalled();
+      expect(patches()).toHaveLength(0);
     });
 
     it('should_displaySavingIndicator_when_autoSaveTriggered', async () => {
       // The test settles the save itself: a timer that resolved it after the test had ended let
       // the form set state after the jsdom teardown (see the RegistrationWizard fix, 978198a7).
-      let finishSave: (event: Event) => void = () => {};
-      const { eventApiClient } = await import('@/services/eventApiClient');
-      (eventApiClient.patchEvent as ReturnType<typeof vi.fn>).mockImplementation(
+      let finishSave: () => void = () => {};
+      api.on(
+        'patchEvent',
         () =>
-          new Promise<Event>((resolve) => {
-            finishSave = resolve;
+          new Promise<Response>((resolve) => {
+            finishSave = () => resolve(HttpResponse.json(mockEvent));
           })
       );
 
-      render(<EventForm mode="edit" open={true} onClose={vi.fn()} event={mockEvent} />, {
-        wrapper: createWrapper(),
-      });
+      renderForm(<EventForm mode="edit" open={true} onClose={vi.fn()} event={mockEvent} />);
       await editTitle();
 
       // Trigger auto-save
@@ -565,19 +623,14 @@ describe('EventForm Component', () => {
         expect(screen.getByText(/saving/i)).toBeInTheDocument();
       });
 
-      await act(async () => finishSave(mockEvent));
+      await act(async () => finishSave());
       await waitFor(() => {
         expect(screen.getByText(/last.*saved/i)).toBeInTheDocument();
       });
     });
 
     it('should_displayLastSavedTimestamp_when_autoSaveCompletes', async () => {
-      const { eventApiClient } = await import('@/services/eventApiClient');
-      (eventApiClient.patchEvent as ReturnType<typeof vi.fn>).mockResolvedValue(mockEvent);
-
-      render(<EventForm mode="edit" open={true} onClose={vi.fn()} event={mockEvent} />, {
-        wrapper: createWrapper(),
-      });
+      renderForm(<EventForm mode="edit" open={true} onClose={vi.fn()} event={mockEvent} />);
       await editTitle();
 
       // Trigger auto-save
@@ -589,14 +642,9 @@ describe('EventForm Component', () => {
     });
 
     it('should_showErrorBanner_when_autoSaveFails', async () => {
-      const { eventApiClient } = await import('@/services/eventApiClient');
-      (eventApiClient.patchEvent as ReturnType<typeof vi.fn>).mockRejectedValue(
-        new Error('Network error')
-      );
+      api.on('patchEvent', () => HttpResponse.error());
 
-      render(<EventForm mode="edit" open={true} onClose={vi.fn()} event={mockEvent} />, {
-        wrapper: createWrapper(),
-      });
+      renderForm(<EventForm mode="edit" open={true} onClose={vi.fn()} event={mockEvent} />);
       await editTitle();
 
       // Trigger auto-save
@@ -610,43 +658,39 @@ describe('EventForm Component', () => {
     it('should_notRetryAutoSave_when_nothingChangedAfterAFailure', async () => {
       // The form keeps the failed change; it saves again on the next edit, not every 5 s while
       // the dialog stays open (a failed save was re-sent with nothing edited).
-      const { eventApiClient } = await import('@/services/eventApiClient');
-      (eventApiClient.patchEvent as ReturnType<typeof vi.fn>).mockRejectedValue({
-        response: { status: 409, data: { message: 'Version conflict' } },
-      });
+      api.on('patchEvent', () =>
+        unprocessable('/api/v1/events/BATbern56', "Validation failed for field 'title': refused")
+      );
 
-      render(<EventForm mode="edit" open={true} onClose={vi.fn()} event={mockEvent} />, {
-        wrapper: createWrapper(),
-      });
+      renderForm(<EventForm mode="edit" open={true} onClose={vi.fn()} event={mockEvent} />);
       await editTitle();
 
       await act(() => vi.advanceTimersByTimeAsync(5000));
-      await waitFor(() => expect(eventApiClient.patchEvent).toHaveBeenCalledTimes(1));
+      await waitFor(() => expect(patches()).toHaveLength(1));
 
       await act(() => vi.advanceTimersByTimeAsync(30000));
-      expect(eventApiClient.patchEvent).toHaveBeenCalledTimes(1);
+      expect(patches()).toHaveLength(1);
     });
 
-    it('should_detectConflict_when_concurrentEdit', async () => {
-      const { eventApiClient } = await import('@/services/eventApiClient');
-      (eventApiClient.patchEvent as ReturnType<typeof vi.fn>).mockRejectedValue({
-        response: {
-          status: 409,
-          data: { message: 'Version conflict' },
-        },
-      });
+    // EMS answers a taken event number with 422; the form showed "auto-save failed" (and had a
+    // "concurrent edit" text for a 409 no event PATCH returns, removed).
+    it('should_showServerReason_when_autoSaveIsRefusedBecauseTheNumberIsTaken', async () => {
+      const reason =
+        "Validation failed for field 'Event number': Event number 57 is already in use by event BATbern57";
+      api.on('patchEvent', () => unprocessable('/api/v1/events/BATbern56', reason));
 
-      render(<EventForm mode="edit" open={true} onClose={vi.fn()} event={mockEvent} />, {
-        wrapper: createWrapper(),
-      });
-      await editTitle();
+      renderForm(<EventForm mode="edit" open={true} onClose={vi.fn()} event={mockEvent} />);
+      const numberInput = screen.getByLabelText(/event number/i);
+      await user.clear(numberInput);
+      await user.type(numberInput, '57');
 
       // Trigger auto-save
       await act(() => vi.advanceTimersByTimeAsync(5000));
 
-      await waitFor(() => {
-        expect(screen.getByText(/concurrent.*edit.*detected/i)).toBeInTheDocument();
-      });
+      await waitFor(() => expect(patches()).toHaveLength(1));
+      // A number, as the save path sends it: auto-save sent the input's string "57".
+      expect(patches()[0].body).toEqual({ eventNumber: 57 });
+      expect(await screen.findByText(reason)).toBeInTheDocument();
     });
   });
 
@@ -654,9 +698,7 @@ describe('EventForm Component', () => {
     // SKIPPED: Unsaved changes dialog not implemented yet
     // These tests time out waiting for warning dialogs that don't exist
     it('should_showWarning_when_closingWithUnsavedChanges', async () => {
-      render(<EventForm mode="edit" open={true} onClose={vi.fn()} event={mockEvent} />, {
-        wrapper: createWrapper(),
-      });
+      renderForm(<EventForm mode="edit" open={true} onClose={vi.fn()} event={mockEvent} />);
 
       const titleInput = screen.getByLabelText(/title/i);
       await userEvent.clear(titleInput);
@@ -672,9 +714,7 @@ describe('EventForm Component', () => {
 
     it('should_notShowWarning_when_noChanges', async () => {
       const onClose = vi.fn();
-      render(<EventForm mode="edit" open={true} onClose={onClose} event={mockEvent} />, {
-        wrapper: createWrapper(),
-      });
+      renderForm(<EventForm mode="edit" open={true} onClose={onClose} event={mockEvent} />);
 
       const cancelButton = screen.getByRole('button', { name: /cancel/i });
       await userEvent.click(cancelButton);
@@ -687,9 +727,7 @@ describe('EventForm Component', () => {
 
     it('should_closeModal_when_confirmUnsavedChanges', async () => {
       const onClose = vi.fn();
-      render(<EventForm mode="edit" open={true} onClose={onClose} event={mockEvent} />, {
-        wrapper: createWrapper(),
-      });
+      renderForm(<EventForm mode="edit" open={true} onClose={onClose} event={mockEvent} />);
 
       const titleInput = screen.getByLabelText(/title/i);
       await userEvent.clear(titleInput);
@@ -709,9 +747,7 @@ describe('EventForm Component', () => {
 
     it('should_keepModalOpen_when_cancelUnsavedChanges', async () => {
       const onClose = vi.fn();
-      render(<EventForm mode="edit" open={true} onClose={onClose} event={mockEvent} />, {
-        wrapper: createWrapper(),
-      });
+      renderForm(<EventForm mode="edit" open={true} onClose={onClose} event={mockEvent} />);
 
       const titleInput = screen.getByLabelText(/title/i);
       await userEvent.clear(titleInput);
@@ -737,12 +773,7 @@ describe('EventForm Component', () => {
     // SKIPPED: PATCH partial update functionality not implemented yet
     // Component likely uses PUT (full update) instead of PATCH
     it('should_sendOnlyChangedFields_when_patchingEvent', async () => {
-      const { eventApiClient } = await import('@/services/eventApiClient');
-      (eventApiClient.patchEvent as ReturnType<typeof vi.fn>).mockResolvedValue(mockEvent);
-
-      render(<EventForm mode="edit" open={true} onClose={vi.fn()} event={mockEvent} />, {
-        wrapper: createWrapper(),
-      });
+      renderForm(<EventForm mode="edit" open={true} onClose={vi.fn()} event={mockEvent} />);
 
       // Change only title
       const titleInput = screen.getByLabelText(/title/i);
@@ -753,19 +784,12 @@ describe('EventForm Component', () => {
       await userEvent.click(saveButton);
 
       await waitFor(() => {
-        expect(eventApiClient.patchEvent).toHaveBeenCalledWith('BATbern56', {
-          title: 'New Title Only',
-        });
+        expect(patches()[0]?.body).toEqual({ title: 'New Title Only' });
       });
     });
 
     it('should_sendMultipleFields_when_multipleFieldsChanged', async () => {
-      const { eventApiClient } = await import('@/services/eventApiClient');
-      (eventApiClient.patchEvent as ReturnType<typeof vi.fn>).mockResolvedValue(mockEvent);
-
-      render(<EventForm mode="edit" open={true} onClose={vi.fn()} event={mockEvent} />, {
-        wrapper: createWrapper(),
-      });
+      renderForm(<EventForm mode="edit" open={true} onClose={vi.fn()} event={mockEvent} />);
 
       // Change title and description
       const titleInput = screen.getByLabelText(/title/i);
@@ -780,7 +804,7 @@ describe('EventForm Component', () => {
       await userEvent.click(saveButton);
 
       await waitFor(() => {
-        expect(eventApiClient.patchEvent).toHaveBeenCalledWith('BATbern56', {
+        expect(patches()[0]?.body).toEqual({
           title: 'New Title',
           description: 'New Description',
         });
@@ -788,12 +812,7 @@ describe('EventForm Component', () => {
     });
 
     it('should_usePatchMethod_when_updatingEvent', async () => {
-      const { eventApiClient } = await import('@/services/eventApiClient');
-      (eventApiClient.patchEvent as ReturnType<typeof vi.fn>).mockResolvedValue(mockEvent);
-
-      render(<EventForm mode="edit" open={true} onClose={vi.fn()} event={mockEvent} />, {
-        wrapper: createWrapper(),
-      });
+      renderForm(<EventForm mode="edit" open={true} onClose={vi.fn()} event={mockEvent} />);
 
       const titleInput = screen.getByLabelText(/title/i);
       await userEvent.clear(titleInput);
@@ -803,17 +822,15 @@ describe('EventForm Component', () => {
       await userEvent.click(saveButton);
 
       await waitFor(() => {
-        expect(eventApiClient.patchEvent).toHaveBeenCalled();
-        expect(eventApiClient.updateEvent).not.toHaveBeenCalled();
+        expect(patches()).toHaveLength(1);
+        expect(api.calls('updateEvent')).toHaveLength(0);
       });
     });
   });
 
   describe('Role-Based Access Control (AC4)', () => {
     it('should_allowEditing_when_organizerRole', () => {
-      render(<EventForm mode="edit" open={true} onClose={vi.fn()} event={mockEvent} />, {
-        wrapper: createWrapper(),
-      });
+      renderForm(<EventForm mode="edit" open={true} onClose={vi.fn()} event={mockEvent} />);
 
       const titleInput = screen.getByLabelText(/title/i) as HTMLInputElement;
       expect(titleInput.disabled).toBe(false);
@@ -821,15 +838,12 @@ describe('EventForm Component', () => {
 
     it.skip('should_blockEditing_when_nonOrganizerRole - Permission check not implemented', () => {
       // SKIPPED: Component doesn't implement role-based permission checks yet
-      // Override mock for this test
-      mockUseAuth.mockReturnValueOnce({
-        user: { username: 'jane.smith', role: 'speaker' },
-        isAuthenticated: true,
-      });
-
-      render(<EventForm mode="edit" open={true} onClose={vi.fn()} event={mockEvent} />, {
-        wrapper: createWrapper(),
-      });
+      renderWithAuth(
+        <I18nextProvider i18n={i18n}>
+          <EventForm mode="edit" open={true} onClose={vi.fn()} event={mockEvent} />
+        </I18nextProvider>,
+        { auth: signedInAs('speaker', { username: 'jane.smith' }) }
+      );
 
       // Should show permission denied message
       expect(screen.getByText(/permission/i)).toBeInTheDocument();
@@ -839,9 +853,7 @@ describe('EventForm Component', () => {
   describe('Event Type Selection (AC3)', () => {
     it.skip('should_displayEventTypeOptions_when_rendered - MUI Select label association', () => {
       // SKIPPED: Similar to prefill test - MUI Select label not properly associated in test environment
-      render(<EventForm mode="create" open={true} onClose={vi.fn()} />, {
-        wrapper: createWrapper(),
-      });
+      renderForm(<EventForm mode="create" open={true} onClose={vi.fn()} />);
 
       const typeSelect = screen.getByLabelText(/event.*type/i);
       expect(typeSelect).toBeInTheDocument();
@@ -850,9 +862,7 @@ describe('EventForm Component', () => {
     it.skip('should_includeFullDayOption_when_rendered - MUI Select options not in DOM until opened', () => {
       // SKIPPED: MUI Select renders options in a portal when opened, not in initial DOM
       // Would need fireEvent.mouseDown on select, then waitFor the option
-      render(<EventForm mode="create" open={true} onClose={vi.fn()} />, {
-        wrapper: createWrapper(),
-      });
+      renderForm(<EventForm mode="create" open={true} onClose={vi.fn()} />);
 
       expect(screen.getByText(/full.*day/i)).toBeInTheDocument();
     });
@@ -860,18 +870,14 @@ describe('EventForm Component', () => {
     it.skip('should_includeAfternoonOption_when_rendered - MUI Select options not in DOM until opened', () => {
       // SKIPPED: MUI Select renders options in a portal when opened, not in initial DOM
       // Would need fireEvent.mouseDown on select, then waitFor the option
-      render(<EventForm mode="create" open={true} onClose={vi.fn()} />, {
-        wrapper: createWrapper(),
-      });
+      renderForm(<EventForm mode="create" open={true} onClose={vi.fn()} />);
 
       expect(screen.getByText(/afternoon/i)).toBeInTheDocument();
     });
 
     it.skip('should_includeEveningOption_when_rendered - MUI Select options not in DOM until opened', () => {
       // SKIPPED: MUI Select renders options in a portal when opened, not in initial DOM
-      render(<EventForm mode="create" open={true} onClose={vi.fn()} />, {
-        wrapper: createWrapper(),
-      });
+      renderForm(<EventForm mode="create" open={true} onClose={vi.fn()} />);
 
       expect(screen.getByText(/evening/i)).toBeInTheDocument();
     });
@@ -880,18 +886,14 @@ describe('EventForm Component', () => {
   describe('Venue Selection (AC3)', () => {
     it.skip('should_displayVenueDropdown_when_rendered - MUI Select label association', () => {
       // SKIPPED: Same MUI Select label issue as event type
-      render(<EventForm mode="create" open={true} onClose={vi.fn()} />, {
-        wrapper: createWrapper(),
-      });
+      renderForm(<EventForm mode="create" open={true} onClose={vi.fn()} />);
 
       expect(screen.getByLabelText(/venue/i)).toBeInTheDocument();
     });
 
     it.skip('should_loadVenueOptions_when_rendered - Venue options not loaded/not in component', async () => {
       // SKIPPED: Venue dropdown might not be implemented yet or uses different field name
-      render(<EventForm mode="create" open={true} onClose={vi.fn()} />, {
-        wrapper: createWrapper(),
-      });
+      renderForm(<EventForm mode="create" open={true} onClose={vi.fn()} />);
 
       const venueSelect = screen.getByLabelText(/venue/i);
       fireEvent.mouseDown(venueSelect);
@@ -906,9 +908,7 @@ describe('EventForm Component', () => {
   describe('Internationalization (AC22)', () => {
     it.skip('should_translateFormLabels_when_languageChanged - Translation keys might not match', async () => {
       // SKIPPED: Test times out - translation keys in i18n might not match expected text
-      render(<EventForm mode="create" open={true} onClose={vi.fn()} />, {
-        wrapper: createWrapper(),
-      });
+      renderForm(<EventForm mode="create" open={true} onClose={vi.fn()} />);
 
       // Check German translations (default)
       await i18n.changeLanguage('de');
@@ -925,9 +925,7 @@ describe('EventForm Component', () => {
 
     it.skip('should_translateValidationErrors_when_languageChanged - Translation keys missing', async () => {
       // SKIPPED: German translation keys not found - likely missing from i18n translation files
-      render(<EventForm mode="create" open={true} onClose={vi.fn()} />, {
-        wrapper: createWrapper(),
-      });
+      renderForm(<EventForm mode="create" open={true} onClose={vi.fn()} />);
 
       const saveButton = screen.getByRole('button', { name: /save.*create/i });
       await userEvent.click(saveButton);
@@ -949,18 +947,14 @@ describe('EventForm Component', () => {
   // Story 2.5.3a: Theme Image Upload Integration Tests
   describe('Theme Image Upload (Story 2.5.3a)', () => {
     it('should_displayThemeImageSection_when_formRendered', () => {
-      render(<EventForm mode="create" open={true} onClose={vi.fn()} />, {
-        wrapper: createWrapper(),
-      });
+      renderForm(<EventForm mode="create" open={true} onClose={vi.fn()} />);
 
       // Should display theme image section
       expect(screen.getByText(/event theme image/i)).toBeInTheDocument();
     });
 
     it('should_displayThemeImageHelpText_when_formRendered', () => {
-      render(<EventForm mode="create" open={true} onClose={vi.fn()} />, {
-        wrapper: createWrapper(),
-      });
+      renderForm(<EventForm mode="create" open={true} onClose={vi.fn()} />);
 
       // Should display help text explaining allowed formats and size
       const helpText = screen.getByText(/upload a theme image.*png.*jpeg.*svg.*5.*mb/i);
@@ -968,9 +962,7 @@ describe('EventForm Component', () => {
     });
 
     it('should_displayFileUploadComponent_when_themeImageSectionRendered', () => {
-      render(<EventForm mode="create" open={true} onClose={vi.fn()} />, {
-        wrapper: createWrapper(),
-      });
+      renderForm(<EventForm mode="create" open={true} onClose={vi.fn()} />);
 
       // FileUpload component should be present in the theme image section
       // Verify by checking for the section and that it's within a bordered container
@@ -984,9 +976,7 @@ describe('EventForm Component', () => {
         themeImageUrl: 'https://cdn.batbern.ch/logos/2025/events/BATbern56/theme.png',
       };
 
-      render(<EventForm mode="edit" open={true} onClose={vi.fn()} event={eventWithImage} />, {
-        wrapper: createWrapper(),
-      });
+      renderForm(<EventForm mode="edit" open={true} onClose={vi.fn()} event={eventWithImage} />);
 
       // Should show the theme image section
       expect(screen.getByText(/event theme image/i)).toBeInTheDocument();
@@ -999,27 +989,21 @@ describe('EventForm Component', () => {
     });
 
     it('should_allowThemeImageUpload_when_creatingEvent', () => {
-      render(<EventForm mode="create" open={true} onClose={vi.fn()} />, {
-        wrapper: createWrapper(),
-      });
+      renderForm(<EventForm mode="create" open={true} onClose={vi.fn()} />);
 
       // Theme image section should be present and allow uploads in create mode
       expect(screen.getByText(/event theme image/i)).toBeInTheDocument();
     });
 
     it('should_allowThemeImageUpload_when_editingEvent', () => {
-      render(<EventForm mode="edit" open={true} onClose={vi.fn()} event={mockEvent} />, {
-        wrapper: createWrapper(),
-      });
+      renderForm(<EventForm mode="edit" open={true} onClose={vi.fn()} event={mockEvent} />);
 
       // Theme image section should be present and allow uploads in edit mode
       expect(screen.getByText(/event theme image/i)).toBeInTheDocument();
     });
 
     it('should_placeThemeImageInSeparateSection_when_rendered', () => {
-      render(<EventForm mode="create" open={true} onClose={vi.fn()} />, {
-        wrapper: createWrapper(),
-      });
+      renderForm(<EventForm mode="create" open={true} onClose={vi.fn()} />);
 
       // Theme image should be in a visually separated section (bordered top)
       const themeSection = screen.getByText(/event theme image/i).closest('div');
@@ -1027,9 +1011,7 @@ describe('EventForm Component', () => {
     });
 
     it('should_displayThemeImageAsOptional_when_formRendered', async () => {
-      render(<EventForm mode="create" open={true} onClose={vi.fn()} />, {
-        wrapper: createWrapper(),
-      });
+      renderForm(<EventForm mode="create" open={true} onClose={vi.fn()} />);
 
       // Form should be submittable without theme image
       // Theme image is optional - button should be enabled even without uploading

@@ -39,13 +39,15 @@ public class MailPipeline {
     }
 
     /**
-     * The template's content in {@code locale}: the store first, its German version next, then the
-     * classpath file the store is seeded from (seeded on every start, so in practice never reached;
-     * used as the services used it: raw file, no layout, the caller's fallback subject).
+     * The template's content in {@code locale} (German or English by {@link MailLocales}: a
+     * {@code fr} recipient gets English, {@code gsw-BE} German, #1222): the store first, its German
+     * version next, then the classpath file the store is seeded from (seeded on every start, so in
+     * practice never reached; used as the services used it: raw file, no layout, the caller's
+     * fallback subject).
      * Empty body, logged, when none exists.
      */
     public MailContent template(String templateKey, String locale) {
-        String wanted = "en".equalsIgnoreCase(locale) ? "en" : DEFAULT_LOCALE;
+        String wanted = MailLocales.languageOf(locale);
         String foundLocale = wanted;
         Optional<EmailTemplate> stored = templates.findByKeyAndLocale(templateKey, wanted);
         if (stored.isEmpty() && !wanted.equals(DEFAULT_LOCALE)) {
@@ -77,7 +79,7 @@ public class MailPipeline {
      * store has neither the locale nor German.
      */
     public MailContent storedTemplate(String templateKey, String locale) {
-        String wanted = "en".equalsIgnoreCase(locale) ? "en" : DEFAULT_LOCALE;
+        String wanted = MailLocales.languageOf(locale);
         // The layout is merged in the requested language, as the per-service copies did.
         Optional<EmailTemplate> stored = templates.findByKeyAndLocale(templateKey, wanted);
         if (stored.isEmpty() && !wanted.equals(DEFAULT_LOCALE)) {

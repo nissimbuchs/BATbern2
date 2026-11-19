@@ -2,6 +2,8 @@ package ch.batbern.gateway.observability;
 
 import ch.batbern.gateway.util.LogSanitizer;
 import io.micrometer.core.instrument.MeterRegistry;
+import jakarta.servlet.AsyncEvent;
+import jakarta.servlet.AsyncListener;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -98,7 +100,11 @@ import java.util.Locale;
  *
  * <p>{@code @Order(HIGHEST_PRECEDENCE)} so the filter wraps the whole chain and observes the
  * status actually sent, including the 401/403 written by Spring Security's entry point and
- * the 400s from {@code GlobalExceptionHandler}. It reads the response and never writes to
+ * the 400s from {@code GlobalExceptionHandler}. A proxied request completes asynchronously
+ * ({@code ProxyController} returns a {@code CompletableFuture}); its line is written by an
+ * {@code AsyncListener} when the container completes the request, so it carries the
+ * downstream status rather than the 200 at async start (#1313). Exactly one line per request
+ * either way. It reads the response and never writes to
  * it, and its own failures are swallowed — an observability filter that can 500 a request is
  * worse than no observability.
  *
@@ -148,11 +154,71 @@ public class ClientErrorMetricsFilter extends OncePerRequestFilter {
         chain.doFilter(request, response);
 
         // Observation only, and deliberately after the chain: the status is not final until
-        // everything downstream has run.
+        // everything downstream has run. For a proxied request it is not final even then (#1313):
+        // ProxyController returns a CompletableFuture, so the chain returns at the START of async
+        // processing with the status still 200, and OncePerRequestFilter skips the async
+        // dispatch. Record those when the container completes the request instead.
+        if (request.isAsyncStarted()) {
+            try {
+                request.getAsyncContext().addListener(new RecordOnComplete(request, response));
+                return;
+            } catch (RuntimeException e) {
+                // Never fail a request over observability: record now, with a possibly early status.
+                log.warn("Failed to register async API request metric listener, recording now", e);
+            }
+        }
+        safeRecord(request, response);
+    }
+
+    private void safeRecord(HttpServletRequest request, HttpServletResponse response) {
         try {
             record(request, response);
         } catch (RuntimeException e) {
             log.warn("Failed to record API request metric", e);
+        }
+    }
+
+    /**
+     * Records an async request once, in {@code onComplete}.
+     *
+     * <p>The servlet spec calls {@code onComplete} after {@code onTimeout} and {@code onError}
+     * too, and only there is the status final: at {@code onTimeout} Spring's
+     * timeout handling (503) has not run yet, at {@code onError} the container's error status
+     * has not been set. Recording in all three would log two lines for one request, one of them
+     * with a status the client never saw. So the other callbacks deliberately do nothing.
+     *
+     * <p>The request and response are the ones this filter saw, not the event's: the filter runs
+     * outermost, so its response is the one whose status the client receives.
+     */
+    private final class RecordOnComplete implements AsyncListener {
+
+        private final HttpServletRequest request;
+        private final HttpServletResponse response;
+
+        private RecordOnComplete(HttpServletRequest request, HttpServletResponse response) {
+            this.request = request;
+            this.response = response;
+        }
+
+        @Override
+        public void onComplete(AsyncEvent event) {
+            safeRecord(request, response);
+        }
+
+        @Override
+        public void onTimeout(AsyncEvent event) {
+            // onComplete follows and carries the final status.
+        }
+
+        @Override
+        public void onError(AsyncEvent event) {
+            // onComplete follows and carries the final status.
+        }
+
+        @Override
+        public void onStartAsync(AsyncEvent event) {
+            // Re-register for a nested startAsync, which drops the listeners of the first cycle.
+            event.getAsyncContext().addListener(this);
         }
     }
 

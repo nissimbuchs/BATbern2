@@ -1,6 +1,7 @@
 /**
- * UserSettingsTab: additional e-mails (Story 10.32, #1244), Q&A frequency (Story 15.7),
- * responsive sub-tabs, and the one settings resource (Story 4.9).
+ * UserSettingsTab: additional e-mails (Story 10.32, #1244), Q&A frequency (Story 15.7), the
+ * e-mail channel as the only one (#1222), responsive sub-tabs, and the one settings resource
+ * (Story 4.9).
  *
  * Runs on the MSW harness with the real hooks, services and i18next (en): the harness checks
  * every request against users-api and records it; texts are looked up in the real bundles.
@@ -256,6 +257,40 @@ describe('UserSettingsTab — Story 15.7 Q&A notification frequency', () => {
     expect(api.calls('updateUserSettings')[0].body).toMatchObject({
       qnaNotificationFrequency: 'off',
     });
+  });
+});
+
+describe('UserSettingsTab — notification channels (#1222)', () => {
+  const gotoNotifications = () =>
+    fireEvent.click(screen.getByRole('tab', { name: en('settings.tabs.notifications') }));
+
+  test('should offer e-mail and Q&A frequency, and no in-app, push or frequency controls', () => {
+    renderTab([]);
+    gotoNotifications();
+
+    expect(screen.getByTestId('channel-email')).toBeInTheDocument();
+    expect(screen.getByTestId('qna-frequency-live')).toBeInTheDocument();
+    // Stored and never read by any sender, so no longer offered.
+    expect(screen.queryByTestId('channel-in-app')).toBeNull();
+    expect(screen.queryByTestId('channel-push')).toBeNull();
+    expect(screen.queryByTestId('frequency-immediate')).toBeNull();
+    expect(screen.queryByTestId('frequency-daily')).toBeNull();
+    expect(screen.queryByTestId('frequency-weekly')).toBeNull();
+  });
+
+  test('should save only the e-mail switch with PATCH /users/me/settings', async () => {
+    renderTab([]);
+    gotoNotifications();
+
+    fireEvent.click(screen.getByTestId('channel-email').querySelector('input')!);
+    fireEvent.click(screen.getByTestId('save-notification-settings-button'));
+
+    await waitFor(() => expect(api.calls('updateUserSettings')).toHaveLength(1));
+    const body = api.calls('updateUserSettings')[0].body as Record<string, unknown>;
+    expect(body).toMatchObject({ emailNotifications: false });
+    expect(body).not.toHaveProperty('inAppNotifications');
+    expect(body).not.toHaveProperty('pushNotifications');
+    expect(body).not.toHaveProperty('notificationFrequency');
   });
 });
 

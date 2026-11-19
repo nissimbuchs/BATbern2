@@ -54,6 +54,7 @@ import CreateMeetingDialog from './CreateMeetingDialog';
 import EditMeetingDialog from './EditMeetingDialog';
 import MeetingDetailPanel from './MeetingDetailPanel';
 import type { PartnerMeetingDTO } from '@/services/api/partnerMeetingsApi';
+import { uiIntlLocale } from '@/utils/date/intlLocale';
 
 const MEETING_TYPE_COLOR: Record<string, 'primary' | 'secondary'> = {
   SPRING: 'primary',
@@ -252,7 +253,7 @@ const MeetingRow: React.FC<MeetingRowProps> = ({
   t,
 }) => {
   const meetingDate = meeting.meetingDate
-    ? new Date(meeting.meetingDate).toLocaleDateString()
+    ? new Date(meeting.meetingDate).toLocaleDateString(uiIntlLocale())
     : '—';
 
   const meetingTime =
@@ -263,7 +264,7 @@ const MeetingRow: React.FC<MeetingRowProps> = ({
         : '—';
 
   const inviteSentDate = meeting.inviteSentAt
-    ? new Date(meeting.inviteSentAt).toLocaleDateString()
+    ? new Date(meeting.inviteSentAt).toLocaleDateString(uiIntlLocale())
     : null;
 
   const typeKey =
@@ -354,7 +355,7 @@ const MeetingCard: React.FC<MeetingRowProps> = ({
   t,
 }) => {
   const meetingDate = meeting.meetingDate
-    ? new Date(meeting.meetingDate).toLocaleDateString()
+    ? new Date(meeting.meetingDate).toLocaleDateString(uiIntlLocale())
     : '—';
 
   const meetingTime =
@@ -365,7 +366,7 @@ const MeetingCard: React.FC<MeetingRowProps> = ({
         : '—';
 
   const inviteSentDate = meeting.inviteSentAt
-    ? new Date(meeting.inviteSentAt).toLocaleDateString()
+    ? new Date(meeting.inviteSentAt).toLocaleDateString(uiIntlLocale())
     : null;
 
   const typeKey =

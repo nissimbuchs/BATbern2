@@ -24,9 +24,9 @@ import { Box, Typography, Paper, Chip, Alert } from '@mui/material';
 import { Email as EmailIcon, Phone as PhoneIcon, Person as PersonIcon } from '@mui/icons-material';
 import { BATbernLoader } from '@components/shared/BATbernLoader';
 import { useTranslation } from 'react-i18next';
-import { format } from 'date-fns';
 import { useSpeakerOutreachHistory } from '@/hooks/useSpeakerOutreach';
 import type { ContactMethod } from '../../../types/speakerOutreach.types';
+import { uiIntlLocale } from '@/utils/date/intlLocale';
 
 interface OutreachHistoryTimelineProps {
   eventCode: string;
@@ -119,10 +119,17 @@ const OutreachHistoryTimeline: React.FC<OutreachHistoryTimelineProps> = ({
           <TimelineItem key={item.id}>
             <TimelineOppositeContent color="text.secondary" sx={{ flex: 0.3 }}>
               <Typography variant="caption" display="block">
-                {format(new Date(item.contactDate), 'MMM dd, yyyy')}
+                {new Date(item.contactDate).toLocaleDateString(uiIntlLocale(), {
+                  day: '2-digit',
+                  month: 'short',
+                  year: 'numeric',
+                })}
               </Typography>
               <Typography variant="caption" display="block">
-                {format(new Date(item.contactDate), 'h:mm a')}
+                {new Date(item.contactDate).toLocaleTimeString(uiIntlLocale(), {
+                  hour: 'numeric',
+                  minute: '2-digit',
+                })}
               </Typography>
             </TimelineOppositeContent>
 

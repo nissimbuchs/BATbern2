@@ -22,6 +22,7 @@ import { BATbernLoader } from '@components/shared/BATbernLoader';
 import { usePartnerMeetings } from '@/hooks/usePartnerMeetings';
 import CreateMeetingDialog from '@/components/organizer/CreateMeetingDialog';
 import type { PartnerMeetingDTO } from '@/services/api/partnerMeetingsApi';
+import { uiIntlLocale } from '@/utils/date/intlLocale';
 
 type UserRole = 'ORGANIZER' | 'PARTNER' | 'SPEAKER' | 'ATTENDEE';
 
@@ -32,7 +33,7 @@ interface PartnerMeetingsTabProps {
 
 const formatMeetingDate = (dateString: string): string => {
   const date = new Date(dateString);
-  return date.toLocaleDateString('en-US', {
+  return date.toLocaleDateString(uiIntlLocale(), {
     month: 'short',
     day: 'numeric',
     year: 'numeric',

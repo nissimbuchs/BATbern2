@@ -37,6 +37,7 @@ import { ConversationDetail } from './ConversationDetail';
 import { EventSelect } from './EventSelect';
 import { FullScreenDetailDialog } from './FullScreenDetailDialog';
 import { initials } from './initials';
+import { intlLocale } from '@/utils/date/intlLocale';
 
 interface ConversationListProps {
   query: UseQueryResult<MailConversationPage, Error>;
@@ -152,7 +153,7 @@ const ConversationRow: React.FC<ConversationRowProps> = ({
     row.via === 'reply'
       ? t(`eventPage.mail.conversations.${replyKey}`)
       : t('eventPage.mail.conversations.via', { address: row.via });
-  const lastAt = new Date(row.lastMessageAt).toLocaleString(i18n.language, {
+  const lastAt = new Date(row.lastMessageAt).toLocaleString(intlLocale(i18n.language), {
     dateStyle: 'medium',
     timeStyle: 'short',
   });

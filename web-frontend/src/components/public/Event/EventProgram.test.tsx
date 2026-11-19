@@ -3,19 +3,12 @@
  * Tests for vertical timeline program display
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { EventProgram } from './EventProgram';
 import type { SessionUI } from '@/types/event.types';
 import { aSession, aSessionSpeaker } from '@/test/fixtures';
-
-// Mock API clients
-vi.mock('@/services/companyApiClient', () => ({
-  companyApiClient: {
-    getCompany: vi.fn(() => Promise.resolve({ name: 'Test Company', logoUrl: null })),
-  },
-}));
 
 describe('EventProgram', () => {
   let queryClient: QueryClient;
@@ -128,8 +121,8 @@ describe('EventProgram', () => {
   it('should_groupSessionsByTime_when_multipleSessions', () => {
     renderWithProviders(<EventProgram sessions={mockSessions} eventCode="BATbern142" />);
 
-    // Should have 2 time slots (09:00 and 12:00)
-    const timeIndicators = screen.getAllByText(/^\d{2}:\d{2}$/);
+    // Should have 2 time slots (09:00 and 12:00), in the UI language (en: "09:00 AM", #1222)
+    const timeIndicators = screen.getAllByText(/^\d{2}:\d{2}( [AP]M)?$/);
     expect(timeIndicators.length).toBe(2);
   });
 
@@ -181,8 +174,10 @@ describe('EventProgram', () => {
 
     // Should have 2 unique time slots
     expect(times.length).toBe(2);
-    // First time should be earlier than second time (string comparison works for HH:mm format)
-    expect(times[0]! < times[1]!).toBe(true);
+    // Earlier slot first, labelled in the UI language (en, #1222)
+    const label = (iso: string) =>
+      new Date(iso).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+    expect(times).toEqual([label('2025-05-15T09:00:00Z'), label('2025-05-15T12:00:00Z')]);
   });
 
   it('should_displayTimelineLine_when_rendered', () => {
@@ -207,7 +202,7 @@ describe('EventProgram', () => {
     renderWithProviders(<EventProgram sessions={mockSessions} eventCode="BATbern142" />);
 
     // Check for formatted time ranges
-    const timeRanges = screen.getAllByText(/\d{2}:\d{2}\s*-\s*\d{2}:\d{2}/);
+    const timeRanges = screen.getAllByText(/\d{2}:\d{2}( [AP]M)?\s*-\s*\d{2}:\d{2}/);
     expect(timeRanges.length).toBeGreaterThan(0);
   });
 

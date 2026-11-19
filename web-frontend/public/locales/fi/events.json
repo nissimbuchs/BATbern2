@@ -23,17 +23,20 @@
       "attention": {
         "title": "Needs your attention",
         "addTask": "Add task",
-        "open": "Open {{tab}} →",
-        "go": "Open →",
+        "open": "Avaa {{tab}}",
+        "go": "Avaa",
         "retry": "Retry",
         "loadError": "Couldn't load your tasks.",
         "allCaught": "You're all caught up — nothing needs your attention right now.",
         "triggerNotReached": "Laukaisinta ei ole vielä saavutettu"
       },
       "due": {
-        "overdue": "Overdue · {{days}} days",
+        "overdue_one": "Myöhässä · {{count}} päivä",
+        "overdue_other": "Myöhässä · {{count}} päivää",
         "overdueNow": "Myöhässä",
-        "dueSoon": "Due in {{days}} days",
+        "dueToday": "Erääntyy tänään",
+        "dueSoon_one": "Erääntyy {{count}} päivän kuluttua",
+        "dueSoon_other": "Erääntyy {{count}} päivän kuluttua",
         "upcoming": "Upcoming",
         "live": "Now · event is live",
         "eventDay": "Tapahtumapäivä · {{date}}"
@@ -670,12 +673,19 @@
     "eventTasksDescription": "Määritä tehtävät, jotka luodaan ja aktivoidaan automaattisesti tapahtuman edetessä työnkulun tilojen läpi.",
     "defaultTemplates": "Oletusarvoiset tehtävämallit",
     "defaultTemplatesDescription": "Nämä ovat tapahtuman suunnittelun vakiotehtävät. Kaikki ovat esivalittuja ja ne luodaan tapahtumaa tallennettaessa.",
+    "defaultTemplatesDescriptionLive": "Nämä ovat tapahtuman vakiosuunnittelutehtävät. Valinta luo tehtävän heti, ja valinnan poisto poistaa sen.",
     "taskExists": "Tehtävä on olemassa",
     "assignTo": "Osoita",
     "triggerState": "Laukaisin",
     "dueDate": "Eräpäivä",
     "immediate": "Välitön",
-    "days": "päivää",
+    "offset": {
+      "before_one": "{{count}} päivä ennen tapahtumaa",
+      "before_other": "{{count}} päivää ennen tapahtumaa",
+      "after_one": "{{count}} päivä tapahtuman jälkeen",
+      "after_other": "{{count}} päivää tapahtuman jälkeen",
+      "eventDay": "Tapahtumapäivänä"
+    },
     "customTemplates": "Mukautetut tehtävämallit",
     "customTemplatesDescription": "Tiimisi on luonut nämä mallit. Valitse ne, jotka haluat sisällyttää tähän tapahtumaan.",
     "customTasks": "Mukautetut tehtävät",
@@ -693,13 +703,16 @@
     "noEvent": "Ei tapahtumaa (tallenna mallina)",
     "triggerStateHelp": "Tapahtuman tila, joka aktivoi tämän tehtävän",
     "workflowStates": {
+      "created": "Luotu",
       "topic_selection": "Aiheen valinta",
-      "speaker_brainstorming": "Puhujien ideointi",
-      "speaker_outreach": "Puhujien kontaktointi",
+      "speaker_identification": "Puhujien tunnistaminen",
+      "slot_assignment": "Paikkamäärittely",
       "agenda_published": "Ohjelma julkaistu",
       "event_live": "Tapahtuma live",
-      "post_event_wrap_up": "Tapahtuman jälkikokoelma",
-      "archived": "Arkistoitu"
+      "event_completed": "Tapahtuma suoritettu",
+      "archived": "Arkistoitu",
+      "speakers_published": "Puhujat julkaistu",
+      "speaker_outreach": "Puhujien kontaktointi"
     },
     "dueDateType": "Eräpäivätyyppi",
     "dueDateTypes": {
@@ -876,7 +889,6 @@
     "saving": "Tallennetaan...",
     "saved": "Viimeksi tallennettu {{time}}",
     "failed": "Automaattinen tallennus epäonnistui",
-    "conflict": "Samanaikainen muokkaus havaittu. Lataa uudelleen ja yritä uudelleen.",
     "enabled": "Automaattinen tallennus käytössä"
   },
   "topics": {
@@ -1195,12 +1207,16 @@
     },
     "quickActions": {
       "title": "Pikavalikko",
-      "total": "{{count}} istuntoa yhteensä",
-      "assigned": "{{count}} osoitettu",
-      "pending": "{{count}} odottaa",
+      "total_one": "{{count}} istunto yhteensä",
+      "total_other": "{{count}} istuntoa yhteensä",
+      "assigned_one": "{{count}} osoitettu",
+      "assigned_other": "{{count}} osoitettu",
+      "pending_one": "{{count}} odottaa",
+      "pending_other": "{{count}} odottaa",
       "allAssigned": "Kaikki ajoitukset osoitettu!",
       "goToPublishing": "Siirry Julkaisu-välilehdelle",
-      "sessionsAssignedAnnouncement": "{{count}} istuntoa osoitettu onnistuneesti"
+      "sessionsAssignedAnnouncement_one": "{{count}} istunto osoitettu onnistuneesti",
+      "sessionsAssignedAnnouncement_other": "{{count}} istuntoa osoitettu onnistuneesti"
     },
     "actions": {
       "autoAssign": "Automaattinen osoitus",
@@ -1483,5 +1499,38 @@
         "text": "Haluaisitko pitää esityksen? Ehdota itseäsi tapahtuman sivulla."
       }
     }
+  },
+  "liveControl": {
+    "title": "Live-ohjaus",
+    "connection": {
+      "connected": "Yhdistetty",
+      "connecting": "Yhdistetään...",
+      "offline": "Offline"
+    },
+    "offlineHint": "Live-päivitykset eivät ole käytettävissä. Sivu yhdistää uudelleen itsestään, kun verkko palaa.",
+    "noActiveSession": "Ei aktiivista sessiota",
+    "nextSession": "Seuraava sessio",
+    "urgency": {
+      "overtime": "Yliaika",
+      "twoMinutesLeft": "2 min jäljellä",
+      "fiveMinutesLeft": "5 min jäljellä",
+      "onTrack": "Aikataulussa"
+    },
+    "delay": "← Viivästä",
+    "adjustTime": "↔ Säädä aikaa",
+    "agenda": {
+      "title": "Ohjelma",
+      "empty": "Ei sessioita saatavilla"
+    },
+    "delaySheet": {
+      "title": "Annetaanko edelliselle sessiolle lisää aikaa?"
+    },
+    "adjustSheet": {
+      "title": "Säädä session kestoa",
+      "shorten": "Lyhennä",
+      "extend": "Pidennä"
+    },
+    "cancel": "Peruuta",
+    "minutes": "{{minutes}} min"
   }
 }

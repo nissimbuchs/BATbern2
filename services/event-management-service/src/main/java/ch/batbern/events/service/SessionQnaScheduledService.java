@@ -31,7 +31,7 @@ public class SessionQnaScheduledService {
      * Freeze windows whose close time has passed. Runs hourly; ShedLock ensures a single instance
      * runs it across the cluster.
      */
-    @Scheduled(cron = "${qna.scheduled.freeze.cron:0 5 * * * *}")
+    @Scheduled(cron = "${qna.scheduled.freeze.cron:0 5 * * * *}", zone = "Europe/Zurich")
     @SchedulerLock(name = "freezeQnaWindows", lockAtMostFor = "5m", lockAtLeastFor = "30s")
     @Transactional
     public void freezeExpiredWindows() {

@@ -1243,9 +1243,8 @@ CREATE TABLE user_profiles (
     pref_theme VARCHAR(10) DEFAULT 'auto',
     pref_language VARCHAR(2) DEFAULT 'de',
     pref_email_notifications BOOLEAN DEFAULT TRUE,
-    pref_in_app_notifications BOOLEAN DEFAULT TRUE,
-    pref_push_notifications BOOLEAN DEFAULT FALSE,
-    pref_notification_frequency VARCHAR(20) DEFAULT 'instant',
+    -- pref_in_app_notifications, pref_push_notifications, pref_notification_frequency still
+    -- exist but no code maps them since #1222; a later migration drops them
 
     -- Settings (embedded)
     settings_profile_visibility VARCHAR(20) DEFAULT 'public',

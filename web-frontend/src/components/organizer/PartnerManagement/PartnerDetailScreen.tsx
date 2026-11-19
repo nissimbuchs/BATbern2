@@ -309,7 +309,9 @@ export const PartnerDetailScreen: React.FC<PartnerDetailScreenProps> = (props) =
         {/* Tab Panels */}
         <Box sx={{ mt: 3 }}>
           {/* Overview Tab */}
-          {effectiveTab === 0 && <PartnerOverviewTab partner={partner} />}
+          {effectiveTab === 0 && (
+            <PartnerOverviewTab partner={partner} canChangeTier={user?.role === 'organizer'} />
+          )}
 
           {/* Contacts Tab */}
           {effectiveTab === 1 && (

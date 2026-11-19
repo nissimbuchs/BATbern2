@@ -54,7 +54,7 @@ const validDays = (value: string): boolean => {
 
 export const AutoPublishScheduleForm: React.FC<AutoPublishScheduleFormProps> = ({ eventCode }) => {
   const { t, i18n } = useTranslation('events');
-  const locale = i18n.language === 'de' ? 'de' : 'en';
+  const locale = i18n.language;
   const { publishingStatus, updateSchedule, isScheduling } = usePublishing(eventCode);
   const [draft, setDraft] = useState<ScheduleDraft | null>(null);
   const [saved, setSaved] = useState(false);

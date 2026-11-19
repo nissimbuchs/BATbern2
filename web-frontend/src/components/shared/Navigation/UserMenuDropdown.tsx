@@ -24,6 +24,7 @@ import { UserContext } from '../../../types/auth';
 import { updateUserSettings, type UserLanguage } from '../../../services/api/userApi';
 import { USER_GUIDE_URL } from '@/config/navigationConfig';
 import { WHATS_NEW_PAGE_PATH } from '@/features/whatsNew/catalogue';
+import { UI_LANGUAGES } from '@/i18n/languages';
 
 interface UserMenuDropdownProps {
   user: UserContext;
@@ -184,7 +185,7 @@ const UserMenuDropdown: React.FC<UserMenuDropdownProps> = ({
             aria-label={t('language.select')}
             data-testid="language-select"
           >
-            {Object.keys(i18n.options?.resources ?? {}).map((code) => (
+            {UI_LANGUAGES.map((code) => (
               <MenuItem key={code} value={code} data-testid={`language-option-${code}`}>
                 {code.toUpperCase()} — {t(`language.${code}`)}
               </MenuItem>

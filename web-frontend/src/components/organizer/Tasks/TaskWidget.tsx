@@ -19,7 +19,7 @@ import { CheckCircle as CheckCircleIcon, OpenInNew as OpenInNewIcon } from '@mui
 import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { de, enUS } from 'date-fns/locale';
+import { dateFnsLocale } from '@/utils/date/dateFnsLocale';
 import { taskService, type EventTaskResponse } from '@/services/taskService';
 import {
   isTaskVisible,
@@ -36,7 +36,7 @@ export const TaskWidget: React.FC<TaskWidgetProps> = ({ organizerUsername }) => 
   const { t, i18n } = useTranslation('events');
   const queryClient = useQueryClient();
   const navigate = useNavigate();
-  const locale = i18n.language === 'de' ? de : enUS;
+  const locale = dateFnsLocale(i18n.language);
   const [editingTask, setEditingTask] = useState<EventTaskResponse | null>(null);
 
   // Fetch all of my tasks; visibility + order are decided client-side below

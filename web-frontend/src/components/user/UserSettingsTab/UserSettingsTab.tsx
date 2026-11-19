@@ -55,6 +55,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { EarlierProfilesSection } from '@/components/user/EarlierProfilesSection/EarlierProfilesSection';
 import { useMySubscriptions, usePatchMySubscription } from '@/hooks/useNewsletter/useNewsletter';
+import { mailLanguage } from '@/i18n/languages';
 
 const ADDITIONAL_EMAILS_LIMIT = 5;
 const TOAST_AUTO_DISMISS_MS = 5000;
@@ -449,7 +450,7 @@ function NewsletterSection() {
 
   function handleToggle(email: string, checked: boolean, hasLanguage: boolean) {
     // Only a new subscription takes the UI language; an existing one keeps its own.
-    const language = i18n.language?.startsWith('de') ? 'de' : 'en';
+    const language = mailLanguage(i18n.language);
     patchMutation.mutate(
       checked && !hasLanguage
         ? { email, subscribed: true, language }
@@ -503,8 +504,7 @@ const UserSettingsTab: React.FC<UserSettingsTabProps> = ({
     preferences || {
       theme: 'LIGHT' as const,
       timezone: 'Europe/Zurich',
-      notificationChannels: { email: true, inApp: true, push: false },
-      notificationFrequency: 'IMMEDIATE' as const,
+      notificationChannels: { email: true },
       qnaNotificationFrequency: 'LIVE' as const,
     }
   );
@@ -697,73 +697,7 @@ const UserSettingsTab: React.FC<UserSettingsTabProps> = ({
               }
               label={t('settings.notifications.channelEmail')}
             />
-            <FormControlLabel
-              control={
-                <Checkbox
-                  checked={preferencesForm.notificationChannels.inApp}
-                  onChange={(e) =>
-                    setPreferencesForm({
-                      ...preferencesForm,
-                      notificationChannels: {
-                        ...preferencesForm.notificationChannels,
-                        inApp: e.target.checked,
-                      },
-                    })
-                  }
-                  data-testid="channel-in-app"
-                />
-              }
-              label={t('settings.notifications.channelInApp')}
-            />
-            <FormControlLabel
-              control={
-                <Checkbox
-                  checked={preferencesForm.notificationChannels.push}
-                  onChange={(e) =>
-                    setPreferencesForm({
-                      ...preferencesForm,
-                      notificationChannels: {
-                        ...preferencesForm.notificationChannels,
-                        push: e.target.checked,
-                      },
-                    })
-                  }
-                  data-testid="channel-push"
-                />
-              }
-              label={t('settings.notifications.channelPush')}
-            />
           </FormGroup>
-
-          <Typography variant="subtitle1" sx={{ mt: 2 }} gutterBottom>
-            {t('settings.notifications.frequency')}
-          </Typography>
-          <RadioGroup
-            value={preferencesForm.notificationFrequency}
-            onChange={(e) =>
-              setPreferencesForm({
-                ...preferencesForm,
-                notificationFrequency: e.target
-                  .value as UserPreferencesView['notificationFrequency'],
-              })
-            }
-          >
-            <FormControlLabel
-              value="IMMEDIATE"
-              control={<Radio data-testid="frequency-immediate" />}
-              label={t('settings.notifications.frequencyImmediate')}
-            />
-            <FormControlLabel
-              value="DAILY_DIGEST"
-              control={<Radio data-testid="frequency-daily" />}
-              label={t('settings.notifications.frequencyDaily')}
-            />
-            <FormControlLabel
-              value="WEEKLY_DIGEST"
-              control={<Radio data-testid="frequency-weekly" />}
-              label={t('settings.notifications.frequencyWeekly')}
-            />
-          </RadioGroup>
 
           {/* Story 15.7 — Q&A notification cadence for speakers / co-speakers / moderators */}
           <Typography variant="subtitle1" sx={{ mt: 2 }} gutterBottom>

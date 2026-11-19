@@ -89,7 +89,7 @@ public class RegistrationCleanupService {
      *
      * ShedLock ensures only ONE ECS instance executes this job
      */
-    @Scheduled(cron = "0 0 3 * * *")
+    @Scheduled(cron = "0 0 3 * * *", zone = "Europe/Zurich")
     @SchedulerLock(
             name = "cleanupUnconfirmedRegistrations",
             lockAtMostFor = "30m",

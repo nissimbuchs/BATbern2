@@ -3,15 +3,14 @@
  *
  * Event-day cards are due ON the event date: before that day the chip shows the
  * date ("Event day · …"); on/after it the event is actually live.
+ *
+ * Real i18next, the real OrganizerChip (its organizer directory answers from the MSW harness).
  */
-import { render, screen } from '@testing-library/react';
+import { screen, within } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
-import { I18nextProvider } from 'react-i18next';
-import i18n from '@/i18n/config';
+import { renderWithAuth } from '@/test/auth';
 import { AttentionCard } from '../AttentionCard';
 import type { CockpitCard } from '../cockpitCards';
-
-vi.mock('@/components/shared/OrganizerChip', () => ({ OrganizerChip: () => null }));
 
 const liveCard = (over: Partial<CockpitCard> = {}): CockpitCard => ({
   id: 'start-presentation',
@@ -23,11 +22,16 @@ const liveCard = (over: Partial<CockpitCard> = {}): CockpitCard => ({
 });
 
 const renderCard = (card: CockpitCard) =>
-  render(
-    <I18nextProvider i18n={i18n}>
-      <AttentionCard card={card} onNavigate={vi.fn()} />
-    </I18nextProvider>
-  );
+  renderWithAuth(<AttentionCard card={card} onNavigate={vi.fn()} />);
+
+const taskCard = (over: Partial<CockpitCard>): CockpitCard => ({
+  id: 'task:x',
+  labelKey: '',
+  labelVars: { name: 'Partner Meeting' },
+  severity: 'dueSoon',
+  taskBacked: true,
+  ...over,
+});
 
 describe('AttentionCard — event-day due chip', () => {
   it('shows the event date (not "live now") for an event still in the future', () => {
@@ -83,5 +87,38 @@ describe('AttentionCard — overdue cards without a due date and notes', () => {
       taskBacked: true,
     });
     expect(screen.queryByText(/trigger not reached/i)).not.toBeInTheDocument();
+  });
+});
+
+describe('AttentionCard — due chip wording (#1223)', () => {
+  it.each([
+    [0, 'Due today'],
+    [1, 'Due in 1 day'],
+    [5, 'Due in 5 days'],
+  ])('a card due in %i days reads "%s"', (dueDays, text) => {
+    renderCard(taskCard({ severity: 'dueSoon', dueDays }));
+    expect(screen.getByText(text)).toBeInTheDocument();
+  });
+
+  it.each([
+    [-1, 'Overdue · 1 day'],
+    [-17, 'Overdue · 17 days'],
+  ])('a card %i days past due reads "%s"', (dueDays, text) => {
+    renderCard(taskCard({ severity: 'overdue', dueDays }));
+    expect(screen.getByText(text)).toBeInTheDocument();
+  });
+});
+
+describe('AttentionCard — action line (#1223)', () => {
+  it.each([
+    ['a tab target', { kind: 'tab', tab: 'registrations' } as const, 'Open Registrations'],
+    ['a route target', { kind: 'route', path: '/organizer/events' } as const, 'Open'],
+  ])('shows one arrow for %s', (_name, target, text) => {
+    renderCard(taskCard({ target }));
+    const card = screen.getByTestId('cockpit-attention-card-task');
+    // The icon is the arrow; the text carries none ("Open Registrations → →" before).
+    expect(within(card).getByText(text)).toBeInTheDocument();
+    expect(card.textContent).not.toContain('→');
+    expect(within(card).getAllByTestId('ArrowForwardIcon')).toHaveLength(1);
   });
 });

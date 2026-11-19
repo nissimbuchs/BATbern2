@@ -1,14 +1,13 @@
 package ch.batbern.events.service;
 
 import ch.batbern.events.domain.Event;
-import ch.batbern.events.dto.generated.users.UserResponse;
 import ch.batbern.events.domain.QnaWindowStatus;
 import ch.batbern.events.domain.Session;
 import ch.batbern.events.domain.SessionQnaNotification;
 import ch.batbern.events.domain.SessionQnaPost;
 import ch.batbern.events.domain.SessionQnaWindow;
 import ch.batbern.events.domain.SessionUser;
-import ch.batbern.events.client.UserApiClient;
+import ch.batbern.events.config.CumsContractHarness;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SessionQnaNotificationRepository;
 import ch.batbern.events.repository.SessionQnaPostRepository;
@@ -31,13 +30,12 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -49,8 +47,9 @@ import static org.mockito.Mockito.when;
  * across rolled-back test transactions (NOT a {@code @TestConfiguration @Primary} bean).
  *
  * <p>The real {@link EmailService} renders and sends to the {@link SesRecorder} (17.0b3): the tests
- * assert what SES received, recipient and body. {@link UserApiClient} is a {@code @MockitoBean} stubbed
- * per-recipient (cadence preference, email, locale).
+ * assert what SES received, recipient and body. CUMS is the {@link CumsContractHarness}: the real
+ * {@code UserApiClient} reads each recipient's address, cadence and language (#1222, touch rule).
+ * Swiss German through CUMS: {@code RecipientLanguageMailIntegrationTest}.
  *
  * <p><b>Not {@code @Transactional}.</b> The service under test is intentionally non-transactional
  * and persists each recipient's throttle row via a {@code REQUIRES_NEW} writer — so setup data must
@@ -81,8 +80,8 @@ class QnaNotificationServiceIntegrationTest extends AbstractIntegrationTest {
     @Autowired
     private SesRecorder sesRecorder;
 
-    @MockitoBean
-    private UserApiClient userApiClient;
+    @Autowired
+    private CumsContractHarness cums;
 
     private static final String EVENT_CODE = "BATbern970";
     private static final String SLUG = "live-qna-session";
@@ -101,21 +100,22 @@ class QnaNotificationServiceIntegrationTest extends AbstractIntegrationTest {
 
         when(lockProvider.lock(any())).thenReturn(Optional.of(mock(SimpleLock.class)));
 
-        // Default stubs (lenient — not every test reads every recipient).
-        lenient().when(userApiClient.getQnaNotificationFrequency(anyString())).thenReturn("live");
-        lenient().when(userApiClient.getPreferredLanguage(anyString())).thenReturn("en");
-        lenient().when(userApiClient.getUserByUsername(SPEAKER))
-                .thenReturn(new UserResponse().email("success+primary.speaker@simulator.amazonses.com"));
-        lenient().when(userApiClient.getUserByUsername(CO_SPEAKER))
-                .thenReturn(new UserResponse().email("success+co.speaker@simulator.amazonses.com"));
-        lenient().when(userApiClient.getUserByUsername(MODERATOR))
-                .thenReturn(new UserResponse().email("success+the.moderator@simulator.amazonses.com"));
-        lenient().when(userApiClient.getUserByUsername(PANELIST))
-                .thenReturn(new UserResponse().email("success+the.panelist@simulator.amazonses.com"));
+        // CUMS answers every recipient: English, live cadence (each test changes what it needs).
+        recipient(SPEAKER, "en", "live");
+        recipient(CO_SPEAKER, "en", "live");
+        recipient(MODERATOR, "en", "live");
+        recipient(PANELIST, "en", "live");
+    }
+
+    /** CUMS knows {@code username} at {@code success+<username>@simulator.amazonses.com}. */
+    private void recipient(String username, String language, String frequency) {
+        cums.userWithSettings(username, "success+" + username + "@simulator.amazonses.com",
+                Map.of("language", language, "qnaNotificationFrequency", frequency));
     }
 
     @AfterEach
     void tearDown() {
+        cums.reset();
         // The REQUIRES_NEW writer commits notification rows that would otherwise leak to other
         // tests / test classes (this class is not @Transactional). Clean them up.
         cleanDb();
@@ -253,7 +253,7 @@ class QnaNotificationServiceIntegrationTest extends AbstractIntegrationTest {
     @Test
     @DisplayName("AC6: a 'daily' recipient is not re-notified 30 min later (24h throttle)")
     void should_throttleDaily_when_within24h() {
-        when(userApiClient.getQnaNotificationFrequency(SPEAKER)).thenReturn("daily");
+        recipient(SPEAKER, "en", "daily");
         SessionQnaWindow window = openWindow(QnaWindowStatus.OPEN);
         Session session = sessionRepository.findById(window.getSessionId()).orElseThrow();
         saveSpeaker(session, SPEAKER, SessionUser.SpeakerRole.PRIMARY_SPEAKER);
@@ -278,7 +278,7 @@ class QnaNotificationServiceIntegrationTest extends AbstractIntegrationTest {
     @Test
     @DisplayName("AC7: an 'off' recipient is never notified")
     void should_notNotify_when_preferenceOff() {
-        when(userApiClient.getQnaNotificationFrequency(SPEAKER)).thenReturn("off");
+        recipient(SPEAKER, "en", "off");
         SessionQnaWindow window = openWindow(QnaWindowStatus.OPEN);
         Session session = sessionRepository.findById(window.getSessionId()).orElseThrow();
         saveSpeaker(session, SPEAKER, SessionUser.SpeakerRole.PRIMARY_SPEAKER);
@@ -356,7 +356,7 @@ class QnaNotificationServiceIntegrationTest extends AbstractIntegrationTest {
     @Test
     @DisplayName("AC10: a recipient with no resolvable email is skipped")
     void should_skip_when_noEmail() {
-        when(userApiClient.getUserByUsername(SPEAKER)).thenReturn(new UserResponse().email(null));
+        cums.unknownUser(SPEAKER); // no profile, so no address
         SessionQnaWindow window = openWindow(QnaWindowStatus.OPEN);
         Session session = sessionRepository.findById(window.getSessionId()).orElseThrow();
         saveSpeaker(session, SPEAKER, SessionUser.SpeakerRole.PRIMARY_SPEAKER);
@@ -371,7 +371,7 @@ class QnaNotificationServiceIntegrationTest extends AbstractIntegrationTest {
     @Test
     @DisplayName("AC10: a non-DE/EN locale preference renders the English template")
     void should_renderEnglish_when_nonDeEnLocale() {
-        when(userApiClient.getPreferredLanguage(SPEAKER)).thenReturn("fr");
+        recipient(SPEAKER, "fr", "live");
         SessionQnaWindow window = openWindow(QnaWindowStatus.OPEN);
         Session session = sessionRepository.findById(window.getSessionId()).orElseThrow();
         saveSpeaker(session, SPEAKER, SessionUser.SpeakerRole.PRIMARY_SPEAKER);
@@ -383,6 +383,36 @@ class QnaNotificationServiceIntegrationTest extends AbstractIntegrationTest {
         assertThat(sent).hasSize(1);
         assertThat(sent.get(sent.size() - 1).html()).contains("question"); // EN copy
         assertThat(sent.get(sent.size() - 1).html()).doesNotContain("Frage"); // not the DE template
+    }
+
+    @Test
+    @DisplayName("#1222: an English preference renders the English template")
+    void should_renderEnglish_when_englishLocale() {
+        recipient(SPEAKER, "en", "live");
+        SessionQnaWindow window = openWindow(QnaWindowStatus.OPEN);
+        Session session = sessionRepository.findById(window.getSessionId()).orElseThrow();
+        saveSpeaker(session, SPEAKER, SessionUser.SpeakerRole.PRIMARY_SPEAKER);
+        savePost(window, ATTENDEE, "Q1", null, Instant.now());
+
+        qnaNotificationService.flushPending();
+
+        assertThat(sesRecorder.mailsTo("success+primary.speaker@simulator.amazonses.com")).singleElement()
+                .satisfies(mail -> assertThat(mail.html()).contains("question").doesNotContain("Frage"));
+    }
+
+    @Test
+    @DisplayName("#1222: a German preference renders the German template")
+    void should_renderGerman_when_germanLocale() {
+        recipient(SPEAKER, "de", "live");
+        SessionQnaWindow window = openWindow(QnaWindowStatus.OPEN);
+        Session session = sessionRepository.findById(window.getSessionId()).orElseThrow();
+        saveSpeaker(session, SPEAKER, SessionUser.SpeakerRole.PRIMARY_SPEAKER);
+        savePost(window, ATTENDEE, "Q1", null, Instant.now());
+
+        qnaNotificationService.flushPending();
+
+        assertThat(sesRecorder.mailsTo("success+primary.speaker@simulator.amazonses.com")).singleElement()
+                .satisfies(mail -> assertThat(mail.html()).contains("Frage"));
     }
 
     // ==================== helpers ====================

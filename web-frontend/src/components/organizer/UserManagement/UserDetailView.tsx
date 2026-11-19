@@ -41,6 +41,7 @@ import { Breadcrumbs } from '@/components/shared/Breadcrumbs/Breadcrumbs';
 import { EventsParticipatedTable } from './EventsParticipatedTable';
 import { useCompany } from '@/hooks/useCompany/useCompany';
 import { MergeProfileDialog } from './MergeProfileDialog';
+import { uiIntlLocale } from '@/utils/date/intlLocale';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -265,7 +266,7 @@ export const UserDetailView: React.FC<UserDetailViewProps> = ({
                 {t('modal.userDetail.createdAt')}
               </Typography>
               <Typography variant="body2">
-                {new Date(user.createdAt).toLocaleDateString()}
+                {new Date(user.createdAt).toLocaleDateString(uiIntlLocale())}
               </Typography>
             </Grid>
 
@@ -274,7 +275,7 @@ export const UserDetailView: React.FC<UserDetailViewProps> = ({
                 {t('modal.userDetail.updatedAt')}
               </Typography>
               <Typography variant="body2">
-                {new Date(user.updatedAt).toLocaleDateString()}
+                {new Date(user.updatedAt).toLocaleDateString(uiIntlLocale())}
               </Typography>
             </Grid>
           </Grid>

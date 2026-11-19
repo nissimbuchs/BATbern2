@@ -16,6 +16,7 @@ import { SpeakerSelfNominatePanel } from '@/components/attendee/SpeakerSelfNomin
 import { buildCdnImageUrl, buildCdnImageSrcSet } from '@/utils/cdnImage';
 import { canOfferSelfNomination } from '@/utils/eventPublication';
 import type { EventDetailUI, SessionUI } from '@/types/event.types';
+import { uiIntlLocale } from '@/utils/date/intlLocale';
 
 type RegistrationStatus =
   'REGISTERED' | 'CONFIRMED' | 'WAITLIST' | 'CANCELLED' | 'ATTENDED' | 'NO_SHOW';
@@ -72,7 +73,7 @@ export function EventCard({
   const displayedSessions = sessions;
 
   // Format date (use Swiss German locale for Swiss company)
-  const formattedDate = new Date(event.date).toLocaleDateString('de-CH', {
+  const formattedDate = new Date(event.date).toLocaleDateString(uiIntlLocale(), {
     year: 'numeric',
     month: 'long',
     day: 'numeric',

@@ -6,10 +6,10 @@
  */
 import { type JSX } from 'react';
 
-import { format } from 'date-fns';
 import { BATbernLoader } from '@/components/shared/BATbernLoader';
 import type { PresentationEventDetail } from '@/services/presentationService';
 import animStyles from '../presentation-animations.module.css';
+import { uiIntlLocale } from '@/utils/date/intlLocale';
 
 interface WelcomeSlideProps {
   event: PresentationEventDetail;
@@ -20,7 +20,13 @@ export function WelcomeSlide({ event }: WelcomeSlideProps): JSX.Element {
   // Use event.title as the main presentation title (the event's own name, e.g. "Zero Trust Journey").
   // event.topic?.name is the backlog categorisation — not the display title.
   const eventTitle = event.title;
-  const dateStr = event.date ? format(new Date(event.date), 'dd. MMMM yyyy') : '';
+  const dateStr = event.date
+    ? new Date(event.date).toLocaleDateString(uiIntlLocale(), {
+        day: '2-digit',
+        month: 'long',
+        year: 'numeric',
+      })
+    : '';
   const venueName = event.venueName ?? event.venue?.name ?? '';
 
   return (

@@ -1,0 +1,145 @@
+# Stories of epic-bug-sweep, in build order. One PR for the whole epic (initiative C2); each story is one commit or a few.
+
+[[entry]]
+id = 1
+type = "story"
+title = "EMS may store inbound attachments; EventBridge grant and ZAP 110009 gone"
+description = "Wires the mail-attachments put/delete grant to the EMS task role (bin/batbern-infrastructure.ts:313, inbound-email-stack.ts:449), deletes the dead emsTaskRole block or feeds it, removes the events:* grant in event-management-stack.ts:291, and ignores ZAP rule 110009 in .zap/rules.tsv."
+verify = "A CDK test shows s3:PutObject and s3:DeleteObject on batbern-inbound-emails-*/mail-attachments/* in the EMS task role policy and no events:* action; after deploy, an inbound mail with an attachment to replies@ arrives in the Mail Center with its attachment."
+covers = ["R1", "R10"]
+after = []
+hitl = true # the post-deploy test mail is sent by a person
+risk = "medium"
+notes = ["Owner 2026-11-15: first commit of the PR."]
+
+[[entry]]
+id = 4
+type = "story"
+title = "Browser notification push and the unread notification preferences are gone"
+description = "Removes useNotificationWebSocket, notificationWebSocketClient and EMS's notification convertAndSend, keeping the Watch STOMP endpoint; removes inAppNotifications, pushNotifications and notificationFrequency from users-api, cums-internal, CUMS, EMS UserPreferences, the profile UI, and the schema (new CUMS migration). The bell's REST notifications source stays untouched for story 7."
+verify = "The Watch live-timing ITs still pass; no reference to the three preferences or the browser WS client remains (grep); the CUMS migration drops the columns and the provider contract test passes."
+covers = ["R11"]
+after = []
+hitl = false
+risk = "medium"
+
+[[entry]]
+id = 2
+type = "story"
+title = "The claim-profile link opens the claim page for every role"
+description = "Adds /claim-profile to every role's allowed paths in authRules.ts, tested through the real route and ProtectedRoute."
+verify = "A test renders /claim-profile?token=… through App routing and ProtectedRoute for attendee, speaker, partner and organizer and finds the claim page, not /dashboard."
+covers = ["R2"]
+after = []
+hitl = false
+risk = "low"
+
+[[entry]]
+id = 3
+type = "story"
+title = "Task trigger states offered are the ones the backend accepts"
+description = "One shared list of trigger states derived from the generated EventWorkflowState plus speakers_published, lower case, used by CustomTaskModal and TaskTemplateEditModal, labels from tasks.workflowStates.* in 10 locales."
+verify = "A test asserts that every value both dialogs offer is in the backend's accepted set and vice versa; saving a template with a changed trigger succeeds against the MSW spec harness."
+covers = ["R3"]
+after = []
+hitl = false
+risk = "low"
+
+[[entry]]
+id = 5
+type = "story"
+title = "Quiet hours, mail language and job times are right"
+description = "Fixes NotificationService.isInQuietHours (overnight windows), MailPipeline falls back to EN for non-DE/EN locales (de* and gsw-BE stay German, owner 2026-11-15), SpeakerReminderService and DeregistrationEmailService use the recipient's language, and every @Scheduled cron carries zone Europe/Zurich, guarded by a test in both CUMS and EMS. Its touched tests leave EmailService mocks for the SesRecorder before story 11 freezes the ratchet counts."
+verify = "Unit tests for a 22:00-07:00 and a 09:00-17:00 window; a mail IT renders fr as EN and gsw-BE as DE through the SesRecorder; a guard test fails a cron without zone."
+covers = ["R5"]
+after = [4]
+hitl = false
+risk = "medium"
+
+[[entry]]
+id = 6
+type = "story"
+title = "gsw-BE can be chosen and saved, dates follow the UI language"
+description = "Adds gsw-BE to the language switcher, widens pref_language (new CUMS migration) and its API validation, and formats dates with the UI locale everywhere the #1222 item 6 and #1223 item 4 dates appear."
+verify = "Saving gsw-BE as profile language round-trips through CUMS (IT); a component test shows an English date ('Oct 22, 2026') in the en UI on the Registrations tab and the homepage."
+covers = ["R5", "R6"]
+after = [4]
+hitl = false
+risk = "medium"
+
+[[entry]]
+id = 7
+type = "story"
+title = "Live Control speaks the UI language, the bell counts, the lineup card opens Communications"
+description = "Moves the hard-coded LiveControl strings to i18n keys in 10 locales, passes the REST unread notifications to BaseLayout (the source story 4 leaves in place), and orders the cockpit card rules so 'Newsletter: Speaker Lineup' matches the newsletter rule first."
+verify = "Component tests: Live Control renders English labels in en; the bell shows the unread count from the MSW harness; the Speaker Lineup card links to Communications."
+covers = ["R4"]
+after = [4, 3]
+hitl = false
+risk = "low"
+
+[[entry]]
+id = 8
+type = "story"
+title = "Cockpit and slot defects of #1223 fixed"
+description = "Items 1 (slot counters), 2 (double arrow), 3 ('Due today'), 5 (task template offsets after the event), 6 (Tasks text on an existing event) and 9 (UNASSIGNED label cut on phone)."
+verify = "One test per item, each failing before the fix: counters equal the slotted sessions of the fixture event, no double arrow, 'Due today' for 0 days, '1d after event' for the slides newsletter, the existing-event text, the label not truncated at 375px (Playwright or a layout assertion)."
+covers = ["R6"]
+after = [7]
+hitl = false
+risk = "low"
+
+[[entry]]
+id = 9
+type = "story"
+title = "The rest of #1223: event number, placeholder page, stray chip, portraits, tier"
+description = "Items 7 (Create Event pre-fills the next number, not 1), 8 (/organizer/speakers placeholder removed or redirected), 10 (stray user chip), 11 (broken archive portraits, checked against production first), 12 (partners see their tier read-only)."
+verify = "One test per item; item 11 closed as local-only if production portraits load (checked with a read-only probe)."
+covers = ["R6"]
+after = [6, 8]
+hitl = false
+risk = "low"
+
+[[entry]]
+id = 10
+type = "story"
+title = "The gateway logs the final status of proxied requests"
+description = "ClientErrorMetricsFilter records in an AsyncListener's onComplete when the request went async (owner chose option 1, #1313)."
+verify = "An integration test proxies to a stub answering 404 and finds GATEWAY_API_REQUEST status=404 clientError=true (red before); the metric filter pattern in alb-alarms.ts still matches the line (CDK test)."
+covers = ["R7"]
+after = []
+hitl = false
+risk = "medium"
+
+[[entry]]
+id = 11
+type = "story"
+title = "The ratchet counts unit tests that mock EmailService"
+description = "Adds a ratchet category for @Mock / mock(...) of EmailService and verify(emailService) in Java unit tests, freezes the counts as they stand after story 5 in the baseline."
+verify = "A fixture test of test-ratchet.ts: a new @Mock EmailService fails as RAISED; the committed baseline lists today's files."
+covers = ["R8"]
+after = [5]
+hitl = false
+risk = "low"
+
+[[entry]]
+id = 12
+type = "story"
+title = "Dev tooling tells the truth"
+description = "make ci-test without the missing test-coverage target; start-all-native.sh hint and header ports; .env.example gets COGNITO_DOMAIN_URL; CLAUDE.md log query with GNU date; update-versions.js reads the Gradle wrapper and the CI Node version; the commented infra E2E step in deploy-staging.yml deleted or run; shared-kernel README type list current."
+verify = "make ci-test runs to its first real step; node scripts/update-versions.js --check passes with Gradle 9.x and Node 22 in docs/versions.json; the CLAUDE.md query runs on rack."
+covers = ["R9"]
+after = []
+hitl = false
+risk = "low"
+
+[[entry]]
+id = 13
+type = "story"
+title = "Refactor sweep"
+description = "Cleanup only, scope set at its start from the plans and review findings the epic deferred."
+verify = "The full suites pass and every deferred finding is either fixed or filed."
+covers = []
+after = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+hitl = false
+risk = "low"

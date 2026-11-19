@@ -14,6 +14,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
+import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -52,8 +53,12 @@ public class PublishingScheduledService {
     private final SessionRepository sessionRepository;
     private final PublishingService publishingService;
     private final ScheduledJobFailures failures;
+    private final Clock clock;
 
-    @Scheduled(cron = "0 0 1 * * *")
+    /** Days are Swiss days: the job runs at 01:00 Zurich, which is still yesterday in UTC (#1222). */
+    private static final ZoneId ZURICH = ZoneId.of("Europe/Zurich");
+
+    @Scheduled(cron = "0 0 1 * * *", zone = "Europe/Zurich")
     @SchedulerLock(name = "PublishingScheduledService_runDailyAutoPublish",
             lockAtLeastFor = "PT5M", lockAtMostFor = "PT30M")
     public void runDailyAutoPublish() {
@@ -83,8 +88,8 @@ public class PublishingScheduledService {
                              Predicate<Event> ready,
                              Predicate<PublishingConfig> enabled,
                              Function<PublishingConfig, Integer> daysBefore) {
-        LocalDate today = LocalDate.now();
-        Instant startOfToday = today.atStartOfDay(ZoneId.systemDefault()).toInstant();
+        LocalDate today = LocalDate.ofInstant(clock.instant(), ZURICH);
+        Instant startOfToday = today.atStartOfDay(ZURICH).toInstant();
         List<Event> upcoming = eventRepository.findByDateAfter(startOfToday);
         log.info("Auto-publish {}: {} upcoming event(s) to check", phase.value(), upcoming.size());
 
@@ -96,7 +101,7 @@ public class PublishingScheduledService {
                     log.debug("Auto-publish {} disabled for event {}", phase.value(), event.getEventCode());
                     continue;
                 }
-                LocalDate eventDay = event.getDate().atZone(ZoneId.systemDefault()).toLocalDate();
+                LocalDate eventDay = event.getDate().atZone(ZURICH).toLocalDate();
                 if (!eventDay.equals(today.plusDays(daysBefore.apply(schedule)))) {
                     continue;
                 }

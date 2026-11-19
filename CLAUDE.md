@@ -187,7 +187,7 @@ BATbern-main/
 
 ### Local Development Setup
 
-**Prerequisites**: Java 21, Node.js 20+, Docker Desktop, AWS CLI v2 (for staging Cognito), jq
+**Prerequisites**: Java 21, Node.js 22, Docker Desktop, AWS CLI v2 (for staging Cognito), jq
 
 ```bash
 # Recommended: Local PostgreSQL + Native Services
@@ -706,10 +706,10 @@ AWS_PROFILE=batbern-staging aws logs tail /aws/ecs/BATbern-staging/event-managem
 # Search for errors
 AWS_PROFILE=batbern-staging aws logs tail /aws/ecs/BATbern-staging/event-management --since 1h --filter-pattern "ERROR"
 
-# CloudWatch Insights query
+# CloudWatch Insights query (GNU date, as on rack; on macOS use `date -v-1H +%s`)
 QUERY_ID=$(AWS_PROFILE=batbern-staging aws logs start-query \
   --log-group-name "/aws/ecs/BATbern-staging/event-management" \
-  --start-time $(date -v-1H +%s) \
+  --start-time $(date -d '1 hour ago' +%s) \
   --end-time $(date +%s) \
   --query-string 'fields @timestamp, @message | filter @message like /ERROR/ | sort @timestamp desc | limit 50' \
   --output text)
@@ -824,8 +824,8 @@ docker compose down -v
 # Clean build
 make clean && make build
 
-# Rebuild shared kernel
-cd shared-kernel && ./gradlew clean build publishToMavenLocal
+# Rebuild shared kernel (from the repository root)
+./gradlew :shared-kernel:clean :shared-kernel:build :shared-kernel:publishToMavenLocal
 ```
 
 ### Frontend Issues

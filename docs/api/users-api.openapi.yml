@@ -315,9 +315,6 @@ paths:
                       showEmail: false
                       allowCalendarSync: false
                       allowMessaging: true
-                      inAppNotifications: true
-                      notificationFrequency: "immediate"
-                      pushNotifications: false
                       qnaNotificationFrequency: "live"
                       quietHoursEnd: null
                       quietHoursStart: null
@@ -2054,9 +2051,6 @@ paths:
                     language: de
                     timezone: Europe/Zurich
                     emailNotifications: true
-                    inAppNotifications: true
-                    pushNotifications: false
-                    notificationFrequency: immediate
                     qnaNotificationFrequency: live
                     quietHoursStart: null
                     quietHoursEnd: null
@@ -2101,9 +2095,9 @@ paths:
                 value:
                   language: en
               notifications:
-                summary: Daily digest with quiet hours
+                summary: No e-mail notifications, quiet hours at night
                 value:
-                  notificationFrequency: daily_digest
+                  emailNotifications: false
                   quietHoursStart: '22:00'
                   quietHoursEnd: '07:00'
               clearQuietHours:
@@ -2126,9 +2120,6 @@ paths:
                     language: de
                     timezone: Europe/Zurich
                     emailNotifications: true
-                    inAppNotifications: true
-                    pushNotifications: false
-                    notificationFrequency: immediate
                     qnaNotificationFrequency: live
                     quietHoursStart: null
                     quietHoursEnd: null
@@ -3465,16 +3456,13 @@ components:
       type: object
       description: |
         The user's settings, one object (Story 4.9 merged the former UserPreferences into it).
-        Display: theme, language, timezone. Notifications: channels, frequency, Q&A digest, quiet
+        Display: theme, language, timezone. Notifications: e-mail on or off, Q&A digest, quiet
         hours. Privacy: visibility and contact options.
       required:
         - theme
         - language
         - timezone
         - emailNotifications
-        - inAppNotifications
-        - pushNotifications
-        - notificationFrequency
         - qnaNotificationFrequency
         - quietHoursStart
         - quietHoursEnd
@@ -3492,7 +3480,10 @@ components:
           default: auto
         language:
           type: string
-          enum: [de, en, fr, it, rm, es, fi, nl, ja]
+          description: |
+            The UI language, one of the 10 UI locales; `gsw-BE` is Swiss German (Bärndütsch).
+            Mails go out in German for `de` and `gsw-BE`, in English for every other language.
+          enum: [de, en, fr, it, rm, es, fi, nl, ja, gsw-BE]
           default: de
         timezone:
           nullable: true
@@ -3503,16 +3494,6 @@ components:
         emailNotifications:
           type: boolean
           default: true
-        inAppNotifications:
-          type: boolean
-          default: true
-        pushNotifications:
-          type: boolean
-          default: false
-        notificationFrequency:
-          type: string
-          enum: [immediate, daily_digest, weekly_digest]
-          default: immediate
         qnaNotificationFrequency:
           type: string
           description: |
@@ -3577,7 +3558,8 @@ components:
           enum: [light, dark, auto]
         language:
           type: string
-          enum: [de, en, fr, it, rm, es, fi, nl, ja]
+          description: One of the 10 UI locales; `gsw-BE` is Swiss German.
+          enum: [de, en, fr, it, rm, es, fi, nl, ja, gsw-BE]
         timezone:
           type: string
           description: IANA zone id, e.g. Europe/Zurich
@@ -3585,13 +3567,6 @@ components:
           maxLength: 64
         emailNotifications:
           type: boolean
-        inAppNotifications:
-          type: boolean
-        pushNotifications:
-          type: boolean
-        notificationFrequency:
-          type: string
-          enum: [immediate, daily_digest, weekly_digest]
         qnaNotificationFrequency:
           type: string
           enum: ["live", "daily", "off"]

@@ -23,17 +23,20 @@
       "attention": {
         "title": "Needs your attention",
         "addTask": "Add task",
-        "open": "Open {{tab}} →",
-        "go": "Open →",
+        "open": "{{tab}} uftue",
+        "go": "Uftue",
         "retry": "Retry",
         "loadError": "Couldn't load your tasks.",
         "allCaught": "You're all caught up — nothing needs your attention right now.",
         "triggerNotReached": "Trigger no nid erreicht"
       },
       "due": {
-        "overdue": "Overdue · {{days}} days",
+        "overdue_one": "Überfällig · {{count}} Tag",
+        "overdue_other": "Überfällig · {{count}} Täg",
         "overdueNow": "Überfällig",
-        "dueSoon": "Due in {{days}} days",
+        "dueToday": "Hüt fällig",
+        "dueSoon_one": "Fällig i {{count}} Tag",
+        "dueSoon_other": "Fällig i {{count}} Täg",
         "upcoming": "Upcoming",
         "live": "Now · event is live",
         "eventDay": "Aalass-Tag · {{date}}"
@@ -676,12 +679,19 @@
     "eventTasksDescription": "Ufgabe konfiguriere, wo automatisch erstellt und aktiviert wärde, wenn d'Veranstatig dur d'Workflow-Status gaat.",
     "defaultTemplates": "Standard-Ufgabevorlagen",
     "defaultTemplatesDescription": "Das si d'Standard-Veranstautigsplaniggsufgabe. Alli si vorousgwäut und wärde erstellt, wenn du d'Veranstatig spychersch.",
+    "defaultTemplatesDescriptionLive": "Das si d'Standard-Planigsufgabe. Es Häkli erstellt d'Ufgab grad, ds Häkli wägnäh löscht se.",
     "taskExists": "Ufgab existiert scho",
     "assignTo": "Zuewise a",
     "triggerState": "Auslöser",
     "dueDate": "Fällig",
     "immediate": "Sofort",
-    "days": "Tag",
+    "offset": {
+      "before_one": "{{count}} Tag vor em Aalass",
+      "before_other": "{{count}} Täg vor em Aalass",
+      "after_one": "{{count}} Tag nach em Aalass",
+      "after_other": "{{count}} Täg nach em Aalass",
+      "eventDay": "Am Aalasstag"
+    },
     "customTemplates": "Eigeni Ufgabevorlagen",
     "customTemplatesDescription": "Die Vorlagen si vom Team erstellt worde. Uswähle, weli für die Veranstatig iibeglosse wärde söue.",
     "customTasks": "Eigeni Ufgabe",
@@ -699,13 +709,16 @@
     "noEvent": "Kei Veranstatig (als Vorlage spychere)",
     "triggerStateHelp": "Dr Veranstautigsstatus, wo die Ufgab aktiviert",
     "workflowStates": {
+      "created": "Erstellt",
       "topic_selection": "Themenauswau",
-      "speaker_brainstorming": "Redner-Ideessammlig",
-      "speaker_outreach": "Rednerkontakt",
+      "speaker_identification": "Redneridentifikation",
+      "slot_assignment": "Slot-Zuwiisig",
       "agenda_published": "Agenda veröffentlicht",
       "event_live": "Veranstatig läuft",
-      "post_event_wrap_up": "Nachbearbeitung",
-      "archived": "Archiviert"
+      "event_completed": "Veranstatig abgschlosse",
+      "archived": "Archiviert",
+      "speakers_published": "Redner veröffentlecht",
+      "speaker_outreach": "Rednerkontakt"
     },
     "dueDateType": "Fälligkeitsdatumtyp",
     "dueDateTypes": {
@@ -880,7 +893,6 @@
     "saving": "Wird gspycheret...",
     "saved": "Zuletzt gspycheret um {{time}}",
     "failed": "Auto-Spychere fehlgschlage",
-    "conflict": "Gleichzytige Bearbeitig erkannt. Bitte neu lade und nomol versuche.",
     "enabled": "Auto-Spychere aktiviert"
   },
   "topics": {
@@ -1198,12 +1210,16 @@
     },
     "quickActions": {
       "title": "Schnällaktione",
-      "total": "{{count}} Sessione total",
-      "assigned": "{{count}} zuegwiise",
-      "pending": "{{count}} hangend",
+      "total_one": "{{count}} Session total",
+      "total_other": "{{count}} Sessione total",
+      "assigned_one": "{{count}} zuegwiise",
+      "assigned_other": "{{count}} zuegwiise",
+      "pending_one": "{{count}} hangend",
+      "pending_other": "{{count}} hangend",
       "allAssigned": "Alli Timings zuegwiise!",
       "goToPublishing": "Zum Veröffentlichigs-Tab",
-      "sessionsAssignedAnnouncement": "{{count}} Sessione erfolgriich zuegwiise"
+      "sessionsAssignedAnnouncement_one": "{{count}} Session erfolgriich zuegwiise",
+      "sessionsAssignedAnnouncement_other": "{{count}} Sessione erfolgriich zuegwiise"
     },
     "actions": {
       "autoAssign": "Automatisch zuweise",
@@ -1486,5 +1502,38 @@
         "text": "Weit Dir es Referat ha? Schlöht Nech uf der Site vom Alass sälber vor."
       }
     }
+  },
+  "liveControl": {
+    "title": "Live Stüürig",
+    "connection": {
+      "connected": "Verbunde",
+      "connecting": "Verbinde...",
+      "offline": "Offline"
+    },
+    "offlineHint": "Live-Updates nid verfüegbar. D Siite verbindet sech vo sälber wider, sobald ds Netz wider da isch.",
+    "noActiveSession": "Kei aktivi Session",
+    "nextSession": "Nächschti Session",
+    "urgency": {
+      "overtime": "Überziit",
+      "twoMinutesLeft": "No 2 Min",
+      "fiveMinutesLeft": "No 5 Min",
+      "onTrack": "Im Plan"
+    },
+    "delay": "← Verzögere",
+    "adjustTime": "↔ Ziit apasse",
+    "agenda": {
+      "title": "Programm",
+      "empty": "Kei Sessions verfüegbar"
+    },
+    "delaySheet": {
+      "title": "Vorherige Session meh Ziit gä?"
+    },
+    "adjustSheet": {
+      "title": "Session-Ziit apasse",
+      "shorten": "Chürze",
+      "extend": "Verlängere"
+    },
+    "cancel": "Abbräche",
+    "minutes": "{{minutes}} min"
   }
 }

@@ -86,4 +86,26 @@ describe('LanguageSwitcher', () => {
     await waitFor(() => expect(i18n.language).toBe('it'));
     expect(api.calls('updateUserSettings')).toHaveLength(0);
   });
+
+  it('should_offerEveryUiLanguage_withItsLabelFromTheLocales_when_opened', () => {
+    renderSwitcher();
+
+    const options = Array.from(
+      (screen.getByTestId('language-selector') as HTMLSelectElement).options
+    ).map((o) => o.value);
+    expect(options).toEqual(['de', 'en', 'fr', 'it', 'rm', 'es', 'fi', 'nl', 'ja', 'gsw-BE']);
+    expect(
+      screen.getByRole('option', { name: `GSW-BE — ${i18n.t('common:language.gsw-BE')}` })
+    ).toBeInTheDocument();
+  });
+
+  it('should_storeSwissGerman_when_signedInAndGswBeChosen', async () => {
+    renderSwitcher(<LanguageSwitcher />, signedInAs('speaker'));
+
+    fireEvent.change(screen.getByTestId('language-selector'), { target: { value: 'gsw-BE' } });
+
+    await waitFor(() => expect(api.calls('updateUserSettings')).toHaveLength(1));
+    expect(api.calls('updateUserSettings')[0].body).toEqual({ language: 'gsw-BE' });
+    expect(i18n.language).toBe('gsw-BE');
+  });
 });

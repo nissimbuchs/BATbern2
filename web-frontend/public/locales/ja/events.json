@@ -23,17 +23,20 @@
       "attention": {
         "title": "Needs your attention",
         "addTask": "Add task",
-        "open": "Open {{tab}} →",
-        "go": "Open →",
+        "open": "{{tab}}を開く",
+        "go": "開く",
         "retry": "Retry",
         "loadError": "Couldn't load your tasks.",
         "allCaught": "You're all caught up — nothing needs your attention right now.",
         "triggerNotReached": "トリガー未到達"
       },
       "due": {
-        "overdue": "Overdue · {{days}} days",
+        "overdue_one": "期限切れ · {{count}}日",
+        "overdue_other": "期限切れ · {{count}}日",
         "overdueNow": "期限超過",
-        "dueSoon": "Due in {{days}} days",
+        "dueToday": "本日期限",
+        "dueSoon_one": "{{count}}日後に期限",
+        "dueSoon_other": "{{count}}日後に期限",
         "upcoming": "Upcoming",
         "live": "Now · event is live",
         "eventDay": "イベント当日 · {{date}}"
@@ -670,12 +673,19 @@
     "eventTasksDescription": "イベントがワークフロー状態を進むにつれて自動的に作成・有効化されるタスクを設定します。",
     "defaultTemplates": "デフォルトタスクテンプレート",
     "defaultTemplatesDescription": "これらは標準的なイベント計画タスクです。すべて事前選択されており、イベントを保存すると作成されます。",
+    "defaultTemplatesDescriptionLive": "これらは標準的なイベント計画タスクです。チェックを入れるとすぐにタスクが作成され、外すと削除されます。",
     "taskExists": "タスクは既に存在します",
     "assignTo": "担当者",
     "triggerState": "トリガー",
     "dueDate": "期限",
     "immediate": "即時",
-    "days": "日",
+    "offset": {
+      "before_one": "イベントの{{count}}日前",
+      "before_other": "イベントの{{count}}日前",
+      "after_one": "イベントの{{count}}日後",
+      "after_other": "イベントの{{count}}日後",
+      "eventDay": "イベント当日"
+    },
     "customTemplates": "カスタムタスクテンプレート",
     "customTemplatesDescription": "これらのテンプレートはチームが作成しました。このイベントに含めたいものを選択してください。",
     "customTasks": "カスタムタスク",
@@ -693,13 +703,16 @@
     "noEvent": "イベントなし（テンプレートとして保存）",
     "triggerStateHelp": "このタスクを有効化するイベント状態",
     "workflowStates": {
+      "created": "作成済み",
       "topic_selection": "トピック選択",
-      "speaker_brainstorming": "スピーカーブレインストーミング",
-      "speaker_outreach": "スピーカー招致",
+      "speaker_identification": "スピーカー特定",
+      "slot_assignment": "スロット割り当て",
       "agenda_published": "アジェンダ公開済み",
       "event_live": "イベント開催中",
-      "post_event_wrap_up": "イベント後まとめ",
-      "archived": "アーカイブ済み"
+      "event_completed": "イベント完了",
+      "archived": "アーカイブ済み",
+      "speakers_published": "スピーカー公開",
+      "speaker_outreach": "スピーカー招致"
     },
     "dueDateType": "期限タイプ",
     "dueDateTypes": {
@@ -876,7 +889,6 @@
     "saving": "保存中...",
     "saved": "{{time}}に最後に保存",
     "failed": "自動保存に失敗しました",
-    "conflict": "同時編集が検出されました。再読み込みしてもう一度お試しください。",
     "enabled": "自動保存が有効"
   },
   "topics": {
@@ -1195,12 +1207,16 @@
     },
     "quickActions": {
       "title": "クイックアクション",
-      "total": "合計{{count}}セッション",
-      "assigned": "{{count}}件割り当て済み",
-      "pending": "{{count}}件保留中",
+      "total_one": "合計{{count}}セッション",
+      "total_other": "合計{{count}}セッション",
+      "assigned_one": "{{count}}件割り当て済み",
+      "assigned_other": "{{count}}件割り当て済み",
+      "pending_one": "{{count}}件保留中",
+      "pending_other": "{{count}}件保留中",
       "allAssigned": "すべてのタイミングが割り当てられました！",
       "goToPublishing": "公開タブへ",
-      "sessionsAssignedAnnouncement": "{{count}}件のセッションが正常に割り当てられました"
+      "sessionsAssignedAnnouncement_one": "{{count}}件のセッションが正常に割り当てられました",
+      "sessionsAssignedAnnouncement_other": "{{count}}件のセッションが正常に割り当てられました"
     },
     "actions": {
       "autoAssign": "自動割り当て",
@@ -1483,5 +1499,38 @@
         "text": "発表してみませんか？イベントページから自薦できます。"
       }
     }
+  },
+  "liveControl": {
+    "title": "ライブ操作",
+    "connection": {
+      "connected": "接続済み",
+      "connecting": "接続中...",
+      "offline": "オフライン"
+    },
+    "offlineHint": "ライブ更新を利用できません。ネットワークが復旧すると、ページは自動的に再接続します。",
+    "noActiveSession": "進行中のセッションはありません",
+    "nextSession": "次のセッション",
+    "urgency": {
+      "overtime": "時間超過",
+      "twoMinutesLeft": "残り2分",
+      "fiveMinutesLeft": "残り5分",
+      "onTrack": "予定どおり"
+    },
+    "delay": "← 遅らせる",
+    "adjustTime": "↔ 時間を調整",
+    "agenda": {
+      "title": "プログラム",
+      "empty": "利用できるセッションはありません"
+    },
+    "delaySheet": {
+      "title": "前のセッションに時間を追加しますか？"
+    },
+    "adjustSheet": {
+      "title": "セッション時間を調整",
+      "shorten": "短縮",
+      "extend": "延長"
+    },
+    "cancel": "キャンセル",
+    "minutes": "{{minutes}} 分"
   }
 }

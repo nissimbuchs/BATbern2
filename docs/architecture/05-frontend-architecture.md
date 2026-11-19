@@ -262,7 +262,7 @@ flowchart LR
 The persisted stores use Zustand's `persist` middleware with the localStorage keys
 `event-store`, `company-store`, `partner-store`, `user-management-store`,
 `event-participant-store` and `newsletter-subscriber-store`. `uiStore` writes its few values to
-localStorage by hand (`batbern-ui-locale`, `batbern-ui-sidebar`, ...).
+localStorage by hand (`batbern-ui-sidebar`, `batbern-ui-active-nav-role`).
 
 > **Not built:** the 2025 design sketched a single `AppState` tree holding auth, UI and domain
 > lists (`events.eventList`, `speakers.invitations`, `attendees.bookmarks`, ...) in one store.
@@ -1509,7 +1509,7 @@ Guards: **P** = `ProtectedRoute` (any authenticated role, then the path-prefix c
 /organizer/event-types                    # redirects to /organizer/admin?tab=0
 /organizer/topics                   P
 /organizer/tasks                    P
-/organizer/speakers                 P
+/organizer/speakers                       # redirects to /organizer/users (placeholder retired, #1223)
 /organizer/partners                 P
 /organizer/partners/:companyName    P
 /organizer/partner-topics           P
@@ -1527,7 +1527,7 @@ Guards: **P** = `ProtectedRoute` (any authenticated role, then the path-prefix c
 /speaker-portal/content/:eventCode  S
 /speaker-portal/respond                   # redirects to /speaker-portal/dashboard (old mail links)
 /speaker-portal/profile[/:eventCode]      # redirect to /profile (Story 12.11)
-/speakers                           S
+/speakers                                 # redirects to /speaker-portal/dashboard (placeholder retired, #1223)
 /speaker/company/*                  S
 
 # Partner
@@ -1555,9 +1555,13 @@ All authenticated routes render through `ProtectedRoute`
    (`AuthContext`, including the Pattern 3b DB fallback for empty JWT roles, see
    `06b-user-lifecycle-sync.md`). Any of the user's roles suffices; otherwise redirect to
    `/dashboard`.
-3. **Path-prefix check** `canAccess(pathname)` in `src/contexts/AuthContext.tsx`: a static
-   map of path prefixes per role (for example organizer: `/organizer`, `/events`,
-   `/speakers`, ...). A path no role's prefix list covers redirects to `/dashboard`.
+3. **Path-prefix check** `canAccess(pathname)`, the pure `canAccessPath` in
+   `src/contexts/authRules.ts`: the role-neutral prefixes every signed-in role may open
+   (`EVERY_ROLE_PATHS`: `/dashboard`, `/profile`, `/account`, `/attendee`, `/claim-profile`)
+   plus a static map of prefixes per role (for example organizer: `/organizer`, `/events`,
+   `/speakers`, ...). A user with no role opens none of them; a path no list covers redirects
+   to `/dashboard`. A new page for every role goes into `EVERY_ROLE_PATHS` (#1217: the claim
+   link was in no list and bounced every role).
 
 The full decision, including the two steps before the list above (auth still loading, not
 signed in) and the optional email-verification check (`requiresVerification`, off by default):
@@ -1603,6 +1607,20 @@ by `src/i18n/config.ts` (static JSON imports, no HTTP backend).
 New UI keys must be populated in all ten locales (see CLAUDE.md, "Localization"). Backend email
 templates are a separate rule: DE and EN only.
 
+- **One list**: `src/i18n/languages.ts` (`UI_LANGUAGES`) is what the language switchers
+  (`LanguageSwitcher`, the user menu) offer, labelled from `common:language.*`, and what the
+  users-api `language` setting accepts, `gsw-BE` included (#1222; `config.test.ts` checks it
+  against the bundled resources). `mailLanguage()` maps a UI language to the mail language
+  (German for `de`/`gsw-BE`, English otherwise), as the backend does.
+- **Dates follow the UI language** (#1222 item 6, #1223 item 4): `intlLocale()`
+  (`src/utils/date/intlLocale.ts`) is the only place that names a locale. `en` is `en-US`
+  ("Oct 22, 2026"), `de` and `gsw-BE` are `de-CH`, `fr`/`it`/`rm` their `-CH` form (`rm` falls
+  back to `de-CH` where the runtime has no Romansh), every other language its plain tag. Every
+  `toLocaleDateString`, `toLocaleString`, `toLocaleTimeString` and `Intl.DateTimeFormat` that
+  shows a date passes `intlLocale(i18n.language)` or `uiIntlLocale()`; date-fns takes
+  `dateFnsLocale()`, the same rule. `zurichDay()` (`en-CA`, ISO `YYYY-MM-DD`) is a machine key
+  for comparing Bern calendar days, never shown.
+
 ### Library Stack
 
 Versions as declared in `web-frontend/package.json` (develop c4593449):
@@ -1641,8 +1659,8 @@ web-frontend/
 │       └── localesComplete.test.ts  # fails on "[MISSING]" placeholders
 ```
 
-Formatting helpers live in `src/utils/date/` (`formatDate`, `formatDateTime`), not in
-`src/i18n/`.
+Formatting helpers live in `src/utils/date/` (`formatDate`, `formatDateTime`, `intlLocale`,
+`dateFnsLocale`, `zurichDay`), not in `src/i18n/`.
 
 **Namespace Strategy** (as built): every namespace of every locale is part of the bundle and
 available from the first render; nothing is lazy-loaded per route or role. The 2025 design
@@ -1842,10 +1860,9 @@ account settings (not verified 2026-11-04).
 
 ### State Management Integration
 
-`uiStore` has a `locale` field with `setLocale`, which only writes `batbern-ui-locale` to
-localStorage. It does **not** call `i18n.changeLanguage`, and no component reads it to drive the
-UI language (checked by grep, 2026-11-04). The language source of truth is i18next plus
-`batbern-language` in localStorage, and `settings.language` in CUMS for signed-in users.
+`uiStore` holds no language. Its former `locale` field was never read and was removed
+(2026-11-18). The language source of truth is i18next plus `batbern-language` in localStorage,
+and `settings.language` in CUMS for signed-in users.
 
 **Persistence**:
 - LocalStorage: `batbern-language` (written by the `languageChanged` handler and the switcher)

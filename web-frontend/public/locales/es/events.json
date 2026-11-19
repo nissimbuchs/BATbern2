@@ -23,17 +23,20 @@
       "attention": {
         "title": "Needs your attention",
         "addTask": "Add task",
-        "open": "Open {{tab}} →",
-        "go": "Open →",
+        "open": "Abrir {{tab}}",
+        "go": "Abrir",
         "retry": "Retry",
         "loadError": "Couldn't load your tasks.",
         "allCaught": "You're all caught up — nothing needs your attention right now.",
         "triggerNotReached": "Disparador aún no alcanzado"
       },
       "due": {
-        "overdue": "Overdue · {{days}} days",
+        "overdue_one": "Vencida · {{count}} día",
+        "overdue_other": "Vencida · {{count}} días",
         "overdueNow": "Vencido",
-        "dueSoon": "Due in {{days}} days",
+        "dueToday": "Vence hoy",
+        "dueSoon_one": "Vence en {{count}} día",
+        "dueSoon_other": "Vence en {{count}} días",
         "upcoming": "Upcoming",
         "live": "Now · event is live",
         "eventDay": "Día del evento · {{date}}"
@@ -670,12 +673,19 @@
     "eventTasksDescription": "Configure las tareas que se crearán y activarán automáticamente a medida que el evento avance por los estados del flujo de trabajo.",
     "defaultTemplates": "Plantillas de tareas predeterminadas",
     "defaultTemplatesDescription": "Estas son las tareas estándar de planificación de eventos. Todas están preseleccionadas y se crearán al guardar el evento.",
+    "defaultTemplatesDescriptionLive": "Estas son las tareas estándar de planificación del evento. Al marcar una, la tarea se crea de inmediato; al desmarcarla, se elimina.",
     "taskExists": "La tarea existe",
     "assignTo": "Asignar a",
     "triggerState": "Disparador",
     "dueDate": "Vencimiento",
     "immediate": "Inmediato",
-    "days": "días",
+    "offset": {
+      "before_one": "{{count}} día antes del evento",
+      "before_other": "{{count}} días antes del evento",
+      "after_one": "{{count}} día después del evento",
+      "after_other": "{{count}} días después del evento",
+      "eventDay": "El día del evento"
+    },
     "customTemplates": "Plantillas de tareas personalizadas",
     "customTemplatesDescription": "Estas plantillas fueron creadas por su equipo. Seleccione las que desea incluir para este evento.",
     "customTasks": "Tareas personalizadas",
@@ -693,13 +703,16 @@
     "noEvent": "Sin evento (guardar como plantilla)",
     "triggerStateHelp": "El estado del evento que activa esta tarea",
     "workflowStates": {
+      "created": "Creado",
       "topic_selection": "Selección de tema",
-      "speaker_brainstorming": "Lluvia de ideas de ponentes",
-      "speaker_outreach": "Contacto con ponentes",
+      "speaker_identification": "Identificación de ponentes",
+      "slot_assignment": "Asignación de espacios",
       "agenda_published": "Agenda publicada",
       "event_live": "Evento en vivo",
-      "post_event_wrap_up": "Resumen post-evento",
-      "archived": "Archivado"
+      "event_completed": "Evento completado",
+      "archived": "Archivado",
+      "speakers_published": "Ponentes publicados",
+      "speaker_outreach": "Contacto con ponentes"
     },
     "dueDateType": "Tipo de vencimiento",
     "dueDateTypes": {
@@ -876,7 +889,6 @@
     "saving": "Guardando...",
     "saved": "Último guardado a las {{time}}",
     "failed": "Error en el guardado automático",
-    "conflict": "Edición simultánea detectada. Recargue e inténtelo de nuevo.",
     "enabled": "Guardado automático activado"
   },
   "topics": {
@@ -1195,12 +1207,16 @@
     },
     "quickActions": {
       "title": "Acciones rápidas",
-      "total": "{{count}} sesiones en total",
-      "assigned": "{{count}} asignadas",
-      "pending": "{{count}} pendientes",
+      "total_one": "{{count}} sesión en total",
+      "total_other": "{{count}} sesiones en total",
+      "assigned_one": "{{count}} asignada",
+      "assigned_other": "{{count}} asignadas",
+      "pending_one": "{{count}} pendiente",
+      "pending_other": "{{count}} pendientes",
       "allAssigned": "¡Todos los horarios asignados!",
       "goToPublishing": "Ir a la pestaña de Publicación",
-      "sessionsAssignedAnnouncement": "{{count}} sesiones asignadas correctamente"
+      "sessionsAssignedAnnouncement_one": "{{count}} sesión asignada correctamente",
+      "sessionsAssignedAnnouncement_other": "{{count}} sesiones asignadas correctamente"
     },
     "actions": {
       "autoAssign": "Asignación automática",
@@ -1483,5 +1499,38 @@
         "text": "¿Quieres dar una charla? Proponte en la página del evento."
       }
     }
+  },
+  "liveControl": {
+    "title": "Control en directo",
+    "connection": {
+      "connected": "Conectado",
+      "connecting": "Conectando...",
+      "offline": "Sin conexión"
+    },
+    "offlineHint": "Actualizaciones en directo no disponibles. La página se reconecta sola cuando vuelva la red.",
+    "noActiveSession": "Ninguna sesión activa",
+    "nextSession": "Siguiente sesión",
+    "urgency": {
+      "overtime": "Tiempo excedido",
+      "twoMinutesLeft": "Quedan 2 min",
+      "fiveMinutesLeft": "Quedan 5 min",
+      "onTrack": "A tiempo"
+    },
+    "delay": "← Retrasar",
+    "adjustTime": "↔ Ajustar tiempo",
+    "agenda": {
+      "title": "Programa",
+      "empty": "No hay sesiones disponibles"
+    },
+    "delaySheet": {
+      "title": "¿Dar más tiempo a la sesión anterior?"
+    },
+    "adjustSheet": {
+      "title": "Ajustar la duración de la sesión",
+      "shorten": "Acortar",
+      "extend": "Alargar"
+    },
+    "cancel": "Cancelar",
+    "minutes": "{{minutes}} min"
   }
 }

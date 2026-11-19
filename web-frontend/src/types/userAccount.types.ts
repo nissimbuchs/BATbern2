@@ -55,10 +55,7 @@ export interface UserPreferencesView {
   timezone: string;
   notificationChannels: {
     email: boolean;
-    inApp: boolean;
-    push: boolean;
   };
-  notificationFrequency: 'IMMEDIATE' | 'DAILY_DIGEST' | 'WEEKLY_DIGEST';
   /**
    * Story 15.7 — how often the user is emailed about new questions in the Q&A of sessions where
    * they are speaker / co-speaker / moderator. LIVE = bundled digest during the session,

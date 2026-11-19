@@ -4,9 +4,10 @@
  */
 
 import { UserRole } from './auth';
+import type { UiLanguage } from '@/i18n/languages';
 
 export interface UserPreferencesData {
-  language: 'de' | 'en' | 'fr' | 'it' | 'rm' | 'es' | 'fi' | 'nl' | 'ja';
+  language: UiLanguage;
   notifications: {
     emailEnabled: boolean;
     inAppEnabled: boolean;

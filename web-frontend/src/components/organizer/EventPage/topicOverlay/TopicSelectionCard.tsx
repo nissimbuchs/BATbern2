@@ -16,6 +16,7 @@ import { useTranslation } from 'react-i18next';
 import { FULLY_AVAILABLE_STALENESS } from '@/types/topic.types';
 import type { Topic } from '@/types/topic.types';
 import { RECENT_STALENESS } from './useTopicSelection';
+import { uiIntlLocale } from '@/utils/date/intlLocale';
 
 export interface TopicSelectionCardProps {
   topic: Topic;
@@ -87,7 +88,7 @@ export const TopicSelectionCard: React.FC<TopicSelectionCardProps> = ({
             {topic.lastUsedDate && (
               <Typography variant="caption" color="text.secondary">
                 {t('organizer:topicBacklog.details.lastUsed', 'Last Used')}:{' '}
-                {new Date(topic.lastUsedDate).toLocaleDateString()}
+                {new Date(topic.lastUsedDate).toLocaleDateString(uiIntlLocale())}
               </Typography>
             )}
           </Box>

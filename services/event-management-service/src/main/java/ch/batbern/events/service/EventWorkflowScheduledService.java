@@ -59,7 +59,7 @@ public class EventWorkflowScheduledService {
      * - lockAtMostFor: 5 minutes (job should complete quickly, this is failsafe)
      * - lockAtLeastFor: 30 seconds (prevents re-execution if job completes very fast)
      */
-    @Scheduled(cron = "${workflow.scheduled.events-going-live.cron:0 1 0 * * *}")
+    @Scheduled(cron = "${workflow.scheduled.events-going-live.cron:0 1 0 * * *}", zone = "Europe/Zurich")
     @SchedulerLock(
             name = "processEventsGoingLive",
             lockAtMostFor = "5m",
@@ -128,7 +128,7 @@ public class EventWorkflowScheduledService {
      * - lockAtMostFor: 5 minutes (job should complete quickly, this is failsafe)
      * - lockAtLeastFor: 30 seconds (prevents re-execution if job completes very fast)
      */
-    @Scheduled(cron = "${workflow.scheduled.events-completed.cron:0 59 23 * * *}")
+    @Scheduled(cron = "${workflow.scheduled.events-completed.cron:0 59 23 * * *}", zone = "Europe/Zurich")
     @SchedulerLock(
             name = "processCompletedEvents",
             lockAtMostFor = "5m",
@@ -220,7 +220,7 @@ public class EventWorkflowScheduledService {
      * - lockAtMostFor: 5 minutes (failsafe)
      * - lockAtLeastFor: 30 seconds (prevents re-execution on very fast completion)
      */
-    @Scheduled(cron = "${workflow.scheduled.events-to-archive.cron:0 0 2 * * *}")
+    @Scheduled(cron = "${workflow.scheduled.events-to-archive.cron:0 0 2 * * *}", zone = "Europe/Zurich")
     @SchedulerLock(
             name = "processEventsToArchive",
             lockAtMostFor = "5m",

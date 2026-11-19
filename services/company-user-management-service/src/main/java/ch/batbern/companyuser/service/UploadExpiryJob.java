@@ -17,7 +17,7 @@ public class UploadExpiryJob {
 
     private final UploadService<CompanyUserUpload> uploadService;
 
-    @Scheduled(cron = "0 0 2 * * *")
+    @Scheduled(cron = "0 0 2 * * *", zone = "Europe/Zurich")
     @SchedulerLock(name = "CompanyUserUploadExpiry_purgeExpired", lockAtMostFor = "30m", lockAtLeastFor = "1m")
     public UploadService.ExpiryResult purgeExpired() {
         return uploadService.purgeExpired();

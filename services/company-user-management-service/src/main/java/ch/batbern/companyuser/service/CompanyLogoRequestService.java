@@ -12,13 +12,13 @@ import ch.batbern.companyuser.repository.UserRepository;
 import ch.batbern.companyuser.security.SecurityContextHelper;
 import ch.batbern.shared.upload.UploadService;
 import ch.batbern.shared.upload.UploadStatus;
+import ch.batbern.companyuser.domain.UserLanguages;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
-import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -205,10 +205,8 @@ public class CompanyLogoRequestService {
     }
 
     private static String locale(User user) {
-        if (user.getPreferences() != null && user.getPreferences().getLanguage() != null) {
-            return user.getPreferences().getLanguage().toLowerCase(Locale.ROOT).startsWith("de") ? "de" : "en";
-        }
-        return "de";
+        return UserLanguages.mailLanguage(
+                user.getPreferences() != null ? user.getPreferences().getLanguage() : null, "de");
     }
 
     private static String nullToEmpty(String s) {

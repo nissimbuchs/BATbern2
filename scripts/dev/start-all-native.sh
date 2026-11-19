@@ -23,7 +23,7 @@
 #   DEV_SERVICES="api-gateway company-user-management event-management" make dev-native-up
 #
 # Memory tuning (added 2026-08-08 for the 6 GB NAS dev host; kept — it also helps laptops
-# and is what keeps six JVMs affordable):
+# and is what keeps the four service JVMs affordable):
 #   - Each service runs as `java -Xmx… -jar <fat jar>` instead of `./gradlew bootRun`.
 #     bootRun cost a Gradle launcher JVM *per service* on top of the app JVM.
 #     Set DEV_RUN_MODE=bootrun to get the old behaviour back (needed for DevTools hot reload).
@@ -121,12 +121,12 @@ check_prerequisites() {
     # Check Node.js
     if ! command -v node &> /dev/null; then
         echo -e "${RED}  ✗ Node.js not found${NC}"
-        echo "    Install: https://nodejs.org/ (Node.js 20+ required)"
+        echo "    Install: https://nodejs.org/ (Node.js 22 required)"
         errors=$((errors + 1))
     else
         NODE_VERSION=$(node -v | cut -d'v' -f2 | cut -d'.' -f1)
-        if [ "$NODE_VERSION" -lt 20 ]; then
-            echo -e "${RED}  ✗ Node.js version $NODE_VERSION found, but Node.js 20+ required${NC}"
+        if [ "$NODE_VERSION" -lt 22 ]; then
+            echo -e "${RED}  ✗ Node.js version $NODE_VERSION found, but Node.js 22 required${NC}"
             errors=$((errors + 1))
         else
             echo -e "${GREEN}  ✓ Node.js $(node -v)${NC}"
@@ -151,7 +151,9 @@ check_prerequisites() {
     # Check .env file
     if [ ! -f "${ENV_FILE}" ]; then
         echo -e "${RED}  ✗ .env file not found${NC}"
-        echo "    Run: ./scripts/config/sync-backend-config.sh development"
+        # Not sync-backend-config.sh development: the dev AWS account has no BATbern stacks, so
+        # that path can never succeed. .env.example carries the live staging Cognito values.
+        echo "    Run: cp .env.example .env"
         errors=$((errors + 1))
     else
         echo -e "${GREEN}  ✓ .env file exists${NC}"
@@ -246,7 +248,6 @@ AWS_PROFILE=${NATIVE_AWS_PROFILE}
 # ==============================================
 COGNITO_USER_POOL_ID=${COGNITO_USER_POOL_ID}
 COGNITO_CLIENT_ID=${COGNITO_CLIENT_ID}
-COGNITO_DOMAIN_URL=${COGNITO_DOMAIN_URL}
 
 # ==============================================
 # Feature Flags

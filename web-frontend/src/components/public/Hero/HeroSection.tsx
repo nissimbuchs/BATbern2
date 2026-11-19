@@ -22,6 +22,7 @@ import { EventEditionLabel } from '@/components/shared/EventEditionLabel/EventEd
 import { CheckCircle2, Mail } from 'lucide-react';
 import { useMyRegistration } from '@/hooks/useMyRegistration';
 import { buildCdnImageUrl, buildCdnImageSrcSet } from '@/utils/cdnImage';
+import { uiIntlLocale } from '@/utils/date/intlLocale';
 
 interface HeroSectionProps {
   title: string;
@@ -121,7 +122,7 @@ export const HeroSection = ({
 
   // Format date for display
   const formattedDate = date
-    ? new Date(date).toLocaleDateString('de-CH', {
+    ? new Date(date).toLocaleDateString(uiIntlLocale(), {
         weekday: 'long',
         year: 'numeric',
         month: 'long',

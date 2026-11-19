@@ -37,7 +37,6 @@ import {
   Visibility as PreviewIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
-import { format } from 'date-fns';
 import { useBreakpoints } from '@/hooks/useBreakpoints';
 import {
   useDeleteEmailTemplate,
@@ -46,6 +45,7 @@ import {
 } from '@/hooks/useEmailTemplates';
 import type { EmailTemplateResponse } from '@/hooks/useEmailTemplates';
 import { BATbernLoader } from '@components/shared/BATbernLoader';
+import { uiIntlLocale } from '@/utils/date/intlLocale';
 
 // Lazy-load the edit modal because it statically imports TinyMCE + Monaco,
 // which run side-effectful init at module load. Keeping this eager would make
@@ -72,7 +72,11 @@ type Category =
 
 const formatDate = (dateStr: string) => {
   try {
-    return format(new Date(dateStr), 'dd.MM.yyyy');
+    return new Date(dateStr).toLocaleDateString(uiIntlLocale(), {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    });
   } catch {
     return dateStr;
   }
