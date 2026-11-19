@@ -277,6 +277,23 @@ export class CICDStack extends cdk.Stack {
             actions: ['sns:ListSubscriptionsByTopic', 'sns:GetTopicAttributes'],
             resources: [`arn:aws:sns:${this.region}:${this.account}:batbern-${config.envName}-*`],
           }),
+
+          // CloudWatch — scripts/ci/latency-alarm-actions.sh silences alb-latency-p95 while
+          // deploy-staging.yml rolls the services (deploy and auto-rollback) and re-enables it
+          // afterwards (#1144: it flapped through every rolling deploy). SetAlarmState resets
+          // an alarm that went to ALARM while muted, so a persisting breach mails again.
+          // That one alarm only: the deploy role must not be able to mute any other signal.
+          new iam.PolicyStatement({
+            effect: iam.Effect.ALLOW,
+            actions: [
+              'cloudwatch:DisableAlarmActions',
+              'cloudwatch:EnableAlarmActions',
+              'cloudwatch:SetAlarmState',
+            ],
+            resources: [
+              `arn:aws:cloudwatch:${this.region}:${this.account}:alarm:batbern-${config.envName}-alb-latency-p95`,
+            ],
+          }),
         ],
       }),
     });

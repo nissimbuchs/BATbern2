@@ -393,6 +393,9 @@ export class ApiGatewayServiceStack extends cdk.Stack {
         // access-log marker, not by an ALB metric, because an ALB metric cannot tell a
         // request addressed to us from a scanner probing for PHP backdoors.
         apiGatewayLogGroup: logGroup,
+        thresholds: {
+          availabilityMinRequests: props.config.alarms?.availabilityMinRequests,
+        },
       });
     }
 

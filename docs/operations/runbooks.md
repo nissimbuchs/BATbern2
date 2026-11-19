@@ -76,8 +76,16 @@ aws cloudwatch describe-alarms --alarm-names <name> \
 2. Check for a deploy in the window: `gh run list --workflow build.yml --limit 5`.
 3. Read the service log for the window (see per-service commands in CLAUDE.md).
 4. `alb-latency-p95` alone, lasting 10-15 minutes and self-resolving, is very likely an ECS task
-   replacement rather than a defect — see **#982**, which is a known, deliberately unsilenced
-   pattern. Confirm by matching the window to a task-replacement event before investigating further.
+   replacement rather than a defect — see **#982**. During a deploy and an auto-rollback its
+   actions are disabled (`deploy-staging.yml`, `scripts/ci/latency-alarm-actions.sh`, #1144), so
+   a mail outside them means an unplanned task replacement (health-check failure, OOM) or a real
+   regression. A mail right after a deploy means the breach outlasted it: the alarm went to ALARM
+   while muted and was reset to OK, and the next evaluation alarmed again. Confirm by matching
+   the window to a task-replacement event before investigating further. If a run shows the
+   warning "Could not re-enable", run
+   `aws cloudwatch enable-alarm-actions --alarm-names batbern-staging-alb-latency-p95`.
+   `alb-availability` evaluates only at 100+ requests per 5 minutes (#1144); a lone 500 at night
+   shows up in `alb-5xx` alone.
 5. `api-4xx-ratio` is ratio-based and ZAP-proof by design (#995). A spike from a single client IP
    is a scanner, not a regression.
 

@@ -314,6 +314,41 @@ describe('CICDStack — GitHub Actions role permissions', () => {
     expect(resources).not.toMatch(/"\*"/);
   });
 
+  // ── CloudWatch alarm actions ─────────────────────────────────────────────
+  // Used by: scripts/ci/latency-alarm-actions.sh, called from deploy-staging.yml around every
+  // service rollout (deploy and auto-rollback) (#1144). alb-latency-p95 flapped through every
+  // rolling deploy. SetAlarmState resets an alarm that went to ALARM while muted, so the next
+  // evaluation alarms again and mails. Scoped to that one alarm: the role must not be able to
+  // silence anything else. The script reads the state with cloudwatch:DescribeAlarms, which
+  // has no resource-level permissions and is granted on '*' elsewhere.
+
+  test('should_grantLatencyAlarmActionToggle_onThatAlarmOnly_for_deploySilence', () => {
+    const policies = template.findResources('AWS::IAM::ManagedPolicy');
+    const runtime = Object.values(policies).find((p) =>
+      JSON.stringify(
+        (p as { Properties?: { ManagedPolicyName?: unknown } }).Properties?.ManagedPolicyName ?? ''
+      ).includes('github-workflow-runtime')
+    ) as {
+      Properties: { PolicyDocument: { Statement: Array<{ Action: unknown; Resource: unknown }> } };
+    };
+    const toggles = runtime.Properties.PolicyDocument.Statement.filter((st) =>
+      /cloudwatch:(Disable|Enable)AlarmActions/.test(JSON.stringify(st.Action))
+    );
+    expect(toggles).toHaveLength(1);
+    expect(toggles[0].Action).toEqual([
+      'cloudwatch:DisableAlarmActions',
+      'cloudwatch:EnableAlarmActions',
+      'cloudwatch:SetAlarmState',
+    ]);
+    expect(toggles[0].Resource).toBe(
+      'arn:aws:cloudwatch:eu-central-1:123456789012:alarm:batbern-staging-alb-latency-p95'
+    );
+  });
+
+  test('should_grantDescribeAlarms_for_latencyAlarmStateCheck', () => {
+    expect(hasAction(template, 'cloudwatch:DescribeAlarms')).toBe(true);
+  });
+
   // ── Policy separation ─────────────────────────────────────────────────────
   // Runtime actions must live in WorkflowRuntimePolicy, not bleed into the CDK policy.
 

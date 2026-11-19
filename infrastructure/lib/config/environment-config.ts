@@ -31,7 +31,20 @@ export interface EnvironmentConfig {
   elasticache: ElastiCacheConfig;
   ecs: EcsConfig;
   domain?: DomainConfig;
+  alarms?: AlarmConfig;
   tags: { [key: string]: string };
+}
+
+/**
+ * Per-environment alarm thresholds. Anything left out falls back to the default in the
+ * construct that owns the alarm.
+ */
+export interface AlarmConfig {
+  /**
+   * Minimum requests per 5-minute window before batbern-{env}-alb-availability evaluates
+   * (#1144). Default in AlbAlarms: 100.
+   */
+  availabilityMinRequests?: number;
 }
 
 /**
