@@ -62,11 +62,14 @@ public final class LogAddressGuard {
         return found;
     }
 
+    private static final String LEVEL_PREFIX = "logging.level.";
+
     /**
      * Framework loggers at DEBUG or TRACE that production would run with: the base and the
      * {@code staging} document of {@code application.yml} (production runs the {@code staging}
-     * profile), and every {@code <logger>} in {@code logback-spring.xml} (Spring Boot applies
-     * {@code logging.level} after the XML, but only for the names it lists; a more specific XML
+     * profile), {@code application.properties} and {@code application-staging.properties}, and
+     * every {@code <logger>} in {@code logback-spring.xml} (Spring Boot applies {@code logging.level}
+     * after the XML, but only for the names it lists; a more specific XML
      * logger keeps its level). {@code ch.batbern} itself is set by {@code LOG_LEVEL} and allowed.
      * Seen 2026-11-03: Spring Security DEBUG logged every request URL, addresses included.
      *
@@ -92,6 +95,23 @@ public final class LogAddressGuard {
                                 found.add("application.yml [" + profile + "]: " + k + "=" + v);
                             }
                         });
+                    }
+                }
+            }
+            for (String name : List.of("application.properties", "application-staging.properties")) {
+                Path props = resources.resolve(name);
+                if (!Files.exists(props)) {
+                    continue;
+                }
+                java.util.Properties p = new java.util.Properties();
+                try (var reader = Files.newBufferedReader(props)) {
+                    p.load(reader);
+                }
+                for (String key : new java.util.TreeSet<>(p.stringPropertyNames())) {
+                    String logger = key.startsWith(LEVEL_PREFIX) ? key.substring(LEVEL_PREFIX.length()) : null;
+                    String level = p.getProperty(key).trim();
+                    if (logger != null && verbose(level) && !logger.equals("ch.batbern")) {
+                        found.add(name + ": " + logger + "=" + level);
                     }
                 }
             }

@@ -95,6 +95,30 @@ class LogAddressGuardTest {
     }
 
     @Test
+    @DisplayName("production log levels: application.properties and its staging variant count too")
+    void verboseLevelsInProductionProperties(@org.junit.jupiter.api.io.TempDir Path dir) throws Exception {
+        // EMS shipped org.hibernate.SQL=DEBUG in application.properties to production, unseen by the
+        // yml-only guard (found 2026-11-19: ~950 SQL lines per hour and task in CloudWatch)
+        java.nio.file.Files.writeString(dir.resolve("application.properties"), """
+                logging.level.ch.batbern=INFO
+                logging.level.org.hibernate.SQL=DEBUG
+                logging.level.org.hibernate.type.descriptor.sql.BasicBinder = TRACE
+                logging.level.org.springframework.web=INFO
+                """);
+        java.nio.file.Files.writeString(dir.resolve("application-staging.properties"), """
+                logging.level.org.springframework.security: debug
+                """);
+        java.nio.file.Files.writeString(dir.resolve("application-local.properties"), """
+                logging.level.org.hibernate.SQL=DEBUG
+                """);
+
+        assertThat(LogAddressGuard.verboseProductionLevels(dir)).containsExactlyInAnyOrder(
+                "application.properties: org.hibernate.SQL=DEBUG",
+                "application.properties: org.hibernate.type.descriptor.sql.BasicBinder=TRACE",
+                "application-staging.properties: org.springframework.security=debug");
+    }
+
+    @Test
     @DisplayName("shared-kernel itself logs no unmasked address")
     void sharedKernelIsClean() {
         assertThat(LogAddressGuard.unmaskedAddressLogs(Path.of("src/main/java"))).isEmpty();
