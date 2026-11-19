@@ -336,7 +336,7 @@ public class NewsletterControllerIntegrationTest extends AbstractIntegrationTest
         sub.setUnsubscribedAt(Instant.now());
         subscriberRepository.save(sub);
 
-        for (String used : new String[] {token, "9b2f0e1c-1111-4222-8333-944455566677"}) {
+        for (String used : new String[] {token, "unknown-confirmation-token"}) {
             mockMvc.perform(post("/api/v1/newsletter/confirmations")
                             .contentType(MediaType.APPLICATION_JSON).content("{\"token\":\"" + used + "\"}"))
                     .andExpect(status().isNotFound());
