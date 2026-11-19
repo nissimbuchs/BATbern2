@@ -63,6 +63,9 @@ SERVICES=(
     "event-management-service:EventManagement"
     "partner-coordination-service:PartnerCoordination"
     "company-user-management-service:CompanyManagement"
+    # The gateway is promoted to staging-stable with the others (promote-ecr-tag.sh), so it is
+    # rolled back with them; until 2026-11-19 it was left on the failed image.
+    "api-gateway:ApiGatewayService"
 )
 
 # Resolve the real (stack-suffixed) ECS service ARN for a CDK construct fragment.
