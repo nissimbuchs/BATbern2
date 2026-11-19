@@ -47,7 +47,7 @@ dependencies {
 
     // Service-specific: Testing
     testImplementation 'io.rest-assured:rest-assured:6.3.0'
-    testImplementation 'org.awaitility:awaitility:4.3.0'
+    testImplementation 'org.awaitility:awaitility'
     // Story 17.0b3: TestAwsConfig registers the SesRecorder's SesClient (EmailService runs for real).
     testImplementation 'software.amazon.awssdk:ses'
     // Frozen ArchUnit rule (service direction), store in src/test/resources

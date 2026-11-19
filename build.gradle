@@ -14,7 +14,9 @@ buildscript {
 
         // Flyway
         classpath 'org.flywaydb:flyway-gradle-plugin:13.12.1'
-        classpath 'org.postgresql:postgresql:42.7.7'
+        // Flyway's Gradle tasks only (never shipped); the buildscript cannot see the Spring Boot
+        // BOM, so this follows its postgresql.version by hand (#1231).
+        classpath 'org.postgresql:postgresql:42.7.14'
         classpath 'org.flywaydb:flyway-database-postgresql:13.12.1'
 
         // OpenAPI Generator
@@ -65,6 +67,12 @@ subprojects {
     // testcontainers-bom directly via the plugin's own idiom (Gradle's platform() is overridden by
     // io.spring.dependency-management and has no effect here). Single source for the TC version.
     pluginManager.withPlugin('io.spring.dependency-management') {
+        // #1231: the AWS SDK's apache5-client asks for httpclient5 5.6.4, and the Spring Boot 4.0.9
+        // BOM pulls it down to 5.5.2 with httpcore5 5.3.6 (CVE-2026-54399, CVE-2026-54428, fixed in
+        // httpcore5 5.4.3). Raise both BOM properties to the SDK's line; drop this once the BOM
+        // manages httpcore5 5.4.3 or later.
+        ext['httpclient5.version'] = '5.6.4'
+        ext['httpcore5.version'] = '5.4.3'
         dependencyManagement {
             imports {
                 mavenBom 'org.testcontainers:testcontainers-bom:2.0.5'
@@ -115,7 +123,7 @@ configure(subprojects.findAll { it.path.startsWith(':services:') }) {
             implementation 'org.springframework.boot:spring-boot-jackson2'
 
             // Database - PostgreSQL + Flyway
-            runtimeOnly 'org.postgresql:postgresql:42.7.7'
+            runtimeOnly 'org.postgresql:postgresql' // BOM-managed (#1231)
             implementation 'org.flywaydb:flyway-core'
             implementation 'org.flywaydb:flyway-database-postgresql'
             // Epic 13 (SB4): Flyway auto-configuration moved OUT of spring-boot-autoconfigure
