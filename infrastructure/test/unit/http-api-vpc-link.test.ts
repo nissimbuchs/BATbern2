@@ -4,7 +4,10 @@ import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as ecs from 'aws-cdk-lib/aws-ecs';
 import * as cognito from 'aws-cdk-lib/aws-cognito';
 import * as sns from 'aws-cdk-lib/aws-sns';
-import { ApiGatewayServiceStack } from '../../lib/stacks/api-gateway-service-stack';
+import {
+  ApiGatewayServiceStack,
+  LIVE_LOGICAL_IDS,
+} from '../../lib/stacks/api-gateway-service-stack';
 import { ApiGatewayStack, CLIENT_IP_HEADER } from '../../lib/stacks/api-gateway-stack';
 import { prodConfig } from '../../lib/config/prod-config';
 
@@ -15,8 +18,8 @@ import { prodConfig } from '../../lib/config/prod-config';
  *
  * The fix: the HTTP API reaches an INTERNAL ALB through a VPC link and overwrites
  * X-BATbern-Client-IP with $context.identity.sourceIp. Nothing on the internet can reach that ALB,
- * so the gateway can trust the header. The public ALB stays for this one deploy (the switch needs
- * no outage and rolls back by pointing the HTTP API at it again) and is locked in the next step.
+ * so the gateway can trust the header. Part 1 kept the public ALB next to it for the switch; part 2
+ * removes it, keeping the running service's logical IDs so CloudFormation updates it in place.
  */
 describe('HTTP API reaches the gateway through a VPC link (#1152)', () => {
   const build = () => {
@@ -104,9 +107,30 @@ describe('HTTP API reaches the gateway through a VPC link (#1152)', () => {
     expect(ingress[0].Properties.CidrIp).toBeUndefined();
   });
 
-  test('should_registerTheServiceOnBothAlbs_when_switchingOver', () => {
+  test('should_haveNoInternetFacingAlb_when_publicAlbRemoved', () => {
+    const albs = Object.values(service.findResources('AWS::ElasticLoadBalancingV2::LoadBalancer'));
+    expect(albs).toHaveLength(1);
+    expect(albs[0].Properties.Scheme).toBe('internal');
     const ecsService = Object.values(service.findResources('AWS::ECS::Service'))[0];
-    expect(ecsService.Properties.LoadBalancers).toHaveLength(2);
+    expect(ecsService.Properties.LoadBalancers).toHaveLength(1);
+  });
+
+  test('should_keepTheLiveLogicalIds_when_patternReplacedByPlainService', () => {
+    // A changed logical ID would make CloudFormation create a second gateway service (and a
+    // second scalable target for the same resource ID, which fails) instead of updating the one
+    // that runs. IDs from the live template, 2026-11-20.
+    expect(service.findResources('AWS::ECS::Service')[LIVE_LOGICAL_IDS.service]).toBeDefined();
+    expect(
+      service.findResources('AWS::ApplicationAutoScaling::ScalableTarget')[
+        LIVE_LOGICAL_IDS.scalableTarget
+      ]
+    ).toBeDefined();
+    const policy = service.findResources('AWS::ApplicationAutoScaling::ScalingPolicy')[
+      LIVE_LOGICAL_IDS.cpuScalingPolicy
+    ];
+    expect(policy.Properties.PolicyName).toBe(
+      `TestApiGatewayService${LIVE_LOGICAL_IDS.cpuScalingPolicyNameSuffix}`
+    );
   });
 
   test('should_pointTheAlbAlarmsAtTheInternalAlb_when_trafficMoves', () => {
@@ -120,14 +144,6 @@ describe('HTTP API reaches the gateway through a VPC link (#1152)', () => {
     for (const alarm of albAlarms) {
       expect(JSON.stringify(alarm.Properties)).toContain(albId);
     }
-  });
-
-  test('should_keepExportingThePublicAlbName_when_theDeployedApiStackStillImportsIt', () => {
-    const outputs = service.findOutputs('*');
-    const exportsDnsName = Object.values(outputs).some((o) =>
-      JSON.stringify(o.Value).includes('DNSName')
-    );
-    expect(exportsDnsName).toBe(true);
   });
 
   test('should_integrateThroughTheVpcLink_when_vpcLinkGiven', () => {

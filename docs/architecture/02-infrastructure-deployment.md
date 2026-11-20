@@ -126,7 +126,7 @@ Reference: what each stack contains.
 | `InboundEmail` | SES receipt rules, MX record, domain identity with DKIM, inbound S3 bucket, inbound and forwarding queues |
 | `Cluster` | ECS cluster, Service Connect namespace `batbern.local`, Container Insights off |
 | 5 domain service stacks | One Fargate service each, built by `domain-service-construct.ts` |
-| `ApiGatewayService` | Spring Boot gateway on Fargate behind an internal ALB that only the HTTP API's VPC link reaches (#1152); the former public ALB carries no traffic and is locked in a follow-up deploy |
+| `ApiGatewayService` | Spring Boot gateway on Fargate behind an internal ALB that only the HTTP API's VPC link reaches (#1152); the former public ALB was removed in part 2 |
 | `ApiGateway` | AWS HTTP API on api.batbern.ch |
 | `Frontend` | SPA bucket, rollback snapshot bucket, CloudFront for www.batbern.ch and batbern.ch |
 | `FrontendBeta` | Second `FrontendStack` for beta.batbern.ch |
@@ -278,7 +278,7 @@ SES addresses; both differ from production.
 graph TB
     subgraph EDGE["Entry"]
         HTTPAPI["AWS HTTP API<br/>api.batbern.ch"]
-        ALB_PUB["Public ALB, listener :80<br/>gateway only"]
+        ALB_PUB["Internal ALB, listener :80<br/>VPC link only (#1152)"]
     end
 
     subgraph CLUSTER["ECS Fargate cluster, Service Connect namespace batbern.local"]
@@ -581,13 +581,13 @@ Resilience4j; neither exists.
 sequenceDiagram
     participant C as Browser
     participant AWS as AWS HTTP API
-    participant ALB as Public ALB
+    participant ALB as Internal ALB (VPC link)
     participant GW as Spring Boot gateway
     participant EM as Event Management
 
     C->>AWS: POST /api/v1/events with Bearer JWT
     AWS->>AWS: CORS preflight handling, throttling
-    AWS->>ALB: HTTP proxy, path unchanged
+    AWS->>ALB: VPC link, path unchanged, sets X-BATbern-Client-IP
     ALB->>GW: forward to task :8080
     GW->>GW: validate Cognito JWT, is_active gate
     GW->>GW: rate limit, add X-Correlation-ID
@@ -612,10 +612,9 @@ graph TB
     end
 
     subgraph VPC["VPC 10.1.0.0/16"]
-        subgraph PUB["Public subnets, 2 AZs"]
-            ALB_PUBLIC["Public ALB<br/>listener :80"]
-        end
         subgraph PRIV["Private subnets with egress, 2 AZs"]
+            VPCLINK["VPC link ENIs"]
+            ALB_PUBLIC["Internal ALB<br/>listener :80, VPC link only"]
             GW_TASKS["Spring Boot gateway tasks :8080"]
             SVC_EM["EMS :8080"]
             SVC_CM["CUMS :8080"]
@@ -624,7 +623,7 @@ graph TB
     end
 
     CLIENT -->|"HTTPS :443"| HTTPAPI
-    HTTPAPI -->|"HTTP :80"| ALB_PUBLIC
+    HTTPAPI -->|"VPC link"| VPCLINK -->|"HTTP :80"| ALB_PUBLIC
     ALB_PUBLIC -->|"HTTP :8080"| GW_TASKS
     GW_TASKS -->|"Service Connect :8080"| SVC_EM & SVC_CM & SVC_PC
 
@@ -940,17 +939,18 @@ graph TB
     subgraph VPC["VPC 10.1.0.0/16, eu-central-1, 2 AZs, /24 subnets"]
         subgraph PUBA["Public subnet AZ a"]
             NAT1["NAT Gateway<br/>the only one"]
-            ALB_A["Public ALB node"]
             BAST["Bastion EC2<br/>SSM only"]
         end
         subgraph PUBB["Public subnet AZ b"]
-            ALB_B["Public ALB node"]
+            NONE_B["no load balancer since #1152"]
         end
         subgraph PRIVA["Private subnet with egress AZ a"]
+            ALB_A["Internal ALB node"]
             ECS_A["ECS tasks<br/>gateway + services"]
             LAMBDA["Cognito trigger Lambdas<br/>VPC-attached"]
         end
         subgraph PRIVB["Private subnet with egress AZ b"]
+            ALB_B["Internal ALB node"]
             ECS_B["ECS tasks<br/>gateway + services"]
         end
         subgraph ISOA["Isolated subnets AZ a and b"]
@@ -968,7 +968,7 @@ graph TB
     end
     S3["S3"]
 
-    IGW --> ALB_A & ALB_B
+    HTTPAPI_N["AWS HTTP API, VPC link"] --> ALB_A & ALB_B
     ALB_A & ALB_B -->|":8080"| ECS_A & ECS_B
     ECS_A & ECS_B & LAMBDA -->|":5432"| RDS
     BAST -.->|"port forward :5432"| RDS
