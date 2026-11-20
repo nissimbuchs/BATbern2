@@ -1197,6 +1197,38 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isForbidden());
     }
 
+    @Test
+    @WithMockUser(username = "admin", roles = {"ORGANIZER"})
+    @DisplayName("should_deleteUser_when_heHasAWatchPairingAndGrantedARole")
+    void should_deleteUser_when_heHasAWatchPairingAndGrantedARole() throws Exception {
+        // Both rows point at the profile without ON DELETE: a Watch pairing by username, and a role
+        // another person holds by granted_by. The delete must still go through.
+        jdbcTemplate.update("INSERT INTO watch_pairings (username, device_name, paired_at) VALUES (?, 'Watch', NOW())",
+                "john.doe");
+        User other = userRepository.save(User.builder()
+                .username("jane.roe")
+                .email("jane.roe@example.com")
+                .firstName("Jane")
+                .lastName("Roe")
+                .cognitoUserId("jane.roe")
+                .roles(new HashSet<>(Set.of(Role.ATTENDEE)))
+                .build());
+        jdbcTemplate.update("UPDATE role_assignments SET granted_by = ? WHERE user_id = ?",
+                testUser.getId(), other.getId());
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                        .delete("/api/v1/users/{username}", "john.doe"))
+                .andExpect(status().isNoContent());
+
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT count(*) FROM user_profiles WHERE username = 'john.doe'", Integer.class)).isZero();
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT count(*) FROM watch_pairings WHERE username = 'john.doe'", Integer.class)).isZero();
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT count(*) FROM role_assignments WHERE user_id = ? AND granted_by IS NULL",
+                Integer.class, other.getId())).isEqualTo(1);
+    }
+
     // AC8: Role Management Tests
 
     @Test
