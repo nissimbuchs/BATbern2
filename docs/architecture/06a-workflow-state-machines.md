@@ -1,12 +1,12 @@
 # Workflow State Machines
 
-This document details the workflow state management systems for the BATbern Event Management Platform, including event lifecycle, speaker coordination (unified 8-state machine per ADR-009), task management, slot assignment, and quality review.
+This document details the workflow state management systems for the BATbern Event Management Platform, including event lifecycle (8 states plus CANCELLED), speaker coordination (unified 8-state machine per ADR-009), task management, slot assignment, and quality review.
 
 ## Overview
 
 The BATbern platform implements sophisticated state machines to manage event workflows. **Key architectural insight:** The original "16-step linear workflow" was a misconception. The actual implementation uses:
 
-1. **Event Workflow**: 8-state state machine for high-level event lifecycle
+1. **Event Workflow**: 8-state state machine for high-level event lifecycle, plus the terminal CANCELLED
 2. **Speaker Workflow**: Per-speaker state machine with parallel progression (quality review and slot assignment can happen in any order)
 3. **Task System**: Configurable tasks (newsletters, catering, etc.) separate from workflow states
 
@@ -28,7 +28,18 @@ This led to a complete redesign from 16 stories to 8 stories, with clearer separ
 ```
 CREATED → TOPIC_SELECTION → SPEAKER_IDENTIFICATION → SLOT_ASSIGNMENT →
 AGENDA_PUBLISHED → EVENT_LIVE → EVENT_COMPLETED → ARCHIVED
+
+any state before EVENT_COMPLETED → CANCELLED (terminal)
 ```
+
+> **Cancellation (#824):** Event Detail → Settings → Danger Zone → Cancel Event sends
+> `POST /events/{eventCode}/transition` with `targetState: CANCELLED`. The `EventWriteHooks.cancelled`
+> hook runs in the transition's transaction and cancels every registered, confirmed and waitlisted
+> registration; after the commit each person gets the `registration-event-cancelled` mail (DE or EN),
+> recorded in the Mail Center as one send group. A cancelled event leaves the public website (list and
+> detail), registration answers 409 `EVENT_CANCELLED`, and auto-publishing, speaker reminders and the
+> newsletter's upcoming-events block skip it. Open tasks stay open. Only an audited override leaves
+> CANCELLED, and it does not restore the registrations.
 
 > **Skip transition:** `CREATED` may transition directly to `SPEAKER_IDENTIFICATION` (skipping `TOPIC_SELECTION`) if a speaker is added to the pool before a topic is formally selected. This is an explicitly allowed path in the transition validator.
 
@@ -61,6 +72,7 @@ One idiom, the ADR-013 section 1 action sub-resource, breaking since 2026-11, no
 | **EVENT_LIVE** | Event currently happening | Event day | Manual trigger after event |
 | **EVENT_COMPLETED** | Event finished, post-processing | After event | Auto: daily scheduler 02:00 Bern time, 14 days after event date |
 | **ARCHIVED** | Event archived | Auto-archived when event date is **more than** 14 days in the past (exclusive boundary: exactly 14 days does not qualify); or manual trigger | Terminal state |
+| **CANCELLED** | Event cancelled, registrations cancelled and told | Organizer cancels (Danger Zone), from any state before EVENT_COMPLETED | Terminal state (audited override only) |
 
 ### Post-Event Window (14-Day Rule)
 
