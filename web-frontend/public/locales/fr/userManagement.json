@@ -68,8 +68,8 @@
     "deleteConfirm": {
       "title": "Supprimer l'utilisateur",
       "message": "Êtes-vous sûr de vouloir supprimer cet utilisateur ?",
-      "gdprWarning": "Avis RGPD : Cette action supprimera définitivement toutes les données de l'utilisateur et ne peut pas être annulée.",
-      "cascadeWarning": "Toutes les données associées seront également supprimées."
+      "gdprWarning": "Supprime le profil avec ses adresses supplémentaires, ses rôles et ses appairages Watch. Cette action est irréversible.",
+      "cascadeWarning": "Sont conservés : la connexion, les inscriptions, les exposés, les messages Q&R, l'abonnement à la newsletter et l'historique du Mail Center. Un effacement complet selon la protection des données n'est pas fait ici ; il est traité à la main."
     },
     "editUser": {
       "uploadPhotoAria": "Télécharger la photo de profil",

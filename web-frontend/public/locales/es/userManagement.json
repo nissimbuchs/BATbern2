@@ -68,8 +68,8 @@
     "deleteConfirm": {
       "title": "Eliminar usuario",
       "message": "¿Está seguro de que desea eliminar este usuario?",
-      "gdprWarning": "Aviso GDPR: Esta acción eliminará permanentemente todos los datos del usuario y no se puede deshacer.",
-      "cascadeWarning": "Todos los datos asociados también serán eliminados."
+      "gdprWarning": "Elimina el perfil con sus direcciones adicionales, roles y emparejamientos de Watch. No se puede deshacer.",
+      "cascadeWarning": "Se conservan: el inicio de sesión, las inscripciones, las charlas, las publicaciones de preguntas, la suscripción al boletín y el historial del Mail Center. Un borrado completo según la protección de datos no se hace aquí; se gestiona a mano."
     },
     "editUser": {
       "uploadPhotoAria": "Subir foto de perfil",

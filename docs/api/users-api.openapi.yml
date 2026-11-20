@@ -11,7 +11,7 @@ info:
     - **Pagination**: Standard page/limit parameters
     - **Caching**: Caffeine in-memory cache (10min TTL)
     - **Role Management**: Business rules enforcement (minimum 2 organizers)
-    - **GDPR Compliance**: Cascade deletion and audit logging
+    - **Profile deletion**: removes the CUMS profile only (no cascade, #1120 postponed)
 
     **Important (ADR-004)**: User entity is the single source of truth for email, name, bio, photo, company.
     Domain entities (Speaker, Attendee, Partner) reference User and never duplicate these fields.
@@ -56,7 +56,7 @@ tags:
       Profile picture removal. Uploads run on the upload contract, purpose `profile-picture`
       (`uploads-api.openapi.yml`, Story 17.11a).
   - name: GDPR Compliance
-    description: GDPR-compliant data export and deletion
+    description: Profile deletion (not a full GDPR erasure, see #1120)
   - name: User Administration
     description: Admin Cognito↔DB reconciliation and sync-status (Story 1.2.5)
   - name: Profile Merge
@@ -1890,23 +1890,17 @@ paths:
     delete:
       tags:
         - GDPR Compliance
-      summary: Delete user and all associated data
+      summary: Delete a user's profile
       description: |
-        Delete a user and cascade deletion across all domain services.
+        Deletes the CUMS profile of the user, with its additional addresses, roles and Watch
+        pairings. A role this user granted to someone else stays, without the grantor.
 
-        **Acceptance Criteria**: AC11
+        **Authorization**: ORGANIZER.
 
-        **Story 1.16.2**: Uses username as identifier instead of UUID
-
-        **Authorization**: ADMIN role or self-deletion
-
-        **Business Rules**:
-        - Cannot delete last ORGANIZER user
-        - Cascade deletion across Event, Speaker, Partner, Attendee services
-
-        **Events Published**: UserDeletedEvent (in-process domain event)
-
-        **Audit Logging**: GDPR compliance logging
+        **Not a GDPR erasure.** The login (Cognito) and everything other services keep under the
+        username stay: registrations, talks, Q&A posts, newsletter subscription, partner notes,
+        Mail Center history. There is no last-organizer guard. The cross-service delete (#1120) is
+        postponed by owner decision 2026-11-20; an erasure request is handled by hand.
 
       operationId: deleteUser
       parameters:

@@ -68,8 +68,8 @@
     "deleteConfirm": {
       "title": "Poista käyttäjä",
       "message": "Haluatko varmasti poistaa tämän käyttäjän?",
-      "gdprWarning": "GDPR-huomio: Tämä toiminto poistaa pysyvästi kaikki käyttäjätiedot, eikä sitä voi kumota.",
-      "cascadeWarning": "Kaikki liittyvät tiedot poistetaan myös."
+      "gdprWarning": "Poistaa profiilin lisäosoitteineen, rooleineen ja Watch-paritusineen. Tätä ei voi perua.",
+      "cascadeWarning": "Säilyvät: kirjautuminen, ilmoittautumiset, esitykset, kysymys-viestit, uutiskirjeen tilaus ja Mail Centerin historia. Tietosuojalain mukaista täydellistä poistoa ei tehdä täällä; se hoidetaan käsin."
     },
     "editUser": {
       "uploadPhotoAria": "Lataa profiilikuva",

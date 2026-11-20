@@ -664,22 +664,16 @@ export interface paths {
     put?: never;
     post?: never;
     /**
-     * Delete user and all associated data
-     * @description Delete a user and cascade deletion across all domain services.
+     * Delete a user's profile
+     * @description Deletes the CUMS profile of the user, with its additional addresses, roles and Watch
+     *     pairings. A role this user granted to someone else stays, without the grantor.
      *
-     *     **Acceptance Criteria**: AC11
+     *     **Authorization**: ORGANIZER.
      *
-     *     **Story 1.16.2**: Uses username as identifier instead of UUID
-     *
-     *     **Authorization**: ADMIN role or self-deletion
-     *
-     *     **Business Rules**:
-     *     - Cannot delete last ORGANIZER user
-     *     - Cascade deletion across Event, Speaker, Partner, Attendee services
-     *
-     *     **Events Published**: UserDeletedEvent (in-process domain event)
-     *
-     *     **Audit Logging**: GDPR compliance logging
+     *     **Not a GDPR erasure.** The login (Cognito) and everything other services keep under the
+     *     username stay: registrations, talks, Q&A posts, newsletter subscription, partner notes,
+     *     Mail Center history. There is no last-organizer guard. The cross-service delete (#1120) is
+     *     postponed by owner decision 2026-11-20; an erasure request is handled by hand.
      */
     delete: operations['deleteUser'];
     options?: never;

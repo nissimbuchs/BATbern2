@@ -379,93 +379,19 @@ Google" with it lands here), and its login is deleted. Organizers cannot do this
 `vorname.nachname@batbern.ch`. Such a profile says "imported without your address" and offers only
 **Ask the organizers**; a confirmation link would reach nobody and is refused.
 
-## GDPR Compliance
+## Data Protection Requests
 
-<span class="feature-status implemented">Implemented</span>
+<span class="feature-status planned">By hand</span>
 
-BATbern complies with the General Data Protection Regulation (GDPR) for user privacy.
+The platform has no self-service data download and no account deletion. Requests for access,
+rectification or erasure come to the organizers by mail and are handled by hand:
 
-### User Rights
-
-#### Right to Access
-
-Users can view all personal data held by the platform:
-
-```
-[📄 Download My Data]
-```
-
-Downloads JSON file containing:
-- Profile information
-- Event registrations
-- Session assignments (for speakers)
-- Activity logs (anonymized IDs for other users)
-
-#### Right to Rectification
-
-Users can update incorrect or incomplete data:
-
-- ✅ Edit profile at any time
-- ✅ Correct email, name, phone, bio
-- ✅ Update company affiliation
-- ✅ Changes reflected immediately
-
-#### Right to Erasure ("Right to be Forgotten")
-
-Users can request account deletion:
-
-<div class="step" data-step="1">
-
-**User Requests Deletion**
-
-User clicks **Delete My Account** in profile settings.
-</div>
-
-<div class="step" data-step="2">
-
-**Confirmation**
-
-User must confirm with password and acknowledge data loss.
-</div>
-
-<div class="step" data-step="3">
-
-**Grace Period**
-
-30-day grace period allows account recovery.
-</div>
-
-<div class="step" data-step="4">
-
-**Permanent Deletion**
-
-After 30 days:
-- User profile deleted
-- Personal data erased
-- Event registrations anonymized
-- Cognito account deleted
-- Audit logs retained (anonymized)
-
-</div>
-
-### Data Retention
-
-| Data Type | Retention Period | Notes |
-|-----------|------------------|-------|
-| **Active Users** | Indefinite | While account active |
-| **Deleted Users** | 30 days | Grace period for recovery |
-| **Personal Data** | 30 days post-deletion | Then permanently erased |
-| **Audit Logs** | 7 years | Anonymized after user deletion |
-| **Event Participation** | Indefinite | Anonymized (speaker became "Anonymous Speaker") |
-
-### Consent Management
-
-<span class="feature-status planned">Planned</span>
-
-Future releases will include:
-- **Cookie Consent**: Banner with accept/reject options
-- **Marketing Communications**: Opt-in for newsletters
-- **Data Processing**: Granular consent for different data uses
+- **Access**: the person sees their profile, registrations and talks on their own pages; anything
+  more is compiled by hand.
+- **Rectification**: the person edits their profile; organizers correct the rest.
+- **Erasure**: **Delete** in the user list removes the profile only (see [Deleting a User](#deleting-a-user)).
+  A full erasure of the person's rows in the event and partner data and of their login is done by
+  hand. The automatic cross-service delete (#1120) was postponed by owner decision on 2026-11-20.
 
 ### Data Processing
 
@@ -564,48 +490,16 @@ Click **Save Changes** to persist updates.
 ## Deleting a User
 
 <div class="alert error">
-❌ <strong>Caution:</strong> User deletion is permanent after 30-day grace period. This action cannot be undone.
+❌ <strong>Caution:</strong> The delete is immediate and cannot be undone. It is not a full erasure under data protection law.
 </div>
 
-<div class="step" data-step="1">
+Click **🗑️ Delete** in the user row and confirm. The dialog says what goes and what stays.
 
-**Click Delete**
+**Deleted**: the profile with its additional addresses, roles and Apple Watch pairings. A role this
+person granted to someone else stays; only the "granted by" is forgotten.
 
-Click **🗑️ Delete** icon in user row.
-</div>
-
-<div class="step" data-step="2">
-
-**Confirm Deletion**
-
-```
-Delete User?
-────────────────────────────────────
-Delete "Hans Müller" (organizer@batbern.ch)?
-
-This will:
-- Deactivate the account immediately
-- Delete Cognito login access
-- Erase personal data after 30 days
-- Anonymize event participation history
-
-[Cancel]           [Delete]
-```
-
-Click **Delete** to confirm.
-</div>
-
-<div class="step" data-step="3">
-
-**Cascade Effects**
-
-After deletion:
-- User cannot log in
-- Event registrations preserved (anonymized)
-- Speaker sessions show "Anonymous Speaker"
-- Audit logs retained (anonymized)
-
-</div>
+**Kept**: the login, registrations, talks and speaker entries, Q&A posts, the newsletter subscription,
+partner notes and the Mail Center history. There is no check that keeps the last organizer.
 
 ## User Statistics
 
@@ -736,10 +630,9 @@ POST   /api/users                  Create user
 GET    /api/users                  List users (paginated)
 GET    /api/users/{id}             Get user by ID
 PUT    /api/users/{id}             Update user
-DELETE /api/users/{id}             Delete user (soft delete)
+DELETE /api/users/{username}       Delete the profile only (not a GDPR erasure)
 POST   /api/users/{id}/promote     Promote user role
 POST   /api/users/{id}/demote      Demote user role
-GET    /api/users/{id}/data-export Export user's personal data (GDPR)
 GET    /api/users/me               Current user (includes additionalEmails)
 POST   /api/users/me/additional-emails          Add an additional email alias
 PATCH  /api/users/me/additional-emails/{emailId} Change one (copy of event mails)

@@ -68,8 +68,8 @@
     "deleteConfirm": {
       "title": "Stritgar utilisader",
       "message": "Vuls ti propi stritgar quest utilisader?",
-      "gdprWarning": "Avis GDPR: Questa acziun stritga definitivamain tut las datas dal utilisader e na po betg vegnir revocada.",
-      "cascadeWarning": "Tut las datas associadas vegnan er stritgadas."
+      "gdprWarning": "Stizza il profil cun sias adressas supplementaras, rollas e cuplaziuns Watch. Quai na po betg vegnir revocà.",
+      "cascadeWarning": "Restan: il login, las annunzias, ils referats, ils messadis Q&A, l'abunament dal newsletter e l'istorgia dal Mail Center. In stizzar cumplet tenor la protecziun da datas na capita betg qua; el vegn fatg a maun."
     },
     "editUser": {
       "uploadPhotoAria": "Chargiar la foto da profil",
