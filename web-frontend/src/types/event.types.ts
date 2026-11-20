@@ -43,26 +43,8 @@ export type CreateRegistrationRequest =
 // UI-Extended Types (extends API types with frontend-only fields)
 // ============================================================================
 
-/**
- * Session Material Type (Story 5.9)
- * Represents uploaded materials for a session
- */
-export interface SessionMaterial {
-  id: string; // UUID
-  uploadId: string;
-  s3Key?: string;
-  cloudFrontUrl: string;
-  fileName: string;
-  fileExtension?: string;
-  fileSize: number; // in bytes
-  mimeType?: string;
-  materialType: 'PRESENTATION' | 'DOCUMENT' | 'VIDEO' | 'OTHER';
-  uploadedBy: string;
-  createdAt: string; // ISO 8601
-  updatedAt?: string; // ISO 8601
-  contentExtracted?: boolean; // Forward compatibility for Story 5.10 (RAG search)
-  extractionStatus?: string; // Forward compatibility for Story 5.10
-}
+/** A session material as the sessions API sends it, with its `publiclyVisible` flag. */
+export type SessionMaterial = sessionsComponents['schemas']['SessionMaterialResponse'];
 
 /**
  * UI-Extended Session Type
@@ -86,7 +68,7 @@ export interface SessionUI extends Session {
   presentationUrl?: string; // URL to download presentation PDF
   presentationSize?: number; // Presentation file size in bytes
   // Session materials (Story 5.9)
-  materials?: SessionMaterial[]; // List of uploaded materials
+  materials?: SessionMaterial[] | null; // Uploaded materials; null when the API sends none
   materialsCount?: number; // Number of materials uploaded
   hasPresentation?: boolean; // Whether session has at least one presentation
   // Note: speakers is inherited from base Session type (SessionSpeaker[])

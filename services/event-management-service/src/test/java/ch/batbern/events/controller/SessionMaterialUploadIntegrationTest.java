@@ -341,7 +341,7 @@ class SessionMaterialUploadIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @DisplayName("delete removes the material and its upload row; a slug of another event is 404")
+    @DisplayName("delete removes the material and its upload row; a slug of another event or session is 404")
     void should_deleteMaterialAndUploadRow_when_deleted() throws Exception {
         String uploadId = reserve(organizer(), "weg.pdf", PDF, MB, EVENT, FOREIGN);
         confirm(organizer(), uploadId, EVENT, FOREIGN, 200);
@@ -349,6 +349,9 @@ class SessionMaterialUploadIntegrationTest extends AbstractIntegrationTest {
 
         // The session is not in OTHER_EVENT: 404, nothing deleted.
         json(delete("/api/v1/events/{ec}/sessions/{slug}/materials/{id}", OTHER_EVENT, FOREIGN, materialId),
+                organizer(), null, 404);
+        // The material is not in OWN (another session of the same event): 404, nothing deleted.
+        json(delete("/api/v1/events/{ec}/sessions/{slug}/materials/{id}", EVENT, OWN, materialId),
                 organizer(), null, 404);
         assertThat(materialRows()).isEqualTo(1);
 

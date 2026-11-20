@@ -53,6 +53,7 @@ import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.http.HttpMethod.POST;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -760,9 +761,10 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
                 .status(ch.batbern.shared.types.SpeakerWorkflowState.QUALITY_REVIEWED)
                 .build());
 
-        // Request event with metrics
+        // Request event with metrics (organizer-only cockpit data)
         mockMvc.perform(get("/api/v1/events/" + savedEvent.getEventCode())
                         .param("include", "metrics")
+                        .with(user("test.organizer").roles("ORGANIZER"))
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.eventCode").value(savedEvent.getEventCode()))
@@ -1160,6 +1162,33 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.title").value("BATbern Current"))
                 .andExpect(jsonPath("$.organizerUsername").doesNotExist())
                 .andExpect(jsonPath("$.realAttendeeCount").doesNotExist());
+    }
+
+    @Test
+    @DisplayName("should_omitSpeakerMetrics_when_nonOrganizerIncludesMetrics")
+    void should_omitSpeakerMetrics_when_nonOrganizerIncludesMetrics() throws Exception {
+        eventRepository.deleteAll();
+        Event event = createTestEvent("BATbern Metrics", daysFromNow(400), "AGENDA_PUBLISHED", "agenda");
+
+        for (String path : new String[] {"/api/v1/events/" + event.getEventCode(), "/api/v1/events/current"}) {
+            mockMvc.perform(get(path).param("include", "metrics"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.title").value("BATbern Metrics"))
+                    .andExpect(jsonPath("$.confirmedSpeakersCount").doesNotExist())
+                    .andExpect(jsonPath("$.speakersWithCompleteInfoCount").doesNotExist())
+                    .andExpect(jsonPath("$.pendingMaterialsCount").doesNotExist())
+                    .andExpect(jsonPath("$.maxSpeakerSlots").doesNotExist())
+                    .andExpect(jsonPath("$.sessionsWithMaterialsCount").doesNotExist())
+                    .andExpect(jsonPath("$.totalSessionsCount").doesNotExist());
+            mockMvc.perform(get(path).param("include", "metrics")
+                            .with(user("some.speaker").roles("SPEAKER")))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.confirmedSpeakersCount").doesNotExist());
+            mockMvc.perform(get(path).param("include", "metrics")
+                            .with(user("test.organizer").roles("ORGANIZER")))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.confirmedSpeakersCount").value(0));
+        }
     }
 
     /**

@@ -397,6 +397,8 @@ paths:
       - Sessions
       summary: List event sessions
       description: 'Retrieve all sessions for a specific event with optional filtering.
+        `materialsCount` and `materialsStatus` count, for a caller who is neither an organizer nor
+        a speaker of the session, the public materials only (#1260).
 
 
         **Acceptance Criteria**: AC9
@@ -1327,6 +1329,9 @@ paths:
 
         - Confirmation status for each speaker
 
+        - Materials: every material for organizers and the speakers of the session, the public
+        ones (`publiclyVisible`) in the public projection for any other caller (#1260)
+
 
         **Public Endpoint**: No authentication required for GET requests
 
@@ -1893,9 +1898,11 @@ paths:
       tags:
       - Session Materials
       summary: List session materials
-      description: 'Retrieve all materials associated with a session (Story 5.9). Requires
-        authentication (organizer/speaker materials-management view); anonymous archive visitors
-        download individual materials via the public {materialId}/download endpoint instead.'
+      description: 'Retrieve the materials of a session (Story 5.9). Requires authentication.
+        Organizers and the speakers of the session get every material; any other caller only the
+        public ones (`publiclyVisible`), in the public projection (no uploader, S3 key or upload id,
+        #1260). A session that is not in the event is 404. Anonymous archive visitors read the
+        public materials on the public event and download them via {materialId}/download.'
       operationId: getSessionMaterials
       security:
       - bearerAuth: []
@@ -1969,6 +1976,81 @@ paths:
           $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/InternalServerError'
+    patch:
+      tags:
+      - Session Materials
+      summary: Mark a session material public or not
+      description: 'Sets whether the material is published after the event (#1260). A new material
+        is public when it is a PDF, otherwise not, unless the upload said otherwise. A material of
+        another session or event is 404. The cached event views show the change at once.
+
+
+        **Authorization**: ORGANIZER (any session) or SPEAKER (own sessions only).'
+      operationId: updateSessionMaterial
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: eventCode
+        in: path
+        required: true
+        schema:
+          type: string
+        example: BATbern142
+      - name: sessionSlug
+        in: path
+        required: true
+        schema:
+          type: string
+        example: blockchain-security
+      - name: materialId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+        example: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SessionMaterialUpdateRequest'
+      responses:
+        '200':
+          description: The material with the new value
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionMaterialResponse'
+              examples:
+                default:
+                  summary: a speaker's slides kept internal
+                  value:
+                    id: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+                    uploadId: 3f2b8c1e-5d4a-4e6b-9a7c-1b2d3e4f5a6b
+                    s3Key: materials/events/BATbern142/sessions/blockchain-security/file-3f2b8c1e-5d4a-4e6b-9a7c-1b2d3e4f5a6b.pptx
+                    cloudFrontUrl: https://cdn.batbern.ch/materials/events/BATbern142/sessions/blockchain-security/file-3f2b8c1e-5d4a-4e6b-9a7c-1b2d3e4f5a6b.pptx
+                    fileName: slides.pptx
+                    fileExtension: pptx
+                    fileSize: 2097152
+                    mimeType: application/vnd.openxmlformats-officedocument.presentationml.presentation
+                    materialType: PRESENTATION
+                    uploadedBy: john.doe
+                    createdAt: '2026-06-28T08:28:30.440Z'
+                    updatedAt: '2026-06-28T09:02:11.120Z'
+                    contentExtracted: false
+                    extractionStatus: PENDING
+                    publiclyVisible: false
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
   /events/{eventCode}/sessions/{sessionSlug}/materials/{materialId}/download:
     get:
       tags:
@@ -1976,7 +2058,9 @@ paths:
       summary: Get a presigned download URL for a material
       description: 'Generate a time-limited presigned download URL for a single material (Story 5.9).
         The file is saved under the material''s original file name (`Content-Disposition`, Story 17.11d).
-        Public endpoint.'
+        Public endpoint for public materials (`publiclyVisible`). The material must belong to the
+        session of the event in the path, else 404. A non-public material answers 404, like an unknown
+        id, to every caller except organizers and the speakers of that session (#1260).'
       operationId: getMaterialDownloadUrl
       parameters:
       - name: eventCode
@@ -2011,7 +2095,13 @@ paths:
                   value:
                     downloadUrl: https://batbern-inbound-emails-staging.s3.eu-central-1.amazonaws.com/...&X-Amz-Signature=...
         '404':
-          $ref: '#/components/responses/NotFound'
+          description: The session is not in the event, the material not in the session, the id is
+            unknown, or the material is not public and the caller is neither an organizer nor a
+            speaker of the session (one answer for all, #1260).
+          content:
+            application/json:
+              schema:
+                $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
         '500':
           $ref: '#/components/responses/InternalServerError'
 components:
@@ -2581,7 +2671,9 @@ components:
               $ref: '#/components/schemas/SessionMaterialResponse'
           materialsCount:
             type: integer
-            description: 'Story 5.9: Number of uploaded materials (for overview displays)'
+            description: 'Story 5.9: Number of materials in `materials`. A caller who is neither an
+              organizer nor a speaker of the session sees and counts the public ones only
+              (`publiclyVisible`, #1260); the public read model always does.'
             example: 3
     SessionMaterialResponse:
       type: object
@@ -2606,6 +2698,7 @@ components:
       - cloudFrontUrl
       - contentExtracted
       - extractionStatus
+      - publiclyVisible
       properties:
         id:
           type: string
@@ -2614,11 +2707,14 @@ components:
           example: 3fa85f64-5717-4562-b3fc-2c963f66afa6
         uploadId:
           type: string
-          description: Client-supplied upload correlation id
+          description: Client-supplied upload correlation id. Empty string in the public projection
+            (a caller who is neither an organizer nor a speaker of the session, and the public read
+            model, #1260).
           example: upload-2026-0001
         s3Key:
           type: string
-          description: S3 object key of the stored material
+          description: S3 object key of the stored material. Empty string in the public projection
+            (#1260).
           example: materials/2026/batbern142/ui-design/slides.pdf
         cloudFrontUrl:
           type: string
@@ -2647,7 +2743,8 @@ components:
           example: slides
         uploadedBy:
           type: string
-          description: Username of the uploader (public identifier per ADR-003)
+          description: Username of the uploader (public identifier per ADR-003). Empty string in the
+            public projection (#1260).
           example: john.doe
         createdAt:
           type: string
@@ -2667,6 +2764,11 @@ components:
           type: string
           description: 'Story 5.10 forward-compat: content-extraction status'
           example: PENDING
+        publiclyVisible:
+          type: boolean
+          description: Whether the material is published after the event (#1260). Defaults to true
+            for a PDF and false for any other type; speaker and organizer change it.
+          example: true
     MaterialUploadItem:
       type: object
       additionalProperties: false
@@ -2693,6 +2795,11 @@ components:
           description: The organizer's classification; when omitted, derived from the upload's
             content type. Ignored for a speaker, whose materials are always PRESENTATION.
           example: PRESENTATION
+        publiclyVisible:
+          type: boolean
+          description: Whether the material is published after the event; when omitted, true for
+            a PDF and false for any other type.
+          example: false
     SessionMaterialAssociationRequest:
       type: object
       description: 'Story 5.9: associate 1-10 already-uploaded materials with a session.'
@@ -2705,6 +2812,17 @@ components:
           maxItems: 10
           items:
             $ref: '#/components/schemas/MaterialUploadItem'
+    SessionMaterialUpdateRequest:
+      type: object
+      additionalProperties: false
+      description: The change of a session material (#1260).
+      required:
+      - publiclyVisible
+      properties:
+        publiclyVisible:
+          type: boolean
+          description: Whether the material is published after the event
+          example: false
     SessionMaterialsResponse:
       type: object
       description: 'Story 5.9: wrapper for the materials associated with a session (returned by

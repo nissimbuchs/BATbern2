@@ -185,7 +185,7 @@ describe('speakerPortalService — Cognito contract (Story 11.E.3 + 11.F.1)', ()
       const file = new File(['x'], 'Vortrag Müller.pdf', { type: 'application/pdf' });
 
       await expect(
-        speakerPortalService.uploadMaterial('BATbern99', 'keynote', file)
+        speakerPortalService.uploadMaterial('BATbern99', 'keynote', file, true)
       ).resolves.toEqual({ fileUrl: FILE_URL, fileName: 'Vortrag Müller.pdf' });
 
       const target = { eventCode: 'BATbern99', sessionSlug: 'keynote' };
@@ -201,7 +201,7 @@ describe('speakerPortalService — Cognito contract (Story 11.E.3 + 11.F.1)', ()
         purpose: 'session-material',
         uploadId: 'up-1',
       });
-      expect(api.calls('confirmFileUpload')[0].body).toEqual({ target });
+      expect(api.calls('confirmFileUpload')[0].body).toEqual({ target, publiclyVisible: true });
     });
 
     it('should_surfaceBackend403_when_sessionIsNotTheSpeakers', async () => {
@@ -212,7 +212,7 @@ describe('speakerPortalService — Cognito contract (Story 11.E.3 + 11.F.1)', ()
       const file = new File(['x'], 'talk.pdf', { type: 'application/pdf' });
 
       await expect(
-        speakerPortalService.uploadMaterial('BATbern99', 'other-session', file)
+        speakerPortalService.uploadMaterial('BATbern99', 'other-session', file, true)
       ).rejects.toMatchObject({ status: 403 });
 
       // Only the reserve went out: no S3 PUT, no confirm.

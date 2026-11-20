@@ -32,6 +32,8 @@ import {
   ListItemSecondaryAction,
   IconButton,
   Link,
+  Checkbox,
+  FormControlLabel,
   useMediaQuery,
   useTheme,
 } from '@mui/material';
@@ -51,6 +53,7 @@ import { sessionApiClient } from '@/services/api/sessionApiClient';
 import { uploadTarget } from '@/services/uploadService';
 import { SessionSpeakersTab } from './SessionSpeakersTab';
 import { isStructuralSession } from '@/utils/sessionTypes';
+import { isPublicByDefault } from '@/utils/materialVisibility';
 
 // Helper function to get file type icon based on mime type
 const getFileTypeIcon = (mimeType: string | undefined): React.ReactNode => {
@@ -167,6 +170,10 @@ export const SessionEditModal: React.FC<SessionEditModalProps> = ({
   // Story 5.9: Materials tab state
   const [activeTab, setActiveTab] = useState<number>(initialTab); // 0 = Details, 1 = Materials
   const [uploadedMaterials, setUploadedMaterials] = useState<UploadedFile[]>([]);
+  // Whether each new upload is published after the event, by uploadId (pre-set by type)
+  const [newVisibility, setNewVisibility] = useState<Record<string, boolean>>({});
+  const [updatingMaterialId, setUpdatingMaterialId] = useState<string | null>(null);
+  const [visibilityError, setVisibilityError] = useState<string | null>(null);
   const [existingMaterials, setExistingMaterials] = useState<SessionMaterial[]>([]);
   const [deletingMaterialId, setDeletingMaterialId] = useState<string | null>(null);
   const [deleteMaterialError, setDeleteMaterialError] = useState<string | null>(null);
@@ -200,6 +207,8 @@ export const SessionEditModal: React.FC<SessionEditModalProps> = ({
       // Story 5.9: Initialize materials from session
       setExistingMaterials(session.materials || []);
       setUploadedMaterials([]);
+      setNewVisibility({});
+      setVisibilityError(null);
       setActiveTab(initialTab); // Use initialTab prop (AC2: Materials button opens Materials tab)
     }
   }, [session, initialTab]);
@@ -288,8 +297,11 @@ export const SessionEditModal: React.FC<SessionEditModalProps> = ({
       // Story 5.9: Save uploaded materials if any
       if (uploadedMaterials.length > 0) {
         // Story 17.11d: name, size and type come from the confirmed upload; the backend derives
-        // the material type from the content type.
-        const materials = uploadedMaterials.map((file) => ({ uploadId: file.uploadId }));
+        // the material type from the content type. Visibility is the organizer's choice.
+        const materials = uploadedMaterials.map((file) => ({
+          uploadId: file.uploadId,
+          publiclyVisible: isNewFilePublic(file),
+        }));
 
         await sessionApiClient.associateMaterials(session.eventCode, session.sessionSlug, {
           materials,
@@ -373,6 +385,67 @@ export const SessionEditModal: React.FC<SessionEditModalProps> = ({
       fileType: data.fileType ?? 'application/octet-stream',
     };
     setUploadedMaterials((prev) => [...prev, uploadedFile]);
+    setNewVisibility((prev) => ({
+      ...prev,
+      [uploadedFile.uploadId]: isPublicByDefault(uploadedFile.fileName, uploadedFile.fileType),
+    }));
+  };
+
+  const isNewFilePublic = (file: UploadedFile) =>
+    newVisibility[file.uploadId] ?? isPublicByDefault(file.fileName, file.fileType);
+
+  const visibilityLabel = t(
+    'sessionEdit.materials.publiclyVisible',
+    'Publicly visible after the event'
+  );
+
+  const renderVisibilityCheckbox = (
+    fileName: string,
+    checked: boolean,
+    onChange: (checked: boolean) => void,
+    disabled = false
+  ) => (
+    <FormControlLabel
+      control={
+        <Checkbox
+          size="small"
+          checked={checked}
+          disabled={disabled}
+          onChange={(e) => onChange(e.target.checked)}
+          slotProps={{ input: { 'aria-label': `${visibilityLabel}: ${fileName}` } }}
+        />
+      }
+      label={<Typography variant="body2">{visibilityLabel}</Typography>}
+    />
+  );
+
+  const handleVisibilityChange = async (material: SessionMaterial, publiclyVisible: boolean) => {
+    if (!session) return;
+    setUpdatingMaterialId(material.id);
+    setVisibilityError(null);
+    try {
+      const updated = await sessionApiClient.updateMaterial(
+        session.eventCode,
+        session.sessionSlug,
+        material.id,
+        { publiclyVisible }
+      );
+      setExistingMaterials((prev) =>
+        prev.map((m) =>
+          m.id === material.id ? { ...m, publiclyVisible: updated.publiclyVisible } : m
+        )
+      );
+      queryClient.invalidateQueries({ queryKey: ['event', session.eventCode] });
+    } catch (error) {
+      // A 401/403 arrives as the AxiosError itself, whose message means nothing to a person.
+      setVisibilityError(
+        error instanceof Error && !isAxiosError(error)
+          ? error.message
+          : t('sessionEdit.materials.visibilityError', 'Could not change the visibility')
+      );
+    } finally {
+      setUpdatingMaterialId(null);
+    }
   };
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
@@ -585,8 +658,22 @@ export const SessionEditModal: React.FC<SessionEditModalProps> = ({
                   'Upload presentations, documents, or videos (max 100MB per file, up to 10 files)'
                 )}
               </Typography>
+              <Typography variant="body2" color="text.secondary" gutterBottom>
+                {t(
+                  'sessionEdit.materials.publicHint',
+                  'Only files marked publicly visible appear on the public event page after the event. We recommend publishing a PDF and keeping PowerPoint and other source files internal.'
+                )}
+              </Typography>
               <FileUpload
                 onUploadSuccess={handleFileUploadSuccess}
+                onFileRemove={(uploadId) =>
+                  setUploadedMaterials((prev) => prev.filter((f) => f.uploadId !== uploadId))
+                }
+                renderFileDetails={(file) =>
+                  renderVisibilityCheckbox(file.fileName, isNewFilePublic(file), (checked) =>
+                    setNewVisibility((prev) => ({ ...prev, [file.uploadId]: checked }))
+                  )
+                }
                 allowedTypes={[
                   // Presentations (AC6 - Story 5.9)
                   'application/vnd.ms-powerpoint', // .ppt
@@ -633,49 +720,66 @@ export const SessionEditModal: React.FC<SessionEditModalProps> = ({
                     {deleteMaterialError}
                   </Alert>
                 )}
+                {visibilityError && (
+                  <Alert severity="error" onClose={() => setVisibilityError(null)} sx={{ mb: 1 }}>
+                    {visibilityError}
+                  </Alert>
+                )}
                 <List dense>
                   {existingMaterials.map((material) => (
                     <ListItem key={material.id}>
                       <ListItemIcon>{getFileTypeIcon(material.mimeType)}</ListItemIcon>
-                      <ListItemText
-                        primary={
-                          <Link
-                            component="button"
-                            onClick={async (e) => {
-                              e.preventDefault();
-                              try {
-                                // Fetch presigned download URL
-                                const response = await sessionApiClient.getMaterialDownloadUrl(
-                                  session!.eventCode,
-                                  session!.sessionSlug,
-                                  material.id
-                                );
-                                // Open in new tab
-                                window.open(response.downloadUrl, '_blank', 'noopener,noreferrer');
-                              } catch (error) {
-                                console.error('Failed to get download URL:', error);
-                                alert(
-                                  t(
-                                    'sessionEdit.materials.downloadError',
-                                    'Failed to download material'
-                                  )
-                                );
-                              }
-                            }}
-                            underline="hover"
-                            sx={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: 0.5,
-                              cursor: 'pointer',
-                            }}
-                          >
-                            {material.fileName}
-                            <DownloadIcon fontSize="small" />
-                          </Link>
-                        }
-                        secondary={`${(material.fileSize / 1024 / 1024).toFixed(2)} MB • ${material.materialType}`}
-                      />
+                      <Box sx={{ minWidth: 0, flex: 1 }}>
+                        <ListItemText
+                          primary={
+                            <Link
+                              component="button"
+                              onClick={async (e) => {
+                                e.preventDefault();
+                                try {
+                                  // Fetch presigned download URL
+                                  const response = await sessionApiClient.getMaterialDownloadUrl(
+                                    session!.eventCode,
+                                    session!.sessionSlug,
+                                    material.id
+                                  );
+                                  // Open in new tab
+                                  window.open(
+                                    response.downloadUrl,
+                                    '_blank',
+                                    'noopener,noreferrer'
+                                  );
+                                } catch (error) {
+                                  console.error('Failed to get download URL:', error);
+                                  alert(
+                                    t(
+                                      'sessionEdit.materials.downloadError',
+                                      'Failed to download material'
+                                    )
+                                  );
+                                }
+                              }}
+                              underline="hover"
+                              sx={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 0.5,
+                                cursor: 'pointer',
+                              }}
+                            >
+                              {material.fileName}
+                              <DownloadIcon fontSize="small" />
+                            </Link>
+                          }
+                          secondary={`${(material.fileSize / 1024 / 1024).toFixed(2)} MB • ${material.materialType}`}
+                        />
+                        {renderVisibilityCheckbox(
+                          material.fileName,
+                          material.publiclyVisible,
+                          (checked) => handleVisibilityChange(material, checked),
+                          updatingMaterialId === material.id
+                        )}
+                      </Box>
                       <ListItemSecondaryAction>
                         <IconButton
                           edge="end"

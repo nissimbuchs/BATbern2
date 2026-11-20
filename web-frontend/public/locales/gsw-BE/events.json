@@ -1153,7 +1153,12 @@
       "uploadTitle": "Session-Materialien ufelade",
       "uploadDescription": "Präsentatione, Dokumänt oder Videos ufelade (max 100MB pro Datei, bis zu 10 Dateie)",
       "existingTitle": "Bestehendi Materialien",
-      "downloadError": "Material chöne nid abelade werde"
+      "downloadError": "Material chöne nid abelade werde",
+      "delete": "Material lösche",
+      "deleteError": "Material het nid chönne glöscht wärde",
+      "publiclyVisible": "Nach em Aalass öffentlech sichtbar",
+      "publicHint": "Nume öffentlech sichtbari Dateie chöme nach em Aalass uf di öffentlechi Eventsiite. Mir empfähle, es PDF z veröffentleche und PowerPoint- und angeri Quelldateie intern z bhaute.",
+      "visibilityError": "D Sichtbarkeit vo dere Datei het nid chönne gänderet wärde."
     },
     "errors": {
       "titleRequired": "Titel isch Pflicht",

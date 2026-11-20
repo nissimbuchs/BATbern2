@@ -138,6 +138,12 @@ export interface components {
     };
     ConfirmUploadRequest: {
       target?: components['schemas']['UploadTarget'];
+      /**
+       * @description `session-material` with a `target` only: whether the material is published after the
+       *     event (#1260). When omitted, true for a PDF and false for any other type. Other purposes
+       *     and a confirm without a target ignore it; the association carries its own value.
+       */
+      publiclyVisible?: boolean;
     };
     ImportUploadRequest: {
       /** @description HTTPS URL of the image */

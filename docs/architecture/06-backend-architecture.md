@@ -181,6 +181,34 @@ so the website never shows an organizer something a visitor would not see.
   `MaterialsStatus` in `event-sessions-api`). Never add a second value for an existing meaning and
   never rename one: installed Apple Watch binaries decode the list. `materialsStatus` is `NONE` or
   `COMPLETE`; one file of any type makes a session `COMPLETE`.
+- **A session material carries `publiclyVisible`** (#1260, V159). It is set on create, on all three
+  paths (confirm of a `session-material` upload with its target, `POST …/materials`, the batch
+  import from a URL): true for a PDF, false for any other type, unless the confirm or the
+  association item says otherwise. `PATCH /events/{code}/sessions/{slug}/materials/{materialId}`
+  changes it (organizer, or a speaker of that session through `checkMayChangeMaterials`; a material
+  of another session 404) and clears `eventWithIncludes` after the commit, as an upload does. The
+  material is loaded within its session (`findByIdAndSession_Id`), for the delete too.
+- **Only public materials for everyone else** (#1260). `SessionMaterialAccess` is the one place that
+  decides who may see non-public materials: an organizer, or a speaker on that session
+  (`session_users`); `checkMayChangeMaterials` uses it too. `SessionMaterialsService.materialsFor`
+  builds every materials list of a response: all of them for those callers, otherwise the public
+  ones in the public projection (`uploadedBy`, `s3Key`, `uploadId` sent as empty strings, kept in the
+  schema because installed Apple Watch binaries decode them as required). Only the uploader is
+  hidden by this: the key, and with it the upload id, is the path of the public `cloudFrontUrl`; the
+  fields are blanked so no public client comes to depend on them. `include=metrics`
+  (speaker-pool counts, `sessionsWithMaterialsCount` and the other cockpit counts) is organizer-only:
+  any other caller gets the event without those fields, and the organizer's count includes every file. The public read model
+  (`/public/events*`) and the public view of `/events/current` pass `publicView` and show public
+  materials to every caller, organizers included: they are shaped by publishing state, never by
+  caller. `GET /events/{code}/sessions/{slug}`, `GET …/materials` and the sessions list decide per
+  caller and session; `materialsCount` and `materialsStatus` count what the response shows (the
+  sessions list: the stored count for privileged callers, the public count otherwise).
+- **Download by event, session and visibility** (#1260). `GET …/materials/{materialId}/download`
+  stays anonymous for public materials. `SessionMaterialsService.generateDownloadUrl` resolves the
+  session within the event and the material within the session (404 otherwise), and a non-public
+  material answers the 404 of an unknown id to everyone `SessionMaterialAccess` does not admit. The
+  files stay under the CDN prefix (owner 2026-11-15): the protection is that no outsider ever
+  receives a non-public material's id or URL.
 
 `PublicEventController` (publishing) serves these three paths through `PublicEventsService`, which
 builds on the event read of event core (`EventReadService`) in the public session view and shapes

@@ -16,6 +16,7 @@ import { FIXTURE_CREATED_AT } from './people.ts';
 
 type Session = sessions['schemas']['Session'];
 type SessionResponse = sessions['schemas']['SessionResponse'];
+type SessionMaterialResponse = sessions['schemas']['SessionMaterialResponse'];
 type EventTaskResponse = tasks['schemas']['EventTaskResponse'];
 type MailMessageSummary = mail['schemas']['MailMessageSummary'];
 type MailConversationSummary = mail['schemas']['MailConversationSummary'];
@@ -52,6 +53,31 @@ export function aSession(overrides: Partial<Session> = {}): Session {
 /** A session as the single-event detail embeds it (with its materials); defaults to none. */
 export function aSessionResponse(overrides: Partial<SessionResponse> = {}): SessionResponse {
   return { ...aSession(), materials: null, materialsCount: 0, ...overrides };
+}
+
+/** A material of a session as the sessions API sends it; defaults to a public PDF. */
+export function aSessionMaterial(
+  overrides: Partial<SessionMaterialResponse> = {}
+): SessionMaterialResponse {
+  return {
+    id: '5b0e7c1a-2f3d-4e5a-8b9c-000000000001',
+    uploadId: 'up-0001',
+    s3Key: 'materials/events/BATbern61/sessions/cloud-native-architektur/file-up-0001.pdf',
+    cloudFrontUrl:
+      'https://cdn.batbern.ch/materials/events/BATbern61/sessions/cloud-native-architektur/file-up-0001.pdf',
+    fileName: 'Folien Brünnimann.pdf',
+    fileExtension: 'pdf',
+    fileSize: 2097152,
+    mimeType: 'application/pdf',
+    materialType: 'PRESENTATION',
+    uploadedBy: 'hongan.meier',
+    createdAt: FIXTURE_CREATED_AT,
+    updatedAt: FIXTURE_CREATED_AT,
+    contentExtracted: false,
+    extractionStatus: 'PENDING',
+    publiclyVisible: true,
+    ...overrides,
+  };
 }
 
 /** An organizer task of an event; defaults to an open, unassigned task. */

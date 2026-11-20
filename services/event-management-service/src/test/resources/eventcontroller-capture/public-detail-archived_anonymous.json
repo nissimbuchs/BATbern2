@@ -63,9 +63,25 @@
           "presentationTitle" : null,
           "isConfirmed" : true
         } ],
-        "materialsStatus" : "NONE",
-        "materials" : [ ],
-        "materialsCount" : 0
+        "materialsStatus" : "COMPLETE",
+        "materials" : [ {
+          "id" : "uuid#1",
+          "uploadId" : "",
+          "s3Key" : "",
+          "cloudFrontUrl" : "https://cdn.batbern.ch/sessions/capture-material-3/archive.pdf",
+          "fileName" : "archive.pdf",
+          "fileExtension" : "pdf",
+          "fileSize" : 2048,
+          "mimeType" : "application/pdf",
+          "materialType" : "PRESENTATION",
+          "uploadedBy" : "",
+          "createdAt" : "ts#9",
+          "updatedAt" : "ts#10",
+          "contentExtracted" : false,
+          "extractionStatus" : "PENDING",
+          "publiclyVisible" : true
+        } ],
+        "materialsCount" : 1
       } ],
       "speakers" : [ {
         "username" : "ari.archived",

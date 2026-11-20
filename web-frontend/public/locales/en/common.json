@@ -576,7 +576,12 @@
       "invalidFileType": "Invalid file type. Accepted formats: PPTX, PDF, KEY",
       "fileTooLarge": "File size must be less than 50MB",
       "acceptedFormats": "Accepted formats: PPTX, PDF, KEY (max 50MB)",
-      "uploadAria": "Upload presentation file"
+      "uploadAria": "Upload presentation file",
+      "sessionFiles": "Files of this session",
+      "publiclyVisible": "Publicly visible after the event",
+      "publicHint": "Only files marked publicly visible are published on the event page after the event. We recommend a PDF as the public copy; any other file stays internal, for the organizers and the speakers of this session.",
+      "visibilityError": "Could not change the visibility of this file.",
+      "listError": "Could not load your files."
     },
     "invitationResponse": {
       "invalidLink": "Invalid Link",

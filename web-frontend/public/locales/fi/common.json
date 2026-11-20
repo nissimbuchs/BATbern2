@@ -537,7 +537,12 @@
       "invalidFileType": "Virheellinen tiedostotyyppi. Hyväksytyt muodot: PPTX, PDF, KEY",
       "fileTooLarge": "Tiedostokoko on oltava alle 50 Mt",
       "acceptedFormats": "Hyväksytyt muodot: PPTX, PDF, KEY (enintään 50 Mt)",
-      "uploadAria": "Lataa esitystiedosto"
+      "uploadAria": "Lataa esitystiedosto",
+      "sessionFiles": "Tämän session tiedostot",
+      "publiclyVisible": "Julkisesti näkyvissä tapahtuman jälkeen",
+      "publicHint": "Vain julkisiksi merkityt tiedostot julkaistaan tapahtumasivulla tapahtuman jälkeen. Suosittelemme PDF-tiedostoa julkiseksi versioksi; muut tiedostot jäävät sisäisiksi järjestäjille ja tämän session puhujille.",
+      "visibilityError": "Tämän tiedoston näkyvyyttä ei voitu muuttaa.",
+      "listError": "Tiedostojasi ei voitu ladata."
     },
     "invitationResponse": {
       "invalidLink": "Virheellinen linkki",

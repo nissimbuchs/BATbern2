@@ -46,13 +46,18 @@ export const uploadTarget = (
 /**
  * Confirm an upload (the file is in S3); with a target it is attached and the result carries its
  * `fileUrl`. A purpose whose target is required (`profile-picture`) answers 400 without one.
+ * `publiclyVisible` is read by `session-material` with a target only (published after the event).
  */
 export const confirmUpload = async (
   purpose: UploadPurpose,
   uploadId: string,
-  target?: UploadTargetRef
+  target?: UploadTargetRef,
+  publiclyVisible?: boolean
 ): Promise<Upload> => {
-  const body: ConfirmUploadRequest = target ? { target } : {};
+  const body: ConfirmUploadRequest = {
+    ...(target ? { target } : {}),
+    ...(publiclyVisible === undefined ? {} : { publiclyVisible }),
+  };
   const response = await apiClient.post<Upload>(`/uploads/${purpose}/${uploadId}/confirm`, body);
   return response.data;
 };

@@ -7,6 +7,7 @@ import ch.batbern.events.sessions.api.generated.SessionMaterialsApi;
 import ch.batbern.events.sessions.dto.generated.DownloadUrlResponse;
 import ch.batbern.events.sessions.dto.generated.SessionMaterialAssociationRequest;
 import ch.batbern.events.sessions.dto.generated.SessionMaterialResponse;
+import ch.batbern.events.sessions.dto.generated.SessionMaterialUpdateRequest;
 import ch.batbern.events.sessions.dto.generated.SessionMaterialsResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -70,8 +71,10 @@ public class SessionMaterialsController implements SessionMaterialsApi {
             String eventCode,
             String sessionSlug) {
 
+        // The session must be in the event (404); everyone else than an organizer or the session's
+        // speakers gets the public materials only (#1260).
         List<SessionMaterialResponse> materials = sessionMaterialsService
-                .getMaterialsBySession(sessionSlug);
+                .getMaterialsBySession(eventCode, sessionSlug);
 
         return ResponseEntity.ok(new SessionMaterialsResponse().materials(materials));
     }
@@ -82,9 +85,23 @@ public class SessionMaterialsController implements SessionMaterialsApi {
             String sessionSlug,
             UUID materialId) {
 
-        String downloadUrl = sessionMaterialsService.generateDownloadUrl(materialId);
+        // The material must be in that session of that event; a non-public one only for organizers
+        // and the session's speakers, 404 for anyone else (#1260).
+        String downloadUrl = sessionMaterialsService.generateDownloadUrl(eventCode, sessionSlug, materialId);
 
         return ResponseEntity.ok(new DownloadUrlResponse().downloadUrl(downloadUrl));
+    }
+
+    @Override
+    @PreAuthorize("hasRole('ORGANIZER') or hasRole('SPEAKER')")
+    public ResponseEntity<SessionMaterialResponse> updateSessionMaterial(
+            String eventCode,
+            String sessionSlug,
+            UUID materialId,
+            SessionMaterialUpdateRequest request) {
+        // The service checks the session (404), the caller's right to change it (403) and the material (404).
+        return ResponseEntity.ok(sessionMaterialsService.updateVisibility(eventCode, sessionSlug, materialId,
+                request.getPubliclyVisible()));
     }
 
     @Override

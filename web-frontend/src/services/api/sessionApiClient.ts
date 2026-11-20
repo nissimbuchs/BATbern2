@@ -32,6 +32,10 @@ export interface AssignSpeakerRequest {
 export type MaterialUploadItem = EventSessionsComponents['schemas']['MaterialUploadItem'];
 export type SessionMaterialAssociationRequest =
   EventSessionsComponents['schemas']['SessionMaterialAssociationRequest'];
+export type SessionMaterialsResponse =
+  EventSessionsComponents['schemas']['SessionMaterialsResponse'];
+export type SessionMaterialUpdateRequest =
+  EventSessionsComponents['schemas']['SessionMaterialUpdateRequest'];
 
 /** A speaker on a session in the company view (enriched by `GET /sessions`). */
 export interface CompanySessionSpeaker {
@@ -111,13 +115,59 @@ class SessionApiClient {
     materials: SessionMaterialAssociationRequest
   ): Promise<SessionMaterial[]> {
     try {
-      const response = await apiClient.post(
+      const response = await apiClient.post<SessionMaterialsResponse>(
         `${SESSION_API_PATH}/${eventCode}/sessions/${sessionSlug}/materials`,
         materials
       );
-      return response.data;
+      return response.data.materials;
     } catch (error) {
       // Re-throw AxiosError to preserve auth errors
+      if (
+        isAxiosError(error) &&
+        (error.response?.status === 401 || error.response?.status === 403)
+      ) {
+        throw error;
+      }
+      throw this.transformError(error);
+    }
+  }
+
+  /**
+   * The materials of a session; organizers and the session's speakers get every material, anyone
+   * else only the public ones.
+   *
+   * GET /api/v1/events/{eventCode}/sessions/{sessionSlug}/materials
+   */
+  async listMaterials(eventCode: string, sessionSlug: string): Promise<SessionMaterial[]> {
+    try {
+      const response = await apiClient.get<SessionMaterialsResponse>(
+        `${SESSION_API_PATH}/${eventCode}/sessions/${sessionSlug}/materials`
+      );
+      return response.data.materials;
+    } catch (error) {
+      throw this.transformError(error);
+    }
+  }
+
+  /**
+   * Change a material of a session, i.e. whether it is published after the event (organizers and
+   * the session's speakers).
+   *
+   * PATCH /api/v1/events/{eventCode}/sessions/{sessionSlug}/materials/{materialId}
+   */
+  async updateMaterial(
+    eventCode: string,
+    sessionSlug: string,
+    materialId: string,
+    change: SessionMaterialUpdateRequest
+  ): Promise<SessionMaterial> {
+    try {
+      const response = await apiClient.patch<SessionMaterial>(
+        `${SESSION_API_PATH}/${eventCode}/sessions/${sessionSlug}/materials/${materialId}`,
+        change
+      );
+      return response.data;
+    } catch (error) {
       if (
         isAxiosError(error) &&
         (error.response?.status === 401 || error.response?.status === 403)

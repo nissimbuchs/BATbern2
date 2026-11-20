@@ -1,0 +1,27 @@
+meta {
+  name: Material download — non-public material, anonymous, 404 (#1260)
+  type: http
+  seq: 42
+}
+
+get {
+  url: {{baseUrl}}/events/{{publicMaterialsEventCode}}/sessions/{{nonPublicMaterialSlug}}/materials/{{nonPublicMaterialId}}/download
+  body: none
+  auth: none
+}
+
+tests {
+  const found = bru.getVar("nonPublicMaterialFound") === "true";
+
+  test(found ? "404 and no URL for a non-public material" : "no non-public material here: nothing to check",
+    function() {
+      expect(res.getStatus()).to.equal(404);
+      expect(JSON.stringify(res.getBody() || {})).to.not.include("downloadUrl");
+    });
+}
+
+docs {
+  Issue 1260, AC2: an anonymous download of a non-public material answers 404, like an unknown id.
+  Without a non-public material in the event the request asks for a zero id and still expects 404.
+  Read-only, safe on every environment.
+}

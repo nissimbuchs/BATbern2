@@ -9,6 +9,7 @@
  * - File size validation - max 50MB (AC7.4)
  * - Upload uses presigned URL (AC7.5)
  * - Progress indicator during upload (AC7.6)
+ * - The session's files, each with "Publicly visible after the event" (#1260)
  */
 
 import { useState, useCallback, useRef, useEffect } from 'react';
@@ -16,6 +17,9 @@ import { useTranslation } from 'react-i18next';
 import { Upload, FileText, X, AlertCircle, ExternalLink } from 'lucide-react';
 import { BATbernLoader } from '@components/shared/BATbernLoader';
 import { speakerPortalService } from '@/services/speakerPortalService';
+import { sessionApiClient } from '@/services/api/sessionApiClient';
+import { isPublicByDefault } from '@/utils/materialVisibility';
+import type { SessionMaterial } from '@/types/event.types';
 
 // Constants
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB (AC7.4)
@@ -63,10 +67,50 @@ const PresentationUpload = ({
   const [isDragging, setIsDragging] = useState(false);
   const [selectedFileName, setSelectedFileName] = useState<string | null>(null);
   const [showDropzone, setShowDropzone] = useState(!currentMaterialUrl);
+  const [materials, setMaterials] = useState<SessionMaterial[]>([]);
+  const [listError, setListError] = useState<string | null>(null);
+  const [visibilityError, setVisibilityError] = useState<string | null>(null);
+  const [updatingMaterialId, setUpdatingMaterialId] = useState<string | null>(null);
 
   // Refs
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dropzoneRef = useRef<HTMLDivElement>(null);
+
+  // The session's files with their visibility (every file: the speaker is on the session)
+  const loadMaterials = useCallback(async () => {
+    try {
+      setMaterials(await sessionApiClient.listMaterials(eventCode, sessionSlug));
+      setListError(null);
+    } catch {
+      setListError(t('speakerPortal.upload.listError'));
+    }
+  }, [eventCode, sessionSlug, t]);
+
+  useEffect(() => {
+    loadMaterials();
+  }, [loadMaterials]);
+
+  const handleVisibilityChange = useCallback(
+    async (material: SessionMaterial, publiclyVisible: boolean) => {
+      setUpdatingMaterialId(material.id);
+      setVisibilityError(null);
+      try {
+        const updated = await sessionApiClient.updateMaterial(eventCode, sessionSlug, material.id, {
+          publiclyVisible,
+        });
+        setMaterials((prev) =>
+          prev.map((m) =>
+            m.id === material.id ? { ...m, publiclyVisible: updated.publiclyVisible } : m
+          )
+        );
+      } catch {
+        setVisibilityError(t('speakerPortal.upload.visibilityError'));
+      } finally {
+        setUpdatingMaterialId(null);
+      }
+    },
+    [eventCode, sessionSlug, t]
+  );
 
   // Update showDropzone when currentMaterialUrl changes
   useEffect(() => {
@@ -136,6 +180,7 @@ const PresentationUpload = ({
           eventCode,
           sessionSlug,
           file,
+          isPublicByDefault(file.name, file.type),
           (progress) => setUploadProgress(progress)
         );
 
@@ -149,6 +194,7 @@ const PresentationUpload = ({
         setSelectedFileName(null);
         setShowDropzone(false);
         onMaterialUploaded(response.fileUrl, response.fileName);
+        await loadMaterials();
       } catch (err) {
         // Handle error
         setIsUploading(false);
@@ -160,7 +206,7 @@ const PresentationUpload = ({
         onError({ type: 'UPLOAD_FAILED', message: errorMsg });
       }
     },
-    [eventCode, sessionSlug, validateFile, onMaterialUploaded, onError]
+    [eventCode, sessionSlug, validateFile, onMaterialUploaded, onError, loadMaterials]
   );
 
   /**
@@ -254,32 +300,80 @@ const PresentationUpload = ({
     setSelectedFileName(null);
   }, []);
 
+  const visibilityLabel = t('speakerPortal.upload.publiclyVisible');
+
+  // The session's files with "Publicly visible after the event"; names are plain text, the link
+  // to the current file is above.
+  const fileVisibility = (
+    <div className="flex flex-col gap-2" data-testid="material-visibility">
+      {materials.length > 0 && (
+        <>
+          <p className="text-sm font-medium text-gray-300">
+            {t('speakerPortal.upload.sessionFiles')}
+          </p>
+          <ul className="flex flex-col gap-2">
+            {materials.map((material) => (
+              <li
+                key={material.id}
+                className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 bg-gray-800 rounded-lg"
+              >
+                <span className="text-sm text-white min-w-0 wrap-anywhere">
+                  {material.fileName}
+                </span>
+                <label className="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    className="h-4 w-4 accent-blue-500"
+                    checked={material.publiclyVisible}
+                    disabled={updatingMaterialId === material.id}
+                    onChange={(e) => handleVisibilityChange(material, e.target.checked)}
+                    aria-label={`${visibilityLabel}: ${material.fileName}`}
+                  />
+                  <span>{visibilityLabel}</span>
+                </label>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+      <p className="text-xs text-gray-500">{t('speakerPortal.upload.publicHint')}</p>
+      {(listError || visibilityError) && (
+        <p role="alert" className="text-sm text-red-400">
+          {visibilityError ?? listError}
+        </p>
+      )}
+    </div>
+  );
+
   // Render material display (when material exists and not changing)
   if (!showDropzone && currentMaterialUrl && currentMaterialName) {
     return (
-      <div className="flex flex-col gap-4 p-4 bg-gray-700 rounded-lg">
-        <div className="flex items-center gap-3">
-          <FileText className="h-8 w-8 text-blue-400 flex-shrink-0" />
-          <div className="flex-1 min-w-0">
-            <a
-              href={currentMaterialUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-blue-400 hover:text-blue-300 transition-colors truncate block"
-            >
-              {currentMaterialName}
-              <ExternalLink className="h-3 w-3 inline-block ml-1" />
-            </a>
-            <p className="text-sm text-gray-500">{t('speakerPortal.upload.presentationFile')}</p>
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-4 p-4 bg-gray-700 rounded-lg">
+          <div className="flex items-center gap-3">
+            <FileText className="h-8 w-8 text-blue-400 flex-shrink-0" />
+            <div className="flex-1 min-w-0">
+              <a
+                href={currentMaterialUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-400 hover:text-blue-300 transition-colors truncate block"
+              >
+                {currentMaterialName}
+                <ExternalLink className="h-3 w-3 inline-block ml-1" />
+              </a>
+              <p className="text-sm text-gray-500">{t('speakerPortal.upload.presentationFile')}</p>
+            </div>
           </div>
+          <button
+            type="button"
+            onClick={handleChangeFile}
+            className="text-sm text-blue-400 hover:text-blue-300 transition-colors self-start"
+          >
+            {t('speakerPortal.upload.changeFile')}
+          </button>
         </div>
-        <button
-          type="button"
-          onClick={handleChangeFile}
-          className="text-sm text-blue-400 hover:text-blue-300 transition-colors self-start"
-        >
-          {t('speakerPortal.upload.changeFile')}
-        </button>
+        {fileVisibility}
       </div>
     );
   }
@@ -383,6 +477,8 @@ const PresentationUpload = ({
           {t('speakerPortal.photo.cancel')}
         </button>
       )}
+
+      {fileVisibility}
     </div>
   );
 };

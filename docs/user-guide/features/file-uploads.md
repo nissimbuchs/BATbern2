@@ -147,7 +147,13 @@ sequenceDiagram
    - Notification sent to speaker confirming receipt
    - File available for organizer review and attendee distribution
 
-7. **Deleting Materials**
+7. **Publicly Visible After the Event**
+   - In the session editor's Materials tab every file, new or saved, has a checkbox "Publicly visible after the event"
+   - A new PDF is ticked, any other file unticked; for a new file the choice is saved with the session, for a saved file a change is saved at once
+   - Only ticked files appear on the public event page and in the archive; we recommend publishing a PDF and keeping PowerPoint and other source files internal
+
+8. **Deleting Materials**
+   - A file uploaded but not yet saved is removed with the delete icon next to it and is not attached
    - Click the delete button next to an uploaded material file
    - Confirm deletion in the dialog
    - File is removed from S3 and the session record is updated

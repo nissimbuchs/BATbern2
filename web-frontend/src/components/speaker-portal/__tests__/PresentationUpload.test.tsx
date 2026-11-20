@@ -11,6 +11,7 @@ import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { http, HttpResponse } from 'msw';
 import { api } from '@/test/msw/api';
 import { server } from '@/test/msw/server';
+import { aSessionMaterial } from '@/test/fixtures';
 import PresentationUpload from '../PresentationUpload';
 
 const S3_PUT = 'https://bucket.example/materials/temp/up-1/file-up-1.pptx';
@@ -255,8 +256,10 @@ describe('PresentationUpload', () => {
         purpose: 'session-material',
         uploadId: 'up-1',
       });
+      // A PowerPoint stays internal unless the speaker ticks it afterwards.
       expect(api.calls('confirmFileUpload')[0].body).toEqual({
         target: { eventCode: 'BATbern99', sessionSlug: 'keynote' },
+        publiclyVisible: false,
       });
     });
   });
@@ -367,6 +370,113 @@ describe('PresentationUpload', () => {
         expect(screen.getByText(/upload failed/i)).toBeInTheDocument();
         expect(onError).toHaveBeenCalledWith(expect.objectContaining({ type: 'UPLOAD_FAILED' }));
       });
+    });
+  });
+
+  describe('Visibility after the event', () => {
+    const pdf = aSessionMaterial({ id: 'mat-pdf', fileName: 'Folien.pdf', publiclyVisible: true });
+    const pptx = aSessionMaterial({
+      id: 'mat-pptx',
+      fileName: 'Folien.pptx',
+      fileExtension: 'pptx',
+      mimeType: PPTX,
+      publiclyVisible: false,
+    });
+
+    it('should list the session materials with their stored visibility', async () => {
+      api.on('getSessionMaterials', () => ({ materials: [pdf, pptx] }));
+
+      render(<PresentationUpload {...defaultProps} />);
+
+      expect(
+        await screen.findByRole('checkbox', {
+          name: 'Publicly visible after the event: Folien.pdf',
+        })
+      ).toBeChecked();
+      expect(
+        screen.getByRole('checkbox', { name: 'Publicly visible after the event: Folien.pptx' })
+      ).not.toBeChecked();
+      expect(screen.getByText(/we recommend a pdf as the public copy/i)).toBeInTheDocument();
+      expect(api.calls('getSessionMaterials')[0].params).toEqual({
+        eventCode: 'BATbern99',
+        sessionSlug: 'keynote',
+      });
+    });
+
+    it('should patch the material when the speaker ticks it', async () => {
+      api.on('getSessionMaterials', () => ({ materials: [pdf, pptx] }));
+      api.on('updateSessionMaterial', () => ({ ...pptx, publiclyVisible: true }));
+      render(<PresentationUpload {...defaultProps} />);
+      const box = await screen.findByRole('checkbox', {
+        name: 'Publicly visible after the event: Folien.pptx',
+      });
+
+      await act(async () => {
+        fireEvent.click(box);
+      });
+
+      await waitFor(() => expect(box).toBeChecked());
+      expect(api.calls('updateSessionMaterial')[0].params).toEqual({
+        eventCode: 'BATbern99',
+        sessionSlug: 'keynote',
+        materialId: 'mat-pptx',
+      });
+      expect(api.calls('updateSessionMaterial')[0].body).toEqual({ publiclyVisible: true });
+    });
+
+    it('should keep the stored value and show an error when the change fails', async () => {
+      api.on('getSessionMaterials', () => ({ materials: [pdf] }));
+      api.on('updateSessionMaterial', () =>
+        HttpResponse.json({ status: 403, message: 'Not your session' }, { status: 403 })
+      );
+      render(<PresentationUpload {...defaultProps} />);
+      const box = await screen.findByRole('checkbox', {
+        name: 'Publicly visible after the event: Folien.pdf',
+      });
+
+      await act(async () => {
+        fireEvent.click(box);
+      });
+
+      expect(await screen.findByText(/could not change/i)).toBeInTheDocument();
+      expect(box).toBeChecked();
+    });
+
+    it('should send the type default on upload and reload the list', async () => {
+      api.on('getSessionMaterials', () => ({ materials: [] }));
+      uploadAnswers();
+      render(<PresentationUpload {...defaultProps} />);
+      await waitFor(() => expect(api.calls('getSessionMaterials')).toHaveLength(1));
+
+      api.on('getSessionMaterials', () => ({ materials: [pdf] }));
+      await act(async () => {
+        fireEvent.change(screen.getByLabelText(/upload presentation/i), {
+          target: { files: [new File(['%PDF'], 'Folien.pdf', { type: 'application/pdf' })] },
+        });
+      });
+
+      await waitFor(() => expect(api.calls('confirmFileUpload')).toHaveLength(1));
+      expect(api.calls('confirmFileUpload')[0].body).toEqual({
+        target: { eventCode: 'BATbern99', sessionSlug: 'keynote' },
+        publiclyVisible: true,
+      });
+      expect(
+        await screen.findByRole('checkbox', {
+          name: 'Publicly visible after the event: Folien.pdf',
+        })
+      ).toBeChecked();
+      expect(api.calls('getSessionMaterials')).toHaveLength(2);
+    });
+
+    it('should still offer the upload when the list cannot be loaded', async () => {
+      api.on('getSessionMaterials', () =>
+        HttpResponse.json({ status: 500, message: 'boom' }, { status: 500 })
+      );
+
+      render(<PresentationUpload {...defaultProps} />);
+
+      expect(await screen.findByText(/could not load your files/i)).toBeInTheDocument();
+      expect(screen.getByTestId('material-dropzone')).toBeInTheDocument();
     });
   });
 });

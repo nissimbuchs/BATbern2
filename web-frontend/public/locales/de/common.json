@@ -539,7 +539,12 @@
       "invalidFileType": "Ungültiger Dateityp. Akzeptierte Formate: PPTX, PDF, KEY",
       "fileTooLarge": "Dateigrösse muss kleiner als 50 MB sein",
       "acceptedFormats": "Akzeptierte Formate: PPTX, PDF, KEY (max. 50 MB)",
-      "uploadAria": "Präsentationsdatei hochladen"
+      "uploadAria": "Präsentationsdatei hochladen",
+      "sessionFiles": "Dateien dieser Session",
+      "publiclyVisible": "Nach dem Anlass öffentlich sichtbar",
+      "publicHint": "Nur öffentlich sichtbare Dateien werden nach dem Anlass auf der Eventseite veröffentlicht. Wir empfehlen ein PDF als öffentliche Fassung; jede andere Datei bleibt intern, für das Organisationsteam und die Speaker dieser Session.",
+      "visibilityError": "Die Sichtbarkeit dieser Datei konnte nicht geändert werden.",
+      "listError": "Ihre Dateien konnten nicht geladen werden."
     },
     "invitationResponse": {
       "invalidLink": "Ungültiger Link",

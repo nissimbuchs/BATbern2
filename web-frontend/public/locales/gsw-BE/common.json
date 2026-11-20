@@ -544,7 +544,12 @@
     },
     "upload": {
       "uploading": "Wird ufeglade...",
-      "uploadAria": "Präsentationsdatei uflade"
+      "uploadAria": "Präsentationsdatei uflade",
+      "sessionFiles": "Dateie vo dere Session",
+      "publiclyVisible": "Nach em Aalass öffentlech sichtbar",
+      "publicHint": "Nume öffentlech sichtbari Dateie wärde nach em Aalass uf dr Eventsiite veröffentlecht. Mir empfähle es PDF als öffentlechi Fassig; jedi angeri Datei blibt intern, fürs Organisationsteam und d Speaker vo dere Session.",
+      "visibilityError": "D Sichtbarkeit vo dere Datei het nid chönne gänderet wärde.",
+      "listError": "Öii Dateie hei nid chönne glade wärde."
     },
     "photo": {
       "uploadAria": "Profilfoto uflade"

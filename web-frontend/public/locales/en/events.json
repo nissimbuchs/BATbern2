@@ -1164,7 +1164,10 @@
       "existingTitle": "Existing Materials",
       "downloadError": "Failed to download material",
       "delete": "Delete material",
-      "deleteError": "Failed to delete material"
+      "deleteError": "Failed to delete material",
+      "publiclyVisible": "Publicly visible after the event",
+      "publicHint": "Only files marked publicly visible appear on the public event page after the event. We recommend publishing a PDF and keeping PowerPoint and other source files internal.",
+      "visibilityError": "Could not change the visibility of this file."
     },
     "errors": {
       "titleRequired": "Title is required",

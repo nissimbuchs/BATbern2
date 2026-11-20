@@ -1,0 +1,32 @@
+meta {
+  name: Material download — public material, anonymous, 200 (#1260)
+  type: http
+  seq: 43
+}
+
+get {
+  url: {{baseUrl}}/events/{{publicMaterialsEventCode}}/sessions/{{publicMaterialSlug}}/materials/{{publicMaterialId}}/download
+  body: none
+  auth: none
+}
+
+tests {
+  const found = bru.getVar("publicMaterialFound") === "true";
+
+  if (found) {
+    test("positive control: a public material downloads without a token", function() {
+      expect(res.getStatus()).to.equal(200);
+      expect(res.getBody().downloadUrl).to.be.a("string").and.not.equal("");
+    });
+  } else {
+    test("no public material here: nothing to check", function() {
+      expect(res.getStatus()).to.equal(404);
+    });
+  }
+}
+
+docs {
+  Issue 1260, AC2, positive control for the previous request: a public material of the same event
+  keeps its anonymous download. Presigning a URL reads nothing from S3. Read-only, safe on every
+  environment.
+}

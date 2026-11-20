@@ -1,6 +1,7 @@
 package ch.batbern.events.service;
 
 import ch.batbern.shared.utils.S3Links;
+import ch.batbern.events.config.CacheConfig;
 import ch.batbern.events.domain.EventManagementUpload;
 import ch.batbern.events.domain.Session;
 import ch.batbern.events.domain.SessionMaterial;
@@ -19,6 +20,7 @@ import ch.batbern.shared.utils.CloudFrontUrlBuilder;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.CacheManager;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import software.amazon.awssdk.services.s3.S3Client;
@@ -58,6 +60,8 @@ public class SessionMaterialsService {
     private final UploadService<EventManagementUpload> uploadService;
     private final SessionMaterialUploadHandler materialUploads;
     private final EventManagementUploadRepository uploadRepository;
+    private final CacheManager cacheManager;
+    private final SessionMaterialAccess materialAccess;
 
     @Value("${aws.s3.bucket-name:batbern-development-company-logos}")
     private String bucketName;
@@ -91,7 +95,8 @@ public class SessionMaterialsService {
             EventManagementUpload upload = uploadService.associate(SessionMaterialUploadHandler.PURPOSE,
                     item.getUploadId(), targetId);
             String type = item.getMaterialType() == null ? null : item.getMaterialType().getValue();
-            materials.add(materialUploads.createMaterial(session, upload, type, uploadedBy));
+            materials.add(materialUploads.createMaterial(session, upload, type, item.getPubliclyVisible(),
+                    uploadedBy));
         }
         materialUploads.published(session, materials, uploadedBy);
 
@@ -102,43 +107,79 @@ public class SessionMaterialsService {
     }
 
     /**
-     * Get all materials for a session
+     * The materials of a session of the event, as the caller may see them ({@link #materialsFor}).
      *
-     * @param sessionSlug The session slug
-     * @return List of materials ordered by creation time
-     * @throws SessionNotFoundException if session not found
+     * @throws SessionNotFoundException if the session is not in the event
      */
-    public List<SessionMaterialResponse> getMaterialsBySession(String sessionSlug) {
-        log.info("Fetching materials for session: {}", sessionSlug);
+    @Transactional(readOnly = true)
+    public List<SessionMaterialResponse> getMaterialsBySession(String eventCode, String sessionSlug) {
+        return materialsFor(materialUploads.session(eventCode, sessionSlug), false);
+    }
 
-        Session session = sessionRepository.findBySessionSlug(sessionSlug)
-                .orElseThrow(() -> new SessionNotFoundException(sessionSlug));
-
-        List<SessionMaterial> materials = sessionMaterialsRepository
-                .findBySession_IdOrderByCreatedAtAsc(session.getId());
-
-        return materials.stream()
-                .map(this::toResponse)
+    /**
+     * The materials of a session as a response may show them, oldest first (#1260): every one for an
+     * organizer or a speaker of the session ({@link SessionMaterialAccess}), otherwise the public ones
+     * in the public projection ({@link #toPublicResponse}). {@code publicView} (the public read model)
+     * shows the public ones whoever asks.
+     */
+    @Transactional(readOnly = true)
+    public List<SessionMaterialResponse> materialsFor(Session session, boolean publicView) {
+        boolean all = mayShowNonPublic(session, publicView);
+        return visible(sessionMaterialsRepository.findBySession_IdOrderByCreatedAtAsc(session.getId()), all)
+                .stream()
+                .map(m -> all ? toResponse(m) : toPublicResponse(m))
                 .collect(Collectors.toList());
+    }
+
+    /** Whether a response about this session may show its non-public materials ({@link #materialsFor}). */
+    public boolean mayShowNonPublic(Session session, boolean publicView) {
+        return !publicView && materialAccess.mayUseNonPublic(session);
+    }
+
+    /** The materials a response may name: all of them, or the public ones. */
+    public static List<SessionMaterial> visible(List<SessionMaterial> materials, boolean includeNonPublic) {
+        return includeNonPublic ? materials
+                : materials.stream().filter(m -> Boolean.TRUE.equals(m.getPubliclyVisible())).toList();
+    }
+
+    /**
+     * The number of materials of a session the caller may see: the stored count (all materials, V127
+     * trigger) for an organizer or a speaker of the session, else the public ones.
+     */
+    @Transactional(readOnly = true)
+    public int countFor(Session session) {
+        if (materialAccess.mayUseNonPublic(session)) {
+            return session.getMaterialsCount() == null ? 0 : session.getMaterialsCount();
+        }
+        return (int) sessionMaterialsRepository.countBySession_IdAndPubliclyVisibleTrue(session.getId());
     }
 
     /**
      * Generate presigned download URL for a material
      * Story 5.9: Session Materials Upload
      *
+     * <p>The material must be in that session of that event. A non-public one is downloaded only by
+     * an organizer or a speaker of the session ({@link SessionMaterialAccess}); anyone else gets the
+     * 404 of an unknown id, so the answer does not reveal it exists (#1260).
+     *
      * Uses injected S3Presigner which is configured for:
      * - Local: MinIO at localhost:8450
      * - Staging/Prod: AWS S3
      *
-     * @param materialId The material ID
      * @return Presigned download URL valid for 1 hour
-     * @throws MaterialNotFoundException if material not found
+     * @throws SessionNotFoundException  if the session is not in the event
+     * @throws MaterialNotFoundException if the material is not in that session, or not public and the
+     *                                   caller may not see it
      */
-    public String generateDownloadUrl(UUID materialId) {
+    @Transactional(readOnly = true)
+    public String generateDownloadUrl(String eventCode, String sessionSlug, UUID materialId) {
         log.info("Generating download URL for material: {}", materialId);
 
-        SessionMaterial material = sessionMaterialsRepository.findById(materialId)
-                .orElseThrow(() -> new MaterialNotFoundException(materialId.toString()));
+        Session session = materialUploads.session(eventCode, sessionSlug);
+        SessionMaterial material = materialIn(session, materialId);
+        if (!Boolean.TRUE.equals(material.getPubliclyVisible()) && !materialAccess.mayUseNonPublic(session)) {
+            throw new MaterialNotFoundException(materialId.toString());
+        }
 
         // Generate presigned URL valid for 1 hour using injected presigner
         try {
@@ -165,25 +206,39 @@ public class SessionMaterialsService {
     }
 
     /**
-     * Delete a material and clean up S3
+     * Sets whether the material is published after the event (#1260). The caller must be an organizer
+     * or a speaker of the session (403); a material not in that session of that event is 404. The event
+     * cache is cleared after the commit, as on an upload (sessions carry their materials).
+     */
+    public SessionMaterialResponse updateVisibility(String eventCode, String sessionSlug, UUID materialId,
+            boolean publiclyVisible) {
+        Session session = materialUploads.session(eventCode, sessionSlug);
+        materialUploads.checkMayChangeMaterials(session);
+        SessionMaterial material = materialIn(session, materialId);
+        material.setPubliclyVisible(publiclyVisible);
+        SessionMaterial saved = sessionMaterialsRepository.saveAndFlush(material);
+        CacheConfig.clearAfterCommit(cacheManager, CacheConfig.EVENT_WITH_INCLUDES_CACHE);
+        log.info("Material {} of session {} publiclyVisible={}", materialId, sessionSlug, publiclyVisible);
+        return toResponse(saved);
+    }
+
+    /** The material in this session; another session's or an unknown id is 404. */
+    private SessionMaterial materialIn(Session session, UUID materialId) {
+        return sessionMaterialsRepository.findByIdAndSession_Id(materialId, session.getId())
+                .orElseThrow(() -> new MaterialNotFoundException(materialId.toString()));
+    }
+
+    /**
+     * Delete a material and clean up S3. The caller checked the session and its right to change it
+     * ({@link SessionMaterialUploadHandler#checkMayChangeMaterials}).
      *
-     * @param sessionSlug The session slug
-     * @param materialId  The material ID
-     * @param username    Username requesting deletion (for RBAC)
-     * @throws MaterialNotFoundException if material not found
-     * @throws IllegalArgumentException  if material doesn't belong to session
+     * @throws SessionNotFoundException  if the session is not in the event
+     * @throws MaterialNotFoundException if the material is not in that session
      */
     public void deleteMaterial(String eventCode, String sessionSlug, UUID materialId, String username) {
         log.info("Deleting material {} from session: {}", materialId, sessionSlug);
 
-        SessionMaterial material = sessionMaterialsRepository.findById(materialId)
-                .orElseThrow(() -> new MaterialNotFoundException(materialId.toString()));
-
-        // Validate material belongs to this session of this event (Story 17.11d: the event too)
-        if (!material.getSession().getSessionSlug().equals(sessionSlug)
-                || (eventCode != null && !eventCode.equals(material.getSession().getEventCode()))) {
-            throw new IllegalArgumentException("Material does not belong to the specified session");
-        }
+        SessionMaterial material = materialIn(materialUploads.session(eventCode, sessionSlug), materialId);
 
         // Delete from S3
         deleteS3Object(material.getS3Key());
@@ -195,6 +250,7 @@ public class SessionMaterialsService {
         uploadRepository.findByUploadId(material.getUploadId())
                 .filter(u -> SessionMaterialUploadHandler.PURPOSE.equals(u.getPurpose()))
                 .ifPresent(uploadRepository::delete);
+        CacheConfig.clearAfterCommit(cacheManager, CacheConfig.EVENT_WITH_INCLUDES_CACHE);
 
         log.info("Deleted material {} from session: {}", materialId, sessionSlug);
     }
@@ -432,6 +488,18 @@ public class SessionMaterialsService {
     }
 
     /**
+     * A public material as anyone may see it (#1260): who uploaded it, its S3 key and upload id are
+     * internal and sent empty (the fields stay, installed Apple Watch binaries decode them as required).
+     */
+    private SessionMaterialResponse toPublicResponse(SessionMaterial material) {
+        SessionMaterialResponse response = toResponse(material);
+        response.setUploadedBy("");
+        response.setS3Key("");
+        response.setUploadId("");
+        return response;
+    }
+
+    /**
      * Convert SessionMaterial entity to response DTO
      */
     private SessionMaterialResponse toResponse(SessionMaterial material) {
@@ -452,6 +520,7 @@ public class SessionMaterialsService {
                         ? material.getUpdatedAt().atOffset(ZoneOffset.UTC) : null)
                 .contentExtracted(material.getContentExtracted())
                 .extractionStatus(material.getExtractionStatus())
+                .publiclyVisible(material.getPubliclyVisible())
                 .build();
     }
 }

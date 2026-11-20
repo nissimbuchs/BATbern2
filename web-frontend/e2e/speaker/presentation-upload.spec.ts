@@ -129,6 +129,8 @@ describeLocal('Speaker portal · Presentation upload (17.11d)', () => {
     await expect(page.getByRole('link', { name: new RegExp(fileName) })).toBeVisible({
       timeout: 15_000,
     });
+    // Listed under the session's files, ticked publicly visible (a PDF).
+    await expect(page.getByRole('checkbox', { name: new RegExp(fileName) })).toBeChecked();
 
     expect(uploadCalls).toHaveLength(2);
     expect(uploadCalls[0]).toBe('POST /api/v1/uploads/session-material');
@@ -142,10 +144,22 @@ describeLocal('Speaker portal · Presentation upload (17.11d)', () => {
       `/events/${eventCode}/sessions/${sessionSlug}/materials`
     );
     const { materials } = (await listed.json()) as {
-      materials: Array<{ id: string; uploadId: string; fileName: string; materialType: string }>;
+      materials: Array<{
+        id: string;
+        uploadId: string;
+        fileName: string;
+        materialType: string;
+        publiclyVisible: boolean;
+      }>;
     };
     expect(materials).toEqual([
-      expect.objectContaining({ uploadId, fileName, materialType: 'PRESENTATION' }),
+      // A PDF goes up publicly visible; the portal lists it ticked.
+      expect.objectContaining({
+        uploadId,
+        fileName,
+        materialType: 'PRESENTATION',
+        publiclyVisible: true,
+      }),
     ]);
     const download = await api(
       organizerToken,

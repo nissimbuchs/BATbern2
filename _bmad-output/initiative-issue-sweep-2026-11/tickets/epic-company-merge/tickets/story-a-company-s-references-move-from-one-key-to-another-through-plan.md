@@ -3,7 +3,7 @@ title: "A company's references move from one key to another through a CUMS contr
 type: 'feature'
 ticket: '1'
 created: '2026-11-20'
-status: 'built'
+status: 'done'
 baseline_revision: '774ec3b8ae315fa79bf4f71d4fc0c6e84399d4e4'
 route: 'full'
 route_source: 'auto'

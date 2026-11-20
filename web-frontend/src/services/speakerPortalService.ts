@@ -214,13 +214,15 @@ class SpeakerPortalService {
   /**
    * Uploads the speaker's slides to their session (Story 17.11d): purpose `session-material` of the
    * upload contract with the target `{eventCode, sessionSlug}`. The confirm with the target creates
-   * the session material (PRESENTATION); its `fileUrl` is the material's CDN URL. The PUT runs
-   * through XHR for the progress events.
+   * the session material (PRESENTATION); its `fileUrl` is the material's CDN URL.
+   * `publiclyVisible` says whether it is published after the event. The PUT runs through XHR for
+   * the progress events.
    */
   async uploadMaterial(
     eventCode: string,
     sessionSlug: string,
     file: File,
+    publiclyVisible: boolean,
     onProgress?: (progress: number) => void
   ): Promise<UploadedMaterial> {
     try {
@@ -261,10 +263,12 @@ class SpeakerPortalService {
         xhr.send(file);
       });
 
-      const confirmed = await confirmUpload('session-material', uploadId, {
-        eventCode,
-        sessionSlug,
-      });
+      const confirmed = await confirmUpload(
+        'session-material',
+        uploadId,
+        { eventCode, sessionSlug },
+        publiclyVisible
+      );
       return { fileUrl: confirmed.fileUrl ?? null, fileName: file.name };
     } catch (error) {
       throw this.transformError(error);

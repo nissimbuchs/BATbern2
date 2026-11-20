@@ -8,7 +8,7 @@ import { render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { EventProgram } from './EventProgram';
 import type { SessionUI } from '@/types/event.types';
-import { aSession, aSessionSpeaker } from '@/test/fixtures';
+import { aSession, aSessionSpeaker, aSessionMaterial } from '@/test/fixtures';
 
 describe('EventProgram', () => {
   let queryClient: QueryClient;
@@ -243,7 +243,7 @@ describe('EventProgram', () => {
           },
         ],
         materials: [
-          {
+          aSessionMaterial({
             id: 'mat-1',
             uploadId: 'upload-1',
             cloudFrontUrl: 'https://cdn.batbern.ch/materials/2025/bat142/keynote-slides.pptx',
@@ -252,8 +252,8 @@ describe('EventProgram', () => {
             materialType: 'PRESENTATION',
             uploadedBy: 'john.doe',
             createdAt: '2025-05-10T10:00:00Z',
-          },
-          {
+          }),
+          aSessionMaterial({
             id: 'mat-2',
             uploadId: 'upload-2',
             cloudFrontUrl: 'https://cdn.batbern.ch/materials/2025/bat142/handout.pdf',
@@ -262,8 +262,8 @@ describe('EventProgram', () => {
             materialType: 'DOCUMENT',
             uploadedBy: 'john.doe',
             createdAt: '2025-05-10T11:00:00Z',
-          },
-          {
+          }),
+          aSessionMaterial({
             id: 'mat-3',
             uploadId: 'upload-3',
             cloudFrontUrl: 'https://cdn.batbern.ch/materials/2025/bat142/session-recording.mp4',
@@ -272,7 +272,7 @@ describe('EventProgram', () => {
             materialType: 'VIDEO',
             uploadedBy: 'john.doe',
             createdAt: '2025-05-16T10:00:00Z',
-          },
+          }),
         ],
         materialsCount: 3,
         hasPresentation: true,

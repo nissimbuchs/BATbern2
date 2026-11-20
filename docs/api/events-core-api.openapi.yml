@@ -2878,22 +2878,22 @@ components:
           description: Organizers only (omitted for other callers, GHSA-qhqv). Username of the last updater (audit).
         confirmedSpeakersCount:
           type: integer
-          description: 'Speakers who accepted their invitation. Only present when ?include=metrics.'
+          description: 'Speakers who accepted their invitation. Only present when ?include=metrics and the caller is an organizer.'
         speakersWithCompleteInfoCount:
           type: integer
-          description: 'Speakers who submitted complete materials. Only present when ?include=metrics.'
+          description: 'Speakers who submitted complete materials. Only present when ?include=metrics and the caller is an organizer.'
         pendingMaterialsCount:
           type: integer
-          description: 'Speakers with materials still pending. Only present when ?include=metrics.'
+          description: 'Speakers with materials still pending. Only present when ?include=metrics and the caller is an organizer.'
         maxSpeakerSlots:
           type: integer
-          description: 'Maximum speaker slots for this event type. Only present when ?include=metrics.'
+          description: 'Maximum speaker slots for this event type. Only present when ?include=metrics and the caller is an organizer.'
         sessionsWithMaterialsCount:
           type: integer
-          description: 'Sessions that have at least one material. Only present when ?include=metrics.'
+          description: 'Sessions that have at least one material. Only present when ?include=metrics and the caller is an organizer.'
         totalSessionsCount:
           type: integer
-          description: 'Total sessions for this event. Only present when ?include=metrics.'
+          description: 'Total sessions for this event. Only present when ?include=metrics and the caller is an organizer.'
     EventDetail:
       x-class-extra-annotation: '@com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)'
       allOf:
@@ -2906,7 +2906,10 @@ components:
             type: array
             description: 'Expanded sessions for the single-event detail view — carries the full
               SessionResponse shape (materials + enriched speakers). The list endpoint embeds the
-              leaner Session instead (materialsStatus only, no materials array).'
+              leaner Session instead (materialsStatus only, no materials array). The public read
+              model (`/public/events*`) and the public view of `/events/current` carry the public
+              materials only (`publiclyVisible`), in the public projection, and count only those
+              (#1260).'
             items:
               $ref: ./event-sessions-api.openapi.yml#/components/schemas/SessionResponse
           currentPublishedPhase:

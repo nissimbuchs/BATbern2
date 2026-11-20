@@ -41,6 +41,20 @@ Only items that are not live yet. Everything else is listed under its release be
 
 ### Unreleased — after BATbern60
 
+**New — Each session material is marked public or not (#1260)**:
+- ✅ Every session material now says whether it may be published after the event. A new PDF is public, any other file (PowerPoint, Keynote, Word, video) is not, so a speaker can upload the PowerPoint for the moderator next to the PDF for the public. The upload can say otherwise, and organizers and the session's speakers can change it later.
+- ✅ Existing materials: PDFs stay public, all other files are marked not public.
+- ✅ The public event page, the archive and the Apple Watch show only the public materials, and count only those. Visitors no longer see who uploaded a file.
+- ✅ A material that is not public can be downloaded only by organizers and the speakers of its session; everyone else gets "not found".
+- ✅ Speaker portal and session editor: each file has a checkbox "Publicly visible after the event" with the hint that a PDF is the recommended public copy. New files are pre-set by type (PDF ticked); a change to a saved file is saved at once.
+- 🐛 Session editor: a file removed before saving was still attached to the session on save.
+- ⚠️ API: `GET …/materials/{materialId}/download` answers 404 for a material of another session or event, and for a non-public material to anyone but organizers and the session's speakers.
+- ⚠️ API: a caller who is neither an organizer nor a speaker of the session gets only the public materials in `GET …/sessions/{sessionSlug}`, `GET …/sessions/{sessionSlug}/materials` and the counts of `GET …/sessions`; `/public/events*` and the public view of `/events/current` always do. Their `uploadedBy`, `s3Key` and `uploadId` are empty strings. `GET …/materials` of a session that is not in the event answers 404.
+- ⚠️ API: new `PATCH /api/v1/events/{eventCode}/sessions/{sessionSlug}/materials/{materialId}` `{publiclyVisible}` (organizers, or a speaker of that session; another session's material 404). `SessionMaterialResponse` has `publiclyVisible`; `POST …/uploads/session-material/{uploadId}/confirm` and the items of `POST …/materials` take an optional `publiclyVisible`.
+
+**Fix — Deleting a session material through another session of the event answers 404**:
+- ✅ `DELETE …/sessions/{sessionSlug}/materials/{materialId}` for a material of another session of the same event answered 400; it is now 404, as for an unknown material, and nothing is deleted.
+
 **New — Organizers can merge two companies (#1251)**:
 - ✅ A duplicate company (for example "Unic AG" next to "Unic") can be merged into the other one. Its people, registrations, partner record, topic suggestions and votes, logo and logo requests move to the company that stays; empty fields there (website, industry, description, logo) are taken from the duplicate, filled ones are kept, and the name of the company that stays does not change.
 - ✅ The duplicate's short and full name, and its own old names, still find the company that stays, in the search and at registration.

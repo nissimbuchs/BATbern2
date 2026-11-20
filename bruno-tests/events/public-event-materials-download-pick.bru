@@ -1,0 +1,41 @@
+meta {
+  name: Material download — pick a public and a non-public material as organizer (read-only, #1260)
+  type: http
+  seq: 41
+}
+
+get {
+  url: {{baseUrl}}/events/{{publicMaterialsEventCode}}?include=sessions
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{organizerAuthToken}}
+}
+
+script:post-response {
+  const sessions = (res.getStatus() === 200 && res.getBody().sessions) || [];
+  const all = sessions.flatMap(s => (s.materials || []).map(m => ({ slug: s.sessionSlug, m })));
+  const hidden = all.find(x => x.m.publiclyVisible === false);
+  const shown = all.find(x => x.m.publiclyVisible === true);
+  bru.setVar("nonPublicMaterialFound", hidden ? "true" : "false");
+  bru.setVar("nonPublicMaterialSlug", hidden ? hidden.slug : "none");
+  bru.setVar("nonPublicMaterialId", hidden ? hidden.m.id : "00000000-0000-0000-0000-000000000000");
+  bru.setVar("publicMaterialFound", shown ? "true" : "false");
+  bru.setVar("publicMaterialSlug", shown ? shown.slug : "none");
+  bru.setVar("publicMaterialId", shown ? shown.m.id : "00000000-0000-0000-0000-000000000000");
+}
+
+tests {
+  test("the organizer reads the event (or there is no archived event with materials)", function() {
+    const expected = bru.getVar("publicMaterialsExpected") === "true";
+    expect(res.getStatus()).to.equal(expected ? 200 : 404);
+  });
+}
+
+docs {
+  Issue 1260, AC2. Reads, as organizer and read-only, the archived event the public-materials
+  request found and picks one non-public and one public material, if it has them. The next two
+  requests download them anonymously. Uploads and sends nothing, safe on every environment.
+}

@@ -40,10 +40,21 @@ public class SessionService {
      * @param session Session entity
      * @param eventCode Event code (for response)
      * @param includeSpeakers Whether to include speakers array
-     * @return SessionResponse DTO
+     * @return SessionResponse DTO, its materials as the caller may see them
      */
     @Transactional(readOnly = true)
     public SessionResponse toSessionResponse(Session session, String eventCode, boolean includeSpeakers) {
+        return toSessionResponse(session, eventCode, includeSpeakers, false);
+    }
+
+    /**
+     * As {@link #toSessionResponse(Session, String, boolean)}; {@code publicView} (the public read
+     * model) carries the public materials only, whoever asks (#1260). Count and status follow the
+     * materials the response carries.
+     */
+    @Transactional(readOnly = true)
+    public SessionResponse toSessionResponse(Session session, String eventCode, boolean includeSpeakers,
+            boolean publicView) {
         // Use SessionMapper for basic field mapping
         SessionResponse baseResponse = sessionMapper.toDto(session);
 
@@ -68,9 +79,8 @@ public class SessionService {
             builder.speakers(speakers);
         }
 
-        // Story 5.9: Always include materials data
-        List<SessionMaterialResponse> materials = sessionMaterialsService
-                .getMaterialsBySession(session.getSessionSlug());
+        // Story 5.9: Always include materials data, as far as this response may show them (#1260)
+        List<SessionMaterialResponse> materials = sessionMaterialsService.materialsFor(session, publicView);
         builder.materials(materials);
         builder.materialsCount(materials.size());
 
@@ -90,6 +100,19 @@ public class SessionService {
      */
     private MaterialsStatus calculateMaterialsStatus(List<SessionMaterialResponse> materials) {
         return materials.isEmpty() ? MaterialsStatus.NONE : MaterialsStatus.COMPLETE;
+    }
+
+    /**
+     * A sessions-list item (no speakers, no materials): count and status of the materials the caller
+     * may see (#1260), the stored ones for an organizer or a speaker of the session.
+     */
+    @Transactional(readOnly = true)
+    public SessionResponse toListItem(Session session) {
+        SessionResponse item = sessionMapper.toDto(session);
+        int count = sessionMaterialsService.countFor(session);
+        item.setMaterialsCount(count);
+        item.setMaterialsStatus(count == 0 ? MaterialsStatus.NONE : MaterialsStatus.COMPLETE);
+        return item;
     }
 
     /**

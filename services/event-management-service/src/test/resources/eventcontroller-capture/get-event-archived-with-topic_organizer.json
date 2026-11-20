@@ -59,15 +59,47 @@
           "presentationTitle" : null,
           "isConfirmed" : true
         } ],
-        "materialsStatus" : "NONE",
-        "materials" : [ ],
-        "materialsCount" : 0
+        "materialsStatus" : "COMPLETE",
+        "materials" : [ {
+          "id" : "uuid#1",
+          "uploadId" : "capture-material-3",
+          "s3Key" : "sessions/capture-material-3/archive.pdf",
+          "cloudFrontUrl" : "https://cdn.batbern.ch/sessions/capture-material-3/archive.pdf",
+          "fileName" : "archive.pdf",
+          "fileExtension" : "pdf",
+          "fileSize" : 2048,
+          "mimeType" : "application/pdf",
+          "materialType" : "PRESENTATION",
+          "uploadedBy" : "olga.organizer",
+          "createdAt" : "ts#9",
+          "updatedAt" : "ts#10",
+          "contentExtracted" : false,
+          "extractionStatus" : "PENDING",
+          "publiclyVisible" : true
+        }, {
+          "id" : "uuid#2",
+          "uploadId" : "capture-material-4",
+          "s3Key" : "sessions/capture-material-4/archive.pptx",
+          "cloudFrontUrl" : "https://cdn.batbern.ch/sessions/capture-material-4/archive.pptx",
+          "fileName" : "archive.pptx",
+          "fileExtension" : "pptx",
+          "fileSize" : 2048,
+          "mimeType" : "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+          "materialType" : "PRESENTATION",
+          "uploadedBy" : "olga.organizer",
+          "createdAt" : "ts#11",
+          "updatedAt" : "ts#12",
+          "contentExtracted" : false,
+          "extractionStatus" : "PENDING",
+          "publiclyVisible" : false
+        } ],
+        "materialsCount" : 2
       } ],
       "confirmedSpeakersCount" : 0,
       "speakersWithCompleteInfoCount" : 0,
       "pendingMaterialsCount" : 0,
       "maxSpeakerSlots" : 4,
-      "sessionsWithMaterialsCount" : 0,
+      "sessionsWithMaterialsCount" : 1,
       "totalSessionsCount" : 1,
       "currentPublishedPhase" : "AGENDA"
     }

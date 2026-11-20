@@ -114,6 +114,12 @@ class EventControllerCaptureIntegrationTest extends AbstractIntegrationTest {
     private final ObjectMapper json = new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT);
     private final List<String> mismatches = new ArrayList<>();
 
+    /** The archived talk's public PDF and non-public PPTX (#1260). */
+    private SessionMaterial archivedPdf;
+    private SessionMaterial archivedPptx;
+    /** The raw body of the last response, for the string search of {@link #read}. */
+    private String lastBody;
+
     @Autowired
     private MockMvc mockMvc;
     @Autowired
@@ -176,6 +182,8 @@ class EventControllerCaptureIntegrationTest extends AbstractIntegrationTest {
         read("get-event-archived-with-topic_organizer",
                 get("/api/v1/events/" + ARCHIVED_WITH_TOPIC).param("include", "topics,sessions,metrics")
                         .with(ORGANIZER));
+        // Positive control of the string search in read(): the organizer endpoint names the PPTX.
+        assertThat(lastBody).contains(archivedPptx.getId().toString()).contains(archivedPptx.getCloudFrontUrl());
         read("get-event-unknown-code_organizer", get("/api/v1/events/BATbern9799").with(ORGANIZER));
         read("get-event-bad-code_anonymous", get("/api/v1/events/not-a-code"));
         assertNoMismatch();
@@ -244,6 +252,11 @@ class EventControllerCaptureIntegrationTest extends AbstractIntegrationTest {
         rows.put("public-list-no-scope", () -> get("/api/v1/public/events"));
         for (Map.Entry<String, Supplier<MockHttpServletRequestBuilder>> row : rows.entrySet()) {
             read(row.getKey() + "_anonymous", row.getValue().get());
+            if (row.getKey().equals("public-detail-archived")) {
+                // Positive control: the public PDF is in the anonymous public detail (#1260)
+                assertThat(lastBody).contains(archivedPdf.getId().toString())
+                        .contains(archivedPdf.getCloudFrontUrl());
+            }
             read(row.getKey() + "_attendee", row.getValue().get().with(ATTENDEE));
             read(row.getKey() + "_organizer", row.getValue().get().with(ORGANIZER));
         }
@@ -478,6 +491,11 @@ class EventControllerCaptureIntegrationTest extends AbstractIntegrationTest {
         Session archivedTalk = session(archivedWithTopic, "Archived Talk", "presentation",
                 archivedWithTopic.getDate().plus(Duration.ofMinutes(30)));
         speaker(archivedTalk, "ari.archived", SessionUser.SpeakerRole.PRIMARY_SPEAKER, "Ari", "Archived");
+        archivedPdf = material(archivedTalk, "capture-material-3", "archive.pdf", "application/pdf", true,
+                Instant.now().minus(Duration.ofDays(300)));
+        archivedPptx = material(archivedTalk, "capture-material-4", "archive.pptx",
+                "application/vnd.openxmlformats-officedocument.presentationml.presentation", false,
+                Instant.now().minus(Duration.ofDays(299)));
         registration(archivedWithTopic, "ada.attended", "attended", null, false, 500);
 
         eventRepository.save(event(DRAFT, 9704, "Capture Draft", daysFromNow(120), EventWorkflowState.CREATED, null));
@@ -538,15 +556,22 @@ class EventControllerCaptureIntegrationTest extends AbstractIntegrationTest {
     }
 
     private void material(Session session, String uploadId, String fileName, Instant createdAt) {
-        sessionMaterialsRepository.save(SessionMaterial.builder()
+        material(session, uploadId, fileName, "application/pdf", null, createdAt);
+    }
+
+    /** {@code publiclyVisible} null: the type default (a PDF is public). */
+    private SessionMaterial material(Session session, String uploadId, String fileName, String mimeType,
+                                     Boolean publiclyVisible, Instant createdAt) {
+        return sessionMaterialsRepository.save(SessionMaterial.builder()
                 .session(session)
                 .uploadId(uploadId)
                 .s3Key("sessions/" + uploadId + "/" + fileName)
                 .cloudFrontUrl("https://cdn.batbern.ch/sessions/" + uploadId + "/" + fileName)
                 .fileName(fileName)
-                .fileExtension("pdf")
+                .fileExtension(fileName.substring(fileName.lastIndexOf('.') + 1))
                 .fileSize(2048L)
-                .mimeType("application/pdf")
+                .mimeType(mimeType)
+                .publiclyVisible(publiclyVisible)
                 .materialType("PRESENTATION")
                 .uploadedBy("olga.organizer")
                 .createdAt(createdAt)
@@ -671,9 +696,20 @@ class EventControllerCaptureIntegrationTest extends AbstractIntegrationTest {
     // Capture and compare
     // ============================================================================================
 
+    /**
+     * Captures one read. A response that is not the organizer's own view (every anonymous and attendee
+     * row, and the public read model for everyone) must not name the non-public PPTX, by id or URL
+     * (#1260 AC4), searched in the raw body.
+     */
     private void read(String name, MockHttpServletRequestBuilder request) throws Exception {
         ObjectNode row = JsonNodeFactory.instance.objectNode();
         row.set("response", response(request));
+        boolean organizerView = (name.endsWith("_organizer") || name.endsWith("_organizer-again"))
+                && !name.startsWith("public-");
+        if (!organizerView) {
+            assertThat(lastBody).as(name).doesNotContain(archivedPptx.getId().toString())
+                    .doesNotContain(archivedPptx.getCloudFrontUrl());
+        }
         compare(name, row);
     }
 
@@ -707,6 +743,7 @@ class EventControllerCaptureIntegrationTest extends AbstractIntegrationTest {
         node.put("status", response.getStatus());
         node.put("xCacheStatus", response.getHeader("X-Cache-Status"));
         String body = response.getContentAsString(StandardCharsets.UTF_8);
+        lastBody = body;
         if (body.isEmpty()) {
             node.put("body", "");
         } else {

@@ -12,6 +12,7 @@ import { afterEach, describe, it, expect } from 'vitest';
 import { HttpResponse } from 'msw';
 import { isAxiosError } from 'axios';
 import { api } from '@/test/msw/api';
+import { aSessionMaterial } from '@/test/fixtures';
 import apiClient from './apiClient';
 import { sessionApiClient } from './sessionApiClient';
 import type { AssignSpeakerRequest } from './sessionApiClient';
@@ -43,6 +44,10 @@ const authPassingMethods = [
     () => sessionApiClient.associateMaterials(EVENT, 'session-1', { materials: [] }),
   ],
   ['deleteSessionMaterial', () => sessionApiClient.deleteMaterial(EVENT, 'session-1', 'mat-1')],
+  [
+    'updateSessionMaterial',
+    () => sessionApiClient.updateMaterial(EVENT, 'session-1', 'mat-1', { publiclyVisible: false }),
+  ],
   ['deleteSession', () => sessionApiClient.deleteSession(EVENT, 'session-1')],
   ['assignSpeakerToSession', () => sessionApiClient.assignSpeaker(EVENT, 'session-1', alice)],
   ['removeSpeakerFromSession', () => sessionApiClient.removeSpeaker(EVENT, 'session-1', 'hong.an')],
@@ -91,6 +96,45 @@ describe('sessionApiClient', () => {
       const [call] = api.calls('associateMaterials');
       expect(call.params).toEqual({ eventCode: EVENT, sessionSlug: 'session-1' });
       expect(call.body).toEqual({ materials });
+    });
+
+    it('should_listMaterialsOfSession_when_requested', async () => {
+      const pptx = aSessionMaterial({
+        id: 'mat-2',
+        fileName: 'Vortrag.pptx',
+        publiclyVisible: false,
+      });
+      api.on('getSessionMaterials', () => ({ materials: [aSessionMaterial(), pptx] }));
+
+      const materials = await sessionApiClient.listMaterials(EVENT, 'session-1');
+
+      expect(materials.map((m) => [m.fileName, m.publiclyVisible])).toEqual([
+        ['Folien Brünnimann.pdf', true],
+        ['Vortrag.pptx', false],
+      ]);
+      expect(api.calls('getSessionMaterials')[0].params).toEqual({
+        eventCode: EVENT,
+        sessionSlug: 'session-1',
+      });
+    });
+
+    it('should_patchVisibilityOfMaterial_when_changed', async () => {
+      api.on('updateSessionMaterial', () =>
+        aSessionMaterial({ id: 'mat-2', publiclyVisible: false })
+      );
+
+      const updated = await sessionApiClient.updateMaterial(EVENT, 'session-1', 'mat-2', {
+        publiclyVisible: false,
+      });
+
+      expect(updated.publiclyVisible).toBe(false);
+      const [call] = api.calls('updateSessionMaterial');
+      expect(call.params).toEqual({
+        eventCode: EVENT,
+        sessionSlug: 'session-1',
+        materialId: 'mat-2',
+      });
+      expect(call.body).toEqual({ publiclyVisible: false });
     });
 
     it('should_returnDownloadUrl_when_requested', async () => {

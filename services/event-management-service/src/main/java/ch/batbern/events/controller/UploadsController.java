@@ -1,6 +1,7 @@
 package ch.batbern.events.controller;
 
 import ch.batbern.events.domain.EventManagementUpload;
+import ch.batbern.events.service.SessionMaterialUploadHandler;
 import ch.batbern.events.uploads.api.generated.UploadsApi;
 import ch.batbern.events.uploads.dto.generated.ConfirmUploadRequest;
 import ch.batbern.events.uploads.dto.generated.CreateUploadRequest;
@@ -53,7 +54,7 @@ public class UploadsController implements UploadsApi {
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Upload> confirmFileUpload(String purpose, String uploadId, ConfirmUploadRequest request) {
         return ResponseEntity.ok(view(uploads.confirm(purpose, uploadId,
-                target(request == null ? null : request.getTarget()))));
+                target(request == null ? null : request.getTarget()), attachOptions(request))));
     }
 
     @Override
@@ -72,6 +73,15 @@ public class UploadsController implements UploadsApi {
             keys.put("sessionSlug", target.getSessionSlug());
         }
         return keys;
+    }
+
+    /** What the handler's attach reads besides the target ({@code session-material}: publiclyVisible). */
+    static Map<String, Object> attachOptions(ConfirmUploadRequest request) {
+        Map<String, Object> options = new HashMap<>();
+        if (request != null && request.getPubliclyVisible() != null) {
+            options.put(SessionMaterialUploadHandler.PUBLICLY_VISIBLE, request.getPubliclyVisible());
+        }
+        return options;
     }
 
     private static Upload view(UploadRecord upload) {
