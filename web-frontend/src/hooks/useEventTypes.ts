@@ -81,6 +81,10 @@ export function useUpdateEventType() {
     onSuccess: () => {
       // Invalidate all event type queries to refetch fresh data
       queryClient.invalidateQueries({ queryKey: eventTypeKeys.all });
+      // Every event of this type without its own override takes its slot limits from the
+      // template: refresh the speaker summaries and agenda configs of all events (#824 item 1).
+      queryClient.invalidateQueries({ queryKey: ['speakerStatusSummary'] });
+      queryClient.invalidateQueries({ queryKey: ['agenda-config'] });
     },
   });
 }

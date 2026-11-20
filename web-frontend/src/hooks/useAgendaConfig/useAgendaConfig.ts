@@ -33,6 +33,8 @@ export function useUpdateAgendaConfig(eventCode: string) {
       // Config change re-times the slot grid → invalidate timetable + the config itself.
       queryClient.invalidateQueries({ queryKey: ['timetable', eventCode] });
       queryClient.invalidateQueries({ queryKey: ['agenda-config', eventCode] });
+      // The Speakers tab reads the min/max slots from the status summary (#824 item 1).
+      queryClient.invalidateQueries({ queryKey: ['speakerStatusSummary', eventCode] });
     },
   });
 }

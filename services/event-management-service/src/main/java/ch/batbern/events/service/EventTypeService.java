@@ -1,5 +1,6 @@
 package ch.batbern.events.service;
 
+import ch.batbern.events.config.CacheConfig;
 import ch.batbern.events.core.dto.generated.EventSlotConfigurationResponse;
 import ch.batbern.events.core.dto.generated.EventType;
 import ch.batbern.events.core.dto.generated.UpdateEventSlotConfigurationRequest;
@@ -12,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -83,7 +85,12 @@ public class EventTypeService {
      * @throws ValidationException if validation fails
      */
     @Transactional
-    @CacheEvict(value = "eventTypes", allEntries = true)
+    @Caching(evict = {
+        @CacheEvict(value = "eventTypes", allEntries = true),
+        // Every event of this type without its own agenda override reads its slot limits from
+        // here, and the speaker status summary caches them per event (#824 item 1).
+        @CacheEvict(value = CacheConfig.STATUS_SUMMARY_CACHE, allEntries = true)
+    })
     public EventSlotConfigurationResponse updateEventType(EventType type, UpdateEventSlotConfigurationRequest request) {
         log.debug("Updating event type configuration for: {}", type);
 
