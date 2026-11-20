@@ -145,6 +145,57 @@ class CompanyDuplicateRulesTest {
         }
 
         @Test
+        @DisplayName("a shared platform: linkedin.com/company/a and /company/b are no pair, the same profile is")
+        void sharedPlatform_linkedIn() {
+            Named a = new Named("alpha", "Alpha", "https://www.linkedin.com/company/a");
+            Named b = new Named("beta", "Beta", "https://linkedin.com/company/b/");
+            Named sameAsA = new Named("gamma", "Gamma", "https://ch.linkedin.com/company/A/about?trk=x");
+
+            assertThat(rule(a, b)).isEmpty();
+            Named delta = new Named("delta", "Delta", "https://www.linkedin.com/company/a");
+
+            assertThat(rule(a, delta)).contains(Rule.SAME_WEBSITE);
+            assertThat(rule(a, sameAsA)).contains(Rule.SAME_WEBSITE);
+        }
+
+        @ParameterizedTest(name = "{0} vs {1}: no pair")
+        @CsvSource(delimiter = '|', value = {
+            "https://facebook.com/alpha|https://www.facebook.com/beta",
+            "https://www.facebook.com/pages/alpha/123|https://www.facebook.com/pages/beta/456",
+            "https://www.xing.com/pages/alpha|https://www.xing.com/pages/beta",
+            "https://www.xing.com/companies/alpha|https://www.xing.com/pages/alpha",
+            "https://instagram.com/alpha|https://instagram.com/beta",
+            "https://x.com/alpha|https://twitter.com/beta",
+            "https://github.com/alpha|https://github.com/beta",
+            "https://sites.google.com/view/alpha|https://sites.google.com/view/beta",
+            "https://www.youtube.com/@alpha|https://www.youtube.com/@beta",
+            "https://bit.ly/alpha|https://bit.ly/beta",
+            "https://www.linkedin.com/company/|https://www.linkedin.com/company/",
+            "https://www.linkedin.com|https://www.linkedin.com/",
+            "https://www.facebook.com/profile.php?id=1|https://www.facebook.com/profile.php?id=2",
+        })
+        void sharedPlatform_differentProfiles(String websiteA, String websiteB) {
+            assertThat(rule(new Named("alpha", "Alpha", websiteA), new Named("beta", "Beta", websiteB))).isEmpty();
+        }
+
+        @ParameterizedTest(name = "{0} -> {1}")
+        @CsvSource(delimiter = '|', value = {
+            "https://www.linkedin.com/company/acme/|linkedin.com/company/acme",
+            "https://de.linkedin.com/company/Acme/about|linkedin.com/company/acme",
+            "https://m.facebook.com/acme?ref=1|facebook.com/acme",
+            "https://www.facebook.com/pages/acme/123|facebook.com/pages/acme",
+            "https://www.xing.com/pages/acme|xing.com/pages/acme",
+            "https://twitter.com/acme|twitter.com/acme",
+            "https://sites.google.com/view/acme/home|sites.google.com/view/acme",
+            "https://www.linkedin.com/company/|''",
+            "https://www.facebook.com|''",
+            "https://www.acme.ch/de/home|acme.ch",
+        })
+        void site(String website, String site) {
+            assertThat(CompanyDuplicateRules.site(website)).isEqualTo(site == null ? "" : site);
+        }
+
+        @Test
         @DisplayName("no website, an empty host or a host without a dot (placeholder) never matches")
         void noWebsite() {
             assertThat(rule(new Named("alpha", "Alpha", null), new Named("beta", "Beta", null))).isEmpty();

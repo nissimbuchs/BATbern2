@@ -91,7 +91,7 @@ Pass 1 (quick lens): 7 findings. high 0, medium 0, low 5, false 1, maybe-false 1
 |---|---|---|---|---|
 | 1 | IT for "older wins" passes on the key tiebreak alone | low | patch | True (older also had the smaller key); test data changed so only age decides. |
 | 2 | Summing one column from two holders untested | low | patch | True; client test now answers the same column at both holders. |
-| 3 | Website rule: placeholders and shared platforms make false HIGH pairs | maybe-false | patch (placeholders) / recorded (platforms) | Not measured (no local DB running). Placeholders: a host without a dot never matches (direct guard). Shared platforms (linkedin.com/company/...) stay possible; organizers dismiss them; to measure on the anonymized snapshot before story 6 ships. |
+| 3 | Website rule: placeholders and shared platforms make false HIGH pairs | maybe-false | patch (placeholders) / recorded (platforms) | Not measured (no local DB running). Placeholders: a host without a dot never matches (direct guard). Shared platforms: fixed after the review (epic 4 close-out), the rule compares host plus the identifying path on a known platform (`CompanyDuplicateRules.PLATFORMS`); a platform address without a profile never matches. |
 | 4 | Bruno 11b test name claims no holder was asked | low | patch | Renamed to what it asserts. |
 | 5 | `counts` Javadoc "no keys asks nobody" vs `requireHolders()` first | low | patch | Empty return moved first. |
 | 6 | Ticket says "smaller key first", code uses smaller id | false | reject | The frozen plan says id (survives a rename); the ticket is not edited by a build. |

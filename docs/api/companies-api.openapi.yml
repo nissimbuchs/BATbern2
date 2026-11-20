@@ -916,7 +916,9 @@ paths:
         merge (`GET /companies/{name}/merge-preview`, `POST /companies/{name}/merge`). A pair is listed
         once, under the first rule it matches:
         - `SAME_WEBSITE` (`HIGH`): the same host of the website (lower case, without scheme, `www.`,
-          port and path);
+          port and path); on a shared platform (LinkedIn, Facebook, XING, Instagram, X, GitHub,
+          Google Sites, YouTube, link shorteners and the like) the host plus the identifying path
+          (`linkedin.com/company/acme`), and a platform address without a profile never matches;
         - `SAME_DISPLAY_NAME` (`HIGH`): the same display name, the key when there is none, folded
           (lower case, umlauts as ae/oe/ue, ß as ss, accents removed, hyphen, underscore and slash as
           a space, other punctuation removed, spaces collapsed);

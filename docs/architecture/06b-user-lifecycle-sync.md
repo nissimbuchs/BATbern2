@@ -1293,7 +1293,7 @@ matches:
 
 | Rule | Match | Confidence |
 |---|---|---|
-| `SAME_WEBSITE` | the same host: lower case, without scheme, `www.`, port and path | HIGH |
+| `SAME_WEBSITE` | the same host: lower case, without scheme, `www.`, port and path; a host without a dot (placeholder) never matches. On a shared platform (LinkedIn, Facebook, XING, Instagram, X, GitHub, Google Sites, YouTube, link shorteners and the like) the host plus the identifying path (`linkedin.com/company/acme`); a platform address without a profile never matches | HIGH |
 | `SAME_DISPLAY_NAME` | the same display name (the key when there is none), folded: lower case, umlauts as ae/oe/ue, ß as ss, accents removed, hyphen, underscore and slash as a space, other punctuation removed, spaces collapsed | HIGH |
 | `SAME_NAME_WITHOUT_LEGAL_FORM` | as before, then the words ag, gmbh, sa, sarl, ltd, inc, llc, kg and a trailing co removed; generic words (Kanton, Uni, Bern, Schweiz) stay; an empty result never matches | MEDIUM |
 | `SLUG_PREFIX` | one key starts with the other (ignoring case), the shorter at least 4 characters | LOW |
