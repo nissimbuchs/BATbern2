@@ -9,6 +9,8 @@ import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.shared.types.EventWorkflowState;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -98,6 +100,23 @@ class WatchEventCompletionIntegrationTest extends AbstractIntegrationTest {
 
         Event updated = eventRepository.findByEventCode("BATw44A").orElseThrow();
         assertThat(updated.getWorkflowState()).isEqualTo(EventWorkflowState.EVENT_COMPLETED);
+    }
+
+    // Review of #824: the transition is an override, so ending the last session of a cancelled or
+    // archived event made it EVENT_COMPLETED (and opened its Q&A windows).
+    @ParameterizedTest
+    @EnumSource(value = EventWorkflowState.class, names = {"CANCELLED", "ARCHIVED"})
+    @DisplayName("should_keepState_when_allSessionsEndedOnCancelledOrArchivedEvent")
+    void should_keepState_when_allSessionsEndedOnCancelledOrArchivedEvent(EventWorkflowState state) {
+        String code = "BATw44" + state.name().charAt(0) + "X";
+        Event event = saveEvent(code, state == EventWorkflowState.CANCELLED ? 9110 : 9111);
+        event.setWorkflowState(state);
+        eventRepository.save(event);
+        saveSession(event.getId(), code, "keynote-1", "keynote");
+
+        watchSessionService.endSession(code, "keynote-1", "marco.organizer");
+
+        assertThat(eventRepository.findByEventCode(code).orElseThrow().getWorkflowState()).isEqualTo(state);
     }
 
     @Test

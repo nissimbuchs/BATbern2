@@ -103,7 +103,11 @@ public class WatchSessionService {
 
         if (allComplete) {
             eventRepository.findByEventCode(eventCode).ifPresent(event -> {
-                if (event.getWorkflowState() != EventWorkflowState.EVENT_COMPLETED) {
+                // Only a running event completes: not one already completed, archived or cancelled
+                // (the override below would otherwise move those to EVENT_COMPLETED, #824 review).
+                if (event.getWorkflowState() != EventWorkflowState.EVENT_COMPLETED
+                        && event.getWorkflowState() != EventWorkflowState.ARCHIVED
+                        && event.getWorkflowState() != EventWorkflowState.CANCELLED) {
                     // Through the state machine so EventWorkflowTransitionEvent fires (event_completed
                     // tasks, Q&A windows). Override: the Watch may finish the event before the 00:01
                     // EVENT_LIVE scheduler has run, and this path never validated before

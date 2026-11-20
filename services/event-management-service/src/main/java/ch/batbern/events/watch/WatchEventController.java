@@ -257,6 +257,8 @@ public class WatchEventController {
     /**
      * Derives event status from workflow state.
      * EVENT_LIVE → "LIVE", EVENT_COMPLETED/ARCHIVED → "COMPLETED", else → "SCHEDULED".
+     * Only ACTIVE_STATES reach here, so a CANCELLED event is never reported (#824): it is not an
+     * active event of the Watch.
      */
     private String determineEventStatus(Event event) {
         return switch (event.getWorkflowState()) {
