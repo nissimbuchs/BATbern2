@@ -587,6 +587,9 @@ export const SessionEditModal: React.FC<SessionEditModalProps> = ({
               </Typography>
               <FileUpload
                 onUploadSuccess={handleFileUploadSuccess}
+                onFileRemove={(uploadId) =>
+                  setUploadedMaterials((prev) => prev.filter((f) => f.uploadId !== uploadId))
+                }
                 allowedTypes={[
                   // Presentations (AC6 - Story 5.9)
                   'application/vnd.ms-powerpoint', // .ppt

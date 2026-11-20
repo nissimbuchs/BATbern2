@@ -23,6 +23,43 @@ import { http, HttpResponse } from 'msw';
 import { api } from '@/test/msw/api';
 import { server } from '@/test/msw/server';
 
+const PPTX = 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
+
+/** Reserve, S3 PUT and confirm (without a target) succeed; each upload gets the next id. */
+function uploadAnswers(...uploadIds: string[]) {
+  let reserved = 0;
+  api.on(
+    'createFileUpload',
+    ({ body }) => {
+      const uploadId = uploadIds[reserved++];
+      return {
+        uploadId,
+        uploadUrl: `https://bucket.example/materials/temp/${uploadId}/file`,
+        expiresAt: '2026-11-13T10:15:00Z',
+        requiredHeaders: { 'Content-Type': body.contentType },
+      };
+    },
+    { status: 201 }
+  );
+  server.use(http.put(/^https:\/\/bucket\.example\//, () => new HttpResponse(null)));
+  api.on('confirmFileUpload', ({ params }) => ({
+    uploadId: params.uploadId,
+    purpose: 'session-material' as const,
+    status: 'CONFIRMED' as const,
+    fileUrl: null,
+  }));
+}
+
+/** Drops one file on the Materials tab's dropzone and waits for its confirm. */
+async function uploadFile(user: ReturnType<typeof userEvent.setup>, name: string, type: string) {
+  const before = api.calls('confirmFileUpload').length;
+  const input = screen
+    .getByTestId('file-dropzone')
+    .querySelector('input[type="file"]') as HTMLInputElement;
+  await user.upload(input, new File(['x'], name, { type }));
+  await waitFor(() => expect(api.calls('confirmFileUpload')).toHaveLength(before + 1));
+}
+
 // The backend answers through the MSW harness; the real sessionApiClient, upload service (the
 // session-material upload target handed to FileUpload, Story 17.11d), speakers tab and i18n run.
 
@@ -767,24 +804,7 @@ describe('SessionEditModal - Materials Tab (Story 5.9 - AC1)', () => {
   it('should_attachUploadedFilesByUploadId_when_saved', async () => {
     // Story 17.11d: the file is reserved and confirmed as session-material without a target; the
     // save hands only its uploadId to associateMaterials (name, size, type come from the upload).
-    const S3_PUT = 'https://bucket.example/materials/temp/up-7/file-up-7.pdf';
-    api.on(
-      'createFileUpload',
-      () => ({
-        uploadId: 'up-7',
-        uploadUrl: S3_PUT,
-        expiresAt: '2026-11-13T10:15:00Z',
-        requiredHeaders: { 'Content-Type': 'application/pdf' },
-      }),
-      { status: 201 }
-    );
-    server.use(http.put(S3_PUT, () => new HttpResponse(null)));
-    api.on('confirmFileUpload', () => ({
-      uploadId: 'up-7',
-      purpose: 'session-material' as const,
-      status: 'CONFIRMED' as const,
-      fileUrl: null,
-    }));
+    uploadAnswers('up-7');
     api.on('associateMaterials', () => ({ materials: [] }), { status: 201 });
     const user = userEvent.setup();
     render(
@@ -798,14 +818,7 @@ describe('SessionEditModal - Materials Tab (Story 5.9 - AC1)', () => {
     );
     await user.click(screen.getByRole('tab', { name: /materials/i }));
 
-    const input = screen
-      .getByTestId('file-dropzone')
-      .querySelector('input[type="file"]') as HTMLInputElement;
-    await user.upload(
-      input,
-      new File(['pdf'], 'Handout Brünnimann.pdf', { type: 'application/pdf' })
-    );
-    await waitFor(() => expect(api.calls('confirmFileUpload')).toHaveLength(1));
+    await uploadFile(user, 'Handout Brünnimann.pdf', 'application/pdf');
     expect(api.calls('createFileUpload')[0].params).toEqual({ purpose: 'session-material' });
     expect(api.calls('createFileUpload')[0].body).not.toHaveProperty('target');
 
@@ -816,7 +829,34 @@ describe('SessionEditModal - Materials Tab (Story 5.9 - AC1)', () => {
       eventCode: 'BATbern57',
       sessionSlug: 'test-session',
     });
-    expect(api.calls('associateMaterials')[0].body).toEqual({ materials: [{ uploadId: 'up-7' }] });
+    expect(api.calls('associateMaterials')[0].body.materials.map((m) => m.uploadId)).toEqual([
+      'up-7',
+    ]);
+  });
+
+  it('should_notAttachFile_when_removedBeforeSave', async () => {
+    uploadAnswers('up-8');
+    const user = userEvent.setup();
+    render(
+      <SessionEditModal
+        open={true}
+        onClose={vi.fn()}
+        session={mockSession}
+        eventDate="2024-12-15"
+        onSave={mockOnSave}
+      />
+    );
+    await user.click(screen.getByRole('tab', { name: /materials/i }));
+    await uploadFile(user, 'Entwurf.pptx', PPTX);
+    // Positive control: the uploaded file is listed before it is removed.
+    expect(await screen.findByText('Entwurf.pptx')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /^delete$/i }));
+
+    await waitFor(() => expect(screen.queryByText('Entwurf.pptx')).not.toBeInTheDocument());
+    await user.click(screen.getByRole('button', { name: /save/i }));
+    await waitFor(() => expect(mockOnSave).toHaveBeenCalled());
+    expect(api.calls('associateMaterials')).toHaveLength(0);
   });
 
   it('should_displayUploadedMaterialsList_when_materialsExist', async () => {
