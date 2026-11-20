@@ -1,7 +1,7 @@
 # Build stage
 # Compile on the runner's own platform: the jar is bytecode, so only the runtime stage
 # needs the target platform (linux/arm64 for Fargate). Avoids running Gradle under QEMU.
-FROM --platform=$BUILDPLATFORM gradle:8.14.5-jdk21 AS build
+FROM --platform=$BUILDPLATFORM gradle:9.8.2-jdk21 AS build
 WORKDIR /workspace
 
 # Copy root build configuration for multi-project build

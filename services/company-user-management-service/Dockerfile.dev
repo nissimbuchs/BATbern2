@@ -1,5 +1,5 @@
 # Development Dockerfile with hot reload support for company-user-management-service
-FROM gradle:8.5-jdk21
+FROM gradle:9.8.2-jdk21
 
 WORKDIR /workspace
 

@@ -1,4 +1,4 @@
-FROM gradle:8.5-jdk21 AS development
+FROM gradle:9.8.2-jdk21 AS development
 
 # Set working directory to workspace root (where settings.gradle is)
 WORKDIR /workspace
