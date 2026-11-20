@@ -36,4 +36,24 @@ describe('Docker images build with the wrapper Gradle (#1220)', () => {
       expect(version).toBe(wrapperVersion);
     }
   });
+
+  // Gradle 9 refuses to configure an included project whose directory does not exist; the
+  // production images copy only their own module, so each must create the others' directories.
+  // Missing this broke every image build on the first CI run of #1328.
+  const settings = fs.readFileSync(path.join(root, 'settings.gradle'), 'utf8');
+  const projects = [...settings.matchAll(/^include\s+'([^']+)'/gm)].map(([, p]) =>
+    p.replace(/:/g, '/')
+  );
+
+  test.each(dockerfiles.filter((f) => !f.endsWith('.dev')))(
+    '%s creates a directory for every included project',
+    (file) => {
+      const text = fs.readFileSync(path.join(root, file), 'utf8');
+      const mkdir = /RUN mkdir -p ((?:[^\n]*\\\n)*[^\n]*)/.exec(text)?.[1] ?? '';
+      expect(projects.length).toBeGreaterThanOrEqual(5);
+      for (const project of projects) {
+        expect(mkdir.split(/[\s\\]+/)).toContain(project);
+      }
+    }
+  );
 });
