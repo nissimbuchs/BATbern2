@@ -7,6 +7,7 @@ import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.events.service.publishing.PublishingPhase;
 import ch.batbern.events.service.publishing.PublishingService;
+import ch.batbern.shared.types.EventWorkflowState;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
@@ -94,6 +95,9 @@ public class PublishingScheduledService {
         log.info("Auto-publish {}: {} upcoming event(s) to check", phase.value(), upcoming.size());
 
         for (Event event : upcoming) {
+            if (event.getWorkflowState() == EventWorkflowState.CANCELLED) {
+                continue; // #824: a cancelled event is never published again
+            }
             // Everything per event inside the try: one bad row never stops the others (4.9b)
             try {
                 PublishingConfig schedule = publishingService.scheduleOf(event);

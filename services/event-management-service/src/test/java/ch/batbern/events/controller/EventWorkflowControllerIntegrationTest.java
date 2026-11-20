@@ -283,8 +283,10 @@ public class EventWorkflowControllerIntegrationTest extends AbstractIntegrationT
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.currentState", is("CREATED")))
                 .andExpect(jsonPath("$.nextAvailableStates", notNullValue()))
-                .andExpect(jsonPath("$.nextAvailableStates", hasSize(2))) // TOPIC_SELECTION and SPEAKER_IDENTIFICATION
-                .andExpect(jsonPath("$.nextAvailableStates[*]", containsInAnyOrder("TOPIC_SELECTION", "SPEAKER_IDENTIFICATION")))
+                // TOPIC_SELECTION, SPEAKER_IDENTIFICATION, and CANCELLED (off the path, #824)
+                .andExpect(jsonPath("$.nextAvailableStates", hasSize(3)))
+                .andExpect(jsonPath("$.nextAvailableStates[*]",
+                        containsInAnyOrder("TOPIC_SELECTION", "SPEAKER_IDENTIFICATION", "CANCELLED")))
                 .andExpect(jsonPath("$.validationMessages", notNullValue()));
     }
 
@@ -304,8 +306,9 @@ public class EventWorkflowControllerIntegrationTest extends AbstractIntegrationT
                         .with(user("john.doe").roles("ORGANIZER")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.currentState", is("TOPIC_SELECTION")))
-                .andExpect(jsonPath("$.nextAvailableStates", hasSize(1)))
-                .andExpect(jsonPath("$.nextAvailableStates[0]", is("SPEAKER_IDENTIFICATION")));
+                .andExpect(jsonPath("$.nextAvailableStates", hasSize(2)))
+                .andExpect(jsonPath("$.nextAvailableStates[*]",
+                        containsInAnyOrder("SPEAKER_IDENTIFICATION", "CANCELLED")));
     }
 
     /**

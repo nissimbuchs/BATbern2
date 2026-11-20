@@ -71,6 +71,7 @@ export const createEventSchema = (t: (key: string) => string) =>
         'EVENT_LIVE',
         'EVENT_COMPLETED',
         'ARCHIVED',
+        'CANCELLED',
       ]),
       eventType: z.enum(['FULL_DAY', 'AFTERNOON', 'EVENING'], {
         message: t('validation.eventTypeRequired'),

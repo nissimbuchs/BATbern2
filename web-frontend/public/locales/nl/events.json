@@ -242,7 +242,10 @@
         "apply": "Status wijzigen",
         "success": "Evenementstatus gewijzigd.",
         "error": "De evenementstatus kon niet worden gewijzigd."
-      }
+      },
+      "cancelError": "Het evenement kon niet worden geannuleerd. Probeer het opnieuw.",
+      "cancelledNotice": "Dit evenement is geannuleerd. De inschrijvingen zijn geannuleerd en de deelnemers zijn per e-mail geïnformeerd.",
+      "cancelSuccess": "Het evenement is geannuleerd. De deelnemers worden per e-mail geïnformeerd."
     },
     "speakers": {
       "progress": "Voortgang",
@@ -712,7 +715,8 @@
       "event_completed": "Evenement voltooid",
       "archived": "Gearchiveerd",
       "speakers_published": "Sprekers gepubliceerd",
-      "speaker_outreach": "Sprekersbenadering"
+      "speaker_outreach": "Sprekersbenadering",
+      "cancelled": "Geannuleerd"
     },
     "dueDateType": "Type vervaldatum",
     "dueDateTypes": {
@@ -877,7 +881,8 @@
       "agenda_published": "Agenda gepubliceerd",
       "event_live": "Evenement live",
       "event_completed": "Evenement voltooid",
-      "archived": "Gearchiveerd"
+      "archived": "Gearchiveerd",
+      "cancelled": "Geannuleerd"
     },
     "loading": "Workflowstatus laden...",
     "error": "Workflowstatus laden mislukt",

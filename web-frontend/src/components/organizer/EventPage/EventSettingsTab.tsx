@@ -41,9 +41,11 @@ import {
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { useBreakpoints } from '@/hooks/useBreakpoints';
 import { useDeleteEvent, useUpdateEvent } from '@/hooks/useEvents';
 import { adjustEventQna } from '@/services/qnaService';
+import { workflowService } from '@/services/workflowService';
 import {
   useUploadTeaserImage,
   useDeleteTeaserImage,
@@ -83,6 +85,14 @@ export const EventSettingsTab: React.FC<EventSettingsTabProps> = ({ event, event
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
+  const [cancelError, setCancelError] = useState<string | null>(null);
+  const [cancelPending, setCancelPending] = useState(false);
+  const [cancelSuccess, setCancelSuccess] = useState(false);
+  // #824: an event that took place, was archived or is already cancelled cannot be cancelled
+  const isCancelled = event.workflowState === 'CANCELLED';
+  const cancelDisabled =
+    isCancelled || event.workflowState === 'EVENT_COMPLETED' || event.workflowState === 'ARCHIVED';
 
   // Teaser images (Story 10.22)
   const teaserImages: TeaserImageItem[] =
@@ -210,9 +220,30 @@ export const EventSettingsTab: React.FC<EventSettingsTabProps> = ({ event, event
     }
   };
 
-  const handleCancelEvent = () => {
-    console.log('Cancel event:', eventCode);
-    setCancelDialogOpen(false);
+  // #824 item 2: the event moves to CANCELLED; the server cancels the registrations and mails
+  // their holders. The event page and the Registrations tab then show the new state and counts.
+  const handleCancelEvent = async () => {
+    setCancelError(null);
+    setCancelPending(true);
+    try {
+      await workflowService.transitionWorkflowState(eventCode, 'CANCELLED');
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['event', eventCode] }),
+        queryClient.invalidateQueries({ queryKey: ['event-registrations', eventCode] }),
+        queryClient.invalidateQueries({ queryKey: ['events'] }),
+      ]);
+      setCancelDialogOpen(false);
+      setCancelSuccess(true);
+    } catch (error) {
+      const serverMessage = (error as { response?: { data?: { message?: string } } })?.response
+        ?.data?.message;
+      setCancelError(
+        serverMessage ??
+          t('eventPage.settings.cancelError', 'The event could not be cancelled. Please try again.')
+      );
+    } finally {
+      setCancelPending(false);
+    }
   };
 
   const handleTeaserImageFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -307,6 +338,16 @@ export const EventSettingsTab: React.FC<EventSettingsTabProps> = ({ event, event
           )}
         </Stack>
       </Paper>
+
+      <Snackbar
+        open={cancelSuccess}
+        autoHideDuration={6000}
+        onClose={() => setCancelSuccess(false)}
+        message={t(
+          'eventPage.settings.cancelSuccess',
+          'The event was cancelled. The participants are being told by mail.'
+        )}
+      />
 
       <Snackbar
         open={moderatorUpdateSuccess}
@@ -668,10 +709,20 @@ export const EventSettingsTab: React.FC<EventSettingsTabProps> = ({ event, event
               color="warning"
               startIcon={<CancelIcon />}
               onClick={() => setCancelDialogOpen(true)}
+              disabled={cancelDisabled}
             >
               {t('eventPage.settings.cancelEvent', 'Cancel Event')}
             </Button>
           </Stack>
+
+          {isCancelled && (
+            <Alert severity="info">
+              {t(
+                'eventPage.settings.cancelledNotice',
+                'This event was cancelled. Its registrations were cancelled and the participants were told by mail.'
+              )}
+            </Alert>
+          )}
 
           {/* Delete Event */}
           <Stack
@@ -717,21 +768,35 @@ export const EventSettingsTab: React.FC<EventSettingsTabProps> = ({ event, event
       {/* Cancel Confirmation Dialog */}
       <Dialog
         open={cancelDialogOpen}
-        onClose={() => setCancelDialogOpen(false)}
+        onClose={() => !cancelPending && setCancelDialogOpen(false)}
         fullScreen={isMobile}
       >
         <DialogTitle>{t('eventPage.settings.confirmCancel', 'Cancel Event?')}</DialogTitle>
         <DialogContent>
           <DialogContentText>
-            {t(
-              'eventPage.settings.cancelConfirmText',
-              'This will cancel the event and notify all {count} registered attendees. This action cannot be undone.'
-            ).replace('{count}', String(event.currentAttendeeCount || 0))}
+            {t('eventPage.settings.cancelConfirmText', {
+              count: event.currentAttendeeCount || 0,
+              defaultValue:
+                'This will cancel the event and notify all {{count}} registered attendees. This action cannot be undone.',
+            })}
           </DialogContentText>
+          {cancelError && (
+            <Alert severity="error" sx={{ mt: 2 }}>
+              {cancelError}
+            </Alert>
+          )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setCancelDialogOpen(false)}>{t('common:actions.cancel')}</Button>
-          <Button onClick={handleCancelEvent} color="warning" variant="contained">
+          <Button onClick={() => setCancelDialogOpen(false)} disabled={cancelPending}>
+            {t('common:actions.cancel')}
+          </Button>
+          <Button
+            onClick={handleCancelEvent}
+            color="warning"
+            variant="contained"
+            disabled={cancelPending}
+            startIcon={cancelPending ? <CircularProgress size={16} /> : undefined}
+          >
             {t('eventPage.settings.confirmCancelBtn', 'Yes, Cancel Event')}
           </Button>
         </DialogActions>
@@ -748,10 +813,11 @@ export const EventSettingsTab: React.FC<EventSettingsTabProps> = ({ event, event
         </DialogTitle>
         <DialogContent>
           <DialogContentText>
-            {t(
-              'eventPage.settings.deleteConfirmText',
-              'This will permanently delete the event "{title}". This action cannot be undone.'
-            ).replace('{title}', event.title)}
+            {t('eventPage.settings.deleteConfirmText', {
+              title: event.title,
+              defaultValue:
+                'This will permanently delete the event "{{title}}". This action cannot be undone.',
+            })}
           </DialogContentText>
           {deleteError && (
             <Alert severity="error" sx={{ mt: 2 }}>

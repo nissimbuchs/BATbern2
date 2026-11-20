@@ -198,7 +198,10 @@
         "apply": "Status ändern",
         "success": "Event-Status geändert.",
         "error": "Der Event-Status konnte nicht geändert werden."
-      }
+      },
+      "cancelError": "Der Event konnte nicht abgesagt werden. Bitte versuchen Sie es erneut.",
+      "cancelledNotice": "Dieser Event wurde abgesagt. Die Anmeldungen wurden storniert und die Teilnehmenden per Mail informiert.",
+      "cancelSuccess": "Der Event wurde abgesagt. Die Teilnehmenden werden per Mail informiert."
     },
     "participantTable": {
       "headers": {
@@ -716,7 +719,8 @@
       "event_completed": "Veranstaltung abgeschlossen",
       "archived": "Archiviert",
       "speakers_published": "Referenten veröffentlicht",
-      "speaker_outreach": "Referentenansprache"
+      "speaker_outreach": "Referentenansprache",
+      "cancelled": "Abgesagt"
     },
     "dueDateType": "Fälligkeitstyp",
     "dueDateTypes": {
@@ -881,7 +885,8 @@
       "agenda_published": "Agenda veröffentlicht",
       "event_live": "Veranstaltung läuft",
       "event_completed": "Veranstaltung abgeschlossen",
-      "archived": "Archiviert"
+      "archived": "Archiviert",
+      "cancelled": "Abgesagt"
     },
     "loading": "Workflow-Status wird geladen...",
     "error": "Workflow-Status konnte nicht geladen werden",

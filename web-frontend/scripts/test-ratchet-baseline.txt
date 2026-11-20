@@ -175,7 +175,6 @@ fe-mock-components	web-frontend/src/components/organizer/EventManagement/__tests
 fe-mock-components	web-frontend/src/components/organizer/EventPage/EventParticipantList.test.tsx	3
 fe-mock-components	web-frontend/src/components/organizer/EventPage/EventParticipantTable.test.tsx	1
 fe-mock-components	web-frontend/src/components/organizer/EventPage/EventParticipantsTab.test.tsx	1
-fe-mock-components	web-frontend/src/components/organizer/EventPage/EventSettingsTab.test.tsx	1
 fe-mock-components	web-frontend/src/components/organizer/EventPage/__tests__/AddParticipantDialog.test.tsx	1
 fe-mock-components	web-frontend/src/components/organizer/EventPage/__tests__/EventCommunicationsContainer.test.tsx	4
 fe-mock-components	web-frontend/src/components/organizer/EventPage/__tests__/EventDetailsContainer.test.tsx	3
@@ -238,7 +237,6 @@ fe-mock-hooks	web-frontend/src/components/organizer/EventManagement/__tests__/Se
 fe-mock-hooks	web-frontend/src/components/organizer/EventManagement/__tests__/TeamActivityFeed.test.tsx	1
 fe-mock-hooks	web-frontend/src/components/organizer/EventPage/AiAssistDrawer.test.tsx	1
 fe-mock-hooks	web-frontend/src/components/organizer/EventPage/EventParticipantList.test.tsx	1
-fe-mock-hooks	web-frontend/src/components/organizer/EventPage/EventSettingsTab.test.tsx	1
 fe-mock-hooks	web-frontend/src/components/organizer/EventPage/__tests__/EventAppreciationTab.test.tsx	1
 fe-mock-hooks	web-frontend/src/components/organizer/EventPage/__tests__/EventCommunicationsContainer.test.tsx	1
 fe-mock-hooks	web-frontend/src/components/organizer/EventPage/__tests__/EventInfoTab.test.tsx	3
@@ -329,7 +327,6 @@ fe-mock-i18n	web-frontend/src/components/organizer/EventPage/EventParticipantFil
 fe-mock-i18n	web-frontend/src/components/organizer/EventPage/EventParticipantList.test.tsx	1
 fe-mock-i18n	web-frontend/src/components/organizer/EventPage/EventParticipantTable.test.tsx	1
 fe-mock-i18n	web-frontend/src/components/organizer/EventPage/EventParticipantsTab.test.tsx	1
-fe-mock-i18n	web-frontend/src/components/organizer/EventPage/EventSettingsTab.test.tsx	1
 fe-mock-i18n	web-frontend/src/components/organizer/EventPage/__tests__/EventAppreciationTab.test.tsx	1
 fe-mock-i18n	web-frontend/src/components/organizer/EventPage/__tests__/EventCommunicationsContainer.test.tsx	1
 fe-mock-i18n	web-frontend/src/components/organizer/EventPage/__tests__/EventDetailsContainer.test.tsx	1

@@ -242,7 +242,10 @@
         "apply": "Muuta tilaa",
         "success": "Tapahtuman tila muutettu.",
         "error": "Tapahtuman tilaa ei voitu muuttaa."
-      }
+      },
+      "cancelError": "Tapahtumaa ei voitu perua. Yritä uudelleen.",
+      "cancelledNotice": "Tämä tapahtuma on peruttu. Ilmoittautumiset peruttiin ja osallistujille ilmoitettiin sähköpostilla.",
+      "cancelSuccess": "Tapahtuma peruttiin. Osallistujille ilmoitetaan sähköpostilla."
     },
     "speakers": {
       "progress": "Edistyminen",
@@ -712,7 +715,8 @@
       "event_completed": "Tapahtuma suoritettu",
       "archived": "Arkistoitu",
       "speakers_published": "Puhujat julkaistu",
-      "speaker_outreach": "Puhujien kontaktointi"
+      "speaker_outreach": "Puhujien kontaktointi",
+      "cancelled": "Peruttu"
     },
     "dueDateType": "Eräpäivätyyppi",
     "dueDateTypes": {
@@ -877,7 +881,8 @@
       "agenda_published": "Ohjelma julkaistu",
       "event_live": "Tapahtuma live",
       "event_completed": "Tapahtuma suoritettu",
-      "archived": "Arkistoitu"
+      "archived": "Arkistoitu",
+      "cancelled": "Peruttu"
     },
     "loading": "Ladataan työnkulun tilaa...",
     "error": "Työnkulun tilan lataus epäonnistui",

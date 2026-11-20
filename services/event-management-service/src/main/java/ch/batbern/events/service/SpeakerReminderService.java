@@ -16,6 +16,7 @@ import ch.batbern.events.repository.SpeakerPoolRepository;
 import ch.batbern.events.repository.SpeakerReminderLogRepository;
 import ch.batbern.shared.mail.MailTrigger;
 import ch.batbern.shared.types.SpeakerWorkflowState;
+import ch.batbern.shared.types.EventWorkflowState;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -84,7 +85,10 @@ public class SpeakerReminderService {
         int skipped = 0;
 
         // Get all events with future dates
-        List<Event> activeEvents = eventRepository.findByDateAfter(clock.instant());
+        // #824: the speakers of a cancelled event get no reminders
+        List<Event> activeEvents = eventRepository.findByDateAfter(clock.instant()).stream()
+                .filter(event -> event.getWorkflowState() != EventWorkflowState.CANCELLED)
+                .toList();
         MailTrigger run = MailTrigger.system();
 
         for (Event event : activeEvents) {

@@ -1,0 +1,26 @@
+<!-- subject: {{eventTitle}} ist abgesagt -->
+<p class="lbl lbl-blue">Absage</p>
+<h2>Der Event findet nicht statt</h2>
+<p class="sub">Ihre Anmeldung ist damit aufgehoben</p>
+
+<p>Hallo {{recipientName}},</p>
+<p>leider müssen wir den folgenden Event absagen:</p>
+
+<div class="event-card">
+  <h3>{{eventTitle}}</h3>
+  <table class="detail-table">
+    <tr>
+      <td class="detail-label">Datum</td>
+      <td class="detail-value">{{eventDate}}</td>
+    </tr>
+    <tr>
+      <td class="detail-label">Veranstaltungsort</td>
+      <td class="detail-value">{{venueName}}<br>{{venueAddress}}</td>
+    </tr>
+  </table>
+</div>
+
+<p>Ihre Anmeldung haben wir storniert. Sie müssen nichts weiter tun.</p>
+<p>Wir bedauern die Absage und hoffen, Sie an einem der nächsten BATbern begrüssen zu dürfen.</p>
+<p>Bei Fragen erreichen Sie uns unter <a href="mailto:{{organizerEmail}}">{{organizerEmail}}</a>.</p>
+<p>Mit freundlichen Grüssen,<br><strong>Das BATbern Team</strong></p>

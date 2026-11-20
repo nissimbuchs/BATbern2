@@ -4,7 +4,7 @@
  * Tests for the event settings, notifications, and danger zone tab.
  */
 
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { BrowserRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -12,7 +12,7 @@ import { I18nextProvider } from 'react-i18next';
 import i18n from '@/i18n/config';
 import { EventSettingsTab } from '../EventSettingsTab';
 import type { Event } from '@/types/event.types';
-import { anEvent } from '@/test/fixtures';
+import { anEvent, aUser } from '@/test/fixtures';
 import { HttpResponse } from 'msw';
 import { api } from '@/test/msw/api';
 
@@ -53,6 +53,22 @@ const mockEventWithAttendees: Event = {
   currentAttendeeCount: 87,
   realAttendeeCount: 87,
 };
+
+/** The organizer list the moderator select loads (useUserList, role ORGANIZER). */
+const ORGANIZERS = {
+  data: [
+    aUser({ id: 'john.doe', firstName: 'John', lastName: 'Doe', roles: ['ORGANIZER'] }),
+    aUser({ id: 'jane.smith', firstName: 'Jane', lastName: 'Smith', roles: ['ORGANIZER'] }),
+  ],
+  pagination: { page: 1, limit: 100, totalItems: 2, totalPages: 1, hasNext: false, hasPrev: false },
+};
+
+const problem = (status: number, message: string) =>
+  HttpResponse.json({ timestamp: '2026-11-20T08:00:00Z', status, error: 'x', message }, { status });
+
+/** The query keys a mutation marked stale. */
+const invalidatedKeys = (spy: { mock: { calls: unknown[][] } }): unknown[][] =>
+  spy.mock.calls.map((call) => (call[0] as { queryKey: unknown[] }).queryKey);
 
 // Only programmatic registrations (auto-enrolled organizers/partners): total count is
 // non-zero but realAttendeeCount is 0 → delete must be ENABLED. This is the core fix.
@@ -165,7 +181,131 @@ describe('EventSettingsTab Component (Story 5.6)', () => {
     });
   });
 
+  // Moved here from the vi.mock-based EventSettingsTab.test.tsx (touch rule, #824): the real
+  // OrganizerSelect loads the organizers, the real useUpdateEvent PATCHes the event.
+  describe('Event Moderator', () => {
+    const chooseModerator = async (username: string) => {
+      // The select is disabled until the organizers have loaded
+      await within(screen.getByTestId('moderator-select')).findByText('John Doe');
+      fireEvent.mouseDown(within(screen.getByTestId('moderator-select')).getByRole('combobox'));
+      fireEvent.click(await screen.findByTestId(`organizer-option-${username}`));
+    };
+
+    beforeEach(() => {
+      api.on('listUsers', () => ORGANIZERS);
+    });
+
+    it('shows the current moderator when rendered', async () => {
+      renderWithProviders(<EventSettingsTab event={mockEvent} eventCode="BATbern54" />);
+
+      expect(screen.getByText('Event Moderator')).toBeInTheDocument();
+      expect(
+        await within(screen.getByTestId('moderator-select')).findByText('John Doe')
+      ).toBeInTheDocument();
+      expect(screen.queryByText('Event Information')).not.toBeInTheDocument();
+    });
+
+    it('saves the new moderator and confirms it', async () => {
+      renderWithProviders(<EventSettingsTab event={mockEvent} eventCode="BATbern54" />);
+
+      await chooseModerator('jane.smith');
+
+      expect(await screen.findByText('Moderator updated successfully')).toBeInTheDocument();
+      expect(api.calls('patchEvent')[0].body).toEqual({ organizerUsername: 'jane.smith' });
+    });
+
+    it('shows the error and keeps the previous moderator when the save fails', async () => {
+      api.on('patchEvent', () => problem(500, 'boom'));
+      renderWithProviders(<EventSettingsTab event={mockEvent} eventCode="BATbern54" />);
+
+      await chooseModerator('jane.smith');
+
+      expect(await screen.findByText(/Server Error/)).toBeInTheDocument();
+      expect(
+        within(screen.getByTestId('moderator-select')).getByText('John Doe')
+      ).toBeInTheDocument();
+    });
+  });
+
+  describe('Event state section (regression: PR #788 lost the state override)', () => {
+    it('shows the state section with the current state, nothing to apply yet', () => {
+      renderWithProviders(
+        <EventSettingsTab
+          event={{ ...mockEvent, workflowState: 'SLOT_ASSIGNMENT' }}
+          eventCode="BATbern54"
+        />
+      );
+      expect(screen.getByTestId('workflow-state-section')).toBeInTheDocument();
+      expect(screen.getByTestId('apply-workflow-state-button')).toBeDisabled();
+    });
+  });
+
   describe('Cancel Event Dialog', () => {
+    // #824 item 2: confirming used to only log; the event now moves to CANCELLED
+    it('should_cancelEvent_andRefreshEventAndRegistrations_when_cancelConfirmed', async () => {
+      const spy = vi.spyOn(queryClient, 'invalidateQueries');
+      api.on('transitionEventWorkflowState', () => ({
+        eventCode: 'BATbern54',
+        workflowState: 'CANCELLED',
+        updatedAt: '2026-11-20T08:00:00Z',
+      }));
+      renderWithProviders(
+        <EventSettingsTab event={mockEventWithAttendees} eventCode="BATbern54" />
+      );
+
+      fireEvent.click(screen.getByRole('button', { name: /Cancel Event/i }));
+      fireEvent.click(await screen.findByRole('button', { name: /Yes, Cancel Event/i }));
+
+      await waitFor(() => expect(api.calls('transitionEventWorkflowState')).toHaveLength(1));
+      const [call] = api.calls('transitionEventWorkflowState');
+      expect(call.params).toEqual({ eventCode: 'BATbern54' });
+      expect(call.body).toMatchObject({ targetState: 'CANCELLED' });
+      expect(await screen.findByText(/The event was cancelled/i)).toBeInTheDocument();
+      await waitFor(() => expect(screen.queryByText(/Cancel Event\?/i)).not.toBeInTheDocument());
+      expect(invalidatedKeys(spy)).toContainEqual(['event', 'BATbern54']);
+      expect(invalidatedKeys(spy)).toContainEqual(['event-registrations', 'BATbern54']);
+    });
+
+    it('should_showServerMessage_andKeepDialog_when_cancelRefused', async () => {
+      api.on('transitionEventWorkflowState', () =>
+        problem(422, 'Cannot transition from terminal state ARCHIVED')
+      );
+      renderWithProviders(<EventSettingsTab event={mockEvent} eventCode="BATbern54" />);
+
+      fireEvent.click(screen.getByRole('button', { name: /Cancel Event/i }));
+      fireEvent.click(await screen.findByRole('button', { name: /Yes, Cancel Event/i }));
+
+      expect(
+        await screen.findByText('Cannot transition from terminal state ARCHIVED')
+      ).toBeInTheDocument();
+      expect(screen.getByText(/Cancel Event\?/i)).toBeInTheDocument();
+    });
+
+    it.each(['EVENT_COMPLETED', 'ARCHIVED', 'CANCELLED'] as const)(
+      'should_disableCancel_when_eventIs_%s',
+      (workflowState) => {
+        renderWithProviders(
+          <EventSettingsTab event={{ ...mockEvent, workflowState }} eventCode="BATbern54" />
+        );
+        expect(screen.getByRole('button', { name: /^Cancel Event$/i })).toBeDisabled();
+      }
+    );
+
+    it('should_sayTheEventIsCancelled_when_eventCancelled', () => {
+      renderWithProviders(
+        <EventSettingsTab
+          event={{ ...mockEvent, workflowState: 'CANCELLED' }}
+          eventCode="BATbern54"
+        />
+      );
+      expect(screen.getByText(/This event was cancelled/i)).toBeInTheDocument();
+    });
+
+    it('should_enableCancel_when_eventStillPlanned (positive control)', () => {
+      renderWithProviders(<EventSettingsTab event={mockEvent} eventCode="BATbern54" />);
+      expect(screen.getByRole('button', { name: /^Cancel Event$/i })).not.toBeDisabled();
+    });
+
     it('should_openCancelDialog_when_cancelButtonClicked', async () => {
       renderWithProviders(<EventSettingsTab event={mockEvent} eventCode="BAT54" />);
 
@@ -183,9 +323,10 @@ describe('EventSettingsTab Component (Story 5.6)', () => {
       const cancelButton = screen.getByRole('button', { name: /Cancel Event/i });
       fireEvent.click(cancelButton);
 
-      await waitFor(() => {
-        expect(screen.getByText(/This will cancel the event and notify/i)).toBeInTheDocument();
-      });
+      // The count is interpolated (it rendered as "{87}" before #824)
+      expect(
+        await screen.findByText(/This will cancel the event and notify all 0 registered attendees/i)
+      ).toBeInTheDocument();
     });
 
     it('should_closeCancelDialog_when_cancelClicked', async () => {
@@ -226,9 +367,9 @@ describe('EventSettingsTab Component (Story 5.6)', () => {
       const deleteButton = screen.getByRole('button', { name: /Delete Event/i });
       fireEvent.click(deleteButton);
 
-      await waitFor(() => {
-        expect(screen.getByText(/Spring Conference 2025/i)).toBeInTheDocument();
-      });
+      expect(
+        await screen.findByText(/delete the event "Spring Conference 2025"\./i)
+      ).toBeInTheDocument();
     });
 
     it('should_navigateToEvents_when_deleteConfirmed', async () => {

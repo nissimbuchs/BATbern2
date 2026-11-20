@@ -47,6 +47,7 @@ public class EventWorkflowStateMachine {
     private final ch.batbern.events.repository.SpeakerPoolRepository speakerPoolRepository;
     private final ch.batbern.events.repository.SessionRepository sessionRepository;
     private final EventArchivalCleanupService eventArchivalCleanupService;
+    private final List<EventWriteHooks> writeHooks;
 
     /**
      * Transitions an event to a target workflow state (backward compatible).
@@ -123,6 +124,12 @@ public class EventWorkflowStateMachine {
         // Run archival cleanup when transitioning to ARCHIVED (Story 10.18)
         if (targetState == EventWorkflowState.ARCHIVED) {
             eventArchivalCleanupService.cleanup(savedEvent.getId(), eventCode);
+        }
+
+        // #824: entering CANCELLED cancels the registrations and mails their holders (registrations
+        // module), once: cancelling a cancelled event again does nothing.
+        if (targetState == EventWorkflowState.CANCELLED && currentState != EventWorkflowState.CANCELLED) {
+            writeHooks.forEach(hooks -> hooks.cancelled(savedEvent));
         }
 
         // Publish domain event with override metadata

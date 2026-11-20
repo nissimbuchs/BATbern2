@@ -14,6 +14,7 @@ package ch.batbern.shared.types;
  * 5. Agenda Publishing (AGENDA_PUBLISHED)
  * 6. Event Execution (EVENT_LIVE, EVENT_COMPLETED)
  * 7. Archival (ARCHIVED)
+ * Off the path: Cancellation (CANCELLED), from any state before EVENT_COMPLETED (#824)
  *
  * State Consolidation (from 16-state model via V30, then V82):
  * - SPEAKER_IDENTIFICATION consolidates: SPEAKER_BRAINSTORMING, SPEAKER_OUTREACH,
@@ -128,5 +129,16 @@ public enum EventWorkflowState {
      *
      * Next States: None (terminal state)
      */
-    ARCHIVED;
+    ARCHIVED,
+
+    /**
+     * The event was called off by an organizer (#824). Its active registrations are cancelled and
+     * their holders get the cancellation mail; it leaves the public site, takes no registrations
+     * and the schedulers skip it.
+     *
+     * Triggered: Manually (Event Detail, Settings, Danger Zone) from any state before EVENT_COMPLETED
+     *
+     * Next States: None (terminal state; only an audited override leaves it)
+     */
+    CANCELLED;
 }

@@ -16,8 +16,10 @@ import ch.batbern.events.dto.generated.users.GetOrCreateUserRequest;
 import ch.batbern.events.dto.generated.users.GetOrCreateUserResponse;
 import ch.batbern.events.dto.generated.users.UserResponse;
 import ch.batbern.events.dto.RegistrationResponse;
+import ch.batbern.events.exception.EventCancelledException;
 import ch.batbern.events.exception.EventHasRealRegistrationsException;
 import ch.batbern.events.exception.UserServiceException;
+import ch.batbern.shared.types.EventWorkflowState;
 import ch.batbern.shared.utils.EmailAddresses;
 import ch.batbern.events.exception.RegistrationAlreadyProcessedException;
 import ch.batbern.events.exception.RegistrationCapacityExceededException;
@@ -70,6 +72,9 @@ public class RegistrationService {
 
     private static final DateTimeFormatter ISO_FORMATTER = DateTimeFormatter.ISO_INSTANT;
 
+    /** The registrations a cancelled event ends: everyone who holds or waits for a place (#824). */
+    static final List<String> CANCELLED_WITH_EVENT_STATUSES = List.of("registered", "confirmed", "waitlist");
+
     private final RegistrationRepository registrationRepository;
     private final EventRepository eventRepository;
     private final UserApiClient userApiClient;
@@ -79,6 +84,7 @@ public class RegistrationService {
     private final WaitlistPromotionService waitlistPromotionService; // Story 10.12
     private final PersonAddresses personAddresses; // #1183
     private final RegistrationConfirmationSender confirmationSender; // #1315
+    private final RegistrationCancellationEmailService cancellationEmailService; // #824
 
     /**
      * Create a new anonymous registration for an event (ADR-005).
@@ -476,6 +482,7 @@ public class RegistrationService {
      * @return counts and one result per person, in request order
      */
     public AddParticipantsResponse importParticipants(Event event, List<ParticipantImportPerson> people) {
+        assertNotCancelled(event);
         List<ParticipantImportResult> results = new ArrayList<>();
         int enrolled = 0;
         int skipped = 0;
@@ -946,8 +953,41 @@ public class RegistrationService {
      * @throws RegistrationClosedException when {@code now} is after the (deadline ?: event date)
      */
     private void assertRegistrationOpen(Event event) {
+        assertNotCancelled(event);
         if (RegistrationWindow.isDeadlinePassed(event, Instant.now())) {
             throw new RegistrationClosedException(event.getEventCode(), RegistrationWindow.deadline(event));
+        }
+    }
+
+    /** #824: a cancelled event takes no registrations, by nobody (409 EVENT_CANCELLED). */
+    private static void assertNotCancelled(Event event) {
+        if (event.getWorkflowState() == EventWorkflowState.CANCELLED) {
+            throw new EventCancelledException(event.getEventCode());
+        }
+    }
+
+    /**
+     * #824: the event was cancelled. Every registration that holds or waits for a place
+     * ({@link Registration#ACTIVE_STATUSES} without {@code attended}) is cancelled, in the caller's
+     * transaction, and each of those people gets the cancellation mail once it has committed. Nobody
+     * moves up from the waitlist: the waitlist is cancelled too.
+     */
+    @Transactional
+    public void cancelForCancelledEvent(Event event) {
+        List<Registration> ended = registrationRepository.findByEventIdAndStatusIn(event.getId(),
+                CANCELLED_WITH_EVENT_STATUSES);
+        List<RegistrationCancellationEmailService.Recipient> recipients = new ArrayList<>();
+        for (Registration registration : ended) {
+            recipients.add(new RegistrationCancellationEmailService.Recipient(registration.getRegistrationCode(),
+                    registration.getAttendeeUsername(), registration.getAttendeeFirstName(),
+                    registration.getAttendeeEmail()));
+            registration.setStatus("cancelled");
+        }
+        registrationRepository.saveAll(ended);
+        log.info("Event {} cancelled: {} registration(s) cancelled", event.getEventCode(), ended.size());
+        if (!recipients.isEmpty()) {
+            String cancelledBy = event.getUpdatedBy();
+            AfterCommit.run(() -> cancellationEmailService.sendEventCancelled(event, recipients, cancelledBy));
         }
     }
 
@@ -974,6 +1014,7 @@ public class RegistrationService {
     @Transactional
     public Registration addParticipant(Event event, String username, boolean force,
                                        boolean notify, String addedBy) {
+        assertNotCancelled(event);
         // Resolve the existing user (UserNotFoundException → 404).
         ch.batbern.events.dto.generated.users.UserResponse user =
                 userApiClient.getUserByUsername(username);

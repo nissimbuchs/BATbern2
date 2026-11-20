@@ -39,6 +39,9 @@ const WORKFLOW_STATES: EventWorkflowState[] = [
   'EVENT_LIVE',
   'EVENT_COMPLETED',
   'ARCHIVED',
+  // Shown, not chosen here: cancelling mails the participants, so it has its own confirmation in
+  // the Danger Zone (#824). An override can still move a cancelled event to another state.
+  'CANCELLED',
 ];
 
 interface EventWorkflowStateSectionProps {
@@ -127,7 +130,12 @@ export const EventWorkflowStateSection: React.FC<EventWorkflowStateSectionProps>
             data-testid="workflow-state-select"
           >
             {WORKFLOW_STATES.map((state) => (
-              <MenuItem key={state} value={state} data-testid={`workflow-state-option-${state}`}>
+              <MenuItem
+                key={state}
+                value={state}
+                disabled={state === 'CANCELLED'}
+                data-testid={`workflow-state-option-${state}`}
+              >
                 {t(`workflow.states.${state.toLowerCase()}`)}
               </MenuItem>
             ))}

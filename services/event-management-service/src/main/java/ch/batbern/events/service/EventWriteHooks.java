@@ -4,8 +4,8 @@ import ch.batbern.events.domain.Event;
 
 /**
  * What the modules above event core do when an event is written (event core SPI), implemented in
- * their own module so {@link EventWriteService} depends on none of them (module map: a lower module
- * defines the interface, a higher one implements it).
+ * their own module so {@link EventWriteService} and {@link EventWorkflowStateMachine} depend on none
+ * of them (module map: a lower module defines the interface, a higher one implements it).
  */
 public interface EventWriteHooks {
 
@@ -21,5 +21,12 @@ public interface EventWriteHooks {
      * event with real attendees answers 409).
      */
     default void beforeDelete(Event event) {
+    }
+
+    /**
+     * The event has just entered CANCELLED (#824), in the transition's transaction: a failure rolls
+     * the cancellation back. Work that must not be taken back (mail) waits for the commit.
+     */
+    default void cancelled(Event event) {
     }
 }

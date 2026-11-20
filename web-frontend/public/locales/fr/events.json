@@ -242,7 +242,10 @@
         "apply": "Modifier le statut",
         "success": "Statut de l'événement modifié.",
         "error": "Le statut de l'événement n'a pas pu être modifié."
-      }
+      },
+      "cancelError": "L'événement n'a pas pu être annulé. Veuillez réessayer.",
+      "cancelledNotice": "Cet événement a été annulé. Les inscriptions ont été annulées et les participants informés par e-mail.",
+      "cancelSuccess": "L'événement a été annulé. Les participants sont informés par e-mail."
     },
     "speakers": {
       "progress": "Progression",
@@ -712,7 +715,8 @@
       "event_completed": "Événement terminé",
       "archived": "Archivé",
       "speakers_published": "Intervenants publiés",
-      "speaker_outreach": "Démarchage des intervenants"
+      "speaker_outreach": "Démarchage des intervenants",
+      "cancelled": "Annulé"
     },
     "dueDateType": "Type d'échéance",
     "dueDateTypes": {
@@ -877,7 +881,8 @@
       "agenda_published": "Agenda publié",
       "event_live": "Événement en direct",
       "event_completed": "Événement terminé",
-      "archived": "Archivé"
+      "archived": "Archivé",
+      "cancelled": "Annulé"
     },
     "loading": "Chargement du statut du workflow...",
     "error": "Impossible de charger le statut du workflow",

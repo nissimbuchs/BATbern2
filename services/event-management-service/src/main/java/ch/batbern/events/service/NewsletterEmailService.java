@@ -883,6 +883,7 @@ public class NewsletterEmailService {
         List<Event> future = eventRepository.findByDateAfter(now).stream()
                 .filter(e -> !e.getId().equals(excludeEventId))
                 .filter(e -> e.getWorkflowState() != EventWorkflowState.ARCHIVED)
+                .filter(e -> e.getWorkflowState() != EventWorkflowState.CANCELLED) // #824
                 .sorted(Comparator.comparing(Event::getDate))
                 .limit(UPCOMING_EVENTS_LIMIT)
                 .toList();

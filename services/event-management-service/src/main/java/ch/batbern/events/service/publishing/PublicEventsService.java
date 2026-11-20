@@ -12,6 +12,7 @@ import ch.batbern.events.service.EventResponseContributor.View;
 import ch.batbern.events.service.EventSearchService;
 import ch.batbern.shared.dto.PaginatedResponse;
 import ch.batbern.shared.exception.ValidationException;
+import ch.batbern.shared.types.EventWorkflowState;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -50,9 +51,10 @@ public class PublicEventsService {
         return Optional.ofNullable(eventReadService.findCurrentEvent()).map(this::publicDetail);
     }
 
-    /** A publicly visible event; 404 for an unknown or unpublished one. */
+    /** A publicly visible event; 404 for an unknown, unpublished or cancelled (#824) one. */
     public EventDetail detail(String eventCode) {
         Event event = eventRepository.findByEventCode(eventCode)
+                .filter(e -> e.getWorkflowState() != EventWorkflowState.CANCELLED)
                 .filter(publicSessionVisibilityPolicy::isPubliclyVisible)
                 .orElseThrow(() -> new EventNotFoundException("Event not found with code: " + eventCode));
         return publicDetail(event);

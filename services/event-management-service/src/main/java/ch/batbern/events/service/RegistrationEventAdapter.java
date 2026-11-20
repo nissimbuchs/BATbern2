@@ -81,4 +81,10 @@ public class RegistrationEventAdapter implements EventResponseContributor, Event
     public void beforeDelete(Event event) {
         registrationService.requireNoRealAttendees(event.getEventCode(), event.getId());
     }
+
+    /** #824: a cancelled event's registrations end, and their holders are told by mail. */
+    @Override
+    public void cancelled(Event event) {
+        registrationService.cancelForCancelledEvent(event);
+    }
 }
