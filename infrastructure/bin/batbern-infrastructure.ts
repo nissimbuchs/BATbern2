@@ -422,7 +422,10 @@ if (EnvironmentHelper.shouldDeployWebInfrastructure(config.envName)) {
     // Prefer pre-created cert ARN from config (avoids CloudFormation cross-stack export
     // conflicts when domain changes). Falls back to Network stack cert for fresh deploys.
     certificateArn: config.domain?.apiCertificateArn || networkStack.apiCertificate?.certificateArn,
-    apiGatewayServiceUrl: apiGatewayServiceStack?.apiGatewayUrl, // Spring Boot API Gateway internal ALB
+    apiGatewayServiceUrl: apiGatewayServiceStack?.apiGatewayUrl, // public ALB, fallback only
+    // #1152: the HTTP API reaches the gateway through a VPC link to the internal ALB
+    apiGatewayListener: apiGatewayServiceStack?.internalListener,
+    vpcLink: apiGatewayServiceStack?.vpcLink,
     env,
     description: `BATbern API Gateway - ${config.envName}`,
     tags: config.tags,

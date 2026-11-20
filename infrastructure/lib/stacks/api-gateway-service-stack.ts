@@ -2,6 +2,8 @@ import * as cdk from 'aws-cdk-lib';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as ecs from 'aws-cdk-lib/aws-ecs';
 import * as ecsPatterns from 'aws-cdk-lib/aws-ecs-patterns';
+import * as elbv2 from 'aws-cdk-lib/aws-elasticloadbalancingv2';
+import * as apigatewayv2 from 'aws-cdk-lib/aws-apigatewayv2';
 import * as logs from 'aws-cdk-lib/aws-logs';
 import * as cognito from 'aws-cdk-lib/aws-cognito';
 import * as iam from 'aws-cdk-lib/aws-iam';
@@ -51,6 +53,10 @@ export interface ApiGatewayServiceStackProps extends cdk.StackProps {
 export class ApiGatewayServiceStack extends cdk.Stack {
   public readonly service: ecsPatterns.ApplicationLoadBalancedFargateService;
   public readonly apiGatewayUrl: string;
+  /** #1152: the internal ALB's listener, reached by the HTTP API only through {@link vpcLink}. */
+  public readonly internalListener: elbv2.ApplicationListener;
+  public readonly vpcLink: apigatewayv2.VpcLink;
+  public readonly internalLoadBalancer: elbv2.ApplicationLoadBalancer;
 
   constructor(scope: Construct, id: string, props: ApiGatewayServiceStackProps) {
     super(scope, id, props);
@@ -289,6 +295,71 @@ export class ApiGatewayServiceStack extends cdk.Stack {
       [{ Key: 'idle_timeout.timeout_seconds', Value: '120' }]
     );
 
+    // #1152: an internal ALB that only the HTTP API reaches, through a VPC link. The HTTP API sets
+    // X-BATbern-Client-IP to the visitor's address ($context.identity.sourceIp); since nothing on
+    // the internet can reach this ALB, the gateway can trust that header (ClientIp.resolve).
+    // The public ALB above stays until the HTTP API has switched (it is locked in the next step,
+    // so this switch needs no outage and is rolled back by pointing the HTTP API back at it).
+    const vpcLinkSecurityGroup = new ec2.SecurityGroup(this, 'HttpApiVpcLinkSecurityGroup', {
+      vpc: props.vpc,
+      description: 'HTTP API VPC link to the internal API gateway ALB (#1152)',
+      allowAllOutbound: false,
+    });
+    this.vpcLink = new apigatewayv2.VpcLink(this, 'HttpApiVpcLink', {
+      vpc: props.vpc,
+      vpcLinkName: `batbern-${envName}-http-api`,
+      subnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
+      securityGroups: [vpcLinkSecurityGroup],
+    });
+
+    const internalAlbSecurityGroup = new ec2.SecurityGroup(this, 'InternalAlbSecurityGroup', {
+      vpc: props.vpc,
+      description: 'Internal API gateway ALB: reachable only from the HTTP API VPC link (#1152)',
+      allowAllOutbound: false,
+    });
+    internalAlbSecurityGroup.addIngressRule(
+      vpcLinkSecurityGroup,
+      ec2.Port.tcp(80),
+      'HTTP API VPC link'
+    );
+    vpcLinkSecurityGroup.addEgressRule(
+      internalAlbSecurityGroup,
+      ec2.Port.tcp(80),
+      'Internal API gateway ALB'
+    );
+
+    this.internalLoadBalancer = new elbv2.ApplicationLoadBalancer(this, 'InternalLoadBalancer', {
+      vpc: props.vpc,
+      internetFacing: false,
+      vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
+      securityGroup: internalAlbSecurityGroup,
+      idleTimeout: cdk.Duration.seconds(120),
+    });
+    this.internalListener = this.internalLoadBalancer.addListener('InternalHttpListener', {
+      port: 80,
+      protocol: elbv2.ApplicationProtocol.HTTP,
+      open: false,
+    });
+    const internalTargetGroup = this.internalListener.addTargets('InternalTargets', {
+      port: 8080,
+      protocol: elbv2.ApplicationProtocol.HTTP,
+      targets: [
+        this.service.service.loadBalancerTarget({
+          containerName: container.containerName,
+          containerPort: 8080,
+        }),
+      ],
+      healthCheck: {
+        path: '/actuator/health',
+        interval: cdk.Duration.seconds(30),
+        timeout: cdk.Duration.seconds(5),
+        healthyThresholdCount: 2,
+        unhealthyThresholdCount: 3,
+      },
+    });
+    // Same warm-up ramp as the public target group (#982, test/unit/alb-warmup.test.ts).
+    internalTargetGroup.setAttribute('slow_start.duration_seconds', '300');
+
     // Enable Service Connect for service-to-service communication
     // This allows API Gateway to communicate directly with microservices using DNS names
     // Must use addPropertyOverride because ApplicationLoadBalancedFargateService doesn't expose Service Connect
@@ -385,8 +456,9 @@ export class ApiGatewayServiceStack extends cdk.Stack {
       // bin/ passes it in), which is the same arrangement EcsServiceAlarms already uses.
       new AlbAlarms(this, 'AlbAlarms', {
         environment: envName,
-        loadBalancerFullName: this.service.loadBalancer.loadBalancerFullName,
-        targetGroupFullName: this.service.targetGroup.targetGroupFullName,
+        // #1152: the traffic runs over the internal ALB now.
+        loadBalancerFullName: this.internalLoadBalancer.loadBalancerFullName,
+        targetGroupFullName: internalTargetGroup.targetGroupFullName,
         alarmTopic: props.alarmTopic,
         isProduction: isProd,
         // #986: the api-4xx-ratio alarm is fed by MetricFilters over this service's own
@@ -400,6 +472,10 @@ export class ApiGatewayServiceStack extends cdk.Stack {
     }
 
     this.apiGatewayUrl = `http://${this.service.loadBalancer.loadBalancerDnsName}`;
+    // #1152 transition: the deployed ApiGateway stack still imports this name until it switches
+    // to the VPC link in the same deploy; keep the export alive for that one deploy. Remove with
+    // the public ALB.
+    this.exportValue(this.service.loadBalancer.loadBalancerDnsName);
 
     // Apply tags
     cdk.Tags.of(this).add('Environment', envName);

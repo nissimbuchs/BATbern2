@@ -88,6 +88,13 @@ aws cloudwatch describe-alarms --alarm-names <name> \
    shows up in `alb-5xx` alone.
 5. `api-4xx-ratio` is ratio-based and ZAP-proof by design (#995). A spike from a single client IP
    is a scanner, not a regression.
+6. Request path since #1152: `api.batbern.ch` (HTTP API) → VPC link `batbern-staging-http-api` →
+   internal ALB → gateway. The ALB alarms watch the internal ALB. If every request fails with 503
+   and no target is unhealthy, check the VPC link (`aws apigatewayv2 get-vpc-links`, status
+   `AVAILABLE`) and the HTTP API integration (`aws apigatewayv2 get-integrations --api-id
+   <id>`, connection type `VPC_LINK`). The visitor's address reaches the services as
+   `X-BATbern-Client-IP`; a rate-limit log line keyed on `3.71.12x.x` / `3.127.7x.x` (API Gateway
+   egress) means the header is not getting through.
 
 **Escalation:** none available. Single operator.
 

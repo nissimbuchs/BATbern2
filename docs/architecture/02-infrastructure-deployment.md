@@ -126,7 +126,7 @@ Reference: what each stack contains.
 | `InboundEmail` | SES receipt rules, MX record, domain identity with DKIM, inbound S3 bucket, inbound and forwarding queues |
 | `Cluster` | ECS cluster, Service Connect namespace `batbern.local`, Container Insights off |
 | 5 domain service stacks | One Fargate service each, built by `domain-service-construct.ts` |
-| `ApiGatewayService` | Spring Boot gateway on Fargate behind a public ALB |
+| `ApiGatewayService` | Spring Boot gateway on Fargate behind an internal ALB that only the HTTP API's VPC link reaches (#1152); the former public ALB carries no traffic and is locked in a follow-up deploy |
 | `ApiGateway` | AWS HTTP API on api.batbern.ch |
 | `Frontend` | SPA bucket, rollback snapshot bucket, CloudFront for www.batbern.ch and batbern.ch |
 | `FrontendBeta` | Second `FrontendStack` for beta.batbern.ch |
@@ -466,7 +466,7 @@ graph LR
 ```mermaid
 graph LR
     A["Browser / Watch"] -->|HTTPS| B["AWS HTTP API<br/>api.batbern.ch<br/>CORS, throttling<br/>no authorizer"]
-    B -->|"HTTP, public ALB DNS"| ALB["Public ALB :80"]
+    B -->|"VPC link"| ALB["Internal ALB :80"]
     ALB --> C["Spring Boot gateway<br/>ECS Fargate<br/>JWT, rate limit, DomainRouter"]
 
     C -->|"Service Connect"| D1["Event Management"]
@@ -487,8 +487,9 @@ graph LR
 - TLS with the pre-created eu-central-1 ACM certificate for api.batbern.ch.
 - Stage `v1` with throttling: rate 1000 req/s, burst 2000.
 - One catch-all route `/{proxy+}` for GET/POST/PUT/DELETE/PATCH, integrated with an
-  `HttpUrlIntegration` to `http://{gateway ALB DNS}/{proxy}`. There is no VPC link: the HTTP
-  API reaches the public ALB over the internet on port 80.
+  `HttpAlbIntegration` through a VPC link to the internal gateway ALB (#1152). The integration
+  overwrites `X-BATbern-Client-IP` with `$context.identity.sourceIp` and passes the path
+  unchanged; the ALB's security group admits only the VPC link, so the header can be trusted.
 - **No authorizer.** An `HttpJwtAuthorizer` object is constructed but attached to no route
   ([ADR-008](./ADR-008-simplified-api-gateway-routing.md)).
 - **The only CORS layer:** `corsPreflight` allows www.batbern.ch, batbern.ch and
@@ -497,10 +498,16 @@ graph LR
 
 ```typescript
 // infrastructure/lib/stacks/api-gateway-stack.ts (abridged)
-const httpIntegration = new apigatewayv2_integrations.HttpUrlIntegration(
-  'SpringBootApiGatewayIntegration',
-  `${apiGatewayServiceUrl}/{proxy}`,      // http://<public ALB DNS>/{proxy}
-  { method: apigatewayv2.HttpMethod.ANY },
+const httpIntegration = new apigatewayv2_integrations.HttpAlbIntegration(
+  'SpringBootApiGatewayAlbIntegration',
+  props.apiGatewayListener,               // internal ALB listener :80
+  {
+    vpcLink: props.vpcLink,
+    method: apigatewayv2.HttpMethod.ANY,
+    parameterMapping: new apigatewayv2.ParameterMapping()
+      .overwriteHeader('X-BATbern-Client-IP', apigatewayv2.MappingValue.contextVariable('identity.sourceIp'))
+      .overwritePath(apigatewayv2.MappingValue.requestPath()),
+  },
 );
 
 this.api.addRoutes({
