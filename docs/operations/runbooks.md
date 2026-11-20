@@ -171,6 +171,94 @@ Single-AZ `db.t4g.micro`. There is no failover; a restart is a full outage.
    ~1000 users/month; sustained CPU is a query defect.
 3. `database-storage-low`: check whether pre-deploy RDS snapshots have accumulated.
 
+### Restoring the database
+
+Not rehearsed yet. Written 2026-11-20 from the live configuration (#1220 item 4); run it once on a
+quiet evening against a throw-away restore and correct this section with what you learn.
+
+**What there is to restore from** (checked 2026-11-20):
+
+| Source | Kept | Granularity |
+|---|---|---|
+| Automated backups of `batbern-staging-postgres` | 7 days (`BackupRetentionPeriod`), window 03:00-04:00 UTC | any second up to about 5 minutes ago (point in time) |
+| `batbern-staging-pre-deploy-*` manual snapshots | newest 3; `deploy-staging.yml` takes one before a deploy that changes a migration or a Dockerfile and deletes older ones (#1032) | the moment before that deploy |
+| Hand-made snapshots (e.g. `batbern-staging-pre-v103-*`) | until deleted by hand | that moment |
+
+A restore never overwrites the running instance: RDS always creates a **new** instance. The database
+secret (`RdsClusterInstanceSecret*`) has no rotation, so a restored instance accepts the same
+credentials the services already use.
+
+**First decide: partial or full.**
+
+- **Partial** (a bad migration or a wrong bulk change hit some tables): restore to a side instance,
+  copy the affected rows back. Production keeps running. Prefer this.
+- **Full** (the instance is lost or the data is broadly wrong): replace the instance. Outage of
+  roughly the restore time plus the service restarts.
+
+**1. Restore to a side instance** (both cases):
+
+```bash
+export AWS_PROFILE=batbern-staging AWS_REGION=eu-central-1
+SRC=batbern-staging-postgres
+NEW=batbern-staging-postgres-restore-$(date +%Y%m%d%H%M)
+COMMON="--db-instance-class db.t4g.micro --db-subnet-group-name $(aws rds describe-db-instances \
+  --db-instance-identifier $SRC --query 'DBInstances[0].DBSubnetGroup.DBSubnetGroupName' --output text) \
+  --vpc-security-group-ids $(aws rds describe-db-instances --db-instance-identifier $SRC \
+  --query 'DBInstances[0].VpcSecurityGroups[0].VpcSecurityGroupId' --output text) \
+  --db-parameter-group-name $(aws rds describe-db-instances --db-instance-identifier $SRC \
+  --query 'DBInstances[0].DBParameterGroups[0].DBParameterGroupName' --output text) \
+  --no-publicly-accessible --copy-tags-to-snapshot"
+
+# a) point in time (UTC), within the last 7 days
+aws rds restore-db-instance-to-point-in-time --source-db-instance-identifier $SRC \
+  --target-db-instance-identifier $NEW --restore-time 2026-11-20T15:00:00Z $COMMON
+# b) or from a snapshot
+aws rds describe-db-snapshots --db-instance-identifier $SRC \
+  --query 'reverse(sort_by(DBSnapshots,&SnapshotCreateTime))[].[DBSnapshotIdentifier,SnapshotCreateTime]' --output text
+aws rds restore-db-instance-from-db-snapshot --db-snapshot-identifier <id> \
+  --db-instance-identifier $NEW $COMMON
+
+aws rds wait db-instance-available --db-instance-identifier $NEW
+```
+
+**2a. Partial: copy rows back.** Open a tunnel to the side instance through the bastion
+(`scripts/staging/start-db-tunnel.sh` reads the endpoint of `batbern-staging-postgres`; point it at
+`$NEW` for this) and compare with production through a second tunnel. Copy with `pg_dump --data-only
+-t <table>` or `\copy` of the selected rows, inside one transaction on production. Each service's
+Flyway history table (`flyway_schema_history_*`) must stay as production has it: never copy those.
+Do not download a dump to a laptop (CLAUDE.md, personal data); work on `rack` or the bastion and
+delete the files afterwards. Then delete the side instance:
+`aws rds delete-db-instance --db-instance-identifier $NEW --skip-final-snapshot`.
+
+**2b. Full: swap the instances.** The services connect to the endpoint
+`batbern-staging-postgres.<id>.eu-central-1.rds.amazonaws.com`, which follows the instance
+identifier. Swapping the identifiers therefore points every service at the restored data without a
+CDK deploy.
+
+```bash
+# stop writers (note each desiredCount first, restore them afterwards)
+for s in $(aws ecs list-services --cluster batbern-staging --query 'serviceArns[]' --output text); do
+  aws ecs update-service --cluster batbern-staging --service $s --desired-count 0 >/dev/null; done
+aws rds modify-db-instance --db-instance-identifier $SRC --new-db-instance-identifier $SRC-old --apply-immediately
+aws rds wait db-instance-available --db-instance-identifier $SRC-old
+aws rds modify-db-instance --db-instance-identifier $NEW --new-db-instance-identifier $SRC \
+  --backup-retention-period 7 --preferred-backup-window 03:00-04:00 \
+  --preferred-maintenance-window sun:04:00-sun:05:00 --deletion-protection --apply-immediately
+aws rds wait db-instance-available --db-instance-identifier $SRC
+# start the services again with their old desiredCount; Flyway validates the history on boot
+```
+
+Check after the swap: each service log shows Flyway at the expected version and no `checksum
+mismatch`; `https://api.batbern.ch/api/v1/events/current` answers; the three `database-*` alarms
+refer to the instance by identifier, so they follow the swap. Keep `$SRC-old`
+(deletion protection on) until the owner agrees to delete it. The next CDK deploy of the database
+stack must show no replacement of the instance (`cdk diff BATbern-staging-Database`); if it does,
+stop and do not deploy.
+
+**Everything written after the restore point is lost** in a full swap: registrations, Mail Center
+messages and uploads metadata of that window. Before the swap, export what was written since
+(compare `created_at`/`updated_at` on the old instance) if it is still readable.
+
 ---
 
 ## Email and SES
