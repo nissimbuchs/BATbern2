@@ -1,139 +1,172 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+/**
+ * SpeakerSelfNominatePanel (Story 7.2 "I Could Speak on That", #1263).
+ *
+ * Network at the wire (MSW, `selfNominateSpeaker`, checked against event-speakers-api), real
+ * auth context (`renderWithAuth`), real router, real i18next (English). The login page is a stand-in
+ * that shows where the real `LoginPage` would send the visitor back to (`loginTarget`).
+ */
+
+import { describe, it, expect } from 'vitest';
+import { HttpResponse } from 'msw';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { Route, Routes, useLocation } from 'react-router-dom';
+import i18n from '@/i18n/config';
+import { api } from '@/test/msw/api';
+import { renderWithAuth, signedInAs, signedOut } from '@/test/auth';
+import type { UseAuthReturn } from '@/contexts/AuthContext';
+import { loginTarget } from '@/utils/auth/loginTarget';
 import { SpeakerSelfNominatePanel } from '../SpeakerSelfNominatePanel';
-import * as speakerNominationApi from '@/services/api/speakerNominationApi';
-import { useAuth } from '@/hooks/useAuth/useAuth';
 
-vi.mock('@/services/api/speakerNominationApi');
-vi.mock('@/hooks/useAuth/useAuth');
-
-const mockNominate = vi.mocked(speakerNominationApi.selfNominateSpeaker);
-const mockUseAuth = vi.mocked(useAuth);
-
-function setAuthenticated(isAuthenticated: boolean) {
-  // The panel only reads isAuthenticated; cast the partial context for the test.
-  mockUseAuth.mockReturnValue({ isAuthenticated } as ReturnType<typeof useAuth>);
+function LoginStandIn() {
+  const location = useLocation();
+  return <p data-testid="login-return-target">{loginTarget(location.state)}</p>;
 }
 
-function makeQueryClient() {
-  return new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
-}
-
-function renderPanel(eventCode = 'BATbern57') {
-  return render(
-    <QueryClientProvider client={makeQueryClient()}>
-      <SpeakerSelfNominatePanel eventCode={eventCode} topicName="Cloud Native" />
-    </QueryClientProvider>
+function renderPanel(
+  auth: UseAuthReturn,
+  props: Partial<React.ComponentProps<typeof SpeakerSelfNominatePanel>> = {}
+) {
+  return renderWithAuth(
+    <Routes>
+      <Route
+        path="/"
+        element={
+          <SpeakerSelfNominatePanel eventCode="BATbern57" topicName="Cloud Native" {...props} />
+        }
+      />
+      <Route path="/login" element={<LoginStandIn />} />
+    </Routes>,
+    { auth }
   );
 }
 
-describe('SpeakerSelfNominatePanel (Story 7.2)', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    setAuthenticated(true);
-    mockNominate.mockResolvedValue({ id: 's1', source: 'self_nomination' } as never);
+const conflict = (code: string) =>
+  HttpResponse.json(
+    { message: 'Conflict', status: 409, error: 'Conflict', details: { code } },
+    { status: 409 }
+  );
+
+async function fillAndSubmit(title: string, abstract: string) {
+  const user = userEvent.setup();
+  await user.click(screen.getByTestId('self-nominate-button'));
+  await user.type(await screen.findByTestId('self-nominate-title'), title);
+  await user.type(screen.getByTestId('self-nominate-abstract'), abstract);
+  await user.click(screen.getByTestId('self-nominate-submit'));
+}
+
+describe('SpeakerSelfNominatePanel', () => {
+  describe('signed out', () => {
+    it('shows the button with the existing wording', () => {
+      renderPanel(signedOut());
+      expect(screen.getByTestId('self-nominate-button')).toHaveTextContent(
+        i18n.t('common:attendee.selfNominate.button')
+      );
+    });
+
+    it('sends the click to the login, which comes back to /?nominate=<code>', async () => {
+      const user = userEvent.setup();
+      renderPanel(signedOut());
+
+      await user.click(screen.getByTestId('self-nominate-button'));
+
+      expect(await screen.findByTestId('login-return-target')).toHaveTextContent(
+        '/?nominate=BATbern57'
+      );
+      expect(screen.queryByTestId('self-nominate-dialog')).not.toBeInTheDocument();
+      expect(api.calls('selfNominateSpeaker')).toHaveLength(0);
+    });
+
+    it('does not open the form from autoOpen while signed out', () => {
+      renderPanel(signedOut(), { autoOpen: true });
+      expect(screen.getByTestId('self-nominate-button')).toBeInTheDocument();
+      expect(screen.queryByTestId('self-nominate-dialog')).not.toBeInTheDocument();
+    });
+
+    it('renders nothing with hideWhenSignedOut (the hero on an event page)', () => {
+      renderPanel(signedOut(), { hideWhenSignedOut: true });
+      expect(screen.queryByTestId('self-nominate-button')).not.toBeInTheDocument();
+    });
   });
 
-  it('renders nothing when the user is not logged in', () => {
-    setAuthenticated(false);
-    renderPanel();
-    expect(screen.queryByTestId('self-nominate-button')).not.toBeInTheDocument();
-  });
+  describe('signed in', () => {
+    it('shows the button with hideWhenSignedOut too, and opens the form on click', async () => {
+      const user = userEvent.setup();
+      renderPanel(signedInAs('attendee'), { hideWhenSignedOut: true });
 
-  it('shows the button to a logged-in attendee and opens the form on click', async () => {
-    const user = userEvent.setup();
-    renderPanel();
+      await user.click(screen.getByTestId('self-nominate-button'));
 
-    await user.click(screen.getByTestId('self-nominate-button'));
-    expect(await screen.findByTestId('self-nominate-dialog')).toBeInTheDocument();
-    expect(screen.getByTestId('self-nominate-title')).toBeInTheDocument();
-    expect(screen.getByTestId('self-nominate-abstract')).toBeInTheDocument();
-  });
+      expect(await screen.findByTestId('self-nominate-dialog')).toBeInTheDocument();
+      expect(screen.getByTestId('self-nominate-title')).toBeInTheDocument();
+      expect(screen.getByTestId('self-nominate-abstract')).toBeInTheDocument();
+    });
 
-  it('disables submit until both title and abstract are valid', async () => {
-    const user = userEvent.setup();
-    renderPanel();
+    it('opens the form on mount with autoOpen', async () => {
+      renderPanel(signedInAs('attendee'), { autoOpen: true });
+      expect(await screen.findByTestId('self-nominate-dialog')).toBeInTheDocument();
+    });
 
-    await user.click(screen.getByTestId('self-nominate-button'));
-    const submit = await screen.findByTestId('self-nominate-submit');
-    expect(submit).toBeDisabled();
+    it('disables submit until both title and abstract are valid', async () => {
+      const user = userEvent.setup();
+      renderPanel(signedInAs('attendee'));
 
-    await user.type(screen.getByTestId('self-nominate-title'), 'A solid talk title');
-    expect(submit).toBeDisabled(); // abstract still empty
+      await user.click(screen.getByTestId('self-nominate-button'));
+      const submit = await screen.findByTestId('self-nominate-submit');
+      expect(submit).toBeDisabled();
 
-    await user.type(screen.getByTestId('self-nominate-abstract'), 'A few sentences of pitch.');
-    expect(submit).toBeEnabled();
-  });
+      await user.type(screen.getByTestId('self-nominate-title'), 'A solid talk title');
+      expect(submit).toBeDisabled(); // abstract still empty
 
-  it('submits a nomination for the card event and shows success', async () => {
-    const user = userEvent.setup();
-    renderPanel('BATbern57');
+      await user.type(screen.getByTestId('self-nominate-abstract'), 'A few sentences of pitch.');
+      expect(submit).toBeEnabled();
+    });
 
-    await user.click(screen.getByTestId('self-nominate-button'));
-    await user.type(await screen.findByTestId('self-nominate-title'), 'Event-driven in practice');
-    await user.type(
-      screen.getByTestId('self-nominate-abstract'),
-      'A field report from the trenches.'
-    );
-    await user.click(screen.getByTestId('self-nominate-submit'));
+    it('posts the nomination for this event and shows success', async () => {
+      renderPanel(signedInAs('attendee'));
 
-    await waitFor(() => {
-      expect(mockNominate).toHaveBeenCalledWith('BATbern57', {
+      await fillAndSubmit('Event-driven in practice', 'A field report from the trenches.');
+
+      expect(await screen.findByTestId('self-nominate-success')).toHaveTextContent(
+        i18n.t('common:attendee.selfNominate.success')
+      );
+      const [call] = api.calls('selfNominateSpeaker');
+      expect(call.params).toEqual({ eventCode: 'BATbern57' });
+      expect(call.body).toEqual({
         sessionTitle: 'Event-driven in practice',
         abstract: 'A field report from the trenches.',
       });
     });
-    expect(await screen.findByTestId('self-nominate-success')).toBeInTheDocument();
-  });
 
-  it('treats a 409 DUPLICATE_SELF_NOMINATION as already-done', async () => {
-    const user = userEvent.setup();
-    mockNominate.mockRejectedValueOnce({
-      isAxiosError: true,
-      response: { status: 409, data: { details: { code: 'DUPLICATE_SELF_NOMINATION' } } },
+    it('treats a 409 DUPLICATE_SELF_NOMINATION as already-done', async () => {
+      api.on('selfNominateSpeaker', () => conflict('DUPLICATE_SELF_NOMINATION'));
+      renderPanel(signedInAs('attendee'));
+
+      await fillAndSubmit('Another talk title', 'Pitch text goes here.');
+
+      expect(await screen.findByTestId('self-nominate-success')).toBeInTheDocument();
     });
-    renderPanel();
 
-    await user.click(screen.getByTestId('self-nominate-button'));
-    await user.type(await screen.findByTestId('self-nominate-title'), 'Another talk title');
-    await user.type(screen.getByTestId('self-nominate-abstract'), 'Pitch text goes here.');
-    await user.click(screen.getByTestId('self-nominate-submit'));
+    it('shows the generic error (not already-done) for a 409 SELF_NOMINATION_NOT_ALLOWED', async () => {
+      api.on('selfNominateSpeaker', () => conflict('SELF_NOMINATION_NOT_ALLOWED'));
+      renderPanel(signedInAs('attendee'));
 
-    // After the duplicate error the dialog flips to the success/already-done view.
-    expect(await screen.findByTestId('self-nominate-success')).toBeInTheDocument();
-  });
+      await fillAndSubmit('A timely talk title', 'Pitch text goes here.');
 
-  it('shows a generic error (NOT already-done) for a 409 SELF_NOMINATION_NOT_ALLOWED', async () => {
-    const user = userEvent.setup();
-    // Topic unset / unpublished race after the card rendered — same status, different code.
-    mockNominate.mockRejectedValueOnce({
-      isAxiosError: true,
-      response: { status: 409, data: { details: { code: 'SELF_NOMINATION_NOT_ALLOWED' } } },
+      expect(await screen.findByTestId('self-nominate-error')).toHaveTextContent(
+        i18n.t('common:attendee.selfNominate.error')
+      );
+      expect(screen.queryByTestId('self-nominate-success')).not.toBeInTheDocument();
     });
-    renderPanel();
 
-    await user.click(screen.getByTestId('self-nominate-button'));
-    await user.type(await screen.findByTestId('self-nominate-title'), 'A timely talk title');
-    await user.type(screen.getByTestId('self-nominate-abstract'), 'Pitch text goes here.');
-    await user.click(screen.getByTestId('self-nominate-submit'));
+    it('shows the generic error when the submission fails for another reason', async () => {
+      api.on('selfNominateSpeaker', () =>
+        HttpResponse.json({ message: 'boom', status: 500, error: 'Error' }, { status: 500 })
+      );
+      renderPanel(signedInAs('attendee'));
 
-    // Must NOT flip to already-done; the form stays open and surfaces the generic error.
-    expect(await screen.findByTestId('self-nominate-error')).toBeInTheDocument();
-    expect(screen.queryByTestId('self-nominate-success')).not.toBeInTheDocument();
-  });
+      await fillAndSubmit('Yet another title', 'Some abstract content.');
 
-  it('shows a generic error when the submission fails for another reason', async () => {
-    const user = userEvent.setup();
-    mockNominate.mockRejectedValueOnce(new Error('network'));
-    renderPanel();
-
-    await user.click(screen.getByTestId('self-nominate-button'));
-    await user.type(await screen.findByTestId('self-nominate-title'), 'Yet another title');
-    await user.type(screen.getByTestId('self-nominate-abstract'), 'Some abstract content.');
-    await user.click(screen.getByTestId('self-nominate-submit'));
-
-    expect(await screen.findByTestId('self-nominate-error')).toBeInTheDocument();
+      await waitFor(() => expect(screen.getByTestId('self-nominate-error')).toBeInTheDocument());
+    });
   });
 });

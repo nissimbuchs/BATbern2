@@ -31,7 +31,8 @@ public final class NewsletterSubscriberSpecification {
     }
 
     /**
-     * {@code active} (neither unsubscribed nor suppressed), {@code unsubscribed}, {@code suppressed};
+     * {@code active} (confirmed, neither unsubscribed nor suppressed), {@code pending} (not yet
+     * confirmed, neither unsubscribed nor suppressed, #1288), {@code unsubscribed}, {@code suppressed};
      * {@code all} or null is unrestricted; any other value matches nothing (as the former JPQL).
      */
     public static Specification<NewsletterSubscriber> hasStatus(String status) {
@@ -40,7 +41,9 @@ public final class NewsletterSubscriberSpecification {
         }
         return switch (status) {
             case "all" -> Specification.unrestricted();
-            case "active" -> (root, query, cb) -> cb.and(
+            case "active" -> (root, query, cb) -> cb.and(cb.isNotNull(root.get("confirmedAt")),
+                    cb.isNull(root.get("unsubscribedAt")), cb.isNull(root.get("suppressedAt")));
+            case "pending" -> (root, query, cb) -> cb.and(cb.isNull(root.get("confirmedAt")),
                     cb.isNull(root.get("unsubscribedAt")), cb.isNull(root.get("suppressedAt")));
             case "unsubscribed" -> (root, query, cb) -> cb.isNotNull(root.get("unsubscribedAt"));
             case "suppressed" -> (root, query, cb) -> cb.isNotNull(root.get("suppressedAt"));

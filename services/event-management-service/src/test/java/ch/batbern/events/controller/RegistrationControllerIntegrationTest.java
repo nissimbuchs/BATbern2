@@ -132,6 +132,7 @@ class RegistrationControllerIntegrationTest extends AbstractIntegrationTest {
 
     /** Deletes this class's events and their registrations (the requests commit). */
     private void cleanUp() {
+        jdbc.update("DELETE FROM newsletter_subscribers WHERE lower(email) IN (?, ?)", JOHN_MAIL, JANE_MAIL);
         jdbc.update("DELETE FROM registrations WHERE event_id IN (SELECT id FROM events WHERE event_code IN (?, ?))",
                 EVENT_CODE, OTHER_EVENT_CODE);
         jdbc.update("DELETE FROM events WHERE event_code IN (?, ?)", EVENT_CODE, OTHER_EVENT_CODE);
@@ -673,6 +674,136 @@ class RegistrationControllerIntegrationTest extends AbstractIntegrationTest {
         sesRecorder.awaitAsyncSends();
         assertThat(sesRecorder.mailsTo(JANE_MAIL)).hasSize(1);
         assertThat(sesRecorder.mailsTo(JOHN_MAIL)).isEmpty();
+    }
+
+    // ============================================================================
+    // Newsletter opt-in of a registration: double opt-in (#1288)
+    // ============================================================================
+
+    private static final String NEW_REGISTRATION_WITH_NEWSLETTER = """
+            {
+                "firstName": "John",
+                "lastName": "Doe",
+                "email": "success+john.doe@simulator.amazonses.com",
+                "termsAccepted": true,
+                "communicationPreferences": {"newsletterSubscribed": true}
+            }
+            """;
+
+    private Map<String, Object> newsletterRow(String email) {
+        return jdbc.queryForMap("SELECT source, confirmed_at, unsubscribed_at, confirmation_token "
+                + "FROM newsletter_subscribers WHERE lower(email) = ?", email);
+    }
+
+    @Test
+    @DisplayName("#1288: the newsletter box of a registration stays pending without an extra mail, "
+            + "and the registration's confirmation link activates it")
+    void should_activateNewsletterOptIn_when_registrationIsConfirmed() throws Exception {
+        mockMvc.perform(post("/api/v1/events/{eventCode}/registrations", EVENT_CODE)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(NEW_REGISTRATION_WITH_NEWSLETTER))
+                .andExpect(status().isCreated());
+
+        assertThat(newsletterRow(JOHN_MAIL)).satisfies(row -> {
+            assertThat(row.get("source")).isEqualTo("registration");
+            assertThat(row.get("confirmed_at")).as("pending").isNull();
+        });
+        // Only the registration's confirmation mail, no newsletter confirmation.
+        sesRecorder.awaitAsyncSends();
+        assertThat(sesRecorder.mails()).singleElement().satisfies(mail -> {
+            assertThat(mail.to()).contains(JOHN_MAIL);
+            assertThat(mail.html()).contains(CONFIRM_LINK).doesNotContain("/newsletter/confirm");
+        });
+        Matcher token = CONFIRM_TOKEN.matcher(sesRecorder.mails().get(0).html());
+        assertThat(token.find()).isTrue();
+
+        mockMvc.perform(post("/api/v1/events/{eventCode}/registrations/confirm", EVENT_CODE)
+                        .param("token", token.group(1)))
+                .andExpect(status().isOk());
+
+        assertThat(newsletterRow(JOHN_MAIL)).satisfies(row -> {
+            assertThat(row.get("confirmed_at")).as("active").isNotNull();
+            assertThat(row.get("unsubscribed_at")).isNull();
+            assertThat(row.get("confirmation_token")).isNull();
+        });
+    }
+
+    @Test
+    @DisplayName("#1288: an ACCEPT reply that confirms the registration activates its newsletter opt-in")
+    void should_activateNewsletterOptIn_when_registrationIsConfirmedByReply(
+            @Autowired ch.batbern.events.service.RegistrationService registrationService) throws Exception {
+        mockMvc.perform(post("/api/v1/events/{eventCode}/registrations", EVENT_CODE)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(NEW_REGISTRATION_WITH_NEWSLETTER))
+                .andExpect(status().isCreated());
+        assertThat(newsletterRow(JOHN_MAIL).get("confirmed_at")).isNull();
+
+        registrationService.confirmByEmail(JOHN_MAIL, EVENT_CODE);
+
+        assertThat(newsletterRow(JOHN_MAIL).get("confirmed_at")).isNotNull();
+    }
+
+    @Test
+    @WithMockUser(roles = "ORGANIZER")
+    @DisplayName("#1288: an organizer's confirmation does not activate the opt-in; its owner gets the confirmation mail")
+    void should_mailNewsletterConfirmation_when_organizerConfirmsRegistration() throws Exception {
+        mockMvc.perform(post("/api/v1/events/{eventCode}/registrations", EVENT_CODE)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(NEW_REGISTRATION_WITH_NEWSLETTER))
+                .andExpect(status().isCreated());
+        sesRecorder.awaitAsyncSends();
+        // Positive control for "no newsletter mail before": only the registration's link went out.
+        assertThat(sesRecorder.mails()).singleElement()
+                .satisfies(mail -> assertThat(mail.html()).doesNotContain("/newsletter/confirm"));
+        sesRecorder.reset();
+        Registration registration = registrationRepository
+                .findByEventIdAndAttendeeUsername(testEvent.getId(), "john.doe").orElseThrow();
+
+        mockMvc.perform(patch("/api/v1/events/{eventCode}/registrations/{registrationCode}",
+                        EVENT_CODE, registration.getRegistrationCode())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"confirmed\"}"))
+                .andExpect(status().isOk());
+
+        sesRecorder.awaitAsyncSends();
+        assertThat(sesRecorder.mailsTo(JOHN_MAIL)).singleElement()
+                .satisfies(mail -> assertThat(mail.html()).contains("/newsletter/confirm?token="));
+        assertThat(newsletterRow(JOHN_MAIL)).satisfies(row -> {
+            assertThat(row.get("confirmed_at")).as("still pending").isNull();
+            assertThat(row.get("confirmation_token")).isNotNull();
+        });
+    }
+
+    @Test
+    @DisplayName("#1288: confirming a registration without the newsletter box leaves an anonymous request pending")
+    void should_leaveAnonymousRequestPending_when_registrationWithoutBoxIsConfirmed() throws Exception {
+        // Someone else asked for the newsletter at this address: pending, waiting for its own link.
+        mockMvc.perform(post("/api/v1/newsletter/subscribers")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"email\": \"" + JOHN_MAIL + "\"}"))
+                .andExpect(status().isOk());
+        mockMvc.perform(post("/api/v1/events/{eventCode}/registrations", EVENT_CODE)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"firstName": "John", "lastName": "Doe",
+                                 "email": "success+john.doe@simulator.amazonses.com", "termsAccepted": true}
+                                """))
+                .andExpect(status().isCreated());
+        Registration registration = registrationRepository
+                .findByEventIdAndAttendeeUsername(testEvent.getId(), "john.doe").orElseThrow();
+
+        mockMvc.perform(post("/api/v1/events/{eventCode}/registrations/confirm", EVENT_CODE)
+                        .param("token", confirmationTokenService.generateConfirmationToken(
+                                registration.getId(), EVENT_CODE)))
+                .andExpect(status().isOk());
+
+        assertThat(registrationRepository.findById(registration.getId()).orElseThrow().getStatus())
+                .isEqualTo("confirmed");
+        assertThat(newsletterRow(JOHN_MAIL)).satisfies(row -> {
+            assertThat(row.get("source")).isEqualTo("explicit");
+            assertThat(row.get("confirmed_at")).as("still pending").isNull();
+            assertThat(row.get("confirmation_token")).isNotNull();
+        });
     }
 
     // ============================================================================

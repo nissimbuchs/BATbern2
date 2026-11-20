@@ -1,5 +1,5 @@
 /**
- * NewsletterSubscribeWidget Tests (Story 10.7 — AC4, AC12; Story 10.31 — AC10; Story 4.10c)
+ * NewsletterSubscribeWidget Tests (Story 10.7 — AC4, AC12; Story 10.31 — AC10; Story 4.10c; #1288)
  *
  * The real widget, hooks, service and apiClient against the MSW harness (4.10c moved it off the
  * hook mocks): subscribing posts to `POST /newsletter/subscribers` (`createNewsletterSubscriber`),
@@ -51,24 +51,21 @@ describe('NewsletterSubscribeWidget', () => {
     expect(api.calls('createNewsletterSubscriber')).toHaveLength(0);
   });
 
-  it('posts the address to /newsletter/subscribers without a Turnstile header when it is off', async () => {
+  it('posts the address and the mail language to /newsletter/subscribers without a Turnstile header when it is off', async () => {
     renderWithAuth(<NewsletterSubscribeWidget />, { auth: signedOut() });
 
     submit('test@example.com');
 
-    expect(await screen.findByText('Thank you! You are now subscribed.')).toBeInTheDocument();
+    // #1288 double opt-in: the visitor is not subscribed yet, they get a confirmation link.
+    expect(
+      await screen.findByText(
+        'Almost done: please confirm your subscription with the link we just sent you.'
+      )
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/You are now subscribed/)).not.toBeInTheDocument();
     const [call] = api.calls('createNewsletterSubscriber');
-    expect(call.body).toEqual({ email: 'test@example.com' });
+    expect(call.body).toEqual({ email: 'test@example.com', language: 'en' });
     expect(call.request.headers.get('X-Turnstile-Token')).toBeNull();
-  });
-
-  it('shows already-subscribed message on 409 response', async () => {
-    api.on('createNewsletterSubscriber', () => problem(409));
-    renderWithAuth(<NewsletterSubscribeWidget />, { auth: signedOut() });
-
-    submit('existing@example.com');
-
-    expect(await screen.findByText('You are already subscribed.')).toBeInTheDocument();
   });
 
   it('shows the error on 403 turnstile_failed (AC10)', async () => {

@@ -422,7 +422,7 @@ Phase A is complete! ✅
 </div>
 
 > **Where else `IDENTIFIED` candidates come from (Epic 7):**
-> - **Speaker self-nomination (Story 7.2)** — once the event's topic is set and published, logged-in attendees can self-nominate ("I could speak on that") with a proposed session title + abstract. Each nomination creates a `speaker_pool` entry at **`IDENTIFIED`**, appearing alongside your brainstormed candidates for triage through the normal 8-state workflow. No account is provisioned at nomination.
+> - **Speaker self-nomination (Story 7.2)** — once the event's topic is set and published, logged-in attendees can self-nominate ("I could speak on that") with a proposed session title + abstract. Each nomination creates a `speaker_pool` entry at **`IDENTIFIED`**, appearing alongside your brainstormed candidates for triage through the normal 8-state workflow. No account is provisioned at nomination. The button shows on the event's upcoming-event card on the homepage and on the homepage hero while the event is in the topic phase, to every visitor; a visitor who is not logged in is asked to log in and comes back to the homepage with the form open.
 > - **Topics from the floor (Story 7.1)** — logged-in attendees suggest future topics into the topic-suggestion pool, tagged `source = community`. These surface in the topic-selection admin UI (Step 2) with a **community** badge for organizers to triage; they do not create speaker-pool entries.
 
 ### Brainstorming Tips

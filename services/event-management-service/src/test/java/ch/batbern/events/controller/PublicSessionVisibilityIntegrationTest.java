@@ -34,6 +34,7 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Objects;
 
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
@@ -256,6 +257,38 @@ class PublicSessionVisibilityIntegrationTest extends AbstractIntegrationTest {
         }
 
         @Test
+        @DisplayName("should_sayWhetherSelfNominationIsOpen_when_upcomingEventsListed (#1263 AC0)")
+        void should_sayWhetherSelfNominationIsOpen_when_upcomingEventsListed() throws Exception {
+            Event open = saveEvent("BATbern9064", 9064, EVENT_DATE.plus(60, ChronoUnit.DAYS),
+                    EventWorkflowState.TOPIC_SELECTION, "topic");
+            open.setTopicCode("cloud-infrastructure");
+            eventRepository.save(open);
+            saveEvent("BATbern9065", 9065, EVENT_DATE.plus(90, ChronoUnit.DAYS),
+                    EventWorkflowState.TOPIC_SELECTION, "topic");
+            // CODE has a topic too but sits in the speakers phase: the phase half of the rule
+            Event speakersPhase = eventRepository.findByEventCode(CODE).orElseThrow();
+            speakersPhase.setTopicCode("it-management");
+            eventRepository.save(speakersPhase);
+
+            mockMvc.perform(get("/api/v1/public/events").param("scope", "upcoming"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data[?(@.eventCode == 'BATbern9064')].selfNominationOpen", contains(true)))
+                    .andExpect(jsonPath("$.data[?(@.eventCode == 'BATbern9065')].selfNominationOpen", contains(false)))
+                    .andExpect(jsonPath("$.data[?(@.eventCode == '" + CODE + "')].selfNominationOpen",
+                            contains(false)));
+            mockMvc.perform(get("/api/v1/public/events/BATbern9064"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.selfNominationOpen").value(true));
+            mockMvc.perform(get("/api/v1/public/events/" + CODE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.selfNominationOpen").value(false));
+            mockMvc.perform(get("/api/v1/public/events/current"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.eventCode").value(CODE))
+                    .andExpect(jsonPath("$.selfNominationOpen").value(false));
+        }
+
+        @Test
         @DisplayName("should_listOnlyArchivedEvents_when_scopeArchive")
         void should_listOnlyArchivedEvents_when_scopeArchive() throws Exception {
             saveEvent("BATbern9062", 9062, Instant.now().minus(200, ChronoUnit.DAYS),
@@ -346,7 +379,12 @@ class PublicSessionVisibilityIntegrationTest extends AbstractIntegrationTest {
         void should_returnAllSessions_when_organizerReadsEventByCode() throws Exception {
             mockMvc.perform(get("/api/v1/events/" + CODE).param("include", "sessions"))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.sessions", hasSize(5)));
+                    .andExpect(jsonPath("$.sessions", hasSize(5)))
+                    // the self-nomination flag belongs to the public read model only
+                    .andExpect(jsonPath("$.selfNominationOpen").doesNotExist());
+            mockMvc.perform(get("/api/v1/events"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data[0].selfNominationOpen").doesNotExist());
         }
 
         @Test

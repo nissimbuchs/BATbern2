@@ -1006,6 +1006,11 @@ export interface components {
       sessions?: components['schemas']['Session'][];
       /** @description Public read model only (GET /public/events/*): the speakers the website may show for the published phase. SPEAKERS phase: accepted-or-later speakers without talk title; AGENDA and later: with talk title. Never set by the organizer endpoints. */
       speakers?: components['schemas']['PublicSpeaker'][] | null;
+      /**
+       * @description Public read model only (GET /public/events and /public/events/*, false for past and archived events): true while visitors may offer a talk (topic set and the topic published, speakers not yet), the rule the self-nomination endpoint enforces with SELF_NOMINATION_NOT_ALLOWED. Never set by the organizer endpoints (#1263).
+       * @example true
+       */
+      selfNominationOpen?: boolean;
       /** @description Organizer's free-text note on topic selection (Story 5.2). */
       topicSelectionNote?: string;
       /** @description Username of the creator (audit). */

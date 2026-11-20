@@ -85,8 +85,8 @@ public class TurnstileVerificationFilter implements Filter {
 
         // AC2: If no token present, fail-open — widget may be blocked by ad blocker or
         // corporate firewall. Registration requires email confirmation, which acts as a
-        // secondary bot filter; the newsletter subscribe has none (#1288) and relies on the
-        // per-IP rate limit (RateLimiter).
+        // secondary bot filter; so does the newsletter subscribe since #1288 (double opt-in),
+        // which is also held to a per-IP rate limit (RateLimiter).
         String token = httpRequest.getHeader("X-Turnstile-Token");
         if (token == null || token.isBlank()) {
             log.debug("Turnstile token missing for {} {} — failing open", httpRequest.getMethod(),

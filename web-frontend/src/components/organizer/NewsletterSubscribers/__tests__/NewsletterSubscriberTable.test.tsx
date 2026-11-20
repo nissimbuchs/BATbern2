@@ -20,7 +20,21 @@ const mockActiveSubscriber: SubscriberResponse = {
   language: 'en',
   source: 'website',
   subscribedAt: '2026-01-15T10:00:00Z',
+  confirmedAt: '2026-01-15T10:05:00Z',
   unsubscribedAt: null,
+};
+
+/** #1288: asked for the newsletter, not yet confirmed by its owner. */
+const mockPendingSubscriber: SubscriberResponse = {
+  id: 'sub-4',
+  email: 'pending@example.com',
+  firstName: 'Dora',
+  language: 'de',
+  source: 'explicit',
+  subscribedAt: '2026-11-19T09:00:00Z',
+  confirmedAt: null,
+  unsubscribedAt: null,
+  suppressedAt: null,
 };
 
 const mockUnsubscribedSubscriber: SubscriberResponse = {
@@ -194,6 +208,18 @@ describe('NewsletterSubscriberTable', () => {
 
     const chips = screen.getAllByText(/active|unsubscribed/i);
     expect(chips.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('should_showPendingChipAndUnsubscribeOnly_when_subscriberIsUnconfirmed', () => {
+    renderComponent({ subscribers: [mockActiveSubscriber, mockPendingSubscriber] });
+
+    expect(screen.getByTestId('pending-chip-sub-4')).toHaveTextContent('Unconfirmed');
+    // Positive control: the confirmed subscriber shows as active, without the pending chip.
+    expect(screen.queryByTestId('pending-chip-sub-1')).not.toBeInTheDocument();
+    expect(screen.getAllByText('Active').length).toBeGreaterThan(0);
+    // #1288: the organizer cannot confirm on the owner's behalf, only remove the request.
+    expect(screen.getByTestId('action-unsubscribe-sub-4')).toBeInTheDocument();
+    expect(screen.queryByTestId('action-resubscribe-sub-4')).not.toBeInTheDocument();
   });
 
   it('should_renderSuppressedChip_when_subscriberHasSuppressedAt', () => {

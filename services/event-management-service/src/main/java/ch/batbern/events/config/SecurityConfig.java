@@ -132,12 +132,14 @@ public class SecurityConfig {
                 // surface (/auth/speaker-magic-login + /speaker-portal/validate-token +
                 // /api/v1/e2e-test/**) was removed in Story 11.F.1.
 
-                // Story 10.7: Newsletter public endpoints (subscribe + token-based unsubscribe).
+                // Story 10.7: Newsletter public endpoints (subscribe, confirm, token-based unsubscribe).
                 // 4.10c: subscribing is POST on the collection; exact path, so the organizer's
                 // /newsletter/subscribers/{id}/* and the GET list stay authenticated.
                 .requestMatchers(HttpMethod.POST, "/api/v1/newsletter/subscribers").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/v1/newsletter/unsubscribe/verify").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/v1/newsletter/unsubscribe").permitAll()
+                // #1288: double opt-in, the confirmation link posts its token here.
+                .requestMatchers(HttpMethod.POST, "/api/v1/newsletter/confirmations").permitAll()
 
                 // Story 7.4: Public "Thank the Organizers" endpoints (anonymous allowed).
                 // POST is Turnstile-guarded + service-side per-(event,IP) rate-limited; the GET is

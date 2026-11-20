@@ -1287,7 +1287,7 @@
       "title": "Mit BATbern auf dem Laufenden bleiben",
       "placeholder": "deine@email.com",
       "button": "Abonnieren",
-      "success": "Danke! Du bist jetzt angemeldet.",
+      "checkInbox": "Fast geschafft: Bitte bestätigen Sie die Anmeldung mit dem Link, den wir Ihnen eben geschickt haben.",
       "alreadySubscribed": "Du bist bereits angemeldet.",
       "error": "Etwas ist schiefgelaufen. Bitte versuche es erneut.",
       "emailInvalid": "Bitte gib eine gültige E-Mail-Adresse ein."
@@ -1300,6 +1300,14 @@
       "success": "Du wurdest erfolgreich abgemeldet.",
       "resubscribeLink": "Erneut anmelden",
       "invalidToken": "Dieser Abmeldelink ist ungültig oder wurde bereits verwendet."
+    },
+    "confirm": {
+      "title": "Newsletter-Anmeldung bestätigen",
+      "message": "Bestätigen Sie, dass Sie den BATbern-Newsletter erhalten möchten.",
+      "button": "Anmeldung bestätigen",
+      "success": "Danke! Ihre Newsletter-Anmeldung ist bestätigt.",
+      "homeLink": "Zur Startseite",
+      "invalidToken": "Dieser Bestätigungslink ist ungültig, abgelaufen (Links gelten 7 Tage) oder wurde bereits verwendet. Bitte melden Sie sich erneut an."
     }
   },
   "speakersTable": {

@@ -67,7 +67,8 @@
           "speakerRole" : "PRIMARY_SPEAKER",
           "talkTitle" : "Archived Talk",
           "sessionSlug" : "archived-talk"
-        } ]
+        } ],
+        "selfNominationOpen" : false
       } ],
       "pagination" : {
         "page" : 1,

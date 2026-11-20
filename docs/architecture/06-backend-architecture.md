@@ -138,7 +138,7 @@ Main `permitAll` entries of the event-management chain
 | `GET /api/v1/event-types` (exact), `GET /api/v1/public/event-photos` (exact) | Event format definitions and the homepage photo strip (Story 4.10b, moved from `/events/types`, `/events/recent-photos`) |
 | `GET .../sessions/{slug}/qna`, `.../materials/{id}/download`, `/events/{code}/photos`, `/events/{code}/live-timing` | Public reads for Q&A archive, materials, photos, presenter screen |
 | `POST /api/v1/events/{code}/registrations`, `.../registrations/confirm`, `GET .../registrations/{code}` | Anonymous registration; the code or the token is the credential |
-| `POST /api/v1/newsletter/subscribers` (exact path), `/newsletter/unsubscribe`, `GET /newsletter/unsubscribe/verify` | Newsletter (subscribe since Story 4.10c; the rest of `/newsletter/subscribers` is the organizer's) |
+| `POST /api/v1/newsletter/subscribers` (exact path), `POST /newsletter/confirmations`, `/newsletter/unsubscribe`, `GET /newsletter/unsubscribe/verify` | Newsletter (subscribe since Story 4.10c, its confirmation link since #1288; the rest of `/newsletter/subscribers` is the organizer's) |
 | `GET/POST /api/v1/registrations/deregister*` | Token-based self-service deregistration |
 | `GET/POST /api/v1/events/{code}/thanks`, `GET /api/v1/thanks/featured` | Thank the organizers |
 | `/internal/**` | Service-to-service only; the gateway denies it (below) |
@@ -164,7 +164,9 @@ so the website never shows an organizer something a visitor would not see.
   sessions. Completed, archived and past events: unfiltered.
 - **What shape:** `PublicEventShaper` derives `speakers[]` from the visible sessions. In the SPEAKERS
   phase it empties the session list and omits talk titles, so the lineup is public before the
-  programme is.
+  programme is. It also sets `selfNominationOpen` from `Event.isSelfNominationOpen()` (topic set,
+  topic phase published), the rule the self-nomination endpoint enforces, so the homepage cards
+  need no phase logic of their own (#1263).
 - `GET /public/events/{code}` returns 404 unless the event is publicly visible.
   `GET /public/events?scope=upcoming|archive` serves the upcoming list and the archive (search,
   topic filter and sort apply to `archive` only).
@@ -367,7 +369,9 @@ speaker went through this event's path. A session's speaker (`/sessions/{slug}/s
 is a user's assignment to a session, keyed by username, and not this key.
 
 The outreach record names the organizer by username (`organizer_username`); before 4.10 the
-controller wrote the e-mail address there. Rows written before keep the address.
+controller wrote the e-mail address there. V157 (#1287) moved each such address to the username of
+the one account that owns it (primary or verified additional address, any case); an address with
+no owner or several owners stays, and the migration logs both counts.
 
 ## Error Handling Strategy
 
@@ -896,6 +900,34 @@ sequenceDiagram
 Not implemented (an earlier "design reference" here): a `RoleManagementService` with promotion and
 demotion requests, an approval workflow (`RoleChangeRequest`, `RoleChangeApproval` tables) and
 `UserRoleChangedEvent`.
+
+## Newsletter Subscription: Double Opt-in (#1288)
+
+A subscriber is **active** only when it is confirmed (`confirmed_at` set, V158), not unsubscribed
+and not suppressed. Every read that picks recipients or counts them requires all three: the send loop
+(`findActiveAfterId`, `isActive`), the retry (`findActiveSubscribersNotInSend`, the failed-recipient
+re-check), the Mail Center newsletter audience (`NewsletterAudienceAdapter`), the counts
+(`countActive`) and the organizer list's `active` filter. A **pending** row (never confirmed, not
+unsubscribed, not suppressed) gets nothing; the organizer list shows it under `pending`.
+
+| Path | Result | Mail |
+|---|---|---|
+| Anonymous `POST /newsletter/subscribers`, new, pending or unsubscribed address | Pending (an unsubscribed row stays unsubscribed until confirmed), `confirmation_token` kept or created, language of the request | `newsletter-confirmation-{de,en}` after the commit, at most one per address and hour (`confirmation_sent_at`; a further request answers 200 and sends nothing), rendered and sent asynchronously so the answer time reveals nothing, German unless the request says `en`, link `{app.base-url}/newsletter/confirm?token=…`; recorded as a `SYSTEM` mail, token masked |
+| Same, active or suppressed address | Unchanged (name, language, source), answer 200 as for any valid address | None |
+| `POST /newsletter/confirmations` with the token (public page `/newsletter/confirm`, posted on click) | Active: `confirmed_at` set, `unsubscribed_at` cleared, token cleared. A used or unknown token: 404, nothing changes | None |
+| Registration with the newsletter box | Pending, source `registration`, token as the marker, under the attendee's address | None; the registration's confirmation link (`confirmRegistration`) or ACCEPT reply (`confirmByEmail`) activates it. Confirming any registration of that address activates its pending registration opt-in, since the person ticked the box on one of them; an anonymous request (source `explicit`) still needs its own link. An organizer's status change to `confirmed` proves no address: it sends the newsletter confirmation mail instead |
+| Signed-in owner, `PATCH /newsletter/my-subscriptions` on their primary or confirmed address | Active at once | None |
+| Organizer resubscribe | Active at once, `confirmed_at` set if it never was | None |
+
+Every unsubscribe (link, account, organizer, inbound reply) also clears the confirmation token, so
+an old confirmation link cannot subscribe the address again. Rows that existed before V158 count as confirmed at their `subscribed_at`. The confirmation mail
+names a 7-day window, counted from the later of the last confirmation mail and the request
+(`confirmation_requested_at`): a later link answers 404. A registration's opt-in without a mail of
+its own waits 14 days for the registration's link (resends and cleanup keep a registration
+confirmable for about 9 days). `NewsletterConfirmationExpiryScheduler` (03:45 Europe/Zurich, ShedLock) deletes
+requests past the window that were never confirmed and are neither unsubscribed nor suppressed, and
+clears the expired token of an unsubscribed row, which stays as the record of the opt-out.
+Suppressed rows are never touched.
 
 ## Newsletter Async Processing
 

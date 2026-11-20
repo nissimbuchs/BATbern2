@@ -89,7 +89,7 @@ class MailComposerControllerIntegrationTest extends AbstractIntegrationTest {
                 .build());
         subscriberRepository.saveAndFlush(NewsletterSubscriber.builder()
                 .email("success+sub921@simulator.amazonses.com").firstName("Sub").language("de")
-                .source("explicit").unsubscribeToken("tok-921-" + UUID.randomUUID()).build());
+                .source("explicit").unsubscribeToken("tok-921-" + UUID.randomUUID()).confirmedAt(Instant.now()).build());
         when(userApiClient.getOrganizerUsernames()).thenReturn(List.of("organizer1", "organizer2"));
         when(userApiClient.getUserByUsername("organizer1"))
                 .thenReturn(new UserResponse().email("success+org1@simulator.amazonses.com"));

@@ -1273,7 +1273,7 @@
       "title": "Resta infurmà cun BATbern",
       "placeholder": "tia@email.com",
       "button": "Abonnar",
-      "success": "Grazia! Ti es ussa abonà.",
+      "checkInbox": "Quasi fatg: confermai p.pl. l'abunament cun il link che nus avain gist tramess a vus.",
       "alreadySubscribed": "Ti es gia abonà.",
       "error": "Insatge è gì tort. Emprova puspè.",
       "emailInvalid": "Endatescha ina adressa e-mail valida."
@@ -1286,6 +1286,14 @@
       "success": "Ti es vegnì desabonà cun success.",
       "resubscribeLink": "Abonnar puspè",
       "invalidToken": "Quest link da desabonnaziun è invalid u è vegnì gia utilisà."
+    },
+    "confirm": {
+      "title": "Confermar l'abunament dal newsletter",
+      "message": "Confermai che Vus vulais retschaiver il newsletter da BATbern.",
+      "button": "Confermar l'abunament",
+      "success": "Grazia! Voss abunament dal newsletter è confermà.",
+      "homeLink": "A la pagina principala",
+      "invalidToken": "Quest link da confermaziun n'è betg valaivel, è scadì (ils links valan 7 dis) u è gia vegnì duvrà. Per plaschair s'annunziai danovamain."
     }
   },
   "speakersTable": {

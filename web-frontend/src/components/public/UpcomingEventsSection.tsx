@@ -17,11 +17,19 @@
  * Hidden when no event follows the hero. If the published list fails, every card falls back to
  * date and title.
  *
+ * Return from login (#1263): an anonymous click on a card's self-nomination button logs in and
+ * comes back to `/?nominate=<eventCode>`. The card with that code opens its form once; once the
+ * cards and the auth state are known, the parameter is removed (replace), whether a card matched
+ * or not. The hero reads the same parameter for its own button (`HomePage`).
+ *
  * The cards and the data behind them are shared with the attendee dashboard (story 3,
  * 2026-11-13): `UpcomingEventCards.tsx`, `useUpcomingEventCards`.
  */
 
+import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useSearchParams } from 'react-router-dom';
+import { useAuth } from '@/hooks/useAuth/useAuth';
 import { useUpcomingEventCards } from '@/hooks/useUpcomingEventCards';
 import { PlannedEventCard, PublishedEventCard } from '@/components/public/UpcomingEventCards';
 
@@ -32,6 +40,23 @@ interface UpcomingEventsSectionProps {
 export function UpcomingEventsSection({ currentEventCode }: UpcomingEventsSectionProps) {
   const { t } = useTranslation('events');
   const { isLoading, calendar, publishedByCode } = useUpcomingEventCards(currentEventCode);
+  const { isLoading: isAuthLoading } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const nominate = searchParams.get('nominate');
+
+  // The matching card opened its form in this same commit (child effects run first), so the
+  // parameter can go: a reload or a back navigation does not open the form again.
+  useEffect(() => {
+    if (nominate === null || isLoading || isAuthLoading) return;
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        next.delete('nominate');
+        return next;
+      },
+      { replace: true }
+    );
+  }, [nominate, isLoading, isAuthLoading, setSearchParams]);
 
   if (isLoading || calendar.length === 0) return null;
 
@@ -42,7 +67,11 @@ export function UpcomingEventsSection({ currentEventCode }: UpcomingEventsSectio
         {calendar.map((e) => {
           const full = publishedByCode.get(e.eventCode);
           return full ? (
-            <PublishedEventCard key={e.eventCode} event={full} />
+            <PublishedEventCard
+              key={e.eventCode}
+              event={full}
+              autoOpenSelfNomination={nominate === e.eventCode}
+            />
           ) : (
             <PlannedEventCard
               key={e.eventCode}

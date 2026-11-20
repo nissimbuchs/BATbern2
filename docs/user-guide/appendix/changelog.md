@@ -41,6 +41,14 @@ Only items that are not live yet. Everything else is listed under its release be
 
 ### Unreleased — after BATbern60
 
+**Fix — A newsletter subscription becomes active only after its owner confirms it (#1288)**:
+- ✅ Subscribing on the website sends a mail (German, English when the page is in English) with a link; the newsletter starts only once the owner of the address follows it and clicks "Confirm subscription" on the page it opens (`/newsletter/confirm`). Until then the address is "Unconfirmed" and gets no newsletter. The mail says the link is valid for 7 days. Before, anyone could subscribe any address.
+- ✅ Subscribing an address again that waits for confirmation sends the same link once more. An address already subscribed is left as it is and gets no mail; the form shows "check your inbox" either way, so it no longer reveals whether an address is subscribed.
+- ✅ The newsletter box of an event registration needs no extra mail: the registration's own confirmation link (or an "accept" reply) confirms the subscription too.
+- ✅ Unchanged: switching the newsletter on for your own address in your account, and an organizer's "Re-subscribe", take effect at once. Everyone subscribed before this change stays subscribed.
+- ✅ The organizer's subscriber list has the status filter "Unconfirmed"; unconfirmed subscribers are counted in no newsletter audience.
+- ⚠️ API: `POST /api/v1/newsletter/subscribers` answers 200 for every valid address (409 for an active one is gone). New public `POST /api/v1/newsletter/confirmations` `{token}`: 200, or 404 for an unknown or used token. `SubscriberResponse` has `confirmedAt` (null while unconfirmed); the list's `status` filter takes `pending` (and `suppressed`, which the spec did not list).
+
 **Fix — Registrations: six flaws from the review of the registration endpoints (#1315)**:
 - ✅ An old confirmation link no longer revives a registration that was cancelled, moved to the waitlist, or marked attended or no-show since: it answers "already processed" (409) and the registration stays as it is. A confirmed registration still answers "already confirmed", without a second mail. The same holds for an "accept" reply to the registration mail: it confirms only a registration that is still pending, and is otherwise ignored without an answer.
 - ✅ The organizer's status change of a registration follows a fixed table: a cancelled registration cannot be changed back, nothing is moved back to "registered" or onto the waitlist, and confirming a pending registration is refused while the event holds more registrations than places. Confirming a waitlisted one promotes it as the "Promote" action does (promotion mail). Cancelling a waitlisted one no longer moves anyone up, and the waitlist positions behind it close the gap. Attendance (attended, no-show) can be set and corrected as before.

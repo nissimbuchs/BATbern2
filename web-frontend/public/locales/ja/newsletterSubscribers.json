@@ -15,6 +15,7 @@
       "label": "Status",
       "all": "All",
       "active": "Active",
+      "pending": "未確認",
       "unsubscribed": "Unsubscribed"
     },
     "clearAll": "Clear Filters"
@@ -33,6 +34,8 @@
   },
   "status": {
     "active": "Active",
+    "pending": "未確認",
+    "pendingHint": "リンクによる購読の確認がまだです。ニュースレターは届きません",
     "unsubscribed": "Unsubscribed"
   },
   "actions": {

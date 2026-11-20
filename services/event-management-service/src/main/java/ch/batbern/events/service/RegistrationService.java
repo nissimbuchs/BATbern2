@@ -16,7 +16,6 @@ import ch.batbern.events.dto.generated.users.GetOrCreateUserRequest;
 import ch.batbern.events.dto.generated.users.GetOrCreateUserResponse;
 import ch.batbern.events.dto.generated.users.UserResponse;
 import ch.batbern.events.dto.RegistrationResponse;
-import ch.batbern.events.exception.DuplicateSubscriberException;
 import ch.batbern.events.exception.EventHasRealRegistrationsException;
 import ch.batbern.events.exception.UserServiceException;
 import ch.batbern.shared.utils.EmailAddresses;
@@ -211,19 +210,15 @@ public class RegistrationService {
         log.info("Created registration: {} for user: {} at event: {}",
                 registrationCode, username, eventCode);
 
-        // Story 10.7 (AC6): Auto-subscribe to newsletter if opted in during registration
+        // Story 10.7 (AC6): subscribe to the newsletter if opted in during registration. #1288: pending
+        // until the registration is confirmed (confirmRegistration, confirmByEmail), no extra mail. The
+        // attendee's address, which the registration's confirmation link goes to and so proves.
         if (request.getCommunicationPreferences() != null
                 && Boolean.TRUE.equals(request.getCommunicationPreferences().getNewsletterSubscribed())) {
             try {
                 String displayName = (request.getFirstName() + " " + request.getLastName()).trim();
-                newsletterSubscriberService.subscribe(
-                        request.getEmail(), displayName, "de", "registration", username);
-                log.info("Auto-subscribed {} to newsletter via registration",
-                        LoggingUtils.maskEmail(request.getEmail()));
-            } catch (DuplicateSubscriberException e) {
-                // Already subscribed — silently ignore (AC6)
-                log.debug("Newsletter auto-subscribe: {} already active, skipping",
-                        LoggingUtils.maskEmail(request.getEmail()));
+                String address = saved.getAttendeeEmail() != null ? saved.getAttendeeEmail() : request.getEmail();
+                newsletterSubscriberService.subscribeFromRegistration(address, displayName, username);
             } catch (ch.batbern.events.exception.ReservedEmailDomainException e) {
                 // Reserved/test domain (RFC 2606) — let registration succeed but skip subscribe
                 log.warn("Newsletter auto-subscribe skipped for reserved domain: {}",
@@ -681,6 +676,10 @@ public class RegistrationService {
             }
             registration.setStatus(target);
             registrationRepository.save(registration);
+            if ("confirmed".equals(target)) {
+                // #1288: the organizer's confirmation proves no address; the opt-in's owner confirms by mail.
+                newsletterSubscriberService.requestConfirmationOfRegistrationOptIn(registration.getAttendeeEmail());
+            }
             if ("cancelled".equals(target) && Registration.CAPACITY_STATUSES.contains(from)) {
                 waitlistPromotionService.promoteFromWaitlist(event.getId());
             }
@@ -782,6 +781,7 @@ public class RegistrationService {
         registration.setStatus("confirmed");
         registrationRepository.save(registration);
         log.info("Registration confirmed: {} for event: {}", registration.getRegistrationCode(), eventCode);
+        newsletterSubscriberService.confirmFromRegistration(registration.getAttendeeEmail());
 
         // The pending mail carries no calendar invite; it comes with the confirmed mail.
         notifyRegistrationConfirmed(registration, event);
@@ -859,6 +859,7 @@ public class RegistrationService {
         registrationRepository.save(registration);
         log.info("Registration confirmed via email reply: {} for event: {}",
                 registration.getRegistrationCode(), eventCode);
+        newsletterSubscriberService.confirmFromRegistration(registration.getAttendeeEmail());
         eventRepository.findByEventCode(eventCode)
                 .ifPresent(event -> notifyRegistrationConfirmed(registration, event));
     }

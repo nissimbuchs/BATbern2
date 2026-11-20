@@ -26,7 +26,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useTranslation } from 'react-i18next';
 import { looksLikeEmail } from '@/utils/validation/email';
-import { useSearchParams } from 'react-router-dom';
+import { useLocation, useSearchParams } from 'react-router-dom';
+import { rememberLoginTarget } from '@/utils/auth/loginTarget';
 import { useAuth } from '@hooks/useAuth';
 import { useFeature } from '@/contexts/useFeature';
 import { authService } from '@/services/auth/authService';
@@ -87,6 +88,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onForgotPasswor
   // after the gateway returns 403 ACCOUNT_DEACTIVATED (it also forced a logout).
   // Surface a dismissible notice so the user understands why they were signed out.
   const [searchParams] = useSearchParams();
+  const location = useLocation();
   const [deactivatedDismissed, setDeactivatedDismissed] = useState(false);
   // Story 12.8 F5: the reason may also arrive via the sessionStorage hand-off instead of
   // the query param — e.g. the AuthCallbackPage navigates to plain `/login` after a failed
@@ -330,7 +332,11 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onForgotPasswor
                       fullWidth
                       startIcon={<Google />}
                       disabled={isLoading}
-                      onClick={() => authService.signInWithFederated('Google')}
+                      onClick={() => {
+                        // the hosted UI round trip loses the router state (AuthCallbackPage)
+                        rememberLoginTarget(location.state);
+                        void authService.signInWithFederated('Google');
+                      }}
                       sx={{ mb: 1 }}
                     >
                       {t('auth:login.continueWithGoogle')}

@@ -212,4 +212,13 @@ public class Event {
     protected void onUpdate() {
         updatedAt = Instant.now();
     }
+
+    /**
+     * Visitors may offer a talk while the topic is set and published and the speakers are not yet
+     * (Story 7.2 AC1/AC4). The one place of the rule: the self-nomination endpoint enforces it and
+     * the public read model reports it to the homepage cards (#1263).
+     */
+    public boolean isSelfNominationOpen() {
+        return topicCode != null && !topicCode.isBlank() && "topic".equalsIgnoreCase(currentPublishedPhase);
+    }
 }

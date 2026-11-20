@@ -143,6 +143,7 @@ export function aSubscriber(overrides: Partial<SubscriberResponse> = {}): Subscr
     bounceCount: null,
     lastBouncedAt: null,
     suppressedAt: null,
+    confirmedAt: FIXTURE_CREATED_AT,
     ...overrides,
   };
 }

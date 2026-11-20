@@ -71,6 +71,7 @@
         "materialsCount" : 0
       } ],
       "speakers" : [ ],
+      "selfNominationOpen" : false,
       "currentPublishedPhase" : "AGENDA"
     }
   }

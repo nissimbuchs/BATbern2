@@ -12,7 +12,7 @@ import { devtools } from 'zustand/middleware';
 
 export interface NewsletterSubscriberFilters {
   searchQuery?: string;
-  status?: 'active' | 'unsubscribed' | 'suppressed' | 'all';
+  status?: 'active' | 'pending' | 'unsubscribed' | 'suppressed' | 'all';
   sortBy?: string;
   sortDir?: 'asc' | 'desc';
 }

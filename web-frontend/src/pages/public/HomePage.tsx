@@ -16,7 +16,7 @@
  * See homePagePhase.ts for the authoritative section visibility matrix.
  */
 
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useCallback } from 'react';
 import { useParams, useSearchParams, useLocation, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { PublicLayout } from '@/components/public/PublicLayout';
@@ -66,7 +66,7 @@ const HomePage = () => {
   const { t: tCommon } = useTranslation('common');
   const { isAuthenticated, user } = useAuth();
   const { eventCode } = useParams<{ eventCode?: string }>();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const location = useLocation();
 
   // Archive mode (Story 4.2)
@@ -93,6 +93,19 @@ const HomePage = () => {
 
   const currentEventQuery = useCurrentEvent();
   const { data: event, isLoading, error } = eventCode ? specificEventQuery : currentEventQuery;
+
+  // #1263: the hero opened its form from `?nominate=<code>` (the return from login); remove the
+  // param itself (replace), so a reload or back navigation does not open it again.
+  const clearNominateParam = useCallback(() => {
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        next.delete('nominate');
+        return next;
+      },
+      { replace: true }
+    );
+  }, [setSearchParams]);
 
   // Event-specific photos — enabled for archive pages and EVENT_COMPLETED/ARCHIVED on homepage
   const isCompletedOrArchived =
@@ -156,10 +169,9 @@ const HomePage = () => {
   const eventDate = event.date;
   const eventLocation = event.venueName;
   const eventDateObj = eventDate ? new Date(eventDate) : null;
-  // Story 7.2 "I Could Speak on That": the current/hero event must also offer self-nomination
-  // while it is still upcoming, its topic is set, and it is published — not only the secondary
-  // upcoming-event cards. The panel self-gates on login; the event must be in the future
-  // (a past/archived hero event never accepts nominations — the window closes at event start).
+  // Story 7.2 "I Could Speak on That": the current/hero event also offers self-nomination while
+  // the server reports it open (`selfNominationOpen`, #1263), not only the upcoming-event cards.
+  // The event must be in the future (the window closes at event start).
   const heroSelfNominationEligible =
     !!event.eventCode &&
     !!eventDateObj &&
@@ -262,12 +274,20 @@ const HomePage = () => {
         </div>
       )}
 
-      {/* Story 7.2: self-nominate on the current event (topic set + published + upcoming).
-          The panel renders nothing for anonymous visitors, so this stays invisible until login. */}
+      {/* Story 7.2: self-nominate on the current event while the server reports it open.
+          On the homepage anonymous visitors see the button too (#1263): it logs in and comes
+          back to /?nominate=<code>, which opens the form once (the section removes the param).
+          On an event's own page the button stays hidden until login, as before. */}
       {heroSelfNominationEligible && (
         <div className="container mx-auto px-4 mt-6">
           <div className="max-w-md mx-auto" data-testid="hero-self-nominate">
-            <SpeakerSelfNominatePanel eventCode={event.eventCode!} topicName={heroTopicName} />
+            <SpeakerSelfNominatePanel
+              eventCode={event.eventCode!}
+              topicName={heroTopicName}
+              autoOpen={!eventCode && searchParams.get('nominate') === event.eventCode}
+              onAutoOpened={clearNominateParam}
+              hideWhenSignedOut={!!eventCode}
+            />
           </div>
         </div>
       )}

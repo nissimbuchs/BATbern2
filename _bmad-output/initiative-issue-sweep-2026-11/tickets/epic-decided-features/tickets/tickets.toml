@@ -1,0 +1,59 @@
+# Stories of epic-decided-features, in build order. One PR for the whole epic (initiative C2); each story is one commit or a few.
+
+[[entry]]
+id = 1
+type = "story"
+title = "Outreach history rows name the organizer by username"
+description = "A new EMS forward migration replaces every speaker_outreach_history.organizer_username that holds an e-mail address with the username of the one account whose primary or verified additional address matches it (case-insensitive); a value that matches no account or more than one stays unchanged. The migration reports the number of rows changed and left unchanged through RAISE NOTICE, which Flyway logs, so the count reaches the PR from production. All services share one database (V116, V151), so the migration reads user_profiles directly and skips itself when that table is missing."
+verify = "A migration test against PostgreSQL seeds rows with a matching primary address, a matching additional address in other case, an unknown address and a username, runs the migration and finds the first two mapped and the last two unchanged; after deploy the CloudWatch log of EMS shows the two counts, which go into the PR."
+covers = ["R16"]
+after = []
+hitl = false
+risk = "low"
+notes = ["Owner 2026-11-15 on #1287: option 1. Writing usernames since Story 4.10 is live, so no new rows with addresses appear."]
+
+[[entry]]
+id = 2
+type = "story"
+title = "The public event list says whether self-nomination is open"
+description = "Spec first: the items of GET /api/v1/public/events carry what the card needs to know that self-nomination is open (a selfNominationOpen flag computed with the same rule the backend enforces with SELF_NOMINATION_NOT_ALLOWED, or currentPublishedPhase; decided in the plan, one rule in one place preferred). Regenerated types, EMS mapper, provider contract test. AC0 of #1263."
+verify = "An EMS integration test of /public/events?scope=upcoming finds the flag true for an event with a topic in the TOPIC phase and false for one without a published topic; the provider contract test passes with the spec example."
+covers = ["R15"]
+after = []
+hitl = false
+risk = "low"
+
+[[entry]]
+id = 3
+type = "story"
+title = "Every visitor sees the speaking call on the upcoming-event cards"
+description = "The upcoming-event card is split: the upper part (image, title, date, topic, lineup) is one link to the event page, the lower part a separate button 'I could speak on this topic' while self-nomination is open, replacing the 'View details' footer and the panel below the card. Logged in, the button opens the existing self-nomination form; anonymous, it leads to login or sign-up and back to that event's open form, with an internal return path only. Unpublished-event cards, archive cards and the event page hero button stay as they are. Tailwind only on the homepage; any new key in all 10 locales. AC1 to AC6 of #1263."
+verify = "Vitest through MSW with the spec's /public/events shape: an anonymous visitor sees the button on an open event and not on one without a published topic; anonymous click goes to login with an internal return target that opens the form after login; logged-in click opens the form and submits; no 'View details' footer; two tab stops per card with the button, one without, no nested interactive elements; the return target refuses an external URL."
+covers = ["R15"]
+after = [2]
+hitl = false
+risk = "medium"
+notes = ["Owner 2026-11-08 on #1263: card split into link and real button, visible to everyone."]
+
+[[entry]]
+id = 4
+type = "story"
+title = "A newsletter subscription becomes active only after its owner confirms it"
+description = "A public subscribe stores the subscriber as pending, with a confirmation token, and sends a DE/EN confirmation mail with the link; clicking it activates the subscription. A pending subscriber receives no newsletter and counts in no audience. An address that is already active is not touched and gets no mail; a repeated subscribe of a pending address sends the mail again within the rate limit. Subscriptions whose address is already proven (the signed-in user's own verified address) are active at once; the plan lists every subscribe path and says which needs confirmation. Existing subscribers stay active. The frontend shows 'check your inbox' after subscribing and a confirmation page for the link. The access-control note and the docs say double opt-in again."
+verify = "Integration tests: an anonymous subscribe creates a pending row and the SesRecorder holds one DE or EN confirmation mail with the link; the confirm endpoint activates it, an unknown or used token does not; a newsletter send and every audience skip pending rows; the signed-in path is active at once. Vitest through MSW for the inbox message and the confirm page. After deploy a subscribe with an SES simulator address lands pending."
+covers = ["R14"]
+after = []
+hitl = false
+risk = "high"
+notes = ["Owner 2026-11-15 on #1288: option 1. Turnstile stays fail-open (#1222 item 9) because pending subscriptions are harmless."]
+
+[[entry]]
+id = 5
+type = "story"
+title = "Unconfirmed newsletter subscriptions expire"
+description = "A daily EMS job, cron with zone Europe/Zurich like every other scheduled job, deletes pending subscriptions older than the confirmation window (7 days unless the plan finds a reason otherwise); the confirmation mail names the window. Confirmed, unsubscribed and suppressed rows are never touched."
+verify = "An integration test with a fixed clock finds a pending row past the window deleted and a younger pending row, an active row, an unsubscribed row and a suppressed row unchanged; the job carries zone Europe/Zurich (the existing cron zone guard passes)."
+covers = ["R14"]
+after = [4]
+hitl = false
+risk = "low"

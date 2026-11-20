@@ -20,7 +20,14 @@ import { uiIntlLocale } from '@/utils/date/intlLocale';
  * Per-card wrapper that calls useMyRegistration individually (rules of hooks).
  * Story 10.10, AC5 / T10.5.
  */
-export function PublishedEventCard({ event }: { event: EventDetailUI }) {
+export function PublishedEventCard({
+  event,
+  autoOpenSelfNomination = false,
+}: {
+  event: EventDetailUI;
+  /** Open the self-nomination form once (the return from login, `?nominate=<code>`). */
+  autoOpenSelfNomination?: boolean;
+}) {
   const { data: myReg } = useMyRegistration(event.eventCode);
   return (
     <div className="min-w-0" data-testid="upcoming-event-card">
@@ -29,8 +36,9 @@ export function PublishedEventCard({ event }: { event: EventDetailUI }) {
         viewMode="grid"
         linkPrefix="/events/"
         myRegistrationStatus={myReg?.status}
-        // Story 7.2 "I Could Speak on That": attendees can self-nominate from upcoming-event cards.
+        // Story 7.2 "I Could Speak on That": visitors can self-nominate from upcoming-event cards.
         enableSelfNomination
+        autoOpenSelfNomination={autoOpenSelfNomination}
       />
     </div>
   );

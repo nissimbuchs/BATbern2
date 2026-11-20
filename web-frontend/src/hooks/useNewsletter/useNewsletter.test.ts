@@ -18,6 +18,7 @@ import {
   useNewsletterSubscribe,
   useVerifyUnsubscribeToken,
   useUnsubscribeByToken,
+  useConfirmSubscription,
   useMySubscriptions,
   usePatchMySubscription,
 } from './useNewsletter';
@@ -66,8 +67,8 @@ describe('useNewsletterSubscribe', () => {
     expect(qc.getQueryState(NEWSLETTER_QUERY_KEYS.mySubscriptions)?.isInvalidated).toBe(true);
   });
 
-  it('is in error when the server refuses (409)', async () => {
-    api.on('createNewsletterSubscriber', () => problem(409));
+  it('is in error when the server refuses (400, reserved address)', async () => {
+    api.on('createNewsletterSubscriber', () => problem(400));
     const { result } = renderHook(() => useNewsletterSubscribe(), { wrapper: wrapper(qc) });
 
     await act(async () => {
@@ -96,6 +97,19 @@ describe('useVerifyUnsubscribeToken', () => {
 
     expect(result.current.isLoading).toBe(false);
     expect(api.calls('verifyUnsubscribeToken')).toHaveLength(0);
+  });
+});
+
+describe('useConfirmSubscription (#1288)', () => {
+  it('posts the token of the confirmation mail and succeeds', async () => {
+    const { result } = renderHook(() => useConfirmSubscription(), { wrapper: wrapper(qc) });
+
+    await act(async () => {
+      await result.current.mutateAsync('confirm-token');
+    });
+
+    expect(api.calls('confirmNewsletterSubscription')[0].body).toEqual({ token: 'confirm-token' });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
   });
 });
 

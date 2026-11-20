@@ -47,7 +47,8 @@
           "speakers" : [ ],
           "materialsStatus" : "NONE"
         } ],
-        "speakers" : [ ]
+        "speakers" : [ ],
+        "selfNominationOpen" : false
       } ],
       "pagination" : {
         "page" : 1,

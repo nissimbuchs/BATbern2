@@ -331,8 +331,7 @@ public class NewsletterEmailService {
                 for (NewsletterSubscriber subscriber : batch) {
                     // A batch is read up to ~3.5 s before its last mail; whoever unsubscribed or
                     // bounced in between is not mailed (one primary-key lookup per recipient).
-                    if (!subscriberRepository.existsByIdAndUnsubscribedAtIsNullAndSuppressedAtIsNull(
-                            subscriber.getId())) {
+                    if (!subscriberRepository.isActive(subscriber.getId())) {
                         continue;
                     }
 
@@ -432,9 +431,9 @@ public class NewsletterEmailService {
             for (NewsletterRecipient failed : failedRecipients) {
                 String email = failed.getId().getEmail();
                 // #1129: never mail an address again whose subscriber was deleted, unsubscribed or
-                // suppressed since the send; it would also go out without an unsubscribe token.
+                // suppressed since the send (or is pending, #1288); it would also go out without an unsubscribe token.
                 Optional<NewsletterSubscriber> activeSubscriber = subscriberRepository.findByEmailIgnoreCase(email)
-                        .filter(s -> s.getUnsubscribedAt() == null && s.getSuppressedAt() == null);
+                        .filter(NewsletterSubscriber::isActive);
                 if (activeSubscriber.isEmpty()) {
                     log.info("Newsletter retry: skipping failed recipient without active subscriber, sendId={}",
                             sendId);

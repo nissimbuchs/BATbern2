@@ -308,7 +308,8 @@ class SlidesOnlineIntegrationTest extends AbstractIntegrationTest {
     void composer_registrantNoticeInProgress_doesNotBlockNewsletter() throws Exception {
         Event event = saveEvent(EVENT_CODE, Instant.parse("2026-03-06T15:00:00Z"));
         subscriberRepository.save(NewsletterSubscriber.builder()
-                .email(sim("sub")).language("de").source("explicit").unsubscribeToken("tok-760-sub").build());
+                .email(sim("sub")).language("de").source("explicit").unsubscribeToken("tok-760-sub")
+                .confirmedAt(Instant.now()).build());
         NewsletterSend notice = savePendingSend(event.getId()); // slides-online, a registrant notice
         notice.setStatus("IN_PROGRESS");
         sendRepository.save(notice);
@@ -328,7 +329,8 @@ class SlidesOnlineIntegrationTest extends AbstractIntegrationTest {
     void composer_newsletterPending_blocksNewsletter() throws Exception {
         Event event = saveEvent(EVENT_CODE, Instant.parse("2026-03-06T15:00:00Z"));
         subscriberRepository.save(NewsletterSubscriber.builder()
-                .email(sim("sub")).language("de").source("explicit").unsubscribeToken("tok-760-sub").build());
+                .email(sim("sub")).language("de").source("explicit").unsubscribeToken("tok-760-sub")
+                .confirmedAt(Instant.now()).build());
         NewsletterSend queued = savePendingSend(event.getId()); // PENDING: before markInProgress
         queued.setTemplateKey("newsletter-event");
         sendRepository.save(queued);
@@ -348,7 +350,8 @@ class SlidesOnlineIntegrationTest extends AbstractIntegrationTest {
     void composer_newsletterInProgress_blocksNewsletter() throws Exception {
         Event event = saveEvent(EVENT_CODE, Instant.parse("2026-03-06T15:00:00Z"));
         subscriberRepository.save(NewsletterSubscriber.builder()
-                .email(sim("sub")).language("de").source("explicit").unsubscribeToken("tok-760-sub").build());
+                .email(sim("sub")).language("de").source("explicit").unsubscribeToken("tok-760-sub")
+                .confirmedAt(Instant.now()).build());
         NewsletterSend running = savePendingSend(event.getId());
         running.setTemplateKey("newsletter-event");
         running.setStatus("IN_PROGRESS");

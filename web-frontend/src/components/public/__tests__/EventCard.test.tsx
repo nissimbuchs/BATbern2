@@ -8,7 +8,9 @@
  */
 
 import { describe, test, expect } from 'vitest';
-import { screen } from '@testing-library/react';
+import { screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { renderWithAuth, signedOut } from '@/test/auth';
 import { render } from '@/test/test-utils';
 import { EventCard } from '../EventCard';
 import type { EventDetail } from '@/types/event.types';
@@ -405,6 +407,83 @@ describe('EventCard Component', () => {
 
       // Elements should stack vertically on mobile
       expect(screen.getByText('BATbern 2024: Cloud Architecture')).toBeInTheDocument();
+    });
+  });
+  // #1263: while the server reports self-nomination open, an upcoming-event card is split: the
+  // upper part links to the event, the lower part is the self-nomination button.
+  describe('Self-nomination (Story 7.2, #1263)', () => {
+    const upcoming = (selfNominationOpen: boolean | undefined) =>
+      anEventDetail({
+        eventCode: 'BATbern61',
+        title: 'Künstliche Intelligenz & Architektur',
+        topic: { code: 'ai', name: 'KI', description: null, category: 'technical' },
+        currentPublishedPhase: 'TOPIC',
+        selfNominationOpen,
+      });
+
+    const renderUpcoming = (selfNominationOpen: boolean | undefined, enable = true) =>
+      renderWithAuth(
+        <EventCard
+          event={upcoming(selfNominationOpen)}
+          viewMode="grid"
+          linkPrefix="/events/"
+          enableSelfNomination={enable}
+        />,
+        { auth: signedOut() }
+      );
+
+    const viewDetails = () => screen.queryByText(/View Details/i);
+
+    test('should_splitCard_when_selfNominationOpen', () => {
+      renderUpcoming(true);
+
+      const link = screen.getByTestId('event-card');
+      expect(link).toHaveAttribute('href', '/events/BATbern61');
+      expect(within(link).getByText('Künstliche Intelligenz & Architektur')).toBeInTheDocument();
+
+      // One call to action: the button replaces "View details".
+      const button = screen.getByRole('button', { name: /I could speak on that/i });
+      expect(viewDetails()).not.toBeInTheDocument();
+      expect(button.closest('a')).toBeNull();
+    });
+
+    test('should_haveTwoTabStopsAndNoNestedInteractive_when_selfNominationOpen', async () => {
+      const user = userEvent.setup();
+      const { container } = renderUpcoming(true);
+
+      const interactive = container.querySelectorAll('a, button, input, textarea, select');
+      expect(interactive).toHaveLength(2);
+      interactive.forEach((el) =>
+        expect(el.querySelector('a, button, input, textarea, select')).toBeNull()
+      );
+
+      await user.tab();
+      expect(screen.getByTestId('event-card')).toHaveFocus();
+      await user.tab();
+      expect(screen.getByTestId('self-nominate-button')).toHaveFocus();
+    });
+
+    test.each([[false], [undefined]])(
+      'should_renderOneLinkWithViewDetails_when_selfNominationOpenIs_%s',
+      (flag) => {
+        const { container } = renderUpcoming(flag);
+
+        expect(container.querySelectorAll('a, button')).toHaveLength(1);
+        expect(screen.getByTestId('event-card')).toContainElement(viewDetails());
+        expect(screen.queryByTestId('self-nominate-button')).not.toBeInTheDocument();
+      }
+    );
+
+    test('should_keepArchiveCardUnchanged_when_selfNominationNotEnabled', () => {
+      // Positive control: the same event with the card option on shows the button.
+      const { unmount } = renderUpcoming(true);
+      expect(screen.getByTestId('self-nominate-button')).toBeInTheDocument();
+      unmount();
+
+      const { container } = renderUpcoming(true, false);
+      expect(container.querySelectorAll('a, button')).toHaveLength(1);
+      expect(screen.getByTestId('event-card')).toContainElement(viewDetails());
+      expect(screen.queryByTestId('self-nominate-button')).not.toBeInTheDocument();
     });
   });
 });

@@ -1,0 +1,27 @@
+meta {
+  name: Anonymous confirm — an unknown token answers 404
+  type: http
+  seq: 11
+}
+
+post {
+  url: {{baseUrl}}/newsletter/confirmations
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "token": "00000000-0000-4000-8000-000000000000"
+  }
+}
+
+assert {
+  res.status: eq 404
+}
+
+docs {
+  Issue 1288 (double opt-in): the confirmation link's endpoint is public (gateway and
+  EMS permitAll) and an unknown or used token changes nothing. A 401 here would mean
+  the permitAll is missing in one of the two SecurityConfigs.
+}

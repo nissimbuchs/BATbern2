@@ -435,7 +435,8 @@ class OwnTextComposerIntegrationTest extends AbstractIntegrationTest {
 
     private void subscriber(String email, String firstName) {
         subscriberRepository.saveAndFlush(NewsletterSubscriber.builder().email(email).firstName(firstName)
-                .language("de").source("explicit").unsubscribeToken("tok-923-" + UUID.randomUUID()).build());
+                .language("de").source("explicit").unsubscribeToken("tok-923-" + UUID.randomUUID())
+                .confirmedAt(Instant.now()).build());
     }
 
     private void registration(String username, String email, String firstName, String status) {

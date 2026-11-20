@@ -103,8 +103,8 @@ class TurnstileVerificationFilterTest {
     @Test
     void missingToken_failsOpen() throws Exception {
         // Widget may be blocked by ad blocker or corporate firewall — fail open so legitimate
-        // users are not locked out. (Registration has an email confirmation behind it; the
-        // newsletter subscribe has none, #1288, and relies on the per-IP rate limit.)
+        // users are not locked out. (Registration and, since #1288, the newsletter subscribe have
+        // an email confirmation behind them; the subscribe also keeps its per-IP rate limit.)
         properties.setEnabled(true);
 
         MockHttpServletRequest request = new MockHttpServletRequest("POST", "/api/v1/newsletter/subscribers");

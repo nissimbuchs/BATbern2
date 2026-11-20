@@ -3,7 +3,7 @@
  * Story 1.17: React Frontend Foundation - Task 13b (Performance Optimization)
  */
 
-import React, { useEffect, Suspense, useCallback } from 'react';
+import React, { useEffect, Suspense, useCallback, useState } from 'react';
 import {
   BrowserRouter as Router,
   Routes,
@@ -12,7 +12,7 @@ import {
   useLocation,
   useNavigate,
 } from 'react-router-dom';
-import { loginTarget } from '@/utils/auth/loginTarget';
+import { rememberLoginTarget, resolveLoginTarget } from '@/utils/auth/loginTarget';
 import { BATbernLoader } from '@components/shared/BATbernLoader';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { HelmetProvider } from 'react-helmet-async';
@@ -168,6 +168,8 @@ const SpeakerDashboardPage = React.lazy(() => import('@pages/speaker-portal/Spea
 
 // Story 10.7: Newsletter unsubscribe page
 const UnsubscribePage = React.lazy(() => import('@pages/public/UnsubscribePage'));
+// #1288: the confirmation link of the newsletter double opt-in
+const NewsletterConfirmPage = React.lazy(() => import('@pages/public/NewsletterConfirmPage'));
 
 // Additional-email verification (v2): public token-credentialed verify page
 const VerifyAdditionalEmailPage = React.lazy(
@@ -200,8 +202,9 @@ const LoginPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { isAuthenticated } = useAuth();
-  // back to the page that sent the user here (ProtectedRoute, Q&A login link), else dashboard
-  const target = loginTarget(location.state);
+  // back to the page that sent the user here (ProtectedRoute, Q&A login link, homepage speaking
+  // call), or the one remembered before sign-up, else dashboard. Read once: taking clears it.
+  const [target] = useState(() => resolveLoginTarget(location.state));
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -218,8 +221,10 @@ const LoginPage: React.FC = () => {
   }, [navigate]);
 
   const handleSignUp = useCallback(() => {
+    // registration and e-mail verification lose the router state; keep the target for the trip
+    rememberLoginTarget(location.state);
     navigate('/auth/register');
-  }, [navigate]);
+  }, [navigate, location.state]);
 
   return (
     <LoginForm
@@ -348,6 +353,8 @@ function App() {
 
                     {/* Story 10.7: Newsletter unsubscribe */}
                     <Route path="/unsubscribe" element={<UnsubscribePage />} />
+                    {/* #1288: Newsletter double opt-in confirmation link */}
+                    <Route path="/newsletter/confirm" element={<NewsletterConfirmPage />} />
 
                     {/* Additional-email verification (v2): public token-credentialed verify */}
                     <Route path="/verify-email" element={<VerifyAdditionalEmailPage />} />

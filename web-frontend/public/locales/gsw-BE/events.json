@@ -1276,7 +1276,7 @@
       "title": "Bliibt uf em Laufende mit BATbern",
       "placeholder": "dini@email.com",
       "button": "Abonniere",
-      "success": "Merci! Du bisch jetzt abonniert.",
+      "checkInbox": "Fasch fertig: Bitte bestätiget d Aamäudig mit em Link, wo mir öich grad gschickt hei.",
       "alreadySubscribed": "Du bisch scho abonniert.",
       "error": "Öppis isch schief gloffe. Bitte nomol versuche.",
       "emailInvalid": "Bitte e gültige E-Mail-Adress iigebbe."
@@ -1289,6 +1289,14 @@
       "success": "Du bisch erfolgriich abgmäldet worde.",
       "resubscribeLink": "Nomol abonniere",
       "invalidToken": "Dä Abmäldigslink isch ungültig oder scho verwändet worde."
+    },
+    "confirm": {
+      "title": "Newsletter-Aamäudig bestätige",
+      "message": "Bestätiget, dass dir dr BATbern-Newsletter wöit übercho.",
+      "button": "Aamäudig bestätige",
+      "success": "Merci! Öii Newsletter-Aamäudig isch bestätiget.",
+      "homeLink": "Zur Startsite",
+      "invalidToken": "Dä Bestätigungslink isch ungültig, abgloffe (Links gälte 7 Täg) oder isch scho brucht worde. Bitte mäldet Euch nomau aa."
     }
   },
   "speakersTable": {

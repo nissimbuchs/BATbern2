@@ -21,7 +21,9 @@ import java.util.UUID;
  * Newsletter subscriber entity (Story 10.7).
  *
  * <p>Tracks community members who have subscribed to BATbern newsletters.
- * Active subscribers have {@code unsubscribedAt = null}.
+ * Active subscribers have {@code confirmedAt != null}, {@code unsubscribedAt = null} and
+ * {@code suppressedAt = null}. A subscription is pending (double opt-in, #1288) until its owner
+ * follows the link with {@code confirmationToken}; a pending row gets no newsletter.
  * Re-subscribing a previously unsubscribed record clears {@code unsubscribedAt}
  * and preserves the original {@code unsubscribeToken}.
  *
@@ -71,6 +73,25 @@ public class NewsletterSubscriber {
     @Column(name = "unsubscribed_at")
     private Instant unsubscribedAt;
 
+    /**
+     * #1288: when the owner confirmed the subscription (link in the confirmation mail, a confirmed
+     * registration, their account, or an organizer). Null = pending, never sent a newsletter.
+     */
+    @Column(name = "confirmed_at")
+    private Instant confirmedAt;
+
+    /** #1288: single-use token of the confirmation link while a confirmation is outstanding; else null. */
+    @Column(name = "confirmation_token", length = 255, unique = true)
+    private String confirmationToken;
+
+    /** #1288: when the confirmation mail last went out; at most one per address and hour. */
+    @Column(name = "confirmation_sent_at")
+    private Instant confirmationSentAt;
+
+    /** #1288 story 3.5: when the open request was made; its window counts from here or the last mail. */
+    @Column(name = "confirmation_requested_at")
+    private Instant confirmationRequestedAt;
+
     // Story 10.29: Bounce tracking fields (V91 migration)
     /** Bounce type: 'hard', 'soft', 'complaint', or null if never bounced. */
     @Column(name = "bounce_type", length = 20)
@@ -92,6 +113,16 @@ public class NewsletterSubscriber {
 
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
+
+    /** #1288: confirmed, not unsubscribed, not suppressed; the only rows that get a newsletter. */
+    public boolean isActive() {
+        return confirmedAt != null && unsubscribedAt == null && suppressedAt == null;
+    }
+
+    /** #1288: never confirmed, not unsubscribed, not suppressed: waits for its owner's confirmation. */
+    public boolean isPending() {
+        return confirmedAt == null && unsubscribedAt == null && suppressedAt == null;
+    }
 
     @PrePersist
     void prePersist() {

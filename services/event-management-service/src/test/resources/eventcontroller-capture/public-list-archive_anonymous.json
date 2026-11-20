@@ -21,7 +21,8 @@
         "eventType" : "EVENING",
         "workflowState" : "ARCHIVED",
         "sessions" : [ ],
-        "speakers" : [ ]
+        "speakers" : [ ],
+        "selfNominationOpen" : false
       }, {
         "eventCode" : "BATbern9703",
         "title" : "Capture Archived Topic Event",
@@ -86,7 +87,8 @@
           "speakerRole" : "PRIMARY_SPEAKER",
           "talkTitle" : "Archived Talk",
           "sessionSlug" : "archived-talk"
-        } ]
+        } ],
+        "selfNominationOpen" : false
       } ],
       "pagination" : {
         "page" : 1,

@@ -125,7 +125,7 @@ have stays empty.
 | System | `currentYear`, `logoUrl`, `baseUrl`, `supportUrl` (the support page, `https://batbern.ch/support`), `organizerName`, `organizerEmail` | Every mail |
 | Event | `eventCode`, `eventNumber`, `eventTitle`, `eventType`, `eventDate`, `eventTime`, `venueName` (also `venue`), `venueAddress`, `venueDirectionsUrl`, `eventUrl` (also `eventDetailLink`), `registrationLink`, `conferenceLanguage`, `topicTitle`, `agenda`, `speakersSection`, `upcomingEventsSection` | Every mail about an event |
 | Recipient | `recipientName`, `salutation`, `dashboardLink` | Mails to one person or one venue contact |
-| Registration | `attendeeFirstName`, `attendeeLastName`, `attendeeName`, `registrationCode`, `confirmationUrl`, `deregistrationUrl` (also `deregistrationLink`), `waitlistPosition`, `createAccountUrl` | Registration, waitlist and registrant mails |
+| Registration | `attendeeFirstName`, `attendeeLastName`, `attendeeName`, `registrationCode`, `confirmationUrl`, `deregistrationUrl` (also `deregistrationLink`), `waitlistPosition`, `createAccountUrl` | Registration, waitlist and registrant mails; `confirmationUrl` also in `newsletter-confirmation` (the double opt-in link, #1288) |
 | Speaker | `speakerName`, `sessionTitle`, `sessionDescription`, `deadline`, `daysRemaining`, `responseDeadline`, `contentDeadline`, `portalLink`, `profileUrl`, `contentUrl`, `loginUrl`, `usernameForLogin`, `temporaryPassword`, `tempPasswordValidityDays`, `useExistingPassword` | Speaker invitation, acceptance and reminders |
 | Newsletter | `unsubscribeLink`, `preferencesLink`, `reminderPrefix` | Newsletter |
 | Venue | `notes`, `organizerSignature` | Venue and catering mails |

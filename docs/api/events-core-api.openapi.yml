@@ -457,6 +457,7 @@ paths:
                         talkTitle: Souveräne KI im Spital-Alltag
                         sessionSlug: batbern60-anna-muster
                     currentPublishedPhase: AGENDA
+                    selfNominationOpen: false
         '404':
           $ref: '#/components/responses/NotFound'
   /public/events:
@@ -2858,6 +2859,14 @@ components:
             title; AGENDA and later: with talk title. Never set by the organizer endpoints.'
           items:
             $ref: '#/components/schemas/PublicSpeaker'
+        selfNominationOpen:
+          type: boolean
+          description: 'Public read model only (GET /public/events and /public/events/*, false for past
+            and archived events): true while visitors may offer a
+            talk (topic set and the topic published, speakers not yet), the rule the self-nomination
+            endpoint enforces with SELF_NOMINATION_NOT_ALLOWED. Never set by the organizer endpoints
+            (#1263).'
+          example: true
         topicSelectionNote:
           type: string
           description: "Organizer's free-text note on topic selection (Story 5.2)."

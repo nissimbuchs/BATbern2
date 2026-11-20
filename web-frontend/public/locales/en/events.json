@@ -1287,7 +1287,7 @@
       "title": "Stay updated with BATbern",
       "placeholder": "your@email.com",
       "button": "Subscribe",
-      "success": "Thank you! You are now subscribed.",
+      "checkInbox": "Almost done: please confirm your subscription with the link we just sent you.",
       "alreadySubscribed": "You are already subscribed.",
       "error": "Something went wrong. Please try again.",
       "emailInvalid": "Please enter a valid email address."
@@ -1300,6 +1300,14 @@
       "success": "You have been successfully unsubscribed.",
       "resubscribeLink": "Subscribe again",
       "invalidToken": "This unsubscribe link is invalid or has already been used."
+    },
+    "confirm": {
+      "title": "Confirm your newsletter subscription",
+      "message": "Confirm that you want to receive the BATbern newsletter.",
+      "button": "Confirm subscription",
+      "success": "Thank you! Your newsletter subscription is confirmed.",
+      "homeLink": "Go to the homepage",
+      "invalidToken": "This confirmation link is invalid, has expired (links work for 7 days) or has already been used. To subscribe, please sign up again."
     }
   },
   "speakersTable": {

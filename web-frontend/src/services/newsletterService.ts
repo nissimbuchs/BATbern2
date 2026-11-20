@@ -12,6 +12,7 @@ type Schemas = components['schemas'];
 /** `language` may be omitted; the server applies its default (`de`). */
 export type NewsletterSubscribeRequest = Schemas['NewsletterSubscribeRequest'];
 export type NewsletterUnsubscribeRequest = Schemas['NewsletterUnsubscribeRequest'];
+export type NewsletterConfirmationRequest = Schemas['NewsletterConfirmationRequest'];
 /** #1244: newsletter state of one of the authenticated user's addresses. */
 export type NewsletterAddressSubscription = Schemas['NewsletterAddressSubscription'];
 export type MyNewsletterSubscriptionsResponse = Schemas['MyNewsletterSubscriptionsResponse'];
@@ -19,7 +20,8 @@ export type MyNewsletterSubscriptionsResponse = Schemas['MyNewsletterSubscriptio
 export type PatchMyNewsletterSubscriptionRequest = Schemas['PatchMyNewsletterSubscriptionRequest'];
 
 /** Subscribe an email to the newsletter (no auth required): `POST /newsletter/subscribers`
- *  (Story 4.10c). Returns 409 if already subscribed. Sends no mail.
+ *  (Story 4.10c). Double opt-in (#1288): 200 for every valid address; the owner gets a mail with a
+ *  confirmation link unless the address is already subscribed.
  *  @param turnstileToken Optional Cloudflare Turnstile token (AC8, Story 10.31). Passed via
  *  X-Turnstile-Token header when present.
  */
@@ -30,6 +32,13 @@ export async function subscribe(
   await apiClient.post('/newsletter/subscribers', request, {
     headers: turnstileToken ? { 'X-Turnstile-Token': turnstileToken } : {},
   });
+}
+
+/** #1288: confirm a subscription with the token of its confirmation mail. Throws 404 if the
+ *  token is unknown or already used. */
+export async function confirmSubscription(token: string): Promise<void> {
+  const request: NewsletterConfirmationRequest = { token };
+  await apiClient.post('/newsletter/confirmations', request);
 }
 
 /** Verify an unsubscribe token — returns email if valid, throws 404 if not. */

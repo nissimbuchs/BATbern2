@@ -15,6 +15,7 @@
       "label": "Status",
       "all": "All",
       "active": "Active",
+      "pending": "Betg confermà",
       "unsubscribed": "Unsubscribed"
     },
     "clearAll": "Clear Filters"
@@ -33,6 +34,8 @@
   },
   "status": {
     "active": "Active",
+    "pending": "Betg confermà",
+    "pendingHint": "L'abunament n'è anc betg confermà cun il link; na survegn nagin newsletter",
     "unsubscribed": "Unsubscribed"
   },
   "actions": {

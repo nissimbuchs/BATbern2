@@ -2,6 +2,7 @@ package ch.batbern.events.controller;
 
 import ch.batbern.events.config.CumsContractHarness;
 import ch.batbern.shared.test.AbstractIntegrationTest;
+import ch.batbern.shared.test.MutableClock;
 import ch.batbern.shared.service.EmailService;
 import ch.batbern.shared.test.mail.SesRecorder;
 import ch.batbern.shared.utils.EmailAddresses;
@@ -29,15 +30,20 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
+import java.time.Duration;
 import java.time.Instant;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -74,6 +80,10 @@ public class NewsletterControllerIntegrationTest extends AbstractIntegrationTest
     @Autowired
     private EmailService emailService;
 
+    /** The time is a boundary: the hourly limit of the confirmation mail is tested with it. */
+    @Autowired
+    private MutableClock clock;
+
     @BeforeEach
     void setUp() {
         subscriberRepository.deleteAll();
@@ -83,70 +93,270 @@ public class NewsletterControllerIntegrationTest extends AbstractIntegrationTest
 
     @AfterEach
     void cleanUp() {
+        clock.reset();
+        sesRecorder.awaitAsyncSends();
         subscriberRepository.deleteAll();
         cums.reset();
     }
 
     // ── AC2, 4.10c: POST /newsletter/subscribers (anonymous subscribe) ────────
 
+    // ── #1288: double opt-in ──────────────────────────────────────────────────
+
+    private static final String ANNA = "success+newsletter.anna@simulator.amazonses.com";
+    private static final Pattern CONFIRM_LINK = Pattern.compile("/newsletter/confirm\\?token=([0-9a-f-]{36})");
+
+    private void anonymousSubscribe(String email, String language) throws Exception {
+        String body = language == null
+                ? objectMapper.writeValueAsString(Map.of("email", email))
+                : objectMapper.writeValueAsString(Map.of("email", email, "language", language));
+        mockMvc.perform(post("/api/v1/newsletter/subscribers")
+                        .contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isOk())
+                .andExpect(content().string(""));
+    }
+
+    private NewsletterSubscriber saveRow(String email, Instant confirmedAt, Instant unsubscribedAt,
+                                         Instant suppressedAt) {
+        return subscriberRepository.save(NewsletterSubscriber.builder()
+                .email(email).firstName("Anna").language("de").source("explicit")
+                .unsubscribeToken("tok-" + email).confirmedAt(confirmedAt)
+                .unsubscribedAt(unsubscribedAt).suppressedAt(suppressedAt).build());
+    }
+
+    private String tokenIn(SesRecorder.RecordedMail mail) {
+        Matcher link = CONFIRM_LINK.matcher(mail.html());
+        assertThat(link.find()).as("confirmation link in the mail").isTrue();
+        return link.group(1);
+    }
+
     @Test
-    @DisplayName("POST /newsletter/subscribers — anonymous, new address → 200, stored, no mail (positive control)")
-    void should_subscribeWithoutMail_when_anonymousPostsNewAddress() throws Exception {
-        String address = "success+newsletter.probe@simulator.amazonses.com";
+    @DisplayName("#1288 new address → 200, pending, one confirmation mail in the request's language with the link")
+    void should_storePendingAndMailConfirmation_when_anonymousSubscribesNewAddress() throws Exception {
+        anonymousSubscribe("Success+Newsletter.Anna@simulator.amazonses.com", "en");
+
+        NewsletterSubscriber sub = subscriberRepository.findByEmailIgnoreCase(ANNA).orElseThrow();
+        assertThat(sub.getEmail()).isEqualTo(ANNA); // stored lower-cased (#1099)
+        assertThat(sub.getLanguage()).isEqualTo("en");
+        assertThat(sub.getSource()).isEqualTo("explicit");
+        assertThat(sub.getUsername()).isNull();
+        assertThat(sub.getUnsubscribedAt()).isNull();
+        assertThat(sub.getConfirmedAt()).as("pending").isNull();
+        assertThat(sub.isActive()).isFalse();
+        assertThat(sub.getConfirmationToken()).isNotBlank();
+
+        sesRecorder.awaitAsyncSends();
+        assertThat(sesRecorder.mailsTo(ANNA)).singleElement().satisfies(mail -> {
+            assertThat(mail.subject()).isEqualTo("Please confirm your BATbern newsletter subscription");
+            assertThat(mail.html()).contains("valid for 7 days");
+            assertThat(tokenIn(mail)).isEqualTo(sub.getConfirmationToken());
+        });
+    }
+
+    @Test
+    @DisplayName("#1288 the mail is German for any language but en")
+    void should_mailInGerman_when_requestLanguageIsNotEnglish() throws Exception {
+        anonymousSubscribe(ANNA, null);
+
+        sesRecorder.awaitAsyncSends();
+        assertThat(sesRecorder.mailsTo(ANNA)).singleElement().satisfies(mail -> {
+            assertThat(mail.subject()).isEqualTo("Bitte bestätigen Sie Ihr BATbern-Newsletter-Abonnement");
+            assertThat(mail.html()).contains("7 Tage gültig");
+        });
+    }
+
+    @Test
+    @DisplayName("#1288 pending address again → still pending, same link, language updated; one mail per hour")
+    void should_resendSameLinkAtMostHourly_when_pendingAddressSubscribesAgain() throws Exception {
+        Instant start = Instant.parse("2027-02-01T08:00:00Z");
+        clock.setInstant(start);
+        anonymousSubscribe(ANNA, "de");
+        sesRecorder.awaitAsyncSends();
+        String first = tokenIn(sesRecorder.mailsTo(ANNA).get(0));
+        sesRecorder.reset();
+
+        // Within the hour: 200, language updated, token kept, no mail.
+        clock.setInstant(start.plus(Duration.ofMinutes(30)));
+        anonymousSubscribe(ANNA, "en");
+        assertThat(subscriberRepository.findAll()).singleElement().satisfies(sub -> {
+            assertThat(sub.getConfirmedAt()).isNull();
+            assertThat(sub.getLanguage()).isEqualTo("en");
+            assertThat(sub.getConfirmationToken()).isEqualTo(first);
+        });
+        sesRecorder.awaitAsyncSends();
+        assertThat(sesRecorder.mailsTo(ANNA)).isEmpty();
+
+        // After the hour: one mail, the same link, in the new language.
+        clock.setInstant(start.plus(Duration.ofMinutes(61)));
+        anonymousSubscribe(ANNA, "en");
+        sesRecorder.awaitAsyncSends();
+        assertThat(sesRecorder.mailsTo(ANNA)).singleElement().satisfies(mail -> {
+            assertThat(mail.subject()).isEqualTo("Please confirm your BATbern newsletter subscription");
+            assertThat(tokenIn(mail)).isEqualTo(first);
+        });
+    }
+
+    @Test
+    @DisplayName("#1288 an organizer's unsubscribe voids the confirmation link: the old token answers 404")
+    void should_voidConfirmationLink_when_organizerUnsubscribesPendingRow() throws Exception {
+        anonymousSubscribe(ANNA, "de");
+        sesRecorder.awaitAsyncSends();
+        String token = tokenIn(sesRecorder.mailsTo(ANNA).get(0));
+        NewsletterSubscriber sub = subscriberRepository.findByEmailIgnoreCase(ANNA).orElseThrow();
+
+        mockMvc.perform(post("/api/v1/newsletter/subscribers/" + sub.getId() + "/unsubscribe")
+                        .with(user("organizer").roles("ORGANIZER")))
+                .andExpect(status().isOk());
+        mockMvc.perform(post("/api/v1/newsletter/confirmations")
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"token\":\"" + token + "\"}"))
+                .andExpect(status().isNotFound());
+
+        assertThat(subscriberRepository.findByEmailIgnoreCase(ANNA)).get().satisfies(after -> {
+            assertThat(after.getUnsubscribedAt()).isNotNull();
+            assertThat(after.isActive()).isFalse();
+        });
+    }
+
+    @Test
+    @DisplayName("#1288 unsubscribed address → stays unsubscribed and pending until confirmed, one mail")
+    void should_keepUnsubscribedUntilConfirmed_when_unsubscribedAddressSubscribesAgain() throws Exception {
+        Instant unsubscribedAt = Instant.now().minusSeconds(3600);
+        saveRow(ANNA, Instant.now().minusSeconds(86_400), unsubscribedAt, null);
+
+        anonymousSubscribe(ANNA, "de");
+
+        NewsletterSubscriber sub = subscriberRepository.findByEmailIgnoreCase(ANNA).orElseThrow();
+        assertThat(sub.getUnsubscribedAt()).isNotNull();
+        assertThat(sub.isActive()).isFalse();
+        assertThat(sub.getUnsubscribeToken()).isEqualTo("tok-" + ANNA);
+        sesRecorder.awaitAsyncSends();
+        String token = tokenIn(sesRecorder.mailsTo(ANNA).get(0));
+        assertThat(sesRecorder.mailsTo(ANNA)).hasSize(1);
+
+        mockMvc.perform(post("/api/v1/newsletter/confirmations")
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"token\":\"" + token + "\"}"))
+                .andExpect(status().isOk());
+
+        assertThat(subscriberRepository.findByEmailIgnoreCase(ANNA)).get().satisfies(after -> {
+            assertThat(after.getUnsubscribedAt()).isNull();
+            assertThat(after.isActive()).isTrue();
+            assertThat(after.getConfirmationToken()).isNull();
+        });
+    }
+
+    @Test
+    @DisplayName("#1288 AC3: active address → 200, unchanged (name, language, source), no mail (positive control)")
+    void should_leaveActiveUnchangedWithoutMail_when_anonymousSubscribesActiveAddress() throws Exception {
+        Instant confirmedAt = Instant.parse("2026-01-10T10:00:00Z");
+        saveRow(ANNA, confirmedAt, null, null);
         // Positive control: a mail to this address reaches the recorder.
-        emailService.sendHtmlEmail(address, "Control", "<p>control</p>");
+        emailService.sendHtmlEmail(ANNA, "Control", "<p>control</p>");
 
         mockMvc.perform(post("/api/v1/newsletter/subscribers")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(
-                                Map.of("email", "Success+Newsletter.Probe@simulator.amazonses.com", "language", "en"))))
+                        .content(objectMapper.writeValueAsString(Map.of(
+                                "email", "SUCCESS+newsletter.anna@simulator.amazonses.com",
+                                "firstName", "Mallory", "language", "en"))))
                 .andExpect(status().isOk());
 
-        assertThat(subscriberRepository.findByEmailIgnoreCase(address)).get().satisfies(sub -> {
-            assertThat(sub.getEmail()).isEqualTo(address); // stored lower-cased (#1099)
-            assertThat(sub.getLanguage()).isEqualTo("en");
+        assertThat(subscriberRepository.findAll()).singleElement().satisfies(sub -> {
+            assertThat(sub.getFirstName()).isEqualTo("Anna");
+            assertThat(sub.getLanguage()).isEqualTo("de");
             assertThat(sub.getSource()).isEqualTo("explicit");
-            assertThat(sub.getUsername()).isNull();
-            assertThat(sub.getUnsubscribedAt()).isNull();
+            assertThat(sub.getConfirmedAt()).isEqualTo(confirmedAt);
+            assertThat(sub.getConfirmationToken()).isNull();
         });
         sesRecorder.awaitAsyncSends();
-        assertThat(sesRecorder.mailsTo(address)).singleElement()
+        assertThat(sesRecorder.mailsTo(ANNA)).singleElement()
                 .satisfies(mail -> assertThat(mail.subject()).isEqualTo("Control"));
     }
 
     @Test
-    @DisplayName("POST /newsletter/subscribers — duplicate active email → 409 Conflict")
-    void subscribe_duplicateActiveEmail_returns409() throws Exception {
-        subscriberRepository.save(NewsletterSubscriber.builder()
-                .email("dup@batbern-test.ch")
-                .language("de")
-                .source("explicit")
-                .unsubscribeToken("tok-dup-1")
-                .build());
+    @DisplayName("#1288 suppressed address → 200, unchanged, no mail (positive control)")
+    void should_leaveSuppressedUnchangedWithoutMail_when_anonymousSubscribesSuppressedAddress() throws Exception {
+        saveRow(ANNA, Instant.now().minusSeconds(86_400), null, Instant.now().minusSeconds(60));
+        emailService.sendHtmlEmail(ANNA, "Control", "<p>control</p>");
 
-        mockMvc.perform(post("/api/v1/newsletter/subscribers")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(Map.of("email", "DUP@batbern-test.ch"))))
-                .andExpect(status().isConflict());
+        anonymousSubscribe(ANNA, "en");
+
+        assertThat(subscriberRepository.findAll()).singleElement().satisfies(sub -> {
+            assertThat(sub.getSuppressedAt()).isNotNull();
+            assertThat(sub.getLanguage()).isEqualTo("de");
+            assertThat(sub.getConfirmationToken()).isNull();
+        });
+        sesRecorder.awaitAsyncSends();
+        assertThat(sesRecorder.mailsTo(ANNA)).singleElement()
+                .satisfies(mail -> assertThat(mail.subject()).isEqualTo("Control"));
     }
 
     @Test
-    @DisplayName("POST /newsletter/subscribers — unsubscribed address → 200, reactivated")
-    void should_reactivate_when_unsubscribedAddressSubscribesAgain() throws Exception {
-        subscriberRepository.save(NewsletterSubscriber.builder()
-                .email("back@batbern-test.ch").language("de").source("explicit")
-                .unsubscribeToken("tok-back-1").unsubscribedAt(Instant.now()).build());
+    @DisplayName("#1288 AC2: the link's token, posted anonymously, makes the subscriber active in the organizer list")
+    void should_listSubscriberAsActive_when_confirmationTokenIsPosted() throws Exception {
+        anonymousSubscribe(ANNA, "de");
+        sesRecorder.awaitAsyncSends();
+        String token = tokenIn(sesRecorder.mailsTo(ANNA).get(0));
 
-        mockMvc.perform(post("/api/v1/newsletter/subscribers")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(Map.of("email", "back@batbern-test.ch"))))
+        mockMvc.perform(get("/api/v1/newsletter/subscribers").param("status", "pending")
+                        .with(user("organizer").roles("ORGANIZER")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].email").value(ANNA))
+                .andExpect(jsonPath("$.data[0].confirmedAt").isEmpty());
+        mockMvc.perform(get("/api/v1/newsletter/subscribers").param("status", "active")
+                        .with(user("organizer").roles("ORGANIZER")))
+                .andExpect(jsonPath("$.pagination.totalItems").value(0));
+
+        mockMvc.perform(post("/api/v1/newsletter/confirmations")
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"token\":\"" + token + "\"}"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(""));
+
+        mockMvc.perform(get("/api/v1/newsletter/subscribers").param("status", "active")
+                        .with(user("organizer").roles("ORGANIZER")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.pagination.totalItems").value(1))
+                .andExpect(jsonPath("$.data[0].email").value(ANNA))
+                .andExpect(jsonPath("$.data[0].confirmedAt").isNotEmpty());
+        mockMvc.perform(get("/api/v1/newsletter/subscribers").param("status", "pending")
+                        .with(user("organizer").roles("ORGANIZER")))
+                .andExpect(jsonPath("$.pagination.totalItems").value(0));
+        assertThat(subscriberRepository.findByEmailIgnoreCase(ANNA).orElseThrow().getConfirmationToken()).isNull();
+    }
+
+    @Test
+    @DisplayName("#1288 a used or unknown token → 404 and nothing changes")
+    void should_return404_when_tokenIsUsedOrUnknown() throws Exception {
+        anonymousSubscribe(ANNA, "de");
+        sesRecorder.awaitAsyncSends();
+        String token = tokenIn(sesRecorder.mailsTo(ANNA).get(0));
+        mockMvc.perform(post("/api/v1/newsletter/confirmations")
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"token\":\"" + token + "\"}"))
                 .andExpect(status().isOk());
+        // The owner unsubscribes afterwards; an old link must not subscribe them again.
+        NewsletterSubscriber sub = subscriberRepository.findByEmailIgnoreCase(ANNA).orElseThrow();
+        sub.setUnsubscribedAt(Instant.now());
+        subscriberRepository.save(sub);
 
-        assertThat(subscriberRepository.findByEmailIgnoreCase("back@batbern-test.ch"))
-                .get().satisfies(sub -> {
-                    assertThat(sub.getUnsubscribedAt()).isNull();
-                    assertThat(sub.getUnsubscribeToken()).isEqualTo("tok-back-1");
-                });
+        for (String used : new String[] {token, "9b2f0e1c-1111-4222-8333-944455566677"}) {
+            mockMvc.perform(post("/api/v1/newsletter/confirmations")
+                            .contentType(MediaType.APPLICATION_JSON).content("{\"token\":\"" + used + "\"}"))
+                    .andExpect(status().isNotFound());
+        }
+        assertThat(subscriberRepository.findByEmailIgnoreCase(ANNA).orElseThrow().getUnsubscribedAt()).isNotNull();
+    }
+
+    @Test
+    @DisplayName("#1288 a pending subscriber gets no newsletter and counts in no audience")
+    void should_excludePendingRows_fromEveryActiveRead() {
+        saveRow("success+active.one@simulator.amazonses.com", Instant.now(), null, null);
+        saveRow(ANNA, null, null, null);
+
+        assertThat(subscriberRepository.findAllActive()).extracting(NewsletterSubscriber::getEmail)
+                .containsExactly("success+active.one@simulator.amazonses.com");
+        assertThat(subscriberRepository.countActive()).isEqualTo(1);
+        assertThat(subscriberRepository.findActiveAfterId(new java.util.UUID(0L, 0L),
+                org.springframework.data.domain.Limit.unlimited())).hasSize(1);
+        NewsletterSubscriber pending = subscriberRepository.findByEmailIgnoreCase(ANNA).orElseThrow();
+        assertThat(subscriberRepository.isActive(pending.getId())).isFalse();
     }
 
     @Test
@@ -293,7 +503,8 @@ public class NewsletterControllerIntegrationTest extends AbstractIntegrationTest
     private void saveDoraRow(String email, String language, boolean active) {
         subscriberRepository.save(NewsletterSubscriber.builder()
                 .email(email).language(language).source("account").username(DORA)
-                .unsubscribeToken("tok-" + email).unsubscribedAt(active ? null : Instant.now()).build());
+                .unsubscribeToken("tok-" + email).confirmedAt(Instant.now().minusSeconds(86_400))
+                .unsubscribedAt(active ? null : Instant.now()).build());
     }
 
     @Test
@@ -338,6 +549,7 @@ public class NewsletterControllerIntegrationTest extends AbstractIntegrationTest
                     assertThat(sub.getUsername()).isEqualTo(DORA);
                     assertThat(sub.getSource()).isEqualTo("account");
                     assertThat(sub.getUnsubscribedAt()).isNull();
+                    assertThat(sub.isActive()).as("#1288: own confirmed address, active at once").isTrue();
                 });
 
         mockMvc.perform(patch("/api/v1/newsletter/my-subscriptions")
@@ -350,6 +562,55 @@ public class NewsletterControllerIntegrationTest extends AbstractIntegrationTest
         sesRecorder.awaitAsyncSends();
         assertThat(sesRecorder.mails()).singleElement()
                 .satisfies(mail -> assertThat(mail.subject()).isEqualTo("Control"));
+    }
+
+    @Test
+    @DisplayName("#1288 PATCH /newsletter/my-subscriptions — the user's own address is active at once, also when pending; no mail")
+    @WithMockUser(username = DORA, roles = "USER")
+    void should_activateAtOnce_when_userSubscribesOwnPendingAddress() throws Exception {
+        doraHasAddresses();
+        subscriberRepository.save(NewsletterSubscriber.builder()
+                .email("dora@batbern-test.ch").language("de").source("explicit")
+                .unsubscribeToken("tok-dora-pending").confirmationToken("ctok-dora-pending").build());
+
+        mockMvc.perform(get("/api/v1/newsletter/my-subscriptions"))
+                .andExpect(jsonPath("$.addresses[0].subscribed").value(false)); // pending is not subscribed
+        mockMvc.perform(patch("/api/v1/newsletter/my-subscriptions")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"email\":\"dora@batbern-test.ch\",\"subscribed\":true}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.addresses[0].subscribed").value(true));
+
+        assertThat(subscriberRepository.findByEmailIgnoreCase("dora@batbern-test.ch")).get().satisfies(sub -> {
+            assertThat(sub.isActive()).isTrue();
+            assertThat(sub.getConfirmationToken()).isNull();
+            assertThat(sub.getUsername()).isEqualTo(DORA);
+        });
+        sesRecorder.awaitAsyncSends();
+        assertThat(sesRecorder.mails()).isEmpty();
+    }
+
+    @Test
+    @DisplayName("#1288 PATCH subscribed=false voids the confirmation link of a pending address: the old token answers 404")
+    @WithMockUser(username = DORA, roles = "USER")
+    void should_voidConfirmationLink_when_userUnsubscribesPendingAddress() throws Exception {
+        doraHasAddresses();
+        subscriberRepository.save(NewsletterSubscriber.builder()
+                .email("dora@batbern-test.ch").language("de").source("explicit")
+                .unsubscribeToken("tok-dora-void").confirmationToken("ctok-dora-void").build());
+
+        mockMvc.perform(patch("/api/v1/newsletter/my-subscriptions")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"email\":\"dora@batbern-test.ch\",\"subscribed\":false}"))
+                .andExpect(status().isOk());
+        mockMvc.perform(post("/api/v1/newsletter/confirmations")
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"token\":\"ctok-dora-void\"}"))
+                .andExpect(status().isNotFound());
+
+        assertThat(subscriberRepository.findByEmailIgnoreCase("dora@batbern-test.ch")).get().satisfies(sub -> {
+            assertThat(sub.getUnsubscribedAt()).isNotNull();
+            assertThat(sub.getConfirmationToken()).isNull();
+        });
     }
 
     @Test
@@ -518,7 +779,12 @@ public class NewsletterControllerIntegrationTest extends AbstractIntegrationTest
     void should_filterByStatus_when_statusActive() throws Exception {
         subscriberRepository.save(NewsletterSubscriber.builder()
                 .email("active@example.com").language("de")
-                .source("explicit").unsubscribeToken("tok-st1")
+                .source("explicit").unsubscribeToken("tok-st1").confirmedAt(Instant.now())
+                .build());
+        // #1288: a pending row is not active
+        subscriberRepository.save(NewsletterSubscriber.builder()
+                .email("pending@example.com").language("de")
+                .source("explicit").unsubscribeToken("tok-st3").confirmationToken("ctok-st3")
                 .build());
         NewsletterSubscriber unsub = NewsletterSubscriber.builder()
                 .email("unsub@example.com").language("de")
@@ -623,7 +889,9 @@ public class NewsletterControllerIntegrationTest extends AbstractIntegrationTest
 
         mockMvc.perform(post("/api/v1/newsletter/subscribers/" + sub.getId() + "/resubscribe"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.unsubscribedAt").isEmpty());
+                .andExpect(jsonPath("$.unsubscribedAt").isEmpty())
+                .andExpect(jsonPath("$.confirmedAt").isNotEmpty()); // #1288: never confirmed, active at once
+        assertThat(subscriberRepository.findById(sub.getId()).orElseThrow().isActive()).isTrue();
     }
 
     @Test
@@ -632,7 +900,7 @@ public class NewsletterControllerIntegrationTest extends AbstractIntegrationTest
     void should_return409_when_alreadyActive() throws Exception {
         NewsletterSubscriber sub = subscriberRepository.save(NewsletterSubscriber.builder()
                 .email("active2@example.com").language("de")
-                .source("explicit").unsubscribeToken("tok-409b")
+                .source("explicit").unsubscribeToken("tok-409b").confirmedAt(Instant.now())
                 .build());
 
         mockMvc.perform(post("/api/v1/newsletter/subscribers/" + sub.getId() + "/resubscribe"))

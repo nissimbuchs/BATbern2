@@ -119,6 +119,27 @@ class NewsletterSendIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
+    @WithMockUser(username = "org.user", roles = "ORGANIZER")
+    @DisplayName("#1288: a pending subscriber gets no newsletter and is not counted; the active one gets it")
+    void send_skipsPendingSubscriber() throws Exception {
+        subscriber("active");
+        subscriberRepository.saveAndFlush(NewsletterSubscriber.builder().email(sim("pending")).language("de")
+                .source("explicit").unsubscribeToken("tok-761-pending").confirmationToken("ctok-761-pending")
+                .build());
+
+        mockMvc.perform(post("/api/v1/events/{eventCode}/mails", EVENT_CODE)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"audience\":\"NEWSLETTER\",\"locale\":\"de\",\"target\":\"RECIPIENTS\"}"))
+                .andExpect(status().isAccepted());
+
+        sesRecorder.awaitAsyncSends();
+        assertThat(sesRecorder.mailsTo(sim("active"))).hasSize(1); // positive control
+        assertThat(sesRecorder.mailsTo(sim("pending"))).isEmpty();
+        assertThat(sendsOfEvent()).singleElement()
+                .satisfies(send -> assertThat(send.getRecipientCount()).isEqualTo(1));
+    }
+
+    @Test
     @DisplayName("the newsletter goes out with the newsletter configuration set, when one is configured")
     void send_usesNewsletterConfigurationSet() {
         subscriber("cfg");
@@ -172,7 +193,7 @@ class NewsletterSendIntegrationTest extends AbstractIntegrationTest {
 
     private void subscriber(String name) {
         subscriberRepository.saveAndFlush(NewsletterSubscriber.builder().email(sim(name)).language("de")
-                .source("explicit").unsubscribeToken("tok-761-" + name).build());
+                .source("explicit").unsubscribeToken("tok-761-" + name).confirmedAt(Instant.now()).build());
     }
 
     private List<NewsletterSend> sendsOfEvent() {

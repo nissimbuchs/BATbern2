@@ -54,6 +54,8 @@ class AutomaticTriggerAudienceGuardTest {
                     "answers the one person who wrote, or tells organizers"),
             Map.entry("MailDeliveryStatusListener#onMessage", "no mail: delivery status"),
             Map.entry("MailMessageRetentionScheduler#purgeExpired", "no mail: deletes old mail records"),
+            Map.entry("NewsletterConfirmationExpiryScheduler#expireUnconfirmedRequests",
+                    "no mail: deletes unconfirmed newsletter requests (#1288)"),
             Map.entry("NewsletterEmailService#recoverOrphanedSends",
                     "finishes a newsletter an organizer already sent, after a restart"),
             Map.entry("OrganizerNotificationListener#onAnyDomainEvent", "no mail: in-app notices for organizers"),

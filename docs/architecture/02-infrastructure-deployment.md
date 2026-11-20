@@ -1229,7 +1229,8 @@ Guidance, not a list of implemented controls:
 1. Remove hard-bounced addresses immediately (implemented for the newsletter via suppression).
 2. One-click unsubscribe in newsletters (implemented via reply/unsubscribe handling; detail in
    06d).
-3. Double opt-in for newsletter subscriptions (not verified 2026-11-04).
+3. Double opt-in for newsletter subscriptions (#1288): an anonymous subscribe stays pending until
+   its owner follows the link of the confirmation mail; a pending address gets no newsletter.
 4. DKIM is configured; SPF and DMARC not verified 2026-11-04.
 5. Keep bounce and complaint rates low; the bounce-rate alarm is the backstop.
 6. Never let tests send real mail: staging is production (newsletter incident 2026-07-01, guard

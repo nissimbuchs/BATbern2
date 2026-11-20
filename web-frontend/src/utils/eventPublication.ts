@@ -16,21 +16,17 @@ export function isPublishedPhase(phase: string | null | undefined): boolean {
 }
 
 interface SelfNominationGateInput {
-  /** Expanded topic object (present once the topic is set), or a raw code/string, or null. */
-  topic?: { name?: string } | string | null;
-  currentPublishedPhase?: string | null;
+  /** The Public Events read model's flag (GET /public/events, /public/events/*), #1263. */
+  selfNominationOpen?: boolean;
 }
 
 /**
- * Story 7.2 "I Could Speak on That": speaker self-nomination is open ONLY during the TOPIC
- * publishing phase — from when the topic is published until the speakers are published. Once the
- * lineup is published (SPEAKERS/AGENDA), the program is set and no further nominations are taken.
- * Callers add their own login gate (the panel self-gates) and, where relevant, a future-event check.
+ * Story 7.2 "I Could Speak on That": may a visitor offer a talk for this event? The server
+ * decides (`Event.isSelfNominationOpen()`: topic set and published, speakers not yet) and reports
+ * it as `selfNominationOpen` on every public list item, detail and current event; the
+ * self-nomination endpoint enforces the same rule. Absent (organizer endpoints, preview) means
+ * closed. Callers add their own checks where relevant (the hero: a future event).
  */
 export function canOfferSelfNomination(event: SelfNominationGateInput): boolean {
-  return (
-    typeof event.topic === 'object' &&
-    event.topic != null &&
-    (event.currentPublishedPhase ?? '') === 'TOPIC'
-  );
+  return event.selfNominationOpen === true;
 }

@@ -1,6 +1,6 @@
 # Notification System
 
-> **Last Updated:** 2026-11-04 — Newsletter sending moved to Communications → New mail; alias forwarding runs in the event-management service since #1137; in-app Notifications page documented.
+> **Last Updated:** 2026-11-19 — Newsletter double opt-in (#1288). 2026-11-04: newsletter sending moved to Communications → New mail; alias forwarding runs in the event-management service since #1137; in-app Notifications page documented.
 
 ## Overview
 
@@ -75,9 +75,9 @@ The platform includes an in-house newsletter system that replaced the previous M
 
 ### Subscription
 
-- **Account-free subscribe** — community members subscribe via the public `POST /api/v1/newsletter/subscribers` endpoint (no login, no confirmation mail; Story 4.10c moved it from `/newsletter/subscribe`). Re-subscribing a previously unsubscribed email reactivates the existing record.
-- **Account settings** — logged-in users manage their subscription from the BATbern account settings page.
-- **Registration opt-in** — subscriptions can also originate from event registration, tracked via a `source` field (`explicit` / `registration` / `account`).
+- **Account-free subscribe with double opt-in (#1288)** — community members subscribe via the public `POST /api/v1/newsletter/subscribers` endpoint (no login; Story 4.10c moved it from `/newsletter/subscribe`). The address stays **unconfirmed** and gets a mail with a confirmation link (German, English when the request is `en`, valid for 7 days); the page `/newsletter/confirm` activates the subscription when the owner clicks "Confirm subscription". An unconfirmed address gets no newsletter. A previously unsubscribed address is reactivated only through the same confirmation. An address that is already subscribed is left unchanged and gets no mail, and the form answers the same way for every address.
+- **Account settings** — logged-in users manage their subscription from the BATbern account settings page; switching it on for their own (confirmed) address takes effect at once.
+- **Registration opt-in** — subscriptions can also originate from event registration, tracked via a `source` field (`explicit` / `registration` / `account`). Such a subscription becomes active when the registration is confirmed (link or "accept" reply), without a separate mail.
 - **Bot protection** — the public subscribe form is protected by Cloudflare Turnstile (Story 10.31) at the API gateway.
 
 ### Sending & Template Selection
@@ -92,7 +92,7 @@ Sent newsletters appear under **What went out** on the same tab.
 
 ### Subscriber Management (Story 10.28)
 
-A dedicated organizer-only **Newsletter Subscribers** page (top-level navigation) provides a paginated, searchable, sortable list of all subscribers, with management actions (unsubscribe, re-subscribe, delete) so the subscriber base can be audited without touching the database.
+A dedicated organizer-only **Newsletter Subscribers** page (top-level navigation) provides a paginated, searchable, sortable list of all subscribers, with management actions (unsubscribe, re-subscribe, delete) so the subscriber base can be audited without touching the database. The status filter has **Unconfirmed** for addresses that have not followed their confirmation link yet; a re-subscribe by an organizer is active at once.
 
 ---
 
