@@ -68,7 +68,7 @@ export interface SessionUI extends Session {
   presentationUrl?: string; // URL to download presentation PDF
   presentationSize?: number; // Presentation file size in bytes
   // Session materials (Story 5.9)
-  materials?: SessionMaterial[]; // List of uploaded materials
+  materials?: SessionMaterial[] | null; // Uploaded materials; null when the API sends none
   materialsCount?: number; // Number of materials uploaded
   hasPresentation?: boolean; // Whether session has at least one presentation
   // Note: speakers is inherited from base Session type (SessionSpeaker[])

@@ -321,7 +321,7 @@ describe('SessionCards', () => {
         materials: [aSessionMaterial()],
       },
       { ...mockSessions[0], sessionSlug: 'empty', title: 'Internal only', materials: [] },
-      { ...mockSessions[0], sessionSlug: 'none', title: 'No list', materials: undefined },
+      { ...mockSessions[0], sessionSlug: 'none', title: 'No list', materials: null },
     ];
 
     renderWithProviders(

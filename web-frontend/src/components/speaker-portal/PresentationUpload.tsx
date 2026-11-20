@@ -308,7 +308,9 @@ const PresentationUpload = ({
     <div className="flex flex-col gap-2" data-testid="material-visibility">
       {materials.length > 0 && (
         <>
-          <p className="text-sm font-medium text-gray-300">{t('speakerPortal.upload.yourFiles')}</p>
+          <p className="text-sm font-medium text-gray-300">
+            {t('speakerPortal.upload.sessionFiles')}
+          </p>
           <ul className="flex flex-col gap-2">
             {materials.map((material) => (
               <li

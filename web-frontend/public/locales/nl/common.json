@@ -538,9 +538,9 @@
       "fileTooLarge": "Bestandsgrootte moet kleiner zijn dan 50 MB",
       "acceptedFormats": "Geaccepteerde formaten: PPTX, PDF, KEY (max. 50 MB)",
       "uploadAria": "Presentatiebestand uploaden",
-      "yourFiles": "Uw bestanden voor deze sessie",
+      "sessionFiles": "Bestanden van deze sessie",
       "publiclyVisible": "Openbaar zichtbaar na het evenement",
-      "publicHint": "Alleen bestanden die als openbaar zichtbaar zijn gemarkeerd, worden na het evenement op de evenementpagina gepubliceerd. We raden een PDF aan als openbare versie; een PowerPoint blijft bij de organisatoren en de moderator.",
+      "publicHint": "Alleen bestanden die als openbaar zichtbaar zijn gemarkeerd, worden na het evenement op de evenementpagina gepubliceerd. We raden een PDF aan als openbare versie; elk ander bestand blijft intern, voor de organisatoren en de sprekers van deze sessie.",
       "visibilityError": "De zichtbaarheid van dit bestand kon niet worden gewijzigd.",
       "listError": "Uw bestanden konden niet worden geladen."
     },

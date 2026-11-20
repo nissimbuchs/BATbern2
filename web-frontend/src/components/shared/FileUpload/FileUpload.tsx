@@ -257,7 +257,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
                   }
                 >
                   <ListItemIcon>{getFileTypeIcon(file.fileType)}</ListItemIcon>
-                  <Box sx={{ minWidth: 0 }}>
+                  <Box sx={{ minWidth: 0, flex: 1 }}>
                     <ListItemText
                       primary={file.fileName}
                       secondary={formatFileSize(file.fileSize)}

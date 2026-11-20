@@ -538,9 +538,9 @@
       "fileTooLarge": "La dimensiun dal file sto esser pli pitschna che 50 MB",
       "acceptedFormats": "Formats acceptads: PPTX, PDF, KEY (max 50 MB)",
       "uploadAria": "Chargiar il file da presentaziun",
-      "yourFiles": "Vossas datotecas per questa sessiun",
+      "sessionFiles": "Datotecas da questa sessiun",
       "publiclyVisible": "Visibel publicamain suenter l'eveniment",
-      "publicHint": "Mo datotecas marcadas sco publicamain visiblas vegnan publitgadas suenter l'eveniment sin la pagina da l'eveniment. Nus recumandain in PDF sco versiun publica; ina PowerPoint resta tar ils organisaturs e tar la moderaziun.",
+      "publicHint": "Mo datotecas marcadas sco publicamain visiblas vegnan publitgadas suenter l'eveniment sin la pagina da l'eveniment. Nus recumandain in PDF sco versiun publica; mintga autra datoteca resta interna, per ils organisaturs ed ils referents da questa sessiun.",
       "visibilityError": "Betg pussaivel da midar la visibilitad da questa datoteca.",
       "listError": "Betg pussaivel da chargiar vossas datotecas."
     },
