@@ -1645,7 +1645,7 @@ export interface components {
       email: string;
       /**
        * @description Optional. If absent, defaults are derived from the email local-part
-       *     (e.g., `jane.smith@x.com` → firstName=`Jane`, lastName=`Smith`).
+       *     (e.g., `jane.smith@example.com` → firstName=`Jane`, lastName=`Smith`).
        * @example Jane
        */
       firstName?: string | null;
@@ -3500,10 +3500,19 @@ export interface operations {
           /**
            * @example {
            *       "jwt": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-           *       "expiresAt": "2026-02-17T16:30:00"
+           *       "expiresAt": "2026-02-17T16:30:00Z"
            *     }
            */
           'application/json': components['schemas']['WatchAuthResponse'];
+        };
+      };
+      /** @description Pairing token missing or empty */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
         };
       };
       /** @description Pairing token invalid or pairing incomplete */

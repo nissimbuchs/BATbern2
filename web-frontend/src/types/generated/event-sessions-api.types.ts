@@ -45,14 +45,7 @@ export interface paths {
     delete?: never;
     options?: never;
     head?: never;
-    /**
-     * Extend or close a session's Q&A window (organizer)
-     * @description Organizer-only (AC4). Extend by sending a new `closesAt` (reopens to that time) or close
-     *     early with `close: true` (freezes immediately). Changes take effect immediately.
-     *
-     *     **Story**: 7.5 - "The Apéro Continues"
-     */
-    patch: operations['patchSessionQnaWindow'];
+    patch?: never;
     trace?: never;
   };
   '/events/{eventCode}/sessions/{sessionSlug}/qna/posts': {
@@ -1375,19 +1368,6 @@ export interface components {
       parentPostId?: string | null;
     };
     /**
-     * @description Story 7.5: organizer adjustment of a Q&A window. Provide a new `closesAt` to extend
-     *     (reopens to that time) OR `close: true` to close early (freeze now). At least one required.
-     */
-    QnaWindowPatchRequest: {
-      /**
-       * Format: date-time
-       * @description New close time (extends/reopens the window).
-       */
-      closesAt?: string | null;
-      /** @description When true, freeze the window immediately (close early). */
-      close?: boolean | null;
-    };
-    /**
      * @description Story 7.5: a single Q&A post. A removed post is a tombstone — `removed: true` and
      *     `body`/`postedByUsername` are null (the archive shows "removed by organizer").
      */
@@ -1639,54 +1619,6 @@ export interface operations {
         };
       };
       /** @description No Q&A window for this session (event not completed, or unknown session). */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['ErrorResponse'];
-        };
-      };
-      500: components['responses']['InternalServerError'];
-    };
-  };
-  patchSessionQnaWindow: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        eventCode: string;
-        /** @example cloud-native-foundations */
-        sessionSlug: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['QnaWindowPatchRequest'];
-      };
-    };
-    responses: {
-      /** @description Updated window. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['QnaWindowResponse'];
-        };
-      };
-      /** @description Neither closesAt nor close provided. */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['ErrorResponse'];
-        };
-      };
-      403: components['responses']['Forbidden'];
-      /** @description No Q&A window for this session. */
       404: {
         headers: {
           [name: string]: unknown;

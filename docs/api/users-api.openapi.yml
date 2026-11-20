@@ -2706,7 +2706,13 @@ paths:
                 $ref: '#/components/schemas/WatchAuthResponse'
               example:
                 jwt: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-                expiresAt: "2026-02-17T16:30:00"
+                expiresAt: "2026-02-17T16:30:00Z"
+        '400':
+          description: Pairing token missing or empty
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '401':
           description: Pairing token invalid or pairing incomplete
           content:
@@ -2858,6 +2864,7 @@ components:
       properties:
         pairingToken:
           type: string
+          minLength: 1
           description: Pairing token obtained from /watch/pair
 
     WatchAuthResponse:
@@ -3747,7 +3754,7 @@ components:
           maxLength: 100
           description: |
             Optional. If absent, defaults are derived from the email local-part
-            (e.g., `jane.smith@x.com` → firstName=`Jane`, lastName=`Smith`).
+            (e.g., `jane.smith@example.com` → firstName=`Jane`, lastName=`Smith`).
           example: Jane
         lastName:
           nullable: true

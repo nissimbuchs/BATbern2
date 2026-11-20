@@ -21,8 +21,6 @@ servers:
 security:
 - BearerAuth: []
 tags:
-- name: Event Actions
-  description: Event publishing and workflow operations
 - name: Sessions
   description: Event session CRUD, structural generation and batch import (SessionController)
 - name: Slot Assignment
@@ -173,82 +171,6 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
       security: []
-    patch:
-      tags:
-      - Event Actions
-      summary: Extend or close a session's Q&A window (organizer)
-      description: 'Organizer-only (AC4). Extend by sending a new `closesAt` (reopens to that time) or close
-
-        early with `close: true` (freezes immediately). Changes take effect immediately.
-
-
-        **Story**: 7.5 - "The Apéro Continues"
-
-        '
-      operationId: patchSessionQnaWindow
-      parameters:
-      - name: eventCode
-        in: path
-        required: true
-        schema:
-          type: string
-          pattern: ^BATbern[0-9]+$
-          example: BATbern57
-      - name: sessionSlug
-        in: path
-        required: true
-        schema:
-          type: string
-        example: cloud-native-foundations
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/QnaWindowPatchRequest'
-      responses:
-        '200':
-          description: Updated window.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/QnaWindowResponse'
-              examples:
-                default:
-                  summary: generated from the schema and captured sub-values
-                  value:
-                    status: OPEN
-                    opensAt: "2026-05-14T16:00:00Z"
-                    closesAt: "2026-05-14T16:00:00Z"
-                    posts:
-                      - id: 3f2b8c1e-5d4a-4e6b-9a7c-1b2d3e4f5a6b
-                        parentPostId: 3f2b8c1e-5d4a-4e6b-9a7c-1b2d3e4f5a6b
-                        postedByUsername: anna.muster
-                        postedByFirstName: Anna
-                        postedByLastName: Muster
-                        postedByCompanyName: Sample name
-                        postedByCompanyLogoUrl: https://www.batbern.ch/
-                        body: Sample text for the API example.
-                        removed: true
-                        createdAt: "2026-05-14T16:00:00Z"
-        '400':
-          description: Neither closesAt nor close provided.
-          content:
-            application/json:
-              schema:
-                $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          description: No Q&A window for this session.
-          content:
-            application/json:
-              schema:
-                $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-      security:
-      - BearerAuth: []
   /events/{eventCode}/sessions/{sessionSlug}/qna/posts:
     post:
       tags:
@@ -3279,24 +3201,6 @@ components:
           format: uuid
           nullable: true
           description: The question being answered; omit for a top-level question.
-    QnaWindowPatchRequest:
-      type: object
-      description: 'Story 7.5: organizer adjustment of a Q&A window. Provide a new `closesAt` to extend
-
-        (reopens to that time) OR `close: true` to close early (freeze now). At least one required.
-
-        '
-      additionalProperties: false
-      properties:
-        closesAt:
-          type: string
-          format: date-time
-          nullable: true
-          description: New close time (extends/reopens the window).
-        close:
-          type: boolean
-          nullable: true
-          description: When true, freeze the window immediately (close early).
     QnaPostResponse:
       type: object
       description: 'Story 7.5: a single Q&A post. A removed post is a tombstone — `removed: true` and
