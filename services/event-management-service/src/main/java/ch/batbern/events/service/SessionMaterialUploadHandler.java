@@ -20,6 +20,7 @@ import org.springframework.cache.CacheManager;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -42,6 +43,8 @@ public class SessionMaterialUploadHandler implements UploadPurposeHandler {
 
     public static final String PURPOSE = "session-material";
     public static final String TARGET_TYPE = "SESSION";
+    /** The confirm option that overrides the type default of {@code publiclyVisible}. */
+    public static final String PUBLICLY_VISIBLE = "publiclyVisible";
 
     /** The organizer's types up to 100 MB, as {@code MaterialsUploadService} before Story 17.11d. */
     static final UploadRules ORGANIZER_RULES = new UploadRules(100L * 1024 * 1024,
@@ -138,9 +141,16 @@ public class SessionMaterialUploadHandler implements UploadPurposeHandler {
      */
     @Override
     public void attach(UploadRecord upload, String targetId) {
+        attach(upload, targetId, Map.of());
+    }
+
+    /** As {@link #attach(UploadRecord, String)}; the confirm's {@code publiclyVisible} wins over the type default. */
+    @Override
+    public void attach(UploadRecord upload, String targetId, Map<String, Object> options) {
         Session session = session(eventCode(targetId), sessionSlug(targetId));
         String by = securityContextHelper.getCurrentUsername();
-        SessionMaterial material = createMaterial(session, upload, null, by);
+        Boolean publiclyVisible = options.get(PUBLICLY_VISIBLE) instanceof Boolean b ? b : null;
+        SessionMaterial material = createMaterial(session, upload, null, publiclyVisible, by);
         published(session, List.of(material), by);
     }
 
@@ -172,8 +182,10 @@ public class SessionMaterialUploadHandler implements UploadPurposeHandler {
      * The {@code session_materials} row of an ASSOCIATED upload: name, size and type come from the
      * upload. The material type: for an organizer the one chosen ({@code materialType}), else derived
      * from the content type; for a speaker always PRESENTATION, whatever the client sends.
+     * {@code publiclyVisible} null: public when it is a PDF ({@link SessionMaterial}).
      */
-    SessionMaterial createMaterial(Session session, UploadRecord upload, String materialType, String uploadedBy) {
+    SessionMaterial createMaterial(Session session, UploadRecord upload, String materialType,
+            Boolean publiclyVisible, String uploadedBy) {
         String type;
         if (!isOrganizer()) {
             type = SessionMaterialType.PRESENTATION.name();
@@ -195,6 +207,7 @@ public class SessionMaterialUploadHandler implements UploadPurposeHandler {
                 .mimeType(upload.getContentType())
                 .materialType(type)
                 .uploadedBy(uploadedBy)
+                .publiclyVisible(publiclyVisible)
                 .contentExtracted(false)
                 .extractionStatus("PENDING")
                 .build());

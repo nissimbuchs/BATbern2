@@ -1,6 +1,7 @@
 package ch.batbern.events.service;
 
 import ch.batbern.shared.utils.S3Links;
+import ch.batbern.events.config.CacheConfig;
 import ch.batbern.events.domain.EventManagementUpload;
 import ch.batbern.events.domain.Session;
 import ch.batbern.events.domain.SessionMaterial;
@@ -19,6 +20,7 @@ import ch.batbern.shared.utils.CloudFrontUrlBuilder;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.CacheManager;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import software.amazon.awssdk.services.s3.S3Client;
@@ -58,6 +60,7 @@ public class SessionMaterialsService {
     private final UploadService<EventManagementUpload> uploadService;
     private final SessionMaterialUploadHandler materialUploads;
     private final EventManagementUploadRepository uploadRepository;
+    private final CacheManager cacheManager;
 
     @Value("${aws.s3.bucket-name:batbern-development-company-logos}")
     private String bucketName;
@@ -91,7 +94,8 @@ public class SessionMaterialsService {
             EventManagementUpload upload = uploadService.associate(SessionMaterialUploadHandler.PURPOSE,
                     item.getUploadId(), targetId);
             String type = item.getMaterialType() == null ? null : item.getMaterialType().getValue();
-            materials.add(materialUploads.createMaterial(session, upload, type, uploadedBy));
+            materials.add(materialUploads.createMaterial(session, upload, type, item.getPubliclyVisible(),
+                    uploadedBy));
         }
         materialUploads.published(session, materials, uploadedBy);
 
@@ -162,6 +166,29 @@ public class SessionMaterialsService {
         }
         String key = material.getS3Key();
         return key.substring(key.lastIndexOf('/') + 1);
+    }
+
+    /**
+     * Sets whether the material is published after the event (#1260). The caller must be an organizer
+     * or a speaker of the session (403); a material not in that session of that event is 404. The event
+     * cache is cleared after the commit, as on an upload (sessions carry their materials).
+     */
+    public SessionMaterialResponse updateVisibility(String eventCode, String sessionSlug, UUID materialId,
+            boolean publiclyVisible) {
+        Session session = materialUploads.session(eventCode, sessionSlug);
+        materialUploads.checkMayChangeMaterials(session);
+        SessionMaterial material = materialIn(session, materialId);
+        material.setPubliclyVisible(publiclyVisible);
+        SessionMaterial saved = sessionMaterialsRepository.saveAndFlush(material);
+        CacheConfig.clearAfterCommit(cacheManager, CacheConfig.EVENT_WITH_INCLUDES_CACHE);
+        log.info("Material {} of session {} publiclyVisible={}", materialId, sessionSlug, publiclyVisible);
+        return toResponse(saved);
+    }
+
+    /** The material in this session; another session's or an unknown id is 404. */
+    private SessionMaterial materialIn(Session session, UUID materialId) {
+        return sessionMaterialsRepository.findByIdAndSession_Id(materialId, session.getId())
+                .orElseThrow(() -> new MaterialNotFoundException(materialId.toString()));
     }
 
     /**
@@ -452,6 +479,7 @@ public class SessionMaterialsService {
                         ? material.getUpdatedAt().atOffset(ZoneOffset.UTC) : null)
                 .contentExtracted(material.getContentExtracted())
                 .extractionStatus(material.getExtractionStatus())
+                .publiclyVisible(material.getPubliclyVisible())
                 .build();
     }
 }

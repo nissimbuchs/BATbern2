@@ -316,7 +316,11 @@ name columns for search. A username appears at most once per session.
 **Content:** the canonical current title and abstract are on `sessions`; every submission is kept
 in `session_content_history` (`submission_version`, abstract up to 1000 characters, title up to
 200, reviewer feedback). Uploaded files are in `session_materials` (PRESENTATION, DOCUMENT, VIDEO,
-OTHER).
+OTHER). `publicly_visible` (V159, #1260) says whether a material is published after the event: on
+create true for a PDF (by extension or MIME type) and false for any other type, unless the confirm
+or the association says otherwise; organizer and the session's speakers change it by `PATCH
+…/materials/{materialId}`. V159 set existing rows the same way. The column defaults to false, so a
+row written outside the entity is internal.
 
 ### Speaker workflow (ADR-009)
 
@@ -863,6 +867,7 @@ erDiagram
         varchar cloudfront_url
         varchar material_type "PRESENTATION DOCUMENT VIDEO OTHER"
         varchar uploaded_by
+        boolean publicly_visible "V159"
     }
     speaker_status_history {
         uuid id PK

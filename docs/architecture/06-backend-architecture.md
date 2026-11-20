@@ -181,6 +181,13 @@ so the website never shows an organizer something a visitor would not see.
   `MaterialsStatus` in `event-sessions-api`). Never add a second value for an existing meaning and
   never rename one: installed Apple Watch binaries decode the list. `materialsStatus` is `NONE` or
   `COMPLETE`; one file of any type makes a session `COMPLETE`.
+- **A session material carries `publiclyVisible`** (#1260, V159). It is set on create, on all three
+  paths (confirm of a `session-material` upload with its target, `POST …/materials`, the batch
+  import from a URL): true for a PDF, false for any other type, unless the confirm or the
+  association item says otherwise. `PATCH /events/{code}/sessions/{slug}/materials/{materialId}`
+  changes it (organizer, or a speaker of that session through `checkMayChangeMaterials`; a material
+  of another session 404) and clears `eventWithIncludes` after the commit, as an upload does. The
+  material is loaded within its session (`findByIdAndSession_Id`).
 
 `PublicEventController` (publishing) serves these three paths through `PublicEventsService`, which
 builds on the event read of event core (`EventReadService`) in the public session view and shapes

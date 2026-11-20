@@ -39,7 +39,8 @@ info:
     or none (one alone is 400). The rules depend on the caller's role (an organizer's rules when the
     caller is an organizer). A speaker may only name a session they are on (403). The confirm with
     the target creates the session material (`GET /events/{eventCode}/sessions/{sessionSlug}/materials`),
-    its type derived from the content type (always PRESENTATION for a speaker). Without a target
+    its type derived from the content type (always PRESENTATION for a speaker), public after the
+    event when it is a PDF unless the confirm's `publiclyVisible` says otherwise. Without a target
     (the organizer's session editor, which attaches the files only when the session is saved, so a
     cancel attaches nothing) the upload is CONFIRMED and
     `POST /events/{eventCode}/sessions/{sessionSlug}/materials` takes its `uploadId`. The upload
@@ -349,6 +350,12 @@ components:
       properties:
         target:
           $ref: '#/components/schemas/UploadTarget'
+        publiclyVisible:
+          type: boolean
+          description: |
+            `session-material` with a `target` only: whether the material is published after the
+            event (#1260). When omitted, true for a PDF and false for any other type. Other purposes
+            and a confirm without a target ignore it; the association carries its own value.
 
     ImportUploadRequest:
       type: object

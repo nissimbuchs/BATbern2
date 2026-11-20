@@ -42,6 +42,7 @@ uuid-path-param	event-notifications-api.openapi.yml	PATCH /notifications/{id}
 uuid-path-param	event-sessions-api.openapi.yml	DELETE /events/{eventCode}/sessions/{sessionSlug}/materials/{materialId}
 uuid-path-param	event-sessions-api.openapi.yml	DELETE /events/{eventCode}/sessions/{sessionSlug}/qna/posts/{postId}
 uuid-path-param	event-sessions-api.openapi.yml	GET /events/{eventCode}/sessions/{sessionSlug}/materials/{materialId}/download
+uuid-path-param	event-sessions-api.openapi.yml	PATCH /events/{eventCode}/sessions/{sessionSlug}/materials/{materialId}
 uuid-path-param	event-speakers-api.openapi.yml	DELETE /events/{eventCode}/speakers/{speakerId}
 uuid-path-param	event-speakers-api.openapi.yml	GET /events/{eventCode}/speakers/{speakerId}/content
 uuid-path-param	event-speakers-api.openapi.yml	GET /events/{eventCode}/speakers/{speakerId}/outreach

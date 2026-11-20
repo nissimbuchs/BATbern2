@@ -92,6 +92,13 @@ public class SessionMaterial {
     @Column(name = "extraction_status", nullable = false, length = 20)
     private String extractionStatus;  // PENDING, IN_PROGRESS, COMPLETED, FAILED, NOT_APPLICABLE
 
+    /**
+     * Published after the event (#1260). When not set on create: true for a PDF, false for any other
+     * type (a speaker's PowerPoint stays internal).
+     */
+    @Column(name = "publicly_visible", nullable = false)
+    private Boolean publiclyVisible;
+
     @PrePersist
     protected void onCreate() {
         if (createdAt == null) {
@@ -106,6 +113,14 @@ public class SessionMaterial {
         if (extractionStatus == null) {
             extractionStatus = "PENDING";
         }
+        if (publiclyVisible == null) {
+            publiclyVisible = isPdf(fileExtension, mimeType);
+        }
+    }
+
+    /** A PDF by extension or MIME type, any case: the type that is public by default. */
+    public static boolean isPdf(String fileExtension, String mimeType) {
+        return "pdf".equalsIgnoreCase(fileExtension) || "application/pdf".equalsIgnoreCase(mimeType);
     }
 
     @PreUpdate

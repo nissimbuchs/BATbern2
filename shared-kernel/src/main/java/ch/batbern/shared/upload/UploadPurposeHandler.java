@@ -5,6 +5,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * One upload purpose in the service that owns it (ADR-002, Story 17.11). {@link UploadService} runs
@@ -69,6 +70,14 @@ public interface UploadPurposeHandler {
 
     /** Puts the attached file on its target (e.g. the company logo). Runs in the confirm transaction. */
     void attach(UploadRecord upload, String targetId);
+
+    /**
+     * As {@link #attach(UploadRecord, String)}, with the options the confirm carried (e.g.
+     * {@code publiclyVisible} of a session material). Default: options ignored.
+     */
+    default void attach(UploadRecord upload, String targetId, Map<String, Object> options) {
+        attach(upload, targetId);
+    }
 
     /** Whether {@code POST /uploads/{purpose}/import} exists for this purpose. */
     default boolean supportsImport() {

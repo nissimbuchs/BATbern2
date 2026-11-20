@@ -54,6 +54,9 @@ public interface SessionMaterialsRepository extends JpaRepository<SessionMateria
      */
     Optional<SessionMaterial> findByUploadId(String uploadId);
 
+    /** A material of its session only (ADR-003: a UUID child is loaded scoped to its parent). */
+    Optional<SessionMaterial> findByIdAndSession_Id(UUID id, UUID sessionId);
+
     /**
      * Find materials by extraction status (for RAG pipeline - Story 5.10)
      * Uses idx_session_materials_extraction_status index

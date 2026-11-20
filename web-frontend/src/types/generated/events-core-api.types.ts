@@ -1849,6 +1849,11 @@ export interface components {
        * @example PENDING
        */
       extractionStatus: string;
+      /**
+       * @description Whether the material is published after the event (#1260). Defaults to true for a PDF and false for any other type; speaker and organizer change it.
+       * @example true
+       */
+      publiclyVisible: boolean;
     };
     /**
      * @description Story 1.15a.1b: Session response with embedded speakers + materials.

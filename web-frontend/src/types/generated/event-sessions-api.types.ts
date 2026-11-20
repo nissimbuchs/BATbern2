@@ -602,7 +602,13 @@ export interface paths {
     delete: operations['deleteSessionMaterial'];
     options?: never;
     head?: never;
-    patch?: never;
+    /**
+     * Mark a session material public or not
+     * @description Sets whether the material is published after the event (#1260). A new material is public when it is a PDF, otherwise not, unless the upload said otherwise. A material of another session or event is 404. The cached event views show the change at once.
+     *
+     *     **Authorization**: ORGANIZER (any session) or SPEAKER (own sessions only).
+     */
+    patch: operations['updateSessionMaterial'];
     trace?: never;
   };
   '/events/{eventCode}/sessions/{sessionSlug}/materials/{materialId}/download': {
@@ -1041,6 +1047,11 @@ export interface components {
        * @example PENDING
        */
       extractionStatus: string;
+      /**
+       * @description Whether the material is published after the event (#1260). Defaults to true for a PDF and false for any other type; speaker and organizer change it.
+       * @example true
+       */
+      publiclyVisible: boolean;
     };
     /** @description One confirmed upload of purpose `session-material` (`uploads-api`, Story 17.11d) to attach to the session. Name, size and type come from the upload. */
     MaterialUploadItem: {
@@ -1055,10 +1066,23 @@ export interface components {
        * @enum {string}
        */
       materialType?: 'PRESENTATION' | 'DOCUMENT' | 'VIDEO' | 'ARCHIVE' | 'OTHER';
+      /**
+       * @description Whether the material is published after the event; when omitted, true for a PDF and false for any other type.
+       * @example false
+       */
+      publiclyVisible?: boolean;
     };
     /** @description Story 5.9: associate 1-10 already-uploaded materials with a session. */
     SessionMaterialAssociationRequest: {
       materials: components['schemas']['MaterialUploadItem'][];
+    };
+    /** @description The change of a session material (#1260). */
+    SessionMaterialUpdateRequest: {
+      /**
+       * @description Whether the material is published after the event
+       * @example false
+       */
+      publiclyVisible: boolean;
     };
     /** @description Story 5.9: wrapper for the materials associated with a session (returned by associate + list). */
     SessionMaterialsResponse: {
@@ -2587,6 +2611,42 @@ export interface operations {
         };
         content?: never;
       };
+      404: components['responses']['NotFound'];
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  updateSessionMaterial: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @example BATbern142 */
+        eventCode: string;
+        /** @example blockchain-security */
+        sessionSlug: string;
+        /** @example 3fa85f64-5717-4562-b3fc-2c963f66afa6 */
+        materialId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['SessionMaterialUpdateRequest'];
+      };
+    };
+    responses: {
+      /** @description The material with the new value */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['SessionMaterialResponse'];
+        };
+      };
+      400: components['responses']['BadRequest'];
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
       404: components['responses']['NotFound'];
       500: components['responses']['InternalServerError'];
     };

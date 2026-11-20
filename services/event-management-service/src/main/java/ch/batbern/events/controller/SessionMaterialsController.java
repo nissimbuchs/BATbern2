@@ -7,6 +7,7 @@ import ch.batbern.events.sessions.api.generated.SessionMaterialsApi;
 import ch.batbern.events.sessions.dto.generated.DownloadUrlResponse;
 import ch.batbern.events.sessions.dto.generated.SessionMaterialAssociationRequest;
 import ch.batbern.events.sessions.dto.generated.SessionMaterialResponse;
+import ch.batbern.events.sessions.dto.generated.SessionMaterialUpdateRequest;
 import ch.batbern.events.sessions.dto.generated.SessionMaterialsResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -85,6 +86,18 @@ public class SessionMaterialsController implements SessionMaterialsApi {
         String downloadUrl = sessionMaterialsService.generateDownloadUrl(materialId);
 
         return ResponseEntity.ok(new DownloadUrlResponse().downloadUrl(downloadUrl));
+    }
+
+    @Override
+    @PreAuthorize("hasRole('ORGANIZER') or hasRole('SPEAKER')")
+    public ResponseEntity<SessionMaterialResponse> updateSessionMaterial(
+            String eventCode,
+            String sessionSlug,
+            UUID materialId,
+            SessionMaterialUpdateRequest request) {
+        // The service checks the session (404), the caller's right to change it (403) and the material (404).
+        return ResponseEntity.ok(sessionMaterialsService.updateVisibility(eventCode, sessionSlug, materialId,
+                request.getPubliclyVisible()));
     }
 
     @Override

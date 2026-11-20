@@ -127,6 +127,16 @@ public class UploadService<T extends UploadRecord> {
      */
     @Transactional
     public T confirm(String purpose, String uploadId, Map<String, String> target) {
+        return confirm(purpose, uploadId, target, Map.of());
+    }
+
+    /**
+     * As {@link #confirm(String, String, Map)}, with options for the handler's attach (e.g. whether a
+     * session material is public); without a target they are not used.
+     */
+    @Transactional
+    public T confirm(String purpose, String uploadId, Map<String, String> target,
+            Map<String, Object> attachOptions) {
         UploadPurposeHandler handler = handler(purpose);
         handler.checkMayUpload();
         String targetId = targetId(handler, target);
@@ -153,7 +163,7 @@ public class UploadService<T extends UploadRecord> {
         }
         T associated = associate(handler, upload, handler.targetType(), targetId,
                 handler.finalKey(upload, targetId));
-        handler.attach(associated, targetId);
+        handler.attach(associated, targetId, attachOptions);
         return associated;
     }
 
