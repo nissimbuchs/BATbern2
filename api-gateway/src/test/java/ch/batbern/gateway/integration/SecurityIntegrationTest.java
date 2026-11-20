@@ -21,7 +21,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * E2E Integration Tests for Security Features
  *
  * TDD RED Phase: These tests are written first and should FAIL initially.
- * Tests cover: Security Headers (AC1), Rate Limiting (AC6), GDPR Export (AC8)
+ * Tests cover: Security Headers (AC1), Rate Limiting (AC6); the GDPR stubs are gone (#1215)
  */
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -187,117 +187,18 @@ class SecurityIntegrationTest {
     }
 
     // ========================================
-    // AC8: GDPR Data Export Tests (E2E)
+    // #1215: no GDPR stub endpoints
     // ========================================
 
     @Test
-    @DisplayName("should_exportUserData_when_exportRequested")
-    void should_exportUserData_when_exportRequested() throws Exception {
-        // Given: An authenticated user
-        // Note: JWT token will be mocked in actual implementation
-
-        // When: User requests data export
-        MvcResult result = mockMvc.perform(get("/api/v1/gdpr/export")
-                        .header("Authorization", "Bearer mock-jwt-token"))
-                .andExpect(status().isOk())
-                .andReturn();
-
-        // Then: Response should contain user data in JSON format
-        String responseBody = result.getResponse().getContentAsString();
-        assertThat(responseBody)
-                .as("Response must contain userId field")
-                .contains("userId");
-        assertThat(responseBody)
-                .as("Response must contain email field")
-                .contains("email");
-        assertThat(responseBody)
-                .as("Response must contain exportDate field")
-                .contains("exportDate");
-    }
-
-    @Test
-    @DisplayName("should_includeAllPersonalData_when_exportGenerated")
-    void should_includeAllPersonalData_when_exportGenerated() throws Exception {
-        // When: User requests data export
-        MvcResult result = mockMvc.perform(get("/api/v1/gdpr/export")
-                        .header("Authorization", "Bearer mock-jwt-token"))
-                .andExpect(status().isOk())
-                .andReturn();
-
-        // Then: Export should include all personal data categories
-        String responseBody = result.getResponse().getContentAsString();
-        assertThat(responseBody).contains("profile");
-        assertThat(responseBody).contains("events");
-        assertThat(responseBody).contains("submissions");
-        assertThat(responseBody).contains("analytics");
-        assertThat(responseBody).contains("preferences");
-    }
-
-    @Test
-    @DisplayName("should_formatAsJSON_when_dataExported")
-    void should_formatAsJSON_when_dataExported() throws Exception {
-        // When: User requests data export
-        MvcResult result = mockMvc.perform(get("/api/v1/gdpr/export")
-                        .header("Authorization", "Bearer mock-jwt-token"))
-                .andExpect(status().isOk())
-                .andReturn();
-
-        // Then: Response content type should be application/json
-        assertThat(result.getResponse().getContentType())
-                .contains("application/json");
-    }
-
-    @Test
-    @DisplayName("should_requireAuthentication_when_gdprExportRequested")
-    void should_requireAuthentication_when_gdprExportRequested() throws Exception {
-        // When: Making request without authentication
-        mockMvc.perform(get("/api/v1/gdpr/export"))
-                // Then: Should return 401 Unauthorized
-                .andExpect(status().isUnauthorized());
-    }
-
-    // ========================================
-    // AC9: GDPR Data Deletion Tests (E2E)
-    // ========================================
-
-    @Test
-    @DisplayName("should_deleteUserData_when_deletionRequested")
-    void should_deleteUserData_when_deletionRequested() throws Exception {
-        // Given: User initiates deletion to get confirmation token
-        MvcResult initResult = mockMvc.perform(delete("/api/v1/gdpr/delete")
-                        .header("Authorization", "Bearer mock-jwt-token"))
-                .andExpect(status().isOk())
-                .andReturn();
-
-        // Extract confirmation token from response (it's logged in the service)
-        // For test purposes, we'll initiate and complete in sequence
-        String responseBody = initResult.getResponse().getContentAsString();
-        assertThat(responseBody).contains("confirmationRequired");
-
-        // When: User requests data deletion with confirmation token
-        // Note: In real scenario, token would come from email. For tests, service returns it.
-        // Since tokens are UUID-based and stored in memory, we simulate by making second call
-        // The service accepts any token for the user after initiation
-        mockMvc.perform(delete("/api/v1/gdpr/delete")
-                        .header("Authorization", "Bearer mock-jwt-token")
-                        .param("confirmationToken", "test-token"))
-                // Then: Should indicate invalid token (since we didn't get real one)
-                // OR should succeed if we had the real token
-                .andExpect(status().isBadRequest()); // Expected: invalid token error
-    }
-
-    @Test
-    @DisplayName("should_requireConfirmation_when_deletionInitiated")
-    void should_requireConfirmation_when_deletionInitiated() throws Exception {
-        // When: User initiates deletion without confirmation token
-        MvcResult result = mockMvc.perform(delete("/api/v1/gdpr/delete")
-                        .header("Authorization", "Bearer mock-jwt-token"))
-                .andExpect(status().isOk())
-                .andReturn();
-
-        // Then: Response should indicate confirmation required
-        String responseBody = result.getResponse().getContentAsString();
-        assertThat(responseBody).contains("confirmationRequired");
+    @DisplayName("should_notServeGdprStubs_when_exportOrDeleteRequested")
+    void should_notServeGdprStubs_when_exportOrDeleteRequested() throws Exception {
+        // The former /gdpr/export returned sample data and /gdpr/delete reported a deletion that never
+        // happened (#1215). Nothing answers these paths any more; erasure is handled by hand (#1120).
+        mockMvc.perform(get("/api/v1/gdpr/export").header("Authorization", "Bearer mock-jwt-token"))
+                .andExpect(status().isNotFound());
+        mockMvc.perform(delete("/api/v1/gdpr/delete").header("Authorization", "Bearer mock-jwt-token"))
+                .andExpect(status().isNotFound());
     }
 
     // ========================================
@@ -327,23 +228,5 @@ class SecurityIntegrationTest {
         // /actuator/health must remain public for load balancer health checks
         mockMvc.perform(get("/actuator/health"))
                 .andExpect(status().isOk());
-    }
-
-    // ========================================
-    // AC10: Audit Logging Tests (E2E)
-    // ========================================
-
-    @Test
-    @DisplayName("should_logAuditEvent_when_gdprExportRequested")
-    void should_logAuditEvent_when_gdprExportRequested() throws Exception {
-        // Note: Audit logging will be verified through log capture in actual implementation
-
-        // When: User requests data export (sensitive operation)
-        mockMvc.perform(get("/api/v1/gdpr/export")
-                        .header("Authorization", "Bearer mock-jwt-token"))
-                .andExpect(status().isOk());
-
-        // Then: Audit log should be created (verified through log appender in unit tests)
-        // This E2E test verifies the flow works end-to-end
     }
 }

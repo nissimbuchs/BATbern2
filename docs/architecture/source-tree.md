@@ -100,7 +100,7 @@ api-gateway/src/main/java/ch/batbern/gateway/
 ├── security/       # RateLimitingFilter, AccountActiveFilter, TurnstileVerificationFilter, security headers
 ├── filter/         # CorrelationIdFilter, ApiVersionHeaderFilter
 ├── config/         # SecurityConfig (JWT resource server, /internal/** denyAll)
-├── auth/  client/  exception/  gdpr/  health/  middleware/  observability/  util/  validation/
+├── auth/  client/  exception/  health/  middleware/  observability/  util/  validation/
 └── ApiGatewayApplication.java
 ```
 
