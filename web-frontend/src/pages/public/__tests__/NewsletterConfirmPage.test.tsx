@@ -22,7 +22,7 @@ function renderPage(url: string) {
 
 describe('NewsletterConfirmPage', () => {
   it('should_postTheToken_and_showSuccess_when_visitorConfirms', async () => {
-    renderPage('/newsletter/confirm?token=3f1c2a9e-7b4d-4e8a-9c21-5d6e7f809a1b');
+    renderPage('/newsletter/confirm?token=example-confirmation-token');
 
     // Nothing is posted until the visitor clicks: a mail scanner opening the link confirms nothing.
     expect(
@@ -36,7 +36,7 @@ describe('NewsletterConfirmPage', () => {
       await screen.findByText('Thank you! Your newsletter subscription is confirmed.')
     ).toBeInTheDocument();
     const [call] = api.calls('confirmNewsletterSubscription');
-    expect(call.body).toEqual({ token: '3f1c2a9e-7b4d-4e8a-9c21-5d6e7f809a1b' });
+    expect(call.body).toEqual({ token: 'example-confirmation-token' });
     expect(screen.getByRole('link', { name: 'Go to the homepage' })).toHaveAttribute('href', '/');
   });
 

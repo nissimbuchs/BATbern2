@@ -3,11 +3,15 @@ package ch.batbern.partners.contract;
 import ch.batbern.partners.config.TestAwsConfig;
 import ch.batbern.partners.config.TestSecurityConfig;
 import ch.batbern.partners.domain.MeetingType;
+import ch.batbern.partners.domain.Partner;
 import ch.batbern.partners.domain.PartnerMeeting;
+import ch.batbern.partners.domain.PartnershipLevel;
 import ch.batbern.partners.repository.PartnerMeetingRepository;
 import ch.batbern.partners.repository.PartnerMeetingRsvpRepository;
+import ch.batbern.partners.repository.PartnerRepository;
 import ch.batbern.shared.test.AbstractIntegrationTest;
 import ch.batbern.shared.test.contract.OpenApiContract;
+import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -48,6 +52,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  *       It replaced {@code POST /internal/partner-meetings/rsvps} (Story 17.0b2).</li>
  *   <li>The user-reference contract CUMS owns (Epic 17 entry 7b): {@code /internal/user-references/*}
  *       in {@code docs/api/internal/cums-internal.openapi.yml}.</li>
+ *   <li>The company-reference contract CUMS owns (#1251): {@code /internal/company-references/*} in the
+ *       same spec.</li>
  * </ul>
  *
  * <p>Until Epic 17 entry 8 this class also proved the two public reads EMS's
@@ -72,12 +78,16 @@ class S2sProviderContractIntegrationTest extends AbstractIntegrationTest {
     private PartnerMeetingRsvpRepository rsvpRepository;
     @Autowired
     private JdbcTemplate jdbc;
+    @Autowired
+    private PartnerRepository partnerRepository;
 
     @AfterEach
     void cleanUp() {
         meetingRepository.findAll().stream().filter(m -> "contract-8b".equals(m.getCreatedBy()))
                 .forEach(meetingRepository::delete);
         jdbc.update("DELETE FROM topic_suggestions WHERE suggested_by IN (?, ?)", MERGE_SOURCE, MERGE_TARGET);
+        partnerRepository.findByCompanyName("contractsrc").ifPresent(partnerRepository::delete);
+        partnerRepository.findByCompanyName("contracttgt").ifPresent(partnerRepository::delete);
     }
 
     @Test
@@ -196,5 +206,92 @@ class S2sProviderContractIntegrationTest extends AbstractIntegrationTest {
                 {"username": "%s", "oldEmail": "old@example.com", "newEmail": "new@example.com"}"""
                 .formatted(MERGE_TARGET), 200);
         postContract("/internal/user-references/primary-email", "{\"username\": \"x\"}", 400);
+    }
+
+    // ------------------------------------------------------------------ company references (#1251)
+
+    private MvcResult companyPreview(String source, String target, boolean user, int expectedStatus)
+            throws Exception {
+        Map<String, List<String>> query = new LinkedHashMap<>();
+        MockHttpServletRequestBuilder request = get("/internal/company-references/preview");
+        if (source != null) {
+            query.put("source", List.of(source));
+            request.param("source", source);
+        }
+        if (target != null) {
+            query.put("target", List.of(target));
+            request.param("target", target);
+        }
+        if (user) {
+            request.with(jwt().jwt(j -> j.claim("custom:username", "organizer.alice")
+                    .claim("custom:role", "ORGANIZER")));
+        }
+        return contractCall(request, "GET", "/internal/company-references/preview", query, null, expectedStatus);
+    }
+
+    /** A company-reference merge as CUMS sends it, with the organizer's JWT forwarded when {@code user}. */
+    private MvcResult companyMerge(String body, boolean user, int expectedStatus) throws Exception {
+        String path = "/internal/company-references/merge";
+        MockHttpServletRequestBuilder request = post(path).contentType(MediaType.APPLICATION_JSON).content(body);
+        if (user) {
+            request.with(jwt().jwt(j -> j.claim("custom:username", "organizer.alice")
+                    .claim("custom:role", "ORGANIZER")));
+        }
+        return contractCall(request, "POST", path, Map.of(), body, expectedStatus);
+    }
+
+    @ParameterizedTest(name = "forwarded JWT: {0}")
+    @CsvSource({"true", "false"})
+    @DisplayName("company-reference contract: preview, merge and the both-partners 409, as CUMS calls them")
+    void companyReferenceContract_matchesCumsSpec(boolean user) throws Exception {
+        jdbc.update("INSERT INTO topic_suggestions (company_name, suggested_by, title, source) VALUES (?, ?, ?, ?)",
+                "contractsrc", MERGE_SOURCE, "Contract topic", "PARTNER");
+
+        MvcResult previewed = companyPreview("contractsrc", "contracttgt", user, 200);
+        assertThat(previewed.getResponse().getContentAsString()).contains("topic_suggestions.company_name");
+        companyPreview("contractsrc", "contractsrc", user, 400);
+        companyPreview("contractsrc", null, user, 400);
+        String merge = """
+                {"source": "%s", "target": "%s", "performedBy": "organizer.alice", "trigger": "%s"}""";
+        companyMerge(merge.formatted("contractsrc", "contracttgt", "MERGE"), user, 200);
+        companyMerge(merge.formatted("contractsrc", "contracttgt", "RENAME"), user, 200);
+        companyMerge(merge.formatted("contractsrc", "not-a-key", "MERGE"), user, 400);
+        companyMerge("{\"source\": \"x\"}", user, 400);
+
+        partnerRepository.save(Partner.builder().companyName("contractsrc").partnershipLevel(PartnershipLevel.GOLD)
+                .partnershipStartDate(LocalDate.now()).build());
+        partnerRepository.save(Partner.builder().companyName("contracttgt").partnershipLevel(PartnershipLevel.GOLD)
+                .partnershipStartDate(LocalDate.now()).build());
+        MvcResult blocked = companyPreview("contractsrc", "contracttgt", user, 200);
+        assertThat(blocked.getResponse().getContentAsString()).contains("MERGE_BLOCKED_BOTH_PARTNERS");
+        MvcResult refused = companyMerge(merge.formatted("contractsrc", "contracttgt", "MERGE"), user, 409);
+        assertThat(refused.getResponse().getContentAsString()).contains("MERGE_BLOCKED_BOTH_PARTNERS");
+    }
+
+    @ParameterizedTest(name = "forwarded JWT: {0}")
+    @CsvSource({"true", "false"})
+    @DisplayName("company-reference contract: counts per key, as CUMS calls them")
+    void companyReferenceCounts_matchCumsSpec(boolean user) throws Exception {
+        jdbc.update("INSERT INTO topic_suggestions (company_name, suggested_by, title, source) VALUES (?, ?, ?, ?)",
+                "contractsrc", MERGE_SOURCE, "Contract topic", "PARTNER");
+        partnerRepository.save(Partner.builder().companyName("contractsrc").partnershipLevel(PartnershipLevel.GOLD)
+                .partnershipStartDate(LocalDate.now()).build());
+        String path = "/internal/company-references/counts";
+        String body = "{\"keys\": [\"contractsrc\", \"contracttgt\"]}";
+        MockHttpServletRequestBuilder request = post(path).contentType(MediaType.APPLICATION_JSON).content(body);
+        if (user) {
+            request.with(jwt().jwt(j -> j.claim("custom:username", "organizer.alice")
+                    .claim("custom:role", "ORGANIZER")));
+        }
+
+        MvcResult counted = contractCall(request, "POST", path, Map.of(), body, 200);
+
+        String json = counted.getResponse().getContentAsString();
+        assertThat(JsonPath.<Integer>read(json, "$.counts.contractsrc['partners.company_name']")).isEqualTo(1);
+        assertThat(JsonPath.<Integer>read(json, "$.counts.contractsrc['topic_suggestions.company_name']"))
+                .isEqualTo(1);
+        assertThat(json).doesNotContain("contracttgt");
+        contractCall(post(path).contentType(MediaType.APPLICATION_JSON).content("{\"keys\": []}"), "POST", path,
+                Map.of(), "{\"keys\": []}", 400);
     }
 }

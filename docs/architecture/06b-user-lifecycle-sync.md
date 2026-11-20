@@ -1221,6 +1221,103 @@ Measured on production 2026-11-07: 257 / 24 / 22 pairs for the three rules, 24 w
   and closing the conversation after an approval are best effort: event-management has already committed
   its part, so they must not roll the merge back.
 
+## Renaming a company (#1251)
+
+A company key (`companies.name`) is held by other rows: CUMS `user_profiles.company_id`,
+`company_logo_requests`, `activity_history` (COMPANY rows), the company-logo upload's target; EMS
+`registrations.attendee_company_id`; PCS `partners`, `topic_suggestions`, `topic_votes`.
+`PATCH /companies/{name}` with a new `name` moves them all through `CompanyKeyMover`, the path a
+company merge reuses:
+
+1. the company row is locked; the new key must be free (no company, no other company's alias);
+2. every holder of the company-references contract previews the move (`trigger RENAME`); a blocker
+   refuses it before any holder moves (409 `RENAME_BLOCKED`);
+3. every holder moves its rows in its own transaction, PCS first (the one that can refuse);
+4. CUMS moves its rows, renames the company, drops an alias equal to the new key (a rename back) and
+   records the old key and display name as an alias (`company_aliases`); the user and company search
+   caches are cleared after the commit.
+
+A holder that does not complete its part fails the rename (502 `RENAME_INCOMPLETE`): CUMS rolls back
+and the company keeps its old key, while earlier holders have moved theirs. Renaming it again to the
+same key finishes the move, as every holder is idempotent. A failure in CUMS after the holders moved
+(the key taken concurrently, the alias) is reported the same way (`CompanyKeyMover.MoveIncompleteException`).
+Until the retry the holders' rows sit on a key no company holds: renaming to another key, or another
+company taking that key meanwhile, leaves them there, to be moved by hand. The other fields and the
+logo of the same `PATCH` are applied first, under the old key, so they cannot fail after the move.
+No domain event is raised; the company
+events were deleted with this change, none had a consumer.
+
+## Merging two companies (#1251)
+
+An organizer folds a duplicate company (source, "Unic AG") into another (target, "Unic"):
+`GET /companies/{target}/merge-preview?source=` shows what would happen, `POST /companies/{target}/merge
+{sourceName}` does it (ORGANIZER, `CompanyMergeController`, tag Company Merge). `CompanyMergeService`
+mirrors the profile merge (`UserMergeService`) and moves the references through `CompanyKeyMover`, the
+path a rename uses:
+
+1. both companies are locked in key order (two opposite merges cannot deadlock) and checked: the same
+   company is refused (400 `MERGE_NOT_ALLOWED`), so is a target key that no user profile can hold (not
+   1 to 12 letters or digits; 409 `MERGE_NOT_ALLOWED`, `details.reasons`, `details.canSwap` when the
+   other direction would pass). A source key of that kind is merged without an alias;
+2. every holder of the company-references contract previews the move (`trigger MERGE`); a blocker
+   refuses it before any holder moves: 409 `MERGE_BLOCKED_BOTH_PARTNERS` when both are partners, else
+   409 `MERGE_BLOCKED` (also when a holder refuses the merge call itself);
+3. every holder moves its rows in its own transaction, PCS first;
+4. CUMS moves its rows (`UPDATE ... RETURNING id`, the ids go to the log). An open logo request of a
+   person who has an open one at the target too is closed (DECLINED, row kept, logged as removed)
+   before it moves: only one may be open per person and company;
+5. the target's empty fields (website, industry, description, the logo as a whole) are filled from the
+   source, set ones are kept, the target's display name always stays; the source's aliases are
+   re-pointed to the target; the source is deleted; its key and display name become aliases of the
+   target (reason MERGE); one `company_merge_log` row keeps the moved and removed row ids of CUMS and
+   every holder, the filled fields and a snapshot of the source with its aliases (outcome COMPLETED). The caches are
+   cleared after the commit.
+
+A holder that does not complete its part, or a failure in CUMS after the holders moved, fails the
+merge (502 `MERGE_INCOMPLETE`): CUMS rolls back, the source and its CUMS rows stay, earlier holders
+have moved theirs, and the same merge again finishes it. The ids those holders moved are written first
+as an INCOMPLETE `company_merge_log` row in a transaction of its own (`CompanyMergeLog`), because the
+retry gets nothing from them. A completed merge repeated answers 404. No
+mail is sent and no S3 key changes: the source's logo upload row moves to the target even when the
+target keeps its own logo, so the file stays reachable for an undo by hand.
+
+**Organizer UI (story 6).** The Companies tab has **Possible duplicates**
+(`/organizer/companies/duplicate-candidates`, `CompanyDuplicatesPage`, a hyphenated path that no
+company key can take) and the detail page **Merge with another company**; both open
+`MergeCompanyDialog`, which shows the preview and posts the merge (`companyMergeApi.ts`). The dialog
+offers the swap whenever the preview says `canSwap`, shows each reason, and maps the error codes of
+the merge to their own text.
+
+### Finding the pairs (story 5)
+
+`GET /companies/duplicate-candidates` (ORGANIZER, `CompanyMergeController`,
+`CompanyDuplicateCandidateService`) lists company pairs that are probably one company, computed on
+the live data each time; nothing is stored, no scheduler, no mail. The model is the profile list
+(`GET /users/duplicate-candidates`). `CompanyDuplicateRules` (pure, unit tested) compares every
+company with every other (about 700, no index needed) and lists a pair once, under the first rule it
+matches:
+
+| Rule | Match | Confidence |
+|---|---|---|
+| `SAME_WEBSITE` | the same host: lower case, without scheme, `www.`, port and path; a host without a dot (placeholder) never matches. On a shared platform (LinkedIn, Facebook, XING, Instagram, X, GitHub, Google Sites, YouTube, link shorteners and the like) the host plus the identifying path (`linkedin.com/company/acme`); a platform address without a profile never matches | HIGH |
+| `SAME_DISPLAY_NAME` | the same display name (the key when there is none), folded: lower case, umlauts as ae/oe/ue, ß as ss, accents removed, hyphen, underscore and slash as a space, other punctuation removed, spaces collapsed | HIGH |
+| `SAME_NAME_WITHOUT_LEGAL_FORM` | as before, then the words ag, gmbh, sa, sarl, ltd, inc, llc, kg and a trailing co removed; generic words (Kanton, Uni, Bern, Schweiz) stay; an empty result never matches | MEDIUM |
+| `SLUG_PREFIX` | one key starts with the other (ignoring case), the shorter at least 4 characters | LOW |
+
+Each side shows the key, display name, logo URL, website, user count (CUMS), registration count and
+partner flag, and created at/by. The registrations and the partner come from the holders through the
+company-references contract (`POST /internal/company-references/counts`, one call per holder for all
+keys of the list, summed per key; ADR-016: CUMS reads no EMS or PCS table). A holder that does not
+answer fails the list with 502 `DUPLICATE_COUNTS_INCOMPLETE`: the suggested target depends on the
+partner flag. `target` is the suggested company to keep: the partner, else the one with a logo, else
+more users, else the older one, else the smaller key. `organizerCanMerge` is false when both are
+partners. `POST /companies/duplicate-candidates/dismissals {nameA, nameB}` marks a pair as no duplicate
+for good (`company_duplicate_dismissals`, V38; 204, idempotent, either order; 404 for an unknown company,
+400 `INVALID_DISMISSAL` for one company twice); merging or deleting either company removes the row.
+On a shared platform (LinkedIn, Facebook, XING, Instagram, X, GitHub, Google Sites, YouTube, link
+shorteners) `SAME_WEBSITE` compares the host plus the profile path, so two companies with a LinkedIn
+page are no pair (`CompanyDuplicateRules.PLATFORMS`).
+
 ## Database Schema
 
 ### user_profiles Table

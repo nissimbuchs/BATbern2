@@ -1,20 +1,17 @@
 package ch.batbern.companyuser.service;
 
+import ch.batbern.companyuser.client.CompanyReferenceContract;
 import ch.batbern.companyuser.domain.Company;
+import ch.batbern.companyuser.domain.CompanyAlias;
 import ch.batbern.companyuser.domain.CompanyUserUpload;
 import ch.batbern.companyuser.dto.generated.CompanyLogo;
 import ch.batbern.companyuser.dto.generated.CompanyResponse;
 import ch.batbern.companyuser.dto.generated.CreateCompanyRequest;
 import ch.batbern.companyuser.dto.generated.UpdateCompanyRequest;
-import ch.batbern.companyuser.event.CompanyCreatedEvent;
-import ch.batbern.companyuser.event.CompanyDeletedEvent;
-import ch.batbern.companyuser.event.CompanyUpdatedEvent;
-import ch.batbern.companyuser.event.CompanyVerifiedEvent;
 import ch.batbern.companyuser.exception.CompanyNotFoundException;
 import ch.batbern.companyuser.exception.CompanyValidationException;
 import ch.batbern.companyuser.repository.CompanyRepository;
 import ch.batbern.companyuser.security.SecurityContextHelper;
-import ch.batbern.shared.events.DomainEventPublisher;
 import ch.batbern.shared.exception.ValidationException;
 import ch.batbern.shared.service.SlugGenerationService;
 import ch.batbern.shared.upload.UploadRecord;
@@ -35,7 +32,6 @@ import java.util.stream.Collectors;
 /**
  * Service for company management business logic
  * AC4: Company CRUD operations
- * AC7: Domain event publishing
  * AC8: Cache invalidation
  *
  * GREEN Phase: Implementation to make tests pass
@@ -47,17 +43,17 @@ import java.util.stream.Collectors;
 public class CompanyService {
 
     private final CompanyRepository companyRepository;
-    private final DomainEventPublisher eventPublisher;
     private final CompanySearchService searchService;
     private final SecurityContextHelper securityContextHelper;
     private final UploadService<CompanyUserUpload> uploadService;
     private final SlugGenerationService slugService;
     private final CompanyInserter companyInserter;
+    private final CompanyAliasService aliasService;
+    private final CompanyKeyMover keyMover;
 
     /**
      * Creates a new company with validation
      * AC4: Company creation
-     * AC7: Publishes CompanyCreatedEvent
      * AC8: Invalidates search cache
      *
      * <p>Owner decision 2026-11-09 (option A): the key ({@code name}, the meaningful ID) is the slug
@@ -80,11 +76,18 @@ public class CompanyService {
             throw new ValidationException("name", "Company name must contain at least one letter or digit");
         }
 
-        // Duplicate company (AC3): the same name as people see it
+        // Duplicate company (AC3): the same name as people see it, also as an old name kept as an
+        // alias after a merge or rename (#1251)
         if (companyRepository.existsByDisplayNameIgnoreCase(displayName)) {
             throw new CompanyValidationException("Company with name '" + displayName + "' already exists");
         }
-        String companyKey = slugService.ensureUniqueCompanyName(baseKey, companyRepository::existsByName);
+        if (aliasService.isAliasDisplayName(displayName)) {
+            throw new CompanyValidationException("Company with name '" + displayName
+                    + "' already exists under another name");
+        }
+        // An alias key is taken: a company with it would hide the alias
+        String companyKey = slugService.ensureUniqueCompanyName(baseKey,
+                key -> companyRepository.existsByName(key) || aliasService.isAliasKey(key));
 
         // Build company entity (AC10: Get username from security context)
         // Story 1.16.2: Use username instead of UUID for createdBy field
@@ -117,21 +120,6 @@ public class CompanyService {
 
         // Invalidate search cache (AC8)
         searchService.invalidateCache();
-
-        // Publish domain event (AC7) using shared-kernel DomainEventPublisher
-        // Story 1.16.2: Use company.name as aggregate ID, username as String
-        CompanyCreatedEvent event = new CompanyCreatedEvent(
-            savedCompany.getName(),  // companyName as aggregate ID
-            savedCompany.getName(),
-            savedCompany.getDisplayName(),
-            savedCompany.getWebsite(),
-            savedCompany.getIndustry(),
-            savedCompany.getDescription(),
-            savedCompany.getCreatedBy(),
-            savedCompany.getCreatedAt(),
-            currentUsername  // username as String
-        );
-        eventPublisher.publish(event);
 
         log.info("Company created successfully: {}", savedCompany.getId());
         return mapToResponse(savedCompany);
@@ -177,11 +165,18 @@ public class CompanyService {
         // "Test Co" → "testco" (max 12 chars, alphanumeric only)
         String companyName = slugService.generateCompanyName(displayName);
 
-        // The generated name is the key: an existing company with it is returned, never suffixed
-        Optional<Company> existing = companyRepository.findByName(companyName);
+        // The generated name is the key: an existing company with it is returned, never suffixed.
+        // Else a company people know by this display name (case, accents and umlaut spelling folded
+        // as the search folds them), whose key differs: "Die Post"
+        // slugs to "diepost" while the company is "post" (#1251); POST /companies calls it a duplicate.
+        // Last, an old key or display name kept as an alias after a merge or rename (#1251), so the
+        // duplicate is not created again.
+        Optional<Company> existing = companyRepository.findByName(companyName)
+                .or(() -> companyRepository.findByFoldedDisplayName(displayName.strip()))
+                .or(() -> aliasService.resolve(displayName));
 
         if (existing.isPresent()) {
-            log.debug("Company found by name: {}", companyName);
+            log.debug("Company found for display name {}: {}", displayName, existing.get().getName());
             return new Resolved(existing.get(), false);
         }
 
@@ -208,20 +203,6 @@ public class CompanyService {
             log.info("Company {} created concurrently; returning it", companyName);
             return new Resolved(concurrent, false);
         }
-
-        // Publish domain event
-        CompanyCreatedEvent event = new CompanyCreatedEvent(
-            savedCompany.getName(),
-            savedCompany.getName(),
-            savedCompany.getDisplayName(),
-            savedCompany.getWebsite(),
-            savedCompany.getIndustry(),
-            savedCompany.getDescription(),
-            savedCompany.getCreatedBy(),
-            savedCompany.getCreatedAt(),
-            savedCompany.getCreatedBy()
-        );
-        eventPublisher.publish(event);
 
         log.info("Company created: {} (name: {}, display: {})",
                  savedCompany.getId(), savedCompany.getName(), savedCompany.getDisplayName());
@@ -265,30 +246,40 @@ public class CompanyService {
     /**
      * Updates company details
      * AC4: Company update
-     * AC7: Publishes CompanyUpdatedEvent
      * AC8: Invalidates search cache
      * Story 1.16.2: Use company name as identifier instead of UUID
      */
     public CompanyResponse updateCompany(String name, UpdateCompanyRequest request) {
         log.info("Updating company: {}", name);
 
-        Company company = companyRepository.findByName(name)
+        // Locked: a rename moves the key other rows hold, and must not interleave with another
+        Company company = companyRepository.findByNameForUpdate(name)
                 .orElseThrow(() -> new CompanyNotFoundException(name));
+        String oldKey = company.getName();
+        String oldDisplayName = company.getDisplayName();
+        String newKey = request.getName();
+        boolean rename = newKey != null && !newKey.equals(oldKey);
 
         // Update only provided fields
-        if (request.getName() != null && !request.getName().equals(company.getName())
-                && !request.getName().matches(SlugGenerationService.COMPANY_NAME_PATTERN)) {
+        if (rename && !newKey.matches(SlugGenerationService.COMPANY_NAME_PATTERN)) {
             // The key is the meaningful ID other services hold: it keeps the slug shape (owner 2026-11-09)
             throw new ValidationException("name",
-                    "Company name (key) must be 1 to 12 letters or digits: " + request.getName());
+                    "Company name (key) must be 1 to 12 letters or digits: " + newKey);
         }
-        if (request.getName() != null) {
+        if (rename && companyRepository.existsByName(newKey)) {
             // Check for duplicate company name if name is being changed (AC3)
-            if (!request.getName().equals(company.getName())
-                    && companyRepository.existsByName(request.getName())) {
-                throw new CompanyValidationException("Company with name '" + request.getName() + "' already exists");
-            }
-            company.setName(request.getName());
+            throw new CompanyValidationException("Company with name '" + newKey + "' already exists");
+        }
+        if (rename && aliasService.ownerOfKey(newKey).filter(owner -> !owner.equals(company.getId())).isPresent()) {
+            // An old key of another company still leads there (#1251)
+            throw new CompanyValidationException("Company name '" + newKey + "' is an old name of another company");
+        }
+        boolean displayNameChanges = request.getDisplayName() != null
+                && !request.getDisplayName().strip().equalsIgnoreCase(String.valueOf(oldDisplayName));
+        if (displayNameChanges && aliasService.ownerOfDisplayName(request.getDisplayName())
+                .filter(owner -> !owner.equals(company.getId())).isPresent()) {
+            throw new CompanyValidationException("Company name '" + request.getDisplayName()
+                    + "' is an old name of another company");
         }
         if (request.getDisplayName() != null) {
             company.setDisplayName(request.getDisplayName());
@@ -305,7 +296,7 @@ public class CompanyService {
 
         company.setUpdatedAt(Instant.now());
         // Flush so that @PreUpdate has set the updatedAt the row gets before the response and the
-        // CompanyUpdatedEvent read it (both are built inside this transaction).
+        // logo handling read it.
         Company updatedCompany = companyRepository.saveAndFlush(company);
 
         // Handle logo changes (Story 1.16.3: Generic File Upload)
@@ -331,31 +322,44 @@ public class CompanyService {
             }
         }
 
+        // The rename is the last step: the fields and the logo (under the old key, whose upload the
+        // move carries along) cannot fail any more once other services have moved their rows (#1251)
+        if (rename) {
+            updatedCompany = rename(updatedCompany, oldKey, oldDisplayName, newKey);
+        }
+
         // Invalidate search cache (AC8)
         searchService.invalidateCache();
-
-        // Publish domain event (AC7) using shared-kernel DomainEventPublisher
-        // Story 1.16.2: Use company.name as aggregate ID, username as String
-        CompanyUpdatedEvent event = new CompanyUpdatedEvent(
-            updatedCompany.getName(),  // companyName as aggregate ID
-            updatedCompany.getName(),
-            updatedCompany.getDisplayName(),
-            updatedCompany.getWebsite(),
-            updatedCompany.getIndustry(),
-            updatedCompany.getDescription(),
-            updatedCompany.getUpdatedAt(),
-            securityContextHelper.getCurrentUserId()  // username as String
-        );
-        eventPublisher.publish(event);
 
         log.info("Company updated successfully: {}", name);
         return mapToResponse(updatedCompany);
     }
 
     /**
+     * #1251: every reference moves to the new key first (EMS and PCS through the contract, then the
+     * CUMS rows, {@link CompanyKeyMover}), then the company takes the key and its old key and display
+     * name become an alias. A failure here leaves the company under its old key; once the holders have
+     * moved, it is reported as {@link CompanyKeyMover.MoveIncompleteException} (502), and the same rename
+     * again finishes the move.
+     */
+    private Company rename(Company company, String oldKey, String oldDisplayName, String newKey) {
+        String performedBy = securityContextHelper.getCurrentUsername();
+        keyMover.move(oldKey, newKey, performedBy, CompanyReferenceContract.Trigger.RENAME);
+        try {
+            aliasService.forget(newKey); // its own old key: the company takes it back
+            company.setName(newKey);
+            Company renamed = companyRepository.saveAndFlush(company);
+            keyMover.keepAsAlias(newKey, oldKey, oldDisplayName, CompanyAlias.Reason.RENAME, performedBy);
+            return renamed;
+        } catch (RuntimeException e) {
+            throw new CompanyKeyMover.MoveIncompleteException(
+                    "The references of " + oldKey + " moved to " + newKey + ", but the rename did not complete", e);
+        }
+    }
+
+    /**
      * Deletes company
      * AC4: Company deletion
-     * AC7: Publishes CompanyDeletedEvent
      * AC8: Invalidates search cache
      * Story 1.16.2: Use company name as identifier instead of UUID
      */
@@ -370,23 +374,12 @@ public class CompanyService {
         // Invalidate search cache (AC8)
         searchService.invalidateCache();
 
-        // Publish domain event (AC7) using shared-kernel DomainEventPublisher
-        // Story 1.16.2: Use company.name as aggregate ID, username as String
-        CompanyDeletedEvent event = new CompanyDeletedEvent(
-            company.getName(),  // companyName as aggregate ID
-            company.getName(),
-            Instant.now(),
-            securityContextHelper.getCurrentUserId()  // username as String
-        );
-        eventPublisher.publish(event);
-
         log.info("Company deleted successfully: {}", name);
     }
 
     /**
      * Marks company as verified
      * AC6: Company verification workflow
-     * AC7: Publishes CompanyVerifiedEvent
      * Story 1.16.2: Use company name as identifier instead of UUID
      */
     public CompanyResponse markAsVerified(String name) {
@@ -399,17 +392,6 @@ public class CompanyService {
         // Flush: @PreUpdate sets the stored updatedAt, which the response and the event carry.
         Company verifiedCompany = companyRepository.saveAndFlush(company);
 
-        // Publish domain event (AC7) using shared-kernel DomainEventPublisher
-        // Story 1.16.2: Use company.name as aggregate ID, username as String
-        CompanyVerifiedEvent event = new CompanyVerifiedEvent(
-            verifiedCompany.getName(),  // companyName as aggregate ID
-            verifiedCompany.getName(),
-            verifiedCompany.isVerified(),
-            verifiedCompany.getUpdatedAt(),
-            securityContextHelper.getCurrentUserId()  // username as String
-        );
-        eventPublisher.publish(event);
-
         log.info("Company marked as verified: {}", name);
         return mapToResponse(verifiedCompany);
     }
@@ -417,7 +399,6 @@ public class CompanyService {
     /**
      * Verifies a company (public API method)
      * AC13: Company verification workflow endpoint
-     * AC7: Publishes CompanyVerifiedEvent
      * Idempotent operation - can be called multiple times safely
      * Story 1.16.2: Use company name as identifier instead of UUID
      */
@@ -475,7 +456,7 @@ public class CompanyService {
 
     /**
      * #1246: gives the company the logo of an accepted logo request. Same effect as an organizer
-     * setting the logo in the company edit: final key, cache invalidation, CompanyUpdatedEvent.
+     * setting the logo in the company edit: final key, cache invalidation.
      *
      * @return the company's new logo URL
      */
@@ -492,7 +473,7 @@ public class CompanyService {
 
     /**
      * Story 17.11: an upload confirmed with the target {@code companyName} becomes the company logo,
-     * with the same effects as the edit (cache invalidation, CompanyUpdatedEvent).
+     * with the same effects as the edit (cache invalidation).
      */
     public String applyLogo(String companyName, UploadRecord upload) {
         Company company = companyRepository.findByName(companyName)
@@ -505,15 +486,6 @@ public class CompanyService {
         company.setUpdatedAt(Instant.now());
         Company saved = companyRepository.save(company);
         searchService.invalidateCache();
-        eventPublisher.publish(new CompanyUpdatedEvent(
-                saved.getName(),
-                saved.getName(),
-                saved.getDisplayName(),
-                saved.getWebsite(),
-                saved.getIndustry(),
-                saved.getDescription(),
-                saved.getUpdatedAt(),
-                securityContextHelper.getCurrentUserId()));
         log.info("Logo applied to company: {}, logoUrl: {}", saved.getName(), saved.getLogoUrl());
         return saved.getLogoUrl();
     }

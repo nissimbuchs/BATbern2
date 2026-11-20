@@ -3,7 +3,7 @@ title: 'Browser notification push and the unread notification preferences are go
 type: 'refactor'
 ticket: '4'
 created: '2026-11-15'
-status: 'built'
+status: 'done'
 baseline_revision: '171e4fc8c819c4ec57a3789018bd57bfcee77a25'
 route: 'full'
 route_source: 'auto'

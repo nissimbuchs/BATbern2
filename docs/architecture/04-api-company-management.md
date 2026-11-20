@@ -128,8 +128,6 @@ description: |
   - Company name must be unique
   - Website must be valid URL (if provided)
 
-  **Events Published**: CompanyCreatedEvent (in-process domain event)
-
   **Performance**: <200ms (P95)
 
 requestBody:
@@ -232,8 +230,6 @@ description: |
   Marks a company as verified by an ORGANIZER.
 
   **Authorization**: ORGANIZER role required
-
-  **Events Published**: CompanyVerifiedEvent (in-process domain event)
 
   **Idempotency**: Safe to call multiple times (no error if already verified)
 
@@ -534,13 +530,11 @@ PaginationMetadata:
 
 ### Domain Events
 
-The service raises these domain events in process (`DomainEventPublisher`, shared kernel). No
-other service consumes them and there is no message bus (Story 17.2 part B, 2026-11):
-
-- `CompanyCreatedEvent`: When new company is created
-- `CompanyUpdatedEvent`: When company data is modified
-- `CompanyDeletedEvent`: When company is removed
-- `CompanyVerifiedEvent`: When company verification status changes
+The service raises no company domain events. `CompanyCreatedEvent`, `CompanyUpdatedEvent`,
+`CompanyDeletedEvent` and `CompanyVerifiedEvent` had no listener in any service and there is no
+message bus (Story 17.2 part B); they were deleted with the company rename (#1251, 2026-11). A
+service that must react to a company change gets an `/internal` contract CUMS owns (ADR-016
+decision 4), as the company-references contract does for a rename or merge.
 
 ### Advanced Query Patterns
 

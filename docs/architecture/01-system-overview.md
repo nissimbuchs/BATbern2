@@ -520,7 +520,8 @@ from the floor", source COMMUNITY), and partner analytics (attendance from EMS, 
 `/analytics/dashboard`, `/analytics/export`, `/api/v1/partners/topics` (backlog, status, vote),
 `/api/v1/partner-meetings` (with `/rsvps` and `/send-invite`), `/api/v1/attendees/topics`, and
 the VPC-only `/internal/calendar-replies` (the calendar reply contract EMS owns, Epic 17 entry 8b)
-and `/internal/user-references/*` (the contract CUMS owns, 7b). See
+and `/internal/user-references/*` and `/internal/company-references/*` (contracts CUMS owns, 7b and
+#1251). See
 [04-api-partner-coordination.md](./04-api-partner-coordination.md).
 
 **Dependencies:** CUMS (companies, users), EMS (attendance summary, event data, and

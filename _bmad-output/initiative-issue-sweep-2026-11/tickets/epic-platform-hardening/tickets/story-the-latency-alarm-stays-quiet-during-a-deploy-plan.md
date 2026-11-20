@@ -3,7 +3,7 @@ title: 'The latency alarm stays quiet during a deploy, the availability alarm ne
 type: 'bugfix'
 ticket: '4'
 created: '2026-11-19'
-status: 'built'
+status: 'done'
 route: 'full'
 risk: 'medium'
 review: 'quick'

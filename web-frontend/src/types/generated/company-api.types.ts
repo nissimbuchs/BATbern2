@@ -45,10 +45,11 @@ export interface paths {
      *     **Acceptance Criteria**: AC1, AC3
      *
      *     **Validation Rules**:
-     *     - Company name must be unique
+     *     - Company name must be unique: a display name another company has (ignoring case), or an
+     *       old name kept as an alias after a merge or rename (also ignoring accents and umlaut
+     *       spelling, #1251), answers 409
+     *     - The key is the name's slug, made unique; an alias key is taken too (#1251)
      *     - Website must be valid URL (if provided)
-     *
-     *     **Events Published**: CompanyCreatedEvent (in-process domain event)
      *
      *     **Performance**: <200ms (P95)
      */
@@ -87,8 +88,6 @@ export interface paths {
      *
      *     **Story 1.16.2**: Uses company name as identifier instead of UUID
      *
-     *     **Events Published**: CompanyDeletedEvent (in-process domain event)
-     *
      *     **Cache Invalidation**: All company caches cleared on deletion
      */
     delete: operations['deleteCompany'];
@@ -103,9 +102,20 @@ export interface paths {
      *     **Story 1.16.2**: Uses company name as identifier instead of UUID
      *
      *     **Validation Rules**:
-     *     - Company name must be unique
+     *     - Company name must be unique: a key another company holds, or an old key of another
+     *       company kept as its alias, answers 409; so does a display name that is another company's
+     *       alias (#1251)
      *
-     *     **Events Published**: CompanyUpdatedEvent (in-process domain event)
+     *     **Rename** (a new `name`, #1251): every reference to the old key moves to the new one before
+     *     the company is renamed. EMS and PCS move theirs through the company-references contract
+     *     (`/internal/company-references/{preview,merge}`, trigger `RENAME`); CUMS moves user profiles,
+     *     logo requests, the logo upload and activity. The old key and the old display name stay
+     *     findable as an alias (search, typeahead, get-or-create). Renaming back to one of the
+     *     company's own old keys takes it back. A service that refuses answers 409 `RENAME_BLOCKED`;
+     *     one that does not complete its part answers 502 `RENAME_INCOMPLETE`, and the company keeps
+     *     its old key: the same rename again finishes the move (see the 502 for the one case it cannot).
+     *     The other fields and the logo are applied before any reference moves, so a bad `logoUploadId`
+     *     fails the edit with nothing moved.
      *
      *     **Cache Invalidation**: All company caches cleared on update
      */
@@ -128,7 +138,9 @@ export interface paths {
      *     **Matching**: every word of `query` must occur, in any order, in the slug
      *     (`name`) or the display name, ignoring case, accents and umlaut spelling (ü = ue = u).
      *     Ranked in SQL before the limit: exact match, then prefix, then any other match, ties by
-     *     display name and slug. A paged search is `GET /companies?search=`.
+     *     display name and slug. A paged search is `GET /companies?search=`. An old key or display
+     *     name kept as an alias after a merge or rename (#1251) finds its company, which is listed
+     *     once, as itself; an exact or prefix alias match ranks as an exact or prefix match.
      *
      *     **Caching**:
      *     - Caffeine in-memory cache with 15-minute TTL
@@ -172,11 +184,156 @@ export interface paths {
      *
      *     **Authorization**: ORGANIZER role required
      *
-     *     **Events Published**: CompanyVerifiedEvent (in-process domain event)
-     *
      *     **Idempotency**: Safe to call multiple times (no error if already verified)
      */
     post: operations['verifyCompany'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/companies/{name}/merge-preview': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Preview merging another company into this one (Organizer)
+     * @description #1251. Shows both companies and what a merge of `source` into `{name}` would do: the rows
+     *     that move per `table.column`, summed over CUMS (user profiles, logo requests, logo uploads,
+     *     activity) and every service that stores company keys (the company-references contract:
+     *     event-management, partner-coordination), the rows that collide (`conflicts`, per table,
+     *     dropped by the merge), the holders' `blockers`, and the fields of `{name}` that are empty and
+     *     would be filled from the source (`fills`). Changes nothing.
+     *
+     *     `canMerge` is false, with the reasons in `reasons`, when:
+     *     - `SAME_COMPANY`: source and target are one company;
+     *     - `TARGET_KEY_TOO_LONG`: the target key is not a company key (1 to 12 letters or digits)
+     *       and cannot be held by a user profile; merge in the other direction when `canSwap`;
+     *     - `BOTH_PARTNERS`: both companies are partners (blocker `MERGE_BLOCKED_BOTH_PARTNERS`);
+     *       merge the partners first;
+     *     - `BLOCKED`: another blocker of a holder.
+     *
+     *     For `SAME_COMPANY` the holders are not asked and `moves`, `conflicts` and `fills` are empty;
+     *     for `TARGET_KEY_TOO_LONG` the holders are not asked either (`moves` and `conflicts` hold the
+     *     CUMS rows only). A source whose key is not a company key is merged without an alias (its key
+     *     and display name are not kept). The source's partner flag shows as
+     *     `moves["partners.company_name"]`.
+     *
+     *     **Authorization**: ORGANIZER role required
+     */
+    get: operations['getCompanyMergePreview'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/companies/{name}/merge': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Merge another company into this one (Organizer)
+     * @description #1251. Folds `sourceName` into `{name}` and deletes it. In this order, the two companies
+     *     locked: every service that stores company keys previews the move (a blocker refuses before
+     *     any of them moves a row) and moves its rows (company-references contract, trigger `MERGE`);
+     *     CUMS moves user profiles, logo requests, the logo uploads and activity; the fields of
+     *     `{name}` that are empty (website, industry, description, logo) are filled from the source, set
+     *     ones are kept, the display name of `{name}` always stays; the source's aliases lead to
+     *     `{name}`; the source is deleted; its key and display name become aliases of `{name}` (search,
+     *     typeahead, get-or-create find it); one `company_merge_log` row keeps every moved and removed
+     *     row id and a snapshot of the source. An attempt that fails after services moved rows leaves an
+     *     INCOMPLETE log row with their ids. No mail is sent; S3 keys do not change.
+     *
+     *     Refused with 400 `MERGE_NOT_ALLOWED` for the same company, 409 `MERGE_NOT_ALLOWED` for a key
+     *     reason of the preview (`details.reasons`, `details.canSwap`), 409
+     *     `MERGE_BLOCKED_BOTH_PARTNERS` when both are partners and 409 `MERGE_BLOCKED` when a service
+     *     refuses the move itself; nothing is moved then. 502 `MERGE_INCOMPLETE` when a service does
+     *     not complete its part: the source company and the CUMS rows stay, and the same merge again
+     *     finishes it. A completed merge repeated answers 404 (the source is gone).
+     *
+     *     **Authorization**: ORGANIZER role required
+     */
+    post: operations['mergeCompany'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/companies/duplicate-candidates': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Company pairs that are probably one company (Organizer)
+     * @description #1251, story 5. Every company compared with every other on the live data, for the company
+     *     merge (`GET /companies/{name}/merge-preview`, `POST /companies/{name}/merge`). A pair is listed
+     *     once, under the first rule it matches:
+     *     - `SAME_WEBSITE` (`HIGH`): the same host of the website (lower case, without scheme, `www.`,
+     *       port and path); on a shared platform (LinkedIn, Facebook, XING, Instagram, X, GitHub,
+     *       Google Sites, YouTube, link shorteners and the like) the host plus the identifying path
+     *       (`linkedin.com/company/acme`), and a platform address without a profile never matches;
+     *     - `SAME_DISPLAY_NAME` (`HIGH`): the same display name, the key when there is none, folded
+     *       (lower case, umlauts as ae/oe/ue, ß as ss, accents removed, hyphen, underscore and slash as
+     *       a space, other punctuation removed, spaces collapsed);
+     *     - `SAME_NAME_WITHOUT_LEGAL_FORM` (`MEDIUM`): the same folded display name once the words ag,
+     *       gmbh, sa, sarl, ltd, inc, llc, kg and then a trailing co are removed; generic words such as
+     *       Kanton, Uni, Bern or Schweiz stay; a name that is only a legal form never matches;
+     *     - `SLUG_PREFIX` (`LOW`): one key starts with the other (ignoring case), the shorter one at
+     *       least 4 characters.
+     *
+     *     Each side shows what the merge decision needs: user profiles (CUMS), registrations and the
+     *     partner flag (summed over every service that stores company keys, the company-references
+     *     contract, one call per service for the whole list). `target` is the suggested company to keep:
+     *     the partner, else the one with a logo, else the one with more users, else the older one, else
+     *     the smaller key. `organizerCanMerge` is false when both are partners (merge the partners first).
+     *     Pairs marked as no duplicate are left out. Sorted by confidence, then the target's display name.
+     *     Changes nothing; no list is stored.
+     *
+     *     **Authorization**: ORGANIZER role required
+     */
+    get: operations['listCompanyDuplicateCandidates'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/companies/duplicate-candidates/dismissals': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Mark a company pair as no duplicate (Organizer)
+     * @description #1251, story 5. The pair no longer appears in `GET /companies/duplicate-candidates`, in either
+     *     order, for good (deleting either company removes the mark). Idempotent. 404 when a company
+     *     does not exist, 400 `INVALID_DISMISSAL` for one company twice.
+     *
+     *     **Authorization**: ORGANIZER role required
+     */
+    post: operations['dismissCompanyDuplicateCandidate'];
     delete?: never;
     options?: never;
     head?: never;
@@ -200,7 +357,12 @@ export interface paths {
      *     **ADR-003**: Uses slug generation to create meaningful company name (ID) from display name.
      *
      *     **Idempotency**: Safe to call multiple times - returns the existing company if the
-     *     generated name already exists.
+     *     generated name already exists. Else a company whose display name equals the typed one,
+     *     ignoring case, accents and umlaut spelling as the search does, is returned (the oldest if
+     *     several), whatever its key: "Die Post" finds the
+     *     company `post` instead of creating `diepost` (#1251). Else an alias (an old key or display
+     *     name kept after a merge or rename): its key equal to the generated name, or its display
+     *     name equal to the typed one (folded the same way), returns its company (#1251).
      *
      *     **Slug Generation**:
      *     - Converts display name to lowercase alphanumeric slug (max 12 chars)
@@ -211,8 +373,6 @@ export interface paths {
      *
      *     **Authentication**: any signed-in user (401 without a login). Story 4.10d moved it from the
      *     retired colon form `POST /companies:get-or-create`.
-     *
-     *     **Events Published**: CompanyCreatedEvent (only if new company created)
      *
      *     **Performance**: <200ms (P95)
      */
@@ -334,7 +494,8 @@ export interface components {
     UpdateCompanyRequest: {
       /**
        * @description A new key for the company (1 to 12 letters or digits). Other services hold the key, so it
-       *     keeps the shape POST /companies gives it; 400 otherwise.
+       *     keeps the shape POST /companies gives it; 400 otherwise. A new key renames the company and
+       *     moves every reference to it (#1251, see `patchCompany`).
        * @example swisscom
        */
       name?: string;
@@ -366,6 +527,127 @@ export interface components {
     PaginatedCompanyResponse: {
       data: components['schemas']['CompanyResponse'][];
       pagination: components['schemas']['PaginationMetadata'];
+    };
+    /** @description One side of a company merge, as the organizer sees it (#1251) */
+    CompanyMergeSide: {
+      /**
+       * @description The company key
+       * @example unicag
+       */
+      name: string;
+      /** @example Unic AG */
+      displayName?: string;
+      /** @example https://www.unic.com */
+      website?: string;
+      /** @example Technology */
+      industry?: string;
+      description?: string;
+      isVerified: boolean;
+      /**
+       * @description User profiles of this company
+       * @example 3
+       */
+      userCount: number;
+      logo?: components['schemas']['CompanyLogo'];
+    };
+    CompanyMergePreview: {
+      target: components['schemas']['CompanyMergeSide'];
+      source: components['schemas']['CompanyMergeSide'];
+      /** @description Rows that move to the target, per `table.column` (CUMS and every holder) */
+      moves: {
+        [key: string]: number;
+      };
+      /**
+       * @description Rows per table that collide with one of the target: dropped by the merge, or for
+       *     `company_logo_requests` (an open request of one person at both) closed as DECLINED
+       */
+      conflicts: {
+        [key: string]: number;
+      };
+      /** @description Why a holder refuses the move, e.g. `MERGE_BLOCKED_BOTH_PARTNERS` */
+      blockers: string[];
+      /** @description Empty fields of the target the merge fills from the source (`website`, `industry`, `description`, `logo`) */
+      fills: string[];
+      canMerge: boolean;
+      /** @description Why `canMerge` is false: `SAME_COMPANY`, `TARGET_KEY_TOO_LONG`, `BOTH_PARTNERS`, `BLOCKED` */
+      reasons: string[];
+      /**
+       * @description The merge in the other direction (this source as the target) passes the key checks: the
+       *     source key is a company key (1 to 12 letters or digits) and the two are different companies
+       */
+      canSwap: boolean;
+    };
+    CompanyMergeRequest: {
+      /**
+       * @description The key of the company that is merged in and then deleted
+       * @example unicag
+       */
+      sourceName: string;
+    };
+    CompanyMergeResult: {
+      /** @example unic */
+      targetName: string;
+      /** @example unicag */
+      sourceName: string;
+      /** @description Rows moved to the target, per `table.column` */
+      moved: {
+        [key: string]: number;
+      };
+      /**
+       * @description Rows of the source dropped because the target held the same one, per `table.column`. An open
+       *     logo request closed because the person has one at the target too is not in it (it moved;
+       *     the merge log lists it)
+       */
+      removed: {
+        [key: string]: number;
+      };
+      /** @description Fields of the target filled from the source */
+      filled: string[];
+    };
+    /** @description Two companies that are probably one (#1251, story 5) */
+    CompanyDuplicateCandidate: {
+      /** @enum {string} */
+      rule: 'SAME_WEBSITE' | 'SAME_DISPLAY_NAME' | 'SAME_NAME_WITHOUT_LEGAL_FORM' | 'SLUG_PREFIX';
+      /** @enum {string} */
+      confidence: 'HIGH' | 'MEDIUM' | 'LOW';
+      /** @description False when both companies are partners */
+      organizerCanMerge: boolean;
+      target: components['schemas']['CompanyDuplicateSide'];
+      source: components['schemas']['CompanyDuplicateSide'];
+    };
+    /** @description One company of a candidate pair, with the counts the merge decision needs */
+    CompanyDuplicateSide: {
+      /**
+       * @description The company key
+       * @example unicag
+       */
+      name: string;
+      /** @example Unic AG */
+      displayName?: string;
+      /** @description The company's logo, when it has one */
+      logoUrl?: string;
+      /** @example https://www.unic.com */
+      website?: string;
+      /**
+       * @description User profiles of this company
+       * @example 3
+       */
+      userCount: number;
+      /**
+       * @description Event registrations under this company key
+       * @example 4
+       */
+      registrationCount: number;
+      isPartner: boolean;
+      /** Format: date-time */
+      createdAt: string;
+      createdBy: string;
+    };
+    CompanyDuplicateDismissal: {
+      /** @description Key of one company */
+      nameA: string;
+      /** @description Key of the other company */
+      nameB: string;
     };
     /**
      * @description Page-based pagination metadata returned with every paginated list response.
@@ -553,6 +835,8 @@ export interface operations {
         /**
          * @description Free-text search. Every word must occur in the company slug (`name`) or
          *     the display name, in any order, ignoring case, accents and umlaut spelling (ü = ue = u).
+         *     A company is also found by an old key or display name kept as its alias after a merge or
+         *     rename (#1251); it is listed once, as itself.
          *     Evaluated before paging, so `pagination.totalItems` counts every match. Combines with
          *     `filter`. Blank means no search.
          */
@@ -698,8 +982,44 @@ export interface operations {
       401: components['responses']['Unauthorized'];
       403: components['responses']['Forbidden'];
       404: components['responses']['CompanyOrLogoUploadNotFound'];
-      409: components['responses']['CompanyOrLogoUploadConflict'];
+      /**
+       * @description The new key or display name is taken (by a company or another company's alias), the
+       *     `logoUploadId` is not CONFIRMED, or a service refused to move its references to the new
+       *     key (`RENAME_BLOCKED`, #1251). Nothing is changed.
+       */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
       500: components['responses']['InternalServerError'];
+      /**
+       * @description A service did not complete its part of the rename, or the rename here failed after the
+       *     services had moved their references (#1251). The company keeps its old key and its other
+       *     changes are not saved; the same rename again finishes the move. Until then the services
+       *     that moved hold the new key: renaming to another key, or another company taking the new
+       *     key meanwhile (the retry then answers 409), leaves their rows on that key.
+       */
+      502: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "status": 502,
+           *       "error": "Bad Gateway",
+           *       "errorCode": "RENAME_INCOMPLETE",
+           *       "message": "Not every service could move its references; the company keeps its old name. Rename it again to the same name to finish.",
+           *       "timestamp": "2026-11-20T10:30:00Z"
+           *     }
+           */
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
     };
   };
   searchCompanies: {
@@ -761,6 +1081,226 @@ export interface operations {
       500: components['responses']['InternalServerError'];
     };
   };
+  getCompanyMergePreview: {
+    parameters: {
+      query: {
+        /** @description The company that is merged in and then deleted */
+        source: string;
+      };
+      header?: never;
+      path: {
+        /** @description The company that stays (target) */
+        name: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Merge preview */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CompanyMergePreview'];
+        };
+      };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+      404: components['responses']['NotFound'];
+      500: components['responses']['InternalServerError'];
+      /** @description A service that stores company keys did not answer the preview (`MERGE_PREVIEW_INCOMPLETE`) */
+      502: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "status": 502,
+           *       "error": "Bad Gateway",
+           *       "errorCode": "MERGE_PREVIEW_INCOMPLETE",
+           *       "message": "Not every service answered; try the preview again.",
+           *       "timestamp": "2026-11-20T10:30:00Z"
+           *     }
+           */
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+    };
+  };
+  mergeCompany: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The company that stays (target) */
+        name: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        /**
+         * @example {
+         *       "sourceName": "unicag"
+         *     }
+         */
+        'application/json': components['schemas']['CompanyMergeRequest'];
+      };
+    };
+    responses: {
+      /** @description Merged */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CompanyMergeResult'];
+        };
+      };
+      /** @description Invalid request, or source and target are the same company (`MERGE_NOT_ALLOWED`) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "status": 400,
+           *       "error": "Bad Request",
+           *       "errorCode": "MERGE_NOT_ALLOWED",
+           *       "message": "Merge not allowed: SAME_COMPANY",
+           *       "details": {
+           *         "reasons": [
+           *           "SAME_COMPANY"
+           *         ],
+           *         "canSwap": false
+           *       },
+           *       "timestamp": "2026-11-20T10:30:00Z"
+           *     }
+           */
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+      404: components['responses']['NotFound'];
+      /**
+       * @description Refused, nothing moved: a key reason (`MERGE_NOT_ALLOWED`, `details.reasons` and
+       *     `details.canSwap`), both companies are partners (`MERGE_BLOCKED_BOTH_PARTNERS`), or a
+       *     service refused the move (`MERGE_BLOCKED`)
+       */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      500: components['responses']['InternalServerError'];
+      /**
+       * @description A service did not complete its part, or the merge here failed after the services had
+       *     moved their references. The source company and the CUMS rows stay; the same merge again
+       *     finishes it.
+       */
+      502: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "status": 502,
+           *       "error": "Bad Gateway",
+           *       "errorCode": "MERGE_INCOMPLETE",
+           *       "message": "Not every service could move its references; the companies were not merged. Merge them again to finish.",
+           *       "timestamp": "2026-11-20T10:30:00Z"
+           *     }
+           */
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+    };
+  };
+  listCompanyDuplicateCandidates: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The pairs */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CompanyDuplicateCandidate'][];
+        };
+      };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+      500: components['responses']['InternalServerError'];
+      /**
+       * @description A service that stores company keys did not answer the counts
+       *     (`DUPLICATE_COUNTS_INCOMPLETE`); without the partner flag no target can be suggested
+       */
+      502: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "status": 502,
+           *       "error": "Bad Gateway",
+           *       "errorCode": "DUPLICATE_COUNTS_INCOMPLETE",
+           *       "message": "Not every service answered; try the list again.",
+           *       "timestamp": "2026-11-20T10:30:00Z"
+           *     }
+           */
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+    };
+  };
+  dismissCompanyDuplicateCandidate: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        /**
+         * @example {
+         *       "nameA": "unic",
+         *       "nameB": "unicag"
+         *     }
+         */
+        'application/json': components['schemas']['CompanyDuplicateDismissal'];
+      };
+    };
+    responses: {
+      /** @description Dismissed */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      400: components['responses']['BadRequest'];
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+      404: components['responses']['NotFound'];
+      500: components['responses']['InternalServerError'];
+    };
+  };
   getOrCreateCompany: {
     parameters: {
       query?: never;
@@ -774,7 +1314,7 @@ export interface operations {
       };
     };
     responses: {
-      /** @description An existing company with this generated name is returned */
+      /** @description An existing company with this generated name, display name or alias is returned */
       200: {
         headers: {
           [name: string]: unknown;

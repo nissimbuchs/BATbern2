@@ -19,7 +19,10 @@ CUMS (identity) is upstream of all. EMS (event) is upstream of PCS (partners).
   `batbern.contracts.<name>.implementers`, called through shared-kernel `ContractCalls`, no
   downstream named in code). No polling, no event bus (ADR-016 decision 4, owner 2026-11-11). Contracts: CUMS
   user-references (`/internal/user-references/{preview,merge,primary-email}`, EMS and PCS
-  implement; a new service that stores usernames implements it too), CUMS Mail Center requests
+  implement; a new service that stores usernames implements it too), CUMS company-references
+  (`/internal/company-references/{preview,merge,counts}`, EMS and PCS implement; a new service that
+  stores company keys implements it too; #1251, `counts` for the duplicate-company list), CUMS Mail
+  Center requests
   (EMS implements), EMS calendar replies (PCS implements). Do not call downstream any other way.
 - Every `/internal` operation is specified in `docs/api/internal/<provider>-internal.openapi.yml`
   (17.0b2; a contract in its owner's spec) and contract-tested on both sides (`ContractServer`, provider
@@ -103,7 +106,7 @@ CUMS (identity) is upstream of all. EMS (event) is upstream of PCS (partners).
   deleted `PartnerApiClient(Impl)`, 8b `PartnerMeetingRsvpClient(Impl)`; EMS calls PCS only through
   its calendar reply contract). CUMS
   clients: 0 (entry 7 deleted the Mail Center client pair, 7b the user-merge pair; CUMS calls
-  downstream only through its two contracts). Mail center wall, watch, usermerge, notification: 0
+  downstream only through its three contracts). Mail center wall, watch, usermerge, notification: 0
   (the mail center wall since 16.8c moved `OwnText` to mail core).
 
 ## Reuse before you build

@@ -259,6 +259,84 @@
     },
     "pagination": {
       "itemsPerPage": "Elementi per pagina"
+    },
+    "duplicates": {
+      "button": "Possibili duplicati",
+      "title": "Possibili aziende duplicate",
+      "back": "Torna alle aziende",
+      "intro": "Coppie di aziende che probabilmente sono la stessa: stesso sito web, stesso nome, stesso nome a parte la forma giuridica, oppure un nome breve che inizia con l'altro. Confronta ogni coppia e uniscila, oppure segnala che non è un duplicato. L'azienda proposta da mantenere è il partner, altrimenti quella con il logo, altrimenti quella con più persone, altrimenti la più vecchia.",
+      "loadError": "Non è stato possibile caricare l'elenco.",
+      "countsIncomplete": "Non tutti i servizi hanno fornito i loro numeri. Riprova.",
+      "all": "Tutte",
+      "count": "Coppie: {{count}}",
+      "empty": "Nessuna possibile azienda duplicata trovata.",
+      "keep": "Mantieni",
+      "mergeIn": "Unisci ed elimina",
+      "compare": "Confronta e unisci",
+      "dismiss": "Non è un duplicato",
+      "dismissError": "Non è stato possibile segnare la coppia. Riprova.",
+      "bothPartners": "Entrambe sono partner: due aziende partner non possono essere unite. Unisci prima i partner.",
+      "people": "Persone: {{count}}",
+      "registrations": "Iscrizioni: {{count}}",
+      "partner": "Partner",
+      "confidence": {
+        "HIGH": "Molto probabile",
+        "MEDIUM": "Probabile",
+        "LOW": "Solo indizio"
+      },
+      "rule": {
+        "SAME_WEBSITE": "Stesso sito web",
+        "SAME_DISPLAY_NAME": "Stesso nome",
+        "SAME_NAME_WITHOUT_LEGAL_FORM": "Stesso nome a parte la forma giuridica",
+        "SLUG_PREFIX": "Un nome breve inizia con l'altro"
+      }
+    },
+    "merge": {
+      "button": "Unisci con un'altra azienda",
+      "title": "Unisci due aziende",
+      "intro": "L'altra azienda viene unita a questa e poi eliminata: le sue persone, iscrizioni, dati partner, proposte e voti di temi, logo e richieste di logo passano a questa. I campi vuoti dell'azienda che resta vengono presi dall'altra; il suo nome resta.",
+      "pickOther": "Altra azienda",
+      "previewFailed": "Non è stato possibile caricare l'anteprima.",
+      "previewIncomplete": "Non tutti i servizi hanno risposto. Riapri l'anteprima.",
+      "keeps": "Resta",
+      "deletes": "Viene unita ed eliminata",
+      "moves": "Passa all'azienda che resta",
+      "nothingToMove": "Niente da spostare.",
+      "conflicts": "Già presente nell'azienda che resta ({{list}}): queste voci vengono rimosse, le richieste di logo chiuse. Tutto viene registrato.",
+      "fills": "Ripreso perché vuoto nell'azienda che resta: {{list}}",
+      "swap": "Inverti direzione",
+      "warning": "L'azienda {{source}} sarà eliminata. L'unione viene registrata e può essere annullata solo a mano.",
+      "confirm": "Unisci ed elimina",
+      "success": "Unita: {{source}} ora fa parte di {{target}}.",
+      "fields": {
+        "website": "Sito web",
+        "industry": "Settore",
+        "description": "Descrizione",
+        "logo": "Logo"
+      },
+      "reason": {
+        "SAME_COMPANY": "È la stessa azienda.",
+        "TARGET_KEY_TOO_LONG": "Il nome breve dell'azienda che resta non può essere usato nei profili delle persone. Unisci nella direzione opposta.",
+        "BOTH_PARTNERS": "Entrambe le aziende sono partner. Due aziende partner non possono essere unite; unisci prima i partner.",
+        "BLOCKED": "Un servizio rifiuta l'unione ({{blockers}})."
+      },
+      "error": {
+        "MERGE_BLOCKED_BOTH_PARTNERS": "Entrambe le aziende sono partner. Non è stato modificato nulla.",
+        "MERGE_BLOCKED": "Un servizio ha rifiutato l'unione. Non è stato modificato nulla.",
+        "MERGE_NOT_ALLOWED": "Questa unione non è consentita. Non è stato modificato nulla.",
+        "MERGE_INCOMPLETE": "Non tutti i servizi hanno completato l'unione. L'altra azienda esiste ancora; unisci di nuovo per completarla.",
+        "default": "L'unione non è riuscita. Non è stato modificato nulla; riprova."
+      },
+      "tables": {
+        "user_profiles": "Persone",
+        "company_logo_requests": "Richieste di logo",
+        "company_user_uploads": "Caricamenti di logo",
+        "activity_history": "Attività",
+        "registrations": "Iscrizioni",
+        "partners": "Dati partner",
+        "topic_suggestions": "Proposte di temi",
+        "topic_votes": "Voti di temi"
+      }
     }
   },
   "event": {

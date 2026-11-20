@@ -6,6 +6,7 @@
 # grows the baseline states why and adds the owner group.
 # Format: <rule> TAB <spec file> TAB <METHOD> <path>, sorted.
 no-literal-under-events	events-core-api.openapi.yml	GET /events/current
+no-verb-segment	companies-api.openapi.yml	GET /companies/{name}/merge-preview
 no-verb-segment	event-ai-api.openapi.yml	POST /events/{eventCode}/ai/theme-image/apply
 no-verb-segment	event-mail-api.openapi.yml	GET /conversations/{conversationKey}/messages/{mailKey}/attachments/{index}/download
 no-verb-segment	event-mail-api.openapi.yml	POST /events/{eventCode}/mails/preview

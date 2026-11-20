@@ -1312,9 +1312,9 @@ flowchart LR
 ```
 
 The shared kernel defines `DomainEvent<T>` with `eventId`, `aggregateId`, `eventType`, `userId`,
-`occurredAt`, `version`, `metadata`, `correlationId` and `causationId`. There are 29 event classes,
+`occurredAt`, `version`, `metadata`, `correlationId` and `causationId`. There are 25 event classes,
 for example `EventWorkflowTransitionEvent`, `SpeakerAcceptedEvent`, `SessionTimingAssignedEvent`,
-`RegistrationCreatedEvent`, `CompanyCreatedEvent`, `UserUpdatedEvent`, `PartnerCreatedEvent`.
+`RegistrationCreatedEvent`, `UserUpdatedEvent`, `PartnerCreatedEvent`.
 
 Events stay in the process that raised them; there is no message bus (the unused EventBridge bus
 was removed in Story 17.2 part B, 2026-11). All listeners are in EMS (for example
@@ -1371,11 +1371,35 @@ Dropped: `publishing_versions` (V28 to V89), `speakers` (V37 to V94), `speaker_i
 (Story 4.9) and dropped one release later (rollback safety); the shared `logos` (CUMS V10 and EMS V5
 to CUMS V31 and EMS V154, #1307), unused since Story 17.11.
 
-**CUMS** (12 tables): `companies` V3, `user_profiles` V4, `role_assignments` V5,
+**CUMS** (15 tables): `companies` V3, `user_profiles` V4, `role_assignments` V5,
 `activity_history` V6, `shedlock` V12, `watch_pairings` V13, `user_additional_emails` V16,
 `profile_merge_requests` V23, `company_logo_requests` V25, `user_duplicate_dismissals` V26,
 `company_key_changes` V28 (shared: CUMS V28, EMS V150 and PCS V11 create it with the same canonical
-block, see below), `company_user_uploads` V30 (Story 17.11).
+block, see below), `company_user_uploads` V30 (Story 17.11), `company_aliases` V36 (#1251), `company_merge_log` V37 (#1251),
+`company_duplicate_dismissals` V38 (#1251).
+
+**Company aliases** (#1251, owner decision 2026-11-07): `company_aliases` keeps an old company key
+(`alias_key`, the primary key, key shape) and the display name people knew (`alias_display_name`)
+after a merge or a rename (`reason` MERGE or RENAME), pointing at the company by its CUMS id with
+`ON DELETE CASCADE`. `CompanyAliasService.record` writes it (recording a key again re-points it; a key
+a company holds is refused); company search and the typeahead match aliases, get-or-create returns
+the aliased company (key equal to the typed name's slug, or display name equal under `batbern_fold`;
+a company's own display name is matched the same way first), and `POST /companies` treats an alias display name as a duplicate and an alias
+key as taken.
+
+**Company merge log** (#1251): `company_merge_log` keeps one row per merge of two companies
+(`CompanyMergeService`): `source_key`, `target_key`, `performed_by`, `merged_at`, `moved_keys` and
+`removed_keys` (`{"table.column": [row id, ...]}` of CUMS and every company-reference holder; a closed
+duplicate logo request under `company_logo_requests.status`), `filled_fields` (the target fields taken
+from the source), `source_snapshot` (the deleted `companies` row with its aliases) and `outcome`
+(COMPLETED, or INCOMPLETE for a failed attempt whose holders had moved rows; a retry gets nothing from
+them). It is the only record for an undo by hand, which reads every row of the pair; the holders keep none.
+
+**Company duplicate dismissals** (#1251, story 5): `company_duplicate_dismissals` keeps the company
+pairs organizers marked as no duplicate in `GET /companies/duplicate-candidates` (`company_a_id`,
+`company_b_id`, the smaller id first by a check constraint, both `ON DELETE CASCADE` to `companies`,
+`dismissed_by`, `dismissed_at`). The candidate list itself is computed live and not stored. The model
+is `user_duplicate_dismissals` (V26).
 
 **Company keys** (owner decision 2026-11-09): `companies.name`, the company's meaningful ID, is
 `^[a-zA-Z0-9]{1,12}$`, the slug that `SlugGenerationService.generateCompanyName` makes from the typed

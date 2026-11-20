@@ -259,6 +259,84 @@
     },
     "pagination": {
       "itemsPerPage": "1ページあたりの件数"
+    },
+    "duplicates": {
+      "button": "重複の可能性",
+      "title": "重複している可能性のある企業",
+      "back": "企業一覧に戻る",
+      "intro": "同じ企業である可能性が高いペア：同じウェブサイト、同じ名前、法人格を除いて同じ名前、または一方の短縮名がもう一方で始まるもの。各ペアを比較して統合するか、重複ではないとマークしてください。残す企業として提案されるのはパートナー、次にロゴのある企業、次に人数の多い企業、次に古い企業です。",
+      "loadError": "一覧を読み込めませんでした。",
+      "countsIncomplete": "一部のサービスが件数を返しませんでした。もう一度お試しください。",
+      "all": "すべて",
+      "count": "ペア: {{count}}",
+      "empty": "重複の可能性のある企業は見つかりませんでした。",
+      "keep": "残す",
+      "mergeIn": "統合して削除",
+      "compare": "比較して統合",
+      "dismiss": "重複ではない",
+      "dismissError": "ペアをマークできませんでした。もう一度お試しください。",
+      "bothPartners": "両方ともパートナーです：パートナー企業同士は統合できません。先にパートナーを統合してください。",
+      "people": "人数: {{count}}",
+      "registrations": "登録: {{count}}",
+      "partner": "パートナー",
+      "confidence": {
+        "HIGH": "可能性が非常に高い",
+        "MEDIUM": "可能性が高い",
+        "LOW": "参考程度"
+      },
+      "rule": {
+        "SAME_WEBSITE": "同じウェブサイト",
+        "SAME_DISPLAY_NAME": "同じ名前",
+        "SAME_NAME_WITHOUT_LEGAL_FORM": "法人格を除いて同じ名前",
+        "SLUG_PREFIX": "一方の短縮名がもう一方で始まる"
+      }
+    },
+    "merge": {
+      "button": "別の企業と統合",
+      "title": "2つの企業を統合",
+      "intro": "もう一方の企業をこの企業に統合し、その後削除します：その人物、登録、パートナー情報、テーマの提案と投票、ロゴとロゴ申請が移ります。残る企業の空欄はもう一方から補われ、名前はそのまま残ります。",
+      "pickOther": "もう一方の企業",
+      "previewFailed": "プレビューを読み込めませんでした。",
+      "previewIncomplete": "一部のサービスが応答しませんでした。もう一度プレビューを開いてください。",
+      "keeps": "残る",
+      "deletes": "統合して削除される",
+      "moves": "残る企業に移るもの",
+      "nothingToMove": "移すものはありません。",
+      "conflicts": "残る企業にすでに存在します（{{list}}）：これらの項目は削除され、ロゴ申請は閉じられます。すべて記録されます。",
+      "fills": "残る企業で空欄のため引き継ぎ: {{list}}",
+      "swap": "方向を入れ替え",
+      "warning": "企業 {{source}} は削除されます。統合は記録され、手作業でのみ元に戻せます。",
+      "confirm": "統合して削除",
+      "success": "統合しました：{{source}} は {{target}} の一部になりました。",
+      "fields": {
+        "website": "ウェブサイト",
+        "industry": "業種",
+        "description": "説明",
+        "logo": "ロゴ"
+      },
+      "reason": {
+        "SAME_COMPANY": "同じ企業です。",
+        "TARGET_KEY_TOO_LONG": "残る企業の短縮名は人物のプロフィールで使用できません。逆方向に統合してください。",
+        "BOTH_PARTNERS": "両方の企業がパートナーです。パートナー企業同士は統合できません。先にパートナーを統合してください。",
+        "BLOCKED": "サービスが統合を拒否しています（{{blockers}}）。"
+      },
+      "error": {
+        "MERGE_BLOCKED_BOTH_PARTNERS": "両方の企業がパートナーです。何も変更されていません。",
+        "MERGE_BLOCKED": "サービスが統合を拒否しました。何も変更されていません。",
+        "MERGE_NOT_ALLOWED": "この統合は許可されていません。何も変更されていません。",
+        "MERGE_INCOMPLETE": "一部のサービスが統合を完了しませんでした。もう一方の企業はまだ存在します。もう一度統合して完了してください。",
+        "default": "統合に失敗しました。何も変更されていません。もう一度お試しください。"
+      },
+      "tables": {
+        "user_profiles": "人物",
+        "company_logo_requests": "ロゴ申請",
+        "company_user_uploads": "ロゴのアップロード",
+        "activity_history": "アクティビティ",
+        "registrations": "登録",
+        "partners": "パートナー情報",
+        "topic_suggestions": "テーマの提案",
+        "topic_votes": "テーマの投票"
+      }
     }
   },
   "event": {

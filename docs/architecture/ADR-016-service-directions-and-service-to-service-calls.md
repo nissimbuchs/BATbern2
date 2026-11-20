@@ -50,7 +50,12 @@ measured how they call each other on develop `e7f76baf`:
    `/internal/user-references/preview|merge|primary-email`, implemented by every service that
    stores usernames (EMS, PCS); synchronous because a holder can refuse a merge and must deliver
    preview counts, and because a registration mail must not go to the old address (primary email,
-   owner 2026-11-11). Owned by CUMS: the Mail Center request contract (merge and logo requests
+   owner 2026-11-11). Owned by CUMS: the company-reference contract
+   `/internal/company-references/preview|merge|counts`, implemented by every service that stores company
+   keys (EMS, PCS); a company merge and a rename move them (`counts` feeds the list of candidate
+   duplicate companies), synchronous for the same reasons (a
+   holder can refuse: both companies partners) (#1251, issue sweep epic 4, replacing the
+   "module-map exception" of the owner decision of 2026-11-07). Owned by CUMS: the Mail Center request contract (merge and logo requests
    opened and decided), implemented by EMS. Owned by EMS: the calendar reply contract (iMIP RSVP
    replies), implemented by PCS. A new upstream→downstream need gets its own contract the same way.
 6. **Direct table reads across services** (the services share one PostgreSQL database) are not a
@@ -96,8 +101,8 @@ measured how they call each other on develop `e7f76baf`:
   them with `POST /topics/classifications`).
 - One caller for decision 4: shared-kernel `ContractCalls` calls a contract its service owns at every
   implementer in `batbern.contracts.<name>.implementers`, with the headers below; 409 becomes
-  `ContractRefusedException`, any other failure `ContractCallFailedException` (entry 7; 7b and 8b
-  reuse it).
+  `ContractRefusedException`, any other failure `ContractCallFailedException` (entry 7; 7b, 8b and
+  the company-reference contract of #1251 reuse it).
 - One header helper for decision 3: shared-kernel `S2sHeaders.forCurrentUser()` forwards the
   user's JWT when there is one and sends none otherwise; CUMS records the forwarded
   `custom:username`, else `system:<job>` (Epic 17 entry 6). A token that expires within 60 s

@@ -3,8 +3,12 @@ package ch.batbern.companyuser.repository;
 import ch.batbern.companyuser.domain.Company;
 import ch.batbern.companyuser.specification.CompanySpecification;
 import ch.batbern.shared.api.DeterministicPaging;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -28,6 +32,11 @@ public interface CompanyRepository extends JpaRepository<Company, UUID>, JpaSpec
      * @return Optional company
      */
     Optional<Company> findByName(String name);
+
+    /** The company by key, locked for the rest of the transaction: a rename or merge moves its key. */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT c FROM Company c WHERE c.name = :name")
+    Optional<Company> findByNameForUpdate(@Param("name") String name);
 
     /**
      * Find companies by name containing (case-insensitive)
@@ -71,6 +80,15 @@ public interface CompanyRepository extends JpaRepository<Company, UUID>, JpaSpec
      * {@code POST /companies}, whose key is derived from the name (owner 2026-11-09).
      */
     boolean existsByDisplayNameIgnoreCase(String displayName);
+
+    /**
+     * The company people know by this display name, folded by {@code batbern_fold} as the search
+     * reads it (case, accents, umlaut spelling); the oldest when several share it. Get-or-create
+     * returns it when the typed name's slug is not a key (#1251).
+     */
+    @Query(value = "SELECT * FROM companies WHERE batbern_fold(display_name) = batbern_fold(:displayName)"
+            + " ORDER BY created_at, name LIMIT 1", nativeQuery = true)
+    Optional<Company> findByFoldedDisplayName(@Param("displayName") String displayName);
 
     /**
      * Find companies by verified status

@@ -3,7 +3,7 @@ title: 'The rest of #1223: event number, placeholder page, stray chip, portraits
 type: 'bugfix'
 ticket: '9'
 created: '2026-11-18'
-status: 'built'
+status: 'done'
 baseline_revision: '237ffd25ade526a50c58a14f95abb534850fc131'
 route: 'full'
 route_source: 'auto'

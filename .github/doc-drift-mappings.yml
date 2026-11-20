@@ -187,6 +187,37 @@ mappings:
       - "docs/architecture/06-backend-architecture.md"
       - "docs/architecture/06b-user-lifecycle-sync.md"
       - "docs/architecture/module-map.md"
+  # #1251: the company-reference contract CUMS owns (company merge and rename), EMS and PCS implement it.
+  - source_pattern: "services/company-user-management-service/src/main/java/ch/batbern/companyuser/client/CompanyReferenceContract.java"
+    docs:
+      - "docs/architecture/06-backend-architecture.md"
+      - "docs/architecture/module-map.md"
+      - "docs/architecture/ADR-016-service-directions-and-service-to-service-calls.md"
+  - source_pattern: "services/company-user-management-service/src/main/java/ch/batbern/companyuser/client/HttpCompanyReferenceContract.java"
+    docs:
+      - "docs/architecture/06-backend-architecture.md"
+      - "docs/architecture/module-map.md"
+      - "docs/architecture/ADR-016-service-directions-and-service-to-service-calls.md"
+  - source_pattern: "services/event-management-service/src/main/java/ch/batbern/events/usermerge/CompanyReference"
+    docs:
+      - "docs/architecture/06-backend-architecture.md"
+      - "docs/architecture/module-map.md"
+      - "docs/architecture/ADR-016-service-directions-and-service-to-service-calls.md"
+  - source_pattern: "services/event-management-service/src/main/java/ch/batbern/events/usermerge/InternalCompanyReference"
+    docs:
+      - "docs/architecture/06-backend-architecture.md"
+      - "docs/architecture/module-map.md"
+      - "docs/architecture/ADR-016-service-directions-and-service-to-service-calls.md"
+  - source_pattern: "services/partner-coordination-service/src/main/java/ch/batbern/partners/usermerge/CompanyReference"
+    docs:
+      - "docs/architecture/06-backend-architecture.md"
+      - "docs/architecture/module-map.md"
+      - "docs/architecture/ADR-016-service-directions-and-service-to-service-calls.md"
+  - source_pattern: "services/partner-coordination-service/src/main/java/ch/batbern/partners/usermerge/InternalCompanyReference"
+    docs:
+      - "docs/architecture/06-backend-architecture.md"
+      - "docs/architecture/module-map.md"
+      - "docs/architecture/ADR-016-service-directions-and-service-to-service-calls.md"
   # The topic canvas composes partner-coordination and EMS data in the browser (entry 8) instead of
   # EMS calling partner-coordination; moving it back would reopen the EMS→PCS edge.
   - source_pattern: "web-frontend/src/services/blobTopicService.ts"

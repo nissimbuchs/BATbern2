@@ -796,7 +796,7 @@ export interface operations {
       content: {
         /**
          * @example {
-         *       "token": "3f1c2a9e-7b4d-4e8a-9c21-5d6e7f809a1b"
+         *       "token": "example-confirmation-token"
          *     }
          */
         'application/json': components['schemas']['NewsletterConfirmationRequest'];

@@ -1,45 +1,14 @@
-import { render, screen, waitFor } from '@testing-library/react';
+/**
+ * CompanyDetailView with its real panels and hooks. The network is the MSW harness, i18n the real
+ * `en` (moved off own-code mocks with #1251 story 6, touch rule).
+ */
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { vi, describe, it, expect, beforeEach } from 'vitest';
-import { BrowserRouter } from 'react-router-dom';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { vi, describe, it, expect } from 'vitest';
+import { Route, Routes } from 'react-router-dom';
 import { CompanyDetailView } from '@/components/shared/Company/CompanyDetailView';
-
-// Mock react-router-dom navigate
-const mockNavigate = vi.fn();
-vi.mock('react-router-dom', async () => {
-  const actual = await vi.importActual('react-router-dom');
-  return {
-    ...actual,
-    useNavigate: () => mockNavigate,
-  };
-});
-
-// Mock child components to focus on integration
-vi.mock('../AssociatedUsersPanel', () => ({
-  AssociatedUsersPanel: ({ companyId }: { companyId: string }) => (
-    <div data-testid="associated-users-panel">AssociatedUsersPanel-{companyId}</div>
-  ),
-}));
-
-// The people tabs (users, speakers) read the organizer-only user directory.
-const mockUseUserList = vi.fn((..._args: unknown[]) => ({
-  data: undefined,
-  isLoading: false,
-  isError: false,
-}));
-vi.mock('@/hooks/useUserManagement', async () => {
-  const actual = await vi.importActual('@/hooks/useUserManagement');
-  return { ...actual, useUserList: (...args: unknown[]) => mockUseUserList(...args) };
-});
-
-// PartnerInfoPanel removed - isPartner field no longer supported by backend
-
-vi.mock('../ActivityTimeline', () => ({
-  ActivityTimeline: ({ companyId }: { companyId: string }) => (
-    <div data-testid="activity-timeline">ActivityTimeline-{companyId}</div>
-  ),
-}));
+import { renderWithProviders } from '@/test/test-utils';
+import { api } from '@/test/msw/api';
 
 // Mock company data - aligned with backend CompanyResponse
 const mockCompany = {
@@ -60,30 +29,18 @@ const mockCompany = {
   },
 };
 
-const createTestQueryClient = () =>
-  new QueryClient({
-    defaultOptions: {
-      queries: { retry: false },
-      mutations: { retry: false },
-    },
-  });
-
-const renderWithRouter = (component: React.ReactElement) => {
-  const queryClient = createTestQueryClient();
-  return render(
-    <QueryClientProvider client={queryClient}>
-      <BrowserRouter>{component}</BrowserRouter>
-    </QueryClientProvider>
+const renderWithRouter = (component: React.ReactElement) =>
+  renderWithProviders(
+    <Routes>
+      <Route path="/organizer/companies" element={<div>Company list page</div>} />
+      <Route path="*" element={component} />
+    </Routes>,
+    { initialEntries: ['/organizer/companies/TestCompanyAG'] }
   );
-};
 
 describe('CompanyDetailView Component', () => {
   const mockOnEdit = vi.fn();
   const mockOnBack = vi.fn();
-
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
 
   describe('AC8.1: Load company detail when company card clicked', () => {
     it('should_loadCompanyDetail_when_companyCardClicked', async () => {
@@ -206,8 +163,7 @@ describe('CompanyDetailView Component', () => {
       const breadcrumbLink = screen.getByText('Company Management');
       await user.click(breadcrumbLink);
 
-      // Verify navigation was called with correct path
-      expect(mockNavigate).toHaveBeenCalledWith('/organizer/companies');
+      expect(await screen.findByText('Company list page')).toBeInTheDocument();
     });
   });
 
@@ -263,16 +219,18 @@ describe('CompanyDetailView Component', () => {
   });
 
   describe('People tabs are organizer-only', () => {
-    it('should_hidePeopleTabs_when_callerIsNotOrganizer', () => {
+    it('should_hidePeopleTabs_when_callerIsNotOrganizer', async () => {
       renderWithRouter(
         <CompanyDetailView company={mockCompany} onEdit={mockOnEdit} onBack={mockOnBack} />
       );
 
       expect(screen.getAllByRole('tab')).toHaveLength(1);
-      expect(mockUseUserList).not.toHaveBeenCalled();
+      // the sessions panel loads (positive control); the user directory is never asked
+      await waitFor(() => expect(api.calls('searchSessionsByCompany').length).toBeGreaterThan(0));
+      expect(api.calls('listUsers')).toHaveLength(0);
     });
 
-    it('should_showUsersSpeakersAndSessionsTabs_when_callerIsOrganizer', () => {
+    it('should_showUsersSpeakersAndSessionsTabs_when_callerIsOrganizer', async () => {
       renderWithRouter(
         <CompanyDetailView
           company={mockCompany}
@@ -283,7 +241,34 @@ describe('CompanyDetailView Component', () => {
       );
 
       expect(screen.getAllByRole('tab')).toHaveLength(3);
-      expect(mockUseUserList).toHaveBeenCalled();
+      await waitFor(() => expect(api.calls('listUsers').length).toBeGreaterThan(0));
+    });
+  });
+
+  describe('Merge with another company (#1251)', () => {
+    it('should_offerMerge_when_onMergeGiven', async () => {
+      const onMerge = vi.fn();
+      renderWithRouter(
+        <CompanyDetailView
+          company={mockCompany}
+          onEdit={mockOnEdit}
+          onMerge={onMerge}
+          onBack={mockOnBack}
+        />
+      );
+
+      await userEvent.click(screen.getByRole('button', { name: 'Merge with another company' }));
+
+      expect(onMerge).toHaveBeenCalled();
+    });
+
+    it('should_notOfferMerge_when_noOnMerge', () => {
+      renderWithRouter(
+        <CompanyDetailView company={mockCompany} onEdit={mockOnEdit} onBack={mockOnBack} />
+      );
+
+      expect(screen.getByRole('button', { name: /edit/i })).toBeInTheDocument();
+      expect(screen.queryByTestId('company-merge-button')).not.toBeInTheDocument();
     });
   });
 });

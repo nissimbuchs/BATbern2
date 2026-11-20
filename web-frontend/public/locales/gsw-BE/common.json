@@ -297,6 +297,84 @@
     },
     "pagination": {
       "itemsPerPage": "Elemente pro Syte"
+    },
+    "duplicates": {
+      "button": "Müglechi Duplikat",
+      "title": "Müglechi doppleti Firme",
+      "back": "Zrügg zu de Firme",
+      "intro": "Firmepaar, wo wahrschinlech di glichi Firma sy: glichi Website, glichi Name, glichi Name bis uf d'Rächtsform, oder e Churzname faht mit em angere a. Vergliich jedes Paar und füer's zäme, oder markier's als kes Duplikat. Zum Bhaute vorgschlage wird dr Partner, süsch die mit Logo, süsch die mit meh Lüt, süsch di euteri.",
+      "loadError": "D'Lischte het nid chönne glade wärde.",
+      "countsIncomplete": "Nid jede Dienscht het syni Zahle gliferet. Bitte nomau probiere.",
+      "all": "Aui",
+      "count": "Paar: {{count}}",
+      "empty": "Kener müglechi doppleti Firme gfunde.",
+      "keep": "Bhaute",
+      "mergeIn": "Übernäh und lösche",
+      "compare": "Vergliiche und zämefüere",
+      "dismiss": "Kes Duplikat",
+      "dismissError": "S'Paar het nid chönne markiert wärde. Bitte nomau probiere.",
+      "bothPartners": "Beidi sy Partner: Zwo Partnerfirme chöi nid zämegfüert wärde. Füer zersch d'Partner zäme.",
+      "people": "Lüt: {{count}}",
+      "registrations": "Aamäudige: {{count}}",
+      "partner": "Partner",
+      "confidence": {
+        "HIGH": "Sehr wahrschinlech",
+        "MEDIUM": "Wahrschinlech",
+        "LOW": "Nume Hiwys"
+      },
+      "rule": {
+        "SAME_WEBSITE": "Glichi Website",
+        "SAME_DISPLAY_NAME": "Glichi Name",
+        "SAME_NAME_WITHOUT_LEGAL_FORM": "Glichi Name bis uf d'Rächtsform",
+        "SLUG_PREFIX": "E Churzname faht mit em angere a"
+      }
+    },
+    "merge": {
+      "button": "Mit ere angere Firma zämefüere",
+      "title": "Zwo Firme zämefüere",
+      "intro": "Di angeri Firma wird i die übernoh und när glöscht: Ihri Lüt, Aamäudige, Partnerdate, Themevorschläg und Stimme, Logo und Logo-Aafrage gö übere. Läeri Fäuder vo dr Firma, wo blybt, wärde vo dr angere übernoh; ihre Name blybt.",
+      "pickOther": "Angeri Firma",
+      "previewFailed": "D'Vorschou het nid chönne glade wärde.",
+      "previewIncomplete": "Nid jede Dienscht het gantwortet. Bitte d'Vorschou nomau ufmache.",
+      "keeps": "Blybt",
+      "deletes": "Wird übernoh und glöscht",
+      "moves": "Geit zur Firma, wo blybt",
+      "nothingToMove": "Nüt z'übernäh.",
+      "conflicts": "Bi dr Firma, wo blybt, scho vorhande ({{list}}): Die Iiträg wärde entfernt, Logo-Aafrage gschlosse. Aues wird protokolliert.",
+      "fills": "Übernoh, wiu's bi dr Firma, wo blybt, läär isch: {{list}}",
+      "swap": "Richtig tuusche",
+      "warning": "D'Firma {{source}} wird glöscht. S'Zämefüere wird protokolliert und cha nume vo Hand rückgängig gmacht wärde.",
+      "confirm": "Zämefüere und lösche",
+      "success": "Zämegfüert: {{source}} ghört jitz zu {{target}}.",
+      "fields": {
+        "website": "Website",
+        "industry": "Branche",
+        "description": "Beschrybig",
+        "logo": "Logo"
+      },
+      "reason": {
+        "SAME_COMPANY": "Das isch di glichi Firma.",
+        "TARGET_KEY_TOO_LONG": "Dr Churzname vo dr Firma, wo blybt, cha i de Profil vo de Lüt nid bruucht wärde. Füer i dr angere Richtig zäme.",
+        "BOTH_PARTNERS": "Beidi Firme sy Partner. Zwo Partnerfirme chöi nid zämegfüert wärde; füer zersch d'Partner zäme.",
+        "BLOCKED": "E Dienscht lehnt s'Zämefüere ab ({{blockers}})."
+      },
+      "error": {
+        "MERGE_BLOCKED_BOTH_PARTNERS": "Beidi Firme sy Partner. Es isch nüt gänderet worde.",
+        "MERGE_BLOCKED": "E Dienscht het s'Zämefüere abglehnt. Es isch nüt gänderet worde.",
+        "MERGE_NOT_ALLOWED": "Das Zämefüere isch nid erloubt. Es isch nüt gänderet worde.",
+        "MERGE_INCOMPLETE": "Nid jede Dienscht het s'Zämefüere abgschlosse. Di angeri Firma git's no; füer nomau zäme, für's abzschliesse.",
+        "default": "S'Zämefüere het nid klappet. Es isch nüt gänderet worde; bitte nomau probiere."
+      },
+      "tables": {
+        "user_profiles": "Lüt",
+        "company_logo_requests": "Logo-Aafrage",
+        "company_user_uploads": "Logo-Uploads",
+        "activity_history": "Aktivität",
+        "registrations": "Aamäudige",
+        "partners": "Partnerdate",
+        "topic_suggestions": "Themevorschläg",
+        "topic_votes": "Themestimme"
+      }
     }
   },
   "event": {

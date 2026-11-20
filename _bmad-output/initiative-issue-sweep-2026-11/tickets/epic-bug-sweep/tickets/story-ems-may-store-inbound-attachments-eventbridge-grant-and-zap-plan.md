@@ -3,7 +3,7 @@ title: 'EMS may store inbound attachments; EventBridge grant and ZAP 110009 gone
 type: 'bugfix'
 ticket: '1'
 created: '2026-11-15'
-status: 'built'
+status: 'done'
 baseline_revision: 'e16231fa7af5b42cc647ac1a50171ca349364f7d'
 route: 'oneshot'
 route_source: 'auto'

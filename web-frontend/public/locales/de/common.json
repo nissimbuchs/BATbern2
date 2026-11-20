@@ -260,6 +260,84 @@
     },
     "pagination": {
       "itemsPerPage": "Einträge pro Seite"
+    },
+    "duplicates": {
+      "button": "Mögliche Duplikate",
+      "title": "Mögliche doppelte Firmen",
+      "back": "Zurück zu den Firmen",
+      "intro": "Firmenpaare, die wahrscheinlich dieselbe Firma sind: gleiche Website, gleicher Name, gleicher Name bis auf die Rechtsform, oder ein Kurzname beginnt mit dem anderen. Vergleichen Sie jedes Paar und führen Sie es zusammen, oder markieren Sie es als kein Duplikat. Vorgeschlagen zum Behalten wird der Partner, sonst die Firma mit Logo, sonst die mit mehr Personen, sonst die ältere.",
+      "loadError": "Die Liste konnte nicht geladen werden.",
+      "countsIncomplete": "Nicht jeder Dienst hat seine Zahlen geliefert. Bitte versuchen Sie es noch einmal.",
+      "all": "Alle",
+      "count": "Paare: {{count}}",
+      "empty": "Keine möglichen doppelten Firmen gefunden.",
+      "keep": "Behalten",
+      "mergeIn": "Übernehmen und löschen",
+      "compare": "Vergleichen und zusammenführen",
+      "dismiss": "Kein Duplikat",
+      "dismissError": "Das Paar konnte nicht markiert werden. Bitte versuchen Sie es noch einmal.",
+      "bothPartners": "Beide sind Partner: Zwei Partnerfirmen können nicht zusammengeführt werden. Führen Sie zuerst die Partner zusammen.",
+      "people": "Personen: {{count}}",
+      "registrations": "Anmeldungen: {{count}}",
+      "partner": "Partner",
+      "confidence": {
+        "HIGH": "Sehr wahrscheinlich",
+        "MEDIUM": "Wahrscheinlich",
+        "LOW": "Nur Hinweis"
+      },
+      "rule": {
+        "SAME_WEBSITE": "Gleiche Website",
+        "SAME_DISPLAY_NAME": "Gleicher Name",
+        "SAME_NAME_WITHOUT_LEGAL_FORM": "Gleicher Name bis auf die Rechtsform",
+        "SLUG_PREFIX": "Ein Kurzname beginnt mit dem anderen"
+      }
+    },
+    "merge": {
+      "button": "Mit anderer Firma zusammenführen",
+      "title": "Zwei Firmen zusammenführen",
+      "intro": "Die andere Firma wird in diese übernommen und danach gelöscht: Ihre Personen, Anmeldungen, Partnerdaten, Themenvorschläge und Stimmen, Logo und Logo-Anfragen gehen über. Leere Felder der bleibenden Firma werden von der anderen übernommen; ihr Name bleibt.",
+      "pickOther": "Andere Firma",
+      "previewFailed": "Die Vorschau konnte nicht geladen werden.",
+      "previewIncomplete": "Nicht jeder Dienst hat geantwortet. Bitte öffnen Sie die Vorschau noch einmal.",
+      "keeps": "Bleibt",
+      "deletes": "Wird übernommen und gelöscht",
+      "moves": "Geht an die bleibende Firma",
+      "nothingToMove": "Nichts zu übernehmen.",
+      "conflicts": "Bei der bleibenden Firma schon vorhanden ({{list}}): Diese Einträge werden entfernt, Logo-Anfragen geschlossen. Alles wird protokolliert.",
+      "fills": "Übernommen, weil bei der bleibenden Firma leer: {{list}}",
+      "swap": "Richtung tauschen",
+      "warning": "Die Firma {{source}} wird gelöscht. Die Zusammenführung wird protokolliert und kann nur von Hand rückgängig gemacht werden.",
+      "confirm": "Zusammenführen und löschen",
+      "success": "Zusammengeführt: {{source}} gehört jetzt zu {{target}}.",
+      "fields": {
+        "website": "Website",
+        "industry": "Branche",
+        "description": "Beschreibung",
+        "logo": "Logo"
+      },
+      "reason": {
+        "SAME_COMPANY": "Das ist dieselbe Firma.",
+        "TARGET_KEY_TOO_LONG": "Der Kurzname der bleibenden Firma kann in Personenprofilen nicht verwendet werden. Führen Sie in der anderen Richtung zusammen.",
+        "BOTH_PARTNERS": "Beide Firmen sind Partner. Zwei Partnerfirmen können nicht zusammengeführt werden; führen Sie zuerst die Partner zusammen.",
+        "BLOCKED": "Ein Dienst lehnt die Zusammenführung ab ({{blockers}})."
+      },
+      "error": {
+        "MERGE_BLOCKED_BOTH_PARTNERS": "Beide Firmen sind Partner. Es wurde nichts geändert.",
+        "MERGE_BLOCKED": "Ein Dienst hat die Zusammenführung abgelehnt. Es wurde nichts geändert.",
+        "MERGE_NOT_ALLOWED": "Diese Zusammenführung ist nicht erlaubt. Es wurde nichts geändert.",
+        "MERGE_INCOMPLETE": "Nicht jeder Dienst hat die Zusammenführung abgeschlossen. Die andere Firma besteht noch; führen Sie noch einmal zusammen, um sie abzuschliessen.",
+        "default": "Die Zusammenführung ist fehlgeschlagen. Es wurde nichts geändert; versuchen Sie es noch einmal."
+      },
+      "tables": {
+        "user_profiles": "Personen",
+        "company_logo_requests": "Logo-Anfragen",
+        "company_user_uploads": "Logo-Uploads",
+        "activity_history": "Aktivität",
+        "registrations": "Anmeldungen",
+        "partners": "Partnerdaten",
+        "topic_suggestions": "Themenvorschläge",
+        "topic_votes": "Themenstimmen"
+      }
     }
   },
   "event": {

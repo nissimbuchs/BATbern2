@@ -41,6 +41,25 @@ Only items that are not live yet. Everything else is listed under its release be
 
 ### Unreleased — after BATbern60
 
+**New — Organizers can merge two companies (#1251)**:
+- ✅ A duplicate company (for example "Unic AG" next to "Unic") can be merged into the other one. Its people, registrations, partner record, topic suggestions and votes, logo and logo requests move to the company that stays; empty fields there (website, industry, description, logo) are taken from the duplicate, filled ones are kept, and the name of the company that stays does not change.
+- ✅ The duplicate's short and full name, and its own old names, still find the company that stays, in the search and at registration.
+- ✅ A preview shows both companies, their number of people and logos, what moves and which fields are filled. Two partner companies cannot be merged; merge the partners first.
+- ✅ If a service cannot complete the merge, nothing is merged here and the organizer sees an error; merging again finishes it. No mail is sent.
+- ✅ On the Companies tab, **Possible duplicates** lists the pairs (below) with **Compare and merge** and **Not a duplicate**; a company's page has **Merge with another company**. Both open the preview, which can swap the direction where the other company should stay, and show why a merge is refused.
+- ⚠️ API: new `GET /api/v1/companies/{name}/merge-preview?source=` and `POST /api/v1/companies/{name}/merge` `{sourceName}` (organizers). The merge answers 400 or 409 `MERGE_NOT_ALLOWED`, 409 `MERGE_BLOCKED_BOTH_PARTNERS` or `MERGE_BLOCKED`, 502 `MERGE_INCOMPLETE`.
+- ✅ A list shows the companies that are probably the same: the same website, the same name, the same name apart from the legal form ("Unic" and "Unic AG"), or one short name that starts with the other ("puzzle" and "puzzleitc"). Each pair shows both companies with their number of people and registrations, whether they are a partner, and which one should stay (the partner, else the one with a logo, else the one with more people, else the older one). A pair that is two different companies can be marked "not a duplicate" and does not come back. Two companies whose website is a profile on the same platform (LinkedIn, Facebook, XING and the like) count as the same website only for the same profile.
+- ⚠️ API: new `GET /api/v1/companies/duplicate-candidates` and `POST /api/v1/companies/duplicate-candidates/dismissals` `{nameA, nameB}` (organizers). The list answers 502 `DUPLICATE_COUNTS_INCOMPLETE` when a service does not deliver its counts.
+
+**Fix — Renaming a company moves everything that belongs to it (#1251)**:
+- ✅ When an organizer changes a company's short name, its people, registrations, partner record, topic suggestions and votes, logo and logo requests move to the new name. Before, they kept the old name and lost their company.
+- ✅ The old short name and the old full name still find the company in the search and at registration, so nobody creates the old company again. Changing the name back to an old one takes it back.
+- ✅ If a service cannot complete the move, nothing is renamed and the organizer sees an error; saving the same new name again finishes the move.
+- ⚠️ API: `PATCH /api/v1/companies/{name}` with a new `name` answers 409 `RENAME_BLOCKED` when a service refuses the move and 502 `RENAME_INCOMPLETE` when one does not complete it; 409 also when the new name or display name is an old name of another company.
+
+**Fix — Registering with a company's full name no longer creates a second company (#1251)**:
+- ✅ When a person types the name of an existing company at registration (for example "Die Post" for the company with the short name `post`), the registration now uses that company, in any upper or lower case and with or without umlauts or accents ("Muller" for "Müller"). Before, a new company `diepost` was created next to it.
+
 **Fix — A newsletter subscription becomes active only after its owner confirms it (#1288)**:
 - ✅ Subscribing on the website sends a mail (German, English when the page is in English) with a link; the newsletter starts only once the owner of the address follows it and clicks "Confirm subscription" on the page it opens (`/newsletter/confirm`). Until then the address is "Unconfirmed" and gets no newsletter. The mail says the link is valid for 7 days. Before, anyone could subscribe any address.
 - ✅ Subscribing an address again that waits for confirmation sends the same link once more. An address already subscribed is left as it is and gets no mail; the form shows "check your inbox" either way, so it no longer reveals whether an address is subscribed.
