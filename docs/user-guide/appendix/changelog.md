@@ -46,6 +46,9 @@ Only items that are not live yet. Everything else is listed under its release be
 - ✅ Existing materials: PDFs stay public, all other files are marked not public.
 - ⚠️ API: new `PATCH /api/v1/events/{eventCode}/sessions/{sessionSlug}/materials/{materialId}` `{publiclyVisible}` (organizers, or a speaker of that session; another session's material 404). `SessionMaterialResponse` has `publiclyVisible`; `POST …/uploads/session-material/{uploadId}/confirm` and the items of `POST …/materials` take an optional `publiclyVisible`.
 
+**Fix — Deleting a session material through another session of the event answers 404**:
+- ✅ `DELETE …/sessions/{sessionSlug}/materials/{materialId}` for a material of another session of the same event answered 400; it is now 404, as for an unknown material, and nothing is deleted.
+
 **New — Organizers can merge two companies (#1251)**:
 - ✅ A duplicate company (for example "Unic AG" next to "Unic") can be merged into the other one. Its people, registrations, partner record, topic suggestions and votes, logo and logo requests move to the company that stays; empty fields there (website, industry, description, logo) are taken from the duplicate, filled ones are kept, and the name of the company that stays does not change.
 - ✅ The duplicate's short and full name, and its own old names, still find the company that stays, in the search and at registration.

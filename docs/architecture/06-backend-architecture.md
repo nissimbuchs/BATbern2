@@ -187,7 +187,7 @@ so the website never shows an organizer something a visitor would not see.
   association item says otherwise. `PATCH /events/{code}/sessions/{slug}/materials/{materialId}`
   changes it (organizer, or a speaker of that session through `checkMayChangeMaterials`; a material
   of another session 404) and clears `eventWithIncludes` after the commit, as an upload does. The
-  material is loaded within its session (`findByIdAndSession_Id`).
+  material is loaded within its session (`findByIdAndSession_Id`), for the delete too.
 
 `PublicEventController` (publishing) serves these three paths through `PublicEventsService`, which
 builds on the event read of event core (`EventReadService`) in the public session view and shapes

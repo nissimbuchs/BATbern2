@@ -4,7 +4,6 @@ import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Session;
 import ch.batbern.events.domain.SessionMaterial;
 import ch.batbern.events.exception.SessionNotFoundException;
-import ch.batbern.events.exception.MaterialNotFoundException;
 import ch.batbern.events.repository.EventManagementUploadRepository;
 import ch.batbern.events.repository.SessionMaterialsRepository;
 import ch.batbern.events.repository.SessionRepository;
@@ -17,7 +16,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 
 import java.util.Arrays;
 import java.util.List;
@@ -163,86 +161,6 @@ class SessionMaterialsServiceTest {
         verify(sessionMaterialsRepository, never()).findBySession_IdOrderByCreatedAtAsc(any());
     }
 
-    // Test 2.8: deleteMaterial() - Success
-    @Test
-    void should_deleteMaterial_when_validMaterialIdProvided() {
-        // Given
-        UUID materialId = UUID.randomUUID();
-        String sessionSlug = "keynote-digital-transformation";
-        String username = "john.doe";
-
-        SessionMaterial material = SessionMaterial.builder()
-                .id(materialId)
-                .session(mockSession)
-                .uploadId("upload-1")
-                .s3Key("materials/2026/events/bat-bern-2026-spring/sessions/keynote-digital-transformation/file-1.pptx")
-                .fileName("slides.pptx")
-                .uploadedBy(username)
-                .build();
-
-        when(sessionMaterialsRepository.findById(materialId)).thenReturn(Optional.of(material));
-
-        // When
-        sessionMaterialsService.deleteMaterial("bat-bern-2026-spring", sessionSlug, materialId, username);
-
-        // Then
-        verify(sessionMaterialsRepository).findById(materialId);
-        verify(sessionMaterialsRepository).delete(material);
-        verify(s3Client).deleteObject(any(DeleteObjectRequest.class)); // S3 cleanup
-    }
-
-    // Test 2.9: deleteMaterial() - Material Not Found
-    @Test
-    void should_throwMaterialNotFoundException_when_materialIdInvalid() {
-        // Given
-        UUID invalidMaterialId = UUID.randomUUID();
-        String sessionSlug = "keynote-digital-transformation";
-        String username = "john.doe";
-
-        when(sessionMaterialsRepository.findById(invalidMaterialId)).thenReturn(Optional.empty());
-
-        // When/Then
-        assertThatThrownBy(() ->
-                sessionMaterialsService.deleteMaterial("bat-bern-2026-spring", sessionSlug, invalidMaterialId, username))
-                .isInstanceOf(MaterialNotFoundException.class)
-                .hasMessageContaining(invalidMaterialId.toString());
-
-        verify(sessionMaterialsRepository).findById(invalidMaterialId);
-        verify(sessionMaterialsRepository, never()).delete(any());
-        verify(s3Client, never()).deleteObject(any(DeleteObjectRequest.class));
-    }
-
-    // Test 2.10: deleteMaterial() - Session Mismatch
-    @Test
-    void should_throwIllegalArgumentException_when_materialDoesNotBelongToSession() {
-        // Given
-        UUID materialId = UUID.randomUUID();
-        String requestedSessionSlug = "keynote-digital-transformation";
-        String username = "john.doe";
-
-        Session differentSession = Session.builder()
-                .id(UUID.randomUUID())
-                .eventId(UUID.randomUUID())
-                .eventCode("TEST-EVENT")
-                .sessionSlug("different-session")
-                .title("Different Session")
-                .build();
-
-        SessionMaterial material = SessionMaterial.builder()
-                .id(materialId)
-                .session(differentSession)
-                .uploadedBy(username)
-                .build();
-
-        when(sessionMaterialsRepository.findById(materialId)).thenReturn(Optional.of(material));
-
-        // When/Then
-        assertThatThrownBy(() ->
-                sessionMaterialsService.deleteMaterial("bat-bern-2026-spring", requestedSessionSlug, materialId, username))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("Material does not belong to the specified session");
-
-        verify(sessionMaterialsRepository).findById(materialId);
-        verify(sessionMaterialsRepository, never()).delete(any());
-    }
+    // Tests 2.8-2.10 (delete) moved to SessionMaterialUploadIntegrationTest and
+    // SessionMaterialsControllerIntegrationTest: a material is loaded within its session on PostgreSQL.
 }

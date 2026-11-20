@@ -192,25 +192,16 @@ public class SessionMaterialsService {
     }
 
     /**
-     * Delete a material and clean up S3
+     * Delete a material and clean up S3. The caller checked the session and its right to change it
+     * ({@link SessionMaterialUploadHandler#checkMayChangeMaterials}).
      *
-     * @param sessionSlug The session slug
-     * @param materialId  The material ID
-     * @param username    Username requesting deletion (for RBAC)
-     * @throws MaterialNotFoundException if material not found
-     * @throws IllegalArgumentException  if material doesn't belong to session
+     * @throws SessionNotFoundException  if the session is not in the event
+     * @throws MaterialNotFoundException if the material is not in that session
      */
     public void deleteMaterial(String eventCode, String sessionSlug, UUID materialId, String username) {
         log.info("Deleting material {} from session: {}", materialId, sessionSlug);
 
-        SessionMaterial material = sessionMaterialsRepository.findById(materialId)
-                .orElseThrow(() -> new MaterialNotFoundException(materialId.toString()));
-
-        // Validate material belongs to this session of this event (Story 17.11d: the event too)
-        if (!material.getSession().getSessionSlug().equals(sessionSlug)
-                || (eventCode != null && !eventCode.equals(material.getSession().getEventCode()))) {
-            throw new IllegalArgumentException("Material does not belong to the specified session");
-        }
+        SessionMaterial material = materialIn(materialUploads.session(eventCode, sessionSlug), materialId);
 
         // Delete from S3
         deleteS3Object(material.getS3Key());
