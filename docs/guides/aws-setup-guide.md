@@ -1,6 +1,15 @@
 # BATbern AWS Account Setup Guide
 
 ## Overview
+
+> **Current state (checked against CLAUDE.md and `infrastructure/lib/config/`, 2026-11-20):** one
+> workload account, **188701360969** (profile `batbern-staging`, stacks named `BATbern-staging-*`),
+> serves production. The management account 510187933511 (profile `batbern-mgmt`) holds the domain
+> registration and consolidated billing. The former production account 422940799530 is
+> decommissioned; the development account 954163570305 (`dev-config.ts`) has no BATbern stacks
+> (per `scripts/dev/start-all-native.sh`). The four member accounts in Step 5 describe the original 2025 plan, not what
+> runs. Phase 6 (CFO billing access) is current.
+
 This guide covers the **manual organizational setup** for AWS accounts. Most infrastructure provisioning is automated via CDK - this guide only covers what must be done manually before CDK deployment.
 
 ## Phase 1: Management Account Setup
@@ -64,6 +73,9 @@ Create OUs in this order:
 7. Suspended
 
 ### Step 5: Create Member Accounts
+
+> **Historical.** Only the staging account (now production, 188701360969) is in use; see the
+> note under Overview.
 Create accounts for each environment:
 
 #### Development Account

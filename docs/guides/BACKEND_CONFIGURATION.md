@@ -1,5 +1,14 @@
 # Backend Configuration Guide
 
+> **Largely historical (2025), does not describe how production is configured.** In production
+> the ECS task definitions get their environment from CDK (`domain-service-construct.ts`, the
+> stack props in `infrastructure/lib/config/staging-config.ts`); no workflow runs
+> `sync-backend-config.sh`. Its `development` path cannot succeed (the dev account has no BATbern
+> stacks) and its `production` path uses the profile `batbern-prod` of the decommissioned account.
+> For local development copy `.env.example` to `.env` (see
+> [local-development-setup.md](./local-development-setup.md)). The principle below, runtime
+> configuration through environment variables, still holds.
+
 ## Overview
 
 BATbern backend uses **runtime configuration** via environment variables. Spring Boot reads configuration at startup from environment variables, enabling the same build (JAR files) to work across all environments without recompilation.
@@ -496,11 +505,9 @@ jobs:
 
 ## Resources
 
-- [Configuration Migration Guide](./CONFIGURATION_MIGRATION.md)
-- [Frontend Configuration Guide](../web-frontend/CONFIG.md)
-- [CDK Configuration](../infrastructure/lib/config/)
-- [Templates](../config/templates/)
-- [Sync Scripts](../scripts/config/)
+- [CDK Configuration](../../infrastructure/lib/config/)
+- [Templates](../../config/templates/)
+- [Sync Scripts](../../scripts/config/)
 
 ---
 

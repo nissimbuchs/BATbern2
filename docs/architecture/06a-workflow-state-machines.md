@@ -516,148 +516,20 @@ Organizers see tasks grouped by status:
 
 **Task creation idempotency:** Calling `createTasksForEvent` twice for the same template/event pair does not create duplicate tasks. The creation guard prevents duplicates even if a workflow transition event is replayed.
 
-## Slot Assignment Algorithm Service
+## Slot Assignment
 
-```java
-@Service
-@Slf4j
-public class SlotAssignmentService {
+Code: `SlotAssignmentController` and the package `ch.batbern.events.service.slotassignment` in
+event-management-service (`SessionTimingService` assigns start, end and room to a session and
+records `session_timing_history`; `PreferenceMatchingAlgorithm` scores speaker preferences;
+`ConflictDetectionService` reports room overlaps and speaker double-bookings). There is no
+`EventSlot` entity: slots are sessions with a time. Assigning a time sets `sessions.start_time`,
+which makes an already `QUALITY_REVIEWED` speaker publishable (derived at read time, ADR-009).
 
-    private final EventSlotRepository slotRepository;
-    private final SpeakerPreferencesRepository preferencesRepository;
-    private final SlotAssignmentAlgorithm assignmentAlgorithm;
+## Quality Review
 
-    @Transactional
-    public List<SlotAssignment> assignSpeakersToSlots(String eventId, boolean useAutomaticAssignment) {
-        Event event = eventRepository.findById(eventId)
-            .orElseThrow(() -> new EntityNotFoundException("Event not found"));
-
-        List<EventSlot> availableSlots = slotRepository.findByEventIdAndAssignedSpeakerIdIsNull(eventId);
-        List<SessionSpeaker> unassignedSpeakers = getUnassignedAcceptedSpeakers(event);
-        List<SpeakerSlotPreferences> preferences = preferencesRepository.findByEventId(eventId);
-
-        SlotAssignmentContext context = SlotAssignmentContext.builder()
-            .event(event)
-            .availableSlots(availableSlots)
-            .unassignedSpeakers(unassignedSpeakers)
-            .speakerPreferences(preferences)
-            .useAutomaticAssignment(useAutomaticAssignment)
-            .build();
-
-        List<SlotAssignment> assignments = assignmentAlgorithm.calculateOptimalAssignments(context);
-
-        // Apply assignments
-        for (SlotAssignment assignment : assignments) {
-            EventSlot slot = slotRepository.findById(assignment.getSlotId())
-                .orElseThrow(() -> new EntityNotFoundException("Slot not found"));
-
-            slot.setAssignedSpeakerId(assignment.getSpeakerId());
-            slot.setAssignedAt(Instant.now());
-            slotRepository.save(slot);
-
-            // Note: No speaker state update needed.
-            // Per ADR-009 there is no CONFIRMED state; the derived `is_publishable`
-            // predicate (status = QUALITY_REVIEWED AND session.start_time IS NOT NULL)
-            // is computed at read time. Assigning a slot here populates session.start_time,
-            // which flips `is_publishable` to true for any already-QUALITY_REVIEWED speaker.
-        }
-
-        log.info("Assigned {} speakers to slots for event {}", assignments.size(), eventId);
-        return assignments;
-    }
-
-    private List<SessionSpeaker> getUnassignedAcceptedSpeakers(Event event) {
-        return event.getSessions().stream()
-            .flatMap(session -> session.getSpeakers().stream())
-            .filter(speaker -> speaker.getWorkflowState() == SpeakerWorkflowState.ACCEPTED)
-            .filter(speaker -> speaker.getSlotAssignment() == null)
-            .collect(Collectors.toList());
-    }
-}
-```
-
-## Quality Review Workflow Engine
-
-```java
-@Service
-@Slf4j
-public class QualityReviewService {
-
-    private final ContentQualityReviewRepository reviewRepository;
-    private final ContentValidationService contentValidator;
-    private final NotificationService notificationService;
-
-    @Transactional
-    public ContentQualityReview submitContentForReview(String sessionId, String speakerId,
-                                                     SubmitContentRequest request) {
-        // Validate content meets basic requirements
-        ContentValidationResult validation = contentValidator.validateContent(request);
-
-        if (!validation.isValid()) {
-            throw new ContentValidationException("Content validation failed", validation.getErrors());
-        }
-
-        ContentQualityReview review = ContentQualityReview.builder()
-            .sessionId(sessionId)
-            .speakerId(speakerId)
-            .abstractReview(AbstractReview.builder()
-                .content(request.getAbstract())
-                .characterCount(request.getAbstract().length())
-                .hasLessonsLearned(contentValidator.hasLessonsLearned(request.getAbstract()))
-                .hasProductPromotion(contentValidator.hasProductPromotion(request.getAbstract()))
-                .meetsStandards(validation.meetsAbstractStandards())
-                .build())
-            .materialReview(buildMaterialReview(request))
-            .status(QualityReviewStatus.PENDING)
-            .submittedAt(Instant.now())
-            .build();
-
-        ContentQualityReview savedReview = reviewRepository.save(review);
-
-        // Notify moderator of pending review
-        notificationService.notifyModeratorOfPendingReview(savedReview);
-
-        // Transition speaker to CONTENT_SUBMITTED via the sole writer of speaker_pool.status (ADR-009)
-        speakerWorkflowService.transition(
-            speakerPoolId, SpeakerWorkflowState.CONTENT_SUBMITTED, actor, TransitionPayload.empty()
-        );
-
-        return savedReview;
-    }
-
-    @Transactional
-    public ContentQualityReview updateReviewStatus(String reviewId, UpdateReviewRequest request,
-                                                  SecurityPrincipal moderator) {
-        ContentQualityReview review = reviewRepository.findById(reviewId)
-            .orElseThrow(() -> new EntityNotFoundException("Review not found"));
-
-        review.setStatus(request.getStatus());
-        review.setReviewedAt(Instant.now());
-        review.setReviewerId(moderator.getUsername());
-        review.setFeedback(request.getFeedback());
-
-        if (request.getStatus() == QualityReviewStatus.REQUIRES_CHANGES) {
-            review.setRevisionRequested(true);
-            review.setRevisionDeadline(Instant.now().plus(Duration.ofDays(7)));
-
-            // Notify speaker of required changes
-            notificationService.notifySpeakerOfRequiredChanges(review);
-        } else if (request.getStatus() == QualityReviewStatus.APPROVED) {
-            // Moderator approval transitions speaker to QUALITY_REVIEWED (terminal happy state).
-            // Per ADR-009: there is no CONFIRMED state; `is_publishable` is derived at read time
-            // when session.start_time IS NOT NULL.
-            speakerWorkflowService.transition(
-                review.getSpeakerPoolId(),
-                SpeakerWorkflowState.QUALITY_REVIEWED,
-                moderator,
-                TransitionPayload.withReason(request.getFeedback())
-            );
-        }
-
-        return reviewRepository.save(review);
-    }
-}
-```
+Code: `QualityReviewService` (`getReviewQueue`, `approveContent`, `rejectContent`) in
+event-management-service. Approval calls `SpeakerWorkflowService.transition()` to
+`QUALITY_REVIEWED`; a rejection records the feedback on the latest `session_content_history` row.
 
 ### Quality Review — Constraints
 
@@ -676,123 +548,11 @@ public class QualityReviewService {
 - `REVISION_NEEDED` — latest row's `reviewer_feedback IS NOT NULL` (the version was rejected; speaker is expected to revise and resubmit)
 - `APPROVED` — workflow state is `QUALITY_REVIEWED` (dominates `REVISION_NEEDED` — historical feedback on prior versions is informational only once review has progressed)
 
-## Overflow Management & Voting System — Removed (legacy, per ADR-009)
+## Overflow Management and Voting: removed
 
-> **REMOVED per ADR-009 (2026-05-15).** The `OVERFLOW` state, the `OverflowManagementService`, the speaker-selection voting flow, and the `speaker_selection_votes` table are removed from the architecture. Capacity is now controlled at invitation time by the **slot-capacity gate** on the `READY → INVITED` transition (see "Critical transition rules" above). Organizers can never invite more speakers than `max_slots`, so an "overflow parking lane" is unnecessary. If too many speakers accept (e.g., because capacity is reduced after invitations went out), the organizer manually moves the excess to `DECLINED` with a clear reason.
->
-> The code block below is preserved verbatim as a historical reference to the design that existed before ADR-009; it is **not the target architecture** and is documented here only to make the deletion explicit during the Epic 11 refactor. Do not implement against this design.
->
-> _Historical Scope Note (2026-01-24, superseded by ADR-009):_ Overflow Management (Story 5.6) was removed from MVP scope. Manual speaker selection by organizers is sufficient for launch. Democratic voting on overflow speakers is deferred to Phase 2+ backlog.
-
-```java
-@Service
-@Slf4j
-public class OverflowManagementService {
-
-    private final OverflowManagementRepository overflowRepository;
-    private final SpeakerSelectionVoteRepository voteRepository;
-    private final EventRepository eventRepository;
-
-    @Transactional
-    public SpeakerSelectionVote submitSpeakerVote(String eventId, SpeakerVoteRequest request,
-                                                 String organizerId) {
-        OverflowManagement overflow = overflowRepository.findByEventId(eventId)
-            .orElseThrow(() -> new EntityNotFoundException("No overflow situation for event"));
-
-        // Check if organizer already voted for this speaker
-        Optional<SpeakerSelectionVote> existingVote = voteRepository
-            .findByOrganizerIdAndSpeakerId(organizerId, request.getSpeakerId());
-
-        SpeakerSelectionVote vote;
-        if (existingVote.isPresent()) {
-            vote = existingVote.get();
-            vote.setVote(request.getVote());
-            vote.setReason(request.getReason());
-            vote.setVotedAt(Instant.now());
-        } else {
-            vote = SpeakerSelectionVote.builder()
-                .organizerId(organizerId)
-                .speakerId(request.getSpeakerId())
-                .vote(request.getVote())
-                .reason(request.getReason())
-                .votedAt(Instant.now())
-                .build();
-        }
-
-        SpeakerSelectionVote savedVote = voteRepository.save(vote);
-
-        // Check if voting is complete
-        checkVotingCompletion(overflow);
-
-        return savedVote;
-    }
-
-    private void checkVotingCompletion(OverflowManagement overflow) {
-        List<String> allOrganizers = getAllEventOrganizers(overflow.getEventId());
-        List<String> speakersInOverflow = overflow.getOverflowSpeakers().stream()
-            .map(OverflowSpeaker::getSpeakerId)
-            .collect(Collectors.toList());
-
-        boolean allVotesReceived = speakersInOverflow.stream()
-            .allMatch(speakerId ->
-                voteRepository.countBySpeakerId(speakerId) >= allOrganizers.size());
-
-        if (allVotesReceived && !overflow.isVotingComplete()) {
-            overflow.setVotingComplete(true);
-            overflowRepository.save(overflow);
-
-            // Calculate final selection
-            selectFinalSpeakers(overflow);
-
-            eventPublisher.publishEvent(new OverflowVotingCompleteEvent(
-                overflow.getEventId(), overflow.getOverflowSpeakers()
-            ));
-        }
-    }
-
-    private void selectFinalSpeakers(OverflowManagement overflow) {
-        Event event = eventRepository.findById(overflow.getEventId())
-            .orElseThrow(() -> new EntityNotFoundException("Event not found"));
-
-        int availableSlots = event.getSlotConfiguration().getMaxSlots();
-
-        // Calculate vote scores and select top speakers
-        List<OverflowSpeaker> selectedSpeakers = overflow.getOverflowSpeakers().stream()
-            .peek(speaker -> {
-                int approveVotes = voteRepository.countBySpeakerIdAndVote(
-                    speaker.getSpeakerId(), VoteType.APPROVE);
-                speaker.setVotes(approveVotes);
-            })
-            .sorted(Comparator.comparingInt(OverflowSpeaker::getVotes).reversed())
-            .limit(availableSlots)
-            .collect(Collectors.toList());
-
-        // Mark selected speakers
-        selectedSpeakers.forEach(speaker -> {
-            speaker.setSelected(true);
-            speakerWorkflowService.updateSpeakerWorkflowState(
-                speaker.getSessionId(),
-                speaker.getSpeakerId(),
-                SpeakerWorkflowState.ACCEPTED,
-                "SYSTEM"
-            );
-        });
-
-        // Mark unselected speakers as overflow (remain in READY state)
-        overflow.getOverflowSpeakers().stream()
-            .filter(speaker -> !speaker.isSelected())
-            .forEach(speaker -> {
-                overflowManagementService.addToOverflow(
-                    overflow.getEventId(),
-                    speaker.getSpeakerId(),
-                    votingResults.get(speaker.getSpeakerId())
-                );
-            });
-
-        overflowRepository.save(overflow);
-    }
-}
-```
+Removed by ADR-009 (2026-05-15): no `OVERFLOW` state, no voting, no `speaker_selection_votes`
+table. Capacity is enforced by the slot-capacity gate on `READY → INVITED`. The pre-ADR-009 design
+text was deleted on 2026-11-20 (#1211); it is in git history.
 
 ## Archival Cleanup
 

@@ -764,7 +764,7 @@ Triggers: push to `develop` or `main`, pull request to `develop`, manual dispatc
 graph LR
     VH["verify-hooks<br/>not required"]
     SK["build-shared-kernel"]
-    SVC["build-services matrix<br/>6 modules on ubuntu-24.04-arm<br/>Gradle build + tests<br/>ARM64 image → ECR"]
+    SVC["build-services matrix<br/>4 modules on ubuntu-24.04-arm<br/>Gradle build + tests<br/>ARM64 image → ECR"]
     FC["frontend-changes"]
     TF["test-frontend"]
     FS["frontend-static<br/>incl. generated API types"]

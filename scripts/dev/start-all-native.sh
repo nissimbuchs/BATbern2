@@ -203,7 +203,7 @@ create_env_native() {
 # This file overrides .env for native (non-Docker) execution
 # ==============================================
 
-# Source the main .env file (auto-synced from AWS)
+# Source the main .env file (a copy of .env.example)
 # Then override specific values for native execution
 
 # ==============================================

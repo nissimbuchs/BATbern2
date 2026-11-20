@@ -1,5 +1,10 @@
 # CI/CD Pipeline Automated Setup Guide
 
+> **Historical (2025, Story 1.4), does not describe the running system.** It assumes a
+> multi-account setup, `deploy:dev` and GitHub environment protection rules, none of which exist
+> today. Production is the single account 188701360969, deployed by every PR to `develop`. Current
+> guide: [cicd-pipeline-guide.md](./cicd-pipeline-guide.md).
+
 **Story**: 1.4 - CI/CD Pipeline Implementation
 **Approach**: Infrastructure as Code (CDK) + GitHub CLI Automation
 

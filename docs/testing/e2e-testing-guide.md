@@ -209,22 +209,11 @@ AWS-blessed way to exercise send paths without real delivery — see the
 
 ### Collections
 
-#### Companies API Tests
-**Location**: `bruno-tests/companies-api/`
-
-**Tests**:
-1. **01-list-companies-cors.bru** - List companies with CORS headers
-2. **02-search-companies.bru** - Search companies with headers
-3. **03-create-company-cors.bru** - POST request with CORS headers
-
-**Environment Variables**:
-- `baseUrl` - API base URL
-- `authToken` - JWT authentication token
-
-#### Event Management Tests
-**Location**: `bruno-tests/event-management-service/`
-
-23 tests covering full event management API lifecycle.
+One folder per API under `bruno-tests/` (for example `companies-api/`, `events-crud-api/`,
+`speaker-pool-api/`, `partners-api/`). Which collections run, in which order, and which run only
+against local development is defined in `scripts/ci/run-bruno-tests.sh` (the `collections` array
+and the dev-only list below it). `scripts/ci/test-bruno-collection-guard.sh` fails CI when a
+folder is neither run nor explicitly excluded there.
 
 ### Environment Variables in Bruno
 

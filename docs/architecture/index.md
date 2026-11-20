@@ -8,8 +8,8 @@ This document outlines the complete fullstack architecture for **BATbern Event M
 
 The architecture documentation has ten numbered sections (01 to 10). Section 04 is an overview
 plus seven per-domain parts, and section 06 has four companion documents (06a to 06d). Supporting
-files and the ADRs are listed further down. The 2024–25 documents (03, 04,
-05, parts of 06) still contain drift; #1211 tracks it.
+files and the ADRs are listed further down. Where a document and the code disagree, the code,
+the Flyway migrations and the OpenAPI specs in `docs/api/` win.
 
 ### Core Architecture Documents
 
@@ -17,7 +17,8 @@ files and the ADRs are listed further down. The 2024–25 documents (03, 04,
    request path, mail, AI assist, technology summary
 2. **[02-infrastructure-deployment.md](./02-infrastructure-deployment.md)** - CDK stacks, ECS
    sizing, API gateway tiers, CI/CD and production deploys, beta canary, inbound mail, backups
-3. **[03-data-architecture.md](./03-data-architecture.md)** - Data architecture and schemas
+3. **[03-data-architecture.md](./03-data-architecture.md)** - Data model concepts, table
+   inventory per service (the Flyway migrations hold the schema)
 4. **[04-api-design.md](./04-api-design.md)** - Index of the API specs, with per-domain index pages:
    [04-api-core.md](./04-api-core.md), [04-api-event-management.md](./04-api-event-management.md),
    [04-api-speaker-coordination.md](./04-api-speaker-coordination.md),
@@ -44,7 +45,7 @@ files and the ADRs are listed further down. The 2024–25 documents (03, 04,
 8. **[08-operations-security.md](./08-operations-security.md)** - Security, monitoring and
    alarms, operations, accessibility
 9. **[09-aiml-architecture.md](./09-aiml-architecture.md)** - AI assist as built (OpenAI-backed,
-   organizer-only, advisory); the 2025 ML vision is kept as a marked historical section
+   organizer-only, advisory)
 10. **[10-watch-app-development-patterns.md](./10-watch-app-development-patterns.md)** - Watch
     app (watchOS) development patterns
 

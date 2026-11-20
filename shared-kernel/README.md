@@ -7,7 +7,7 @@ consume it as a project dependency.
 ## What is in it
 
 Every class under `src/main/java/ch/batbern/shared`, by package (listed from the source tree
-2026-11-18; regenerate the table from the tree when a package changes, never by hand):
+2026-11-20; regenerate the table from the tree when a package changes, never by hand):
 
 | Package | Classes |
 |---|---|
@@ -18,6 +18,7 @@ Every class under `src/main/java/ch/batbern/shared`, by package (listed from the
 | `events` | `DomainEvent`, `DomainEventPublisher`, `EventCreatedEvent`, `EventWorkflowTransitionEvent`, `SessionTimingAssignedEvent`, `SpeakerAcceptedEvent`, `SpeakerAddedToPoolEvent`, `SpeakerInvitationSentEvent`, `SpeakerInvitedEvent`, `SpeakerPromotedToReadyEvent`, `SpeakerResponseReceivedEvent`, `SpeakerWorkflowStateChangeEvent`, `SpringDomainEventPublisher` |
 | `exception` | `BATbernException`, `ClientErrorClassifier`, `ErrorCode`, `InvalidStateTransitionException`, `NotFoundException`, `ServiceException`, `UnauthorizedException`, `ValidationException` |
 | `exceptions` | `DomainException`, `ValidationException` |
+| `logging` | `EmailMaskingMessageConverter`, `EmailMaskingThrowableConverter`, `EmailValueMasker` |
 | `mail` | `ComposedMail`, `MailContext`, `MailRedaction`, `MailTrigger`, `OutboundMail`, `OutboundMailRecorder` |
 | `search` | `SearchPredicates`, `SearchTerms` |
 | `security` | `AuditLog`, `AuditLoggingAspect`, `ClientIp`, `JwtRolesConverter`, `S2sHeaders` |

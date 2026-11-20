@@ -8,8 +8,8 @@ The main BATbern platform uses Epics 1-6 with story numbering like `6.3-content-
 
 | Namespace | Example | Location |
 |---|---|---|
-| Platform stories | `6.1a-magic-link-infrastructure.md` | `docs/stories/` |
-| Watch stories | `W1.2-event-hero-screen.md` | `docs/watch-app/stories/` |
+| Platform stories | `6.1a-magic-link-infrastructure.md` | `docs/stories/archived/`, `_bmad-output/implementation-artifacts/archive/` |
+| Watch stories | `w1-2-session-card-browsing.md` | `_bmad-output/implementation-artifacts/archive/` |
 | Platform architecture | `01-system-overview.md` | `docs/architecture/` |
 | Watch architecture | `architecture.md` | `docs/watch-app/` |
 
@@ -18,7 +18,6 @@ The main BATbern platform uses Epics 1-6 with story numbering like `6.3-content-
 ### Planning Artifacts
 | Document | Description | Status |
 |---|---|---|
-| [product-brief.md](product-brief.md) | Initial product brief from brainstorming | Complete |
 | [brainstorming-session.md](brainstorming-session.md) | Feature brainstorming results | Complete |
 | [prd-batbern-watch.md](prd-batbern-watch.md) | **Product Requirements Document** (authoritative) | v1.0 |
 | [architecture.md](architecture.md) | Architecture decisions (BMAD output, pre-public-view) | Needs update |
@@ -26,23 +25,11 @@ The main BATbern platform uses Epics 1-6 with story numbering like `6.3-content-
 | [ux-design-directions.html](ux-design-directions.html) | Visual design direction mockups | Complete |
 | [epics.md](../archive/watch-app/epics.md) | Epic breakdown with requirements (BMAD output, pre-public-view) | Needs update |
 
-### Stories (W-prefixed)
-Stories live in `stories/` and follow the naming convention `W{epic}.{story}-{description}.md`.
+### Stories
 
-**Watch Epic 1: Public Event Companion**
-- Stories TBD (Xcode setup, hero screen, session browsing, abstract/bio views, etc.)
-
-**Watch Epic 2: Watch Pairing & Organizer Access**
-- Stories TBD (pairing code flow, web UI, auto-auth, pre-event overview)
-
-**Watch Epic 3: Live Countdown & Haptic Awareness**
-- Stories TBD (countdown timer, haptic patterns, overtime tracking, etc.)
-
-**Watch Epic 4: Session Control & Team Sync**
-- Stories TBD (session controls, WebSocket sync, conflict resolution)
-
-**Watch Epic 5: Offline Resilience**
-- Stories TBD (SwiftData cache, local timers, sync recovery)
+The watch app is delivered (epics W1 to W5). Its 20 story files are archived in
+`_bmad-output/implementation-artifacts/archive/` as `w{epic}-{story}-*.md` (for example
+`w2-1-pairing-code-backend-web-frontend.md`). There is no `docs/watch-app/stories/` folder.
 
 ## Code Location
 
@@ -80,4 +67,3 @@ Backend changes required by Watch epics (pairing endpoints in Epic 2, WebSocket 
 
 - The **authoritative PRD** is `prd-batbern-watch.md` (v1.0, includes public companion + organizer views)
 - Earlier BMAD artifacts (`architecture.md`, `ux-design-specification.md`, `epics.md`) were created before the public companion view was added — they need updating to reflect the 5-epic structure
-- The originals remain in `_bmad-output/planning-artifacts/` for BMAD workflow tracking

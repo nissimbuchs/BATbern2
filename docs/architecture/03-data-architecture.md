@@ -15,12 +15,11 @@ concepts first, then the schema of each service as the Flyway migrations build i
 - **Flyway per service**: each service has its own `flyway_schema_history_<service>` table and its
   own migrations under `services/<service>/src/main/resources/db/migration/`.
 
-**How the schema in this document was derived (2026-11-04):** all migrations of CUMS (V1 to
-V22), PCS (V1 to V10) and EMS (V1 to V144) were applied in version order to an empty
-PostgreSQL 15 database, and the resulting tables, columns, keys and check constraints were read
-from the catalog. Every migration applied without error. The Flyway migrations remain the source
-of truth; regenerate the diagrams the same way rather than editing them from memory. Text that
-could not be checked is marked "(not verified 2026-11-04)".
+**Source of truth for columns, keys and constraints: the Flyway migrations**, one folder per
+service (see [Table Inventory](#table-inventory)). This document does not repeat column lists.
+The per-service ER diagrams that stood here (derived from the catalog on 2026-11-04, migrations up
+to EMS V144) were removed on 2026-11-20 because they no longer matched the migrations (#1211).
+Text that could not be checked is marked "(not verified 2026-11-04)".
 
 ## Conceptual Model
 
@@ -71,7 +70,7 @@ service boundary or use a meaningful identifier without a foreign key (ADR-003).
 ## Data Models
 
 The concepts below describe what each entity means and which identifiers it exposes. Columns and
-relationships are shown in the [Database Schema](#database-schema) diagrams; the API shapes are
+relationships are defined by the Flyway migrations (see [Table Inventory](#table-inventory)); the API shapes are
 defined in `docs/api/*.openapi.yml` ([ADR-006](./ADR-006-openapi-contract-first-code-generation.md)).
 The TypeScript interfaces that stood here until 2026-11 described a design that was only partly
 built; what was never built is listed under [Not implemented](#not-implemented).
@@ -451,9 +450,9 @@ for in-app), timestamps and metadata. User notification preferences are columns 
 
 ## Database Schema
 
-The diagrams show the tables that exist after the last migration, with their main columns (not
-every column), primary keys (PK), foreign keys (FK) and unique keys (UK). Relationship lines are
-foreign keys unless the label says "no FK".
+Notes per service on what the migrations do not make obvious. For the tables and their columns,
+read the migrations listed in the [Table Inventory](#table-inventory). The one diagram kept below
+shows the cross-service references, which have no foreign keys and so are invisible in the schema.
 
 ### Cross-service references (ADR-003)
 
@@ -522,81 +521,6 @@ person to another username, EMS rewrites these columns and records what moved in
 
 ### Company User Management Service (CUMS)
 
-```mermaid
-erDiagram
-    companies {
-        uuid id PK
-        varchar name UK "1 to 12 alphanumerics"
-        varchar display_name
-        varchar website
-        varchar industry
-        varchar logo_url
-        varchar logo_file_id "company_user_uploads.upload_id"
-        bool is_verified
-        varchar created_by
-    }
-    user_profiles {
-        uuid id PK
-        varchar username UK
-        varchar cognito_user_id UK "NULL until first login"
-        varchar email UK
-        varchar first_name
-        varchar last_name
-        text bio
-        varchar company_id "company name, no FK"
-        varchar profile_picture_url
-        bool is_active
-        timestamptz terms_accepted_at
-        timestamptz last_login_at
-    }
-    role_assignments {
-        uuid user_id PK, FK
-        varchar role PK "ORGANIZER SPEAKER PARTNER ATTENDEE"
-        uuid granted_by FK
-        timestamptz granted_at
-    }
-    user_additional_emails {
-        uuid id PK
-        uuid user_id FK
-        varchar email UK
-        varchar label
-        timestamptz verified_at
-    }
-    activity_history {
-        uuid id PK
-        uuid user_id FK
-        varchar activity_type
-        varchar entity_type
-        varchar entity_id
-        jsonb metadata
-    }
-    watch_pairings {
-        uuid id PK
-        varchar username FK
-        varchar pairing_code
-        varchar pairing_token UK
-        varchar device_name
-        timestamp paired_at
-    }
-    company_user_uploads {
-        uuid id PK
-        varchar upload_id UK
-        varchar purpose "company-logo"
-        varchar s3_key
-        varchar file_url
-        varchar status "pending confirmed associated"
-        varchar target_type
-        varchar target_id
-        timestamptz expires_at
-    }
-    user_profiles ||--o{ role_assignments : "user_id"
-    user_profiles ||--o{ user_additional_emails : "user_id"
-    user_profiles ||--o{ activity_history : "user_id"
-    user_profiles ||--o{ watch_pairings : "username"
-    user_profiles }o..o| companies : "company_id = name, no FK"
-    companies |o..o| company_user_uploads : "logo_file_id = upload_id, no FK"
-```
-
 - `role_assignments` has a composite key (user, role); `granted_by` points to the organizer who
   granted it.
 - `presentation_settings` (CUMS V14) held the presenter screen settings until Story 4.9: EMS V152
@@ -607,72 +531,6 @@ erDiagram
   dropped by both (CUMS V31, EMS V154, `DROP TABLE IF EXISTS`, #1307).
 
 ### Partner Coordination Service (PCS)
-
-```mermaid
-erDiagram
-    partners {
-        uuid id PK
-        varchar company_name UK "CUMS company name"
-        varchar partnership_level "BRONZE to STRATEGIC"
-        date partnership_start_date
-        date partnership_end_date
-        numeric partnership_cost
-    }
-    partner_notes {
-        uuid id PK
-        uuid partner_id FK
-        varchar title
-        text content
-        varchar author_username
-    }
-    partner_meetings {
-        uuid id PK
-        varchar meeting_type "SPRING AUTUMN"
-        date meeting_date
-        time start_time
-        time end_time
-        varchar location
-        varchar event_code "no FK"
-        text agenda
-        timestamptz invite_sent_at
-        int invite_sequence "ICS SEQUENCE"
-        varchar created_by
-    }
-    partner_meeting_rsvps {
-        uuid id PK
-        uuid meeting_id FK
-        varchar attendee_email
-        varchar status "ACCEPTED DECLINED TENTATIVE"
-        timestamptz responded_at
-    }
-    partner_meeting_attendance {
-        uuid id PK
-        uuid meeting_id FK
-        uuid partner_id FK
-        varchar rsvp_status
-        bool attended
-    }
-    topic_suggestions {
-        uuid id PK
-        varchar company_name "NULL for community"
-        varchar suggested_by
-        varchar title
-        text description
-        varchar status "PROPOSED SELECTED DECLINED"
-        varchar planned_event
-        varchar source "PARTNER COMMUNITY"
-    }
-    topic_votes {
-        uuid topic_id PK, FK
-        varchar company_name PK
-        timestamptz voted_at
-    }
-    partners ||--o{ partner_notes : "partner_id"
-    partner_meetings ||--o{ partner_meeting_rsvps : "meeting_id"
-    partner_meetings ||--o{ partner_meeting_attendance : "meeting_id"
-    partners ||--o{ partner_meeting_attendance : "partner_id"
-    topic_suggestions ||--o{ topic_votes : "topic_id"
-```
 
 - **Meetings and RSVPs:** invitations are ICS mails; `invite_sequence` increments with every
   re-send so calendar clients update the existing entry. Calendar replies arrive by mail at EMS,
@@ -685,125 +543,9 @@ erDiagram
 
 ### Event Management Service (EMS)
 
-EMS owns 44 tables, plus `shedlock`, which it shares with CUMS. They are grouped by domain below; a table that belongs to two groups is drawn
-in full in one and as a key-only stub in the other.
+EMS tables, grouped by domain. The full list is in the [Table Inventory](#table-inventory).
 
 #### Events, agenda and topics
-
-```mermaid
-erDiagram
-    event_types {
-        uuid id PK
-        varchar type UK "full_day afternoon evening"
-        int min_slots
-        int max_slots
-        int slot_duration
-        int default_capacity
-        int aperitif_slots
-        varchar aperitif_position
-    }
-    events {
-        uuid id PK
-        varchar event_code UK
-        int event_number UK
-        varchar title
-        timestamptz event_date
-        varchar event_type FK
-        varchar workflow_state "8 states"
-        varchar topic_code "no FK"
-        int registration_capacity
-        varchar current_published_phase
-        bool qna_enabled
-        bigint live_timing_version
-        bigint version
-    }
-    event_agenda_config {
-        uuid id PK
-        uuid event_id FK, UK
-        int min_slots
-        int max_slots
-        int slot_duration
-        int aperitif_slots
-    }
-    sessions {
-        uuid id PK
-        uuid event_id FK
-        varchar event_code
-        varchar session_slug UK
-        varchar title
-        text description
-        varchar session_type
-        timestamptz start_time
-        timestamptz end_time
-        varchar room
-        uuid speaker_pool_id FK
-        varchar materials_status
-        timestamptz actual_start_time
-        timestamptz actual_end_time
-    }
-    session_timing_history {
-        uuid id PK
-        uuid session_id FK
-        timestamptz previous_start_time
-        timestamptz new_start_time
-        varchar change_reason
-        varchar changed_by
-    }
-    publishing_config {
-        uuid id PK
-        uuid event_id FK, UK
-        bool auto_publish_speakers
-        int auto_publish_speakers_days_before
-        bool auto_publish_agenda
-        int auto_publish_agenda_days_before
-    }
-    topics {
-        uuid id PK
-        varchar topic_code UK
-        varchar title
-        varchar category
-        jsonb similarity_scores
-        bool is_active
-    }
-    topic_usage_history {
-        uuid id PK
-        uuid topic_id FK
-        uuid event_id FK
-        timestamptz used_date
-        float feedback_score
-    }
-    event_photos {
-        uuid id PK
-        varchar event_code FK
-        text s3_key
-        text display_url
-        int sort_order
-    }
-    event_teaser_images {
-        uuid id PK
-        varchar event_code FK "NULL for global images"
-        text image_url
-        varchar presentation_position
-        int display_order
-    }
-    workflow_state_migration_log {
-        uuid id PK
-        uuid event_id FK
-        varchar old_state
-        varchar new_state
-    }
-    event_types ||--o{ events : "type"
-    events ||--o| event_agenda_config : "event_id"
-    events ||--o{ sessions : "event_id"
-    sessions ||--o{ session_timing_history : "session_id"
-    events ||--o| publishing_config : "event_id"
-    topics ||--o{ topic_usage_history : "topic_id"
-    events ||--o{ topic_usage_history : "event_id"
-    events }o..o| topics : "topic_code, no FK"
-    events ||--o{ event_photos : "event_code"
-    events ||--o{ event_teaser_images : "event_code"
-    events ||--o{ workflow_state_migration_log : "event_id"
-```
 
 - Nearly every event child table cascades on event delete (`ON DELETE CASCADE`).
 - `event_photos` and `event_teaser_images` reference `events.event_code`, not the UUID; teaser
@@ -816,109 +558,6 @@ erDiagram
   it.
 
 #### Speaker workflow and content
-
-```mermaid
-erDiagram
-    events {
-        uuid id PK
-        varchar event_code UK
-    }
-    speaker_pool {
-        uuid id PK
-        uuid event_id FK
-        uuid session_id FK
-        varchar speaker_name
-        varchar company
-        varchar status "8 speaker states"
-        varchar assigned_organizer_id
-        date response_deadline
-        date content_deadline
-        bool reminders_disabled
-        varchar source "organizer_added self_nomination"
-    }
-    sessions {
-        uuid id PK
-        uuid event_id FK
-        uuid speaker_pool_id FK
-        varchar title
-        text description
-    }
-    session_users {
-        uuid id PK
-        uuid session_id FK
-        varchar username "no FK"
-        varchar speaker_role "primary co moderator panelist"
-        bool is_confirmed
-    }
-    session_content_history {
-        uuid id PK
-        uuid session_id FK
-        int submission_version
-        varchar title
-        text abstract
-        text reviewer_feedback
-        varchar submitted_by_username
-    }
-    session_materials {
-        uuid id PK
-        uuid session_id FK
-        varchar upload_id UK
-        varchar s3_key
-        varchar cloudfront_url
-        varchar material_type "PRESENTATION DOCUMENT VIDEO OTHER"
-        varchar uploaded_by
-        boolean publicly_visible "V159"
-    }
-    speaker_status_history {
-        uuid id PK
-        uuid speaker_pool_id FK
-        uuid event_id FK
-        varchar previous_status
-        varchar new_status
-        varchar changed_by_username
-    }
-    speaker_outreach_history {
-        uuid id PK
-        uuid speaker_pool_id FK
-        timestamptz contact_date
-        varchar contact_method
-        varchar organizer_username
-    }
-    speaker_reminder_log {
-        uuid id PK
-        uuid speaker_pool_id FK
-        uuid event_id FK
-        varchar reminder_type "RESPONSE CONTENT"
-        varchar tier "TIER_1 to TIER_3"
-        date deadline_date
-    }
-    speaker_slot_preferences {
-        uuid id PK
-        uuid speaker_id FK "speaker_pool.id"
-        uuid event_id FK
-        varchar preferred_time_of_day
-        jsonb avoid_times
-        jsonb av_requirements
-    }
-    session_proposals {
-        uuid id PK
-        uuid speaker_pool_id FK
-        uuid event_id FK
-        varchar proposed_by_username
-        varchar proposed_title
-        text proposed_abstract
-    }
-    events ||--o{ speaker_pool : "event_id"
-    speaker_pool |o--o| sessions : "session_id and speaker_pool_id"
-    sessions ||--o{ session_users : "session_id"
-    sessions ||--o{ session_content_history : "session_id"
-    sessions ||--o{ session_materials : "session_id"
-    speaker_pool ||--o{ speaker_status_history : "speaker_pool_id"
-    speaker_pool ||--o{ speaker_outreach_history : "speaker_pool_id"
-    speaker_pool ||--o{ speaker_reminder_log : "speaker_pool_id"
-    speaker_pool ||--o{ speaker_slot_preferences : "speaker_id"
-    speaker_pool ||--o{ session_proposals : "speaker_pool_id"
-```
 
 - **Two links between pool and session:** `speaker_pool.session_id` and
   `sessions.speaker_pool_id`, both `ON DELETE SET NULL`. V103 re-synchronised them before dropping
@@ -935,67 +574,6 @@ erDiagram
 
 #### Registrations and attendee contributions
 
-```mermaid
-erDiagram
-    events {
-        uuid id PK
-        varchar event_code UK
-        int registration_capacity
-    }
-    registrations {
-        uuid id PK
-        uuid event_id FK
-        varchar registration_code UK
-        varchar attendee_username "no FK"
-        varchar attendee_email
-        varchar status "registered waitlist confirmed cancelled attended"
-        int waitlist_position
-        uuid deregistration_token UK
-        uuid calendar_uid UK
-        jsonb metadata
-    }
-    organizer_thanks {
-        uuid id PK
-        uuid event_id FK
-        varchar thanked_by_username
-        text note
-        timestamptz featured_at
-    }
-    session_qna_window {
-        uuid id PK
-        uuid session_id FK, UK
-        varchar event_code
-        varchar status "open frozen"
-        timestamptz opens_at
-        timestamptz closes_at
-    }
-    session_qna_post {
-        uuid id PK
-        uuid window_id FK
-        uuid parent_post_id FK
-        varchar posted_by_username
-        text body
-        timestamptz removed_at
-    }
-    session_qna_notification {
-        uuid window_id PK, FK
-        varchar recipient_username PK
-        timestamptz last_notified_at
-        timestamptz notified_through
-    }
-    sessions {
-        uuid id PK
-        uuid event_id FK
-    }
-    events ||--o{ registrations : "event_id"
-    events ||--o{ organizer_thanks : "event_id"
-    events ||--o{ sessions : "event_id"
-    sessions ||--o| session_qna_window : "session_id"
-    session_qna_window ||--o{ session_qna_post : "window_id"
-    session_qna_post ||--o{ session_qna_post : "parent_post_id, answers"
-    session_qna_window ||--o{ session_qna_notification : "window_id"
-```
-
 - **Waitlist:** when `registration_capacity` is reached, new registrations get status `waitlist`
   and a `waitlist_position`; `WaitlistPromotionService` promotes them when places free up or the
   capacity is raised.
@@ -1008,52 +586,10 @@ erDiagram
 - **Thanks (Story 7.4):** one note per user per event (partial unique index); organizers can
   feature notes on the public site (`featured_at`).
 - **Self-nomination (Story 7.2)** writes `session_proposals` and a `speaker_pool` row with
-  `source = 'self_nomination'` (see the speaker workflow diagram).
+  `source = 'self_nomination'` (see [Speaker workflow (ADR-009)](#speaker-workflow-adr-009)).
 - **Topics from the floor** are stored in PCS `topic_suggestions` with `source = 'COMMUNITY'`.
 
 #### Tasks and notifications
-
-```mermaid
-erDiagram
-    task_templates {
-        uuid id PK
-        varchar name
-        varchar trigger_state "event workflow state"
-        varchar due_date_type "immediate relative_to_event absolute"
-        int due_date_offset_days
-        int activation_lead_days
-        varchar system_key
-        bool is_default
-    }
-    event_tasks {
-        uuid id PK
-        uuid event_id FK
-        uuid template_id FK
-        varchar task_name
-        varchar trigger_state
-        timestamptz due_date
-        varchar assigned_organizer_username
-        varchar status "pending todo in_progress completed cancelled"
-        varchar completed_by_username
-        bigint version
-    }
-    notifications {
-        uuid id PK
-        varchar recipient_username
-        varchar event_code
-        varchar notification_type
-        varchar channel "EMAIL IN_APP"
-        varchar status
-        timestamp read_at
-    }
-    events {
-        uuid id PK
-        varchar event_code UK
-    }
-    task_templates ||--o{ event_tasks : "template_id"
-    events ||--o{ event_tasks : "event_id"
-    events ||..o{ notifications : "event_code, no FK"
-```
 
 - Tasks are activated (`pending` to `todo`) when the event reaches the template's
   `trigger_state` (edge-triggered by `EventWorkflowTransitionEvent`) or when the due date is
@@ -1062,78 +598,6 @@ erDiagram
   relies on (for example the slides-online task, V110 and V125).
 
 #### Mail Center, forwarding and templates
-
-```mermaid
-erDiagram
-    mail_conversation {
-        uuid id PK
-        varchar conversation_key UK
-        varchar event_code
-        varchar audience
-        text subject
-        varchar counterpart_address
-        varchar status "OPEN WAITING DONE"
-        varchar assignee_username
-        varchar reply_token UK
-        timestamptz last_inbound_at
-    }
-    mail_message {
-        uuid id PK
-        varchar mail_key UK
-        varchar send_group_id UK
-        varchar event_code
-        varchar direction "OUT IN"
-        varchar audience
-        varchar template_key
-        varchar content_source "TEMPLATE OWN_TEXT"
-        text subject
-        varchar inbound_path "REPLIES ALIAS"
-        uuid conversation_id FK
-        uuid newsletter_send_id FK
-        jsonb attachments
-        bool is_spam
-    }
-    mail_recipient {
-        uuid id PK
-        uuid mail_message_id FK
-        varchar address
-        varchar kind "TO CC"
-        varchar ses_message_id
-        varchar status "SENT DELIVERED FAILED"
-    }
-    mail_automatic_event {
-        uuid id PK
-        varchar dedupe_key UK
-        varchar event_code
-        varchar kind
-        timestamptz received_at
-    }
-    email_forwarding_log {
-        uuid id PK
-        varchar s3_key UK
-        varchar aliases
-        varchar outcome
-        int recipient_count
-        int failed_count
-    }
-    email_templates {
-        uuid id PK
-        varchar template_key UK
-        varchar locale UK "de en"
-        varchar category
-        bool is_layout
-        varchar layout_key
-        bool is_system_template
-    }
-    newsletter_sends {
-        uuid id PK
-        uuid event_id FK
-    }
-    mail_conversation ||--o{ mail_message : "conversation_id"
-    mail_message ||--o{ mail_recipient : "mail_message_id"
-    newsletter_sends |o--o{ mail_message : "newsletter_send_id"
-    email_templates ||..o{ mail_message : "template_key, no FK"
-```
 
 - **Outbound:** sends are recorded as `mail_message` rows with their recipients
   (`JpaOutboundMailRecorder`; whether every send path records (not verified 2026-11-04));
@@ -1151,47 +615,6 @@ erDiagram
 
 #### Newsletter
 
-```mermaid
-erDiagram
-    newsletter_subscribers {
-        uuid id PK
-        varchar email UK "case-insensitive unique"
-        varchar first_name
-        varchar language
-        varchar source
-        varchar username "no FK"
-        varchar unsubscribe_token UK
-        timestamptz unsubscribed_at
-        varchar bounce_type
-        int bounce_count
-        timestamptz suppressed_at
-    }
-    newsletter_sends {
-        uuid id PK
-        uuid event_id FK
-        varchar template_key
-        bool is_reminder
-        varchar locale
-        varchar status
-        int sent_count
-        int failed_count
-        bool test_mode
-        varchar content_source "TEMPLATE OWN_TEXT"
-    }
-    newsletter_recipients {
-        uuid send_id PK, FK
-        varchar email PK
-        varchar delivery_status
-        varchar bounce_type
-    }
-    events {
-        uuid id PK
-        varchar event_code UK
-    }
-    events ||--o{ newsletter_sends : "event_id"
-    newsletter_sends ||--o{ newsletter_recipients : "send_id"
-```
-
 - Subscribers are not linked by foreign key to anything; `username` is set when the subscriber is
   also a user. Bounces from the `bounce-processing` queue raise `bounce_count` and can suppress an
   address (`BounceProcessingService`).
@@ -1200,65 +623,10 @@ erDiagram
 
 #### AI assist
 
-```mermaid
-erDiagram
-    ai_prompts {
-        varchar prompt_key PK
-        varchar display_name
-        text prompt_text
-        text default_text
-    }
-    ai_generation_log {
-        uuid id PK
-        varchar event_code
-        varchar type
-        varchar input_hash
-        int tokens_used
-        bool was_accepted
-    }
-    events {
-        uuid id PK
-        varchar event_code UK
-    }
-    events ||..o{ ai_generation_log : "event_code, no FK"
-```
-
 Prompts are organizer-editable with a stored default to reset to; every call to OpenAI is logged
 with its token count. See [09-aiml-architecture.md](./09-aiml-architecture.md).
 
 #### Live timing and Watch
-
-```mermaid
-erDiagram
-    events {
-        uuid id PK
-        varchar event_code UK
-        bigint live_timing_version "ETag of the snapshot"
-    }
-    sessions {
-        uuid id PK
-        uuid event_id FK
-        timestamptz actual_start_time
-        timestamptz actual_end_time
-        int overrun_minutes
-        varchar completed_by_username
-    }
-    live_timing_presence {
-        varchar event_code PK
-        varchar username PK
-        timestamptz last_seen_at
-    }
-    speaker_arrivals {
-        uuid id PK
-        varchar event_code
-        varchar speaker_username
-        varchar confirmed_by_username
-        timestamp arrived_at
-    }
-    events ||--o{ sessions : "event_id"
-    events ||..o{ live_timing_presence : "event_code, no FK"
-    events ||..o{ speaker_arrivals : "event_code, no FK"
-```
 
 - Live timing (Story 15.1) is a polled snapshot: every organizer action on the session clock bumps
   `events.live_timing_version`, which the endpoint returns as ETag so clients get `304` while
@@ -1279,7 +647,7 @@ erDiagram
 
 Per [ADR-009](./ADR-009-unified-speaker-workflow.md) and
 [ADR-014](./ADR-014-backend-service-consolidation.md), everything speaker-related is in EMS
-(see the speaker workflow diagram). Registrations, the attendee dashboard and the archive are in
+(see [Speaker workflow (ADR-009)](#speaker-workflow-adr-009)). Registrations, the attendee dashboard and the archive are in
 EMS; attendee topic suggestions are in PCS. The former speaker stub service (removed by Story
 17.2, 2026-11) applied only the shared-kernel baseline; its history table
 `flyway_schema_history_speaker_coordination` stays in the database, deliberately untouched.
@@ -1288,7 +656,7 @@ EMS; attendee topic suggestions are in PCS. The former speaker stub service (rem
 
 Most rules are enforced in application code. The database enforces:
 
-- **Check constraints** on every status and type column shown in the diagrams (workflow states,
+- **Check constraints** on every status and type column (workflow states,
   speaker states, registration status, session types, mail enums and so on), plus value ranges
   (slot counts, durations, abstract length up to 1000 characters, title up to 200, logo size up to
   5 MB, `qna_window_days` 1 to 365) and the username and company name patterns.
@@ -1347,16 +715,16 @@ As built, cross-service data is read, not replicated:
 
 A compact list of every table and the migration that created it, for finding your way. It was
 derived by scanning every migration for `CREATE TABLE`, `DROP TABLE` and `ALTER TABLE ... RENAME
-TO` and cross-checked against the applied schema on 2026-11-04.
+TO` (last on 2026-11-20). The migration folders are the source of truth:
 
 | Service | Migrations | Flyway history table |
 |---|---|---|
-| event-management-service | V1 to V154 | `flyway_schema_history_event_management` |
-| company-user-management-service | V1 to V31 | `flyway_schema_history_company_user_management` |
-| partner-coordination-service | V1 to V12 | `flyway_schema_history_partner_coordination` |
+| event-management-service | `services/event-management-service/src/main/resources/db/migration/` | `flyway_schema_history_event_management` |
+| company-user-management-service | `services/company-user-management-service/src/main/resources/db/migration/` | `flyway_schema_history_company_user_management` |
+| partner-coordination-service | `services/partner-coordination-service/src/main/resources/db/migration/` | `flyway_schema_history_partner_coordination` |
 | (former speaker stub, removed by Story 17.2) | shared-kernel baseline only | `flyway_schema_history_speaker_coordination`, kept |
 
-**EMS** (44 tables plus the shared `shedlock`): `events` V2, `sessions` V2, `registrations` V2,
+**EMS** (45 tables plus the shared `shedlock`): `events` V2, `sessions` V2, `registrations` V2,
 `session_users` V7, `event_types` V10, `topics` V14, `topic_usage_history` V14,
 `speaker_pool` V14, `speaker_outreach_history` V16, `task_templates` V22, `event_tasks` V22,
 `speaker_status_history` V23, `session_timing_history` V28, `speaker_slot_preferences` V28,
@@ -1369,7 +737,8 @@ V80, `ai_prompts` V82, `app_settings` V88, `session_proposals` V109, `organizer_
 `session_qna_window` V112, `session_qna_post` V112, `session_qna_notification` V117,
 `live_timing_presence` V119, `event_agenda_config` V121, `email_forwarding_log` V128,
 `mail_message` V135, `mail_recipient` V135, `mail_conversation` V139, `mail_automatic_event`
-V139, `user_merge_log` V144, `event_management_uploads` V153.
+V139, `user_merge_log` V144, `company_key_changes` V150 (shared, see below),
+`event_management_uploads` V153.
 
 Dropped: `publishing_versions` (V28 to V89), `speakers` (V37 to V94), `speaker_invitation_tokens`
 (V43 to V104); in CUMS `presentation_settings` (V14 to V29), copied into `app_settings` by EMS V152
@@ -1417,9 +786,10 @@ only its own references: CUMS `companies`, `logos` (COMPANY rows; table dropped 
 `activity_history` (COMPANY rows), `user_profiles.company_id`; EMS `registrations.attendee_company_id`;
 PCS `partners`, `topic_suggestions`, `topic_votes`. The table stays as the audit of what changed.
 
-**PCS** (7 tables): `partners` V2, `partner_meetings` V2, `partner_meeting_attendance` V2 (no
+**PCS** (9 tables): `partners` V2, `partner_meetings` V2, `partner_meeting_attendance` V2 (no
 entity, unused), `topic_suggestions` V4 (V2 version dropped and recreated), `topic_votes` V4 (same),
-`partner_notes` V7, `partner_meeting_rsvps` V9. Dropped: `partner_contacts` (V2 to V6).
+`partner_notes` V7, `partner_meeting_rsvps` V9, `company_key_changes` V11 (shared, see above),
+`partner_user_merge_log` V12. Dropped: `partner_contacts` (V2 to V6).
 
 ## Not implemented
 

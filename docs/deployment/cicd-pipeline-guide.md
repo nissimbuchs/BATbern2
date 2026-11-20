@@ -7,59 +7,48 @@ The BATbern platform uses GitHub Actions for continuous integration and deployme
 ## Pipeline Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                      Build Pipeline                          │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐     │
-│  │Shared Kernel │→ │   Services   │→ │   Frontend   │     │
-│  │   Build      │  │ Build (Matrix)│  │    Build     │     │
-│  └──────────────┘  └──────────────┘  └──────────────┘     │
-│                           ↓                                  │
-│                  ┌──────────────┐                           │
-│                  │ Integration  │                           │
-│                  │    Tests     │                           │
-│                  └──────────────┘                           │
-└─────────────────────────────────────────────────────────────┘
-                            ↓
-┌─────────────────────────────────────────────────────────────┐
-│                   Security Scanning                          │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐     │
-│  │     Snyk     │  │  SonarQube   │  │   License    │     │
-│  │  Scanning    │  │    Scan      │  │   Checking   │     │
-│  └──────────────┘  └──────────────┘  └──────────────┘     │
-└─────────────────────────────────────────────────────────────┘
-                            ↓
-┌─────────────────────────────────────────────────────────────┐
-│                      Deployment                              │
-│                  ┌──────────────┐                              │
-│                  │  Production  │                              │
-│                  │  (Auto from  │                              │
-│                  │   develop)   │                              │
-│                  └──────────────┘                              │
-│                          ↓                                    │
-│                  ┌──────────────┐                              │
-│                  │ Smoke Tests  │                              │
-│                  │ + E2E Tests  │                              │
-│                  └──────────────┘                              │
-│                          ↓                                    │
-│                  ┌──────────────┐                              │
-│                  │   Rollback   │                              │
-│                  │ (On Failure) │                              │
-│                  └──────────────┘                              │
-└─────────────────────────────────────────────────────────────┘
+PR to develop (or push to develop)
+  └─ build.yml: verify-hooks, build-shared-kernel, build-services (matrix), frontend jobs,
+     test-ratchet, build-infrastructure
+       └─ deploy-to-staging → deploy-staging.yml (production, account 188701360969)
+            ├─ deploy (CDK / fast path), then post-deploy-checks (smoke, CORS, access control)
+            ├─ bruno-tests, playwright-tests (@smoke)
+            └─ all green: tag staging-stable; any red: rollback-on-test-failure
+  └─ claude-code-review.yml: Claude review and the Doc Drift Check
+  └─ auto-merge.yml: merges when the required checks and the deploy succeeded
 ```
+
+Every workflow is in `.github/workflows/`; the YAML is the source of truth. Other workflows:
+
+| Workflow | Trigger | What it does |
+|---|---|---|
+| `security-scan.yml` | weekly (Monday 02:42 UTC), manual | OWASP ZAP scan of the live site |
+| `nightly-e2e.yml` | nightly 01:17 UTC, manual | Full Playwright `@gate` suite, infrastructure Layer 4 E2E |
+| `ai-security.yml` | PR and push to develop, weekly | OWASP LLM checks for the AI code, advisory |
+| `api-contract-validation.yml` | PR and push | OpenAPI contract validation |
+| `sync-versions.yml` | PR and push | `node scripts/update-versions.js --check` |
+| `doc-drift-auditor.yml` | weekly (Monday 08:27 UTC), manual | Weekly doc drift audit |
+| `dependabot-batch-merge.yml` | monthly (first Monday) | Builds the Dependabot batch branch, see CLAUDE.md |
+| `claude.yml` | issue and PR comments | `@claude` on issues and PRs |
+| `deploy-production.yml`, `promote-to-production.yml` | manual | Deprecated, point to the decommissioned account, fail at the first AWS step |
+
+Not in use: Snyk, SonarQube/SonarCloud (`sonarcloud` job in `build.yml` has `if: false`), license
+checks, K6. The `*.yml.disabled` files are not run.
 
 ## Workflows
 
 ### 1. Build Pipeline (`build.yml`)
 
 **Triggers:**
-- Push to `develop` or `main` branches
-- Pull requests to `develop` or `main`
+- Push to `develop` or `main`
+- Pull requests to `develop` (this deploys production, see section 3)
+- Manual dispatch
 
 **Jobs:**
 1. **Build Shared Kernel**
    - Builds shared domain types and utilities
-   - Runs unit tests with JaCoCo coverage (90% threshold)
+   - Runs its tests; the JaCoCo gate (0.60 instruction coverage per module) runs only in
+     `make test`, not in CI
    - Publishes to local Maven repository
    - Duration: ~2-3 minutes
 
@@ -131,38 +120,14 @@ The BATbern platform uses GitHub Actions for continuous integration and deployme
      skipped ancestor would skip silently. `auto-merge.yml` also refuses to merge a PR whose
      `deploy-to-staging / deploy-to-staging` check did not succeed.
 
-4. **Integration Tests**
-   - Spins up PostgreSQL containers
-   - Runs integration tests with Testcontainers
-   - Uses Caffeine for in-memory caching (no external cache required)
-   - Duration: ~3-5 minutes
-
-**Total Pipeline Duration:** ~10-12 minutes
+Integration tests (Testcontainers PostgreSQL) run inside each module's Gradle build in
+`build-services`; there is no separate integration job.
 
 ### 2. Security Scanning (`security-scan.yml`)
 
-**Triggers:**
-- After successful build pipeline completion
-- Pull requests
-- Daily at 2 AM UTC (scheduled)
-
-**Jobs:**
-1. **Snyk Vulnerability Scanning**
-   - Scans Gradle dependencies
-   - Scans npm dependencies
-   - Fails on high severity vulnerabilities
-   - Uploads results to GitHub Security
-
-2. **SonarQube Code Quality**
-   - Analyzes code quality and security
-   - Enforces quality gate thresholds
-   - Tracks technical debt
-   - Requires full git history
-
-3. **License Compliance**
-   - Checks Gradle dependency licenses
-   - Checks npm dependency licenses
-   - Fails on GPL, AGPL, or other copyleft licenses
+OWASP ZAP against the live site, weekly and on demand. After every deploy, `post-deploy-checks`
+in `deploy-staging.yml` also runs the anonymous access-control probe
+(`scripts/ci/access-control-public.txt` lists what may answer anonymously).
 
 ### 3. Production Deployment (`deploy-staging.yml`)
 
@@ -344,10 +309,8 @@ Until then: **work one PR to `develop` at a time.**
 
 ### 4. Tagged Release Deployment (`deploy-production.yml`)
 
-> **Note:** This workflow is being phased out. It targets the former production account (422940799530) which is decommissioned.
-> Production deploys now go through `deploy-staging.yml` automatically.
-
-**Environment:** https://www.batbern.ch
+Deprecated and not usable: it targets the decommissioned account 422940799530 and fails at the
+first AWS step. Kept by owner decision 2026-11-03. Production is deployed by every PR to `develop`.
 
 ## Required Secrets
 
@@ -362,69 +325,28 @@ Configure these secrets in GitHub repository settings:
 - Microservices access credentials at runtime via ECS task IAM roles
 - No database credentials stored in GitHub Secrets
 
-### Security Scanning
-- `SNYK_TOKEN` - Snyk API token for vulnerability scanning
-- `SONAR_TOKEN` - SonarQube authentication token
-- `SONAR_HOST_URL` - SonarQube server URL
-- `CODECOV_TOKEN` - (Optional) Codecov upload token
+The full secret list: [github-secrets-setup.md](./github-secrets-setup.md).
 
-### Notifications (Optional)
-- `SLACK_WEBHOOK_URL` - Slack webhook for notifications
+## Image Tagging
 
-## Version Management
-
-### Semantic Versioning
-
-The platform uses semantic versioning: `v{major}.{minor}.{patch}`
-
-**Examples:**
-- `v1.0.0` - Major release
-- `v1.2.3` - Minor and patch releases
-- `v2.0.0-alpha.1` - Pre-release
-- `v1.5.0+build.123` - Build metadata
-
-### Image Tagging Strategy
-
-**Production (via develop branch):**
-- `{sha}-staging.{run_number}` - e.g., `a1b2c3d-staging.142`
-- Used for all deployments to production (staging account serves production traffic)
+`{sha}-staging.{run_number}`, e.g. `a1b2c3d-staging.142`. After a green post-deploy check the
+release is tagged `staging-current`, after green Bruno and Playwright `staging-stable`.
 
 ## Deployment Process
 
 ### To Production (automatic)
-1. Merge feature branch to `develop`
-2. Build pipeline runs automatically
-3. On success, deployment to production triggers automatically
-4. Full E2E test suite validates deployment
-5. Automatic rollback on failure
-
-### Tagged Releases (manual)
-1. Merge `develop → main` via PR on GitHub
-2. Note the 7-char SHA of the merge commit
-3. Navigate to Actions → Deploy to Production → Run workflow → version: `<sha7>`
-4. GitHub Release is created automatically on success
+1. Open a PR to `develop`. Opening it, and every further push to it, deploys that branch to
+   production, unmerged (Dependabot PRs excluded)
+2. After the deploy: post-deploy checks, Bruno, Playwright `@smoke`; rollback to `staging-stable`
+   on failure
+3. `auto-merge.yml` merges the PR when the required checks and the deploy are green
 
 ## Monitoring and Troubleshooting
 
 ### Build Failures
 
-**Coverage Below Threshold:**
-```
-Error: Coverage 85% is below 90% threshold
-Solution: Add more unit tests or adjust threshold in build.yml
-```
-
-**Security Vulnerabilities:**
-```
-Error: High severity vulnerabilities found
-Solution: Update dependencies or suppress false positives in Snyk
-```
-
-**Quality Gate Failed:**
-```
-Error: SonarQube quality gate failed
-Solution: Fix code smells, bugs, or security hotspots
-```
+Read the failing job's log in GitHub Actions. Which checks are required is set in the branch
+protection of `develop`; the jobs themselves are described above.
 
 ### Deployment Failures
 
@@ -478,62 +400,14 @@ Solution: Check service logs, rollback if necessary
 3. Update application configuration
 4. Redeploy previous version
 
-## Performance Optimization
-
-### Build Time Optimization
-
-**Current:** ~10-12 minutes
-**Target:** < 10 minutes
-
-**Optimizations Implemented:**
-- Gradle dependency caching
-- npm dependency caching
-- Docker layer caching
-- Parallel service builds
-- Reusable workflows
-
-**Further Optimizations:**
-- Use custom Docker images with pre-installed dependencies
-- Split integration tests into parallel jobs
-- Use GitHub Actions cache for Gradle build cache
-- Implement incremental builds
-
-### Deployment Time Optimization
-
-**Current (3-tier deployment):**
-- Fast-path (code-only): ~2-5 minutes
-- Hotswap (service changes): ~10-20 minutes
-- Full CDK (infrastructure): ~20-30 minutes
-
-**Optimizations:**
-- Pre-build Docker images
-- Parallel service deployments
-- Optimize health check intervals
-- Use CDK hotswap for faster dev deployments
-
 ## Quality Gates
 
-### Code Coverage
-- **Threshold:** 90%
-- **Tool:** JaCoCo (Java), Vitest (TypeScript)
-- **Enforcement:** Build fails if below threshold
-
-### Security Scanning
-- **Tool:** Snyk, SonarQube
-- **Threshold:** No high severity vulnerabilities
-- **Frequency:** Every build + daily scans
-
-### License Compliance
-- **Tool:** license-checker (npm), Gradle dependencies
-- **Policy:** No GPL, AGPL, or SSPL licenses
-- **Enforcement:** Build fails on violation
-
-### Performance Testing
-- **Tool:** K6
-- **Thresholds:**
-  - P95 response time < 500ms
-  - Error rate < 1%
-- **Frequency:** Before production deployment
+- **Coverage:** frontend statements at least 73 % (Vitest, enforced in `build-frontend`); Java
+  JaCoCo instruction coverage at least 0.60 per module, enforced by `make test` only, not in CI;
+  none for CDK.
+- **Security:** OWASP ZAP weekly, access-control probe after every deploy, `ai-security.yml`
+  (advisory).
+- **Docs:** Doc Drift Check on every PR (`[no-doc]` opts out), `sync-versions.yml`.
 
 ## Best Practices
 
@@ -552,41 +426,8 @@ docs(deployment): update runbook
 test(integration): add contract tests
 ```
 
-### Deployment Checklist
-- [ ] All tests passing
-- [ ] Security scan passed
-- [ ] Code reviewed and approved
-- [ ] Database migrations tested
-- [ ] Deployment window scheduled
-- [ ] Team notified
-- [ ] Rollback plan ready
-- [ ] Monitoring configured
-
-### Emergency Procedures
-1. Stop ongoing deployments
-2. Roll back to last known good version
-3. Restore database from latest snapshot
-4. Notify team and stakeholders
-5. Investigate root cause
-6. Document incident
-7. Implement preventive measures
-
-## Support and Contact
-
-**CI/CD Issues:**
-- Check workflow logs in GitHub Actions
-- Review deployment logs in AWS CloudWatch
-- Contact DevOps team
-
-**Access Issues:**
-- Verify GitHub repository permissions
-- Check AWS IAM permissions
-- Request access from team lead
-
 ## Further Reading
 
 - [GitHub Actions Documentation](https://docs.github.com/actions)
 - [AWS CDK Guide](https://docs.aws.amazon.com/cdk/)
-- [AWS ECS Blue/Green Deployments](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/deployment-type-bluegreen.html)
 - [Flyway Documentation](https://flywaydb.org/documentation/)
-- [K6 Performance Testing](https://k6.io/docs/)

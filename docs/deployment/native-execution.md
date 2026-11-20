@@ -95,16 +95,19 @@ make dev-native-up
 This will:
 1. Check prerequisites (Java, Node.js, PostgreSQL, etc.)
 2. Verify local PostgreSQL is running
-3. Create `.env.native` with localhost configuration
-4. Start all 6 backend services + frontend
+3. Create `.env.native.{instance}` with localhost configuration (instance 1 for `BASE_PORT=8000`)
+4. Start the gateway, the three services and the frontend
 5. Wait for health checks
 
 **Services will be available at:**
-- API Gateway: http://localhost:8080
-- Company User Management: http://localhost:8081
-- Event Management: http://localhost:8082
-- Partner Coordination: http://localhost:8084
-- Web Frontend: http://localhost:3000
+- API Gateway: http://localhost:8000
+- Company User Management: http://localhost:8001
+- Event Management: http://localhost:8002
+- Partner Coordination: http://localhost:8004
+- Web Frontend: http://localhost:8100
+
+(Default `BASE_PORT=8000`; a second instance with `BASE_PORT=9000` uses 9000, 9001, 9002, 9004 and
+9100.)
 
 ### Check Status
 
@@ -162,9 +165,9 @@ make dev-native-down
 │                                                             │
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐    │
 │  │  Frontend    │  │ API Gateway  │  │  Services    │    │
-│  │  (npm dev)   │  │  (bootRun)   │  │  (bootRun)   │    │
-│  │  Port: 3000  │  │  Port: 8080  │  │  Ports:      │    │
-│  │              │  │              │  │  8081-8085   │    │
+│  │  (npm dev)   │  │  (java -jar) │  │  (java -jar) │    │
+│  │  Port: 8100  │  │  Port: 8000  │  │  Ports:      │    │
+│  │              │  │              │  │  8001/02/04  │    │
 │  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘    │
 │         │                 │                 │              │
 │         └─────────────────┴─────────────────┘              │
@@ -190,10 +193,10 @@ make dev-native-down
 
 ### Environment Configuration
 
-The startup script creates `.env.native` which:
-1. Sources the main `.env` file (pre-configured for local PostgreSQL)
+The startup script creates `.env.native.{instance}` which:
+1. Sources the main `.env` file (a copy of `.env.example`)
 2. Ensures `DB_HOST=localhost` for local PostgreSQL container
-3. Sets microservice URLs to `http://localhost:808X`
+3. Sets microservice URLs to `http://localhost:{BASE_PORT + n}`
 4. Configures staging Cognito for authentication
 
 **Key Differences from Docker:**
@@ -201,7 +204,7 @@ The startup script creates `.env.native` which:
 | Configuration | Docker | Native |
 |--------------|--------|--------|
 | PostgreSQL | Container-to-container | Host to container (localhost:5432) |
-| Service URLs | `http://service-name:8080` | `http://localhost:808X` |
+| Service URLs | `http://service-name:8080` | `http://localhost:800X` |
 | Networking | Docker bridge network | Localhost loopback |
 | Isolation | Container isolation | Process isolation |
 | Resources | Higher (~12-14GB) | Lower (~6-8GB) |
@@ -209,8 +212,8 @@ The startup script creates `.env.native` which:
 ### Process Management
 
 Services run as background processes:
-- **PIDs stored in:** `/tmp/batbern-dev-{service}.pid`
-- **Logs stored in:** `/tmp/batbern-dev-{service}.log`
+- **PIDs stored in:** `/tmp/batbern-{instance}-{service}.pid` (instance 1: `/tmp/batbern-1-*.pid`)
+- **Logs stored in:** `/tmp/batbern-{instance}-{service}.log`
 - **Graceful shutdown:** SIGTERM with 15-second timeout
 - **Force kill:** SIGKILL if graceful shutdown fails
 
@@ -302,7 +305,7 @@ make dev-native-up
 **Solutions:**
 1. Check if ports are already in use:
    ```bash
-   lsof -i :8080  # Check specific port
+   lsof -i :8000  # Check specific port
    ```
 
 2. View service logs:
@@ -310,9 +313,9 @@ make dev-native-up
    ./scripts/dev/logs-native.sh api-gateway -n 100
    ```
 
-3. Verify `.env` is synced:
+3. Verify `.env` exists (copy it from `.env.example`):
    ```bash
-   ./scripts/config/sync-backend-config.sh development
+   cp .env.example .env
    ```
 
 4. Check Java version:
@@ -359,7 +362,7 @@ make dev-native-up
 **Solutions:**
 1. Find process using the port:
    ```bash
-   lsof -i :8080
+   lsof -i :8000
    ```
 
 2. Kill the process:
@@ -581,11 +584,8 @@ If you encounter issues:
 2. View logs: `make dev-native-logs`
 3. Verify prerequisites: Script will check automatically on startup
 4. Restart services: `make dev-native-restart`
-5. Ask on Slack: #dev-infrastructure channel
 
 ## See Also
 
-- [Local Development Setup](./local-setup.md)
-- [Docker Development Setup](./docker-setup.md)
+- [Local Development Setup](../guides/local-development-setup.md)
 - [AWS Configuration](../architecture/02-infrastructure-deployment.md)
-- [Troubleshooting Guide](./troubleshooting.md)

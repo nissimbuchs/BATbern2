@@ -44,19 +44,27 @@ This document describes the GitHub repository secrets required for CI/CD workflo
 - Tokens are scoped to the workflow run only (never stored)
 - No token expiration issues - always gets a fresh token
 
-## Optional Secrets (Future)
+## All secrets the workflows read
 
-### PRODUCTION_TEST_USER_EMAIL
+Checked against `.github/workflows/*.yml` on 2026-11-20 (`grep -o 'secrets\.[A-Z_]*'`). AWS access
+needs no secret: the workflows assume `arn:aws:iam::188701360969:role/batbern-staging-github-actions-role`
+via OIDC, written into the workflow files.
 
-**Purpose**: Email/username for the bootstrap test user in production environment.
+| Secret | Read by | Purpose |
+|---|---|---|
+| `STAGING_TEST_USER_EMAIL`, `STAGING_TEST_USER_PASSWORD` | `deploy-staging.yml` and others | Organizer fallback test user (above) |
+| `STAGING_ORGANIZER_EMAIL`, `STAGING_ORGANIZER_PASSWORD` | `deploy-staging.yml`, `nightly-e2e.yml` | Organizer test user for Bruno and Playwright |
+| `STAGING_SPEAKER_EMAIL`, `STAGING_SPEAKER_PASSWORD` | `deploy-staging.yml`, `nightly-e2e.yml` | Speaker test user |
+| `STAGING_PARTNER_EMAIL`, `STAGING_PARTNER_PASSWORD` | `deploy-staging.yml`, `nightly-e2e.yml` | Partner test user |
+| `TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET_KEY` | `deploy-staging.yml` | Cloudflare Turnstile keys passed to the deploy |
+| `CLAUDE_CODE_OAUTH_TOKEN` | `claude.yml`, `claude-code-review.yml` | Claude Code on issues and PRs, PR review and Doc Drift Check |
+| `SLACK_WEBHOOK_URL` | `deploy-staging.yml` | Optional notification (whether it is set was not checked) |
+| `CODECOV_TOKEN` | `build.yml` | Optional coverage upload (whether it is set was not checked) |
+| `SONAR_TOKEN` | `build.yml` | Only in the `sonarcloud` job, which is disabled (`if: false`) |
+| `AWS_ROLE_ARN_PROD`, `AWS_ROLE_ARN_STAGING`, `JIRA_USER`, `JIRA_API_TOKEN`, `LAUNCHDARKLY_API_TOKEN` | `promote-to-production.yml` | Deprecated workflow, fails at the first AWS step |
 
-**Value**: TBD when production environment is ready
-
-### PRODUCTION_TEST_USER_PASSWORD
-
-**Purpose**: Password for the bootstrap test user in production environment.
-
-**Value**: TBD when production environment is ready
+`GITHUB_TOKEN` is provided by GitHub. There are no `PRODUCTION_TEST_USER_*` secrets: production
+is the staging account, so the `STAGING_*` users are the production test users.
 
 ## Security Best Practices
 
@@ -139,7 +147,7 @@ ERROR: STAGING_TEST_USER_EMAIL and STAGING_TEST_USER_PASSWORD secrets must be se
 
 ## Related Documentation
 
-- [Local Authentication Setup](../authentication/LOCAL_AUTH_SETUP.md) - Local development token setup
+- [Local Authentication Setup](../guides/LOCAL_AUTH_SETUP.md) - Local development token setup
 - [Authentication Script](../../scripts/auth/get-token.sh) - Token retrieval script
 - [Bruno Tests](../../bruno-tests/) - API contract tests
 - [GitHub Actions Secrets Documentation](https://docs.github.com/en/actions/security-guides/encrypted-secrets)
