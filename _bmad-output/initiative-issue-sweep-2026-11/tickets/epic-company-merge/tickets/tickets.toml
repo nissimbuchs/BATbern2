@@ -1,0 +1,73 @@
+# Stories of epic-company-merge, in build order. One PR for the whole epic (initiative C2); each story is one commit or a few.
+# Spec: issue #1251 and the owner decisions in its comment of 2026-11-07. Since then ADR-016 (decisions 4, 5) replaced the
+# "module-map exception": CUMS reaches EMS and PCS only through an /internal contract it owns, like user-references.
+
+[[entry]]
+id = 1
+type = "story"
+title = "A company's references move from one key to another through a CUMS contract"
+description = "Spec first: CUMS owns a new company-references contract (/internal/company-references/preview and /merge, {source, target}) in its internal spec, implementers listed under batbern.contracts.company-references.implementers, called through shared-kernel ContractCalls; CUMS names no downstream in code. EMS implements it for registrations.attendee_company_id; PCS for topic_suggestions, topic_votes (a vote that would collide after the move is kept once and logged) and partners.company_name when only the source is a partner (both partners refuses with 409 MERGE_BLOCKED_BOTH_PARTNERS). Preview returns counts per table; merge is idempotent and evicts that service's company caches. speaker_pool.company is free text and stays. ADR-016 decision 5 and module-map list the new contract."
+verify = "Provider integration tests (Testcontainers) in EMS and PCS: preview counts, merge moves rows, a second merge changes nothing, the vote collision keeps one row, two partners answer 409; contract tests on both sides (ContractServer, S2sProviderContractIntegrationTest); EndpointAuthorizationGuardTest and the module rules stay green."
+covers = ["R17"]
+after = []
+hitl = false
+risk = "medium"
+notes = ["Owner 2026-11-07 decision 1 (CUMS may reach EMS and PCS for company merges) is carried out the ADR-016 way: a CUMS-owned contract, as user-references after Epic 17 7b."]
+
+[[entry]]
+id = 2
+type = "story"
+title = "An old company name stays findable as an alias"
+description = "CUMS gets company_aliases (alias slug and alias display name to company key, unique alias). Company search and typeahead find a company by its alias and show the company, not the alias; the registration get-or-create (POST /companies/get-or-create) returns the aliased company instead of creating a new one, so a merged or renamed duplicate is not created again the next day. Deleting a company removes its aliases."
+verify = "CUMS integration tests: an alias slug and an alias display name (other case) find the target in search and typeahead; get-or-create with an alias name returns the target and creates no company; the spec and generated types carry any changed response."
+covers = ["R17"]
+after = []
+hitl = false
+risk = "medium"
+notes = ["Owner 2026-11-07 decision 2: alias table yes."]
+
+[[entry]]
+id = 3
+type = "story"
+title = "Renaming a company moves its references"
+description = "When an organizer changes a company's key (name), CUMS moves user_profiles.company_id and company_logo_requests to the new key, calls the company-references contract (story 1) for EMS and PCS, records the old key and display name as an alias (story 2) and evicts its caches, in the same order and failure semantics as the merge: a failure leaves the company re-renamable to finish the move. CompanyUpdatedEvent no longer stands in for a consumer that never existed."
+verify = "CUMS integration test with the contract served by ContractServer: a rename moves users and logo requests, sends the contract call with old and new key, and the old key resolves through search and get-or-create; repeating the rename finishes a half-done move."
+covers = ["R17"]
+after = [1, 2]
+hitl = false
+risk = "medium"
+notes = ["Owner 2026-11-07 decision 4: rename fixed in the same PR. Side finding 1 of #1251."]
+
+[[entry]]
+id = 4
+type = "story"
+title = "Organizers merge two companies"
+description = "GET /companies/{target}/merge-preview?source= and POST /companies/{target}/merge {source}, both ORGANIZER, spec first. CUMS CompanyMergeService in the UserMergeService order: lock both, validate (both partners 409 MERGE_BLOCKED_BOTH_PARTNERS, same company 400, a target key that does not fit user_profiles.company_id refused with the swap offered), contract preview and merge for EMS and PCS, then CUMS rows (user_profiles, company_logo_requests), fill empty target fields from the source (display name stays the target's; website, Swiss UID, industry, description, logo upload), alias for the source key and display name, delete the source, write company_merge_log (moved keys per table and a source snapshot). A failure after the contract call leaves the source, and merging again finishes it. No mail to anyone."
+verify = "CUMS integration tests with ContractServer: preview counts per table; merge moves users and logo requests, fills only empty target fields, keeps the source logo when the target has none, writes alias and log, deletes the source; both partners 409 with no row moved; a contract failure leaves the source and a second merge completes; anonymous 401, non-organizer 403."
+covers = ["R17"]
+after = [1, 2]
+hitl = false
+risk = "high"
+notes = ["Owner 2026-11-07 decision 3: two partners refused."]
+
+[[entry]]
+id = 5
+type = "story"
+title = "Organizers see candidate duplicate companies"
+description = "GET /companies/duplicate-candidates (ORGANIZER), computed live, rules as in #1251: SAME_WEBSITE (host without www and path, HIGH), SAME_DISPLAY_NAME (lower case, umlauts folded, accents and punctuation removed, HIGH), SAME_NAME_WITHOUT_LEGAL_FORM (AG, GmbH, SA, Sàrl, Ltd, Inc, LLC, KG, & Co removed; generic words kept, MEDIUM), SLUG_PREFIX (shorter key >= 4, LOW); a pair listed once under its first rule. Each side shows display name, key, logo, website, user and registration counts, partner flag, created at and by, and the suggested target (partner, else with logo, else more users, else older). POST of a 'not a duplicate' stores the pair in company_duplicate_dismissals (smaller key first, gone with either company) and hides it."
+verify = "Unit tests of the rules with the measured examples of #1251 (unic/unicag, diepost/post, sbbcffffs/sbb, puzzle/puzzleitc) and the Kanton Bern / Kanton Zürich negative; CUMS integration test of the endpoint with counts and suggested target, a dismissal hiding its pair, 401/403."
+covers = ["R17"]
+after = []
+hitl = false
+risk = "medium"
+
+[[entry]]
+id = 6
+type = "story"
+title = "The Companies tab finds and merges duplicates"
+description = "Organizers get a 'Possible duplicates' button on the Companies tab opening a page built like UserManagement/DuplicateCandidatesPage: the candidate pairs with rule, confidence and both sides, 'Not a duplicate', and 'Merge' opening a dialog with the preview (what moves, counts per table, which target fields get filled), swap direction, refusal reasons, confirm. A single company offers 'Merge with another company' for pairs no rule finds. Services through the API client only; all 10 locales. Docs: 'Merging two companies' next to 'Merging two profiles' (06b), the organizer user guide."
+verify = "Vitest through MSW with the spec shapes: the list renders both sides, dismiss removes a pair, the dialog shows preview counts, swap changes direction, the both-partners refusal shows its reason, confirm posts the merge; i18n keys complete in 10 locales; check-api-paths clean."
+covers = ["R17"]
+after = [4, 5]
+hitl = false
+risk = "medium"
