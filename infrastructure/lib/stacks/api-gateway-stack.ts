@@ -6,6 +6,7 @@ import * as cognito from 'aws-cdk-lib/aws-cognito';
 import * as route53 from 'aws-cdk-lib/aws-route53';
 import * as route53targets from 'aws-cdk-lib/aws-route53-targets';
 import * as certificatemanager from 'aws-cdk-lib/aws-certificatemanager';
+import * as elbv2 from 'aws-cdk-lib/aws-elasticloadbalancingv2';
 import { Construct } from 'constructs';
 import { EnvironmentConfig } from '../config/environment-config';
 
@@ -16,8 +17,14 @@ export interface ApiGatewayStackProps extends cdk.StackProps {
   domainName?: string;
   hostedZoneId?: string;
   certificateArn?: string;
-  apiGatewayServiceUrl?: string; // Internal ALB URL for Spring Boot API Gateway
+  apiGatewayServiceUrl?: string; // Public ALB URL, used only when no VPC link is given
+  /** #1152: the internal ALB listener and the VPC link that reaches it. */
+  apiGatewayListener?: elbv2.IApplicationListener;
+  vpcLink?: apigatewayv2.IVpcLink;
 }
+
+/** #1152: header the HTTP API sets to the visitor's address; the client cannot set it. */
+export const CLIENT_IP_HEADER = 'X-BATbern-Client-IP';
 
 /**
  * API Gateway Stack - Simplified HTTP API (Backend Controls Authentication)
@@ -122,20 +129,37 @@ export class ApiGatewayStack extends cdk.Stack {
       },
     });
 
-    // Spring Boot API Gateway service URL
-    const apiGatewayServiceUrl =
-      props.apiGatewayServiceUrl || `http://api-gateway-${envName}.internal`;
+    // The integration target: the internal ALB listener (#1152), else the gateway URL.
+    const apiGatewayServiceUrl = props.apiGatewayListener
+      ? props.apiGatewayListener.listenerArn
+      : props.apiGatewayServiceUrl || `http://api-gateway-${envName}.internal`;
 
-    // HTTP Proxy Integration to Spring Boot API Gateway
-    // Uses greedy path matching {proxy+} which captures full path (e.g., /api/v1/companies)
-    // CDK automatically forwards the captured path when using /{proxy} in the URL template
-    const httpIntegration = new apigatewayv2_integrations.HttpUrlIntegration(
-      'SpringBootApiGatewayIntegration',
-      `${apiGatewayServiceUrl}/{proxy}`,
-      {
-        method: apigatewayv2.HttpMethod.ANY,
-      }
-    );
+    // #1152: through the VPC link to the internal ALB, with the visitor's address in a header the
+    // HTTP API overwrites (a client-sent value never arrives). The path goes through unchanged.
+    // Without a VPC link (an environment that has none) the old HTTP proxy to the ALB URL stays.
+    const httpIntegration: apigatewayv2.HttpRouteIntegration =
+      props.apiGatewayListener && props.vpcLink
+        ? new apigatewayv2_integrations.HttpAlbIntegration(
+            'SpringBootApiGatewayAlbIntegration',
+            props.apiGatewayListener,
+            {
+              vpcLink: props.vpcLink,
+              method: apigatewayv2.HttpMethod.ANY,
+              parameterMapping: new apigatewayv2.ParameterMapping()
+                .overwriteHeader(
+                  CLIENT_IP_HEADER,
+                  apigatewayv2.MappingValue.contextVariable('identity.sourceIp')
+                )
+                .overwritePath(apigatewayv2.MappingValue.requestPath()),
+            }
+          )
+        : new apigatewayv2_integrations.HttpUrlIntegration(
+            'SpringBootApiGatewayIntegration',
+            `${apiGatewayServiceUrl}/{proxy}`,
+            {
+              method: apigatewayv2.HttpMethod.ANY,
+            }
+          );
 
     /**
      * Catch-all route - forwards ALL requests to backend
@@ -248,7 +272,7 @@ export class ApiGatewayStack extends cdk.Stack {
 
     new cdk.CfnOutput(this, 'ApiGatewayServiceUrl', {
       value: apiGatewayServiceUrl,
-      description: 'Spring Boot API Gateway Service URL (internal)',
+      description: 'Integration target: internal ALB listener ARN (VPC link), else the gateway URL',
     });
   }
 }

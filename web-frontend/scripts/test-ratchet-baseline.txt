@@ -274,7 +274,6 @@ fe-mock-hooks	web-frontend/src/components/organizer/PartnerMeetingsPage.test.tsx
 fe-mock-hooks	web-frontend/src/components/organizer/SpeakerDrawer/__tests__/AssignedOrganizerField.test.tsx	1
 fe-mock-hooks	web-frontend/src/components/organizer/SpeakerDrawer/__tests__/DetailsTabPanel.test.tsx	3
 fe-mock-hooks	web-frontend/src/components/organizer/SpeakerDrawer/__tests__/SpeakerDetailDrawer.test.tsx	1
-fe-mock-hooks	web-frontend/src/components/organizer/UserManagement/DeleteUserDialog.test.tsx	1
 fe-mock-hooks	web-frontend/src/components/organizer/UserManagement/ParticipantBatchImportModal.test.tsx	1
 fe-mock-hooks	web-frontend/src/components/organizer/UserManagement/RoleManagerModal.test.tsx	1
 fe-mock-hooks	web-frontend/src/components/organizer/UserManagement/UserDetailView.test.tsx	1

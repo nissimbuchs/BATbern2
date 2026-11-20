@@ -1,11 +1,15 @@
 # Build stage
 # Compile on the runner's own platform: the jar is bytecode, so only the runtime stage
 # needs the target platform (linux/arm64 for Fargate). Avoids running Gradle under QEMU.
-FROM --platform=$BUILDPLATFORM gradle:8.14.5-jdk21 AS build
+FROM --platform=$BUILDPLATFORM gradle:9.8.2-jdk21 AS build
 WORKDIR /workspace
 
 # Copy root build configuration for multi-project build
 COPY settings.gradle build.gradle ./
+# Gradle 9 refuses to configure an included project whose directory is missing (#1220): every
+# project of settings.gradle gets a directory, the ones this image does not build stay empty.
+RUN mkdir -p shared-kernel api-gateway services/event-management-service \
+    services/partner-coordination-service services/company-user-management-service
 
 # Copy checkstyle configuration
 COPY config ./config

@@ -12,7 +12,7 @@ relatedADRs: [ADR-003, ADR-004, ADR-007, ADR-009]
 
 # Epic 11: Unified Speaker Workflow Refactor
 
-**Status:** ✅ **COMPLETE** (sprint-status: epic-11 done; Phase F magic-link teardown 11.F.1 completed 2026-05-25). Leftovers tracked separately: 11.E.5 and 11.G.1 ready-for-dev, 11.F.2 backlog.
+**Status:** ✅ **COMPLETE** (sprint-status: epic-11 done; Phase F magic-link teardown 11.F.1 completed 2026-05-25). Leftovers 11.E.5, 11.G.1 and 11.F.2 were not built and were archived by owner decision 2026-11-07.
 
 ## Overview
 

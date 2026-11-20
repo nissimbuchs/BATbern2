@@ -68,8 +68,8 @@
     "deleteConfirm": {
       "title": "Gebruiker verwijderen",
       "message": "Weet u zeker dat u deze gebruiker wilt verwijderen?",
-      "gdprWarning": "AVG-kennisgeving: Deze actie verwijdert alle gebruikersgegevens permanent en kan niet ongedaan worden gemaakt.",
-      "cascadeWarning": "Alle bijbehorende gegevens worden ook verwijderd."
+      "gdprWarning": "Verwijdert het profiel met de extra adressen, rollen en Watch-koppelingen. Dit kan niet ongedaan worden gemaakt.",
+      "cascadeWarning": "Blijven bewaard: de login, inschrijvingen, presentaties, Q&A-berichten, het nieuwsbriefabonnement en de Mail Center-geschiedenis. Een volledige verwijdering volgens de privacywet gebeurt niet hier; die wordt met de hand afgehandeld."
     },
     "editUser": {
       "uploadPhotoAria": "Profielfoto uploaden",

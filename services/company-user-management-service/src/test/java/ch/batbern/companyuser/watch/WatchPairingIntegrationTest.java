@@ -59,6 +59,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @DisplayName("WatchPairing Integration Tests")
 class WatchPairingIntegrationTest extends AbstractIntegrationTest {
 
+    /** The Watch app parses these with ISO8601DateFormatter: UTC with a zone, fraction optional. */
+    private static final String ISO_UTC = "\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?Z";
+
+
     @Autowired
     private MockMvc mockMvc;
 
@@ -100,7 +104,7 @@ class WatchPairingIntegrationTest extends AbstractIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.pairingCode").value(matchesPattern("\\d{6}")))
-                .andExpect(jsonPath("$.expiresAt").value(notNullValue()))
+                .andExpect(jsonPath("$.expiresAt").value(matchesPattern(ISO_UTC)))
                 .andExpect(jsonPath("$.hoursUntilExpiry").value(24));
     }
 
@@ -370,7 +374,7 @@ class WatchPairingIntegrationTest extends AbstractIntegrationTest {
                         .content("{\"pairingToken\": \"" + token + "\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.jwt").value(notNullValue()))
-                .andExpect(jsonPath("$.expiresAt").value(notNullValue()))
+                .andExpect(jsonPath("$.expiresAt").value(matchesPattern(ISO_UTC)))
                 .andReturn();
 
         // Verify JWT contains correct claims: subject=username, role=ORGANIZER (task 9.5)
@@ -393,6 +397,37 @@ class WatchPairingIntegrationTest extends AbstractIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"pairingToken\": \"nonexistent-token\"}"))
                 .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @DisplayName("an unknown pairing code answers the ErrorResponse users-api names for 400")
+    void shouldAnswerErrorResponse_whenPairingCodeUnknown() throws Exception {
+        mockMvc.perform(post("/api/v1/watch/pair")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"pairingCode\": \"999999\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.message").value("Code invalid or expired"));
+    }
+
+    @Test
+    @DisplayName("an unknown pairing token answers the ErrorResponse users-api names for 401")
+    void shouldAnswerErrorResponse_whenPairingTokenUnknown() throws Exception {
+        mockMvc.perform(post("/api/v1/watch/authenticate")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"pairingToken\": \"nonexistent-token\"}"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.status").value(401))
+                .andExpect(jsonPath("$.message").value(notNullValue()));
+    }
+
+    @Test
+    @DisplayName("an empty pairing token is a bad request, not an unknown token")
+    void shouldRejectAuth_whenTokenEmpty() throws Exception {
+        mockMvc.perform(post("/api/v1/watch/authenticate")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"pairingToken\": \"\"}"))
+                .andExpect(status().isBadRequest());
     }
 
     @Test

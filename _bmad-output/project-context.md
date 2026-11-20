@@ -231,9 +231,8 @@ Entity      →  JPA annotations, UUID PK + meaningful ID alternate key (ADR-003
   (invites, cancellations, reminders) or leave test data behind — always add cleanup steps.
 
 ### Coverage Requirements
-- Unit tests (business logic): ≥ 90%
-- Integration tests (APIs): ≥ 80%
-- Overall line coverage: ≥ 70%
+- Enforced gates: JaCoCo instruction coverage ≥ 0.60 per Java module (`make test` only, not in
+  CI); Vitest statement coverage ≥ 73 % (CI); none for CDK.
 - Every acceptance criterion must have at least one test; complex criteria need multiple.
 
 ### Build & Test Output

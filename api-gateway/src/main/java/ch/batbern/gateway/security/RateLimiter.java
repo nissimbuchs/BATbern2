@@ -140,6 +140,7 @@ public class RateLimiter {
     }
 
     private String getClientIp(HttpServletRequest request) {
-        return ClientIp.resolve(request.getHeader(ClientIp.X_FORWARDED_FOR), request.getRemoteAddr());
+        return ClientIp.resolve(request.getHeader(ClientIp.CLIENT_IP_HEADER),
+                request.getHeader(ClientIp.X_FORWARDED_FOR), request.getRemoteAddr());
     }
 }

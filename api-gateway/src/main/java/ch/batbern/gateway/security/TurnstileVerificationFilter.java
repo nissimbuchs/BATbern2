@@ -167,7 +167,8 @@ public class TurnstileVerificationFilter implements Filter {
      * Client IP passed to Cloudflare: the rightmost public X-Forwarded-For hop (#1132).
      */
     private String getClientIp(HttpServletRequest request) {
-        return ClientIp.resolve(request.getHeader(ClientIp.X_FORWARDED_FOR), request.getRemoteAddr());
+        return ClientIp.resolve(request.getHeader(ClientIp.CLIENT_IP_HEADER),
+                request.getHeader(ClientIp.X_FORWARDED_FOR), request.getRemoteAddr());
     }
 
     @Override

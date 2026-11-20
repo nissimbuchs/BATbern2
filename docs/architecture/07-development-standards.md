@@ -117,9 +117,9 @@ All new features and bug fixes MUST follow Test-Driven Development practices. Se
 3. **REFACTOR**: Improve code while keeping tests green
 
 ### Coverage Requirements
-- Unit Tests: 90% for business logic
-- Integration Tests: 80% for APIs
-- Overall: 85% line coverage
+- Java: JaCoCo instruction coverage at least 0.60 per module, checked by `make test` only
+- Frontend: Vitest statement coverage at least 73 %, checked in CI
+- CDK: no gate
 
 Details: [Coding Standards - Coverage Requirements](./coding-standards.md#coverage-requirements).
 

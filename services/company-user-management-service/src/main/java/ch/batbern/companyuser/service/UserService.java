@@ -352,18 +352,18 @@ public class UserService {
     }
 
     /**
-     * Delete user (GDPR compliance)
-     * Story 1.16.2: Public API uses username
-     * AC11: GDPR delete user
+     * Deletes the profile, with its additional addresses, roles and Watch pairings (V39). Not a GDPR
+     * erasure: the login and other services' rows stay (#1120, postponed by the owner 2026-11-20).
+     * Story 1.16.2: Public API uses username.
      */
     @Counted(value = "users.gdprDeletions", description = "Count of GDPR user deletions")
     public void deleteUser(String username) {
-        log.info("Deleting user (GDPR): {}", username);
+        log.info("Deleting user profile: {}", username);
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new UserNotFoundException(username));
 
-        // Deletes the CUMS row only: no other service consumes UserDeletedEvent, and there is no
-        // last-organizer guard (#1120).
+        // Deletes the CUMS profile only: no other service consumes UserDeletedEvent, the Cognito login
+        // stays, and there is no last-organizer guard (#1120, postponed).
 
         userRepository.delete(user);
 

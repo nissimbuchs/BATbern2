@@ -17,19 +17,47 @@ import java.util.regex.Pattern;
  *
  * <p>Measured on production (2026-10-28): the hop the ALB appends for a request through
  * {@code api.batbern.ch} is the AWS HTTP API's egress address (3.71.120.0/22, 3.127.74.0/23), not
- * the end user's address. {@link #resolve} therefore identifies the nearest public peer, which is
- * the API Gateway node for normal traffic and the caller itself for a request sent to the ALB
- * directly. Getting the end user's address needs the HTTP API to pass it in a header the client
- * cannot set (#1152).
+ * the end user's address. {@link #resolve(String, String)} therefore identifies the nearest public
+ * peer, which is the API Gateway node for that path and the caller itself for a request sent to an
+ * ALB directly.
+ *
+ * <p>#1152: the HTTP API now reaches the gateway through a VPC link to an internal ALB and
+ * overwrites {@value #CLIENT_IP_HEADER} with the visitor's address. {@link #resolve(String, String,
+ * String)} takes that header, but only when the request came over our private path (the hop
+ * nearest to us is internal); a caller on the internet who sets the header on a request to a public
+ * ALB is resolved from {@code X-Forwarded-For} as before. The gateway overwrites the header with
+ * its resolved value before forwarding, so the services read the same address.
  */
 public final class ClientIp {
 
     public static final String X_FORWARDED_FOR = "X-Forwarded-For";
 
+    /** #1152: set by the HTTP API to {@code $context.identity.sourceIp}, by the gateway to its result. */
+    public static final String CLIENT_IP_HEADER = "X-BATbern-Client-IP";
+
     private static final Pattern IPV4 = Pattern.compile("^\\d{1,3}(\\.\\d{1,3}){3}$");
     private static final Pattern IPV6 = Pattern.compile("^[0-9a-fA-F:.]*:[0-9a-fA-F:.]*$");
 
     private ClientIp() {
+    }
+
+    /**
+     * The visitor's address: {@code clientIpHeader} when it is an IP literal and the request reached
+     * us over a private hop (the rightmost {@code X-Forwarded-For} hop, or {@code remoteAddr} when
+     * there is none, is internal); otherwise {@link #resolve(String, String)}.
+     */
+    public static String resolve(String clientIpHeader, String xForwardedFor, String remoteAddr) {
+        String header = clientIpHeader == null ? null : clientIpHeader.trim();
+        if (parseLiteral(header).isPresent() && cameOverPrivateHop(xForwardedFor, remoteAddr)) {
+            return header;
+        }
+        return resolve(xForwardedFor, remoteAddr);
+    }
+
+    private static boolean cameOverPrivateHop(String xForwardedFor, String remoteAddr) {
+        List<String> hops = hops(xForwardedFor);
+        String nearest = hops.isEmpty() ? remoteAddr : hops.get(hops.size() - 1);
+        return parseLiteral(nearest).map(ClientIp::isInternal).orElse(false);
     }
 
     /**

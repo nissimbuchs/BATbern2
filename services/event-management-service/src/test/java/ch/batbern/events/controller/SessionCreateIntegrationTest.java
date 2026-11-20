@@ -124,8 +124,8 @@ class SessionCreateIntegrationTest extends AbstractIntegrationTest {
 
     private void mockUserApiClient() {
         // CUMS knows two speakers; an unknown one answers 404, and the import skips it.
-        cums.user("thomas.goetz", CumsContractHarness.userJson("thomas.goetz", "Thomas", "Goetz",
-                "thomas.goetz@mobiliar.ch", "mobiliar"));
+        cums.user("hugo.muster", CumsContractHarness.userJson("hugo.muster", "Hugo", "Muster",
+                "hugo.muster@example.com", "muster-ag"));
         cums.user("john.doe", CumsContractHarness.userJson("john.doe", "John", "Doe",
                 "john.doe@example.com", "test-company"));
         cums.unknownUser("unknown.person");
@@ -161,11 +161,11 @@ class SessionCreateIntegrationTest extends AbstractIntegrationTest {
                         "authoren": "",
                         "referenten": [
                             {
-                                "name": "Thomas Goetz, Die Mobiliar",
+                                "name": "Hugo Muster, Muster AG",
                                 "bio": "Expert in UI design",
-                                "company": "mobiliar",
-                                "portrait": "thomas.goetz.jpg",
-                                "speakerId": "thomas.goetz"
+                                "company": "muster-ag",
+                                "portrait": "hugo.muster.jpg",
+                                "speakerId": "hugo.muster"
                             }
                         ]
                     },
@@ -289,11 +289,11 @@ class SessionCreateIntegrationTest extends AbstractIntegrationTest {
                         "pdf": "BAT142_UI_Design.pdf",
                         "referenten": [
                             {
-                                "name": "Thomas Goetz, Die Mobiliar",
+                                "name": "Hugo Muster, Muster AG",
                                 "bio": "Expert in UI design",
-                                "company": "mobiliar",
-                                "portrait": "thomas.goetz.jpg",
-                                "speakerId": "thomas.goetz"
+                                "company": "muster-ag",
+                                "portrait": "hugo.muster.jpg",
+                                "speakerId": "hugo.muster"
                             }
                         ]
                     }
@@ -312,7 +312,7 @@ class SessionCreateIntegrationTest extends AbstractIntegrationTest {
         List<SessionUser> speakers = sessionUserRepository.findBySessionId(session.getId());
 
         assertThat(speakers).hasSize(1);
-        assertThat(speakers.get(0).getUsername()).isEqualTo("thomas.goetz");
+        assertThat(speakers.get(0).getUsername()).isEqualTo("hugo.muster");
         assertThat(speakers.get(0).getSpeakerRole()).isEqualTo(SessionUser.SpeakerRole.PRIMARY_SPEAKER);
         assertThat(speakers.get(0).isConfirmed()).isTrue(); // Historical data: already confirmed
     }
@@ -362,8 +362,8 @@ class SessionCreateIntegrationTest extends AbstractIntegrationTest {
                         "abstract": "First session",
                         "referenten": [
                             {
-                                "name": "Thomas Goetz",
-                                "speakerId": "thomas.goetz"
+                                "name": "Hugo Muster",
+                                "speakerId": "hugo.muster"
                             }
                         ]
                     },
@@ -384,8 +384,8 @@ class SessionCreateIntegrationTest extends AbstractIntegrationTest {
                         "abstract": "Third session",
                         "referenten": [
                             {
-                                "name": "Thomas Goetz",
-                                "speakerId": "thomas.goetz"
+                                "name": "Hugo Muster",
+                                "speakerId": "hugo.muster"
                             }
                         ]
                     }

@@ -18,14 +18,15 @@ files and the ADRs are listed further down. The 2024–25 documents (03, 04,
 2. **[02-infrastructure-deployment.md](./02-infrastructure-deployment.md)** - CDK stacks, ECS
    sizing, API gateway tiers, CI/CD and production deploys, beta canary, inbound mail, backups
 3. **[03-data-architecture.md](./03-data-architecture.md)** - Data architecture and schemas
-4. **[04-api-design.md](./04-api-design.md)** - API design narrative, with per-domain parts:
+4. **[04-api-design.md](./04-api-design.md)** - Index of the API specs, with per-domain index pages:
    [04-api-core.md](./04-api-core.md), [04-api-event-management.md](./04-api-event-management.md),
    [04-api-speaker-coordination.md](./04-api-speaker-coordination.md),
    [04-api-partner-coordination.md](./04-api-partner-coordination.md),
    [04-api-company-management.md](./04-api-company-management.md),
    [04-api-user-management.md](./04-api-user-management.md),
    [04-api-attendee-experience.md](./04-api-attendee-experience.md).
-   These are narratives; the API contract is the OpenAPI specs in `docs/api/*.openapi.yml`
+   The API contract is the OpenAPI specs in `docs/api/*.openapi.yml`; the pages only index them
+   (narratives retired by owner decision 2026-11-15, #1212). Shared conventions: 04-api-core.
 5. **[05-frontend-architecture.md](./05-frontend-architecture.md)** - React component
    architecture, role-adaptive UI, state management and routing
 6. **[06-backend-architecture.md](./06-backend-architecture.md)** - Service patterns,
@@ -59,7 +60,7 @@ files and the ADRs are listed further down. The 2024–25 documents (03, 04,
 
 ### For Developers
 - **Getting Started**: Start with [07-development-standards.md](./07-development-standards.md) for setup and coding standards
-- **API Reference**: The contract is the OpenAPI specs in `docs/api/*.openapi.yml` (code is generated from them, ADR-006); [04-api-design.md](./04-api-design.md) is the narrative
+- **API Reference**: The contract is the OpenAPI specs in `docs/api/*.openapi.yml` (code is generated from them, ADR-006); [04-api-design.md](./04-api-design.md) indexes them
 - **Frontend Development**: Check [05-frontend-architecture.md](./05-frontend-architecture.md) for React patterns
 - **Backend Development**: Review [06-backend-architecture.md](./06-backend-architecture.md) for service patterns
 

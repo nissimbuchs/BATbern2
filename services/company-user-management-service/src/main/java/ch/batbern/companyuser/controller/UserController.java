@@ -228,14 +228,14 @@ public class UserController implements UserManagementApi, UserAccountApi, Profil
     // GdprComplianceApi
     // ------------------------------------------------------------------------
 
-    /** AC11: Delete user (GDPR compliance). */
+    /** AC11: Delete a user's profile (not a GDPR erasure, see UserService#deleteUser). */
     @Override
     @PreAuthorize("hasRole('ORGANIZER')")
     @Timed(value = "users.deleteUser",
-            description = "Time to delete user (GDPR compliance)",
+            description = "Time to delete a user profile",
             percentiles = {0.5, 0.95, 0.99})
     public ResponseEntity<Void> deleteUser(String username) {
-        log.warn("Deleting user (GDPR): {}", username);
+        log.warn("Deleting user profile: {}", username);
 
         userService.deleteUser(username);
 

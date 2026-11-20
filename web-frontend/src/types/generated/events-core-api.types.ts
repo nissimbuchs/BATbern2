@@ -3063,6 +3063,10 @@ export interface operations {
       query?: never;
       header?: never;
       path: {
+        /**
+         * @description The setting key. The store accepts any key, but only these are read by EMS: `presentation` (JSON, moderator presentation page, Story 4.9); `venue.coordination.config` (JSON, venue and catering contacts for the venue coordination mail); `email-forwarding.support-contacts` (comma-separated addresses that receive `support@` mail, else all organizers, Story 10.26); `mailcenter.notify-instead-of-forward` (comma- or space-separated alias groups `moderator`, `replies`, `contact` answered in the Mail Center instead of forwarded, Story 16.6; switched by the owner only). A key that was never set answers 200 with `value: null`.
+         * @example presentation
+         */
         key: string;
       };
       cookie?: never;
@@ -3087,7 +3091,10 @@ export interface operations {
       query?: never;
       header?: never;
       path: {
-        /** @example presentation */
+        /**
+         * @description The setting key. The store accepts any key, but only these are read by EMS: `presentation` (JSON, moderator presentation page, Story 4.9); `venue.coordination.config` (JSON, venue and catering contacts for the venue coordination mail); `email-forwarding.support-contacts` (comma-separated addresses that receive `support@` mail, else all organizers, Story 10.26); `mailcenter.notify-instead-of-forward` (comma- or space-separated alias groups `moderator`, `replies`, `contact` answered in the Mail Center instead of forwarded, Story 16.6; switched by the owner only). A key that was never set answers 200 with `value: null`.
+         * @example presentation
+         */
         key: string;
       };
       cookie?: never;

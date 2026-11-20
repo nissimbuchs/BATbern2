@@ -41,6 +41,16 @@ Only items that are not live yet. Everything else is listed under its release be
 
 ### Unreleased — after BATbern60
 
+**Fix — Rate limits and Turnstile see the visitor's address (#1152)**:
+- ✅ `api.batbern.ch` now reaches the backend through a VPC link to an internal load balancer and passes the visitor's address in a header no client can set. Rate limits, the Turnstile check and the speaker-portal audit use that address; before, every anonymous visitor shared the limit of the AWS API Gateway node they happened to pass.
+- ✅ Production images build with the same Gradle (9.8.2) that runs the tests (#1220).
+- ✅ Presigned uploads work from `beta.batbern.ch` and from local development on port 8100 (#1220).
+
+**Fix — Deleting a user says what it deletes, and works for everyone (#1215, #1120)**:
+- ✅ The delete dialog no longer promises a full GDPR erasure. It deletes the profile with its additional addresses, roles and Watch pairings; the login, registrations, talks, Q&A posts, newsletter subscription and Mail Center history stay. A full erasure is handled by hand (cross-service delete #1120 postponed by owner decision 2026-11-20).
+- 🐛 Deleting a user who had once granted a role to someone, or who had a paired Apple Watch, failed with an error. Both now go through: the role stays without its grantor, the pairing is deleted.
+- ⚠️ API: the gateway endpoints `DELETE /api/v1/gdpr/delete` and `GET /api/v1/gdpr/export` are removed (404). They reported a deletion that never happened and exported sample data.
+
 **New — Each session material is marked public or not (#1260)**:
 - ✅ Every session material now says whether it may be published after the event. A new PDF is public, any other file (PowerPoint, Keynote, Word, video) is not, so a speaker can upload the PowerPoint for the moderator next to the PDF for the public. The upload can say otherwise, and organizers and the session's speakers can change it later.
 - ✅ Existing materials: PDFs stay public, all other files are marked not public.

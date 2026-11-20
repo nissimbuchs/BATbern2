@@ -39,3 +39,4 @@ The owner sees the covered issues (R20) closed with the fix live in production, 
 
 - Waits on epic 3 because: outreach history keyed by username (R16), which the delete row list relies on
 - Waits on epic 4 because: the company-merge additions to cums-internal.openapi.yml, so both contract changes do not collide
+- Postponed by the owner 2026-11-20; #1120 closed as not planned with the restart notes. A restart begins with a fresh inventory of the migrated schema (columns added since 2026-10-29). Its #1215 part shipped with epic-docs-and-spec-hygiene.

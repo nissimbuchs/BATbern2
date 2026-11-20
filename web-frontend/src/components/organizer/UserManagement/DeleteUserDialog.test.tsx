@@ -6,25 +6,29 @@ import DeleteUserDialog from './DeleteUserDialog';
 import type { User } from '../../../types/user.types';
 import { I18nextProvider } from 'react-i18next';
 import i18n from '../../../i18n/config';
+import { HttpResponse } from 'msw';
+import { api } from '@/test/msw/api';
 
-// Mock the useDeleteUser hook
-vi.mock('../../../hooks/useUserManagement', () => ({
-  useDeleteUser: () => ({
-    mutateAsync: vi.fn().mockResolvedValue({}),
-    isPending: false,
-    isError: false,
-  }),
-}));
+// HTTP is answered by the MSW harness (spec-checked): the real hook, service and apiClient run.
 
 const mockUser: User = {
-  id: 'user-123',
+  id: 'john.doe',
+  hasCognitoAccount: true,
+  email: 'john.doe@example.com',
   firstName: 'John',
   lastName: 'Doe',
-  email: 'john.doe@example.com',
+  bio: null,
+  companyId: null,
   roles: ['ATTENDEE'],
-  isActive: true,
+  profilePictureUrl: null,
+  active: true,
   createdAt: '2024-01-01T00:00:00Z',
   updatedAt: '2024-01-01T00:00:00Z',
+  lastLoginAt: null,
+  termsAcceptedAt: null,
+  company: null,
+  settings: null,
+  additionalEmails: [],
 };
 
 const renderWithProviders = (ui: React.ReactElement) => {
@@ -77,7 +81,7 @@ describe('DeleteUserDialog Component', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
-  it('should_displayGDPRWarning_when_confirmationShown', () => {
+  it('should_sayTheProfileIsDeleted_when_confirmationShown', () => {
     renderWithProviders(
       <DeleteUserDialog
         user={mockUser}
@@ -87,8 +91,9 @@ describe('DeleteUserDialog Component', () => {
       />
     );
 
-    expect(screen.getByText(/GDPR/i)).toBeInTheDocument();
-    expect(screen.getByText(/permanently delete/i)).toBeInTheDocument();
+    expect(screen.getByTestId('delete-user-gdpr-warning')).toHaveTextContent(
+      /deletes the profile with its additional addresses, roles and watch pairings/i
+    );
   });
 
   it('should_displayUserInfo_when_rendered', () => {
@@ -139,9 +144,12 @@ describe('DeleteUserDialog Component', () => {
     await waitFor(() => {
       expect(mockOnSuccess).toHaveBeenCalledTimes(1);
     });
+    expect(api.calls('deleteUser')[0].params.username).toBe('john.doe');
   });
 
-  it('should_displayCascadeWarning_when_rendered', () => {
+  it('should_sayWhatIsKept_when_rendered', () => {
+    // #1120 postponed (owner 2026-11-20): the delete removes the profile only, so the dialog must
+    // not promise a full erasure.
     renderWithProviders(
       <DeleteUserDialog
         user={mockUser}
@@ -151,6 +159,29 @@ describe('DeleteUserDialog Component', () => {
       />
     );
 
-    expect(screen.getByText(/all associated data/i)).toBeInTheDocument();
+    const kept = screen.getByTestId('delete-user-cascade-warning');
+    expect(kept).toHaveTextContent(/kept: the login, registrations, talks/i);
+    expect(kept).toHaveTextContent(/handled by hand/i);
+    expect(screen.queryByText(/all associated data/i)).not.toBeInTheDocument();
+  });
+
+  it('should_showError_when_deleteFails', async () => {
+    api.on('deleteUser', () => HttpResponse.json({ message: 'boom' }, { status: 500 }));
+    const user = userEvent.setup();
+    renderWithProviders(
+      <DeleteUserDialog
+        user={mockUser}
+        open={true}
+        onClose={mockOnClose}
+        onSuccess={mockOnSuccess}
+      />
+    );
+
+    await user.click(screen.getByRole('button', { name: /delete/i }));
+
+    expect(
+      await screen.findByText(i18n.t('userManagement:error.deleteFailed'))
+    ).toBeInTheDocument();
+    expect(mockOnSuccess).not.toHaveBeenCalled();
   });
 });

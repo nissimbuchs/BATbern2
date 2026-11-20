@@ -2,7 +2,9 @@ name: Claude Code Review
 
 on:
   pull_request:
-    types: [opened, synchronize]
+    # edited: adding [no-doc] to the title re-runs the Doc Drift Check (#1214). The Claude
+    # review skips that event, so a title or description edit does not buy a second review.
+    types: [opened, synchronize, edited]
     # Optional: Only run on specific file changes
     # paths:
     #   - "src/**/*.ts"
@@ -14,7 +16,7 @@ jobs:
   claude-review:
     # Skip Claude Code Review for Dependabot PRs (they don't have access to secrets)
     # Also skip for specific user types if needed (uncomment below)
-    if: github.actor != 'dependabot[bot]'
+    if: github.actor != 'dependabot[bot]' && github.event.action != 'edited'
     # if: |
     #   github.actor != 'dependabot[bot]' && (
     #   github.event.pull_request.user.login == 'external-contributor' ||
@@ -82,10 +84,8 @@ jobs:
 
   doc-drift-check:
     name: Doc Drift Check
-    # Skip for dependabot and for auto-resolver branches (they're docs-only by design)
-    if: |
-      github.actor != 'dependabot[bot]' &&
-      !startsWith(github.head_ref, 'docs/drift-fix-')
+    # Skip for dependabot. Rules: .github/scripts/doc_drift.py, tests: .github/scripts/test-doc-drift.sh
+    if: github.actor != 'dependabot[bot]'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -100,21 +100,28 @@ jobs:
       - name: Install dependencies
         run: pip install pyyaml --quiet
 
+      # The rules have their own test (throwaway git repo): a broken rule fails here, not silently.
+      - name: Test the doc-drift rules
+        run: bash .github/scripts/test-doc-drift.sh
+
       - name: Check for doc drift
         id: drift
         env:
           BASE_REF: ${{ github.base_ref }}
           PR_TITLE: ${{ github.event.pull_request.title }}
           MAPPINGS_FILE: .github/doc-drift-mappings.yml
-        run: |
-          chmod +x .github/scripts/doc-drift-pr-check.sh
-          .github/scripts/doc-drift-pr-check.sh
+          COMMENT_FILE: ${{ runner.temp }}/drift-pr-comment.md
+        run: bash .github/scripts/doc-drift-pr-check.sh
 
+      # The check itself runs on every edit (a skipped run would read as passed), but a
+      # description edit that leaves the title alone does not post the same comment again.
       - name: Comment on PR
-        if: failure() && steps.drift.outcome == 'failure'
+        if: >-
+          failure() && steps.drift.outcome == 'failure' &&
+          (github.event.action != 'edited' || github.event.changes.title)
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh pr comment ${{ github.event.pull_request.number }} \
-            --body-file /tmp/drift-pr-comment.md
+            --body-file "$RUNNER_TEMP/drift-pr-comment.md"
 

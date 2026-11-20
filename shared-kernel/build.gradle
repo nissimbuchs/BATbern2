@@ -188,8 +188,8 @@ jacocoTestCoverageVerification {
     violationRules {
         rule {
             limit {
-                // Use 60% threshold for incremental development
-                // TODO: Restore to 0.90 once coverage is improved
+                // Instruction coverage per module. Stays at 0.60 by owner decision 2026-11-15
+                // (#1119 A2); docs: coding-standards.md "Coverage Requirements".
                 minimum = 0.60
             }
         }
@@ -213,7 +213,8 @@ jacocoTestCoverageVerification {
     }
 }
 
-// Coverage verification runs only during explicit test tasks, not during build
+// Coverage verification runs only when the task is named (make test-java), not in check,
+// so CI does not run it.
 // check.dependsOn jacocoTestCoverageVerification
 
 // Checkstyle is configured centrally in the root build.gradle

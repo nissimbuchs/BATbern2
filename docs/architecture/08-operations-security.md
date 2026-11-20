@@ -8,8 +8,8 @@ This document consolidates security implementation, performance standards, acces
 
 ```mermaid
 flowchart TD
-    C["Browser / any internet caller"] --> HA["AWS HTTP API, api.batbern.ch<br/>custom domain, HttpUrlIntegration to the ALB<br/>no WAF, no API Gateway throttling configured"]
-    HA --> ALB["Internet-facing ALB<br/>appends X-Forwarded-For"]
+    C["Browser / any internet caller"] --> HA["AWS HTTP API, api.batbern.ch<br/>custom domain, VPC link to the internal ALB<br/>sets X-BATbern-Client-IP to the source IP<br/>no WAF"]
+    HA --> ALB["Internal ALB, reachable only from the VPC link<br/>appends X-Forwarded-For"]
     ALB --> GW
     subgraph GW["Spring API gateway, ECS"]
         G1["CorrelationId, SecurityHeaders filters"] --> G2["Spring Security filter chain<br/>JWT signature check, permitAll list,<br/>/internal/** denyAll"]
@@ -296,16 +296,16 @@ The weekly ZAP API scan covered 13 of 19 specs (users, topics, partner meetings,
 notifications and app settings were missing). `scripts/ci/check-zap-spec-coverage.py` now fails
 the build when a spec is not in the scan matrix.
 
-### Client IP: read X-Forwarded-For from the right, never the first hop (#1132)
+### Client IP: the HTTP API's header, else X-Forwarded-For from the right (#1132, #1152)
 
-Requests reach the Spring gateway as client → AWS HTTP API (`api.batbern.ch`) → internet-facing
-ALB → gateway task, and the domain services through Service Connect, which delivers **every**
+Requests reach the Spring gateway as client → AWS HTTP API (`api.batbern.ch`) → VPC link →
+internal ALB → gateway task, and the domain services through Service Connect, which delivers **every**
 request from 127.0.0.1. The ALB runs `xff_header_processing.mode=append`, and the gateway copies
 all request headers to the service. So whatever a client puts in `X-Forwarded-For` arrives intact
 in front of the hop the ALB appended: the first hop is attacker-controlled.
 
 - Every client-IP lookup goes through `ch.batbern.shared.security.ClientIp.resolve`: the
-  rightmost public hop, else the remote address. `X-Real-IP` is client-controlled too and is not
+  trusted `X-BATbern-Client-IP` (below), else the rightmost public hop, else the remote address. `X-Real-IP` is client-controlled too and is not
   read. Gateway rate limiting, Turnstile, EMS rate limiting, the thanks limit and the speaker-portal
   audit IP all use it.
 - CUMS `VpcInternalAuthorizationManager` treats a request as in-VPC only if the connection **and
@@ -314,11 +314,19 @@ in front of the hop the ALB appended: the first hop is attacker-controlled.
 - Never call `InetAddress.getByName` on a header value: it resolves host names. `ClientIp.parseLiteral`
   accepts IP literals only.
 
-**Measured on production (2026-10-28): the rightmost public hop is the HTTP API's egress node**
-(`3.71.120.0/22`, `3.127.74.0/23`), not the visitor. Anonymous rate limits therefore bucket by
-API Gateway node, as they always did; the fix removes the spoofing, it does not recover the
-visitor's address. That needs the HTTP API to pass `$context.identity.sourceIp` in a header the
-client cannot set, which in turn needs the ALB to be unreachable directly (#1152).
+**Measured on production (2026-10-28): the rightmost public hop was the HTTP API's egress node**
+(`3.71.120.0/22`, `3.127.74.0/23`), not the visitor, so anonymous rate limits bucketed by API
+Gateway node.
+
+**Visitor address since #1152.** The HTTP API reaches the gateway through a VPC link to an
+**internal** ALB whose security group admits only the VPC link, and overwrites
+`X-BATbern-Client-IP` with `$context.identity.sourceIp` (a client-sent value never arrives).
+`ClientIp.resolve(clientIpHeader, xForwardedFor, remoteAddr)` takes the header only when the hop
+nearest to us (the rightmost `X-Forwarded-For` hop, else the connection) is internal, which is the
+VPC link's address; a caller who reaches some other ALB directly and sets the header is resolved
+from `X-Forwarded-For` as before. The gateway overwrites the header with its own result before
+forwarding (`DomainRouter`), so EMS rate limiting, the thanks limit and the speaker-portal audit IP
+see the same address.
 
 `ProductionSecurityFilterChainTest` exists for the gateway and CUMS, `EmsProductionSecurityFilterChainTest` for EMS (#1136). The EMS one lives in `ch.batbern.securitychain` because EMS component-scans its test packages, and a probe controller there would hijack every other EMS test. Each loads only
 the service's `SecurityConfig` and a probe controller under a non-test profile, so the `permitAll`

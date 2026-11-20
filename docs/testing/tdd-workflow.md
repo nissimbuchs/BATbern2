@@ -329,16 +329,13 @@ git commit -m "refactor(event-management): optimize event type validation
 
 ## Coverage Requirements
 
-### Minimum Coverage Targets
+### Enforced Gates
 
-| Type | Target | Enforcement |
-|------|--------|-------------|
-| Unit Tests | 90% | Blocks PR merge |
-| Integration Tests | 80% | Blocks PR merge |
-| Overall Coverage | 85% | Blocks deployment |
-| Business Logic | 95% | Blocks PR merge |
-| Controllers | 85% | Warning only |
-| Utilities | 70% | Warning only |
+| Scope | Gate | Checked by |
+|---|---|---|
+| Java: `shared-kernel`, `api-gateway`, the three services | JaCoCo `jacocoTestCoverageVerification`, instruction coverage at least 0.60 per module; generated code and configuration classes excluded (lists in each `build.gradle`) | `make test` / `make test-java` only. It is not part of `check`, and CI does not run it |
+| Frontend | Vitest statement coverage at least 73 % (`web-frontend/vite.config.ts`) | CI, on the merged shard report |
+| CDK (`infrastructure/`) | none | - |
 
 ### Coverage Calculation
 

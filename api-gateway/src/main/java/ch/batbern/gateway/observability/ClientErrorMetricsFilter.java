@@ -87,8 +87,8 @@ import java.util.Locale;
  *
  * <p>A prefix list, not {@link ch.batbern.gateway.routing.DomainRouter}. The router looks
  * like the authority — it throws {@code RoutingException} for anything it cannot place — but
- * it only knows *proxied* paths, so the gateway's own controllers ({@code /api/v1/config},
- * the GDPR export and deletion endpoints) would be classified as nonexistent and their
+ * it only knows *proxied* paths, so the gateway's own controllers ({@code /api/v1/config})
+ * would be classified as nonexistent and their
  * failures would go uncounted.
  *
  * <p>The trade is explicit: a scanner guessing {@code /api/v1/something-fake} is counted.

@@ -68,8 +68,8 @@
     "deleteConfirm": {
       "title": "Delete User",
       "message": "Are you sure you want to delete this user?",
-      "gdprWarning": "GDPR Notice: This action will permanently delete all user data and cannot be undone.",
-      "cascadeWarning": "All associated data will also be deleted."
+      "gdprWarning": "Deletes the profile with its additional addresses, roles and Watch pairings. This cannot be undone.",
+      "cascadeWarning": "Kept: the login, registrations, talks, Q&A posts, the newsletter subscription and the Mail Center history. A full erasure under data protection law is not done here; it is handled by hand."
     },
     "editUser": {
       "uploadPhotoAria": "Upload profile photo",

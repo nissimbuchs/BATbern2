@@ -25,7 +25,8 @@ import java.io.IOException;
  * RateLimitingFilter enforces rate limiting on all API requests.
  *
  * Features:
- * - Role-based rate limits (organizer: 100/min, speaker: 50/min, etc.)
+ * - Role-based rate limits per minute, defined in InMemoryRateLimitStorage.RATE_LIMITS
+ *   (organizer 1000, speaker 500, partner 500, attendee 200, anonymous 50 per client IP)
  * - Returns 429 Too Many Requests when limit exceeded
  * - Adds X-RateLimit-* headers to responses
  * - Uses existing RateLimiter and RateLimitStorage infrastructure
@@ -145,7 +146,8 @@ public class RateLimitingFilter implements Filter {
      * never the client-supplied first one or X-Real-IP (#1132).
      */
     private String getClientIp(HttpServletRequest request) {
-        return ClientIp.resolve(request.getHeader(ClientIp.X_FORWARDED_FOR), request.getRemoteAddr());
+        return ClientIp.resolve(request.getHeader(ClientIp.CLIENT_IP_HEADER),
+                request.getHeader(ClientIp.X_FORWARDED_FOR), request.getRemoteAddr());
     }
 
     /**

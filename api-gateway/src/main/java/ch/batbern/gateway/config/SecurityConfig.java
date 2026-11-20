@@ -153,7 +153,7 @@ public class SecurityConfig {
 
     /**
      * Security configuration for test profile
-     * Allows test endpoints without auth, requires JWT for GDPR endpoints
+     * Allows test endpoints without auth
      * CSRF disabled: Stateless JWT API - tokens in headers, not cookies
      */
     @Bean
@@ -171,7 +171,6 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/v1/health", "/api/v1/test-*", "/api/v1/validation/*").permitAll()
-                        .requestMatchers("/api/v1/gdpr/**").authenticated()
                         .anyRequest().permitAll()
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> { }))

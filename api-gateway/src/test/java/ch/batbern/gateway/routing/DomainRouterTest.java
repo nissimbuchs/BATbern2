@@ -600,6 +600,31 @@ class DomainRouterTest {
         assertThat(capturedUri.toString()).startsWith("http://localhost:8081/api/v1/events?");
     }
 
+    @Test
+    @DisplayName("should_forwardTheResolvedClientIp_when_routingToAService")
+    void should_forwardTheResolvedClientIp_when_routingToAService() {
+        // #1152: the services read X-BATbern-Client-IP. The gateway overwrites it with what it
+        // resolved itself, so a value a caller set on a request to a public ALB never reaches them.
+        ArgumentCaptor<org.springframework.http.HttpEntity<?>> entityCaptor =
+            ArgumentCaptor.forClass(org.springframework.http.HttpEntity.class);
+        when(restTemplate.exchange(any(URI.class), any(), entityCaptor.capture(), eq(byte[].class)))
+            .thenReturn(ResponseEntity.ok(new byte[0]));
+
+        MockHttpServletRequest throughVpcLink = new MockHttpServletRequest("GET", "/api/v1/events");
+        throughVpcLink.addHeader("X-BATbern-Client-IP", "198.51.100.23");
+        throughVpcLink.addHeader("X-Forwarded-For", "10.1.3.44");
+        domainRouter.routeRequest("event-management-service", throughVpcLink).join();
+        assertThat(entityCaptor.getValue().getHeaders().get("X-BATbern-Client-IP"))
+            .containsExactly("198.51.100.23");
+
+        MockHttpServletRequest direct = new MockHttpServletRequest("GET", "/api/v1/events");
+        direct.addHeader("X-BATbern-Client-IP", "192.0.2.200");
+        direct.addHeader("X-Forwarded-For", "203.0.113.66");
+        domainRouter.routeRequest("event-management-service", direct).join();
+        assertThat(entityCaptor.getValue().getHeaders().get("X-BATbern-Client-IP"))
+            .containsExactly("203.0.113.66");
+    }
+
     // Trailing slash normalization tests (ZAP fix: prevent 500 on /api/v1/events/)
     @Test
     @DisplayName("should_stripTrailingSlash_when_requestUriEndsWithSlash")

@@ -14,6 +14,8 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -43,6 +45,8 @@ class RateLimitFilterTest {
     @BeforeEach
     void setUp() {
         rateLimitFilter = new RateLimitFilter();
+        // #1152: the filter also reads X-BATbern-Client-IP; a test that does not set it gets null.
+        lenient().when(request.getHeader(anyString())).thenReturn(null);
     }
 
     /**
@@ -145,6 +149,27 @@ class RateLimitFilterTest {
         // Then - 5 should pass, 6th should be rate limited
         verify(filterChain, times(5)).doFilter(request, response);
         verify(response).setStatus(HttpStatus.TOO_MANY_REQUESTS.value());
+    }
+
+    /**
+     * #1152: two visitors behind the same VPC link get their own buckets from X-BATbern-Client-IP,
+     * which the gateway sets to the address it resolved.
+     */
+    @Test
+    void should_keyOnTheClientIpHeader_when_requestCameThroughTheGateway() throws Exception {
+        when(request.getRequestURI()).thenReturn("/api/v1/speaker-portal/validate-token");
+        when(request.getMethod()).thenReturn("POST");
+        when(request.getHeader("X-Forwarded-For")).thenReturn("10.1.3.44");
+
+        when(request.getHeader("X-BATbern-Client-IP")).thenReturn("198.51.100.23");
+        for (int i = 0; i < 5; i++) {
+            rateLimitFilter.doFilter(request, response, filterChain);
+        }
+        when(request.getHeader("X-BATbern-Client-IP")).thenReturn("198.51.100.24");
+        rateLimitFilter.doFilter(request, response, filterChain);
+
+        verify(filterChain, times(6)).doFilter(request, response);
+        verify(response, never()).setStatus(HttpStatus.TOO_MANY_REQUESTS.value());
     }
 
     /**

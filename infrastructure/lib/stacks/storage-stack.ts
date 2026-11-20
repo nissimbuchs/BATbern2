@@ -89,7 +89,10 @@ export class StorageStack extends cdk.Stack {
           allowedOrigins: [
             'https://www.batbern.ch',
             'https://batbern.ch',
-            'http://localhost:3000', // For local development
+            // Beta frontend canary (docs/plans/beta-frontend-canary.md) and the local dev frontend
+            // port (make dev-native-up), #1220 item 5
+            'https://beta.batbern.ch',
+            'http://localhost:8100',
           ],
           allowedHeaders: ['*'],
           exposedHeaders: ['ETag'],

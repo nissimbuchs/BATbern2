@@ -371,10 +371,11 @@ npm run synth:dev | grep GitHubActionsRoleArn
 1. Run `./scripts/ci/setup-github-oidc-provider.sh`
 2. Verify `githubRepository` context matches your repo
 
-### "Coverage below 90%" (Build fails)
+### Coverage gate fails
 
-**Expected**: JaCoCo enforces 90% coverage
-**Solution**: Add tests or request coverage threshold adjustment
+**Expected**: JaCoCo requires instruction coverage of at least 0.60 per Java module, checked by
+`make test` (CI does not run it); the frontend requires 73 % statement coverage in CI
+**Solution**: Add tests
 
 ### "Environment protection rules not working"
 

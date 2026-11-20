@@ -1576,4 +1576,4 @@ it from CUMS (`/internal/users`, ADR-016).
 - **[Story 1.2.5: User Sync Implementation](../stories/archived/epic-1/1.2.5-user-sync-reconciliation-implementation.md)** - Lambda trigger implementation
 - **[Story 1.2.3: Account Creation Flow](../stories/archived/epic-1/1.2.3-implement-account-creation-flow.md)** - Self-registration UI
 - **[Backend Architecture](./06-backend-architecture.md)** - Overall backend patterns
-- **[API Design](./04-api-design.md)** - REST API conventions and authorization patterns
+- **[API Design](./04-api-design.md)** - Index of the OpenAPI specs; conventions in [04-api-core.md](./04-api-core.md)

@@ -305,4 +305,28 @@ describe('StorageStack', () => {
       expect(stack.stackName).toBe('TestStorageStack');
     });
   });
+
+  describe('#1220 item 5: presigned uploads from every frontend we run', () => {
+    test('should_allowBetaAndTheLocalDevPort_when_uploadingDirectly', () => {
+      const app = new App();
+      const stack = new StorageStack(app, 'TestStorageStack', {
+        config: prodConfig,
+        env: { account: '123456789012', region: 'eu-central-1' },
+      });
+
+      const buckets = Template.fromStack(stack).findResources('AWS::S3::Bucket');
+      const uploadRules = Object.values(buckets)
+        .flatMap((b) => b.Properties?.CorsConfiguration?.CorsRules ?? [])
+        .filter((r: { AllowedMethods: string[] }) => r.AllowedMethods.includes('PUT'));
+      expect(uploadRules).toHaveLength(1);
+      expect(uploadRules[0].AllowedOrigins).toEqual(
+        expect.arrayContaining([
+          'https://www.batbern.ch',
+          'https://beta.batbern.ch',
+          'http://localhost:8100',
+        ])
+      );
+      expect(uploadRules[0].AllowedOrigins).not.toContain('http://localhost:3000');
+    });
+  });
 });

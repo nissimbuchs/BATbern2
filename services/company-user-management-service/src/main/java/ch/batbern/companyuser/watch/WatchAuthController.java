@@ -1,39 +1,41 @@
 package ch.batbern.companyuser.watch;
 
+import ch.batbern.companyuser.api.generated.WatchAuthenticationApi;
 import ch.batbern.companyuser.domain.User;
 import ch.batbern.companyuser.domain.WatchPairing;
+import ch.batbern.companyuser.dto.generated.WatchAuthRequest;
+import ch.batbern.companyuser.dto.generated.WatchAuthResponse;
+import ch.batbern.companyuser.dto.generated.WatchPairingRequest;
+import ch.batbern.companyuser.dto.generated.WatchPairingResponse;
 import ch.batbern.companyuser.repository.UserRepository;
-import ch.batbern.companyuser.watch.dto.AuthRequest;
-import ch.batbern.companyuser.watch.dto.AuthResponse;
-import ch.batbern.companyuser.watch.dto.PairingRequest;
-import ch.batbern.companyuser.watch.dto.PairingResponse;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.security.SecureRandom;
-import java.util.Map;
+import java.time.OffsetDateTime;
 import java.util.Optional;
+import java.util.UUID;
 
 /**
- * REST endpoints for Watch pairing and authentication.
+ * REST endpoints for Watch pairing and authentication, implementing the generated
+ * {@link WatchAuthenticationApi} (users-api).
  * W2.2: AC2 (pair code exchange), AC3 (error handling), AC4 (JWT for persistent pairing).
  *
  * Both endpoints are unauthenticated — the code/token IS the credential.
- * Security is configured in SecurityConfig to permit these paths.
+ * Security is configured in SecurityConfig to permit these paths. Errors answer the
+ * {@code ErrorResponse} users-api names (400, 401, 500), through {@link ResponseStatusException}.
  */
 @RestController
-@RequestMapping("/api/v1/watch")
+@RequestMapping("/api/v1")
 @RequiredArgsConstructor
 @Slf4j
-public class WatchAuthController {
+public class WatchAuthController implements WatchAuthenticationApi {
 
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
@@ -49,22 +51,20 @@ public class WatchAuthController {
      * Response: { "pairingToken": "...", "organizerUsername": "...", "organizerFirstName": "..." }
      *
      * M1 fix: validate + clear + save in a single atomic transaction via claimPairingCode().
-     * M2 fix: returns error body with message on 400, not empty body.
-     * M5 fix: handles user-not-found gracefully instead of throwing 500.
+     * M5 fix: handles user-not-found gracefully (500 with an error body).
      * Returns 400 if code is invalid or expired.
      */
-    @PostMapping("/pair")
+    @Override
     @PreAuthorize("permitAll()")
-    public ResponseEntity<?> pair(@Valid @RequestBody PairingRequest request) {
+    public ResponseEntity<WatchPairingResponse> pairWatch(WatchPairingRequest request) {
         // Generate token first — claimPairingCode() then atomically validates + persists
         String pairingToken = generateSecurePairingToken();
-        Optional<WatchPairing> claimedOpt = watchPairingService.claimPairingCode(request.pairingCode(), pairingToken);
+        Optional<WatchPairing> claimedOpt =
+                watchPairingService.claimPairingCode(request.getPairingCode(), pairingToken);
 
         if (claimedOpt.isEmpty()) {
             log.warn("Pairing attempt with invalid/expired code");
-            // M2: Return error body per story task 3.3 spec
-            return ResponseEntity.badRequest()
-                    .body(Map.of("message", "Code invalid or expired"));
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Code invalid or expired");
         }
 
         WatchPairing pairing = claimedOpt.get();
@@ -73,18 +73,17 @@ public class WatchAuthController {
         Optional<User> organizerOpt = userRepository.findByUsername(pairing.getUsername());
         if (organizerOpt.isEmpty()) {
             log.error("User not found for claimed pairing: {}", pairing.getUsername());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("message", "Internal error during pairing"));
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Internal error during pairing");
         }
 
         User organizer = organizerOpt.get();
         log.info("Watch paired successfully for user: {}", pairing.getUsername());
 
-        return ResponseEntity.ok(new PairingResponse(
-                pairingToken,
-                organizer.getUsername(),
-                organizer.getFirstName()
-        ));
+        return ResponseEntity.ok(WatchPairingResponse.builder()
+                .pairingToken(pairingToken)
+                .organizerUsername(organizer.getUsername())
+                .organizerFirstName(organizer.getFirstName())
+                .build());
     }
 
     /**
@@ -94,17 +93,17 @@ public class WatchAuthController {
      * Request:  { "pairingToken": "..." }
      * Response: { "jwt": "eyJ...", "expiresAt": "2026-02-16T15:30:00Z" }
      *
-     * H3+M3 fix: expiresAt is now an ISO-8601 UTC string correlated with the generated JWT.
+     * H3+M3 fix: expiresAt is an ISO-8601 UTC timestamp correlated with the generated JWT.
      * Returns 401 if pairing token is invalid or not yet paired.
      */
-    @PostMapping("/authenticate")
+    @Override
     @PreAuthorize("permitAll()")
-    public ResponseEntity<AuthResponse> authenticate(@Valid @RequestBody AuthRequest request) {
-        Optional<WatchPairing> pairingOpt = watchPairingService.findByPairingToken(request.pairingToken());
+    public ResponseEntity<WatchAuthResponse> authenticateWatch(WatchAuthRequest request) {
+        Optional<WatchPairing> pairingOpt = watchPairingService.findByPairingToken(request.getPairingToken());
 
         if (pairingOpt.isEmpty()) {
             log.warn("Authentication attempt with invalid pairing token");
-            return ResponseEntity.status(401).build();
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Pairing token invalid or pairing incomplete");
         }
 
         WatchPairing pairing = pairingOpt.get();
@@ -113,7 +112,10 @@ public class WatchAuthController {
 
         log.debug("Watch JWT issued for user: {}", pairing.getUsername());
 
-        return ResponseEntity.ok(new AuthResponse(jwtResult.jwt(), jwtResult.expiresAt()));
+        return ResponseEntity.ok(WatchAuthResponse.builder()
+                .jwt(jwtResult.jwt())
+                .expiresAt(OffsetDateTime.parse(jwtResult.expiresAt()))
+                .build());
     }
 
     // --- Private helpers ---
@@ -124,7 +126,7 @@ public class WatchAuthController {
      */
     private String generateSecurePairingToken() {
         long randomSuffix = Math.abs(SECURE_RANDOM.nextLong());
-        return java.util.UUID.randomUUID()
+        return UUID.randomUUID()
                 + "-" + System.currentTimeMillis()
                 + "-" + randomSuffix;
     }
