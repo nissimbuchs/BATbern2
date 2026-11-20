@@ -18,9 +18,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 class EventWorkflowStateTest {
 
     @Test
-    @DisplayName("should_containAllEightStates_when_EventWorkflowStateEnum_verified")
-    void should_containAllEightStates_when_EventWorkflowStateEnum_verified() {
-        // Given: Expected 8 workflow states (V82: AGENDA_FINALIZED removed)
+    @DisplayName("should_containTheEightLifecycleStatesAndCancelled_when_EventWorkflowStateEnum_verified")
+    void should_containTheEightLifecycleStatesAndCancelled_when_EventWorkflowStateEnum_verified() {
+        // Given: the 8 lifecycle states (V82: AGENDA_FINALIZED removed) plus terminal CANCELLED (#824, V160)
         List<String> expectedStates = Arrays.asList(
             "CREATED",
             "TOPIC_SELECTION",
@@ -29,7 +29,8 @@ class EventWorkflowStateTest {
             "AGENDA_PUBLISHED",
             "EVENT_LIVE",
             "EVENT_COMPLETED",
-            "ARCHIVED"
+            "ARCHIVED",
+            "CANCELLED"
         );
 
         // When: Get all enum values
@@ -38,8 +39,8 @@ class EventWorkflowStateTest {
             .map(Enum::name)
             .collect(Collectors.toList());
 
-        // Then: All 8 states should exist
-        assertThat(actualStates).hasSize(8);
+        // Then: all 9 states exist
+        assertThat(actualStates).hasSize(9);
         assertThat(actualStateNames).containsExactlyInAnyOrderElementsOf(expectedStates);
     }
 
