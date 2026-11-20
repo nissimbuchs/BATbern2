@@ -51,8 +51,6 @@ export interface paths {
      *     - The key is the name's slug, made unique; an alias key is taken too (#1251)
      *     - Website must be valid URL (if provided)
      *
-     *     **Events Published**: CompanyCreatedEvent (in-process domain event)
-     *
      *     **Performance**: <200ms (P95)
      */
     post: operations['createCompany'];
@@ -90,8 +88,6 @@ export interface paths {
      *
      *     **Story 1.16.2**: Uses company name as identifier instead of UUID
      *
-     *     **Events Published**: CompanyDeletedEvent (in-process domain event)
-     *
      *     **Cache Invalidation**: All company caches cleared on deletion
      */
     delete: operations['deleteCompany'];
@@ -107,8 +103,6 @@ export interface paths {
      *
      *     **Validation Rules**:
      *     - Company name must be unique
-     *
-     *     **Events Published**: CompanyUpdatedEvent (in-process domain event)
      *
      *     **Cache Invalidation**: All company caches cleared on update
      */
@@ -177,8 +171,6 @@ export interface paths {
      *
      *     **Authorization**: ORGANIZER role required
      *
-     *     **Events Published**: CompanyVerifiedEvent (in-process domain event)
-     *
      *     **Idempotency**: Safe to call multiple times (no error if already verified)
      */
     post: operations['verifyCompany'];
@@ -221,8 +213,6 @@ export interface paths {
      *
      *     **Authentication**: any signed-in user (401 without a login). Story 4.10d moved it from the
      *     retired colon form `POST /companies:get-or-create`.
-     *
-     *     **Events Published**: CompanyCreatedEvent (only if new company created)
      *
      *     **Performance**: <200ms (P95)
      */

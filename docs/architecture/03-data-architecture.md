@@ -1312,9 +1312,9 @@ flowchart LR
 ```
 
 The shared kernel defines `DomainEvent<T>` with `eventId`, `aggregateId`, `eventType`, `userId`,
-`occurredAt`, `version`, `metadata`, `correlationId` and `causationId`. There are 29 event classes,
+`occurredAt`, `version`, `metadata`, `correlationId` and `causationId`. There are 25 event classes,
 for example `EventWorkflowTransitionEvent`, `SpeakerAcceptedEvent`, `SessionTimingAssignedEvent`,
-`RegistrationCreatedEvent`, `CompanyCreatedEvent`, `UserUpdatedEvent`, `PartnerCreatedEvent`.
+`RegistrationCreatedEvent`, `UserUpdatedEvent`, `PartnerCreatedEvent`.
 
 Events stay in the process that raised them; there is no message bus (the unused EventBridge bus
 was removed in Story 17.2 part B, 2026-11). All listeners are in EMS (for example

@@ -7,7 +7,6 @@ import ch.batbern.companyuser.exception.CompanyNotFoundException;
 import ch.batbern.companyuser.exception.CompanyValidationException;
 import ch.batbern.companyuser.repository.CompanyRepository;
 import ch.batbern.companyuser.security.SecurityContextHelper;
-import ch.batbern.shared.events.DomainEventPublisher;
 import ch.batbern.shared.service.SlugGenerationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -37,7 +36,6 @@ import static org.mockito.Mockito.when;
  * Unit tests for CompanyService
  * Following TDD: Tests written BEFORE implementation
  * AC4: REST API CRUD operations
- * AC7: Domain events publishing (CompanyCreated, CompanyUpdated, CompanyDeleted)
  */
 @ExtendWith(MockitoExtension.class)
 @DisplayName("CompanyService Unit Tests")
@@ -47,14 +45,10 @@ class CompanyServiceTest {
     private CompanyRepository companyRepository;
 
     @Mock
-    private DomainEventPublisher eventPublisher;
-
-    @Mock
     private CompanySearchService searchService;
 
     @Mock
     private SecurityContextHelper securityContextHelper;
-
 
     // The real slug rule (own code, no mock): the key a company gets is what these tests check
     private final SlugGenerationService slugService = new SlugGenerationService();
@@ -71,12 +65,11 @@ class CompanyServiceTest {
         // No upload service: no test here sets a logo upload id (the logo paths run in
         // UploadsControllerIntegrationTest against the real upload service). No alias service: only
         // create and get-or-create use it, and they are tested against PostgreSQL (see below).
-        companyService = new CompanyService(companyRepository, eventPublisher, searchService,
+        companyService = new CompanyService(companyRepository, searchService,
                 securityContextHelper, null, slugService, new CompanyInserter(companyRepository), null);
 
         // Story 1.16.2: the company name (key) is the identifier, a slug since 2026-11-09
         companyName = "testcompany";
-
 
         updateRequest = UpdateCompanyRequest.builder()
                 .name("updatedco")
@@ -123,7 +116,6 @@ class CompanyServiceTest {
     }
 
     @Disabled("Flaky test - passes individually but fails in full suite due to test pollution")
-
 
     @Test
     @DisplayName("Test 4.7: should_throwCompanyNotFoundException_when_companyDoesNotExist")
@@ -188,7 +180,6 @@ class CompanyServiceTest {
     void should_updateCompany_when_validUpdateRequest() {
         // Given
         // Story 1.16.2: use company name instead of UUID
-        when(securityContextHelper.getCurrentUserId()).thenReturn("test-user");
         when(companyRepository.findByName(companyName)).thenReturn(Optional.of(existingCompany));
         when(companyRepository.saveAndFlush(any(Company.class))).thenReturn(existingCompany);
 
@@ -203,7 +194,6 @@ class CompanyServiceTest {
     }
 
     @Disabled("Flaky test - passes individually but fails in full suite due to test pollution")
-
 
     @Test
     @DisplayName("Test 4.11: should_throwCompanyNotFoundException_when_updateNonExistentCompany")
@@ -230,7 +220,6 @@ class CompanyServiceTest {
                 .build();
 
         // Story 1.16.2: use company name instead of UUID
-        when(securityContextHelper.getCurrentUserId()).thenReturn("test-user");
         when(companyRepository.findByName(companyName)).thenReturn(Optional.of(existingCompany));
         when(companyRepository.saveAndFlush(any(Company.class))).thenReturn(existingCompany);
 
@@ -251,7 +240,6 @@ class CompanyServiceTest {
     void should_deleteCompany_when_companyExists() {
         // Given
         // Story 1.16.2: use company name instead of UUID
-        when(securityContextHelper.getCurrentUserId()).thenReturn("test-user");
         when(companyRepository.findByName(companyName)).thenReturn(Optional.of(existingCompany));
         doNothing().when(companyRepository).delete(existingCompany);
 
@@ -265,7 +253,6 @@ class CompanyServiceTest {
     }
 
     @Disabled("Flaky test - passes individually but fails in full suite due to test pollution")
-
 
     @Test
     @DisplayName("Test 4.14: should_throwCompanyNotFoundException_when_deleteNonExistentCompany")
@@ -290,7 +277,6 @@ class CompanyServiceTest {
     void should_markAsVerified_when_validCompanyProvided() {
         // Given
         // Story 1.16.2: use company name instead of UUID
-        when(securityContextHelper.getCurrentUserId()).thenReturn("test-user");
         when(companyRepository.findByName(companyName)).thenReturn(Optional.of(existingCompany));
         when(companyRepository.saveAndFlush(any(Company.class))).thenReturn(existingCompany);
 
@@ -300,23 +286,6 @@ class CompanyServiceTest {
         // Then
         assertThat(response).isNotNull();
         verify(companyRepository).saveAndFlush(argThat(company -> company.isVerified()));
-        verify(eventPublisher).publish(any());
-    }
-
-    @Test
-    @DisplayName("Test 4.18: should_publishCompanyUpdatedEvent_when_companyUpdated")
-    void should_publishCompanyUpdatedEvent_when_companyUpdated() {
-        // Given
-        // Story 1.16.2: use company name instead of UUID
-        when(securityContextHelper.getCurrentUserId()).thenReturn("test-user");
-        when(companyRepository.findByName(companyName)).thenReturn(Optional.of(existingCompany));
-        when(companyRepository.saveAndFlush(any(Company.class))).thenReturn(existingCompany);
-
-        // When
-        companyService.updateCompany(companyName, updateRequest);
-
-        // Then
-        verify(eventPublisher).publish(any());
     }
 
     @Test
@@ -324,7 +293,6 @@ class CompanyServiceTest {
     void should_verifyCompany_when_validIdProvided() {
         // Given
         // Story 1.16.2: use company name instead of UUID
-        when(securityContextHelper.getCurrentUserId()).thenReturn("test-user");
         when(companyRepository.findByName(companyName)).thenReturn(Optional.of(existingCompany));
         when(companyRepository.saveAndFlush(any(Company.class))).thenReturn(existingCompany);
 
@@ -334,11 +302,9 @@ class CompanyServiceTest {
         // Then
         assertThat(response).isNotNull();
         verify(companyRepository).saveAndFlush(argThat(company -> company.isVerified()));
-        verify(eventPublisher).publish(any());
     }
 
     @Disabled("Flaky test - passes individually but fails in full suite due to test pollution")
-
 
     @Test
     @DisplayName("Test 4.20: should_throwCompanyNotFoundException_when_verifyNonExistentCompany")
@@ -353,7 +319,6 @@ class CompanyServiceTest {
                 .hasMessageContaining(companyName);
 
         verify(companyRepository, never()).saveAndFlush(any(Company.class));
-        verify(eventPublisher, never()).publish(any());
     }
 
     @Test
@@ -446,7 +411,6 @@ class CompanyServiceTest {
                 .build();
 
         // Story 1.16.2: use company name instead of UUID
-        when(securityContextHelper.getCurrentUserId()).thenReturn("test-user");
         when(companyRepository.findByName(companyName)).thenReturn(Optional.of(existingCompany));
         when(companyRepository.saveAndFlush(any(Company.class))).thenReturn(existingCompany);
 

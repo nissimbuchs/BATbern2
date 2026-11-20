@@ -773,7 +773,7 @@ The organizers decide in the Mail Center; company edits themselves stay `ORGANIZ
   uploads again on retry, because the association has already moved the temporary S3 object.
 - **Decision** (`ORGANIZER`). `POST /users/company-logo-requests/{id}/approve` copies the logo to the
   company's final key (`logos/companies/{name}/logo-{uploadId}.{ext}`, no year since 17.11a; `UploadService.reassign`)
-  and sets it through `CompanyService.applyRequestedLogo` (cache invalidation, `CompanyUpdatedEvent`,
+  and sets it through `CompanyService.applyRequestedLogo` (cache invalidation,
   like an organizer edit). `.../decline {reason?}` changes nothing on the company. Either way the requester is mailed
   at the primary address (`company-logo-approved|declined-{de,en}`, the reason block only when given),
   best effort, and the conversation is closed after the commit (contract `.../decision`).

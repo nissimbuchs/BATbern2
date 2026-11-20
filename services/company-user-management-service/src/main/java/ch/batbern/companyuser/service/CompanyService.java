@@ -6,15 +6,10 @@ import ch.batbern.companyuser.dto.generated.CompanyLogo;
 import ch.batbern.companyuser.dto.generated.CompanyResponse;
 import ch.batbern.companyuser.dto.generated.CreateCompanyRequest;
 import ch.batbern.companyuser.dto.generated.UpdateCompanyRequest;
-import ch.batbern.companyuser.event.CompanyCreatedEvent;
-import ch.batbern.companyuser.event.CompanyDeletedEvent;
-import ch.batbern.companyuser.event.CompanyUpdatedEvent;
-import ch.batbern.companyuser.event.CompanyVerifiedEvent;
 import ch.batbern.companyuser.exception.CompanyNotFoundException;
 import ch.batbern.companyuser.exception.CompanyValidationException;
 import ch.batbern.companyuser.repository.CompanyRepository;
 import ch.batbern.companyuser.security.SecurityContextHelper;
-import ch.batbern.shared.events.DomainEventPublisher;
 import ch.batbern.shared.exception.ValidationException;
 import ch.batbern.shared.service.SlugGenerationService;
 import ch.batbern.shared.upload.UploadRecord;
@@ -35,7 +30,6 @@ import java.util.stream.Collectors;
 /**
  * Service for company management business logic
  * AC4: Company CRUD operations
- * AC7: Domain event publishing
  * AC8: Cache invalidation
  *
  * GREEN Phase: Implementation to make tests pass
@@ -47,7 +41,6 @@ import java.util.stream.Collectors;
 public class CompanyService {
 
     private final CompanyRepository companyRepository;
-    private final DomainEventPublisher eventPublisher;
     private final CompanySearchService searchService;
     private final SecurityContextHelper securityContextHelper;
     private final UploadService<CompanyUserUpload> uploadService;
@@ -58,7 +51,6 @@ public class CompanyService {
     /**
      * Creates a new company with validation
      * AC4: Company creation
-     * AC7: Publishes CompanyCreatedEvent
      * AC8: Invalidates search cache
      *
      * <p>Owner decision 2026-11-09 (option A): the key ({@code name}, the meaningful ID) is the slug
@@ -126,20 +118,6 @@ public class CompanyService {
         // Invalidate search cache (AC8)
         searchService.invalidateCache();
 
-        // Publish domain event (AC7) using shared-kernel DomainEventPublisher
-        // Story 1.16.2: Use company.name as aggregate ID, username as String
-        CompanyCreatedEvent event = new CompanyCreatedEvent(
-            savedCompany.getName(),  // companyName as aggregate ID
-            savedCompany.getName(),
-            savedCompany.getDisplayName(),
-            savedCompany.getWebsite(),
-            savedCompany.getIndustry(),
-            savedCompany.getDescription(),
-            savedCompany.getCreatedBy(),
-            savedCompany.getCreatedAt(),
-            currentUsername  // username as String
-        );
-        eventPublisher.publish(event);
 
         log.info("Company created successfully: {}", savedCompany.getId());
         return mapToResponse(savedCompany);
@@ -224,19 +202,6 @@ public class CompanyService {
             return new Resolved(concurrent, false);
         }
 
-        // Publish domain event
-        CompanyCreatedEvent event = new CompanyCreatedEvent(
-            savedCompany.getName(),
-            savedCompany.getName(),
-            savedCompany.getDisplayName(),
-            savedCompany.getWebsite(),
-            savedCompany.getIndustry(),
-            savedCompany.getDescription(),
-            savedCompany.getCreatedBy(),
-            savedCompany.getCreatedAt(),
-            savedCompany.getCreatedBy()
-        );
-        eventPublisher.publish(event);
 
         log.info("Company created: {} (name: {}, display: {})",
                  savedCompany.getId(), savedCompany.getName(), savedCompany.getDisplayName());
@@ -280,7 +245,6 @@ public class CompanyService {
     /**
      * Updates company details
      * AC4: Company update
-     * AC7: Publishes CompanyUpdatedEvent
      * AC8: Invalidates search cache
      * Story 1.16.2: Use company name as identifier instead of UUID
      */
@@ -320,7 +284,7 @@ public class CompanyService {
 
         company.setUpdatedAt(Instant.now());
         // Flush so that @PreUpdate has set the updatedAt the row gets before the response and the
-        // CompanyUpdatedEvent read it (both are built inside this transaction).
+        // logo handling read it.
         Company updatedCompany = companyRepository.saveAndFlush(company);
 
         // Handle logo changes (Story 1.16.3: Generic File Upload)
@@ -349,19 +313,6 @@ public class CompanyService {
         // Invalidate search cache (AC8)
         searchService.invalidateCache();
 
-        // Publish domain event (AC7) using shared-kernel DomainEventPublisher
-        // Story 1.16.2: Use company.name as aggregate ID, username as String
-        CompanyUpdatedEvent event = new CompanyUpdatedEvent(
-            updatedCompany.getName(),  // companyName as aggregate ID
-            updatedCompany.getName(),
-            updatedCompany.getDisplayName(),
-            updatedCompany.getWebsite(),
-            updatedCompany.getIndustry(),
-            updatedCompany.getDescription(),
-            updatedCompany.getUpdatedAt(),
-            securityContextHelper.getCurrentUserId()  // username as String
-        );
-        eventPublisher.publish(event);
 
         log.info("Company updated successfully: {}", name);
         return mapToResponse(updatedCompany);
@@ -370,7 +321,6 @@ public class CompanyService {
     /**
      * Deletes company
      * AC4: Company deletion
-     * AC7: Publishes CompanyDeletedEvent
      * AC8: Invalidates search cache
      * Story 1.16.2: Use company name as identifier instead of UUID
      */
@@ -385,15 +335,6 @@ public class CompanyService {
         // Invalidate search cache (AC8)
         searchService.invalidateCache();
 
-        // Publish domain event (AC7) using shared-kernel DomainEventPublisher
-        // Story 1.16.2: Use company.name as aggregate ID, username as String
-        CompanyDeletedEvent event = new CompanyDeletedEvent(
-            company.getName(),  // companyName as aggregate ID
-            company.getName(),
-            Instant.now(),
-            securityContextHelper.getCurrentUserId()  // username as String
-        );
-        eventPublisher.publish(event);
 
         log.info("Company deleted successfully: {}", name);
     }
@@ -401,7 +342,6 @@ public class CompanyService {
     /**
      * Marks company as verified
      * AC6: Company verification workflow
-     * AC7: Publishes CompanyVerifiedEvent
      * Story 1.16.2: Use company name as identifier instead of UUID
      */
     public CompanyResponse markAsVerified(String name) {
@@ -414,16 +354,6 @@ public class CompanyService {
         // Flush: @PreUpdate sets the stored updatedAt, which the response and the event carry.
         Company verifiedCompany = companyRepository.saveAndFlush(company);
 
-        // Publish domain event (AC7) using shared-kernel DomainEventPublisher
-        // Story 1.16.2: Use company.name as aggregate ID, username as String
-        CompanyVerifiedEvent event = new CompanyVerifiedEvent(
-            verifiedCompany.getName(),  // companyName as aggregate ID
-            verifiedCompany.getName(),
-            verifiedCompany.isVerified(),
-            verifiedCompany.getUpdatedAt(),
-            securityContextHelper.getCurrentUserId()  // username as String
-        );
-        eventPublisher.publish(event);
 
         log.info("Company marked as verified: {}", name);
         return mapToResponse(verifiedCompany);
@@ -432,7 +362,6 @@ public class CompanyService {
     /**
      * Verifies a company (public API method)
      * AC13: Company verification workflow endpoint
-     * AC7: Publishes CompanyVerifiedEvent
      * Idempotent operation - can be called multiple times safely
      * Story 1.16.2: Use company name as identifier instead of UUID
      */
@@ -490,7 +419,7 @@ public class CompanyService {
 
     /**
      * #1246: gives the company the logo of an accepted logo request. Same effect as an organizer
-     * setting the logo in the company edit: final key, cache invalidation, CompanyUpdatedEvent.
+     * setting the logo in the company edit: final key, cache invalidation.
      *
      * @return the company's new logo URL
      */
@@ -507,7 +436,7 @@ public class CompanyService {
 
     /**
      * Story 17.11: an upload confirmed with the target {@code companyName} becomes the company logo,
-     * with the same effects as the edit (cache invalidation, CompanyUpdatedEvent).
+     * with the same effects as the edit (cache invalidation).
      */
     public String applyLogo(String companyName, UploadRecord upload) {
         Company company = companyRepository.findByName(companyName)
@@ -520,15 +449,6 @@ public class CompanyService {
         company.setUpdatedAt(Instant.now());
         Company saved = companyRepository.save(company);
         searchService.invalidateCache();
-        eventPublisher.publish(new CompanyUpdatedEvent(
-                saved.getName(),
-                saved.getName(),
-                saved.getDisplayName(),
-                saved.getWebsite(),
-                saved.getIndustry(),
-                saved.getDescription(),
-                saved.getUpdatedAt(),
-                securityContextHelper.getCurrentUserId()));
         log.info("Logo applied to company: {}, logoUrl: {}", saved.getName(), saved.getLogoUrl());
         return saved.getLogoUrl();
     }

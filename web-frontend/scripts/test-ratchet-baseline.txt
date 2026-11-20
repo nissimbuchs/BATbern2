@@ -79,7 +79,6 @@ be-transactional-it	services/company-user-management-service/src/test/java/ch/ba
 be-transactional-it	services/company-user-management-service/src/test/java/ch/batbern/companyuser/integration/AuthenticationIntegrationTest.java	1
 be-transactional-it	services/company-user-management-service/src/test/java/ch/batbern/companyuser/integration/CompanyControllerIntegrationTest.java	1
 be-transactional-it	services/company-user-management-service/src/test/java/ch/batbern/companyuser/integration/CompanySearchIntegrationTest.java	1
-be-transactional-it	services/company-user-management-service/src/test/java/ch/batbern/companyuser/integration/EventPublishingIntegrationTest.java	1
 be-transactional-it	services/company-user-management-service/src/test/java/ch/batbern/companyuser/integration/FederatedAvatarImportIntegrationTest.java	1
 be-transactional-it	services/company-user-management-service/src/test/java/ch/batbern/companyuser/integration/JITAdditionalEmailGuardIntegrationTest.java	1
 be-transactional-it	services/company-user-management-service/src/test/java/ch/batbern/companyuser/integration/JITProvisioningIntegrationTest.java	1
