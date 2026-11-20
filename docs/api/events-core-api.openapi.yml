@@ -2906,7 +2906,10 @@ components:
             type: array
             description: 'Expanded sessions for the single-event detail view — carries the full
               SessionResponse shape (materials + enriched speakers). The list endpoint embeds the
-              leaner Session instead (materialsStatus only, no materials array).'
+              leaner Session instead (materialsStatus only, no materials array). The public read
+              model (`/public/events*`) and the public view of `/events/current` carry the public
+              materials only (`publiclyVisible`), in the public projection, and count only those
+              (#1260).'
             items:
               $ref: ./event-sessions-api.openapi.yml#/components/schemas/SessionResponse
           currentPublishedPhase:

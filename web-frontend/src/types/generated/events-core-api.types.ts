@@ -1032,7 +1032,7 @@ export interface components {
     };
     EventDetail: components['schemas']['Event'] & {
       venue?: components['schemas']['Venue'];
-      /** @description Expanded sessions for the single-event detail view — carries the full SessionResponse shape (materials + enriched speakers). The list endpoint embeds the leaner Session instead (materialsStatus only, no materials array). */
+      /** @description Expanded sessions for the single-event detail view — carries the full SessionResponse shape (materials + enriched speakers). The list endpoint embeds the leaner Session instead (materialsStatus only, no materials array). The public read model (`/public/events*`) and the public view of `/events/current` carry the public materials only (`publiclyVisible`), in the public projection, and count only those (#1260). */
       sessions?: components['schemas']['SessionResponse'][];
       /**
        * @description Progressive publishing phase for watch app (Story W1.2)
@@ -1782,12 +1782,12 @@ export interface components {
        */
       id: string;
       /**
-       * @description Client-supplied upload correlation id
+       * @description Client-supplied upload correlation id. Empty string in the public projection (a caller who is neither an organizer nor a speaker of the session, and the public read model,
        * @example upload-2026-0001
        */
       uploadId: string;
       /**
-       * @description S3 object key of the stored material
+       * @description S3 object key of the stored material. Empty string in the public projection (#1260).
        * @example materials/2026/batbern142/ui-design/slides.pdf
        */
       s3Key: string;
@@ -1823,7 +1823,7 @@ export interface components {
        */
       materialType: string;
       /**
-       * @description Username of the uploader (public identifier per ADR-003)
+       * @description Username of the uploader (public identifier per ADR-003). Empty string in the public projection (#1260).
        * @example john.doe
        */
       uploadedBy: string;
@@ -1863,7 +1863,7 @@ export interface components {
       /** @description Story 5.9: Uploaded session materials (populated by the service layer) */
       materials: components['schemas']['SessionMaterialResponse'][] | null;
       /**
-       * @description Story 5.9: Number of uploaded materials (for overview displays)
+       * @description Story 5.9: Number of materials in `materials`. A caller who is neither an organizer nor a speaker of the session sees and counts the public ones only (`publiclyVisible`, #1260); the public read model always does.
        * @example 3
        */
       materialsCount: number;

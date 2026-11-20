@@ -397,6 +397,8 @@ paths:
       - Sessions
       summary: List event sessions
       description: 'Retrieve all sessions for a specific event with optional filtering.
+        `materialsCount` and `materialsStatus` count, for a caller who is neither an organizer nor
+        a speaker of the session, the public materials only (#1260).
 
 
         **Acceptance Criteria**: AC9
@@ -1327,6 +1329,9 @@ paths:
 
         - Confirmation status for each speaker
 
+        - Materials: every material for organizers and the speakers of the session, the public
+        ones (`publiclyVisible`) in the public projection for any other caller (#1260)
+
 
         **Public Endpoint**: No authentication required for GET requests
 
@@ -1893,9 +1898,11 @@ paths:
       tags:
       - Session Materials
       summary: List session materials
-      description: 'Retrieve all materials associated with a session (Story 5.9). Requires
-        authentication (organizer/speaker materials-management view); anonymous archive visitors
-        download individual materials via the public {materialId}/download endpoint instead.'
+      description: 'Retrieve the materials of a session (Story 5.9). Requires authentication.
+        Organizers and the speakers of the session get every material; any other caller only the
+        public ones (`publiclyVisible`), in the public projection (no uploader, S3 key or upload id,
+        #1260). A session that is not in the event is 404. Anonymous archive visitors read the
+        public materials on the public event and download them via {materialId}/download.'
       operationId: getSessionMaterials
       security:
       - bearerAuth: []
@@ -2656,7 +2663,9 @@ components:
               $ref: '#/components/schemas/SessionMaterialResponse'
           materialsCount:
             type: integer
-            description: 'Story 5.9: Number of uploaded materials (for overview displays)'
+            description: 'Story 5.9: Number of materials in `materials`. A caller who is neither an
+              organizer nor a speaker of the session sees and counts the public ones only
+              (`publiclyVisible`, #1260); the public read model always does.'
             example: 3
     SessionMaterialResponse:
       type: object
@@ -2690,11 +2699,14 @@ components:
           example: 3fa85f64-5717-4562-b3fc-2c963f66afa6
         uploadId:
           type: string
-          description: Client-supplied upload correlation id
+          description: Client-supplied upload correlation id. Empty string in the public projection
+            (a caller who is neither an organizer nor a speaker of the session, and the public read
+            model, #1260).
           example: upload-2026-0001
         s3Key:
           type: string
-          description: S3 object key of the stored material
+          description: S3 object key of the stored material. Empty string in the public projection
+            (#1260).
           example: materials/2026/batbern142/ui-design/slides.pdf
         cloudFrontUrl:
           type: string
@@ -2723,7 +2735,8 @@ components:
           example: slides
         uploadedBy:
           type: string
-          description: Username of the uploader (public identifier per ADR-003)
+          description: Username of the uploader (public identifier per ADR-003). Empty string in the
+            public projection (#1260).
           example: john.doe
         createdAt:
           type: string

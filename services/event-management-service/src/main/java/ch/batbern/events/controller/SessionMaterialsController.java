@@ -71,8 +71,10 @@ public class SessionMaterialsController implements SessionMaterialsApi {
             String eventCode,
             String sessionSlug) {
 
+        // The session must be in the event (404); everyone else than an organizer or the session's
+        // speakers gets the public materials only (#1260).
         List<SessionMaterialResponse> materials = sessionMaterialsService
-                .getMaterialsBySession(sessionSlug);
+                .getMaterialsBySession(eventCode, sessionSlug);
 
         return ResponseEntity.ok(new SessionMaterialsResponse().materials(materials));
     }

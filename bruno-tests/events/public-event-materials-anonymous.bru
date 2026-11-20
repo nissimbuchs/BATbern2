@@ -1,0 +1,54 @@
+meta {
+  name: Public materials — no non-public material in the public event (GET /public/events/{code}, #1260)
+  type: http
+  seq: 40
+}
+
+get {
+  url: {{baseUrl}}/public/events/{{publicMaterialsEventCode}}
+  body: none
+  auth: none
+}
+
+tests {
+  const expected = bru.getVar("publicMaterialsExpected") === "true";
+  const sessions = (res.getBody() && res.getBody().sessions) || [];
+  const materials = sessions.flatMap(s => s.materials || []);
+
+  if (!expected) {
+    test("no archived event with public materials here: nothing to check", function() {
+      expect([200, 404]).to.include(res.getStatus());
+    });
+  } else {
+    test("200 without a token", function() {
+      expect(res.getStatus()).to.equal(200);
+    });
+
+    test("positive control: the event carries at least one material", function() {
+      expect(materials.length).to.be.above(0);
+    });
+
+    test("every material is public and names no uploader, S3 key or upload id", function() {
+      materials.forEach(m => {
+        expect(m.publiclyVisible).to.equal(true);
+        expect(m.uploadedBy).to.equal("");
+        expect(m.s3Key).to.equal("");
+        expect(m.uploadId).to.equal("");
+        expect(m.cloudFrontUrl).to.be.a("string").and.not.equal("");
+      });
+    });
+
+    test("each session counts the materials it shows", function() {
+      sessions.forEach(s => {
+        expect(s.materialsCount).to.equal((s.materials || []).length);
+      });
+    });
+  }
+}
+
+docs {
+  Issue 1260, AC4, against live data: the anonymous public event detail contains public materials only,
+  in the public projection, and counts only those. The event comes from the previous request;
+  an environment without an archived event with public materials passes with nothing to check.
+  Read-only, uploads and sends nothing, safe on every environment.
+}

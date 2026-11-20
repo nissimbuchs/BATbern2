@@ -8,7 +8,6 @@ import ch.batbern.events.event.SessionMaterialsUploadedEvent;
 import ch.batbern.events.exception.SessionNotFoundException;
 import ch.batbern.events.repository.SessionMaterialsRepository;
 import ch.batbern.events.repository.SessionRepository;
-import ch.batbern.events.repository.SessionUserRepository;
 import ch.batbern.events.security.SecurityContextHelper;
 import ch.batbern.shared.events.DomainEventPublisher;
 import ch.batbern.shared.upload.UploadException;
@@ -79,7 +78,7 @@ public class SessionMaterialUploadHandler implements UploadPurposeHandler {
             Set.of("pptx", "ppt", "key", "pdf"));
 
     private final SessionRepository sessionRepository;
-    private final SessionUserRepository sessionUserRepository;
+    private final SessionMaterialAccess materialAccess;
     private final SessionMaterialsRepository sessionMaterialsRepository;
     private final SecurityContextHelper securityContextHelper;
     private final DomainEventPublisher domainEventPublisher;
@@ -166,14 +165,10 @@ public class SessionMaterialUploadHandler implements UploadPurposeHandler {
 
     /**
      * Organizers may change the materials of any session, a speaker only of a session they are on
-     * ({@code session_users}); 403 otherwise. Shared by the upload, association and delete.
+     * ({@link SessionMaterialAccess}); 403 otherwise. Shared by the upload, association, change and delete.
      */
     public void checkMayChangeMaterials(Session session) {
-        if (isOrganizer()) {
-            return;
-        }
-        String username = securityContextHelper.getCurrentUsernameOrNull();
-        if (username == null || !sessionUserRepository.existsBySessionIdAndUsername(session.getId(), username)) {
+        if (!materialAccess.mayUseNonPublic(session)) {
             throw UploadException.forbidden("Speakers may only change the materials of their own sessions");
         }
     }

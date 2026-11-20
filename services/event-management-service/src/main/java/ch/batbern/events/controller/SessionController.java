@@ -5,7 +5,6 @@ import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Session;
 import ch.batbern.events.exception.EventNotFoundException;
 import ch.batbern.events.mapper.SessionEnums;
-import ch.batbern.events.mapper.SessionMapper;
 import ch.batbern.events.repository.SessionContentHistoryRepository;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SessionRepository;
@@ -75,9 +74,6 @@ public class SessionController implements SessionsApi {
     private SessionService sessionService;
 
     @Autowired
-    private SessionMapper sessionMapper;
-
-    @Autowired
     private SessionBatchImportService sessionBatchImportService;
 
     @Autowired
@@ -134,12 +130,12 @@ public class SessionController implements SessionsApi {
                 sessionsPage = new PageImpl<>(visible.subList(from, to), pageable, visible.size());
             }
 
-            // Map entities to the generated SessionResponse via the pure mapper (no speaker
-            // enrichment — list payloads stay lean, matching prior raw-entity behaviour).
+            // Lean list items (no speakers, no materials); the materials count is what the caller
+            // may see (#1260).
             List<SessionResponse> data = sessionsPage.getContent().stream()
                     .map(session -> {
                         session.setEventCode(eventCode);
-                        return sessionMapper.toDto(session);
+                        return sessionService.toListItem(session);
                     })
                     .toList();
 

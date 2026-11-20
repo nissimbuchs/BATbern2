@@ -111,7 +111,7 @@ export interface paths {
     };
     /**
      * List event sessions
-     * @description Retrieve all sessions for a specific event with optional filtering.
+     * @description Retrieve all sessions for a specific event with optional filtering. `materialsCount` and `materialsStatus` count, for a caller who is neither an organizer nor a speaker of the session, the public materials only (#1260).
      *
      *     **Acceptance Criteria**: AC9
      *     **Story**: 1.16.2 - Uses eventCode (meaningful ID) instead of UUID
@@ -413,6 +413,7 @@ export interface paths {
      *     - Session details (title, description, time, room)
      *     - Speaker list with enriched User data
      *     - Confirmation status for each speaker
+     *     - Materials: every material for organizers and the speakers of the session, the public ones (`publiclyVisible`) in the public projection for any other caller (#1260)
      *
      *     **Public Endpoint**: No authentication required for GET requests
      */
@@ -566,7 +567,7 @@ export interface paths {
     };
     /**
      * List session materials
-     * @description Retrieve all materials associated with a session (Story 5.9). Requires authentication (organizer/speaker materials-management view); anonymous archive visitors download individual materials via the public {materialId}/download endpoint instead.
+     * @description Retrieve the materials of a session (Story 5.9). Requires authentication. Organizers and the speakers of the session get every material; any other caller only the public ones (`publiclyVisible`), in the public projection (no uploader, S3 key or upload id, #1260). A session that is not in the event is 404. Anonymous archive visitors read the public materials on the public event and download them via {materialId}/download.
      */
     get: operations['getSessionMaterials'];
     put?: never;
@@ -963,7 +964,7 @@ export interface components {
       /** @description Story 5.9: Uploaded session materials (populated by the service layer) */
       materials: components['schemas']['SessionMaterialResponse'][] | null;
       /**
-       * @description Story 5.9: Number of uploaded materials (for overview displays)
+       * @description Story 5.9: Number of materials in `materials`. A caller who is neither an organizer nor a speaker of the session sees and counts the public ones only (`publiclyVisible`, #1260); the public read model always does.
        * @example 3
        */
       materialsCount: number;
@@ -980,12 +981,12 @@ export interface components {
        */
       id: string;
       /**
-       * @description Client-supplied upload correlation id
+       * @description Client-supplied upload correlation id. Empty string in the public projection (a caller who is neither an organizer nor a speaker of the session, and the public read model,
        * @example upload-2026-0001
        */
       uploadId: string;
       /**
-       * @description S3 object key of the stored material
+       * @description S3 object key of the stored material. Empty string in the public projection (#1260).
        * @example materials/2026/batbern142/ui-design/slides.pdf
        */
       s3Key: string;
@@ -1021,7 +1022,7 @@ export interface components {
        */
       materialType: string;
       /**
-       * @description Username of the uploader (public identifier per ADR-003)
+       * @description Username of the uploader (public identifier per ADR-003). Empty string in the public projection (#1260).
        * @example john.doe
        */
       uploadedBy: string;

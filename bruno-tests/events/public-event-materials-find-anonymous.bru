@@ -1,0 +1,37 @@
+meta {
+  name: Public materials — find an archived event with materials (GET /public/events, #1260)
+  type: http
+  seq: 39
+}
+
+get {
+  url: {{baseUrl}}/public/events?scope=archive&limit=20
+  body: none
+  auth: none
+}
+
+script:post-response {
+  const events = (res.getBody() && res.getBody().data) || [];
+  const withMaterials = events.find(e => (e.sessions || []).some(s => s.materialsStatus === "COMPLETE"));
+  bru.setVar("publicMaterialsExpected", withMaterials ? "true" : "false");
+  bru.setVar("publicMaterialsEventCode", withMaterials ? withMaterials.eventCode : "BATbern0");
+}
+
+tests {
+  test("200 without a token", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("lean sessions carry no materials array", function() {
+    (res.getBody().data || []).forEach(e => (e.sessions || []).forEach(s => {
+      expect(s.materials).to.equal(undefined);
+    }));
+  });
+}
+
+docs {
+  Issue 1260: picks the most recent archived event (first page) with a session whose materialsStatus
+  is COMPLETE. For an anonymous caller that status counts public materials only, so the event
+  found has at least one public material. The next request reads its public detail.
+  Read-only, safe on every environment.
+}

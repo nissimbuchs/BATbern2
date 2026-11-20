@@ -73,7 +73,7 @@
             "presentationTitle" : null,
             "isConfirmed" : true
           } ],
-          "materialsStatus" : "NONE"
+          "materialsStatus" : "COMPLETE"
         } ],
         "speakers" : [ {
           "username" : "ari.archived",

@@ -40,6 +40,7 @@ public class SessionEventExpansion implements EventResponseContributor {
     private final SessionMaterialsRepository sessionMaterialsRepository;
     private final SessionService sessionService;
     private final SessionVisibility sessionVisibility;
+    private final SessionMaterialsService sessionMaterialsService;
 
     @Override
     public Set<String> includes() {
@@ -121,10 +122,12 @@ public class SessionEventExpansion implements EventResponseContributor {
             String eventCode = events.get(i).getEventCode();
             List<Session> eventSessions = sessionsByEventId.getOrDefault(eventId, List.of());
 
+            // The public view names public materials only; otherwise what the caller may see (#1260)
             List<Map<String, Object>> sessionMaps = eventSessions.stream()
                     .map(s -> buildSessionMapBatch(
                             s, eventCode,
-                            finalMaterials.getOrDefault(s.getId(), List.of()),
+                            SessionMaterialsService.visible(finalMaterials.getOrDefault(s.getId(), List.of()),
+                                    sessionMaterialsService.mayShowNonPublic(s, view == View.PUBLIC)),
                             finalPortraits))
                     .collect(Collectors.toList());
 
@@ -133,7 +136,8 @@ public class SessionEventExpansion implements EventResponseContributor {
     }
 
     /**
-     * Build a session response map from already-loaded entities (no DB or HTTP calls).
+     * Build a session response map from already-loaded entities (no DB or HTTP calls). The materials
+     * are the ones this response may show; count and status follow them.
      *
      * Speaker names, portrait URLs, and company logo URLs all come from the batch
      * cross-service join result (user_profiles + companies tables).
@@ -223,7 +227,9 @@ public class SessionEventExpansion implements EventResponseContributor {
         // Convert to response format using SessionService (includes materials - Story 5.9)
         return sessions.stream()
                 .map(session -> {
-                    SessionResponse sessionResponse = sessionService.toSessionResponse(session, event.getEventCode());
+                    // The public view carries public materials only, whoever asks (#1260)
+                    SessionResponse sessionResponse = sessionService.toSessionResponse(session,
+                            event.getEventCode(), true, view == View.PUBLIC);
 
                     // Convert SessionResponse to Map for backward compatibility
                     Map<String, Object> sessionMap = new HashMap<>();

@@ -44,6 +44,8 @@ Only items that are not live yet. Everything else is listed under its release be
 **New — Each session material is marked public or not (#1260)**:
 - ✅ Every session material now says whether it may be published after the event. A new PDF is public, any other file (PowerPoint, Keynote, Word, video) is not, so a speaker can upload the PowerPoint for the moderator next to the PDF for the public. The upload can say otherwise, and organizers and the session's speakers can change it later.
 - ✅ Existing materials: PDFs stay public, all other files are marked not public.
+- ✅ The public event page, the archive and the Apple Watch show only the public materials, and count only those. Visitors no longer see who uploaded a file.
+- ⚠️ API: a caller who is neither an organizer nor a speaker of the session gets only the public materials in `GET …/sessions/{sessionSlug}`, `GET …/sessions/{sessionSlug}/materials` and the counts of `GET …/sessions`; `/public/events*` and the public view of `/events/current` always do. Their `uploadedBy`, `s3Key` and `uploadId` are empty strings. `GET …/materials` of a session that is not in the event answers 404.
 - ⚠️ API: new `PATCH /api/v1/events/{eventCode}/sessions/{sessionSlug}/materials/{materialId}` `{publiclyVisible}` (organizers, or a speaker of that session; another session's material 404). `SessionMaterialResponse` has `publiclyVisible`; `POST …/uploads/session-material/{uploadId}/confirm` and the items of `POST …/materials` take an optional `publiclyVisible`.
 
 **Fix — Deleting a session material through another session of the event answers 404**:

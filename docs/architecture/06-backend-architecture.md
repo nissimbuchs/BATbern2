@@ -188,6 +188,21 @@ so the website never shows an organizer something a visitor would not see.
   changes it (organizer, or a speaker of that session through `checkMayChangeMaterials`; a material
   of another session 404) and clears `eventWithIncludes` after the commit, as an upload does. The
   material is loaded within its session (`findByIdAndSession_Id`), for the delete too.
+- **Only public materials for everyone else** (#1260). `SessionMaterialAccess` is the one place that
+  decides who may see non-public materials: an organizer, or a speaker on that session
+  (`session_users`); `checkMayChangeMaterials` uses it too. `SessionMaterialsService.materialsFor`
+  builds every materials list of a response: all of them for those callers, otherwise the public
+  ones in the public projection (`uploadedBy`, `s3Key`, `uploadId` sent as empty strings, kept in the
+  schema because installed Apple Watch binaries decode them as required). Only the uploader is
+  hidden by this: the key, and with it the upload id, is the path of the public `cloudFrontUrl`; the
+  fields are blanked so no public client comes to depend on them. `include=metrics`
+  (`sessionsWithMaterialsCount`) counts public files for everyone but organizers, since the event
+  detail caches one entry for all non-organizers. The public read model
+  (`/public/events*`) and the public view of `/events/current` pass `publicView` and show public
+  materials to every caller, organizers included: they are shaped by publishing state, never by
+  caller. `GET /events/{code}/sessions/{slug}`, `GET …/materials` and the sessions list decide per
+  caller and session; `materialsCount` and `materialsStatus` count what the response shows (the
+  sessions list: the stored count for privileged callers, the public count otherwise).
 
 `PublicEventController` (publishing) serves these three paths through `PublicEventsService`, which
 builds on the event read of event core (`EventReadService`) in the public session view and shapes

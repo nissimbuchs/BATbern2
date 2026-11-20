@@ -81,9 +81,10 @@ public class SpeakerMetricsExpansion implements EventResponseContributor {
                 .filter(session -> session.getStartTime() != null)
                 .filter(session -> !Session.isStructuralType(session.getSessionType()))
                 .filter(session -> {
-                    // Count sessions with materialsStatus = COMPLETE
+                    // Count sessions with materialsStatus = COMPLETE. Organizers count every file;
+                    // anyone else (one shared cache entry) the public ones only, never by caller (#1260).
                     List<SessionMaterialResponse> materials =
-                            sessionService.toSessionResponse(session, event.getEventCode(), false)
+                            sessionService.toSessionResponse(session, event.getEventCode(), false, view != View.ALL)
                                     .getMaterials();
                     return materials != null && !materials.isEmpty();
                 })
