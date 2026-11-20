@@ -121,9 +121,9 @@ class V159SessionMaterialsPubliclyVisibleMigrationIntegrationTest {
         UUID id = UUID.randomUUID();
         jdbcTemplate.update(
                 "INSERT INTO session_materials (id, session_id, upload_id, s3_key, cloudfront_url, file_name, "
-                        + "file_extension, file_size, mime_type, material_type, uploaded_by) "
+                        + "file_extension, file_size, mime_type, material_type, uploaded_by, created_at, updated_at) "
                         + "VALUES (?, ?, ?, 'k', 'https://cdn.example.com/k', ?, ?, 1, ?, 'PRESENTATION', "
-                        + "'speaker.v159')",
+                        + "'speaker.v159', TIMESTAMPTZ '2020-01-01 00:00:00+00', TIMESTAMPTZ '2020-01-01 00:00:00+00')",
                 id, sessionId, "upl-" + id, fileName, extension, mimeType);
         return id;
     }
@@ -143,6 +143,17 @@ class V159SessionMaterialsPubliclyVisibleMigrationIntegrationTest {
         assertThat(visible(pdfByMimeOnly)).isTrue();
         assertThat(visible(pptx)).isFalse();
         assertThat(visible(otherEventKeynote)).isFalse();
+    }
+
+    @Test
+    @DisplayName("the backfill keeps each material's updated_at")
+    void should_keepUpdatedAt_whenBackfilling() {
+        migrateTo("159");
+
+        Integer touched = jdbcTemplate.queryForObject(
+                "SELECT count(*) FROM session_materials WHERE updated_at <> TIMESTAMPTZ '2020-01-01 00:00:00+00'",
+                Integer.class);
+        assertThat(touched).isZero();
     }
 
     @Test
