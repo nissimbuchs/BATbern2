@@ -206,9 +206,11 @@ export function useParticipantBatchImport() {
         onProgress?.(c + 1, chunks.length);
       }
 
-      // Invalidate cache to refresh user/registration data
+      // Refresh the users, the registration lists and the events with their counts. The key
+      // ['registrations'] used here matched no query (#824 item 5); an import can touch many events.
       await queryClient.invalidateQueries({ queryKey: ['users'] });
-      await queryClient.invalidateQueries({ queryKey: ['registrations'] });
+      await queryClient.invalidateQueries({ queryKey: ['event-registrations'] });
+      await queryClient.invalidateQueries({ queryKey: ['event'] });
 
       setIsImporting(false);
       return result;

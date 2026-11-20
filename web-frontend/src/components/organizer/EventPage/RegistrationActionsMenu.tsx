@@ -63,13 +63,17 @@ const RegistrationActionsMenu: React.FC<RegistrationActionsMenuProps> = ({
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
   const closeMenu = () => setMenuAnchor(null);
 
+  // The list and the event: the tab's confirmed/waitlist counts and the capacity bar come from
+  // the event query, not from the list (#824 item 5).
+  const refreshListAndCounts = () => {
+    queryClient.invalidateQueries({ queryKey: ['event-registrations', participant.eventCode] });
+    queryClient.invalidateQueries({ queryKey: ['event', participant.eventCode] });
+  };
+
   // Cancel registration mutation
   const cancelMutation = useMutation({
     mutationFn: () => cancelRegistration(participant.eventCode, participant.registrationCode),
-    onSuccess: () => {
-      // Invalidate queries to refresh the list (use hyphenated key to match hook)
-      queryClient.invalidateQueries({ queryKey: ['event-registrations', participant.eventCode] });
-    },
+    onSuccess: refreshListAndCounts,
   });
 
   // Resend confirmation email mutation
@@ -84,8 +88,7 @@ const RegistrationActionsMenu: React.FC<RegistrationActionsMenuProps> = ({
   const deleteMutation = useMutation({
     mutationFn: () => deleteRegistration(participant.eventCode, participant.registrationCode),
     onSuccess: () => {
-      // Invalidate queries to refresh the list (use hyphenated key to match hook)
-      queryClient.invalidateQueries({ queryKey: ['event-registrations', participant.eventCode] });
+      refreshListAndCounts();
       setDeleteDialogOpen(false);
     },
   });
