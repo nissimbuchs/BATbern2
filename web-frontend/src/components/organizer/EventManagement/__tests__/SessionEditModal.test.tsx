@@ -23,28 +23,8 @@ import { http, HttpResponse } from 'msw';
 import { api } from '@/test/msw/api';
 import { server } from '@/test/msw/server';
 
-// Mock SessionSpeakersTab to isolate SessionEditModal tests
-vi.mock('../SessionSpeakersTab', () => ({
-  SessionSpeakersTab: () => <div data-testid="session-speakers-tab">No speakers assigned yet</div>,
-}));
-
-// The backend answers through the MSW harness; the real sessionApiClient and upload service (the
-// session-material upload target handed to FileUpload, Story 17.11d) run.
-
-// Mock i18n
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string, defaults?: any) => {
-      if (typeof defaults === 'string') {
-        return defaults;
-      }
-      if (typeof defaults === 'object' && defaults !== null) {
-        return defaults.defaultValue || key;
-      }
-      return key;
-    },
-  }),
-}));
+// The backend answers through the MSW harness; the real sessionApiClient, upload service (the
+// session-material upload target handed to FileUpload, Story 17.11d), speakers tab and i18n run.
 
 describe('SessionEditModal - Helper Functions', () => {
   describe('extractTimeFromISO', () => {
