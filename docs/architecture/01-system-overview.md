@@ -497,7 +497,7 @@ Cognito user provisioning and JIT provisioning on first login, Google avatar imp
 merge (#1183, orchestrated here, data moved by EMS), the generic logo upload
 ([ADR-002](./ADR-002-generic-file-upload-service.md)), Watch pairing, and the VPC-only `/internal/users` reads for other services.
 
-**Key interfaces:** `/api/v1/companies`, `/api/v1/logos`, `/api/v1/users`,
+**Key interfaces:** `/api/v1/companies`, `/api/v1/uploads/{purpose}` (company logo, profile picture), `/api/v1/users`,
 `/api/v1/users/me`, `/api/v1/public/organizers`, `/api/v1/public/users`, `/api/v1/watch/pair`, `/api/v1/watch/authenticate`,
 `/internal/users`. See [04-api-company-management.md](./04-api-company-management.md) and
 [04-api-user-management.md](./04-api-user-management.md).

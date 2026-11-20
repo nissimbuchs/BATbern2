@@ -1,6 +1,6 @@
 # BATbern Event Management Platform - Enhanced PRD
 
-**Last Updated:** 2026-11-04 (doc audit #1210: epic statuses through Epic 16, FR24–FR41 for shipped capabilities, owner-decision notes on FR7/FR14/FR15/FR18/FR20 and §4.2; earlier 2026-10-24: FR2 8 states, task rules)
+**Last Updated:** 2026-11-20 (#1210 owner decisions 2026-11-15: FR7/FR14/FR15/FR18/FR20 struck, §4.2 rewritten to the built storage; epic statuses through Epic 17; earlier 2026-11-04 doc audit #1210: epic statuses through Epic 16, FR24–FR41 for shipped capabilities, owner-decision notes on FR7/FR14/FR15/FR18/FR20 and §4.2; earlier 2026-10-24: FR2 8 states, task rules)
 
 ## 1. Project Analysis and Context
 
@@ -97,9 +97,9 @@ See [Workflow State Machines](./architecture/06a-workflow-state-machines.md) for
 
 **FR6**: Attendees shall access a prominent current event landing page featuring the upcoming BATbern event with complete logistics (date, location, free attendance), speaker lineup, agenda details, and registration functionality
 
-**FR7**: The system shall integrate email notification workflows for event updates, speaker deadlines, and newsletter distribution, supported by a comprehensive email template management system that allows organizers to create, customize, and version email templates with variable substitution, multilingual support, and A/B testing capabilities for different stakeholder groups (speakers, attendees, partners, organizers)
+**FR7**: ~~The system shall integrate email notification workflows for event updates, speaker deadlines, and newsletter distribution, supported by a comprehensive email template management system that allows organizers to create, customize, and version email templates with variable substitution, multilingual support, and A/B testing capabilities for different stakeholder groups (speakers, attendees, partners, organizers)~~
 
-> **Not implemented as of 2026-11-04 (owner decision on strike/defer/rewrite pending: #1210).** What exists: database-backed email template management with variable substitution and DE/EN templates (Story 10.2), layouts, newsletter template selection (Story 10.14), own text with placeholders and preview (Story 16.5). Not found in code: A/B testing, template version history.
+> **Struck by owner decision 2026-11-15 (#1210).** A/B testing and template version history were never built. What shipped: email template management with variable substitution and DE/EN templates (Story 10.2), newsletter template selection (Story 10.14), own text with placeholders and preview (Story 16.5).
 
 **FR8**: Partner users shall vote on topic priorities and submit strategic topic suggestions outside formal partner meetings
 
@@ -111,27 +111,27 @@ See [Workflow State Machines](./architecture/06a-workflow-state-machines.md) for
 
 **FR13**: [REMOVED - Strategic refocus per Sprint Change Proposal 2025-10-01]
 
-**FR14**: Attendees shall manage personal engagement through newsletter subscriptions, content bookmarking, and presentation downloads with personalized preferences, including granular notification preference controls allowing users to opt in/out of specific notification types (event updates, speaker announcements, partner communications, system alerts) across multiple channels (email, in-app, push notifications) with frequency management and quiet hours settings
+**FR14**: ~~Attendees shall manage personal engagement through newsletter subscriptions, content bookmarking, and presentation downloads with personalized preferences, including granular notification preference controls allowing users to opt in/out of specific notification types (event updates, speaker announcements, partner communications, system alerts) across multiple channels (email, in-app, push notifications) with frequency management and quiet hours settings~~
 
-> **Not implemented as of 2026-11-04 (owner decision on strike/defer/rewrite pending: #1210).** What exists: newsletter subscription (Story 10.7), per-user preference columns including quiet hours and a push flag (CUMS `UserPreferences`), a quiet-hours check in EMS `NotificationService`. Not found: a push channel (no FCM/SNS), content bookmarking, per-channel opt-in UI.
+> **Struck by owner decision 2026-11-15 (#1210).** Push notifications, content bookmarking and per-channel opt-in were never built. What shipped: newsletter subscription (Story 10.7) and the in-app notification inbox.
 
-**FR15**: The platform shall provide mobile-optimized attendee experience with offline content access, event check-in capabilities, and progressive web app functionality
+**FR15**: ~~The platform shall provide mobile-optimized attendee experience with offline content access, event check-in capabilities, and progressive web app functionality~~
 
-> **Not implemented as of 2026-11-04 (owner decision on strike/defer/rewrite pending: #1210).** What exists: responsive UI, a PWA manifest and Workbox service worker (`vite-plugin-pwa`, navigations NetworkFirst). Not found: offline content access beyond the service-worker cache, attendee check-in.
+> **Struck by owner decision 2026-11-15 (#1210).** Offline content access and attendee check-in were never built. What shipped: a responsive UI with a PWA manifest and service worker.
 
 **FR16**: [REMOVED - Strategic refocus per Sprint Change Proposal 2025-10-01]
 
 **FR17**: The system shall provide intelligent speaker matching and assignment tracking with the unified 8-state speaker workflow (IDENTIFIED → CONTACTED → READY → INVITED → ACCEPTED → CONTENT_SUBMITTED → QUALITY_REVIEWED; DECLINED reachable from any non-terminal state) per ADR-009, supporting parallel per-speaker progression, real-time organizer collaboration including slot preference collection and technical requirement tracking. Capacity is enforced by a **slot-capacity gate** at the READY → INVITED transition: `(count(ACCEPTED) + count(INVITED)) >= max_slots` blocks further invitations. There is no overflow / parking-lane state and no organizer voting mechanism — if a slot opens up (e.g., an invited speaker declines), the next speaker in READY can be invited
 
-**FR18**: Event organizers shall access smart topic backlog management with visual heat map representation showing topic usage frequency over time, ML-powered similarity scoring to identify duplicate or similar topics with automated avoidance warnings, staleness detection algorithms that calculate recommended wait periods before topic reuse based on historical patterns and partner influence metrics, and intelligent duplicate avoidance that prevents organizers from selecting recently used or semantically similar topics
+**FR18**: ~~Event organizers shall access smart topic backlog management with visual heat map representation showing topic usage frequency over time, ML-powered similarity scoring to identify duplicate or similar topics with automated avoidance warnings, staleness detection algorithms that calculate recommended wait periods before topic reuse based on historical patterns and partner influence metrics, and intelligent duplicate avoidance that prevents organizers from selecting recently used or semantically similar topics~~
 
-> **Not implemented as of 2026-11-04 (owner decision on strike/defer/rewrite pending: #1210).** What exists: topic backlog with heat map, staleness scores and TF-IDF cosine similarity warnings at >70 % (Story 5.2, `SimilarityCalculationService`). Not found: ML-based similarity, partner-influence weighting, hard blocking of recent topics (warnings only).
+> **Struck by owner decision 2026-11-15 (#1210).** ML similarity, partner-influence weighting and hard blocking of recent topics were never built. What shipped: topic backlog with heat map, staleness scores and TF-IDF similarity warnings (Story 5.2).
 
 **FR19**: The platform shall implement progressive publishing engine that automatically validates content readiness (moderator quality review, abstract length limits) and publishes event information in phases (topic immediate → speakers 1 month prior → progressive agenda updates → final agenda → post-event materials) with quality control checkpoints and automated content standards enforcement
 
-**FR20**: Event organizers shall receive intelligent notification system with role-based alerts, cross-stakeholder visibility, and automated escalation workflows for deadline management and task coordination, implementing multi-tier escalation rules (reminder → warning → critical → escalation to backup organizer) with configurable timing thresholds, automatic fallback notification paths, priority-based delivery guarantees, and real-time escalation status dashboards with audit trails
+**FR20**: ~~Event organizers shall receive intelligent notification system with role-based alerts, cross-stakeholder visibility, and automated escalation workflows for deadline management and task coordination, implementing multi-tier escalation rules (reminder → warning → critical → escalation to backup organizer) with configurable timing thresholds, automatic fallback notification paths, priority-based delivery guarantees, and real-time escalation status dashboards with audit trails~~
 
-> **Not implemented as of 2026-11-04 (owner decision on strike/defer/rewrite pending: #1210).** What exists: tiered speaker deadline reminders with an organizer escalation after tier 3 (Story 6.5, `SpeakerReminderService`), task due dates in the organizer cockpit (#1105). Not found: escalation to a backup organizer, configurable multi-tier escalation for tasks, escalation status dashboard.
+> **Struck by owner decision 2026-11-15 (#1210).** Escalation to a backup organizer and configurable multi-tier task escalation were never built. What shipped: tiered speaker deadline reminders with an organizer escalation (Story 6.5) and task due dates in the organizer cockpit (#1105).
 
 **FR21**: The system shall support long-term planning capabilities including multi-year venue booking workflows, seasonal partner meeting coordination, and strategic budget planning with automated scheduling and reminder systems
 
@@ -241,7 +241,7 @@ For comprehensive technical implementation details, refer to the following archi
 - **[System Overview](./architecture/01-system-overview.md)** - C4 model and component relationships
 - **[Infrastructure & Deployment](./architecture/02-infrastructure-deployment.md)** - AWS deployment strategy and CI/CD
 - **[Data Architecture](./architecture/03-data-architecture.md)** - Domain models and database schemas
-- **[API Design](./architecture/04-api-design.md)** - REST API specifications and workflows
+- **[API Design](./architecture/04-api-design.md)** - Index of the OpenAPI specs in `docs/api/`
 - **[Frontend Architecture](./architecture/05-frontend-architecture.md)** - React component patterns and PWA
 - **[Backend Architecture](./architecture/06-backend-architecture.md)** - Service patterns and security
 - **[Workflow State Machines](./architecture/06a-workflow-state-machines.md)** - Event workflow, speaker workflow, and task management
@@ -258,7 +258,7 @@ For comprehensive technical implementation details, refer to the following archi
 ## 4. Epic Structure and Sprint Planning
 
 ### Epic Approach
-**Vertical Slice Strategy**: Sixteen epics (Epic 9 superseded by Epic 11) delivering end-to-end functionality, each providing demonstrable value to users while building progressively on the platform foundation.
+**Vertical Slice Strategy**: Seventeen epics (Epic 9 superseded by Epic 11) delivering end-to-end functionality, each providing demonstrable value to users while building progressively on the platform foundation.
 
 ### Sprint Planning Overview
 
@@ -278,126 +278,46 @@ For comprehensive technical implementation details, refer to the following archi
 - **Epic 8**: Weeks 45+ (Partner Coordination - ✅ **100% COMPLETE** 2026-02-22)
 - **Epic 9**: Speaker Authentication - 📦 **SUPERSEDED** by Epic 11 (ADR-009)
 - **Epic 10**: Additional Stories - ✅ **COMPLETE** (10.6, 10.13, 10.15 cancelled; 10.24, 10.25 deferred)
-- **Epic 11**: Unified Speaker Workflow Refactor - ✅ **COMPLETE** (Phases A–F per ADR-009; 11.F.1 magic-link teardown 2026-05-25; leftovers 11.E.5, 11.G.1, 11.F.2 open)
-- **Epic 12**: Federated Identity / Google SSO - ✅ **LIVE** 2026-06-04 (ADR-010; Story 12.10 Apple/generic OIDC in backlog)
-- **Epic 13**: Spring Boot 4 Migration - 🔄 SB 4.0.9 **LIVE** (4.0.7 via #797 2026-06-19, 4.0.9 2026-11-05); 13.4 Jackson 3 flip and 13.5 open
+- **Epic 11**: Unified Speaker Workflow Refactor - ✅ **COMPLETE** (Phases A–F per ADR-009; 11.F.1 magic-link teardown 2026-05-25; leftovers 11.E.5, 11.G.1, 11.F.2 archived 2026-11-07)
+- **Epic 12**: Federated Identity / Google SSO - ✅ **LIVE** 2026-06-04 (ADR-010; Story 12.10 Apple/generic OIDC archived 2026-11-07)
+- **Epic 13**: Spring Boot 4 Migration - ✅ **COMPLETE**, SB 4.0.9 live (4.0.7 via #797 2026-06-19, 4.0.9 2026-11-05); 13.4 and 13.5 archived 2026-11-07
 - **Epic 14**: Event Detail Page — Lifecycle-Aware Redesign - ✅ **COMPLETE** (#788, 2026-06-15)
-- **Epic 15**: Post-Event #2 Hardening - 🔄 **IN PROGRESS** (15.1 P2/P3, 15.4, 15.8 open)
-- **Epic 16**: Mail Center - 🔄 16.0–16.11 **LIVE** (2026-10-30 to 2026-11-03); 16.8c gated, 16.12/16.13 backlog
+- **Epic 15**: Post-Event #2 Hardening - ✅ **CLOSED** (15.1 P2/P3, 15.4, 15.8 archived 2026-11-07)
+- **Epic 16**: Mail Center - ✅ **COMPLETE**: 16.0–16.11 live (2026-10-30 to 2026-11-03), 16.8c live via #1281; 16.12, 16.13 archived 2026-11-07
+- **Epic 17**: Architecture Hardening - ✅ **CLOSED** 2026-11-15 (last #1314, follow-up #1316; 17.12, 17.15, 17.16 dropped by owner 2026-11-14)
 
 **Reorganization Rationale**: Epic structure revised to prioritize functional delivery (CRUD with consolidated APIs, data migration, public website) before workflow automation. Epic 5 completed with the event workflow (9 states then, consolidated to 8 in V82), per-speaker coordination, task management, auto-publishing, and lifecycle automation. Epic 6 fully deployed with automated speaker invitation, self-service response portal, content submission, dashboard (WCAG 2.1 AA), and deadline reminders. Epic 8 complete with partner attendance analytics, topic voting, and meeting coordination with RFC 5545 calendar invites. Epic 7 was rewritten 2026-06-09 from its deferred over-scoped form (dashboards/PWA/recommendation engine) into a right-sized set of five organizer-voted attendee contribution & touchpoint features (see `prd/epic-7-attendee-experience-enhancements.md`); the prior Epic 9 (JWT magic-link speaker authentication) is superseded by **Epic 11** per ADR-009, which adopts standard AWS Cognito with `FORCE_CHANGE_PASSWORD` first-login as the sole speaker auth path (no parallel JWT / magic-link stack).
 
-### 4.2 Content Management & Storage Architecture
+### 4.2 Content Storage
 
-> **Not implemented as of 2026-11-04 (owner decision on strike/defer/rewrite pending: #1210).** This section is a target design. Verified reality: one content bucket `batbern-content-${env}` (`infrastructure/lib/stacks/storage-stack.ts`, S3-managed encryption, versioned in production), region eu-central-1, presigned uploads, an image-resize Lambda behind `cdn.batbern.ch`. Not found in code: per-type buckets, ClamAV scanning, role quotas, cross-region replication (eu-west-1 is not used), `cdn-staging`/`cdn-dev` domains.
+> **Rewritten by owner decision 2026-11-15 (#1210)** to the storage that is built. The former
+> target design (per-type buckets, ClamAV scanning, role quotas, cross-region replication to
+> eu-west-1, `cdn-staging`/`cdn-dev` domains, RTO/RPO targets) was never built and is struck.
 
-The BATbern platform manages diverse content types including company logos, speaker photos and CVs, event presentations, and historical archives. This section defines the storage architecture, CDN strategy, and content policies.
+All content is stored in eu-central-1, defined in `infrastructure/lib/stacks/storage-stack.ts`.
+Bucket names carry the CDK environment name, which is `staging` for the production account.
 
-#### AWS S3 Storage Strategy
+| Bucket | Holds | Settings |
+|---|---|---|
+| `batbern-content-${env}` | Every uploaded file: logos, profile pictures, event theme images, teaser images, event photos, session materials | S3-managed encryption, public access blocked, versioned in production; objects move to Intelligent-Tiering after 30 days; in production, non-current versions move to Glacier after 30 days and expire after 90 |
+| `batbern-logs-${env}` | CloudFront access logs | Not versioned; objects expire after 30 days |
+| `batbern-backups-${env}` | Backups | Versioned in production; objects expire after 90 days in production, 30 elsewhere; retained when the stack is deleted |
 
-**Bucket Architecture:**
-- **Environment Separation**: Separate S3 buckets per environment (development, staging, production)
-- **Bucket Naming**: `batbern-{environment}-{content-type}` (e.g., `batbern-prod-presentations`, `batbern-prod-logos`)
-- **Content Types**:
-  - `presentations`: Speaker presentation files (PDF, PPTX)
-  - `logos`: Company and partner logos (PNG, JPG, SVG)
-  - `profiles`: Speaker photos and CVs (JPG, PNG, PDF)
-  - `archives`: Historical event materials and photo galleries
+**Uploads.** Files go from the browser straight to the content bucket through a presigned PUT
+URL, valid 15 minutes, never through a backend (`uploads-api.openapi.yml`, ADR-002). Each upload
+purpose has its own allowed types and maximum size, listed in that spec. Keys are per entity
+with a generated id in the file name, for example `logos/companies/{companyName}/...`,
+`profile-pictures/{username}/...`, `events/{eventCode}/photos/...`,
+`materials/events/{eventCode}/sessions/{sessionSlug}/...`.
 
-**S3 Key Structure:**
-```
-/{content-type}/{year}/{entity-id}/{filename-with-uuid}
-Examples:
-  /presentations/2024/evt-123/speaker-456-presentation-a7b3c9d2.pdf
-  /logos/2024/company-789/logo-f3e8d1a4.png
-  /profiles/2024/speaker-456/photo-b2c9e3f1.jpg
-```
+**Delivery.** A CloudFront distribution (`cdn.batbern.ch` in production) reads the content
+bucket through origin access control. A Lambda@Edge function on the origin request resizes
+images on the fly (`?w=`, `?h=`, `?fit=`, served as WebP); the cache key includes those three
+parameters. Responses carry `Cache-Control: public, max-age=31536000, immutable` where the
+origin sets none, and a `sandbox` CSP so an uploaded SVG cannot run script.
 
-**Lifecycle Policies:**
-- **Active Content**: S3 Standard storage class for content < 1 year old
-- **Historical Content**: Transition to S3 Standard-IA after 1 year
-- **Archive Content**: Transition to S3 Glacier after 3 years
-- **Retention**: Indefinite retention for all event-related content
-
-**Security & Access Control:**
-- **Private Buckets**: All buckets private by default, no public access
-- **Presigned URLs**: Time-limited presigned URLs for downloads (15-minute expiration)
-- **Upload Authentication**: All uploads require valid JWT with appropriate role
-- **Server-Side Encryption**: AES-256 encryption at rest (S3-SSE)
-- **Versioning**: Enabled for accidental deletion protection
-
-#### CloudFront CDN Configuration
-
-**Distribution Strategy:**
-- **Global CDN**: CloudFront distribution per environment for fast worldwide delivery
-- **Origin**: S3 buckets as CloudFront origins with Origin Access Identity (OAI)
-- **Caching**: Aggressive caching for static content (TTL: 7 days)
-- **Custom Domain**: `cdn.batbern.ch`, `cdn-staging.batbern.ch`, `cdn-dev.batbern.ch`
-
-**Performance Optimization:**
-- **Edge Locations**: AWS global edge network for low-latency delivery
-- **Compression**: Automatic gzip/brotli compression for text-based files
-- **HTTP/2**: Enabled for multiplexing and reduced latency
-- **Image Optimization**: Lambda@Edge for automatic image resizing and format conversion
-
-**Security Headers:**
-- **HTTPS Only**: Redirect HTTP to HTTPS
-- **Security Headers**: CORS, CSP, X-Frame-Options, X-Content-Type-Options
-- **Signed URLs**: Optional signed URLs for sensitive content
-
-#### File Size and Format Constraints
-
-**Per Content Type:**
-
-| Content Type | Max Size | Allowed Formats | Validation |
-|--------------|----------|-----------------|------------|
-| Company Logo | 5 MB | PNG, JPG, SVG | Dimensions: 500x500 to 2000x2000 |
-| Speaker Photo | 10 MB | JPG, PNG | Dimensions: min 800x800, aspect ratio 1:1 or 4:3 |
-| Speaker CV | 5 MB | PDF | Max 10 pages |
-| Presentation | 100 MB | PDF, PPTX | Virus scan required |
-| Event Photo | 20 MB | JPG, PNG | Max 4000x4000 |
-
-**Upload Requirements:**
-- **Multipart Upload**: Files > 10 MB use multipart upload for reliability
-- **Progress Tracking**: Real-time upload progress for files > 1 MB
-- **Virus Scanning**: ClamAV integration for all uploaded files
-- **Checksum Verification**: SHA-256 checksum validation on upload completion
-
-#### Storage Quota Policies Per Role
-
-**Role-Based Quotas:**
-
-| Role | Total Storage Quota | Max Files | Max File Size | Notes |
-|------|---------------------|-----------|---------------|-------|
-| Organizer | Unlimited | Unlimited | 100 MB | Full platform administration |
-| Speaker | 200 MB | 20 files | 100 MB | Presentation + supporting materials |
-| Partner | 50 MB | 5 files | 5 MB | Company logo + marketing materials |
-| Attendee | 10 MB | 5 files | 5 MB | Profile photo + bookmarked content |
-
-**Quota Enforcement:**
-- **Pre-Upload Check**: Validate available quota before upload
-- **Soft Limits**: Warning at 80% quota usage
-- **Hard Limits**: Upload rejection at 100% quota
-- **Quota Increase**: Manual approval process for speakers exceeding limits
-
-#### Backup and Disaster Recovery
-
-**Backup Strategy:**
-- **Cross-Region Replication**: Replicate production bucket to secondary region (eu-west-1 → eu-central-1)
-- **Versioning**: S3 versioning enabled for 30-day rollback capability
-- **Daily Snapshots**: S3 bucket inventory reports for disaster recovery planning
-- **Backup Testing**: Quarterly restore drills to validate backup integrity
-
-**Disaster Recovery:**
-- **RTO (Recovery Time Objective)**: 4 hours for full content restoration
-- **RPO (Recovery Point Objective)**: 1 hour maximum data loss
-- **Failover**: Automatic CloudFront failover to secondary region on origin failure
-- **Restoration Process**: Documented restoration procedures with runbooks
-
-**Data Integrity:**
-- **Checksum Validation**: SHA-256 checksums stored in database for integrity verification
-- **Periodic Audits**: Monthly automated integrity checks comparing S3 and database records
-- **Orphan Detection**: Identify and cleanup orphaned S3 objects without database references
+Other buckets outside the content path: the frontend buckets (`frontend-stack.ts`) and the
+inbound mail bucket (`inbound-email-stack.ts`).
 
 ### Detailed Epic Implementation
 
@@ -420,10 +340,11 @@ The comprehensive epic breakdown follows a CRUD-first approach, prioritizing fun
 - **[Epic 10: Additional Stories](archive/prd/epic-10-additional-stories.md)** - ✅ **COMPLETE** - Administration, email templates, newsletter, presenter, capacity + waitlist, photos, Turnstile, additional emails, alias forwarding (10.6/10.13/10.15 cancelled, 10.24/10.25 deferred)
 - **[Epic 11: Unified Speaker Workflow Refactor](./prd/epic-11-speaker-workflow-refactor.md)** - ✅ **COMPLETE** - 8-state speaker workflow per ADR-009, Cognito speaker auth, magic links removed
 - **[Epic 12: Federated Identity / Google SSO](archive/plans/sso-oidc-federation.md)** - ✅ **LIVE** 2026-06-04 - ADR-010; no PRD file, the plan is the source
-- **[Epic 13: Spring Boot 4 Migration](./plans/spring-boot-4-migration.md)** - 🔄 SB 4.0.9 live (#797, patch 2026-11-05); 13.4, 13.5 open; no PRD file, the plan is the source
+- **[Epic 13: Spring Boot 4 Migration](./plans/spring-boot-4-migration.md)** - ✅ **COMPLETE** - SB 4.0.9 live (#797, patch 2026-11-05); 13.4, 13.5 archived; no PRD file, the plan is the source
 - **[Epic 14: Event Detail Page — Lifecycle-Aware Redesign](archive/prd/epic-14-event-detail-redesign.md)** - ✅ **COMPLETE** (#788)
-- **[Epic 15: Post-Event #2 Hardening](archive/prd/epic-15-post-event-2-hardening.md)** - 🔄 **IN PROGRESS**
-- **[Epic 16: Mail Center](archive/prd/epic-16-mail-center.md)** - 🔄 16.0–16.11 live; 16.8c gated; 16.12, 16.13 backlog
+- **[Epic 15: Post-Event #2 Hardening](archive/prd/epic-15-post-event-2-hardening.md)** - ✅ **CLOSED** (unbuilt stories archived 2026-11-07)
+- **[Epic 16: Mail Center](archive/prd/epic-16-mail-center.md)** - ✅ **COMPLETE** - 16.0–16.11 and 16.8c live; 16.12, 16.13 archived
+- **[Epic 17: Architecture Hardening](../_bmad-output/initiative-architecture-hardening/initiative-architecture-hardening.md)** - ✅ **CLOSED** 2026-11-15 - test fidelity, dead surface removed, API conventions, one upload contract; tracked as a BMAD v7 initiative, no PRD file
 
 Each epic document contains:
 - Detailed user stories with architecture alignment
@@ -544,10 +465,7 @@ Each epic document contains:
 
 ## Next Steps
 
-Open work as of 2026-11-04 (source: `_bmad-output/implementation-artifacts/sprint-status.yaml`):
-
-1. **Owner decisions (#1210)**: strike, defer or rewrite FR7, FR14, FR15, FR18, FR20 and §4.2
-2. **Epic 13**: 13.4 Jackson 3 flag flip, 13.5 unpin BOM-managed versions
-3. **Epic 15**: 15.1 P2 (watch off WebSockets) and P3 (WebSocket teardown), 15.4, 15.8
-4. **Epic 16**: 16.8c (after one release, owner go), 16.12, 16.13
-5. **Epic 12**: Story 12.10 (Apple/generic OIDC) after deferred-work cluster A
+Open work as of 2026-11-20: Epics 1-17 are closed. Unbuilt stories of epics 1-16 were archived
+by owner decision 2026-11-07 (index: `_bmad-output/implementation-artifacts/sprint-status.yaml`)
+and are not open work. Open work is the tickets in `_bmad-output/backlog/` and the open GitHub
+issues; each needs owner go.

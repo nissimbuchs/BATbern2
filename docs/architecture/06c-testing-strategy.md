@@ -400,10 +400,10 @@ public class EventTestDataBuilder {
 
 ## Test Coverage Requirements
 
-- **Unit Tests**: 90% coverage for business logic
-- **Integration Tests**: 80% coverage for API endpoints
 - **E2E Tests**: Critical user journeys only
-- **Overall**: Minimum 85% line coverage
+- **Enforced gates**: JaCoCo instruction coverage at least 0.60 per Java module (`make test`
+  only, not in CI), Vitest statement coverage at least 73 % (CI), none for CDK. Detail:
+  [coding-standards.md](./coding-standards.md#coverage-requirements)
 
 ## Running Tests
 

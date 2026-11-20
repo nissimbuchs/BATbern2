@@ -210,7 +210,7 @@ that nothing consumed.
 - [ ] **Test Coverage**: Each acceptance criterion has corresponding tests
 - [ ] **Test Fidelity**: New and touched tests follow the "Test fidelity rules" (mocks at the process boundary only, positive control for absence, effect not call)
 - [ ] Code follows established patterns and conventions
-- [ ] All tests pass and coverage meets requirements (≥85%)
+- [ ] All tests pass and the coverage gates pass (see Coverage Requirements)
 - [ ] Test names clearly describe expected behavior
 - [ ] API documentation is updated if needed
 - [ ] Error handling is comprehensive and user-friendly
@@ -289,10 +289,13 @@ backend/
 - Complex criteria should have multiple test cases
 - Edge cases and error scenarios must be covered
 
-**Minimum Coverage Targets:**
-- Unit Tests: 90% for business logic
-- Integration Tests: 80% for APIs
-- Overall: 85% line coverage
+**Enforced gates** (they stay as they are, owner decision 2026-11-15, #1119):
+
+| Scope | Gate | Checked by |
+|---|---|---|
+| Java: `shared-kernel`, `api-gateway`, the three services | JaCoCo `jacocoTestCoverageVerification`, instruction coverage at least 0.60 per module; generated code and configuration classes excluded (lists in each `build.gradle`) | `make test` / `make test-java` only. It is not part of `check`, and CI does not run it |
+| Frontend | Vitest statement coverage at least 73 % (`web-frontend/vite.config.ts`) | CI, on the merged shard report |
+| CDK (`infrastructure/`) | none | - |
 
 ### Test-First Commit Requirements
 

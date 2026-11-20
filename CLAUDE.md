@@ -752,9 +752,10 @@ AWS_PROFILE=batbern-staging aws ecs list-tasks \
 
 ## Coverage Requirements
 
-- Unit Tests: 90% for business logic
-- Integration Tests: 80% for APIs
-- Overall: 85% line coverage
+Enforced gates (they stay as they are, owner 2026-11-15): JaCoCo instruction coverage at least
+0.60 per Java module, checked by `make test` only (not by `check`, not in CI); frontend statement
+coverage at least 73 %, checked in CI; none for CDK. Detail: `docs/architecture/coding-standards.md`
+→ "Coverage Requirements".
 
 ```bash
 make test  # Run all tests with coverage reports
@@ -928,7 +929,7 @@ anything you could not verify. Silence reads as coverage.
 - Follow TDD practices (Red-Green-Refactor)
 - Write tests before implementation
 - Ensure all tests pass before committing
-- Maintain 80%+ code coverage
+- Keep the coverage gates green (see Coverage Requirements)
 - Update OpenAPI specs when changing APIs
 - Regenerate types after API changes
 - instead of running the test suites several times and grep the output, dump the output to a temp file and grep that file. this saves time

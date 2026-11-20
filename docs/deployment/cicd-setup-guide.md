@@ -465,9 +465,8 @@ git push origin develop
 
 ### 2. Test Coverage Enforcement
 ```bash
-# Build locally should enforce 90% coverage
-cd shared-kernel
-./gradlew clean check
+# The JaCoCo gate (0.60 instruction coverage per module) runs only when named, not in check
+./gradlew :shared-kernel:test :shared-kernel:jacocoTestCoverageVerification
 ```
 
 ### 3. Test ECR Access
