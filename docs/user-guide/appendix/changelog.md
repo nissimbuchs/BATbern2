@@ -41,6 +41,12 @@ Only items that are not live yet. Everything else is listed under its release be
 
 ### Unreleased — after BATbern60
 
+**Fix — Renaming a company moves everything that belongs to it (#1251)**:
+- ✅ When an organizer changes a company's short name, its people, registrations, partner record, topic suggestions and votes, logo and logo requests move to the new name. Before, they kept the old name and lost their company.
+- ✅ The old short name and the old full name still find the company in the search and at registration, so nobody creates the old company again. Changing the name back to an old one takes it back.
+- ✅ If a service cannot complete the move, nothing is renamed and the organizer sees an error; saving the same new name again finishes the move.
+- ⚠️ API: `PATCH /api/v1/companies/{name}` with a new `name` answers 409 `RENAME_BLOCKED` when a service refuses the move and 502 `RENAME_INCOMPLETE` when one does not complete it; 409 also when the new name or display name is an old name of another company.
+
 **Fix — Registering with a company's full name no longer creates a second company (#1251)**:
 - ✅ When a person types the name of an existing company at registration (for example "Die Post" for the company with the short name `post`), the registration now uses that company, in any upper or lower case and with or without umlauts or accents ("Muller" for "Müller"). Before, a new company `diepost` was created next to it.
 

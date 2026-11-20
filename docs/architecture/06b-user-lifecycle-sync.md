@@ -1221,6 +1221,32 @@ Measured on production 2026-11-07: 257 / 24 / 22 pairs for the three rules, 24 w
   and closing the conversation after an approval are best effort: event-management has already committed
   its part, so they must not roll the merge back.
 
+## Renaming a company (#1251)
+
+A company key (`companies.name`) is held by other rows: CUMS `user_profiles.company_id`,
+`company_logo_requests`, `activity_history` (COMPANY rows), the company-logo upload's target; EMS
+`registrations.attendee_company_id`; PCS `partners`, `topic_suggestions`, `topic_votes`.
+`PATCH /companies/{name}` with a new `name` moves them all through `CompanyKeyMover`, the path a
+company merge reuses:
+
+1. the company row is locked; the new key must be free (no company, no other company's alias);
+2. every holder of the company-references contract previews the move (`trigger RENAME`); a blocker
+   refuses it before any holder moves (409 `RENAME_BLOCKED`);
+3. every holder moves its rows in its own transaction, PCS first (the one that can refuse);
+4. CUMS moves its rows, renames the company, drops an alias equal to the new key (a rename back) and
+   records the old key and display name as an alias (`company_aliases`); the user and company search
+   caches are cleared after the commit.
+
+A holder that does not complete its part fails the rename (502 `RENAME_INCOMPLETE`): CUMS rolls back
+and the company keeps its old key, while earlier holders have moved theirs. Renaming it again to the
+same key finishes the move, as every holder is idempotent. A failure in CUMS after the holders moved
+(the key taken concurrently, the alias) is reported the same way (`CompanyKeyMover.MoveIncompleteException`).
+Until the retry the holders' rows sit on a key no company holds: renaming to another key, or another
+company taking that key meanwhile, leaves them there, to be moved by hand. The other fields and the
+logo of the same `PATCH` are applied first, under the old key, so they cannot fail after the move.
+No domain event is raised; the company
+events were deleted with this change, none had a consumer.
+
 ## Database Schema
 
 ### user_profiles Table

@@ -1,6 +1,7 @@
 package ch.batbern.companyuser.controller;
 
 import ch.batbern.companyuser.api.generated.CompaniesApi;
+import ch.batbern.companyuser.client.CompanyReferenceContract;
 import ch.batbern.companyuser.api.generated.CompanySearchApi;
 import ch.batbern.companyuser.api.generated.CompanyVerificationApi;
 import ch.batbern.companyuser.dto.generated.CompanyResponse;
@@ -9,17 +10,22 @@ import ch.batbern.companyuser.dto.generated.CreateCompanyRequest;
 import ch.batbern.companyuser.dto.generated.GetOrCreateCompanyRequest;
 import ch.batbern.companyuser.dto.generated.PaginatedCompanyResponse;
 import ch.batbern.companyuser.dto.generated.UpdateCompanyRequest;
+import ch.batbern.companyuser.service.CompanyKeyMover;
 import ch.batbern.companyuser.service.CompanyQueryService;
 import ch.batbern.companyuser.service.CompanySearchService;
 import ch.batbern.companyuser.service.CompanyService;
+import ch.batbern.shared.dto.ErrorResponse;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.Instant;
 import java.util.List;
 
 /**
@@ -113,7 +119,8 @@ public class CompanyController implements CompaniesApi, CompanySearchApi, Compan
     }
 
     /**
-     * Partially update a company. Requires ORGANIZER role. Publishes CompanyUpdated event.
+     * Partially update a company. Requires ORGANIZER role. A new key (rename) moves every reference
+     * to the company first (#1251, {@code CompanyKeyMover}).
      * Story 1.16.2: uses company name instead of UUID.
      */
     @Override
@@ -124,7 +131,7 @@ public class CompanyController implements CompaniesApi, CompanySearchApi, Compan
     }
 
     /**
-     * Delete a company. Requires ORGANIZER role. Publishes CompanyDeleted event.
+     * Delete a company. Requires ORGANIZER role; its aliases go with it.
      * Story 1.16.2: uses company name instead of UUID.
      */
     @Override
@@ -136,14 +143,57 @@ public class CompanyController implements CompaniesApi, CompanySearchApi, Compan
     }
 
     /**
-     * Mark a company as verified. Requires ORGANIZER role. Idempotent. Publishes
-     * CompanyVerified event. AC13. Story 1.16.2: uses company name instead of UUID.
+     * Mark a company as verified. Requires ORGANIZER role. Idempotent. AC13. Story 1.16.2: uses
+     * company name instead of UUID.
      */
     @Override
     @PreAuthorize("hasRole('ORGANIZER')")
     public ResponseEntity<CompanyResponse> verifyCompany(String name) {
         log.info("Verifying company: {}", name);
         return ResponseEntity.ok(companyService.verifyCompany(name));
+    }
+
+    /** #1251: a holder of the company-reference contract refused the move (409); nothing was renamed. */
+    @ExceptionHandler(CompanyReferenceContract.MoveBlockedException.class)
+    public ResponseEntity<ErrorResponse> moveBlocked(CompanyReferenceContract.MoveBlockedException e,
+            HttpServletRequest request) {
+        return error(HttpStatus.CONFLICT, "RENAME_BLOCKED", e.getMessage(), request);
+    }
+
+    /**
+     * #1251: a holder did not complete its part of the move (502). The company keeps its old key;
+     * the same rename again finishes the move.
+     */
+    @ExceptionHandler(CompanyReferenceContract.CallFailedException.class)
+    public ResponseEntity<ErrorResponse> holderIncomplete(CompanyReferenceContract.CallFailedException e,
+            HttpServletRequest request) {
+        return moveIncomplete(e, request);
+    }
+
+    /** #1251: the holders moved, but the rename here did not complete (502); the same rename finishes it. */
+    @ExceptionHandler(CompanyKeyMover.MoveIncompleteException.class)
+    public ResponseEntity<ErrorResponse> renameIncomplete(CompanyKeyMover.MoveIncompleteException e,
+            HttpServletRequest request) {
+        return moveIncomplete(e, request);
+    }
+
+    private static ResponseEntity<ErrorResponse> moveIncomplete(RuntimeException e, HttpServletRequest request) {
+        log.error("Company rename incomplete: {}", e.getMessage(), e);
+        return error(HttpStatus.BAD_GATEWAY, "RENAME_INCOMPLETE",
+                "Not every service could move its references; the company keeps its old name. "
+                        + "Rename it again to the same name to finish.", request);
+    }
+
+    private static ResponseEntity<ErrorResponse> error(HttpStatus status, String code, String message,
+            HttpServletRequest request) {
+        return ResponseEntity.status(status).body(ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .path(request.getRequestURI())
+                .status(status.value())
+                .error(status.getReasonPhrase())
+                .errorCode(code)
+                .message(message)
+                .build());
     }
 
     // Story 1.16.3: Old company-specific logo endpoints removed.

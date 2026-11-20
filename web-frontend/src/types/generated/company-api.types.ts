@@ -102,7 +102,20 @@ export interface paths {
      *     **Story 1.16.2**: Uses company name as identifier instead of UUID
      *
      *     **Validation Rules**:
-     *     - Company name must be unique
+     *     - Company name must be unique: a key another company holds, or an old key of another
+     *       company kept as its alias, answers 409; so does a display name that is another company's
+     *       alias (#1251)
+     *
+     *     **Rename** (a new `name`, #1251): every reference to the old key moves to the new one before
+     *     the company is renamed. EMS and PCS move theirs through the company-references contract
+     *     (`/internal/company-references/{preview,merge}`, trigger `RENAME`); CUMS moves user profiles,
+     *     logo requests, the logo upload and activity. The old key and the old display name stay
+     *     findable as an alias (search, typeahead, get-or-create). Renaming back to one of the
+     *     company's own old keys takes it back. A service that refuses answers 409 `RENAME_BLOCKED`;
+     *     one that does not complete its part answers 502 `RENAME_INCOMPLETE`, and the company keeps
+     *     its old key: the same rename again finishes the move (see the 502 for the one case it cannot).
+     *     The other fields and the logo are applied before any reference moves, so a bad `logoUploadId`
+     *     fails the edit with nothing moved.
      *
      *     **Cache Invalidation**: All company caches cleared on update
      */
@@ -334,7 +347,8 @@ export interface components {
     UpdateCompanyRequest: {
       /**
        * @description A new key for the company (1 to 12 letters or digits). Other services hold the key, so it
-       *     keeps the shape POST /companies gives it; 400 otherwise.
+       *     keeps the shape POST /companies gives it; 400 otherwise. A new key renames the company and
+       *     moves every reference to it (#1251, see `patchCompany`).
        * @example swisscom
        */
       name?: string;
@@ -700,8 +714,44 @@ export interface operations {
       401: components['responses']['Unauthorized'];
       403: components['responses']['Forbidden'];
       404: components['responses']['CompanyOrLogoUploadNotFound'];
-      409: components['responses']['CompanyOrLogoUploadConflict'];
+      /**
+       * @description The new key or display name is taken (by a company or another company's alias), the
+       *     `logoUploadId` is not CONFIRMED, or a service refused to move its references to the new
+       *     key (`RENAME_BLOCKED`, #1251). Nothing is changed.
+       */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
       500: components['responses']['InternalServerError'];
+      /**
+       * @description A service did not complete its part of the rename, or the rename here failed after the
+       *     services had moved their references (#1251). The company keeps its old key and its other
+       *     changes are not saved; the same rename again finishes the move. Until then the services
+       *     that moved hold the new key: renaming to another key, or another company taking the new
+       *     key meanwhile (the retry then answers 409), leaves their rows on that key.
+       */
+      502: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "status": 502,
+           *       "error": "Bad Gateway",
+           *       "errorCode": "RENAME_INCOMPLETE",
+           *       "message": "Not every service could move its references; the company keeps its old name. Rename it again to the same name to finish.",
+           *       "timestamp": "2026-11-20T10:30:00Z"
+           *     }
+           */
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
     };
   };
   searchCompanies: {

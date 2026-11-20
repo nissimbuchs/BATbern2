@@ -3,7 +3,9 @@ package ch.batbern.companyuser.repository;
 import ch.batbern.companyuser.domain.Company;
 import ch.batbern.companyuser.specification.CompanySpecification;
 import ch.batbern.shared.api.DeterministicPaging;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -30,6 +32,11 @@ public interface CompanyRepository extends JpaRepository<Company, UUID>, JpaSpec
      * @return Optional company
      */
     Optional<Company> findByName(String name);
+
+    /** The company by key, locked for the rest of the transaction: a rename or merge moves its key. */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT c FROM Company c WHERE c.name = :name")
+    Optional<Company> findByNameForUpdate(@Param("name") String name);
 
     /**
      * Find companies by name containing (case-insensitive)

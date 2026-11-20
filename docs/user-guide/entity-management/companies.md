@@ -213,6 +213,10 @@ Click the **📝 Edit** icon in the company row.
 
 Update any editable fields. Note:
 - Logo can be replaced (the old file stays in S3; only the company record points to the new one)
+- Changing the short name (the key) renames the company everywhere: its people, registrations,
+  partner record, topic suggestions and votes and its logo move to the new name, and the old name
+  still finds the company in search and at registration. If a service cannot finish the move, the
+  company keeps its old name and an error asks you to save the same new name again, which finishes it.
 
 </div>
 

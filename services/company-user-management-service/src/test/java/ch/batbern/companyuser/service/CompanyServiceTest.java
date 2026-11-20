@@ -1,10 +1,8 @@
 package ch.batbern.companyuser.service;
 
 import ch.batbern.companyuser.domain.Company;
-import ch.batbern.companyuser.dto.generated.UpdateCompanyRequest;
 import ch.batbern.companyuser.dto.generated.CompanyResponse;
 import ch.batbern.companyuser.exception.CompanyNotFoundException;
-import ch.batbern.companyuser.exception.CompanyValidationException;
 import ch.batbern.companyuser.repository.CompanyRepository;
 import ch.batbern.companyuser.security.SecurityContextHelper;
 import ch.batbern.shared.service.SlugGenerationService;
@@ -26,7 +24,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -55,29 +52,21 @@ class CompanyServiceTest {
 
     private CompanyService companyService;
 
-    private UpdateCompanyRequest updateRequest;
     private Company existingCompany;
     // Story 1.16.2: use company name instead of UUID
     private String companyName;
 
     @BeforeEach
     void setUp() {
-        // No upload service: no test here sets a logo upload id (the logo paths run in
-        // UploadsControllerIntegrationTest against the real upload service). No alias service: only
-        // create and get-or-create use it, and they are tested against PostgreSQL (see below).
+        // No upload service, alias service or key mover: no test here uses them. The logo paths run in
+        // UploadsControllerIntegrationTest; create, get-or-create and update (rename) against
+        // PostgreSQL in the integration tests named below.
         companyService = new CompanyService(companyRepository, searchService,
-                securityContextHelper, null, slugService, new CompanyInserter(companyRepository), null);
+                securityContextHelper, null, slugService, new CompanyInserter(companyRepository), null, null);
 
         // Story 1.16.2: the company name (key) is the identifier, a slug since 2026-11-09
         companyName = "testcompany";
 
-        updateRequest = UpdateCompanyRequest.builder()
-                .name("updatedco")
-                .displayName("Updated Company")
-                .website("https://updated.ch")
-                .industry("Finance")
-                .description("Updated description")
-                .build();
 
         existingCompany = Company.builder()
                 .id(UUID.randomUUID())  // Internal DB uses UUID
@@ -116,7 +105,6 @@ class CompanyServiceTest {
     }
 
     @Disabled("Flaky test - passes individually but fails in full suite due to test pollution")
-
     @Test
     @DisplayName("Test 4.7: should_throwCompanyNotFoundException_when_companyDoesNotExist")
     void should_throwCompanyNotFoundException_when_companyDoesNotExist() {
@@ -173,65 +161,8 @@ class CompanyServiceTest {
         verify(companyRepository).findAll();
     }
 
-    // ==================== UPDATE COMPANY TESTS ====================
-
-    @Test
-    @DisplayName("Test 4.10: should_updateCompany_when_validUpdateRequest")
-    void should_updateCompany_when_validUpdateRequest() {
-        // Given
-        // Story 1.16.2: use company name instead of UUID
-        when(companyRepository.findByName(companyName)).thenReturn(Optional.of(existingCompany));
-        when(companyRepository.saveAndFlush(any(Company.class))).thenReturn(existingCompany);
-
-        // When
-        CompanyResponse response = companyService.updateCompany(companyName, updateRequest);
-
-        // Then
-        assertThat(response).isNotNull();
-        verify(companyRepository).findByName(companyName);
-        verify(companyRepository).saveAndFlush(any(Company.class));
-        verify(searchService).invalidateCache();
-    }
-
-    @Disabled("Flaky test - passes individually but fails in full suite due to test pollution")
-
-    @Test
-    @DisplayName("Test 4.11: should_throwCompanyNotFoundException_when_updateNonExistentCompany")
-    void should_throwCompanyNotFoundException_when_updateNonExistentCompany() {
-        // Given
-        // Story 1.16.2: use company name instead of UUID
-        when(companyRepository.findByName(companyName)).thenReturn(Optional.empty());
-
-        // When / Then
-        assertThatThrownBy(() -> companyService.updateCompany(companyName, updateRequest))
-                .isInstanceOf(CompanyNotFoundException.class)
-                .hasMessageContaining(companyName);
-
-        verify(companyRepository, never()).saveAndFlush(any(Company.class));
-        verify(searchService, never()).invalidateCache();
-    }
-
-    @Test
-    @DisplayName("Test 4.12: should_updateOnlyProvidedFields_when_partialUpdateRequest")
-    void should_updateOnlyProvidedFields_when_partialUpdateRequest() {
-        // Given
-        UpdateCompanyRequest partialUpdate = UpdateCompanyRequest.builder()
-                .name("newnameonly")
-                .build();
-
-        // Story 1.16.2: use company name instead of UUID
-        when(companyRepository.findByName(companyName)).thenReturn(Optional.of(existingCompany));
-        when(companyRepository.saveAndFlush(any(Company.class))).thenReturn(existingCompany);
-
-        // When
-        companyService.updateCompany(companyName, partialUpdate);
-
-        // Then
-        verify(companyRepository).saveAndFlush(argThat(company ->
-            company.getName().equals("newnameonly")
-            && company.getWebsite().equals("https://testcompany.ch") // Original value preserved
-        ));
-    }
+    // updateCompany (and its rename) runs against PostgreSQL in CompanyControllerIntegrationTest and
+    // CompanyRenameIntegrationTest (touch rule, #1251).
 
     // ==================== DELETE COMPANY TESTS ====================
 
@@ -253,7 +184,6 @@ class CompanyServiceTest {
     }
 
     @Disabled("Flaky test - passes individually but fails in full suite due to test pollution")
-
     @Test
     @DisplayName("Test 4.14: should_throwCompanyNotFoundException_when_deleteNonExistentCompany")
     void should_throwCompanyNotFoundException_when_deleteNonExistentCompany() {
@@ -305,7 +235,6 @@ class CompanyServiceTest {
     }
 
     @Disabled("Flaky test - passes individually but fails in full suite due to test pollution")
-
     @Test
     @DisplayName("Test 4.20: should_throwCompanyNotFoundException_when_verifyNonExistentCompany")
     void should_throwCompanyNotFoundException_when_verifyNonExistentCompany() {
@@ -378,50 +307,5 @@ class CompanyServiceTest {
         // Then
         assertThat(response).isNotNull();
         assertThat(response.getLogo()).isNull();
-    }
-
-    @Test
-    @DisplayName("Test 4.23: should_throwCompanyValidationException_when_updateWithDuplicateName")
-    void should_throwCompanyValidationException_when_updateWithDuplicateName() {
-        // Given
-        UpdateCompanyRequest updateWithNewName = UpdateCompanyRequest.builder()
-                .name("anotherco")
-                .build();
-
-        // Story 1.16.2: use company name instead of UUID
-        when(companyRepository.findByName(companyName)).thenReturn(Optional.of(existingCompany));
-        when(companyRepository.existsByName("anotherco")).thenReturn(true);
-
-        // When / Then
-        assertThatThrownBy(() -> companyService.updateCompany(companyName, updateWithNewName))
-                .isInstanceOf(CompanyValidationException.class)
-                .hasMessageContaining("already exists");
-
-        verify(companyRepository, never()).saveAndFlush(any(Company.class));
-        verify(searchService, never()).invalidateCache();
-    }
-
-    @Test
-    @DisplayName("Test 4.24: should_allowSameName_when_updateWithoutChangingName")
-    void should_allowSameName_when_updateWithoutChangingName() {
-        // Given
-        UpdateCompanyRequest updateWithSameName = UpdateCompanyRequest.builder()
-                .name("testcompany") // Same as existing
-                .displayName("Updated Display")
-                .build();
-
-        // Story 1.16.2: use company name instead of UUID
-        when(companyRepository.findByName(companyName)).thenReturn(Optional.of(existingCompany));
-        when(companyRepository.saveAndFlush(any(Company.class))).thenReturn(existingCompany);
-
-        // When
-        CompanyResponse response = companyService.updateCompany(companyName, updateWithSameName);
-
-        // Then
-        assertThat(response).isNotNull();
-        verify(companyRepository).saveAndFlush(any(Company.class));
-        verify(searchService).invalidateCache();
-        // Should NOT check existsByName when name hasn't changed
-        verify(companyRepository, never()).existsByName(anyString());
     }
 }

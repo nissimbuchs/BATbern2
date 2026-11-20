@@ -1,6 +1,8 @@
 package ch.batbern.companyuser.service;
 
+import ch.batbern.companyuser.client.CompanyReferenceContract;
 import ch.batbern.companyuser.domain.Company;
+import ch.batbern.companyuser.domain.CompanyAlias;
 import ch.batbern.companyuser.domain.CompanyUserUpload;
 import ch.batbern.companyuser.dto.generated.CompanyLogo;
 import ch.batbern.companyuser.dto.generated.CompanyResponse;
@@ -47,6 +49,7 @@ public class CompanyService {
     private final SlugGenerationService slugService;
     private final CompanyInserter companyInserter;
     private final CompanyAliasService aliasService;
+    private final CompanyKeyMover keyMover;
 
     /**
      * Creates a new company with validation
@@ -117,7 +120,6 @@ public class CompanyService {
 
         // Invalidate search cache (AC8)
         searchService.invalidateCache();
-
 
         log.info("Company created successfully: {}", savedCompany.getId());
         return mapToResponse(savedCompany);
@@ -202,7 +204,6 @@ public class CompanyService {
             return new Resolved(concurrent, false);
         }
 
-
         log.info("Company created: {} (name: {}, display: {})",
                  savedCompany.getId(), savedCompany.getName(), savedCompany.getDisplayName());
 
@@ -251,23 +252,34 @@ public class CompanyService {
     public CompanyResponse updateCompany(String name, UpdateCompanyRequest request) {
         log.info("Updating company: {}", name);
 
-        Company company = companyRepository.findByName(name)
+        // Locked: a rename moves the key other rows hold, and must not interleave with another
+        Company company = companyRepository.findByNameForUpdate(name)
                 .orElseThrow(() -> new CompanyNotFoundException(name));
+        String oldKey = company.getName();
+        String oldDisplayName = company.getDisplayName();
+        String newKey = request.getName();
+        boolean rename = newKey != null && !newKey.equals(oldKey);
 
         // Update only provided fields
-        if (request.getName() != null && !request.getName().equals(company.getName())
-                && !request.getName().matches(SlugGenerationService.COMPANY_NAME_PATTERN)) {
+        if (rename && !newKey.matches(SlugGenerationService.COMPANY_NAME_PATTERN)) {
             // The key is the meaningful ID other services hold: it keeps the slug shape (owner 2026-11-09)
             throw new ValidationException("name",
-                    "Company name (key) must be 1 to 12 letters or digits: " + request.getName());
+                    "Company name (key) must be 1 to 12 letters or digits: " + newKey);
         }
-        if (request.getName() != null) {
+        if (rename && companyRepository.existsByName(newKey)) {
             // Check for duplicate company name if name is being changed (AC3)
-            if (!request.getName().equals(company.getName())
-                    && companyRepository.existsByName(request.getName())) {
-                throw new CompanyValidationException("Company with name '" + request.getName() + "' already exists");
-            }
-            company.setName(request.getName());
+            throw new CompanyValidationException("Company with name '" + newKey + "' already exists");
+        }
+        if (rename && aliasService.ownerOfKey(newKey).filter(owner -> !owner.equals(company.getId())).isPresent()) {
+            // An old key of another company still leads there (#1251)
+            throw new CompanyValidationException("Company name '" + newKey + "' is an old name of another company");
+        }
+        boolean displayNameChanges = request.getDisplayName() != null
+                && !request.getDisplayName().strip().equalsIgnoreCase(String.valueOf(oldDisplayName));
+        if (displayNameChanges && aliasService.ownerOfDisplayName(request.getDisplayName())
+                .filter(owner -> !owner.equals(company.getId())).isPresent()) {
+            throw new CompanyValidationException("Company name '" + request.getDisplayName()
+                    + "' is an old name of another company");
         }
         if (request.getDisplayName() != null) {
             company.setDisplayName(request.getDisplayName());
@@ -310,12 +322,39 @@ public class CompanyService {
             }
         }
 
+        // The rename is the last step: the fields and the logo (under the old key, whose upload the
+        // move carries along) cannot fail any more once other services have moved their rows (#1251)
+        if (rename) {
+            updatedCompany = rename(updatedCompany, oldKey, oldDisplayName, newKey);
+        }
+
         // Invalidate search cache (AC8)
         searchService.invalidateCache();
 
-
         log.info("Company updated successfully: {}", name);
         return mapToResponse(updatedCompany);
+    }
+
+    /**
+     * #1251: every reference moves to the new key first (EMS and PCS through the contract, then the
+     * CUMS rows, {@link CompanyKeyMover}), then the company takes the key and its old key and display
+     * name become an alias. A failure here leaves the company under its old key; once the holders have
+     * moved, it is reported as {@link CompanyKeyMover.MoveIncompleteException} (502), and the same rename
+     * again finishes the move.
+     */
+    private Company rename(Company company, String oldKey, String oldDisplayName, String newKey) {
+        String performedBy = securityContextHelper.getCurrentUsername();
+        keyMover.move(oldKey, newKey, performedBy, CompanyReferenceContract.Trigger.RENAME);
+        try {
+            aliasService.forget(newKey); // its own old key: the company takes it back
+            company.setName(newKey);
+            Company renamed = companyRepository.saveAndFlush(company);
+            keyMover.keepAsAlias(newKey, oldKey, oldDisplayName, CompanyAlias.Reason.RENAME, performedBy);
+            return renamed;
+        } catch (RuntimeException e) {
+            throw new CompanyKeyMover.MoveIncompleteException(
+                    "The references of " + oldKey + " moved to " + newKey + ", but the rename did not complete", e);
+        }
     }
 
     /**
@@ -335,7 +374,6 @@ public class CompanyService {
         // Invalidate search cache (AC8)
         searchService.invalidateCache();
 
-
         log.info("Company deleted successfully: {}", name);
     }
 
@@ -353,7 +391,6 @@ public class CompanyService {
         company.markAsVerified();
         // Flush: @PreUpdate sets the stored updatedAt, which the response and the event carry.
         Company verifiedCompany = companyRepository.saveAndFlush(company);
-
 
         log.info("Company marked as verified: {}", name);
         return mapToResponse(verifiedCompany);

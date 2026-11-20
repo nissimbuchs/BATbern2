@@ -15,6 +15,7 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 
 import java.time.Instant;
 import java.util.Optional;
+import java.util.UUID;
 
 /**
  * Old company keys and display names that still lead to the company (#1251, owner decision
@@ -87,6 +88,33 @@ public class CompanyAliasService {
         return byKey
                 .or(() -> aliasRepository.findByFoldedDisplayName(typedName.strip()))
                 .flatMap(alias -> companyRepository.findById(alias.getCompanyId()));
+    }
+
+    /** The company (CUMS id) an alias key leads to. */
+    @Transactional(readOnly = true)
+    public Optional<UUID> ownerOfKey(String key) {
+        return aliasRepository.findById(key).map(CompanyAlias::getCompanyId);
+    }
+
+    /** The company (CUMS id) an alias display name leads to, folded as the search folds it. */
+    @Transactional(readOnly = true)
+    public Optional<UUID> ownerOfDisplayName(String displayName) {
+        if (displayName == null || displayName.isBlank()) {
+            return Optional.empty();
+        }
+        return aliasRepository.findByFoldedDisplayName(displayName.strip()).map(CompanyAlias::getCompanyId);
+    }
+
+    /**
+     * Removes the alias {@code key}: its company takes the key back (a rename to an old key). The
+     * search cache is cleared after the commit.
+     */
+    public void forget(String key) {
+        if (aliasRepository.existsById(key)) {
+            aliasRepository.deleteById(key);
+            aliasRepository.flush();
+            clearSearchCacheAfterCommit();
+        }
     }
 
     /** Whether {@code key} is an alias: a new company must not take it (it would hide the alias). */
