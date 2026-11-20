@@ -143,6 +143,32 @@ pr_case no-doc-title   "fix(events): internal [no-doc]" 0 "$EMS/service/EventSer
 pr_case chore-type     "chore(events): tidy" 0 "$EMS/service/EventService.java"
 pr_case unmonitored    "feat(x): unmapped path" 0 some/unmapped/file.txt
 
+# pr_two <name> <expected exit> <msg1> <file1> <msg2> <file2>: a branch of two commits, PR title = msg2.
+# [no-doc] exempts only the files of its own commit, not every other commit on the branch.
+pr_two() {
+  local name="$1" expected="$2" m1="$3" f1="$4" m2="$5" f2="$6"
+  git checkout -q -b "case-$name" origin/develop
+  commit "2026-11-18T09:00:00Z" "$m1" "$f1"
+  commit "2026-11-18T09:05:00Z" "$m2" "$f2"
+  local rc=0
+  BASE_REF=develop PR_TITLE="$m2" COMMENT_FILE="$WORK/comment-$name.md" \
+    "$SCRIPTS/doc-drift-pr-check.sh" > "$WORK/pr-$name.log" 2>&1 || rc=$?
+  if [[ "$rc" == "$expected" ]]; then
+    pass "PR $name exits $expected"
+  else
+    fail "PR $name exits $expected (got $rc, log follows)"
+    cat "$WORK/pr-$name.log"
+  fi
+  git checkout -q develop
+}
+
+pr_two no-doc-commit-does-not-exempt-others 1 \
+  "test(web): fixture [no-doc]" web-frontend/src/pages/Home.tsx \
+  "fix(events): change the workflow" "$EMS/service/EventService.java"
+pr_two no-doc-commit-exempts-its-own-files 0 \
+  "fix(events): internal [no-doc]" "$EMS/service/EventService.java" \
+  "feat(x): unmapped path" some/unmapped/other.txt
+
 if grep -q "changelog.md" "$WORK/comment-changelog-only.md" 2>/dev/null; then
   fail "PR comment does not suggest the changelog"
 else

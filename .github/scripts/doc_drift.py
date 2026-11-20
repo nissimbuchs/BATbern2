@@ -174,17 +174,27 @@ def cmd_pr(args):
     if "[no-doc]" in args.title:
         print("[no-doc] flag present in PR title: doc drift check skipped.")
         return 0
-    # CLAUDE.md documents "[no-doc] in the commit message", so honour any commit on the branch.
-    if "[no-doc]" in git("log", f"{base}..HEAD", "--format=%B"):
-        print("[no-doc] flag present in a commit message on this branch: doc drift check skipped.")
-        return 0
     reason = skip_reason(args.title, config)
     if reason:
         print(f"{reason}: doc drift check skipped.")
         return 0
 
     files = [f for f in git("diff", "--name-only", f"{base}...HEAD").splitlines() if f]
-    sources, required, satisfied = classify(files, config)
+    # CLAUDE.md documents "[no-doc] in the commit message": such a commit exempts the files it
+    # changes, never the other commits on the branch. A file also changed by a commit without
+    # the flag is still checked.
+    exempt, checked = set(), set()
+    for sha in git("rev-list", "--no-merges", f"{base}..HEAD").split():
+        changed = {f for f in git("diff-tree", "--no-commit-id", "-r", "--name-only", sha).splitlines() if f}
+        (exempt if "[no-doc]" in git("log", "-1", "--format=%B", sha) else checked).update(changed)
+    exempt -= checked
+    if exempt:
+        print(f"[no-doc] commits exempt {len(exempt)} file(s) from the check.")
+    sources, required, _ = classify([f for f in files if f not in exempt], config)
+    satisfied = sorted(
+        p for p in files
+        if p not in NEVER_COUNTS and any(doc_covers(d, p) for d in required)
+    )
     if not required:
         print("No monitored source paths changed: no drift.")
         return 0
