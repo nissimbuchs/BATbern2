@@ -196,8 +196,8 @@ so the website never shows an organizer something a visitor would not see.
   schema because installed Apple Watch binaries decode them as required). Only the uploader is
   hidden by this: the key, and with it the upload id, is the path of the public `cloudFrontUrl`; the
   fields are blanked so no public client comes to depend on them. `include=metrics`
-  (`sessionsWithMaterialsCount`) counts public files for everyone but organizers, since the event
-  detail caches one entry for all non-organizers. The public read model
+  (speaker-pool counts, `sessionsWithMaterialsCount` and the other cockpit counts) is organizer-only:
+  any other caller gets the event without those fields, and the organizer's count includes every file. The public read model
   (`/public/events*`) and the public view of `/events/current` pass `publicView` and show public
   materials to every caller, organizers included: they are shaped by publishing state, never by
   caller. `GET /events/{code}/sessions/{slug}`, `GET …/materials` and the sessions list decide per

@@ -1017,17 +1017,17 @@ export interface components {
       createdBy?: string;
       /** @description Organizers only (omitted for other callers, GHSA-qhqv). Username of the last updater (audit). */
       updatedBy?: string;
-      /** @description Speakers who accepted their invitation. Only present when ?include=metrics. */
+      /** @description Speakers who accepted their invitation. Only present when ?include=metrics and the caller is an organizer. */
       confirmedSpeakersCount?: number;
-      /** @description Speakers who submitted complete materials. Only present when ?include=metrics. */
+      /** @description Speakers who submitted complete materials. Only present when ?include=metrics and the caller is an organizer. */
       speakersWithCompleteInfoCount?: number;
-      /** @description Speakers with materials still pending. Only present when ?include=metrics. */
+      /** @description Speakers with materials still pending. Only present when ?include=metrics and the caller is an organizer. */
       pendingMaterialsCount?: number;
-      /** @description Maximum speaker slots for this event type. Only present when ?include=metrics. */
+      /** @description Maximum speaker slots for this event type. Only present when ?include=metrics and the caller is an organizer. */
       maxSpeakerSlots?: number;
-      /** @description Sessions that have at least one material. Only present when ?include=metrics. */
+      /** @description Sessions that have at least one material. Only present when ?include=metrics and the caller is an organizer. */
       sessionsWithMaterialsCount?: number;
-      /** @description Total sessions for this event. Only present when ?include=metrics. */
+      /** @description Total sessions for this event. Only present when ?include=metrics and the caller is an organizer. */
       totalSessionsCount?: number;
     };
     EventDetail: components['schemas']['Event'] & {

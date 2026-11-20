@@ -70,12 +70,6 @@
         "materials" : [ ],
         "materialsCount" : 0
       } ],
-      "confirmedSpeakersCount" : 4,
-      "speakersWithCompleteInfoCount" : 3,
-      "pendingMaterialsCount" : 1,
-      "maxSpeakerSlots" : 4,
-      "sessionsWithMaterialsCount" : 1,
-      "totalSessionsCount" : 2,
       "currentPublishedPhase" : "AGENDA"
     }
   }

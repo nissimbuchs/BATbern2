@@ -19,7 +19,7 @@ import java.util.UUID;
 
 /**
  * The speaker and materials metrics of an event read ({@code include=metrics}, single event only),
- * speakers module. Moved from {@code EventController} unchanged (Story BAT-91 Phase 3, Story 5.9).
+ * speakers module. Organizers only: other callers get the event without these fields.
  */
 @Component
 @Order(4)
@@ -39,6 +39,10 @@ public class SpeakerMetricsExpansion implements EventResponseContributor {
 
     @Override
     public void expand(String include, Event event, EventResponse response, View view) {
+        // Speaker-pool and materials progress is cockpit data: organizers only, whatever the caller asks for.
+        if (view != View.ALL) {
+            return;
+        }
         UUID eventId = event.getId();
 
         // Count speakers along the content lifecycle (ADR-009 §0.1: CONFIRMED + SLOT_ASSIGNED
@@ -81,10 +85,8 @@ public class SpeakerMetricsExpansion implements EventResponseContributor {
                 .filter(session -> session.getStartTime() != null)
                 .filter(session -> !Session.isStructuralType(session.getSessionType()))
                 .filter(session -> {
-                    // Count sessions with materialsStatus = COMPLETE. Organizers count every file;
-                    // anyone else (one shared cache entry) the public ones only, never by caller (#1260).
                     List<SessionMaterialResponse> materials =
-                            sessionService.toSessionResponse(session, event.getEventCode(), false, view != View.ALL)
+                            sessionService.toSessionResponse(session, event.getEventCode(), false, false)
                                     .getMaterials();
                     return materials != null && !materials.isEmpty();
                 })

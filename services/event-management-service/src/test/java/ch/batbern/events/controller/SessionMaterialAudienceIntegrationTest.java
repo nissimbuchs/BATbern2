@@ -347,10 +347,9 @@ class SessionMaterialAudienceIntegrationTest extends AbstractIntegrationTest {
     // ---- Metrics: include=metrics counts sessions with materials -------------------------------
 
     @Test
-    @DisplayName("Metrics: everyone but an organizer counts sessions with public files, whoever asked first")
-    void should_countPublicSessions_when_metricsAreReadByNonOrganizer() throws Exception {
-        // The session's speaker reads first: the non-organizer entry of the event cache must not hold
-        // a count that includes their non-public files.
+    @DisplayName("Metrics: only an organizer gets them, and the organizer counts every file")
+    void should_countAllSessions_when_organizerReadsMetrics_andOmitThemForEveryoneElse() throws Exception {
+        // The session's speaker reads first: no non-organizer response carries a count at all.
         for (RequestPostProcessor who : List.of(user(OTHER_SPEAKER).roles("SPEAKER"), anonymous(),
                 user("it.attendee.1261").roles("ATTENDEE"))) {
             for (MockHttpServletRequestBuilder request : List.of(
@@ -358,7 +357,7 @@ class SessionMaterialAudienceIntegrationTest extends AbstractIntegrationTest {
                     get("/api/v1/events/current").param("include", "metrics"))) {
                 JsonNode event = objectMapper.readTree(body(request, who));
                 assertThat(event.path("eventCode").asText()).isEqualTo(EVENT);
-                assertThat(event.path("sessionsWithMaterialsCount").asInt()).isEqualTo(1);
+                assertThat(event.has("sessionsWithMaterialsCount")).isFalse();
             }
         }
         JsonNode byOrganizer = objectMapper.readTree(
