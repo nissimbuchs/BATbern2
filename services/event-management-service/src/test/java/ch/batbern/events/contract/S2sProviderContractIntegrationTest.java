@@ -54,8 +54,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * schedule since the 17.0 deferred work, attendance summary since Epic 17 6b). EMS serves no public
  * operation to another service any more.
  *
- * <p>EMS also implements two contracts CUMS owns, the Mail Center request contract (Epic 17 entry 7)
- * and the user-reference contract (entry 7b): those operations are checked against
+ * <p>EMS also implements three contracts CUMS owns, the Mail Center request contract (Epic 17
+ * entry 7), the user-reference contract (entry 7b) and the company-reference contract (#1251): those
+ * operations are checked against
  * {@code docs/api/internal/cums-internal.openapi.yml}, the spec the CUMS contract callers are tested
  * against.
  */
@@ -318,6 +319,72 @@ class S2sProviderContractIntegrationTest extends AbstractIntegrationTest {
                  "trigger": "ORGANIZER"}""".formatted(MERGE_SOURCE, MERGE_TARGET), 409);
 
         assertThat(result.getResponse().getContentAsString()).contains("MERGE_BLOCKED").contains(CODE);
+    }
+
+    /** The company-reference preview as CUMS calls it ({@code source} / {@code target} null: left out). */
+    private MvcResult companyPreview(String source, String target, boolean user, int expectedStatus)
+            throws Exception {
+        Map<String, List<String>> query = new java.util.LinkedHashMap<>();
+        MockHttpServletRequestBuilder request = get("/internal/company-references/preview");
+        if (source != null) {
+            query.put("source", List.of(source));
+            request.param("source", source);
+        }
+        if (target != null) {
+            query.put("target", List.of(target));
+            request.param("target", target);
+        }
+        if (user) {
+            request.with(jwt().jwt(j -> j.claim("custom:username", "organizer.alice")
+                    .claim("custom:role", "ORGANIZER")));
+        }
+        if (expectedStatus < 300) {
+            assertThat(OpenApiContract.load(CUMS_INTERNAL).validateRequest("GET",
+                    "/internal/company-references/preview", query, Map.of(), null)).as("a valid contract request")
+                    .isEmpty();
+        }
+        MvcResult result = mockMvc.perform(request).andExpect(status().is(expectedStatus)).andReturn();
+        assertResponseMatchesSpec(CUMS_INTERNAL, result);
+        return result;
+    }
+
+    /** A company-reference merge as CUMS sends it, with the organizer's JWT forwarded when {@code user}. */
+    private MvcResult companyMerge(String body, boolean user, int expectedStatus) throws Exception {
+        String path = "/internal/company-references/merge";
+        if (expectedStatus < 300) {
+            assertThat(OpenApiContract.load(CUMS_INTERNAL).validateRequest("POST", path, Map.of(),
+                    Map.of("Content-Type", List.of("application/json")), body))
+                    .as("a valid contract request").isEmpty();
+        }
+        MockHttpServletRequestBuilder request = postJson(path, body);
+        if (user) {
+            request.with(jwt().jwt(j -> j.claim("custom:username", "organizer.alice")
+                    .claim("custom:role", "ORGANIZER")));
+        }
+        MvcResult result = mockMvc.perform(request).andExpect(status().is(expectedStatus)).andReturn();
+        assertResponseMatchesSpec(CUMS_INTERNAL, result);
+        return result;
+    }
+
+    @ParameterizedTest(name = "forwarded JWT: {0}")
+    @CsvSource({"true", "false"})
+    @DisplayName("company-reference contract (#1251): preview and merge as CUMS calls them, with and without JWT")
+    void companyReferenceContract_matchesCumsSpec(boolean user) throws Exception {
+        MvcResult previewed = companyPreview("ContractCo", "contracttgt", user, 200);
+        assertThat(previewed.getResponse().getContentAsString()).contains("registrations.attendee_company_id");
+        companyPreview("ContractCo", "ContractCo", user, 400);
+        companyPreview("ContractCo", null, user, 400);
+        String merge = """
+                {"source": "%s", "target": "%s", "performedBy": "organizer.alice", "trigger": "%s"}""";
+        MvcResult merged = companyMerge(merge.formatted("ContractCo", "contracttgt", "MERGE"), user, 200);
+        companyMerge(merge.formatted("contracttgt", "ContractCo", "RENAME"), user, 200);
+        companyMerge(merge.formatted("ContractCo", "not-a-key", "MERGE"), user, 400);
+        companyMerge("{\"source\": \"x\"}", user, 400);
+
+        assertThat(JsonPath.<Integer>read(merged.getResponse().getContentAsString(),
+                "$.moved['registrations.attendee_company_id']")).isEqualTo(1);
+        assertThat(jdbc.queryForObject("SELECT attendee_company_id FROM registrations WHERE registration_code = ?",
+                String.class, CODE + "-reg-contract")).as("moved there and back").isEqualTo("ContractCo");
     }
 
     @ParameterizedTest(name = "forwarded JWT: {0}")

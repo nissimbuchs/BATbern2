@@ -25,6 +25,9 @@ info:
     Epic 17 entry 7b: the user-reference contract (`/internal/user-references/*`,
     `user-references`), implemented by every service that stores usernames (event-management,
     partner-coordination).
+    Issue sweep epic 4 (#1251): the company-reference contract (`/internal/company-references/*`,
+    `company-references`), implemented by every service that stores company keys
+    (event-management, partner-coordination); a company merge and a rename move them.
 
     Epic 17 entry 6 (17.6 part A) moved the three machine-only writes of users-api here (provision,
     profile patch, invitation credentials) and added the single company read. Paths are full paths
@@ -522,6 +525,148 @@ paths:
               schema:
                 $ref: '../_shared.openapi.yml#/components/schemas/ErrorResponse'
 
+  /internal/company-references/preview:
+    get:
+      tags: [contract]
+      operationId: previewCompanyReferenceMove
+      summary: 'Contract: what moving a company key would move at this holder (#1251)'
+      description: |
+        Company-reference contract (issue sweep epic 4, ADR-016 decision 5), owned by CUMS and served
+        by each holder in `batbern.contracts.company-references.implementers` (today
+        partner-coordination and event-management). A holder is a service that stores company keys (`companies.name`,
+        no foreign key, ADR-003). CUMS asks every holder before a company merge or rename moves the
+        references from `source` to `target`: `moves` keyed `table.column`, `conflicts` by table
+        (rows that collide with one the target already has and are dropped by the merge),
+        `blockers` from any holder. Changes nothing. A blocker at any holder refuses the move before
+        any holder moves a row.
+      parameters:
+        - name: source
+          in: query
+          required: true
+          description: Company key whose references move (the company that disappears, or the old key of a rename).
+          schema:
+            type: string
+          example: unicag
+        - name: target
+          in: query
+          required: true
+          description: Company key the references move to (a company key, the slug rule of CUMS V28).
+          schema:
+            type: string
+            pattern: '^[a-zA-Z0-9]{1,12}$'
+          example: unic
+      responses:
+        '200':
+          description: What this holder would move
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompanyReferencePreview'
+              examples:
+                clean:
+                  value:
+                    moves: {topic_suggestions.company_name: 2, topic_votes.company_name: 3, partners.company_name: 1}
+                    conflicts: {topic_votes: 1}
+                    blockers: []
+                blocked:
+                  value:
+                    moves: {topic_suggestions.company_name: 1, topic_votes.company_name: 0, partners.company_name: 1}
+                    conflicts: {}
+                    blockers: [MERGE_BLOCKED_BOTH_PARTNERS]
+                nothingHeld:
+                  value:
+                    moves: {registrations.attendee_company_id: 0}
+                    conflicts: {}
+                    blockers: []
+        '400':
+          description: |
+            Source and target are the same key or the target is not a company key
+            (`CompanyReferenceError`), or `source` / `target` missing (the shared `ErrorResponse`)
+          content:
+            application/json:
+              schema:
+                # anyOf, not oneOf: see the user-reference preview's 400.
+                anyOf:
+                  - $ref: '#/components/schemas/CompanyReferenceError'
+                  - $ref: '../_shared.openapi.yml#/components/schemas/ErrorResponse'
+              example:
+                error: INVALID_MERGE
+                message: Source and target must be two different company keys
+
+  /internal/company-references/merge:
+    post:
+      tags: [contract]
+      operationId: moveCompanyReferences
+      summary: 'Contract: move every reference of one company key to another at this holder (#1251)'
+      description: |
+        Company-reference contract (issue sweep epic 4). CUMS calls every holder in configured
+        order, after every holder's preview came back without a blocker, for a company merge
+        (`trigger: MERGE`) or a rename (`RENAME`), and changes its own rows only when all holders
+        answered. Each holder rewrites the source key to the target in one transaction of its own
+        and clears its caches after the commit. Idempotent: a second call finds nothing left to
+        move, so a move that failed at a later holder is completed by running it again. A holder
+        that can refuse is listed first (partner-coordination), so a refusal comes before any
+        holder moved a row.
+        `movedKeys` and `removedKeys` name the rows per `table.column` (row id; `topic_id` for a
+        topic vote), for the CUMS merge log and an undo by hand; holders keep no log of their own.
+        event-management moves `registrations.attendee_company_id`; partner-coordination moves
+        `topic_suggestions`, `topic_votes` (a vote of the source on a topic the target voted for
+        too is removed, the target's stays) and the partner when only the source is one. Both
+        companies partners: 409 `MERGE_BLOCKED_BOTH_PARTNERS`, nothing moved.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompanyReferenceMerge'
+            example:
+              source: unicag
+              target: unic
+              performedBy: organizer.alice
+              trigger: MERGE
+      responses:
+        '200':
+          description: What this holder moved and removed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompanyReferenceMergeResult'
+              examples:
+                merged:
+                  value:
+                    moved: {topic_suggestions.company_name: 1, topic_votes.company_name: 1, partners.company_name: 1}
+                    removed: {topic_votes.company_name: 1}
+                    movedKeys:
+                      topic_suggestions.company_name: [3f6c2a1e-6d0b-4f3e-9a51-0c2d6b1e7a11]
+                      topic_votes.company_name: [8b1d4c2e-1f2a-4b3c-8d4e-5f6a7b8c9d01]
+                      partners.company_name: [c4e1a2b3-5d6f-4a7b-9c8d-0e1f2a3b4c5d]
+                    removedKeys:
+                      topic_votes.company_name: [9a2b3c4d-5e6f-4a1b-8c2d-3e4f5a6b7c8d]
+                nothingHeld:
+                  value:
+                    moved: {registrations.attendee_company_id: 0}
+                    removed: {}
+                    movedKeys: {}
+                    removedKeys: {}
+        '400':
+          description: Invalid request (validation, source equals target, or the target is not a company key)
+          content:
+            application/json:
+              schema:
+                # anyOf, not oneOf: see the user-reference preview's 400.
+                anyOf:
+                  - $ref: '#/components/schemas/CompanyReferenceError'
+                  - $ref: '../_shared.openapi.yml#/components/schemas/ErrorResponse'
+        '409':
+          description: The holder refuses the move (both companies are partners); nothing was moved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompanyReferenceError'
+              example:
+                error: MERGE_BLOCKED_BOTH_PARTNERS
+                message: 'Both companies are partners (unicag, unic); merge the partners first'
+
   /internal/companies:
     get:
       operationId: findCompanyNames
@@ -1002,6 +1147,76 @@ components:
           type: string
           minLength: 1
           maxLength: 255
+
+    CompanyReferencePreview:
+      type: object
+      required: [moves, conflicts, blockers]
+      properties:
+        moves:
+          $ref: '#/components/schemas/UserReferenceCounts'
+        conflicts:
+          $ref: '#/components/schemas/UserReferenceCounts'
+        blockers:
+          type: array
+          description: Why this holder refuses the move (partner-coordination - MERGE_BLOCKED_BOTH_PARTNERS).
+          items:
+            type: string
+      additionalProperties: false
+
+    CompanyReferenceKeys:
+      type: object
+      description: Ids of the rows per `table.column` (`topic_id` for a topic vote).
+      additionalProperties:
+        type: array
+        items:
+          type: string
+
+    CompanyReferenceMergeResult:
+      type: object
+      required: [moved, removed, movedKeys, removedKeys]
+      properties:
+        moved:
+          $ref: '#/components/schemas/UserReferenceCounts'
+        removed:
+          $ref: '#/components/schemas/UserReferenceCounts'
+        movedKeys:
+          $ref: '#/components/schemas/CompanyReferenceKeys'
+        removedKeys:
+          $ref: '#/components/schemas/CompanyReferenceKeys'
+      additionalProperties: false
+
+    CompanyReferenceError:
+      type: object
+      description: Error body of the company-reference operations (holder-local handler, not the shared ErrorResponse).
+      required: [error, message]
+      properties:
+        error:
+          type: string
+          enum: [MERGE_BLOCKED_BOTH_PARTNERS, INVALID_MERGE]
+        message:
+          type: string
+      additionalProperties: false
+
+    CompanyReferenceMerge:
+      type: object
+      required: [source, target, performedBy, trigger]
+      properties:
+        source:
+          type: string
+          minLength: 1
+          maxLength: 255
+          description: Company key whose references move.
+        target:
+          type: string
+          pattern: '^[a-zA-Z0-9]{1,12}$'
+          description: Company key the references move to (a company key, the slug rule of CUMS V28).
+        performedBy:
+          type: string
+          minLength: 1
+          maxLength: 100
+        trigger:
+          type: string
+          enum: [MERGE, RENAME]
 
     MailCenterRequestOpened:
       type: object

@@ -108,6 +108,8 @@ class S2sProviderContractIntegrationTest extends AbstractIntegrationTest {
         "GET,  /internal/user-references/preview",
         "POST, /internal/user-references/merge",
         "POST, /internal/user-references/primary-email",
+        "GET,  /internal/company-references/preview",
+        "POST, /internal/company-references/merge",
     })
     @DisplayName("internal spec examples match their schema")
     void should_haveValidExamples_forInternalOperations(String method, String path) {

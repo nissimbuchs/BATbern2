@@ -112,6 +112,11 @@ batbern:
     # (#1183), a new primary address reaches them (#1244). Service Connect names in production.
     user-references:
       implementers: ${EVENT_MANAGEMENT_SERVICE_URL:http://event-management:8080},${PARTNER_COORDINATION_SERVICE_URL:http://partner-coordination:8080}
+    # Issue sweep epic 4 (#1251): the services that store company keys; a company merge and a
+    # rename move their rows. partner-coordination first: it is the holder that can refuse (both
+    # companies partners), and the call stops at the first refusal before a later holder moved rows.
+    company-references:
+      implementers: ${PARTNER_COORDINATION_SERVICE_URL:http://partner-coordination:8080},${EVENT_MANAGEMENT_SERVICE_URL:http://event-management:8080}
   user:
     additional-emails:
       verification:
