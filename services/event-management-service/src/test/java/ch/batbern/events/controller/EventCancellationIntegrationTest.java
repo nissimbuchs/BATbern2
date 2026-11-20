@@ -170,6 +170,32 @@ class EventCancellationIntegrationTest extends AbstractIntegrationTest {
         assertThat(sesRecorder.mails()).isEmpty();
     }
 
+    // Review of #824: the override skipped the transition check, so a past or archived event could
+    // be "cancelled" and its leftover waitlist mailed that the event will not take place.
+    @Test
+    @DisplayName("a completed or archived event cannot be cancelled, not even with override")
+    void cancel_withOverride_fromCompletedOrArchived_isRefused() throws Exception {
+        for (EventWorkflowState past : List.of(EventWorkflowState.EVENT_COMPLETED, EventWorkflowState.ARCHIVED)) {
+            Event current = eventRepository.findByEventCode(CODE).orElseThrow();
+            current.setWorkflowState(past);
+            eventRepository.saveAndFlush(current);
+
+            mockMvc.perform(post("/api/v1/events/{code}/transition", CODE)
+                            .with(user(ORGANIZER).roles("ORGANIZER"))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"targetState\":\"CANCELLED\",\"overrideValidation\":true,"
+                                    + "\"overrideReason\":\"test\"}"))
+                    .andExpect(status().isUnprocessableEntity())
+                    .andExpect(jsonPath("$.message", org.hamcrest.Matchers.containsString("cannot be cancelled")));
+
+            assertThat(eventRepository.findByEventCode(CODE).orElseThrow().getWorkflowState()).isEqualTo(past);
+        }
+        assertThat(registrationRepository.findByEventIdAndAttendeeUsername(event.getId(), "wim.waiting")
+                .orElseThrow().getStatus()).isEqualTo("waitlist");
+        sesRecorder.awaitAsyncSends();
+        assertThat(sesRecorder.mails()).isEmpty();
+    }
+
     @Test
     @DisplayName("CANCELLED is terminal without override")
     void cancelled_isTerminal() throws Exception {

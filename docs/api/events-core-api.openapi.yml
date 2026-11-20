@@ -979,7 +979,7 @@ paths:
 
         **Cancellation** (#824): CANCELLED is reachable from every state before EVENT_COMPLETED and is
 
-        terminal. Entering it cancels every registration that holds or waits for a place (registered,
+        terminal. From EVENT_COMPLETED or ARCHIVED it is refused with 422 even with `overrideValidation`. Entering it cancels every registration that holds or waits for a place (registered,
 
         confirmed, waitlist) and mails each of those people the cancellation (template
 

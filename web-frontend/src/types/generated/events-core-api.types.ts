@@ -267,7 +267,7 @@ export interface paths {
      *     after it.
      *
      *     **Cancellation** (#824): CANCELLED is reachable from every state before EVENT_COMPLETED and is
-     *     terminal. Entering it cancels every registration that holds or waits for a place (registered,
+     *     terminal. From EVENT_COMPLETED or ARCHIVED it is refused with 422 even with `overrideValidation`. Entering it cancels every registration that holds or waits for a place (registered,
      *     confirmed, waitlist) and mails each of those people the cancellation (template
      *     `registration-event-cancelled`, German or English by their language) after the commit. A
      *     cancelled event is not on the public site (`/public/events*` answer as for an unknown event),

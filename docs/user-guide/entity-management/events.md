@@ -370,7 +370,7 @@ event moves to the state **Cancelled**, and at the same time:
 - auto-publishing and the automatic speaker reminders skip the event
 - open tasks stay open, for example to tell the venue and the caterer
 
-Only an event before **Event Completed** can be cancelled, on the event day too. **Cancelled** is a final state: the
+Only an event before **Event Completed** can be cancelled, on the event day too; not even **Override workflow validation** cancels a completed or archived event. **Cancelled** is a final state: the
 event cannot be reopened by the normal state change, only with **Override workflow validation**,
 and that does not restore the registrations. A cancelled event without attendee registrations can
 be deleted.

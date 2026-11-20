@@ -5,6 +5,7 @@ import ch.batbern.events.exception.WorkflowValidationException;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.shared.events.DomainEventPublisher;
 import ch.batbern.shared.events.EventWorkflowTransitionEvent;
+import ch.batbern.shared.exception.InvalidStateTransitionException;
 import ch.batbern.shared.types.EventWorkflowState;
 import ch.batbern.shared.types.SpeakerWorkflowState;
 import lombok.RequiredArgsConstructor;
@@ -99,6 +100,15 @@ public class EventWorkflowStateMachine {
                 .orElseThrow(() -> new IllegalArgumentException("Event not found: " + eventCode));
 
         EventWorkflowState currentState = event.getWorkflowState();
+
+        // #824: cancelling cancels the registrations and mails "will not take place". For an event
+        // that took place or is archived that is never true, so not even an override allows it.
+        if (targetState == EventWorkflowState.CANCELLED
+                && (currentState == EventWorkflowState.EVENT_COMPLETED
+                        || currentState == EventWorkflowState.ARCHIVED)) {
+            throw new InvalidStateTransitionException(String.format(
+                    "Event %s is %s and cannot be cancelled: it has taken place.", eventCode, currentState));
+        }
 
         // Conditional validation: skip if override=true
         if (!override) {
