@@ -259,6 +259,84 @@
     },
     "pagination": {
       "itemsPerPage": "Éléments par page"
+    },
+    "duplicates": {
+      "button": "Doublons possibles",
+      "title": "Entreprises en double possibles",
+      "back": "Retour aux entreprises",
+      "intro": "Paires d'entreprises qui sont probablement la même : même site web, même nom, même nom à la forme juridique près, ou un nom court qui commence par l'autre. Comparez chaque paire et fusionnez-la, ou marquez-la comme n'étant pas un doublon. L'entreprise proposée à conserver est le partenaire, sinon celle avec un logo, sinon celle avec le plus de personnes, sinon la plus ancienne.",
+      "loadError": "La liste n'a pas pu être chargée.",
+      "countsIncomplete": "Tous les services n'ont pas fourni leurs chiffres. Veuillez réessayer.",
+      "all": "Toutes",
+      "count": "Paires : {{count}}",
+      "empty": "Aucune entreprise en double possible trouvée.",
+      "keep": "Conserver",
+      "mergeIn": "Reprendre et supprimer",
+      "compare": "Comparer et fusionner",
+      "dismiss": "Pas un doublon",
+      "dismissError": "La paire n'a pas pu être marquée. Veuillez réessayer.",
+      "bothPartners": "Les deux sont partenaires : deux entreprises partenaires ne peuvent pas être fusionnées. Fusionnez d'abord les partenaires.",
+      "people": "Personnes : {{count}}",
+      "registrations": "Inscriptions : {{count}}",
+      "partner": "Partenaire",
+      "confidence": {
+        "HIGH": "Très probable",
+        "MEDIUM": "Probable",
+        "LOW": "Simple indice"
+      },
+      "rule": {
+        "SAME_WEBSITE": "Même site web",
+        "SAME_DISPLAY_NAME": "Même nom",
+        "SAME_NAME_WITHOUT_LEGAL_FORM": "Même nom à la forme juridique près",
+        "SLUG_PREFIX": "Un nom court commence par l'autre"
+      }
+    },
+    "merge": {
+      "button": "Fusionner avec une autre entreprise",
+      "title": "Fusionner deux entreprises",
+      "intro": "L'autre entreprise est reprise dans celle-ci puis supprimée : ses personnes, inscriptions, données de partenaire, propositions et votes de thèmes, logo et demandes de logo sont transférés. Les champs vides de l'entreprise conservée sont repris de l'autre ; son nom reste.",
+      "pickOther": "Autre entreprise",
+      "previewFailed": "L'aperçu n'a pas pu être chargé.",
+      "previewIncomplete": "Tous les services n'ont pas répondu. Veuillez rouvrir l'aperçu.",
+      "keeps": "Reste",
+      "deletes": "Est reprise et supprimée",
+      "moves": "Transféré à l'entreprise conservée",
+      "nothingToMove": "Rien à transférer.",
+      "conflicts": "Déjà présent dans l'entreprise conservée ({{list}}) : ces entrées sont supprimées, les demandes de logo fermées. Tout est journalisé.",
+      "fills": "Repris car vide dans l'entreprise conservée : {{list}}",
+      "swap": "Inverser le sens",
+      "warning": "L'entreprise {{source}} sera supprimée. La fusion est journalisée et ne peut être annulée qu'à la main.",
+      "confirm": "Fusionner et supprimer",
+      "success": "Fusionnée : {{source}} fait maintenant partie de {{target}}.",
+      "fields": {
+        "website": "Site web",
+        "industry": "Secteur",
+        "description": "Description",
+        "logo": "Logo"
+      },
+      "reason": {
+        "SAME_COMPANY": "C'est la même entreprise.",
+        "TARGET_KEY_TOO_LONG": "Le nom court de l'entreprise conservée ne peut pas être utilisé dans les profils. Fusionnez dans l'autre sens.",
+        "BOTH_PARTNERS": "Les deux entreprises sont partenaires. Deux entreprises partenaires ne peuvent pas être fusionnées ; fusionnez d'abord les partenaires.",
+        "BLOCKED": "Un service refuse la fusion ({{blockers}})."
+      },
+      "error": {
+        "MERGE_BLOCKED_BOTH_PARTNERS": "Les deux entreprises sont partenaires. Rien n'a été modifié.",
+        "MERGE_BLOCKED": "Un service a refusé la fusion. Rien n'a été modifié.",
+        "MERGE_NOT_ALLOWED": "Cette fusion n'est pas autorisée. Rien n'a été modifié.",
+        "MERGE_INCOMPLETE": "Tous les services n'ont pas terminé la fusion. L'autre entreprise existe encore ; fusionnez à nouveau pour terminer.",
+        "default": "La fusion a échoué. Rien n'a été modifié ; réessayez."
+      },
+      "tables": {
+        "user_profiles": "Personnes",
+        "company_logo_requests": "Demandes de logo",
+        "company_user_uploads": "Téléversements de logo",
+        "activity_history": "Activité",
+        "registrations": "Inscriptions",
+        "partners": "Données de partenaire",
+        "topic_suggestions": "Propositions de thèmes",
+        "topic_votes": "Votes de thèmes"
+      }
     }
   },
   "event": {

@@ -212,8 +212,6 @@ fe-mock-components	web-frontend/src/components/public/EventPhotos/__tests__/Even
 fe-mock-components	web-frontend/src/components/public/Hero/__tests__/HeroSection.test.tsx	1
 fe-mock-components	web-frontend/src/components/public/__tests__/DeregistrationEntry.test.tsx	1
 fe-mock-components	web-frontend/src/components/public/__tests__/FilterSheet.test.tsx	1
-fe-mock-components	web-frontend/src/components/shared/Company/__tests__/CompanyDetailView.test.tsx	2
-fe-mock-components	web-frontend/src/components/shared/Company/__tests__/CompanyManagementScreen.test.tsx	1
 fe-mock-components	web-frontend/src/components/shared/__tests__/OrganizerChip.test.tsx	1
 fe-mock-components	web-frontend/src/pages/PartnerCompanyPage.test.tsx	1
 fe-mock-components	web-frontend/src/pages/organizer/OrganizerAnalyticsPage.test.tsx	4
@@ -292,8 +290,6 @@ fe-mock-hooks	web-frontend/src/components/public/Registration/__tests__/Registra
 fe-mock-hooks	web-frontend/src/components/public/Testimonials/__tests__/TestimonialSection.test.tsx	3
 fe-mock-hooks	web-frontend/src/components/shared/Company/CompanyBatchImportModal.test.tsx	1
 fe-mock-hooks	web-frontend/src/components/shared/Company/__tests__/Accessibility.test.tsx	4
-fe-mock-hooks	web-frontend/src/components/shared/Company/__tests__/CompanyDetailView.test.tsx	1
-fe-mock-hooks	web-frontend/src/components/shared/Company/__tests__/CompanyManagementScreen.test.tsx	4
 fe-mock-hooks	web-frontend/src/components/shared/Company/__tests__/ErrorHandling.test.tsx	2
 fe-mock-hooks	web-frontend/src/components/shared/Company/__tests__/Performance.test.tsx	2
 fe-mock-hooks	web-frontend/src/components/shared/Company/__tests__/Responsive.test.tsx	4

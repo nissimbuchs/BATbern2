@@ -6,6 +6,7 @@
  * - Grid/List view toggle
  * - Create company button
  * - Routing to detail view
+ * - Possible duplicates page and merging two companies (#1251)
  * - Responsive layout
  */
 
@@ -22,12 +23,19 @@ import {
   useTheme,
   useMediaQuery,
 } from '@mui/material';
-import { Add as AddIcon, ViewModule as GridIcon, ViewList as ListIcon } from '@mui/icons-material';
+import {
+  Add as AddIcon,
+  ContentCopy as DuplicatesIcon,
+  ViewModule as GridIcon,
+  ViewList as ListIcon,
+} from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { CompanyList } from '@/components/shared/Company/CompanyList';
 import CompanyFilters from '@/components/shared/Company/CompanyFilters';
 import { CompanyForm } from '@/components/shared/Company/CompanyForm';
 import { CompanyDetailView } from '@/components/shared/Company/CompanyDetailView';
+import { CompanyDuplicatesPage } from '@/components/shared/Company/CompanyDuplicatesPage';
+import { MergeCompanyDialog } from '@/components/shared/Company/MergeCompanyDialog';
 import { useAuth } from '@/hooks/useAuth';
 import CompanyPagination from '@/components/shared/Company/CompanyPagination';
 import {
@@ -51,19 +59,29 @@ const CompanyDetailWrapper: React.FC<{
   const { id } = useParams<{ id: string }>();
   const { data: company, isLoading, error, refetch } = useCompany(id || '');
   const { hasRole } = useAuth();
+  // the company the merge was opened on: the dialog stays (with its result) while a merge that
+  // deleted that company opens the page of the one that stays
+  const [mergeFor, setMergeFor] = useState<string | null>(null);
+  const isOrganizer = hasRole('organizer');
 
   return (
-    <CompanyDetailView
-      company={company || null}
-      isLoading={isLoading}
-      error={error?.message}
-      canEdit={true}
-      canDelete={true}
-      showPeople={hasRole('organizer')}
-      onEdit={() => company && onEdit(company)}
-      onBack={onBack}
-      onRetry={refetch}
-    />
+    <>
+      <CompanyDetailView
+        company={company || null}
+        isLoading={isLoading}
+        error={error?.message}
+        canEdit={true}
+        canDelete={true}
+        showPeople={isOrganizer}
+        onEdit={() => company && onEdit(company)}
+        onMerge={isOrganizer && company ? () => setMergeFor(company.name) : undefined}
+        onBack={onBack}
+        onRetry={refetch}
+      />
+      {mergeFor && (
+        <MergeCompanyDialog open onClose={() => setMergeFor(null)} companyName={mergeFor} />
+      )}
+    </>
   );
 };
 
@@ -190,6 +208,18 @@ const CompanyManagementScreen: React.FC = () => {
                   </ToggleButtonGroup>
                 )}
 
+                <Button
+                  variant="outlined"
+                  startIcon={<DuplicatesIcon />}
+                  onClick={() => navigate('duplicate-candidates')}
+                  aria-label={t('company.duplicates.button')}
+                  data-testid="company-duplicates-button"
+                >
+                  <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
+                    {t('company.duplicates.button')}
+                  </Box>
+                </Button>
+
                 {/* Create Button */}
                 <Button
                   variant="contained"
@@ -239,6 +269,8 @@ const CompanyManagementScreen: React.FC = () => {
               </>
             }
           />
+          {/* A company key is 1 to 12 letters or digits, so this path cannot shadow one */}
+          <Route path="/duplicate-candidates" element={<CompanyDuplicatesPage />} />
           <Route
             path="/:id"
             element={

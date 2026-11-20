@@ -259,6 +259,84 @@
     },
     "pagination": {
       "itemsPerPage": "Elementos por página"
+    },
+    "duplicates": {
+      "button": "Posibles duplicados",
+      "title": "Posibles empresas duplicadas",
+      "back": "Volver a las empresas",
+      "intro": "Pares de empresas que probablemente son la misma: el mismo sitio web, el mismo nombre, el mismo nombre salvo la forma jurídica, o un nombre corto que empieza por el otro. Compare cada par y fusiónelo, o márquelo como no duplicado. La empresa propuesta para conservar es el socio, si no la que tiene logotipo, si no la que tiene más personas, si no la más antigua.",
+      "loadError": "No se pudo cargar la lista.",
+      "countsIncomplete": "No todos los servicios entregaron sus cifras. Inténtelo de nuevo.",
+      "all": "Todas",
+      "count": "Pares: {{count}}",
+      "empty": "No se encontraron posibles empresas duplicadas.",
+      "keep": "Conservar",
+      "mergeIn": "Fusionar y eliminar",
+      "compare": "Comparar y fusionar",
+      "dismiss": "No es un duplicado",
+      "dismissError": "No se pudo marcar el par. Inténtelo de nuevo.",
+      "bothPartners": "Ambas son socias: dos empresas socias no se pueden fusionar. Fusione primero los socios.",
+      "people": "Personas: {{count}}",
+      "registrations": "Inscripciones: {{count}}",
+      "partner": "Socio",
+      "confidence": {
+        "HIGH": "Muy probable",
+        "MEDIUM": "Probable",
+        "LOW": "Solo una pista"
+      },
+      "rule": {
+        "SAME_WEBSITE": "Mismo sitio web",
+        "SAME_DISPLAY_NAME": "Mismo nombre",
+        "SAME_NAME_WITHOUT_LEGAL_FORM": "Mismo nombre salvo la forma jurídica",
+        "SLUG_PREFIX": "Un nombre corto empieza por el otro"
+      }
+    },
+    "merge": {
+      "button": "Fusionar con otra empresa",
+      "title": "Fusionar dos empresas",
+      "intro": "La otra empresa se integra en esta y luego se elimina: sus personas, inscripciones, datos de socio, propuestas y votos de temas, logotipo y solicitudes de logotipo pasan a esta. Los campos vacíos de la empresa que se conserva se toman de la otra; su nombre se mantiene.",
+      "pickOther": "Otra empresa",
+      "previewFailed": "No se pudo cargar la vista previa.",
+      "previewIncomplete": "No todos los servicios respondieron. Vuelva a abrir la vista previa.",
+      "keeps": "Se conserva",
+      "deletes": "Se integra y se elimina",
+      "moves": "Pasa a la empresa que se conserva",
+      "nothingToMove": "Nada que mover.",
+      "conflicts": "Ya presente en la empresa que se conserva ({{list}}): estas entradas se eliminan, las solicitudes de logotipo se cierran. Todo queda registrado.",
+      "fills": "Tomado porque está vacío en la empresa que se conserva: {{list}}",
+      "swap": "Invertir dirección",
+      "warning": "La empresa {{source}} será eliminada. La fusión queda registrada y solo se puede deshacer a mano.",
+      "confirm": "Fusionar y eliminar",
+      "success": "Fusionada: {{source}} ahora forma parte de {{target}}.",
+      "fields": {
+        "website": "Sitio web",
+        "industry": "Sector",
+        "description": "Descripción",
+        "logo": "Logotipo"
+      },
+      "reason": {
+        "SAME_COMPANY": "Es la misma empresa.",
+        "TARGET_KEY_TOO_LONG": "El nombre corto de la empresa que se conserva no se puede usar en los perfiles de las personas. Fusione en la otra dirección.",
+        "BOTH_PARTNERS": "Ambas empresas son socias. Dos empresas socias no se pueden fusionar; fusione primero los socios.",
+        "BLOCKED": "Un servicio rechaza la fusión ({{blockers}})."
+      },
+      "error": {
+        "MERGE_BLOCKED_BOTH_PARTNERS": "Ambas empresas son socias. No se cambió nada.",
+        "MERGE_BLOCKED": "Un servicio rechazó la fusión. No se cambió nada.",
+        "MERGE_NOT_ALLOWED": "Esta fusión no está permitida. No se cambió nada.",
+        "MERGE_INCOMPLETE": "No todos los servicios completaron la fusión. La otra empresa sigue existiendo; fusione de nuevo para terminarla.",
+        "default": "La fusión falló. No se cambió nada; inténtelo de nuevo."
+      },
+      "tables": {
+        "user_profiles": "Personas",
+        "company_logo_requests": "Solicitudes de logotipo",
+        "company_user_uploads": "Subidas de logotipo",
+        "activity_history": "Actividad",
+        "registrations": "Inscripciones",
+        "partners": "Datos de socio",
+        "topic_suggestions": "Propuestas de temas",
+        "topic_votes": "Votos de temas"
+      }
     }
   },
   "event": {

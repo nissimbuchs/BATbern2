@@ -277,6 +277,49 @@ After deletion:
 
 </div>
 
+## Finding and Merging Duplicate Companies
+
+<span class="feature-status implemented">Implemented</span> (#1251)
+
+The same company sometimes exists twice, for example "Unic" and "Unic AG", or "Die Post" with the
+short names `post` and `diepost`. Its people and registrations are then split between the two.
+
+**Finding duplicates**: on the Companies tab, **Mögliche Duplikate** lists pairs of companies that
+are probably the same, computed on the current data:
+
+- the same website (on LinkedIn, Facebook, XING and similar platforms only the same profile counts);
+- the same name, ignoring upper and lower case, umlauts, accents and punctuation;
+- the same name apart from the legal form (AG, GmbH, SA, Sàrl, Ltd, Inc, LLC, KG, & Co);
+- one short name starts with the other ("puzzle" and "puzzleitc").
+
+Each pair shows how likely it is ("Sehr wahrscheinlich", "Wahrscheinlich", "Nur Hinweis"), both
+companies with their website, number of people and registrations and whether they are a partner, and
+which one should stay: the partner, else the one with a logo, else the one with more people, else the
+older one. **Vergleichen und zusammenführen** opens the merge preview below with the pair already
+chosen; you stay on the list. **Kein Duplikat** removes a pair of two different companies from the list
+for good. Two partner companies cannot be merged here; merge the partners first.
+
+**Merging one company into another**: open the company that should stay and click **Mit anderer Firma
+zusammenführen**, then pick the other company. The preview shows both companies and:
+
+- what moves to the company that stays: people, registrations, partner record, topic suggestions and
+  votes, logo uploads and logo requests, with their numbers;
+- what is already there and is removed (a vote for the same topic) or closed (an open logo request of
+  the same person);
+- which empty fields of the company that stays are taken over (website, industry, description, logo).
+  Filled fields and the name of the company that stays do not change.
+
+**Richtung tauschen** turns the merge around when the other company should stay instead; the preview
+offers it only where that direction is possible. A merge is refused, with the reason shown, when both
+companies are partners, when they are the same company, or when the short name of the company that
+stays cannot be used for people's profiles (then swap). Confirm with **Zusammenführen und löschen**.
+
+- The other company is deleted; its short and full name still find the company that stays in the search
+  and at registration, so nobody creates it again.
+- If a service cannot complete the merge, the other company stays and an error says so; merging again
+  finishes it.
+- No mail is sent. Every merge is logged with everything it moved and removed, so it can be undone by hand.
+
 ## Company Employees
 
 ### Viewing Employees

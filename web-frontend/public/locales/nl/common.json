@@ -259,6 +259,84 @@
     },
     "pagination": {
       "itemsPerPage": "Items per pagina"
+    },
+    "duplicates": {
+      "button": "Mogelijke duplicaten",
+      "title": "Mogelijke dubbele bedrijven",
+      "back": "Terug naar bedrijven",
+      "intro": "Paren bedrijven die waarschijnlijk hetzelfde zijn: dezelfde website, dezelfde naam, dezelfde naam op de rechtsvorm na, of een korte naam die met de andere begint. Vergelijk elk paar en voeg het samen, of markeer het als geen duplicaat. Voorgesteld om te behouden is de partner, anders het bedrijf met een logo, anders dat met meer personen, anders het oudste.",
+      "loadError": "De lijst kon niet worden geladen.",
+      "countsIncomplete": "Niet elke dienst heeft zijn aantallen geleverd. Probeer het opnieuw.",
+      "all": "Alle",
+      "count": "Paren: {{count}}",
+      "empty": "Geen mogelijke dubbele bedrijven gevonden.",
+      "keep": "Behouden",
+      "mergeIn": "Overnemen en verwijderen",
+      "compare": "Vergelijken en samenvoegen",
+      "dismiss": "Geen duplicaat",
+      "dismissError": "Het paar kon niet worden gemarkeerd. Probeer het opnieuw.",
+      "bothPartners": "Beide zijn partner: twee partnerbedrijven kunnen niet worden samengevoegd. Voeg eerst de partners samen.",
+      "people": "Personen: {{count}}",
+      "registrations": "Inschrijvingen: {{count}}",
+      "partner": "Partner",
+      "confidence": {
+        "HIGH": "Zeer waarschijnlijk",
+        "MEDIUM": "Waarschijnlijk",
+        "LOW": "Alleen een hint"
+      },
+      "rule": {
+        "SAME_WEBSITE": "Dezelfde website",
+        "SAME_DISPLAY_NAME": "Dezelfde naam",
+        "SAME_NAME_WITHOUT_LEGAL_FORM": "Dezelfde naam op de rechtsvorm na",
+        "SLUG_PREFIX": "Een korte naam begint met de andere"
+      }
+    },
+    "merge": {
+      "button": "Samenvoegen met een ander bedrijf",
+      "title": "Twee bedrijven samenvoegen",
+      "intro": "Het andere bedrijf wordt in dit bedrijf opgenomen en daarna verwijderd: de personen, inschrijvingen, partnergegevens, onderwerpvoorstellen en stemmen, het logo en de logoaanvragen gaan over. Lege velden van het bedrijf dat blijft worden van het andere overgenomen; de naam blijft.",
+      "pickOther": "Ander bedrijf",
+      "previewFailed": "De voorvertoning kon niet worden geladen.",
+      "previewIncomplete": "Niet elke dienst heeft geantwoord. Open de voorvertoning opnieuw.",
+      "keeps": "Blijft",
+      "deletes": "Wordt opgenomen en verwijderd",
+      "moves": "Gaat naar het bedrijf dat blijft",
+      "nothingToMove": "Niets te verplaatsen.",
+      "conflicts": "Al aanwezig bij het bedrijf dat blijft ({{list}}): deze vermeldingen worden verwijderd, logoaanvragen gesloten. Alles wordt gelogd.",
+      "fills": "Overgenomen omdat leeg bij het bedrijf dat blijft: {{list}}",
+      "swap": "Richting omdraaien",
+      "warning": "Bedrijf {{source}} wordt verwijderd. Het samenvoegen wordt gelogd en kan alleen met de hand ongedaan worden gemaakt.",
+      "confirm": "Samenvoegen en verwijderen",
+      "success": "Samengevoegd: {{source}} hoort nu bij {{target}}.",
+      "fields": {
+        "website": "Website",
+        "industry": "Branche",
+        "description": "Beschrijving",
+        "logo": "Logo"
+      },
+      "reason": {
+        "SAME_COMPANY": "Dit is hetzelfde bedrijf.",
+        "TARGET_KEY_TOO_LONG": "De korte naam van het bedrijf dat blijft kan niet in profielen van personen worden gebruikt. Voeg in de andere richting samen.",
+        "BOTH_PARTNERS": "Beide bedrijven zijn partner. Twee partnerbedrijven kunnen niet worden samengevoegd; voeg eerst de partners samen.",
+        "BLOCKED": "Een dienst weigert het samenvoegen ({{blockers}})."
+      },
+      "error": {
+        "MERGE_BLOCKED_BOTH_PARTNERS": "Beide bedrijven zijn partner. Er is niets gewijzigd.",
+        "MERGE_BLOCKED": "Een dienst heeft het samenvoegen geweigerd. Er is niets gewijzigd.",
+        "MERGE_NOT_ALLOWED": "Dit samenvoegen is niet toegestaan. Er is niets gewijzigd.",
+        "MERGE_INCOMPLETE": "Niet elke dienst heeft het samenvoegen afgerond. Het andere bedrijf bestaat nog; voeg opnieuw samen om het af te ronden.",
+        "default": "Het samenvoegen is mislukt. Er is niets gewijzigd; probeer het opnieuw."
+      },
+      "tables": {
+        "user_profiles": "Personen",
+        "company_logo_requests": "Logoaanvragen",
+        "company_user_uploads": "Logo-uploads",
+        "activity_history": "Activiteit",
+        "registrations": "Inschrijvingen",
+        "partners": "Partnergegevens",
+        "topic_suggestions": "Onderwerpvoorstellen",
+        "topic_votes": "Onderwerpstemmen"
+      }
     }
   },
   "event": {

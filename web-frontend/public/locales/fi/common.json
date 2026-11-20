@@ -259,6 +259,84 @@
     },
     "pagination": {
       "itemsPerPage": "Kohteita per sivu"
+    },
+    "duplicates": {
+      "button": "Mahdolliset kaksoiskappaleet",
+      "title": "Mahdollisesti kahdentuneet yritykset",
+      "back": "Takaisin yrityksiin",
+      "intro": "Yrityspareja, jotka ovat todennäköisesti sama yritys: sama verkkosivusto, sama nimi, sama nimi yhtiömuotoa lukuun ottamatta tai lyhyt nimi, joka alkaa toisella. Vertaa jokaista paria ja yhdistä se tai merkitse se ei-kaksoiskappaleeksi. Säilytettäväksi ehdotetaan kumppania, muuten logollista, muuten sitä, jossa on enemmän henkilöitä, muuten vanhempaa.",
+      "loadError": "Luetteloa ei voitu ladata.",
+      "countsIncomplete": "Kaikki palvelut eivät toimittaneet lukujaan. Yritä uudelleen.",
+      "all": "Kaikki",
+      "count": "Pareja: {{count}}",
+      "empty": "Mahdollisesti kahdentuneita yrityksiä ei löytynyt.",
+      "keep": "Säilytä",
+      "mergeIn": "Yhdistä ja poista",
+      "compare": "Vertaa ja yhdistä",
+      "dismiss": "Ei kaksoiskappale",
+      "dismissError": "Paria ei voitu merkitä. Yritä uudelleen.",
+      "bothPartners": "Molemmat ovat kumppaneita: kahta kumppaniyritystä ei voi yhdistää. Yhdistä ensin kumppanit.",
+      "people": "Henkilöt: {{count}}",
+      "registrations": "Ilmoittautumiset: {{count}}",
+      "partner": "Kumppani",
+      "confidence": {
+        "HIGH": "Hyvin todennäköinen",
+        "MEDIUM": "Todennäköinen",
+        "LOW": "Vain vihje"
+      },
+      "rule": {
+        "SAME_WEBSITE": "Sama verkkosivusto",
+        "SAME_DISPLAY_NAME": "Sama nimi",
+        "SAME_NAME_WITHOUT_LEGAL_FORM": "Sama nimi yhtiömuotoa lukuun ottamatta",
+        "SLUG_PREFIX": "Lyhyt nimi alkaa toisella"
+      }
+    },
+    "merge": {
+      "button": "Yhdistä toiseen yritykseen",
+      "title": "Yhdistä kaksi yritystä",
+      "intro": "Toinen yritys yhdistetään tähän ja poistetaan sitten: sen henkilöt, ilmoittautumiset, kumppanitiedot, aihe-ehdotukset ja äänet, logo ja logopyynnöt siirtyvät. Säilyvän yrityksen tyhjät kentät täytetään toisesta; sen nimi säilyy.",
+      "pickOther": "Toinen yritys",
+      "previewFailed": "Esikatselua ei voitu ladata.",
+      "previewIncomplete": "Kaikki palvelut eivät vastanneet. Avaa esikatselu uudelleen.",
+      "keeps": "Säilyy",
+      "deletes": "Yhdistetään ja poistetaan",
+      "moves": "Siirtyy säilyvään yritykseen",
+      "nothingToMove": "Ei siirrettävää.",
+      "conflicts": "Jo olemassa säilyvässä yrityksessä ({{list}}): nämä merkinnät poistetaan, logopyynnöt suljetaan. Kaikki kirjataan.",
+      "fills": "Otettu, koska tyhjä säilyvässä yrityksessä: {{list}}",
+      "swap": "Vaihda suuntaa",
+      "warning": "Yritys {{source}} poistetaan. Yhdistäminen kirjataan ja sen voi perua vain käsin.",
+      "confirm": "Yhdistä ja poista",
+      "success": "Yhdistetty: {{source}} kuuluu nyt yritykseen {{target}}.",
+      "fields": {
+        "website": "Verkkosivusto",
+        "industry": "Toimiala",
+        "description": "Kuvaus",
+        "logo": "Logo"
+      },
+      "reason": {
+        "SAME_COMPANY": "Tämä on sama yritys.",
+        "TARGET_KEY_TOO_LONG": "Säilyvän yrityksen lyhyttä nimeä ei voi käyttää henkilöiden profiileissa. Yhdistä toiseen suuntaan.",
+        "BOTH_PARTNERS": "Molemmat yritykset ovat kumppaneita. Kahta kumppaniyritystä ei voi yhdistää; yhdistä ensin kumppanit.",
+        "BLOCKED": "Palvelu estää yhdistämisen ({{blockers}})."
+      },
+      "error": {
+        "MERGE_BLOCKED_BOTH_PARTNERS": "Molemmat yritykset ovat kumppaneita. Mitään ei muutettu.",
+        "MERGE_BLOCKED": "Palvelu esti yhdistämisen. Mitään ei muutettu.",
+        "MERGE_NOT_ALLOWED": "Tämä yhdistäminen ei ole sallittu. Mitään ei muutettu.",
+        "MERGE_INCOMPLETE": "Kaikki palvelut eivät saaneet yhdistämistä valmiiksi. Toinen yritys on yhä olemassa; yhdistä uudelleen viimeistelläksesi.",
+        "default": "Yhdistäminen epäonnistui. Mitään ei muutettu; yritä uudelleen."
+      },
+      "tables": {
+        "user_profiles": "Henkilöt",
+        "company_logo_requests": "Logopyynnöt",
+        "company_user_uploads": "Logolataukset",
+        "activity_history": "Toiminta",
+        "registrations": "Ilmoittautumiset",
+        "partners": "Kumppanitiedot",
+        "topic_suggestions": "Aihe-ehdotukset",
+        "topic_votes": "Aiheäänet"
+      }
     }
   },
   "event": {

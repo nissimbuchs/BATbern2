@@ -259,6 +259,84 @@
     },
     "pagination": {
       "itemsPerPage": "Elements per pagina"
+    },
+    "duplicates": {
+      "button": "Duplicats pussaivels",
+      "title": "Empresas dublas pussaivlas",
+      "back": "Enavos a las empresas",
+      "intro": "Pèrs d'empresas che èn probablamain la medema: medema website, medem num, medem num cun excepziun da la furma giuridica, u in num curt che cumenza cun l'auter. Cumparegl mintga pèr e l'unescha, u marca el sco betg duplicat. Proponida per tegnair è la partenaria, uschiglio quella cun logo, uschiglio quella cun dapli persunas, uschiglio la pli veglia.",
+      "loadError": "La glista n'ha betg pudì vegnir chargiada.",
+      "countsIncomplete": "Betg mintga servetsch ha furnì ses dumbers. Emprova anc ina giada.",
+      "all": "Tuttas",
+      "count": "Pèrs: {{count}}",
+      "empty": "Chattà naginas empresas dublas pussaivlas.",
+      "keep": "Tegnair",
+      "mergeIn": "Surpigliar e stizzar",
+      "compare": "Cumparegliar ed unir",
+      "dismiss": "Betg in duplicat",
+      "dismissError": "Il pèr n'ha betg pudì vegnir marcà. Emprova anc ina giada.",
+      "bothPartners": "Omaduas èn partenarias: duas empresas partenarias na pon betg vegnir unidas. Unescha l'emprim ils partenaris.",
+      "people": "Persunas: {{count}}",
+      "registrations": "Annunzias: {{count}}",
+      "partner": "Partenari",
+      "confidence": {
+        "HIGH": "Fitg probabel",
+        "MEDIUM": "Probabel",
+        "LOW": "Mo in indizi"
+      },
+      "rule": {
+        "SAME_WEBSITE": "Medema website",
+        "SAME_DISPLAY_NAME": "Medem num",
+        "SAME_NAME_WITHOUT_LEGAL_FORM": "Medem num cun excepziun da la furma giuridica",
+        "SLUG_PREFIX": "In num curt cumenza cun l'auter"
+      }
+    },
+    "merge": {
+      "button": "Unir cun in'autra empresa",
+      "title": "Unir duas empresas",
+      "intro": "L'autra empresa vegn surpigliada en questa e lura stizzada: sias persunas, annunzias, datas da partenari, propostas e vuschs da temas, logo e dumondas da logo passan sur. Champs vids da l'empresa che resta vegnan surpigliads da l'autra; ses num resta.",
+      "pickOther": "Autra empresa",
+      "previewFailed": "La prevista n'ha betg pudì vegnir chargiada.",
+      "previewIncomplete": "Betg mintga servetsch ha respundì. Avra anc ina giada la prevista.",
+      "keeps": "Resta",
+      "deletes": "Vegn surpigliada e stizzada",
+      "moves": "Va a l'empresa che resta",
+      "nothingToMove": "Nagut da surpigliar.",
+      "conflicts": "Gia avant maun tar l'empresa che resta ({{list}}): questas inscripziuns vegnan allontanadas, dumondas da logo serradas. Tut vegn protocollà.",
+      "fills": "Surpiglià perquai ch'el è vid tar l'empresa che resta: {{list}}",
+      "swap": "Midar la direcziun",
+      "warning": "L'empresa {{source}} vegn stizzada. L'uniun vegn protocollada e po vegnir revocada mo a maun.",
+      "confirm": "Unir e stizzar",
+      "success": "Unì: {{source}} fa ussa part da {{target}}.",
+      "fields": {
+        "website": "Website",
+        "industry": "Branscha",
+        "description": "Descripziun",
+        "logo": "Logo"
+      },
+      "reason": {
+        "SAME_COMPANY": "Quai è la medema empresa.",
+        "TARGET_KEY_TOO_LONG": "Il num curt da l'empresa che resta na po betg vegnir duvrà en ils profils da las persunas. Unescha en l'autra direcziun.",
+        "BOTH_PARTNERS": "Omaduas empresas èn partenarias. Duas empresas partenarias na pon betg vegnir unidas; unescha l'emprim ils partenaris.",
+        "BLOCKED": "In servetsch refusa l'uniun ({{blockers}})."
+      },
+      "error": {
+        "MERGE_BLOCKED_BOTH_PARTNERS": "Omaduas empresas èn partenarias. Nagut n'è vegnì midà.",
+        "MERGE_BLOCKED": "In servetsch ha refusà l'uniun. Nagut n'è vegnì midà.",
+        "MERGE_NOT_ALLOWED": "Questa uniun n'è betg permessa. Nagut n'è vegnì midà.",
+        "MERGE_INCOMPLETE": "Betg mintga servetsch ha terminà l'uniun. L'autra empresa exista anc; unescha anc ina giada per la terminar.",
+        "default": "L'uniun n'è betg reussida. Nagut n'è vegnì midà; emprova anc ina giada."
+      },
+      "tables": {
+        "user_profiles": "Persunas",
+        "company_logo_requests": "Dumondas da logo",
+        "company_user_uploads": "Uploads da logo",
+        "activity_history": "Activitad",
+        "registrations": "Annunzias",
+        "partners": "Datas da partenari",
+        "topic_suggestions": "Propostas da temas",
+        "topic_votes": "Vuschs da temas"
+      }
     }
   },
   "event": {

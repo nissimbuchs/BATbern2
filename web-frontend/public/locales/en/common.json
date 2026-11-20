@@ -298,6 +298,84 @@
     },
     "pagination": {
       "itemsPerPage": "Items per page"
+    },
+    "duplicates": {
+      "button": "Possible duplicates",
+      "title": "Possible duplicate companies",
+      "back": "Back to companies",
+      "intro": "Pairs of companies that are probably the same: the same website, the same name, the same name apart from the legal form, or one short name that starts with the other. Compare each pair and merge it, or mark it as not a duplicate. The suggested company to keep is the partner, else the one with a logo, else the one with more people, else the older one.",
+      "loadError": "The list could not be loaded.",
+      "countsIncomplete": "Not every service delivered its numbers. Please try again.",
+      "all": "All",
+      "count": "Pairs: {{count}}",
+      "empty": "No possible duplicate companies found.",
+      "keep": "Keep",
+      "mergeIn": "Merge in and delete",
+      "compare": "Compare and merge",
+      "dismiss": "Not a duplicate",
+      "dismissError": "The pair could not be marked. Please try again.",
+      "bothPartners": "Both are partners: two partner companies cannot be merged. Merge the partners first.",
+      "people": "People: {{count}}",
+      "registrations": "Registrations: {{count}}",
+      "partner": "Partner",
+      "confidence": {
+        "HIGH": "Very likely",
+        "MEDIUM": "Likely",
+        "LOW": "Hint only"
+      },
+      "rule": {
+        "SAME_WEBSITE": "Same website",
+        "SAME_DISPLAY_NAME": "Same name",
+        "SAME_NAME_WITHOUT_LEGAL_FORM": "Same name apart from the legal form",
+        "SLUG_PREFIX": "One short name starts with the other"
+      }
+    },
+    "merge": {
+      "button": "Merge with another company",
+      "title": "Merge two companies",
+      "intro": "The other company is merged into this one and then deleted: its people, registrations, partner record, topic suggestions and votes, logo and logo requests move over. Empty fields of the company that stays are taken from the other one; its name stays.",
+      "pickOther": "Other company",
+      "previewFailed": "The preview could not be loaded.",
+      "previewIncomplete": "Not every service answered. Please open the preview again.",
+      "keeps": "Stays",
+      "deletes": "Is merged in and deleted",
+      "moves": "Moves to the company that stays",
+      "nothingToMove": "Nothing to move.",
+      "conflicts": "Already present at the company that stays ({{list}}): these entries are removed or, for logo requests, closed. Everything is logged.",
+      "fills": "Taken over because empty at the company that stays: {{list}}",
+      "swap": "Swap direction",
+      "warning": "Company {{source}} will be deleted. The merge is logged and can be undone by hand only.",
+      "confirm": "Merge and delete",
+      "success": "Merged: {{source}} is now part of {{target}}.",
+      "fields": {
+        "website": "Website",
+        "industry": "Industry",
+        "description": "Description",
+        "logo": "Logo"
+      },
+      "reason": {
+        "SAME_COMPANY": "This is the same company.",
+        "TARGET_KEY_TOO_LONG": "The short name of the company that stays cannot be used in people's profiles. Merge in the other direction.",
+        "BOTH_PARTNERS": "Both companies are partners. Two partner companies cannot be merged; merge the partners first.",
+        "BLOCKED": "A service refuses the merge ({{blockers}})."
+      },
+      "error": {
+        "MERGE_BLOCKED_BOTH_PARTNERS": "Both companies are partners. Nothing was changed.",
+        "MERGE_BLOCKED": "A service refused the merge. Nothing was changed.",
+        "MERGE_NOT_ALLOWED": "This merge is not allowed. Nothing was changed.",
+        "MERGE_INCOMPLETE": "Not every service completed the merge. The other company still exists; merge again to finish it.",
+        "default": "The merge failed. Nothing was changed; try again."
+      },
+      "tables": {
+        "user_profiles": "People",
+        "company_logo_requests": "Logo requests",
+        "company_user_uploads": "Logo uploads",
+        "activity_history": "Activity",
+        "registrations": "Registrations",
+        "partners": "Partner record",
+        "topic_suggestions": "Topic suggestions",
+        "topic_votes": "Topic votes"
+      }
     }
   },
   "event": {

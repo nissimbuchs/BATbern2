@@ -1,201 +1,149 @@
 /**
- * CompanyManagementScreen Component Tests (RED Phase)
- *
- * Tests for main company management screen with routing and layout
- * AC1: Company List Display
+ * CompanyManagementScreen: the Companies tab as the app routes it (`/organizer/companies/*`), with
+ * its real hooks and services. The network is the MSW harness, auth the real `AuthContext`, i18n
+ * the real `en` (moved off own-code mocks with #1251 story 6, touch rule).
  */
-
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { describe, it, expect } from 'vitest';
+import { screen, waitFor, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { Route, Routes } from 'react-router-dom';
 import CompanyManagementScreen from '@/components/shared/Company/CompanyManagementScreen';
-import { BaseLayout } from '@/components/shared/Layout/BaseLayout';
+import { renderWithAuth, signedInAs } from '@/test/auth';
+import { api } from '@/test/msw/api';
+import type { UserRole } from '@/types/auth';
 
-// Mock hooks
-vi.mock('@/hooks/useCompanies/useCompanies', () => ({
-  useCompanies: vi.fn(() => ({
-    data: { data: [], pagination: { page: 1, limit: 100, totalItems: 0, totalPages: 0 } },
-    isLoading: false,
-    isError: false,
-  })),
-}));
-
-vi.mock('@/hooks/useCompanyMutations/useCompanyMutations', () => ({
-  useCreateCompany: vi.fn(() => ({ mutateAsync: vi.fn() })),
-  useUpdateCompany: vi.fn(() => ({ mutateAsync: vi.fn() })),
-}));
-
-// Mock useAuth hook for BaseLayout
-vi.mock('@/hooks/useAuth', () => ({
-  useAuth: vi.fn(() => ({
-    user: {
-      userId: 'user-123',
-      email: 'test@batbern.ch',
-      emailVerified: true,
-      role: 'organizer',
-      companyId: 'company-123',
-      preferences: {
-        language: 'de',
-        theme: 'light',
-        privacy: { showProfile: true, allowMessages: true },
-      },
-      issuedAt: 0,
-      expiresAt: 0,
-      tokenId: '',
-    },
-    isAuthenticated: true,
-    isLoading: false,
-    error: null,
-    signOut: vi.fn(),
-  })),
-}));
-
-// Mock useBreakpoints hook for BaseLayout
-vi.mock('@/hooks/useBreakpoints', () => ({
-  useBreakpoints: vi.fn(() => ({
-    isMobile: false,
-    isTablet: false,
-    isDesktop: true,
-    isWideDesktop: false,
-  })),
-}));
-
-// Mock child components to isolate testing
-// Note: CompanyFilters is NOT mocked so the search bar can be tested
-vi.mock('@/components/shared/Company/CompanyList', () => ({
-  CompanyList: () => <div data-testid="company-list">Company List Mock</div>,
-}));
-
-const createTestQueryClient = () =>
-  new QueryClient({
-    defaultOptions: {
-      queries: { retry: false },
-      mutations: { retry: false },
-    },
-  });
-
-const renderWithProviders = (ui: React.ReactElement, { route = '/organizer/companies' } = {}) => {
-  const queryClient = createTestQueryClient();
-  window.history.pushState({}, 'Test page', route);
-
-  return render(
-    <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <BaseLayout>
-          <Routes>
-            <Route path="/organizer/companies/*" element={ui} />
-          </Routes>
-        </BaseLayout>
-      </BrowserRouter>
-    </QueryClientProvider>
-  );
+const company = {
+  name: 'unic',
+  displayName: 'Unic',
+  isVerified: true,
+  createdAt: '2024-01-15T10:00:00Z',
+  updatedAt: '2024-10-14T15:30:00Z',
+  createdBy: 'system',
 };
 
-describe('CompanyManagementScreen Component', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
+const renderScreen = (path = '/organizer/companies', role: UserRole = 'organizer') =>
+  renderWithAuth(
+    <Routes>
+      <Route path="/organizer/companies/*" element={<CompanyManagementScreen />} />
+    </Routes>,
+    { auth: signedInAs(role), initialEntries: [path] }
+  );
 
-  describe('Layout and Structure', () => {
-    it('should_renderMainLayout_when_screenLoaded', () => {
-      renderWithProviders(<CompanyManagementScreen />);
+describe('CompanyManagementScreen', () => {
+  describe('list', () => {
+    it('should_showTitleSearchFiltersViewToggleAndCreate_when_screenLoaded', async () => {
+      renderScreen();
 
-      // Should have main container
-      expect(screen.getByRole('main')).toBeInTheDocument();
-    });
-
-    it('should_renderHeaderWithTitle_when_screenLoaded', () => {
-      renderWithProviders(<CompanyManagementScreen />);
-
-      // Should display page title
       expect(screen.getByRole('heading', { name: /company management/i })).toBeInTheDocument();
-    });
-
-    it('should_renderSearchBar_when_screenLoaded', () => {
-      renderWithProviders(<CompanyManagementScreen />);
-
-      // Should have search input (TextField renders as textbox, not combobox)
       expect(screen.getByPlaceholderText(/search companies/i)).toBeInTheDocument();
-    });
-
-    it('should_renderFilterSection_when_screenLoaded', () => {
-      renderWithProviders(<CompanyManagementScreen />);
-
-      // Should have filter controls
       expect(screen.getByTestId('company-filters')).toBeInTheDocument();
-    });
-
-    it('should_renderViewToggleButtons_when_screenLoaded', () => {
-      renderWithProviders(<CompanyManagementScreen />);
-
-      // Should have grid/list toggle
       expect(screen.getByRole('button', { name: /grid view/i })).toBeInTheDocument();
       expect(screen.getByRole('button', { name: /list view/i })).toBeInTheDocument();
-    });
-
-    it('should_renderCreateButton_when_screenLoaded', () => {
-      renderWithProviders(<CompanyManagementScreen />);
-
-      // Should have create company button
       expect(screen.getByRole('button', { name: /create company/i })).toBeInTheDocument();
+      await waitFor(() => expect(api.calls('listCompanies')).toHaveLength(1));
     });
 
-    it('should_renderCompanyListComponent_when_screenLoaded', () => {
-      renderWithProviders(<CompanyManagementScreen />);
+    it('should_sendTheSearchToTheBackend_when_typed', async () => {
+      renderScreen();
 
-      // Screen should render main container
-      const main = screen.getByRole('main');
-      expect(main).toBeInTheDocument();
+      await userEvent.type(screen.getByPlaceholderText(/search companies/i), 'Müller');
 
-      // CompanyList is rendered inside a Route, verified by main container presence
-    });
-  });
-
-  describe('Routing', () => {
-    it('should_displayListView_when_routeIsCompanies', () => {
-      renderWithProviders(<CompanyManagementScreen />);
-
-      // List view is rendered at root route (/)
-      const main = screen.getByRole('main');
-      expect(main).toBeInTheDocument();
-
-      // Detailed route testing is in E2E tests
-    });
-
-    it('should_displayDetailView_when_routeIsCompanyId', () => {
-      // Detail view requires specific routing with ID parameter
-      // This is thoroughly tested in CompanyDetailView.test.tsx
-      // and in E2E tests with actual navigation
-
-      renderWithProviders(<CompanyManagementScreen />);
-      expect(screen.getByRole('main')).toBeInTheDocument();
+      await waitFor(() =>
+        expect(api.calls('listCompanies').some((c) => c.query.get('search') === 'Müller')).toBe(
+          true
+        )
+      );
     });
   });
 
-  describe('Responsive Layout', () => {
-    it('should_stackElements_when_mobileViewport', () => {
-      // Responsive layout is tested comprehensively in Responsive.test.tsx
-      // This test verifies the component renders on mobile
-      renderWithProviders(<CompanyManagementScreen />);
+  describe('possible duplicates (#1251)', () => {
+    it('should_openTheDuplicatesPage_when_buttonClicked', async () => {
+      api.on('listCompanyDuplicateCandidates', () => []);
+      renderScreen();
 
-      const main = screen.getByRole('main');
-      expect(main).toBeInTheDocument();
+      await userEvent.click(screen.getByTestId('company-duplicates-button'));
 
-      // Detailed responsive layout tests in Responsive.test.tsx
+      expect(
+        await screen.findByRole('heading', { name: 'Possible duplicate companies' })
+      ).toBeInTheDocument();
+      expect(await screen.findByTestId('company-duplicates-empty')).toBeInTheDocument();
+      // the list header (title, filters) belongs to the list only
+      expect(screen.queryByTestId('company-duplicates-button')).not.toBeInTheDocument();
     });
 
-    it('should_showHorizontalLayout_when_desktopViewport', () => {
-      // Mock desktop viewport
-      global.innerWidth = 1920;
-      global.dispatchEvent(new Event('resize'));
+    it('should_offerMergeOnTheDetailPage_when_organizer', async () => {
+      api.on('getCompany', () => company);
+      api.on('searchCompanies', () => [
+        { name: 'unicag', displayName: 'Unic AG', isVerified: false },
+      ]);
+      renderScreen('/organizer/companies/unic');
 
-      renderWithProviders(<CompanyManagementScreen />);
+      await userEvent.click(await screen.findByTestId('company-merge-button'));
+      const dialog = await screen.findByTestId('merge-company-dialog');
+      await userEvent.type(within(dialog).getByRole('combobox'), 'Unic');
+      await userEvent.click(await screen.findByRole('option', { name: /Unic AG/ }));
 
-      const container = screen.getByRole('main');
+      await within(dialog).findByTestId('merge-company-target');
+      const preview = api.calls('getCompanyMergePreview')[0];
+      expect(preview.params.name).toBe('unic');
+      expect(preview.query.get('source')).toBe('unicag');
+    });
 
-      // On desktop, header elements should be horizontal
-      expect(container).toBeInTheDocument();
+    it('should_openTheCompanyThatStaysAndKeepTheResult_when_theOpenCompanyWasMergedIn', async () => {
+      api.on('getCompany', ({ params }) =>
+        params.name === 'unic' ? company : { ...company, name: 'unicag', displayName: 'Unic AG' }
+      );
+      api.on('searchCompanies', () => [
+        { name: 'unicag', displayName: 'Unic AG', isVerified: false },
+      ]);
+      api.on('getCompanyMergePreview', ({ params, query }) => ({
+        target: { name: params.name, isVerified: true, userCount: 1 },
+        source: { name: query.get('source') ?? '', isVerified: true, userCount: 1 },
+        moves: {},
+        conflicts: {},
+        blockers: [],
+        fills: [],
+        canMerge: true,
+        reasons: [],
+        canSwap: true,
+      }));
+      api.on('mergeCompany', ({ params, body }) => ({
+        targetName: params.name,
+        sourceName: body?.sourceName ?? '',
+        moved: {},
+        removed: {},
+        filled: [],
+      }));
+      renderScreen('/organizer/companies/unic');
+
+      await userEvent.click(await screen.findByTestId('company-merge-button'));
+      const dialog = await screen.findByTestId('merge-company-dialog');
+      await userEvent.type(within(dialog).getByRole('combobox'), 'Unic');
+      await userEvent.click(await screen.findByRole('option', { name: /Unic AG/ }));
+      await userEvent.click(await within(dialog).findByTestId('merge-company-swap'));
+      await waitFor(() => expect(api.calls('getCompanyMergePreview')).toHaveLength(2));
+      const confirm = within(dialog).getByTestId('merge-company-confirm');
+      await waitFor(() => expect(confirm).toBeEnabled());
+      await userEvent.click(confirm);
+
+      expect(await screen.findByTestId('merge-company-success')).toHaveTextContent(
+        'Merged: unic is now part of unicag.'
+      );
+      expect(
+        await screen.findByRole('heading', { name: 'Unic AG', hidden: true })
+      ).toBeInTheDocument(); // behind the open dialog
+      expect(screen.getByTestId('merge-company-success')).toBeInTheDocument();
+      expect(api.calls('mergeCompany')[0].params.name).toBe('unicag');
+    });
+
+    it('should_notOfferMerge_when_notOrganizer', async () => {
+      api.on('getCompany', () => company);
+      renderScreen('/organizer/companies/unic', 'speaker');
+
+      expect(await screen.findByTestId('company-detail-view')).toBeInTheDocument();
+      // positive control: the edit action of the same row is there
+      expect(screen.getByRole('button', { name: /edit/i })).toBeInTheDocument();
+      expect(screen.queryByTestId('company-merge-button')).not.toBeInTheDocument();
     });
   });
 });

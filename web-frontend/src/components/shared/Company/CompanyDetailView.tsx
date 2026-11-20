@@ -28,6 +28,7 @@ import {
   People as UsersIcon,
   RecordVoiceOver as SpeakersIcon,
   Slideshow as SessionsIcon,
+  MergeType as MergeIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
@@ -343,6 +344,8 @@ interface CompanyDetailViewProps {
    */
   showPeople?: boolean;
   onEdit: (companyId: string) => void;
+  /** Offers "Merge with another company" (organizers, #1251); hidden without it. */
+  onMerge?: () => void;
   onBack: () => void;
   onRetry?: () => void;
 }
@@ -355,6 +358,7 @@ export const CompanyDetailView: React.FC<CompanyDetailViewProps> = ({
   canDelete = false,
   showPeople = false,
   onEdit,
+  onMerge,
   onBack,
   onRetry,
 }) => {
@@ -446,9 +450,19 @@ export const CompanyDetailView: React.FC<CompanyDetailViewProps> = ({
       />
 
       {/* Action buttons */}
-      {(canEdit || canDelete) && (
+      {(canEdit || canDelete || onMerge) && (
         <Box sx={{ mb: 3, display: 'flex', justifyContent: 'flex-end' }}>
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
+            {onMerge && (
+              <Button
+                variant="outlined"
+                startIcon={<MergeIcon />}
+                onClick={onMerge}
+                data-testid="company-merge-button"
+              >
+                {t('company.merge.button')}
+              </Button>
+            )}
             {canDelete && (
               <Button
                 variant="outlined"

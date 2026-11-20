@@ -1279,8 +1279,14 @@ have moved theirs, and the same merge again finishes it. The ids those holders m
 as an INCOMPLETE `company_merge_log` row in a transaction of its own (`CompanyMergeLog`), because the
 retry gets nothing from them. A completed merge repeated answers 404. No
 mail is sent and no S3 key changes: the source's logo upload row moves to the target even when the
-target keeps its own logo, so the file stays reachable for an undo by hand. Story 6 of the epic adds
-the organizer UI.
+target keeps its own logo, so the file stays reachable for an undo by hand.
+
+**Organizer UI (story 6).** The Companies tab has **Possible duplicates**
+(`/organizer/companies/duplicate-candidates`, `CompanyDuplicatesPage`, a hyphenated path that no
+company key can take) and the detail page **Merge with another company**; both open
+`MergeCompanyDialog`, which shows the preview and posts the merge (`companyMergeApi.ts`). The dialog
+offers the swap whenever the preview says `canSwap`, shows each reason, and maps the error codes of
+the merge to their own text.
 
 ### Finding the pairs (story 5)
 
@@ -1308,6 +1314,9 @@ more users, else the older one, else the smaller key. `organizerCanMerge` is fal
 partners. `POST /companies/duplicate-candidates/dismissals {nameA, nameB}` marks a pair as no duplicate
 for good (`company_duplicate_dismissals`, V38; 204, idempotent, either order; 404 for an unknown company,
 400 `INVALID_DISMISSAL` for one company twice); merging or deleting either company removes the row.
+On a shared platform (LinkedIn, Facebook, XING, Instagram, X, GitHub, Google Sites, YouTube, link
+shorteners) `SAME_WEBSITE` compares the host plus the profile path, so two companies with a LinkedIn
+page are no pair (`CompanyDuplicateRules.PLATFORMS`).
 
 ## Database Schema
 
