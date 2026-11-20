@@ -1,5 +1,6 @@
 package ch.batbern.gateway.routing;
 
+import ch.batbern.shared.security.ClientIp;
 import ch.batbern.gateway.routing.exception.RouteNotFoundException;
 import ch.batbern.gateway.routing.exception.RoutingException;
 import ch.batbern.gateway.util.LogSanitizer;
@@ -275,10 +276,14 @@ public class DomainRouter {
                 Enumeration<String> headerNames = request.getHeaderNames();
                 while (headerNames.hasMoreElements()) {
                     String headerName = headerNames.nextElement();
-                    if (!"host".equalsIgnoreCase(headerName)) {
+                    if (!"host".equalsIgnoreCase(headerName)
+                            && !ClientIp.CLIENT_IP_HEADER.equalsIgnoreCase(headerName)) {
                         headers.put(headerName, Collections.list(request.getHeaders(headerName)));
                     }
                 }
+                // #1152: the services get the address the gateway resolved, never a caller's value.
+                headers.set(ClientIp.CLIENT_IP_HEADER, ClientIp.resolve(request.getHeader(ClientIp.CLIENT_IP_HEADER),
+                        request.getHeader(ClientIp.X_FORWARDED_FOR), request.getRemoteAddr()));
 
                 // Create HTTP entity with headers and body
                 HttpEntity<String> entity = new HttpEntity<>(finalRequestBody, headers);

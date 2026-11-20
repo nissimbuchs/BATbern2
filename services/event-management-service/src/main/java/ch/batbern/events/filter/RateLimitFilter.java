@@ -167,6 +167,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
      * Client IP: the rightmost public X-Forwarded-For hop, never the client-supplied first one (#1132).
      */
     private String getClientIp(HttpServletRequest request) {
-        return ClientIp.resolve(request.getHeader(ClientIp.X_FORWARDED_FOR), request.getRemoteAddr());
+        return ClientIp.resolve(request.getHeader(ClientIp.CLIENT_IP_HEADER),
+                request.getHeader(ClientIp.X_FORWARDED_FOR), request.getRemoteAddr());
     }
 }

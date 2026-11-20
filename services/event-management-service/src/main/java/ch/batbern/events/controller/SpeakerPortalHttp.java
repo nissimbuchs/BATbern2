@@ -28,6 +28,7 @@ final class SpeakerPortalHttp {
             return "unknown";
         }
         HttpServletRequest request = attrs.getRequest();
-        return ClientIp.resolve(request.getHeader(ClientIp.X_FORWARDED_FOR), request.getRemoteAddr());
+        return ClientIp.resolve(request.getHeader(ClientIp.CLIENT_IP_HEADER),
+                request.getHeader(ClientIp.X_FORWARDED_FOR), request.getRemoteAddr());
     }
 }
