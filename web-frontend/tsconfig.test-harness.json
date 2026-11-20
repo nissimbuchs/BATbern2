@@ -36,7 +36,6 @@
     "src/components/organizer/SlotTemplatePreview/SlotTemplatePreview.test.tsx",
     "src/components/organizer/SpeakerStatus/__tests__/StatusChangeDialog.test.tsx",
     "src/components/organizer/SpeakerStatus/__tests__/StatusHistoryTimeline.test.tsx",
-    "src/components/organizer/UserManagement/DeleteUserDialog.test.tsx",
     "src/components/organizer/UserManagement/ParticipantBatchImportModal.test.tsx",
     "src/components/organizer/UserManagement/RoleManagerModal.test.tsx",
     "src/components/organizer/UserManagement/UserCard.test.tsx",

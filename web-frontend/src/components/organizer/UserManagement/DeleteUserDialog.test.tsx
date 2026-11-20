@@ -13,13 +13,22 @@ import { api } from '@/test/msw/api';
 
 const mockUser: User = {
   id: 'john.doe',
+  hasCognitoAccount: true,
+  email: 'john.doe@example.com',
   firstName: 'John',
   lastName: 'Doe',
-  email: 'john.doe@example.com',
+  bio: null,
+  companyId: null,
   roles: ['ATTENDEE'],
-  isActive: true,
+  profilePictureUrl: null,
+  active: true,
   createdAt: '2024-01-01T00:00:00Z',
   updatedAt: '2024-01-01T00:00:00Z',
+  lastLoginAt: null,
+  termsAcceptedAt: null,
+  company: null,
+  settings: null,
+  additionalEmails: [],
 };
 
 const renderWithProviders = (ui: React.ReactElement) => {
