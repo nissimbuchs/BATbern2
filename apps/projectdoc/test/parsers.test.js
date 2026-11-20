@@ -84,3 +84,18 @@ test('SARIF: falls back to "Severity:" in the message, then to the SARIF level',
   assert.equal(findings.summary.bySeverity.critical, 1);
   assert.equal(findings.summary.bySeverity.high, 1);
 });
+
+test('ZAP: a scan job log saved by scripts/ci/zap-job-logs.sh yields rules and instances (#1228)', async () => {
+  const { ZapParser } = await import('../src/utils/parsers/zap-parser.js');
+  // GitHub's timestamp prefix already stripped, as the script writes it.
+  const log = [
+    'Total of 120 URLs',
+    'PASS: Vulnerable JS Library [10003]',
+    'WARN-NEW: Full Path Disclosure [110009] x 1 ',
+    '\thttps://api.batbern.ch/api/v1/x (404 Not Found)',
+  ].join('\n');
+  const { rules } = ZapParser.parseLogFile(log, 'events-core');
+  assert.equal(rules['10003'].status, 'PASS');
+  assert.equal(rules['110009'].status, 'WARN');
+  assert.deepEqual(rules['110009'].instances, ['https://api.batbern.ch/api/v1/x (404 Not Found)']);
+});
