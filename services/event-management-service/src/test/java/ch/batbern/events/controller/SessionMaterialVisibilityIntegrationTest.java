@@ -36,6 +36,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.anonymous;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -344,6 +345,33 @@ class SessionMaterialVisibilityIntegrationTest extends AbstractIntegrationTest {
         setVisible(organizer(), FOREIGN, id, "{\"publiclyVisible\": false}", 200);
 
         assertThat(flag(detail(), id)).isFalse();
+    }
+
+    @Test
+    @DisplayName("a deleted material leaves the cached event detail at once")
+    void should_dropMaterialFromCachedEventDetail_when_deleted() throws Exception {
+        String id = material(organizer(), "slides.pdf", PDF, FOREIGN, null);
+        detail();
+        MvcResult cached = detail();
+        assertThat(cached.getResponse().getHeader("X-Cache-Status")).isEqualTo("HIT");
+        assertThat(contains(cached, id)).isTrue();
+
+        mockMvc.perform(delete("/api/v1/events/{ec}/sessions/{slug}/materials/{id}", EVENT, FOREIGN, id)
+                        .with(organizer()))
+                .andExpect(status().is2xxSuccessful());
+
+        assertThat(contains(detail(), id)).isFalse();
+    }
+
+    private boolean contains(MvcResult detail, String materialId) throws Exception {
+        for (JsonNode session : objectMapper.readTree(detail.getResponse().getContentAsString()).path("sessions")) {
+            for (JsonNode m : session.path("materials")) {
+                if (m.path("id").asText().equals(materialId)) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     private MvcResult detail() throws Exception {

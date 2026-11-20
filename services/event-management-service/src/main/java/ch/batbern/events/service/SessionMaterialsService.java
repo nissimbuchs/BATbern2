@@ -250,6 +250,7 @@ public class SessionMaterialsService {
         uploadRepository.findByUploadId(material.getUploadId())
                 .filter(u -> SessionMaterialUploadHandler.PURPOSE.equals(u.getPurpose()))
                 .ifPresent(uploadRepository::delete);
+        CacheConfig.clearAfterCommit(cacheManager, CacheConfig.EVENT_WITH_INCLUDES_CACHE);
 
         log.info("Deleted material {} from session: {}", materialId, sessionSlug);
     }
