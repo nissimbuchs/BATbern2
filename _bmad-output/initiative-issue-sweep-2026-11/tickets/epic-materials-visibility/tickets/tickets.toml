@@ -1,0 +1,51 @@
+# Stories of epic-materials-visibility, in build order. One PR for the whole epic (initiative C2); each story is one commit or a few.
+# Spec: issue #1260 (AC1-AC5) and the owner decision 2026-11-15: files stay under the CDN prefix, the URL and id of a
+# non-public material are never handed to an anonymous caller. Recon 2026-11-20 (Explore, read in code): anonymous routes
+# A GET /events/{code}/sessions/{slug}, B GET /public/events/{code|current}, C GET /events/current?include=sessions,
+# D GET .../materials/{id}/download (looks the id up without event, session or visibility check), H GET .../materials
+# (any logged-in user, full object). All full objects come from SessionMaterialsService.toResponse.
+# Measured 2026-11-20 via the public API: 298 publicly listed materials in 61 events, all PDF.
+
+[[entry]]
+id = 1
+type = "story"
+title = "Each material carries a public flag that speaker and organizer set"
+description = "Spec first. New migration adds session_materials.publicly_visible (not null); existing rows true for PDF (by file_extension or mime type application/pdf), false otherwise; the migration RAISE NOTICEs the count of non-PDF rows per event so the PR can list them. On create the flag defaults to true for PDF, false otherwise, on all three paths (upload confirm with target, organizer associate, batch import from URL); the upload confirm target and MaterialUploadItem accept an optional publiclyVisible that overrides the default. PATCH /events/{eventCode}/sessions/{sessionSlug}/materials/{materialId} {publiclyVisible}: ORGANIZER or a speaker of that session (SessionMaterialUploadHandler.checkMayChangeMaterials), anyone else 403, a material not in that event and session 404. SessionMaterialResponse carries publiclyVisible. A change clears the caches an upload clears (eventWithIncludes)."
+verify = "EMS integration tests (Testcontainers): migration default by extension; each create path defaults by type and honours an explicit value; PATCH as organizer and as the session's speaker 200, as another speaker 403, anonymous 401, wrong session 404; the cached event detail shows the new flag right after PATCH. Spec lint clean, generated types regenerated."
+covers = ["R19"]
+after = []
+hitl = false
+risk = "medium"
+
+[[entry]]
+id = 2
+type = "story"
+title = "No anonymous response names a non-public material"
+description = "Routes A, B and C (and the batch session map behind the public list) return only materials with publiclyVisible for every caller who is not an organizer or a speaker of that session; the filter sits in one place (SessionMaterialsService or the session expansion), not per controller. In those responses the public material also drops uploadedBy (a username), s3Key and uploadId, which nothing on the public page reads (C9). materialsCount and materialsStatus in anonymous responses count public materials only. Route H (GET .../materials) gives a logged-in user who is neither organizer nor that session's speaker the public ones only."
+verify = "EMS integration tests seeding a public PDF and a non-public PPTX on an archived event's session: anonymous A, B, C and H-as-attendee contain the PDF (positive control) and neither the id nor the cloudFrontUrl of the PPTX anywhere in the body (string search of the raw JSON); organizer and the session's speaker see both. Anonymous capture goldens updated to hold a public material. Bruno anonymous request on the public event detail asserts no non-public material."
+covers = ["R19"]
+after = [1]
+hitl = false
+risk = "high"
+
+[[entry]]
+id = 3
+type = "story"
+title = "A material downloads only through its own event and session, and a non-public one only for its people"
+description = "GET .../materials/{materialId}/download resolves the material within eventCode and sessionSlug (another session's id answers 404). A non-public material answers 404 to anonymous callers and to logged-in users who are neither organizer nor a speaker of that session; organizer and the session's speakers get the presigned URL. A public material keeps today's anonymous download. access-control-public.txt stays accurate."
+verify = "EMS integration tests: anonymous download of the public PDF 200; of the non-public PPTX 404; organizer and the session's speaker 200 for the PPTX; an attendee 404; a material id under the wrong session or event 404. Bruno: anonymous download of a non-public material 404 (read-only against an existing fixture, no upload in prod)."
+covers = ["R19"]
+after = [1]
+hitl = false
+risk = "high"
+
+[[entry]]
+id = 4
+type = "story"
+title = "Speakers and organizers tick 'Publicly visible after the event'"
+description = "Organizer SessionEditModal Materials tab and the speaker portal PresentationUpload show a checkbox per material, pre-set by type (PDF on, others off) for new uploads and from publiclyVisible for existing ones, with the hint that a PDF is the recommended public copy. Organizer and speaker change an existing one through the PATCH of story 1, a new one through the confirm/associate value. The public SessionCards and EventProgram need no filter (the backend sends only public ones) but must not break when a session has none. Services through the API client only; all 10 locales."
+verify = "Vitest through MSW with the spec shapes: the checkbox defaults by type, toggling sends the PATCH, a new upload sends the chosen value; i18n keys complete in 10 locales; check-api-paths clean. AC1 shown in production after deploy on the public page of an archived event (read-only)."
+covers = ["R19"]
+after = [1]
+hitl = false
+risk = "medium"
