@@ -1,5 +1,6 @@
 package ch.batbern.events.usermerge;
 
+import ch.batbern.events.config.CacheConfig;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -190,15 +191,12 @@ public class UserMergeService {
 
     /**
      * Everything cached per username or per event lists people by username: the user cache of
-     * company-user-management lookups and the event pages with speakers. A merge is rare, so all of it.
+     * company-user-management lookups and the event pages with speakers. A merge is rare, so all of it,
+     * after the commit: a clear inside the transaction lets a concurrent read put the source back
+     * before the commit (the 17.11c race).
      */
     private void evictCaches() {
-        for (String name : cacheManager.getCacheNames()) {
-            var cache = cacheManager.getCache(name);
-            if (cache != null) {
-                cache.clear();
-            }
-        }
+        CacheConfig.clearAfterCommit(cacheManager, cacheManager.getCacheNames().toArray(String[]::new));
     }
 
     private int queryInt(String sql, MapSqlParameterSource p) {

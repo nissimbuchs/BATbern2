@@ -1,5 +1,6 @@
 package ch.batbern.events.usermerge;
 
+import ch.batbern.events.config.CacheConfig;
 import ch.batbern.events.config.TestAwsConfig;
 import ch.batbern.events.config.TestSecurityConfig;
 import ch.batbern.shared.test.AbstractIntegrationTest;
@@ -10,10 +11,14 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -45,6 +50,12 @@ class InternalUserMergeIntegrationTest extends AbstractIntegrationTest {
     private ObjectMapper objectMapper;
     @Autowired
     private JdbcTemplate jdbc;
+    @Autowired
+    private CacheManager cacheManager;
+    @Autowired
+    private UserMergeService mergeService;
+    @Autowired
+    private PlatformTransactionManager transactionManager;
 
     private UUID eventA;
     private UUID eventB;
@@ -232,6 +243,22 @@ class InternalUserMergeIntegrationTest extends AbstractIntegrationTest {
         assertThat(emailOf(upcoming)).isEqualTo("private@example.com");
         assertThat(emailOf(otherAddress)).isEqualTo("guest@example.com");
         assertThat(emailOf(past)).isEqualTo(SOURCE + "@example.com");
+    }
+
+    @Test
+    @DisplayName("the caches are cleared after the commit, not inside the transaction (17.11c race)")
+    void merge_clearsCachesAfterCommit() {
+        insertRegistration(eventA, SOURCE, "confirmed");
+        Cache users = cacheManager.getCache(CacheConfig.USER_API_CACHE);
+        users.put(SOURCE, "cached profile");
+
+        new TransactionTemplate(transactionManager).executeWithoutResult(tx -> {
+            mergeService.merge(SOURCE, TARGET, "organizer1", "ORGANIZER", null);
+            assertThat(users.get(SOURCE)).as("still cached before the commit").isNotNull();
+        });
+
+        assertThat(users.get(SOURCE)).isNull();
+        assertThat(count("registrations", "attendee_username", TARGET)).isEqualTo(1);
     }
 
     private String emailOf(UUID registration) {
