@@ -57,7 +57,11 @@ describe('HTTP API reaches the gateway through a VPC link (#1152)', () => {
         vpcLink: service.vpcLink,
       });
 
-      return { service: Template.fromStack(service), api: Template.fromStack(api) };
+      return {
+        service: Template.fromStack(service),
+        api: Template.fromStack(api),
+        support: Template.fromStack(support),
+      };
     } finally {
       if (previousTag === undefined) {
         delete process.env.IMAGE_TAG;
@@ -67,13 +71,25 @@ describe('HTTP API reaches the gateway through a VPC link (#1152)', () => {
     }
   };
 
-  const { service, api } = build();
+  const { service, api, support } = build();
 
   const logicalId = (template: Template, type: string, props: object) => {
     const ids = Object.keys(template.findResources(type, { Properties: props }));
     expect(ids).toHaveLength(1);
     return ids[0];
   };
+
+  // The live service stack imports both public subnet IDs from the network stack (the public ALB
+  // sat in them). The network stack deploys first, and CloudFormation refuses to delete an export
+  // that is still imported (#1329's first deploy). So the network stack keeps exporting them until
+  // a later deploy, when nothing imports them any more.
+  test('should_keepExportingThePublicSubnets_when_theServiceNoLongerUsesThem', () => {
+    const exported = Object.values(support.findOutputs('*'))
+      .map((o) => JSON.stringify(o.Value))
+      .join(' ');
+    expect(exported).toMatch(/VpcPublicSubnet1Subnet/);
+    expect(exported).toMatch(/VpcPublicSubnet2Subnet/);
+  });
 
   test('should_createAnInternalAlb_when_serviceStackBuilt', () => {
     service.hasResourceProperties('AWS::ElasticLoadBalancingV2::LoadBalancer', {

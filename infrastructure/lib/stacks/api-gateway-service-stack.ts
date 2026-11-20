@@ -299,6 +299,13 @@ export class ApiGatewayServiceStack extends cdk.Stack {
       'Internal API gateway ALB'
     );
 
+    // The deployed stack still imports both public subnet IDs from the network stack (the former
+    // public ALB sat in them). The network stack deploys first and may not delete an export that
+    // is still imported, so it keeps exporting them for this deploy. Remove in a later PR, once
+    // the deployed template no longer imports them.
+    const vpcStack = cdk.Stack.of(props.vpc);
+    props.vpc.publicSubnets.forEach((subnet) => vpcStack.exportValue(subnet.subnetId));
+
     this.internalLoadBalancer = new elbv2.ApplicationLoadBalancer(this, 'InternalLoadBalancer', {
       vpc: props.vpc,
       internetFacing: false,
