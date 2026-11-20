@@ -1,7 +1,6 @@
 import * as cdk from 'aws-cdk-lib';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as ecs from 'aws-cdk-lib/aws-ecs';
-import * as ecsPatterns from 'aws-cdk-lib/aws-ecs-patterns';
 import * as elbv2 from 'aws-cdk-lib/aws-elasticloadbalancingv2';
 import * as apigatewayv2 from 'aws-cdk-lib/aws-apigatewayv2';
 import * as logs from 'aws-cdk-lib/aws-logs';
@@ -14,6 +13,19 @@ import { EnvironmentConfig } from '../config/environment-config';
 import { createContainerImage } from '../utils/container-image-helper';
 import { EcsServiceAlarms } from '../constructs/ecs-service-alarms';
 import { AlbAlarms } from '../constructs/alb-alarms';
+
+/**
+ * #1152 part 2: the logical IDs the ApplicationLoadBalancedFargateService pattern gave these
+ * resources, read from the live BATbern-staging-ApiGatewayService template on 2026-11-20. Keeping
+ * them makes CloudFormation update the running service instead of replacing it.
+ */
+export const LIVE_LOGICAL_IDS = {
+  service: 'Service9571FDD8',
+  scalableTarget: 'ServiceTaskCountTargetDF7542A8',
+  cpuScalingPolicy: 'ServiceTaskCountTargetCpuScaling4BCDA6AE',
+  // The policy's name is derived from the construct path too; a new name would replace it.
+  cpuScalingPolicyNameSuffix: 'TaskCountTargetCpuScalingA5DF6D64',
+} as const;
 
 export interface ApiGatewayServiceStackProps extends cdk.StackProps {
   config: EnvironmentConfig;
@@ -42,7 +54,8 @@ export interface ApiGatewayServiceStackProps extends cdk.StackProps {
  * API Gateway Service Stack - Spring Boot API Gateway on ECS Fargate
  *
  * This is the Spring Boot application that routes requests to domain microservices.
- * It runs on ECS with a public ALB and uses Service Connect for direct communication with microservices.
+ * It runs on ECS behind an internal ALB that only the HTTP API reaches through a VPC link (#1152), and
+ * uses Service Connect for direct communication with microservices.
  *
  * Architecture:
  * Client → AWS HTTP API (Cognito auth) → **This Service** (Public ALB) → Domain Microservices (Service Connect)
@@ -51,7 +64,7 @@ export interface ApiGatewayServiceStackProps extends cdk.StackProps {
  * and improving latency through direct container-to-container communication via Envoy proxy.
  */
 export class ApiGatewayServiceStack extends cdk.Stack {
-  public readonly service: ecsPatterns.ApplicationLoadBalancedFargateService;
+  public readonly service: ecs.FargateService;
   public readonly apiGatewayUrl: string;
   /** #1152: the internal ALB's listener, reached by the HTTP API only through {@link vpcLink}. */
   public readonly internalListener: elbv2.ApplicationListener;
@@ -233,73 +246,31 @@ export class ApiGatewayServiceStack extends cdk.Stack {
       'Allow HTTP inbound for Service Connect inter-service communication'
     );
 
-    // Create service with PUBLIC ALB
-    this.service = new ecsPatterns.ApplicationLoadBalancedFargateService(this, 'Service', {
+    // #1152 part 2: a plain Fargate service behind the internal ALB only. Until part 2 it was an
+    // ApplicationLoadBalancedFargateService, which always brings its own (public) load balancer.
+    // The CloudFormation logical IDs below are the ones that pattern gave the service and its
+    // auto-scaling in production (live template 2026-11-20), so CloudFormation updates the running
+    // service in place instead of replacing it; only the public ALB, its listener, target group and
+    // security group are deleted. test/unit/http-api-vpc-link.test.ts pins these IDs.
+    this.service = new ecs.FargateService(this, 'Service', {
       cluster: props.cluster,
       taskDefinition,
-      publicLoadBalancer: true,
       desiredCount: isProd ? 2 : 1,
       healthCheckGracePeriod: cdk.Duration.seconds(60),
       assignPublicIp: false,
-      taskSubnets: {
+      vpcSubnets: {
         subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
       },
-      listenerPort: 80,
       minHealthyPercent: 100, // Ensure zero-downtime deployments
       maxHealthyPercent: 200, // Allow temporary extra tasks during deployments
       securityGroups: [serviceSecurityGroup], // Use explicit security group
     });
-
-    // Configure health checks
-    this.service.targetGroup.configureHealthCheck({
-      path: '/actuator/health',
-      interval: cdk.Duration.seconds(30),
-      timeout: cdk.Duration.seconds(5),
-      healthyThresholdCount: 2,
-      unhealthyThresholdCount: 3,
-    });
-
-    // Issue #982: ramp traffic onto a newly registered target instead of switching it on at
-    // full rate.
-    //
-    // Every task replacement produced ~10-15 minutes of multi-second latency — about 800 real
-    // requests per replacement, against a measured 2-25 ms steady-state p95. Measured over two
-    // replacements on 2026-08-19, ALB TargetResponseTime p95 per 5-min window ran
-    // 4.71 s (35 requests) -> 1.17 s (220) -> 0.43 s (533) -> 0.0057 s (45). Volume ramps
-    // while latency decays, which is a JVM warming up under load rather than a slow
-    // dependency, and it tracks task registration exactly (18:48 target registered, 19:00
-    // p95 = 4.71 s).
-    //
-    // The cause is that a target enters service the moment `/actuator/health` passes, and
-    // passing a liveness probe is not the same as being warm — the container health check even
-    // carries a 180 s startPeriod, acknowledging as much. The ALB then sends it a full
-    // round-robin share immediately.
-    //
-    // 300 s covers the steep part of the decay (4.71 s -> ~0.43 s happens inside the first ten
-    // minutes) without holding a target at reduced share for the full window; the JVM needs
-    // real traffic to JIT-compile, so a longer ramp is not strictly better. AWS accepts
-    // 30-900 s. Requires the round_robin algorithm — slow start is refused on
-    // least_outstanding_requests; test/unit/alb-warmup.test.ts pins both.
-    //
-    // This is a MITIGATION, not a root cause fix, and it is the cheapest one available: no
-    // application change. #982 keeps the measurement work open — a JFR recording or
-    // actuator/metrics on a fresh task to separate JIT from Hikari pool fill from cold
-    // Caffeine caches, and only then CDS/AppCDS or AOT. It also matters outside deploy
-    // windows: 70% of capacity is FARGATE_SPOT, and a Spot reclaim produces the same profile
-    // unannounced during ordinary traffic.
-    this.service.targetGroup.setAttribute('slow_start.duration_seconds', '300');
-
-    // Increase ALB idle timeout to 120s to avoid 60s timeout during cold starts
-    (this.service.loadBalancer.node.defaultChild as cdk.CfnResource).addPropertyOverride(
-      'LoadBalancerAttributes',
-      [{ Key: 'idle_timeout.timeout_seconds', Value: '120' }]
-    );
+    (this.service.node.defaultChild as ecs.CfnService).overrideLogicalId(LIVE_LOGICAL_IDS.service);
 
     // #1152: an internal ALB that only the HTTP API reaches, through a VPC link. The HTTP API sets
     // X-BATbern-Client-IP to the visitor's address ($context.identity.sourceIp); since nothing on
     // the internet can reach this ALB, the gateway can trust that header (ClientIp.resolve).
-    // The public ALB above stays until the HTTP API has switched (it is locked in the next step,
-    // so this switch needs no outage and is rolled back by pointing the HTTP API back at it).
+    // It is the only load balancer since part 2 removed the public one.
     const vpcLinkSecurityGroup = new ec2.SecurityGroup(this, 'HttpApiVpcLinkSecurityGroup', {
       vpc: props.vpc,
       description: 'HTTP API VPC link to the internal API gateway ALB (#1152)',
@@ -328,6 +299,13 @@ export class ApiGatewayServiceStack extends cdk.Stack {
       'Internal API gateway ALB'
     );
 
+    // The deployed stack still imports both public subnet IDs from the network stack (the former
+    // public ALB sat in them). The network stack deploys first and may not delete an export that
+    // is still imported, so it keeps exporting them for this deploy. Remove in a later PR, once
+    // the deployed template no longer imports them.
+    const vpcStack = cdk.Stack.of(props.vpc);
+    props.vpc.publicSubnets.forEach((subnet) => vpcStack.exportValue(subnet.subnetId));
+
     this.internalLoadBalancer = new elbv2.ApplicationLoadBalancer(this, 'InternalLoadBalancer', {
       vpc: props.vpc,
       internetFacing: false,
@@ -344,7 +322,7 @@ export class ApiGatewayServiceStack extends cdk.Stack {
       port: 8080,
       protocol: elbv2.ApplicationProtocol.HTTP,
       targets: [
-        this.service.service.loadBalancerTarget({
+        this.service.loadBalancerTarget({
           containerName: container.containerName,
           containerPort: 8080,
         }),
@@ -363,7 +341,7 @@ export class ApiGatewayServiceStack extends cdk.Stack {
     // Enable Service Connect for service-to-service communication
     // This allows API Gateway to communicate directly with microservices using DNS names
     // Must use addPropertyOverride because ApplicationLoadBalancedFargateService doesn't expose Service Connect
-    const cfnService = this.service.service.node.defaultChild as ecs.CfnService;
+    const cfnService = this.service.node.defaultChild as ecs.CfnService;
     cfnService.addPropertyOverride('ServiceConnectConfiguration', {
       Enabled: true,
       Namespace: 'batbern.local',
@@ -417,7 +395,7 @@ export class ApiGatewayServiceStack extends cdk.Stack {
     });
 
     // Configure auto-scaling
-    const scaling = this.service.service.autoScaleTaskCount({
+    const scaling = this.service.autoScaleTaskCount({
       minCapacity: isProd ? 2 : 1,
       maxCapacity: isProd ? 8 : 4,
     });
@@ -427,13 +405,26 @@ export class ApiGatewayServiceStack extends cdk.Stack {
       scaleInCooldown: cdk.Duration.seconds(60),
       scaleOutCooldown: cdk.Duration.seconds(60),
     });
+    // Same logical IDs as in production (see the service above): a replaced scalable target
+    // would collide with the existing one, which has the same resource ID.
+    const scalableTarget = scaling.node.findChild('Target');
+    (scalableTarget.node.defaultChild as cdk.CfnResource).overrideLogicalId(
+      LIVE_LOGICAL_IDS.scalableTarget
+    );
+    const cpuPolicy = scalableTarget.node.findChild('CpuScaling').node
+      .defaultChild as cdk.CfnResource;
+    cpuPolicy.overrideLogicalId(LIVE_LOGICAL_IDS.cpuScalingPolicy);
+    cpuPolicy.addPropertyOverride(
+      'PolicyName',
+      `${this.stackName.replace(/[^A-Za-z0-9]/g, '')}${LIVE_LOGICAL_IDS.cpuScalingPolicyNameSuffix}`
+    );
 
     // Platform Stability Improvements (Phase 3): Add ECS Service Alarms
     if (props.alarmTopic) {
       new EcsServiceAlarms(this, 'ServiceAlarms', {
         environment: envName,
         clusterName: props.cluster.clusterName,
-        serviceName: this.service.service.serviceName,
+        serviceName: this.service.serviceName,
         serviceDisplayName: 'ApiGatewayService',
         alarmTopic: props.alarmTopic,
         thresholds: {
@@ -471,11 +462,7 @@ export class ApiGatewayServiceStack extends cdk.Stack {
       });
     }
 
-    this.apiGatewayUrl = `http://${this.service.loadBalancer.loadBalancerDnsName}`;
-    // #1152 transition: the deployed ApiGateway stack still imports this name until it switches
-    // to the VPC link in the same deploy; keep the export alive for that one deploy. Remove with
-    // the public ALB.
-    this.exportValue(this.service.loadBalancer.loadBalancerDnsName);
+    this.apiGatewayUrl = `http://${this.internalLoadBalancer.loadBalancerDnsName}`;
 
     // Apply tags
     cdk.Tags.of(this).add('Environment', envName);
@@ -490,7 +477,7 @@ export class ApiGatewayServiceStack extends cdk.Stack {
     });
 
     new cdk.CfnOutput(this, 'LoadBalancerArn', {
-      value: this.service.loadBalancer.loadBalancerArn,
+      value: this.internalLoadBalancer.loadBalancerArn,
       description: 'API Gateway Load Balancer ARN',
       exportName: `${envName}-ApiGatewayLoadBalancerArn`,
     });

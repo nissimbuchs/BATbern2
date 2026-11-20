@@ -43,6 +43,7 @@ Only items that are not live yet. Everything else is listed under its release be
 
 **Fix — Rate limits and Turnstile see the visitor's address (#1152)**:
 - ✅ `api.batbern.ch` now reaches the backend through a VPC link to an internal load balancer and passes the visitor's address in a header no client can set. Rate limits, the Turnstile check and the speaker-portal audit use that address; before, every anonymous visitor shared the limit of the AWS API Gateway node they happened to pass.
+- ✅ The gateway's former public load balancer is gone: the backend can no longer be called past `api.batbern.ch`, and one load balancer is paid instead of two.
 - ✅ Production images build with the same Gradle (9.8.2) that runs the tests (#1220).
 - ✅ Presigned uploads work from `beta.batbern.ch` and from local development on port 8100 (#1220).
 

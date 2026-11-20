@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # doc-drift-pr-check.sh
 # Fails a PR that touches mapped source paths without changing any doc mapped to them.
-# [no-doc] in the PR title or in any commit message on the branch skips the check.
+# [no-doc] in the PR title skips the check; in a commit message it exempts that commit's files.
 # Rules: .github/scripts/doc_drift.py (#1214).
 #
 # Env:
