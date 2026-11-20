@@ -812,8 +812,8 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
         String newEvent = """
                 {
                     "title": "BATbern 2027",
-                    "date": "2027-08-15T09:00:00Z",
-                    "registrationDeadline": "2027-08-01T09:00:00Z",
+                    "date": "%s",
+                    "registrationDeadline": "%s",
                     "venueName": "Kornhausforum",
                     "venueAddress": "Kornhausplatz 18, 3011 Bern",
                     "venueCapacity": 200,
@@ -821,7 +821,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
                     "description": "Annual tech conference 2027",
                     "eventType": "EVENING"
                 }
-                """;
+                """.formatted(daysFromNow(270), daysFromNow(256));
 
         mockMvc.perform(post("/api/v1/events")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -861,15 +861,15 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
         ObjectNode body = (ObjectNode) objectMapper.readTree("""
                 {
                     "title": "BATbern Required Fields",
-                    "date": "2027-08-15T09:00:00Z",
-                    "registrationDeadline": "2027-08-01T09:00:00Z",
+                    "date": "%s",
+                    "registrationDeadline": "%s",
                     "venueName": "Kornhausforum",
                     "venueAddress": "Kornhausplatz 18, 3011 Bern",
                     "venueCapacity": 200,
                     "organizerUsername": "test.organizer",
                     "eventType": "EVENING"
                 }
-                """);
+                """.formatted(daysFromNow(270), daysFromNow(256)));
         body.remove(field);
 
         mockMvc.perform(post("/api/v1/events")
@@ -969,8 +969,8 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
     @DisplayName("should_deleteEventNotifications_when_eventDeleted")
     @WithMockUser(username = "test.organizer", roles = "ORGANIZER")
     void should_deleteEventNotifications_when_eventDeleted() throws Exception {
-        Event event = createTestEvent("BATbern Notif-Cleanup", "2027-05-15T09:00:00Z", "CREATED");
-        Event other = createTestEvent("BATbern Notif-Keep", "2027-06-15T09:00:00Z", "CREATED");
+        Event event = createTestEvent("BATbern Notif-Cleanup", daysFromNow(180), "CREATED");
+        Event other = createTestEvent("BATbern Notif-Keep", daysFromNow(210), "CREATED");
         notificationRepository.save(notification(event.getEventCode()));
         notificationRepository.save(notification(event.getEventCode()));
         notificationRepository.save(notification(other.getEventCode()));
@@ -991,7 +991,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
     @DisplayName("should_deleteNewsletterSends_when_eventDeleted")
     @WithMockUser(username = "test.organizer", roles = "ORGANIZER")
     void should_deleteNewsletterSends_when_eventDeleted() throws Exception {
-        Event event = createTestEvent("BATbern Newsletter-Cleanup", "2027-05-15T09:00:00Z", "CREATED");
+        Event event = createTestEvent("BATbern Newsletter-Cleanup", daysFromNow(180), "CREATED");
         entityManager.flush();
         Object sendId = entityManager.createNativeQuery(
                         "INSERT INTO newsletter_sends (event_id, template_key, sent_by_username) "
@@ -1042,7 +1042,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
     @DisplayName("should_allowDelete_when_onlyProgrammaticRegistrations")
     @WithMockUser(username = "test.organizer", roles = "ORGANIZER")
     void should_allowDelete_when_onlyProgrammaticRegistrations() throws Exception {
-        Event event = createTestEvent("BATbern Prog-Only", "2027-05-15T09:00:00Z", "CREATED");
+        Event event = createTestEvent("BATbern Prog-Only", daysFromNow(180), "CREATED");
         // Programmatic enrollment (organizer/partner auto-enrol) — carries the autoRegisteredFrom marker.
         saveRegistration(event.getId(), "batbern.organizer", "confirmed",
                 Registration.TRIGGER_STAKEHOLDER_ENROLLMENT);
@@ -1064,7 +1064,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
     @DisplayName("should_deleteEvent_when_everyRealRegistrationCancelled")
     @WithMockUser(username = "test.organizer", roles = "ORGANIZER")
     void should_deleteEvent_when_everyRealRegistrationCancelled() throws Exception {
-        Event event = createTestEvent("BATbern All-Cancelled", "2027-05-15T09:00:00Z", "CREATED");
+        Event event = createTestEvent("BATbern All-Cancelled", daysFromNow(180), "CREATED");
         saveRegistration(event.getId(), "real.attendee", "cancelled", null);
         saveRegistration(event.getId(), "other.attendee", "cancelled", null);
 
@@ -1081,7 +1081,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
     @DisplayName("should_blockDelete_when_realAttendeeRegistered")
     @WithMockUser(username = "test.organizer", roles = "ORGANIZER")
     void should_blockDelete_when_realAttendeeRegistered() throws Exception {
-        Event event = createTestEvent("BATbern Real-Attendee", "2027-06-15T09:00:00Z", "CREATED");
+        Event event = createTestEvent("BATbern Real-Attendee", daysFromNow(210), "CREATED");
         // A programmatic enrollment must NOT, on its own, block deletion…
         saveRegistration(event.getId(), "batbern.organizer", "confirmed",
                 Registration.TRIGGER_STAKEHOLDER_ENROLLMENT);
@@ -1101,7 +1101,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
     @WithMockUser(username = "test.organizer", roles = "ORGANIZER") // realAttendeeCount: organizers only
     @DisplayName("should_excludeProgrammaticRegistrations_from_realAttendeeCount")
     void should_excludeProgrammaticRegistrations_from_realAttendeeCount() throws Exception {
-        Event event = createTestEvent("BATbern Count", "2027-07-15T09:00:00Z", "CREATED");
+        Event event = createTestEvent("BATbern Count", daysFromNow(240), "CREATED");
         saveRegistration(event.getId(), "batbern.organizer", "confirmed",
                 Registration.TRIGGER_STAKEHOLDER_ENROLLMENT);
         saveRegistration(event.getId(), "auto.speaker", "confirmed", "SESSION_PRIMARY_SPEAKER");
@@ -1121,7 +1121,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
     @Test
     @DisplayName("should_omitInternalFields_when_anonymousRequestsEventDetail")
     void should_omitInternalFields_when_anonymousRequestsEventDetail() throws Exception {
-        Event event = createTestEvent("BATbern Public Detail", "2027-08-15T09:00:00Z", "CREATED");
+        Event event = createTestEvent("BATbern Public Detail", daysFromNow(270), "CREATED");
 
         mockMvc.perform(get("/api/v1/events/" + event.getEventCode()))
                 .andExpect(status().isOk())
@@ -1147,7 +1147,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
     @WithMockUser(username = "some.speaker", roles = "SPEAKER")
     @DisplayName("should_omitInternalFields_when_nonOrganizerRequestsEventDetail")
     void should_omitInternalFields_when_nonOrganizerRequestsEventDetail() throws Exception {
-        Event event = createTestEvent("BATbern Speaker View", "2027-08-15T09:00:00Z", "CREATED");
+        Event event = createTestEvent("BATbern Speaker View", daysFromNow(270), "CREATED");
 
         mockMvc.perform(get("/api/v1/events/" + event.getEventCode()))
                 .andExpect(status().isOk())
@@ -1159,7 +1159,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
     @WithMockUser(username = "test.organizer", roles = "ORGANIZER")
     @DisplayName("should_includeInternalFields_when_organizerRequestsEvent")
     void should_includeInternalFields_when_organizerRequestsEvent() throws Exception {
-        Event event = createTestEvent("BATbern Organizer View", "2027-08-15T09:00:00Z", "CREATED");
+        Event event = createTestEvent("BATbern Organizer View", daysFromNow(270), "CREATED");
 
         mockMvc.perform(get("/api/v1/events/" + event.getEventCode()))
                 .andExpect(status().isOk())
@@ -1320,7 +1320,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
     @WithMockUser(username = "test.organizer", roles = "ORGANIZER")
     void should_returnAnalytics_when_metricsRequested() throws Exception {
         // Feedback #1: future-dated event so the registrations below pass the deadline guard.
-        Event savedEvent = createTestEvent("BATbern RegAnalytics", "2027-06-15T09:00:00Z", "AGENDA_PUBLISHED");
+        Event savedEvent = createTestEvent("BATbern RegAnalytics", daysFromNow(210), "AGENDA_PUBLISHED");
 
         // Create some test data for analytics
         // Add registrations (Story 2.2a format)
@@ -1368,7 +1368,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
     @WithMockUser(username = "some.attendee", roles = "ATTENDEE")
     void should_returnAnalytics_when_callerIsAnyAuthenticatedUser() throws Exception {
         // Owner decision 2026-11-09: aggregate counts, open to every signed-in account.
-        Event savedEvent = createTestEvent("BATbern AnalyticsOpen", "2027-06-15T09:00:00Z", "AGENDA_PUBLISHED");
+        Event savedEvent = createTestEvent("BATbern AnalyticsOpen", daysFromNow(210), "AGENDA_PUBLISHED");
 
         mockMvc.perform(get("/api/v1/events/" + savedEvent.getEventCode() + "/analytics")
                         .param("metrics", "registrations"))
@@ -1379,7 +1379,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
     @Test
     @DisplayName("should_return401_when_analyticsRequestedAnonymously")
     void should_return401_when_analyticsRequestedAnonymously() throws Exception {
-        Event savedEvent = createTestEvent("BATbern AnalyticsAnon", "2027-06-15T09:00:00Z", "AGENDA_PUBLISHED");
+        Event savedEvent = createTestEvent("BATbern AnalyticsAnon", daysFromNow(210), "AGENDA_PUBLISHED");
 
         mockMvc.perform(get("/api/v1/events/" + savedEvent.getEventCode() + "/analytics")
                         .param("metrics", "registrations"))
@@ -1391,7 +1391,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
     @WithMockUser(username = "test.organizer", roles = "ORGANIZER")
     void should_filterByTimeframe_when_timeframeProvided() throws Exception {
         // Feedback #1: future-dated event so the registrations below pass the deadline guard.
-        Event savedEvent = createTestEvent("BATbern RegTimeframe", "2027-06-15T09:00:00Z", "AGENDA_PUBLISHED");
+        Event savedEvent = createTestEvent("BATbern RegTimeframe", daysFromNow(210), "AGENDA_PUBLISHED");
 
         // Create registrations with different dates (Story 2.2a format)
         String earlyRegistration = """
@@ -1562,7 +1562,9 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
     @WithMockUser(username = "test.organizer", roles = "ORGANIZER")
     void should_respondUnder500ms_when_fullIncludesRequested() throws Exception {
         // Feedback #1: future-dated event so the 20 registrations below pass the deadline guard.
-        Event savedEvent = createTestEvent("BATbern RegPerf", "2027-06-15T09:00:00Z", "AGENDA_PUBLISHED");
+        String perfDay = Instant.now().plus(Duration.ofDays(210)).truncatedTo(ChronoUnit.DAYS).toString()
+                .substring(0, 10);
+        Event savedEvent = createTestEvent("BATbern RegPerf", perfDay + "T09:00:00Z", "AGENDA_PUBLISHED");
 
         // Create test data for performance test
         // Add multiple sessions and registrations
@@ -1572,11 +1574,11 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
                     {
                         "title": "Session %d",
                         "description": "Performance test session %d",
-                        "startTime": "2027-06-15T%02d:00:00Z",
-                        "endTime": "2027-06-15T%02d:00:00Z",
+                        "startTime": "%sT%02d:00:00Z",
+                        "endTime": "%sT%02d:00:00Z",
                         "sessionType": "workshop"
                     }
-                    """.formatted(i, i, hour, hour + 1);
+                    """.formatted(i, i, perfDay, hour, perfDay, hour + 1);
 
             mockMvc.perform(post("/api/v1/events/" + savedEvent.getEventCode() + "/sessions")
                             .contentType(MediaType.APPLICATION_JSON)

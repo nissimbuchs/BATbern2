@@ -24,6 +24,7 @@ import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -87,8 +88,8 @@ public class AnonymousRegistrationE2EIntegrationTest extends AbstractIntegration
                 .eventCode("BATbern142")
                 .title("BATbern 2025 E2E Test")
                 .eventNumber(142)
-                .date(Instant.parse("2027-06-15T09:00:00Z"))
-                .registrationDeadline(Instant.parse("2027-06-08T23:59:59Z"))
+                .date(Instant.now().plus(200, ChronoUnit.DAYS))
+                .registrationDeadline(Instant.now().plus(193, ChronoUnit.DAYS))
                 .venueName("Test Venue")
                 .venueAddress("Test Address 123, Bern")
                 .venueCapacity(100)
@@ -243,8 +244,8 @@ public class AnonymousRegistrationE2EIntegrationTest extends AbstractIntegration
                 .eventCode("BATbern143")
                 .title("BATbern 2025 Second Event")
                 .eventNumber(143)
-                .date(Instant.parse("2027-07-15T09:00:00Z"))
-                .registrationDeadline(Instant.parse("2027-07-08T23:59:59Z"))
+                .date(Instant.now().plus(230, ChronoUnit.DAYS))
+                .registrationDeadline(Instant.now().plus(223, ChronoUnit.DAYS))
                 .venueName("Test Venue")
                 .venueAddress("Test Address 456, Bern")
                 .venueCapacity(100)
