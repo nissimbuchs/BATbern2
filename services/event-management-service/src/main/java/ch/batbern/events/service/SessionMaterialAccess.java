@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
  * Who may see and change every material of a session, the non-public ones included (#1260): an
  * organizer, or a speaker on that session ({@code session_users}). Everyone else, anonymous callers
  * included, gets the public materials only; the public read model never gets more. The one place
- * this is decided: materials reads and the materials change check use it.
+ * this is decided: materials reads, the materials change check and the download use it.
  */
 @Component
 @RequiredArgsConstructor

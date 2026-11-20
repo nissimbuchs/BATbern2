@@ -2058,7 +2058,9 @@ paths:
       summary: Get a presigned download URL for a material
       description: 'Generate a time-limited presigned download URL for a single material (Story 5.9).
         The file is saved under the material''s original file name (`Content-Disposition`, Story 17.11d).
-        Public endpoint.'
+        Public endpoint for public materials (`publiclyVisible`). The material must belong to the
+        session of the event in the path, else 404. A non-public material answers 404, like an unknown
+        id, to every caller except organizers and the speakers of that session (#1260).'
       operationId: getMaterialDownloadUrl
       parameters:
       - name: eventCode
@@ -2093,7 +2095,13 @@ paths:
                   value:
                     downloadUrl: https://batbern-inbound-emails-staging.s3.eu-central-1.amazonaws.com/...&X-Amz-Signature=...
         '404':
-          $ref: '#/components/responses/NotFound'
+          description: The session is not in the event, the material not in the session, the id is
+            unknown, or the material is not public and the caller is neither an organizer nor a
+            speaker of the session (one answer for all, #1260).
+          content:
+            application/json:
+              schema:
+                $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
         '500':
           $ref: '#/components/responses/InternalServerError'
 components:

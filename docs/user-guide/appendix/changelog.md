@@ -45,6 +45,8 @@ Only items that are not live yet. Everything else is listed under its release be
 - ✅ Every session material now says whether it may be published after the event. A new PDF is public, any other file (PowerPoint, Keynote, Word, video) is not, so a speaker can upload the PowerPoint for the moderator next to the PDF for the public. The upload can say otherwise, and organizers and the session's speakers can change it later.
 - ✅ Existing materials: PDFs stay public, all other files are marked not public.
 - ✅ The public event page, the archive and the Apple Watch show only the public materials, and count only those. Visitors no longer see who uploaded a file.
+- ✅ A material that is not public can be downloaded only by organizers and the speakers of its session; everyone else gets "not found".
+- ⚠️ API: `GET …/materials/{materialId}/download` answers 404 for a material of another session or event, and for a non-public material to anyone but organizers and the session's speakers.
 - ⚠️ API: a caller who is neither an organizer nor a speaker of the session gets only the public materials in `GET …/sessions/{sessionSlug}`, `GET …/sessions/{sessionSlug}/materials` and the counts of `GET …/sessions`; `/public/events*` and the public view of `/events/current` always do. Their `uploadedBy`, `s3Key` and `uploadId` are empty strings. `GET …/materials` of a session that is not in the event answers 404.
 - ⚠️ API: new `PATCH /api/v1/events/{eventCode}/sessions/{sessionSlug}/materials/{materialId}` `{publiclyVisible}` (organizers, or a speaker of that session; another session's material 404). `SessionMaterialResponse` has `publiclyVisible`; `POST …/uploads/session-material/{uploadId}/confirm` and the items of `POST …/materials` take an optional `publiclyVisible`.
 

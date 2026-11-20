@@ -115,7 +115,8 @@ public class SecurityConfig {
                 // Story 1.15a.1b: Public speaker list endpoint (GET only, POST/PUT/DELETE require ORGANIZER)
                 .requestMatchers(HttpMethod.GET, "/api/v1/events/*/sessions/*/speakers").permitAll()
 
-                // Story 5.9: Public materials download endpoint for archived events
+                // Story 5.9: Public materials download; a non-public material answers 404 to anyone but
+                // organizers and the session's speakers (#1260, SessionMaterialsService)
                 .requestMatchers(HttpMethod.GET, "/api/v1/events/*/sessions/*/materials/*/download").permitAll()
 
                 // Story 7.5: Public read of a session's Q&A thread (frozen archive is public, AC3).

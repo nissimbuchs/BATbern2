@@ -18,7 +18,7 @@ GET    /events/{eventCode}/photos                # event photo gallery
 GET    /events/{eventCode}/sessions              # programme
 GET    /events/{eventCode}/sessions/{sessionSlug}  # talk page
 GET    /events/{eventCode}/sessions/{sessionSlug}/speakers  # speakers of a talk
-GET    /events/{eventCode}/sessions/{sessionSlug}/materials/{materialId}/download  # published slides
+GET    /events/{eventCode}/sessions/{sessionSlug}/materials/{materialId}/download  # public materials only; a non-public one 404 (#1260)
 GET    /events/{eventCode}/sessions/{sessionSlug}/qna  # post-event Q&A (Epic 7)
 GET    /events/{eventCode}/live-timing           # presenter screen and Watch on event day
 GET    /public/events                            # website read model, list

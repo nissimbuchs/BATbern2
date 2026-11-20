@@ -621,7 +621,7 @@ export interface paths {
     };
     /**
      * Get a presigned download URL for a material
-     * @description Generate a time-limited presigned download URL for a single material (Story 5.9). The file is saved under the material's original file name (`Content-Disposition`, Story 17.11d). Public endpoint.
+     * @description Generate a time-limited presigned download URL for a single material (Story 5.9). The file is saved under the material's original file name (`Content-Disposition`, Story 17.11d). Public endpoint for public materials (`publiclyVisible`). The material must belong to the session of the event in the path, else 404. A non-public material answers 404, like an unknown id, to every caller except organizers and the speakers of that session (#1260).
      */
     get: operations['getMaterialDownloadUrl'];
     put?: never;
@@ -2677,7 +2677,15 @@ export interface operations {
           'application/json': components['schemas']['DownloadUrlResponse'];
         };
       };
-      404: components['responses']['NotFound'];
+      /** @description The session is not in the event, the material not in the session, the id is unknown, or the material is not public and the caller is neither an organizer nor a speaker of the session (one answer for all, */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
       500: components['responses']['InternalServerError'];
     };
   };

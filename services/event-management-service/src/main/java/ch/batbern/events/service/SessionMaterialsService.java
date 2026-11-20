@@ -158,19 +158,28 @@ public class SessionMaterialsService {
      * Generate presigned download URL for a material
      * Story 5.9: Session Materials Upload
      *
+     * <p>The material must be in that session of that event. A non-public one is downloaded only by
+     * an organizer or a speaker of the session ({@link SessionMaterialAccess}); anyone else gets the
+     * 404 of an unknown id, so the answer does not reveal it exists (#1260).
+     *
      * Uses injected S3Presigner which is configured for:
      * - Local: MinIO at localhost:8450
      * - Staging/Prod: AWS S3
      *
-     * @param materialId The material ID
      * @return Presigned download URL valid for 1 hour
-     * @throws MaterialNotFoundException if material not found
+     * @throws SessionNotFoundException  if the session is not in the event
+     * @throws MaterialNotFoundException if the material is not in that session, or not public and the
+     *                                   caller may not see it
      */
-    public String generateDownloadUrl(UUID materialId) {
+    @Transactional(readOnly = true)
+    public String generateDownloadUrl(String eventCode, String sessionSlug, UUID materialId) {
         log.info("Generating download URL for material: {}", materialId);
 
-        SessionMaterial material = sessionMaterialsRepository.findById(materialId)
-                .orElseThrow(() -> new MaterialNotFoundException(materialId.toString()));
+        Session session = materialUploads.session(eventCode, sessionSlug);
+        SessionMaterial material = materialIn(session, materialId);
+        if (!Boolean.TRUE.equals(material.getPubliclyVisible()) && !materialAccess.mayUseNonPublic(session)) {
+            throw new MaterialNotFoundException(materialId.toString());
+        }
 
         // Generate presigned URL valid for 1 hour using injected presigner
         try {

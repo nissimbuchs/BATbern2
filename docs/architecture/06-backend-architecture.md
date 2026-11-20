@@ -203,6 +203,12 @@ so the website never shows an organizer something a visitor would not see.
   caller. `GET /events/{code}/sessions/{slug}`, `GET …/materials` and the sessions list decide per
   caller and session; `materialsCount` and `materialsStatus` count what the response shows (the
   sessions list: the stored count for privileged callers, the public count otherwise).
+- **Download by event, session and visibility** (#1260). `GET …/materials/{materialId}/download`
+  stays anonymous for public materials. `SessionMaterialsService.generateDownloadUrl` resolves the
+  session within the event and the material within the session (404 otherwise), and a non-public
+  material answers the 404 of an unknown id to everyone `SessionMaterialAccess` does not admit. The
+  files stay under the CDN prefix (owner 2026-11-15): the protection is that no outsider ever
+  receives a non-public material's id or URL.
 
 `PublicEventController` (publishing) serves these three paths through `PublicEventsService`, which
 builds on the event read of event core (`EventReadService`) in the public session view and shapes

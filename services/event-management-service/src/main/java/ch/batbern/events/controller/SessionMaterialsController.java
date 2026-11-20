@@ -85,7 +85,9 @@ public class SessionMaterialsController implements SessionMaterialsApi {
             String sessionSlug,
             UUID materialId) {
 
-        String downloadUrl = sessionMaterialsService.generateDownloadUrl(materialId);
+        // The material must be in that session of that event; a non-public one only for organizers
+        // and the session's speakers, 404 for anyone else (#1260).
+        String downloadUrl = sessionMaterialsService.generateDownloadUrl(eventCode, sessionSlug, materialId);
 
         return ResponseEntity.ok(new DownloadUrlResponse().downloadUrl(downloadUrl));
     }
