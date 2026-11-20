@@ -19,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 
@@ -163,9 +164,13 @@ class EventMailControllerIntegrationTest extends AbstractIntegrationTest {
     @WithMockUser(roles = "ORGANIZER")
     @DisplayName("automatic mails are collapsed per template and day, and expand with grouped=false")
     void automaticMails_collapsed() throws Exception {
+        // One Zurich day for all three: "now minus minutes" straddled midnight when the suite ran just
+        // after 00:00 and the mails fell into two day groups (seen 2026-11-21 00:08).
+        Instant startOfDay = now.atZone(ZoneId.of("Europe/Zurich")).toLocalDate()
+                .atStartOfDay(ZoneId.of("Europe/Zurich")).toInstant();
         for (int i = 1; i <= 3; i++) {
             UUID id = message(new Mail("BATbern915-1" + i, "REGISTRANTS", "registration-confirmation", "TEMPLATE", null,
-                    null, "Confirmation " + i, now.minus(10 - i, ChronoUnit.MINUTES), EVENT_CODE));
+                    null, "Confirmation " + i, startOfDay.plusSeconds(i), EVENT_CODE));
             recipient(id, "success+r" + i + "@simulator.amazonses.com", i == 2 ? "FAILED" : "DELIVERED",
                     i == 2 ? "Permanent/General" : null);
         }
