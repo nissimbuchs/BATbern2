@@ -3,14 +3,14 @@ title: 'Each material carries a public flag that speaker and organizer set'
 type: 'feature'
 ticket: '1'
 created: '2026-11-20'
-status: 'in-progress'
+status: 'built'
 baseline_revision: 'a19df539fb73d05e9fde30664ce850ecb8480517'
 route: 'full'
 route_source: 'auto'
 risk: 'medium'
-review: ''
-review_source: ''
-lenses_ran: []
+review: 'quick'
+review_source: 'pinned'
+lenses_ran: [self-quick]
 review_loop_iteration: 0
 context:
   - '{project-root}/docs/architecture/module-map.md'
@@ -65,12 +65,12 @@ context:
 ## Tasks & Acceptance
 
 **Execution:**
-- [ ] Specs + lint baseline -- first.
-- [ ] ITs red: every matrix row.
-- [ ] V159 + entity + repository + handler/service/controller + shared-kernel option.
-- [ ] Defect (own commit, test first): DELETE of a material of another session of the same event answers 400 (`IllegalArgumentException`); must be 404 through `materialIn`.
-- [ ] Regenerate frontend types, `npm run type-check`, `npm run lint:api`, `make check-test-ratchet`.
-- [ ] Docs + changelog.
+- [x] Specs + lint baseline -- first.
+- [x] ITs red: every matrix row.
+- [x] V159 + entity + repository + handler/service/controller + shared-kernel option.
+- [x] Defect (own commit, test first): DELETE of a material of another session of the same event answers 400 (`IllegalArgumentException`); must be 404 through `materialIn`.
+- [x] Regenerate frontend types, `npm run type-check`, `npm run lint:api`, `make check-test-ratchet`.
+- [x] Docs + changelog.
 
 **Acceptance Criteria:**
 - Given V159 applied on production data, then no row has a NULL flag and the deploy log lists the non-PDF count per event.
@@ -91,6 +91,15 @@ context:
 
 ## Review Triage Log
 
+Pass 1 (quick lens, run by the build session itself: the coordinator's brief allowed no subagents on rack, so no context-free reviewer ran; an independent review is still open). 4 findings: high 0, medium 0, low 2, false 2.
+
+| # | Finding | Verdict | Route | Evidence / action |
+|---|---|---|---|---|
+| 1 | The generic `UploadsController` names `SessionMaterialUploadHandler.PUBLICLY_VISIBLE`, coupling the purpose-neutral contract to one purpose | low | reject | Same module (EMS uploads and sessions), no archunit rule touched; a literal would duplicate the key. Left as is. |
+| 2 | A `mime_type` with parameters (`application/pdf; x=y`) is not a PDF in V159 or `isPdf` | low | reject | The upload contract normalizes the content type (`normalizedType`) and the batch import maps by extension; such a row is not producible today. |
+| 3 | Anonymous responses now also carry `publiclyVisible` and still list non-public materials | false | n/a | Intended: filtering is story 2; the flag itself names nothing private. |
+| 4 | `UploadService.confirm` with a null options map would throw in the session-material handler | false | n/a | Both callers pass a map (`Map.of()` from the old overload, `attachOptions` from the controller). |
+
 ## Design Notes
 
 **Architecture note.** Modules: EMS sessions (materials), shared-kernel upload. New dependencies: none. Endpoint: `PATCH /events/{eventCode}/sessions/{sessionSlug}/materials/{materialId}`; nearest is the `DELETE` on the same path (no body, other method) and `PATCH /events/{eventCode}/teaser-images/{imageId}` (same shape on another resource); the module map asks state changes as PATCH on the resource. Reused: `checkMayChangeMaterials`, `session(...)`, `CacheConfig.clearAfterCommit`, upload contract. Deviation: none; the confirm option crosses shared-kernel because `UploadService.confirm` calls the handler.
@@ -100,8 +109,11 @@ context:
 **DB default false.** A row inserted outside the entity (raw SQL) stays non-public: the safe side for #1260.
 
 **Store sizes at start:** EMS archunit store 10 lines; ratchet baseline 524 lines; EMS response-conformance baseline 3 lines.
+**Store sizes at end:** unchanged (archunit store untouched, `make check-test-ratchet` clean with no STALE line, response-conformance baseline untouched). Not smaller: the touched code had no archunit or ratchet entry; the removed Mockito delete tests were not ratchet lines.
 
 ## Verification
+
+Run 2026-11-20 (logs in `~/.cache/batbern-test-logs/epic5-s1-*.log`): targeted ITs green; full EMS suite 3101 tests, 2 failed (organizer capture goldens, only the new field), goldens updated and `EventControllerCaptureIntegrationTest` green; shared-kernel 709 tests green; checkstyle EMS + shared-kernel clean; CUMS compiles; `lint:api`, `type-check`, `check-frontend-api-paths`, MSW harness tests (40), `check-test-ratchet` clean.
 
 **Commands:**
 - `./gradlew :services:event-management-service:test --tests '*SessionMaterial*' --tests '*V159*' --tests '*EndpointAuthorizationGuard*' --max-workers=4` -- green
