@@ -3,7 +3,7 @@ title: "Speakers and organizers tick 'Publicly visible after the event'"
 type: 'feature'
 ticket: '4'
 created: '2026-11-20'
-status: 'built'
+status: 'done'
 baseline_revision: '4c8d538fcd5095da79ddaa19225e88b91d1314d1'
 route: 'full'
 route_source: 'auto'

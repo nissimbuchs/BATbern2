@@ -3,7 +3,7 @@ title: 'A material downloads only through its own event and session, and a non-p
 type: 'feature'
 ticket: '3'
 created: '2026-11-20'
-status: 'built'
+status: 'done'
 baseline_revision: '4c4a68624868e4904a4a8794100a0772ed73a38d'
 route: 'full'
 route_source: 'auto'
