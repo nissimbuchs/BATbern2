@@ -1058,6 +1058,25 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isNotFound());
     }
 
+    // #824 item 4: an organizer cancels every registration, then deletes the event. Cancelled
+    // registrations are history, they neither block the delete nor survive it.
+    @Test
+    @DisplayName("should_deleteEvent_when_everyRealRegistrationCancelled")
+    @WithMockUser(username = "test.organizer", roles = "ORGANIZER")
+    void should_deleteEvent_when_everyRealRegistrationCancelled() throws Exception {
+        Event event = createTestEvent("BATbern All-Cancelled", "2027-05-15T09:00:00Z", "CREATED");
+        saveRegistration(event.getId(), "real.attendee", "cancelled", null);
+        saveRegistration(event.getId(), "other.attendee", "cancelled", null);
+
+        mockMvc.perform(delete("/api/v1/events/" + event.getEventCode())
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNoContent());
+
+        entityManager.flush();
+        assertThat(registrationRepository.findAll().stream()
+                .filter(r -> event.getId().equals(r.getEventId()))).isEmpty();
+    }
+
     @Test
     @DisplayName("should_blockDelete_when_realAttendeeRegistered")
     @WithMockUser(username = "test.organizer", roles = "ORGANIZER")
