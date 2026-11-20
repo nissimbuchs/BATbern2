@@ -5,9 +5,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.CacheManager;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -21,7 +23,7 @@ import java.util.regex.Pattern;
  * registration (search and badges). {@code speaker_pool.company} is free text (display names), not
  * a key, and stays. Nothing here is unique per company, so a move never conflicts and never blocks;
  * a rerun finds nothing left to move. No log of its own: the moved ids go back to CUMS, which logs
- * the merge.
+ * the merge. {@link #counts} answers CUMS's list of candidate duplicate companies.
  */
 @Service
 @RequiredArgsConstructor
@@ -51,6 +53,21 @@ public class CompanyReferenceService {
         Integer n = jdbc.queryForObject("SELECT COUNT(*) FROM registrations WHERE attendee_company_id = ?",
                 Integer.class, source);
         return new Preview(Map.of(REGISTRATIONS, n == null ? 0 : n), Map.of(), List.of());
+    }
+
+    /**
+     * The registrations per company key, for every key asked; a key without registrations is left
+     * out. Changes nothing.
+     */
+    @Transactional(readOnly = true)
+    public Map<String, Map<String, Integer>> counts(Collection<String> keys) {
+        Map<String, Map<String, Integer>> counts = new LinkedHashMap<>();
+        new NamedParameterJdbcTemplate(jdbc).query("SELECT attendee_company_id AS k, COUNT(*) AS n FROM registrations "
+                + "WHERE attendee_company_id IN (:keys) GROUP BY attendee_company_id",
+                Map.of("keys", keys), rs -> {
+                    counts.put(rs.getString("k"), Map.of(REGISTRATIONS, rs.getInt("n")));
+                });
+        return counts;
     }
 
     /** Rewrites the source key to the target, in one transaction; caches cleared after the commit. Idempotent. */

@@ -5,11 +5,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -27,7 +29,8 @@ import java.util.regex.Pattern;
  * is one; both companies partners refuses (409 {@code MERGE_BLOCKED_BOTH_PARTNERS}), because partner
  * notes, meetings and RSVPs hang on the partner id and merging two partners is a decision of its own
  * (owner 2026-11-07). Idempotent: a rerun finds nothing left to move. No log of its own: the moved
- * and removed ids go back to CUMS, which logs the merge.
+ * and removed ids go back to CUMS, which logs the merge. {@link #counts} answers CUMS's list of
+ * candidate duplicate companies.
  */
 @Service
 @RequiredArgsConstructor
@@ -67,6 +70,25 @@ public class CompanyReferenceService {
         Map<String, Integer> conflicts = collisions == 0 ? Map.of() : Map.of("topic_votes", collisions);
         List<String> blockers = bothPartners(source, target) ? List.of(BOTH_PARTNERS) : List.of();
         return new Preview(moves, conflicts, blockers);
+    }
+
+    /**
+     * The partner (1 or none), suggestions and votes per company key, for every key asked; a key or
+     * column without rows is left out. Changes nothing.
+     */
+    @Transactional(readOnly = true)
+    public Map<String, Map<String, Integer>> counts(Collection<String> keys) {
+        Map<String, Map<String, Integer>> counts = new LinkedHashMap<>();
+        NamedParameterJdbcTemplate named = new NamedParameterJdbcTemplate(jdbc);
+        for (String column : List.of(PARTNERS, SUGGESTIONS, VOTES)) {
+            String table = column.substring(0, column.indexOf('.'));
+            named.query("SELECT company_name AS k, COUNT(*) AS n FROM " + table
+                    + " WHERE company_name IN (:keys) GROUP BY company_name", Map.of("keys", keys), rs -> {
+                        counts.computeIfAbsent(rs.getString("k"), k -> new LinkedHashMap<>())
+                                .put(column, rs.getInt("n"));
+                    });
+        }
+        return counts;
     }
 
     /** Rewrites the source key to the target, in one transaction; caches cleared after the commit. Idempotent. */

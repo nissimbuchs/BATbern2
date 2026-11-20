@@ -51,8 +51,9 @@ measured how they call each other on develop `e7f76baf`:
    stores usernames (EMS, PCS); synchronous because a holder can refuse a merge and must deliver
    preview counts, and because a registration mail must not go to the old address (primary email,
    owner 2026-11-11). Owned by CUMS: the company-reference contract
-   `/internal/company-references/preview|merge`, implemented by every service that stores company
-   keys (EMS, PCS); a company merge and a rename move them, synchronous for the same reasons (a
+   `/internal/company-references/preview|merge|counts`, implemented by every service that stores company
+   keys (EMS, PCS); a company merge and a rename move them (`counts` feeds the list of candidate
+   duplicate companies), synchronous for the same reasons (a
    holder can refuse: both companies partners) (#1251, issue sweep epic 4, replacing the
    "module-map exception" of the owner decision of 2026-11-07). Owned by CUMS: the Mail Center request contract (merge and logo requests
    opened and decided), implemented by EMS. Owned by EMS: the calendar reply contract (iMIP RSVP

@@ -389,6 +389,29 @@ class S2sProviderContractIntegrationTest extends AbstractIntegrationTest {
 
     @ParameterizedTest(name = "forwarded JWT: {0}")
     @CsvSource({"true", "false"})
+    @DisplayName("company-reference contract (#1251): counts per key as CUMS calls them, with and without JWT")
+    void companyReferenceCounts_matchCumsSpec(boolean user) throws Exception {
+        String path = "/internal/company-references/counts";
+        String body = "{\"keys\": [\"ContractCo\", \"contractnone\"]}";
+        assertThat(OpenApiContract.load(CUMS_INTERNAL).validateRequest("POST", path, Map.of(),
+                Map.of("Content-Type", List.of("application/json")), body)).as("a valid contract request").isEmpty();
+        MockHttpServletRequestBuilder request = postJson(path, body);
+        if (user) {
+            request.with(jwt().jwt(j -> j.claim("custom:username", "organizer.alice")
+                    .claim("custom:role", "ORGANIZER")));
+        }
+        MvcResult result = mockMvc.perform(request).andExpect(status().isOk()).andReturn();
+        assertResponseMatchesSpec(CUMS_INTERNAL, result);
+        assertThat(JsonPath.<Integer>read(result.getResponse().getContentAsString(),
+                "$.counts.ContractCo['registrations.attendee_company_id']")).isEqualTo(1);
+
+        MvcResult invalid = mockMvc.perform(postJson(path, "{\"keys\": []}"))
+                .andExpect(status().isBadRequest()).andReturn();
+        assertResponseMatchesSpec(CUMS_INTERNAL, invalid);
+    }
+
+    @ParameterizedTest(name = "forwarded JWT: {0}")
+    @CsvSource({"true", "false"})
     @DisplayName("Mail Center request contract: opened and decided, as CUMS calls them, with and without the user's JWT")
     void mailCenterRequestContract_matchesCumsSpec(boolean user) throws Exception {
         String opened = """

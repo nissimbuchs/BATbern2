@@ -1371,11 +1371,12 @@ Dropped: `publishing_versions` (V28 to V89), `speakers` (V37 to V94), `speaker_i
 (Story 4.9) and dropped one release later (rollback safety); the shared `logos` (CUMS V10 and EMS V5
 to CUMS V31 and EMS V154, #1307), unused since Story 17.11.
 
-**CUMS** (14 tables): `companies` V3, `user_profiles` V4, `role_assignments` V5,
+**CUMS** (15 tables): `companies` V3, `user_profiles` V4, `role_assignments` V5,
 `activity_history` V6, `shedlock` V12, `watch_pairings` V13, `user_additional_emails` V16,
 `profile_merge_requests` V23, `company_logo_requests` V25, `user_duplicate_dismissals` V26,
 `company_key_changes` V28 (shared: CUMS V28, EMS V150 and PCS V11 create it with the same canonical
-block, see below), `company_user_uploads` V30 (Story 17.11), `company_aliases` V36 (#1251), `company_merge_log` V37 (#1251).
+block, see below), `company_user_uploads` V30 (Story 17.11), `company_aliases` V36 (#1251), `company_merge_log` V37 (#1251),
+`company_duplicate_dismissals` V38 (#1251).
 
 **Company aliases** (#1251, owner decision 2026-11-07): `company_aliases` keeps an old company key
 (`alias_key`, the primary key, key shape) and the display name people knew (`alias_display_name`)
@@ -1393,6 +1394,12 @@ duplicate logo request under `company_logo_requests.status`), `filled_fields` (t
 from the source), `source_snapshot` (the deleted `companies` row with its aliases) and `outcome`
 (COMPLETED, or INCOMPLETE for a failed attempt whose holders had moved rows; a retry gets nothing from
 them). It is the only record for an undo by hand, which reads every row of the pair; the holders keep none.
+
+**Company duplicate dismissals** (#1251, story 5): `company_duplicate_dismissals` keeps the company
+pairs organizers marked as no duplicate in `GET /companies/duplicate-candidates` (`company_a_id`,
+`company_b_id`, the smaller id first by a check constraint, both `ON DELETE CASCADE` to `companies`,
+`dismissed_by`, `dismissed_at`). The candidate list itself is computed live and not stored. The model
+is `user_duplicate_dismissals` (V26).
 
 **Company keys** (owner decision 2026-11-09): `companies.name`, the company's meaningful ID, is
 `^[a-zA-Z0-9]{1,12}$`, the slug that `SlugGenerationService.generateCompanyName` makes from the typed

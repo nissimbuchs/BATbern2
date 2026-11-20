@@ -224,6 +224,35 @@ class CompanyReferenceIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
+    @DisplayName("counts: partner, suggestions and votes per key for every key asked, keys without rows left out")
+    void counts_perKey() throws Exception {
+        mockMvc.perform(post("/internal/company-references/counts").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"keys\": [\"" + SOURCE + "\", \"" + TARGET + "\", \"crnothing\"]}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.counts." + SOURCE + "['partners.company_name']").value(1))
+                .andExpect(jsonPath("$.counts." + SOURCE + "['topic_suggestions.company_name']").value(1))
+                .andExpect(jsonPath("$.counts." + SOURCE + "['topic_votes.company_name']").value(2))
+                .andExpect(jsonPath("$.counts." + TARGET + "['partners.company_name']").doesNotExist())
+                .andExpect(jsonPath("$.counts." + TARGET + "['topic_suggestions.company_name']").value(1))
+                .andExpect(jsonPath("$.counts." + TARGET + "['topic_votes.company_name']").value(1))
+                .andExpect(jsonPath("$.counts." + OTHER).doesNotExist())
+                .andExpect(jsonPath("$.counts.crnothing").doesNotExist());
+
+        assertThat(count("partners", SOURCE)).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("counts without keys, or with an empty key: 400")
+    void counts_invalid() throws Exception {
+        mockMvc.perform(post("/internal/company-references/counts").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"keys\": []}"))
+                .andExpect(status().isBadRequest());
+        mockMvc.perform(post("/internal/company-references/counts").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"keys\": [\"\"]}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     @DisplayName("the caches are cleared after the commit, not inside the transaction")
     void merge_clearsCachesAfterCommit() {
         Cache companies = cacheManager.getCache("companyApiCache");

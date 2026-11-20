@@ -272,6 +272,72 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/companies/duplicate-candidates': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Company pairs that are probably one company (Organizer)
+     * @description #1251, story 5. Every company compared with every other on the live data, for the company
+     *     merge (`GET /companies/{name}/merge-preview`, `POST /companies/{name}/merge`). A pair is listed
+     *     once, under the first rule it matches:
+     *     - `SAME_WEBSITE` (`HIGH`): the same host of the website (lower case, without scheme, `www.`,
+     *       port and path);
+     *     - `SAME_DISPLAY_NAME` (`HIGH`): the same display name, the key when there is none, folded
+     *       (lower case, umlauts as ae/oe/ue, ß as ss, accents removed, hyphen, underscore and slash as
+     *       a space, other punctuation removed, spaces collapsed);
+     *     - `SAME_NAME_WITHOUT_LEGAL_FORM` (`MEDIUM`): the same folded display name once the words ag,
+     *       gmbh, sa, sarl, ltd, inc, llc, kg and then a trailing co are removed; generic words such as
+     *       Kanton, Uni, Bern or Schweiz stay; a name that is only a legal form never matches;
+     *     - `SLUG_PREFIX` (`LOW`): one key starts with the other (ignoring case), the shorter one at
+     *       least 4 characters.
+     *
+     *     Each side shows what the merge decision needs: user profiles (CUMS), registrations and the
+     *     partner flag (summed over every service that stores company keys, the company-references
+     *     contract, one call per service for the whole list). `target` is the suggested company to keep:
+     *     the partner, else the one with a logo, else the one with more users, else the older one, else
+     *     the smaller key. `organizerCanMerge` is false when both are partners (merge the partners first).
+     *     Pairs marked as no duplicate are left out. Sorted by confidence, then the target's display name.
+     *     Changes nothing; no list is stored.
+     *
+     *     **Authorization**: ORGANIZER role required
+     */
+    get: operations['listCompanyDuplicateCandidates'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/companies/duplicate-candidates/dismissals': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Mark a company pair as no duplicate (Organizer)
+     * @description #1251, story 5. The pair no longer appears in `GET /companies/duplicate-candidates`, in either
+     *     order, for good (deleting either company removes the mark). Idempotent. 404 when a company
+     *     does not exist, 400 `INVALID_DISMISSAL` for one company twice.
+     *
+     *     **Authorization**: ORGANIZER role required
+     */
+    post: operations['dismissCompanyDuplicateCandidate'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/companies/get-or-create': {
     parameters: {
       query?: never;
@@ -535,6 +601,51 @@ export interface components {
       };
       /** @description Fields of the target filled from the source */
       filled: string[];
+    };
+    /** @description Two companies that are probably one (#1251, story 5) */
+    CompanyDuplicateCandidate: {
+      /** @enum {string} */
+      rule: 'SAME_WEBSITE' | 'SAME_DISPLAY_NAME' | 'SAME_NAME_WITHOUT_LEGAL_FORM' | 'SLUG_PREFIX';
+      /** @enum {string} */
+      confidence: 'HIGH' | 'MEDIUM' | 'LOW';
+      /** @description False when both companies are partners */
+      organizerCanMerge: boolean;
+      target: components['schemas']['CompanyDuplicateSide'];
+      source: components['schemas']['CompanyDuplicateSide'];
+    };
+    /** @description One company of a candidate pair, with the counts the merge decision needs */
+    CompanyDuplicateSide: {
+      /**
+       * @description The company key
+       * @example unicag
+       */
+      name: string;
+      /** @example Unic AG */
+      displayName?: string;
+      /** @description The company's logo, when it has one */
+      logoUrl?: string;
+      /** @example https://www.unic.com */
+      website?: string;
+      /**
+       * @description User profiles of this company
+       * @example 3
+       */
+      userCount: number;
+      /**
+       * @description Event registrations under this company key
+       * @example 4
+       */
+      registrationCount: number;
+      isPartner: boolean;
+      /** Format: date-time */
+      createdAt: string;
+      createdBy: string;
+    };
+    CompanyDuplicateDismissal: {
+      /** @description Key of one company */
+      nameA: string;
+      /** @description Key of the other company */
+      nameB: string;
     };
     /**
      * @description Page-based pagination metadata returned with every paginated list response.
@@ -1109,6 +1220,83 @@ export interface operations {
           'application/json': components['schemas']['ErrorResponse'];
         };
       };
+    };
+  };
+  listCompanyDuplicateCandidates: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The pairs */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CompanyDuplicateCandidate'][];
+        };
+      };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+      500: components['responses']['InternalServerError'];
+      /**
+       * @description A service that stores company keys did not answer the counts
+       *     (`DUPLICATE_COUNTS_INCOMPLETE`); without the partner flag no target can be suggested
+       */
+      502: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "status": 502,
+           *       "error": "Bad Gateway",
+           *       "errorCode": "DUPLICATE_COUNTS_INCOMPLETE",
+           *       "message": "Not every service answered; try the list again.",
+           *       "timestamp": "2026-11-20T10:30:00Z"
+           *     }
+           */
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+    };
+  };
+  dismissCompanyDuplicateCandidate: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        /**
+         * @example {
+         *       "nameA": "unic",
+         *       "nameB": "unicag"
+         *     }
+         */
+        'application/json': components['schemas']['CompanyDuplicateDismissal'];
+      };
+    };
+    responses: {
+      /** @description Dismissed */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      400: components['responses']['BadRequest'];
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+      404: components['responses']['NotFound'];
+      500: components['responses']['InternalServerError'];
     };
   };
   getOrCreateCompany: {

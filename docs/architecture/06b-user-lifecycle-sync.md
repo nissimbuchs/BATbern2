@@ -1279,8 +1279,35 @@ have moved theirs, and the same merge again finishes it. The ids those holders m
 as an INCOMPLETE `company_merge_log` row in a transaction of its own (`CompanyMergeLog`), because the
 retry gets nothing from them. A completed merge repeated answers 404. No
 mail is sent and no S3 key changes: the source's logo upload row moves to the target even when the
-target keeps its own logo, so the file stays reachable for an undo by hand. Story 5 of the epic adds
+target keeps its own logo, so the file stays reachable for an undo by hand. Story 6 of the epic adds
 the organizer UI.
+
+### Finding the pairs (story 5)
+
+`GET /companies/duplicate-candidates` (ORGANIZER, `CompanyMergeController`,
+`CompanyDuplicateCandidateService`) lists company pairs that are probably one company, computed on
+the live data each time; nothing is stored, no scheduler, no mail. The model is the profile list
+(`GET /users/duplicate-candidates`). `CompanyDuplicateRules` (pure, unit tested) compares every
+company with every other (about 700, no index needed) and lists a pair once, under the first rule it
+matches:
+
+| Rule | Match | Confidence |
+|---|---|---|
+| `SAME_WEBSITE` | the same host: lower case, without scheme, `www.`, port and path | HIGH |
+| `SAME_DISPLAY_NAME` | the same display name (the key when there is none), folded: lower case, umlauts as ae/oe/ue, ß as ss, accents removed, hyphen, underscore and slash as a space, other punctuation removed, spaces collapsed | HIGH |
+| `SAME_NAME_WITHOUT_LEGAL_FORM` | as before, then the words ag, gmbh, sa, sarl, ltd, inc, llc, kg and a trailing co removed; generic words (Kanton, Uni, Bern, Schweiz) stay; an empty result never matches | MEDIUM |
+| `SLUG_PREFIX` | one key starts with the other (ignoring case), the shorter at least 4 characters | LOW |
+
+Each side shows the key, display name, logo URL, website, user count (CUMS), registration count and
+partner flag, and created at/by. The registrations and the partner come from the holders through the
+company-references contract (`POST /internal/company-references/counts`, one call per holder for all
+keys of the list, summed per key; ADR-016: CUMS reads no EMS or PCS table). A holder that does not
+answer fails the list with 502 `DUPLICATE_COUNTS_INCOMPLETE`: the suggested target depends on the
+partner flag. `target` is the suggested company to keep: the partner, else the one with a logo, else
+more users, else the older one, else the smaller key. `organizerCanMerge` is false when both are
+partners. `POST /companies/duplicate-candidates/dismissals {nameA, nameB}` marks a pair as no duplicate
+for good (`company_duplicate_dismissals`, V38; 204, idempotent, either order; 404 for an unknown company,
+400 `INVALID_DISMISSAL` for one company twice); merging or deleting either company removes the row.
 
 ## Database Schema
 

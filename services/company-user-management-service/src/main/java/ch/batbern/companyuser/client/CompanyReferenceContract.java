@@ -1,20 +1,28 @@
 package ch.batbern.companyuser.client;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
 /**
  * The company-reference contract CUMS owns (ADR-016 decision 5, issue sweep epic 4, #1251):
- * {@code /internal/company-references/{preview,merge}} in
+ * {@code /internal/company-references/{preview,merge,counts}} in
  * {@code docs/api/internal/cums-internal.openapi.yml}. Every holder configured under
  * {@code batbern.contracts.company-references.implementers} (a service that stores company keys)
- * counts and moves the rows it keeps under a company key. A company merge and a rename call it; CUMS
- * names no holder in code. A merge is idempotent at every holder.
+ * counts and moves the rows it keeps under a company key. A company merge and a rename call it, the
+ * list of candidate duplicate companies counts through it; CUMS names no holder in code. A merge is
+ * idempotent at every holder.
  */
 public interface CompanyReferenceContract {
 
     /** The configuration name of the contract. */
     String NAME = "company-references";
+
+    /** The {@code table.column} of a company's registrations (event-management), in the counts and moves. */
+    String REGISTRATIONS = "registrations.attendee_company_id";
+
+    /** The {@code table.column} of the partner (partner-coordination): 1 when the company is a partner. */
+    String PARTNERS = "partners.company_name";
 
     /**
      * Every holder's preview, in configured order.
@@ -31,6 +39,15 @@ public interface CompanyReferenceContract {
      * @throws CallFailedException  when a holder did not complete its part
      */
     List<Result> merge(MergeCall call);
+
+    /**
+     * The rows every holder keeps under each key, summed over the holders: per key, per
+     * {@code table.column}. A key or a column without rows may be missing. One call per holder for
+     * all keys; no keys asks nobody.
+     *
+     * @throws CallFailedException when a holder did not answer
+     */
+    Map<String, Map<String, Integer>> counts(Collection<String> keys);
 
     /** Rows per {@code table.column} ({@code conflicts} per table) and why a holder refuses. */
     record Preview(Map<String, Integer> moves, Map<String, Integer> conflicts, List<String> blockers) {

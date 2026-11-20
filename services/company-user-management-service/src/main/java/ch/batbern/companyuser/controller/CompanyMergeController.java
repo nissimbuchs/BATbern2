@@ -3,12 +3,16 @@ package ch.batbern.companyuser.controller;
 import ch.batbern.companyuser.api.generated.CompanyMergeApi;
 import ch.batbern.companyuser.client.CompanyReferenceContract;
 import ch.batbern.companyuser.domain.Company;
+import ch.batbern.companyuser.dto.generated.CompanyDuplicateCandidate;
+import ch.batbern.companyuser.dto.generated.CompanyDuplicateDismissal;
+import ch.batbern.companyuser.dto.generated.CompanyDuplicateSide;
 import ch.batbern.companyuser.dto.generated.CompanyLogo;
 import ch.batbern.companyuser.dto.generated.CompanyMergePreview;
 import ch.batbern.companyuser.dto.generated.CompanyMergeRequest;
 import ch.batbern.companyuser.dto.generated.CompanyMergeResult;
 import ch.batbern.companyuser.dto.generated.CompanyMergeSide;
 import ch.batbern.companyuser.security.SecurityContextHelper;
+import ch.batbern.companyuser.service.CompanyDuplicateCandidateService;
 import ch.batbern.companyuser.service.CompanyKeyMover;
 import ch.batbern.companyuser.service.CompanyMergeService;
 import ch.batbern.shared.dto.ErrorResponse;
@@ -25,12 +29,14 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.net.URI;
 import java.time.Instant;
+import java.time.ZoneOffset;
+import java.util.List;
 import java.util.Map;
 
 /**
- * #1251 (issue sweep epic 4, story 4): an organizer merges a duplicate company into another.
- * Contract: {@code companies-api.openapi.yml}, tag Company Merge. The model is
- * {@link UserMergeController} (profile merge).
+ * #1251 (issue sweep epic 4, story 4): an organizer merges a duplicate company into another; story
+ * 5: the list of candidate duplicates and its dismissals. Contract: {@code companies-api.openapi.yml},
+ * tag Company Merge. The model is {@link UserMergeController} (profile merge, duplicate candidates).
  */
 @RestController
 @RequestMapping("/api/v1")
@@ -39,6 +45,7 @@ import java.util.Map;
 public class CompanyMergeController implements CompanyMergeApi {
 
     private final CompanyMergeService mergeService;
+    private final CompanyDuplicateCandidateService duplicateService;
     private final SecurityContextHelper securityContext;
 
     @Override
@@ -68,6 +75,58 @@ public class CompanyMergeController implements CompanyMergeApi {
                 .moved(r.moved())
                 .removed(r.removed())
                 .filled(r.filled()));
+    }
+
+    // ---------------------------------------------------------------- duplicate candidates (story 5)
+
+    @Override
+    @PreAuthorize("hasRole('ORGANIZER')")
+    public ResponseEntity<List<CompanyDuplicateCandidate>> listCompanyDuplicateCandidates() {
+        return ResponseEntity.ok(duplicateService.candidates().stream()
+                .map(c -> new CompanyDuplicateCandidate()
+                        .rule(CompanyDuplicateCandidate.RuleEnum.fromValue(c.rule().name()))
+                        .confidence(CompanyDuplicateCandidate.ConfidenceEnum.fromValue(c.confidence().name()))
+                        .organizerCanMerge(c.organizerCanMerge())
+                        .target(duplicateSide(c.target()))
+                        .source(duplicateSide(c.source())))
+                .toList());
+    }
+
+    @Override
+    @PreAuthorize("hasRole('ORGANIZER')")
+    public ResponseEntity<Void> dismissCompanyDuplicateCandidate(CompanyDuplicateDismissal request) {
+        duplicateService.dismiss(request.getNameA(), request.getNameB(), securityContext.getCurrentUsername());
+        return ResponseEntity.noContent().build();
+    }
+
+    private static CompanyDuplicateSide duplicateSide(CompanyDuplicateCandidateService.Side s) {
+        Company c = s.company();
+        return new CompanyDuplicateSide()
+                .name(c.getName())
+                .displayName(c.getDisplayName())
+                .logoUrl(c.getLogoUrl() == null || c.getLogoUrl().isBlank() ? null : c.getLogoUrl())
+                .website(c.getWebsite())
+                .userCount((int) s.userCount())
+                .registrationCount(s.registrationCount())
+                .isPartner(s.partner())
+                .createdAt(c.getCreatedAt() == null ? null : c.getCreatedAt().atOffset(ZoneOffset.UTC))
+                .createdBy(c.getCreatedBy());
+    }
+
+    /** A holder did not answer the counts of the candidate list (502). */
+    @ExceptionHandler(CompanyDuplicateCandidateService.CountsIncompleteException.class)
+    public ResponseEntity<ErrorResponse> countsIncomplete(
+            CompanyDuplicateCandidateService.CountsIncompleteException e, HttpServletRequest request) {
+        log.error("Company duplicate candidates incomplete: {}", e.getMessage(), e);
+        return error(HttpStatus.BAD_GATEWAY, "DUPLICATE_COUNTS_INCOMPLETE",
+                "Not every service answered; try the list again.", request, null);
+    }
+
+    /** The same company twice (400). */
+    @ExceptionHandler(CompanyDuplicateCandidateService.InvalidDismissalException.class)
+    public ResponseEntity<ErrorResponse> invalidDismissal(
+            CompanyDuplicateCandidateService.InvalidDismissalException e, HttpServletRequest request) {
+        return error(HttpStatus.BAD_REQUEST, "INVALID_DISMISSAL", e.getMessage(), request, null);
     }
 
     private static CompanyMergeSide side(CompanyMergeService.Side s) {

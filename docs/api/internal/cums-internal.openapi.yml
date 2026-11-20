@@ -667,6 +667,56 @@ paths:
                 error: MERGE_BLOCKED_BOTH_PARTNERS
                 message: 'Both companies are partners (unicag, unic); merge the partners first'
 
+  /internal/company-references/counts:
+    post:
+      tags: [contract]
+      operationId: countCompanyReferences
+      summary: 'Contract: the rows this holder keeps under each of several company keys (#1251)'
+      description: |
+        Company-reference contract (issue sweep epic 4, story 5). CUMS calls every holder once for the
+        organizers' list of candidate duplicate companies (`GET /companies/duplicate-candidates`), with
+        every company key of the list, and sums the answers per key. `counts` keyed by company key,
+        then `table.column` as in the preview: event-management `registrations.attendee_company_id`;
+        partner-coordination `partners.company_name` (1 when the company is a partner),
+        `topic_suggestions.company_name` and `topic_votes.company_name`. A key without rows may be left
+        out, and so may a column without rows. Changes nothing; a POST only because the keys travel in
+        the body (a list can hold a few hundred).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompanyReferenceCountRequest'
+            example:
+              keys: [unic, unicag, puzzle]
+      responses:
+        '200':
+          description: The rows per company key and `table.column`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompanyReferenceCountResult'
+              examples:
+                registrations:
+                  value:
+                    counts:
+                      unic: {registrations.attendee_company_id: 14}
+                      unicag: {registrations.attendee_company_id: 3}
+                partners:
+                  value:
+                    counts:
+                      unic: {partners.company_name: 1, topic_suggestions.company_name: 2, topic_votes.company_name: 5}
+                      unicag: {topic_votes.company_name: 1}
+                nothingHeld:
+                  value:
+                    counts: {}
+        '400':
+          description: No keys, too many, or a key that is empty or too long
+          content:
+            application/json:
+              schema:
+                $ref: '../_shared.openapi.yml#/components/schemas/ErrorResponse'
+
   /internal/companies:
     get:
       operationId: findCompanyNames
@@ -1195,6 +1245,32 @@ components:
           enum: [MERGE_BLOCKED_BOTH_PARTNERS, INVALID_MERGE]
         message:
           type: string
+      additionalProperties: false
+
+    CompanyReferenceCountRequest:
+      type: object
+      required: [keys]
+      properties:
+        keys:
+          type: array
+          minItems: 1
+          maxItems: 2000
+          description: Company keys (`companies.name`), each at most once.
+          items:
+            type: string
+            minLength: 1
+            maxLength: 255
+      additionalProperties: false
+
+    CompanyReferenceCountResult:
+      type: object
+      required: [counts]
+      properties:
+        counts:
+          type: object
+          description: Per company key, the rows per `table.column`; a key without rows may be left out.
+          additionalProperties:
+            $ref: '#/components/schemas/UserReferenceCounts'
       additionalProperties: false
 
     CompanyReferenceMerge:

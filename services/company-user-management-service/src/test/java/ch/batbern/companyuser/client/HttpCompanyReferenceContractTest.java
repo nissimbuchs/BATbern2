@@ -23,6 +23,7 @@ import java.net.ConnectException;
 import java.util.List;
 import java.util.Map;
 
+import static ch.batbern.companyuser.client.CompanyReferenceHolders.COUNTS;
 import static ch.batbern.companyuser.client.CompanyReferenceHolders.MERGE;
 import static ch.batbern.companyuser.client.CompanyReferenceHolders.PREVIEW;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -165,6 +166,44 @@ class HttpCompanyReferenceContractTest {
     }
 
     @Test
+    @DisplayName("counts: one call per holder with every key, summed per key and table.column")
+    void should_sumEveryHoldersCounts_perKey() {
+        holders.expect(POST, COUNTS).atHost(A).andExpect(r -> {
+            noJwt(r);
+            assertThat(body(r)).isEqualTo("{\"keys\":[\"unic\",\"unicag\",\"puzzle\"]}");
+        }).respondWithExample("registrations");
+        // Holder B answers a column holder A answered too: the two are summed, not overwritten
+        holders.expect(POST, COUNTS).atHost(B).respondWith(HttpStatus.OK, "{\"counts\": {\"unic\": "
+                + "{\"registrations.attendee_company_id\": 6, \"partners.company_name\": 1, "
+                + "\"topic_votes.company_name\": 5}, \"unicag\": {\"topic_votes.company_name\": 1}}}");
+
+        Map<String, Map<String, Integer>> counts = contract.counts(List.of("unic", "unicag", "puzzle"));
+
+        assertThat(counts.get("unic")).containsEntry(CompanyReferenceContract.REGISTRATIONS, 20)
+                .containsEntry(CompanyReferenceContract.PARTNERS, 1)
+                .containsEntry("topic_votes.company_name", 5);
+        assertThat(counts.get("unicag")).containsEntry(CompanyReferenceContract.REGISTRATIONS, 3)
+                .containsEntry("topic_votes.company_name", 1)
+                .doesNotContainKey(CompanyReferenceContract.PARTNERS);
+        assertThat(counts).doesNotContainKey("puzzle");
+        holders.verify();
+    }
+
+    @Test
+    @DisplayName("counts: a holder that does not answer fails the call; no keys asks nobody")
+    void should_failCounts_when_aHolderIsDown() {
+        holders.expect(POST, COUNTS).atHost(A).respondWithExample("nothingHeld");
+        holders.expect(POST, COUNTS).atHost(B).respondWith(request -> {
+            throw new ConnectException("connection refused");
+        });
+
+        assertThatThrownBy(() -> contract.counts(List.of("unic")))
+                .isInstanceOf(CallFailedException.class).hasMessageContaining(B);
+        assertThat(contract.counts(List.of())).isEmpty();
+        holders.verify();
+    }
+
+    @Test
     @DisplayName("no holder configured: preview and merge fail instead of a move that would orphan every row")
     void should_refusePreviewAndMerge_when_noHolderIsConfigured() {
         HttpCompanyReferenceContract none = new HttpCompanyReferenceContract(new RestTemplateBuilder().build(),
@@ -173,6 +212,8 @@ class HttpCompanyReferenceContractTest {
         assertThatThrownBy(() -> none.preview("unicag", "unic"))
                 .isInstanceOf(CallFailedException.class).hasMessageContaining("no holder");
         assertThatThrownBy(() -> none.merge(mergeCall()))
+                .isInstanceOf(CallFailedException.class).hasMessageContaining("no holder");
+        assertThatThrownBy(() -> none.counts(List.of("unic")))
                 .isInstanceOf(CallFailedException.class).hasMessageContaining("no holder");
     }
 }

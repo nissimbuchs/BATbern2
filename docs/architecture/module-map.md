@@ -20,8 +20,9 @@ CUMS (identity) is upstream of all. EMS (event) is upstream of PCS (partners).
   downstream named in code). No polling, no event bus (ADR-016 decision 4, owner 2026-11-11). Contracts: CUMS
   user-references (`/internal/user-references/{preview,merge,primary-email}`, EMS and PCS
   implement; a new service that stores usernames implements it too), CUMS company-references
-  (`/internal/company-references/{preview,merge}`, EMS and PCS implement; a new service that stores
-  company keys implements it too; #1251), CUMS Mail Center requests
+  (`/internal/company-references/{preview,merge,counts}`, EMS and PCS implement; a new service that
+  stores company keys implements it too; #1251, `counts` for the duplicate-company list), CUMS Mail
+  Center requests
   (EMS implements), EMS calendar replies (PCS implements). Do not call downstream any other way.
 - Every `/internal` operation is specified in `docs/api/internal/<provider>-internal.openapi.yml`
   (17.0b2; a contract in its owner's spec) and contract-tested on both sides (`ContractServer`, provider

@@ -158,6 +158,34 @@ class CompanyReferenceIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
+    @DisplayName("counts: the registrations per key for every key asked, keys without rows left out; changes nothing")
+    void counts_perKey() throws Exception {
+        mockMvc.perform(post("/internal/company-references/counts").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"keys\": [\"" + SOURCE + "\", \"" + TARGET + "\", \"crnothing\"]}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.counts." + SOURCE + "['registrations.attendee_company_id']").value(2))
+                .andExpect(jsonPath("$.counts." + TARGET + "['registrations.attendee_company_id']").value(1))
+                .andExpect(jsonPath("$.counts." + OTHER).doesNotExist())
+                .andExpect(jsonPath("$.counts.crnothing").doesNotExist());
+
+        assertThat(count(SOURCE)).isEqualTo(2);
+    }
+
+    @Test
+    @DisplayName("counts without keys, or with an empty key: 400")
+    void counts_invalid() throws Exception {
+        mockMvc.perform(post("/internal/company-references/counts").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"keys\": []}"))
+                .andExpect(status().isBadRequest());
+        mockMvc.perform(post("/internal/company-references/counts").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"keys\": [\"\"]}"))
+                .andExpect(status().isBadRequest());
+        mockMvc.perform(post("/internal/company-references/counts").contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     @DisplayName("the caches are cleared after the commit, not inside the transaction")
     void merge_clearsCachesAfterCommit() {
         Cache users = cacheManager.getCache(CacheConfig.USER_API_CACHE);

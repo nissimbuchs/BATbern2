@@ -33,6 +33,8 @@ idempotent: even if a test mid-flow crashes, the next run starts clean.
 - `04-update-company` — PATCH `/companies/{name}`.
 - `05-search-companies` — GET `/companies/search?query=BRUNOTESTCO`.
 - `10-verify-company` — verification flow.
+- `11a-list-duplicate-candidates` — GET `/companies/duplicate-candidates` (#1251 story 5), read-only, shape only (seq 14).
+- `11b-merge-preview-same-company` — GET `/companies/{name}/merge-preview?source={name}`: `SAME_COMPANY`, no holder asked, nothing merged (seq 14.5).
 - `11-put-update-company` — PUT `/companies/{name}` (full replacement).
 - `12-delete-company` — DELETE `/companies/{name}` (seq 15).
 - `13-verify-deletion` — GET asserts 404 (seq 16).

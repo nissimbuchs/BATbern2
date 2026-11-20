@@ -1,0 +1,57 @@
+meta {
+  name: List Duplicate Candidates
+  type: http
+  seq: 14
+}
+
+get {
+  url: {{baseUrl}}/companies/duplicate-candidates
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: test-{{timestamp}}
+  Accept: application/json
+}
+
+tests {
+  test("should list the candidate pairs", function() {
+    expect(res.status).to.equal(200);
+    expect(res.body).to.be.an("array");
+  });
+
+  test("every pair has a rule, a confidence and two sides with counts", function() {
+    const rules = ["SAME_WEBSITE", "SAME_DISPLAY_NAME", "SAME_NAME_WITHOUT_LEGAL_FORM", "SLUG_PREFIX"];
+    res.body.forEach(function(pair) {
+      expect(rules).to.include(pair.rule);
+      expect(["HIGH", "MEDIUM", "LOW"]).to.include(pair.confidence);
+      expect(pair.organizerCanMerge).to.be.a("boolean");
+      [pair.target, pair.source].forEach(function(side) {
+        expect(side.name).to.be.a("string");
+        expect(side.userCount).to.be.a("number");
+        expect(side.registrationCount).to.be.a("number");
+        expect(side.isPartner).to.be.a("boolean");
+      });
+      expect(pair.target.name).to.not.equal(pair.source.name);
+    });
+  });
+
+  test("each pair is listed once", function() {
+    const seen = res.body.map(function(pair) {
+      return [pair.target.name, pair.source.name].sort().join("|");
+    });
+    expect(new Set(seen).size).to.equal(seen.length);
+  });
+}
+
+docs {
+  Issue 1251, story 5: GET /companies/duplicate-candidates (ORGANIZER). Read-only: the list is computed live
+  and each holder of the company-references contract (EMS, PCS) is asked once for the counts. This
+  collection runs against production after a deploy, so it never dismisses a pair or merges
+  (no Bruno request that writes). The contents depend on the live data; the tests check the shape.
+}

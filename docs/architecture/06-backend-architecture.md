@@ -233,7 +233,7 @@ the VPC through Service Connect. Callers forward the user's JWT when there is on
 | `POST /internal/users/get-or-create` | Company-User Management | EMS anonymous registration and speaker provisioning (ADR-005) |
 | `GET /internal/email-owners?email=` | Company-User Management | EMS by-email deregistration across a person's profiles (#1183) |
 | `GET /internal/user-references/preview`, `POST /internal/user-references/merge`, `POST /internal/user-references/primary-email` | Event Management and Partner Coordination (implement the CUMS contract) | CUMS profile merge (#1183 C/D, below) and primary-address change (#1244); Epic 17 entry 7b |
-| `GET /internal/company-references/preview`, `POST /internal/company-references/merge` | Event Management and Partner Coordination (implement the CUMS contract) | CUMS company merge and rename move the company keys EMS (`registrations.attendee_company_id`) and PCS (topic suggestions and votes, the partner) keep (#1251, issue sweep epic 4) |
+| `GET /internal/company-references/preview`, `POST /internal/company-references/merge`, `POST /internal/company-references/counts` | Event Management and Partner Coordination (implement the CUMS contract) | CUMS company merge and rename move the company keys EMS (`registrations.attendee_company_id`) and PCS (topic suggestions and votes, the partner) keep; `counts` gives the rows per key for the candidate duplicate list (#1251, issue sweep epic 4) |
 | `POST /internal/mail-center-requests`, `POST /internal/mail-center-requests/{requestId}/decision` | Event Management (implements the CUMS contract) | CUMS opens and closes the Mail Center conversation of a merge or logo request (#1237, #1246; Epic 17 entry 7, below) |
 | `POST /internal/calendar-replies` | Partner Coordination (implements the EMS contract) | EMS inbound iMIP REPLY to a partner meeting invite (Story 10.27; Epic 17 entry 8b, below); replaced `POST /internal/partner-meetings/rsvps` |
 
@@ -248,8 +248,9 @@ moves its rows in one transaction, idempotently, clears its caches after the com
 moved and removed row ids for the CUMS merge log; PCS refuses when both companies are partners
 (409 `MERGE_BLOCKED_BOTH_PARTNERS`) and keeps the target's vote where both voted for one topic.
 The company merge itself (`CompanyMergeService`, `GET /companies/{name}/merge-preview`,
-`POST /companies/{name}/merge`, `company_merge_log`) is described in
-`06b-user-lifecycle-sync.md`, "Merging two companies".
+`POST /companies/{name}/merge`, `company_merge_log`) and the list of candidate duplicates
+(`GET /companies/duplicate-candidates`) are described in `06b-user-lifecycle-sync.md`, "Merging two
+companies".
 
 The calendar reply operation is a **contract EMS owns** (Epic 17 entry 8b): specified in
 `ems-internal.openapi.yml`, called by `forwarding/InboundEmailRouter` through

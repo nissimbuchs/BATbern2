@@ -11,6 +11,7 @@ import ch.batbern.partners.repository.PartnerMeetingRsvpRepository;
 import ch.batbern.partners.repository.PartnerRepository;
 import ch.batbern.shared.test.AbstractIntegrationTest;
 import ch.batbern.shared.test.contract.OpenApiContract;
+import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -265,5 +266,32 @@ class S2sProviderContractIntegrationTest extends AbstractIntegrationTest {
         assertThat(blocked.getResponse().getContentAsString()).contains("MERGE_BLOCKED_BOTH_PARTNERS");
         MvcResult refused = companyMerge(merge.formatted("contractsrc", "contracttgt", "MERGE"), user, 409);
         assertThat(refused.getResponse().getContentAsString()).contains("MERGE_BLOCKED_BOTH_PARTNERS");
+    }
+
+    @ParameterizedTest(name = "forwarded JWT: {0}")
+    @CsvSource({"true", "false"})
+    @DisplayName("company-reference contract: counts per key, as CUMS calls them")
+    void companyReferenceCounts_matchCumsSpec(boolean user) throws Exception {
+        jdbc.update("INSERT INTO topic_suggestions (company_name, suggested_by, title, source) VALUES (?, ?, ?, ?)",
+                "contractsrc", MERGE_SOURCE, "Contract topic", "PARTNER");
+        partnerRepository.save(Partner.builder().companyName("contractsrc").partnershipLevel(PartnershipLevel.GOLD)
+                .partnershipStartDate(LocalDate.now()).build());
+        String path = "/internal/company-references/counts";
+        String body = "{\"keys\": [\"contractsrc\", \"contracttgt\"]}";
+        MockHttpServletRequestBuilder request = post(path).contentType(MediaType.APPLICATION_JSON).content(body);
+        if (user) {
+            request.with(jwt().jwt(j -> j.claim("custom:username", "organizer.alice")
+                    .claim("custom:role", "ORGANIZER")));
+        }
+
+        MvcResult counted = contractCall(request, "POST", path, Map.of(), body, 200);
+
+        String json = counted.getResponse().getContentAsString();
+        assertThat(JsonPath.<Integer>read(json, "$.counts.contractsrc['partners.company_name']")).isEqualTo(1);
+        assertThat(JsonPath.<Integer>read(json, "$.counts.contractsrc['topic_suggestions.company_name']"))
+                .isEqualTo(1);
+        assertThat(json).doesNotContain("contracttgt");
+        contractCall(post(path).contentType(MediaType.APPLICATION_JSON).content("{\"keys\": []}"), "POST", path,
+                Map.of(), "{\"keys\": []}", 400);
     }
 }

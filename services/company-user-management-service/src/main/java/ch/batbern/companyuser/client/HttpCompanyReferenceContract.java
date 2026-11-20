@@ -14,7 +14,9 @@ import org.springframework.web.client.RestTemplate;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
@@ -32,6 +34,9 @@ public class HttpCompanyReferenceContract implements CompanyReferenceContract {
     private static final Duration READ_TIMEOUT = Duration.ofSeconds(30);
     private static final String PREVIEW = "/internal/company-references/preview?source={source}&target={target}";
     private static final String MERGE = "/internal/company-references/merge";
+    private static final String COUNTS = "/internal/company-references/counts";
+    /** The most keys one counts call carries (the contract's {@code maxItems}). */
+    private static final int COUNT_KEYS_PER_CALL = 2000;
 
     private final RestTemplate restTemplate;
     private final ContractCalls calls;
@@ -96,6 +101,27 @@ public class HttpCompanyReferenceContract implements CompanyReferenceContract {
             }
         }
         return results;
+    }
+
+    @Override
+    public Map<String, Map<String, Integer>> counts(Collection<String> keys) {
+        if (keys.isEmpty()) {
+            return new LinkedHashMap<>();
+        }
+        requireHolders();
+        List<String> distinct = new ArrayList<>(new LinkedHashSet<>(keys));
+        Map<String, Map<String, Integer>> sums = new LinkedHashMap<>();
+        for (int from = 0; from < distinct.size(); from += COUNT_KEYS_PER_CALL) {
+            Map<String, Object> request = Map.of("keys",
+                    distinct.subList(from, Math.min(distinct.size(), from + COUNT_KEYS_PER_CALL)));
+            for (String answer : call(() -> calls.postForAnswers(COUNTS, request, String.class))) {
+                json(answer).path("counts").properties().forEach(key -> {
+                    Map<String, Integer> sum = sums.computeIfAbsent(key.getKey(), k -> new LinkedHashMap<>());
+                    counts(key.getValue()).forEach((column, n) -> sum.merge(column, n, Integer::sum));
+                });
+            }
+        }
+        return sums;
     }
 
     private Result result(String answer) {

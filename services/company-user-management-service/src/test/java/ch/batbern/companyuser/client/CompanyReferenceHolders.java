@@ -18,6 +18,7 @@ public final class CompanyReferenceHolders {
     public static final String HOLDER_B = "company-holder-b.invalid";
     public static final String PREVIEW = "/internal/company-references/preview";
     public static final String MERGE = "/internal/company-references/merge";
+    public static final String COUNTS = "/internal/company-references/counts";
 
     private CompanyReferenceHolders() {
     }
