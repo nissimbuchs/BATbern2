@@ -134,6 +134,34 @@ class EventAttendanceSummaryIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$[0].companyAttendees").value(3)); // Only 3 confirmed GoogleZH
     }
 
+    // Review of #824: a cancelled event took place for nobody; listed with 0 attendees it lowered the
+    // partner's averages and showed in the XLSX export.
+    @Test
+    @DisplayName("should leave a cancelled event out of the attendance summary")
+    void should_excludeCancelledEvent() throws Exception {
+        eventRepository.save(Event.builder()
+                .eventCode("BATbern143")
+                .title("BATbern cancelled")
+                .eventNumber(143)
+                .date(EVENT_2024.plusSeconds(86400 * 30L))
+                .registrationDeadline(EVENT_2024)
+                .venueName("Venue A")
+                .venueAddress("Bern")
+                .venueCapacity(200)
+                .organizerUsername("organizer")
+                .currentAttendeeCount(0)
+                .eventType(EventType.EVENING)
+                .workflowState(EventWorkflowState.CANCELLED)
+                .build());
+
+        mockMvc.perform(get(PATH)
+                        .param("companyName", COMPANY_GOOGLE)
+                        .param("fromYear", "2024"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(1)))
+                .andExpect(jsonPath("$[0].eventCode").value("BATbern142"));
+    }
+
     // ── AC2: fromYear filtering ──────────────────────────────────────────────
 
     @Test
