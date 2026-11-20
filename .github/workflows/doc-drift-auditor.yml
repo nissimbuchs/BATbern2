@@ -6,10 +6,16 @@ on:
   workflow_dispatch:
     inputs:
       since:
-        description: 'How far back to scan (e.g. "7 days ago", "14 days ago")'
+        description: 'Window start, ISO UTC (e.g. 2026-11-02T00:00:00Z). Empty: previous Monday 00:00 UTC'
         required: false
-        default: '7 days ago'
+        default: ''
+      until:
+        description: 'Window end, ISO UTC, exclusive. Empty: this Monday 00:00 UTC'
+        required: false
+        default: ''
 
+# The window is fixed (previous Monday 00:00 UTC to this Monday 00:00 UTC), so a delayed
+# scheduled start neither skips nor repeats commits (#1214). Rules: .github/scripts/doc_drift.py.
 jobs:
   audit:
     runs-on: ubuntu-latest
@@ -29,36 +35,47 @@ jobs:
       - name: Run audit
         id: audit
         env:
-          SINCE: ${{ github.event.inputs.since || '7 days ago' }}
+          SINCE: ${{ github.event.inputs.since }}
+          UNTIL: ${{ github.event.inputs.until }}
           MAPPINGS_FILE: .github/doc-drift-mappings.yml
+          GAPS_FILE: ${{ runner.temp }}/doc-drift-gaps.txt
         run: |
-          chmod +x .github/scripts/doc-drift-weekly-audit.sh
-          .github/scripts/doc-drift-weekly-audit.sh
-          GAPS_COUNT=$(tail -1 /tmp/doc-drift-gaps.txt)
-          echo "gaps_count=$GAPS_COUNT" >> $GITHUB_OUTPUT
+          set -o pipefail
+          bash .github/scripts/doc-drift-weekly-audit.sh | tee "$RUNNER_TEMP/audit.log"
+          {
+            echo "gaps_count=$(tail -1 "$GAPS_FILE")"
+            echo "since=$(sed -n 's/^WINDOW_SINCE=//p' "$RUNNER_TEMP/audit.log")"
+            echo "until=$(sed -n 's/^WINDOW_UNTIL=//p' "$RUNNER_TEMP/audit.log")"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Build issue body
         if: steps.audit.outputs.gaps_count != '0'
+        env:
+          SINCE: ${{ steps.audit.outputs.since }}
+          UNTIL: ${{ steps.audit.outputs.until }}
         run: |
           python3 .github/scripts/build-issue-body.py \
-            --gaps-file /tmp/doc-drift-gaps.txt \
-            --since "${{ github.event.inputs.since || '7 days ago' }}" \
-            --date "$(date +%Y-%m-%d)" \
-            > /tmp/issue-body.md
+            --gaps-file "$RUNNER_TEMP/doc-drift-gaps.txt" \
+            --since "$SINCE" \
+            --until "$UNTIL" \
+            > "$RUNNER_TEMP/issue-body.md"
           echo "--- Issue body preview ---"
-          cat /tmp/issue-body.md
+          cat "$RUNNER_TEMP/issue-body.md"
 
+      # The doc-drift label marks these reports. Since the resolver was retired (#1214),
+      # the label triggers nothing.
       - name: Create GitHub Issue
         if: steps.audit.outputs.gaps_count != '0'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SINCE: ${{ steps.audit.outputs.since }}
         run: |
           gh issue create \
-            --title "📋 Doc Drift Report — week of $(date +%Y-%m-%d)" \
-            --body-file /tmp/issue-body.md \
+            --title "Doc drift report, week of ${SINCE%%T*}" \
+            --body-file "$RUNNER_TEMP/issue-body.md" \
             --label "doc-drift" \
             --assignee "${{ github.repository_owner }}"
 
       - name: All clear
         if: steps.audit.outputs.gaps_count == '0'
-        run: echo "✅ No doc drift detected this week."
+        run: echo "No doc drift detected in the window."

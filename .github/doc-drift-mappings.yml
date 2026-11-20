@@ -1,8 +1,17 @@
 # Doc Drift Mappings
-# Maps source path patterns to documentation files that should be reviewed
-# when those paths are modified in a feat: or fix: commit.
-# Used by both the weekly auditor (doc-drift-auditor.yml) and PR check (claude-code-review.yml).
-# Extend this file as new services or docs are added.
+# Maps source path patterns to the documentation that should be reviewed when those paths change.
+# Used by the weekly auditor (doc-drift-auditor.yml) and the PR check (claude-code-review.yml),
+# both through .github/scripts/doc_drift.py; tests: .github/scripts/test-doc-drift.sh.
+#
+# Rules (#1214):
+# - A commit or PR is exempt only when at least one doc mapped to its changed source paths
+#   changed. docs/user-guide/appendix/changelog.md and docs/versions.json never count.
+# - docs/api/ is source (OpenAPI specs), except its Markdown files. CLAUDE.md and any README.md
+#   are docs and may be targets.
+# - source_pattern: a plain value is a path prefix; a value with * ? or [ is an fnmatch pattern
+#   over the whole path, where * also crosses "/".
+# - docs: a value ending in "/" covers every file under it, anything else is one file.
+#   Every target must exist (the test checks it).
 
 mappings:
 
@@ -14,7 +23,24 @@ mappings:
       - "docs/prd/epic-5-enhanced-organizer-workflows.md"
       - "docs/user-guide/workflow/"
       - "docs/user-guide/entity-management/events.md"
-      - "docs/user-guide/appendix/changelog.md"
+
+  # Alias forwarding and the Mail Center (#1214): operated through the runbooks, described in 06d.
+  - source_pattern: "services/event-management-service/src/main/java/ch/batbern/events/forwarding/"
+    docs:
+      - "docs/operations/runbooks.md"
+      - "docs/architecture/06d-notification-system.md"
+  - source_pattern: "services/event-management-service/src/main/java/ch/batbern/events/mailcenter/"
+    docs:
+      - "docs/operations/runbooks.md"
+      - "docs/architecture/06d-notification-system.md"
+
+  # Speaker workflow (#1214): it lives in EMS since ADR-014, spread over the layered packages,
+  # so it is matched by file name.
+  - source_pattern: "services/event-management-service/src/main/java/*Speaker*"
+    docs:
+      - "docs/architecture/06d-notification-system.md"
+      - "docs/user-guide/speaker-portal/"
+      - "docs/prd/epic-6-speaker-portal-support.md"
 
   # ── AI / LLM surface (Story 15.9) ───────────────────────────────────────────
   # AI prompt-construction & content-generation services map to the OWASP-LLM checklist.
@@ -47,7 +73,6 @@ mappings:
       - "docs/architecture/06-backend-architecture.md"
       - "docs/user-guide/entity-management/companies.md"
       - "docs/user-guide/entity-management/users.md"
-      - "docs/user-guide/appendix/changelog.md"
 
   # ── Partner Coordination Service ────────────────────────────────────────────
   - source_pattern: "services/partner-coordination-service/"
@@ -56,13 +81,13 @@ mappings:
       - "docs/architecture/06-backend-architecture.md"
       - "docs/user-guide/partner-portal/"
       - "docs/user-guide/features/analytics.md"
-      - "docs/user-guide/appendix/changelog.md"
 
   # ── API Gateway ─────────────────────────────────────────────────────────────
   - source_pattern: "api-gateway/"
     docs:
       - "docs/architecture/06-backend-architecture.md"
-      - "docs/api/"
+      - "docs/architecture/08-operations-security.md"
+      - "docs/api/README.md"
       # Story 12.2: the gateway now hosts the canonical is_active gate (AccountActiveFilter),
       # whose lifecycle/enforcement semantics live in 06b — flag gateway auth changes against it.
       - "docs/architecture/06b-user-lifecycle-sync.md"
@@ -72,11 +97,65 @@ mappings:
     docs:
       - "docs/architecture/08-operations-security.md"
       - "docs/architecture/06-backend-architecture.md"
+      - "docs/architecture/02-infrastructure-deployment.md"
 
-  # ── Deploy workflow (#1144) ──────────────────────────────────────────────────
-  - source_pattern: ".github/workflows/deploy-staging.yml"
+  # Monitoring stack and alarm constructs (#1214): what an alarm means and what to do lives in the runbooks.
+  - source_pattern: "infrastructure/lib/stacks/monitoring-stack.ts"
+    docs:
+      - "docs/operations/runbooks.md"
+  - source_pattern: "infrastructure/lib/constructs/*alarm*"
+    docs:
+      - "docs/operations/runbooks.md"
+  - source_pattern: "infrastructure/lib/constructs/monitoring-widgets-construct.ts"
+    docs:
+      - "docs/operations/runbooks.md"
+  - source_pattern: "infrastructure/lib/constructs/github-issues-construct.ts"
+    docs:
+      - "docs/operations/runbooks.md"
+
+  # ── Security configuration (#1214) ──────────────────────────────────────────
+  - source_pattern: "*/src/main/java/*/SecurityConfig.java"
+    docs:
+      - "docs/architecture/08-operations-security.md"
+
+  # ── CI/CD, build and hooks (#1214) ──────────────────────────────────────────
+  - source_pattern: ".github/workflows/"
     docs:
       - "docs/deployment/cicd-pipeline-guide.md"
+      - "docs/guides/developer-workflow.md"
+      - "CLAUDE.md"
+  - source_pattern: "Makefile"
+    docs:
+      - "docs/deployment/cicd-pipeline-guide.md"
+      - "docs/guides/developer-workflow.md"
+      - "CLAUDE.md"
+  - source_pattern: ".githooks/"
+    docs:
+      - "docs/deployment/cicd-pipeline-guide.md"
+      - "docs/guides/developer-workflow.md"
+      - "CLAUDE.md"
+
+  # ── Local development (#1214) ───────────────────────────────────────────────
+  - source_pattern: "scripts/dev/"
+    docs:
+      - "docs/guides/local-development-setup.md"
+      - "docs/deployment/native-execution.md"
+  - source_pattern: "docker-compose*"
+    docs:
+      - "docs/guides/local-development-setup.md"
+      - "docs/deployment/native-execution.md"
+  - source_pattern: ".env.example"
+    docs:
+      - "docs/guides/local-development-setup.md"
+      - "docs/deployment/native-execution.md"
+
+  # ── API contract tests and the watch app (#1214) ────────────────────────────
+  - source_pattern: "bruno-tests/"
+    docs:
+      - "docs/testing/e2e-testing-guide.md"
+  - source_pattern: "apps/BATbern-watch/"
+    docs:
+      - "docs/watch-app/architecture.md"
 
   # ── Shared Kernel ────────────────────────────────────────────────────────────
   - source_pattern: "shared-kernel/"
@@ -240,13 +319,22 @@ mappings:
       - "docs/user-guide/partner-portal/"
       - "docs/prd/epic-8-partner-coordination.md"
 
-  - source_pattern: "web-frontend/src/components/event"
+  # The organizer event and admin components moved under components/organizer/; the former
+  # components/event and components/admin patterns matched nothing (#1214).
+  - source_pattern: "web-frontend/src/components/organizer/EventManagement/"
     docs:
       - "docs/user-guide/workflow/"
       - "docs/user-guide/entity-management/events.md"
+  - source_pattern: "web-frontend/src/components/organizer/EventPage/"
+    docs:
+      - "docs/user-guide/workflow/"
+      - "docs/user-guide/entity-management/events.md"
+
+  - source_pattern: "web-frontend/src/components/public/"
+    docs:
       - "docs/prd/epic-4-public-website-content-discovery.md"
 
-  - source_pattern: "web-frontend/src/components/admin"
+  - source_pattern: "web-frontend/src/components/organizer/Admin/"
     docs:
       - "docs/user-guide/administration/"
 
@@ -255,9 +343,10 @@ mappings:
       - "docs/user-guide/features/"
 
   # ── OpenAPI Specs ─────────────────────────────────────────────────────────
-  # Changes to API specs are themselves doc changes — flag PRD and user-guide
+  # docs/api/ is source (#1214): a spec change is reviewed against the spec index.
   - source_pattern: "docs/api/"
     docs:
+      - "docs/api/README.md"
       - "docs/prd-enhanced.md"
 
 # ── Commit type prefixes that are ALWAYS skipped ────────────────────────────
@@ -270,12 +359,11 @@ skip_commit_types:
   - "build"
   - "ci"
 
-# Only these types are audited
-audit_commit_types:
-  - "feat"
-  - "fix"
+# Every other type is audited, including perf and non-conventional subjects ("unknown").
 
 # ── Commit scopes that are ALWAYS skipped ────────────────────────────────────
+# A subject with several scopes is skipped only when every scope is listed.
+# auth and security are audited (#1214): their paths map to 08-operations-security.md.
 # Scopes that are never business-rule changes — infra wiring, test fixes,
 # build tooling, UI polish, code-review cleanup, etc.
 skip_commit_scopes:
@@ -287,7 +375,5 @@ skip_commit_scopes:
   - "review"
   - "presentation"
   - "ci"
-  - "security"   # OWASP/ZAP remediations — technical, not user-facing behaviour
-  - "auth"       # auth wiring fixes — rarely need PRD/user-guide updates
   - "blob-selector"  # UI animation/interaction — not a business rule
   - "watch"          # WebSocket resilience — technical fix
