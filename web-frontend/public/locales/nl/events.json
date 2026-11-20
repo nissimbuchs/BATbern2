@@ -1150,7 +1150,12 @@
       "uploadTitle": "Sessiemateriaal uploaden",
       "uploadDescription": "Upload presentaties, documenten of video's (max 100 MB per bestand, tot 10 bestanden)",
       "existingTitle": "Bestaande materialen",
-      "downloadError": "Downloaden van materiaal mislukt"
+      "downloadError": "Downloaden van materiaal mislukt",
+      "delete": "Materiaal verwijderen",
+      "deleteError": "Materiaal kon niet worden verwijderd",
+      "publiclyVisible": "Openbaar zichtbaar na het evenement",
+      "publicHint": "Alleen bestanden die als openbaar zichtbaar zijn gemarkeerd, verschijnen na het evenement op de openbare evenementpagina. We raden aan een PDF te publiceren en PowerPoint- en andere bronbestanden intern te houden.",
+      "visibilityError": "De zichtbaarheid van dit bestand kon niet worden gewijzigd."
     },
     "errors": {
       "titleRequired": "Titel is verplicht",

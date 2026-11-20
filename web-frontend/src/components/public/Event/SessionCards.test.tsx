@@ -8,7 +8,7 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SessionCards } from './SessionCards';
 import type { SessionUI, SessionMaterial } from '@/types/event.types';
-import { aSession, aSessionSpeaker } from '@/test/fixtures';
+import { aSession, aSessionSpeaker, aSessionMaterial } from '@/test/fixtures';
 
 // Mock API clients
 vi.mock('@/services/companyApiClient', () => ({
@@ -290,7 +290,7 @@ describe('SessionCards', () => {
   });
 
   it('should_showMaterials_when_showMaterialsTrue', () => {
-    const material: SessionMaterial = {
+    const material: SessionMaterial = aSessionMaterial({
       id: 'mat-1',
       uploadId: 'up-1',
       cloudFrontUrl: 'https://cdn.example.com/slides.pdf',
@@ -299,7 +299,7 @@ describe('SessionCards', () => {
       materialType: 'PRESENTATION',
       uploadedBy: 'john.doe',
       createdAt: '2025-05-15T10:00:00Z',
-    };
+    });
 
     const sessionsWithMaterials: SessionUI[] = [{ ...mockSessions[0], materials: [material] }];
 
@@ -311,11 +311,33 @@ describe('SessionCards', () => {
     expect(screen.getByText('2.0 MB')).toBeInTheDocument();
   });
 
+  // The backend sends only public materials; a session whose files are all internal has none.
+  it('should_showMaterialsOnlyForSessionsWithMaterials_when_someHaveNone', () => {
+    const sessions: SessionUI[] = [
+      {
+        ...mockSessions[0],
+        sessionSlug: 'with',
+        title: 'With slides',
+        materials: [aSessionMaterial()],
+      },
+      { ...mockSessions[0], sessionSlug: 'empty', title: 'Internal only', materials: [] },
+      { ...mockSessions[0], sessionSlug: 'none', title: 'No list', materials: undefined },
+    ];
+
+    renderWithProviders(
+      <SessionCards sessions={sessions} showMaterials={true} eventCode="BATbern142" />
+    );
+
+    expect(screen.getAllByTestId('session-card')).toHaveLength(3);
+    expect(screen.getAllByTestId('session-materials')).toHaveLength(1);
+    expect(screen.getByText('Folien Brünnimann.pdf')).toBeInTheDocument();
+  });
+
   // #1113: a long file name must wrap inside the card instead of widening it (mobile layout).
   it('should_wrapLongMaterialFileName_when_fileNameHasNoBreaks', () => {
     const longName =
       'BATbern57_Praesentation_Digitale_Souveraenitaet_in_der_Bundesverwaltung_final_v3.pdf';
-    const material: SessionMaterial = {
+    const material: SessionMaterial = aSessionMaterial({
       id: 'mat-long',
       uploadId: 'up-long',
       cloudFrontUrl: 'https://cdn.example.com/long.pdf',
@@ -324,7 +346,7 @@ describe('SessionCards', () => {
       materialType: 'PRESENTATION',
       uploadedBy: 'john.doe',
       createdAt: '2025-05-15T10:00:00Z',
-    };
+    });
 
     renderWithProviders(
       <SessionCards
@@ -340,7 +362,7 @@ describe('SessionCards', () => {
   });
 
   it('should_hideMaterials_when_showMaterialsFalse', () => {
-    const material: SessionMaterial = {
+    const material: SessionMaterial = aSessionMaterial({
       id: 'mat-1',
       uploadId: 'up-1',
       cloudFrontUrl: 'https://cdn.example.com/slides.pdf',
@@ -349,7 +371,7 @@ describe('SessionCards', () => {
       materialType: 'PRESENTATION',
       uploadedBy: 'john.doe',
       createdAt: '2025-05-15T10:00:00Z',
-    };
+    });
 
     const sessionsWithMaterials: SessionUI[] = [{ ...mockSessions[0], materials: [material] }];
 

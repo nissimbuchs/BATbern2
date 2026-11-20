@@ -167,7 +167,13 @@ describeLocal('Organizer · Session materials upload (17.11d)', () => {
 
     const listed = await api(`/events/${eventCode}/sessions/${sessionSlug}/materials`);
     const { materials } = (await listed.json()) as {
-      materials: Array<{ uploadId: string; fileName: string; materialType: string; s3Key: string }>;
+      materials: Array<{
+        uploadId: string;
+        fileName: string;
+        materialType: string;
+        s3Key: string;
+        publiclyVisible: boolean;
+      }>;
     };
     expect(materials).toEqual([
       expect.objectContaining({
@@ -175,6 +181,7 @@ describeLocal('Organizer · Session materials upload (17.11d)', () => {
         fileName,
         materialType: 'DOCUMENT',
         s3Key: `materials/events/${eventCode}/sessions/${sessionSlug}/file-${uploadId}.pdf`,
+        publiclyVisible: true, // a PDF is pre-ticked in the editor and sent with the association
       }),
     ]);
   });

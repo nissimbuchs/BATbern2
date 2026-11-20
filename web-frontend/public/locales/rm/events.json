@@ -1150,7 +1150,12 @@
       "uploadTitle": "Chargiar materialas da sessiun",
       "uploadDescription": "Chargiar presentaziuns, documents u videos (max 100MB per fichier, fin a 10 fichiers)",
       "existingTitle": "Materialas existentas",
-      "downloadError": "Telechargiar material fallì"
+      "downloadError": "Telechargiar material fallì",
+      "delete": "Stizzar il material",
+      "deleteError": "Betg pussaivel da stizzar il material",
+      "publiclyVisible": "Visibel publicamain suenter l'eveniment",
+      "publicHint": "Mo datotecas marcadas sco publicamain visiblas cumparan suenter l'eveniment sin la pagina publica da l'eveniment. Nus recumandain da publitgar in PDF e da tegnair PowerPoint ed autras datotecas da funtauna intern.",
+      "visibilityError": "Betg pussaivel da midar la visibilitad da questa datoteca."
     },
     "errors": {
       "titleRequired": "Il titel è obligatori",

@@ -18,7 +18,7 @@ import { SessionEditModal, type SessionUpdateData } from '../SessionEditModal';
 type SaveFn = (sessionSlug: string, updates: SessionUpdateData) => Promise<void>;
 import type { SessionUI } from '@/types/event.types';
 import { AxiosError } from 'axios';
-import { aSession } from '@/test/fixtures';
+import { aSession, aSessionMaterial } from '@/test/fixtures';
 import { http, HttpResponse } from 'msw';
 import { api } from '@/test/msw/api';
 import { server } from '@/test/msw/server';
@@ -36,7 +36,7 @@ function uploadAnswers(...uploadIds: string[]) {
         uploadId,
         uploadUrl: `https://bucket.example/materials/temp/${uploadId}/file`,
         expiresAt: '2026-11-13T10:15:00Z',
-        requiredHeaders: { 'Content-Type': body.contentType },
+        requiredHeaders: { 'Content-Type': body?.contentType ?? '' },
       };
     },
     { status: 201 }
@@ -829,9 +829,73 @@ describe('SessionEditModal - Materials Tab (Story 5.9 - AC1)', () => {
       eventCode: 'BATbern57',
       sessionSlug: 'test-session',
     });
-    expect(api.calls('associateMaterials')[0].body.materials.map((m) => m.uploadId)).toEqual([
-      'up-7',
-    ]);
+    // A PDF is public unless the organizer unticks it.
+    expect(api.calls('associateMaterials')[0].body).toEqual({
+      materials: [{ uploadId: 'up-7', publiclyVisible: true }],
+    });
+  });
+
+  it('should_presetVisibilityByType_when_filesUploaded', async () => {
+    uploadAnswers('up-pdf', 'up-pptx');
+    const user = userEvent.setup();
+    render(
+      <SessionEditModal
+        open={true}
+        onClose={vi.fn()}
+        session={mockSession}
+        eventDate="2024-12-15"
+        onSave={mockOnSave}
+      />
+    );
+    await user.click(screen.getByRole('tab', { name: /materials/i }));
+    await uploadFile(user, 'Folien Müller.pdf', 'application/pdf');
+    await uploadFile(user, 'Folien Müller.pptx', PPTX);
+
+    expect(
+      await screen.findByRole('checkbox', {
+        name: 'Publicly visible after the event: Folien Müller.pdf',
+      })
+    ).toBeChecked();
+    expect(
+      screen.getByRole('checkbox', { name: 'Publicly visible after the event: Folien Müller.pptx' })
+    ).not.toBeChecked();
+    expect(screen.getByText(/we recommend publishing a pdf/i)).toBeInTheDocument();
+  });
+
+  it('should_sendChosenVisibility_when_savedAfterTicking', async () => {
+    uploadAnswers('up-pdf', 'up-pptx');
+    api.on('associateMaterials', () => ({ materials: [] }), { status: 201 });
+    const user = userEvent.setup();
+    render(
+      <SessionEditModal
+        open={true}
+        onClose={vi.fn()}
+        session={mockSession}
+        eventDate="2024-12-15"
+        onSave={mockOnSave}
+      />
+    );
+    await user.click(screen.getByRole('tab', { name: /materials/i }));
+    await uploadFile(user, 'Folien Müller.pdf', 'application/pdf');
+    await uploadFile(user, 'Folien Müller.pptx', PPTX);
+
+    await user.click(
+      await screen.findByRole('checkbox', {
+        name: 'Publicly visible after the event: Folien Müller.pdf',
+      })
+    );
+    await user.click(
+      screen.getByRole('checkbox', { name: 'Publicly visible after the event: Folien Müller.pptx' })
+    );
+    await user.click(screen.getByRole('button', { name: /save/i }));
+
+    await waitFor(() => expect(api.calls('associateMaterials')).toHaveLength(1));
+    expect(api.calls('associateMaterials')[0].body).toEqual({
+      materials: [
+        { uploadId: 'up-pdf', publiclyVisible: false },
+        { uploadId: 'up-pptx', publiclyVisible: true },
+      ],
+    });
   });
 
   it('should_notAttachFile_when_removedBeforeSave', async () => {
@@ -863,7 +927,7 @@ describe('SessionEditModal - Materials Tab (Story 5.9 - AC1)', () => {
     const mockSessionWithMaterials: SessionUI = {
       ...mockSession,
       materials: [
-        {
+        aSessionMaterial({
           id: 'mat-1',
           uploadId: 'upload-1',
           fileName: 'presentation.pptx',
@@ -872,8 +936,8 @@ describe('SessionEditModal - Materials Tab (Story 5.9 - AC1)', () => {
           cloudFrontUrl: 'https://cdn.batbern.ch/materials/presentation.pptx',
           uploadedBy: 'john.doe',
           createdAt: '2024-01-15T10:00:00Z',
-        },
-        {
+        }),
+        aSessionMaterial({
           id: 'mat-2',
           uploadId: 'upload-2',
           fileName: 'document.pdf',
@@ -882,7 +946,7 @@ describe('SessionEditModal - Materials Tab (Story 5.9 - AC1)', () => {
           cloudFrontUrl: 'https://cdn.batbern.ch/materials/document.pdf',
           uploadedBy: 'john.doe',
           createdAt: '2024-01-15T10:05:00Z',
-        },
+        }),
       ],
     };
 
@@ -920,7 +984,7 @@ describe('SessionEditModal - Delete Material', () => {
     slotNumber: 1,
     materialsStatus: 'COMPLETE',
     materials: [
-      {
+      aSessionMaterial({
         id: 'mat-1',
         uploadId: 'upload-1',
         fileName: 'slides.pptx',
@@ -929,7 +993,7 @@ describe('SessionEditModal - Delete Material', () => {
         cloudFrontUrl: 'https://cdn.batbern.ch/materials/slides.pptx',
         uploadedBy: 'john.doe',
         createdAt: '2024-01-15T10:00:00Z',
-      },
+      }),
     ],
   };
 
@@ -1021,6 +1085,109 @@ describe('SessionEditModal - Delete Material', () => {
       sessionSlug: 'test-session',
       materialId: 'mat-1',
     });
+  });
+});
+
+describe('SessionEditModal - Visibility of existing materials', () => {
+  const session: SessionUI = {
+    ...aSession(),
+    sessionSlug: 'test-session',
+    eventCode: 'BATbern99',
+    materialsStatus: 'COMPLETE',
+    materials: [
+      aSessionMaterial({ id: 'mat-pdf', fileName: 'Folien.pdf', publiclyVisible: true }),
+      aSessionMaterial({
+        id: 'mat-pptx',
+        fileName: 'Folien.pptx',
+        fileExtension: 'pptx',
+        mimeType: PPTX,
+        publiclyVisible: false,
+      }),
+    ],
+  };
+
+  const openMaterials = async () => {
+    const user = userEvent.setup();
+    render(
+      <SessionEditModal
+        open={true}
+        onClose={vi.fn()}
+        session={session}
+        eventDate="2024-12-15"
+        onSave={vi.fn().mockResolvedValue(undefined)}
+      />
+    );
+    await user.click(screen.getByRole('tab', { name: /materials/i }));
+    return user;
+  };
+
+  it('should_showStoredVisibility_when_materialsListed', async () => {
+    await openMaterials();
+
+    expect(
+      screen.getByRole('checkbox', { name: 'Publicly visible after the event: Folien.pdf' })
+    ).toBeChecked();
+    expect(
+      screen.getByRole('checkbox', { name: 'Publicly visible after the event: Folien.pptx' })
+    ).not.toBeChecked();
+  });
+
+  it('should_patchMaterial_when_visibilityTicked', async () => {
+    api.on('updateSessionMaterial', ({ body }) =>
+      aSessionMaterial({
+        id: 'mat-pptx',
+        fileName: 'Folien.pptx',
+        publiclyVisible: body?.publiclyVisible ?? false,
+      })
+    );
+    const user = await openMaterials();
+    const pptx = screen.getByRole('checkbox', {
+      name: 'Publicly visible after the event: Folien.pptx',
+    });
+
+    await user.click(pptx);
+
+    await waitFor(() => expect(pptx).toBeChecked());
+    expect(api.calls('updateSessionMaterial')).toHaveLength(1);
+    expect(api.calls('updateSessionMaterial')[0].params).toEqual({
+      eventCode: 'BATbern99',
+      sessionSlug: 'test-session',
+      materialId: 'mat-pptx',
+    });
+    expect(api.calls('updateSessionMaterial')[0].body).toEqual({ publiclyVisible: true });
+  });
+
+  it('should_keepStoredVisibilityAndShowError_when_patchFails', async () => {
+    api.on('updateSessionMaterial', () =>
+      HttpResponse.json(
+        { status: 500, error: 'Internal Server Error', message: 'Material is locked' },
+        { status: 500 }
+      )
+    );
+    const user = await openMaterials();
+    const pdf = screen.getByRole('checkbox', {
+      name: 'Publicly visible after the event: Folien.pdf',
+    });
+
+    await user.click(pdf);
+
+    expect(await screen.findByText('Material is locked')).toBeInTheDocument();
+    expect(pdf).toBeChecked();
+  });
+
+  it('should_showReadableError_when_patchIsForbidden', async () => {
+    api.on('updateSessionMaterial', () =>
+      HttpResponse.json({ status: 403, message: 'Forbidden' }, { status: 403 })
+    );
+    const user = await openMaterials();
+
+    await user.click(
+      screen.getByRole('checkbox', { name: 'Publicly visible after the event: Folien.pptx' })
+    );
+
+    expect(
+      await screen.findByText('Could not change the visibility of this file.')
+    ).toBeInTheDocument();
   });
 });
 

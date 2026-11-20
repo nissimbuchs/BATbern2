@@ -1150,7 +1150,12 @@
       "uploadTitle": "Carica materiali sessione",
       "uploadDescription": "Carica presentazioni, documenti o video (max 100MB per file, fino a 10 file)",
       "existingTitle": "Materiali esistenti",
-      "downloadError": "Download materiale fallito"
+      "downloadError": "Download materiale fallito",
+      "delete": "Elimina materiale",
+      "deleteError": "Impossibile eliminare il materiale",
+      "publiclyVisible": "Visibile pubblicamente dopo l'evento",
+      "publicHint": "Solo i file contrassegnati come visibili pubblicamente compaiono sulla pagina pubblica dell'evento dopo l'evento. Consigliamo di pubblicare un PDF e di mantenere interni PowerPoint e gli altri file sorgente.",
+      "visibilityError": "Impossibile modificare la visibilità di questo file."
     },
     "errors": {
       "titleRequired": "Il titolo è obbligatorio",

@@ -1150,7 +1150,12 @@
       "uploadTitle": "セッション資料をアップロード",
       "uploadDescription": "プレゼンテーション、ドキュメント、または動画をアップロードしてください（ファイルあたり最大100MB、最大10ファイル）",
       "existingTitle": "既存の資料",
-      "downloadError": "資料のダウンロードに失敗しました"
+      "downloadError": "資料のダウンロードに失敗しました",
+      "delete": "資料を削除",
+      "deleteError": "資料を削除できませんでした",
+      "publiclyVisible": "イベント後に一般公開",
+      "publicHint": "一般公開とマークされたファイルのみ、イベント後に公開イベントページに表示されます。PDFを公開し、PowerPointなどの元ファイルは内部に留めることをお勧めします。",
+      "visibilityError": "このファイルの公開設定を変更できませんでした。"
     },
     "errors": {
       "titleRequired": "タイトルは必須です",

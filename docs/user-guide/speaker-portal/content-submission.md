@@ -69,6 +69,8 @@ The submission form has three main sections:
 
 Files are uploaded directly to S3 via presigned URL — they are never sent through the backend. Since Story 17.11d the upload runs on the shared upload flow (`POST /api/v1/uploads/session-material`, purpose `session-material`, with the speaker's own session as target `{eventCode, sessionSlug}`); the confirm attaches the file to the session as a PRESENTATION under its original file name. The speaker's Cognito Bearer token authorises the request, and a session the speaker is not on is refused (403). A progress bar is shown during upload.
 
+**Publicly visible after the event (#1260).** Below the upload the portal lists every file of the speaker's session with a checkbox "Publicly visible after the event" and the hint that a PDF is the recommended public copy. A new PDF goes up ticked, any other file (PowerPoint, Keynote) unticked; the speaker can change either at once, which saves immediately (`PATCH …/sessions/{sessionSlug}/materials/{materialId}`). Only ticked files appear on the public event page and in the archive; the others stay with the organisers and the moderator. Upload a PDF for the public next to the PowerPoint for the moderator.
+
 ### 3 — Review & Submit
 
 The speaker reviews all entered details before submitting:

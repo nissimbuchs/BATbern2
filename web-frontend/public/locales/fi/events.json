@@ -1150,7 +1150,12 @@
       "uploadTitle": "Lataa istunnon materiaaleja",
       "uploadDescription": "Lataa esityksiä, asiakirjoja tai videoita (enintään 100 Mt per tiedosto, enintään 10 tiedostoa)",
       "existingTitle": "Olemassa olevat materiaalit",
-      "downloadError": "Materiaalin lataaminen epäonnistui"
+      "downloadError": "Materiaalin lataaminen epäonnistui",
+      "delete": "Poista materiaali",
+      "deleteError": "Materiaalin poistaminen epäonnistui",
+      "publiclyVisible": "Julkisesti näkyvissä tapahtuman jälkeen",
+      "publicHint": "Vain julkisiksi merkityt tiedostot näkyvät tapahtuman julkisella sivulla tapahtuman jälkeen. Suosittelemme julkaisemaan PDF-tiedoston ja pitämään PowerPoint- ja muut lähdetiedostot sisäisinä.",
+      "visibilityError": "Tämän tiedoston näkyvyyttä ei voitu muuttaa."
     },
     "errors": {
       "titleRequired": "Otsikko on pakollinen",

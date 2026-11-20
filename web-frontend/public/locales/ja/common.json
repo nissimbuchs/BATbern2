@@ -537,7 +537,12 @@
       "invalidFileType": "無効なファイル形式です。対応形式：PPTX、PDF、KEY",
       "fileTooLarge": "ファイルサイズは50MB未満にしてください",
       "acceptedFormats": "対応形式：PPTX、PDF、KEY（最大50MB）",
-      "uploadAria": "プレゼンテーションファイルをアップロード"
+      "uploadAria": "プレゼンテーションファイルをアップロード",
+      "yourFiles": "このセッションのファイル",
+      "publiclyVisible": "イベント後に一般公開",
+      "publicHint": "一般公開とマークされたファイルのみ、イベント後にイベントページで公開されます。公開用にはPDFをお勧めします。PowerPointは主催者と司会者のみが使用します。",
+      "visibilityError": "このファイルの公開設定を変更できませんでした。",
+      "listError": "ファイルを読み込めませんでした。"
     },
     "invitationResponse": {
       "invalidLink": "無効なリンク",

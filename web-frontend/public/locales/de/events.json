@@ -1164,7 +1164,10 @@
       "existingTitle": "Vorhandene Materialien",
       "downloadError": "Material konnte nicht heruntergeladen werden",
       "delete": "Material löschen",
-      "deleteError": "Material konnte nicht gelöscht werden"
+      "deleteError": "Material konnte nicht gelöscht werden",
+      "publiclyVisible": "Nach dem Anlass öffentlich sichtbar",
+      "publicHint": "Nur öffentlich sichtbare Dateien erscheinen nach dem Anlass auf der öffentlichen Eventseite. Wir empfehlen, ein PDF zu veröffentlichen und PowerPoint- und andere Quelldateien intern zu behalten.",
+      "visibilityError": "Die Sichtbarkeit dieser Datei konnte nicht geändert werden."
     },
     "errors": {
       "titleRequired": "Titel ist erforderlich",

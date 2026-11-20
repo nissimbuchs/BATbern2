@@ -1150,7 +1150,12 @@
       "uploadTitle": "Cargar materiales de la sesión",
       "uploadDescription": "Cargue presentaciones, documentos o vídeos (máx. 100 MB por archivo, hasta 10 archivos)",
       "existingTitle": "Materiales existentes",
-      "downloadError": "Error al descargar el material"
+      "downloadError": "Error al descargar el material",
+      "delete": "Eliminar material",
+      "deleteError": "No se pudo eliminar el material",
+      "publiclyVisible": "Visible públicamente después del evento",
+      "publicHint": "Solo los archivos marcados como visibles públicamente aparecen en la página pública del evento después del mismo. Recomendamos publicar un PDF y mantener PowerPoint y otros archivos fuente como internos.",
+      "visibilityError": "No se pudo cambiar la visibilidad de este archivo."
     },
     "errors": {
       "titleRequired": "El título es obligatorio",

@@ -75,6 +75,7 @@ interface FileUploadProps {
   multiple?: boolean; // Enable multiple file uploads
   maxFiles?: number; // Maximum number of files (default 10)
   uploadedFiles?: UploadedFile[]; // List of uploaded files (for multiple mode)
+  renderFileDetails?: (file: UploadedFile) => React.ReactNode; // Shown under each uploaded file
   uploadTarget: FileUploadTarget; // presign + confirm of the upload's purpose (required)
 }
 
@@ -114,6 +115,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   multiple = false,
   maxFiles = 10,
   uploadedFiles = [],
+  renderFileDetails,
   uploadTarget,
 }) => {
   const { t } = useTranslation('common');
@@ -255,7 +257,13 @@ export const FileUpload: React.FC<FileUploadProps> = ({
                   }
                 >
                   <ListItemIcon>{getFileTypeIcon(file.fileType)}</ListItemIcon>
-                  <ListItemText primary={file.fileName} secondary={formatFileSize(file.fileSize)} />
+                  <Box sx={{ minWidth: 0 }}>
+                    <ListItemText
+                      primary={file.fileName}
+                      secondary={formatFileSize(file.fileSize)}
+                    />
+                    {renderFileDetails?.(file)}
+                  </Box>
                 </ListItem>
               ))}
             </List>

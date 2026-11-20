@@ -1150,7 +1150,12 @@
       "uploadTitle": "Téléverser des documents de session",
       "uploadDescription": "Téléversez des présentations, documents ou vidéos (max 100 Mo par fichier, jusqu'à 10 fichiers)",
       "existingTitle": "Documents existants",
-      "downloadError": "Échec du téléchargement du document"
+      "downloadError": "Échec du téléchargement du document",
+      "delete": "Supprimer le document",
+      "deleteError": "Échec de la suppression du document",
+      "publiclyVisible": "Visible publiquement après l'événement",
+      "publicHint": "Seuls les fichiers marqués comme visibles publiquement apparaissent sur la page publique de l'événement après celui-ci. Nous recommandons de publier un PDF et de garder PowerPoint et les autres fichiers sources en interne.",
+      "visibilityError": "Impossible de modifier la visibilité de ce fichier."
     },
     "errors": {
       "titleRequired": "Le titre est requis",
