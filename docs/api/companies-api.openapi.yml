@@ -580,7 +580,9 @@ paths:
         **ADR-003**: Uses slug generation to create meaningful company name (ID) from display name.
 
         **Idempotency**: Safe to call multiple times - returns the existing company if the
-        generated name already exists.
+        generated name already exists. Else a company whose display name equals the typed one,
+        ignoring case, is returned (the oldest if several), whatever its key: "Die Post" finds the
+        company `post` instead of creating `diepost` (#1251).
 
         **Slug Generation**:
         - Converts display name to lowercase alphanumeric slug (max 12 chars)
@@ -614,7 +616,7 @@ paths:
                   displayName: Müller & Söhne AG
       responses:
         '200':
-          description: An existing company with this generated name is returned
+          description: An existing company with this generated name or display name is returned
           content:
             application/json:
               schema:

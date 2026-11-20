@@ -177,11 +177,14 @@ public class CompanyService {
         // "Test Co" → "testco" (max 12 chars, alphanumeric only)
         String companyName = slugService.generateCompanyName(displayName);
 
-        // The generated name is the key: an existing company with it is returned, never suffixed
-        Optional<Company> existing = companyRepository.findByName(companyName);
+        // The generated name is the key: an existing company with it is returned, never suffixed.
+        // Else a company people know by this display name (any case), whose key differs: "Die Post"
+        // slugs to "diepost" while the company is "post" (#1251); POST /companies calls it a duplicate.
+        Optional<Company> existing = companyRepository.findByName(companyName)
+                .or(() -> companyRepository.findFirstByDisplayNameIgnoreCaseOrderByCreatedAtAsc(displayName.strip()));
 
         if (existing.isPresent()) {
-            log.debug("Company found by name: {}", companyName);
+            log.debug("Company found for display name {}: {}", displayName, existing.get().getName());
             return new Resolved(existing.get(), false);
         }
 

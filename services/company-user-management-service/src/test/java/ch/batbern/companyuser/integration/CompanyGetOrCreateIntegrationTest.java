@@ -168,6 +168,26 @@ class CompanyGetOrCreateIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     @WithMockUser(username = CALLER, roles = {"ATTENDEE"})
+    @DisplayName("#1251: the display name of a company with another key, in other case: 200, that company, no duplicate")
+    void should_returnExistingCompany_when_displayNameMatchesCompanyWithOtherKey() throws Exception {
+        // the diepost/post pair of #1251: "Die Post" slugs to "diepost", the company's key is "post"
+        companyRepository.save(Company.builder()
+                .name("gocpost")
+                .displayName("GoC Die Post")
+                .isVerified(true)
+                .createdBy(CALLER)
+                .build());
+
+        mockMvc.perform(post(PATH).contentType(MediaType.APPLICATION_JSON).content(body("goc die post")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.name").value("gocpost"))
+                .andExpect(jsonPath("$.displayName").value("GoC Die Post"));
+
+        assertThat(countByName("gocdiepost")).isZero();
+    }
+
+    @Test
+    @WithMockUser(username = CALLER, roles = {"ATTENDEE"})
     @DisplayName("a blank display name: 400, nothing created")
     void should_return400_when_displayNameBlank() throws Exception {
         long before = companyRepository.count();

@@ -41,6 +41,9 @@ Only items that are not live yet. Everything else is listed under its release be
 
 ### Unreleased — after BATbern60
 
+**Fix — Registering with a company's full name no longer creates a second company (#1251)**:
+- ✅ When a person types the name of an existing company at registration (for example "Die Post" for the company with the short name `post`), the registration now uses that company, in any upper or lower case. Before, a new company `diepost` was created next to it.
+
 **Fix — A newsletter subscription becomes active only after its owner confirms it (#1288)**:
 - ✅ Subscribing on the website sends a mail (German, English when the page is in English) with a link; the newsletter starts only once the owner of the address follows it and clicks "Confirm subscription" on the page it opens (`/newsletter/confirm`). Until then the address is "Unconfirmed" and gets no newsletter. The mail says the link is valid for 7 days. Before, anyone could subscribe any address.
 - ✅ Subscribing an address again that waits for confirmation sends the same link once more. An address already subscribed is left as it is and gets no mail; the form shows "check your inbox" either way, so it no longer reveals whether an address is subscribed.

@@ -73,6 +73,12 @@ public interface CompanyRepository extends JpaRepository<Company, UUID>, JpaSpec
     boolean existsByDisplayNameIgnoreCase(String displayName);
 
     /**
+     * The company people know by this display name, ignoring case; the oldest when several share it.
+     * Get-or-create returns it when the typed name's slug is not a key (#1251).
+     */
+    Optional<Company> findFirstByDisplayNameIgnoreCaseOrderByCreatedAtAsc(String displayName);
+
+    /**
      * Find companies by verified status
      * AC6: Company verification filtering
      *
