@@ -14,6 +14,7 @@ import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -115,6 +116,23 @@ public class CompanyAliasService {
             aliasRepository.flush();
             clearSearchCacheAfterCommit();
         }
+    }
+
+    /**
+     * Every alias of the company {@code fromId} now leads to the company {@code toId}: a merge, before
+     * it deletes the source (the database would remove the source's aliases with it). The search cache
+     * is cleared after the commit.
+     *
+     * @return the aliases re-pointed
+     */
+    public List<CompanyAlias> repoint(UUID fromId, UUID toId) {
+        List<CompanyAlias> aliases = aliasRepository.findByCompanyId(fromId);
+        aliases.forEach(alias -> alias.setCompanyId(toId));
+        aliasRepository.saveAllAndFlush(aliases);
+        if (!aliases.isEmpty()) {
+            clearSearchCacheAfterCommit();
+        }
+        return aliases;
     }
 
     /** Whether {@code key} is an alias: a new company must not take it (it would hide the alias). */

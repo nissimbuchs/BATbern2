@@ -247,6 +247,9 @@ These three contracts are CUMS's only calls to a downstream service. A company-r
 moves its rows in one transaction, idempotently, clears its caches after the commit and answers the
 moved and removed row ids for the CUMS merge log; PCS refuses when both companies are partners
 (409 `MERGE_BLOCKED_BOTH_PARTNERS`) and keeps the target's vote where both voted for one topic.
+The company merge itself (`CompanyMergeService`, `GET /companies/{name}/merge-preview`,
+`POST /companies/{name}/merge`, `company_merge_log`) is described in
+`06b-user-lifecycle-sync.md`, "Merging two companies".
 
 The calendar reply operation is a **contract EMS owns** (Epic 17 entry 8b): specified in
 `ems-internal.openapi.yml`, called by `forwarding/InboundEmailRouter` through

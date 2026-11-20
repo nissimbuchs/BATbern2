@@ -193,6 +193,85 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/companies/{name}/merge-preview': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Preview merging another company into this one (Organizer)
+     * @description #1251. Shows both companies and what a merge of `source` into `{name}` would do: the rows
+     *     that move per `table.column`, summed over CUMS (user profiles, logo requests, logo uploads,
+     *     activity) and every service that stores company keys (the company-references contract:
+     *     event-management, partner-coordination), the rows that collide (`conflicts`, per table,
+     *     dropped by the merge), the holders' `blockers`, and the fields of `{name}` that are empty and
+     *     would be filled from the source (`fills`). Changes nothing.
+     *
+     *     `canMerge` is false, with the reasons in `reasons`, when:
+     *     - `SAME_COMPANY`: source and target are one company;
+     *     - `TARGET_KEY_TOO_LONG`: the target key is not a company key (1 to 12 letters or digits)
+     *       and cannot be held by a user profile; merge in the other direction when `canSwap`;
+     *     - `BOTH_PARTNERS`: both companies are partners (blocker `MERGE_BLOCKED_BOTH_PARTNERS`);
+     *       merge the partners first;
+     *     - `BLOCKED`: another blocker of a holder.
+     *
+     *     For `SAME_COMPANY` the holders are not asked and `moves`, `conflicts` and `fills` are empty;
+     *     for `TARGET_KEY_TOO_LONG` the holders are not asked either (`moves` and `conflicts` hold the
+     *     CUMS rows only). A source whose key is not a company key is merged without an alias (its key
+     *     and display name are not kept). The source's partner flag shows as
+     *     `moves["partners.company_name"]`.
+     *
+     *     **Authorization**: ORGANIZER role required
+     */
+    get: operations['getCompanyMergePreview'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/companies/{name}/merge': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Merge another company into this one (Organizer)
+     * @description #1251. Folds `sourceName` into `{name}` and deletes it. In this order, the two companies
+     *     locked: every service that stores company keys previews the move (a blocker refuses before
+     *     any of them moves a row) and moves its rows (company-references contract, trigger `MERGE`);
+     *     CUMS moves user profiles, logo requests, the logo uploads and activity; the fields of
+     *     `{name}` that are empty (website, industry, description, logo) are filled from the source, set
+     *     ones are kept, the display name of `{name}` always stays; the source's aliases lead to
+     *     `{name}`; the source is deleted; its key and display name become aliases of `{name}` (search,
+     *     typeahead, get-or-create find it); one `company_merge_log` row keeps every moved and removed
+     *     row id and a snapshot of the source. An attempt that fails after services moved rows leaves an
+     *     INCOMPLETE log row with their ids. No mail is sent; S3 keys do not change.
+     *
+     *     Refused with 400 `MERGE_NOT_ALLOWED` for the same company, 409 `MERGE_NOT_ALLOWED` for a key
+     *     reason of the preview (`details.reasons`, `details.canSwap`), 409
+     *     `MERGE_BLOCKED_BOTH_PARTNERS` when both are partners and 409 `MERGE_BLOCKED` when a service
+     *     refuses the move itself; nothing is moved then. 502 `MERGE_INCOMPLETE` when a service does
+     *     not complete its part: the source company and the CUMS rows stay, and the same merge again
+     *     finishes it. A completed merge repeated answers 404 (the source is gone).
+     *
+     *     **Authorization**: ORGANIZER role required
+     */
+    post: operations['mergeCompany'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/companies/get-or-create': {
     parameters: {
       query?: never;
@@ -380,6 +459,82 @@ export interface components {
     PaginatedCompanyResponse: {
       data: components['schemas']['CompanyResponse'][];
       pagination: components['schemas']['PaginationMetadata'];
+    };
+    /** @description One side of a company merge, as the organizer sees it (#1251) */
+    CompanyMergeSide: {
+      /**
+       * @description The company key
+       * @example unicag
+       */
+      name: string;
+      /** @example Unic AG */
+      displayName?: string;
+      /** @example https://www.unic.com */
+      website?: string;
+      /** @example Technology */
+      industry?: string;
+      description?: string;
+      isVerified: boolean;
+      /**
+       * @description User profiles of this company
+       * @example 3
+       */
+      userCount: number;
+      logo?: components['schemas']['CompanyLogo'];
+    };
+    CompanyMergePreview: {
+      target: components['schemas']['CompanyMergeSide'];
+      source: components['schemas']['CompanyMergeSide'];
+      /** @description Rows that move to the target, per `table.column` (CUMS and every holder) */
+      moves: {
+        [key: string]: number;
+      };
+      /**
+       * @description Rows per table that collide with one of the target: dropped by the merge, or for
+       *     `company_logo_requests` (an open request of one person at both) closed as DECLINED
+       */
+      conflicts: {
+        [key: string]: number;
+      };
+      /** @description Why a holder refuses the move, e.g. `MERGE_BLOCKED_BOTH_PARTNERS` */
+      blockers: string[];
+      /** @description Empty fields of the target the merge fills from the source (`website`, `industry`, `description`, `logo`) */
+      fills: string[];
+      canMerge: boolean;
+      /** @description Why `canMerge` is false: `SAME_COMPANY`, `TARGET_KEY_TOO_LONG`, `BOTH_PARTNERS`, `BLOCKED` */
+      reasons: string[];
+      /**
+       * @description The merge in the other direction (this source as the target) passes the key checks: the
+       *     source key is a company key (1 to 12 letters or digits) and the two are different companies
+       */
+      canSwap: boolean;
+    };
+    CompanyMergeRequest: {
+      /**
+       * @description The key of the company that is merged in and then deleted
+       * @example unicag
+       */
+      sourceName: string;
+    };
+    CompanyMergeResult: {
+      /** @example unic */
+      targetName: string;
+      /** @example unicag */
+      sourceName: string;
+      /** @description Rows moved to the target, per `table.column` */
+      moved: {
+        [key: string]: number;
+      };
+      /**
+       * @description Rows of the source dropped because the target held the same one, per `table.column`. An open
+       *     logo request closed because the person has one at the target too is not in it (it moved;
+       *     the merge log lists it)
+       */
+      removed: {
+        [key: string]: number;
+      };
+      /** @description Fields of the target filled from the source */
+      filled: string[];
     };
     /**
      * @description Page-based pagination metadata returned with every paginated list response.
@@ -811,6 +966,149 @@ export interface operations {
       403: components['responses']['Forbidden'];
       404: components['responses']['NotFound'];
       500: components['responses']['InternalServerError'];
+    };
+  };
+  getCompanyMergePreview: {
+    parameters: {
+      query: {
+        /** @description The company that is merged in and then deleted */
+        source: string;
+      };
+      header?: never;
+      path: {
+        /** @description The company that stays (target) */
+        name: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Merge preview */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CompanyMergePreview'];
+        };
+      };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+      404: components['responses']['NotFound'];
+      500: components['responses']['InternalServerError'];
+      /** @description A service that stores company keys did not answer the preview (`MERGE_PREVIEW_INCOMPLETE`) */
+      502: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "status": 502,
+           *       "error": "Bad Gateway",
+           *       "errorCode": "MERGE_PREVIEW_INCOMPLETE",
+           *       "message": "Not every service answered; try the preview again.",
+           *       "timestamp": "2026-11-20T10:30:00Z"
+           *     }
+           */
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+    };
+  };
+  mergeCompany: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The company that stays (target) */
+        name: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        /**
+         * @example {
+         *       "sourceName": "unicag"
+         *     }
+         */
+        'application/json': components['schemas']['CompanyMergeRequest'];
+      };
+    };
+    responses: {
+      /** @description Merged */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CompanyMergeResult'];
+        };
+      };
+      /** @description Invalid request, or source and target are the same company (`MERGE_NOT_ALLOWED`) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "status": 400,
+           *       "error": "Bad Request",
+           *       "errorCode": "MERGE_NOT_ALLOWED",
+           *       "message": "Merge not allowed: SAME_COMPANY",
+           *       "details": {
+           *         "reasons": [
+           *           "SAME_COMPANY"
+           *         ],
+           *         "canSwap": false
+           *       },
+           *       "timestamp": "2026-11-20T10:30:00Z"
+           *     }
+           */
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+      404: components['responses']['NotFound'];
+      /**
+       * @description Refused, nothing moved: a key reason (`MERGE_NOT_ALLOWED`, `details.reasons` and
+       *     `details.canSwap`), both companies are partners (`MERGE_BLOCKED_BOTH_PARTNERS`), or a
+       *     service refused the move (`MERGE_BLOCKED`)
+       */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      500: components['responses']['InternalServerError'];
+      /**
+       * @description A service did not complete its part, or the merge here failed after the services had
+       *     moved their references. The source company and the CUMS rows stay; the same merge again
+       *     finishes it.
+       */
+      502: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "status": 502,
+           *       "error": "Bad Gateway",
+           *       "errorCode": "MERGE_INCOMPLETE",
+           *       "message": "Not every service could move its references; the companies were not merged. Merge them again to finish.",
+           *       "timestamp": "2026-11-20T10:30:00Z"
+           *     }
+           */
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
     };
   };
   getOrCreateCompany: {

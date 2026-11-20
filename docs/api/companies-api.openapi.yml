@@ -43,6 +43,8 @@ tags:
     description: Company search and autocomplete with caching
   - name: Company Verification
     description: Company verification
+  - name: Company Merge
+    description: Folding a duplicate company into another (#1251)
 
 paths:
   /companies:
@@ -626,6 +628,284 @@ paths:
       security:
         - BearerAuth: []
 
+  /companies/{name}/merge-preview:
+    get:
+      tags:
+        - Company Merge
+      summary: Preview merging another company into this one (Organizer)
+      description: |
+        #1251. Shows both companies and what a merge of `source` into `{name}` would do: the rows
+        that move per `table.column`, summed over CUMS (user profiles, logo requests, logo uploads,
+        activity) and every service that stores company keys (the company-references contract:
+        event-management, partner-coordination), the rows that collide (`conflicts`, per table,
+        dropped by the merge), the holders' `blockers`, and the fields of `{name}` that are empty and
+        would be filled from the source (`fills`). Changes nothing.
+
+        `canMerge` is false, with the reasons in `reasons`, when:
+        - `SAME_COMPANY`: source and target are one company;
+        - `TARGET_KEY_TOO_LONG`: the target key is not a company key (1 to 12 letters or digits)
+          and cannot be held by a user profile; merge in the other direction when `canSwap`;
+        - `BOTH_PARTNERS`: both companies are partners (blocker `MERGE_BLOCKED_BOTH_PARTNERS`);
+          merge the partners first;
+        - `BLOCKED`: another blocker of a holder.
+
+        For `SAME_COMPANY` the holders are not asked and `moves`, `conflicts` and `fills` are empty;
+        for `TARGET_KEY_TOO_LONG` the holders are not asked either (`moves` and `conflicts` hold the
+        CUMS rows only). A source whose key is not a company key is merged without an alias (its key
+        and display name are not kept). The source's partner flag shows as
+        `moves["partners.company_name"]`.
+
+        **Authorization**: ORGANIZER role required
+      operationId: getCompanyMergePreview
+      parameters:
+        - name: name
+          in: path
+          required: true
+          description: The company that stays (target)
+          schema:
+            type: string
+            example: unic
+        - name: source
+          in: query
+          required: true
+          description: The company that is merged in and then deleted
+          schema:
+            type: string
+            example: unicag
+      responses:
+        '200':
+          description: Merge preview
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompanyMergePreview'
+              examples:
+                default:
+                  summary: Unic AG into Unic
+                  value:
+                    target:
+                      name: unic
+                      displayName: Unic
+                      industry: Technology
+                      isVerified: true
+                      userCount: 12
+                    source:
+                      name: unicag
+                      displayName: Unic AG
+                      website: https://www.unic.com
+                      isVerified: false
+                      userCount: 3
+                      logo:
+                        url: https://cdn.batbern.ch/logos/2026/companies/unicag/logo-d4884d93-e5c1-4ed1-acc0-02e796bb60b5.svg
+                        s3Key: logos/2026/companies/unicag/logo-d4884d93-e5c1-4ed1-acc0-02e796bb60b5.svg
+                        fileId: d4884d93-e5c1-4ed1-acc0-02e796bb60b5
+                    moves:
+                      user_profiles.company_id: 3
+                      company_logo_requests.company_name: 0
+                      activity_history.entity_id: 1
+                      company_user_uploads.target_id: 1
+                      registrations.attendee_company_id: 4
+                      topic_votes.company_name: 2
+                    conflicts:
+                      topic_votes: 1
+                    blockers: []
+                    fills:
+                      - website
+                      - logo
+                    canMerge: true
+                    reasons: []
+                    canSwap: true
+                bothPartners:
+                  summary: Both companies are partners
+                  value:
+                    target:
+                      name: unic
+                      displayName: Unic
+                      isVerified: true
+                      userCount: 12
+                    source:
+                      name: unicag
+                      displayName: Unic AG
+                      isVerified: false
+                      userCount: 3
+                    moves:
+                      user_profiles.company_id: 3
+                      partners.company_name: 1
+                    conflicts: {}
+                    blockers:
+                      - MERGE_BLOCKED_BOTH_PARTNERS
+                    fills: []
+                    canMerge: false
+                    reasons:
+                      - BOTH_PARTNERS
+                    canSwap: true
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '502':
+          description: A service that stores company keys did not answer the preview (`MERGE_PREVIEW_INCOMPLETE`)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: 502
+                error: Bad Gateway
+                errorCode: MERGE_PREVIEW_INCOMPLETE
+                message: Not every service answered; try the preview again.
+                timestamp: 2026-11-20T10:30:00Z
+      security:
+        - BearerAuth: []
+
+  /companies/{name}/merge:
+    post:
+      tags:
+        - Company Merge
+      summary: Merge another company into this one (Organizer)
+      description: |
+        #1251. Folds `sourceName` into `{name}` and deletes it. In this order, the two companies
+        locked: every service that stores company keys previews the move (a blocker refuses before
+        any of them moves a row) and moves its rows (company-references contract, trigger `MERGE`);
+        CUMS moves user profiles, logo requests, the logo uploads and activity; the fields of
+        `{name}` that are empty (website, industry, description, logo) are filled from the source, set
+        ones are kept, the display name of `{name}` always stays; the source's aliases lead to
+        `{name}`; the source is deleted; its key and display name become aliases of `{name}` (search,
+        typeahead, get-or-create find it); one `company_merge_log` row keeps every moved and removed
+        row id and a snapshot of the source. An attempt that fails after services moved rows leaves an
+        INCOMPLETE log row with their ids. No mail is sent; S3 keys do not change.
+
+        Refused with 400 `MERGE_NOT_ALLOWED` for the same company, 409 `MERGE_NOT_ALLOWED` for a key
+        reason of the preview (`details.reasons`, `details.canSwap`), 409
+        `MERGE_BLOCKED_BOTH_PARTNERS` when both are partners and 409 `MERGE_BLOCKED` when a service
+        refuses the move itself; nothing is moved then. 502 `MERGE_INCOMPLETE` when a service does
+        not complete its part: the source company and the CUMS rows stay, and the same merge again
+        finishes it. A completed merge repeated answers 404 (the source is gone).
+
+        **Authorization**: ORGANIZER role required
+      operationId: mergeCompany
+      parameters:
+        - name: name
+          in: path
+          required: true
+          description: The company that stays (target)
+          schema:
+            type: string
+            example: unic
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompanyMergeRequest'
+            example:
+              sourceName: unicag
+      responses:
+        '200':
+          description: Merged
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompanyMergeResult'
+              examples:
+                default:
+                  summary: Unic AG into Unic
+                  value:
+                    targetName: unic
+                    sourceName: unicag
+                    moved:
+                      user_profiles.company_id: 3
+                      company_logo_requests.company_name: 0
+                      activity_history.entity_id: 1
+                      company_user_uploads.target_id: 1
+                      registrations.attendee_company_id: 4
+                      topic_votes.company_name: 1
+                    removed:
+                      topic_votes.company_name: 1
+                    filled:
+                      - website
+                      - logo
+        '400':
+          description: Invalid request, or source and target are the same company (`MERGE_NOT_ALLOWED`)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: 400
+                error: Bad Request
+                errorCode: MERGE_NOT_ALLOWED
+                message: 'Merge not allowed: SAME_COMPANY'
+                details:
+                  reasons: [SAME_COMPANY]
+                  canSwap: false
+                timestamp: 2026-11-20T10:30:00Z
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: |
+            Refused, nothing moved: a key reason (`MERGE_NOT_ALLOWED`, `details.reasons` and
+            `details.canSwap`), both companies are partners (`MERGE_BLOCKED_BOTH_PARTNERS`), or a
+            service refused the move (`MERGE_BLOCKED`)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                notAllowed:
+                  value:
+                    status: 409
+                    error: Conflict
+                    errorCode: MERGE_NOT_ALLOWED
+                    message: 'Merge not allowed: TARGET_KEY_TOO_LONG'
+                    details:
+                      reasons: [TARGET_KEY_TOO_LONG]
+                      canSwap: true
+                    timestamp: 2026-11-20T10:30:00Z
+                bothPartners:
+                  value:
+                    status: 409
+                    error: Conflict
+                    errorCode: MERGE_BLOCKED_BOTH_PARTNERS
+                    message: 'Company references of unicag cannot move to unic: [MERGE_BLOCKED_BOTH_PARTNERS]'
+                    timestamp: 2026-11-20T10:30:00Z
+                blocked:
+                  value:
+                    status: 409
+                    error: Conflict
+                    errorCode: MERGE_BLOCKED
+                    message: A service refused to move the references of unicag
+                    timestamp: 2026-11-20T10:30:00Z
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '502':
+          description: |
+            A service did not complete its part, or the merge here failed after the services had
+            moved their references. The source company and the CUMS rows stay; the same merge again
+            finishes it.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: 502
+                error: Bad Gateway
+                errorCode: MERGE_INCOMPLETE
+                message: >-
+                  Not every service could move its references; the companies were not merged.
+                  Merge them again to finish.
+                timestamp: 2026-11-20T10:30:00Z
+      security:
+        - BearerAuth: []
+
   /companies/get-or-create:
     post:
       tags:
@@ -932,6 +1212,120 @@ components:
             $ref: '#/components/schemas/CompanyResponse'
         pagination:
           $ref: '#/components/schemas/PaginationMetadata'
+
+    CompanyMergeSide:
+      type: object
+      description: One side of a company merge, as the organizer sees it (#1251)
+      required: [name, isVerified, userCount]
+      properties:
+        name:
+          type: string
+          description: The company key
+          example: unicag
+        displayName:
+          type: string
+          example: Unic AG
+        website:
+          type: string
+          example: https://www.unic.com
+        industry:
+          type: string
+          example: Technology
+        description:
+          type: string
+        isVerified:
+          type: boolean
+        userCount:
+          type: integer
+          description: User profiles of this company
+          example: 3
+        logo:
+          $ref: '#/components/schemas/CompanyLogo'
+
+    CompanyMergePreview:
+      type: object
+      required: [target, source, moves, conflicts, blockers, fills, canMerge, reasons, canSwap]
+      properties:
+        target:
+          $ref: '#/components/schemas/CompanyMergeSide'
+        source:
+          $ref: '#/components/schemas/CompanyMergeSide'
+        moves:
+          type: object
+          description: Rows that move to the target, per `table.column` (CUMS and every holder)
+          additionalProperties:
+            type: integer
+        conflicts:
+          type: object
+          description: |
+            Rows per table that collide with one of the target: dropped by the merge, or for
+            `company_logo_requests` (an open request of one person at both) closed as DECLINED
+          additionalProperties:
+            type: integer
+        blockers:
+          type: array
+          description: Why a holder refuses the move, e.g. `MERGE_BLOCKED_BOTH_PARTNERS`
+          items:
+            type: string
+        fills:
+          type: array
+          description: Empty fields of the target the merge fills from the source (`website`, `industry`, `description`, `logo`)
+          items:
+            type: string
+        canMerge:
+          type: boolean
+        reasons:
+          type: array
+          description: |
+            Why `canMerge` is false: `SAME_COMPANY`, `TARGET_KEY_TOO_LONG`, `BOTH_PARTNERS`, `BLOCKED`
+          items:
+            type: string
+        canSwap:
+          type: boolean
+          description: |
+            The merge in the other direction (this source as the target) passes the key checks: the
+            source key is a company key (1 to 12 letters or digits) and the two are different companies
+
+    CompanyMergeRequest:
+      type: object
+      required: [sourceName]
+      additionalProperties: false
+      properties:
+        sourceName:
+          type: string
+          description: The key of the company that is merged in and then deleted
+          minLength: 1
+          maxLength: 255
+          example: unicag
+
+    CompanyMergeResult:
+      type: object
+      required: [targetName, sourceName, moved, removed, filled]
+      properties:
+        targetName:
+          type: string
+          example: unic
+        sourceName:
+          type: string
+          example: unicag
+        moved:
+          type: object
+          description: Rows moved to the target, per `table.column`
+          additionalProperties:
+            type: integer
+        removed:
+          type: object
+          description: |
+            Rows of the source dropped because the target held the same one, per `table.column`. An open
+            logo request closed because the person has one at the target too is not in it (it moved;
+            the merge log lists it)
+          additionalProperties:
+            type: integer
+        filled:
+          type: array
+          description: Fields of the target filled from the source
+          items:
+            type: string
 
     PaginationMetadata:
       $ref: './_shared.openapi.yml#/components/schemas/PaginationMetadata'

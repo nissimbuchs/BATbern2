@@ -41,6 +41,13 @@ Only items that are not live yet. Everything else is listed under its release be
 
 ### Unreleased — after BATbern60
 
+**New — Organizers can merge two companies (#1251)**:
+- ✅ A duplicate company (for example "Unic AG" next to "Unic") can be merged into the other one. Its people, registrations, partner record, topic suggestions and votes, logo and logo requests move to the company that stays; empty fields there (website, industry, description, logo) are taken from the duplicate, filled ones are kept, and the name of the company that stays does not change.
+- ✅ The duplicate's short and full name, and its own old names, still find the company that stays, in the search and at registration.
+- ✅ A preview shows both companies, their number of people and logos, what moves and which fields are filled. Two partner companies cannot be merged; merge the partners first.
+- ✅ If a service cannot complete the merge, nothing is merged here and the organizer sees an error; merging again finishes it. No mail is sent.
+- ⚠️ API: new `GET /api/v1/companies/{name}/merge-preview?source=` and `POST /api/v1/companies/{name}/merge` `{sourceName}` (organizers). The merge answers 400 or 409 `MERGE_NOT_ALLOWED`, 409 `MERGE_BLOCKED_BOTH_PARTNERS` or `MERGE_BLOCKED`, 502 `MERGE_INCOMPLETE`. The organizer screen follows.
+
 **Fix — Renaming a company moves everything that belongs to it (#1251)**:
 - ✅ When an organizer changes a company's short name, its people, registrations, partner record, topic suggestions and votes, logo and logo requests move to the new name. Before, they kept the old name and lost their company.
 - ✅ The old short name and the old full name still find the company in the search and at registration, so nobody creates the old company again. Changing the name back to an old one takes it back.

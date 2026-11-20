@@ -141,6 +141,9 @@ public interface UserRepository extends JpaRepository<User, UUID>, JpaSpecificat
      */
     List<User> findByCompanyId(String companyId);
 
+    /** Number of user profiles of a company (#1251: the sides of a company merge preview). */
+    long countByCompanyId(String companyId);
+
     /**
      * Find users by role
      * AC7: Role-based user queries

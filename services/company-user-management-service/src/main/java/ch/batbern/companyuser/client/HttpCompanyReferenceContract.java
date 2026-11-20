@@ -82,14 +82,26 @@ public class HttpCompanyReferenceContract implements CompanyReferenceContract {
         request.put("target", call.targetKey());
         request.put("performedBy", call.performedBy());
         request.put("trigger", call.trigger().name());
-        List<String> answers = call(() -> calls.postForAnswers(MERGE, request, String.class));
+        // One holder at a time: when a later one fails, the answers of those that completed travel on the
+        // exception, so the caller can log the rows they moved (a retry finds nothing left to move there)
         List<Result> results = new ArrayList<>();
-        for (String answer : answers) {
-            JsonNode body = json(answer);
-            results.add(new Result(counts(body.path("moved")), counts(body.path("removed")),
-                    keys(body.path("movedKeys")), keys(body.path("removedKeys"))));
+        for (String implementer : calls.implementers()) {
+            ContractCalls one = new ContractCalls(NAME, List.of(implementer), restTemplate);
+            try {
+                for (String answer : call(() -> one.postForAnswers(MERGE, request, String.class))) {
+                    results.add(result(answer));
+                }
+            } catch (CallFailedException e) {
+                throw new CallFailedException(e.getMessage(), e.getCause(), results);
+            }
         }
         return results;
+    }
+
+    private Result result(String answer) {
+        JsonNode body = json(answer);
+        return new Result(counts(body.path("moved")), counts(body.path("removed")),
+                keys(body.path("movedKeys")), keys(body.path("removedKeys")));
     }
 
     /**

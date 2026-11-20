@@ -1247,6 +1247,41 @@ logo of the same `PATCH` are applied first, under the old key, so they cannot fa
 No domain event is raised; the company
 events were deleted with this change, none had a consumer.
 
+## Merging two companies (#1251)
+
+An organizer folds a duplicate company (source, "Unic AG") into another (target, "Unic"):
+`GET /companies/{target}/merge-preview?source=` shows what would happen, `POST /companies/{target}/merge
+{sourceName}` does it (ORGANIZER, `CompanyMergeController`, tag Company Merge). `CompanyMergeService`
+mirrors the profile merge (`UserMergeService`) and moves the references through `CompanyKeyMover`, the
+path a rename uses:
+
+1. both companies are locked in key order (two opposite merges cannot deadlock) and checked: the same
+   company is refused (400 `MERGE_NOT_ALLOWED`), so is a target key that no user profile can hold (not
+   1 to 12 letters or digits; 409 `MERGE_NOT_ALLOWED`, `details.reasons`, `details.canSwap` when the
+   other direction would pass). A source key of that kind is merged without an alias;
+2. every holder of the company-references contract previews the move (`trigger MERGE`); a blocker
+   refuses it before any holder moves: 409 `MERGE_BLOCKED_BOTH_PARTNERS` when both are partners, else
+   409 `MERGE_BLOCKED` (also when a holder refuses the merge call itself);
+3. every holder moves its rows in its own transaction, PCS first;
+4. CUMS moves its rows (`UPDATE ... RETURNING id`, the ids go to the log). An open logo request of a
+   person who has an open one at the target too is closed (DECLINED, row kept, logged as removed)
+   before it moves: only one may be open per person and company;
+5. the target's empty fields (website, industry, description, the logo as a whole) are filled from the
+   source, set ones are kept, the target's display name always stays; the source's aliases are
+   re-pointed to the target; the source is deleted; its key and display name become aliases of the
+   target (reason MERGE); one `company_merge_log` row keeps the moved and removed row ids of CUMS and
+   every holder, the filled fields and a snapshot of the source with its aliases (outcome COMPLETED). The caches are
+   cleared after the commit.
+
+A holder that does not complete its part, or a failure in CUMS after the holders moved, fails the
+merge (502 `MERGE_INCOMPLETE`): CUMS rolls back, the source and its CUMS rows stay, earlier holders
+have moved theirs, and the same merge again finishes it. The ids those holders moved are written first
+as an INCOMPLETE `company_merge_log` row in a transaction of its own (`CompanyMergeLog`), because the
+retry gets nothing from them. A completed merge repeated answers 404. No
+mail is sent and no S3 key changes: the source's logo upload row moves to the target even when the
+target keeps its own logo, so the file stays reachable for an undo by hand. Story 5 of the epic adds
+the organizer UI.
+
 ## Database Schema
 
 ### user_profiles Table
