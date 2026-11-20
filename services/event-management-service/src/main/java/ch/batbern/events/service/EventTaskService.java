@@ -203,6 +203,9 @@ public class EventTaskService {
         openTasks.stream().map(EventTask::getEventId).distinct()
                 .forEach(id -> eventRepository.findById(id)
                         .filter(e -> e.getWorkflowState() != EventWorkflowState.ARCHIVED)
+                        // #824: a cancelled event's tasks wait for nothing; its "cancelled" tasks
+                        // were activated by the transition
+                        .filter(e -> e.getWorkflowState() != EventWorkflowState.CANCELLED)
                         .ifPresent(e -> events.put(id, e)));
 
         List<EventTask> toActivate = openTasks.stream()
@@ -224,6 +227,9 @@ public class EventTaskService {
      * (V125), not by name, so renaming a template cannot silently disable the rule.
      */
     private void supersedeNewsletterTasks(Event event) {
+        if (event.getWorkflowState() == EventWorkflowState.CANCELLED) {
+            return; // #824: nothing was published, the newsletter tasks are not "superseded"
+        }
         boolean agendaPublic = "agenda".equals(event.getCurrentPublishedPhase())
                 || isStateAtLeast(event.getWorkflowState(), EventWorkflowState.AGENDA_PUBLISHED);
         boolean speakersPublic = agendaPublic || isSpeakersPhasePublished(event.getCurrentPublishedPhase());
@@ -301,7 +307,7 @@ public class EventTaskService {
     }
 
     private static boolean isStateAtLeast(EventWorkflowState state, EventWorkflowState reference) {
-        return state != null && state.ordinal() >= reference.ordinal();
+        return EventLifecycle.reached(state, reference);
     }
 
     private static EventWorkflowState parseState(String state) {

@@ -4,6 +4,8 @@ import ch.batbern.events.config.CacheConfig;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.PublishingConfig;
 import ch.batbern.events.domain.Session;
+import ch.batbern.events.exception.EventCancelledException;
+import ch.batbern.events.service.EventLifecycle;
 import ch.batbern.events.core.dto.generated.PatchPublishingRequest;
 import ch.batbern.events.core.dto.generated.PublishPhaseResponse;
 import ch.batbern.events.core.dto.generated.PublishingStatusResponse;
@@ -83,6 +85,10 @@ public class PublishingService {
 
         Event event = eventRepository.findByEventCode(eventCode)
                 .orElseThrow(() -> new EventNotFoundException(eventCode));
+        if (event.getWorkflowState() == EventWorkflowState.CANCELLED) {
+            // #824: an agenda publish moves the workflow with override and would un-cancel it
+            throw new EventCancelledException(eventCode);
+        }
 
         PublishingPhase current = currentPhaseOf(event);
         if (current != null && phase.ordinal() < current.ordinal()) {
@@ -410,7 +416,7 @@ public class PublishingService {
     }
 
     private static boolean isBefore(EventWorkflowState state, EventWorkflowState reference) {
-        return state == null || state.ordinal() < reference.ordinal();
+        return !EventLifecycle.reached(state, reference);
     }
 
     /**

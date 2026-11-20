@@ -2958,7 +2958,7 @@ export interface operations {
       401: components['responses']['Unauthorized'];
       403: components['responses']['Forbidden'];
       404: components['responses']['NotFound'];
-      /** @description A phase above this one is published; use unpublish to step back. Nothing changed. */
+      /** @description A phase above this one is published (use unpublish to step back), or the event was cancelled (details.code EVENT_CANCELLED, */
       409: {
         headers: {
           [name: string]: unknown;

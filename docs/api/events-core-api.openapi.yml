@@ -1918,7 +1918,7 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
         '409':
-          description: A phase above this one is published; use unpublish to step back. Nothing changed.
+          description: A phase above this one is published (use unpublish to step back), or the event was cancelled (details.code EVENT_CANCELLED, #824). Nothing changed.
           content:
             application/json:
               schema:
