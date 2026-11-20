@@ -70,6 +70,18 @@ class EventPublishingIntegrationTest extends AbstractIntegrationTest {
     // EVENT PUBLISHING TESTS (AC7)
 
     @Test
+    @WithMockUser(username = "test.user", roles = {"ATTENDEE"})
+    @DisplayName("get-or-create publishes CompanyCreated once: when it creates, not when it finds")
+    void shouldPublishCompanyCreatedEventOnce_whenGetOrCreateCreatesThenFinds() {
+        companyService.getOrCreateCompany("Event Probe GmbH");
+        companyService.getOrCreateCompany("event probe gmbh");
+
+        assertThat(applicationEvents.stream(CompanyCreatedEvent.class))
+                .singleElement()
+                .satisfies(e -> assertThat(e.getName()).isEqualTo("eventprobegm"));
+    }
+
+    @Test
     @WithMockUser(username = "test.user", roles = {"ORGANIZER"})
     @DisplayName("should publish CompanyCreated event when company is created")
     void shouldPublishCompanyCreatedEvent_whenCompanyCreated() {

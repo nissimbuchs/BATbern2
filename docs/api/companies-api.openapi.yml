@@ -88,6 +88,8 @@ paths:
           description: |
             Free-text search. Every word must occur in the company slug (`name`) or
             the display name, in any order, ignoring case, accents and umlaut spelling (ü = ue = u).
+            A company is also found by an old key or display name kept as its alias after a merge or
+            rename (#1251); it is listed once, as itself.
             Evaluated before paging, so `pagination.totalItems` counts every match. Combines with
             `filter`. Blank means no search.
           required: false
@@ -197,7 +199,10 @@ paths:
         **Acceptance Criteria**: AC1, AC3
 
         **Validation Rules**:
-        - Company name must be unique
+        - Company name must be unique: a display name another company has (ignoring case), or an
+          old name kept as an alias after a merge or rename (also ignoring accents and umlaut
+          spelling, #1251), answers 409
+        - The key is the name's slug, made unique; an alias key is taken too (#1251)
         - Website must be valid URL (if provided)
 
         **Events Published**: CompanyCreatedEvent (in-process domain event)
@@ -430,7 +435,9 @@ paths:
         **Matching**: every word of `query` must occur, in any order, in the slug
         (`name`) or the display name, ignoring case, accents and umlaut spelling (ü = ue = u).
         Ranked in SQL before the limit: exact match, then prefix, then any other match, ties by
-        display name and slug. A paged search is `GET /companies?search=`.
+        display name and slug. A paged search is `GET /companies?search=`. An old key or display
+        name kept as an alias after a merge or rename (#1251) finds its company, which is listed
+        once, as itself; an exact or prefix alias match ranks as an exact or prefix match.
 
         **Caching**:
         - Caffeine in-memory cache with 15-minute TTL
@@ -581,8 +588,11 @@ paths:
 
         **Idempotency**: Safe to call multiple times - returns the existing company if the
         generated name already exists. Else a company whose display name equals the typed one,
-        ignoring case, is returned (the oldest if several), whatever its key: "Die Post" finds the
-        company `post` instead of creating `diepost` (#1251).
+        ignoring case, accents and umlaut spelling as the search does, is returned (the oldest if
+        several), whatever its key: "Die Post" finds the
+        company `post` instead of creating `diepost` (#1251). Else an alias (an old key or display
+        name kept after a merge or rename): its key equal to the generated name, or its display
+        name equal to the typed one (folded the same way), returns its company (#1251).
 
         **Slug Generation**:
         - Converts display name to lowercase alphanumeric slug (max 12 chars)
@@ -616,7 +626,7 @@ paths:
                   displayName: Müller & Söhne AG
       responses:
         '200':
-          description: An existing company with this generated name or display name is returned
+          description: An existing company with this generated name, display name or alias is returned
           content:
             application/json:
               schema:

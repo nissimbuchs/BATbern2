@@ -5,6 +5,8 @@ import ch.batbern.companyuser.specification.CompanySpecification;
 import ch.batbern.shared.api.DeterministicPaging;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -73,10 +75,13 @@ public interface CompanyRepository extends JpaRepository<Company, UUID>, JpaSpec
     boolean existsByDisplayNameIgnoreCase(String displayName);
 
     /**
-     * The company people know by this display name, ignoring case; the oldest when several share it.
-     * Get-or-create returns it when the typed name's slug is not a key (#1251).
+     * The company people know by this display name, folded by {@code batbern_fold} as the search
+     * reads it (case, accents, umlaut spelling); the oldest when several share it. Get-or-create
+     * returns it when the typed name's slug is not a key (#1251).
      */
-    Optional<Company> findFirstByDisplayNameIgnoreCaseOrderByCreatedAtAsc(String displayName);
+    @Query(value = "SELECT * FROM companies WHERE batbern_fold(display_name) = batbern_fold(:displayName)"
+            + " ORDER BY created_at, name LIMIT 1", nativeQuery = true)
+    Optional<Company> findByFoldedDisplayName(@Param("displayName") String displayName);
 
     /**
      * Find companies by verified status

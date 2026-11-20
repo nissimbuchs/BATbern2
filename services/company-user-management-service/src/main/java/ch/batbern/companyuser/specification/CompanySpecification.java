@@ -1,10 +1,12 @@
 package ch.batbern.companyuser.specification;
 
 import ch.batbern.companyuser.domain.Company;
+import ch.batbern.companyuser.domain.CompanyAlias;
 import ch.batbern.shared.api.FilterCriteria;
 import ch.batbern.shared.api.FilterOperator;
 import ch.batbern.shared.search.SearchPredicates;
 import ch.batbern.shared.search.SearchTerms;
+import jakarta.persistence.criteria.CommonAbstractCriteria;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.Expression;
@@ -12,11 +14,13 @@ import jakarta.persistence.criteria.Order;
 import jakarta.persistence.criteria.Path;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
+import jakarta.persistence.criteria.Subquery;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -27,22 +31,37 @@ import java.util.stream.Collectors;
 public class CompanySpecification {
 
     /**
-     * Every word of {@code search} occurs in the slug ({@code name}) or the display
-     * name, folded by {@code batbern_fold}, in any order. Blank: unrestricted. Used by the paged
-     * company list, the autocomplete and {@code GET /internal/companies}.
+     * Every word of {@code search} occurs in the slug ({@code name}) or the display name, or every
+     * word in one alias's key or display name (#1251), folded by {@code batbern_fold}, in any order.
+     * Blank: unrestricted. Used by the paged company list, the autocomplete and
+     * {@code GET /internal/companies}.
      */
     public static Specification<Company> matchesSearch(String search) {
         SearchTerms terms = SearchTerms.parse(search);
         if (terms.isEmpty()) {
             return Specification.unrestricted();
         }
-        return (root, query, cb) -> SearchPredicates.allTermsInAnyField(cb, terms,
-                root.get("name"), root.get("displayName"));
+        return (root, query, cb) -> cb.or(
+                SearchPredicates.allTermsInAnyField(cb, terms, root.get("name"), root.get("displayName")),
+                cb.exists(aliasOf(root, query, cb, alias -> SearchPredicates.allTermsInAnyField(cb, terms,
+                        alias.get("aliasKey"), alias.get("aliasDisplayName")))));
     }
 
     /**
-     * {@link #matchesSearch} ordered for an autocomplete: exact display name or slug first, then a
-     * prefix, then any other match; display name and the unique slug break ties. Applied to the row
+     * {@code EXISTS (an alias of the company that satisfies the condition)} (#1251): an old key or
+     * display name kept after a merge or rename finds the company, which is listed once, as itself.
+     */
+    private static Subquery<String> aliasOf(Root<Company> root, CommonAbstractCriteria query, CriteriaBuilder cb,
+            Function<Root<CompanyAlias>, Predicate> condition) {
+        Subquery<String> sub = query.subquery(String.class);
+        Root<CompanyAlias> alias = sub.from(CompanyAlias.class);
+        return sub.select(alias.get("aliasKey"))
+                .where(cb.equal(alias.get("companyId"), root.get("id")), condition.apply(alias));
+    }
+
+    /**
+     * {@link #matchesSearch} ordered for an autocomplete: exact display name, slug or alias first, then a
+     * prefix of one of them, then any other match; display name and the unique slug break ties. Applied to the row
      * query only, never to Spring Data's count query.
      */
     public static Specification<Company> matchesSearchRanked(String search) {
@@ -56,9 +75,17 @@ public class CompanySpecification {
                     String phrase = terms.phrase();
                     order.add(cb.asc(cb.<Integer>selectCase()
                             .when(cb.or(SearchPredicates.foldedEquals(cb, displayName, phrase),
-                                    SearchPredicates.foldedEquals(cb, name, phrase)), 0)
+                                    SearchPredicates.foldedEquals(cb, name, phrase),
+                                    cb.exists(aliasOf(root, query, cb, alias -> cb.or(
+                                            SearchPredicates.foldedEquals(cb, alias.get("aliasKey"), phrase),
+                                            SearchPredicates.foldedEquals(cb, alias.get("aliasDisplayName"),
+                                                    phrase))))), 0)
                             .when(cb.or(SearchPredicates.foldedStartsWith(cb, displayName, phrase),
-                                    SearchPredicates.foldedStartsWith(cb, name, phrase)), 1)
+                                    SearchPredicates.foldedStartsWith(cb, name, phrase),
+                                    cb.exists(aliasOf(root, query, cb, alias -> cb.or(
+                                            SearchPredicates.foldedStartsWith(cb, alias.get("aliasKey"), phrase),
+                                            SearchPredicates.foldedStartsWith(cb, alias.get("aliasDisplayName"),
+                                                    phrase))))), 1)
                             .otherwise(2)));
                 }
                 order.add(cb.asc(root.get("displayName")));

@@ -180,6 +180,21 @@ class CompanyGetOrCreateIntegrationTest extends AbstractIntegrationTest {
 
         mockMvc.perform(post(PATH).contentType(MediaType.APPLICATION_JSON).content(body("goc die post")))
                 .andExpect(status().isOk())
+                .andExpect(jsonPath("$.name").value("gocpost"));
+        // another umlaut or accent spelling of the same name, as the typeahead reads it
+        companyRepository.save(Company.builder()
+                .name("gocmoewe")
+                .displayName("GoC Möwe Bäckerei")
+                .isVerified(true)
+                .createdBy(CALLER)
+                .build());
+        mockMvc.perform(post(PATH).contentType(MediaType.APPLICATION_JSON).content(body("GoC Mowe Backerei")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.name").value("gocmoewe"));
+        assertThat(countByName("gocmowebacke")).isZero();
+
+        mockMvc.perform(post(PATH).contentType(MediaType.APPLICATION_JSON).content(body("goc die post")))
+                .andExpect(status().isOk())
                 .andExpect(jsonPath("$.name").value("gocpost"))
                 .andExpect(jsonPath("$.displayName").value("GoC Die Post"));
 

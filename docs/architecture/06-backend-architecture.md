@@ -1741,7 +1741,7 @@ workflow state) combine with it unchanged.
   | Users (list `GET /users?search`, picker `GET /users/search`) | username, first and last name, primary e-mail, additional e-mails (verified or not), company id |
   | Participants (`GET /events/{code}/registrations?search`) | attendee username, first and last name, e-mail, company id (denormalized columns) |
   | Newsletter subscribers | e-mail, first name, username (the username of a subscriber with a profile carries the last name; no EMS read of `user_profiles`) |
-  | Companies (list `GET /companies?search`, picker `GET /companies/search`) | slug (`name`), display name |
+  | Companies (list `GET /companies?search`, picker `GET /companies/search`) | slug (`name`), display name; or every word in one alias (`company_aliases`: key, display name, #1251), the company listed once as itself |
   | Partners (`GET /partners?search`) | company slug and display name, resolved to slugs by CUMS `GET /internal/companies?search=` (PCS holds only the slug) |
   | Topics (`GET /topics?search`) | title, description |
   | Events and archive (`title $contains`, `GET /public/events?scope=archive&search`) | event title, description, event code (`56` finds BATbern56), session titles and abstracts, speaker first and last names |

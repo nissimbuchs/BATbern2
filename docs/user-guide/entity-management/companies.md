@@ -151,6 +151,7 @@ Use the search box at the top of the company list:
 
 Searches across:
 - Company name (both internal name and display name)
+- Old names of a company that was merged or renamed: they find the company under its current name
 - City
 - Canton
 

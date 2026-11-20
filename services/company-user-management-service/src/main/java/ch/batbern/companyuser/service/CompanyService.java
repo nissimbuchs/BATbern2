@@ -53,6 +53,7 @@ public class CompanyService {
     private final UploadService<CompanyUserUpload> uploadService;
     private final SlugGenerationService slugService;
     private final CompanyInserter companyInserter;
+    private final CompanyAliasService aliasService;
 
     /**
      * Creates a new company with validation
@@ -80,11 +81,18 @@ public class CompanyService {
             throw new ValidationException("name", "Company name must contain at least one letter or digit");
         }
 
-        // Duplicate company (AC3): the same name as people see it
+        // Duplicate company (AC3): the same name as people see it, also as an old name kept as an
+        // alias after a merge or rename (#1251)
         if (companyRepository.existsByDisplayNameIgnoreCase(displayName)) {
             throw new CompanyValidationException("Company with name '" + displayName + "' already exists");
         }
-        String companyKey = slugService.ensureUniqueCompanyName(baseKey, companyRepository::existsByName);
+        if (aliasService.isAliasDisplayName(displayName)) {
+            throw new CompanyValidationException("Company with name '" + displayName
+                    + "' already exists under another name");
+        }
+        // An alias key is taken: a company with it would hide the alias
+        String companyKey = slugService.ensureUniqueCompanyName(baseKey,
+                key -> companyRepository.existsByName(key) || aliasService.isAliasKey(key));
 
         // Build company entity (AC10: Get username from security context)
         // Story 1.16.2: Use username instead of UUID for createdBy field
@@ -178,10 +186,14 @@ public class CompanyService {
         String companyName = slugService.generateCompanyName(displayName);
 
         // The generated name is the key: an existing company with it is returned, never suffixed.
-        // Else a company people know by this display name (any case), whose key differs: "Die Post"
+        // Else a company people know by this display name (case, accents and umlaut spelling folded
+        // as the search folds them), whose key differs: "Die Post"
         // slugs to "diepost" while the company is "post" (#1251); POST /companies calls it a duplicate.
+        // Last, an old key or display name kept as an alias after a merge or rename (#1251), so the
+        // duplicate is not created again.
         Optional<Company> existing = companyRepository.findByName(companyName)
-                .or(() -> companyRepository.findFirstByDisplayNameIgnoreCaseOrderByCreatedAtAsc(displayName.strip()));
+                .or(() -> companyRepository.findByFoldedDisplayName(displayName.strip()))
+                .or(() -> aliasService.resolve(displayName));
 
         if (existing.isPresent()) {
             log.debug("Company found for display name {}: {}", displayName, existing.get().getName());
