@@ -387,6 +387,10 @@ Solution: Check service logs, rollback if necessary
 - A failure inside the deploy job itself (CDK, ECS stabilisation) is handled by the stack
   recovery steps of that job, not by this rollback
 - Team is notified via workflow output
+- The rollback moves the services behind CloudFormation's back. Rerunning the same deploy is
+  safe: after the service stacks, `scripts/ci/ensure-services-run-image.sh` moves every service
+  that does not run the run's image tag to the task definition registered for it (CloudFormation
+  sees an unchanged template and would leave the rolled-back image in place)
 
 **Manual Rollback:**
 1. Navigate to AWS ECS Console

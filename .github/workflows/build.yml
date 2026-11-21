@@ -86,6 +86,10 @@ jobs:
       - name: Verify the ZAP job-log capture
         run: ./scripts/ci/test-zap-job-logs.sh
 
+      # A rerun after an auto-rollback must not leave the services on the rolled-back image.
+      - name: Verify the deploy moves every service to its image
+        run: ./scripts/ci/test-ensure-services-run-image.sh
+
   # ═══════════════════════════════════════════════════════════
   # BUILD PHASE: Shared Kernel (Foundation)
   # ═══════════════════════════════════════════════════════════
