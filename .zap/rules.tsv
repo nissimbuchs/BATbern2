@@ -122,6 +122,9 @@
 10024	OUTOFSCOPE	.*/registrations/deregister/verify.*
 10024	OUTOFSCOPE	.*/newsletter/unsubscribe/verify.*
 10024	OUTOFSCOPE	.*/users/additional-emails/verify.*
+# The Mail Center list (GET /api/v1/mails, organizer only) filters by `participantUsername`:
+# a username, not a secret or an e-mail address, and the filter is a read on a GET (#1335).
+10024	OUTOFSCOPE	.*/api/v1/mails\?.*
 
 # ─── INFORMATIONAL — WARN (non-blocking, report only) ─────────────────────────
 
