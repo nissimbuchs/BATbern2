@@ -220,9 +220,12 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
     soundsRef.current = sounds;
   }, [sounds]);
 
-  const hasOrbitingRed = nodesRef.current.some(
-    (n) => n.type === 'red-star' && (n as RedStarNode).orbiting === acceptBlob?.id
-  );
+  // What the accept dialog shows about the simulation, read from nodesRef when the dialog opens
+  // (#611: a ref is not read during render).
+  const [acceptSnapshot, setAcceptSnapshot] = useState<{
+    hasOrbitingRed: boolean;
+    competingCandidates: string[];
+  }>({ hasOrbitingRed: false, competingCandidates: [] });
 
   // ─── INIT SIMULATION ──────────────────────────────────────────────────────
 
@@ -1103,7 +1106,16 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
               .attr('filter', nowSelected ? 'url(#gold-glow)' : null);
           })
           .on('dblclick', (_, d) => {
-            setAcceptBlob(d as BlueBlobNode);
+            const blob = d as BlueBlobNode;
+            setAcceptSnapshot({
+              hasOrbitingRed: nodesRef.current.some(
+                (n) => n.type === 'red-star' && (n as RedStarNode).orbiting === blob.id
+              ),
+              competingCandidates: nodesRef.current
+                .filter((n) => n.type === 'blue' && n.id !== blob.id)
+                .map((n) => (n as BlueBlobNode).name),
+            });
+            setAcceptBlob(blob);
           });
         break;
       }
@@ -2354,11 +2366,9 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
       <AcceptTopicDialog
         open={acceptBlob !== null}
         blob={acceptBlob}
-        hasOrbitingRed={hasOrbitingRed}
+        hasOrbitingRed={acceptSnapshot.hasOrbitingRed}
         mostRecentEventNumber={mostRecentEventNum}
-        competingCandidates={nodesRef.current
-          .filter((n) => n.type === 'blue' && n.id !== acceptBlob?.id)
-          .map((n) => (n as BlueBlobNode).name)}
+        competingCandidates={acceptSnapshot.competingCandidates}
         onConfirm={handleAcceptConfirm}
         onCancel={() => setAcceptBlob(null)}
       />

@@ -90,6 +90,8 @@ export const EventCommunicationsContainer: React.FC<EventCommunicationsContainer
   const queryClient = useQueryClient();
   const newMailButton = useRef<HTMLButtonElement>(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  // The menu's anchor, set on click (#611: a ref is not read during render).
+  const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null);
   const [compose, setCompose] = useState<PickerAudience | null>(null);
   const composeHeading = useRef<HTMLHeadingElement>(null);
   const [sentToast, setSentToast] = useState(false);
@@ -163,7 +165,10 @@ export const EventCommunicationsContainer: React.FC<EventCommunicationsContainer
         ref={newMailButton}
         variant="contained"
         startIcon={<AddIcon />}
-        onClick={() => setMenuOpen(true)}
+        onClick={(clickEvent) => {
+          setMenuAnchor(clickEvent.currentTarget);
+          setMenuOpen(true);
+        }}
         aria-haspopup="menu"
         aria-expanded={menuOpen}
         aria-controls={menuOpen ? 'new-mail-menu' : undefined}
@@ -173,7 +178,7 @@ export const EventCommunicationsContainer: React.FC<EventCommunicationsContainer
       </Button>
       <Menu
         id="new-mail-menu"
-        anchorEl={newMailButton.current}
+        anchorEl={menuAnchor}
         open={menuOpen}
         onClose={() => setMenuOpen(false)}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}

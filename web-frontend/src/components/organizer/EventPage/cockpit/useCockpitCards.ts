@@ -16,6 +16,7 @@
  */
 
 import { useMemo } from 'react';
+import { useNow } from '@/hooks/useNow/useNow';
 import type { Event, EventDetailUI } from '@/types/event.types';
 import { useEventTasks } from '@/hooks/useEventTasks';
 import { useSpeakerPool } from '@/hooks/useSpeakerPool';
@@ -88,10 +89,10 @@ export function useCockpitCards(
     };
   }, [event, eventCode, agendaConfigQuery.data, poolQuery.data]);
 
-  // Computed each render (not memoized): buildAttentionList is cheap over a handful
-  // of cards, and this keeps `Date.now()` fresh so due-date chips don't freeze when
-  // the Cockpit stays open across a day boundary.
-  const now = Date.now();
+  // Computed each render (not memoized): buildAttentionList is cheap over a handful of cards.
+  // useNow refreshes every minute, so due-date chips don't freeze when the Cockpit stays open
+  // across a day boundary (#611: no Date.now() during render).
+  const now = useNow(60_000);
   const cards = buildAttentionList(tasks ?? [], ctx, now);
 
   return {

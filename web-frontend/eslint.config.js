@@ -3,6 +3,7 @@ import globals from 'globals';
 import reactHooks from 'eslint-plugin-react-hooks';
 import reactRefresh from 'eslint-plugin-react-refresh';
 import tseslint from 'typescript-eslint';
+import setStateInEffectBaseline from './eslint.set-state-in-effect-baseline.js';
 
 export default tseslint.config(
   {
@@ -32,7 +33,10 @@ export default tseslint.config(
     },
     rules: {
       ...reactHooks.configs.recommended.rules,
-      // Disable React Compiler rules added in react-hooks v7 — project does not use React Compiler
+      // React Compiler rules added in react-hooks v7. The project does not adopt the compiler
+      // (#611, owner 2026-11-21), so the compiler-only rules stay off. The three that flag
+      // genuinely fragile code are on: refs, purity, and set-state-in-effect (the last with a
+      // shrinking baseline of old files, see the block below).
       'react-hooks/static-components': 'off',
       'react-hooks/use-memo': 'off',
       'react-hooks/component-hook-factories': 'off',
@@ -40,10 +44,10 @@ export default tseslint.config(
       'react-hooks/incompatible-library': 'off',
       'react-hooks/immutability': 'off',
       'react-hooks/globals': 'off',
-      'react-hooks/refs': 'off',
-      'react-hooks/set-state-in-effect': 'off',
+      'react-hooks/refs': 'error',
+      'react-hooks/set-state-in-effect': 'error',
       'react-hooks/error-boundaries': 'off',
-      'react-hooks/purity': 'off',
+      'react-hooks/purity': 'error',
       'react-hooks/set-state-in-render': 'off',
       'react-hooks/unsupported-syntax': 'off',
       'react-hooks/config': 'off',
@@ -52,6 +56,13 @@ export default tseslint.config(
       // Temporarily downgrade to warnings for incremental development
       '@typescript-eslint/no-unused-vars': 'warn',
       '@typescript-eslint/no-explicit-any': 'warn',
+    },
+  },
+  {
+    // #611: files that still set state synchronously in an effect. Only shrinks.
+    files: setStateInEffectBaseline,
+    rules: {
+      'react-hooks/set-state-in-effect': 'off',
     },
   },
   {

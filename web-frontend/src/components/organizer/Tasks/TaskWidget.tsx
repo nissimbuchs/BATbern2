@@ -14,6 +14,7 @@
  */
 
 import React, { useState } from 'react';
+import { useNow } from '@/hooks/useNow/useNow';
 import { List, ListItem, Typography, Box, Button, Chip, Stack, Skeleton } from '@mui/material';
 import { CheckCircle as CheckCircleIcon, OpenInNew as OpenInNewIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
@@ -69,7 +70,7 @@ export const TaskWidget: React.FC<TaskWidgetProps> = ({ organizerUsername }) => 
   };
 
   // Same rule as the Cockpit cards: hide completed / cancelled / not-yet-triggered
-  const now = Date.now();
+  const now = useNow(60_000);
   const activeTasks = sortTasksByDue(myTasks.filter((task) => isTaskVisible(task, now)));
 
   // Loading state

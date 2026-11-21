@@ -19,7 +19,7 @@
  * no per-task in-memory state, so polls landing on different Fargate tasks are consistent.
  */
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef, useCallback } from 'react';
 import { liveTimingService } from '@/services/liveTimingService';
 import type { components } from '@/types/generated/event-watch-api.types';
 
@@ -93,7 +93,7 @@ export function useLiveSessionControl(eventCode: string | undefined): LiveSessio
   );
   const [isActionInFlight, setIsActionInFlight] = useState(false);
   const [isLoadingInitial, setIsLoadingInitial] = useState(true);
-  const [currentTime, setCurrentTime] = useState(Date.now());
+  const [currentTime, setCurrentTime] = useState(() => Date.now());
 
   const etagRef = useRef<string | null>(null);
   // Latest sessions, readable inside the polling loop without re-subscribing.
@@ -150,7 +150,10 @@ export function useLiveSessionControl(eventCode: string | undefined): LiveSessio
     },
     [eventCode, applySnapshot]
   );
-  dispatchActionRef.current = dispatchAction;
+  // Kept current after commit, never during render (#611).
+  useLayoutEffect(() => {
+    dispatchActionRef.current = dispatchAction;
+  }, [dispatchAction]);
 
   // Adaptive REST polling loop (replaces the STOMP subscription).
   useEffect(() => {

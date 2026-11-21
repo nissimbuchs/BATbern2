@@ -14,7 +14,7 @@
  * first tray load read 0 whenever every session was already slotted).
  */
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useLayoutEffect, useCallback, useRef } from 'react';
 import { isAxiosError } from 'axios';
 import {
   slotAssignmentService,
@@ -64,7 +64,10 @@ export const useSlotAssignment = (eventCode: string): UseSlotAssignmentReturn =>
   // only works when React runs the updater eagerly; with a pending update on the fiber it runs
   // at render time, after a fast failure has already "rolled back" to an empty tray.
   const unassignedRef = useRef<Session[]>(unassignedSessions);
-  unassignedRef.current = unassignedSessions;
+  // Synced after commit, never during render (#611).
+  useLayoutEffect(() => {
+    unassignedRef.current = unassignedSessions;
+  }, [unassignedSessions]);
 
   /**
    * Fetch unassigned sessions

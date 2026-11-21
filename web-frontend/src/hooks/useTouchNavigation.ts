@@ -12,7 +12,7 @@
  * that belongs to the TouchZones component which owns tap zones for left/right/bottom.
  */
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useLayoutEffect, useRef } from 'react';
 
 /** Minimum horizontal distance (px) that counts as a swipe. */
 const SWIPE_THRESHOLD = 50;
@@ -36,10 +36,13 @@ export function useTouchNavigation({
   const onPrevRef = useRef(onPrev);
   const onToggleBlankRef = useRef(onToggleBlank);
 
-  isBlankRef.current = isBlankActive;
-  onNextRef.current = onNext;
-  onPrevRef.current = onPrev;
-  onToggleBlankRef.current = onToggleBlank;
+  // Synced after commit, never during render (#611).
+  useLayoutEffect(() => {
+    isBlankRef.current = isBlankActive;
+    onNextRef.current = onNext;
+    onPrevRef.current = onPrev;
+    onToggleBlankRef.current = onToggleBlank;
+  });
 
   useEffect(() => {
     let startX = 0;
