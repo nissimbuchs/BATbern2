@@ -393,12 +393,11 @@ const HomePage = () => {
           <TestimonialSection skipPhotoRow={vis.testimonialsSkipPhotoRow} />
         </div>
 
-        {/* Newsletter Subscribe Widget — always shown (lazy, below the fold) */}
-        <div className="border-t pt-4 pb-8">
-          <Suspense fallback={null}>
-            <NewsletterSubscribeWidget />
-          </Suspense>
-        </div>
+        {/* Newsletter Subscribe Widget (lazy, below the fold). It renders nothing for a logged-in
+            subscriber, so it carries its own top border: no empty bordered strip then. */}
+        <Suspense fallback={null}>
+          <NewsletterSubscribeWidget className="border-t pt-4 pb-8" />
+        </Suspense>
       </div>
     </PublicLayout>
   );

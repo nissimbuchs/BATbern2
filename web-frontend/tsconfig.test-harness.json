@@ -21,8 +21,6 @@
     "src/components/organizer/EventTypeSelector/EventTypeSelector.test.tsx",
     "src/components/organizer/NewsletterSubscribers/__tests__/NewsletterSubscriberFilters.test.tsx",
     "src/components/organizer/NewsletterSubscribers/__tests__/NewsletterSubscriberTable.test.tsx",
-    "src/components/organizer/NewsletterSubscribers/__tests__/UnsubscribeDialog.test.tsx",
-    "src/components/organizer/NewsletterSubscribers/__tests__/UnsuppressDialog.test.tsx",
     "src/components/organizer/PartnerManagement/PartnerCard.test.tsx",
     "src/components/organizer/PartnerManagement/PartnerCreateEditModal.test.tsx",
     "src/components/organizer/PartnerManagement/PartnerDetailHeader.test.tsx",

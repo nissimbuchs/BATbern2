@@ -1284,7 +1284,6 @@
       "placeholder": "tua@email.com",
       "button": "Iscriviti",
       "checkInbox": "Quasi fatto: conferma l'iscrizione con il link che ti abbiamo appena inviato.",
-      "alreadySubscribed": "Sei già iscritto.",
       "error": "Qualcosa è andato storto. Riprova.",
       "emailInvalid": "Inserisci un indirizzo e-mail valido."
     },

@@ -2,7 +2,7 @@
  * NewsletterSubscribeWidget (Story 10.7 — AC4)
  *
  * Footer widget for subscribing anonymous visitors to the BATbern newsletter.
- * Shows check-your-inbox / already-subscribed / error inline states. Double opt-in (#1288): the
+ * Shows check-your-inbox / error inline states, and nothing for a logged-in subscriber. Double opt-in (#1288): the
  * server answers 200 for every valid address and mails a confirmation link, so success means
  * "check your inbox", not "subscribed".
  */
@@ -20,7 +20,7 @@ import { mailLanguage } from '@/i18n/languages';
 
 type WidgetState = 'idle' | 'submitting' | 'success' | 'error';
 
-export function NewsletterSubscribeWidget() {
+export function NewsletterSubscribeWidget({ className = '' }: { className?: string }) {
   const { t, i18n } = useTranslation('events');
   const [email, setEmail] = useState('');
   const [emailError, setEmailError] = useState('');
@@ -88,23 +88,21 @@ export function NewsletterSubscribeWidget() {
 
   if (widgetState === 'success') {
     return (
-      <div className="py-4 text-center text-sm text-green-700 dark:text-green-400">
+      <div className={`py-4 text-center text-sm text-green-700 dark:text-green-400 ${className}`}>
         {t('newsletter.widget.checkInbox')}
       </div>
     );
   }
 
-  // Known-subscribed authenticated visitor: never show the form.
+  // Known-subscribed authenticated visitor: nothing at all. A line "Du bist bereits angemeldet"
+  // at the bottom of the homepage read as an event registration, which the hero already shows
+  // (owner 2026-11-21). The subscription is managed in the profile.
   if (isAuthenticated && anySubscribed) {
-    return (
-      <div className="py-4 text-center text-sm text-muted-foreground">
-        {t('newsletter.widget.alreadySubscribed')}
-      </div>
-    );
+    return null;
   }
 
   return (
-    <div className="py-4">
+    <div className={`py-4 ${className}`}>
       <p className="mb-3 text-sm font-medium">{t('newsletter.widget.title')}</p>
       {/* Invisible Turnstile widget container (Story 10.31, AC7) */}
       <div ref={widgetRef} />

@@ -1296,7 +1296,6 @@
       "placeholder": "your@email.com",
       "button": "Subscribe",
       "checkInbox": "Almost done: please confirm your subscription with the link we just sent you.",
-      "alreadySubscribed": "You are already subscribed.",
       "error": "Something went wrong. Please try again.",
       "emailInvalid": "Please enter a valid email address."
     },

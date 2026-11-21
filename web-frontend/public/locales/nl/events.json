@@ -1284,7 +1284,6 @@
       "placeholder": "uw@email.com",
       "button": "Abonneren",
       "checkInbox": "Bijna klaar: bevestig uw abonnement met de link die we u zojuist hebben gestuurd.",
-      "alreadySubscribed": "U bent al geabonneerd.",
       "error": "Er ging iets mis. Probeer opnieuw.",
       "emailInvalid": "Voer een geldig e-mailadres in."
     },
