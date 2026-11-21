@@ -20,12 +20,16 @@ flowchart TD
     end
     G6 --> S
     subgraph S["Domain service EMS, CUMS, PCS"]
-        S1["own SecurityConfig: permitAll list must match the gateway"] --> S2["JwtRolesConverter: custom:role to ROLE_x"]
+        S1["own SecurityConfig: permitAll list must match the gateway,<br/>shared BatbernJwtDecoder"] --> S2["JwtRolesConverter: custom:role to ROLE_x"]
         S2 --> S3["@PreAuthorize on every write and every<br/>read of other people's data, ADR-008"]
         S3 --> S4["controller, public responses are projections"]
     end
     I["Service to service: /internal/** over Service Connect,<br/>no JWT, never routed by the gateway"] -.-> S1
 ```
+
+Every service and the gateway verify the JWT with the one shared-kernel `BatbernJwtDecoder`:
+Cognito, Watch and agent tokens, each kind on per service (PCS: Cognito and agent only; details and
+properties in 06, "One JWT decoder for every service").
 
 Roles are decided only in the services (ADR-008, #1147). The gateway authenticates and routes; its
 `AccountActiveFilter`, Turnstile and rate limiting are the only request-time checks it adds.

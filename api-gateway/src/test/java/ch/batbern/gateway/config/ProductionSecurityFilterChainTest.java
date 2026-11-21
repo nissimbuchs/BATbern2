@@ -1,5 +1,6 @@
 package ch.batbern.gateway.config;
 
+import ch.batbern.shared.test.security.TestTokens;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
 import com.nimbusds.jose.crypto.MACSigner;
@@ -14,6 +15,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit.jupiter.web.SpringJUnitWebConfig;
 import org.springframework.test.web.servlet.MockMvc;
@@ -203,5 +206,28 @@ class ProductionSecurityFilterChainTest {
         // so the 401s above come from the rules and not from a broken context.
         mockMvc.perform(get("/api/v1/events/BATbern60"))
                 .andExpect(status().isOk());
+    }
+
+    @DynamicPropertySource
+    static void agentKey(DynamicPropertyRegistry registry) {
+        registry.add("agent.jwt.public-key", TestTokens::agentPublicKeyPem);
+    }
+
+    @Test
+    @DisplayName("should_reachService_when_callerHasValidAgentToken")
+    void should_reachService_when_callerHasValidAgentToken() throws Exception {
+        // Agentic interaction 0.1: the shared decoder accepts an agent token signed with the configured key.
+        String token = TestTokens.agentToken("agent-sub-1", "agent.planner", "run-1", "test.organizer");
+        mockMvc.perform(get("/api/v1/users").header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("should_return401_when_agentTokenSignedWithOtherKey")
+    void should_return401_when_agentTokenSignedWithOtherKey() throws Exception {
+        String token = TestTokens.agent("agent-sub-1", "agent.planner", "run-1", "test.organizer")
+                .signedWith(TestTokens.newRsaKeyPair()).build();
+        mockMvc.perform(get("/api/v1/users").header("Authorization", "Bearer " + token))
+                .andExpect(status().isUnauthorized());
     }
 }

@@ -1,27 +1,26 @@
 package ch.batbern.companyuser.config;
 
 import ch.batbern.companyuser.security.VpcInternalAuthorizationManager;
+import ch.batbern.shared.security.BatbernJwtDecoder;
 import ch.batbern.shared.security.JwtRolesConverter;
+import ch.batbern.shared.security.TokenKind;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.http.HttpMethod;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
+import org.springframework.core.env.Environment;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
-import org.springframework.security.oauth2.jwt.JwtValidators;
-import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.web.SecurityFilterChain;
 
-import javax.crypto.spec.SecretKeySpec;
 import javax.sql.DataSource;
-import java.nio.charset.StandardCharsets;
-import java.util.Base64;
+import java.util.EnumSet;
 
 /**
  * Security configuration for the Company-User Management Service
@@ -41,14 +40,8 @@ import java.util.Base64;
 @EnableWebSecurity
 public class SecurityConfig {
 
-    @Value("${spring.security.oauth2.resourceserver.jwt.jwk-set-uri:}")
-    private String jwkSetUri;
-
     @Value("${vpc.cidr:10.1.0.0/16}")
     private String vpcCidr;
-
-    @Value("${watch.jwt.secret:batbern-watch-dev-secret-key-min-32-chars}")
-    private String watchJwtSecret;
 
     /**
      * Enable method-level security in every profile (local, test, staging, production).
@@ -67,6 +60,7 @@ public class SecurityConfig {
     @Bean
     @Profile("local")
     public SecurityFilterChain localFilterChain(HttpSecurity http,
+                                                JwtDecoder jwtDecoder,
                                                 JwtAuthenticationConverter jwtAuthenticationConverter)
             throws Exception {
         http
@@ -101,7 +95,7 @@ public class SecurityConfig {
             )
             .oauth2ResourceServer(oauth2 -> oauth2
                 .jwt(jwt -> jwt
-                    .decoder(jwtDecoder())
+                    .decoder(jwtDecoder)
                     .jwtAuthenticationConverter(jwtAuthenticationConverter)
                 )
             );
@@ -116,6 +110,7 @@ public class SecurityConfig {
     @Bean
     @Profile("!local")
     public SecurityFilterChain filterChain(HttpSecurity http,
+                                           JwtDecoder jwtDecoder,
                                            JwtAuthenticationConverter jwtAuthenticationConverter)
             throws Exception {
         http
@@ -160,7 +155,7 @@ public class SecurityConfig {
             )
             .oauth2ResourceServer(oauth2 -> oauth2
                 .jwt(jwt -> jwt
-                    .decoder(jwtDecoder())
+                    .decoder(jwtDecoder)
                     .jwtAuthenticationConverter(jwtAuthenticationConverter)
                 )
             );
@@ -169,51 +164,17 @@ public class SecurityConfig {
     }
 
     /**
-     * Multi-issuer JWT decoder accepting both AWS Cognito (RS256) and Watch app (HS256) tokens.
-     *
-     * Story 11.C.1: Watch organizer JWTs are now propagated to CUMS by EMS's
-     * {@code WatchEventController} / {@code WatchSpeakerArrivalService} when they call
-     * {@code UserApiClient.getUserByUsername(...)}, so CUMS must accept the Watch issuer too.
-     * Mirrors the multi-issuer pattern in EMS {@code SecurityConfig#jwtDecoder()}.
-     *
-     * Routing strategy: peek at the "iss" claim in the (unverified) JWT payload to select
-     * the correct decoder. Signature verification is then performed by the selected decoder,
-     * so a forged issuer claim cannot bypass verification — it would just fail with the wrong key.
-     *
-     * - iss == "batbern-watch" → HMAC-SHA256 decoder (Watch pairing JWT)
-     * - anything else          → Cognito RS256 decoder (Cognito ID/access token)
-     *
-     * Every profile, tests included: the test profile points the JWK set at an unreachable host,
-     * since its tests authenticate through MockMvc's {@code jwt()} post-processor.
+     * The shared decoder ({@link BatbernJwtDecoder}), in every profile. Default kinds: Cognito, Watch
+     * (Story 11.C.1: EMS forwards Watch organizer JWTs on its CUMS calls) and agent.
+     * {@code batbern.security.token-kinds} overrides; the agent kind needs
+     * {@code agent.jwt.public-key}. The test profile points the JWK set at an unreachable host: its
+     * tests authenticate through MockMvc's {@code jwt()} post-processor or a {@code TestTokens} agent
+     * token.
      */
     @Bean
-    public JwtDecoder jwtDecoder() {
-        if (jwkSetUri == null || jwkSetUri.isEmpty()) {
-            throw new IllegalArgumentException("JWT JWK Set URI must be configured");
-        }
-
-        NimbusJwtDecoder cognitoDecoder = NimbusJwtDecoder.withJwkSetUri(jwkSetUri).build();
-        cognitoDecoder.setJwtValidator(JwtValidators.createDefault());
-
-        SecretKeySpec watchKey = new SecretKeySpec(
-                watchJwtSecret.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
-        NimbusJwtDecoder watchDecoder = NimbusJwtDecoder.withSecretKey(watchKey).build();
-
-        return token -> isWatchJwt(token) ? watchDecoder.decode(token) : cognitoDecoder.decode(token);
-    }
-
-    /** Peeks at the JWT payload (base64url, no signature check) to read the "iss" claim. */
-    private static boolean isWatchJwt(String token) {
-        try {
-            String[] parts = token.split("\\.");
-            if (parts.length < 2) {
-                return false;
-            }
-            String payload = new String(Base64.getUrlDecoder().decode(parts[1]), StandardCharsets.UTF_8);
-            return payload.contains("\"iss\":\"batbern-watch\"");
-        } catch (Exception e) {
-            return false;
-        }
+    public JwtDecoder jwtDecoder(Environment environment) {
+        return BatbernJwtDecoder.fromEnvironment(environment,
+                EnumSet.of(TokenKind.COGNITO, TokenKind.WATCH, TokenKind.AGENT));
     }
 
     /**

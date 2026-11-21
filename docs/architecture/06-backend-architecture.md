@@ -103,13 +103,31 @@ sequenceDiagram
     end
 ```
 
-Facts behind the diagram: `api-gateway/.../config/SecurityConfig.java` (`oauth2ResourceServer`,
-composite decoder for Cognito and Watch tokens), `TurnstileVerificationFilter` (protected endpoints
+Facts behind the diagram: `api-gateway/.../config/SecurityConfig.java` (`oauth2ResourceServer`
+with the shared decoder, below), `TurnstileVerificationFilter` (protected endpoints
 in `api-gateway/src/main/resources/application.yml`: newsletter subscribe, registration create,
 thanks POST; `turnstile.enabled` defaults to false and is switched on by environment),
 `RateLimitingFilter`, `AccountActiveFilter` (fail-open, kill switch
 `security.active-gate.enabled`), and `shared-kernel/.../security/JwtRolesConverter` (with the
 Pattern 3b database fallback, see 06b).
+
+**One JWT decoder for every service** (agentic interaction 0.1): gateway, CUMS, EMS and PCS each
+register `shared-kernel/.../security/BatbernJwtDecoder` as their only `JwtDecoder` bean
+(`BatbernJwtDecoder.fromEnvironment(environment, serviceDefault)`). It reads the unverified `iss`
+with `JWTParser` only to pick a verifier; the chosen verifier always checks the signature:
+
+| `iss` | Kind | Verifier | Default on in |
+|---|---|---|---|
+| `batbern-watch` | `WATCH` | HS256, `watch.jwt.secret` (dev default as before) | gateway, CUMS, EMS |
+| `batbern-agent` | `AGENT` | RS256 only, `agent.jwt.public-key` (PEM or base64 DER); `AgentTokenValidator`: `sub`, `custom:username`, `act.run`, `act.principal`, `iat`, `exp` present, lifetime at most 300 s, no `custom:role` / `role` claim | gateway, CUMS, EMS, PCS |
+| anything else | `COGNITO` | JWK set (`spring.security.oauth2.resourceserver.jwt.jwk-set-uri`, else discovery from `issuer-uri`) | gateway, CUMS, EMS, PCS |
+
+`batbern.security.token-kinds` (e.g. `cognito,agent`) overrides a service's default. The agent kind
+stays off without `agent.jwt.public-key`. A token of a kind the service does not accept is refused
+(401) without reaching another verifier: PCS refuses Watch tokens. An agent's roles come from
+`role_assignments` by its `sub` through `JwtRolesConverter`, never from the token. Tests sign agent
+and Watch tokens with shared-kernel test fixtures `ch.batbern.shared.test.security.TestTokens`
+(key pair generated per JVM; `AbstractIntegrationTest` registers its public key).
 
 ### Role-Based Security Configuration
 
@@ -326,7 +344,7 @@ public SecurityFilterChain filterChain(HttpSecurity http, JwtAuthenticationConve
             // ... further public reads and token-credentialed writes ...
             .requestMatchers("/internal/**").permitAll()   // the gateway denies it
             .anyRequest().authenticated())
-        // every service validates the JWT itself (multi-issuer: Cognito RS256, Watch HS256)
+        // every service validates the JWT itself with the shared BatbernJwtDecoder bean (see above)
         .oauth2ResourceServer(o -> o.jwt(j -> j.jwtAuthenticationConverter(jwtAuthenticationConverter)));
     return http.build();
 }

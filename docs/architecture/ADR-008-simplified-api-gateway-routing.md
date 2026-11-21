@@ -70,7 +70,7 @@ We have decided to simplify the API Gateway architecture:
 ┌─────────────────────────────────────────────────────────────────┐
 │ Spring Boot API Gateway Service (ECS)                          │
 │ - Route to microservices (based on path)                       │
-│ - JWT validation via CognitoJWTValidator                       │
+│ - JWT validation via the shared BatbernJwtDecoder              │
 │ - SecurityConfig: public vs authenticated endpoints            │
 │ - Rate limiting (role-based)                                    │
 │ - Correlation ID generation                                     │

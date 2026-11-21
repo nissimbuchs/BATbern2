@@ -39,10 +39,6 @@ dependencies {
     implementation 'software.amazon.awssdk:cognitoidentityprovider'
     implementation 'software.amazon.awssdk:auth'
 
-    // JWT Processing
-    implementation 'com.auth0:java-jwt:4.6.2'
-    implementation 'com.auth0:jwks-rsa:0.24.2'
-
     // Jackson for JSON processing (version managed by Spring Boot)
     // Epic 13 (SB4): keep Jackson 2 (com.fasterxml) defaults during migration — payload parity.
     implementation 'org.springframework.boot:spring-boot-jackson2'
