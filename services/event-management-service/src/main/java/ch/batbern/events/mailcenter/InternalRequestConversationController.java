@@ -60,7 +60,7 @@ public class InternalRequestConversationController {
     public record Decided(
             @NotNull RequestConversations.Kind kind,
             @NotNull Status status,
-            @NotBlank @Size(max = 100) String decidedBy,
+            @NotBlank @Size(max = 255) String decidedBy,
             @NotNull Instant decidedAt) {
     }
 }

@@ -53,6 +53,9 @@ import java.util.UUID;
 @Transactional
 public class PartnerService {
 
+    /** Actor of a partner domain event published without a signed-in user. */
+    static final String PARTNER_EVENTS_JOB = "partner-events";
+
     private final PartnerRepository partnerRepository;
     private final CompanyServiceClient companyServiceClient;
     private final DomainEventPublisher eventPublisher;
@@ -372,7 +375,7 @@ public class PartnerService {
     }
 
     private void publishPartnerCreatedEvent(Partner partner) {
-        String userId = securityContextHelper.getCurrentUserIdOrSystem();
+        String userId = securityContextHelper.actorOr(PARTNER_EVENTS_JOB);
 
         PartnerCreatedEvent event = new PartnerCreatedEvent(
                 partner.getId(),
@@ -388,7 +391,7 @@ public class PartnerService {
     }
 
     private void publishPartnerUpdatedEvent(Partner partner) {
-        String userId = securityContextHelper.getCurrentUserIdOrSystem();
+        String userId = securityContextHelper.actorOr(PARTNER_EVENTS_JOB);
 
         PartnerUpdatedEvent event = new PartnerUpdatedEvent(
                 partner.getId(),

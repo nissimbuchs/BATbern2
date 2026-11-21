@@ -99,11 +99,13 @@ public class EventPhotoUploadHandler implements UploadPurposeHandler {
     /**
      * Creates the gallery row; the photo's id is the upload's. The file name is {@code photo.{ext}}
      * (the original name is not kept, Story 17.11d adds it). The uploader is the confirming organizer
-     * by username (ADR-003); {@code createdBy} of the upload is the JWT subject.
+     * by username (ADR-003), recorded as its actor ({@code agent:<run> for <username>} under an
+     * agent token, {@code system:event-photo-upload} without a user); {@code createdBy} of the upload
+     * is the JWT subject.
      */
     @Override
     public void attach(UploadRecord upload, String eventCode) {
-        String username = securityContextHelper.getCurrentUsernameOrNull();
+        String uploadedBy = securityContextHelper.actorOr("event-photo-upload");
         photoRepository.save(EventPhoto.builder()
                 .id(UUID.fromString(upload.getUploadId()))
                 .newEntity(true)
@@ -112,7 +114,7 @@ public class EventPhotoUploadHandler implements UploadPurposeHandler {
                 .displayUrl(upload.getFileUrl())
                 .filename("photo." + keyExtension(upload))
                 .uploadedAt(Instant.now())
-                .uploadedBy(username != null ? username : "system")
+                .uploadedBy(uploadedBy)
                 .sortOrder(0)
                 .build());
     }

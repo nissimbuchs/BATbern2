@@ -3,6 +3,7 @@ package ch.batbern.companyuser.service;
 import ch.batbern.companyuser.domain.User;
 import ch.batbern.companyuser.exception.UserNotFoundException;
 import ch.batbern.companyuser.repository.UserRepository;
+import ch.batbern.shared.security.Actors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
@@ -112,7 +113,7 @@ public class DuplicateCandidateService {
                 INSERT INTO user_duplicate_dismissals (user_a_id, user_b_id, dismissed_by)
                 VALUES (LEAST(?, ?), GREATEST(?, ?), ?)
                 ON CONFLICT DO NOTHING
-                """, a.getId(), b.getId(), a.getId(), b.getId(), by);
+                """, a.getId(), b.getId(), a.getId(), b.getId(), Actors.forUsername(by));
     }
 
     private Candidate row(ResultSet rs, int i) throws SQLException {

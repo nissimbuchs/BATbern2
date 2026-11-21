@@ -71,7 +71,7 @@ public class EventTask {
     @Column(name = "completed_date")
     private Instant completedDate;
 
-    @Column(name = "completed_by_username", length = 100)
+    @Column(name = "completed_by_username", length = 255)
     private String completedByUsername;
 
     @Column(name = "cancelled_reason", length = 255)

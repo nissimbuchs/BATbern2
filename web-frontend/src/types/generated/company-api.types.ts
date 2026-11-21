@@ -420,9 +420,10 @@ export interface components {
        */
       updatedAt: string;
       /**
-       * @description Who created this company (Story 1.16.2): the creator's username; `anonymous` for a
-       *     company named during an anonymous event registration; the Cognito subject (UUID) when
-       *     the creator's token carried no `custom:username` claim.
+       * @description Who created this company (Story 1.16.2): the creator's username; `agent:<run> for
+       *     <username>` when an agent created it for that person (agentic interaction 0.2);
+       *     `anonymous` for a company named during an anonymous event registration; the Cognito
+       *     subject (UUID) when the creator's token carried no `custom:username` claim.
        * @example john.doe
        */
       createdBy: string;

@@ -12,6 +12,7 @@ import ch.batbern.partners.meetings.dto.generated.SendInviteResponse;
 import ch.batbern.partners.meetings.dto.generated.UpdateMeetingRequest;
 import ch.batbern.partners.exception.PartnerNotFoundException;
 import ch.batbern.partners.repository.PartnerMeetingRepository;
+import ch.batbern.shared.security.Actors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -89,7 +90,7 @@ public class PartnerMeetingService {
                 .endTime(LocalTime.parse(request.getEndTime()))
                 .location(request.getLocation())
                 .agenda(request.getAgenda())
-                .createdBy(organizerUsername)
+                .createdBy(Actors.forUsername(organizerUsername))
                 .build();
 
         // Flush so that Hibernate fills @CreationTimestamp/@UpdateTimestamp before the DTO is built:

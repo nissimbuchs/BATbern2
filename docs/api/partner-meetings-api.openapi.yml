@@ -394,7 +394,7 @@ components:
           description: "Timestamp when calendar invite was sent, null if not yet sent"
         createdBy:
           type: string
-          description: "Organizer username (ADR-003)"
+          description: "Organizer username (ADR-003), or `agent:<run> for <username>` when an agent created the meeting for that organizer"
         createdAt:
           type: string
           format: date-time

@@ -9,6 +9,7 @@ import ch.batbern.events.watch.domain.SpeakerArrival;
 import ch.batbern.events.watch.dto.ArrivalCount;
 import ch.batbern.events.watch.dto.ArrivalStatusDto;
 import ch.batbern.events.watch.dto.SpeakerArrivalBroadcast;
+import ch.batbern.shared.security.Actors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -71,7 +72,7 @@ public class WatchSpeakerArrivalService {
         // Idempotent: catch DataIntegrityViolationException from UNIQUE(event_code, speaker_username)
         try {
             if (!arrivalRepository.existsByEventCodeAndSpeakerUsername(eventCode, speakerUsername)) {
-                arrivalRepository.save(new SpeakerArrival(eventCode, speakerUsername, confirmedBy));
+                arrivalRepository.save(new SpeakerArrival(eventCode, speakerUsername, Actors.forUsername(confirmedBy)));
             }
         } catch (DataIntegrityViolationException e) {
             // Concurrent confirmation — already inserted by another organizer. Safe to ignore.

@@ -1,5 +1,6 @@
 package ch.batbern.events.security;
 
+import ch.batbern.shared.security.Actors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -139,6 +140,30 @@ public class SecurityContextHelper {
             return null;
         }
         return getCurrentUsername();
+    }
+
+    /**
+     * The current caller as an audit column records it ({@link Actors#forUsername}): the username, or
+     * {@code agent:<run> for <username>} under an agent token. Never for ownership checks.
+     */
+    public String getCurrentActor() {
+        return Actors.forUsername(getCurrentUsername());
+    }
+
+    /**
+     * Who acted: the current caller's actor ({@link #getCurrentActor()}) when someone is signed in,
+     * otherwise {@code system:<job>} (scheduler, listener, anonymous flow).
+     *
+     * @param systemJob kebab-case name of the job that writes without a user
+     */
+    public String actorOr(String systemJob) {
+        String username = getCurrentUsernameOrNull();
+        return username != null ? Actors.forUsername(username) : Actors.system(systemJob);
+    }
+
+    /** Whether the current caller's token carries an {@code act} claim (an agent token). */
+    public boolean carriesAgentAct() {
+        return Actors.carriesAct(SecurityContextHolder.getContext().getAuthentication());
     }
 
     /**

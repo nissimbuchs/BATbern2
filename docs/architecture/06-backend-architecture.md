@@ -129,6 +129,17 @@ stays off without `agent.jwt.public-key`. A token of a kind the service does not
 and Watch tokens with shared-kernel test fixtures `ch.batbern.shared.test.security.TestTokens`
 (key pair generated per JVM; `AbstractIntegrationTest` registers its public key).
 
+**Who acted** (agentic interaction 0.2): audit columns and `performedBy` / `decidedBy` record the
+actor of shared-kernel `security/Actors`: `agent:<run> for <username>` when the token carries
+`act` (`act.run`, `custom:username`), the plain username otherwise, `system:<job>` without a user
+(`Actors.system`, kebab case). The value is wrapped at the sink with `Actors.forUsername`, which is
+idempotent; each service's `SecurityContextHelper` offers `getCurrentActor()`, `actorOr(job)` and
+`carriesAgentAct()`. Identity and ownership keep reading the username (`requester_username`,
+`UserOwnership`, `findBy…Username`), so an agent passes the same ownership checks as its person.
+The EMS STOMP principal of an agent token is its actor; Cognito and Watch keep the `sub`. Audit
+columns narrower than 255 were widened (CUMS V40, EMS V161, PCS V13); the longest actor is 147
+characters (36-character run, 100-character username).
+
 ### Role-Based Security Configuration
 
 > **Important (corrected 2026-10):** Both the API gateway and each domain service validate the JWT

@@ -1024,7 +1024,7 @@ export interface components {
       topicSelectionNote?: string;
       /** @description Username of the creator (audit). */
       createdBy?: string;
-      /** @description Organizers only (omitted for other callers, GHSA-qhqv). Username of the last updater (audit). */
+      /** @description Organizers only (omitted for other callers, GHSA-qhqv). Username of the last updater (audit), `agent:<run> for <username>` when an agent acted for them, or `system:<job>`. */
       updatedBy?: string;
       /** @description Speakers who accepted their invitation. Only present when ?include=metrics and the caller is an organizer. */
       confirmedSpeakersCount?: number;

@@ -39,6 +39,6 @@ public class AppSettingEntity {
     @UpdateTimestamp
     private Instant updatedAt;
 
-    @Column(name = "updated_by", length = 100)
+    @Column(name = "updated_by", length = 255)
     private String updatedBy;
 }

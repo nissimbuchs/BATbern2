@@ -6,6 +6,7 @@ import ch.batbern.events.repository.EventRepository;
 import ch.batbern.shared.events.DomainEventPublisher;
 import ch.batbern.shared.events.EventWorkflowTransitionEvent;
 import ch.batbern.shared.exception.InvalidStateTransitionException;
+import ch.batbern.shared.security.Actors;
 import ch.batbern.shared.types.EventWorkflowState;
 import ch.batbern.shared.types.SpeakerWorkflowState;
 import lombok.RequiredArgsConstructor;
@@ -125,7 +126,7 @@ public class EventWorkflowStateMachine {
 
         // Update state
         event.setWorkflowState(targetState);
-        event.setUpdatedBy(organizerUsername);
+        event.setUpdatedBy(Actors.forUsername(organizerUsername));
         event.setUpdatedAt(Instant.now());
 
         // Persist

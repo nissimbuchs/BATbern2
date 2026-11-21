@@ -32,6 +32,8 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class JwtStompInterceptorTest {
 
+    private static final String WATCH_SECRET = "stomp-test-watch-secret-at-least-32-bytes";
+
     @Mock
     private JwtDecoder jwtDecoder;
 
@@ -124,7 +126,20 @@ class JwtStompInterceptorTest {
         Message<?> result = real.preSend(buildStompConnectMessage("Bearer " + token), channel);
 
         assertThat(result).isNotNull();
-        assertThat(StompHeaderAccessor.wrap(result).getUser().getName()).isEqualTo("agent-sub-1");
+        // Agentic interaction 0.2: an agent is named after its actor, not its sub.
+        assertThat(StompHeaderAccessor.wrap(result).getUser().getName()).isEqualTo("agent:run-1 for agent.planner");
+    }
+
+    @Test
+    @DisplayName("should_keepSubAsPrincipalName_when_realWatchTokenConnects")
+    void should_keepSubAsPrincipalName_when_realWatchTokenConnects() {
+        JwtStompInterceptor real = new JwtStompInterceptor(realSharedDecoder());
+        String token = TestTokens.watchToken(WATCH_SECRET, "marco.organizer", "ORGANIZER");
+
+        Message<?> result = real.preSend(buildStompConnectMessage("Bearer " + token), channel);
+
+        assertThat(result).isNotNull();
+        assertThat(StompHeaderAccessor.wrap(result).getUser().getName()).isEqualTo("marco.organizer");
     }
 
     @Test
@@ -142,7 +157,8 @@ class JwtStompInterceptorTest {
         MockEnvironment environment = new MockEnvironment()
                 .withProperty("spring.security.oauth2.resourceserver.jwt.jwk-set-uri",
                         "https://jwks.example.invalid/keys")
-                .withProperty("agent.jwt.public-key", TestTokens.agentPublicKeyPem());
+                .withProperty("agent.jwt.public-key", TestTokens.agentPublicKeyPem())
+                .withProperty("watch.jwt.secret", WATCH_SECRET);
         return new SecurityConfig().jwtDecoder(environment);
     }
 

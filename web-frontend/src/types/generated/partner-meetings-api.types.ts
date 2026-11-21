@@ -158,7 +158,7 @@ export interface components {
        * @description Timestamp when calendar invite was sent, null if not yet sent
        */
       inviteSentAt?: string | null;
-      /** @description Organizer username (ADR-003) */
+      /** @description Organizer username (ADR-003), or `agent:<run> for <username>` when an agent created the meeting for that organizer */
       createdBy: string;
       /** Format: date-time */
       createdAt: string;

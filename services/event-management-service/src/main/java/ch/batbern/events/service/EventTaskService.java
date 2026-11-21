@@ -6,6 +6,7 @@ import ch.batbern.events.domain.TaskTemplate;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.EventTaskRepository;
 import ch.batbern.events.repository.TaskTemplateRepository;
+import ch.batbern.shared.security.Actors;
 import ch.batbern.shared.types.EventWorkflowState;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -503,7 +504,7 @@ public class EventTaskService {
             boolean completes = "completed".equals(changes.status());
             if (completes && !wasCompleted) {
                 task.setCompletedDate(Instant.now());
-                task.setCompletedByUsername(callerUsername);
+                task.setCompletedByUsername(Actors.forUsername(callerUsername));
             } else if (!completes && wasCompleted) {
                 task.setCompletedDate(null);
                 task.setCompletedByUsername(null);

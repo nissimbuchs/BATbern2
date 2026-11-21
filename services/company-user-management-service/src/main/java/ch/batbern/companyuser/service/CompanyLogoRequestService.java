@@ -10,6 +10,7 @@ import ch.batbern.companyuser.repository.CompanyLogoRequestRepository;
 import ch.batbern.companyuser.repository.CompanyRepository;
 import ch.batbern.companyuser.repository.UserRepository;
 import ch.batbern.companyuser.security.SecurityContextHelper;
+import ch.batbern.shared.security.Actors;
 import ch.batbern.shared.upload.UploadService;
 import ch.batbern.shared.upload.UploadStatus;
 import ch.batbern.companyuser.domain.UserLanguages;
@@ -156,12 +157,13 @@ public class CompanyLogoRequestService {
     }
 
     private void decide(CompanyLogoRequest request, CompanyLogoRequest.Status status, String by, String reason) {
+        String decidedBy = Actors.forUsername(by);
         request.setStatus(status);
-        request.setDecidedBy(by);
+        request.setDecidedBy(decidedBy);
         request.setDecidedAt(Instant.now());
         request.setReason(reason);
         requests.saveAndFlush(request);
-        mailCenterDecisions.afterCommit(MailCenterRequestContract.Kind.LOGO, request.getId(), status.name(), by,
+        mailCenterDecisions.afterCommit(MailCenterRequestContract.Kind.LOGO, request.getId(), status.name(), decidedBy,
                 request.getDecidedAt());
     }
 

@@ -69,7 +69,7 @@ public class TaskTemplateController implements TaskTemplatesApi {
         log.info("POST /api/v1/tasks/templates - name: {}", request.getName());
 
         // Extract organizer username from security context
-        String createdByUsername = getCurrentUsername();
+        String createdByUsername = getCurrentActor();
 
         TaskTemplate template = taskTemplateService.createTemplate(
                 request.getName(),
@@ -160,13 +160,11 @@ public class TaskTemplateController implements TaskTemplatesApi {
     }
 
     /**
-     * Current authenticated CANONICAL username (ADR-003), or {@code "system"} when
-     * unauthenticated. Uses {@link SecurityContextHelper#getCurrentUsernameOrNull()}
-     * (custom:username claim + Pattern 3b twin DB fallback) instead of
-     * {@code authentication.getName()}, which returns the Cognito {@code sub} (a UUID).
+     * Who creates the template, as {@code created_by_username} records it: the caller's actor
+     * ({@link SecurityContextHelper#actorOr}: canonical username, {@code agent:<run> for <username>}
+     * under an agent token), or {@code system:task-templates} when unauthenticated.
      */
-    private String getCurrentUsername() {
-        String username = securityContextHelper.getCurrentUsernameOrNull();
-        return username != null ? username : "system";
+    private String getCurrentActor() {
+        return securityContextHelper.actorOr("task-templates");
     }
 }

@@ -6,6 +6,7 @@ import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.MailConversationRepository;
 import ch.batbern.shared.exception.NotFoundException;
 import ch.batbern.shared.exception.ValidationException;
+import ch.batbern.shared.security.Actors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -76,7 +77,7 @@ public class ConversationService {
             conversation.setAssigneeUsername(assignee);
         }
         conversation.setUpdatedAt(Instant.now());
-        conversation.setUpdatedBy(caller);
+        conversation.setUpdatedBy(Actors.forUsername(caller));
         conversations.saveAndFlush(conversation);
         if (notify) {
             notifier.notifyAssigned(conversation, assignee);

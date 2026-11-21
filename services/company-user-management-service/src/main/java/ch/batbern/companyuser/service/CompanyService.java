@@ -13,6 +13,7 @@ import ch.batbern.companyuser.exception.CompanyValidationException;
 import ch.batbern.companyuser.repository.CompanyRepository;
 import ch.batbern.companyuser.security.SecurityContextHelper;
 import ch.batbern.shared.exception.ValidationException;
+import ch.batbern.shared.security.Actors;
 import ch.batbern.shared.service.SlugGenerationService;
 import ch.batbern.shared.upload.UploadRecord;
 import ch.batbern.shared.upload.UploadService;
@@ -100,7 +101,7 @@ public class CompanyService {
                 .industry(request.getIndustry())
                 .description(request.getDescription())
                 .isVerified(false)
-                .createdBy(currentUsername)
+                .createdBy(Actors.forUsername(currentUsername))
                 .build();
 
         Company savedCompany = companyRepository.save(company);
@@ -189,7 +190,7 @@ public class CompanyService {
                 .name(companyName)  // Short slug (e.g., "testco")
                 .displayName(displayName)  // Full name (e.g., "Test Co")
                 .isVerified(false)
-                .createdBy(currentUsername != null ? currentUsername : "anonymous")
+                .createdBy(currentUsername != null ? Actors.forUsername(currentUsername) : "anonymous")
                 .build();
 
         Company savedCompany;
@@ -343,7 +344,7 @@ public class CompanyService {
      * again finishes the move.
      */
     private Company rename(Company company, String oldKey, String oldDisplayName, String newKey) {
-        String performedBy = securityContextHelper.getCurrentUsername();
+        String performedBy = securityContextHelper.getCurrentActor();
         keyMover.move(oldKey, newKey, performedBy, CompanyReferenceContract.Trigger.RENAME);
         try {
             aliasService.forget(newKey); // its own old key: the company takes it back

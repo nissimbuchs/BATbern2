@@ -8,6 +8,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -35,6 +36,16 @@ public class UserReferenceService {
             "partner_notes.author_username",
             "partner_meetings.created_by");
 
+    /**
+     * The columns of {@link #COLUMNS} that record an actor (agentic interaction 0.2): besides the plain
+     * username they hold {@code agent:<run> for <username>}, whose username follows as well.
+     */
+    static final List<String> ACTOR_COLUMNS = List.of("partner_meetings.created_by");
+
+    /** An agent actor naming the username {@code ?}: exact prefix and suffix, no LIKE pattern. */
+    private static final String AGENT_FOR =
+            "starts_with(%1$s, 'agent:') AND right(%1$s, length(' for ' || ?)) = ' for ' || ?";
+
     private static final ObjectMapper JSON = new ObjectMapper();
 
     private final JdbcTemplate jdbc;
@@ -53,7 +64,13 @@ public class UserReferenceService {
         for (String column : COLUMNS) {
             Integer n = jdbc.queryForObject("SELECT COUNT(*) FROM " + table(column) + " WHERE " + name(column)
                     + " = ?", Integer.class, source);
-            moves.put(column, n == null ? 0 : n);
+            int count = n == null ? 0 : n;
+            if (ACTOR_COLUMNS.contains(column)) {
+                Integer agents = jdbc.queryForObject("SELECT COUNT(*) FROM " + table(column) + " WHERE "
+                        + AGENT_FOR.formatted(name(column)), Integer.class, source, source);
+                count += agents == null ? 0 : agents;
+            }
+            moves.put(column, count);
         }
         return new Preview(moves, Map.of(), List.of());
     }
@@ -67,6 +84,14 @@ public class UserReferenceService {
         for (String column : COLUMNS) {
             List<String> ids = jdbc.queryForList("UPDATE " + table(column) + " SET " + name(column) + " = ? WHERE "
                     + name(column) + " = ? RETURNING id::text", String.class, target, source);
+            if (ACTOR_COLUMNS.contains(column)) {
+                // agent:<run> for <source> becomes agent:<run> for <target>
+                ids = new ArrayList<>(ids);
+                ids.addAll(jdbc.queryForList("UPDATE " + table(column) + " SET " + name(column) + " = left("
+                        + name(column) + ", length(" + name(column) + ") - length(?)) || ? WHERE "
+                        + AGENT_FOR.formatted(name(column)) + " RETURNING id::text", String.class,
+                        source, target, source, source));
+            }
             moved.put(column, ids.size());
             if (!ids.isEmpty()) {
                 movedIds.put(column, ids);

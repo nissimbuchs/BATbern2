@@ -212,6 +212,11 @@ mappings:
       - "docs/architecture/module-map.md"
       - "docs/architecture/ADR-016-service-directions-and-service-to-service-calls.md"
   # Epic 17 entry 7: contracts a service owns (ADR-016 decision 4) are called through one shared caller.
+  # Agentic interaction 0.2: the attribution convention (agent:<run> for <username>, system:<job>).
+  - source_pattern: "shared-kernel/src/main/java/ch/batbern/shared/security/Actors.java"
+    docs:
+      - "docs/architecture/module-map.md"
+      - "docs/architecture/06-backend-architecture.md"
   - source_pattern: "shared-kernel/src/main/java/ch/batbern/shared/contract/"
     docs:
       - "docs/architecture/module-map.md"

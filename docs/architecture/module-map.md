@@ -14,6 +14,17 @@ CUMS (identity) is upstream of all. EMS (event) is upstream of PCS (partners).
   Never require it: schedulers, SQS listeners and anonymous flows have none (`system:<job>`).
   `/internal` authorizes by operation, never by the user's role. Build the headers of every S2S
   call with shared-kernel `S2sHeaders.forCurrentUser()`; no client writes its own token code.
+- Attribution: a who-acted column (`created_by`, `updated_by`, `decided_by`, `performed_by`, ...)
+  and a who-acted value that leaves the service (`performedBy`, `decidedBy`) record shared-kernel
+  `Actors`: the username, `agent:<run> for <username>` when an agent acted for that person, or
+  `system:<job>` without a user. Wrap at the sink (`Actors.forUsername`, idempotent) or take
+  `SecurityContextHelper.getCurrentActor()` / `actorOr(job)`; never write a bare `system`.
+  Identity and ownership read the username, never the actor (`requester_username`,
+  `UserOwnership`, `findBy…Username`). The EMS STOMP principal of an agent is its actor.
+- The agent service calls no `/internal/**` except CUMS `/internal/agent-*` (agent tokens, and
+  agent grants for delegate requests), checked by its caller secret (AD-2, epic decision
+  2026-11-21). Everything else goes through the Spring gateway's public API with its delegated
+  agent token; it never reads or writes another service's tables.
 - Downstream must react to an upstream change? The upstream calls it through an `/internal`
   contract it owns (its spec, implementers listed in its configuration under
   `batbern.contracts.<name>.implementers`, called through shared-kernel `ContractCalls`, no

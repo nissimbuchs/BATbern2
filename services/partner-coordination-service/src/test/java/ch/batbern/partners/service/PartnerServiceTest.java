@@ -69,7 +69,7 @@ class PartnerServiceTest {
     @BeforeEach
     void setUp() {
         // Mock securityContextHelper to return "test-user" for all tests (lenient to avoid unnecessary stubbing errors)
-        lenient().when(securityContextHelper.getCurrentUserIdOrSystem()).thenReturn("test-user");
+        lenient().when(securityContextHelper.actorOr("partner-events")).thenReturn("test-user");
 
         createPartnerRequest = new CreatePartnerRequest();
         createPartnerRequest.setCompanyName("GoogleZH");

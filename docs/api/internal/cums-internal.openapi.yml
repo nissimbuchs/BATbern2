@@ -1171,7 +1171,10 @@ components:
         performedBy:
           type: string
           minLength: 1
-          maxLength: 100
+          maxLength: 255
+          description: |
+            Who merged, as recorded (module map, attribution): the organizer's or claimant's
+            username, or `agent:<run> for <username>` when an agent acted for them.
         trigger:
           type: string
           enum: [ORGANIZER, SELF_CLAIM]
@@ -1289,7 +1292,10 @@ components:
         performedBy:
           type: string
           minLength: 1
-          maxLength: 100
+          maxLength: 255
+          description: |
+            Who merged or renamed, as recorded (module map, attribution): the organizer's username,
+            or `agent:<run> for <username>` when an agent acted for them.
         trigger:
           type: string
           enum: [MERGE, RENAME]
@@ -1347,8 +1353,10 @@ components:
         decidedBy:
           type: string
           minLength: 1
-          maxLength: 100
-          description: Username of the organizer who decided, or `system:mail-center-request` for WITHDRAWN.
+          maxLength: 255
+          description: |
+            Username of the organizer who decided, `agent:<run> for <username>` when an agent
+            decided for them, or `system:mail-center-request` for WITHDRAWN.
         decidedAt:
           type: string
           format: date-time

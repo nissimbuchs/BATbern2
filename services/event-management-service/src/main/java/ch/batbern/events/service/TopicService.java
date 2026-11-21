@@ -9,6 +9,7 @@ import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.TopicRepository;
 import ch.batbern.events.repository.TopicUsageHistoryRepository;
 import ch.batbern.shared.api.DeterministicPaging;
+import ch.batbern.shared.security.Actors;
 import ch.batbern.shared.types.EventWorkflowState;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -516,7 +517,7 @@ public class TopicService {
 
         // NOW assign topic to the event returned by state machine (ADR-003: use topicCode)
         updatedEvent.setTopicCode(topicCode);
-        updatedEvent.setUpdatedBy(organizerUsername);
+        updatedEvent.setUpdatedBy(Actors.forUsername(organizerUsername));
         Event savedEvent = eventRepository.save(updatedEvent);
 
         // Create usage history record (single source of truth for usage count + staleness)

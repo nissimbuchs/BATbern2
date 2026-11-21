@@ -8,6 +8,10 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
+
+import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -440,7 +444,7 @@ class SecurityContextHelperTest {
                 new org.springframework.security.core.userdetails.User(
                         "testuser",
                         "password",
-                        java.util.List.of(
+                        List.of(
                                 new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_ORGANIZER"),
                                 new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_SPEAKER")
                         )
@@ -585,5 +589,58 @@ class SecurityContextHelperTest {
         assertThat(roles).hasSize(1);
         assertThat(roles).contains("ORGANIZER");
     }
-}
 
+    // ---------------------------------------------------------------- actor (agentic interaction 0.2)
+
+    private static Jwt agentJwt() {
+        return Jwt.withTokenValue("agent").header("alg", "RS256").subject("agent-sub")
+                .claim("custom:username", "hong.an")
+                .claim("act", Map.of("run", "run-1", "principal", "organizer-assistant"))
+                .build();
+    }
+
+    private static Jwt cognitoJwt() {
+        return Jwt.withTokenValue("cognito").header("alg", "RS256").subject("cognito-sub")
+                .claim("custom:username", "hong.an").build();
+    }
+
+    @Test
+    void should_recordAgentActor_when_agentTokenSignedIn() {
+        SecurityContextHolder.clearContext();
+        SecurityContextHolder.getContext().setAuthentication(
+                new JwtAuthenticationToken(agentJwt(), List.of()));
+        try {
+            assertThat(securityContextHelper.getCurrentUsername()).isEqualTo("hong.an");
+            assertThat(securityContextHelper.getCurrentActor()).isEqualTo("agent:run-1 for hong.an");
+            assertThat(securityContextHelper.actorOr("ems-speaker-workflow")).isEqualTo("agent:run-1 for hong.an");
+            assertThat(securityContextHelper.carriesAgentAct()).isTrue();
+        } finally {
+            SecurityContextHolder.clearContext();
+        }
+    }
+
+    @Test
+    void should_recordUsername_when_cognitoTokenSignedIn() {
+        SecurityContextHolder.clearContext();
+        SecurityContextHolder.getContext().setAuthentication(
+                new JwtAuthenticationToken(cognitoJwt(), List.of()));
+        try {
+            assertThat(securityContextHelper.getCurrentActor()).isEqualTo("hong.an");
+            assertThat(securityContextHelper.actorOr("ems-speaker-workflow")).isEqualTo("hong.an");
+            assertThat(securityContextHelper.carriesAgentAct()).isFalse();
+        } finally {
+            SecurityContextHolder.clearContext();
+        }
+    }
+
+    @Test
+    void should_recordSystemJob_when_noJwt() {
+        SecurityContextHolder.clearContext();
+        try {
+            assertThat(securityContextHelper.actorOr("ems-speaker-workflow")).isEqualTo("system:ems-speaker-workflow");
+            assertThat(securityContextHelper.carriesAgentAct()).isFalse();
+        } finally {
+            SecurityContextHolder.clearContext();
+        }
+    }
+}

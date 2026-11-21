@@ -152,7 +152,7 @@ public class Session {
     @Column(name = "overrun_minutes")
     private Integer overrunMinutes;
 
-    @Column(name = "completed_by_username", length = 100)
+    @Column(name = "completed_by_username", length = 255)
     private String completedByUsername;
 
     /**

@@ -9,6 +9,7 @@ import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
 import ch.batbern.events.service.workflow.TransitionPayload;
 import ch.batbern.shared.mail.MailContext;
+import ch.batbern.shared.security.Actors;
 import ch.batbern.shared.service.EmailService;
 import ch.batbern.shared.types.SpeakerWorkflowState;
 import ch.batbern.events.mailcenter.render.ModeratorReplyAddress;
@@ -152,7 +153,7 @@ public class QualityReviewService {
                 SessionContentVersion submission = latestSubmission.get();
                 submission.setReviewerFeedback(feedback);
                 submission.setReviewedAt(java.time.Instant.now());
-                submission.setReviewedBy(moderatorUsername);
+                submission.setReviewedBy(Actors.forUsername(moderatorUsername));
                 sessionContentHistoryRepository.save(submission);
             } else {
                 sessionRepository.findById(sessionId).ifPresent(session -> {
@@ -172,7 +173,7 @@ public class QualityReviewService {
                             .submittedAt(java.time.Instant.now())
                             .reviewerFeedback(feedback)
                             .reviewedAt(java.time.Instant.now())
-                            .reviewedBy(moderatorUsername)
+                            .reviewedBy(Actors.forUsername(moderatorUsername))
                             .build();
                     sessionContentHistoryRepository.save(submission);
                     log.info("Created v1 session_content_history row from session for speaker: {}",

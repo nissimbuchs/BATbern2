@@ -1,5 +1,6 @@
 package ch.batbern.events.service;
 
+import ch.batbern.shared.security.Actors;
 import ch.batbern.shared.utils.S3Links;
 import ch.batbern.events.config.CacheConfig;
 import ch.batbern.events.domain.EventManagementUpload;
@@ -375,7 +376,7 @@ public class SessionMaterialsService {
                     .fileSize(fileSize)
                     .mimeType(mimeType)
                     .materialType(materialType)
-                    .uploadedBy(uploadedBy)
+                    .uploadedBy(Actors.forUsername(uploadedBy))
                     .contentExtracted(false)
                     .extractionStatus("PENDING")
                     .build();
