@@ -43,9 +43,13 @@ const UnsubscribeDialog: React.FC<UnsubscribeDialogProps> = ({
   const { isMobile } = useBreakpoints();
   const mutation = useUnsubscribeSubscriber();
 
+  // Clear a previous error when the dialog opens. Depend on the stable `reset`, never on the
+  // mutation object: that changes when mutate() starts, the effect re-ran, reset() detached the
+  // running call, and its onSuccess (close the dialog) never fired. The dialog stayed open.
+  const { reset } = mutation;
   React.useEffect(() => {
-    if (open) mutation.reset();
-  }, [open, mutation]);
+    if (open) reset();
+  }, [open, reset]);
 
   const handleConfirm = () => {
     if (!subscriber?.id) return;

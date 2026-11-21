@@ -8,6 +8,7 @@
  */
 
 import { useMemo } from 'react';
+import { useNow } from '@/hooks/useNow/useNow';
 import { useQuery } from '@tanstack/react-query';
 import { publishingService } from '@/services/publishingService/publishingService';
 import type { Event, EventDetailUI } from '@/types/event.types';
@@ -37,6 +38,7 @@ export function useTabBadges(
   const waitlistCount = (event as { waitlistCount?: number } | undefined)?.waitlistCount ?? 0;
   const registrationsCount = confirmedCount + waitlistCount;
 
+  const now = useNow(60_000);
   return useMemo(
     () =>
       computeTabBadges({
@@ -45,8 +47,8 @@ export function useTabBadges(
         tasks,
         publishingStatus,
         registrationsCount,
-        now: Date.now(),
+        now,
       }),
-    [sessions, pendingMaterialsCount, tasks, publishingStatus, registrationsCount]
+    [sessions, pendingMaterialsCount, tasks, publishingStatus, registrationsCount, now]
   );
 }

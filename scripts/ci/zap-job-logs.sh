@@ -34,8 +34,12 @@ while IFS=$'\t' read -r id name; do
     *) continue ;;
   esac
   file="$out_dir/zap-$scan.log"
-  # GitHub prefixes every log line with an ISO timestamp; the parser wants the bare line.
-  if ! gh api "repos/$REPO/actions/jobs/$id/logs" | sed -E 's/^[0-9]{4}-[0-9]{2}-[0-9]{2}T[^ ]+ //' > "$file"; then
+  # curl, not `gh api`: gh refuses a response with terminal escape sequences, and ZAP colours its
+  # output (the first run, 2026-11-21, saved nothing). GitHub prefixes every line with an ISO
+  # timestamp; the parser wants the bare line, without colour codes.
+  if ! curl -sSfL -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" \
+      "${GITHUB_API_URL:-https://api.github.com}/repos/$REPO/actions/jobs/$id/logs" \
+      | sed -E 's/^[0-9]{4}-[0-9]{2}-[0-9]{2}T[^ ]+ //; s/\x1b\[[0-9;]*m//g' > "$file"; then
     echo "::error::Could not fetch the log of job '$name' ($id)"
     failed=1
     continue

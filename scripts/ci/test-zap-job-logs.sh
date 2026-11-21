@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Tests for zap-job-logs.sh (#1228) with a fake `gh` on PATH.
+# Tests for zap-job-logs.sh (#1228) with a fake `gh` and a fake `curl` on PATH.
 set -uo pipefail
 
 SCRIPT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/zap-job-logs.sh"
@@ -10,28 +10,35 @@ ok() { echo "  PASS $1"; pass=$((pass + 1)); }
 ko() { echo "  FAIL $1"; fail=$((fail + 1)); }
 
 mkdir -p "$WORK/bin"
-cat > "$WORK/bin/gh" <<'EOF'
+cat > "$WORK/bin/gh" <<'FAKE_GH'
 #!/usr/bin/env bash
-# fake gh: "api --paginate .../jobs --jq ..." lists jobs; "api .../jobs/<id>/logs" prints a log.
+# fake gh: lists the run's jobs; like the real one, it refuses a log with escape sequences.
 args="$*"
 if [[ "$args" == *"/runs/"*"/jobs"* ]]; then
   printf '11\tZAP API — events-core\n12\tZAP Frontend Baseline\n13\tSecurity Scan Summary\n'
   exit 0
 fi
+echo "the response contains terminal escape sequences; pass --allow-escape-sequences to output it anyway" >&2
+exit 1
+FAKE_GH
+cat > "$WORK/bin/curl" <<'FAKE_CURL'
+#!/usr/bin/env bash
+# fake curl: serves job logs, with ZAP's colour codes.
+args="$*"
 case "$args" in
   *"/jobs/11/logs"*)
     printf '2026-11-23T02:50:01.1234567Z Total of 120 URLs\n'
-    printf '2026-11-23T02:50:02.1234567Z PASS: Vulnerable JS Library [10003]\n'
+    printf '2026-11-23T02:50:02.1234567Z \033[32mPASS: Vulnerable JS Library [10003]\033[0m\n'
     printf '2026-11-23T02:50:02.2234567Z WARN-NEW: Full Path Disclosure [110009] x 1 \n'
     printf '2026-11-23T02:50:02.3234567Z \thttps://api.batbern.ch/api/v1/x (404 Not Found)\n' ;;
   *"/jobs/12/logs"*)
     [[ "${FAKE_FRONTEND:-ok}" == "empty" ]] && { printf '2026-11-23T02:50:02Z nothing\n'; exit 0; }
-    [[ "${FAKE_FRONTEND:-ok}" == "error" ]] && exit 1
+    [[ "${FAKE_FRONTEND:-ok}" == "error" ]] && exit 22
     printf '2026-11-23T02:51:02.1234567Z PASS: Cookie No HttpOnly Flag [10010]\n' ;;
-  *) exit 1 ;;
+  *) exit 22 ;;
 esac
-EOF
-chmod +x "$WORK/bin/gh"
+FAKE_CURL
+chmod +x "$WORK/bin/gh" "$WORK/bin/curl"
 export PATH="$WORK/bin:$PATH" REPO=o/r RUN_ID=1 GH_TOKEN=x
 
 echo "zap-job-logs"
@@ -40,6 +47,7 @@ if bash "$SCRIPT" "$WORK/out" > "$WORK/log" 2>&1; then ok "exits 0 when every sc
 [[ -f "$WORK/out/zap-frontend.log" ]] && ok "frontend job → zap-frontend.log" || ko "frontend job → zap-frontend.log"
 [[ ! -e "$WORK/out/zap-Security Scan Summary.log" && $(ls "$WORK/out" | wc -l) -eq 2 ]] && ok "non-ZAP jobs skipped" || ko "non-ZAP jobs skipped"
 grep -qx 'WARN-NEW: Full Path Disclosure \[110009\] x 1 ' "$WORK/out/zap-events-core.log" && ok "timestamp prefix stripped" || ko "timestamp prefix stripped"
+grep -qx 'PASS: Vulnerable JS Library \[10003\]' "$WORK/out/zap-events-core.log" && ok "colour codes stripped" || ko "colour codes stripped"
 FAKE_FRONTEND=empty bash "$SCRIPT" "$WORK/out2" > "$WORK/log2" 2>&1 && ko "a log without rule lines fails" || ok "a log without rule lines fails"
 FAKE_FRONTEND=error bash "$SCRIPT" "$WORK/out3" > "$WORK/log3" 2>&1 && ko "an unfetchable log fails" || ok "an unfetchable log fails"
 

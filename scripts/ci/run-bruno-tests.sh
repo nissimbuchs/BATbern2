@@ -298,7 +298,9 @@ echo ""
 # Check if Bruno CLI is installed
 if ! command -v bru &> /dev/null; then
     echo -e "${YELLOW}Installing Bruno CLI...${NC}"
-    npm install -g @usebruno/cli || {
+    # One retry after a minute: on 2026-11-21 the install hit a dependency version npm listed
+    # but had not yet served (published 33 s later) and the deploy rolled back for it.
+    npm install -g @usebruno/cli || { echo "Bruno CLI install failed, retrying in 60 s"; sleep 60; npm install -g @usebruno/cli; } || {
         echo -e "${RED}Failed to install Bruno CLI${NC}"
         echo "Install manually: npm install -g @usebruno/cli"
         exit 1

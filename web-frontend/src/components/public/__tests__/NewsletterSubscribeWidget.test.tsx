@@ -88,7 +88,7 @@ describe('NewsletterSubscribeWidget', () => {
 
   // ── #818 defect 2: already-subscribed users were still shown the form ──────────────
   describe('#818 — existing subscription state', () => {
-    it('should_hideTheForm_when_authenticatedUserIsAlreadySubscribed', async () => {
+    it('should_renderNothing_when_authenticatedUserIsAlreadySubscribed', async () => {
       api.on('getMyNewsletterSubscriptions', () => ({
         addresses: [
           { email: 'me@example.com', primary: true, subscribed: false, language: null },
@@ -97,8 +97,13 @@ describe('NewsletterSubscribeWidget', () => {
       }));
       renderWithAuth(<NewsletterSubscribeWidget />, { auth: signedInAs('attendee') });
 
-      expect(await screen.findByText('You are already subscribed.')).toBeInTheDocument();
-      expect(screen.queryByRole('button', { name: 'Subscribe' })).not.toBeInTheDocument();
+      // Nothing at all (owner 2026-11-21): "Du bist bereits angemeldet" at the page bottom read as
+      // an event registration. The subscription is managed in the profile.
+      await waitFor(() =>
+        expect(screen.queryByRole('button', { name: 'Subscribe' })).not.toBeInTheDocument()
+      );
+      expect(screen.queryByText('Stay updated with BATbern')).not.toBeInTheDocument();
+      expect(screen.queryByText(/already/i)).not.toBeInTheDocument();
     });
 
     it('should_showTheForm_when_authenticatedUserIsNotSubscribed', async () => {

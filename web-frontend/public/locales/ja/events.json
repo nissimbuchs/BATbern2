@@ -1284,7 +1284,6 @@
       "placeholder": "your@email.com",
       "button": "登録する",
       "checkInbox": "あと少しです。お送りしたリンクから購読を確認してください。",
-      "alreadySubscribed": "既に登録済みです。",
       "error": "問題が発生しました。もう一度お試しください。",
       "emailInvalid": "有効なメールアドレスを入力してください。"
     },

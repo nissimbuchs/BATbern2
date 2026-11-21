@@ -852,6 +852,13 @@ jobs:
             echo "✅ All Layer 4 services deployed successfully"
           fi
 
+      # A rerun after an auto-rollback deploys an unchanged template, so CloudFormation leaves the
+      # services on the rolled-back image (seen on #1331, 2026-11-21). Every service must run this
+      # run's image before the post-deploy tests start.
+      - name: Every service runs this deploy's image
+        if: steps.prepare-deployment.outputs.use_layer_deployment == 'true'
+        run: ./scripts/ci/ensure-services-run-image.sh staging "${{ steps.image-tag.outputs.IMAGE_TAG }}"
+
       - name: Re-authenticate after Layer 4
         if: steps.prepare-deployment.outputs.use_layer_deployment == 'true'
         uses: aws-actions/configure-aws-credentials@v4

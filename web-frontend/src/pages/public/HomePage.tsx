@@ -47,6 +47,7 @@ const NewsletterSubscribeWidget = lazy(() =>
 );
 import { useCurrentEvent } from '@/hooks/useCurrentEvent';
 import { useMyRegistration } from '@/hooks/useMyRegistration';
+import { useNow } from '@/hooks/useNow/useNow';
 import { useEventPhotos } from '@/hooks/useEventPhotos';
 import { eventApiClient } from '@/services/eventApiClient';
 import type { EventDetail } from '@/types/event.types';
@@ -124,6 +125,7 @@ const HomePage = () => {
   const { data: myRegistration, isLoading: isRegistrationLoading } = useMyRegistration(
     loadMyRegistration ? (event?.eventCode ?? undefined) : undefined
   );
+  const now = useNow();
 
   // Loading state — reserve a full viewport height so the footer starts below
   // the fold (where it lands once content loads). Without this the short
@@ -175,7 +177,7 @@ const HomePage = () => {
   const heroSelfNominationEligible =
     !!event.eventCode &&
     !!eventDateObj &&
-    eventDateObj.getTime() > Date.now() &&
+    eventDateObj.getTime() > now &&
     canOfferSelfNomination(event);
   const heroTopicName =
     event.topic && typeof event.topic === 'object' ? event.topic.name : undefined;
@@ -391,12 +393,11 @@ const HomePage = () => {
           <TestimonialSection skipPhotoRow={vis.testimonialsSkipPhotoRow} />
         </div>
 
-        {/* Newsletter Subscribe Widget — always shown (lazy, below the fold) */}
-        <div className="border-t pt-4 pb-8">
-          <Suspense fallback={null}>
-            <NewsletterSubscribeWidget />
-          </Suspense>
-        </div>
+        {/* Newsletter Subscribe Widget (lazy, below the fold). It renders nothing for a logged-in
+            subscriber, so it carries its own top border: no empty bordered strip then. */}
+        <Suspense fallback={null}>
+          <NewsletterSubscribeWidget className="border-t pt-4 pb-8" />
+        </Suspense>
       </div>
     </PublicLayout>
   );

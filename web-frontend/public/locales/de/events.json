@@ -1296,7 +1296,6 @@
       "placeholder": "deine@email.com",
       "button": "Abonnieren",
       "checkInbox": "Fast geschafft: Bitte bestätigen Sie die Anmeldung mit dem Link, den wir Ihnen eben geschickt haben.",
-      "alreadySubscribed": "Du bist bereits angemeldet.",
       "error": "Etwas ist schiefgelaufen. Bitte versuche es erneut.",
       "emailInvalid": "Bitte gib eine gültige E-Mail-Adresse ein."
     },

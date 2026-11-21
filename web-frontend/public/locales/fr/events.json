@@ -1284,7 +1284,6 @@
       "placeholder": "votre@email.com",
       "button": "S'abonner",
       "checkInbox": "Presque terminé : veuillez confirmer votre abonnement avec le lien que nous venons de vous envoyer.",
-      "alreadySubscribed": "Vous êtes déjà abonné.",
       "error": "Une erreur s'est produite. Veuillez réessayer.",
       "emailInvalid": "Veuillez saisir une adresse e-mail valide."
     },

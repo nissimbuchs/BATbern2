@@ -6,6 +6,7 @@
  */
 
 import { useState, useEffect, useMemo } from 'react';
+import { useNow } from '@/hooks/useNow/useNow';
 import { useSearchParams } from 'react-router-dom';
 import { useInView } from 'react-intersection-observer';
 import { useTranslation } from 'react-i18next';
@@ -37,7 +38,8 @@ function ArchiveEventCardWithStatus({
   event: EventDetailUI;
   viewMode: ViewMode;
 }) {
-  const isWithin12Months = Date.now() - new Date(event.date).getTime() < ONE_YEAR_MS;
+  const now = useNow();
+  const isWithin12Months = now - new Date(event.date).getTime() < ONE_YEAR_MS;
   const { data: myReg } = useMyRegistration(isWithin12Months ? event.eventCode : undefined);
   return <EventCard event={event} viewMode={viewMode} myRegistrationStatus={myReg?.status} />;
 }

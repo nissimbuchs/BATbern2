@@ -253,12 +253,7 @@ fe-mock-hooks	web-frontend/src/components/organizer/EventPage/topicOverlay/__tes
 fe-mock-hooks	web-frontend/src/components/organizer/EventTypeConfigurationForm/EventTypeConfigurationForm.test.tsx	1
 fe-mock-hooks	web-frontend/src/components/organizer/MailCenter/__tests__/MailCenterPage.test.tsx	4
 fe-mock-hooks	web-frontend/src/components/organizer/MailCenter/__tests__/ParticipantMailList.test.tsx	1
-fe-mock-hooks	web-frontend/src/components/organizer/NewsletterSubscribers/UnsubscribeDialog.test.tsx	1
-fe-mock-hooks	web-frontend/src/components/organizer/NewsletterSubscribers/__tests__/DeleteSubscriberDialog.test.tsx	1
 fe-mock-hooks	web-frontend/src/components/organizer/NewsletterSubscribers/__tests__/NewsletterSubscriberList.test.tsx	1
-fe-mock-hooks	web-frontend/src/components/organizer/NewsletterSubscribers/__tests__/ResubscribeDialog.test.tsx	1
-fe-mock-hooks	web-frontend/src/components/organizer/NewsletterSubscribers/__tests__/UnsubscribeDialog.test.tsx	1
-fe-mock-hooks	web-frontend/src/components/organizer/NewsletterSubscribers/__tests__/UnsuppressDialog.test.tsx	1
 fe-mock-hooks	web-frontend/src/components/organizer/PartnerManagement/PartnerCreateEditModal.test.tsx	1
 fe-mock-hooks	web-frontend/src/components/organizer/PartnerManagement/PartnerDetailScreen.accessibility.test.tsx	4
 fe-mock-hooks	web-frontend/src/components/organizer/PartnerManagement/PartnerDetailScreen.responsive.test.tsx	4
