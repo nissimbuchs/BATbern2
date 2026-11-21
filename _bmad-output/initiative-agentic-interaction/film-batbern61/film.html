@@ -1,0 +1,374 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>BATbern61 Agentic</title>
+<style>
+:root{
+  --bg:#0d1726; --bg2:#13223a; --panel:#ffffff; --ink:#0f1b2d; --muted:#5b6b82;
+  --line:#dfe5ee; --accent:#e8833a; --accent2:#2f7de1; --ok:#1f9d6b; --warn:#d99a1e; --soft:#f4f6fa;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:1920px;height:1080px;overflow:hidden;background:var(--bg);
+  font-family:"Inter","Helvetica Neue","Liberation Sans",Arial,sans-serif;color:#fff}
+#stage{position:absolute;inset:0;background:radial-gradient(1200px 700px at 70% 20%,#1b3354 0%,var(--bg) 60%)}
+section{position:absolute;inset:0;opacity:0;transition:opacity .8s ease}
+section.live{opacity:1}
+.fx{opacity:0;transform:translateY(24px);transition:opacity .7s ease,transform .7s ease}
+.fx.on{opacity:1;transform:none}
+.fx-l{opacity:0;transform:translateX(-30px);transition:opacity .6s,transform .6s}
+.fx-l.on{opacity:1;transform:none}
+.pop{opacity:0;transform:scale(.85);transition:opacity .5s,transform .5s cubic-bezier(.2,1.4,.4,1)}
+.pop.on{opacity:1;transform:none}
+.chip{position:absolute;left:80px;top:60px;display:flex;gap:14px;align-items:center;font-size:26px;color:#c9d6ea}
+.chip b{background:var(--accent);color:#fff;padding:6px 16px;border-radius:999px;font-weight:600;font-size:22px;letter-spacing:.5px}
+.wm{position:absolute;right:60px;top:64px;font-size:20px;color:#7d90ab;letter-spacing:.5px}
+#sub{position:absolute;left:50%;bottom:54px;transform:translateX(-50%);max-width:1500px;text-align:center;
+  font-size:34px;line-height:1.35;color:#fff;background:rgba(5,12,22,.72);padding:12px 28px;border-radius:12px;
+  transition:opacity .3s;opacity:0}
+#sub.on{opacity:1}
+/* windows */
+.win{position:absolute;background:var(--panel);color:var(--ink);border-radius:18px;box-shadow:0 40px 90px rgba(0,0,0,.45);overflow:hidden}
+.win .bar{height:52px;background:#eef2f7;display:flex;align-items:center;padding:0 20px;gap:10px;border-bottom:1px solid var(--line);font-size:20px;color:var(--muted)}
+.dot{width:14px;height:14px;border-radius:50%;background:#d6dce5}
+.phone{position:absolute;width:500px;height:850px;background:#0a0f18;border-radius:64px;padding:22px;box-shadow:0 40px 90px rgba(0,0,0,.5)}
+.screen{width:100%;height:100%;background:#f5f7fb;border-radius:46px;overflow:hidden;color:var(--ink);position:relative}
+.ph-top{height:110px;background:#fff;border-bottom:1px solid var(--line);padding:46px 30px 0;font-size:22px;color:var(--muted)}
+.ph-top b{color:var(--ink);font-size:26px;display:block}
+.bubble{margin:18px 24px;padding:20px 22px;border-radius:22px;font-size:23px;line-height:1.4;background:#fff;border:1px solid var(--line)}
+.bubble.me{background:#2f7de1;color:#fff;border:none;margin-left:70px}
+.bubble small{display:block;font-size:17px;color:var(--muted);margin-bottom:6px}
+.bubble.me small{color:#d6e6ff}
+.att{display:inline-flex;align-items:center;gap:8px;margin-top:10px;padding:8px 14px;border-radius:10px;background:rgba(255,255,255,.2);font-size:19px}
+.att.dark{background:var(--soft);color:var(--ink);border:1px solid var(--line)}
+.pill{display:inline-block;padding:6px 14px;border-radius:999px;font-size:18px;font-weight:600;border:2px solid var(--line);color:var(--muted);background:#fff}
+.pill.hl{border-color:var(--accent);color:#fff;background:var(--accent)}
+.pill.ok{border-color:var(--ok);color:#fff;background:var(--ok)}
+.pill.warn{border-color:var(--warn);color:#fff;background:var(--warn)}
+.btn{display:inline-block;padding:16px 34px;border-radius:14px;font-size:24px;font-weight:700;background:var(--accent2);color:#fff;position:relative;overflow:hidden}
+.btn.ghost{background:#fff;color:var(--ink);border:2px solid var(--line)}
+.btn .rip{position:absolute;left:50%;top:50%;width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,.6);transform:translate(-50%,-50%) scale(0);opacity:1}
+.btn.press .rip{animation:rip .7s ease-out forwards}
+@keyframes rip{to{transform:translate(-50%,-50%) scale(40);opacity:0}}
+.caret::after{content:"|";animation:blink 1s steps(1) infinite;color:var(--accent2)}
+@keyframes blink{50%{opacity:0}}
+.meter{height:22px;border-radius:11px;background:#e7ecf3;position:relative;overflow:hidden}
+.meter i{position:absolute;left:0;top:0;bottom:0;width:0;border-radius:11px;transition:width 2.2s cubic-bezier(.3,.8,.3,1)}
+.meter .thr{position:absolute;top:-8px;bottom:-8px;width:4px;background:var(--ink)}
+.log{font-family:"DejaVu Sans Mono","Liberation Mono",monospace;font-size:19px;line-height:1.7;color:#334}
+.check{color:var(--ok);font-weight:800}
+.q{color:var(--warn);font-weight:800}
+.avatar{width:96px;height:96px;border-radius:50%;background:linear-gradient(135deg,#2f7de1,#7b5cff);color:#fff;font-weight:800;font-size:36px;display:flex;align-items:center;justify-content:center}
+h1.big{font-size:150px;font-weight:800;letter-spacing:-3px}
+</style>
+</head>
+<body>
+<div id="stage">
+
+<!-- S1 Title -->
+<section id="s1">
+  <div style="position:absolute;left:160px;top:250px">
+    <div class="fx" data-at="0.2" style="font-size:30px;color:var(--accent);letter-spacing:6px;font-weight:700">BERNER ARCHITEKTEN TREFFEN</div>
+    <h1 class="big fx" data-at="0.6" style="margin-top:20px">BATbern61</h1>
+    <div class="fx" data-at="1.4" style="font-size:52px;color:#c9d6ea;margin-top:10px">5. März 2027</div>
+    <div class="fx" data-at="2.4" style="font-size:58px;font-weight:700;margin-top:60px;max-width:1500px">FinOps im Spannungsfeld von Cloud und KI</div>
+    <div class="fx" data-at="6.5" style="font-size:40px;margin-top:70px;color:#fff"><span style="color:var(--accent)">Absicht rein.</span> Bestätigung raus.</div>
+  </div>
+  <div class="wm">Illustration · Pilot-Vorschlag · Beispieldaten</div>
+</section>
+
+<!-- S2 Morning brief -->
+<section id="s2">
+  <div class="chip"><b>ORGANISATOR</b> Nissim · Montag, 07:30</div>
+  <div class="wm">Illustration · Beispieldaten</div>
+  <div class="win fx" data-at="0.3" style="left:260px;top:120px;width:1400px;height:760px">
+    <div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span style="margin-left:20px">Posteingang</span></div>
+    <div style="display:flex;height:708px">
+      <div style="width:400px;border-right:1px solid var(--line);background:var(--soft)">
+        <div style="padding:24px;border-bottom:1px solid var(--line);background:#fff;border-left:6px solid var(--accent)">
+          <div style="font-weight:700;font-size:22px">BATbern Agent</div>
+          <div style="font-size:20px;margin-top:4px">Morgenbrief BATbern61</div>
+          <div style="font-size:17px;color:var(--muted);margin-top:4px">07:30</div>
+        </div>
+        <div style="padding:24px;border-bottom:1px solid var(--line);color:var(--muted);font-size:19px">Newsletter Architektur<br><small>gestern</small></div>
+      </div>
+      <div style="flex:1;padding:40px 50px">
+        <div style="font-size:34px;font-weight:800">Guten Morgen, Nissim.</div>
+        <div style="font-size:22px;color:var(--muted);margin-top:6px">BATbern61 · FinOps im Spannungsfeld von Cloud und KI · in gut drei Monaten</div>
+        <div style="margin-top:34px;font-size:25px;line-height:1.9">
+          <div class="fx-l" data-at="3.0"><span class="check">✓</span> Thema ist publiziert</div>
+          <div class="fx-l" data-at="5.0"><span class="q">●</span> 2 Speaker-Plätze sind offen</div>
+          <div class="fx-l" data-at="7.5"><span class="q">●</span> Vorschläge aus dem Archiv von 60 Events:</div>
+          <div class="fx-l" data-at="9.0" style="margin-left:40px;display:flex;gap:14px;align-items:center">
+            <span class="pill hl">Andy Grütter</span><span class="pill">Kandidat B</span><span class="pill">Kandidat C</span>
+          </div>
+        </div>
+        <div class="fx" data-at="12.5" style="margin-top:40px;border:2px solid var(--accent2);border-radius:14px;padding:18px 22px;font-size:26px">
+          <span class="type" data-at="13.2" data-dur="1.6" data-text="Lade Andy ein."></span>
+        </div>
+        <div class="fx" data-at="15.6" style="margin-top:18px;text-align:right"><span class="btn" id="b2">Senden<span class="rip"></span></span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- S3 Gate -->
+<section id="s3">
+  <div class="chip"><b>AGENT</b> Autonomie-Gate</div>
+  <div class="wm">Illustration</div>
+  <div style="position:absolute;left:150px;top:200px;width:1000px">
+    <div class="fx" data-at="0.3" style="font-size:28px;color:#c9d6ea">Absicht</div>
+    <div class="fx" data-at="0.6" style="font-size:54px;font-weight:800;margin-top:6px">«Andy zu BATbern61 einladen»</div>
+    <div class="fx" data-at="1.6" style="margin-top:50px;font-size:26px;color:#c9d6ea">Risikoklasse</div>
+    <div class="fx" data-at="1.9" style="margin-top:14px;display:flex;gap:14px">
+      <span class="pill">lesen</span><span class="pill">umkehrbar</span><span class="pill">Antwort</span><span class="pill hl">verbindlich</span><span class="pill">Publikum</span>
+    </div>
+    <div class="fx" data-at="3.4" style="margin-top:50px;font-size:26px;color:#c9d6ea">Sicherheit aus früheren Fällen</div>
+    <div class="fx" data-at="3.6" style="margin-top:16px;width:900px"><div class="meter"><i id="m3" style="background:var(--ok)"></i><span class="thr" style="left:62%"></span></div>
+      <div style="display:flex;justify-content:space-between;font-size:19px;color:#8ea2bf;margin-top:10px"><span>unsicher</span><span style="margin-left:420px">Schwelle</span><span>sicher</span></div></div>
+    <div class="pop" data-at="6.6" style="margin-top:40px"><span class="pill ok" style="font-size:30px;padding:12px 26px">Agent handelt selbst</span></div>
+  </div>
+  <div class="win fx" data-at="2.2" style="left:1220px;top:200px;width:560px;height:640px">
+    <div class="bar">Entscheidungslog</div>
+    <div class="log" style="padding:24px">
+      <div class="fx-l" data-at="2.8">07:31 run #4711 · Organisator</div>
+      <div class="fx-l" data-at="4.4">07:31 lesen · Archiv, frühere Einladungen</div>
+      <div class="fx-l" data-at="6.0">07:31 verbindlich · invite(andy)</div>
+      <div class="fx-l" data-at="6.6"><span class="check">✓ autonom</span> · Präzedenz zitiert</div>
+      <div class="fx-l" data-at="7.6">07:32 Mail an Andy · Mail Center</div>
+    </div>
+  </div>
+</section>
+
+<!-- S4 Andy replies on phone -->
+<section id="s4">
+  <div class="chip"><b>SPEAKER</b> Andy · im Zug</div>
+  <div class="wm">Illustration · Beispieldaten</div>
+  <div class="phone fx" data-at="0.2" style="left:710px;top:50px">
+    <div class="screen">
+      <div class="ph-top"><b>BATbern</b>Einladung BATbern61</div>
+      <div class="bubble fx" data-at="0.8"><small>BATbern Agent</small>Hallo Andy, wir möchten dich gerne als Speaker an BATbern61 am 5. März 2027 einladen: «FinOps im Spannungsfeld von Cloud und KI». Antworte einfach auf diese Mail.</div>
+      <div class="bubble me fx" data-at="2.6"><small>Andy</small>
+        <span class="type" data-at="3.0" data-dur="5.0" data-text="Sehr gerne! Titel: «Wer bezahlt die Tokens? FinOps für KI-Workloads». Abstract: Wie Teams Kosten von Cloud und KI sichtbar machen, bevor die Rechnung kommt. Darf meine Kollegin mitmachen?"></span>
+        <div class="att fx" data-at="8.2">Anhang: andy-portrait.jpg</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- S5 Agent processes -->
+<section id="s5">
+  <div class="chip"><b>AGENT</b> handelt als Andy</div>
+  <div class="wm">Illustration</div>
+  <div class="win fx" data-at="0.2" style="left:260px;top:170px;width:1400px;height:720px">
+    <div class="bar">Run #4712 · Auftraggeber: Andy (Speaker)</div>
+    <div style="padding:46px 60px;font-size:28px;line-height:2.1">
+      <div class="fx-l" data-at="0.8"><span class="check">✓</span> Zusage erfasst <span class="pill" style="margin-left:14px">umkehrbar</span></div>
+      <div class="fx-l" data-at="2.0"><span class="check">✓</span> Titel und Abstract gespeichert <span class="pill" style="margin-left:14px">umkehrbar</span></div>
+      <div class="fx-l" data-at="3.2"><span class="check">✓</span> Foto hochgeladen <span class="pill" style="margin-left:14px">umkehrbar</span></div>
+      <div class="fx-l" data-at="6.0"><span class="q">?</span> Zusätzliche Speakerin <span class="pill hl" style="margin-left:14px">verbindlich</span></div>
+      <div class="fx" data-at="7.2" style="margin-top:18px;width:900px"><div class="meter"><i id="m5" style="background:var(--warn)"></i><span class="thr" style="left:62%"></span></div></div>
+      <div class="pop" data-at="10.0" style="margin-top:26px"><span class="pill warn" style="font-size:28px;padding:10px 24px">Unsicher: Organisatoren fragen</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- S6 Card on phone -->
+<section id="s6">
+  <div class="chip"><b>SPEAKER</b> Andy · eine Karte</div>
+  <div class="wm">Illustration</div>
+  <div class="phone fx" data-at="0.2" style="left:710px;top:50px">
+    <div class="screen">
+      <div class="ph-top"><b>BATbern61</b>Bitte kurz bestätigen</div>
+      <div class="fx" data-at="1.0" style="margin:40px 30px;background:#fff;border-radius:24px;border:1px solid var(--line);padding:36px;box-shadow:0 10px 30px rgba(0,0,0,.08)">
+        <div style="font-size:22px;color:var(--muted)">So erscheinst du auf batbern.ch</div>
+        <div style="display:flex;gap:22px;align-items:center;margin-top:26px">
+          <div class="avatar">AG</div>
+          <div><div style="font-size:30px;font-weight:800">Andy Grütter</div><div style="font-size:20px;color:var(--muted)">Speaker · BATbern61</div></div>
+        </div>
+        <div style="font-size:24px;font-weight:700;margin-top:28px;line-height:1.35">Wer bezahlt die Tokens? FinOps für KI-Workloads</div>
+        <div style="margin-top:36px;text-align:center"><span class="btn" id="b6" style="width:100%">Bestätigen<span class="rip"></span></span></div>
+        <div class="pop" data-at="5.6" style="margin-top:24px;text-align:center;font-size:26px;color:var(--ok);font-weight:800">✓ Bestätigt</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- S7 Console approval -->
+<section id="s7">
+  <div class="chip"><b>ORGANISATORIN</b> Konsole</div>
+  <div class="wm">Illustration · Beispieldaten</div>
+  <div class="win fx" data-at="0.2" style="left:160px;top:120px;width:1600px;height:740px">
+    <div class="bar">BATbern Konsole</div>
+    <div style="display:flex;height:688px">
+      <div style="width:300px;background:var(--soft);border-right:1px solid var(--line);padding:30px;font-size:24px;line-height:2.4;color:var(--muted)">
+        <div>Aktivität</div><div style="color:var(--ink);font-weight:800">Freigaben <span class="pill hl" style="font-size:16px">1</span></div><div>Morgenbrief</div><div>Chat</div>
+      </div>
+      <div style="flex:1;padding:40px 50px">
+        <div class="fx" data-at="1.0" style="border:2px solid var(--warn);border-radius:18px;padding:34px">
+          <div style="font-size:20px;color:var(--warn);font-weight:800;letter-spacing:1px">OFFENE FRAGE · VERBINDLICH</div>
+          <div style="font-size:34px;font-weight:800;margin-top:10px">Kollegin von Andy als zusätzliche Speakerin aufnehmen?</div>
+          <div style="font-size:22px;color:var(--muted);margin-top:8px">Talk: Wer bezahlt die Tokens? FinOps für KI-Workloads</div>
+          <div class="fx-l" data-at="3.0" style="margin-top:26px;background:var(--soft);border-radius:12px;padding:20px 24px;font-size:22px;line-height:1.7">
+            <b>Frühere Fälle</b><br>Co-Speaker auf Wunsch des Speakers: meist genehmigt<br>Entscheid lag jeweils bei den Organisatoren
+          </div>
+          <div style="margin-top:30px;display:flex;gap:18px"><span class="btn" id="b7" style="background:var(--ok)">Genehmigen<span class="rip"></span></span><span class="btn ghost">Ablehnen</span></div>
+          <div class="pop" data-at="8.0" style="margin-top:24px;font-size:23px;color:var(--ok);font-weight:700">✓ Ausgeführt mit dem eigenen Login der Organisatorin</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- S8 Late speaker Nissim -->
+<section id="s8">
+  <div class="chip"><b>SPEAKER</b> Nissim · 23. Februar 2027</div>
+  <div class="wm">Illustration · Beispieldaten</div>
+  <div class="phone fx" data-at="0.2" style="left:710px;top:50px">
+    <div class="screen">
+      <div class="ph-top"><b>BATbern</b>Deine Folien für BATbern61</div>
+      <div class="bubble fx" data-at="3.2"><small>BATbern Agent</small>Hallo Nissim, in zehn Tagen ist BATbern61. Deine Folien fehlen noch. Schick sie einfach als Antwort.</div>
+      <div class="bubble me fx" data-at="6.4"><small>Nissim</small>Sorry, hier sind sie!<div class="att">Anhang: folien-batbern61.docx</div></div>
+      <div class="bubble fx" data-at="9.6"><small>BATbern Agent</small>Danke! Das ist eine Word-Datei. Kannst du sie als PDF schicken? Dann ist sie für den Beamer und den Download bereit.</div>
+    </div>
+  </div>
+</section>
+
+<!-- S9 Chat with generated view -->
+<section id="s9">
+  <div class="chip"><b>ORGANISATOR</b> Andy · Chat</div>
+  <div class="wm">Illustration · Beispieldaten</div>
+  <div class="win fx" data-at="0.2" style="left:160px;top:120px;width:1600px;height:770px">
+    <div class="bar">BATbern Konsole · Chat</div>
+    <div style="padding:30px 46px">
+      <div class="bubble me fx" data-at="0.8" style="margin-left:700px;font-size:26px"><span class="type" data-at="1.0" data-dur="2.6" data-text="Wie stehen die Anmeldungen im Vergleich zu BATbern60?"></span></div>
+      <div class="fx" data-at="5.0" style="display:flex;gap:30px;margin-top:20px">
+        <div style="flex:1.4;border:1px solid var(--line);border-radius:16px;padding:24px">
+          <div style="font-size:20px;color:var(--muted)">Anmeldungen pro Woche vor dem Event · Beispieldaten</div>
+          <svg width="820" height="380" viewBox="0 0 820 380" style="margin-top:10px">
+            <g stroke="#e3e8f0">
+              <line x1="50" y1="40" x2="800" y2="40"/><line x1="50" y1="140" x2="800" y2="140"/><line x1="50" y1="240" x2="800" y2="240"/><line x1="50" y1="340" x2="800" y2="340"/>
+            </g>
+            <polyline id="l60" fill="none" stroke="#9fb0c8" stroke-width="5" stroke-dasharray="1200" stroke-dashoffset="1200"
+              points="50,330 150,312 250,290 350,262 450,226 550,186 650,140 750,96"/>
+            <polyline id="l61" fill="none" stroke="#e8833a" stroke-width="6" stroke-dasharray="1200" stroke-dashoffset="1200"
+              points="50,326 150,300 250,270 350,236 450,200 550,164"/>
+            <g font-size="18" fill="#5b6b82"><text x="50" y="370">−8 Wo.</text><text x="700" y="370">Event</text>
+            <text x="440" y="250" fill="#e8833a" font-weight="700">BATbern61</text><text x="680" y="86" fill="#7c8ea8">BATbern60</text></g>
+          </svg>
+        </div>
+        <div style="flex:1;border:1px solid var(--line);border-radius:16px;padding:24px;font-size:22px">
+          <div style="font-size:20px;color:var(--muted)">Stand heute · Beispieldaten</div>
+          <table style="width:100%;margin-top:18px;border-collapse:collapse;line-height:2.2">
+            <tr style="color:var(--muted)"><td></td><td>BATbern60</td><td>BATbern61</td></tr>
+            <tr style="border-top:1px solid var(--line)"><td>6 Wochen vorher</td><td>Referenz</td><td><b>darüber</b></td></tr>
+            <tr style="border-top:1px solid var(--line)"><td>Warteliste</td><td>nein</td><td>nein</td></tr>
+          </table>
+        </div>
+      </div>
+      <div class="fx" data-at="10.0" style="margin-top:22px;font-size:20px;color:var(--muted)">Generiert für diese eine Frage · Bausteine aus dem geprüften Katalog: <span class="pill">Chart</span> <span class="pill">Table</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- S10 Kill switch -->
+<section id="s10">
+  <div class="chip"><b>KONTROLLE</b> Organisatoren</div>
+  <div class="wm">Illustration</div>
+  <div style="position:absolute;left:0;right:0;top:250px;text-align:center">
+    <div class="fx" data-at="0.4" style="font-size:40px;color:#c9d6ea">Agent</div>
+    <div class="fx" data-at="0.8" style="margin:30px auto 0;width:300px;height:150px;border-radius:75px;background:var(--ok);position:relative;transition:background .6s" id="sw">
+      <div id="knob" style="position:absolute;top:15px;left:165px;width:120px;height:120px;border-radius:50%;background:#fff;transition:left .6s cubic-bezier(.3,.8,.3,1)"></div>
+    </div>
+    <div class="fx" data-at="0.8" id="swlabel" style="margin-top:24px;font-size:34px;font-weight:700">aktiv</div>
+    <div class="pop" data-at="5.6" style="margin-top:60px;font-size:40px">Jede Mail geht direkt an die <span style="color:var(--accent);font-weight:800">Organisatoren</span>.</div>
+  </div>
+</section>
+
+<!-- S11 Closing -->
+<section id="s11">
+  <div style="position:absolute;left:0;right:0;top:120px;text-align:center">
+    <div class="fx" data-at="0.3" style="font-size:72px;font-weight:800"><span style="color:var(--accent)">Absicht rein.</span> Bestätigung raus.</div>
+  </div>
+  <div style="position:absolute;left:460px;top:330px;width:1000px">
+    <div class="fx" data-at="2.6" style="border:2px dashed #5d7598;border-radius:24px;padding:26px;text-align:center;font-size:30px;color:#c9d6ea">Ränder: Mail · Chat · Karten · Morgenbrief</div>
+    <div class="fx" data-at="4.2" style="margin:22px 80px 0;border:2px solid var(--accent);border-radius:24px;padding:26px;text-align:center;font-size:30px">Agent: Werkzeuge · Gate · Entscheidungslog</div>
+    <div class="fx" data-at="5.6" style="margin:22px 160px 0;background:#fff;color:var(--ink);border-radius:24px;padding:30px;text-align:center;font-size:32px;font-weight:800">Kern: deterministisch und nachvollziehbar</div>
+  </div>
+  <div class="fx" data-at="11.5" style="position:absolute;left:0;right:0;bottom:210px;text-align:center;font-size:38px;color:#c9d6ea">BATbern61 · 5. März 2027 · Die Organisatoren entscheiden.</div>
+</section>
+
+</div>
+<div id="sub"></div>
+
+<script>
+const NARR=[14.602,19.148,9.326,10.266,13.009,8.751,11.154,13.322,15.151,8.594,14.916];
+const TEXT=[
+"BATbern61, am 5. März 2027. Thema: FinOps im Spannungsfeld von Cloud und KI.|So könnte die Vorbereitung aussehen, wenn BATbern nicht mehr bedient wird, sondern mitarbeitet.",
+"Montag, halb acht. Kein Login, kein Dashboard.|Nissim erhält den Morgenbrief des Agenten: Das Thema ist publiziert, zwei Speaker-Plätze sind offen,|und aus sechzig Events im Archiv schlägt der Agent passende Namen vor.|Nissim antwortet mit einem Satz: «Lade Andy ein.»",
+"Eine Einladung verpflichtet BATbern.|Der Agent prüft frühere Fälle, ist sich sicher genug und handelt selbst.|Jeder Schritt landet im Entscheidungslog.",
+"Andy sitzt im Zug und antwortet einfach auf die Mail:|Zusage, Titel, ein kurzes Abstract, ein Foto im Anhang.|Und eine Frage: Darf meine Kollegin mitmachen?",
+"Titel, Abstract und Foto erledigt der Agent sofort, als Andy, mit Andys Rechten.|Eine zusätzliche Speakerin aber ist eine Zusage im Namen von BATbern.|Hier ist er unsicher. Also fragt er.",
+"Andy bekommt eine Karte: So erscheinst du auf batbern.ch.|Ein Tipp, bestätigt. Keine Navigation, kein Portal.",
+"Bei den Organisatoren erscheint die offene Frage in der Konsole, mit den früheren Fällen daneben.|Ein Klick auf «Genehmigen».|Ausgeführt mit dem Login der Organisatorin, nicht mit dem des Agenten.",
+"Zehn Tage vor dem Event. Nissim, diesmal als Speaker, hat seine Folien noch nicht geschickt.|Der Agent erinnert ihn. Nissim schickt eine Word-Datei statt eines PDF.|Der Agent merkt es und fragt freundlich nach.",
+"Im Chat fragt Andy, jetzt als Organisator: Wie stehen die Anmeldungen im Vergleich zu BATbern60?|Der Agent baut die Ansicht für genau diese Frage. Programmiert war sie nicht.|Jedes Element stammt aus einem geprüften Baukasten.",
+"Und wenn etwas schiefläuft? Ein Schalter, und der Agent schweigt.|Jede Mail geht wieder direkt an die Organisatoren. Die Kontrolle bleibt bei uns.",
+"Absicht rein, Bestätigung raus.|Der Kern bleibt, wie er ist: deterministisch und nachvollziehbar. Der Agent arbeitet an den Rändern.|Ob das die Zukunft ist? Das entscheiden wir Organisatoren. An BATbern61."
+];
+const LEAD=1.0, TAIL=3.0;
+const scenes=[...document.querySelectorAll('section')];
+const starts=[];let acc=0;NARR.forEach(d=>{starts.push(acc);acc+=d+LEAD+TAIL});
+const TOTAL=acc+1.5;
+window.FILM={starts,NARR,LEAD,TOTAL};
+// custom per-scene actions: [scene, at, fn]
+const ACT=[
+ [1,15.9,()=>press('b2')],
+ [2,3.8,()=>{document.getElementById('m3').style.width='80%'}],
+ [4,7.4,()=>{document.getElementById('m5').style.width='38%'}],
+ [5,4.8,()=>press('b6')],
+ [6,6.6,()=>press('b7')],
+ [8,5.4,()=>{document.getElementById('l60').style.transition='stroke-dashoffset 2.5s ease';document.getElementById('l60').style.strokeDashoffset='0'}],
+ [8,6.4,()=>{document.getElementById('l61').style.transition='stroke-dashoffset 2.5s ease';document.getElementById('l61').style.strokeDashoffset='0'}],
+ [9,3.0,()=>{const s=document.getElementById('sw');s.style.background='#8b98ab';document.getElementById('knob').style.left='15px';document.getElementById('swlabel').textContent='aus'}],
+];
+function press(id){const b=document.getElementById(id);b.classList.add('press');b.style.filter='brightness(.9)'}
+const fired=new Set();
+function tick(t0){
+  const now=(performance.now()-t0)/1000;
+  scenes.forEach((s,i)=>{
+    const st=starts[i], en=st+NARR[i]+LEAD+TAIL;
+    const live=now>=st && now<en;
+    s.classList.toggle('live',live);
+    if(now>=st){
+      const local=now-st;
+      s.querySelectorAll('[data-at]').forEach(el=>{
+        const at=parseFloat(el.dataset.at);
+        if(local>=at){
+          if(el.classList.contains('type')){
+            const dur=parseFloat(el.dataset.dur), txt=el.dataset.text;
+            const n=Math.min(txt.length,Math.floor(txt.length*(local-at)/dur));
+            el.textContent=txt.slice(0,n); el.classList.toggle('caret',n<txt.length);
+          } else el.classList.add('on');
+        }
+      });
+    }
+  });
+  ACT.forEach((a,k)=>{if(!fired.has(k)&&now>=starts[a[0]]+a[1]){fired.add(k);a[2]()}});
+  // subtitles
+  const sub=document.getElementById('sub');let shown='';
+  for(let i=0;i<scenes.length;i++){
+    const ns=starts[i]+LEAD, ne=ns+NARR[i];
+    if(now>=ns&&now<ne+0.4){
+      const parts=TEXT[i].split('|');const tot=parts.reduce((a,p)=>a+p.length,0);
+      let c=ns;for(const p of parts){const d=NARR[i]*p.length/tot;if(now<c+d||p===parts[parts.length-1]){shown=p;break}c+=d}
+    }
+  }
+  if(shown){sub.textContent=shown;sub.classList.add('on')}else sub.classList.remove('on');
+  if(now<TOTAL) requestAnimationFrame(()=>tick(t0)); else window.FILM_DONE=true;
+}
+window.startFilm=(off=0)=>{const t0=performance.now()-off*1000;requestAnimationFrame(()=>tick(t0));};
+if(location.hash==='#auto') window.startFilm();
+</script>
+</body>
+</html>
