@@ -262,8 +262,17 @@ export interface paths {
      *     as a side effect (`POST /events/{eventCode}/phases/agenda/publish`).
      *
      *     **States** (8, V82): CREATED, TOPIC_SELECTION, SPEAKER_IDENTIFICATION, SLOT_ASSIGNMENT,
-     *     AGENDA_PUBLISHED, EVENT_LIVE, EVENT_COMPLETED, ARCHIVED. The scheduler moves AGENDA_PUBLISHED
-     *     to EVENT_LIVE on event day and EVENT_LIVE to EVENT_COMPLETED after it.
+     *     AGENDA_PUBLISHED, EVENT_LIVE, EVENT_COMPLETED, ARCHIVED, plus CANCELLED off the path. The
+     *     scheduler moves AGENDA_PUBLISHED to EVENT_LIVE on event day and EVENT_LIVE to EVENT_COMPLETED
+     *     after it.
+     *
+     *     **Cancellation** (#824): CANCELLED is reachable from every state before EVENT_COMPLETED and is
+     *     terminal. From EVENT_COMPLETED or ARCHIVED it is refused with 422 even with `overrideValidation`. Entering it cancels every registration that holds or waits for a place (registered,
+     *     confirmed, waitlist) and mails each of those people the cancellation (template
+     *     `registration-event-cancelled`, German or English by their language) after the commit. A
+     *     cancelled event is not on the public site (`/public/events*` answer as for an unknown event),
+     *     takes no registrations (409 `EVENT_CANCELLED`), and the schedulers (auto-publishing, speaker
+     *     reminders) skip it.
      *
      *     **Validation**: the state machine checks that the target is reachable from the current state
      *     and the business rules of the target (e.g. speakers confirmed). An unknown `targetState`
@@ -1354,6 +1363,8 @@ export interface components {
      * @description Event workflow state for 8-step consolidated workflow (V82: AGENDA_FINALIZED removed).
      *     Defines the current state of an event in the organizer workflow.
      *     The scheduler transitions AGENDA_PUBLISHED directly to EVENT_LIVE on event day.
+     *     CANCELLED (#824) lies off the path: an organizer calls the event off from any state before
+     *     EVENT_COMPLETED; it is terminal.
      * @example SPEAKER_IDENTIFICATION
      * @enum {string}
      */
@@ -1365,7 +1376,8 @@ export interface components {
       | 'AGENDA_PUBLISHED'
       | 'EVENT_LIVE'
       | 'EVENT_COMPLETED'
-      | 'ARCHIVED';
+      | 'ARCHIVED'
+      | 'CANCELLED';
     /** @description Result of a successful workflow state transition. */
     WorkflowTransitionResponse: {
       /** @example BATbern142 */
@@ -2946,7 +2958,7 @@ export interface operations {
       401: components['responses']['Unauthorized'];
       403: components['responses']['Forbidden'];
       404: components['responses']['NotFound'];
-      /** @description A phase above this one is published; use unpublish to step back. Nothing changed. */
+      /** @description A phase above this one is published (use unpublish to step back), or the event was cancelled (details.code EVENT_CANCELLED, */
       409: {
         headers: {
           [name: string]: unknown;

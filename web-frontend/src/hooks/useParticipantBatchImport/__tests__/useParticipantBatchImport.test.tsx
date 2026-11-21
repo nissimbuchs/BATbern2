@@ -193,6 +193,8 @@ describe('useParticipantBatchImport', () => {
     });
 
     expect(invalidate).toHaveBeenCalledWith({ queryKey: ['users'] });
-    expect(invalidate).toHaveBeenCalledWith({ queryKey: ['registrations'] });
+    // #824 item 5: the keys the registration lists and the event counts are cached under
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ['event-registrations'] });
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ['event'] });
   });
 });

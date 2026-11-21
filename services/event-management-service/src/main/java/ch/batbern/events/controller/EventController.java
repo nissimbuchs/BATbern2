@@ -70,7 +70,9 @@ public class EventController implements EventsApi {
     @Override
     @Caching(evict = {
         @CacheEvict(value = CacheConfig.EVENT_WITH_INCLUDES_CACHE, allEntries = true),
-        @CacheEvict(value = CacheConfig.ARCHIVE_EVENTS_CACHE, allEntries = true)
+        @CacheEvict(value = CacheConfig.ARCHIVE_EVENTS_CACHE, allEntries = true),
+        // The event type sets the slot limits of the speaker status summary (#824 item 1).
+        @CacheEvict(value = CacheConfig.STATUS_SUMMARY_CACHE, key = "#eventCode")
     })
     @PreAuthorize("hasRole('ORGANIZER')")
     public ResponseEntity<Event> updateEvent(String eventCode, UpdateEventRequest request) {
@@ -78,7 +80,10 @@ public class EventController implements EventsApi {
     }
 
     @Override
-    @CacheEvict(value = CacheConfig.EVENT_WITH_INCLUDES_CACHE, allEntries = true)
+    @Caching(evict = {
+        @CacheEvict(value = CacheConfig.EVENT_WITH_INCLUDES_CACHE, allEntries = true),
+        @CacheEvict(value = CacheConfig.STATUS_SUMMARY_CACHE, key = "#eventCode")
+    })
     @PreAuthorize("hasRole('ORGANIZER')")
     public ResponseEntity<Event> patchEvent(String eventCode, PatchEventRequest request) {
         return ResponseEntity.ok(eventWriteService.patch(eventCode, request));

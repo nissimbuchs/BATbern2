@@ -33,7 +33,9 @@ BATbern uses Flyway for database schema versioning. Each microservice runs its o
 - ❌ NO cross-service foreign keys
 - ❌ NO database access from GitHub Actions (RDS in private subnet)
 
-**Reference**: `.github/workflows/deploy-production.yml` lines 122-136
+**Reference**: `.github/workflows/deploy-staging.yml` (the production deploy), comment above the
+deploy step: migrations run in each service on startup; a pre-deploy RDS snapshot is taken when a
+`db/migration/V*.sql` file changed
 
 ---
 
@@ -449,7 +451,7 @@ spring.jpa.hibernate.ddl-auto=validate
 
 ### How Migrations Run
 
-**Automatic on Service Startup** (per `.github/workflows/deploy-production.yml`):
+**Automatic on Service Startup** (per `.github/workflows/deploy-staging.yml`, the production deploy):
 
 1. ECS task starts in VPC (has RDS access)
 2. Spring Boot application starts
@@ -519,7 +521,7 @@ ALTER TABLE partners DROP COLUMN IF EXISTS new_column;
 
 ### Deployment
 
-- **[.github/workflows/deploy-production.yml](../../.github/workflows/deploy-production.yml)** lines 122-136 - Migration strategy
+- **[.github/workflows/deploy-staging.yml](../../.github/workflows/deploy-staging.yml)** - Production deploy; migration snapshot and the note on why migrations run in the services
 
 ### Tools
 

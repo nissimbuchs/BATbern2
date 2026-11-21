@@ -363,7 +363,7 @@ public interface RegistrationRepository
      * - totalAttendees: all confirmed registrations for that event
      * - companyAttendees: confirmed registrations where attendeeCompanyId = :companyId
      *
-     * Only events on or after :fromDate are included.
+     * Only events on or after :fromDate are included; a cancelled event (#824) never is.
      *
      * @param companyId  company identifier (ADR-003 meaningful ID = company name)
      * @param fromDate   earliest event date to include
@@ -380,6 +380,7 @@ public interface RegistrationRepository
         FROM Event e
         LEFT JOIN Registration r ON r.eventId = e.id AND r.status IN ('confirmed', 'attended')
         WHERE e.date >= :fromDate
+          AND e.workflowState <> ch.batbern.shared.types.EventWorkflowState.CANCELLED
         GROUP BY e.id, e.eventCode, e.title, e.date
         ORDER BY e.date DESC
         """)

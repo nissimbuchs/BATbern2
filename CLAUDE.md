@@ -78,7 +78,7 @@ make build                      # Build everything
 make test                       # Run all tests with coverage (requires Docker for integration tests)
 
 # Development workflow
-make verify                     # Pre-commit checks (lint + test)
+make verify                     # Pre-commit checks (lint + generated API types check + test)
 make reports                    # Regenerate projectdoc reports from scratch (all tests, CDK coverage, Trivy SAST, latest ZAP DAST)
 make reports-deploy             # make reports, then deploy the projectdoc site
 make docker-up                  # Start all services with Docker Compose
@@ -128,8 +128,8 @@ make update-deps                # Update safe dependencies (patch/minor)
 # Frontend development
 cd web-frontend && npm run dev
 
-# Infrastructure deployment
-cd infrastructure && npm run deploy:dev
+# Infrastructure deployment (the staging stacks ARE production; there is no dev environment)
+cd infrastructure && npm run deploy:staging
 ```
 
 ### Test-Driven Development (TDD)
@@ -156,7 +156,7 @@ cd infrastructure && npm run deploy:dev
 ## Project Structure
 
 ```
-BATbern-main/
+BATbern2/
 ├── shared-kernel/                    # Common types, events, utilities (foundation)
 ├── api-gateway/                      # Unified API gateway with auth
 ├── services/                         # Domain microservices
@@ -165,14 +165,15 @@ BATbern-main/
 │   └── partner-coordination-service/
 ├── web-frontend/                     # React 19 + TypeScript SPA
 ├── infrastructure/                   # AWS CDK infrastructure as code
+├── apps/BATbern-watch/               # watchOS companion app
 ├── bruno-tests/                      # API contract tests (Layer 2 E2E)
-├── scripts/
-│   ├── ci/                          # CI/CD and test scripts
-│   └── auth/                        # Authentication helpers
+├── scripts/                          # dev/, ci/, auth/, deploy/, ... (see docs/architecture/source-tree.md)
+├── .githooks/                        # Active git hooks (make install-hooks)
+├── _bmad-output/                     # BMAD: backlog/, stories (implementation-artifacts/), initiatives
 └── docs/
-    ├── architecture/                # Architecture documentation
-    ├── api/                        # OpenAPI specifications
-    └── stories/                    # Development stories
+    ├── architecture/                # Architecture documentation, ADRs
+    ├── api/                        # OpenAPI specifications (the API contract)
+    └── stories/archived/           # Older story files
 ```
 
 ### Key Architectural Patterns
@@ -288,9 +289,9 @@ grep -i "routing\|proxying" /tmp/batbern-1-api-gateway.log
 ### Testing Strategy (4-Layer E2E Framework)
 
 1. **Layer 1**: Shell scripts (`scripts/ci/*.sh`) — smoke, CORS, header propagation
-2. **Layer 2**: Bruno tests (`bruno-tests/**/*.bru`) — API contract tests (collections: companies, users, events, partners, partner-meetings, tasks, file-upload)
+2. **Layer 2**: Bruno tests (`bruno-tests/**/*.bru`): API contract tests, one folder per API; which collections run where is listed in `scripts/ci/run-bruno-tests.sh`
 3. **Layer 3**: Playwright tests (`web-frontend/e2e/*.spec.ts`) — UI E2E; role-based projects: `chromium` (organizer), `speaker`, `partner`
-4. **Layer 4**: Infrastructure tests (`infrastructure/test/e2e/*.test.ts`) — CDK / AWS resource validation
+4. **Layer 4**: Infrastructure tests (`infrastructure/test/e2e/`, today the monitoring specs): AWS resource validation, run nightly by `nightly-e2e.yml`
 
 ```bash
 # Run Bruno API contract tests (loads all role tokens automatically)
@@ -656,7 +657,7 @@ distribution and CORS allow-listing of `https://beta.batbern.ch` (gateway `Secur
 
 Admin setting `mailcenter.notify-instead-of-forward` lists the alias groups answered in the Mail
 Center: `moderator` (`batbern{N}-moderator@`), `replies` (`replies@`, `replies+{token}@`), `contact`
-(`info@`, `events@`, `support@`; only after Story 16.7). For a listed group the recipients get a short
+(`info@`, `events@`, `support@`; Story 16.7, live since #1194). For a listed group the recipients get a short
 notice with a link instead of the forwarded copy. Empty = forwarding as before. It is read for every mail,
 so no deploy is needed. **Only the owner switches a group on.** Never set it from code, tests or Bruno.
 Organizer sends (`-speaker@`, `-participants@`, `partner@`, `ok@`) are always forwarded.

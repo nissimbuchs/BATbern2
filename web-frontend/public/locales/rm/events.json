@@ -242,7 +242,10 @@
         "apply": "Midar il status",
         "success": "Status da l'eveniment midà.",
         "error": "Il status da l'eveniment n'ha betg pudì vegnir midà."
-      }
+      },
+      "cancelError": "L'eveniment n'ha betg pudì vegnir revocà. Empruvai anc ina giada.",
+      "cancelledNotice": "Quest eveniment è vegnì revocà. Las annunzias èn vegnidas annulladas ed ils participants infurmads per e-mail.",
+      "cancelSuccess": "L'eveniment è vegnì revocà. Ils participants vegnan infurmads per e-mail."
     },
     "speakers": {
       "progress": "Progress",
@@ -712,7 +715,8 @@
       "event_completed": "Eveniment cumplì",
       "archived": "Archivà",
       "speakers_published": "Referents publitgads",
-      "speaker_outreach": "Contact cun referents"
+      "speaker_outreach": "Contact cun referents",
+      "cancelled": "Revocà"
     },
     "dueDateType": "Tip da scadenza",
     "dueDateTypes": {
@@ -877,7 +881,8 @@
       "agenda_published": "Agenda publicada",
       "event_live": "Eveniment en direct",
       "event_completed": "Eveniment cumplì",
-      "archived": "Archivà"
+      "archived": "Archivà",
+      "cancelled": "Revocà"
     },
     "loading": "Chargiar il status dal workflow...",
     "error": "Il status dal workflow n'ha betg pudì vegnir chargià",

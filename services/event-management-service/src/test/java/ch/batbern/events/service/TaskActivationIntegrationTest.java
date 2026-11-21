@@ -2,6 +2,7 @@ package ch.batbern.events.service;
 
 import ch.batbern.events.core.dto.generated.EventType;
 import ch.batbern.events.domain.Event;
+import ch.batbern.events.exception.EventCancelledException;
 import ch.batbern.events.domain.EventTask;
 import ch.batbern.events.domain.Session;
 import ch.batbern.events.domain.TaskTemplate;
@@ -30,6 +31,8 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.tuple;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -220,6 +223,74 @@ class TaskActivationIntegrationTest extends AbstractIntegrationTest {
         eventTaskService.reconcileOpenTasks(Instant.now());
 
         assertThat(reload(lineup).getStatus()).isEqualTo("cancelled");
+    }
+
+    // ---------------------------------------------------------------- #824: a cancelled event
+
+    // CANCELLED is the last enum constant, so an ordinal comparison read it as "past every state":
+    // cancelling activated every pending task (event_completed, archived included) and cancelled the
+    // newsletter tasks as "superseded: speakers published".
+    @Test
+    @WithMockUser(username = "alice.organizer", roles = "ORGANIZER")
+    void should_activateOnlyCancelledTriggerTasks_when_eventIsCancelled() throws Exception {
+        Instant eventDate = Instant.now().plus(60, ChronoUnit.DAYS);
+        Event event = createEvent("TA-CANCEL", eventDate, EventWorkflowState.SPEAKER_IDENTIFICATION, null);
+        EventTask agenda = createPendingTask(event, "Final Agenda", "agenda_published", eventDate, null);
+        EventTask completed = createPendingTask(event, "Thank speakers", "event_completed", eventDate, null);
+        EventTask archived = createPendingTask(event, "Archive photos", "archived", eventDate, null);
+        EventTask speakersPublished = createPendingTask(event, "Lineup", "speakers_published", eventDate, null);
+        EventTask onCancel = createPendingTask(event, "Tell the caterer", "cancelled", eventDate, null);
+        EventTask topic = createTodoTaskFromSystemTemplate(event, "newsletter_topic");
+
+        mockMvc.perform(post("/api/v1/events/" + event.getEventCode() + "/transition")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"targetState\":\"CANCELLED\"}"))
+                .andExpect(status().isOk());
+
+        assertThat(reload(onCancel).getStatus()).isEqualTo("todo");
+        assertThat(List.of(reload(agenda), reload(completed), reload(archived), reload(speakersPublished)))
+                .extracting(EventTask::getStatus).containsOnly("pending");
+        assertThat(reload(topic).getStatus()).isEqualTo("todo");
+    }
+
+    @Test
+    void should_refusePublishing_when_eventIsCancelled() {
+        Instant eventDate = LocalDate.now().plusDays(14).atStartOfDay(ZoneId.systemDefault()).toInstant();
+        Event event = createEvent("TA-CANCEL-PUBLISH", eventDate, EventWorkflowState.CANCELLED, "speakers");
+        createTimedSession(event, eventDate);
+
+        assertThatThrownBy(() -> publishingService.publishPhase(event.getEventCode(), PublishingPhase.AGENDA))
+                .isInstanceOf(EventCancelledException.class);
+        assertThat(eventRepository.findById(event.getId()).orElseThrow().getWorkflowState())
+                .isEqualTo(EventWorkflowState.CANCELLED);
+    }
+
+    @Test
+    void should_leaveCancelledEventAlone_when_reconcilingOpenTasks() {
+        Instant eventDate = Instant.now().plus(5, ChronoUnit.DAYS);
+        Event event = createEvent("TA-CANCEL-RECONCILE", eventDate, EventWorkflowState.CANCELLED, "speakers");
+        EventTask completed = createPendingTask(event, "Thank speakers", "event_completed", eventDate, 14);
+        EventTask topic = createTodoTaskFromSystemTemplate(event, "newsletter_topic");
+
+        eventTaskService.reconcileOpenTasks(Instant.now());
+
+        assertThat(reload(completed).getStatus()).isEqualTo("pending");
+        assertThat(reload(topic).getStatus()).isEqualTo("todo");
+    }
+
+    @Test
+    void should_createCancelledTriggerTaskAsTodo_but_otherTriggersAsPending_when_eventIsCancelled() {
+        Instant eventDate = Instant.now().plus(30, ChronoUnit.DAYS);
+        Event event = createEvent("TA-CANCEL-ADD", eventDate, EventWorkflowState.CANCELLED, null);
+        TaskTemplate onCancel = createTemplate("Tell the venue", "cancelled", -20, null);
+        TaskTemplate completed = createTemplate("Thank speakers", "event_completed", 1, null);
+
+        List<EventTask> created = eventTaskService.createTasksFromTemplatesWithAssignees(event.getId(), List.of(
+                new EventTaskService.TemplateAssignmentConfig(onCancel.getId(), null),
+                new EventTaskService.TemplateAssignmentConfig(completed.getId(), null)));
+
+        assertThat(created).extracting(EventTask::getTaskName, EventTask::getStatus)
+                .containsExactlyInAnyOrder(tuple("Tell the venue", "todo"), tuple("Thank speakers", "pending"));
     }
 
     // ---------------------------------------------------------------- seeded defaults (V125)

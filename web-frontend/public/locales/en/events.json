@@ -198,7 +198,10 @@
         "apply": "Change state",
         "success": "Event state changed.",
         "error": "The event state could not be changed."
-      }
+      },
+      "cancelError": "The event could not be cancelled. Please try again.",
+      "cancelledNotice": "This event was cancelled. Its registrations were cancelled and the participants were told by mail.",
+      "cancelSuccess": "The event was cancelled. The participants are being told by mail."
     },
     "participantTable": {
       "headers": {
@@ -716,7 +719,8 @@
       "event_completed": "Event Completed",
       "archived": "Archived",
       "speakers_published": "Speakers published",
-      "speaker_outreach": "Speaker Outreach"
+      "speaker_outreach": "Speaker Outreach",
+      "cancelled": "Cancelled"
     },
     "dueDateType": "Due Date Type",
     "dueDateTypes": {
@@ -881,7 +885,8 @@
       "agenda_published": "Agenda Published",
       "event_live": "Event Live",
       "event_completed": "Event Completed",
-      "archived": "Archived"
+      "archived": "Archived",
+      "cancelled": "Cancelled"
     },
     "loading": "Loading workflow status...",
     "error": "Failed to load the workflow status",

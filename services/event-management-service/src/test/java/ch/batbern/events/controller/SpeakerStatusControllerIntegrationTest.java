@@ -20,6 +20,7 @@ import static org.hamcrest.Matchers.isA;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -273,6 +274,57 @@ public class SpeakerStatusControllerIntegrationTest extends AbstractIntegrationT
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.minSlotsRequired", is(3)))
                 .andExpect(jsonPath("$.maxSlotsAllowed", is(11)));
+    }
+
+    // #824 item 1: the event-type template is the other source of the slot limits. Editing it
+    // (2 slots instead of 3) left the cached summary on the old minimum for up to 15 minutes.
+    @Test
+    @DisplayName("Should report the edited event-type slots right after the template is saved")
+    void should_reportTemplateSlots_when_eventTypeEditedAfterSummaryCached() throws Exception {
+        mockMvc.perform(get("/api/v1/events/{code}/speakers/status-summary", TEST_EVENT_CODE)
+                        .with(user(ORGANIZER_USERNAME).roles("ORGANIZER")))
+                .andExpect(status().isOk());
+
+        putEventTypeSlots("EVENING", 2, 4);
+
+        mockMvc.perform(get("/api/v1/events/{code}/speakers/status-summary", TEST_EVENT_CODE)
+                        .with(user(ORGANIZER_USERNAME).roles("ORGANIZER")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.minSlotsRequired", is(2)))
+                .andExpect(jsonPath("$.maxSlotsAllowed", is(4)));
+    }
+
+    // #824 item 1: switching the event to another event type changes its slot limits too.
+    @Test
+    @DisplayName("Should report the new event type's slots right after the event's type is changed")
+    void should_reportNewTypeSlots_when_eventTypeOfEventChangedAfterSummaryCached() throws Exception {
+        putEventTypeSlots("FULL_DAY", 5, 9);
+        mockMvc.perform(get("/api/v1/events/{code}/speakers/status-summary", TEST_EVENT_CODE)
+                        .with(user(ORGANIZER_USERNAME).roles("ORGANIZER")))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(patch("/api/v1/events/{code}", TEST_EVENT_CODE)
+                        .with(user(ORGANIZER_USERNAME).roles("ORGANIZER"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"eventType\":\"FULL_DAY\"}"))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/v1/events/{code}/speakers/status-summary", TEST_EVENT_CODE)
+                        .with(user(ORGANIZER_USERNAME).roles("ORGANIZER")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.minSlotsRequired", is(5)))
+                .andExpect(jsonPath("$.maxSlotsAllowed", is(9)));
+    }
+
+    private void putEventTypeSlots(String type, int minSlots, int maxSlots) throws Exception {
+        mockMvc.perform(put("/api/v1/event-types/{type}", type)
+                        .with(user(ORGANIZER_USERNAME).roles("ORGANIZER"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(String.format("""
+                                {"minSlots":%d,"maxSlots":%d,"slotDuration":45,"theoreticalSlotsAM":false,
+                                 "breakSlots":1,"lunchSlots":0,"defaultCapacity":180,
+                                 "typicalStartTime":"16:00","typicalEndTime":"21:00"}""", minSlots, maxSlots)))
+                .andExpect(status().isOk());
     }
 
     /**

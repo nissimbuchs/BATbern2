@@ -258,6 +258,15 @@ paths:
                     code: DUPLICATE_REGISTRATION
         '404':
           $ref: '#/components/responses/NotFound'
+        '409':
+          description: |
+            Registration is not possible: the registration deadline has passed (details.code
+            REGISTRATION_CLOSED, with details.deadline) or the event was cancelled (details.code
+            EVENT_CANCELLED, #824). No registration is created.
+          content:
+            application/json:
+              schema:
+                $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
         '429':
           description: Rate limit exceeded (public endpoint protection)
         '500':
@@ -420,7 +429,9 @@ paths:
         '409':
           description: 'Single mode: the user is already registered (generic) or the event is full
 
-            (`details.code = "capacity_exceeded"`; retry with `force: true`).
+            (`details.code = "capacity_exceeded"`; retry with `force: true`). Any mode: the event
+
+            was cancelled (`details.code = "EVENT_CANCELLED"`, #824), nobody is added.
 
             '
           content:
@@ -616,7 +627,9 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
         '409':
-          description: User is already registered for this event
+          description: User is already registered for this event, the registration deadline has
+            passed (details.code REGISTRATION_CLOSED) or the event was cancelled (details.code
+            EVENT_CANCELLED, #824)
           content:
             application/json:
               schema:

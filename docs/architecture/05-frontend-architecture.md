@@ -2,7 +2,7 @@
 
 ## Component Organization
 
-Top-level layout of `web-frontend/src/` (develop c4593449). Components are grouped partly by role
+Top-level layout of `web-frontend/src/` (develop c4593449, routes rechecked 2026-11-20). Components are grouped partly by role
 and partly by feature; the tree below lists folders only, not individual files.
 
 ```
@@ -1488,6 +1488,7 @@ again when read) and taken by `/auth/callback` or by the login after verificatio
 /registration-success
 /events/:eventCode/confirm-registration
 /unsubscribe                              # Newsletter unsubscribe
+/newsletter/confirm                       # Newsletter double opt-in confirmation (#1288)
 /verify-email                             # Additional-email verification (token)
 /deregister                               # Self-service deregistration (token)
 /present/:eventCode                       # Fullscreen moderator presentation page
@@ -1543,6 +1544,7 @@ again when read) and taken by `/auth/callback` or by the login after verificatio
 
 # Attendee
 /attendee/dashboard                 P     # Event history (Story 7.6)
+/attendee/whats-new                 P     # What's new, full searchable list
 /attendee                                 # redirects to /attendee/dashboard
 ```
 

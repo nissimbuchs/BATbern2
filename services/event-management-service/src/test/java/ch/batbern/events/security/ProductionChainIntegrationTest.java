@@ -18,6 +18,8 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtAut
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.JwtRequestPostProcessor;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Collection;
 
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
@@ -43,11 +45,11 @@ class ProductionChainIntegrationTest extends AbstractIntegrationTest {
      * same body can only come from security.
      */
     private static final String VALID_BODY = """
-            {"title": "Chain test event", "eventNumber": 9871, "date": "2027-08-15T09:00:00Z",
-             "registrationDeadline": "2027-08-01T09:00:00Z", "venueName": "Kornhausforum",
+            {"title": "Chain test event", "eventNumber": 9871, "date": "%s",
+             "registrationDeadline": "%s", "venueName": "Kornhausforum",
              "venueAddress": "Kornhausplatz 18, 3011 Bern", "venueCapacity": 200,
              "organizerUsername": "chain.organizer", "description": "Production chain", "eventType": "EVENING"}
-            """;
+            """.formatted(Instant.now().plus(270, ChronoUnit.DAYS), Instant.now().plus(256, ChronoUnit.DAYS));
 
     @Autowired
     private MockMvc mockMvc;

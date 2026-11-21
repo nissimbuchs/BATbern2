@@ -17,6 +17,7 @@ const WORKFLOW_STATES: Record<EventWorkflowState, true> = {
   EVENT_LIVE: true,
   EVENT_COMPLETED: true,
   ARCHIVED: true,
+  CANCELLED: true,
 };
 
 export const TRIGGER_SPEAKERS_PUBLISHED = 'speakers_published';

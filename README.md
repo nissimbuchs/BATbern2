@@ -26,7 +26,8 @@ Mail Center. Epic 17 (architecture hardening, closed 2026-11-15) put service-to-
 - AWS CLI v2
 - AWS CDK v2.110+
 - jq (JSON processor: `brew install jq` on macOS)
-- AWS credentials configured (`~/.aws/credentials` with profile `batbern-mgmt`)
+- AWS credentials configured (`~/.aws/credentials` with profile `batbern-staging`, the production
+  account; local development uses its Cognito pool)
 
 ### Local Development with Native Execution (Recommended)
 
@@ -35,7 +36,7 @@ Mail Center. Epic 17 (architecture hardening, closed 2026-11-15) put service-to-
 ```bash
 # Clone repository
 git clone https://github.com/nissimbuchs/BATbern2.git
-cd BATbern
+cd BATbern2
 
 # Install git hooks (pre-commit, pre-push)
 ./.githooks/install-hooks.sh
@@ -282,10 +283,12 @@ The platform uses GitHub Actions for automated building, testing, and deployment
 
 ### Automated Workflows
 
-- **Build Pipeline** - Runs on every push to `develop` or `main`
-- **Security Scanning** - Runs after successful builds
-- **Staging Deployment** - Automatic on push to `develop` (or manual via Actions)
-- **Production Deployment** - Manual via GitHub Actions after merging `develop → main`
+- **Build Pipeline** (`build.yml`) - Runs on a PR to `develop` and on a push to `develop` or `main`
+- **Production Deployment** (`deploy-staging.yml`) - Called by the build pipeline on a push to
+  `develop` **and on every PR to `develop`**, so opening or pushing to such a PR deploys that branch
+  to production before merge (Dependabot PRs excluded)
+- **Security Scanning** (`security-scan.yml`) - OWASP ZAP, weekly
+- Details: [CI/CD Pipeline Guide](docs/deployment/cicd-pipeline-guide.md)
 
 ### Deployment Environments
 
@@ -316,28 +319,12 @@ frontend-only changes; never for backend, migration, or destructive testing. It 
 
 ### Quick Deploy
 
-**To Production** (automatic via develop branch):
-```bash
-git push origin develop
-# Deploy runs automatically after build passes — deploys to production (staging account)
-```
+**To Production**: open a PR to `develop`. Its build deploys the branch to production, runs the
+post-deploy checks, Bruno and Playwright, and rolls back on failure; `auto-merge.yml` then merges it.
 
-**Tagged Releases** (manual — 3 steps):
-```bash
-# Step 1: Open a PR on GitHub: develop → main and merge it.
-#         The build pipeline runs on main and pushes images to ECR
-#         with the merge commit SHA as the image tag.
-
-# Step 2: Note the 7-char SHA of the merge commit
-#         (visible in the commit list or the build workflow run)
-
-# Step 3: Trigger the deploy
-Actions → Deploy to Production → Run workflow → version: <sha7>
-# e.g. version: a3f7c91
-```
-
-A GitHub Release (`prod/<sha7>`) is created automatically after a successful production deploy.
-Each deploy is visible on the [/deployments](../../deployments) and [/releases](../../releases) pages.
+**Tagged releases are not usable** (checked 2026-11-03): `deploy-production.yml` and
+`promote-to-production.yml` point to the decommissioned account 422940799530 and fail at the first
+AWS step. They are kept by owner decision.
 
 ## Architecture
 
@@ -372,15 +359,16 @@ Each deploy is visible on the [/deployments](../../deployments) and [/releases](
 
 **Organizer Workflows (Epic 5) - ✅ 100% Complete:**
 - **Event Type Definition** - Full-day, afternoon, evening formats
-- **9-State Workflow Machine** - Event lifecycle from creation to archive
+- **8-State Workflow Machine** - Event lifecycle from creation to archive
 - **Speaker Coordination** - Per-speaker workflow with parallel progression
 - **Task Management System** - Configurable tasks with auto-creation
 - **Auto-Publishing Engine** - CDN integration with scheduled publishing
 - **Lifecycle Automation** - EVENT_LIVE and EVENT_COMPLETED transitions
 
 **Speaker Self-Service Portal (Epic 6) - ✅ 100% Complete:**
-- **Automated Invitations** - AWS SES magic link invitation system
-- **Self-Service Response Portal** - Speaker accept/decline via unique link (no login required)
+- **Automated Invitations** - SES invitation mails (the original magic links were replaced by a
+  Cognito login in Epic 11, ADR-009)
+- **Self-Service Response Portal** - Speaker accept/decline in the speaker portal
 - **Material Submission** - Speaker self-upload of title, abstract, CV, photo, presentation
 - **Speaker Dashboard** - View upcoming/past events; WCAG 2.1 AA accessible
 - **Deadline Reminders** - Configurable automated reminder tiers (friendly → urgent → escalate)
@@ -391,7 +379,7 @@ Each deploy is visible on the [/deployments](../../deployments) and [/releases](
 - **Meeting Coordination** - RFC 5545 ICS calendar invites with agenda + iCal RSVP tracking
 - **Partner Notes** - Organizer/partner notes on partner records (Story 8.4)
 
-**Attendee Experience (Epic 7) - 🔨 In Review:**
+**Attendee Experience (Epic 7) - ✅ Complete:**
 - **Topics From the Floor** - Logged-in attendees suggest future topics into the existing topic pool (`source = community`)
 - **"I Could Speak on That"** - Attendee speaker self-nomination into the 8-state speaker workflow (enters at `IDENTIFIED`)
 - **"Slides Are Online" Mail** - Event-triggered email to active registrants when materials publish (DE/EN)
@@ -413,7 +401,7 @@ Each deploy is visible on the [/deployments](../../deployments) and [/releases](
 - **"Continue with Google" SSO** - Federated login with account linking, JIT provisioning, ToS consent, avatar import
 
 ### Technology Stack
-- **Backend:** Java 21, Spring Boot 3.5+
+- **Backend:** Java 21, Spring Boot 4.0.x
 - **Frontend:** React 19, TypeScript 6.x, Material-UI + Tailwind CSS
 - **Auth:** AWS Cognito + Google SSO federation (OIDC)
 - **Database:** PostgreSQL 15+
@@ -439,14 +427,10 @@ make test-node         # Node.js tests only
 
 **Individual Component Tests:**
 ```bash
-# Shared kernel tests
-cd shared-kernel && ./gradlew test
-
-# API Gateway tests
-cd api-gateway && ./gradlew test
-
-# Domain services tests
-cd services/event-management-service && ./gradlew test
+# Gradle always from the repository root
+./gradlew :shared-kernel:test
+./gradlew :api-gateway:test
+./gradlew :services:event-management-service:test
 
 # Infrastructure tests
 cd infrastructure && npm test
@@ -462,16 +446,17 @@ All new features must follow Test-Driven Development practices:
 3. **REFACTOR Phase**: Improve code while keeping tests green
 
 ### Coverage Requirements
-- Unit Tests: 90% for business logic
-- Integration Tests: 80% for APIs
-- Overall: 85% line coverage
+- Java: JaCoCo instruction coverage at least 0.60 per module, checked by `make test` (not in CI)
+- Frontend: statement coverage at least 73 %, checked in CI
+- CDK: no gate
 
 ## Security
 
 ### Vulnerability Scanning
-- **Snyk** - Dependency scanning (daily)
-- **SonarQube** - Code quality and security
-- **License Checker** - License compliance
+- **OWASP ZAP** - Weekly scan of the live site (`security-scan.yml`)
+- **Access-control probe** - Anonymous calls against every endpoint after each deploy
+- **Dependabot** - Monthly grouped dependency updates (see CLAUDE.md)
+- **AI security** - OWASP LLM checks for the AI code (`ai-security.yml`, advisory)
 
 ### Secrets Management
 All secrets stored in GitHub Secrets and AWS Secrets Manager.
@@ -488,10 +473,8 @@ All secrets stored in GitHub Secrets and AWS Secrets Manager.
 - [API Documentation](docs/api/)
 
 ### User Guides
-- [Forgot Password Flow](docs/guides/forgot-password-flow.md) - Password reset functionality (Story 1.2.2)
-- [AWS SES Configuration](docs/guides/aws-ses-configuration.md) - Email template setup
-- [Rate Limiting Rules](docs/guides/rate-limiting.md) - Security and abuse prevention
-- [Troubleshooting Guide](docs/guides/troubleshooting-forgot-password.md) - Common issues and solutions
+- [Forgot Password Flow](docs/guides/forgot-password-flow.md) - Password reset (client-side, Amplify and Cognito)
+- [Local Development Setup](docs/guides/local-development-setup.md)
 
 ### Deployment
 - [Deployment Guide](docs/deployment/)

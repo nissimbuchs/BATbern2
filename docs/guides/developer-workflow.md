@@ -11,18 +11,12 @@ This guide covers the essential developer workflow for the BATbern Event Managem
 After cloning the repository, install the git hooks:
 
 ```bash
-# Navigate to project root
-cd BATbern
-
-# Run the installation script
-chmod +x .githooks/install-hooks.sh
-./.githooks/install-hooks.sh
+make install-hooks      # also part of make install
 ```
 
-This will:
-- Configure git to use custom hooks from `.githooks/`
-- Install necessary dependencies for frontend (ESLint, Prettier, commitlint)
-- Set up pre-commit, commit-msg, and pre-push hooks
+This runs `.githooks/install-hooks.sh`, which sets `core.hooksPath` to `.githooks` and activates
+the pre-commit, commit-msg and pre-push hooks. It installs no npm packages; the frontend hooks use
+the tooling from `npm ci` in `web-frontend/`.
 
 ### 2. Verify Installation
 
@@ -59,13 +53,13 @@ git add .
 git commit -m "feat(auth): add Google OAuth"
 ```
 
-The hook will:
-- ✅ Run ESLint on changed frontend files (`.ts`, `.tsx`)
-- ✅ Run Prettier to check formatting
-- ✅ Run Checkstyle on changed backend files (`.java`)
-- ✅ Validate commit message format
+The hook (`.githooks/pre-commit`) will:
+- Run lint-staged (ESLint and Prettier, may amend and re-stage files) when anything under
+  `web-frontend/` is staged, and for staged `infrastructure/**/*.ts`
+- Check that the generated API types are up to date when a spec or generated file is staged
+- Run Checkstyle when Java files are staged
 
-**Execution time: ~5-10 seconds**
+The commit message is checked separately by the commit-msg hook (next step).
 
 #### If Checks Fail:
 
@@ -117,12 +111,10 @@ When you push to remote, the **pre-push hook** runs:
 git push origin feature/your-feature-name
 ```
 
-The hook will:
-- ✅ Run full frontend test suite
-- ✅ Run full backend test suite (unit + integration)
-- ✅ Ensure all tests pass
-
-**Execution time: ~1-3 minutes**
+The hook (`.githooks/pre-push`) runs the tests of the components the push changes, not
+everything: Vitest when the frontend changed, the Gradle tests (unit and integration, so Docker is
+needed) of the changed Java modules and of the services a changed `docs/api` spec belongs to, and
+the CICD permission test when a workflow changed.
 
 #### If Tests Fail:
 

@@ -247,7 +247,10 @@
         "apply": "Status ändere",
         "success": "Event-Status g'änderet.",
         "error": "Dr Event-Status het nid chönne g'änderet wärde."
-      }
+      },
+      "cancelError": "Dr Event het nid chönne abgsait wärde. Bitte versuechet s nomau.",
+      "cancelledNotice": "Dä Event isch abgsait worde. D Aamäldige si storniert und d Teilnähmer per Mail informiert worde.",
+      "cancelSuccess": "Dr Event isch abgsait. D Teilnähmer wärde per Mail informiert."
     },
     "speakers": {
       "progress": "Fortschritt",
@@ -718,7 +721,8 @@
       "event_completed": "Veranstatig abgschlosse",
       "archived": "Archiviert",
       "speakers_published": "Redner veröffentlecht",
-      "speaker_outreach": "Rednerkontakt"
+      "speaker_outreach": "Rednerkontakt",
+      "cancelled": "Abgsait"
     },
     "dueDateType": "Fälligkeitsdatumtyp",
     "dueDateTypes": {
@@ -881,7 +885,8 @@
       "agenda_published": "Agenda veröffentlicht",
       "event_live": "Veranstatig läuft",
       "event_completed": "Veranstatig abgschlosse",
-      "archived": "Archiviert"
+      "archived": "Archiviert",
+      "cancelled": "Abgsait"
     },
     "loading": "Workflow-Status wird glade...",
     "error": "Workflow-Status het nid chönne glade wärde",

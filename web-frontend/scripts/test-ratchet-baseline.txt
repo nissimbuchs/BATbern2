@@ -175,7 +175,6 @@ fe-mock-components	web-frontend/src/components/organizer/EventManagement/__tests
 fe-mock-components	web-frontend/src/components/organizer/EventPage/EventParticipantList.test.tsx	3
 fe-mock-components	web-frontend/src/components/organizer/EventPage/EventParticipantTable.test.tsx	1
 fe-mock-components	web-frontend/src/components/organizer/EventPage/EventParticipantsTab.test.tsx	1
-fe-mock-components	web-frontend/src/components/organizer/EventPage/EventSettingsTab.test.tsx	1
 fe-mock-components	web-frontend/src/components/organizer/EventPage/__tests__/AddParticipantDialog.test.tsx	1
 fe-mock-components	web-frontend/src/components/organizer/EventPage/__tests__/EventCommunicationsContainer.test.tsx	4
 fe-mock-components	web-frontend/src/components/organizer/EventPage/__tests__/EventDetailsContainer.test.tsx	3
@@ -238,11 +237,9 @@ fe-mock-hooks	web-frontend/src/components/organizer/EventManagement/__tests__/Se
 fe-mock-hooks	web-frontend/src/components/organizer/EventManagement/__tests__/TeamActivityFeed.test.tsx	1
 fe-mock-hooks	web-frontend/src/components/organizer/EventPage/AiAssistDrawer.test.tsx	1
 fe-mock-hooks	web-frontend/src/components/organizer/EventPage/EventParticipantList.test.tsx	1
-fe-mock-hooks	web-frontend/src/components/organizer/EventPage/EventSettingsTab.test.tsx	1
 fe-mock-hooks	web-frontend/src/components/organizer/EventPage/__tests__/EventAppreciationTab.test.tsx	1
 fe-mock-hooks	web-frontend/src/components/organizer/EventPage/__tests__/EventCommunicationsContainer.test.tsx	1
 fe-mock-hooks	web-frontend/src/components/organizer/EventPage/__tests__/EventInfoTab.test.tsx	3
-fe-mock-hooks	web-frontend/src/components/organizer/EventPage/__tests__/RegistrationActionsMenu.test.tsx	1
 fe-mock-hooks	web-frontend/src/components/organizer/EventPage/cockpit/__tests__/CockpitTab.test.tsx	3
 fe-mock-hooks	web-frontend/src/components/organizer/EventPage/cockpit/__tests__/useCockpitCards.test.ts	4
 fe-mock-hooks	web-frontend/src/components/organizer/EventPage/communications/__tests__/ConversationDetail.test.tsx	3
@@ -329,12 +326,10 @@ fe-mock-i18n	web-frontend/src/components/organizer/EventPage/EventParticipantFil
 fe-mock-i18n	web-frontend/src/components/organizer/EventPage/EventParticipantList.test.tsx	1
 fe-mock-i18n	web-frontend/src/components/organizer/EventPage/EventParticipantTable.test.tsx	1
 fe-mock-i18n	web-frontend/src/components/organizer/EventPage/EventParticipantsTab.test.tsx	1
-fe-mock-i18n	web-frontend/src/components/organizer/EventPage/EventSettingsTab.test.tsx	1
 fe-mock-i18n	web-frontend/src/components/organizer/EventPage/__tests__/EventAppreciationTab.test.tsx	1
 fe-mock-i18n	web-frontend/src/components/organizer/EventPage/__tests__/EventCommunicationsContainer.test.tsx	1
 fe-mock-i18n	web-frontend/src/components/organizer/EventPage/__tests__/EventDetailsContainer.test.tsx	1
 fe-mock-i18n	web-frontend/src/components/organizer/EventPage/__tests__/EventInfoTab.test.tsx	1
-fe-mock-i18n	web-frontend/src/components/organizer/EventPage/__tests__/RegistrationActionsMenu.test.tsx	1
 fe-mock-i18n	web-frontend/src/components/organizer/EventPage/communications/CompanyLogoRequestPanel.test.tsx	1
 fe-mock-i18n	web-frontend/src/components/organizer/EventPage/communications/ProfileMergeRequestPanel.test.tsx	1
 fe-mock-i18n	web-frontend/src/components/organizer/EventPage/communications/__tests__/ConversationDetail.test.tsx	1
@@ -410,7 +405,6 @@ fe-mock-services	web-frontend/src/components/organizer/EventPage/EventParticipan
 fe-mock-services	web-frontend/src/components/organizer/EventPage/EventParticipantsTab.test.tsx	1
 fe-mock-services	web-frontend/src/components/organizer/EventPage/__tests__/EventCommunicationsContainer.test.tsx	1
 fe-mock-services	web-frontend/src/components/organizer/EventPage/__tests__/EventInfoTab.test.tsx	1
-fe-mock-services	web-frontend/src/components/organizer/EventPage/__tests__/RegistrationActionsMenu.test.tsx	1
 fe-mock-services	web-frontend/src/components/organizer/EventPage/communications/CompanyLogoRequestPanel.test.tsx	1
 fe-mock-services	web-frontend/src/components/organizer/EventPage/communications/ProfileMergeRequestPanel.test.tsx	1
 fe-mock-services	web-frontend/src/components/organizer/EventPage/communications/__tests__/ConversationDetail.test.tsx	1

@@ -1,12 +1,12 @@
 # Source Tree Structure
 
-Generated from `git ls-tree` on `develop` (c4593449, 2026-11-04). Only directories that exist are
+Generated from `git ls-files` on `develop` (2026-11-04, rechecked 2026-11-20). Only directories that exist are
 listed; descriptions are short on purpose. Regenerate rather than hand-edit when the layout
 changes.
 
 ## Unified Project Structure
 
-One monorepo. The root `settings.gradle` includes `shared-kernel`, `api-gateway` and the five
+One monorepo. The root `settings.gradle` includes `shared-kernel`, `api-gateway` and the three
 `services:*` modules; `web-frontend` and `infrastructure` are separate npm projects. Run Gradle
 from the repository root.
 
@@ -167,7 +167,7 @@ scripts/
 ├── deploy/    # publish-beta-frontend.sh
 ├── staging/   # data uploads and bootstrap-user sync against the production account
 ├── config/    # sync-backend-config.sh, validate-backend-config.sh
-├── db/  e2e/  data/  test/
+├── architecture/  gate/  db/  e2e/  data/  test/
 └── update-versions.js   # generates docs/versions.json
 ```
 
@@ -185,7 +185,8 @@ docs/
 ├── security/       # e.g. owasp-llm-agentic-checklist.md
 ├── watch-app/      # Watch app PRD, architecture, UX
 ├── stories/archived/  # Older story files, by epic (newer stories are in _bmad-output/implementation-artifacts/)
-├── testing/  qa/  specs/  ux/  wireframes/  user-guide/  migration/  presentation/  trainings/  templates/  assessment/
+├── archive/        # Closed epic PRDs, done plans, v6 planning reports
+├── testing/  qa/  qa-gates/  specs/  ux/  wireframes/  user-guide/  migration/  presentation/  trainings/  templates/  assessment/
 └── versions.json   # Generated technology versions
 ```
 

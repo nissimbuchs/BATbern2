@@ -122,6 +122,8 @@ public class EventSearchService {
         Specification<Event> spec = (root, query, cb) -> cb.and(
                 cb.greaterThanOrEqualTo(root.get("date"), startOfToday),
                 cb.notEqual(root.get("workflowState"), EventWorkflowState.ARCHIVED),
+                // #824: a cancelled event is not on the public site
+                cb.notEqual(root.get("workflowState"), EventWorkflowState.CANCELLED),
                 cb.lower(root.get("currentPublishedPhase")).in(PUBLISHED_PHASES));
 
         Page<Event> eventPage = eventRepository.findAll(

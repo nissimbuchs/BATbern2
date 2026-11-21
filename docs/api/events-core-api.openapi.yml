@@ -970,9 +970,26 @@ paths:
 
         **States** (8, V82): CREATED, TOPIC_SELECTION, SPEAKER_IDENTIFICATION, SLOT_ASSIGNMENT,
 
-        AGENDA_PUBLISHED, EVENT_LIVE, EVENT_COMPLETED, ARCHIVED. The scheduler moves AGENDA_PUBLISHED
+        AGENDA_PUBLISHED, EVENT_LIVE, EVENT_COMPLETED, ARCHIVED, plus CANCELLED off the path. The
 
-        to EVENT_LIVE on event day and EVENT_LIVE to EVENT_COMPLETED after it.
+        scheduler moves AGENDA_PUBLISHED to EVENT_LIVE on event day and EVENT_LIVE to EVENT_COMPLETED
+
+        after it.
+
+
+        **Cancellation** (#824): CANCELLED is reachable from every state before EVENT_COMPLETED and is
+
+        terminal. From EVENT_COMPLETED or ARCHIVED it is refused with 422 even with `overrideValidation`. Entering it cancels every registration that holds or waits for a place (registered,
+
+        confirmed, waitlist) and mails each of those people the cancellation (template
+
+        `registration-event-cancelled`, German or English by their language) after the commit. A
+
+        cancelled event is not on the public site (`/public/events*` answer as for an unknown event),
+
+        takes no registrations (409 `EVENT_CANCELLED`), and the schedulers (auto-publishing, speaker
+
+        reminders) skip it.
 
 
         **Validation**: the state machine checks that the target is reachable from the current state
@@ -1041,7 +1058,7 @@ paths:
                     path: /api/v1/events/BATbern142/transition
                     status: 400
                     error: Bad Request
-                    message: "Unknown target state 'PUBLISHED'. Allowed: CREATED, TOPIC_SELECTION, SPEAKER_IDENTIFICATION, SLOT_ASSIGNMENT, AGENDA_PUBLISHED, EVENT_LIVE, EVENT_COMPLETED, ARCHIVED"
+                    message: "Unknown target state 'PUBLISHED'. Allowed: CREATED, TOPIC_SELECTION, SPEAKER_IDENTIFICATION, SLOT_ASSIGNMENT, AGENDA_PUBLISHED, EVENT_LIVE, EVENT_COMPLETED, ARCHIVED, CANCELLED"
                     correlationId: abc-123-def
                     severity: MEDIUM
         '403':
@@ -1901,7 +1918,7 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
         '409':
-          description: A phase above this one is published; use unpublish to step back. Nothing changed.
+          description: A phase above this one is published (use unpublish to step back), or the event was cancelled (details.code EVENT_CANCELLED, #824). Nothing changed.
           content:
             application/json:
               schema:
@@ -3424,6 +3441,10 @@ components:
 
         The scheduler transitions AGENDA_PUBLISHED directly to EVENT_LIVE on event day.
 
+        CANCELLED (#824) lies off the path: an organizer calls the event off from any state before
+
+        EVENT_COMPLETED; it is terminal.
+
         '
       enum:
       - CREATED
@@ -3434,6 +3455,7 @@ components:
       - EVENT_LIVE
       - EVENT_COMPLETED
       - ARCHIVED
+      - CANCELLED
       example: SPEAKER_IDENTIFICATION
     WorkflowTransitionResponse:
       type: object

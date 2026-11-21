@@ -43,6 +43,22 @@ describe('EventWorkflowStateSection', () => {
     expect(screen.getByRole('combobox')).toHaveTextContent('Slot Assignment');
   });
 
+  // #824: cancelling mails the participants, so it is only offered in the Danger Zone
+  it('should show a cancelled event as cancelled and never offer CANCELLED as a target', async () => {
+    renderSection('CANCELLED');
+    expect(screen.getByRole('combobox')).toHaveTextContent('Cancelled');
+
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('combobox'));
+    expect(await screen.findByTestId('workflow-state-option-CANCELLED')).toHaveAttribute(
+      'aria-disabled',
+      'true'
+    );
+    expect(screen.getByTestId('workflow-state-option-ARCHIVED')).not.toHaveAttribute(
+      'aria-disabled'
+    );
+  });
+
   it('should keep the apply button disabled when the selected state equals the current state', () => {
     renderSection('SLOT_ASSIGNMENT');
 

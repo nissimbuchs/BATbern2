@@ -309,12 +309,7 @@ Use this sub-tab to add a default task that an older event lacks, for example **
 | **Registration Capacity** | Maximum number of places. Leave it blank for unlimited. Saving fills free places from the waitlist (see [Waitlist and capacity](#waitlist-and-capacity)). |
 | **Session Q&A** | Per-session Q&A: on/off, when it opens, how many days it stays open, **Close Q&A now** |
 | **Teaser Images** | Extra slides for the moderator presentation of this event |
-| **Danger Zone** | **Delete Event**, only possible while the event has no attendee registrations |
-
-<div class="alert warning">
-⚠️ <strong>Cancel Event does not cancel the event.</strong> The <strong>Cancel Event</strong> button
-in the Danger Zone opens a confirmation dialog, but confirming it changes nothing and sends no mail.
-</div>
+| **Danger Zone** | **Cancel Event** calls the event off: its registrations are cancelled and the participants get a cancellation mail (see [Cancelling an Event](events.md#cancelling-an-event)). **Delete Event**, only possible while the event has no attendee registrations |
 
 ---
 

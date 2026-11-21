@@ -170,6 +170,11 @@ export const useUpdateEvent = (): UseMutationResult<
       if ('registrationCapacity' in data) {
         queryClient.invalidateQueries({ queryKey: ['event-registrations', eventCode] });
       }
+      // Another event type brings other slot limits (Speakers tab, cockpit) (#824 item 1)
+      if ('eventType' in data) {
+        queryClient.invalidateQueries({ queryKey: ['speakerStatusSummary', eventCode] });
+        queryClient.invalidateQueries({ queryKey: ['agenda-config', eventCode] });
+      }
       // Invalidate ALL event-related caches for proper MVC pattern
       // 1. List caches (all pagination/filter combinations)
       queryClient.invalidateQueries({ queryKey: ['events'] });

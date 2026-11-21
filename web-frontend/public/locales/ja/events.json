@@ -242,7 +242,10 @@
         "apply": "状態を変更",
         "success": "イベントの状態を変更しました。",
         "error": "イベントの状態を変更できませんでした。"
-      }
+      },
+      "cancelError": "イベントを中止できませんでした。もう一度お試しください。",
+      "cancelledNotice": "このイベントは中止されました。登録はキャンセルされ、参加者にはメールで通知されました。",
+      "cancelSuccess": "イベントは中止されました。参加者にはメールで通知されます。"
     },
     "speakers": {
       "progress": "進捗",
@@ -712,7 +715,8 @@
       "event_completed": "イベント完了",
       "archived": "アーカイブ済み",
       "speakers_published": "スピーカー公開",
-      "speaker_outreach": "スピーカー招致"
+      "speaker_outreach": "スピーカー招致",
+      "cancelled": "中止"
     },
     "dueDateType": "期限タイプ",
     "dueDateTypes": {
@@ -877,7 +881,8 @@
       "agenda_published": "アジェンダ公開済み",
       "event_live": "イベント開催中",
       "event_completed": "イベント完了",
-      "archived": "アーカイブ済み"
+      "archived": "アーカイブ済み",
+      "cancelled": "中止"
     },
     "loading": "ワークフローの状態を読み込み中...",
     "error": "ワークフローの状態を読み込めませんでした",

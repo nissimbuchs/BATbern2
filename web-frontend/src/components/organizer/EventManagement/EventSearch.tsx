@@ -50,6 +50,7 @@ const WORKFLOW_STATE_OPTIONS = [
   'EVENT_LIVE',
   'EVENT_COMPLETED',
   'ARCHIVED',
+  'CANCELLED',
 ];
 
 export const EventSearch: React.FC<EventSearchProps> = ({ onFiltersChange, filters }) => {

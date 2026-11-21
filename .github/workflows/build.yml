@@ -82,6 +82,10 @@ jobs:
       - name: Verify the deploy waits for in-progress CloudFormation stacks
         run: ./scripts/ci/test-wait-for-stable-stacks.sh
 
+      # #1228: the weekly ZAP scan saves each scan job's console log for projectdoc.
+      - name: Verify the ZAP job-log capture
+        run: ./scripts/ci/test-zap-job-logs.sh
+
   # ═══════════════════════════════════════════════════════════
   # BUILD PHASE: Shared Kernel (Foundation)
   # ═══════════════════════════════════════════════════════════

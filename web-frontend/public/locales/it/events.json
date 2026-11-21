@@ -242,7 +242,10 @@
         "apply": "Cambia stato",
         "success": "Stato dell'evento modificato.",
         "error": "Impossibile modificare lo stato dell'evento."
-      }
+      },
+      "cancelError": "Non è stato possibile annullare l'evento. Riprova.",
+      "cancelledNotice": "Questo evento è stato annullato. Le iscrizioni sono state annullate e i partecipanti informati via e-mail.",
+      "cancelSuccess": "L'evento è stato annullato. I partecipanti vengono informati via e-mail."
     },
     "speakers": {
       "progress": "Avanzamento",
@@ -712,7 +715,8 @@
       "event_completed": "Evento completato",
       "archived": "Archiviato",
       "speakers_published": "Relatori pubblicati",
-      "speaker_outreach": "Contatto relatori"
+      "speaker_outreach": "Contatto relatori",
+      "cancelled": "Annullato"
     },
     "dueDateType": "Tipo di scadenza",
     "dueDateTypes": {
@@ -877,7 +881,8 @@
       "agenda_published": "Agenda pubblicata",
       "event_live": "Evento in diretta",
       "event_completed": "Evento completato",
-      "archived": "Archiviato"
+      "archived": "Archiviato",
+      "cancelled": "Annullato"
     },
     "loading": "Caricamento dello stato del workflow...",
     "error": "Impossibile caricare lo stato del workflow",

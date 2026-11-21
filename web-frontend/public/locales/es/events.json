@@ -242,7 +242,10 @@
         "apply": "Cambiar estado",
         "success": "Estado del evento cambiado.",
         "error": "No se pudo cambiar el estado del evento."
-      }
+      },
+      "cancelError": "No se pudo cancelar el evento. Inténtelo de nuevo.",
+      "cancelledNotice": "Este evento fue cancelado. Las inscripciones se cancelaron y los participantes fueron informados por correo.",
+      "cancelSuccess": "El evento fue cancelado. Los participantes están siendo informados por correo."
     },
     "speakers": {
       "progress": "Progreso",
@@ -712,7 +715,8 @@
       "event_completed": "Evento completado",
       "archived": "Archivado",
       "speakers_published": "Ponentes publicados",
-      "speaker_outreach": "Contacto con ponentes"
+      "speaker_outreach": "Contacto con ponentes",
+      "cancelled": "Cancelado"
     },
     "dueDateType": "Tipo de vencimiento",
     "dueDateTypes": {
@@ -877,7 +881,8 @@
       "agenda_published": "Agenda publicada",
       "event_live": "Evento en vivo",
       "event_completed": "Evento completado",
-      "archived": "Archivado"
+      "archived": "Archivado",
+      "cancelled": "Cancelado"
     },
     "loading": "Cargando el estado del flujo de trabajo...",
     "error": "No se pudo cargar el estado del flujo de trabajo",

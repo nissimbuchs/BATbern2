@@ -357,10 +357,23 @@ confirmation. It is only possible while the event has no attendee registrations;
 says *"Cannot delete event with attendee registrations. Cancel the event instead."* Organizers and
 partners enrolled automatically do not count as attendee registrations.
 
-<div class="alert warning">
-⚠️ The <strong>Cancel Event</strong> button next to it does not cancel the event: confirming the
-dialog changes nothing and sends no mail.
-</div>
+## Cancelling an Event
+
+**Details → Settings → Danger Zone → Cancel Event** calls the event off, after a confirmation. The
+event moves to the state **Cancelled**, and at the same time:
+
+- every registration that holds or waits for a place (registered, confirmed, waitlist) is set to
+  **Cancelled**, and each of these people gets a cancellation mail in German or English, by their
+  language; the mails are listed in the Mail Center
+- the event is no longer on the public website and takes no registrations, not even through
+  **Add participant**
+- auto-publishing and the automatic speaker reminders skip the event
+- open tasks stay open, for example to tell the venue and the caterer
+
+Only an event before **Event Completed** can be cancelled, on the event day too; not even **Override workflow validation** cancels a completed or archived event. **Cancelled** is a final state: the
+event cannot be reopened by the normal state change, only with **Override workflow validation**,
+and that does not restore the registrations. A cancelled event without attendee registrations can
+be deleted.
 
 ## Resource Expansion
 

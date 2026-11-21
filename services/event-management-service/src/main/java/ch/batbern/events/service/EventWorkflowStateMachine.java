@@ -5,6 +5,7 @@ import ch.batbern.events.exception.WorkflowValidationException;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.shared.events.DomainEventPublisher;
 import ch.batbern.shared.events.EventWorkflowTransitionEvent;
+import ch.batbern.shared.exception.InvalidStateTransitionException;
 import ch.batbern.shared.types.EventWorkflowState;
 import ch.batbern.shared.types.SpeakerWorkflowState;
 import lombok.RequiredArgsConstructor;
@@ -47,6 +48,7 @@ public class EventWorkflowStateMachine {
     private final ch.batbern.events.repository.SpeakerPoolRepository speakerPoolRepository;
     private final ch.batbern.events.repository.SessionRepository sessionRepository;
     private final EventArchivalCleanupService eventArchivalCleanupService;
+    private final List<EventWriteHooks> writeHooks;
 
     /**
      * Transitions an event to a target workflow state (backward compatible).
@@ -99,6 +101,15 @@ public class EventWorkflowStateMachine {
 
         EventWorkflowState currentState = event.getWorkflowState();
 
+        // #824: cancelling cancels the registrations and mails "will not take place". For an event
+        // that took place or is archived that is never true, so not even an override allows it.
+        if (targetState == EventWorkflowState.CANCELLED
+                && (currentState == EventWorkflowState.EVENT_COMPLETED
+                        || currentState == EventWorkflowState.ARCHIVED)) {
+            throw new InvalidStateTransitionException(String.format(
+                    "Event %s is %s and cannot be cancelled: it has taken place.", eventCode, currentState));
+        }
+
         // Conditional validation: skip if override=true
         if (!override) {
             // Normal path: validate transition and business rules
@@ -123,6 +134,12 @@ public class EventWorkflowStateMachine {
         // Run archival cleanup when transitioning to ARCHIVED (Story 10.18)
         if (targetState == EventWorkflowState.ARCHIVED) {
             eventArchivalCleanupService.cleanup(savedEvent.getId(), eventCode);
+        }
+
+        // #824: entering CANCELLED cancels the registrations and mails their holders (registrations
+        // module), once: cancelling a cancelled event again does nothing.
+        if (targetState == EventWorkflowState.CANCELLED && currentState != EventWorkflowState.CANCELLED) {
+            writeHooks.forEach(hooks -> hooks.cancelled(savedEvent));
         }
 
         // Publish domain event with override metadata

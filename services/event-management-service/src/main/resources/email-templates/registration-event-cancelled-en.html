@@ -1,0 +1,26 @@
+<!-- subject: {{eventTitle}} is cancelled -->
+<p class="lbl lbl-blue">Cancellation</p>
+<h2>The event will not take place</h2>
+<p class="sub">Your registration has been cancelled</p>
+
+<p>Hello {{recipientName}},</p>
+<p>unfortunately we have to cancel the following event:</p>
+
+<div class="event-card">
+  <h3>{{eventTitle}}</h3>
+  <table class="detail-table">
+    <tr>
+      <td class="detail-label">Date</td>
+      <td class="detail-value">{{eventDate}}</td>
+    </tr>
+    <tr>
+      <td class="detail-label">Venue</td>
+      <td class="detail-value">{{venueName}}<br>{{venueAddress}}</td>
+    </tr>
+  </table>
+</div>
+
+<p>We have cancelled your registration. There is nothing you need to do.</p>
+<p>We regret the cancellation and hope to welcome you at one of the next BATbern events.</p>
+<p>For questions, contact us at <a href="mailto:{{organizerEmail}}">{{organizerEmail}}</a>.</p>
+<p>Best regards,<br><strong>The BATbern Team</strong></p>

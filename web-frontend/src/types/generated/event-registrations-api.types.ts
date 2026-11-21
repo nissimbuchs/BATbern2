@@ -1053,6 +1053,19 @@ export interface operations {
         };
       };
       404: components['responses']['NotFound'];
+      /**
+       * @description Registration is not possible: the registration deadline has passed (details.code
+       *     REGISTRATION_CLOSED, with details.deadline) or the event was cancelled (details.code
+       *     EVENT_CANCELLED, #824). No registration is created.
+       */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
       /** @description Rate limit exceeded (public endpoint protection) */
       429: {
         headers: {
@@ -1129,7 +1142,8 @@ export interface operations {
       404: components['responses']['NotFound'];
       /**
        * @description Single mode: the user is already registered (generic) or the event is full
-       *     (`details.code = "capacity_exceeded"`; retry with `force: true`).
+       *     (`details.code = "capacity_exceeded"`; retry with `force: true`). Any mode: the event
+       *     was cancelled (`details.code = "EVENT_CANCELLED"`, #824), nobody is added.
        */
       409: {
         headers: {
@@ -1249,7 +1263,7 @@ export interface operations {
         };
       };
       401: components['responses']['Unauthorized'];
-      /** @description User is already registered for this event */
+      /** @description User is already registered for this event, the registration deadline has passed (details.code REGISTRATION_CLOSED) or the event was cancelled (details.code EVENT_CANCELLED, */
       409: {
         headers: {
           [name: string]: unknown;

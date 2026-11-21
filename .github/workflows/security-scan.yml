@@ -180,10 +180,8 @@ jobs:
       - name: Stage JSON + log reports for projectdoc — ${{ matrix.api }}
         if: always()
         run: |
-          mkdir -p zap-json-stage zap-json-stage/zap-logs
+          mkdir -p zap-json-stage
           cp report_json.json "zap-json-stage/zap-${{ matrix.api }}.json" 2>/dev/null || true
-          # The ZAP action writes the console log to zap.out
-          cp zap.out "zap-json-stage/zap-logs/zap-${{ matrix.api }}.log" 2>/dev/null || true
 
       - name: Upload HTML report — ${{ matrix.api }}
         if: always()
@@ -290,9 +288,8 @@ jobs:
       - name: Stage JSON + log reports for projectdoc — frontend
         if: always()
         run: |
-          mkdir -p zap-json-stage zap-json-stage/zap-logs
+          mkdir -p zap-json-stage
           cp report_json.json "zap-json-stage/zap-frontend.json" 2>/dev/null || true
-          cp zap.out "zap-json-stage/zap-logs/zap-frontend.log" 2>/dev/null || true
 
       - name: Upload HTML report — frontend
         if: always()
@@ -318,8 +315,16 @@ jobs:
     runs-on: ubuntu-latest
     needs: [zap-api-scan, zap-frontend-scan]
     if: always()
+    permissions:
+      actions: read     # the scan jobs' logs (#1228)
+      contents: read
 
     steps:
+      - name: Checkout the CI scripts
+        uses: actions/checkout@v7
+        with:
+          sparse-checkout: scripts/ci
+
       - name: Download all ZAP JSON reports
         uses: actions/download-artifact@v8
         with:
@@ -327,6 +332,16 @@ jobs:
           merge-multiple: true
           path: security-reports/
         continue-on-error: true
+
+      # #1228: the per-rule PASS/WARN/FAIL lines exist only in each scan job's console output
+      # (ZAP's zap.out stays inside the container), so they are fetched from the finished jobs.
+      # A missing log fails this step instead of silently degrading the projectdoc matrix.
+      - name: Save the console log of every ZAP scan job (for projectdoc)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+        run: bash scripts/ci/zap-job-logs.sh security-reports/zap-logs
 
       - name: Upload combined ZAP JSON reports (for projectdoc)
         if: always()

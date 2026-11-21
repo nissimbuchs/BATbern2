@@ -124,6 +124,22 @@ public class PublishingScheduledServiceIntegrationTest extends AbstractIntegrati
         assertThat(updated.getLastPublishedAt()).isNotNull();
     }
 
+    /** #824: a cancelled event is never published again, also on its auto-publish day. */
+    @Test
+    void should_notAutoPublishSpeakers_when_eventCancelled() {
+        Instant eventDate = LocalDate.now(ZURICH).plusDays(30)
+                .atStartOfDay(ZURICH)
+                .toInstant();
+        Event event = createEvent("BAT-SPEAKERS-CANCELLED", eventDate, null);
+        event.setWorkflowState(EventWorkflowState.CANCELLED);
+        eventRepository.save(event);
+        createAcceptedSpeaker(event);
+
+        publishingScheduledService.autoPublishSpeakers();
+
+        assertThat(eventRepository.findById(event.getId()).orElseThrow().getCurrentPublishedPhase()).isNull();
+    }
+
     /**
      * AC5: Should not auto-publish speakers if already published
      */

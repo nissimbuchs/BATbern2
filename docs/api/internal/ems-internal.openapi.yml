@@ -94,7 +94,8 @@ paths:
       description: |
         partner-coordination (`EventManagementClientImpl.getAttendanceSummary`, Story 8.1) builds the
         partner attendance dashboard and its XLSX export from it. One row per event since 1 January
-        of `fromYear` (UTC), newest first; only confirmed registrations count. Authorized by
+        of `fromYear` (UTC), newest first, cancelled events left out (#824); only confirmed registrations
+        count. Authorized by
         operation, not by the caller's role: the role and ownership check (PARTNER of the company or
         ORGANIZER) stays on the partner-coordination endpoint the user entered through (ADR-016
         decision 3). A forwarded JWT is optional and does not change the answer. Until 6b (Epic 17)

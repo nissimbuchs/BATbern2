@@ -24,10 +24,11 @@ import java.util.Set;
  * 6. AGENDA_PUBLISHED → EVENT_LIVE (automatic via cron when event date reached, daily 00:01 Bern time)
  * 7. EVENT_LIVE → EVENT_COMPLETED (automatic via cron when event date passed, daily 23:59 Bern time)
  * 8. EVENT_COMPLETED → ARCHIVED (manual archival)
+ * 9. any state before EVENT_COMPLETED → CANCELLED (manual, Event Detail Danger Zone; #824)
  *
  * Special Rules:
  * - Idempotent transitions (same state to same state) are allowed
- * - ARCHIVED is a terminal state (no transitions out allowed)
+ * - ARCHIVED and CANCELLED are terminal states (no transitions out allowed)
  * - Backwards transitions are NOT allowed
  * - Skipping TOPIC_SELECTION is allowed when speaker added directly to pool
  *
@@ -54,28 +55,34 @@ public class WorkflowTransitionValidator {
             Map.entry(EventWorkflowState.CREATED, EnumSet.of(
                     EventWorkflowState.CREATED,              // Idempotent
                     EventWorkflowState.TOPIC_SELECTION,      // Manual transition
-                    EventWorkflowState.SPEAKER_IDENTIFICATION // Auto when speaker added
+                    EventWorkflowState.SPEAKER_IDENTIFICATION, // Auto when speaker added
+                    EventWorkflowState.CANCELLED              // Called off (#824)
             )),
             Map.entry(EventWorkflowState.TOPIC_SELECTION, EnumSet.of(
                     EventWorkflowState.TOPIC_SELECTION,      // Idempotent
-                    EventWorkflowState.SPEAKER_IDENTIFICATION // Auto-transition when topic selected
+                    EventWorkflowState.SPEAKER_IDENTIFICATION, // Auto-transition when topic selected
+                    EventWorkflowState.CANCELLED              // Called off (#824)
             )),
             Map.entry(EventWorkflowState.SPEAKER_IDENTIFICATION, EnumSet.of(
                     EventWorkflowState.SPEAKER_IDENTIFICATION, // Idempotent
-                    EventWorkflowState.SLOT_ASSIGNMENT        // Auto-transition when speaker accepted
+                    EventWorkflowState.SLOT_ASSIGNMENT,       // Auto-transition when speaker accepted
+                    EventWorkflowState.CANCELLED              // Called off (#824)
             )),
             Map.entry(EventWorkflowState.SLOT_ASSIGNMENT, EnumSet.of(
                     EventWorkflowState.SLOT_ASSIGNMENT,   // Idempotent
-                    EventWorkflowState.AGENDA_PUBLISHED   // Auto-transition when all sessions timed + phase ready
+                    EventWorkflowState.AGENDA_PUBLISHED,  // Auto-transition when all sessions timed + phase ready
+                    EventWorkflowState.CANCELLED          // Called off (#824)
             )),
             Map.entry(EventWorkflowState.AGENDA_PUBLISHED, EnumSet.of(
                     EventWorkflowState.AGENDA_PUBLISHED,  // Idempotent
                     // Auto-transition via cron when event date reached (daily 00:01 Bern time)
-                    EventWorkflowState.EVENT_LIVE
+                    EventWorkflowState.EVENT_LIVE,
+                    EventWorkflowState.CANCELLED          // Called off (#824)
             )),
             Map.entry(EventWorkflowState.EVENT_LIVE, EnumSet.of(
                     EventWorkflowState.EVENT_LIVE,        // Idempotent
-                    EventWorkflowState.EVENT_COMPLETED    // Auto-transition via cron when event date passed
+                    EventWorkflowState.EVENT_COMPLETED,   // Auto-transition via cron when event date passed
+                    EventWorkflowState.CANCELLED          // Called off on the day (#824)
             )),
             Map.entry(EventWorkflowState.EVENT_COMPLETED, EnumSet.of(
                     EventWorkflowState.EVENT_COMPLETED,   // Idempotent
@@ -83,6 +90,9 @@ public class WorkflowTransitionValidator {
             )),
             Map.entry(EventWorkflowState.ARCHIVED, EnumSet.of(
                     EventWorkflowState.ARCHIVED           // Terminal state - only idempotent allowed
+            )),
+            Map.entry(EventWorkflowState.CANCELLED, EnumSet.of(
+                    EventWorkflowState.CANCELLED          // Terminal state - only idempotent allowed
             ))
     );
 
@@ -108,9 +118,10 @@ public class WorkflowTransitionValidator {
         Set<EventWorkflowState> allowedTargets = VALID_TRANSITIONS.get(fromState);
         if (allowedTargets == null || !allowedTargets.contains(toState)) {
             // Special error message for terminal state
-            if (fromState == EventWorkflowState.ARCHIVED && toState != EventWorkflowState.ARCHIVED) {
+            if ((fromState == EventWorkflowState.ARCHIVED || fromState == EventWorkflowState.CANCELLED)
+                    && toState != fromState) {
                 throw new InvalidStateTransitionException(
-                        "Cannot transition from terminal state ARCHIVED");
+                        "Cannot transition from terminal state " + fromState.name());
             }
 
             throw new InvalidStateTransitionException(fromState.name(), toState.name());

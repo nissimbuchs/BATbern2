@@ -51,6 +51,8 @@ AGENDA_PUBLISHED → EVENT_LIVE → EVENT_COMPLETED → ARCHIVED
 
 > **Note**: There is no separate "finalize agenda" step any more. The former `AGENDA_FINALIZED` state was removed (migration V84) because it was a manual gate: if nobody set it, the event never went live automatically. An event in `AGENDA_PUBLISHED` now moves to `EVENT_LIVE` by itself on event day.
 
+> **Note**: CANCELLED lies off this path. Cancelling an event cancels its registrations and mails the participants; see [Cancelling an Event](../entity-management/events.md#cancelling-an-event).
+
 > **Note**: TOPIC_SELECTION is not a mandatory stop from CREATED. When a topic is confirmed from CREATED state, the event transitions directly to **SPEAKER_IDENTIFICATION**. CREATED → SPEAKER_IDENTIFICATION is also a valid direct transition (e.g., when re-creating an event with a pre-known topic).
 
 ### State Definitions
@@ -65,6 +67,7 @@ AGENDA_PUBLISHED → EVENT_LIVE → EVENT_COMPLETED → ARCHIVED
 | **EVENT_LIVE**             | Event currently happening               | Automatic: nightly job on event day | All talk sessions ended, or event date passed |
 | **EVENT_COMPLETED**        | Event finished, post-processing         | All completeable sessions ended via Watch mode, or nightly job after the event date | Automatic archival 14 days after the event, or manual |
 | **ARCHIVED**               | Event archived for history              | Automatic (14 days after the event) or manual state change | Terminal state |
+| **CANCELLED**              | Event called off, off the regular path  | **Cancel Event** in the Danger Zone, from any state before EVENT_COMPLETED | Terminal state |
 
 ### Workflow Phases (User Guide Organization)
 

@@ -4,7 +4,8 @@
 
 This guide describes how to run BATbern locally using:
 - **Local PostgreSQL** in Docker (eliminates AWS RDS costs)
-- **Development Cognito** for authentication (can be switched to staging)
+- **The production Cognito pool** (account 188701360969, called "staging" in stack names) for
+  authentication
 - **Local microservices** running natively or in Docker
 
 **Cost Savings**: This setup eliminates the need for a dedicated AWS development environment, saving **$600-720/year**.
@@ -14,7 +15,7 @@ This guide describes how to run BATbern locally using:
 ```
 Local Development Environment:
 ├─ PostgreSQL 15.4 (Docker container with persistent volume)
-├─ Development/Staging Cognito (AWS - shared)
+├─ Production ("staging") Cognito pool (AWS, shared)
 ├─ All microservices (running natively on your machine)
 └─ Frontend (Vite dev server)
 ```
@@ -24,7 +25,7 @@ Local Development Environment:
 - Docker Desktop installed and running
 - Java 21 installed
 - Node.js 22 installed (the version CI uses, see `docs/versions.json`)
-- AWS CLI configured with `batbern-dev` profile (for Cognito access)
+- AWS CLI configured with the `batbern-staging` profile (for Cognito access)
 - PostgreSQL client tools (psql) - optional but recommended
 
 ## Quick Start
@@ -44,20 +45,14 @@ docker exec batbern-dev-postgres pg_isready -U postgres
 
 ### 2. Configure Environment
 
-The `.env` file is already configured for local PostgreSQL:
-
 ```bash
-# Database - Local Docker PostgreSQL
-DB_HOST=localhost
-DB_PORT=5432
-DB_NAME=batbern_development
-DB_USER=postgres
-DB_PASSWORD=devpass123
-
-# Cognito - Development (or Staging)
-COGNITO_USER_POOL_ID=eu-central-1_camJHQhZ8
-COGNITO_CLIENT_ID=5h9421vo002bi7udjdu5orp7u3
+cp .env.example .env
 ```
+
+`.env.example` carries the Cognito pool and client of the live pool. `make dev-native-up` writes
+`.env.native.{instance}` on top of it with the local database (`localhost:5432`,
+`batbern_development`, the `docker-compose-dev.yml` credentials) and the instance ports, so you do
+not edit database settings by hand.
 
 **Frontend configuration** needs no Cognito variables: the SPA loads the user pool, client ID
 and feature flags at startup from `GET /api/v1/config` on the gateway
@@ -112,8 +107,9 @@ docker exec -it batbern-dev-postgres psql -U postgres -d batbern_development
 # Check tables
 \dt
 
-# Check migration history
-SELECT * FROM flyway_schema_history ORDER BY installed_rank;
+# Check migration history (one table per service)
+SELECT version, description FROM flyway_schema_history_event_management ORDER BY installed_rank;
+-- also flyway_schema_history_company_user_management, flyway_schema_history_partner_coordination
 
 # Exit
 \q
@@ -129,7 +125,7 @@ After first startup, sync existing Cognito users to your local database:
 # 2. You need a JWT token with ORGANIZER role
 
 # Get JWT token:
-# 1. Login to http://localhost:3000 with organizer credentials
+# 1. Login to http://localhost:8100 with organizer credentials
 # 2. Open DevTools > Application > Local Storage
 # 3. Copy the JWT token
 
@@ -276,7 +272,7 @@ make dev-native-restart
 
 ```bash
 # Check Flyway history
-docker exec -it batbern-dev-postgres psql -U postgres -d batbern_development -c "SELECT * FROM flyway_schema_history;"
+docker exec -it batbern-dev-postgres psql -U postgres -d batbern_development -c "SELECT * FROM flyway_schema_history_event_management;"
 
 # Repair Flyway (if migrations are out of sync)
 ./gradlew :shared-kernel:flywayRepair
@@ -301,7 +297,7 @@ aws sts get-caller-identity --profile batbern-staging
 
 # Check staging Cognito User Pool
 aws cognito-idp list-users \
-  --user-pool-id eu-central-1_camJHQhZ8 \
+  --user-pool-id eu-central-1_FtgfxgQRF \
   --profile batbern-staging \
   --max-results 10
 
@@ -320,10 +316,10 @@ aws configure --profile batbern-staging
 # Verify credentials work
 aws sts get-caller-identity --profile batbern-staging
 
-# Expected output should show staging account (954163570305)
+# Expected output should show account 188701360969 (production, profile batbern-staging)
 ```
 
-**Note**: The `.env` file should already be configured for staging Cognito (configured during initial setup). If not, update it:
+**Note**: `.env` copied from `.env.example` already has these values:
 
 ```bash
 # Same values as .env.example
@@ -355,4 +351,3 @@ COGNITO_CLIENT_ID=1b53lci6qpqsmdn0u3e8s4knvv
 
 - [CLAUDE.md](../../CLAUDE.md) - Development workflow and commands
 - [Architecture: Database](../architecture/03-data-architecture.md) - Database design
-- [Cost Reduction Plan](/Users/nissim/.claude/plans/wobbly-tickling-dewdrop.md) - Detailed analysis and options

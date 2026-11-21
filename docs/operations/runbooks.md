@@ -22,31 +22,9 @@ CloudWatch alarm
 The GitHub issue is the incident record. Work in it, and close it when the alarm returns to `OK`
 (alarms carry an OK action, so recovery closes the issue automatically).
 
-> **Known gap:** the seven identity alarms listed under [Identity and user sync](#identity-and-user-sync)
-> publish to `batbern-user-sync-alarms-staging`, which has **zero subscriptions** — they reach
-> nobody. Tracked as **#1005**.
->
-> The subscription address has been changed from the unread `admin@batbern.ch` to
-> `nissim@buchs.be` (`monitoring-stack.ts`). **That is not live until the stack deploys, and SNS
-> will then send a confirmation email that must be clicked within 3 days** — an unconfirmed
-> subscription is deleted and the topic goes silent again, which is precisely how this defect
-> arose. Confirm it, then verify:
->
-> ```bash
-> aws sns list-subscriptions-by-topic \
->   --topic-arn arn:aws:sns:eu-central-1:188701360969:batbern-user-sync-alarms-staging \
->   --query 'Subscriptions[].[Protocol,Endpoint,SubscriptionArn]' --output text
-> ```
->
-> A `SubscriptionArn` of `PendingConfirmation` means it is still not delivering.
->
-> Note this restores **email** only. These seven alarms still bypass the github-issues Lambda, so
-> they produce no GitHub issue and no triage comment. Routing them at the shared
-> `batbern-staging-alarms` topic instead would fix both and remove the confirmation dependency
-> for good; that remains the proposal in #1005.
->
-> Until confirmed, check these alarms by hand in the CloudWatch console. Do not treat their
-> silence as health.
+The seven identity alarms (see [Identity and user sync](#identity-and-user-sync)) publish to the
+same shared topic since #1005 (fixed by #1006); the former private topic with no subscribers is
+gone.
 
 ## Standing conventions
 
@@ -278,8 +256,9 @@ messages and uploads metadata of that window. Before the swap, export what was w
 invitations, registration confirmations and the newsletter at once.
 
 1. `bounce-rate-*`: identify whether the bounces are one bad import or a systemic address problem.
-   Note **#984** — `bounce-rate-warning` currently watches a metric that keeps it latched on a
-   single May event with 0 bounces in 14 days. Confirm against real recent sends before acting.
+   `bounce-rate-warning` fires on more than 5 SES bounces in one hour (a send path bouncing now);
+   `bounce-rate-critical` watches the rolling reputation rate. The former latching on one May event
+   (#984) was fixed by #1007.
 2. `emails-rejected` is the abuse-detection signal. Treat a real firing as urgent. Since forwarding
    moved into EMS, auto-replies and mail to `noreply@`/`calendar@` no longer count, so a firing is
    real senders being refused: check the EMS log for `Forwarding: unauthorized sender` /
@@ -314,7 +293,7 @@ invitations, registration confirmations and the newsletter at once.
 Admin setting `mailcenter.notify-instead-of-forward` lists the alias groups answered in the Mail
 Center, comma or space separated: `moderator` (`batbern{N}-moderator@`), `replies` (unrecognized
 mail and `replies+{token}@` replies at `replies@`), `contact` (`info@`, `events@`, `support@`;
-only once Story 16.7 lists conversations without an event). Empty or missing = forwarding as before.
+Story 16.7, live since #1194). Empty or missing = forwarding as before.
 It is read per mail, so a change applies to the next mail without a deploy. **The owner switches
 each group on; nobody else does.** Attachment storage (up to 25 MB per file) is live, so switched
 mail keeps its files.

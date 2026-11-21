@@ -98,6 +98,8 @@ class DomainExceptionResponseTest {
                         "Conflict", "Send running", "LOW", null),
                 row("DuplicateSelfNomination", () -> new DuplicateSelfNominationException("Already nominated"), 409,
                         "Conflict", "Already nominated", "LOW", details("code", "DUPLICATE_SELF_NOMINATION")),
+                row("EventCancelled", () -> new EventCancelledException("BATbern99"), 409, "Conflict",
+                        "Event BATbern99 was cancelled", "LOW", details("code", "EVENT_CANCELLED")),
                 row("EventHasRealRegistrations", () -> new EventHasRealRegistrationsException("BATbern99", 3), 409,
                         "Conflict", "Event 'BATbern99' has 3 real attendee registration(s) and cannot be deleted. "
                                 + "Cancel the event instead.", "LOW", null),

@@ -305,7 +305,6 @@ function generateVersionsJson() {
     },
     "monitoring": {
       "cloudwatch": "Latest",
-      "grafana": "10.x",
       "micrometer": "Latest",
       "logback": "1.x"
     }

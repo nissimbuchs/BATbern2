@@ -1,5 +1,12 @@
 # AWS SES Configuration for Password Reset Emails
 
+> **Historical (2025, Story 1.2.2), does not describe the running system.** No SES templates
+> `PasswordResetDE` / `PasswordResetEN` exist in CDK. The reset mail is sent by the Cognito
+> `CustomEmailSender` trigger (`infrastructure/lib/lambda/triggers/custom-email-sender.ts`) with
+> `SendEmail`; the domain identity with DKIM is in the `InboundEmail` stack, the configuration sets
+> for bounce and delivery events in the `Ses` stack. Current mail
+> architecture: [06d-notification-system.md](../architecture/06d-notification-system.md).
+
 **Story 1.2.2** - Email template configuration for forgot password flow
 
 ## Overview
@@ -413,4 +420,3 @@ SES Pricing (as of 2025):
 ## Related Documentation
 
 - [Forgot Password Flow](./forgot-password-flow.md)
-- [Troubleshooting Guide](./troubleshooting-forgot-password.md)
