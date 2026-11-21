@@ -27,10 +27,11 @@ export class SesStack extends cdk.Stack {
   public readonly bounceQueue: sqs.Queue;
   public readonly bounceQueueDlq: sqs.Queue;
   /**
-   * Name of the SES Configuration Set that routes BOUNCE/COMPLAINT events to SNS → SQS.
-   * Consumers (EventManagementStack) inject this as BATBERN_SES_CONFIGURATION_SET_NAME so
-   * each SendEmail attaches the configuration set; without it, SES drops the events
-   * silently and the app's BounceProcessingService never sees them.
+   * Name of the NEWSLETTER SES Configuration Set, which routes BOUNCE/COMPLAINT events to
+   * SNS → SQS. EventManagementStack injects it as BATBERN_SES_NEWSLETTER_CONFIGURATION_SET_NAME
+   * so each newsletter send attaches it; without it, SES drops the events silently and the
+   * app's BounceProcessingService never sees them. Do not rename it: SES cannot rename a set in
+   * place (CloudFormation deletes and recreates it, see #654).
    */
   public readonly configurationSetName: string;
 

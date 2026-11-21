@@ -1225,9 +1225,19 @@ graph LR
 #### Environment Variables
 ```bash
 EMAIL_FROM=noreply@batbern.ch                       # EMS default in application.yml
-BATBERN_SES_CONFIGURATION_SET_NAME=batbern-staging-newsletter   # injected by CDK into EMS
+BATBERN_SES_CONFIGURATION_SET_NAME=batbern-staging-transactional          # CDK, into EMS, CUMS, PCS
+BATBERN_SES_NEWSLETTER_CONFIGURATION_SET_NAME=batbern-staging-newsletter  # CDK, into EMS only
+AWS_INBOUND_EMAIL_FORWARDING_CONFIGURATION_SET=...                        # CDK, alias forwarding in EMS
 ```
-The transactional configuration set is applied through the shared `EmailService` default.
+The transactional configuration set is applied through the shared `EmailService` default to every
+mail that is not a newsletter. `NewsletterEmailService` overrides it with the newsletter set, the
+only one wired to the bounce SQS and `BounceProcessingService` (auto-suppression).
+
+**The set names are fixed.** Until Story 16.1b the `newsletter` set was attached to all mail, which
+is why older notes and issue #654 call it misnamed. Today the name matches its use. SES cannot
+rename a configuration set in place: CloudFormation deletes it and creates a new one, and mail sent
+in between carries no tracking (or it takes three deploys: add, switch, delete). The owner decided
+on 2026-11-21 that this is not worth it (#654). Leave the names as they are; a new purpose gets a new set.
 SES sending quota and rate for the account: not verified 2026-11-04 (the previous
 50,000/day and 14/s were not checked).
 
