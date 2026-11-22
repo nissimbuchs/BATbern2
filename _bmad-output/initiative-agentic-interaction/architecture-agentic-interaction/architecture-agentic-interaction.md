@@ -68,7 +68,9 @@ flowchart LR
 - **Prevents:** a second write path that bypasses per-user authorization and ownership rules.
 - **Rule:** agent-service calls other services only through the Spring gateway's public API with a
   delegated token (AD-3). It never reads or writes another service's tables and calls no
-  `/internal/**` operation except CUMS `/internal/agent-tokens` (AD-3). Upstream services reach
+  `/internal/**` operation except CUMS `/internal/agent-*`: it requests grants on
+  `/internal/agent-grants` and mints tokens on `/internal/agent-tokens`, checked by its caller
+  secret (AD-3; amended 2026-11-22 to match the module map). Upstream services reach
   agent-service only through a contract they own (AD-4). The first story amends
   `docs/architecture/module-map.md` with this exception.
 
@@ -76,7 +78,7 @@ flowchart LR
 flowchart TD
   AS["agent-service"] -->|"public API + delegated token"| GW["Spring gateway"]
   GW --> CUMS & EMS & PCS
-  AS -->|"/internal/agent-tokens only"| CUMS
+  AS -->|"/internal/agent-grants + agent-tokens only"| CUMS
   EMS -.->|"EMS-owned contract agent-inbound-mail"| AS
   EMS -->|"/internal agent-eligibility"| CUMS
   PCS --> EMS --> CUMS
@@ -334,7 +336,7 @@ shared-kernel/.../security/             # one decoder + actor resolver (AD-3)
 docs/api/agent-api.openapi.yml          # console, chat, approvals, cards
 docs/api/agent-ui-catalog.json          # BATbern A2UI catalog (AD-11)
 docs/api/internal/ems-internal.openapi.yml   # + agent-inbound-mail
-docs/api/internal/cums-internal.openapi.yml  # + agent-tokens, agent-eligibility
+docs/api/internal/cums-internal.openapi.yml  # + agent-grants, agent-tokens, agent-eligibility
 web-frontend/src/components/agent-ui/   # the one renderer
 infrastructure/lib/stacks/              # + agent-service stack
 ```

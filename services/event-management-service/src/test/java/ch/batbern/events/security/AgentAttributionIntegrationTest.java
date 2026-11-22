@@ -5,11 +5,9 @@ import ch.batbern.events.config.TestAwsConfig;
 import ch.batbern.events.config.TestSecurityConfig;
 import ch.batbern.events.core.dto.generated.EventType;
 import ch.batbern.events.domain.Event;
-import ch.batbern.events.domain.Registration;
 import ch.batbern.events.notification.Notification;
 import ch.batbern.events.notification.NotificationRepository;
 import ch.batbern.events.repository.EventRepository;
-import ch.batbern.events.repository.RegistrationRepository;
 import ch.batbern.shared.test.AbstractIntegrationTest;
 import ch.batbern.shared.test.mail.SesRecorder;
 import ch.batbern.shared.test.security.RoleStubTables;
@@ -27,9 +25,9 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.Map;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -40,7 +38,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 /**
  * Agentic interaction 0.2: an agent token is recorded as {@code agent:<run> for <username>} in a
- * who-acted column, while ownership still reads the username. Real agent tokens ({@link TestTokens})
+ * who-acted column, while ownership still reads the username, and a mail the agent sends records the
+ * person as its sender. An agent cannot cancel an event (AD-15, {@code EventCancellationIntegrationTest}). Real agent tokens ({@link TestTokens})
  * go through the production chain and the real decoder.
  *
  * <p>The EMS test schema has a {@code user_profiles} stub (testmigration V100) but no
@@ -57,8 +56,8 @@ class AgentAttributionIntegrationTest extends AbstractIntegrationTest {
     private static final String RUN = "run-ems-1";
     private static final String SETTING = "agent-attribution.probe";
     private static final String EVENT = "BATbern9770";
-    private static final String REGISTRANT = "dora.agentattr";
-    private static final String REGISTRANT_MAIL = "success+agentattr-dora@simulator.amazonses.com";
+    private static final String CONVERSATION = "conv-agentattr-9770";
+    private static final String SPEAKER_MAIL = "success+agentattr-dora@simulator.amazonses.com";
 
     @Autowired
     private MockMvc mockMvc;
@@ -68,8 +67,6 @@ class AgentAttributionIntegrationTest extends AbstractIntegrationTest {
     private NotificationRepository notificationRepository;
     @Autowired
     private EventRepository eventRepository;
-    @Autowired
-    private RegistrationRepository registrationRepository;
     @Autowired
     private SesRecorder sesRecorder;
     @Autowired
@@ -87,7 +84,10 @@ class AgentAttributionIntegrationTest extends AbstractIntegrationTest {
     void cleanUp() {
         sesRecorder.awaitAsyncSends();
         cums.reset();
+        jdbc.update("DELETE FROM mail_recipient WHERE mail_message_id IN "
+                + "(SELECT id FROM mail_message WHERE event_code = ?)", EVENT);
         jdbc.update("DELETE FROM mail_message WHERE event_code = ?", EVENT);
+        jdbc.update("DELETE FROM mail_conversation WHERE event_code = ?", EVENT);
         jdbc.update("DELETE FROM events WHERE event_code = ?", EVENT);
         jdbc.update("DELETE FROM app_settings WHERE setting_key = ?", SETTING);
         jdbc.update("DELETE FROM notifications WHERE recipient_username IN (?, ?)", ORGANIZER, OTHER_ORGANIZER);
@@ -167,12 +167,12 @@ class AgentAttributionIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @DisplayName("an organizer's agent cancels an event: updated_by is the agent, the mail's sender the person")
-    void should_recordAgentActorAndPersonAsSender_when_agentCancelsEvent() throws Exception {
+    @DisplayName("an organizer's agent answers a conversation: the mail goes out, its sender is the person")
+    void should_recordPersonAsSender_when_agentAnswersConversation() throws Exception {
         Instant date = Instant.now().plus(40, ChronoUnit.DAYS).truncatedTo(ChronoUnit.HOURS);
-        Event event = eventRepository.saveAndFlush(Event.builder()
+        eventRepository.saveAndFlush(Event.builder()
                 .eventCode(EVENT)
-                .title("Agent Cancel Probe")
+                .title("Agent Reply Probe")
                 .eventNumber(9770)
                 .date(date)
                 .registrationDeadline(date.minus(7, ChronoUnit.DAYS))
@@ -185,30 +185,22 @@ class AgentAttributionIntegrationTest extends AbstractIntegrationTest {
                 .workflowState(EventWorkflowState.AGENDA_PUBLISHED)
                 .currentPublishedPhase("agenda")
                 .build());
-        cums.userWithSettings(REGISTRANT, REGISTRANT_MAIL, Map.of("language", "de"));
-        registrationRepository.saveAndFlush(Registration.builder()
-                .registrationCode(EVENT + "-" + REGISTRANT)
-                .eventId(event.getId())
-                .deregistrationToken(UUID.randomUUID())
-                .attendeeUsername(REGISTRANT)
-                .attendeeFirstName("Dora")
-                .attendeeLastName("Brünnimann")
-                .attendeeEmail(REGISTRANT_MAIL)
-                .status("confirmed")
-                .registrationDate(Instant.now())
-                .build());
+        cums.user(ORGANIZER, "Carla", "Agentattr", "success+agentattr-carla@simulator.amazonses.com");
+        jdbc.update("INSERT INTO mail_conversation (id, conversation_key, event_code, audience, subject, "
+                + "counterpart_address, counterpart_name, status, reply_token, last_message_at) "
+                + "VALUES (?, ?, ?, 'SPEAKERS', 'Slides', ?, 'Dora', 'OPEN', ?, ?)",
+                UUID.randomUUID(), CONVERSATION, EVENT, SPEAKER_MAIL, "agentattrtoken01",
+                Timestamp.from(Instant.now()));
 
-        mockMvc.perform(post("/api/v1/events/{code}/transition", EVENT)
+        mockMvc.perform(post("/api/v1/conversations/{key}/replies", CONVERSATION)
                         .header(HttpHeaders.AUTHORIZATION, bearer())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"targetState\":\"CANCELLED\"}"))
-                .andExpect(status().isOk());
+                        .content("{\"text\":\"Bis Freitag, danke.\"}"))
+                .andExpect(status().isCreated());
 
-        assertThat(jdbc.queryForObject("SELECT updated_by FROM events WHERE event_code = ?", String.class, EVENT))
-                .isEqualTo("agent:" + RUN + " for " + ORGANIZER);
-        sesRecorder.awaitAsyncSends();
-        assertThat(sesRecorder.mailsTo(REGISTRANT_MAIL)).hasSize(1);
-        assertThat(jdbc.queryForObject("SELECT sender_username FROM mail_message WHERE event_code = ?",
-                String.class, EVENT)).as("the sender is an identity: the person").isEqualTo(ORGANIZER);
+        assertThat(sesRecorder.mailsTo(SPEAKER_MAIL)).hasSize(1);
+        assertThat(jdbc.queryForObject("SELECT sender_username FROM mail_message WHERE event_code = ?"
+                        + " AND direction = 'OUT'", String.class, EVENT))
+                .as("the sender is an identity: the person").isEqualTo(ORGANIZER);
     }
 }

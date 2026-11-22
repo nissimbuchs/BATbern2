@@ -6,7 +6,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 /**
  * Audience sends refuse agent tokens (AD-15; agentic interaction, story 7). A mail to an audience
  * (Mail Center composer send and retry, newsletter and slides-online bulk sends in EMS, partner
- * meeting invite and its cancellation in PCS) may only be started by a person: a token that carries
+ * meeting invite and its cancellation in PCS, cancelling an event in EMS, which mails every registrant)
+ * may only be started by a person: a token that carries
  * an {@code act} claim, well-formed or not ({@link Actors#carriesAct}), is refused with
  * {@link AccessDeniedException}, which each service maps to 403.
  *

@@ -1183,7 +1183,7 @@ paths:
               schedulerJob:
                 value:
                   trigger: SCHEDULER_JOB
-                  jobName: weekly-digest
+                  jobName: morning-brief
       responses:
         '201':
           description: Grant issued; `grantSecret` is in this answer only

@@ -282,7 +282,7 @@ export interface paths {
      *     **Side effects**: `EventWorkflowTransitionEvent` fires (task activation, Q&A windows,
      *     archival cleanup); all event caches are cleared.
      *
-     *     **Security**: ORGANIZER role required; any other role gets 403.
+     *     **Security**: ORGANIZER role required; any other role gets 403. A transition to CANCELLED mails every registrant, so a token that carries `act` (an agent token) gets 403 for it (AD-15: audience sends refuse agent tokens).
      */
     post: operations['transitionEventWorkflowState'];
     delete?: never;

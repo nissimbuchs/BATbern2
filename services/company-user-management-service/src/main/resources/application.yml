@@ -134,8 +134,9 @@ agent:
     agent-service:
       secret: ${AGENT_CALLERS_AGENT_SERVICE_SECRET:}
   grants:
-    # Scheduler jobs that may request a grant for the organizer delegate, comma-separated. None yet.
-    scheduler-jobs: ""
+    # Scheduler jobs that may request a grant for the organizer delegate, comma-separated.
+    # morning-brief: agent-service's morning brief for the organizers (epic-brief-and-chat).
+    scheduler-jobs: morning-brief
 
 # Server Configuration
 server:

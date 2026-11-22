@@ -7,6 +7,7 @@ import ch.batbern.shared.events.DomainEventPublisher;
 import ch.batbern.shared.events.EventWorkflowTransitionEvent;
 import ch.batbern.shared.exception.InvalidStateTransitionException;
 import ch.batbern.shared.security.Actors;
+import ch.batbern.shared.security.AudienceGuard;
 import ch.batbern.shared.types.EventWorkflowState;
 import ch.batbern.shared.types.SpeakerWorkflowState;
 import lombok.RequiredArgsConstructor;
@@ -95,6 +96,12 @@ public class EventWorkflowStateMachine {
             String organizerUsername,
             boolean override,
             String overrideReason) {
+
+        // AD-15: entering CANCELLED mails every registrant, so only a person may cancel. Checked before
+        // any read or write, so a refused agent leaves the event and its registrations untouched.
+        if (targetState == EventWorkflowState.CANCELLED) {
+            AudienceGuard.refuseAgentTokens("event cancel");
+        }
 
         // Fetch event
         Event event = eventRepository.findByEventCode(eventCode)

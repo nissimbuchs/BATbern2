@@ -164,7 +164,8 @@ before any recipient lookup, render, write or SES call, so a refused call leaves
 no `newsletter_sends` row and no meeting change: EMS `MailComposerService.send` (every audience and
 the organizer test send) and `retry`, and below them `NewsletterEmailService.sendNewsletter`,
 `sendNewsletterOwnText`, `retryFailedRecipients` and `SlidesOnlineEmailService.sendRegistrantNotice`,
-`sendRegistrantOwnText`; PCS `PartnerMeetingService.sendInvite` and `deleteMeeting` of a meeting
+`sendRegistrantOwnText`; `EventWorkflowStateMachine.transitionToState` to CANCELLED (it cancels every
+registration and mails each holder; checked before the event is read); PCS `PartnerMeetingService.sendInvite` and `deleteMeeting` of a meeting
 whose invite was sent (the METHOD:CANCEL goes to every partner contact and organizer). Without an
 authentication (scheduler, `@Async` thread, SQS) and for Cognito, Watch and mock users it does
 nothing. EMS returns the guard's message (`Audience sends refuse agent tokens (AD-15): <operation>`),
@@ -199,7 +200,7 @@ decides caller and principal, never the body: `EMS_HANDOFF` (EMS, body `username
 a Watch or agent token; principal `ORGANIZER`), `LINKED_RUN` (agent service, `linkedRunId` plus
 `linkedRunGrantSecret` of an active `REQUESTER` grant; principal `ORGANIZER_DELEGATE`, the delegate),
 `SCHEDULER_JOB` (agent service, `jobName` listed in `agent.grants.scheduler-jobs`, comma-separated,
-empty by default; the delegate). Checks in order, the first failure answers with `details.code`:
+today `morning-brief`; the delegate). Checks in order, the first failure answers with `details.code`:
 caller secret 401 `CALLER_SECRET_INVALID`, body 400, organizer login 401
 `ORGANIZER_LOGIN_REQUIRED`, switch 403 `AGENT_SWITCHED_OFF`, link or job 403 `LINKED_RUN_INVALID` /
 `SCHEDULER_JOB_UNKNOWN`, principal 403 `PRINCIPAL_NOT_ELIGIBLE` (no delegate, or not
