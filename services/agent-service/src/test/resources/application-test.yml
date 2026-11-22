@@ -20,3 +20,6 @@ spring:
 agent:
   anthropic:
     api-key: none
+  # CUMS is answered at the wire by ContractServer (CumsAtTheWire); this secret exists only here
+  cums:
+    caller-secret: test-only-agent-caller-secret

@@ -75,6 +75,16 @@ agent:
     timeout: ${AGENT_ANTHROPIC_TIMEOUT:5m}
     max-retries: ${AGENT_ANTHROPIC_MAX_RETRIES:2}
     base-url: ${AGENT_ANTHROPIC_BASE_URL:}
+  # The run's identity (story 4, R2, AD-3): every run obtains a grant and mints its agent token at
+  # CUMS (POST /internal/agent-grants, /internal/agent-tokens), and mints again before every write.
+  # The caller secret comes from Secrets Manager (batbern/<env>/agent/agent-service-caller-secret);
+  # blank or `none`: every run is handed to the organizers (CALLER_SECRET_MISSING).
+  cums:
+    base-url: ${COMPANY_USER_MANAGEMENT_SERVICE_URL:http://company-user-management:8080}
+    caller-secret: ${AGENT_CUMS_CALLER_SECRET:}
+  # Tools reach the public API only through the Spring gateway, with the run's token
+  gateway:
+    base-url: ${AGENT_GATEWAY_URL:${API_BASE_URL:http://api-gateway:8080}}
 
 aws:
   region: ${AWS_REGION:eu-central-1}

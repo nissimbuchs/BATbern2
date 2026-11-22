@@ -15,6 +15,16 @@ public enum RunEndReason {
     MODEL_STOPPED(AgentRunStatus.HANDED_TO_ORGANIZERS),
     /** The model kept calling tools past {@code agent.loop.max-steps}. */
     STEP_LIMIT(AgentRunStatus.HANDED_TO_ORGANIZERS),
+    /**
+     * CUMS refused the run grant, or could not be asked (story 4, R2); the run's {@code end_detail}
+     * holds the CUMS code. No model call was made.
+     */
+    GRANT_REFUSED(AgentRunStatus.HANDED_TO_ORGANIZERS),
+    /**
+     * CUMS refused to mint an agent token, before the first model call or before a write (story 4,
+     * R2); the run's {@code end_detail} holds the CUMS code. A refused write was never sent.
+     */
+    TOKEN_REFUSED(AgentRunStatus.HANDED_TO_ORGANIZERS),
     /** A fault in agent-service itself. */
     INTERNAL_ERROR(AgentRunStatus.FAILED);
 

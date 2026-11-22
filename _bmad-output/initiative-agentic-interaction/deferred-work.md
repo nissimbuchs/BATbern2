@@ -31,3 +31,12 @@
 - source_plan: `_bmad-output/initiative-agentic-interaction/tickets/epic-agent-runtime/tickets/story-the-anthropic-adapter-answers-through-llmport-with-the-key-f-plan.md`
   summary: The contract fixture is hand-built from the documented Messages response shape, not recorded from the live API.
   evidence: Recording needs a key and a real call (C2). Re-record once the key exists, outside CI, if the owner wants byte-level fidelity.
+- source_plan: `_bmad-output/initiative-agentic-interaction/tickets/epic-agent-runtime/tickets/story-agent-service-acts-with-a-cums-minted-token-minted-again-bef-plan.md`
+  summary: Local dev runs of agent-service are all handed over with CALLER_SECRET_MISSING unless AGENT_CUMS_CALLER_SECRET equals CUMS's AGENT_CALLERS_AGENT_SERVICE_SECRET; start-all-native.sh sets neither.
+  evidence: Both default to blank (agent-service application.yml, CUMS application.yml); .env.example documents the pair, the dev scripts do not generate one.
+- source_plan: `_bmad-output/initiative-agentic-interaction/tickets/epic-agent-runtime/tickets/story-agent-service-acts-with-a-cums-minted-token-minted-again-bef-plan.md`
+  summary: The grant call can return 5xx from Service Connect/Envoy (502/503) although cums-internal.openapi.yml declares no 5xx for /internal/agent-grants; agent-service maps it to HTTP_<status>, the spec does not say so.
+  evidence: Test should_useHttpStatus_when_grantRefusalHasNoCode answers outside the declared statuses (harness declared-status check bypassed); CUMS behaviour unchanged by this story, so the spec was left alone.
+- source_plan: `_bmad-output/initiative-agentic-interaction/tickets/epic-agent-runtime/tickets/story-agent-service-acts-with-a-cums-minted-token-minted-again-bef-plan.md`
+  summary: No end-to-end proof that a CUMS-minted token passes the Spring gateway and a service on a real route from agent-service; the gateway call is proven against the companies spec only.
+  evidence: Epic 0 tests accept agent tokens per service; story 4 tests stub CUMS and the gateway at the RestTemplate (ContractServer). Settled after deploy once the switch is on and a tool runs.

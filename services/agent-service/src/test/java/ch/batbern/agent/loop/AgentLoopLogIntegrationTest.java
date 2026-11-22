@@ -1,5 +1,6 @@
 package ch.batbern.agent.loop;
 
+import ch.batbern.agent.identity.CumsAtTheWire;
 import ch.batbern.agent.loop.TestTools.RecordingTool;
 import ch.batbern.agent.run.AgentRunStatus;
 import ch.batbern.agent.run.RunTrigger;
@@ -15,9 +16,11 @@ import org.springframework.boot.test.system.CapturedOutput;
 import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.TestPropertySource;
+import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
 
+import static ch.batbern.agent.identity.CumsAtTheWire.source;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
@@ -43,11 +46,27 @@ class AgentLoopLogIntegrationTest extends AbstractIntegrationTest {
     @Autowired
     private JdbcTemplate jdbc;
 
+    @Autowired
+    private RestTemplate restTemplate;
+
+    /** CUMS grants and mints at the wire, spec-validated; every run obtains a grant and a token first. */
+    private CumsAtTheWire cums;
+
     @BeforeEach
     @AfterEach
     void clean() {
         model.reset();
         jdbc.execute("TRUNCATE agent_runs CASCADE");
+    }
+
+    @BeforeEach
+    void bindCums() {
+        cums = CumsAtTheWire.bindTo(restTemplate).grants().mints();
+    }
+
+    @AfterEach
+    void unbindCums() {
+        cums.close();
     }
 
     @Test
@@ -64,7 +83,7 @@ class AgentLoopLogIntegrationTest extends AbstractIntegrationTest {
                         new LlmContent.ToolUse("tu_3", "unknown " + PERSON.fullName(), TestTools.input("query", who))))
              .thenThrow(new IllegalStateException("model fault while answering about " + who));
 
-        AgentRunResult result = loop.run(new AgentRunRequest(RunTrigger.INBOUND_MAIL,
+        AgentRunResult result = loop.run(new AgentRunRequest(source(RunTrigger.INBOUND_MAIL),
                 "Help " + who, "Please update " + who, List.of(find, broken)));
 
         assertThat(result.status()).isEqualTo(AgentRunStatus.FAILED);
@@ -85,5 +104,9 @@ class AgentLoopLogIntegrationTest extends AbstractIntegrationTest {
                 .doesNotContain(PERSON.email())
                 .doesNotContain(POSTAL_ADDRESS)
                 .doesNotContain("Kramgasse");
+        // ... nor the run's credentials (story 4)
+        assertThat(cums.tokens()).isNotEmpty();
+        assertThat(out).doesNotContain(CumsAtTheWire.CALLER_SECRET);
+        cums.tokens().forEach(token -> assertThat(out).doesNotContain(token));
     }
 }

@@ -14,9 +14,12 @@ import java.util.Set;
  *                  service dark and nothing in it acts until the owner switches it on
  * @param loop      the agent loop's limits
  * @param anthropic the Anthropic model adapter
+ * @param cums      CUMS, which grants runs and mints the agent's tokens
+ * @param gateway   the Spring gateway, through which tools reach the public API
  */
 @ConfigurationProperties(prefix = "agent")
-public record AgentProperties(boolean enabled, @DefaultValue Loop loop, @DefaultValue Anthropic anthropic) {
+public record AgentProperties(boolean enabled, @DefaultValue Loop loop, @DefaultValue Anthropic anthropic,
+                              @DefaultValue Cums cums, @DefaultValue Gateway gateway) {
 
     /**
      * Limits of one run of the agent loop ({@code agent.loop.*}). Story 8 adds the token, reply and
@@ -101,5 +104,65 @@ public record AgentProperties(boolean enabled, @DefaultValue Loop loop, @Default
                     + ", timeout=" + timeout + ", maxRetries=" + maxRetries
                     + ", baseUrl=" + (baseUrl.isEmpty() ? "default" : baseUrl) + "]";
         }
+    }
+
+    /**
+     * CUMS as the agent's identity provider ({@code agent.cums.*}, story 4, R2, AD-3). agent-service
+     * calls exactly {@code POST /internal/agent-grants} and {@code POST /internal/agent-tokens},
+     * presenting its caller secret (Secrets Manager, {@code AGENT_CUMS_CALLER_SECRET}). Blank or
+     * {@code none} (any case) means no secret: every run is handed to the organizers
+     * (CALLER_SECRET_MISSING) and CUMS is not called. {@link #toString()} never shows the secret.
+     *
+     * @param baseUrl      CUMS's base URL ({@code http://company-user-management:8080})
+     * @param callerSecret agent-service's caller secret, or blank
+     */
+    public record Cums(@DefaultValue("http://company-user-management:8080") String baseUrl,
+                       @DefaultValue("") String callerSecret) {
+
+        public Cums {
+            baseUrl = trimBaseUrl(baseUrl, "agent.cums.base-url");
+        }
+
+        /** Whether a caller secret is installed: not blank and not {@code none} (trimmed, any case). */
+        public boolean hasCallerSecret() {
+            return callerSecret != null && !callerSecret.isBlank() && !"none".equalsIgnoreCase(callerSecret.trim());
+        }
+
+        /** The caller secret, trimmed; only for the CUMS client. */
+        public String secret() {
+            if (!hasCallerSecret()) {
+                throw new IllegalStateException("No CUMS caller secret is installed");
+            }
+            return callerSecret.trim();
+        }
+
+        @Override
+        public String toString() {
+            return "Cums[baseUrl=" + baseUrl + ", callerSecret=" + (hasCallerSecret() ? "****" : "none") + "]";
+        }
+    }
+
+    /**
+     * The Spring gateway ({@code agent.gateway.*}, story 4): every tool call to the public API goes
+     * there with the run's minted token, never to a service directly.
+     *
+     * @param baseUrl the gateway's base URL without {@code /api/v1} ({@code http://api-gateway:8080})
+     */
+    public record Gateway(@DefaultValue("http://api-gateway:8080") String baseUrl) {
+
+        public Gateway {
+            baseUrl = trimBaseUrl(baseUrl, "agent.gateway.base-url");
+        }
+    }
+
+    private static String trimBaseUrl(String baseUrl, String property) {
+        if (baseUrl == null || baseUrl.isBlank()) {
+            throw new IllegalArgumentException(property + " must not be blank");
+        }
+        String trimmed = baseUrl.trim();
+        while (trimmed.endsWith("/")) {
+            trimmed = trimmed.substring(0, trimmed.length() - 1);
+        }
+        return trimmed;
     }
 }

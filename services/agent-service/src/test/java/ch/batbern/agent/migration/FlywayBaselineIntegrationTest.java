@@ -9,20 +9,23 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.env.YamlPropertySourceLoader;
 import org.springframework.core.env.PropertySource;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import javax.sql.DataSource;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.groups.Tuple.tuple;
 
 /**
  * agent-service migrates into the shared production database, which is not empty and has no
  * {@code flyway_schema_history_agent} yet. With the service's own Flyway settings, Flyway must
- * baseline at 0 and then apply V1 and the later migrations (V2: the decision log); with the default baseline 1 it would skip V1 and the service
+ * baseline at 0 and then apply V1 and the later migrations (V2: the decision log, V3: the run's grant); with the default baseline 1 it would skip V1 and the service
  * would fail schema validation.
  *
  * <p>The settings are read from the base document of the production {@code application.yml}, not
@@ -87,7 +90,8 @@ class FlywayBaselineIntegrationTest extends AbstractIntegrationTest {
                 .containsExactly(
                         tuple("0", "BASELINE", true),
                         tuple("1", "SQL", true),
-                        tuple("2", "SQL", true));
+                        tuple("2", "SQL", true),
+                        tuple("3", "SQL", true));
         assertThat(jdbc.queryForObject("SELECT count(*) FROM information_schema.tables "
                 + "WHERE table_schema = ? AND table_name IN ('agent_runs', 'agent_inbound_messages', 'agent_steps', "
                 + "'agent_model_calls', 'agent_tool_calls', 'agent_verdicts', 'agent_approvals', 'agent_undos')",
@@ -99,7 +103,29 @@ class FlywayBaselineIntegrationTest extends AbstractIntegrationTest {
     @DisplayName("should_recordMigrationsInOwnHistory_when_serviceStarted")
     void should_recordMigrationsInOwnHistory_when_serviceStarted() {
         Integer applied = jdbc.queryForObject("SELECT count(*) FROM flyway_schema_history_agent "
-                + "WHERE version IN ('1', '2') AND success", Integer.class);
-        assertThat(applied).isEqualTo(2);
+                + "WHERE version IN ('1', '2', '3') AND success", Integer.class);
+        assertThat(applied).isEqualTo(3);
+    }
+
+    @Test
+    @DisplayName("should_enforceGrantAndDetailRules_when_V3Applied")
+    void should_enforceGrantAndDetailRules_when_V3Applied() {
+        UUID grant = UUID.randomUUID();
+        jdbc.update("INSERT INTO agent_runs (id, status, started_at, ended_at, trigger, end_reason, end_detail, "
+                + "grant_run_id) VALUES (?, 'HANDED_TO_ORGANIZERS', now(), now(), 'SCHEDULED', 'TOKEN_REFUSED', "
+                + "'GRANT_INVALID', ?)", UUID.randomUUID(), grant);
+        try {
+            // One grant, one run
+            assertThatThrownBy(() -> jdbc.update("INSERT INTO agent_runs (id, status, started_at, trigger, "
+                    + "grant_run_id) VALUES (?, 'RUNNING', now(), 'SCHEDULED', ?)", UUID.randomUUID(), grant))
+                    .isInstanceOf(DataIntegrityViolationException.class);
+            // The detail is a code, never free text
+            assertThatThrownBy(() -> jdbc.update("INSERT INTO agent_runs (id, status, started_at, ended_at, trigger, "
+                    + "end_reason, end_detail) VALUES (?, 'HANDED_TO_ORGANIZERS', now(), now(), 'SCHEDULED', "
+                    + "'GRANT_REFUSED', 'refused for anna.meier')", UUID.randomUUID()))
+                    .isInstanceOf(DataIntegrityViolationException.class);
+        } finally {
+            jdbc.execute("TRUNCATE agent_runs CASCADE");
+        }
     }
 }

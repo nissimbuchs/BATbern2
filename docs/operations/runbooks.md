@@ -360,7 +360,7 @@ one-time owner step after the SecretsStack is deployed.
 | Private key, PKCS#8 PEM | secret `batbern/staging/agent/signing-private-key` | `AGENT_JWT_PRIVATE_KEY` / `agent.jwt.private-key` (signs in `/internal/agent-tokens`) | CUMS only |
 | Public key, SPKI PEM | SSM String parameter `/batbern/staging/agent/jwt-public-key` | `AGENT_JWT_PUBLIC_KEY` / `agent.jwt.public-key` | gateway, CUMS, EMS, PCS |
 | EMS caller secret (generated) | secret `batbern/staging/agent/ems-caller-secret` | `AGENT_CALLERS_EMS_SECRET` / `agent.callers.ems.secret` (`/internal/agent-grants`, `/internal/agent-eligibility`) | CUMS, EMS |
-| Agent-service caller secret (generated) | secret `batbern/staging/agent/agent-service-caller-secret` | `AGENT_CALLERS_AGENT_SERVICE_SECRET` / `agent.callers.agent-service.secret` (`/internal/agent-grants`, `/internal/agent-tokens`) | CUMS only |
+| Agent-service caller secret (generated) | secret `batbern/staging/agent/agent-service-caller-secret` | CUMS: `AGENT_CALLERS_AGENT_SERVICE_SECRET` / `agent.callers.agent-service.secret` (`/internal/agent-grants`, `/internal/agent-tokens`); agent-service: `AGENT_CUMS_CALLER_SECRET` / `agent.cums.caller-secret` (presents it on both calls; blank or `none`: every run is handed to the organizers with `CALLER_SECRET_MISSING`) | CUMS, agent-service |
 
 **Turn agent tokens on:**
 

@@ -19,6 +19,7 @@ const TEST_ACCOUNT = '123456789012';
 const TEST_REGION = 'eu-central-1';
 const ALARM_TOPIC = `arn:aws:sns:${TEST_REGION}:${TEST_ACCOUNT}:batbern-staging-alarms`;
 const ANTHROPIC_KEY_ARN = `arn:aws:secretsmanager:${TEST_REGION}:${TEST_ACCOUNT}:secret:batbern/staging/agent/anthropic-api-key-AbCdEf`;
+const CALLER_SECRET_ARN = `arn:aws:secretsmanager:${TEST_REGION}:${TEST_ACCOUNT}:secret:batbern/staging/agent/agent-service-caller-secret-GhIjKl`;
 
 function buildTemplate(): Template {
   const app = new App();
@@ -48,6 +49,11 @@ function buildTemplate(): Template {
       parent,
       'AnthropicKey',
       ANTHROPIC_KEY_ARN
+    ),
+    cumsCallerSecret: secretsmanager.Secret.fromSecretCompleteArn(
+      parent,
+      'CallerSecret',
+      CALLER_SECRET_ARN
     ),
     env: { account: TEST_ACCOUNT, region: TEST_REGION },
   });
@@ -106,12 +112,13 @@ describe('AgentServiceStack', () => {
     expect(containerEnv(template).AGENT_ENABLED).toBe('false');
   });
 
-  test('should_carryTheAnthropicKeyButNoAgentOrMailSecrets', () => {
-    // Cognito only (no agent public key), no caller secret yet (story 4); the Anthropic key is the
-    // one secret beyond the database's (story 3)
+  test('should_carryTheAnthropicKeyAndCallerSecretButNoAgentKeyOrMailSecrets', () => {
+    // Cognito only (no agent public key, no signing key); the Anthropic key (story 3) and the CUMS
+    // caller secret (story 4) are the two secrets beyond the database's
     const taskDefs = JSON.stringify(template.findResources('AWS::ECS::TaskDefinition'));
     expect(taskDefs).not.toContain('AGENT_JWT_PUBLIC_KEY');
-    expect(taskDefs).not.toContain('CALLER_SECRET');
+    expect(taskDefs).not.toContain('AGENT_JWT_PRIVATE_KEY');
+    expect(taskDefs).not.toContain('AGENT_CALLERS_EMS_SECRET');
     // Exactly one ANTHROPIC-named entry on the agent container, across Environment and Secrets
     const [taskDef] = Object.values(template.findResources('AWS::ECS::TaskDefinition')) as Array<{
       Properties: {
@@ -150,6 +157,34 @@ describe('AgentServiceStack', () => {
     expect(JSON.stringify(key?.ValueFrom)).toContain('batbern/staging/agent/anthropic-api-key');
     // The key is a secret, never a plain environment variable
     expect(containerEnv(template).AGENT_ANTHROPIC_API_KEY).toBeUndefined();
+  });
+
+  test('should_injectTheCallerSecret_as_AGENT_CUMS_CALLER_SECRET', () => {
+    const [taskDef] = Object.values(template.findResources('AWS::ECS::TaskDefinition')) as Array<{
+      Properties: {
+        ContainerDefinitions: Array<{
+          Name: string;
+          Environment?: Array<{ Name: string }>;
+          Secrets?: Array<{ Name: string; ValueFrom: unknown }>;
+        }>;
+      };
+    }>;
+    const container = taskDef.Properties.ContainerDefinitions.find((c) => c.Name === 'Container');
+    const callerNames = [...(container?.Environment ?? []), ...(container?.Secrets ?? [])]
+      .map((e) => e.Name)
+      .filter((name) => name.includes('CALLER'));
+    expect(callerNames).toEqual(['AGENT_CUMS_CALLER_SECRET']);
+    const secret = container?.Secrets?.find((s) => s.Name === 'AGENT_CUMS_CALLER_SECRET');
+    expect(JSON.stringify(secret?.ValueFrom)).toContain(
+      'batbern/staging/agent/agent-service-caller-secret'
+    );
+    expect(containerEnv(template).AGENT_CUMS_CALLER_SECRET).toBeUndefined();
+  });
+
+  test('should_reachCumsAndTheGateway_throughServiceConnect', () => {
+    const env = containerEnv(template);
+    expect(env.COMPANY_USER_MANAGEMENT_SERVICE_URL).toBe('http://company-user-management:8080');
+    expect(env.AGENT_GATEWAY_URL).toBe('http://api-gateway:8080');
   });
 
   test('should_registerServiceConnect_as_agent8080', () => {
@@ -219,6 +254,8 @@ describe('agent-service wiring', () => {
     ]) {
       expect(app).toContain(`agentServiceStack.addDependency(${dep})`);
     }
+    expect(app).toContain('agentServiceStack.addDependency(secretsStack)');
+    expect(app).toContain('cumsCallerSecret: secretsStack.agentServiceCallerSecret');
     expect(app).not.toContain('agentServiceStack.addDependency(sesStack)');
   });
 });

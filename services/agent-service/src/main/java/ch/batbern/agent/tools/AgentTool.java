@@ -20,9 +20,12 @@ public interface AgentTool {
 
     /**
      * Runs the tool. A tool that throws is logged as FAILED and the model gets an error result.
+     * A tool reaches the services only through {@link ToolContext#api()}, with the run's minted
+     * token; when CUMS refuses a mint the run ends after this tool, whatever the tool returns.
      *
-     * @param input the input the model chose
+     * @param input   the input the model chose
+     * @param context the run and its public API
      * @return what the model gets back
      */
-    ToolOutcome execute(JsonNode input);
+    ToolOutcome execute(JsonNode input, ToolContext context);
 }

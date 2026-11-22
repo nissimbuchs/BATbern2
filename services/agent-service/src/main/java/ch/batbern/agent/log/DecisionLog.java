@@ -8,6 +8,7 @@ import ch.batbern.agent.run.AgentRunRepository;
 import ch.batbern.agent.run.RunEndReason;
 import ch.batbern.agent.run.RunTrigger;
 import ch.batbern.agent.tools.ToolOutcome;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -55,7 +56,31 @@ public class DecisionLog {
     /** Ends the run for {@code reason}; the reason fixes DONE, FAILED or HANDED_TO_ORGANIZERS. */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void endRun(UUID runId, RunEndReason reason) {
-        runs.findById(runId).orElseThrow(() -> missing("run", runId)).end(reason, clock.instant());
+        endRun(runId, reason, null);
+    }
+
+    /**
+     * Ends the run for {@code reason} with its machine-readable {@code detail} (the CUMS code of a
+     * refusal; {@code null} for none). A detail that is not a code is stored as UNKNOWN_CODE.
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void endRun(UUID runId, RunEndReason reason, String detail) {
+        runs.findById(runId).orElseThrow(() -> missing("run", runId)).end(reason, detail, clock.instant());
+    }
+
+    /**
+     * The run acts under the CUMS grant {@code grantRunId} (story 4). One grant, one run.
+     *
+     * @throws DataIntegrityViolationException when another run already acts under that grant
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void recordGrant(UUID runId, UUID grantRunId) {
+        if (runs.existsByGrantRunId(grantRunId)) {
+            throw new DataIntegrityViolationException("The grant is already used by another run");
+        }
+        runs.findById(runId).orElseThrow(() -> missing("run", runId)).recordGrant(grantRunId);
+        // Flush here, so a concurrent run with the same grant fails inside this call
+        runs.flush();
     }
 
     /** The message the run was given, in full. */

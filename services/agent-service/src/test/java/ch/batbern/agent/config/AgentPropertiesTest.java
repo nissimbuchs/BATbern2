@@ -8,11 +8,12 @@ import java.time.Duration;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-/** The adapter's configuration: what counts as a key, and a toString that never shows it. */
-@DisplayName("AgentProperties.Anthropic")
+/** The adapter's and CUMS's configuration: what counts as a key or secret, and a toString that never shows it. */
+@DisplayName("AgentProperties")
 class AgentPropertiesTest {
 
     private static final String KEY = "sk-ant-properties-test-secret-1234";
+    private static final String CALLER_SECRET = "caller-secret-properties-test-5678";
 
     private static AgentProperties.Anthropic anthropic(String key) {
         return new AgentProperties.Anthropic(key, "claude-sonnet-5-5", "medium", Duration.ofMinutes(5), 2, "");
@@ -22,11 +23,13 @@ class AgentPropertiesTest {
     @DisplayName("toString masks the key, of the nested record and of the whole configuration")
     void should_maskKey_when_toString() {
         AgentProperties.Anthropic anthropic = anthropic(KEY);
-        AgentProperties properties = new AgentProperties(false, new AgentProperties.Loop(25, 16000), anthropic);
+        AgentProperties properties = new AgentProperties(false, new AgentProperties.Loop(25, 16000), anthropic,
+                new AgentProperties.Cums("http://cums:8080", CALLER_SECRET), new AgentProperties.Gateway("http://gw:8080"));
 
         assertThat(anthropic.toString()).doesNotContain(KEY).doesNotContain("secret")
                 .contains("apiKey=****").contains("model=claude-sonnet-5-5");
-        assertThat(properties.toString()).doesNotContain(KEY).contains("apiKey=****");
+        assertThat(properties.toString()).doesNotContain(KEY).contains("apiKey=****")
+                .doesNotContain(CALLER_SECRET).contains("callerSecret=****");
         assertThat(anthropic("none").toString()).contains("apiKey=none");
     }
 
@@ -54,5 +57,23 @@ class AgentPropertiesTest {
                 .isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() -> new AgentProperties.Anthropic(KEY, "m", "low", Duration.ZERO, 0, ""))
                 .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    @DisplayName("Cums: blank or none in any case is no caller secret; toString masks it; base URLs lose a trailing slash")
+    void should_recogniseCallerSecret_when_set() {
+        assertThat(new AgentProperties.Cums("http://cums:8080", null).hasCallerSecret()).isFalse();
+        assertThat(new AgentProperties.Cums("http://cums:8080", "").hasCallerSecret()).isFalse();
+        assertThat(new AgentProperties.Cums("http://cums:8080", " None ").hasCallerSecret()).isFalse();
+        AgentProperties.Cums cums = new AgentProperties.Cums("http://cums:8080/", " " + CALLER_SECRET + "\n");
+        assertThat(cums.hasCallerSecret()).isTrue();
+        assertThat(cums.secret()).isEqualTo(CALLER_SECRET);
+        assertThat(cums.baseUrl()).isEqualTo("http://cums:8080");
+        assertThat(cums.toString()).doesNotContain(CALLER_SECRET).contains("callerSecret=****");
+        assertThat(new AgentProperties.Cums("http://cums:8080", "none").toString()).contains("callerSecret=none");
+        assertThatThrownBy(() -> new AgentProperties.Cums("http://cums:8080", "").secret())
+                .isInstanceOf(IllegalStateException.class);
+        assertThat(new AgentProperties.Gateway("http://api-gateway:8080//").baseUrl()).isEqualTo("http://api-gateway:8080");
+        assertThatThrownBy(() -> new AgentProperties.Gateway(" ")).isInstanceOf(IllegalArgumentException.class);
     }
 }

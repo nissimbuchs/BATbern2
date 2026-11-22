@@ -1,6 +1,7 @@
 package ch.batbern.agent.loop;
 
 import ch.batbern.agent.tools.AgentTool;
+import ch.batbern.agent.tools.ToolContext;
 import ch.batbern.agent.tools.ToolOutcome;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -8,40 +9,50 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 /** Tools for loop tests: plain code the loop runs, recording every input it got. */
-final class TestTools {
+public final class TestTools {
 
-    static final ObjectMapper JSON = new ObjectMapper();
+    public static final ObjectMapper JSON = new ObjectMapper();
 
     private TestTools() {
     }
 
     /** A tool answering {@code answer.apply(input)}. */
-    static RecordingTool answering(String name, Function<JsonNode, String> answer) {
+    public static RecordingTool answering(String name, Function<JsonNode, String> answer) {
         return new RecordingTool(name, input -> ToolOutcome.ok(answer.apply(input)));
     }
 
     /** A tool that throws {@code error}. */
-    static RecordingTool throwing(String name, RuntimeException error) {
+    public static RecordingTool throwing(String name, RuntimeException error) {
         return new RecordingTool(name, input -> {
             throw error;
         });
     }
 
     /** {@code {"key": value}}. */
-    static ObjectNode input(String key, String value) {
+    public static ObjectNode input(String key, String value) {
         return JSON.createObjectNode().put(key, value);
     }
 
-    static final class RecordingTool implements AgentTool {
+    /** A tool that uses the run's public API ({@link ToolContext#api()}). */
+    public static RecordingTool calling(String name, BiFunction<JsonNode, ToolContext, ToolOutcome> behaviour) {
+        return new RecordingTool(name, behaviour);
+    }
+
+    public static final class RecordingTool implements AgentTool {
 
         private final String name;
-        private final Function<JsonNode, ToolOutcome> behaviour;
+        private final BiFunction<JsonNode, ToolContext, ToolOutcome> behaviour;
         private final List<JsonNode> inputs = new ArrayList<>();
 
         RecordingTool(String name, Function<JsonNode, ToolOutcome> behaviour) {
+            this(name, (input, context) -> behaviour.apply(input));
+        }
+
+        RecordingTool(String name, BiFunction<JsonNode, ToolContext, ToolOutcome> behaviour) {
             this.name = name;
             this.behaviour = behaviour;
         }
@@ -64,12 +75,12 @@ final class TestTools {
         }
 
         @Override
-        public ToolOutcome execute(JsonNode input) {
+        public ToolOutcome execute(JsonNode input, ToolContext context) {
             inputs.add(input);
-            return behaviour.apply(input);
+            return behaviour.apply(input, context);
         }
 
-        List<JsonNode> inputs() {
+        public List<JsonNode> inputs() {
             return List.copyOf(inputs);
         }
     }

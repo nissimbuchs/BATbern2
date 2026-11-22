@@ -269,6 +269,10 @@ mappings:
   - source_pattern: "infrastructure/lib/stacks/secrets-stack.ts"
     docs:
       - "docs/operations/runbooks.md"
+  # Agent runtime story 4: which secrets agent-service gets (Anthropic key, CUMS caller secret) is in the runbooks.
+  - source_pattern: "infrastructure/lib/stacks/agent-service-stack.ts"
+    docs:
+      - "docs/operations/runbooks.md"
   # Epic 17 entry 7: EMS implements the CUMS-owned Mail Center request contract in the mail center module.
   - source_pattern: "services/event-management-service/src/main/java/ch/batbern/events/mailcenter/InternalRequestConversationController"
     docs:

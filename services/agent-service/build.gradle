@@ -1,7 +1,8 @@
 // Agent Service (agentic interaction, epic agent runtime, story 1)
 // Common configuration is in root build.gradle (every :services:* project).
-// This file holds only what agent-service needs on top: no SES, no caches, no S2S clients, no
-// Resilience4j. The agent never sends mail itself (AD-5) and calls no /internal/** yet.
+// This file holds only what agent-service needs on top: no SES, no caches, no Resilience4j. The
+// agent never sends mail itself (AD-5). Its only /internal/** calls are CUMS's agent-grants and
+// agent-tokens (story 4), on the common RestTemplate (spring-boot-starter-restclient, root build).
 
 plugins {
     // Version-less: resolved from settings.gradle pluginManagement (single source, Epic 13)

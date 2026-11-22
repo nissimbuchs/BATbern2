@@ -86,6 +86,31 @@ calls before they run and again after, so a crashed run leaves its trace. The ap
 carries run ids, counts, tool names and outcomes, never prompt text, tool input or output, or an
 exception message (#1202); the decision log keeps them in full.
 
+The run's identity (story 4, R2, AD-3, AD-15): a run acts only with a CUMS-minted agent token.
+`AgentRunRequest` carries a `GrantSource`, which fixes the run's trigger: `OrganizerLogin` (the
+organizer's Cognito JWT, forwarded as `Authorization` on the grant call only; trigger `ORGANIZER`),
+`LinkedRun` (`linkedRunId`, `linkedRunGrantSecret`; `LINKED_RUN`), `SchedulerJob` (`jobName`;
+`SCHEDULED`) or `HandedOver` (run id and secret of a grant EMS obtained; no grant call;
+`INBOUND_MAIL`). Before its first model call the loop obtains the grant through
+`identity/CumsAgentClient` (`POST /internal/agent-grants` on `agent.cums.base-url`, body with only
+the trigger's fields, header `X-Agent-Caller-Secret` from `agent.cums.caller-secret` /
+`AGENT_CUMS_CALLER_SECRET`), stores CUMS's run id as `agent_runs.grant_run_id` (V3, unique) and
+mints the first token (`POST /internal/agent-tokens`, no `Authorization`). Tools get a
+`ToolContext` with the run's `gateway/PublicApi`: every call goes to `agent.gateway.base-url`
+(`AGENT_GATEWAY_URL`, `http://api-gateway:8080`) under `/api/v1` with `Authorization: Bearer
+<agent token>`; a GET reuses the token until 60 s before its `expiresAt`, every other method is a
+write and mints a fresh token first. An HTTP error of the API goes back to the tool as
+`ApiResponse`. A refused grant or mint, CUMS unreachable or no caller secret (blank or `none`; CUMS
+is not called, startup warning) ends the run HANDED_TO_ORGANIZERS with `GRANT_REFUSED` or
+`TOKEN_REFUSED` and `end_detail` = the CUMS `details.code` (else `HTTP_<status>`,
+`CUMS_UNREACHABLE`, `CALLER_SECRET_MISSING`; anything not matching `^[A-Z][A-Z0-9_]{0,63}$` is
+`UNKNOWN_CODE`), logged with the run id; no retry, no mail. A refused mint before a write sends
+nothing: the tool call is FAILED and no further model call follows, even if the tool swallows the
+exception (the loop reads the refusal from `RunCredentials` after each tool). One `RestTemplate`
+(`config/RestClientConfig`, connect 5 s, read 30 s) serves both, without a logging interceptor:
+no token, grant secret, caller secret or username reaches a log, an exception message or a
+`toString`.
+
 ### Package layout
 
 Layer packages are shared by all services; larger services add feature packages next to them.

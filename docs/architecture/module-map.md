@@ -46,7 +46,16 @@ CUMS (identity) is upstream of all. EMS (event) is upstream of PCS (partners).
   in `llm/` (`AnthropicLlm` on `anthropic-java` 3.12.0, `LocalDevLlm`), picked once at startup by
   `llm/LlmConfig`, and api.anthropic.com is the service's only outbound call outside the BATbern
   services. Its key comes from Secrets Manager (`AGENT_ANTHROPIC_API_KEY`, agent-service only, story
-  3). Every write goes through `log/DecisionLog`, one committed transaction per row. Open naming point for the epic's
+  3). Its identity (story 4, R2, AD-3): before its first model call a run obtains its grant
+  (`POST /internal/agent-grants` for an organizer login, a linked run or a scheduler job; or a grant
+  handed over by EMS, then no grant call) and mints its token (`POST /internal/agent-tokens`), both
+  with its own caller secret (`AGENT_CUMS_CALLER_SECRET`), through `identity/CumsAgentClient`; these
+  two are the only `/internal/**` operations it calls. Tools reach the services only through
+  `gateway/PublicApi`, the public API behind the Spring gateway with the run's token: a read reuses
+  it until 60 s before it expires, every write mints a fresh one first. A refused grant or mint ends
+  the run HANDED_TO_ORGANIZERS (`GRANT_REFUSED`, `TOKEN_REFUSED`, the CUMS code in `end_detail`);
+  the grant's run id is stored as `agent_runs.grant_run_id`, so `agent:<run>` in another service's
+  audit column leads to the run. Every write goes through `log/DecisionLog`, one committed transaction per row. Open naming point for the epic's
   refactor sweep: CUMS already owns `agent_settings`, `agent_grants` and `agent_allowlist`, so
   "agent_* tables belong to agent-service" (AD-9) needs a sharper rule.
 - Downstream must react to an upstream change? The upstream calls it through an `/internal`

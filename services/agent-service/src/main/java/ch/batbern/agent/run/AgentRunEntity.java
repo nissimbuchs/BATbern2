@@ -9,11 +9,18 @@ import jakarta.persistence.Table;
 
 import java.time.Instant;
 import java.util.UUID;
+import java.util.regex.Pattern;
 
 /** One run of the agent loop ({@code agent_runs}, owned by agent-service). */
 @Entity
 @Table(name = "agent_runs")
 public class AgentRunEntity {
+
+    /** The {@code chk_agent_runs_end_detail} pattern: a code, never free text. */
+    public static final Pattern END_DETAIL = Pattern.compile("^[A-Z][A-Z0-9_]{0,63}$");
+
+    /** What an end detail that is not a code is stored as. */
+    public static final String UNKNOWN_CODE = "UNKNOWN_CODE";
 
     @Id
     private UUID id;
@@ -36,6 +43,13 @@ public class AgentRunEntity {
     @Column(name = "end_reason", length = 32)
     private RunEndReason endReason;
 
+    @Column(name = "end_detail", length = 64)
+    private String endDetail;
+
+    /** The run id of the CUMS grant the run acts under ({@code act.run} of its tokens). */
+    @Column(name = "grant_run_id", unique = true)
+    private UUID grantRunId;
+
     protected AgentRunEntity() {
     }
 
@@ -51,12 +65,29 @@ public class AgentRunEntity {
 
     /** Ends the run for {@code reason} at {@code at}; the reason fixes the end status. */
     public void end(RunEndReason reason, Instant at) {
+        end(reason, null, at);
+    }
+
+    /**
+     * Ends the run for {@code reason} with a machine-readable {@code detail} (a CUMS code); a detail
+     * that is not a code is stored as {@value #UNKNOWN_CODE}.
+     */
+    public void end(RunEndReason reason, String detail, Instant at) {
         if (status != AgentRunStatus.RUNNING) {
             throw new IllegalStateException("Run " + id + " has already ended");
         }
         this.status = reason.status();
         this.endReason = reason;
+        this.endDetail = detail == null ? null : (END_DETAIL.matcher(detail).matches() ? detail : UNKNOWN_CODE);
         this.endedAt = at;
+    }
+
+    /** The run acts under the CUMS grant {@code grantRunId}; set once. */
+    public void recordGrant(UUID grantRunId) {
+        if (this.grantRunId != null) {
+            throw new IllegalStateException("Run " + id + " already has a grant");
+        }
+        this.grantRunId = grantRunId;
     }
 
     public UUID getId() {
@@ -81,5 +112,13 @@ public class AgentRunEntity {
 
     public RunEndReason getEndReason() {
         return endReason;
+    }
+
+    public String getEndDetail() {
+        return endDetail;
+    }
+
+    public UUID getGrantRunId() {
+        return grantRunId;
     }
 }
