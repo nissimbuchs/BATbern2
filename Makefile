@@ -385,9 +385,9 @@ dev-native-up-instance: ## Start specific instance (use BASE_PORT=9000 for insta
 		echo "Usage: make dev-native-up-instance BASE_PORT=9000"; \
 		echo ""; \
 		echo "Recommended port ranges:"; \
-		echo "  BASE_PORT=8000 (default: gateway 8000, services 8001/8002/8004, frontend 8100)"; \
-		echo "  BASE_PORT=9000 (gateway 9000, services 9001/9002/9004, frontend 9100)"; \
-		echo "  BASE_PORT=9500 (gateway 9500, services 9501/9502/9504, frontend 9600)"; \
+		echo "  BASE_PORT=8000 (default: gateway 8000, services 8001-8004, frontend 8100)"; \
+		echo "  BASE_PORT=9000 (gateway 9000, services 9001-9004, frontend 9100)"; \
+		echo "  BASE_PORT=9500 (gateway 9500, services 9501-9504, frontend 9600)"; \
 		echo "  Any BASE_PORT value is supported"; \
 		exit 1; \
 	fi

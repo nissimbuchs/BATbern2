@@ -32,6 +32,15 @@ CUMS (identity) is upstream of all. EMS (event) is upstream of PCS (partners).
   (`AgentCallerSecrets`); the filter chain keeps `/internal/**` open. Everything else goes through
   the Spring gateway's public API with its delegated agent token; it never reads or writes another
   service's tables.
+- agent-service (story 1 of the agent runtime epic, shipped dark with `agent.enabled=false`) serves
+  `/api/v1/agent/**` (`agent-api.openapi.yml`; the gateway routes the prefix with its slash, so
+  `/api/v1/agent-settings` stays CUMS). Its own API accepts Cognito tokens only (an agent token
+  is 401) and organizers only; roles come from `custom:role` without the `JwtRolesConverter` DB
+  fallback, which reads CUMS tables. It keeps its data in its own tables (`agent_runs` so far,
+  folder `db/agent-migration`, history `flyway_schema_history_agent`), scans only
+  `ch.batbern.agent` and uses shared-kernel classes directly. Open naming point for the epic's
+  refactor sweep: CUMS already owns `agent_settings`, `agent_grants` and `agent_allowlist`, so
+  "agent_* tables belong to agent-service" (AD-9) needs a sharper rule.
 - Downstream must react to an upstream change? The upstream calls it through an `/internal`
   contract it owns (its spec, implementers listed in its configuration under
   `batbern.contracts.<name>.implementers`, called through shared-kernel `ContractCalls`, no

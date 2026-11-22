@@ -351,8 +351,8 @@ type(scope): description
 
 ### API Ports (native dev, BASE_PORT=8000)
 - API Gateway: `8000`, Company/User: `8001`, Event Mgmt: `8002`
-- Speaker Coordination: `8003`, Partner Coordination: `8004`
-- Attendee Experience: `8005`, Frontend: `8100`
+- Agent Service: `8003`, Partner Coordination: `8004`
+- Frontend: `8100` (`8005` unused since the attendee stub was removed, Story 17.2)
 
 ### Git Hooks (`.githooks/`)
 - **Installed by `make install`** as of #973 (also by a root `npm install`, via the

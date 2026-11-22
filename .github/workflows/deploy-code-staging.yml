@@ -57,6 +57,9 @@ jobs:
               partner-coordination)
                 ECS_SERVICE_PATTERN="BATbern-staging-PartnerCoordination-Service"
                 ;;
+              agent)
+                ECS_SERVICE_PATTERN="BATbern-staging-AgentService-Service"
+                ;;
               api-gateway-service|api-gateway)
                 ECS_SERVICE_PATTERN="BATbern-staging-ApiGatewayService-Service"
                 ;;

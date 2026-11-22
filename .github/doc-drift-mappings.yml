@@ -82,6 +82,12 @@ mappings:
       - "docs/user-guide/partner-portal/"
       - "docs/user-guide/features/analytics.md"
 
+  # ── Agent Service (agentic interaction, epic agent runtime) ──────────────────
+  - source_pattern: "services/agent-service/"
+    docs:
+      - "docs/architecture/module-map.md"
+      - "docs/architecture/06-backend-architecture.md"
+
   # ── API Gateway ─────────────────────────────────────────────────────────────
   - source_pattern: "api-gateway/"
     docs:

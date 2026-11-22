@@ -24,6 +24,7 @@ import { stagingConfig } from '../../lib/config/staging-config';
 import { CompanyManagementStack } from '../../lib/stacks/company-management-stack';
 import { EventManagementStack } from '../../lib/stacks/event-management-stack';
 import { PartnerCoordinationStack } from '../../lib/stacks/partner-coordination-stack';
+import { AgentServiceStack } from '../../lib/stacks/agent-service-stack';
 
 const TEST_ACCOUNT = '123456789012';
 const TEST_REGION = 'eu-central-1';
@@ -63,6 +64,11 @@ const SERVICES: ServiceCase[] = [
     displayName: 'PartnerCoordination',
     logGroupName: '/aws/ecs/BATbern-staging/partner-coordination',
     build: (app, common) => new PartnerCoordinationStack(app, 'TestPCS', common as any),
+  },
+  {
+    displayName: 'Agent',
+    logGroupName: '/aws/ecs/BATbern-staging/agent',
+    build: (app, common) => new AgentServiceStack(app, 'TestAgent', common as any),
   },
 ];
 

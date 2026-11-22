@@ -89,6 +89,9 @@ while IFS= read -r file; do
                 TEST_SERVICES="$TEST_SERVICES partner-coordination-service"
             fi
             ;;
+        services/agent-service/*)
+            add_service agent-service
+            ;;
         .github/workflows/*.yml|infrastructure/lib/stacks/cicd-stack.ts)
             CHECK_CICD_PERMISSIONS=true
             ;;
@@ -108,6 +111,9 @@ while IFS= read -r file; do
             ;;
         docs/api/partner*.openapi.yml)
             add_service partner-coordination-service
+            ;;
+        docs/api/agent-api.openapi.yml)
+            add_service agent-service
             ;;
         # Internal S2S specs (17.0b2): the provider's tests, every consumer's contract tests and the
         # harness self-test in shared-kernel (ContractServerTest loads all three) read them.
@@ -146,7 +152,7 @@ done <<< "$CHANGED_FILES"
 if [ "$TEST_SHARED_KERNEL" = true ]; then
     echo -e "${YELLOW}⚡ shared-kernel changed - testing all backend components${NC}"
     TEST_API_GATEWAY=true
-    TEST_SERVICES="company-user-management-service event-management-service partner-coordination-service"
+    TEST_SERVICES="company-user-management-service event-management-service partner-coordination-service agent-service"
 fi
 
 # Show what will be tested

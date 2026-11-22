@@ -17,7 +17,8 @@ BATbern2/
 ├── services/
 │   ├── event-management-service/          # EMS, primary (ADR-014)
 │   ├── company-user-management-service/   # CUMS, primary
-│   └── partner-coordination-service/      # PCS, separate service
+│   ├── partner-coordination-service/      # PCS, separate service
+│   └── agent-service/                     # agent runtime (agentic interaction), /api/v1/agent/**
 ├── web-frontend/             # React 19 + TypeScript SPA (public site and role areas)
 ├── infrastructure/           # AWS CDK app (TypeScript)
 ├── apps/
@@ -136,7 +137,7 @@ infrastructure/
 ├── lib/
 │   ├── stacks/        # One file per stack: dns, network, secrets, database, bastion, storage,
 │   │                  # monitoring, cicd, cognito, ses, inbound-email, cluster,
-│   │                  # event-management, partner-coordination,
+│   │                  # event-management, partner-coordination, agent-service,
 │   │                  # company-management, api-gateway-service,
 │   │                  # api-gateway, frontend (also used for FrontendBeta), auto-shutdown
 │   ├── constructs/    # domain-service-construct (Fargate + Service Connect), alarms, rds-cluster, vpc ...

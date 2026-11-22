@@ -1,0 +1,153 @@
+openapi: 3.1.0
+info:
+  title: BATbern Agent API
+  version: 1.0.0
+  description: |
+    Read API of agent-service (agentic interaction, epic agent runtime, AD-9): organizers read
+    what the agent did. Served by agent-service behind the Spring gateway at `/api/v1/agent/**`.
+
+    - Only a Cognito organizer token is accepted. Any other role answers 403, no token 401.
+    - An agent token (`iss batbern-agent`, carrying `act`) is refused with 401: agent-service
+      accepts Cognito tokens only, so the agent can never read its own decision log.
+    - The data lives in agent-service's own `agent_*` tables; no other service reads them.
+
+    Story 1 ships the service dark (`agent.enabled=false`): the list is empty until the agent
+    loop (story 2) writes runs.
+  contact:
+    name: BATbern Platform Team
+    email: platform@batbern.ch
+  license:
+    name: Proprietary
+    identifier: Proprietary
+
+servers:
+  - url: /api/v1
+    description: API Gateway base URL
+
+security:
+  - bearerAuth: []
+
+tags:
+  - name: Agent Runs
+    description: The runs of the agent, newest first (organizers only)
+
+paths:
+  /agent/runs:
+    get:
+      tags:
+        - Agent Runs
+      summary: List agent runs
+      description: |
+        The runs of the agent, newest first (by `startedAt`), one page at a time.
+        ORGANIZER only.
+      operationId: listAgentRuns
+      parameters:
+        - name: page
+          in: query
+          description: Page number (0-based)
+          required: false
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+        - name: limit
+          in: query
+          description: Items per page (max 100)
+          required: false
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 100
+      responses:
+        '200':
+          description: One page of runs, newest first
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAgentRunResponse'
+              examples:
+                empty:
+                  summary: the dark service before the first run
+                  value:
+                    data: []
+                    pagination:
+                      page: 0
+                      limit: 20
+                      totalItems: 0
+                      totalPages: 0
+                      hasNext: false
+                      hasPrev: false
+        '400':
+          description: Invalid page or limit
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Not authenticated, or a token kind agent-service does not accept (agent token)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden (ORGANIZER role required)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Cognito ID token of an organizer
+
+  schemas:
+    AgentRun:
+      type: object
+      description: One run of the agent loop.
+      required:
+        - id
+        - status
+        - startedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Run id; the `act.run` claim of the agent tokens minted for this run
+        status:
+          type: string
+          description: |
+            RUNNING while the loop works; DONE or FAILED when it ended; HANDED_TO_ORGANIZERS when
+            a cap, a refused grant or mint, or the gate stopped it and the organizers take over.
+          enum: [RUNNING, DONE, FAILED, HANDED_TO_ORGANIZERS]
+        startedAt:
+          type: string
+          format: date-time
+          description: When the run started
+        endedAt:
+          type: [string, 'null']
+          format: date-time
+          description: When the run ended; null while it runs
+
+    PaginatedAgentRunResponse:
+      type: object
+      description: The shared paginated envelope (`PaginatedResponse`) with `data` of `AgentRun`.
+      required:
+        - data
+        - pagination
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/AgentRun'
+        pagination:
+          $ref: '#/components/schemas/PaginationMetadata'
+
+    PaginationMetadata:
+      $ref: './_shared.openapi.yml#/components/schemas/PaginationMetadata'
+    ErrorResponse:
+      $ref: './_shared.openapi.yml#/components/schemas/ErrorResponse'

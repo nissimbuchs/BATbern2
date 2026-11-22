@@ -394,6 +394,24 @@ describe('github-issues Lambda handler', () => {
         .find((c) => c.__type === 'filter');
       expect(filter.input.logGroupName).toBe('/aws/ecs/BATbern-staging/event-management');
     });
+
+    it('should_pickTheAgentLogGroupAndLabel_when_alarmNamesTheAgentService', async () => {
+      await handler(
+        makeSnsEvent([
+          makeAlarmMessage({
+            NewStateValue: 'ALARM',
+            AlarmName: 'batbern-staging-Agent-High-Memory',
+          }),
+        ])
+      );
+
+      const filter = mockLogsSend.mock.calls
+        .map((c) => c[0] as any)
+        .find((c) => c.__type === 'filter');
+      expect(filter.input.logGroupName).toBe('/aws/ecs/BATbern-staging/agent');
+      const createArgs = mockIssuesCreate.mock.calls[0][0] as { labels: string[] };
+      expect(createArgs.labels).toContain('service:agent');
+    });
   });
 
   describe('@claude triage handoff', () => {

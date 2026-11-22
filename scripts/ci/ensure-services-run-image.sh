@@ -19,7 +19,7 @@ set -euo pipefail
 ENV="${1:?usage: ensure-services-run-image.sh <env> <image-tag>}"
 TAG="${2:?usage: ensure-services-run-image.sh <env> <image-tag>}"
 CLUSTER="batbern-${ENV}"
-FRAGMENTS=(EventManagement PartnerCoordination CompanyManagement ApiGatewayService)
+FRAGMENTS=(EventManagement PartnerCoordination CompanyManagement AgentService ApiGatewayService)
 
 image_tag_of() {
   aws ecs describe-task-definition --task-definition "$1" \

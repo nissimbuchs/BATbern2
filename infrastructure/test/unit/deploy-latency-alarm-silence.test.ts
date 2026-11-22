@@ -39,11 +39,11 @@ const workflow = loadWorkflow('deploy-staging.yml');
 
 /**
  * A step rolls ECS tasks when it deploys a service stack or touches a service directly.
- * Stack names: the four `BATbern-<env>-<Service>` stacks; `ApiGateway` alone (AWS API Gateway)
+ * Stack names: the five `BATbern-<env>-<Service>` stacks; `ApiGateway` alone (AWS API Gateway)
  * and `Frontend` do not run ECS tasks.
  */
 const ROLLS_SERVICES =
-  /update-ecs-task\.sh|rollback-deployment\.sh|ecs update-service|deploy:staging:layer4-|cdk deploy[^\n]*BATbern-[^\s]*-(EventManagement|CompanyManagement|PartnerCoordination|ApiGatewayService)\b/;
+  /update-ecs-task\.sh|rollback-deployment\.sh|ecs update-service|deploy:staging:layer4-|cdk deploy[^\n]*BATbern-[^\s]*-(EventManagement|CompanyManagement|PartnerCoordination|AgentService|ApiGatewayService)\b/;
 const DISABLE = /latency-alarm-actions\.sh disable /;
 const ENABLE = /latency-alarm-actions\.sh enable /;
 const WAIT_STABLE = /wait-ecs-services-stable\.sh /;
@@ -235,9 +235,10 @@ exit 0
   };
 
   describe('wait-ecs-services-stable.sh', () => {
-    const ALL = 'CompanyManagement EventManagement PartnerCoordination ApiGatewayService';
+    const ALL =
+      'CompanyManagement EventManagement PartnerCoordination AgentService ApiGatewayService';
 
-    test('should_waitForAllFourServicesIncludingTheGateway_byTheirRealNames', () => {
+    test('should_waitForAllFiveServicesIncludingTheGateway_byTheirRealNames', () => {
       // The step it replaces waited for `event-management-service` etc., which ECS reports as
       // MISSING (real names are BATbern-staging-<Service>-Service<hash>), so it waited for
       // nothing, and it never listed the API gateway.
@@ -246,7 +247,7 @@ exit 0
       });
       expect(status).toBe(0);
       const waited = calls.filter((c) => c.includes('ecs wait services-stable'));
-      expect(waited).toHaveLength(4);
+      expect(waited).toHaveLength(5);
       for (const f of ALL.split(' ')) {
         expect(waited.some((c) => c.includes(`--services BATbern-staging-${f}-ServiceABC`))).toBe(
           true
@@ -256,7 +257,7 @@ exit 0
 
     test('should_failLoudly_when_aServiceNameResolvesToNothing', () => {
       const { status, out } = run('wait-ecs-services-stable.sh', ['staging'], {
-        AWS_STUB_SERVICES: 'CompanyManagement EventManagement PartnerCoordination',
+        AWS_STUB_SERVICES: 'CompanyManagement EventManagement PartnerCoordination AgentService',
       });
       expect(status).not.toBe(0);
       expect(out).toContain('::error::');

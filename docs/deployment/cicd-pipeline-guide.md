@@ -58,7 +58,11 @@ checks, K6. The `*.yml.disabled` files are not run.
      matching ECS Fargate ARM64. The Gradle build stage uses `--platform=$BUILDPLATFORM`, so a
      build on an x86 machine compiles natively too and only the runtime stage targets arm64
    - Pushes images to AWS ECR (on push and pull-request events; not on `workflow_dispatch`)
-   - Services: event-management, partner-coordination, company-management, api-gateway
+   - Services: event-management, partner-coordination, company-management, agent, api-gateway
+   - First push of a new service (agent-service, 2026-11-22): when its ECR repository does not
+     exist yet (CDK creates it in deploy Layer 0; the workflow role may not), the image is saved
+     as artifact `first-push-image-<service>` instead of pushed, and `deploy-staging.yml` pushes
+     it after Layer 0, before Layer 4. Dormant once the repository exists
    - Until 2026-10-07 this job ran on x86 `ubuntu-latest`, and the whole Docker build ran under
      QEMU: 20-29 minutes per changed service for the image step alone (PR #1072)
 

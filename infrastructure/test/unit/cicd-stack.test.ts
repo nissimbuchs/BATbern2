@@ -169,6 +169,44 @@ describe('CICDStack — GitHub Actions role permissions', () => {
     expect(hasAction(template, 'ecr:DescribeImages')).toBe(true);
   });
 
+  // Used by: build.yml "Push to ECR" and deploy-staging.yml "Prepare deployment" (first-push
+  // detection). Granted by CdkDeploymentPolicy, not the runtime policy; pinned to that policy so
+  // removing the grant fails here (and the pre-push CICD sync check finds the action in this file).
+  test('should_grantEcrDescribeRepositories_viaCdkDeploymentPolicy_for_firstPushDetection', () => {
+    const policies = template.findResources('AWS::IAM::ManagedPolicy');
+    const deployment = Object.values(policies).find((p) =>
+      JSON.stringify(
+        (p as { Properties?: { ManagedPolicyName?: unknown } }).Properties?.ManagedPolicyName ?? ''
+      ).includes('github-cdk-deployment')
+    ) as { Properties: { PolicyDocument: { Statement: Array<{ Action: unknown }> } } };
+    const actions = deployment.Properties.PolicyDocument.Statement.flatMap((st) =>
+      Array.isArray(st.Action) ? st.Action : [st.Action]
+    );
+    expect(actions).toContain('ecr:DescribeRepositories');
+  });
+
+  // The ECR repository of every deployed service, CDK-owned (agent-service joined 2026-11-22)
+  test.each([
+    'shared-kernel',
+    'api-gateway',
+    'event-management-service',
+    'partner-coordination-service',
+    'company-user-management-service',
+    'agent-service',
+  ])('should_createEcrRepository_for_%s', (service) => {
+    template.hasResourceProperties('AWS::ECR::Repository', {
+      RepositoryName: `batbern/staging/${service}`,
+    });
+  });
+
+  test('should_retainEcrRepositories_when_stackDeleted', () => {
+    const repos = template.findResources('AWS::ECR::Repository');
+    expect(Object.keys(repos)).toHaveLength(6);
+    for (const repo of Object.values(repos)) {
+      expect((repo as { DeletionPolicy?: string }).DeletionPolicy).toBe('Retain');
+    }
+  });
+
   // ── RDS ──────────────────────────────────────────────────────────────────
   // Used by: deploy-staging.yml pre-deploy database backup step
 

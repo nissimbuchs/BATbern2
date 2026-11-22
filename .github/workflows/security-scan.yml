@@ -92,6 +92,8 @@ jobs:
             spec: docs/api/gateway-config-api.openapi.yml
           - api: uploads
             spec: docs/api/uploads-api.openapi.yml
+          - api: agent
+            spec: docs/api/agent-api.openapi.yml
 
     steps:
       - name: Checkout code

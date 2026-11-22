@@ -23,6 +23,7 @@ flowchart LR
     GW -->|"path prefix, headers copied"| EMS["event-management-service"]
     GW --> CUMS["company-user-management-service"]
     GW --> PCS["partner-coordination-service"]
+    GW -->|"/agent/**"| AGENT["agent-service<br/>(dark, agent.enabled=false)"]
     GW -->|"/internal/** denyAll"| X["403"]
     EMS <-->|"/internal/** no JWT,<br/>Service Connect inside the VPC"| CUMS
     PCS -->|"/internal/users"| CUMS
@@ -31,6 +32,7 @@ flowchart LR
     EMS --> DB[("PostgreSQL<br/>one database, per-service tables")]
     CUMS --> DB
     PCS --> DB
+    AGENT -->|"own agent_* tables,<br/>flyway_schema_history_agent"| DB
 ```
 
 Every service validates the JWT again and decides access itself with `@PreAuthorize` (ADR-008,
@@ -41,6 +43,15 @@ explicit map of purpose to service, Story 17.11a: `company-logo` and `profile-pi
 `event-theme-image` EMS, an unlisted purpose 404), and copies the incoming headers, including
 `Authorization`, to the service (`DomainRouter.routeRequest`). Service URLs are Service Connect
 names (`http://event-management:8080`, see `api-gateway-service-stack.ts`).
+
+agent-service (agentic interaction, epic agent runtime) owns `/api/v1/agent/**`: the gateway
+routes the prefix with its slash (`/api/v1/agent-settings` stays CUMS) to `http://agent:8080`
+(`AGENT_SERVICE_URL`). It accepts Cognito tokens only (`BatbernJwtDecoder` with `COGNITO`; an agent
+token is refused with 401), takes roles from `custom:role` without the DB fallback (it reads no
+other service's tables), scans only `ch.batbern.agent`, and migrates its own folder
+`db/agent-migration` into `flyway_schema_history_agent` with baseline 0 (shared-kernel ships a
+`V1` under `db/migration`). Story 1 ships it dark: `agent.enabled=false` (`AGENT_ENABLED`), one
+read endpoint `GET /api/v1/agent/runs` (organizers, `agent-api.openapi.yml`).
 
 ### Package layout
 

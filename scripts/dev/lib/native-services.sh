@@ -29,7 +29,7 @@ compose_cmd() {
 
 # Every service the platform can run, in port order. Used for "what is NOT running"
 # reporting — do not reorder without checking the callers.
-ALL_NATIVE_SERVICES="api-gateway company-user-management event-management partner-coordination"
+ALL_NATIVE_SERVICES="api-gateway company-user-management event-management agent partner-coordination"
 
 # Services started by default: all of them. A partial set is misleading: the API Gateway
 # routes to the missing services and fails, which reads as a broken gateway rather than a
@@ -49,6 +49,7 @@ service_heap() {
         company-user-management)  echo "512m" ;;
         api-gateway)              echo "320m" ;;
         partner-coordination)     echo "320m" ;;
+        agent)                    echo "320m" ;;
         *)                        echo "320m" ;;
     esac
 }
@@ -67,6 +68,7 @@ service_port() {
         api-gateway)             echo "${API_GATEWAY_PORT}" ;;
         company-user-management) echo "${COMPANY_USER_MGMT_PORT}" ;;
         event-management)        echo "${EVENT_MGMT_PORT}" ;;
+        agent)                   echo "${AGENT_PORT}" ;;
         partner-coordination)    echo "${PARTNER_COORD_PORT}" ;;
     esac
 }

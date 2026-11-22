@@ -16,6 +16,7 @@ import { ClusterStack } from '../lib/stacks/cluster-stack';
 import { ApiGatewayServiceStack } from '../lib/stacks/api-gateway-service-stack';
 import { EventManagementStack } from '../lib/stacks/event-management-stack';
 import { PartnerCoordinationStack } from '../lib/stacks/partner-coordination-stack';
+import { AgentServiceStack } from '../lib/stacks/agent-service-stack';
 import { CompanyManagementStack } from '../lib/stacks/company-management-stack';
 import { BastionStack } from '../lib/stacks/bastion-stack';
 import { AutoShutdownStack } from '../lib/stacks/auto-shutdown-stack';
@@ -225,6 +226,7 @@ const sesStack = new SesStack(app, `${stackPrefix}-SES`, {
 let clusterStack: ClusterStack | undefined;
 let eventManagementStack: EventManagementStack | undefined;
 let partnerCoordinationStack: PartnerCoordinationStack | undefined;
+let agentServiceStack: AgentServiceStack | undefined;
 let companyManagementStack: CompanyManagementStack | undefined;
 let apiGatewayServiceStack: ApiGatewayServiceStack | undefined;
 
@@ -356,6 +358,29 @@ if (EnvironmentHelper.shouldDeployWebInfrastructure(config.envName)) {
   partnerCoordinationStack.addDependency(monitoringStack);
   partnerCoordinationStack.addDependency(sesStack);
   partnerCoordinationStack.addDependency(secretsStack); // agent public key (0.3)
+
+  // 10d. Agent Service (agentic interaction, epic agent runtime): /api/v1/agent/**, shipped dark.
+  // Same dependencies as PCS minus SES (the agent never sends mail itself, AD-5).
+  agentServiceStack = new AgentServiceStack(app, `${stackPrefix}-AgentService`, {
+    config,
+    cluster: clusterStack.cluster,
+    vpc: networkStack.vpc,
+    databaseSecurityGroup: networkStack.databaseSecurityGroup,
+    databaseEndpoint: databaseStack.databaseEndpoint,
+    databaseSecret: databaseStack.databaseSecret,
+    userPool: cognitoStack.userPool,
+    userPoolClient: cognitoStack.userPoolClient,
+    alarmTopic: monitoringStack.alarmTopic,
+    env,
+    description: `BATbern Agent Service - ${config.envName}`,
+    tags: config.tags,
+  });
+  agentServiceStack.addDependency(clusterStack);
+  agentServiceStack.addDependency(databaseStack);
+  agentServiceStack.addDependency(cicdStack); // ECR repository batbern/<env>/agent-service
+  agentServiceStack.addDependency(cognitoStack);
+  agentServiceStack.addDependency(monitoringStack);
+  agentServiceStack.addDependency(secretsStack); // caller secret (story 4), Anthropic key (story 3)
 
   // 10e. Company & User Management Service (Consolidated)
   // Handles both /api/v1/companies and /api/v1/users endpoints

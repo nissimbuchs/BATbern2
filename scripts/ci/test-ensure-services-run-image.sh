@@ -27,7 +27,7 @@ image() { # task def arn → image
 }
 case "$args" in
   "ecs list-services"*)
-    for f in EventManagement PartnerCoordination CompanyManagement ApiGatewayService; do
+    for f in EventManagement PartnerCoordination CompanyManagement AgentService ApiGatewayService; do
       [[ "$args" == *"'${f}-Service'"* ]] && { echo "arn:aws:ecs:svc/BATbern-staging-${f}-ServiceABC"; exit 0; }
     done ;;
   "ecs describe-services"*)

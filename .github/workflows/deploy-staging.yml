@@ -187,6 +187,11 @@ jobs:
             CHANGED_SERVICES="$CHANGED_SERVICES company-management"
           fi
 
+          if echo "$CHANGED_FILES" | grep -q "^services/agent-service/"; then
+            echo "✓ Agent service changed"
+            CHANGED_SERVICES="$CHANGED_SERVICES agent"
+          fi
+
           if echo "$CHANGED_FILES" | grep -q "^api-gateway/"; then
             echo "✓ API Gateway service changed"
             CHANGED_SERVICES="$CHANGED_SERVICES api-gateway"
@@ -213,7 +218,7 @@ jobs:
           if [ -n "$CHANGED_SERVICES" ]; then
             echo "services=true" >> $GITHUB_OUTPUT
             # Check if actual Flyway migrations changed (V*.sql files only)
-            if echo "$CHANGED_FILES" | grep -qE "db/migration/V[0-9]+.*\.sql"; then
+            if echo "$CHANGED_FILES" | grep -qE "db/([a-z]+-)?migration/V[0-9]+.*\.sql"; then
               echo "needs_database_backup=true" >> $GITHUB_OUTPUT
               echo "✓ Database migration detected - backup will be created"
             fi
@@ -377,7 +382,7 @@ jobs:
 
           if [ "${{ steps.changes.outputs.infrastructure }}" != "true" ] && \
              [ "${{ steps.changes.outputs.frontend }}" != "true" ] && \
-             ! echo "$CHANGED_FILES" | grep -qE "Dockerfile|db/migration/V[0-9]+.*\.sql" && \
+             ! echo "$CHANGED_FILES" | grep -qE "Dockerfile|db/([a-z]+-)?migration/V[0-9]+.*\.sql" && \
              [ -n "${{ steps.changes.outputs.changed_services }}" ] && \
              [ "${{ steps.changes.outputs.changed_services }}" != "all-services" ]; then
             CODE_ONLY="true"
@@ -389,7 +394,7 @@ jobs:
               echo "   Reason: Infrastructure changes detected"
             elif echo "$CHANGED_FILES" | grep -qE "Dockerfile"; then
               echo "   Reason: Dockerfile changes detected"
-            elif echo "$CHANGED_FILES" | grep -qE "db/migration/V[0-9]+.*\.sql"; then
+            elif echo "$CHANGED_FILES" | grep -qE "db/([a-z]+-)?migration/V[0-9]+.*\.sql"; then
               echo "   Reason: Database migration changes detected"
             fi
           fi
@@ -427,6 +432,9 @@ jobs:
                 ;;
               partner-coordination)
                 ECS_SERVICE_PATTERN="BATbern-staging-PartnerCoordination-Service"
+                ;;
+              agent)
+                ECS_SERVICE_PATTERN="BATbern-staging-AgentService-Service"
                 ;;
               api-gateway-service|api-gateway)
                 ECS_SERVICE_PATTERN="BATbern-staging-ApiGatewayService-Service"
@@ -487,7 +495,37 @@ jobs:
           CHANGED_SERVICES="${{ steps.changes.outputs.changed_services }}"
           VALIDATION_FAILED=false
 
-          for SERVICE in event-management-service partner-coordination-service company-user-management-service api-gateway; do
+          # First push of a new service (build.yml hands the image over as an artifact because CDK
+          # creates the repository only in Layer 0): skip its image check here; the step after
+          # Layer 0 pushes the artifact, and the deploy fails there if it is missing.
+          FIRST_PUSH_SERVICES=""
+          for SERVICE in event-management-service partner-coordination-service company-user-management-service agent-service api-gateway; do
+            REPO_NAME="batbern/staging/${SERVICE}"
+            set +e
+            DESCRIBE=$(aws ecr describe-repositories --repository-names "$REPO_NAME" \
+              --region ${{ env.AWS_REGION }} 2>&1)
+            DESCRIBE_EXIT=$?
+            set -e
+            if [ $DESCRIBE_EXIT -ne 0 ]; then
+              if echo "$DESCRIBE" | grep -q RepositoryNotFoundException; then
+                echo "  ℹ️  ${REPO_NAME} does not exist yet: first push after Layer 0"
+                FIRST_PUSH_SERVICES="$FIRST_PUSH_SERVICES $SERVICE"
+              else
+                echo "::error::describe-repositories ${REPO_NAME} failed: $DESCRIBE"
+                VALIDATION_FAILED=true
+              fi
+            fi
+          done
+          FIRST_PUSH_SERVICES=$(echo "$FIRST_PUSH_SERVICES" | xargs)
+          if [ -n "$FIRST_PUSH_SERVICES" ] && [ "${{ steps.changes.outputs.deploy_all }}" != "true" ]; then
+            echo "::error::ECR repositories missing (${FIRST_PUSH_SERVICES}) but no infrastructure deploy creates them (Layer 0)"
+            VALIDATION_FAILED=true
+          fi
+
+          for SERVICE in event-management-service partner-coordination-service company-user-management-service agent-service api-gateway; do
+            if echo " $FIRST_PUSH_SERVICES " | grep -q " $SERVICE "; then
+              continue
+            fi
             # Only check services that are being deployed
             if [ "${{ steps.changes.outputs.deploy_all }}" = "true" ] || echo "$CHANGED_SERVICES" | grep -q "$SERVICE" || [ "$CHANGED_SERVICES" = "all-services" ]; then
               REPO_NAME="batbern/staging/${SERVICE}"
@@ -542,7 +580,7 @@ jobs:
           elif [ "$CHANGED_SERVICES" = "all-services" ]; then
             # Shared kernel changed - deploy all service stacks
             echo "🔄 Shared kernel changed: deploying all service stacks"
-            STACKS_TO_DEPLOY="BATbern-staging-EventManagement BATbern-staging-PartnerCoordination BATbern-staging-CompanyManagement BATbern-staging-ApiGatewayService BATbern-staging-ApiGateway"
+            STACKS_TO_DEPLOY="BATbern-staging-EventManagement BATbern-staging-PartnerCoordination BATbern-staging-CompanyManagement BATbern-staging-AgentService BATbern-staging-ApiGatewayService BATbern-staging-ApiGateway"
           else
             # Selective deployment: only deploy changed service stacks
             echo "🎯 Selective deployment: deploying only changed service stacks"
@@ -563,6 +601,11 @@ jobs:
               STACKS_TO_DEPLOY="$STACKS_TO_DEPLOY BATbern-staging-CompanyManagement"
             fi
 
+            if echo "$CHANGED_SERVICES" | grep -qw "agent"; then
+              echo "  ✓ Agent service"
+              STACKS_TO_DEPLOY="$STACKS_TO_DEPLOY BATbern-staging-AgentService"
+            fi
+
             if echo "$CHANGED_SERVICES" | grep -q "api-gateway"; then
               echo "  ✓ API Gateway service"
               STACKS_TO_DEPLOY="$STACKS_TO_DEPLOY BATbern-staging-ApiGatewayService BATbern-staging-ApiGateway"
@@ -576,6 +619,7 @@ jobs:
           fi
 
           # Output deployment strategy
+          echo "first_push_services=$FIRST_PUSH_SERVICES" >> $GITHUB_OUTPUT
           echo "use_layer_deployment=$USE_LAYER_DEPLOYMENT" >> $GITHUB_OUTPUT
           echo "stacks_to_deploy=$STACKS_TO_DEPLOY" >> $GITHUB_OUTPUT
         env:
@@ -608,6 +652,44 @@ jobs:
         with:
           role-to-assume: arn:aws:iam::188701360969:role/batbern-staging-github-actions-role
           aws-region: ${{ env.AWS_REGION }}
+
+      # First push of a new service's image (decided 2026-11-22): Layer 0 (CICD stack) has just
+      # created its ECR repository, so the image build.yml handed over as an artifact is pushed
+      # now, before Layer 4 deploys the service. Fails loudly when the artifact is missing.
+      - name: Download first-push images
+        if: steps.prepare-deployment.outputs.use_layer_deployment == 'true' && steps.prepare-deployment.outputs.first_push_services != ''
+        uses: actions/download-artifact@v8
+        with:
+          pattern: first-push-image-*
+          path: first-push
+          merge-multiple: true
+
+      - name: Login to Amazon ECR for the first push
+        id: first-push-ecr-login
+        if: steps.prepare-deployment.outputs.use_layer_deployment == 'true' && steps.prepare-deployment.outputs.first_push_services != ''
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Push first-push images to the new ECR repositories
+        if: steps.prepare-deployment.outputs.use_layer_deployment == 'true' && steps.prepare-deployment.outputs.first_push_services != ''
+        run: |
+          REGISTRY="${{ steps.first-push-ecr-login.outputs.registry }}"
+          for SERVICE in ${{ steps.prepare-deployment.outputs.first_push_services }}; do
+            ARCHIVE="first-push/${SERVICE}.tar.gz"
+            if [ ! -f "$ARCHIVE" ]; then
+              echo "::error::No first-push image for ${SERVICE} (artifact first-push-image-${SERVICE} missing): the build did not hand it over"
+              exit 1
+            fi
+            IMAGE="${REGISTRY}/batbern/${{ env.ENVIRONMENT }}/${SERVICE}:${IMAGE_TAG}"
+            gunzip -c "$ARCHIVE" | docker load
+            if ! docker image inspect "$IMAGE" >/dev/null 2>&1; then
+              echo "::error::The first-push archive of ${SERVICE} holds no image ${IMAGE}"
+              exit 1
+            fi
+            docker push "$IMAGE"
+            echo "✅ First push: $IMAGE"
+          done
+        env:
+          IMAGE_TAG: ${{ steps.image-tag.outputs.IMAGE_TAG }}
 
       - name: Deploy Layer 1 - Infrastructure
         if: steps.prepare-deployment.outputs.use_layer_deployment == 'true'
@@ -804,6 +886,47 @@ jobs:
           role-to-assume: arn:aws:iam::188701360969:role/batbern-staging-github-actions-role
           aws-region: ${{ env.AWS_REGION }}
 
+      # Before the gateway: a Service Connect client resolves only the endpoints that existed when
+      # its tasks started, so the gateway (4.6, redeployed with AGENT_SERVICE_URL) must start
+      # after agent-service registered `agent:8080`.
+      - name: Deploy Layer 4.5 - Agent Service
+        id: deploy-agent
+        if: steps.prepare-deployment.outputs.use_layer_deployment == 'true'
+        continue-on-error: true
+        timeout-minutes: 25
+        working-directory: ./infrastructure
+        run: |
+          echo "🏗️  Layer 4.5: Agent Service"
+          npm run deploy:staging:layer4-agent-service --context version=${{ github.sha }}
+        env:
+          IMAGE_TAG: ${{ steps.image-tag.outputs.IMAGE_TAG }}
+
+      - name: Cleanup stuck Agent Service deployment
+        if: steps.deploy-agent.outcome == 'failure'
+        run: |
+          STACK="BATbern-staging-AgentService"
+          STATUS=$(aws cloudformation describe-stacks --stack-name "$STACK" --region ${{ env.AWS_REGION }} --query 'Stacks[0].StackStatus' --output text 2>/dev/null || echo "UNKNOWN")
+          echo "⚠️  Agent Service deploy failed. Stack status: $STATUS"
+          if [[ "$STATUS" == *"IN_PROGRESS"* ]]; then
+            echo "Stack is stuck — cancelling update..."
+            aws cloudformation cancel-update-stack --stack-name "$STACK" --region ${{ env.AWS_REGION }} 2>/dev/null || true
+            timeout 120 aws cloudformation wait stack-rollback-complete --stack-name "$STACK" --region ${{ env.AWS_REGION }} 2>/dev/null || \
+            aws cloudformation continue-update-rollback --stack-name "$STACK" --resources-to-skip ServiceD69D759B --region ${{ env.AWS_REGION }} 2>/dev/null || true
+            echo "✅ Stack recovered"
+          elif [[ "$STATUS" == *"FAILED"* ]]; then
+            aws cloudformation continue-update-rollback --stack-name "$STACK" --resources-to-skip ServiceD69D759B --region ${{ env.AWS_REGION }} 2>/dev/null || true
+            echo "✅ Stack recovered"
+          else
+            echo "ℹ️  Stack not stuck ($STATUS) — CDK error, no cleanup needed"
+          fi
+
+      - name: Re-authenticate after Agent Service
+        if: steps.prepare-deployment.outputs.use_layer_deployment == 'true'
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::188701360969:role/batbern-staging-github-actions-role
+          aws-region: ${{ env.AWS_REGION }}
+
       - name: Deploy Layer 4.6 - API Gateway Service
         id: deploy-gateway
         if: steps.prepare-deployment.outputs.use_layer_deployment == 'true'
@@ -845,6 +968,7 @@ jobs:
           [ "${{ steps.deploy-company.outcome }}" = "failure" ] && FAILED="$FAILED CompanyManagement"
           [ "${{ steps.deploy-event.outcome }}" = "failure" ] && FAILED="$FAILED EventManagement"
           [ "${{ steps.deploy-partner.outcome }}" = "failure" ] && FAILED="$FAILED PartnerCoordination"
+          [ "${{ steps.deploy-agent.outcome }}" = "failure" ] && FAILED="$FAILED AgentService"
           [ "${{ steps.deploy-gateway.outcome }}" = "failure" ] && FAILED="$FAILED ApiGateway"
           if [ -n "$FAILED" ]; then
             echo "::warning::The following services failed to deploy (stacks auto-recovered):$FAILED"
@@ -939,6 +1063,23 @@ jobs:
           role-to-assume: arn:aws:iam::188701360969:role/batbern-staging-github-actions-role
           aws-region: ${{ env.AWS_REGION }}
 
+      - name: Selective Deploy - Agent Service
+        if: steps.deployment-strategy.outputs.code_only != 'true' && steps.prepare-deployment.outputs.use_layer_deployment != 'true' && (contains(steps.prepare-deployment.outputs.stacks_to_deploy, 'BATbern-staging-AgentService') || steps.changes.outputs.changed_services == 'all-services')
+        timeout-minutes: 25
+        working-directory: ./infrastructure
+        run: |
+          echo "🎯 Selective deployment: Agent Service"
+          npm run deploy:staging:layer4-agent-service --context version=${{ github.sha }}
+        env:
+          IMAGE_TAG: ${{ steps.image-tag.outputs.IMAGE_TAG }}
+
+      - name: Re-authenticate after Agent Service (selective)
+        if: steps.deployment-strategy.outputs.code_only != 'true' && steps.prepare-deployment.outputs.use_layer_deployment != 'true' && (contains(steps.prepare-deployment.outputs.stacks_to_deploy, 'BATbern-staging-AgentService') || steps.changes.outputs.changed_services == 'all-services')
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::188701360969:role/batbern-staging-github-actions-role
+          aws-region: ${{ env.AWS_REGION }}
+
       - name: Selective Deploy - API Gateway Service
         if: steps.deployment-strategy.outputs.code_only != 'true' && steps.prepare-deployment.outputs.use_layer_deployment != 'true' && (contains(steps.changes.outputs.changed_services, 'api-gateway') || steps.changes.outputs.changed_services == 'all-services')
         timeout-minutes: 25
@@ -992,7 +1133,7 @@ jobs:
 
       - name: Wait for ECS services to stabilize
         if: steps.deployment-strategy.outputs.code_only != 'true'
-        # All four services by their real names (BATbern-staging-<Service>-Service<hash>); the
+        # All five services by their real names (BATbern-staging-<Service>-Service<hash>); the
         # inline version asked for `event-management-service` etc., which ECS reports as
         # MISSING, so it waited for nothing and never covered the API gateway.
         run: ./scripts/ci/wait-ecs-services-stable.sh "${{ env.ENVIRONMENT }}"

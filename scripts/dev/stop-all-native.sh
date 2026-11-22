@@ -131,6 +131,7 @@ main() {
     stop_service "api-gateway"
     stop_service "company-user-management"
     stop_service "event-management"
+    stop_service "agent"
     stop_service "partner-coordination"
 
     # Stop infrastructure services (unless --keep-tunnel is specified)

@@ -353,6 +353,8 @@ function logGroupForAlarm(alarmName: string): string {
     ['EventManagement', 'event-management'],
     ['PartnerCoordination', 'partner-coordination'],
     ['CompanyManagement', 'company-user-management'],
+    // With its dashes: the agent-service alarms carry the display name "Agent" (agent-service-stack.ts)
+    ['-Agent-', 'agent'],
   ].find(([token]) => alarmName.includes(token));
   return `/aws/ecs/BATbern-${env}/${service ? service[1] : 'api-gateway'}`;
 }
@@ -592,7 +594,7 @@ function getLabels(alarm: CloudWatchAlarm): string[] {
   // Platform Stability Improvements (Phase 3): Add service attribution label
   // Extract service name from alarm (e.g., "batbern-staging-EventManagement-High-Memory" → "service:event-management")
   const serviceMatch = alarm.AlarmName.match(
-    /-(EventManagement|PartnerCoordination|CompanyManagement|ApiGatewayService)-/
+    /-(EventManagement|PartnerCoordination|CompanyManagement|Agent|ApiGatewayService)-/
   );
   if (serviceMatch) {
     const serviceName = serviceMatch[1]

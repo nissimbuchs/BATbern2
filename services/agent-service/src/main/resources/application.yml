@@ -1,0 +1,146 @@
+server:
+  port: 8080
+  compression:
+    enabled: false
+
+spring:
+  application:
+    name: agent-service
+
+  # Jackson 2 converter, as every other service (Epic 13 compat flag)
+  http:
+    converters:
+      preferred-json-mapper: jackson2
+
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/batbern}
+    username: ${DATABASE_USERNAME:batbern}
+    password: ${DATABASE_PASSWORD:changeme}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      # One task, one read endpoint: a small pool keeps the shared database's connection budget
+      maximum-pool-size: 5
+      minimum-idle: 1
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate # Flyway owns the schema
+    show-sql: false
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+
+  # Own history table and folder in the shared database. Baseline 0: the shared schema is not
+  # empty, so Flyway baselines first; with the default baseline 1 it would skip V1.
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    baseline-version: 0
+    out-of-order: false
+    validate-on-migrate: true
+    clean-disabled: true
+    locations: classpath:db/agent-migration
+    table: flyway_schema_history_agent
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${COGNITO_ISSUER_URI:https://cognito-idp.${AWS_REGION:eu-central-1}.amazonaws.com/${COGNITO_USER_POOL_ID:}}
+          jwk-set-uri: ${COGNITO_JWK_SET_URI:https://cognito-idp.${AWS_REGION:eu-central-1}.amazonaws.com/${COGNITO_USER_POOL_ID:}/.well-known/jwks.json}
+
+# The agent switch of agent-service. Off: the service runs dark (story 1); nothing in it acts.
+# The organizer-facing switch, allowlist and delegate live in CUMS (/api/v1/agent-settings).
+agent:
+  enabled: ${AGENT_ENABLED:false}
+
+aws:
+  region: ${AWS_REGION:eu-central-1}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: when-authorized
+      probes:
+        enabled: true
+  metrics:
+    export:
+      cloudwatch2:
+        enabled: ${CLOUDWATCH_METRICS_ENABLED:false}
+  health:
+    livenessState:
+      enabled: true
+    readinessState:
+      enabled: true
+  info:
+    env:
+      enabled: true
+    git:
+      mode: full
+    build:
+      enabled: true
+
+info:
+  app:
+    name: ${spring.application.name}
+    description: Agent Service
+    version: ${build.version:1.0.0}
+
+logging:
+  level:
+    root: INFO
+    # INFO by default; opt IN to DEBUG (#990)
+    ch.batbern: ${LOG_LEVEL:INFO}
+    org.springframework.web: INFO
+    # INFO: Security DEBUG logs every request URL (#1184)
+    org.springframework.security: INFO
+  pattern:
+    # %wEx: the masking throwable converter of logback-spring.xml (#1202)
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n%wEx"
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
+---
+# Local profile (native development, make dev-native-up)
+spring:
+  config:
+    activate:
+      on-profile: local
+
+logging:
+  level:
+    ch.batbern: DEBUG
+
+---
+# Test profile (Testcontainers; AbstractIntegrationTest sets the datasource)
+spring:
+  config:
+    activate:
+      on-profile: test
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          # Never fetched: tests authenticate through MockMvc's jwt() post-processor
+          jwk-set-uri: https://jwks.example.invalid/keys
+
+logging:
+  level:
+    ch.batbern: DEBUG
+    org.testcontainers: INFO
+    com.github.dockerjava: WARN

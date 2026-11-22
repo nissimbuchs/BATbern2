@@ -1,0 +1,16 @@
+# Test profile of agent-service. Shadows shared-kernel's testFixtures application-test.yml, which
+# points Flyway at classpath:db/migration (the other services' folder) and configures a cache.
+# The datasource comes from AbstractIntegrationTest (Testcontainers PostgreSQL).
+spring:
+  datasource:
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+  flyway:
+    enabled: true
+    locations: classpath:db/agent-migration
+    table: flyway_schema_history_agent
+    baseline-on-migrate: true
+    baseline-version: 0
