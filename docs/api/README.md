@@ -13,8 +13,14 @@ from them.
 - `agent-api.openapi.yml`: the read API of agent-service (agentic interaction, epic agent
   runtime) under `/api/v1/agent/**`, routed to agent-service by its own gateway prefix (with the
   slash; `/agent-settings` stays CUMS). Organizers only; a Cognito token is required and an agent
-  token is refused (401). Story 1: `GET /agent/runs` (`listAgentRuns`, 0-based `page`), empty while
-  the service runs dark. No frontend types yet (no UI in epic 1).
+  token is refused (401); a token carrying `act` is refused (403) even if a decoder accepted it.
+  Story 1: `GET /agent/runs` (`listAgentRuns`, 0-based `page`), empty while the service runs dark.
+  Story 9: the decision log of a run, `GET /agent/runs/{runId}` (detail with totals and inbound
+  messages) and the paged `…/steps`, `…/model-calls`, `…/tool-calls`, `…/verdicts` (cited
+  precedents resolved, the approval of a pending verdict), plus `…/model-calls/{modelCallId}` with
+  the full prompt and answer (AD-9: every exchange in full; organizers only). `{runId}` and
+  `{modelCallId}` are UUIDs under the ADR-003 amendment (lint exceptions X4 and X1). Frontend types:
+  `web-frontend/src/types/generated/agent-api.types.ts` (no UI in epic 1).
 - `internal/`: the service-to-service operations under `/internal/**` (Story 17.0b2), one spec per
   provider (`cums-`, `ems-`, `pcs-internal.openapi.yml`). Not public: the gateway denies
   `/internal/**`, and the public tooling (frontend path check, type generation, API similarity, ZAP

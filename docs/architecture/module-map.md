@@ -77,7 +77,11 @@ CUMS (identity) is upstream of all. EMS (event) is upstream of PCS (partners).
   (`config/AgentProperties.Limits`) holds the caps and the gate's two values; `loop/AgentLoop` checks
   steps, run tokens and the daily budget before every model call (tokens read by `loop/TokenLedger`
   from `agent_model_calls`), the reply cap is the `gate/GateCaps` bean `gate/ReplyCap`, and a reached
-  limit ends the run `CAP_REACHED` with the `run/RunLimit` as end detail. Open naming point for the epic's
+  limit ends the run `CAP_REACHED` with the `run/RunLimit` as end detail. The read API (story 9, R8):
+  `run/AgentRunController` serves every `GET` of `agent-api.openapi.yml` (runs, a run's detail, steps,
+  model calls with the full prompt on the detail only, tool calls, verdicts with resolved precedents
+  and approvals) from `run/RunLogReadService`, read only, to organizers as persons
+  (`security/ConsoleAccess`: organizer role, no `act` claim). Open naming point for the epic's
   refactor sweep: CUMS already owns `agent_settings`, `agent_grants` and `agent_allowlist`, so
   "agent_* tables belong to agent-service" (AD-9) needs a sharper rule.
 - Downstream must react to an upstream change? The upstream calls it through an `/internal`

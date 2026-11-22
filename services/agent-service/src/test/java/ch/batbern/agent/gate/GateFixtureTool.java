@@ -32,7 +32,7 @@ public final class GateFixtureTool implements AgentTool {
 
     /** What a real tool would resolve as organizers (an organizer alias). */
     static final Set<String> ORGANIZER_ADDRESSES = Set.of("organizers@example.com");
-    static final int PAST_EVENT_LIMIT = 3;
+    public static final int PAST_EVENT_LIMIT = 3;
     private static final ObjectMapper JSON = new ObjectMapper();
 
     private final String name;
@@ -61,7 +61,7 @@ public final class GateFixtureTool implements AgentTool {
     }
 
     /** {@code binding}, no mail. */
-    static GateFixtureTool binding() {
+    public static GateFixtureTool binding() {
         return new GateFixtureTool("createCompany", OperationClass.BINDING, "POST /companies", false);
     }
 

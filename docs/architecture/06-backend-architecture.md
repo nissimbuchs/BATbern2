@@ -50,8 +50,9 @@ routes the prefix with its slash (`/api/v1/agent-settings` stays CUMS) to `http:
 token is refused with 401), takes roles from `custom:role` without the DB fallback (it reads no
 other service's tables), scans only `ch.batbern.agent`, and migrates its own folder
 `db/agent-migration` into `flyway_schema_history_agent` with baseline 0 (shared-kernel ships a
-`V1` under `db/migration`). Story 1 ships it dark: `agent.enabled=false` (`AGENT_ENABLED`), one
-read endpoint `GET /api/v1/agent/runs` (organizers, `agent-api.openapi.yml`).
+`V1` under `db/migration`). Story 1 ships it dark: `agent.enabled=false` (`AGENT_ENABLED`), with
+the read endpoint `GET /api/v1/agent/runs` (organizers, `agent-api.openapi.yml`; story 9 adds the
+decision log of a run, below).
 
 The agent loop (story 2, AD-14): `AgentLoop` is the only caller of `LlmPort`, whose types map 1:1
 onto the Messages API tool use of `anthropic-java` (system, user/assistant messages of text,
@@ -103,6 +104,24 @@ limit ends the run HANDED_TO_ORGANIZERS with end reason `CAP_REACHED` and end de
 `RUN_TOKENS`, `REPLIES` or `DAILY_TOKENS` (V6, which folds story 2's `STEP_LIMIT` into it), a status
 only, no mail; the application log names the run id, the limit, the amount used and the configured
 value, nothing else.
+
+The read API (story 9, R8, AD-9): organizers read the decision log through `agent-api.openapi.yml`,
+all `GET` under `/api/v1/agent/runs`: the run list (with trigger, end reason, end detail, principal
+kind and the CUMS grant's run id), one run's detail (totals over its log, its inbound messages), and
+four paged sub-collections of a run, ordered as the run happened: steps (with their model and tool
+call ids), model calls (status, model, stop reason, chosen tools, the four token counts), tool calls
+(input, output or error, the verdict id of a gated call) and verdicts (class, outcome, rule,
+confidence, inputs, the cited precedents resolved to the approval, undo or past event they name, and
+the approval of a pending verdict). The full prompt and answer are only on the model-call detail
+`GET /agent/runs/{runId}/model-calls/{modelCallId}`: every exchange is logged in full (AD-9), the
+organizers may see it, and a page of calls stays small. `run/RunLogReadService` reads the tables
+with SQL, read only; an unknown run, or a model call asked for under another run, answers 404
+`ERR_NOT_FOUND` in the shared `ErrorResponse`. Access is the filter chain's `GET /api/v1/agent/**`
+organizer rule plus `@PreAuthorize(ConsoleAccess.ORGANIZER_PERSON)` on every operation: organizer
+role and no `act` claim, so a token carrying `act` is refused (403) even past the decoder, which
+already refuses agent tokens (401). Every 401 and 403 carries the shared `ErrorResponse`
+(`security/SecurityErrorWriter`, `ERR_UNAUTHORIZED`, `ERR_FORBIDDEN`), and each read is one
+REPEATABLE READ transaction, so a page and its total come from one snapshot of a running run.
 
 The run's identity (story 4, R2, AD-3, AD-15): a run acts only with a CUMS-minted agent token.
 `AgentRunRequest` carries a `GrantSource`, which fixes the run's trigger: `OrganizerLogin` (the

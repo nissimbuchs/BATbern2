@@ -1,6 +1,7 @@
 package ch.batbern.agent.exception;
 
 import ch.batbern.shared.dto.ErrorResponse;
+import ch.batbern.shared.exception.NotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
 import org.springframework.http.HttpStatus;
@@ -12,7 +13,7 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 
 import java.time.Instant;
 
-/** Maps a bad request parameter to the shared {@link ErrorResponse} (400). */
+/** Maps a bad request parameter (400) and an unknown run or call (404) to the shared {@link ErrorResponse}. */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -27,6 +28,21 @@ public class GlobalExceptionHandler {
                 .error(status.getReasonPhrase())
                 .errorCode("ERR_VALIDATION")
                 .message("Invalid request parameter")
+                .severity("LOW")
+                .build());
+    }
+
+    /** An unknown run, or a model call not of the run: 404 {@code ERR_NOT_FOUND}. */
+    @ExceptionHandler(NotFoundException.class)
+    public ResponseEntity<ErrorResponse> notFound(NotFoundException e, HttpServletRequest request) {
+        HttpStatus status = HttpStatus.NOT_FOUND;
+        return ResponseEntity.status(status).body(ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .path(request.getRequestURI())
+                .status(status.value())
+                .error(status.getReasonPhrase())
+                .errorCode(e.getErrorCode().name())
+                .message(e.getMessage())
                 .severity("LOW")
                 .build());
     }

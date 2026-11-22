@@ -1,5 +1,6 @@
 package ch.batbern.agent.config;
 
+import ch.batbern.agent.security.SecurityErrorWriter;
 import ch.batbern.shared.security.BatbernJwtDecoder;
 import ch.batbern.shared.security.JwtRolesConverter;
 import ch.batbern.shared.security.TokenKind;
@@ -57,18 +58,26 @@ public class SecurityConfig {
     @Profile("!local")
     public SecurityFilterChain productionFilterChain(HttpSecurity http,
                                                      JwtDecoder jwtDecoder,
-                                                     JwtAuthenticationConverter jwtAuthenticationConverter)
+                                                     JwtAuthenticationConverter jwtAuthenticationConverter,
+                                                     SecurityErrorWriter errors)
             throws Exception {
         http
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(authz -> authz
                 .requestMatchers("/actuator/health", "/actuator/health/**", "/actuator/info").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/v1/agent/runs").hasRole("ORGANIZER")
+                // The whole read API of agent-api.openapi.yml; each operation checks again, and
+                // refuses a token carrying act (ConsoleAccess)
+                .requestMatchers(HttpMethod.GET, "/api/v1/agent/**").hasRole("ORGANIZER")
                 .anyRequest().authenticated())
-            .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> jwt
-                .decoder(jwtDecoder)
-                .jwtAuthenticationConverter(jwtAuthenticationConverter)));
+            // 401 and 403 answer with the shared ErrorResponse, as the spec declares
+            .exceptionHandling(handling -> handling.authenticationEntryPoint(errors).accessDeniedHandler(errors))
+            .oauth2ResourceServer(oauth2 -> oauth2
+                .authenticationEntryPoint(errors)
+                .accessDeniedHandler(errors)
+                .jwt(jwt -> jwt
+                    .decoder(jwtDecoder)
+                    .jwtAuthenticationConverter(jwtAuthenticationConverter)));
         return http.build();
     }
 

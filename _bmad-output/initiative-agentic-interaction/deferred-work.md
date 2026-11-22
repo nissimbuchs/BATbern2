@@ -73,3 +73,15 @@
 - source_plan: `_bmad-output/initiative-agentic-interaction/tickets/epic-agent-runtime/tickets/story-caps-and-the-daily-budget-stop-a-run-and-hand-it-to-the-orga-plan.md`
   summary: Day-boundary tests (daily budget, gate per-day count) use the real system clock, so a run across midnight Europe/Zurich could flake.
   evidence: Review finding on RunLimitsScenarios.should_stop_when_dailyBudgetReached; the window is the test's seconds around midnight; a fixed test Clock bean would settle it.
+- source_plan: `_bmad-output/initiative-agentic-interaction/tickets/epic-agent-runtime/tickets/story-organizers-read-every-run-step-and-verdict-through-the-conso-plan.md`
+  summary: Resolved by story 9, not open: the story-1 entry "Add a post-deploy Bruno check for GET /api/v1/agent/runs (organizer 200, speaker 403)" is delivered by bruno-tests/agent-api (01 organizer 200, 02 speaker 403, 03 unknown run 404), registered as a production collection.
+  evidence: Entries are append-only, so this line records the closure. The collection was parse-checked with bru (no "Skipping invalid file"); it has not run against a live service yet (local dev was down, staging runs old code until the epic's deploy).
+- source_plan: `_bmad-output/initiative-agentic-interaction/tickets/epic-agent-runtime/tickets/story-organizers-read-every-run-step-and-verdict-through-the-conso-plan.md`
+  summary: No cross-run approvals inbox (GET of every PENDING approval across runs); pending approvals are readable per run only (embedded in each verdict, counted in the run detail). epic-oversight-console designs the inbox with its approve and deny actions.
+  evidence: Plan decision of story 9; the actions on approvals are out of epic 1 (epic Boundaries).
+- source_plan: `_bmad-output/initiative-agentic-interaction/tickets/epic-agent-runtime/tickets/story-organizers-read-every-run-step-and-verdict-through-the-conso-plan.md`
+  summary: The run detail returns all inbound messages of a run unpaged; fine while a run gets one message, revisit if a chat run ever holds many.
+  evidence: RunLogReadService.inboundMessages reads every row of the run; sub-collections are paged, this list is not.
+- source_plan: `_bmad-output/initiative-agentic-interaction/tickets/epic-agent-runtime/tickets/story-organizers-read-every-run-step-and-verdict-through-the-conso-plan.md`
+  summary: Only agent-service answers 401/403 with the shared ErrorResponse (security/SecurityErrorWriter); EMS, CUMS and PCS still answer filter-chain refusals with an empty body although their specs declare ErrorResponse.
+  evidence: grep finds no AuthenticationEntryPoint or AccessDeniedHandler in the other services (2026-11-22); EMS maps only method-level AccessDeniedException in its advice.
