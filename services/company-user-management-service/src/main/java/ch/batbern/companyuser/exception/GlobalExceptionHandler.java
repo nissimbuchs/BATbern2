@@ -236,8 +236,9 @@ public class GlobalExceptionHandler {
     }
 
     /**
-     * Agent identity, story 5: an agent grant or eligibility request refused, with its status
-     * (400, 401, 403) and the reason as {@code details.code}. The message never holds a secret.
+     * Agent identity, stories 5 and 6: an agent grant, eligibility or token request refused, with its
+     * status (400, 401, 403, 503) and the reason as {@code details.code}. The message never holds a
+     * secret.
      */
     @ExceptionHandler(AgentRequestRefusedException.class)
     public ResponseEntity<ErrorResponse> handleAgentRequestRefusedException(
@@ -251,10 +252,18 @@ public class GlobalExceptionHandler {
                 .error(ex.getStatus().getReasonPhrase())
                 .message(ex.getMessage())
                 .correlationId(CorrelationIdGenerator.current())
-                .severity(ex.getStatus() == HttpStatus.UNAUTHORIZED ? "MEDIUM" : "LOW")
+                .severity(agentRefusalSeverity(ex.getStatus()))
                 .details(Map.of("code", ex.getCode()))
                 .build();
         return ResponseEntity.status(ex.getStatus()).body(error);
+    }
+
+    /** 503 (no signing key: a configuration fault) HIGH, 401 MEDIUM, policy refusals LOW. */
+    private static String agentRefusalSeverity(HttpStatus status) {
+        if (status.is5xxServerError()) {
+            return "HIGH";
+        }
+        return status == HttpStatus.UNAUTHORIZED ? "MEDIUM" : "LOW";
     }
 
     /**

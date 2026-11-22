@@ -121,7 +121,7 @@ class JwtStompInterceptorTest {
     void should_acceptAgentConnect_when_realSharedDecoderVerifiesAgentKey() {
         // Agentic interaction 0.1: EMS's real decoder, not the mock; agent kind on via the test key.
         JwtStompInterceptor real = new JwtStompInterceptor(realSharedDecoder());
-        String token = TestTokens.agentToken("agent-sub-1", "agent.planner", "run-1", "marco.organizer");
+        String token = TestTokens.agentToken("agent-sub-1", "agent.planner", "run-1", "organizer");
 
         Message<?> result = real.preSend(buildStompConnectMessage("Bearer " + token), channel);
 

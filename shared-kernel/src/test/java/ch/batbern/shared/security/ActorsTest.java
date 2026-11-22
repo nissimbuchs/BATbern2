@@ -32,7 +32,7 @@ class ActorsTest {
     private static final String SUB = "0d6f4c1e-agent-sub";
     private static final String USERNAME = "hong.an";
     private static final String RUN = "run-7f3a";
-    private static final String PRINCIPAL = "organizer-assistant";
+    private static final String PRINCIPAL = "organizer";
 
     private static final BatbernJwtDecoder DECODER = BatbernJwtDecoder.builder()
             .agent((RSAPublicKey) TestTokens.agentKeyPair().getPublic())

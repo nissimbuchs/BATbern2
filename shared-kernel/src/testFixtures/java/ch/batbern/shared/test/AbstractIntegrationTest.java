@@ -100,5 +100,8 @@ public abstract class AbstractIntegrationTest {
         // Agentic interaction 0.1: every IT context runs with the agent token kind on, as production
         // will; the key pair is generated per JVM by TestTokens, so agentToken(...) verifies here.
         registry.add("agent.jwt.public-key", TestTokens::agentPublicKeyPem);
+        // Story 0.6: the matching private key, read by CUMS only (POST /internal/agent-tokens), so a
+        // token CUMS mints in an IT verifies with the decoder of every service.
+        registry.add("agent.jwt.private-key", TestTokens::agentPrivateKeyPem);
     }
 }

@@ -126,7 +126,7 @@ class AgentSettingsControllerIntegrationTest extends AbstractIntegrationTest {
     }
 
     private static String agentBearer(String sub, String username) {
-        return "Bearer " + TestTokens.agentToken(sub, username, "run-agent-settings-1", "organizer-assistant");
+        return "Bearer " + TestTokens.agentToken(sub, username, "run-agent-settings-1", "organizer");
     }
 
     private static MockHttpServletRequestBuilder patchJson(String body) {

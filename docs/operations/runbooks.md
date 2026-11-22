@@ -357,10 +357,10 @@ one-time owner step after the SecretsStack is deployed.
 
 | What | Where | Container env / Spring property | On |
 |---|---|---|---|
-| Private key, PKCS#8 PEM | secret `batbern/staging/agent/signing-private-key` | `AGENT_JWT_PRIVATE_KEY` / `agent.jwt.private-key` | CUMS only |
+| Private key, PKCS#8 PEM | secret `batbern/staging/agent/signing-private-key` | `AGENT_JWT_PRIVATE_KEY` / `agent.jwt.private-key` (signs in `/internal/agent-tokens`) | CUMS only |
 | Public key, SPKI PEM | SSM String parameter `/batbern/staging/agent/jwt-public-key` | `AGENT_JWT_PUBLIC_KEY` / `agent.jwt.public-key` | gateway, CUMS, EMS, PCS |
 | EMS caller secret (generated) | secret `batbern/staging/agent/ems-caller-secret` | `AGENT_CALLERS_EMS_SECRET` / `agent.callers.ems.secret` (`/internal/agent-grants`, `/internal/agent-eligibility`) | CUMS, EMS |
-| Agent-service caller secret (generated) | secret `batbern/staging/agent/agent-service-caller-secret` | `AGENT_CALLERS_AGENT_SERVICE_SECRET` / `agent.callers.agent-service.secret` (`/internal/agent-grants`) | CUMS only |
+| Agent-service caller secret (generated) | secret `batbern/staging/agent/agent-service-caller-secret` | `AGENT_CALLERS_AGENT_SERVICE_SECRET` / `agent.callers.agent-service.secret` (`/internal/agent-grants`, `/internal/agent-tokens`) | CUMS only |
 
 **Turn agent tokens on:**
 
@@ -376,7 +376,13 @@ one-time owner step after the SecretsStack is deployed.
    `aws ecs update-service --force-new-deployment` loop. ECS reads secrets at task start only.
 5. Check each service's start log for `JWT decoder accepts token kinds`: `[COGNITO, WATCH, AGENT]`
    for company-user-management, event-management and api-gateway, `[COGNITO, AGENT]` for
-   partner-coordination.
+   partner-coordination. company-user-management must no longer log
+   `Agent token minting is off`.
+
+While the private key is `none` (or unset, blank), CUMS starts normally and answers every valid,
+allowed `POST /internal/agent-tokens` with 503 `AGENT_SIGNING_KEY_MISSING` (logged
+`Agent token refused: ... code=AGENT_SIGNING_KEY_MISSING`); a private key that is not an RSA PKCS#8
+key fails CUMS startup with `agent.jwt.private-key is not an RSA private key`.
 
 **The script refuses** when either value is not `none`: a key is already there. `--force` replaces
 it; every agent token signed with the old key stops verifying once the services restart.

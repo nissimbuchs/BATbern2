@@ -21,10 +21,11 @@ CUMS (identity) is upstream of all. EMS (event) is upstream of PCS (partners).
   `SecurityContextHelper.getCurrentActor()` / `actorOr(job)`; never write a bare `system`.
   Identity and ownership read the username, never the actor (`requester_username`,
   `UserOwnership`, `findBy…Username`). The EMS STOMP principal of an agent is its actor.
-- The agent service calls no `/internal/**` except CUMS `/internal/agent-*` (agent tokens, and
-  agent grants for delegate requests), checked by its caller secret (AD-2, epic decision
-  2026-11-21). EMS calls CUMS `/internal/agent-grants` (mail handoff) and
-  `/internal/agent-eligibility` with its own caller secret. The `/internal/agent-*` operations are
+- The agent service calls no `/internal/**` except CUMS `/internal/agent-*` (agent tokens,
+  `/internal/agent-tokens`, and agent grants for delegate requests), checked by its caller secret
+  (AD-2, epic decision 2026-11-21). EMS calls CUMS `/internal/agent-grants` (mail handoff) and
+  `/internal/agent-eligibility` with its own caller secret; EMS never mints agent tokens
+  (AD-3). The `/internal/agent-*` operations are
   the only ones that check who calls: each verifies the `X-Agent-Caller-Secret` header itself
   (`AgentCallerSecrets`); the filter chain keeps `/internal/**` open. Everything else goes through
   the Spring gateway's public API with its delegated agent token; it never reads or writes another

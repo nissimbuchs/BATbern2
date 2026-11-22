@@ -90,7 +90,7 @@ class AgentAttributionIntegrationTest extends AbstractIntegrationTest {
     }
 
     private static String bearer(String sub, String username) {
-        return "Bearer " + TestTokens.agentToken(sub, username, RUN, "organizer-assistant");
+        return "Bearer " + TestTokens.agentToken(sub, username, RUN, "organizer");
     }
 
     private String createdByOf(String displayName) {

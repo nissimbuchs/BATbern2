@@ -91,7 +91,7 @@ class PcsProductionSecurityFilterChainTest {
     @Test
     @DisplayName("should_reachService_when_callerHasValidAgentToken")
     void should_reachService_when_callerHasValidAgentToken() throws Exception {
-        String token = TestTokens.agentToken("agent-sub-1", "agent.planner", "run-1", "test.organizer");
+        String token = TestTokens.agentToken("agent-sub-1", "agent.planner", "run-1", "organizer");
         mockMvc.perform(get(AUTHENTICATED_ONLY_PATH).header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk());
     }
@@ -110,7 +110,7 @@ class PcsProductionSecurityFilterChainTest {
     void should_return401_when_callerSendsValidWatchToken() throws Exception {
         // Valid HS256 with the configured secret: gateway, CUMS and EMS accept it, PCS does not.
         String token = TestTokens.watchToken(WATCH_TEST_SECRET, "test.organizer", "ORGANIZER");
-        String agent = TestTokens.agentToken("agent-sub-1", "agent.planner", "run-1", "test.organizer");
+        String agent = TestTokens.agentToken("agent-sub-1", "agent.planner", "run-1", "organizer");
         mockMvc.perform(get(AUTHENTICATED_ONLY_PATH).header("Authorization", "Bearer " + agent))
                 .andExpect(status().isOk()); // positive control: the path is reachable with a token
         mockMvc.perform(get(AUTHENTICATED_ONLY_PATH).header("Authorization", "Bearer " + token))

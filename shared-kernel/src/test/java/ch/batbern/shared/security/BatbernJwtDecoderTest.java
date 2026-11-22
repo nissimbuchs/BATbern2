@@ -84,7 +84,7 @@ class BatbernJwtDecoderTest {
     }
 
     private static String agentToken() {
-        return TestTokens.agentToken("agent-sub-1", "agent.planner", "run-42", "nissim.buchs");
+        return TestTokens.agentToken("agent-sub-1", "agent.planner", "run-42", "organizer");
     }
 
     @Nested
@@ -181,7 +181,7 @@ class BatbernJwtDecoderTest {
             assertThat(jwt.getSubject()).isEqualTo("agent-sub-1");
             assertThat(jwt.getClaimAsString("custom:username")).isEqualTo("agent.planner");
             assertThat(jwt.getClaimAsMap("act")).containsEntry("run", "run-42")
-                    .containsEntry("principal", "nissim.buchs");
+                    .containsEntry("principal", "organizer");
             assertThat(cognito.calls).isEmpty();
         }
 

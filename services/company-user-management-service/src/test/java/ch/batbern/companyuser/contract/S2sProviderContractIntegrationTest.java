@@ -113,6 +113,7 @@ class S2sProviderContractIntegrationTest extends AbstractIntegrationTest {
         "POST, /internal/company-references/counts",
         "POST, /internal/agent-grants",
         "GET,  /internal/agent-eligibility",
+        "POST, /internal/agent-tokens",
     })
     @DisplayName("internal spec examples match their schema")
     void should_haveValidExamples_forInternalOperations(String method, String path) {

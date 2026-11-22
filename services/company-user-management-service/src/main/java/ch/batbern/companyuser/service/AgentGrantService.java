@@ -189,11 +189,12 @@ public class AgentGrantService {
     }
 
     /**
-     * The seam story 6 mints agent tokens against: the grant of {@code runId} when it has not expired
-     * and {@code grantSecret} is its secret (hash compared in constant time); empty otherwise, also for
-     * {@code null} arguments. It does not re-check the switch or the allowlist: minting must do that
-     * itself ({@link AgentSettingsService#isEnabled()}, {@link AgentSettingsService#isAllowlisted}),
-     * since either may have changed since the grant was issued.
+     * The seam {@link AgentTokenService} mints agent tokens against (story 6): the grant of
+     * {@code runId} when it has not expired and {@code grantSecret} is its secret (hash compared in
+     * constant time); empty otherwise, also for {@code null} arguments. It does not re-check the
+     * switch or the allowlist: minting must do that itself ({@link AgentSettingsService#isEnabled()},
+     * {@link AgentSettingsService#isAllowlisted}), since either may have changed since the grant was
+     * issued.
      */
     @Transactional(readOnly = true)
     public Optional<AgentGrant> findActiveGrant(String runId, String grantSecret) {

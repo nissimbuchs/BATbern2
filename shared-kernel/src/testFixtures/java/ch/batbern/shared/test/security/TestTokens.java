@@ -1,5 +1,6 @@
 package ch.batbern.shared.test.security;
 
+import ch.batbern.shared.security.AgentTokenSigner;
 import ch.batbern.shared.security.BatbernJwtDecoder;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSAlgorithm;
@@ -15,6 +16,8 @@ import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
+import java.security.interfaces.RSAPrivateKey;
+import java.time.Clock;
 import java.time.Instant;
 import java.util.Base64;
 import java.util.Date;
@@ -28,7 +31,13 @@ import java.util.function.Consumer;
  * <p>The agent key pair is generated once per JVM at runtime (RSA-2048); no private key is
  * committed anywhere. {@link #agentPublicKeyPem()} is what a test context registers as
  * {@code agent.jwt.public-key} ({@code AbstractIntegrationTest} does it for every IT), so a token
- * from {@link #agentToken} verifies there and nowhere else.
+ * from {@link #agentToken} verifies there and nowhere else; {@link #agentPrivateKeyPem()} is what it
+ * registers as {@code agent.jwt.private-key}, so CUMS mints with the key the decoder trusts.
+ *
+ * <p>Story 0.6: a default agent token ({@link #agentToken}) comes from the production signer
+ * {@link AgentTokenSigner}, the class CUMS mints with, so every service's agent-token tests prove
+ * acceptance of exactly what CUMS produces. The {@link #agent} builder stays for tokens broken on
+ * purpose (wrong key, HS256, missing or extra claims).
  */
 public final class TestTokens {
 
@@ -61,6 +70,13 @@ public final class TestTokens {
         return toPem(AGENT_KEYS);
     }
 
+    /** The agent private key as PKCS#8 PEM ({@code BEGIN PRIVATE KEY}), as CUMS reads it. */
+    public static String agentPrivateKeyPem() {
+        String base64 = Base64.getMimeEncoder(64, "\n".getBytes(StandardCharsets.US_ASCII))
+                .encodeToString(AGENT_KEYS.getPrivate().getEncoded());
+        return "-----BEGIN PRIVATE KEY-----\n" + base64 + "\n-----END PRIVATE KEY-----\n";
+    }
+
     /** {@code keyPair}'s public key as PEM with header, footer and 64-character lines. */
     public static String toPem(KeyPair keyPair) {
         String base64 = Base64.getMimeEncoder(64, "\n".getBytes(StandardCharsets.US_ASCII))
@@ -68,9 +84,14 @@ public final class TestTokens {
         return "-----BEGIN PUBLIC KEY-----\n" + base64 + "\n-----END PUBLIC KEY-----\n";
     }
 
-    /** A valid agent token signed with the agent key of this JVM. */
+    /**
+     * A valid agent token from the production signer ({@link AgentTokenSigner}) with the agent key of
+     * this JVM, living {@value #AGENT_TOKEN_LIFETIME_SECONDS} s.
+     */
     public static String agentToken(String sub, String username, String run, String principal) {
-        return agent(sub, username, run, principal).build();
+        AgentTokenSigner signer = new AgentTokenSigner((RSAPrivateKey) AGENT_KEYS.getPrivate(), Clock.systemUTC());
+        return signer.sign(sub, username, run, principal,
+                Instant.now().plusSeconds(AGENT_TOKEN_LIFETIME_SECONDS)).token();
     }
 
     /** A builder for an agent token that starts valid and can be broken on purpose. */

@@ -201,7 +201,7 @@ class EmsProductionSecurityFilterChainTest {
     @DisplayName("should_reachService_when_callerHasValidAgentToken")
     void should_reachService_when_callerHasValidAgentToken() throws Exception {
         // Agentic interaction 0.1: the shared decoder accepts an agent token signed with the configured key.
-        String token = TestTokens.agentToken("agent-sub-1", "agent.planner", "run-1", "test.organizer");
+        String token = TestTokens.agentToken("agent-sub-1", "agent.planner", "run-1", "organizer");
         mockMvc.perform(get("/api/v1/events/BATbern60/registrations").header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk());
     }

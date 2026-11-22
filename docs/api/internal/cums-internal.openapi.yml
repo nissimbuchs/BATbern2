@@ -29,9 +29,10 @@ info:
     `company-references`), implemented by every service that stores company keys
     (event-management, partner-coordination); a company merge and a rename move them.
 
-    Agent identity, story 5: `/internal/agent-grants` and `/internal/agent-eligibility` are the only
-    operations here that authenticate their caller. Each checks the header `X-Agent-Caller-Secret`
-    itself (EMS or the agent service, per operation), constant-time, before anything else; the
+    Agent identity, stories 5 and 6: `/internal/agent-grants`, `/internal/agent-eligibility` and
+    `/internal/agent-tokens` are the only operations here that authenticate their caller. Each
+    checks the header `X-Agent-Caller-Secret` itself (EMS or the agent service, per operation;
+    `/internal/agent-tokens` the agent service only), constant-time, before anything else; the
     filter chain leaves `/internal/**` open as for every other operation (epic decision
     2026-11-21, `docs/architecture/module-map.md`). One exception to "caller secret first": an
     `Authorization: Bearer` header that does not decode (expired, malformed, wrong signature) is
@@ -1125,9 +1126,9 @@ paths:
       summary: Issue a run grant for the organizer agent (agent identity, story 5)
       description: |
         A grant is one agent run for one principal, valid for at most one hour. The agent token of
-        that run (story 6) is minted only against an active grant, and minting checks the switch and
-        the allowlist again. The `grantSecret` of the answer is returned once and stored as a
-        SHA-256 hash: it is never readable again.
+        that run (story 6, `POST /internal/agent-tokens`) is minted only against an active grant,
+        and minting checks the switch and the allowlist again. The `grantSecret` of the answer is
+        returned once and stored as a SHA-256 hash: it is never readable again.
 
         The trigger decides who the principal is, never the body:
 
@@ -1364,6 +1365,149 @@ paths:
                 severity: LOW
                 details:
                   code: PRINCIPAL_NOT_ELIGIBLE
+
+  /internal/agent-tokens:
+    post:
+      operationId: mintAgentToken
+      summary: Mint a delegated agent token for an active run grant (agent identity, story 6)
+      description: |
+        The agent service exchanges a run's grant (story 5) for a short-lived agent token, which it
+        sends as `Authorization: Bearer` to the public API of every service. A token is minted per
+        write and lives at most 300 s; it never outlives its grant. Nothing is stored.
+
+        Caller: the agent service only (its caller secret); EMS never mints (AD-3). Checks in order,
+        the first failure answers, with the code in `details.code`:
+
+        1. caller secret: 401 `CALLER_SECRET_INVALID` (missing, wrong, or EMS's secret);
+        2. body: 400 `INVALID_AGENT_REQUEST` (no body, `runId` or `grantSecret` missing, blank or
+           too long, an unknown field);
+        3. switch: 403 `AGENT_SWITCHED_OFF`, checked again on every mint;
+        4. grant: 403 `GRANT_INVALID` (unknown run, wrong grant secret, expired grant);
+        5. principal: 403 `PRINCIPAL_NOT_ELIGIBLE` (no longer on the allowlist or no longer
+           ORGANIZER, or the user has no Cognito login, so no `sub`);
+        6. signing key: 503 `AGENT_SIGNING_KEY_MISSING` (`agent.jwt.private-key` unset, blank or
+           the deploy placeholder `none`): the request is valid, CUMS is not configured yet.
+
+        The token (RS256, `typ` JWT, verified with `agent.jwt.public-key`) carries exactly: `iss`
+        `batbern-agent`; `sub` the principal's Cognito sub (`user_profiles.cognito_user_id`; roles
+        are looked up by it in `role_assignments`); `custom:username` the grant's username; `act`
+        `{run: <runId>, principal: requester | organizer | organizer_delegate}`; `iat` now; `exp`
+        the earlier of `iat` + 300 s and the grant's `expiresAt`. No role claim. Every service
+        records what the token does as `agent:<runId> for <username>`.
+
+        Logged at INFO with run id, principal kind and code; never the token, the grant secret or
+        the caller secret.
+      parameters:
+        - $ref: '#/components/parameters/AgentCallerSecret'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AgentTokenRequest'
+            example:
+              runId: 3f2b8c1e-5a47-4d2e-9b61-0c7f4e8a9d15
+              grantSecret: example-grant-secret-0000000000000000000000
+      responses:
+        '200':
+          description: The token and its `exp`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentToken'
+              examples:
+                minted:
+                  value:
+                    token: eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.example-claims.example-signature
+                    expiresAt: '2026-11-22T09:05:00Z'
+        '400':
+          description: |
+            `INVALID_AGENT_REQUEST`: no body, `runId` or `grantSecret` missing, blank or too long, or
+            an unknown field. Malformed JSON is refused before the operation runs (400 without
+            `details.code`)
+          content:
+            application/json:
+              schema:
+                $ref: '../_shared.openapi.yml#/components/schemas/ErrorResponse'
+              example:
+                timestamp: '2026-11-22T09:00:00Z'
+                path: /internal/agent-tokens
+                status: 400
+                error: Bad Request
+                message: 'runId is required'
+                severity: LOW
+                details:
+                  code: INVALID_AGENT_REQUEST
+        '401':
+          description: |
+            `CALLER_SECRET_INVALID`: missing, wrong, or not the agent service's caller secret. A
+            bearer token that does not decode gets Spring's 401 without a body instead, before the
+            secret check
+          content:
+            application/json:
+              schema:
+                $ref: '../_shared.openapi.yml#/components/schemas/ErrorResponse'
+              example:
+                timestamp: '2026-11-22T09:00:00Z'
+                path: /internal/agent-tokens
+                status: 401
+                error: Unauthorized
+                message: 'Caller secret missing or invalid'
+                severity: MEDIUM
+                details:
+                  code: CALLER_SECRET_INVALID
+        '403':
+          description: '`AGENT_SWITCHED_OFF`, `GRANT_INVALID` or `PRINCIPAL_NOT_ELIGIBLE`'
+          content:
+            application/json:
+              schema:
+                $ref: '../_shared.openapi.yml#/components/schemas/ErrorResponse'
+              examples:
+                switchedOff:
+                  value:
+                    timestamp: '2026-11-22T09:00:00Z'
+                    path: /internal/agent-tokens
+                    status: 403
+                    error: Forbidden
+                    message: 'The organizer agent is switched off'
+                    severity: LOW
+                    details:
+                      code: AGENT_SWITCHED_OFF
+                grantInvalid:
+                  value:
+                    timestamp: '2026-11-22T09:00:00Z'
+                    path: /internal/agent-tokens
+                    status: 403
+                    error: Forbidden
+                    message: 'No active grant for this run and secret'
+                    severity: LOW
+                    details:
+                      code: GRANT_INVALID
+                notEligible:
+                  value:
+                    timestamp: '2026-11-22T09:00:00Z'
+                    path: /internal/agent-tokens
+                    status: 403
+                    error: Forbidden
+                    message: 'The principal is not on the agent allowlist or no longer an organizer'
+                    severity: LOW
+                    details:
+                      code: PRINCIPAL_NOT_ELIGIBLE
+        '503':
+          description: '`AGENT_SIGNING_KEY_MISSING`: `agent.jwt.private-key` is unset, blank or `none`'
+          content:
+            application/json:
+              schema:
+                $ref: '../_shared.openapi.yml#/components/schemas/ErrorResponse'
+              example:
+                timestamp: '2026-11-22T09:00:00Z'
+                path: /internal/agent-tokens
+                status: 503
+                error: Service Unavailable
+                message: 'The agent signing key is not configured'
+                severity: HIGH
+                details:
+                  code: AGENT_SIGNING_KEY_MISSING
 
 components:
   parameters:
@@ -1703,6 +1847,37 @@ components:
           type: string
           format: date-time
           description: One hour after `issuedAt`.
+      additionalProperties: false
+
+    AgentTokenRequest:
+      type: object
+      required: [runId, grantSecret]
+      properties:
+        runId:
+          type: string
+          minLength: 1
+          maxLength: 36
+          description: The run of an active grant (`AgentGrant.runId`).
+        grantSecret:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: That grant's secret, as returned once by `POST /internal/agent-grants`.
+      additionalProperties: false
+
+    AgentToken:
+      type: object
+      required: [token, expiresAt]
+      properties:
+        token:
+          type: string
+          minLength: 1
+          description: |
+            The signed agent token (compact JWS, RS256). A bearer credential: never log it.
+        expiresAt:
+          type: string
+          format: date-time
+          description: The token's `exp`; at most 300 s after minting, never after the grant's `expiresAt`.
       additionalProperties: false
 
     AgentEligibility:

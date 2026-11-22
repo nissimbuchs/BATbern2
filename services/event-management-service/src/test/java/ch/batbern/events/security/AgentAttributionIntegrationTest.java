@@ -99,7 +99,7 @@ class AgentAttributionIntegrationTest extends AbstractIntegrationTest {
     }
 
     private static String bearer() {
-        return "Bearer " + TestTokens.agentToken(ORGANIZER_SUB, ORGANIZER, RUN, "organizer-assistant");
+        return "Bearer " + TestTokens.agentToken(ORGANIZER_SUB, ORGANIZER, RUN, "organizer");
     }
 
     private String updatedByOfSetting() {

@@ -543,7 +543,7 @@ class InternalAgentGrantIntegrationTest extends AbstractIntegrationTest {
     @Test
     @DisplayName("organizer login with a real agent token: 401 ORGANIZER_LOGIN_REQUIRED, no row")
     void should_refuseOrganizerLogin_when_agentToken() throws Exception {
-        String agentToken = TestTokens.agentToken(REQUESTER_SUB, REQUESTER, "run-agent-grant-1", "organizer-assistant");
+        String agentToken = TestTokens.agentToken(REQUESTER_SUB, REQUESTER, "run-agent-grant-1", "organizer");
 
         refused(grantRequest(AGENT_SERVICE_SECRET, ORGANIZER_LOGIN)
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + agentToken), 401, "ORGANIZER_LOGIN_REQUIRED");

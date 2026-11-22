@@ -138,7 +138,8 @@ relaxed binding. The caller secrets are mapped in CUMS `application.yml` to
 (401) without reaching another verifier: PCS refuses Watch tokens. An agent's roles come from
 `role_assignments` by its `sub` through `JwtRolesConverter`, never from the token. Tests sign agent
 and Watch tokens with shared-kernel test fixtures `ch.batbern.shared.test.security.TestTokens`
-(key pair generated per JVM; `AbstractIntegrationTest` registers its public key).
+(key pair generated per JVM; `AbstractIntegrationTest` registers its public and private key; a
+default agent token comes from the production signer `AgentTokenSigner`).
 
 **Who acted** (agentic interaction 0.2): audit columns and `performedBy` / `decidedBy` record the
 actor of shared-kernel `security/Actors`: `agent:<run> for <username>` when the token carries
@@ -193,8 +194,28 @@ linked run or job (each set exactly for its trigger, DB check), `requested_by`
 (at most one hour, DB check) and the hex SHA-256 of the grant secret (32 random bytes, base64url),
 which the 201 returns once. Eligibility (EMS secret only) answers 200 `eligible: true` or 403
 (`AGENT_SWITCHED_OFF`, `PRINCIPAL_NOT_ELIGIBLE`), never `eligible: false`.
-`AgentGrantService.findActiveGrant(runId, grantSecret)` is the seam story 6 mints agent tokens
+`AgentGrantService.findActiveGrant(runId, grantSecret)` is the seam the agent tokens are minted
 against; minting re-checks the switch and the allowlist.
+
+**Agent tokens** (agent identity story 6): the agent service exchanges a run grant for a delegated
+agent token, `POST /internal/agent-tokens` (`cums-internal` spec, `InternalAgentController`,
+`AgentTokenService`), body exactly `{runId, grantSecret}`, and sends the token as
+`Authorization: Bearer` to the public API of every service. Agent-service caller secret only; EMS
+never mints (AD-3). Checks in order, the first failure answers with `details.code`: caller secret 401
+`CALLER_SECRET_INVALID`, body 400 `INVALID_AGENT_REQUEST`, switch 403 `AGENT_SWITCHED_OFF`, grant 403
+`GRANT_INVALID` (unknown run, wrong secret, expired), principal 403 `PRINCIPAL_NOT_ELIGIBLE` (not
+`isAllowlisted`, or no `cognito_user_id`), signing key 503 `AGENT_SIGNING_KEY_MISSING`
+(`agent.jwt.private-key` unset, blank or `none`; CUMS starts normally, an unparseable key fails
+startup). Switch and allowlist are read on every mint, so switching off stops every run within one
+token lifetime (AD-10). Nothing is stored. The claim set lives in one class, shared-kernel
+`security/AgentTokenSigner`: header RS256 / `typ` JWT; `iss` `batbern-agent`, `sub` the principal's
+`cognito_user_id` (roles come from `role_assignments` by it), `custom:username`, `act {run,
+principal}` with the principal kind in lowercase (`requester`, `organizer`, `organizer_delegate`),
+`iat` now, `exp` the earlier of `iat` + 300 s and the grant's `expiresAt`; no role claim. The test
+fixture `TestTokens.agentToken` signs with the same class (`AbstractIntegrationTest` also registers
+the test private key as `agent.jwt.private-key`), so the agent-token tests of gateway, CUMS, EMS and
+PCS run on exactly what CUMS mints. Mint and refusal are logged at INFO with run id, principal kind
+and code, never the token, a secret or the key.
 
 ### Role-Based Security Configuration
 
