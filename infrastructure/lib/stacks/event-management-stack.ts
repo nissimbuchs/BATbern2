@@ -7,6 +7,7 @@ import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
 import * as sns from 'aws-cdk-lib/aws-sns';
 import * as sqs from 'aws-cdk-lib/aws-sqs';
+import * as ssm from 'aws-cdk-lib/aws-ssm';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import { Construct } from 'constructs';
 import { EnvironmentConfig } from '../config/environment-config';
@@ -41,6 +42,13 @@ export interface EventManagementStackProps extends cdk.StackProps {
   forwardingConfigurationSetName?: string;
   /** Watch JWT signing secret — same value used by CUMS to sign, EMS to verify (SecurityConfig). */
   watchJwtSecret?: secretsmanager.ISecret;
+  /**
+   * Agentic interaction 0.3: RSA public key (SPKI PEM) that verifies agent tokens, injected as
+   * AGENT_JWT_PUBLIC_KEY (agent.jwt.public-key). Holds `none` until the owner writes the key.
+   */
+  agentJwtPublicKey?: ssm.IStringParameter;
+  /** Agentic interaction 0.3: secret EMS presents to CUMS when it requests an agent token. */
+  emsCallerSecret?: secretsmanager.ISecret;
   /** Story 10.29: SQS queue URL for bounce/complaint processing. */
   bounceQueueUrl?: string;
   /**
@@ -182,6 +190,14 @@ export class EventManagementStack extends cdk.Stack {
           // whenever ECS replaces a Fargate Spot task or a new deployment lands.
           ...(props.watchJwtSecret && {
             JWT_SECRET: ecs.Secret.fromSecretsManager(props.watchJwtSecret),
+          }),
+          // Agent identity (agentic interaction 0.3): verify agent tokens, and the caller secret
+          // EMS presents to CUMS. Never the private key (CUMS only).
+          ...(props.agentJwtPublicKey && {
+            AGENT_JWT_PUBLIC_KEY: ecs.Secret.fromSsmParameter(props.agentJwtPublicKey),
+          }),
+          ...(props.emsCallerSecret && {
+            AGENT_CALLERS_EMS_SECRET: ecs.Secret.fromSecretsManager(props.emsCallerSecret),
           }),
         },
       },

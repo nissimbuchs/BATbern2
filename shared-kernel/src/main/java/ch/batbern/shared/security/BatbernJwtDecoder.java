@@ -56,9 +56,10 @@ import java.util.Set;
  *
  * <p><b>Configuration.</b> {@link #fromEnvironment} enables the service's default kinds, or the list
  * in {@code batbern.security.token-kinds} (comma-separated or a YAML list, e.g. {@code cognito,agent})
- * when set. {@code AGENT} also needs {@code agent.jwt.public-key}; without it (or blank) the kind
- * stays off. An unparseable key, an unknown kind, or {@code COGNITO} without a JWK set or issuer
- * fails at startup.
+ * when set. {@code AGENT} also needs {@code agent.jwt.public-key}; without it, blank, or the deploy
+ * placeholder {@value #AGENT_PUBLIC_KEY_OFF} (trimmed, any case: what the CDK-created SSM parameter
+ * holds until the owner writes the real key) the kind stays off. An unparseable key, an unknown
+ * kind, or {@code COGNITO} without a JWK set or issuer fails at startup.
  */
 public final class BatbernJwtDecoder implements JwtDecoder {
 
@@ -71,6 +72,11 @@ public final class BatbernJwtDecoder implements JwtDecoder {
     public static final String TOKEN_KINDS_PROPERTY = "batbern.security.token-kinds";
     /** RSA public key that verifies agent tokens; the agent kind is off without it. */
     public static final String AGENT_PUBLIC_KEY_PROPERTY = "agent.jwt.public-key";
+    /**
+     * Placeholder value of {@value #AGENT_PUBLIC_KEY_PROPERTY} that means "no key yet": the CDK
+     * SecretsStack creates the parameter with it, so a deploy before the key exists starts safely.
+     */
+    public static final String AGENT_PUBLIC_KEY_OFF = "none";
     /** HMAC secret of Watch tokens. */
     public static final String WATCH_SECRET_PROPERTY = "watch.jwt.secret";
     /** Cognito JWK set, checked first. */
@@ -109,6 +115,9 @@ public final class BatbernJwtDecoder implements JwtDecoder {
             String key = environment.getProperty(AGENT_PUBLIC_KEY_PROPERTY);
             if (key == null || key.isBlank()) {
                 LOG.info("Agent tokens are off: {} is not set", AGENT_PUBLIC_KEY_PROPERTY);
+            } else if (AGENT_PUBLIC_KEY_OFF.equalsIgnoreCase(key.trim())) {
+                LOG.info("Agent tokens are off: {} holds the placeholder {}",
+                        AGENT_PUBLIC_KEY_PROPERTY, AGENT_PUBLIC_KEY_OFF);
             } else {
                 builder.agent(parsePublicKey(key));
             }

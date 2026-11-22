@@ -5,6 +5,7 @@ import * as cognito from 'aws-cdk-lib/aws-cognito';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
 import * as sns from 'aws-cdk-lib/aws-sns';
+import * as ssm from 'aws-cdk-lib/aws-ssm';
 import { Construct } from 'constructs';
 import { EnvironmentConfig } from '../config/environment-config';
 import { createDomainService } from '../constructs/domain-service-construct';
@@ -26,6 +27,11 @@ export interface PartnerCoordinationStackProps extends cdk.StackProps {
    * See spec-transactional-ses-config-set.md.
    */
   sesTransactionalConfigurationSetName?: string;
+  /**
+   * Agentic interaction 0.3: RSA public key (SPKI PEM) that verifies agent tokens, injected as
+   * AGENT_JWT_PUBLIC_KEY (agent.jwt.public-key). Holds `none` until the owner writes the key.
+   */
+  agentJwtPublicKey?: ssm.IStringParameter;
 }
 
 /**
@@ -49,6 +55,13 @@ export class PartnerCoordinationStack extends cdk.Stack {
       // Transactional SES config set → shared EmailService default (delivery tracking)
       ...(props.sesTransactionalConfigurationSetName && {
         BATBERN_SES_CONFIGURATION_SET_NAME: props.sesTransactionalConfigurationSetName,
+      }),
+    };
+
+    // Agent identity (agentic interaction 0.3): PCS only verifies agent tokens.
+    const additionalSecrets: Record<string, ecs.Secret> = {
+      ...(props.agentJwtPublicKey && {
+        AGENT_JWT_PUBLIC_KEY: ecs.Secret.fromSsmParameter(props.agentJwtPublicKey),
       }),
     };
 
@@ -76,6 +89,7 @@ export class PartnerCoordinationStack extends cdk.Stack {
         maxCapacity: 2,
         healthCheckStartPeriodSeconds: 300, // DB + Flyway + JPA
         additionalEnvironment,
+        additionalSecrets,
       },
       cluster: props.cluster,
       vpc: props.vpc,

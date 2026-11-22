@@ -348,6 +348,49 @@ They publish to the shared alarm topic (#1005 fixed the former private topic wit
 
 ---
 
+## Agent signing key
+
+Agent tokens (agentic interaction) are signed by CUMS with an RS256 private key and verified by
+gateway, CUMS, EMS and PCS with its public key. CDK creates both with the placeholder `none`, so a
+deploy before the key exists starts every service with agent tokens off. Enabling them is a
+one-time owner step after the SecretsStack is deployed.
+
+| What | Where | Container env / Spring property | On |
+|---|---|---|---|
+| Private key, PKCS#8 PEM | secret `batbern/staging/agent/signing-private-key` | `AGENT_JWT_PRIVATE_KEY` / `agent.jwt.private-key` | CUMS only |
+| Public key, SPKI PEM | SSM String parameter `/batbern/staging/agent/jwt-public-key` | `AGENT_JWT_PUBLIC_KEY` / `agent.jwt.public-key` | gateway, CUMS, EMS, PCS |
+| EMS caller secret (generated) | secret `batbern/staging/agent/ems-caller-secret` | `AGENT_CALLERS_EMS_SECRET` (consumer and property: story 5) | CUMS, EMS |
+| Agent-service caller secret (generated) | secret `batbern/staging/agent/agent-service-caller-secret` | `AGENT_CALLERS_AGENT_SERVICE_SECRET` (consumer and property: story 5) | CUMS only |
+
+**Turn agent tokens on:**
+
+1. Deploy first. Every service logs
+   `Agent tokens are off: agent.jwt.public-key holds the placeholder none` and
+   `JWT decoder accepts token kinds [...]` without `AGENT`.
+2. Optional preview, no AWS call: `scripts/deploy/create-agent-signing-key.sh --dry-run`.
+3. Run `scripts/deploy/create-agent-signing-key.sh`. It uses profile `batbern-staging` (override
+   with `AGENT_KEY_AWS_PROFILE`) in `eu-central-1`, checks that both values are still `none`,
+   writes the private key to the secret, then the public key to the parameter, reads the parameter
+   back, and prints the public key. The private key is never printed and never stored locally.
+4. Force a new deployment of the four services; the script prints the exact
+   `aws ecs update-service --force-new-deployment` loop. ECS reads secrets at task start only.
+5. Check each service's start log for `JWT decoder accepts token kinds`: `[COGNITO, WATCH, AGENT]`
+   for company-user-management, event-management and api-gateway, `[COGNITO, AGENT]` for
+   partner-coordination.
+
+**The script refuses** when either value is not `none`: a key is already there. `--force` replaces
+it; every agent token signed with the old key stops verifying once the services restart.
+
+**What resets the key to `none`:** a CDK change to the properties of the secret
+`AgentSigningPrivateKey` or the parameter `AgentJwtPublicKey` in `secrets-stack.ts` (description,
+name, value, or tags of the SecretsStack), or replacing the SecretsStack. CloudFormation then writes
+the template value `none` back and agent tokens go off at the next task start. Fix: re-run the
+script with `--force`, then step 4. Ordinary deploys do not touch the values.
+
+Rotation is not automated.
+
+---
+
 ## When the triage loop itself is the problem
 
 Kill switch: set `CLAUDE_TRIAGE_ENABLED=false` on the `batbern-staging-github-issues` Lambda.

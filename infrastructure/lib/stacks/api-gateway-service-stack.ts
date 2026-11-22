@@ -8,6 +8,7 @@ import * as cognito from 'aws-cdk-lib/aws-cognito';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
 import * as sns from 'aws-cdk-lib/aws-sns';
+import * as ssm from 'aws-cdk-lib/aws-ssm';
 import { Construct } from 'constructs';
 import { EnvironmentConfig } from '../config/environment-config';
 import { createContainerImage } from '../utils/container-image-helper';
@@ -39,6 +40,11 @@ export interface ApiGatewayServiceStackProps extends cdk.StackProps {
   alarmTopic?: sns.ITopic;
   /** Watch JWT signing secret — same value used by CUMS to sign, API Gateway to verify (SecurityConfig). */
   watchJwtSecret?: secretsmanager.ISecret;
+  /**
+   * Agentic interaction 0.3: RSA public key (SPKI PEM) that verifies agent tokens, injected as
+   * AGENT_JWT_PUBLIC_KEY (agent.jwt.public-key). Holds `none` until the owner writes the key.
+   */
+  agentJwtPublicKey?: ssm.IStringParameter;
   /**
    * Cloudflare Turnstile secret key stored in AWS Secrets Manager (Story 10.31, Task 11.3).
    * When provided, TURNSTILE_SECRET_KEY is injected as a container secret (not plain env var).
@@ -96,6 +102,9 @@ export class ApiGatewayServiceStack extends cdk.Stack {
     }
     if (props.watchJwtSecret) {
       secrets.WATCH_JWT_SECRET = ecs.Secret.fromSecretsManager(props.watchJwtSecret);
+    }
+    if (props.agentJwtPublicKey) {
+      secrets.AGENT_JWT_PUBLIC_KEY = ecs.Secret.fromSsmParameter(props.agentJwtPublicKey);
     }
     if (props.turnstileSecret) {
       secrets.TURNSTILE_SECRET_KEY = ecs.Secret.fromSecretsManager(props.turnstileSecret);

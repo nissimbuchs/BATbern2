@@ -123,7 +123,16 @@ with `JWTParser` only to pick a verifier; the chosen verifier always checks the 
 | anything else | `COGNITO` | JWK set (`spring.security.oauth2.resourceserver.jwt.jwk-set-uri`, else discovery from `issuer-uri`) | gateway, CUMS, EMS, PCS |
 
 `batbern.security.token-kinds` (e.g. `cognito,agent`) overrides a service's default. The agent kind
-stays off without `agent.jwt.public-key`. A token of a kind the service does not accept is refused
+stays off without `agent.jwt.public-key`, when it is blank, or when it holds the deploy placeholder
+`none` (trimmed, any case; `BatbernJwtDecoder.AGENT_PUBLIC_KEY_OFF`). It logs
+`Agent tokens are off: agent.jwt.public-key is not set` when the property is missing or blank, and
+`Agent tokens are off: agent.jwt.public-key holds the placeholder none` for the placeholder. In AWS the key arrives as the container
+secret `AGENT_JWT_PUBLIC_KEY` from the SSM parameter `/batbern/<env>/agent/jwt-public-key`
+(agentic interaction 0.3); CUMS also gets `AGENT_JWT_PRIVATE_KEY` (property
+`agent.jwt.private-key`, PKCS#8 PEM) and the caller secrets `AGENT_CALLERS_EMS_SECRET` and
+`AGENT_CALLERS_AGENT_SERVICE_SECRET`, EMS gets `AGENT_CALLERS_EMS_SECRET`. No yml maps the keys:
+Spring resolves `agent.jwt.public-key` and `agent.jwt.private-key` from the environment variables by
+relaxed binding. The caller-secret properties are named by story 5. A token of a kind the service does not accept is refused
 (401) without reaching another verifier: PCS refuses Watch tokens. An agent's roles come from
 `role_assignments` by its `sub` through `JwtRolesConverter`, never from the token. Tests sign agent
 and Watch tokens with shared-kernel test fixtures `ch.batbern.shared.test.security.TestTokens`

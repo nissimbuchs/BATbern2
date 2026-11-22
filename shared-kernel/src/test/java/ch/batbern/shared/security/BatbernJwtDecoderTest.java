@@ -12,6 +12,8 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.springframework.core.env.StandardEnvironment;
+import org.springframework.core.env.SystemEnvironmentPropertySource;
 import org.springframework.mock.env.MockEnvironment;
 import org.springframework.security.oauth2.jwt.BadJwtException;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -318,6 +320,35 @@ class BatbernJwtDecoderTest {
                 assertThat(decoder.enabledKinds()).doesNotContain(TokenKind.AGENT);
                 assertThatThrownBy(() -> decoder.decode(agentToken())).isInstanceOf(BadJwtException.class);
             }
+        }
+
+        @ParameterizedTest
+        @ValueSource(strings = {"none", " NONE ", "None"})
+        void should_turnAgentOff_when_publicKeyIsDeployPlaceholder(String placeholder) {
+            // positive control: the same setup with a real key accepts the agent token
+            BatbernJwtDecoder on = BatbernJwtDecoder.fromEnvironment(
+                    env().withProperty("agent.jwt.public-key", TestTokens.agentPublicKeyPem()),
+                    EnumSet.allOf(TokenKind.class));
+            assertThat(on.decode(agentToken()).getSubject()).isEqualTo("agent-sub-1");
+
+            BatbernJwtDecoder off = BatbernJwtDecoder.fromEnvironment(
+                    env().withProperty("agent.jwt.public-key", placeholder), EnumSet.allOf(TokenKind.class));
+            assertThat(off.enabledKinds()).doesNotContain(TokenKind.AGENT).contains(TokenKind.COGNITO);
+            assertThatThrownBy(() -> off.decode(agentToken())).isInstanceOf(BadJwtException.class);
+        }
+
+        @Test
+        void should_readPublicKey_when_givenAsAgentJwtPublicKeyEnvironmentVariable() {
+            // The CDK injects the key as the ECS container secret AGENT_JWT_PUBLIC_KEY; no yml maps
+            // it, so the property must resolve from the OS environment by itself.
+            StandardEnvironment environment = new StandardEnvironment();
+            environment.getPropertySources().replace(
+                    StandardEnvironment.SYSTEM_ENVIRONMENT_PROPERTY_SOURCE_NAME,
+                    new SystemEnvironmentPropertySource(
+                            StandardEnvironment.SYSTEM_ENVIRONMENT_PROPERTY_SOURCE_NAME,
+                            Map.of("AGENT_JWT_PUBLIC_KEY", TestTokens.agentPublicKeyPem())));
+            BatbernJwtDecoder decoder = BatbernJwtDecoder.fromEnvironment(environment, EnumSet.of(TokenKind.AGENT));
+            assertThat(decoder.decode(agentToken()).getSubject()).isEqualTo("agent-sub-1");
         }
 
         @Test

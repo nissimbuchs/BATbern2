@@ -289,6 +289,8 @@ if (EnvironmentHelper.shouldDeployWebInfrastructure(config.envName)) {
     forwardingDomain: inboundEmailStack.forwardingDomain,
     forwardingConfigurationSetName: inboundEmailStack.forwarderConfigurationSetName,
     watchJwtSecret: secretsStack.watchJwtSecret,
+    agentJwtPublicKey: secretsStack.agentJwtPublicKey,
+    emsCallerSecret: secretsStack.emsCallerSecret,
     env,
     description: `BATbern Event Management Service - ${config.envName}`,
     tags: config.tags,
@@ -341,6 +343,7 @@ if (EnvironmentHelper.shouldDeployWebInfrastructure(config.envName)) {
       userPoolClient: cognitoStack.userPoolClient,
       alarmTopic: monitoringStack.alarmTopic,
       sesTransactionalConfigurationSetName: sesStack.transactionalConfigurationSetName,
+      agentJwtPublicKey: secretsStack.agentJwtPublicKey,
       env,
       description: `BATbern Partner Coordination Service - ${config.envName}`,
       tags: config.tags,
@@ -352,6 +355,7 @@ if (EnvironmentHelper.shouldDeployWebInfrastructure(config.envName)) {
   partnerCoordinationStack.addDependency(cognitoStack);
   partnerCoordinationStack.addDependency(monitoringStack);
   partnerCoordinationStack.addDependency(sesStack);
+  partnerCoordinationStack.addDependency(secretsStack); // agent public key (0.3)
 
   // 10e. Company & User Management Service (Consolidated)
   // Handles both /api/v1/companies and /api/v1/users endpoints
@@ -369,6 +373,10 @@ if (EnvironmentHelper.shouldDeployWebInfrastructure(config.envName)) {
     cloudFrontDistribution: storageStack.distribution,
     alarmTopic: monitoringStack.alarmTopic,
     watchJwtSecret: secretsStack.watchJwtSecret,
+    agentJwtPublicKey: secretsStack.agentJwtPublicKey,
+    agentSigningPrivateKey: secretsStack.agentSigningPrivateKey,
+    emsCallerSecret: secretsStack.emsCallerSecret,
+    agentServiceCallerSecret: secretsStack.agentServiceCallerSecret,
     sesTransactionalConfigurationSetName: sesStack.transactionalConfigurationSetName,
     env,
     description: `BATbern Company & User Management Service (Consolidated) - ${config.envName}`,
@@ -396,6 +404,7 @@ if (EnvironmentHelper.shouldDeployWebInfrastructure(config.envName)) {
     userPoolClient: cognitoStack.userPoolClient,
     alarmTopic: monitoringStack.alarmTopic,
     watchJwtSecret: secretsStack.watchJwtSecret,
+    agentJwtPublicKey: secretsStack.agentJwtPublicKey,
     env,
     description: `BATbern API Gateway Service (Spring Boot) - ${config.envName}`,
     tags: config.tags,

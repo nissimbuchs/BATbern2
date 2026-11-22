@@ -115,7 +115,7 @@ Reference: what each stack contains.
 |---|---|
 | `DNS` (us-east-1) | Imports the `batbern.ch` hosted zone; references the pre-created us-east-1 certificates for CloudFront and the Cognito domain |
 | `Network` | VPC `10.1.0.0/16`, 2 AZs, public / private-with-egress / isolated subnets, **one** NAT gateway, S3 gateway endpoint only |
-| `Secrets` | Secrets Manager and KMS, including the Watch JWT secret |
+| `Secrets` | Secrets Manager and KMS, including the Watch JWT secret and the agent identity: signing private key (secret) and public key (SSM String parameter), both `none` until the owner runs `scripts/deploy/create-agent-signing-key.sh`, and the EMS and agent-service caller secrets (08, "Agent signing key") |
 | `Database` | RDS PostgreSQL 15, `db.t4g.micro`, Single-AZ, 20 GB, encrypted, deletion protection, 7-day backups. ElastiCache configured with 0 nodes, so not created |
 | `Bastion` | EC2 in a public subnet, reachable only via SSM Session Manager, for port-forwarding to RDS |
 | `Storage` | Buckets `batbern-content-*`, `batbern-logs-*`, `batbern-backups-*`; CloudFront for cdn.batbern.ch with the `image-resize` Lambda@Edge |
