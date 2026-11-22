@@ -10,6 +10,7 @@ import ch.batbern.partners.repository.PartnerMeetingRepository;
 import ch.batbern.shared.test.AbstractIntegrationTest;
 import ch.batbern.shared.test.contract.ContractServer;
 import ch.batbern.shared.test.mail.SesRecorder;
+import ch.batbern.shared.test.security.RoleStubTables;
 import ch.batbern.shared.test.security.TestTokens;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -59,7 +60,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * <p>Real agent tokens ({@link TestTokens}) through the production chain and decoder. CUMS and EMS
  * answer at the wire ({@link ContractServer}); the mail record goes to an EMS stand-in on the real
  * {@link HttpOutboundMailRecorder}. PCS owns no {@code user_profiles} or {@code role_assignments}: this
- * test creates both as stubs, so the agent's roles resolve by its {@code sub} as in production.
+ * test creates both as stubs ({@link RoleStubTables}), so the agent's roles resolve by its {@code sub}
+ * as in production.
  */
 @Import({TestSecurityConfig.class, TestAwsConfig.class})
 @DisplayName("PCS: audience sends refuse agent tokens (AD-15)")
@@ -97,16 +99,11 @@ class AudienceGuardIntegrationTest extends AbstractIntegrationTest {
 
     @BeforeEach
     void setUp() {
-        jdbc.execute("CREATE TABLE IF NOT EXISTS user_profiles ("
-                + "id UUID PRIMARY KEY, cognito_user_id VARCHAR(255), username VARCHAR(100))");
-        jdbc.execute("CREATE TABLE IF NOT EXISTS role_assignments (user_id UUID NOT NULL, role VARCHAR(50) NOT NULL)");
+        RoleStubTables.create(jdbc);
         cleanUp();
         sesRecorder.reset();
         recordedMails.clear();
-        UUID profile = UUID.randomUUID();
-        jdbc.update("INSERT INTO user_profiles (id, cognito_user_id, username) VALUES (?, ?, ?)", profile,
-                ORGANIZER_SUB, ORGANIZER);
-        jdbc.update("INSERT INTO role_assignments (user_id, role) VALUES (?, 'ORGANIZER')", profile);
+        RoleStubTables.grant(jdbc, ORGANIZER, ORGANIZER_SUB, "ORGANIZER");
 
         cacheManager.getCacheNames().forEach(name -> cacheManager.getCache(name).clear());
         peers = ContractServer.bindTo(restTemplate, EMS_INTERNAL, CumsInternalUsers.CUMS_INTERNAL);
@@ -142,9 +139,7 @@ class AudienceGuardIntegrationTest extends AbstractIntegrationTest {
             emsMailRecords = null;
         }
         jdbc.update("DELETE FROM partner_meetings WHERE created_by = ?", CREATED_BY);
-        jdbc.update("DELETE FROM role_assignments WHERE user_id IN "
-                + "(SELECT id FROM user_profiles WHERE cognito_user_id = ?)", ORGANIZER_SUB);
-        jdbc.update("DELETE FROM user_profiles WHERE cognito_user_id = ?", ORGANIZER_SUB);
+        RoleStubTables.remove(jdbc, ORGANIZER_SUB);
     }
 
     @Test

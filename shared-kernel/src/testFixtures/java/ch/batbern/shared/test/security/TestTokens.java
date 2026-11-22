@@ -1,6 +1,7 @@
 package ch.batbern.shared.test.security;
 
 import ch.batbern.shared.security.AgentTokenSigner;
+import ch.batbern.shared.security.AgentTokenValidator;
 import ch.batbern.shared.security.BatbernJwtDecoder;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSAlgorithm;
@@ -40,9 +41,6 @@ import java.util.function.Consumer;
  * purpose (wrong key, HS256, missing or extra claims).
  */
 public final class TestTokens {
-
-    /** Lifetime of a default agent token: the maximum the decoder accepts. */
-    public static final long AGENT_TOKEN_LIFETIME_SECONDS = 300;
 
     private static final KeyPair AGENT_KEYS = newRsaKeyPair();
 
@@ -86,12 +84,12 @@ public final class TestTokens {
 
     /**
      * A valid agent token from the production signer ({@link AgentTokenSigner}) with the agent key of
-     * this JVM, living {@value #AGENT_TOKEN_LIFETIME_SECONDS} s.
+     * this JVM, living the maximum the decoder accepts ({@link AgentTokenValidator#MAX_LIFETIME}).
      */
     public static String agentToken(String sub, String username, String run, String principal) {
         AgentTokenSigner signer = new AgentTokenSigner((RSAPrivateKey) AGENT_KEYS.getPrivate(), Clock.systemUTC());
         return signer.sign(sub, username, run, principal,
-                Instant.now().plusSeconds(AGENT_TOKEN_LIFETIME_SECONDS)).token();
+                Instant.now().plus(AgentTokenValidator.MAX_LIFETIME)).token();
     }
 
     /** A builder for an agent token that starts valid and can be broken on purpose. */
@@ -127,7 +125,7 @@ public final class TestTokens {
                     .claim("custom:username", username)
                     .claim("act", Map.of("run", run, "principal", principal))
                     .issueTime(Date.from(now))
-                    .expirationTime(Date.from(now.plusSeconds(AGENT_TOKEN_LIFETIME_SECONDS)));
+                    .expirationTime(Date.from(now.plus(AgentTokenValidator.MAX_LIFETIME)));
         }
 
         /** Changes the claims after the defaults; {@code b.claim(name, null)} removes one. */

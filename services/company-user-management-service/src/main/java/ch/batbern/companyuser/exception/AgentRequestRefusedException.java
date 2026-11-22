@@ -19,7 +19,7 @@ public class AgentRequestRefusedException extends RuntimeException {
     public static final String LINKED_RUN_INVALID = "LINKED_RUN_INVALID";
     public static final String SCHEDULER_JOB_UNKNOWN = "SCHEDULER_JOB_UNKNOWN";
     public static final String PRINCIPAL_NOT_ELIGIBLE = "PRINCIPAL_NOT_ELIGIBLE";
-    public static final String INVALID_REQUEST = "INVALID_AGENT_REQUEST";
+    public static final String INVALID_AGENT_REQUEST = "INVALID_AGENT_REQUEST";
     public static final String GRANT_INVALID = "GRANT_INVALID";
     public static final String AGENT_SIGNING_KEY_MISSING = "AGENT_SIGNING_KEY_MISSING";
 
@@ -38,9 +38,9 @@ public class AgentRequestRefusedException extends RuntimeException {
                 "Caller secret missing or invalid");
     }
 
-    /** 400 for a body or parameter that does not fit the operation ({@value #INVALID_REQUEST}). */
+    /** 400 for a body or parameter that does not fit the operation ({@value #INVALID_AGENT_REQUEST}). */
     public static AgentRequestRefusedException badRequest(String message) {
-        return new AgentRequestRefusedException(HttpStatus.BAD_REQUEST, INVALID_REQUEST, message);
+        return new AgentRequestRefusedException(HttpStatus.BAD_REQUEST, INVALID_AGENT_REQUEST, message);
     }
 
     /** 503 {@value #AGENT_SIGNING_KEY_MISSING}: valid and allowed, but CUMS cannot sign yet. */

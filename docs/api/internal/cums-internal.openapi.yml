@@ -32,12 +32,16 @@ info:
     Agent identity, stories 5 and 6: `/internal/agent-grants`, `/internal/agent-eligibility` and
     `/internal/agent-tokens` are the only operations here that authenticate their caller. Each
     checks the header `X-Agent-Caller-Secret` itself (EMS or the agent service, per operation;
-    `/internal/agent-tokens` the agent service only), constant-time, before anything else; the
-    filter chain leaves `/internal/**` open as for every other operation (epic decision
-    2026-11-21, `docs/architecture/module-map.md`). One exception to "caller secret first": an
-    `Authorization: Bearer` header that does not decode (expired, malformed, wrong signature) is
-    refused by the resource-server filter before the operation runs, with Spring's bare 401 (empty
-    body, no `details.code`). A caller forwards only a valid token, or none.
+    `/internal/agent-tokens` the agent service only), constant-time, first among the operation's
+    checks; a body Spring cannot read (malformed JSON, a wrong type, a wrong `Content-Type`)
+    answers 400 or 415 before it. The filter chain leaves `/internal/**` open as for every other
+    operation (epic decision 2026-11-21, `docs/architecture/module-map.md`). One exception to
+    "caller secret first": an `Authorization: Bearer` header with a token the decoder does not
+    accept (any kind, any validation failure, e.g. an agent token while CUMS's
+    `agent.jwt.public-key` is `none`) is refused by the resource-server filter before the
+    operation runs, with Spring's 401: empty body, no `details.code`, and a
+    `WWW-Authenticate: Bearer` header whose `error_description` names the failure. A caller
+    forwards only a valid token, or none.
 
     Epic 17 entry 6 (17.6 part A) moved the three machine-only writes of users-api here (provision,
     profile patch, invitation credentials) and added the single company read. Paths are full paths
@@ -1150,9 +1154,11 @@ paths:
         username for `ORGANIZER_LOGIN`, `system:agent-service` otherwise. Consumers: EMS (handoff,
         epic speaker mail agent) and the agent service.
 
-        Exception to the order: an `Authorization: Bearer` header that does not decode (expired,
-        malformed, wrong signature) is refused by the resource-server filter before this operation
-        runs, with Spring's bare 401 (empty body, no `details.code`).
+        Exceptions to the order: a body Spring cannot read (malformed JSON, a wrong type, a wrong
+        `Content-Type`) answers 400 or 415 before the caller secret; an `Authorization: Bearer`
+        header with a token the decoder does not accept (any kind, any validation failure) is
+        refused by the resource-server filter before this operation runs, with Spring's 401 (empty
+        body, no `details.code`, `WWW-Authenticate: Bearer` with an `error_description`).
       parameters:
         - $ref: '#/components/parameters/AgentCallerSecret'
       requestBody:
@@ -1230,7 +1236,8 @@ paths:
           description: |
             `CALLER_SECRET_INVALID`: the caller secret is missing, wrong, or the other caller's;
             `ORGANIZER_LOGIN_REQUIRED`: `ORGANIZER_LOGIN` without a forwarded Cognito login. A bearer
-            token that does not decode gets Spring's 401 without a body instead, before any check
+            token the decoder does not accept gets Spring's 401 without a body instead (with
+            `WWW-Authenticate`), before any check
           content:
             application/json:
               schema:
@@ -1336,7 +1343,8 @@ paths:
         '401':
           description: |
             `CALLER_SECRET_INVALID`: missing, wrong, or not the EMS caller secret. A bearer token
-            that does not decode gets Spring's 401 without a body instead, before the secret check
+            the decoder does not accept gets Spring's 401 without a body instead (with
+            `WWW-Authenticate`), before the secret check
           content:
             application/json:
               schema:
@@ -1382,7 +1390,10 @@ paths:
         2. body: 400 `INVALID_AGENT_REQUEST` (no body, `runId` or `grantSecret` missing, blank or
            too long, an unknown field);
         3. switch: 403 `AGENT_SWITCHED_OFF`, checked again on every mint;
-        4. grant: 403 `GRANT_INVALID` (unknown run, wrong grant secret, expired grant);
+        4. grant: 403 `GRANT_INVALID` (unknown run, wrong grant secret, expired grant). The grant
+           operation answers the same unknown or expired grant with `LINKED_RUN_INVALID`: there it
+           is the parent the caller links a new run to, here it is the caller's own run, so each
+           code names the input the caller has to fix;
         5. principal: 403 `PRINCIPAL_NOT_ELIGIBLE` (no longer on the allowlist or no longer
            ORGANIZER, or the user has no Cognito login, so no `sub`);
         6. signing key: 503 `AGENT_SIGNING_KEY_MISSING` (`agent.jwt.private-key` unset, blank or
@@ -1441,8 +1452,8 @@ paths:
         '401':
           description: |
             `CALLER_SECRET_INVALID`: missing, wrong, or not the agent service's caller secret. A
-            bearer token that does not decode gets Spring's 401 without a body instead, before the
-            secret check
+            bearer token the decoder does not accept gets Spring's 401 without a body instead (with
+            `WWW-Authenticate`), before the secret check
           content:
             application/json:
               schema:

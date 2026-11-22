@@ -24,9 +24,15 @@ import org.springframework.web.bind.annotation.RestController;
  *
  * <p>The only {@code /internal} operations that authenticate their caller: the filter chain leaves
  * {@code /internal/**} open, so {@link AgentGrantService} and {@link AgentTokenService} check the
- * {@value #CALLER_SECRET_HEADER} header first (epic decision 2026-11-21,
- * {@code docs/architecture/module-map.md}). The header, the parameters and the bodies are optional
- * here on purpose: a missing secret must answer 401 before anything else, not Spring's 400. No
+ * {@value #CALLER_SECRET_HEADER} header first among the operation's checks (epic decision
+ * 2026-11-21, {@code docs/architecture/module-map.md}). The header, the parameters and the bodies
+ * are optional here on purpose: a missing secret must answer 401 before the operation's other checks,
+ * not Spring's 400; a missing body answers the operation's own 400 after the secret check. A body
+ * Spring cannot read (malformed JSON, a wrong type, a wrong {@code Content-Type}) still answers 400
+ * or 415 before the secret is checked. An {@code Authorization: Bearer} token the decoder does not
+ * accept (any kind, any validation failure, e.g. an agent token while CUMS's public key is
+ * {@code none}) never reaches this controller: the resource-server filter answers Spring's 401 with
+ * an empty body and a {@code WWW-Authenticate} header carrying an {@code error_description}. No
  * {@code @PreAuthorize}: these are not user endpoints ({@code EndpointAuthorizationGuard} excludes
  * {@code /internal/}).
  */

@@ -12,6 +12,7 @@ import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.RegistrationRepository;
 import ch.batbern.shared.test.AbstractIntegrationTest;
 import ch.batbern.shared.test.mail.SesRecorder;
+import ch.batbern.shared.test.security.RoleStubTables;
 import ch.batbern.shared.test.security.TestTokens;
 import ch.batbern.shared.types.EventWorkflowState;
 import org.junit.jupiter.api.AfterEach;
@@ -43,8 +44,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * go through the production chain and the real decoder.
  *
  * <p>The EMS test schema has a {@code user_profiles} stub (testmigration V100) but no
- * {@code role_assignments}: this test creates it, so {@code JwtRolesConverter} resolves the agent's
- * roles by its {@code sub} as production does.
+ * {@code role_assignments}: this test creates it ({@link RoleStubTables}), so
+ * {@code JwtRolesConverter} resolves the agent's roles by its {@code sub} as production does.
  */
 @Import({TestSecurityConfig.class, TestAwsConfig.class})
 @DisplayName("EMS: agent actions are recorded as agent:<run> for <username>")
@@ -76,13 +77,10 @@ class AgentAttributionIntegrationTest extends AbstractIntegrationTest {
 
     @BeforeEach
     void setUp() {
-        jdbc.execute("CREATE TABLE IF NOT EXISTS role_assignments (user_id UUID NOT NULL, role VARCHAR(50) NOT NULL)");
+        RoleStubTables.create(jdbc);
         cleanUp();
         sesRecorder.reset();
-        UUID id = UUID.randomUUID();
-        jdbc.update("INSERT INTO user_profiles (id, username, cognito_user_id) VALUES (?, ?, ?)", id, ORGANIZER,
-                ORGANIZER_SUB);
-        jdbc.update("INSERT INTO role_assignments (user_id, role) VALUES (?, 'ORGANIZER')", id);
+        RoleStubTables.grant(jdbc, ORGANIZER, ORGANIZER_SUB, "ORGANIZER");
     }
 
     @AfterEach
@@ -93,9 +91,7 @@ class AgentAttributionIntegrationTest extends AbstractIntegrationTest {
         jdbc.update("DELETE FROM events WHERE event_code = ?", EVENT);
         jdbc.update("DELETE FROM app_settings WHERE setting_key = ?", SETTING);
         jdbc.update("DELETE FROM notifications WHERE recipient_username IN (?, ?)", ORGANIZER, OTHER_ORGANIZER);
-        jdbc.update("DELETE FROM role_assignments WHERE user_id IN "
-                + "(SELECT id FROM user_profiles WHERE cognito_user_id = ?)", ORGANIZER_SUB);
-        jdbc.update("DELETE FROM user_profiles WHERE cognito_user_id = ?", ORGANIZER_SUB);
+        RoleStubTables.remove(jdbc, ORGANIZER_SUB);
     }
 
     private static String bearer() {

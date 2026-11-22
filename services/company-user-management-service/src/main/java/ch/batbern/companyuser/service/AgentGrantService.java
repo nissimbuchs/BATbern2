@@ -69,8 +69,10 @@ public class AgentGrantService {
 
     private static final int SECRET_BYTES = 32;
     private static final int MAX_USERNAME = 100;
-    private static final int MAX_RUN_ID = 36;
-    private static final int MAX_SECRET = 100;
+    /** Longest run id ({@code runId}, {@code linkedRunId}); the mint reads it too. */
+    static final int MAX_RUN_ID = 36;
+    /** Longest grant secret ({@code grantSecret}, {@code linkedRunGrantSecret}); the mint reads it too. */
+    static final int MAX_SECRET = 100;
     private static final int MAX_JOB_NAME = 100;
 
     private final AgentGrantRepository grantRepository;
@@ -256,13 +258,18 @@ public class AgentGrantService {
         return username == null || username.isBlank() ? Optional.empty() : Optional.of(username);
     }
 
-    private void requireSwitchedOn() {
+    /** 403 {@code AGENT_SWITCHED_OFF} unless the agent is switched on; the mint checks it too. */
+    void requireSwitchedOn() {
         if (!agentSettingsService.isEnabled()) {
             throw AgentRequestRefusedException.forbidden(AGENT_SWITCHED_OFF, "The organizer agent is switched off");
         }
     }
 
-    private void requireAllowlisted(String username) {
+    /**
+     * 403 {@code PRINCIPAL_NOT_ELIGIBLE} unless {@code username} is allowlisted and still ORGANIZER;
+     * the mint checks it too.
+     */
+    void requireAllowlisted(String username) {
         if (!agentSettingsService.isAllowlisted(username)) {
             throw AgentRequestRefusedException.forbidden(PRINCIPAL_NOT_ELIGIBLE,
                     "The principal is not on the agent allowlist or no longer an organizer");

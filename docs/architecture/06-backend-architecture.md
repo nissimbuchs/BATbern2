@@ -139,15 +139,19 @@ relaxed binding. The caller secrets are mapped in CUMS `application.yml` to
 `role_assignments` by its `sub` through `JwtRolesConverter`, never from the token. Tests sign agent
 and Watch tokens with shared-kernel test fixtures `ch.batbern.shared.test.security.TestTokens`
 (key pair generated per JVM; `AbstractIntegrationTest` registers its public and private key; a
-default agent token comes from the production signer `AgentTokenSigner`).
+default agent token comes from the production signer `AgentTokenSigner`). EMS and PCS integration
+tests that resolve an agent's roles create the CUMS `user_profiles` / `role_assignments` stubs with
+`RoleStubTables` beside it.
 
 **Who acted** (agentic interaction 0.2): audit columns and `performedBy` / `decidedBy` record the
 actor of shared-kernel `security/Actors`: `agent:<run> for <username>` when the token carries
 `act` (`act.run`, `custom:username`), the plain username otherwise, `system:<job>` without a user
 (`Actors.system`, kebab case). The value is wrapped at the sink with `Actors.forUsername`, which is
 idempotent; each service's `SecurityContextHelper` offers `getCurrentActor()`, `actorOr(job)` and
-`carriesAgentAct()`. Identity and ownership keep reading the username (`requester_username`,
-`UserOwnership`, `findBy…Username`), so an agent passes the same ownership checks as its person.
+`carriesAgentAct()`. `actorOr(job)` differs per service (story 0.2, not aligned): CUMS returns the
+actor only for a JWT principal and `system:<job>` for anything else, a `@WithMockUser` included; EMS
+and PCS return it for any signed-in, non-anonymous principal. Identity and ownership keep reading
+the username (`requester_username`, `UserOwnership`, `findBy…Username`), so an agent passes the same ownership checks as its person.
 The EMS STOMP principal of an agent token is its actor; Cognito and Watch keep the `sub`. Audit
 columns narrower than 255 were widened (CUMS V40, EMS V161, PCS V13); the longest actor is 147
 characters (36-character run, 100-character username).
@@ -199,10 +203,16 @@ empty by default; the delegate). Checks in order, the first failure answers with
 caller secret 401 `CALLER_SECRET_INVALID`, body 400, organizer login 401
 `ORGANIZER_LOGIN_REQUIRED`, switch 403 `AGENT_SWITCHED_OFF`, link or job 403 `LINKED_RUN_INVALID` /
 `SCHEDULER_JOB_UNKNOWN`, principal 403 `PRINCIPAL_NOT_ELIGIBLE` (no delegate, or not
-`isAllowlisted`; the delegate must be allowlisted too); a 400 carries `INVALID_AGENT_REQUEST`. One
-exception to that order: an `Authorization: Bearer` header that does not decode (expired, malformed,
-wrong signature) is refused by the resource-server filter before the operation runs, with Spring's
-bare 401 (empty body, no `details.code`); the filter chain stays as it is. A grant is a row of `agent_grants` (V42): a
+`isAllowlisted`; the delegate must be allowlisted too); a 400 carries `INVALID_AGENT_REQUEST`. The
+caller secret is first among the operation's checks: a body Spring cannot read (malformed JSON, a
+wrong type, a wrong `Content-Type`) answers 400 or 415 before it. One exception to that order: an
+`Authorization: Bearer` header with a token the decoder does not accept (any kind, any validation
+failure, e.g. an agent token while CUMS's public key is `none`) is refused by the resource-server
+filter before the operation runs, with Spring's 401 (empty body, no `details.code`, a
+`WWW-Authenticate: Bearer` header with an `error_description`); the filter chain stays as it is.
+An unknown or expired grant answers `LINKED_RUN_INVALID` on the grant operation and `GRANT_INVALID`
+on the mint: there it is the parent of a new run, here the caller's own run.
+A grant is a row of `agent_grants` (V42): a
 random UUID `run_id`, principal kind, username (foreign key to `user_profiles`, cascades), trigger,
 linked run or job (each set exactly for its trigger, DB check), `requested_by`
 (`system:ems-agent-handoff`, `system:agent-service` or the organizer), `issued_at`, `expires_at`

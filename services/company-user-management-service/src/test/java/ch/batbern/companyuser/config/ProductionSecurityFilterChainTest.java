@@ -1,11 +1,6 @@
 package ch.batbern.companyuser.config;
 
 import ch.batbern.shared.test.security.TestTokens;
-import com.nimbusds.jose.JWSAlgorithm;
-import com.nimbusds.jose.JWSHeader;
-import com.nimbusds.jose.crypto.MACSigner;
-import com.nimbusds.jwt.JWTClaimsSet;
-import com.nimbusds.jwt.SignedJWT;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -26,10 +21,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.context.WebApplicationContext;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
-
-import java.nio.charset.StandardCharsets;
-import java.time.Instant;
-import java.util.Date;
 
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -171,17 +162,8 @@ class ProductionSecurityFilterChainTest {
                 .andExpect(status().isOk());
     }
 
-    private static String watchToken() throws Exception {
-        JWTClaimsSet claims = new JWTClaimsSet.Builder()
-                .issuer("batbern-watch")
-                .subject("test.organizer")
-                .claim("role", "ORGANIZER")
-                .issueTime(new Date())
-                .expirationTime(Date.from(Instant.now().plusSeconds(300)))
-                .build();
-        SignedJWT jwt = new SignedJWT(new JWSHeader(JWSAlgorithm.HS256), claims);
-        jwt.sign(new MACSigner(WATCH_TEST_SECRET.getBytes(StandardCharsets.UTF_8)));
-        return jwt.serialize();
+    private static String watchToken() {
+        return TestTokens.watchToken(WATCH_TEST_SECRET, "test.organizer", "ORGANIZER");
     }
 
     @DynamicPropertySource

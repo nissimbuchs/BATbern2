@@ -20,8 +20,10 @@ import java.util.Map;
  * <ul>
  *   <li>{@code sub}, {@code custom:username}, {@code iat} and {@code exp} are present;</li>
  *   <li>{@code exp - iat} is at most {@link #MAX_LIFETIME} (300 s): an agent token is short-lived;
- *       {@code iat} is not after {@code exp} and not later than now plus {@link #CLOCK_SKEW}, so a
- *       token dated into the future cannot stretch its lifetime;</li>
+ *       {@code iat} is strictly before {@code exp} (as {@link AgentTokenSigner} mints) and not later
+ *       than now plus {@link #CLOCK_SKEW}, so a token dated into the future cannot stretch its
+ *       lifetime. Spring's {@code Jwt} already refuses {@code iat >= exp} when the decoder builds it;
+ *       the rule here keeps the validator complete on its own;</li>
  *   <li>{@code act} is an object with a non-blank {@code run} and {@code principal} (who the agent
  *       acts for, in which run);</li>
  *   <li>no {@code custom:role} and no {@code role} claim: an agent's roles come from
@@ -63,8 +65,8 @@ public final class AgentTokenValidator implements OAuth2TokenValidator<Jwt> {
             errors.add(error("Agent token has no exp"));
         }
         if (issuedAt != null && expiresAt != null) {
-            if (issuedAt.isAfter(expiresAt)) {
-                errors.add(error("Agent token has iat after exp"));
+            if (!issuedAt.isBefore(expiresAt)) {
+                errors.add(error("Agent token has iat not before exp"));
             } else if (Duration.between(issuedAt, expiresAt).compareTo(MAX_LIFETIME) > 0) {
                 errors.add(error("Agent token lives longer than " + MAX_LIFETIME.toSeconds() + " s"));
             }

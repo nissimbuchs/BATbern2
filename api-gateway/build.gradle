@@ -34,9 +34,10 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-validation'
     implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
 
-    // AWS SDK for Cognito (the gateway sends no mail; its unused SesClient bean was removed in 17.0b3)
+    // AWS SDK (the gateway sends no mail: its unused SesClient bean was removed in 17.0b3; it calls no
+    // Cognito API either: its unused Cognito client went in agent identity 0.8, password reset runs
+    // in the browser)
     implementation platform('software.amazon.awssdk:bom:2.57.11')
-    implementation 'software.amazon.awssdk:cognitoidentityprovider'
     implementation 'software.amazon.awssdk:auth'
 
     // Jackson for JSON processing (version managed by Spring Boot)

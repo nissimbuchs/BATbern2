@@ -21,10 +21,12 @@ CUMS (identity) is upstream of all. EMS (event) is upstream of PCS (partners).
   `SecurityContextHelper.getCurrentActor()` / `actorOr(job)`; never write a bare `system`.
   Identity and ownership read the username, never the actor (`requester_username`,
   `UserOwnership`, `findBy…Username`). The EMS STOMP principal of an agent is its actor.
-- The agent service calls no `/internal/**` except CUMS `/internal/agent-*` (agent tokens,
-  `/internal/agent-tokens`, and agent grants for delegate requests), checked by its caller secret
-  (AD-2, epic decision 2026-11-21). EMS calls CUMS `/internal/agent-grants` (mail handoff) and
-  `/internal/agent-eligibility` with its own caller secret; EMS never mints agent tokens
+- The agent service calls no `/internal/**` except CUMS `/internal/agent-*`: it requests
+  `ORGANIZER_LOGIN`, `LINKED_RUN` and `SCHEDULER_JOB` grants on `/internal/agent-grants` and mints
+  its tokens on `/internal/agent-tokens`, checked by its caller secret (AD-2, epic decision
+  2026-11-21). EMS will call CUMS `/internal/agent-grants` (`EMS_HANDOFF`, the mail handoff of the
+  epic speaker mail agent) and `/internal/agent-eligibility` with its own caller secret; it has no
+  such client yet, and its caller secret is injected but not read. EMS never mints agent tokens
   (AD-3). The `/internal/agent-*` operations are
   the only ones that check who calls: each verifies the `X-Agent-Caller-Secret` header itself
   (`AgentCallerSecrets`); the filter chain keeps `/internal/**` open. Everything else goes through
@@ -135,7 +137,7 @@ CUMS (identity) is upstream of all. EMS (event) is upstream of PCS (partners).
 | Headers of a service-to-service call | `S2sHeaders.forCurrentUser()` (shared-kernel) | read the `SecurityContext` in a client |
 | A person's proven addresses | `PersonAddresses` | read additional e-mails directly |
 | File upload | `uploads-api` `/uploads/{purpose}`: shared-kernel `ch.batbern.shared.upload` (`UploadService`, `UploadRecord`, `ImageUrlFetcher`) + an `UploadPurposeHandler` in the owning service (CUMS `company-logo`, `profile-picture`; EMS `event-theme-image`, `event-photo`, `teaser-image`, `session-material`), its own uploads table (`company_user_uploads`, `event_management_uploads`); frontend `uploadTarget(purpose, target?)` + `useFileUpload` (ADR-002, Stories 17.11 to 17.11d) | new presign code or endpoints; a table of another service (EMS maps no `company_user_uploads` or `logos`: `EmsDataOwnershipTest`) |
-| Admin or feature setting | `AdminSettingsService` (`/admin/settings/{key}`). Exception: the agent switch, allowlist and delegate are CUMS `AgentSettingsService` (`/agent-settings`, V41), because CUMS issues the agent grants and tokens and cannot call EMS (epic decision 2026-11-21) | a new settings resource |
+| Admin or feature setting | `AdminSettingsService` (`/admin/settings/{key}`). Exception: the agent switch, allowlist and delegate are CUMS `AgentSettingsService` (`/api/v1/agent-settings`, V41), because CUMS issues the agent grants and tokens and cannot call EMS (epic decision 2026-11-21) | a new settings resource |
 | Scheduled job | `@Scheduled` + ShedLock | unlocked scheduler. Audience mails are organizer-sent only (#1179) |
 | Error → HTTP status | `ClientErrorClassifier` | another catch-all |
 | EMS domain error → HTTP response | extend `DomainException` (status, severity, `details.code`); extra fields in the module advice with `DomainErrorResponse` | an `@ExceptionHandler` in `GlobalExceptionHandler`, `@ResponseStatus` |

@@ -19,27 +19,6 @@ import org.springframework.stereotype.Component;
 public class SecurityContextHelper {
 
     /**
-     * Gets the current authenticated user's ID from JWT token or mock user
-     * @return User ID (subject claim from JWT or username from mock user)
-     * @throws SecurityException if not authenticated
-     */
-    public String getCurrentUserId() {
-        Authentication authentication = getAuthentication();
-
-        if (authentication.getPrincipal() instanceof Jwt) {
-            Jwt jwt = (Jwt) authentication.getPrincipal();
-            return jwt.getSubject();
-        } else if (authentication.getPrincipal() instanceof User) {
-            // In test environment with @WithMockUser, use username as user ID
-            User user = (User) authentication.getPrincipal();
-            return user.getUsername();
-        } else {
-            log.error("Unsupported principal type: {}", authentication.getPrincipal().getClass());
-            throw new SecurityException("Unsupported authentication principal type");
-        }
-    }
-
-    /**
      * Gets the current authenticated user's username from JWT token or mock user
      * Used for Partner Contact management (ADR-003: meaningful IDs)
      * ADR-001: Custom claims are set by PreTokenGeneration Lambda from database

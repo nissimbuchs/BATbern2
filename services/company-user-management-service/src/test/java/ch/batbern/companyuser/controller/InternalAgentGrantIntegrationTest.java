@@ -595,6 +595,28 @@ class InternalAgentGrantIntegrationTest extends AbstractIntegrationTest {
         assertThat(grantRows()).isEqualTo(1);
     }
 
+    @ParameterizedTest(name = "{0}")
+    @ValueSource(strings = {"malformed", "wrong-signature"})
+    @DisplayName("an undecodable bearer and no caller secret: the filter's bare 401, no row (review C6)")
+    void should_refuseWithFilter401_when_bearerUndecodableAndNoCallerSecret(String kind) throws Exception {
+        String bearer = "malformed".equals(kind)
+                ? "not-a-jwt"
+                : TestTokens.agent(REQUESTER_SUB, REQUESTER, "run-agent-grant-3", "organizer")
+                        .signedWith(TestTokens.newRsaKeyPair()).build();
+
+        MvcResult result = mockMvc.perform(grantRequest(null, emsHandoff(REQUESTER))
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + bearer))
+                .andExpect(status().isUnauthorized())
+                .andReturn();
+        assertThat(result.getResponse().getContentAsString()).isEmpty();
+        assertThat(result.getResponse().getHeader(HttpHeaders.WWW_AUTHENTICATE))
+                .startsWith("Bearer").contains("error=\"invalid_token\"");
+        assertThat(grantRows()).isZero();
+
+        requesterGrant(); // positive control: the same body with the caller secret and no bearer
+        assertThat(grantRows()).isEqualTo(1);
+    }
+
     // ------------------------------------------------------------------ linked run, job
 
     @Test

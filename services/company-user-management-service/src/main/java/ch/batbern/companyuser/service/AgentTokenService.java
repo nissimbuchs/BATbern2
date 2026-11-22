@@ -19,7 +19,6 @@ import java.time.Clock;
 import java.util.Locale;
 import java.util.Optional;
 
-import static ch.batbern.companyuser.exception.AgentRequestRefusedException.AGENT_SWITCHED_OFF;
 import static ch.batbern.companyuser.exception.AgentRequestRefusedException.GRANT_INVALID;
 import static ch.batbern.companyuser.exception.AgentRequestRefusedException.PRINCIPAL_NOT_ELIGIBLE;
 
@@ -31,21 +30,17 @@ import static ch.batbern.companyuser.exception.AgentRequestRefusedException.PRIN
  * <p>Checks in order, the first failure answers: caller secret, agent service only (401), body (400),
  * switch (403), grant ({@link AgentGrantService#findActiveGrant}, 403), principal still allowlisted
  * and an organizer with a Cognito {@code sub} (403), signing key (503). Switch and allowlist are
- * checked again on every mint, so switching the agent off stops every run within one token lifetime
- * (AD-10). The claim set is {@link AgentTokenSigner}'s; the token lives at most 300 s and never
- * outlives its grant. Nothing is stored. Logs carry run id, principal kind and code, never the token,
- * a secret or the key.
+ * {@link AgentGrantService}'s own checks, run again on every mint, so switching the agent off stops
+ * every run within one token lifetime (AD-10). The claim set is {@link AgentTokenSigner}'s; the token
+ * lives at most 300 s and never outlives its grant. Nothing is stored. Logs carry run id, principal
+ * kind and code, never the token, a secret or the key.
  */
 @Slf4j
 @Service
 @Transactional(readOnly = true)
 public class AgentTokenService {
 
-    private static final int MAX_RUN_ID = 36;
-    private static final int MAX_SECRET = 100;
-
     private final AgentGrantService agentGrantService;
-    private final AgentSettingsService agentSettingsService;
     private final AgentCallerSecrets callerSecrets;
     private final UserRepository userRepository;
     private final Optional<AgentTokenSigner> signer;
@@ -56,12 +51,10 @@ public class AgentTokenService {
      */
     public AgentTokenService(
             AgentGrantService agentGrantService,
-            AgentSettingsService agentSettingsService,
             AgentCallerSecrets callerSecrets,
             UserRepository userRepository,
             @Value("${" + AgentTokenSigner.AGENT_PRIVATE_KEY_PROPERTY + ":}") String privateKey) {
         this.agentGrantService = agentGrantService;
-        this.agentSettingsService = agentSettingsService;
         this.callerSecrets = callerSecrets;
         this.userRepository = userRepository;
         this.signer = AgentTokenSigner.fromKey(privateKey, Clock.systemUTC());
@@ -84,16 +77,18 @@ public class AgentTokenService {
         }
         validate(request);
         String runId = request.runId();
-        if (!agentSettingsService.isEnabled()) {
-            throw refused(AgentRequestRefusedException.forbidden(AGENT_SWITCHED_OFF,
-                    "The organizer agent is switched off"), runId, null);
+        try {
+            agentGrantService.requireSwitchedOn();
+        } catch (AgentRequestRefusedException e) {
+            throw refused(e, runId, null);
         }
         AgentGrant grant = agentGrantService.findActiveGrant(runId, request.grantSecret())
                 .orElseThrow(() -> refused(grantInvalid(), runId, null));
         String principalKind = grant.getPrincipalKind().name().toLowerCase(Locale.ROOT);
-        if (!agentSettingsService.isAllowlisted(grant.getUsername())) {
-            throw refused(AgentRequestRefusedException.forbidden(PRINCIPAL_NOT_ELIGIBLE,
-                    "The principal is not on the agent allowlist or no longer an organizer"), runId, principalKind);
+        try {
+            agentGrantService.requireAllowlisted(grant.getUsername());
+        } catch (AgentRequestRefusedException e) {
+            throw refused(e, runId, principalKind);
         }
         String sub = userRepository.findByUsername(grant.getUsername())
                 .map(User::getCognitoUserId)
@@ -123,8 +118,8 @@ public class AgentTokenService {
             throw refused(AgentRequestRefusedException.badRequest(
                     "Unknown fields: " + request.unknownFields().keySet()), null, null);
         }
-        field("runId", request.runId(), MAX_RUN_ID);
-        field("grantSecret", request.grantSecret(), MAX_SECRET);
+        field("runId", request.runId(), AgentGrantService.MAX_RUN_ID);
+        field("grantSecret", request.grantSecret(), AgentGrantService.MAX_SECRET);
     }
 
     private static void field(String name, String value, int maxLength) {

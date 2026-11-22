@@ -20,6 +20,7 @@ import ch.batbern.events.repository.SpeakerPoolRepository;
 import ch.batbern.events.service.AdminSettingsService;
 import ch.batbern.shared.test.AbstractIntegrationTest;
 import ch.batbern.shared.test.mail.SesRecorder;
+import ch.batbern.shared.test.security.RoleStubTables;
 import ch.batbern.shared.test.security.TestTokens;
 import ch.batbern.shared.types.EventWorkflowState;
 import ch.batbern.shared.types.SpeakerWorkflowState;
@@ -62,8 +63,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * positive control in each test.
  *
  * <p>CUMS answers at the wire ({@link CumsContractHarness}); speakers resolve through a real session and
- * its PRIMARY_SPEAKER. The EMS test schema has no {@code role_assignments}: this test creates it, so the
- * agent's roles resolve by its {@code sub} as in production. Not {@code @Transactional}: the sends run on
+ * its PRIMARY_SPEAKER. The EMS test schema has no {@code role_assignments}: this test creates it
+ * ({@link RoleStubTables}), so the agent's roles resolve by its {@code sub} as in production. Not {@code @Transactional}: the sends run on
  * {@code @Async} threads; rows are removed in {@code @AfterEach}. Synthetic simulator addresses only.
  */
 @Import({TestSecurityConfig.class, TestAwsConfig.class})
@@ -117,13 +118,10 @@ class AudienceGuardIntegrationTest extends AbstractIntegrationTest {
 
     @BeforeEach
     void setUp() {
-        jdbc.execute("CREATE TABLE IF NOT EXISTS role_assignments (user_id UUID NOT NULL, role VARCHAR(50) NOT NULL)");
+        RoleStubTables.create(jdbc);
         cleanUp();
         sesRecorder.reset();
-        UUID profile = UUID.randomUUID();
-        jdbc.update("INSERT INTO user_profiles (id, username, cognito_user_id) VALUES (?, ?, ?)", profile, ORGANIZER,
-                ORGANIZER_SUB);
-        jdbc.update("INSERT INTO role_assignments (user_id, role) VALUES (?, 'ORGANIZER')", profile);
+        RoleStubTables.grant(jdbc, ORGANIZER, ORGANIZER_SUB, "ORGANIZER");
 
         Instant now = Instant.now().truncatedTo(ChronoUnit.SECONDS);
         event = eventRepository.saveAndFlush(Event.builder()
@@ -159,9 +157,7 @@ class AudienceGuardIntegrationTest extends AbstractIntegrationTest {
         jdbc.update("DELETE FROM registrations WHERE event_id IN " + eventIds, EVENT_CODE);
         jdbc.update("DELETE FROM events WHERE event_code = ?", EVENT_CODE);
         jdbc.update("DELETE FROM app_settings WHERE setting_key = ?", VenueCoordinationConfig.SETTING_KEY);
-        jdbc.update("DELETE FROM role_assignments WHERE user_id IN "
-                + "(SELECT id FROM user_profiles WHERE cognito_user_id = ?)", ORGANIZER_SUB);
-        jdbc.update("DELETE FROM user_profiles WHERE cognito_user_id = ?", ORGANIZER_SUB);
+        RoleStubTables.remove(jdbc, ORGANIZER_SUB);
     }
 
     // ── composer send, every audience ─────────────────────────────────────────

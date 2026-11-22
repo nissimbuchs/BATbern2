@@ -11,6 +11,7 @@ import ch.batbern.partners.repository.PartnerRepository;
 import ch.batbern.partners.repository.TopicRepository;
 import ch.batbern.shared.test.AbstractIntegrationTest;
 import ch.batbern.shared.test.contract.ContractServer;
+import ch.batbern.shared.test.security.RoleStubTables;
 import ch.batbern.shared.test.security.TestTokens;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.AfterEach;
@@ -46,8 +47,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * the wire ({@link ContractServer}).
  *
  * <p>PCS owns no {@code user_profiles} or {@code role_assignments} (production shares one database
- * with CUMS), so this test creates both as stubs: {@code JwtRolesConverter} resolves an agent's
- * roles from them by its {@code sub}, as production does.
+ * with CUMS), so this test creates both as stubs ({@link RoleStubTables}): {@code JwtRolesConverter}
+ * resolves an agent's roles from them by its {@code sub}, as production does.
  */
 @Import({TestSecurityConfig.class, TestAwsConfig.class})
 @DisplayName("PCS: agent actions are recorded as agent:<run> for <username>")
@@ -81,12 +82,10 @@ class AgentAttributionIntegrationTest extends AbstractIntegrationTest {
 
     @BeforeEach
     void setUp() {
-        jdbc.execute("CREATE TABLE IF NOT EXISTS user_profiles ("
-                + "id UUID PRIMARY KEY, cognito_user_id VARCHAR(255), username VARCHAR(100))");
-        jdbc.execute("CREATE TABLE IF NOT EXISTS role_assignments (user_id UUID NOT NULL, role VARCHAR(50) NOT NULL)");
+        RoleStubTables.create(jdbc);
         cleanUp();
-        grant(ORGANIZER, ORGANIZER_SUB, "ORGANIZER");
-        grant(PARTNER, PARTNER_SUB, "PARTNER");
+        RoleStubTables.grant(jdbc, ORGANIZER, ORGANIZER_SUB, "ORGANIZER");
+        RoleStubTables.grant(jdbc, PARTNER, PARTNER_SUB, "PARTNER");
         partner(COMPANY);
         partner(OTHER_COMPANY);
 
@@ -109,15 +108,7 @@ class AgentAttributionIntegrationTest extends AbstractIntegrationTest {
         jdbc.update("DELETE FROM partner_meetings WHERE created_by LIKE ?", "%" + ORGANIZER);
         jdbc.update("DELETE FROM topic_suggestions WHERE company_name IN (?, ?)", COMPANY, OTHER_COMPANY);
         jdbc.update("DELETE FROM partners WHERE company_name IN (?, ?)", COMPANY, OTHER_COMPANY);
-        jdbc.update("DELETE FROM role_assignments WHERE user_id IN "
-                + "(SELECT id FROM user_profiles WHERE cognito_user_id IN (?, ?))", ORGANIZER_SUB, PARTNER_SUB);
-        jdbc.update("DELETE FROM user_profiles WHERE cognito_user_id IN (?, ?)", ORGANIZER_SUB, PARTNER_SUB);
-    }
-
-    private void grant(String username, String sub, String role) {
-        UUID id = UUID.randomUUID();
-        jdbc.update("INSERT INTO user_profiles (id, cognito_user_id, username) VALUES (?, ?, ?)", id, sub, username);
-        jdbc.update("INSERT INTO role_assignments (user_id, role) VALUES (?, ?)", id, role);
+        RoleStubTables.remove(jdbc, ORGANIZER_SUB, PARTNER_SUB);
     }
 
     private void partner(String companyName) {
