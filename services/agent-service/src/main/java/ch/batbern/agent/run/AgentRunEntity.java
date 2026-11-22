@@ -28,24 +28,34 @@ public class AgentRunEntity {
     @Column(name = "ended_at")
     private Instant endedAt;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "trigger", nullable = false, length = 32)
+    private RunTrigger trigger;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "end_reason", length = 32)
+    private RunEndReason endReason;
+
     protected AgentRunEntity() {
     }
 
-    /** A run that started at {@code startedAt} and is {@link AgentRunStatus#RUNNING}. */
-    public static AgentRunEntity started(UUID id, Instant startedAt) {
+    /** A run started by {@code trigger} at {@code startedAt}; it is {@link AgentRunStatus#RUNNING}. */
+    public static AgentRunEntity started(UUID id, RunTrigger trigger, Instant startedAt) {
         AgentRunEntity run = new AgentRunEntity();
         run.id = id;
+        run.trigger = trigger;
         run.status = AgentRunStatus.RUNNING;
         run.startedAt = startedAt;
         return run;
     }
 
-    /** Ends the run with {@code status} at {@code endedAt}. */
-    public void end(AgentRunStatus endStatus, Instant at) {
-        if (endStatus == AgentRunStatus.RUNNING) {
-            throw new IllegalArgumentException("A run ends DONE, FAILED or HANDED_TO_ORGANIZERS");
+    /** Ends the run for {@code reason} at {@code at}; the reason fixes the end status. */
+    public void end(RunEndReason reason, Instant at) {
+        if (status != AgentRunStatus.RUNNING) {
+            throw new IllegalStateException("Run " + id + " has already ended");
         }
-        this.status = endStatus;
+        this.status = reason.status();
+        this.endReason = reason;
         this.endedAt = at;
     }
 
@@ -63,5 +73,13 @@ public class AgentRunEntity {
 
     public Instant getEndedAt() {
         return endedAt;
+    }
+
+    public RunTrigger getTrigger() {
+        return trigger;
+    }
+
+    public RunEndReason getEndReason() {
+        return endReason;
     }
 }

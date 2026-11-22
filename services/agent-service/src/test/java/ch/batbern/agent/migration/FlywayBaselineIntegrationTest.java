@@ -22,7 +22,7 @@ import static org.assertj.core.groups.Tuple.tuple;
 /**
  * agent-service migrates into the shared production database, which is not empty and has no
  * {@code flyway_schema_history_agent} yet. With the service's own Flyway settings, Flyway must
- * baseline at 0 and then apply V1; with the default baseline 1 it would skip V1 and the service
+ * baseline at 0 and then apply V1 and the later migrations (V2: the decision log); with the default baseline 1 it would skip V1 and the service
  * would fail schema validation.
  *
  * <p>The settings are read from the base document of the production {@code application.yml}, not
@@ -30,7 +30,7 @@ import static org.assertj.core.groups.Tuple.tuple;
  * shadow the shared-kernel testFixtures file), so the context alone would not notice a change to
  * production.
  */
-@DisplayName("Flyway baselines a non-empty schema at 0 and applies V1")
+@DisplayName("Flyway baselines a non-empty schema at 0 and applies every migration")
 class FlywayBaselineIntegrationTest extends AbstractIntegrationTest {
 
     /** A schema of its own, so the probe never touches the one the test context migrated. */
@@ -48,8 +48,8 @@ class FlywayBaselineIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @DisplayName("should_baselineAt0ThenApplyV1_when_schemaHoldsOtherServicesTables")
-    void should_baselineAt0ThenApplyV1_when_schemaHoldsOtherServicesTables() throws IOException {
+    @DisplayName("should_baselineAt0ThenApplyAll_when_schemaHoldsOtherServicesTables")
+    void should_baselineAt0ThenApplyAll_when_schemaHoldsOtherServicesTables() throws IOException {
         PropertySource<?> production = new YamlPropertySourceLoader()
                 .load("application.yml", new ClassPathResource("application.yml")).get(0);
         String table = String.valueOf(production.getProperty("spring.flyway.table"));
@@ -86,17 +86,20 @@ class FlywayBaselineIntegrationTest extends AbstractIntegrationTest {
         assertThat(history).extracting(row -> row.get("version"), row -> row.get("type"), row -> row.get("success"))
                 .containsExactly(
                         tuple("0", "BASELINE", true),
-                        tuple("1", "SQL", true));
+                        tuple("1", "SQL", true),
+                        tuple("2", "SQL", true));
         assertThat(jdbc.queryForObject("SELECT count(*) FROM information_schema.tables "
-                + "WHERE table_schema = ? AND table_name = 'agent_runs'", Integer.class, PROBE_SCHEMA))
-                .isEqualTo(1);
+                + "WHERE table_schema = ? AND table_name IN ('agent_runs', 'agent_inbound_messages', 'agent_steps', "
+                + "'agent_model_calls', 'agent_tool_calls', 'agent_verdicts', 'agent_approvals', 'agent_undos')",
+                Integer.class, PROBE_SCHEMA))
+                .isEqualTo(8);
     }
 
     @Test
-    @DisplayName("should_recordV1InOwnHistory_when_serviceStarted")
-    void should_recordV1InOwnHistory_when_serviceStarted() {
+    @DisplayName("should_recordMigrationsInOwnHistory_when_serviceStarted")
+    void should_recordMigrationsInOwnHistory_when_serviceStarted() {
         Integer applied = jdbc.queryForObject("SELECT count(*) FROM flyway_schema_history_agent "
-                + "WHERE version = '1' AND success", Integer.class);
-        assertThat(applied).isEqualTo(1);
+                + "WHERE version IN ('1', '2') AND success", Integer.class);
+        assertThat(applied).isEqualTo(2);
     }
 }

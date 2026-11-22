@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.core.env.Environment;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
@@ -53,10 +54,14 @@ class AgentRunControllerIntegrationTest extends AbstractIntegrationTest {
     @Autowired
     private Environment environment;
 
+    @Autowired
+    private JdbcTemplate jdbc;
+
     @BeforeEach
     @AfterEach
-    void emptyTable() {
-        runs.deleteAll();
+    void emptyTables() {
+        // The decision log hangs off the runs; its rows go with them
+        jdbc.execute("TRUNCATE agent_runs CASCADE");
     }
 
     @Test
@@ -77,11 +82,13 @@ class AgentRunControllerIntegrationTest extends AbstractIntegrationTest {
     @DisplayName("organizer reads the stored runs, newest first, one page at a time")
     void should_listNewestFirst_when_runsExist() throws Exception {
         Instant base = Instant.parse("2026-11-20T08:00:00Z");
-        AgentRunEntity oldest = AgentRunEntity.started(UUID.randomUUID(), base);
-        oldest.end(AgentRunStatus.DONE, base.plus(2, ChronoUnit.MINUTES));
-        AgentRunEntity middle = AgentRunEntity.started(UUID.randomUUID(), base.plus(1, ChronoUnit.HOURS));
-        middle.end(AgentRunStatus.HANDED_TO_ORGANIZERS, base.plus(61, ChronoUnit.MINUTES));
-        AgentRunEntity newest = AgentRunEntity.started(UUID.randomUUID(), base.plus(2, ChronoUnit.HOURS));
+        AgentRunEntity oldest = AgentRunEntity.started(UUID.randomUUID(), RunTrigger.ORGANIZER, base);
+        oldest.end(RunEndReason.COMPLETED, base.plus(2, ChronoUnit.MINUTES));
+        AgentRunEntity middle = AgentRunEntity.started(UUID.randomUUID(), RunTrigger.INBOUND_MAIL,
+                base.plus(1, ChronoUnit.HOURS));
+        middle.end(RunEndReason.MODEL_UNAVAILABLE, base.plus(61, ChronoUnit.MINUTES));
+        AgentRunEntity newest = AgentRunEntity.started(UUID.randomUUID(), RunTrigger.SCHEDULED,
+                base.plus(2, ChronoUnit.HOURS));
         runs.saveAll(List.of(oldest, middle, newest));
 
         mockMvc.perform(get(RUNS).param("page", "0").param("limit", "2").with(tokenWithRole("ORGANIZER")))

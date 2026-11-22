@@ -53,6 +53,23 @@ other service's tables), scans only `ch.batbern.agent`, and migrates its own fol
 `V1` under `db/migration`). Story 1 ships it dark: `agent.enabled=false` (`AGENT_ENABLED`), one
 read endpoint `GET /api/v1/agent/runs` (organizers, `agent-api.openapi.yml`).
 
+The agent loop (story 2, AD-14): `AgentLoop` is the only caller of `LlmPort`, whose types map 1:1
+onto the Messages API tool use of `anthropic-java` (system, user/assistant messages of text,
+`tool_use` and `tool_result` blocks, tools with a JSON input schema, stop reason, usage). Until the
+Anthropic adapter (story 3) exists, the default `UnavailableLlm` makes every run hand itself over;
+tests script the model with `ScriptedLlm` (the model is a process boundary). The loop refuses to
+start while `agent.enabled` is false (`AgentSwitchedOffException`, no run row). It runs the tools the
+model chooses and sends their results back until the model ends its turn (DONE, `COMPLETED`). An
+unreachable model (`MODEL_UNAVAILABLE`, no retry), a cut-off answer (`MODEL_MAX_TOKENS`), a refusal
+or other stop (`MODEL_STOPPED`) and a model still calling tools after `agent.loop.max-steps` (25,
+`STEP_LIMIT`) end the run HANDED_TO_ORGANIZERS; a fault of agent-service itself ends it FAILED
+(`INTERNAL_ERROR`). An unknown tool or a tool that throws goes back to the model as an error
+`tool_result`. `DecisionLog` writes every run, inbound message, step, model call and tool call into
+the `agent_*` tables (V2) as it happens, one `REQUIRES_NEW` transaction per write, model and tool
+calls before they run and again after, so a crashed run leaves its trace. The application log
+carries run ids, counts, tool names and outcomes, never prompt text, tool input or output, or an
+exception message (#1202); the decision log keeps them in full.
+
 ### Package layout
 
 Layer packages are shared by all services; larger services add feature packages next to them.

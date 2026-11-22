@@ -36,9 +36,14 @@ CUMS (identity) is upstream of all. EMS (event) is upstream of PCS (partners).
   `/api/v1/agent/**` (`agent-api.openapi.yml`; the gateway routes the prefix with its slash, so
   `/api/v1/agent-settings` stays CUMS). Its own API accepts Cognito tokens only (an agent token
   is 401) and organizers only; roles come from `custom:role` without the `JwtRolesConverter` DB
-  fallback, which reads CUMS tables. It keeps its data in its own tables (`agent_runs` so far,
-  folder `db/agent-migration`, history `flyway_schema_history_agent`), scans only
-  `ch.batbern.agent` and uses shared-kernel classes directly. Open naming point for the epic's
+  fallback, which reads CUMS tables. It keeps its data in its own tables (folder `db/agent-migration`, history
+  `flyway_schema_history_agent`), scans only `ch.batbern.agent` and uses shared-kernel classes
+  directly. The decision log (story 2, R7): `agent_runs` (trigger, end status DONE, FAILED or
+  HANDED_TO_ORGANIZERS and its reason), `agent_inbound_messages`, `agent_steps`,
+  `agent_model_calls` (full prompt, answer, chosen tools, tokens), `agent_tool_calls`, and the
+  tables `agent_verdicts`, `agent_approvals`, `agent_undos`, written once the gate and the console
+  exist. Only `loop/AgentLoop` calls the model, through `loop/LlmPort` (AD-14); every write goes
+  through `log/DecisionLog`, one committed transaction per row. Open naming point for the epic's
   refactor sweep: CUMS already owns `agent_settings`, `agent_grants` and `agent_allowlist`, so
   "agent_* tables belong to agent-service" (AD-9) needs a sharper rule.
 - Downstream must react to an upstream change? The upstream calls it through an `/internal`
