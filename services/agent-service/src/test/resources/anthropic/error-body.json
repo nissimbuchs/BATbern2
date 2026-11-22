@@ -1,0 +1,8 @@
+{
+  "type": "error",
+  "error": {
+    "type": "ERROR_TYPE",
+    "message": "BODY-TEXT-MUST-NOT-LEAK: the request contained speaker@example.com"
+  },
+  "request_id": "req_contract"
+}

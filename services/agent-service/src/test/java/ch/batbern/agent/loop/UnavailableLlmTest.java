@@ -7,7 +7,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-/** Until story 3 brings the Anthropic adapter, the default port is unavailable: a run hands itself over. */
+/** Without a key in production the port is unavailable: a run hands itself over. */
 @DisplayName("UnavailableLlm")
 class UnavailableLlmTest {
 

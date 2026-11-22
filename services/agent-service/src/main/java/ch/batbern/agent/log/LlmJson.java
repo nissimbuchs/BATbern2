@@ -96,6 +96,11 @@ final class LlmJson {
         ObjectNode node = MAPPER.createObjectNode();
         switch (block) {
             case LlmContent.Text text -> node.put("type", "text").put("text", text.text());
+            case LlmContent.Thinking thinking -> node.put("type", "thinking")
+                    .put("thinking", thinking.thinking())
+                    .put("signature", thinking.signature());
+            case LlmContent.RedactedThinking redacted -> node.put("type", "redacted_thinking")
+                    .put("data", redacted.data());
             case LlmContent.ToolUse use -> node.put("type", "tool_use")
                     .put("id", use.id())
                     .put("name", use.name())

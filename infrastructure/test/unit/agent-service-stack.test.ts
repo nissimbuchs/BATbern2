@@ -5,6 +5,7 @@ import { Match, Template } from 'aws-cdk-lib/assertions';
 import * as cognito from 'aws-cdk-lib/aws-cognito';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as ecs from 'aws-cdk-lib/aws-ecs';
+import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
 import * as sns from 'aws-cdk-lib/aws-sns';
 import { stagingConfig } from '../../lib/config/staging-config';
 import { AgentServiceStack } from '../../lib/stacks/agent-service-stack';
@@ -17,6 +18,7 @@ import { AgentServiceStack } from '../../lib/stacks/agent-service-stack';
 const TEST_ACCOUNT = '123456789012';
 const TEST_REGION = 'eu-central-1';
 const ALARM_TOPIC = `arn:aws:sns:${TEST_REGION}:${TEST_ACCOUNT}:batbern-staging-alarms`;
+const ANTHROPIC_KEY_ARN = `arn:aws:secretsmanager:${TEST_REGION}:${TEST_ACCOUNT}:secret:batbern/staging/agent/anthropic-api-key-AbCdEf`;
 
 function buildTemplate(): Template {
   const app = new App();
@@ -42,6 +44,11 @@ function buildTemplate(): Template {
     userPool: cognito.UserPool.fromUserPoolId(parent, 'UP', `${TEST_REGION}_test`),
     userPoolClient: cognito.UserPoolClient.fromUserPoolClientId(parent, 'UPC', 'test-client-id'),
     alarmTopic: sns.Topic.fromTopicArn(parent, 'AlarmTopic', ALARM_TOPIC),
+    anthropicApiKey: secretsmanager.Secret.fromSecretCompleteArn(
+      parent,
+      'AnthropicKey',
+      ANTHROPIC_KEY_ARN
+    ),
     env: { account: TEST_ACCOUNT, region: TEST_REGION },
   });
   return Template.fromStack(stack);
@@ -99,13 +106,50 @@ describe('AgentServiceStack', () => {
     expect(containerEnv(template).AGENT_ENABLED).toBe('false');
   });
 
-  test('should_carryNoAgentOrMailSecrets_inStoryOne', () => {
-    // Cognito only (no agent public key), no caller secret (story 4), no Anthropic key (story 3)
+  test('should_carryTheAnthropicKeyButNoAgentOrMailSecrets', () => {
+    // Cognito only (no agent public key), no caller secret yet (story 4); the Anthropic key is the
+    // one secret beyond the database's (story 3)
     const taskDefs = JSON.stringify(template.findResources('AWS::ECS::TaskDefinition'));
     expect(taskDefs).not.toContain('AGENT_JWT_PUBLIC_KEY');
     expect(taskDefs).not.toContain('CALLER_SECRET');
-    expect(taskDefs).not.toContain('ANTHROPIC');
+    // Exactly one ANTHROPIC-named entry on the agent container, across Environment and Secrets
+    const [taskDef] = Object.values(template.findResources('AWS::ECS::TaskDefinition')) as Array<{
+      Properties: {
+        ContainerDefinitions: Array<{
+          Name: string;
+          Environment?: Array<{ Name: string }>;
+          Secrets?: Array<{ Name: string }>;
+        }>;
+      };
+    }>;
+    const container = taskDef.Properties.ContainerDefinitions.find((c) => c.Name === 'Container');
+    const anthropicNames = [...(container?.Environment ?? []), ...(container?.Secrets ?? [])]
+      .map((e) => e.Name)
+      .filter((name) => name.includes('ANTHROPIC'));
+    expect(anthropicNames).toEqual(['AGENT_ANTHROPIC_API_KEY']);
+    expect(container?.Secrets?.map((s) => s.Name)).toContain('AGENT_ANTHROPIC_API_KEY');
     expect(JSON.stringify(template.toJSON())).not.toMatch(/ses:Send/);
+  });
+
+  test('should_injectTheAnthropicKey_as_AGENT_ANTHROPIC_API_KEY', () => {
+    const taskDefs = template.findResources('AWS::ECS::TaskDefinition');
+    const secrets = (
+      Object.values(taskDefs) as Array<{
+        Properties: {
+          ContainerDefinitions: Array<{
+            Name: string;
+            Secrets?: Array<{ Name: string; ValueFrom: unknown }>;
+          }>;
+        };
+      }>
+    )
+      .flatMap((t) => t.Properties.ContainerDefinitions)
+      .flatMap((c) => c.Secrets ?? []);
+    const key = secrets.find((s) => s.Name === 'AGENT_ANTHROPIC_API_KEY');
+    expect(key).toBeDefined();
+    expect(JSON.stringify(key?.ValueFrom)).toContain('batbern/staging/agent/anthropic-api-key');
+    // The key is a secret, never a plain environment variable
+    expect(containerEnv(template).AGENT_ANTHROPIC_API_KEY).toBeUndefined();
   });
 
   test('should_registerServiceConnect_as_agent8080', () => {

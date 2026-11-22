@@ -34,6 +34,26 @@ class AgentSwitchDefaultTest {
                 assertThat(context.getBean(AgentProperties.class).enabled()).isTrue());
     }
 
+    @Test
+    @DisplayName("should_haveNoKeyAndSonnet_when_noEnvironmentOverride")
+    void should_haveNoKeyAndSonnet_when_noEnvironmentOverride() throws IOException {
+        runnerWithProductionYaml().run(context -> {
+            AgentProperties properties = context.getBean(AgentProperties.class);
+            assertThat(properties.anthropic().hasKey()).isFalse();
+            assertThat(properties.anthropic().model()).isEqualTo("claude-sonnet-5-5");
+            assertThat(properties.anthropic().effort()).isEqualTo("medium");
+            assertThat(properties.anthropic().baseUrl()).isEmpty();
+            assertThat(properties.loop().maxOutputTokens()).isEqualTo(16000);
+        });
+    }
+
+    @Test
+    @DisplayName("should_readKey_when_environmentInstallsIt")
+    void should_readKey_when_environmentInstallsIt() throws IOException {
+        runnerWithProductionYaml().withSystemProperties("AGENT_ANTHROPIC_API_KEY=sk-ant-env-test").run(context ->
+                assertThat(context.getBean(AgentProperties.class).anthropic().key()).isEqualTo("sk-ant-env-test"));
+    }
+
     private static ApplicationContextRunner runnerWithProductionYaml() throws IOException {
         // The first document of application.yml is the base every profile starts from
         List<PropertySource<?>> documents = new YamlPropertySourceLoader()

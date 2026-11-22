@@ -62,7 +62,19 @@ agent:
   # to the organizers. Token, reply and daily caps follow in story 8.
   loop:
     max-steps: ${AGENT_LOOP_MAX_STEPS:25}
-    max-output-tokens: ${AGENT_LOOP_MAX_OUTPUT_TOKENS:4096}
+    # Adaptive thinking spends output tokens too: 16000, the non-streaming default (story 3)
+    max-output-tokens: ${AGENT_LOOP_MAX_OUTPUT_TOKENS:16000}
+  # The model adapter (story 3, AD-14). The key comes from Secrets Manager
+  # (batbern/<env>/agent/anthropic-api-key, injected by the agent-service stack). `none` or blank: no adapter, runs
+  # are handed to the organizers (in profile local: a canned local adapter). The startup log names
+  # the adapter and the model, never the key.
+  anthropic:
+    api-key: ${AGENT_ANTHROPIC_API_KEY:none}
+    model: ${AGENT_ANTHROPIC_MODEL:claude-sonnet-5-5}
+    effort: ${AGENT_ANTHROPIC_EFFORT:medium}
+    timeout: ${AGENT_ANTHROPIC_TIMEOUT:5m}
+    max-retries: ${AGENT_ANTHROPIC_MAX_RETRIES:2}
+    base-url: ${AGENT_ANTHROPIC_BASE_URL:}
 
 aws:
   region: ${AWS_REGION:eu-central-1}

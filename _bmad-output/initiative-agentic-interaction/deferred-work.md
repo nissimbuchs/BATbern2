@@ -22,3 +22,12 @@
 - source_plan: `_bmad-output/initiative-agentic-interaction/tickets/epic-agent-runtime/tickets/story-the-decision-log-and-the-loop-run-a-scripted-model-end-to-en-plan.md`
   summary: ScriptedLlm lives in test sources; story 3 decides whether local dev needs a scripted adapter in main (Operational Envelope says local dev uses it unless a key is set).
   evidence: Plan decision of story 2; production default port is UnavailableLlm (always throws, run handed to the organizers).
+- source_plan: `_bmad-output/initiative-agentic-interaction/tickets/epic-agent-runtime/tickets/story-the-anthropic-adapter-answers-through-llmport-with-the-key-f-plan.md`
+  summary: anthropic-java 3.12.0 sends the key as `Authorization: Bearer`, not `x-api-key`; whether the real API accepts it is unverified until the owner installs the key.
+  evidence: Measured in the contract test against a local server; C2 forbids a test against the real API. Settled by the first model call after the key script (no 401, startup log "Model adapter anthropic").
+- source_plan: `_bmad-output/initiative-agentic-interaction/tickets/epic-agent-runtime/tickets/story-the-anthropic-adapter-answers-through-llmport-with-the-key-f-plan.md`
+  summary: An unhandled response content block (server-tool blocks only) ends the call as MODEL_UNAVAILABLE and drops its billed usage from agent_model_calls; story 8's token caps would under-count it.
+  evidence: Review finding 3 of story 3, rejected as unreachable today (no server tools declared). Revisit if a server tool is ever offered.
+- source_plan: `_bmad-output/initiative-agentic-interaction/tickets/epic-agent-runtime/tickets/story-the-anthropic-adapter-answers-through-llmport-with-the-key-f-plan.md`
+  summary: The contract fixture is hand-built from the documented Messages response shape, not recorded from the live API.
+  evidence: Recording needs a key and a real call (C2). Re-record once the key exists, outside CI, if the owner wants byte-level fidelity.

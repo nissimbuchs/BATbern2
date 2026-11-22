@@ -262,6 +262,10 @@ mappings:
   - source_pattern: "scripts/deploy/create-agent-signing-key.sh"
     docs:
       - "docs/operations/runbooks.md"
+  # Agent runtime story 3: the Anthropic API key of agent-service is installed through the runbooks.
+  - source_pattern: "scripts/deploy/put-anthropic-api-key.sh"
+    docs:
+      - "docs/operations/runbooks.md"
   - source_pattern: "infrastructure/lib/stacks/secrets-stack.ts"
     docs:
       - "docs/operations/runbooks.md"

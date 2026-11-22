@@ -18,6 +18,7 @@
 | Cache | Caffeine | 3.x | Application-level in-memory caching | High performance, cost-effective, zero external dependencies |
 | File Storage | AWS S3 | Latest | Document and media storage | Enterprise-grade, CDN integration, Swiss compliance capable |
 | Authentication | AWS Cognito | Latest | Multi-role user management | Enterprise SSO, fine-grained permissions, AWS ecosystem |
+| Model API client | anthropic-java | 3.12.0 | agent-service's model adapter (`llm/AnthropicLlm`, AD-14) | Official SDK, non-beta Messages API, own loop without the tool runner; default model `claude-sonnet-5-5` as configuration |
 | Frontend Testing | Vitest + React Testing Library | 5.x / 16.x | Component and integration testing | Fast, TypeScript native, React best practices |
 | Backend Testing | JUnit + Testcontainers | 6.x / 2.x | Service and integration testing | Java standard, real database testing |
 | E2E Testing | Playwright | 1.x | Full application workflows | Cross-browser, reliable, excellent CI integration |

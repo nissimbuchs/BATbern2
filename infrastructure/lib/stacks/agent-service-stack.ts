@@ -19,6 +19,8 @@ export interface AgentServiceStackProps extends cdk.StackProps {
   userPool: cognito.IUserPool;
   userPoolClient: cognito.IUserPoolClient;
   alarmTopic?: sns.ITopic;
+  /** Anthropic API key of the model adapter (story 3); `none` until the owner installs it */
+  anthropicApiKey?: secretsmanager.ISecret;
 }
 
 /**
@@ -28,9 +30,10 @@ export interface AgentServiceStackProps extends cdk.StackProps {
  * (AD-9). Handles /api/v1/agent/** behind the Spring gateway, reached through Service Connect as
  * `agent:8080`. Shipped dark: AGENT_ENABLED stays false until the owner switches it on.
  *
- * It accepts Cognito tokens only, so it needs no agent public key; the CUMS caller secret
- * (story 4) and the Anthropic key secret (story 3) are added by those stories. No SES: the agent
- * never sends mail itself (AD-5).
+ * It accepts Cognito tokens only, so it needs no agent public key. The Anthropic key secret
+ * (story 3) is injected as AGENT_ANTHROPIC_API_KEY on this task definition only; the CUMS caller
+ * secret follows with story 4. No SES: the agent never sends mail itself (AD-5). Egress to
+ * api.anthropic.com goes through the domain-service security group (443 to any IPv4, via NAT).
  */
 export class AgentServiceStack extends cdk.Stack {
   public readonly service: ecs.FargateService;
@@ -39,6 +42,14 @@ export class AgentServiceStack extends cdk.Stack {
     super(scope, id, props);
 
     const envName = props.config.envName;
+
+    // ecs.Secret grants the execution role read access to the secret; no other service gets it
+    const additionalSecrets: Record<string, ecs.Secret> = {};
+    if (props.anthropicApiKey) {
+      additionalSecrets.AGENT_ANTHROPIC_API_KEY = ecs.Secret.fromSecretsManager(
+        props.anthropicApiKey
+      );
+    }
 
     const domainService = createDomainService(this, {
       config: props.config,
@@ -57,6 +68,7 @@ export class AgentServiceStack extends cdk.Stack {
           // The service's agent switch; the owner turns it on, never a deploy (C1)
           AGENT_ENABLED: 'false',
         },
+        additionalSecrets,
       },
       cluster: props.cluster,
       vpc: props.vpc,

@@ -4,13 +4,43 @@ import com.fasterxml.jackson.databind.JsonNode;
 
 import java.util.Objects;
 
-/** One content block of a message, as the Messages API defines it for tool use. */
-public sealed interface LlmContent permits LlmContent.Text, LlmContent.ToolUse, LlmContent.ToolResult {
+/**
+ * One content block of a message, as the Messages API defines it for tool use. The thinking blocks
+ * come back from the model and go back to it unchanged on the next request (story 3): the history
+ * stays append-only, so the model's thinking stays valid.
+ */
+public sealed interface LlmContent permits LlmContent.Text, LlmContent.Thinking, LlmContent.RedactedThinking,
+        LlmContent.ToolUse, LlmContent.ToolResult {
 
     /** A {@code text} block. */
     record Text(String text) implements LlmContent {
         public Text {
             Objects.requireNonNull(text, "text");
+        }
+    }
+
+    /**
+     * A {@code thinking} block of the model. With the default display the text is empty; the
+     * signature is what the API checks when the block comes back.
+     *
+     * @param thinking  the thinking text, possibly empty
+     * @param signature the API's signature of the block
+     */
+    record Thinking(String thinking, String signature) implements LlmContent {
+        public Thinking {
+            Objects.requireNonNull(thinking, "thinking");
+            Objects.requireNonNull(signature, "signature");
+        }
+    }
+
+    /**
+     * A {@code redacted_thinking} block: thinking the API returns encrypted.
+     *
+     * @param data the encrypted thinking, sent back as received
+     */
+    record RedactedThinking(String data) implements LlmContent {
+        public RedactedThinking {
+            Objects.requireNonNull(data, "data");
         }
     }
 

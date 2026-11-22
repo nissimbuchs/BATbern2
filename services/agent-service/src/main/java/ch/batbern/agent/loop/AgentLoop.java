@@ -133,7 +133,17 @@ public class AgentLoop {
                         messages.add(LlmMessage.assistant(response.content()));
                         messages.add(LlmMessage.user(runTools(runId, stepId, counter.steps, uses, tools)));
                         break;
+                    case PAUSE_TURN:
+                        // agent-service declares no server tools, so the API has nothing to pause
+                        // for; resuming blind would act on a turn we cannot see. Handed over.
+                    case STOP_SEQUENCE:
+                        // No stop sequences are sent
+                    case REFUSAL:
+                        // A refusal goes to the organizers; there is no fallback model (story 3)
+                    case UNKNOWN:
                     default:
+                        // The exact stop reason is in agent_model_calls; the end reason stays one
+                        // value (the V2 check constraint is frozen)
                         return RunEndReason.MODEL_STOPPED;
                 }
             } finally {

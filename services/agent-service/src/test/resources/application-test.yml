@@ -14,3 +14,9 @@ spring:
     table: flyway_schema_history_agent
     baseline-on-migrate: true
     baseline-version: 0
+
+# Tests never reach the model (C2): a key in the developer's environment must not build a client.
+# The scripted model (ScriptedLlm, @Primary) answers every loop test.
+agent:
+  anthropic:
+    api-key: none

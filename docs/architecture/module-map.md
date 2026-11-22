@@ -42,8 +42,11 @@ CUMS (identity) is upstream of all. EMS (event) is upstream of PCS (partners).
   HANDED_TO_ORGANIZERS and its reason), `agent_inbound_messages`, `agent_steps`,
   `agent_model_calls` (full prompt, answer, chosen tools, tokens), `agent_tool_calls`, and the
   tables `agent_verdicts`, `agent_approvals`, `agent_undos`, written once the gate and the console
-  exist. Only `loop/AgentLoop` calls the model, through `loop/LlmPort` (AD-14); every write goes
-  through `log/DecisionLog`, one committed transaction per row. Open naming point for the epic's
+  exist. Only `loop/AgentLoop` calls the model, through `loop/LlmPort` (AD-14); the adapters live
+  in `llm/` (`AnthropicLlm` on `anthropic-java` 3.12.0, `LocalDevLlm`), picked once at startup by
+  `llm/LlmConfig`, and api.anthropic.com is the service's only outbound call outside the BATbern
+  services. Its key comes from Secrets Manager (`AGENT_ANTHROPIC_API_KEY`, agent-service only, story
+  3). Every write goes through `log/DecisionLog`, one committed transaction per row. Open naming point for the epic's
   refactor sweep: CUMS already owns `agent_settings`, `agent_grants` and `agent_allowlist`, so
   "agent_* tables belong to agent-service" (AD-9) needs a sharper rule.
 - Downstream must react to an upstream change? The upstream calls it through an `/internal`

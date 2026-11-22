@@ -19,6 +19,9 @@ gitProperties {
 }
 
 dependencies {
+    // The model adapter (story 3, AD-14): the Messages API, non-beta, no tool runner
+    implementation 'com.anthropic:anthropic-java:3.12.0'
+
     // AWS SDK version alignment (the SDK modules come in through shared-kernel and the
     // CloudWatch registry)
     implementation platform('software.amazon.awssdk:bom:2.57.11')

@@ -43,6 +43,16 @@ only). All four use the AWS-managed key, like the Watch secret. CDK creates the 
 placeholder `none`, which the decoder reads as "agent off"; the owner writes the real pair once with
 `scripts/deploy/create-agent-signing-key.sh` (runbook "Agent signing key"). No real key is in git.
 
+**Anthropic API key** (agent runtime story 3, AD-14). The secret
+`batbern/<env>/agent/anthropic-api-key` (AWS-managed key) is injected into the agent-service task
+only, as `AGENT_ANTHROPIC_API_KEY`. CDK creates it with the placeholder `none`: agent-service starts
+with the model adapter off and hands every run to the organizers. The owner writes the real key with
+`scripts/deploy/put-anthropic-api-key.sh`, which reads it from stdin, never echoes it and passes it
+to the AWS CLI as `file://` (runbook "Anthropic API key"). The key never appears in a log, a
+`toString` or an exception message; the start log names the adapter and the model only. Outbound
+calls go to api.anthropic.com over 443 through the NAT, which the domain-service security group
+already allows.
+
 Roles are decided only in the services (ADR-008, #1147). The gateway authenticates and routes; its
 `AccountActiveFilter`, Turnstile and rate limiting are the only request-time checks it adds.
 `EndpointAuthorizationGuardTest` per service fails the build for a write endpoint without

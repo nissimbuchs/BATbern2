@@ -3,8 +3,9 @@ package ch.batbern.agent.loop;
 /**
  * The only way to the model (AD-14). {@link AgentLoop} is its only caller: tools never call the
  * model, and nothing else in agent-service does. The types map 1:1 onto the Messages API tool use of
- * {@code anthropic-java} 3.12.0; the production adapter arrives in story 3, until then
- * {@link UnavailableLlm} answers.
+ * {@code anthropic-java} 3.12.0. {@code llm/LlmConfig} picks the adapter at startup:
+ * {@code llm/AnthropicLlm} with a key, {@code llm/LocalDevLlm} in local development without one,
+ * {@link UnavailableLlm} otherwise.
  */
 public interface LlmPort {
 

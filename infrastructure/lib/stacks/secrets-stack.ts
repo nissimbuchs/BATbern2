@@ -38,6 +38,8 @@ export class SecretsStack extends cdk.Stack {
   public readonly emsCallerSecret: secretsmanager.Secret;
   /** Secret the agent service presents to CUMS. CUMS only until the agent runtime exists. */
   public readonly agentServiceCallerSecret: secretsmanager.Secret;
+  /** Anthropic API key of the agent service's model adapter (AD-14). agent-service only. */
+  public readonly anthropicApiKey: secretsmanager.Secret;
 
   constructor(scope: Construct, id: string, props: SecretsStackProps) {
     super(scope, id, props);
@@ -125,6 +127,20 @@ export class SecretsStack extends cdk.Stack {
         passwordLength: 64,
         excludePunctuation: true,
       },
+    });
+
+    // The Anthropic API key of agent-service's model adapter (agent runtime, story 3, AD-14).
+    // AWS-managed key, as the agent secrets above. CDK creates it with the placeholder `none`: the
+    // secret exists before the first deploy, and agent-service reads `none` as "no key" (adapter
+    // off, runs handed to the organizers) and still starts. The owner writes the real key with
+    // scripts/deploy/put-anthropic-api-key.sh. DO NOT change the properties of this resource
+    // (description, name, value, tags): CloudFormation would write `none` back on the next deploy
+    // and switch the adapter off. If that happened, re-run the script with --force.
+    this.anthropicApiKey = new secretsmanager.Secret(this, 'AgentAnthropicApiKey', {
+      secretName: `batbern/${props.config.envName}/agent/anthropic-api-key`,
+      description:
+        'Anthropic API key of the agent service model adapter; written by scripts/deploy/put-anthropic-api-key.sh',
+      secretStringValue: cdk.SecretValue.unsafePlainText(AGENT_KEY_PLACEHOLDER),
     });
 
     // SSM Parameter Store for non-sensitive configuration

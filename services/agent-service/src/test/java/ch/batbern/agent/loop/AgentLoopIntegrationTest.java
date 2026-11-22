@@ -125,7 +125,7 @@ class AgentLoopIntegrationTest extends AbstractIntegrationTest {
                 .containsEntry("status", "SUCCEEDED")
                 .containsEntry("model", ScriptedLlm.MODEL)
                 .containsEntry("system", SYSTEM)
-                .containsEntry("max_tokens", 4096)
+                .containsEntry("max_tokens", 16000)
                 .containsEntry("first_text", "Which slot is free?")
                 .containsEntry("offered", "lookup_event,list_slots,find_speaker")
                 .containsEntry("error", null));
@@ -169,6 +169,38 @@ class AgentLoopIntegrationTest extends AbstractIntegrationTest {
         assertThat(lookup.inputs()).hasSize(1);
         assertThat(slots.inputs()).hasSize(1);
         assertThat(speaker.inputs()).hasSize(1);
+    }
+
+    @Test
+    @DisplayName("thinking blocks of step 1 go back to the model unchanged on step 2, and are logged")
+    void should_returnThinkingUnchanged_when_modelThoughtBeforeToolUse() {
+        RecordingTool lookup = TestTools.answering("lookup_event", in -> "event BATbern61 on 2027-03-05");
+        LlmContent.Thinking thinking = new LlmContent.Thinking("", "sig-of-step-1");
+        LlmContent.RedactedThinking redacted = new LlmContent.RedactedThinking("encrypted-step-1");
+        LlmContent.ToolUse use = new LlmContent.ToolUse("tu_1", "lookup_event", TestTools.input("query", "BATbern61"));
+        model.then(model.response(LlmStopReason.TOOL_USE, NO_TOKENS, thinking, redacted, use))
+             .then(model.response(LlmStopReason.END_TURN, NO_TOKENS, new LlmContent.Text("Done.")));
+
+        AgentRunResult result = loop.run(new AgentRunRequest(RunTrigger.ORGANIZER, SYSTEM, "Which event?",
+                List.of(lookup)));
+
+        assertThat(result.status()).isEqualTo(AgentRunStatus.DONE);
+        LlmRequest second = model.requests().get(1);
+        assertThat(second.messages().get(1).role()).isEqualTo(LlmMessage.Role.ASSISTANT);
+        assertThat(second.messages().get(1).content()).containsExactly(thinking, redacted, use);
+
+        // The decision log stores them in the Messages API's shape
+        Map<String, Object> logged = jdbc.queryForMap("SELECT "
+                + "m.response->'content'->0->>'type' AS t0, m.response->'content'->0->>'signature' AS sig, "
+                + "m.response->'content'->1->>'type' AS t1, m.response->'content'->1->>'data' AS data "
+                + "FROM agent_model_calls m JOIN agent_steps s ON s.id = m.step_id "
+                + "WHERE m.run_id = ? AND s.step_number = 1", result.runId());
+        assertThat(logged).containsEntry("t0", "thinking").containsEntry("sig", "sig-of-step-1")
+                .containsEntry("t1", "redacted_thinking").containsEntry("data", "encrypted-step-1");
+        String secondPrompt = jdbc.queryForObject("SELECT m.prompt->'messages'->1->'content'->0->>'signature' "
+                + "FROM agent_model_calls m JOIN agent_steps s ON s.id = m.step_id "
+                + "WHERE m.run_id = ? AND s.step_number = 2", String.class, result.runId());
+        assertThat(secondPrompt).isEqualTo("sig-of-step-1");
     }
 
     @Test

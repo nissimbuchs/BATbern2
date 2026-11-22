@@ -55,13 +55,29 @@ read endpoint `GET /api/v1/agent/runs` (organizers, `agent-api.openapi.yml`).
 
 The agent loop (story 2, AD-14): `AgentLoop` is the only caller of `LlmPort`, whose types map 1:1
 onto the Messages API tool use of `anthropic-java` (system, user/assistant messages of text,
-`tool_use` and `tool_result` blocks, tools with a JSON input schema, stop reason, usage). Until the
-Anthropic adapter (story 3) exists, the default `UnavailableLlm` makes every run hand itself over;
-tests script the model with `ScriptedLlm` (the model is a process boundary). The loop refuses to
+`tool_use` and `tool_result` blocks, `thinking` and `redacted_thinking` blocks, tools with a JSON
+input schema, stop reason, usage). `llm/LlmConfig` picks the adapter once at startup (story 3) and
+logs `Model adapter {anthropic|local-scripted|none}, model {id}`, never the key: with a key in
+`agent.anthropic.api-key` (`AGENT_ANTHROPIC_API_KEY`, from Secrets Manager; blank or `none` in any
+case is no key) `llm/AnthropicLlm` (`anthropic-java` 3.12.0, non-beta `client.messages()`, no tool
+runner, no streaming, no server tools, no fallback model); without a key in profile `local`
+`llm/LocalDevLlm` (a canned `end_turn` answer, model `local-scripted`); otherwise `UnavailableLlm`,
+which makes every run hand itself over. The adapter sends model (`agent.anthropic.model`, default
+`claude-sonnet-5-5`), system, `max_tokens` (`agent.loop.max-output-tokens`, 16000: adaptive thinking
+spends output tokens), tools and `output_config.effort` (`agent.anthropic.effort`, default `medium`);
+no `thinking` field (adaptive is the model's default, `disabled` is rejected) and no `tool_choice`
+(forced choice is rejected). Thinking blocks go back to the model unchanged on the next request, so
+the history stays append-only. The SDK retries 408, 409, 429, 5xx and connection errors
+(`agent.anthropic.max-retries`, 2; timeout `agent.anthropic.timeout`, 5 min); after that every
+failure is `LlmUnavailableException` carrying the HTTP status and error type only, never the
+response body or the key. anthropic-java 3.12.0 sends the key as `Authorization: Bearer`. Tests
+script the model with `ScriptedLlm` (the model is a process boundary); the adapter's contract test
+runs against a local JDK `HttpServer`, never the real API. The loop refuses to
 start while `agent.enabled` is false (`AgentSwitchedOffException`, no run row). It runs the tools the
 model chooses and sends their results back until the model ends its turn (DONE, `COMPLETED`). An
 unreachable model (`MODEL_UNAVAILABLE`, no retry), a cut-off answer (`MODEL_MAX_TOKENS`), a refusal
-or other stop (`MODEL_STOPPED`) and a model still calling tools after `agent.loop.max-steps` (25,
+or other stop (`MODEL_STOPPED`: `refusal`, `stop_sequence`, `pause_turn`, which cannot come without
+server tools and is not resumed blind, and any stop reason the adapter does not know) and a model still calling tools after `agent.loop.max-steps` (25,
 `STEP_LIMIT`) end the run HANDED_TO_ORGANIZERS; a fault of agent-service itself ends it FAILED
 (`INTERNAL_ERROR`). An unknown tool or a tool that throws goes back to the model as an error
 `tool_result`. `DecisionLog` writes every run, inbound message, step, model call and tool call into

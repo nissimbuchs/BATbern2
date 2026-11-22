@@ -397,6 +397,48 @@ Rotation is not automated.
 
 ---
 
+## Anthropic API key
+
+agent-service calls the model through its Anthropic adapter (agent runtime story 3). The key lives
+in the secret `batbern/staging/agent/anthropic-api-key` (AWS-managed key), injected into the
+agent-service task only as `AGENT_ANTHROPIC_API_KEY` (`agent.anthropic.api-key`). CDK creates it
+with the placeholder `none`: agent-service starts with the adapter off and hands every run to the
+organizers. Installing the key is a one-time owner step after the SecretsStack is deployed. It does
+not switch the agent on: that stays `AGENT_ENABLED`.
+
+**Install the key:**
+
+1. Deploy first. agent-service logs
+   `Model adapter none, model none: no key installed, runs are handed to the organizers`.
+2. Optional check, no AWS call: `scripts/deploy/put-anthropic-api-key.sh --dry-run` (reads the key
+   and checks its shape; prints the steps, never the key).
+3. Run `scripts/deploy/put-anthropic-api-key.sh` and paste the key at the hidden prompt, or pipe it
+   in. It uses profile `batbern-staging` (override with `ANTHROPIC_KEY_AWS_PROFILE`) in
+   `eu-central-1`, checks that the secret still holds `none`, writes the key through a umask-077
+   temp file as `file://`, and forces a new deployment of the agent service (`--no-restart` skips
+   that and prints the command).
+4. Check the start log of the new task:
+   `aws --profile batbern-staging --region eu-central-1 logs tail /aws/ecs/BATbern-staging/agent --since 30m --filter-pattern '"Model adapter"'`
+   must show `Model adapter anthropic, model claude-sonnet-5-5, effort medium`.
+
+**The script refuses** when the secret already holds a key; `--force` replaces it. `none` is refused
+too unless `--force` is given: `echo none | scripts/deploy/put-anthropic-api-key.sh --force` switches
+the adapter off again after the restart.
+
+**Model and effort** are configuration, not part of the secret: `AGENT_ANTHROPIC_MODEL` (default
+`claude-sonnet-5-5`) and `AGENT_ANTHROPIC_EFFORT` (default `medium`) on the task.
+
+**What resets the key to `none`:** a CDK change to the properties of the secret
+`AgentAnthropicApiKey` in `secrets-stack.ts` (description, name, value, or the SecretsStack's
+tags), or replacing the SecretsStack. `anthropic-api-key.test.ts` pins those properties. Fix:
+re-run the script with `--force`.
+
+**While the model fails** (HTTP error, timeout, unreachable), the SDK retries 429, 5xx and
+connection errors twice, then the run ends HANDED_TO_ORGANIZERS with `MODEL_UNAVAILABLE`; the
+model call in `agent_model_calls` keeps the HTTP status and error type, never the response body.
+
+---
+
 ## When the triage loop itself is the problem
 
 Kill switch: set `CLAUDE_TRIAGE_ENABLED=false` on the `batbern-staging-github-issues` Lambda.

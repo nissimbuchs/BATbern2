@@ -371,6 +371,7 @@ if (EnvironmentHelper.shouldDeployWebInfrastructure(config.envName)) {
     userPool: cognitoStack.userPool,
     userPoolClient: cognitoStack.userPoolClient,
     alarmTopic: monitoringStack.alarmTopic,
+    anthropicApiKey: secretsStack.anthropicApiKey,
     env,
     description: `BATbern Agent Service - ${config.envName}`,
     tags: config.tags,
