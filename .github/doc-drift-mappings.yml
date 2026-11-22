@@ -217,6 +217,11 @@ mappings:
     docs:
       - "docs/architecture/module-map.md"
       - "docs/architecture/06-backend-architecture.md"
+  # Agentic interaction story 7: audience sends refuse agent tokens (AD-15).
+  - source_pattern: "shared-kernel/src/main/java/ch/batbern/shared/security/AudienceGuard.java"
+    docs:
+      - "docs/architecture/module-map.md"
+      - "docs/architecture/06-backend-architecture.md"
   - source_pattern: "shared-kernel/src/main/java/ch/batbern/shared/contract/"
     docs:
       - "docs/architecture/module-map.md"

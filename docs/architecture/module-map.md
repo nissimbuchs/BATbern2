@@ -130,7 +130,7 @@ CUMS (identity) is upstream of all. EMS (event) is upstream of PCS (partners).
 | Need | Use | Do not |
 |---|---|---|
 | Send a template mail | `MailPipeline` + `EmailService` (shared-kernel) | load or render HTML yourself |
-| Mail to an audience | Mail Center: an `AudienceAdapter` for `MailComposerService` | add a `…/send` + `…/preview` endpoint pair |
+| Mail to an audience | Mail Center: an `AudienceAdapter` for `MailComposerService`. A send to an audience refuses agent tokens: shared-kernel `AudienceGuard.refuseAgentTokens(operation)` as the first statement of the service method (403 for a token carrying `act`, AD-15); it guards `MailComposerService.send`/`retry`, the newsletter and registrant bulk sends under them and PCS `PartnerMeetingService.sendInvite` and the cancellation of an invited meeting. Single-recipient sends stay open | add a `…/send` + `…/preview` endpoint pair; an audience send without the guard |
 | User or company data | `UserApiClient` (cached, `/internal`) | store name/email (ADR-004) |
 | Headers of a service-to-service call | `S2sHeaders.forCurrentUser()` (shared-kernel) | read the `SecurityContext` in a client |
 | A person's proven addresses | `PersonAddresses` | read additional e-mails directly |

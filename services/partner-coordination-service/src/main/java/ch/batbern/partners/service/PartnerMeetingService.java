@@ -13,6 +13,7 @@ import ch.batbern.partners.meetings.dto.generated.UpdateMeetingRequest;
 import ch.batbern.partners.exception.PartnerNotFoundException;
 import ch.batbern.partners.repository.PartnerMeetingRepository;
 import ch.batbern.shared.security.Actors;
+import ch.batbern.shared.security.AudienceGuard;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -144,6 +145,7 @@ public class PartnerMeetingService {
      */
     @Transactional
     public SendInviteResponse sendInvite(UUID meetingId, String senderUsername) {
+        AudienceGuard.refuseAgentTokens("partner meeting invite");
         PartnerMeeting meeting = findMeetingById(meetingId);
 
         log.info("Sending partner meeting invite: meetingId={}, eventCode={}", meetingId, meeting.getEventCode());
@@ -210,10 +212,10 @@ public class PartnerMeetingService {
     @Transactional
     public void deleteMeeting(UUID meetingId, String senderUsername) {
         PartnerMeeting meeting = findMeetingById(meetingId);
-        log.info("Deleting partner meeting: id={}, eventCode={}, inviteSent={}",
-                meetingId, meeting.getEventCode(), meeting.getInviteSentAt() != null);
 
         if (meeting.getInviteSentAt() != null) {
+            // The cancellation mails every partner contact and organizer: an audience send (AD-15).
+            AudienceGuard.refuseAgentTokens("partner meeting cancellation");
             // Fetch event title for the cancellation email body
             EventSummaryDTO event = eventManagementClient.getEventSummary(meeting.getEventCode());
             List<String> emails = collectInviteRecipientEmails();
@@ -230,6 +232,8 @@ public class PartnerMeetingService {
             log.info("Cancellation notice queued for {} recipients, meetingId={}", emails.size(), meetingId);
         }
 
+        log.info("Deleting partner meeting: id={}, eventCode={}, inviteSent={}",
+                meetingId, meeting.getEventCode(), meeting.getInviteSentAt() != null);
         meetingRepository.delete(meeting);
     }
 

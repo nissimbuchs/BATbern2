@@ -152,6 +152,21 @@ The EMS STOMP principal of an agent token is its actor; Cognito and Watch keep t
 columns narrower than 255 were widened (CUMS V40, EMS V161, PCS V13); the longest actor is 147
 characters (36-character run, 100-character username).
 
+**Audience sends refuse agent tokens** (AD-15, agent identity story 7): a mail to an audience may
+only be started by a person. Shared-kernel `security/AudienceGuard.refuseAgentTokens(operation)`
+throws `AccessDeniedException` (403) when the current token carries `act`, well-formed or not
+(`Actors.carriesAct`; the claim, not the issuer). It is the first statement of the service method,
+before any recipient lookup, render, write or SES call, so a refused call leaves no `mail_message`,
+no `newsletter_sends` row and no meeting change: EMS `MailComposerService.send` (every audience and
+the organizer test send) and `retry`, and below them `NewsletterEmailService.sendNewsletter`,
+`sendNewsletterOwnText`, `retryFailedRecipients` and `SlidesOnlineEmailService.sendRegistrantNotice`,
+`sendRegistrantOwnText`; PCS `PartnerMeetingService.sendInvite` and `deleteMeeting` of a meeting
+whose invite was sent (the METHOD:CANCEL goes to every partner contact and organizer). Without an
+authentication (scheduler, `@Async` thread, SQS) and for Cognito, Watch and mock users it does
+nothing. EMS returns the guard's message (`Audience sends refuse agent tokens (AD-15): <operation>`),
+PCS its generic "Access denied". Single-recipient sends (speaker invitation, conversation reply,
+registration confirmation resend, add participant) stay open to agent tokens.
+
 **Agent settings** (agentic interaction, agent identity story 4): the organizer agent's switch, its
 allowlist and the organizer delegate are one global resource in CUMS, `GET` / `PATCH
 /api/v1/agent-settings` (`users-api`, routed to CUMS by the Spring gateway), stored in the singleton
