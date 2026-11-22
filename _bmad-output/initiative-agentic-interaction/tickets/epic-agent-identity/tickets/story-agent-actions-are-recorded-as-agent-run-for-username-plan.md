@@ -3,7 +3,7 @@ title: 'Agent actions are recorded as agent:<run> for <username>'
 type: 'feature'
 ticket: '2'
 created: '2026-11-22'
-status: 'built'
+status: done
 baseline_revision: '2fc1f69be1412b2a258950502d495691ccd12bf7'
 route: 'full'
 route_source: 'auto'

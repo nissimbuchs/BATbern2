@@ -3,7 +3,7 @@ title: 'CUMS mints delegated tokens that every service accepts'
 type: 'feature'
 ticket: '6'
 created: '2026-11-22'
-status: 'built'
+status: done
 baseline_revision: 'c9dca63c948c1220d4b2be9c2d758afa2bf94cfd'
 route: 'full'
 route_source: 'auto'

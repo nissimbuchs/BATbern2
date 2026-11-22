@@ -3,7 +3,7 @@ title: 'CUMS issues run grants and answers agent eligibility'
 type: 'feature'
 ticket: '5'
 created: '2026-11-22'
-status: 'built'
+status: done
 baseline_revision: '9ae07fa9e0cbdd04db2fe56ee6ff84bbc27c7300'
 route: 'full'
 route_source: 'auto'
