@@ -14,6 +14,7 @@ import ch.batbern.agent.loop.TestTools.RecordingTool;
 import ch.batbern.agent.precedent.Precedents;
 import ch.batbern.agent.run.AgentRunStatus;
 import ch.batbern.agent.run.RunEndReason;
+import ch.batbern.agent.run.RunLimit;
 import ch.batbern.agent.run.RunTrigger;
 import ch.batbern.agent.tools.AgentTool;
 import ch.batbern.agent.tools.OperationClass;
@@ -60,7 +61,7 @@ import static org.assertj.core.groups.Tuple.tuple;
  * source ids), and whether the fixture ran.
  */
 @DisplayName("The autonomy gate decides every non-read call and cites its precedents")
-@TestPropertySource(properties = {"agent.enabled=true", "agent.loop.max-steps=4"})
+@TestPropertySource(properties = {"agent.enabled=true", "agent.limits.run-steps=4"})
 class AutonomyGateIntegrationTest extends AbstractIntegrationTest {
 
     private static final String EVENTS_CORE = "docs/api/events-core-api.openapi.yml";
@@ -448,14 +449,14 @@ class AutonomyGateIntegrationTest extends AbstractIntegrationTest {
         Verdict verdict = ledger.decideAndRecord(runId, toolCallId, tool, GateLedger.MailResolution.NONE,
                 new Precedents(List.of(), List.of(), List.of(), List.of(), Precedents.HistoryStatus.NOT_ASKED),
                 (run, effectiveClass, mail) -> effectiveClass == OperationClass.REVERSIBLE
-                        ? Optional.of("steps") : Optional.empty());
+                        ? Optional.of(RunLimit.REPLIES) : Optional.empty());
 
         assertThat(verdict.outcome()).isEqualTo(VerdictOutcome.REFUSED);
         assertThat(verdict.reason()).isEqualTo(GateReason.CAP_REACHED);
-        assertThat(verdict.cap()).isEqualTo("steps");
+        assertThat(verdict.cap()).isEqualTo(RunLimit.REPLIES);
         Map<String, Object> row = jdbc.queryForMap("SELECT outcome, inputs->>'cap' AS cap FROM agent_verdicts "
                 + "WHERE id = ?", verdict.id());
-        assertThat(row).containsEntry("outcome", "REFUSED").containsEntry("cap", "steps");
+        assertThat(row).containsEntry("outcome", "REFUSED").containsEntry("cap", "REPLIES");
         assertThat(GateMessages.toModel(verdict)).contains("CAP_REACHED");
     }
 

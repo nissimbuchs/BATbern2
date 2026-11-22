@@ -28,7 +28,7 @@ import java.util.Set;
  * throws, as a real tool must. With {@code topic} in its input it asks for the past events matching
  * that topic.
  */
-final class GateFixtureTool implements AgentTool {
+public final class GateFixtureTool implements AgentTool {
 
     /** What a real tool would resolve as organizers (an organizer alias). */
     static final Set<String> ORGANIZER_ADDRESSES = Set.of("organizers@example.com");
@@ -49,13 +49,13 @@ final class GateFixtureTool implements AgentTool {
     }
 
     /** {@code reversible}, no mail; undone by patching the session back. */
-    static GateFixtureTool reversible() {
+    public static GateFixtureTool reversible() {
         return new GateFixtureTool("rescheduleSession", OperationClass.REVERSIBLE,
                 "PATCH /events/{eventCode}/sessions/{sessionSlug}", false);
     }
 
     /** {@code reply}: one mail in the requester's conversation. */
-    static GateFixtureTool reply() {
+    public static GateFixtureTool reply() {
         return new GateFixtureTool("replyToRequester", OperationClass.REPLY,
                 "POST /conversations/{conversationKey}/replies", true);
     }
@@ -141,7 +141,7 @@ final class GateFixtureTool implements AgentTool {
     }
 
     /** The inputs it ran with. */
-    synchronized List<JsonNode> executed() {
+    public synchronized List<JsonNode> executed() {
         return List.copyOf(executed);
     }
 }

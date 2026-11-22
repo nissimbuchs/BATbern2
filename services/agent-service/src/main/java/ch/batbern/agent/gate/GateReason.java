@@ -12,12 +12,15 @@ public enum GateReason {
     BINDING_DENIED,
     /** The tool is {@code audience}: always a pending approval. */
     AUDIENCE_CLASS,
-    /** The mail brings the distinct non-organizer recipients of the run or the day above one: {@code audience}. */
+    /**
+     * The mail brings the distinct non-organizer recipients of the run or the day above
+     * {@code agent.limits.non-organizer-recipients} (one by default): {@code audience}.
+     */
     RECIPIENTS_ABOVE_ONE,
     /** A scheduled run's mail: never sent without approval. */
     SCHEDULED_MAIL,
     /** The tool could not say whom its mail would reach: the call does not run. */
     MAIL_UNRESOLVED,
-    /** A per-run or per-day cap is reached (story 8): the call does not run. */
+    /** A limit of {@code agent.limits} is reached (story 8): the call does not run and the run stops. */
     CAP_REACHED
 }

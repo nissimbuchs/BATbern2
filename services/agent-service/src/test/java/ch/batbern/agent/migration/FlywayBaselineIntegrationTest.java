@@ -25,7 +25,8 @@ import static org.assertj.core.groups.Tuple.tuple;
 /**
  * agent-service migrates into the shared production database, which is not empty and has no
  * {@code flyway_schema_history_agent} yet. With the service's own Flyway settings, Flyway must
- * baseline at 0 and then apply V1 and the later migrations (V2: the decision log, V3: the run's grant, V4: its principal kind, V5: the gate's held calls); with the default baseline 1 it would skip V1 and the service
+ * baseline at 0 and then apply V1 and the later migrations (V2: the decision log, V3: the run's grant, V4: its principal kind, V5: the gate's held calls, V6:
+ * the limits); with the default baseline 1 it would skip V1 and the service
  * would fail schema validation.
  *
  * <p>The settings are read from the base document of the production {@code application.yml}, not
@@ -93,7 +94,8 @@ class FlywayBaselineIntegrationTest extends AbstractIntegrationTest {
                         tuple("2", "SQL", true),
                         tuple("3", "SQL", true),
                         tuple("4", "SQL", true),
-                        tuple("5", "SQL", true));
+                        tuple("5", "SQL", true),
+                        tuple("6", "SQL", true));
         assertThat(jdbc.queryForObject("SELECT count(*) FROM information_schema.tables "
                 + "WHERE table_schema = ? AND table_name IN ('agent_runs', 'agent_inbound_messages', 'agent_steps', "
                 + "'agent_model_calls', 'agent_tool_calls', 'agent_verdicts', 'agent_approvals', 'agent_undos')",
@@ -105,8 +107,8 @@ class FlywayBaselineIntegrationTest extends AbstractIntegrationTest {
     @DisplayName("should_recordMigrationsInOwnHistory_when_serviceStarted")
     void should_recordMigrationsInOwnHistory_when_serviceStarted() {
         Integer applied = jdbc.queryForObject("SELECT count(*) FROM flyway_schema_history_agent "
-                + "WHERE version IN ('1', '2', '3', '4', '5') AND success", Integer.class);
-        assertThat(applied).isEqualTo(5);
+                + "WHERE version IN ('1', '2', '3', '4', '5', '6') AND success", Integer.class);
+        assertThat(applied).isEqualTo(6);
     }
 
     @Test
@@ -185,6 +187,29 @@ class FlywayBaselineIntegrationTest extends AbstractIntegrationTest {
                     + "'{}'::jsonb, '[]'::jsonb, now())";
             jdbc.update(verdict, UUID.randomUUID(), run, held);
             assertThatThrownBy(() -> jdbc.update(verdict, UUID.randomUUID(), run, held))
+                    .isInstanceOf(DataIntegrityViolationException.class);
+        } finally {
+            jdbc.execute("TRUNCATE agent_runs CASCADE");
+        }
+    }
+
+    @Test
+    @DisplayName("should_nameTheLimit_when_V6Applied")
+    void should_nameTheLimit_when_V6Applied() {
+        String ended = "INSERT INTO agent_runs (id, status, started_at, ended_at, trigger, end_reason, end_detail) "
+                + "VALUES (?, 'HANDED_TO_ORGANIZERS', now(), now(), 'ORGANIZER', ?, ?)";
+        try {
+            // Positive control: each limit is stored
+            for (String limit : new String[] {"STEPS", "RUN_TOKENS", "REPLIES", "DAILY_TOKENS"}) {
+                jdbc.update(ended, UUID.randomUUID(), "CAP_REACHED", limit);
+            }
+            // A run stopped by a limit names it
+            assertThatThrownBy(() -> jdbc.update(ended, UUID.randomUUID(), "CAP_REACHED", null))
+                    .isInstanceOf(DataIntegrityViolationException.class);
+            assertThatThrownBy(() -> jdbc.update(ended, UUID.randomUUID(), "CAP_REACHED", "GRANT_INVALID"))
+                    .isInstanceOf(DataIntegrityViolationException.class);
+            // The step limit of story 2 is one of the limits now
+            assertThatThrownBy(() -> jdbc.update(ended, UUID.randomUUID(), "STEP_LIMIT", null))
                     .isInstanceOf(DataIntegrityViolationException.class);
         } finally {
             jdbc.execute("TRUNCATE agent_runs CASCADE");

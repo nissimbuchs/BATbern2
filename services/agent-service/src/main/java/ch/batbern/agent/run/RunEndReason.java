@@ -13,8 +13,11 @@ public enum RunEndReason {
     MODEL_MAX_TOKENS(AgentRunStatus.HANDED_TO_ORGANIZERS),
     /** The model refused or stopped for a reason the loop does not continue from. */
     MODEL_STOPPED(AgentRunStatus.HANDED_TO_ORGANIZERS),
-    /** The model kept calling tools past {@code agent.loop.max-steps}. */
-    STEP_LIMIT(AgentRunStatus.HANDED_TO_ORGANIZERS),
+    /**
+     * A limit of {@code agent.limits} was reached (story 8, R9): steps, run tokens, replies or the
+     * daily budget. The run's {@code end_detail} names the {@link RunLimit}.
+     */
+    CAP_REACHED(AgentRunStatus.HANDED_TO_ORGANIZERS),
     /**
      * CUMS refused the run grant, or could not be asked (story 4, R2); the run's {@code end_detail}
      * holds the CUMS code. No model call was made.

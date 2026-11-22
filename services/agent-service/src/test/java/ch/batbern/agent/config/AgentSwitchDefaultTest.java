@@ -48,6 +48,31 @@ class AgentSwitchDefaultTest {
     }
 
     @Test
+    @DisplayName("should_haveOwnerLimits_when_noEnvironmentOverride")
+    void should_haveOwnerLimits_when_noEnvironmentOverride() throws IOException {
+        runnerWithProductionYaml().run(context ->
+                assertThat(context.getBean(AgentProperties.class).limits())
+                        .isEqualTo(new AgentProperties.Limits(25, 200_000, 2, 2_000_000, 2, 1)));
+    }
+
+    @Test
+    @DisplayName("should_moveLimits_when_environmentSetsThem")
+    void should_moveLimits_when_environmentSetsThem() throws IOException {
+        runnerWithProductionYaml().withSystemProperties("AGENT_LIMITS_RUN_STEPS=10", "AGENT_LIMITS_RUN_TOKENS=5000",
+                "AGENT_LIMITS_RUN_REPLIES=0", "AGENT_LIMITS_DAILY_TOKENS=90000", "AGENT_LIMITS_BINDING_APPROVALS=3",
+                "AGENT_LIMITS_NON_ORGANIZER_RECIPIENTS=0").run(context ->
+                assertThat(context.getBean(AgentProperties.class).limits())
+                        .isEqualTo(new AgentProperties.Limits(10, 5000, 0, 90_000, 3, 0)));
+    }
+
+    @Test
+    @DisplayName("should_failStartup_when_limitInvalid")
+    void should_failStartup_when_limitInvalid() throws IOException {
+        runnerWithProductionYaml().withSystemProperties("AGENT_LIMITS_BINDING_APPROVALS=0").run(context ->
+                assertThat(context).hasFailed());
+    }
+
+    @Test
     @DisplayName("should_readKey_when_environmentInstallsIt")
     void should_readKey_when_environmentInstallsIt() throws IOException {
         runnerWithProductionYaml().withSystemProperties("AGENT_ANTHROPIC_API_KEY=sk-ant-env-test").run(context ->

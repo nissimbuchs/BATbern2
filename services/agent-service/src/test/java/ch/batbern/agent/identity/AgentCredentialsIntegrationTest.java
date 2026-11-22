@@ -14,6 +14,7 @@ import ch.batbern.agent.loop.LlmUsage;
 import ch.batbern.agent.loop.ScriptedLlm;
 import ch.batbern.agent.loop.TestTools;
 import ch.batbern.agent.loop.TestTools.RecordingTool;
+import ch.batbern.agent.loop.TokenLedger;
 import ch.batbern.agent.run.AgentRunStatus;
 import ch.batbern.agent.run.PrincipalKind;
 import ch.batbern.agent.run.RunEndReason;
@@ -64,7 +65,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * log and PostgreSQL; only the model is scripted. Rows are read through {@link JdbcTemplate}.
  */
 @DisplayName("A run acts with a CUMS-minted token, minted again before every write")
-@TestPropertySource(properties = {"agent.enabled=true", "agent.loop.max-steps=4"})
+@TestPropertySource(properties = {"agent.enabled=true", "agent.limits.run-steps=4"})
 @ExtendWith(OutputCaptureExtension.class)
 class AgentCredentialsIntegrationTest extends AbstractIntegrationTest {
 
@@ -99,6 +100,9 @@ class AgentCredentialsIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
     private AutonomyGate gate;
+
+    @Autowired
+    private TokenLedger tokens;
 
     private CumsAtTheWire cums;
 
@@ -446,11 +450,11 @@ class AgentCredentialsIntegrationTest extends AbstractIntegrationTest {
     @DisplayName("no caller secret: GRANT_REFUSED, CALLER_SECRET_MISSING, CUMS not called; a startup warning says so")
     void should_refuseWithoutCallingCums_when_noCallerSecret(CapturedOutput output) {
         for (String missing : new String[] {"", "  ", "none", "NONE"}) {
-            AgentProperties withoutSecret = new AgentProperties(true, properties.loop(), properties.anthropic(),
+            AgentProperties withoutSecret = new AgentProperties(true, properties.loop(), properties.limits(), properties.anthropic(),
                     new AgentProperties.Cums(properties.cums().baseUrl(), missing), properties.gateway());
             CumsAgentClient client = new CumsAgentClient(restTemplate, withoutSecret);
             AgentLoop loopWithoutSecret = new AgentLoop(model, decisionLog, withoutSecret, client, restTemplate,
-                    NO_TOOLS, gate, clock);
+                    NO_TOOLS, gate, tokens, clock);
 
             // No expectation is registered: any request to CUMS fails the test
             AgentRunResult result = loopWithoutSecret.run(new AgentRunRequest(
@@ -460,11 +464,11 @@ class AgentCredentialsIntegrationTest extends AbstractIntegrationTest {
             client.warnWithoutCallerSecret();
         }
         // Even a handed-over grant: no mint without the secret
-        AgentProperties withoutSecret = new AgentProperties(true, properties.loop(), properties.anthropic(),
+        AgentProperties withoutSecret = new AgentProperties(true, properties.loop(), properties.limits(), properties.anthropic(),
                 new AgentProperties.Cums(properties.cums().baseUrl(), ""), properties.gateway());
         CumsAgentClient client = new CumsAgentClient(restTemplate, withoutSecret);
         AgentRunResult handedOver = new AgentLoop(model, decisionLog, withoutSecret, client, restTemplate, NO_TOOLS, gate,
-                clock)
+                tokens, clock)
                 .run(new AgentRunRequest(new GrantSource.HandedOver(UUID.randomUUID(), CumsAtTheWire.grantSecret()),
                         SYSTEM, "Tidy up"));
         assertRefusedBeforeModel(handedOver, RunEndReason.GRANT_REFUSED, "CALLER_SECRET_MISSING");

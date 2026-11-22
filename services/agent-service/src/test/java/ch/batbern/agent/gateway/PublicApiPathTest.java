@@ -93,7 +93,8 @@ class PublicApiPathTest {
         server.verify();
     }
 
-    private static final AgentProperties PROPERTIES = new AgentProperties(true, new AgentProperties.Loop(25, 16000),
+    private static final AgentProperties PROPERTIES = new AgentProperties(true, new AgentProperties.Loop(16000),
+            new AgentProperties.Limits(25, 200000, 2, 2000000, 2, 1),
             new AgentProperties.Anthropic("none", "m", "medium", Duration.ofMinutes(1), 0, ""),
             new AgentProperties.Cums("http://cums:8080", "test-secret"),
             new AgentProperties.Gateway("http://gw:8080"));

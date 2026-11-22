@@ -1,7 +1,9 @@
 package ch.batbern.agent.gate;
 
+import ch.batbern.agent.config.AgentProperties;
 import ch.batbern.agent.precedent.Precedents;
 import ch.batbern.agent.run.PrincipalKind;
+import ch.batbern.agent.run.RunLimit;
 import ch.batbern.agent.run.RunTrigger;
 import ch.batbern.agent.tools.AgentTool;
 import ch.batbern.agent.tools.OutboundMail;
@@ -37,8 +39,8 @@ import java.util.UUID;
 @Component
 public class GateLedger {
 
-    /** The day of the per-day recipient count. */
-    public static final ZoneId DAY_ZONE = ZoneId.of("Europe/Zurich");
+    /** The day of the per-day recipient count: the daily budget's day. */
+    public static final ZoneId DAY_ZONE = RunLimit.DAY_ZONE;
 
     /** The advisory lock key that serializes mail verdicts across runs and tasks. */
     static final long MAIL_LOCK_KEY = 0x6167656E74_6D61L; // "agentma"
@@ -66,10 +68,13 @@ public class GateLedger {
 
     private final JdbcTemplate jdbc;
     private final Clock clock;
+    private final GateRules.Thresholds thresholds;
 
-    public GateLedger(JdbcTemplate jdbc, Clock clock) {
+    public GateLedger(JdbcTemplate jdbc, Clock clock, AgentProperties properties) {
         this.jdbc = jdbc;
         this.clock = clock;
+        AgentProperties.Limits limits = properties.limits();
+        this.thresholds = new GateRules.Thresholds(limits.bindingApprovals(), limits.nonOrganizerRecipients());
     }
 
     /**
@@ -114,9 +119,9 @@ public class GateLedger {
                 mail.mail().organizerCount(), mail.mail().nonOrganizerAddresses());
         GateFacts facts = new GateFacts(tool.operationClass(), run.trigger(), mailFacts, mail.unresolved(), runBefore,
                 dayBefore, precedents.approvals().size(), precedents.denials().size());
-        GateRules.Decision decision = GateRules.decide(facts);
+        GateRules.Decision decision = GateRules.decide(facts, thresholds);
 
-        String cap = null;
+        RunLimit cap = null;
         if (decision.outcome() == VerdictOutcome.RUN) {
             cap = caps.reached(runId, decision.effectiveClass(), sendsMail).orElse(null);
             if (cap != null) {
@@ -175,8 +180,8 @@ public class GateLedger {
     }
 
     /** The verdict's inputs: what the rules saw and why they decided, never model or inbound text. */
-    private static ObjectNode inputs(AgentTool tool, RunRow run, MailResolution mail, LocalDate day,
-                                     Precedents precedents, GateRules.Decision decision, String cap) {
+    private ObjectNode inputs(AgentTool tool, RunRow run, MailResolution mail, LocalDate day,
+                              Precedents precedents, GateRules.Decision decision, RunLimit cap) {
         ObjectNode inputs = JSON.createObjectNode()
                 .put("tool", tool.name())
                 .put("toolClass", tool.operationClass().wireName())
@@ -203,12 +208,13 @@ public class GateLedger {
                 .put("undos", precedents.undos().size())
                 .put("pastEvents", precedents.pastEvents().size())
                 .put("history", precedents.historyStatus().name());
-        inputs.put("requiredApprovals", GateRules.REQUIRED_APPROVALS)
+        inputs.put("requiredApprovals", thresholds.bindingApprovals())
+                .put("maxNonOrganizerRecipients", thresholds.nonOrganizerRecipients())
                 .put("reason", decision.reason().name());
         if (cap == null) {
             inputs.putNull("cap");
         } else {
-            inputs.put("cap", cap);
+            inputs.put("cap", cap.name());
         }
         return inputs;
     }

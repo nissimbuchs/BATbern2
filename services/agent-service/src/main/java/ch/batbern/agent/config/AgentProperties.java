@@ -12,32 +12,73 @@ import java.util.Set;
  *
  * @param enabled   the service's agent switch; {@code false} by default, so a deploy ships the
  *                  service dark and nothing in it acts until the owner switches it on
- * @param loop      the agent loop's limits
+ * @param loop      the agent loop's model call settings
+ * @param limits    the caps and budget that stop a run, and the gate's two owner values
  * @param anthropic the Anthropic model adapter
  * @param cums      CUMS, which grants runs and mints the agent's tokens
  * @param gateway   the Spring gateway, through which tools reach the public API
  */
 @ConfigurationProperties(prefix = "agent")
-public record AgentProperties(boolean enabled, @DefaultValue Loop loop, @DefaultValue Anthropic anthropic,
-                              @DefaultValue Cums cums, @DefaultValue Gateway gateway) {
+public record AgentProperties(boolean enabled, @DefaultValue Loop loop, @DefaultValue Limits limits,
+                              @DefaultValue Anthropic anthropic, @DefaultValue Cums cums,
+                              @DefaultValue Gateway gateway) {
 
     /**
-     * Limits of one run of the agent loop ({@code agent.loop.*}). Story 8 adds the token, reply and
-     * daily caps.
+     * Settings of each model call of the agent loop ({@code agent.loop.*}). The caps of a run are
+     * {@link Limits}.
      *
-     * @param maxSteps        model calls per run; a model still calling tools after the last one
-     *                        hands the run to the organizers (STEP_LIMIT)
      * @param maxOutputTokens the output token limit of each model call; adaptive thinking spends
      *                        output tokens too, so the default is the non-streaming 16000
      */
-    public record Loop(@DefaultValue("25") int maxSteps, @DefaultValue("16000") int maxOutputTokens) {
+    public record Loop(@DefaultValue("16000") int maxOutputTokens) {
 
         public Loop {
-            if (maxSteps < 1) {
-                throw new IllegalArgumentException("agent.loop.max-steps must be at least 1");
-            }
             if (maxOutputTokens < 1) {
                 throw new IllegalArgumentException("agent.loop.max-output-tokens must be at least 1");
+            }
+        }
+    }
+
+    /**
+     * The limits of agent-service ({@code agent.limits.*}, story 8, R9, Operational envelope "Limits",
+     * owner values 2026-11-22), all in one place. The four caps stop a run: reaching one ends it
+     * HANDED_TO_ORGANIZERS with reason {@code CAP_REACHED} and the limit as end detail. The loop
+     * checks steps, run tokens and the daily budget before every model call, against the tokens
+     * already recorded in {@code agent_model_calls}; the reply cap is checked by the gate. The last
+     * two values are the gate's rules (story 7).
+     *
+     * @param runSteps               model calls per run; a model still calling tools after the last
+     *                               one stops the run ({@code STEPS})
+     * @param runTokens              model tokens per run (input, output, cache creation and cache
+     *                               read); no further model call once reached ({@code RUN_TOKENS})
+     * @param runReplies             {@code reply} calls the gate lets run per run; the next one stops
+     *                               the run ({@code REPLIES})
+     * @param dailyTokens            model tokens of all runs per day (Europe/Zurich); no further model
+     *                               call once reached ({@code DAILY_TOKENS})
+     * @param bindingApprovals       matching approved precedents a {@code binding} call needs to run
+     *                               alone; at least 1, so no binding call ever runs without one
+     * @param nonOrganizerRecipients distinct non-organizer recipients a run or a day may reach before
+     *                               every further mail is {@code audience}
+     */
+    public record Limits(@DefaultValue("25") int runSteps,
+                         @DefaultValue("200000") long runTokens,
+                         @DefaultValue("2") int runReplies,
+                         @DefaultValue("2000000") long dailyTokens,
+                         @DefaultValue("2") int bindingApprovals,
+                         @DefaultValue("1") int nonOrganizerRecipients) {
+
+        public Limits {
+            atLeast(runSteps, 1, "agent.limits.run-steps");
+            atLeast(runTokens, 1, "agent.limits.run-tokens");
+            atLeast(runReplies, 0, "agent.limits.run-replies");
+            atLeast(dailyTokens, 1, "agent.limits.daily-tokens");
+            atLeast(bindingApprovals, 1, "agent.limits.binding-approvals");
+            atLeast(nonOrganizerRecipients, 0, "agent.limits.non-organizer-recipients");
+        }
+
+        private static void atLeast(long value, long minimum, String property) {
+            if (value < minimum) {
+                throw new IllegalArgumentException(property + " must be at least " + minimum + ", was " + value);
             }
         }
     }

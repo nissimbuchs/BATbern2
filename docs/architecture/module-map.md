@@ -73,7 +73,11 @@ CUMS (identity) is upstream of all. EMS (event) is upstream of PCS (partners).
   tool call (read calls skip it); the rules live only in `gate/GateRules`, the verdict with its
   inputs and cited precedent ids is written by `gate/GateLedger` to `agent_verdicts` (plus a PENDING
   `agent_approvals` row), and only a RUN verdict runs the tool. Mail tools declare their recipients
-  through `AgentTool.outboundMail`; story 8's caps plug in as a `gate/GateCaps` bean. Open naming point for the epic's
+  through `AgentTool.outboundMail`. Limits (story 8, R9): one configuration block `agent.limits`
+  (`config/AgentProperties.Limits`) holds the caps and the gate's two values; `loop/AgentLoop` checks
+  steps, run tokens and the daily budget before every model call (tokens read by `loop/TokenLedger`
+  from `agent_model_calls`), the reply cap is the `gate/GateCaps` bean `gate/ReplyCap`, and a reached
+  limit ends the run `CAP_REACHED` with the `run/RunLimit` as end detail. Open naming point for the epic's
   refactor sweep: CUMS already owns `agent_settings`, `agent_grants` and `agent_allowlist`, so
   "agent_* tables belong to agent-service" (AD-9) needs a sharper rule.
 - Downstream must react to an upstream change? The upstream calls it through an `/internal`

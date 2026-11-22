@@ -64,3 +64,12 @@
 - source_plan: `_bmad-output/initiative-agentic-interaction/tickets/epic-agent-runtime/tickets/story-one-autonomy-gate-decides-every-non-read-call-and-cites-its-plan.md`
   summary: GateRules.REQUIRED_APPROVALS (2) and the one-recipient limit are constants, not configuration like story 8's caps.
   evidence: Owner fixed the values 2026-11-22; changing them is a code change today.
+- source_plan: `_bmad-output/initiative-agentic-interaction/tickets/epic-agent-runtime/tickets/story-caps-and-the-daily-budget-stop-a-run-and-hand-it-to-the-orga-plan.md`
+  summary: Resolved by story 8, not open: the story-7 entry above (GateRules constants) is settled, both values are now agent.limits.binding-approvals and agent.limits.non-organizer-recipients.
+  evidence: GateRules.decide takes GateRules.Thresholds from AgentProperties.Limits; existing entries are append-only, so this line records the closure.
+- source_plan: `_bmad-output/initiative-agentic-interaction/tickets/epic-agent-runtime/tickets/story-caps-and-the-daily-budget-stop-a-run-and-hand-it-to-the-orga-plan.md`
+  summary: The daily budget can be overshot by model calls in flight in concurrent runs (each run checks before its call, no lock across runs); there is no concurrency test, and story 10's budget alarm should filter end_detail DAILY_TOKENS.
+  evidence: Accepted by design (checked before each call, documented in 06-backend-architecture); a two-run test would show the overshoot is at most one call per concurrent run.
+- source_plan: `_bmad-output/initiative-agentic-interaction/tickets/epic-agent-runtime/tickets/story-caps-and-the-daily-budget-stop-a-run-and-hand-it-to-the-orga-plan.md`
+  summary: Day-boundary tests (daily budget, gate per-day count) use the real system clock, so a run across midnight Europe/Zurich could flake.
+  evidence: Review finding on RunLimitsScenarios.should_stop_when_dailyBudgetReached; the window is the test's seconds around midnight; a fixed test Clock bean would settle it.

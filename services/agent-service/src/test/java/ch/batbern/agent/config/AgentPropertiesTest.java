@@ -23,7 +23,8 @@ class AgentPropertiesTest {
     @DisplayName("toString masks the key, of the nested record and of the whole configuration")
     void should_maskKey_when_toString() {
         AgentProperties.Anthropic anthropic = anthropic(KEY);
-        AgentProperties properties = new AgentProperties(false, new AgentProperties.Loop(25, 16000), anthropic,
+        AgentProperties properties = new AgentProperties(false, new AgentProperties.Loop(16000),
+                new AgentProperties.Limits(25, 200000, 2, 2000000, 2, 1), anthropic,
                 new AgentProperties.Cums("http://cums:8080", CALLER_SECRET), new AgentProperties.Gateway("http://gw:8080"));
 
         assertThat(anthropic.toString()).doesNotContain(KEY).doesNotContain("secret")
@@ -31,6 +32,20 @@ class AgentPropertiesTest {
         assertThat(properties.toString()).doesNotContain(KEY).contains("apiKey=****")
                 .doesNotContain(CALLER_SECRET).contains("callerSecret=****");
         assertThat(anthropic("none").toString()).contains("apiKey=none");
+    }
+
+    @Test
+    @DisplayName("limits: each below its minimum is refused, naming the property")
+    void should_refuse_when_limitBelowMinimum() {
+        assertThat(new AgentProperties.Limits(1, 1, 0, 1, 1, 0)).isNotNull();
+        assertThatThrownBy(() -> new AgentProperties.Limits(0, 1, 0, 1, 1, 0)).hasMessageContaining("run-steps");
+        assertThatThrownBy(() -> new AgentProperties.Limits(1, 0, 0, 1, 1, 0)).hasMessageContaining("run-tokens");
+        assertThatThrownBy(() -> new AgentProperties.Limits(1, 1, -1, 1, 1, 0)).hasMessageContaining("run-replies");
+        assertThatThrownBy(() -> new AgentProperties.Limits(1, 1, 0, 0, 1, 0)).hasMessageContaining("daily-tokens");
+        assertThatThrownBy(() -> new AgentProperties.Limits(1, 1, 0, 1, 0, 0))
+                .hasMessageContaining("binding-approvals");
+        assertThatThrownBy(() -> new AgentProperties.Limits(1, 1, 0, 1, 1, -1))
+                .hasMessageContaining("non-organizer-recipients");
     }
 
     @Test

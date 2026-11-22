@@ -42,7 +42,7 @@ import static org.assertj.core.groups.Tuple.tuple;
  * {@link JdbcTemplate}, not the entities, so the stored shape is what is asserted.
  */
 @DisplayName("AgentLoop runs a scripted model and logs every step")
-@TestPropertySource(properties = {"agent.enabled=true", "agent.loop.max-steps=4"})
+@TestPropertySource(properties = {"agent.enabled=true", "agent.limits.run-steps=4"})
 class AgentLoopIntegrationTest extends AbstractIntegrationTest {
 
     private static final GrantSource ORGANIZER_LOGIN = source(RunTrigger.ORGANIZER);
@@ -362,7 +362,7 @@ class AgentLoopIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @DisplayName("step ceiling: a model still calling tools after max-steps model calls hands the run over, STEP_LIMIT")
+    @DisplayName("step ceiling: a model still calling tools after run-steps model calls hands the run over, CAP_REACHED STEPS")
     void should_handToOrganizers_when_stepLimitReached() {
         RecordingTool lookup = TestTools.answering("lookupEvent", in -> "again");
         for (int i = 1; i <= 5; i++) {
@@ -373,14 +373,15 @@ class AgentLoopIntegrationTest extends AbstractIntegrationTest {
         AgentRunResult result = loop.run(toolRegistry.request(ORGANIZER_LOGIN, SYSTEM, "Hello", List.of(lookup)));
 
         assertThat(result.status()).isEqualTo(AgentRunStatus.HANDED_TO_ORGANIZERS);
-        assertThat(result.reason()).isEqualTo(RunEndReason.STEP_LIMIT);
+        assertThat(result.reason()).isEqualTo(RunEndReason.CAP_REACHED);
+        assertThat(result.detail()).isEqualTo("STEPS");
         assertThat(result.steps()).isEqualTo(4);
-        assertThat(model.requests()).as("max-steps=4 model calls, no fifth").hasSize(4);
+        assertThat(model.requests()).as("run-steps=4 model calls, no fifth").hasSize(4);
         assertThat(jdbc.queryForObject("SELECT count(*) FROM agent_steps WHERE run_id = ?", Integer.class,
                 result.runId())).isEqualTo(4);
         assertThat(countToolCalls(result.runId())).isEqualTo(4);
-        assertThat(jdbc.queryForObject("SELECT end_reason FROM agent_runs WHERE id = ?", String.class,
-                result.runId())).isEqualTo("STEP_LIMIT");
+        assertThat(jdbc.queryForMap("SELECT end_reason, end_detail FROM agent_runs WHERE id = ?", result.runId()))
+                .containsEntry("end_reason", "CAP_REACHED").containsEntry("end_detail", "STEPS");
     }
 
     @Test

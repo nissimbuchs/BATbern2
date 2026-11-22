@@ -77,14 +77,32 @@ start while `agent.enabled` is false (`AgentSwitchedOffException`, no run row). 
 model chooses and sends their results back until the model ends its turn (DONE, `COMPLETED`). An
 unreachable model (`MODEL_UNAVAILABLE`, no retry), a cut-off answer (`MODEL_MAX_TOKENS`), a refusal
 or other stop (`MODEL_STOPPED`: `refusal`, `stop_sequence`, `pause_turn`, which cannot come without
-server tools and is not resumed blind, and any stop reason the adapter does not know) and a model still calling tools after `agent.loop.max-steps` (25,
-`STEP_LIMIT`) end the run HANDED_TO_ORGANIZERS; a fault of agent-service itself ends it FAILED
+server tools and is not resumed blind, and any stop reason the adapter does not know) and a reached
+limit (`CAP_REACHED`, below) end the run HANDED_TO_ORGANIZERS; a fault of agent-service itself ends it FAILED
 (`INTERNAL_ERROR`). An unknown tool or a tool that throws goes back to the model as an error
 `tool_result`. `DecisionLog` writes every run, inbound message, step, model call and tool call into
 the `agent_*` tables (V2) as it happens, one `REQUIRES_NEW` transaction per write, model and tool
 calls before they run and again after, so a crashed run leaves its trace. The application log
 carries run ids, counts, tool names and outcomes, never prompt text, tool input or output, or an
 exception message (#1202); the decision log keeps them in full.
+
+Limits (story 8, R9, Operational envelope "Limits", owner values 2026-11-22): one configuration
+block, `agent.limits` (`AGENT_LIMITS_*`), holds four caps: `run-steps` (25 model calls per run),
+`run-tokens` (200,000 per run), `run-replies` (2 `reply` calls per run) and `daily-tokens` (2,000,000
+across all runs per Europe/Zurich day). Tokens are read from `agent_model_calls` (`loop/TokenLedger`):
+input, output, cache-creation and cache-read, all four, so prompt caching does not change what counts.
+Before every model call the loop checks, in order, the run's steps, the run's tokens and today's
+tokens against what is already recorded; the run is stopped **before** a model call, never in the
+middle of one, so the call that crosses a token cap completes, its answer's tools run (gated), and no
+further call follows. A run can therefore overshoot a token cap by at most one call (its input plus
+`max-output-tokens`), and the daily budget also by calls in flight in concurrent runs. Projecting
+the next call's size was rejected: it is a guess and would stop runs early. The reply cap is checked by
+the gate (`gate/ReplyCap`): it counts the run's verdicts that let a `reply` call run; the next `reply`
+call is `REFUSED` (`CAP_REACHED`) and the run stops without the answer's remaining tools. Any reached
+limit ends the run HANDED_TO_ORGANIZERS with end reason `CAP_REACHED` and end detail `STEPS`,
+`RUN_TOKENS`, `REPLIES` or `DAILY_TOKENS` (V6, which folds story 2's `STEP_LIMIT` into it), a status
+only, no mail; the application log names the run id, the limit, the amount used and the configured
+value, nothing else.
 
 The run's identity (story 4, R2, AD-3, AD-15): a run acts only with a CUMS-minted agent token.
 `AgentRunRequest` carries a `GrantSource`, which fixes the run's trigger: `OrganizerLogin` (the
@@ -169,8 +187,13 @@ The rules, in order (owner, 2026-11-22):
 - A `binding` call runs alone only with at least two matching approvals and no matching denial
   (confidence 0 with a denial, else `min(approvals, 2) / 2`, threshold 1); otherwise it is pending.
 - A `reversible` or `reply` call runs alone.
-- Every call the rules let run is asked of a `gate/GateCaps` bean (story 8); when it names a cap the
-  call reaches, the call is `REFUSED` (`CAP_REACHED`).
+- Every call the rules let run is asked of the `gate/GateCaps` bean, `gate/ReplyCap` (story 8); when
+  it names a limit the call reaches, the call is `REFUSED` (`CAP_REACHED`, the limit in `inputs.cap`)
+  and the run stops.
+
+The two numbers above (two approvals, one non-organizer recipient) are configuration,
+`agent.limits.binding-approvals` (at least 1) and `agent.limits.non-organizer-recipients`; each
+verdict records them in its inputs (`requiredApprovals`, `maxNonOrganizerRecipients`).
 
 Nothing the model writes and nothing in the inbound message is an input: an approval can only come
 from the decision log. A held call is not run; its tool call ends `PENDING_APPROVAL` or `REFUSED`

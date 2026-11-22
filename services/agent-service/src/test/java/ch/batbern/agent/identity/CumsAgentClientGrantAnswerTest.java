@@ -38,7 +38,7 @@ class CumsAgentClientGrantAnswerTest {
     private final RestTemplate restTemplate = new RestTemplate();
     private final MockRestServiceServer server = MockRestServiceServer.bindTo(restTemplate).build();
     private final CumsAgentClient client = new CumsAgentClient(restTemplate, new AgentProperties(true,
-            new AgentProperties.Loop(25, 4096),
+            new AgentProperties.Loop(4096), new AgentProperties.Limits(25, 200000, 2, 2000000, 2, 1),
             new AgentProperties.Anthropic("none", "claude-sonnet-5-5", "medium", Duration.ofMinutes(5), 2, ""),
             new AgentProperties.Cums(BASE, "test-only-secret"), new AgentProperties.Gateway("http://gw.test")));
 

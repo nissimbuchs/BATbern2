@@ -31,7 +31,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * captured output; the decision log keeps them (it is the full record).
  */
 @DisplayName("AgentLoop logs no personal data")
-@TestPropertySource(properties = {"agent.enabled=true", "agent.loop.max-steps=4"})
+@TestPropertySource(properties = {"agent.enabled=true", "agent.limits.run-steps=4"})
 @ExtendWith(OutputCaptureExtension.class)
 class AgentLoopLogIntegrationTest extends AbstractIntegrationTest {
 

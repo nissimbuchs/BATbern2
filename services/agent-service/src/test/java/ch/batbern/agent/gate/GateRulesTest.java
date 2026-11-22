@@ -18,12 +18,14 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class GateRulesTest {
 
     private static final GateFacts.Mail TO_ANNA = mail("anna@example.com");
+    /** The owner's values (2026-11-22), the defaults of {@code agent.limits}. */
+    private static final GateRules.Thresholds OWNER = new GateRules.Thresholds(2, 1);
 
     @ParameterizedTest
     @EnumSource(value = OperationClass.class, names = {"REVERSIBLE", "REPLY"})
     @DisplayName("reversible and reply run alone")
     void should_run_when_reversibleOrReply(OperationClass toolClass) {
-        GateRules.Decision decision = GateRules.decide(facts(toolClass, RunTrigger.ORGANIZER, null, 0, 0));
+        GateRules.Decision decision = GateRules.decide(facts(toolClass, RunTrigger.ORGANIZER, null, 0, 0), OWNER);
 
         assertThat(decision.outcome()).isEqualTo(VerdictOutcome.RUN);
         assertThat(decision.reason()).isEqualTo(GateReason.RUNS_ALONE);
@@ -51,7 +53,7 @@ class GateRulesTest {
     @DisplayName("audience is pending even with approvals")
     void should_pend_when_audience() {
         GateRules.Decision decision = GateRules.decide(facts(OperationClass.AUDIENCE, RunTrigger.ORGANIZER,
-                TO_ANNA, 9, 0));
+                TO_ANNA, 9, 0), OWNER);
 
         assertThat(decision.outcome()).isEqualTo(VerdictOutcome.PENDING_APPROVAL);
         assertThat(decision.reason()).isEqualTo(GateReason.AUDIENCE_CLASS);
@@ -70,15 +72,15 @@ class GateRulesTest {
                 mail("anna@example.com", "ben@example.com"), 2, 0);
 
         for (GateFacts facts : new GateFacts[] {inRun, inDay, twoAtOnce}) {
-            GateRules.Decision decision = GateRules.decide(facts);
+            GateRules.Decision decision = GateRules.decide(facts, OWNER);
             assertThat(decision.outcome()).isEqualTo(VerdictOutcome.PENDING_APPROVAL);
             assertThat(decision.effectiveClass()).isEqualTo(OperationClass.AUDIENCE);
             assertThat(decision.reason()).isEqualTo(GateReason.RECIPIENTS_ABOVE_ONE);
         }
-        assertThat(GateRules.decide(inDay).recipientsToday()).isEqualTo(2);
-        assertThat(GateRules.decide(inDay).recipientsThisRun()).isEqualTo(1);
+        assertThat(GateRules.decide(inDay, OWNER).recipientsToday()).isEqualTo(2);
+        assertThat(GateRules.decide(inDay, OWNER).recipientsThisRun()).isEqualTo(1);
         // Positive control: the same recipient again stays one
-        GateRules.Decision same = GateRules.decide(again);
+        GateRules.Decision same = GateRules.decide(again, OWNER);
         assertThat(same.outcome()).isEqualTo(VerdictOutcome.RUN);
         assertThat(same.recipientsToday()).isEqualTo(1);
     }
@@ -90,17 +92,18 @@ class GateRulesTest {
                 new GateFacts.Mail(1, 1, Set.of()), false, Set.of("anna@example.com", "ben@example.com"),
                 Set.of("anna@example.com", "ben@example.com"), 0, 0);
 
-        assertThat(GateRules.decide(organizersOnly).outcome()).isEqualTo(VerdictOutcome.RUN);
+        assertThat(GateRules.decide(organizersOnly, OWNER).outcome()).isEqualTo(VerdictOutcome.RUN);
     }
 
     @Test
     @DisplayName("a scheduled run's mail is pending, its non-mail call is not")
     void should_pend_when_scheduledMail() {
-        GateRules.Decision mail = GateRules.decide(facts(OperationClass.REPLY, RunTrigger.SCHEDULED, TO_ANNA, 0, 0));
+        GateRules.Decision mail = GateRules.decide(facts(OperationClass.REPLY, RunTrigger.SCHEDULED, TO_ANNA, 0, 0),
+                OWNER);
         GateRules.Decision binding = GateRules.decide(facts(OperationClass.BINDING, RunTrigger.SCHEDULED, TO_ANNA,
-                2, 0));
+                2, 0), OWNER);
         GateRules.Decision noMail = GateRules.decide(facts(OperationClass.REVERSIBLE, RunTrigger.SCHEDULED, null,
-                0, 0));
+                0, 0), OWNER);
 
         assertThat(mail.outcome()).isEqualTo(VerdictOutcome.PENDING_APPROVAL);
         assertThat(mail.reason()).isEqualTo(GateReason.SCHEDULED_MAIL);
@@ -112,7 +115,7 @@ class GateRulesTest {
     @DisplayName("an unresolved mail is refused, before any other rule")
     void should_refuse_when_mailUnresolved() {
         GateRules.Decision decision = GateRules.decide(new GateFacts(OperationClass.AUDIENCE, RunTrigger.SCHEDULED,
-                null, true, Set.of(), Set.of(), 0, 0));
+                null, true, Set.of(), Set.of(), 0, 0), OWNER);
 
         assertThat(decision.outcome()).isEqualTo(VerdictOutcome.REFUSED);
         assertThat(decision.reason()).isEqualTo(GateReason.MAIL_UNRESOLVED);
@@ -121,12 +124,40 @@ class GateRulesTest {
     @Test
     @DisplayName("a read call is not the gate's")
     void should_throw_when_read() {
-        assertThatThrownBy(() -> GateRules.decide(facts(OperationClass.READ, RunTrigger.ORGANIZER, null, 0, 0)))
-                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> GateRules.decide(facts(OperationClass.READ, RunTrigger.ORGANIZER, null, 0, 0),
+                OWNER)).isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    @DisplayName("configured thresholds move the binding threshold and the recipient limit (story 8)")
+    void should_followThresholds_when_configured() {
+        GateRules.Thresholds three = new GateRules.Thresholds(3, 2);
+        GateFacts twoApprovals = facts(OperationClass.BINDING, RunTrigger.ORGANIZER, null, 2, 0);
+        assertThat(GateRules.decide(twoApprovals, OWNER).outcome()).isEqualTo(VerdictOutcome.RUN);
+        GateRules.Decision belowThree = GateRules.decide(twoApprovals, three);
+        assertThat(belowThree.outcome()).isEqualTo(VerdictOutcome.PENDING_APPROVAL);
+        assertThat(belowThree.confidence()).isEqualTo(new BigDecimal("0.6666"));
+        assertThat(GateRules.decide(facts(OperationClass.BINDING, RunTrigger.ORGANIZER, null, 3, 0), three).outcome())
+                .isEqualTo(VerdictOutcome.RUN);
+
+        GateFacts secondPerson = new GateFacts(OperationClass.REPLY, RunTrigger.ORGANIZER, mail("ben@example.com"),
+                false, Set.of("anna@example.com"), Set.of("anna@example.com"), 0, 0);
+        assertThat(GateRules.decide(secondPerson, OWNER).reason()).isEqualTo(GateReason.RECIPIENTS_ABOVE_ONE);
+        assertThat(GateRules.decide(secondPerson, three).reason()).isEqualTo(GateReason.RUNS_ALONE);
+        GateFacts firstPerson = facts(OperationClass.REPLY, RunTrigger.ORGANIZER, TO_ANNA, 0, 0);
+        assertThat(GateRules.decide(firstPerson, new GateRules.Thresholds(2, 0)).reason())
+                .isEqualTo(GateReason.RECIPIENTS_ABOVE_ONE);
+    }
+
+    @Test
+    @DisplayName("a binding threshold below 1 is refused: no binding call runs without a precedent")
+    void should_refuse_when_thresholdBelowOne() {
+        assertThatThrownBy(() -> new GateRules.Thresholds(0, 1)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new GateRules.Thresholds(2, -1)).isInstanceOf(IllegalArgumentException.class);
     }
 
     private static GateRules.Decision binding(int approvals, int denials) {
-        return GateRules.decide(facts(OperationClass.BINDING, RunTrigger.ORGANIZER, null, approvals, denials));
+        return GateRules.decide(facts(OperationClass.BINDING, RunTrigger.ORGANIZER, null, approvals, denials), OWNER);
     }
 
     private static GateFacts facts(OperationClass toolClass, RunTrigger trigger, GateFacts.Mail mail, int approvals,

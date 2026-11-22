@@ -11,6 +11,7 @@ import ch.batbern.agent.identity.RunCredentials;
 import ch.batbern.agent.log.DecisionLog;
 import ch.batbern.agent.precedent.ProposedCall;
 import ch.batbern.agent.run.RunEndReason;
+import ch.batbern.agent.run.RunLimit;
 import ch.batbern.agent.tools.AgentTool;
 import ch.batbern.agent.tools.ToolContext;
 import ch.batbern.agent.tools.ToolOutcome;
@@ -53,9 +54,14 @@ import java.util.UUID;
  *   <li>HANDED_TO_ORGANIZERS with GRANT_REFUSED or TOKEN_REFUSED and the CUMS code as end detail
  *       when CUMS refuses the grant, the first mint or a mint before a write (no further model
  *       call; a refused write is never sent);</li>
- *   <li>HANDED_TO_ORGANIZERS when the model is unreachable (no retry), its output is cut off, it
- *       refuses or stops otherwise, or it is still calling tools after {@code agent.loop.max-steps}
- *       model calls;</li>
+ *   <li>HANDED_TO_ORGANIZERS when the model is unreachable (no retry), its output is cut off, or it
+ *       refuses or stops otherwise;</li>
+ *   <li>HANDED_TO_ORGANIZERS with CAP_REACHED and the {@link RunLimit} as end detail when a limit of
+ *       {@code agent.limits} is reached (story 8, R9): before every model call the loop checks the
+ *       run's steps, the run's tokens and today's tokens of all runs against what is already
+ *       recorded, so the call that crosses a token cap completes and no further call follows; the
+ *       gate refuses the {@code reply} call past the reply cap, and the run ends there, without the
+ *       answer's remaining tools;</li>
  *   <li>FAILED on a fault in agent-service itself.</li>
  * </ul>
  * A tool that throws or is unknown goes back to the model as an error tool_result; the run goes on.
@@ -78,10 +84,12 @@ public class AgentLoop {
     private final RestTemplate restTemplate;
     private final ToolRegistry registry;
     private final AutonomyGate gate;
+    private final TokenLedger tokens;
     private final Clock clock;
 
     public AgentLoop(LlmPort llm, DecisionLog decisionLog, AgentProperties properties, CumsAgentClient cums,
-                     RestTemplate restTemplate, ToolRegistry registry, AutonomyGate gate, Clock clock) {
+                     RestTemplate restTemplate, ToolRegistry registry, AutonomyGate gate, TokenLedger tokens,
+                     Clock clock) {
         this.llm = llm;
         this.decisionLog = decisionLog;
         this.properties = properties;
@@ -89,6 +97,7 @@ public class AgentLoop {
         this.restTemplate = restTemplate;
         this.registry = registry;
         this.gate = gate;
+        this.tokens = tokens;
         this.clock = clock;
     }
 
@@ -150,17 +159,17 @@ public class AgentLoop {
                 .toList();
         List<LlmMessage> messages = new ArrayList<>();
         messages.add(LlmMessage.user(request.userMessage()));
-        AgentProperties.Loop limits = properties.loop();
+        int maxOutputTokens = properties.loop().maxOutputTokens();
 
         while (true) {
-            if (counter.steps >= limits.maxSteps()) {
-                LOG.warn("Agent run {} reached the step limit of {}", runId, limits.maxSteps());
-                return new RunEnd(RunEndReason.STEP_LIMIT, null);
+            Optional<RunLimit> limit = limitBeforeModelCall(runId, counter.steps);
+            if (limit.isPresent()) {
+                return capReached(limit.get());
             }
             counter.steps++;
             UUID stepId = decisionLog.startStep(runId, counter.steps);
             try {
-                LlmRequest llmRequest = new LlmRequest(request.system(), messages, specs, limits.maxOutputTokens());
+                LlmRequest llmRequest = new LlmRequest(request.system(), messages, specs, maxOutputTokens);
                 UUID modelCallId = decisionLog.startModelCall(runId, stepId, llmRequest);
                 LlmResponse response;
                 try {
@@ -190,15 +199,19 @@ public class AgentLoop {
                         if (uses.isEmpty()) {
                             return new RunEnd(RunEndReason.MODEL_STOPPED, null);
                         }
-                        List<LlmContent.ToolResult> results =
-                                runTools(runId, stepId, counter.steps, uses, tools, api, credentials);
+                        ToolRound round = runTools(runId, stepId, counter.steps, uses, tools, api, credentials);
                         // Read from the credentials, not from an exception a tool may have swallowed
                         Optional<AgentCredentialsRefusedException> refusal = credentials.refusal();
                         if (refusal.isPresent()) {
                             return refused(runId, refusal.get());
                         }
+                        if (round.capReached() != null) {
+                            // The gate refuses the reply once the run's replies that ran equal the cap
+                            logged(runId, round.capReached(), configured(round.capReached()));
+                            return capReached(round.capReached());
+                        }
                         messages.add(LlmMessage.assistant(response.content()));
-                        messages.add(LlmMessage.user(results));
+                        messages.add(LlmMessage.user(round.results()));
                         break;
                     case PAUSE_TURN:
                         // agent-service declares no server tools, so the API has nothing to pause
@@ -219,6 +232,48 @@ public class AgentLoop {
         }
     }
 
+    /**
+     * The limit a further model call would go past, checked in this order: steps, the run's tokens,
+     * today's tokens of all runs. Logs the limit, what was used and the configured value; nothing else.
+     */
+    private Optional<RunLimit> limitBeforeModelCall(UUID runId, int stepsTaken) {
+        AgentProperties.Limits limits = properties.limits();
+        if (stepsTaken >= limits.runSteps()) {
+            return logged(runId, RunLimit.STEPS, stepsTaken);
+        }
+        if (stepsTaken > 0) {
+            long runTokens = tokens.ofRun(runId);
+            if (runTokens >= limits.runTokens()) {
+                return logged(runId, RunLimit.RUN_TOKENS, runTokens);
+            }
+        }
+        long todayTokens = tokens.ofToday();
+        if (todayTokens >= limits.dailyTokens()) {
+            return logged(runId, RunLimit.DAILY_TOKENS, todayTokens);
+        }
+        return Optional.empty();
+    }
+
+    private Optional<RunLimit> logged(UUID runId, RunLimit limit, long used) {
+        LOG.warn("Agent run {} handed to the organizers: limit {} reached (used {}, configured {})", runId, limit,
+                used, configured(limit));
+        return Optional.of(limit);
+    }
+
+    private long configured(RunLimit limit) {
+        AgentProperties.Limits limits = properties.limits();
+        return switch (limit) {
+            case STEPS -> limits.runSteps();
+            case RUN_TOKENS -> limits.runTokens();
+            case REPLIES -> limits.runReplies();
+            case DAILY_TOKENS -> limits.dailyTokens();
+        };
+    }
+
+    private static RunEnd capReached(RunLimit limit) {
+        return new RunEnd(RunEndReason.CAP_REACHED, limit.name());
+    }
+
     private RunEnd refused(UUID runId, AgentCredentialsRefusedException refusal) {
         // Run id, reason and code only: never a username, token or secret
         LOG.warn("Agent run {} handed to the organizers: {} {}", runId, refusal.reason(), refusal.code());
@@ -228,8 +283,9 @@ public class AgentLoop {
     /**
      * Runs the tools of one model answer in order. Stops after a tool during which CUMS refused a
      * mint: that tool call is FAILED (even if the tool returned normally), the rest are not run.
+     * Stops likewise after a call the gate refused because a limit is reached (CAP_REACHED).
      */
-    private List<LlmContent.ToolResult> runTools(UUID runId, UUID stepId, int step,
+    private ToolRound runTools(UUID runId, UUID stepId, int step,
                                                  List<LlmContent.ToolUse> uses, Map<String, AgentTool> tools,
                                                  PublicApi api, RunCredentials credentials) {
         List<LlmContent.ToolResult> results = new ArrayList<>();
@@ -282,6 +338,9 @@ public class AgentLoop {
                 LOG.info("Agent run {} step {}: tool {} held by the gate ({}, {})", runId, step, tool.name(),
                         verdict.outcome(), verdict.reason());
                 results.add(new LlmContent.ToolResult(use.id(), told, GateMessages.isError(verdict)));
+                if (verdict.cap() != null) {
+                    return new ToolRound(results, verdict.cap());
+                }
                 continue;
             }
             decisionLog.completeToolCall(toolCallId, outcome);
@@ -289,7 +348,11 @@ public class AgentLoop {
                     outcome.error() ? "returned an error" : "succeeded");
             results.add(new LlmContent.ToolResult(use.id(), outcome.content(), outcome.error()));
         }
-        return results;
+        return new ToolRound(results, null);
+    }
+
+    /** The tool results of one answer, and the limit a refused call reached ({@code null} for none). */
+    private record ToolRound(List<LlmContent.ToolResult> results, RunLimit capReached) {
     }
 
     /** How a run ends: the reason and its machine-readable detail ({@code null} for none). */

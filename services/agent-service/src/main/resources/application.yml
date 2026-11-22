@@ -58,12 +58,22 @@ spring:
 # The organizer-facing switch, allowlist and delegate live in CUMS (/api/v1/agent-settings).
 agent:
   enabled: ${AGENT_ENABLED:false}
-  # The agent loop (story 2). A model still calling tools after max-steps model calls hands the run
-  # to the organizers. Token, reply and daily caps follow in story 8.
+  # Each model call of the agent loop (story 2). The caps of a run are agent.limits.
   loop:
-    max-steps: ${AGENT_LOOP_MAX_STEPS:25}
     # Adaptive thinking spends output tokens too: 16000, the non-streaming default (story 3)
     max-output-tokens: ${AGENT_LOOP_MAX_OUTPUT_TOKENS:16000}
+  # The limits (story 8, R9, owner values 2026-11-22). Reaching a cap stops the run: it ends
+  # HANDED_TO_ORGANIZERS, reason CAP_REACHED, the limit as end_detail (STEPS, RUN_TOKENS, REPLIES,
+  # DAILY_TOKENS). Steps, run tokens and the daily budget (Europe/Zurich day, all runs) are checked
+  # before every model call against the tokens recorded so far, so the call that crosses a token cap
+  # still completes; the reply cap is checked by the gate. The last two values are the gate's rules.
+  limits:
+    run-steps: ${AGENT_LIMITS_RUN_STEPS:25}
+    run-tokens: ${AGENT_LIMITS_RUN_TOKENS:200000}
+    run-replies: ${AGENT_LIMITS_RUN_REPLIES:2}
+    daily-tokens: ${AGENT_LIMITS_DAILY_TOKENS:2000000}
+    binding-approvals: ${AGENT_LIMITS_BINDING_APPROVALS:2}
+    non-organizer-recipients: ${AGENT_LIMITS_NON_ORGANIZER_RECIPIENTS:1}
   # The model adapter (story 3, AD-14). The key comes from Secrets Manager
   # (batbern/<env>/agent/anthropic-api-key, injected by the agent-service stack). `none` or blank: no adapter, runs
   # are handed to the organizers (in profile local: a canned local adapter). The startup log names

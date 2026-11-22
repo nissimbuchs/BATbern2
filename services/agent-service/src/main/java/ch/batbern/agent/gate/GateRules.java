@@ -14,24 +14,41 @@ import java.util.Set;
  * <ol>
  *   <li>A mail the tool could not resolve is REFUSED.</li>
  *   <li>An {@code audience} tool, or a mail to a non-organizer that brings the distinct
- *       non-organizer recipients of the run or of the day above one, is {@code audience}: always
+ *       non-organizer recipients of the run or of the day above
+ *       {@link Thresholds#nonOrganizerRecipients()} (1), is {@code audience}: always
  *       PENDING_APPROVAL. A mail to organizers only is not counted.</li>
  *   <li>Any mail of a scheduled run is PENDING_APPROVAL.</li>
- *   <li>A {@code binding} call runs alone only with at least {@value #REQUIRED_APPROVALS} matching
- *       approvals and no matching denial; otherwise PENDING_APPROVAL.</li>
+ *   <li>A {@code binding} call runs alone only with at least {@link Thresholds#bindingApprovals()}
+ *       (2) matching approvals and no matching denial; otherwise PENDING_APPROVAL.</li>
  *   <li>A {@code reversible} or {@code reply} call runs alone (the caps are checked after, by
  *       {@link GateCaps}, as for a cleared {@code binding} call).</li>
  * </ol>
+ * The two numbers are configuration ({@code agent.limits.binding-approvals},
+ * {@code agent.limits.non-organizer-recipients}, story 8).
  */
 public final class GateRules {
 
-    /** Matching approved precedents a {@code binding} call needs to run alone (owner, 2026-11-22). */
-    public static final int REQUIRED_APPROVALS = 2;
-
-    /** Distinct non-organizer recipients a run or a day may reach before every further mail is {@code audience}. */
-    public static final int MAX_RECIPIENTS = 1;
-
     private GateRules() {
+    }
+
+    /**
+     * The rules' two owner values (2026-11-22), from {@code agent.limits}.
+     *
+     * @param bindingApprovals       matching approved precedents a {@code binding} call needs to run
+     *                               alone; at least 1
+     * @param nonOrganizerRecipients distinct non-organizer recipients a run or a day may reach before
+     *                               every further mail is {@code audience}
+     */
+    public record Thresholds(int bindingApprovals, int nonOrganizerRecipients) {
+
+        public Thresholds {
+            if (bindingApprovals < 1) {
+                throw new IllegalArgumentException("bindingApprovals must be at least 1");
+            }
+            if (nonOrganizerRecipients < 0) {
+                throw new IllegalArgumentException("nonOrganizerRecipients must not be negative");
+            }
+        }
     }
 
     /**
@@ -49,7 +66,7 @@ public final class GateRules {
     }
 
     /** Decides a non-read call. */
-    public static Decision decide(GateFacts facts) {
+    public static Decision decide(GateFacts facts, Thresholds thresholds) {
         OperationClass toolClass = facts.toolClass();
         if (toolClass == OperationClass.READ) {
             throw new IllegalArgumentException("Read calls skip the gate");
@@ -64,19 +81,21 @@ public final class GateRules {
         if (toolClass == OperationClass.AUDIENCE) {
             return pending(OperationClass.AUDIENCE, GateReason.AUDIENCE_CLASS, thisRun, today);
         }
-        if (!thisMail.isEmpty() && (thisRun > MAX_RECIPIENTS || today > MAX_RECIPIENTS)) {
+        if (!thisMail.isEmpty() && (thisRun > thresholds.nonOrganizerRecipients()
+                || today > thresholds.nonOrganizerRecipients())) {
             return pending(OperationClass.AUDIENCE, GateReason.RECIPIENTS_ABOVE_ONE, thisRun, today);
         }
         if (facts.sendsMail() && facts.trigger() == RunTrigger.SCHEDULED) {
             return pending(toolClass, GateReason.SCHEDULED_MAIL, thisRun, today);
         }
         if (toolClass == OperationClass.BINDING) {
-            BigDecimal confidence = confidence(facts.matchingApprovals(), facts.matchingDenials());
+            BigDecimal confidence = confidence(facts.matchingApprovals(), facts.matchingDenials(),
+                    thresholds.bindingApprovals());
             if (facts.matchingDenials() > 0) {
                 return new Decision(VerdictOutcome.PENDING_APPROVAL, toolClass, GateReason.BINDING_DENIED,
                         confidence, thisRun, today);
             }
-            if (facts.matchingApprovals() >= REQUIRED_APPROVALS) {
+            if (facts.matchingApprovals() >= thresholds.bindingApprovals()) {
                 return new Decision(VerdictOutcome.RUN, toolClass, GateReason.BINDING_CLEARED, confidence,
                         thisRun, today);
             }
@@ -90,12 +109,12 @@ public final class GateRules {
      * Confidence of a {@code binding} call: 0 with any matching denial, else the share of the
      * required approvals present, capped at 1. The threshold is 1.
      */
-    static BigDecimal confidence(int approvals, int denials) {
+    static BigDecimal confidence(int approvals, int denials, int required) {
         if (denials > 0) {
             return BigDecimal.ZERO.setScale(4, RoundingMode.UNNECESSARY);
         }
-        int counted = Math.min(approvals, REQUIRED_APPROVALS);
-        return BigDecimal.valueOf(counted).divide(BigDecimal.valueOf(REQUIRED_APPROVALS), 4, RoundingMode.DOWN);
+        int counted = Math.min(approvals, required);
+        return BigDecimal.valueOf(counted).divide(BigDecimal.valueOf(required), 4, RoundingMode.DOWN);
     }
 
     private static Decision pending(OperationClass effectiveClass, GateReason reason, int thisRun, int today) {

@@ -1,6 +1,7 @@
 package ch.batbern.agent.gate;
 
 import ch.batbern.agent.log.ToolCallStatus;
+import ch.batbern.agent.run.RunLimit;
 import ch.batbern.agent.tools.OperationClass;
 
 import java.util.List;
@@ -15,11 +16,11 @@ import java.util.UUID;
  * @param effectiveClass the class the call was treated as
  * @param reason         the rule that decided
  * @param approvalId     the PENDING {@code agent_approvals} row of a pending verdict; {@code null} otherwise
- * @param cap            the cap a refused call reached; {@code null} otherwise
+ * @param cap            the limit a refused call reached; {@code null} otherwise
  * @param cited          the source ids of the precedents the verdict cites
  */
 public record Verdict(UUID id, VerdictOutcome outcome, OperationClass effectiveClass, GateReason reason,
-                      UUID approvalId, String cap, List<String> cited) {
+                      UUID approvalId, RunLimit cap, List<String> cited) {
 
     public Verdict {
         Objects.requireNonNull(id, "id");

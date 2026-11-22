@@ -57,7 +57,7 @@ import static org.assertj.core.api.Assertions.within;
  * installs others).
  */
 @DisplayName("Read tools see past events through the public API")
-@TestPropertySource(properties = {"agent.enabled=true", "agent.loop.max-steps=5"})
+@TestPropertySource(properties = {"agent.enabled=true", "agent.limits.run-steps=5"})
 class ReadToolsIntegrationTest extends AbstractIntegrationTest {
 
     private static final String EVENTS_CORE = "docs/api/events-core-api.openapi.yml";
