@@ -5,8 +5,8 @@ import java.util.Objects;
 
 /**
  * A personal mail with headers the caller owns (Story 16.6: an organizer's answer to a
- * conversation). Sent by {@code EmailService.sendComposed} through {@code SendRawEmail}, because
- * {@code SendEmail} can carry neither {@code In-Reply-To}/{@code References} nor a per-mail display
+ * conversation). Sent by {@code EmailService.sendComposed} as raw content of SES v2 {@code SendEmail},
+ * because simple content can carry neither {@code In-Reply-To}/{@code References} nor a per-mail display
  * name. The From address is the given one (an address of the platform's verified domain), else the
  * platform's sender address.
  *

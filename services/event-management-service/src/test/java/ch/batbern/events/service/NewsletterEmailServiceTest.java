@@ -371,7 +371,7 @@ class NewsletterEmailServiceTest {
     @Test
     @DisplayName("sendNewsletter: a test-marked event proceeds when no live SES client exists (#1071)")
     void sendNewsletter_proceeds_whenEventIsTestMarkedButDeliveryIsNotLive() {
-        // Local dev has no SesClient: mail goes to LocalEmailCapture, nothing leaves the machine.
+        // Local dev has no SesV2Client: mail goes to LocalEmailCapture, nothing leaves the machine.
         // The wall exists for live delivery only, like the per-email wall in EmailService; without
         // this the newsletter E2E spec could never pass anywhere.
         testEvent.setId(UUID.randomUUID());

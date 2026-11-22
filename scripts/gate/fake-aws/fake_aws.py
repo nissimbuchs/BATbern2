@@ -1,12 +1,15 @@
 """Fake AWS for the pre-deploy gate (P5 spike): SES and a stand-in Cognito user pool.
 
-SES: the part of the v1 Query API that EmailService uses (SendEmail, SendRawEmail); every mail is
-kept in memory, nothing is forwarded anywhere.
+SES: the API v2 SendEmail operation that EmailService uses (simple and raw content; REST/JSON at
+POST /v2/email/outbound-emails), plus the v1 Query API (SendEmail, SendRawEmail) it used before
+2026-11-22. A mail is listed with action "SendEmail" (simple content) or "SendRawEmail" (raw content)
+either way. Every mail is kept in memory, nothing is forwarded anywhere.
 Cognito: the admin operations CUMS calls (JSON 1.1, X-Amz-Target), on an in-memory pool keyed by
 e-mail, so Pattern N (adminCreateUserSilently) works without the production user pool.
 Standard library only.
 
-  POST /                 SES API (form-encoded, Action=SendEmail | SendRawEmail)
+  POST /v2/email/outbound-emails  SES API v2 SendEmail (JSON)
+  POST /                 SES API v1 (form-encoded, Action=SendEmail | SendRawEmail)
                          or Cognito API (X-Amz-Target: AWSCognitoIdentityProviderService.<Op>)
   GET  /_gate/users      the stand-in pool's users, as JSON
   GET  /_gate/messages   every mail received, as JSON (to, cc, bcc, from, subject, text, html)
@@ -93,6 +96,63 @@ def parse_send_raw_email(form):
     }
 
 
+def parse_raw_mime(raw):
+    msg = email.message_from_bytes(raw, policy=email.policy.default)
+    text = html = None
+    attachments = []
+    for part in msg.walk():
+        if part.is_multipart():
+            continue
+        if part.get_content_disposition() == "attachment":
+            attachments.append(part.get_filename())
+        elif part.get_content_type() == "text/plain" and text is None:
+            text = part.get_content()
+        elif part.get_content_type() == "text/html" and html is None:
+            html = part.get_content()
+    return msg, text, html, attachments
+
+
+def parse_send_email_v2(req):
+    """SES API v2 SendEmail: simple content -> action SendEmail, raw content -> SendRawEmail."""
+    dest = req.get("Destination") or {}
+    content = req.get("Content") or {}
+    common = {
+        "configurationSet": req.get("ConfigurationSetName"),
+        "tags": {t.get("Name"): t.get("Value") for t in req.get("EmailTags") or []},
+        "api": "v2",
+    }
+    if "Raw" in content:
+        raw = base64.b64decode((content["Raw"] or {}).get("Data", ""))
+        msg, text, html, attachments = parse_raw_mime(raw)
+        destinations = (dest.get("ToAddresses") or []) + (dest.get("CcAddresses") or []) \
+            + (dest.get("BccAddresses") or [])
+        return dict(common, **{
+            "action": "SendRawEmail",
+            "from": req.get("FromEmailAddress") or msg.get("From"),
+            "to": addresses(msg.get_all("To")),
+            "cc": addresses(msg.get_all("Cc")),
+            "destinations": destinations,
+            "subject": str(msg.get("Subject")),
+            "text": text,
+            "html": html,
+            "attachments": attachments,
+            "rawBytes": len(raw),
+        })
+    simple = content.get("Simple") or {}
+    body = simple.get("Body") or {}
+    return dict(common, **{
+        "action": "SendEmail",
+        "from": req.get("FromEmailAddress"),
+        "to": dest.get("ToAddresses") or [],
+        "cc": dest.get("CcAddresses") or [],
+        "bcc": dest.get("BccAddresses") or [],
+        "replyTo": req.get("ReplyToAddresses") or [],
+        "subject": (simple.get("Subject") or {}).get("Data"),
+        "text": (body.get("Text") or {}).get("Data"),
+        "html": (body.get("Html") or {}).get("Data"),
+    })
+
+
 class Handler(BaseHTTPRequestHandler):
     def _json(self, status, payload):
         body = json.dumps(payload, indent=2, ensure_ascii=False).encode()
@@ -141,6 +201,8 @@ class Handler(BaseHTTPRequestHandler):
                 USERS[email_key] = {"sub": user["sub"], "attributes": attrs, "enabled": True,
                                     "status": "CONFIRMED", "created": time.time()}
             return self._json(201, {"registered": email_key})
+        if self.path.split("?", 1)[0] == "/v2/email/outbound-emails":
+            return self._ses_v2(json.loads(body or "{}"))
         target = self.headers.get("X-Amz-Target") or ""
         if target.startswith("AWSCognitoIdentityProviderService."):
             return self._cognito(target.split(".", 1)[1], json.loads(body or "{}"))
@@ -164,6 +226,16 @@ class Handler(BaseHTTPRequestHandler):
             f'<ErrorResponse xmlns="{NS}"><Error><Type>Sender</Type><Code>InvalidAction</Code>'
             f'<Message>fake SES does not implement {action}</Message></Error>'
             f'<RequestId>{request_id}</RequestId></ErrorResponse>'))
+
+    def _ses_v2(self, req):
+        with LOCK:
+            REQUESTS.append({"action": "v2:SendEmail", "host": self.headers.get("Host")})
+        mail = parse_send_email_v2(req)
+        mail["messageId"] = f"gate-{uuid.uuid4()}"
+        with LOCK:
+            MESSAGES.append(mail)
+        print(f"[fake-aws] ses v2 {mail['action']} to={mail.get('to')} subject={mail.get('subject')!r}", flush=True)
+        return self._json(200, {"MessageId": mail["messageId"]})
 
     # --- Cognito stand-in -------------------------------------------------------------------
     def _cognito_reply(self, status, payload):

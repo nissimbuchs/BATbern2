@@ -30,7 +30,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.transaction.support.TransactionTemplate;
-import software.amazon.awssdk.services.ses.SesClient;
+import software.amazon.awssdk.services.sesv2.SesV2Client;
 
 import java.sql.Timestamp;
 import java.time.Instant;
@@ -211,7 +211,7 @@ class MailRecordingIntegrationTest extends AbstractIntegrationTest {
     @Test
     @DisplayName("AC4/ADR-015: a test-marked send blocked before SES writes no row")
     void testMarked_writesNothing() {
-        ReflectionTestUtils.setField(emailService, "sesClient", Mockito.mock(SesClient.class));
+        ReflectionTestUtils.setField(emailService, "sesClient", Mockito.mock(SesV2Client.class));
         MailContext context = MailContext.individual(EVENT_CODE, MailContext.Audience.SPEAKERS, "speaker-invitation");
 
         assertThatThrownBy(() -> emailService.sendHtmlEmailSync(context, TO, List.of(),

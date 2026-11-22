@@ -279,7 +279,7 @@ sequenceDiagram
 ```mermaid
 flowchart LR
     subgraph mailout["Outbound"]
-        EMSO["EMS<br/>templates, compose,<br/>newsletter, forwarding"] -->|"SendEmail, SendRawEmail"| SESO["SES<br/>configuration sets"]
+        EMSO["EMS<br/>templates, compose,<br/>newsletter, forwarding"] -->|"SES v2 SendEmail"| SESO["SES<br/>configuration sets"]
         SESO -->|"bounce, complaint"| SNSB["SNS ses-bounces"] --> QB["SQS bounce-processing"]
         SESO -->|"transactional delivery events"| SNST["SNS ses-transactional-events"] --> QD["SQS mail-delivery-status"]
         QB --> EMSB["EMS BounceProcessingService<br/>newsletter suppression"]

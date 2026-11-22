@@ -9,8 +9,8 @@ import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
-import software.amazon.awssdk.services.ses.SesClient;
-import software.amazon.awssdk.services.ses.SesClientBuilder;
+import software.amazon.awssdk.services.sesv2.SesV2Client;
+import software.amazon.awssdk.services.sesv2.SesV2ClientBuilder;
 
 import java.net.URI;
 
@@ -18,7 +18,10 @@ import java.net.URI;
  * AWS SES configuration for sending transactional emails.
  *
  * Production/Staging/Local: Uses real AWS SES (sandbox mode in dev)
- * Test: the test fixtures' SesRecorder provides the SesClient (17.0b3)
+ * Test: the test fixtures' SesRecorder provides the SesV2Client (17.0b3)
+ *
+ * SES API v2: a message may be up to 40 MB; API v1 refused anything over 10 MB (2026-11-22, a
+ * 10.9 MB forward to ok@ failed for every recipient).
  *
  * Story 2.2a Task B12: Email service infrastructure
  */
@@ -43,8 +46,8 @@ public class AwsSesConfig {
     private String sesEndpoint;
 
     /**
-     * AWS SES Client for production and staging only.
-     * Local development uses no SesClient — EmailService captures emails in-memory via LocalEmailCapture.
+     * AWS SES (API v2) client for production and staging only.
+     * Local development uses no SesV2Client — EmailService captures emails in-memory via LocalEmailCapture.
      * Integration tests get theirs from the test fixtures' {@code SesRecorder} (17.0b3), never from here.
      * Uses DefaultCredentialsProvider which supports:
      * - IAM roles (production/staging ECS tasks)
@@ -53,7 +56,7 @@ public class AwsSesConfig {
      */
     @Bean
     @Profile("!test & !local")
-    public SesClient sesClient() {
+    public SesV2Client sesClient() {
         log.info("Initializing AWS SES client for region: {}, profile: {}",
                 awsRegion, awsProfile != null ? awsProfile : "default");
         return buildSesClient(awsRegion, sesEndpoint);
@@ -63,8 +66,8 @@ public class AwsSesConfig {
      * Builds the client. With an endpoint, it talks to that endpoint with placeholder credentials
      * (a fake SES); without one, it is the production client: AWS SES, default credentials chain.
      */
-    static SesClient buildSesClient(String region, String endpoint) {
-        SesClientBuilder builder = SesClient.builder().region(Region.of(region));
+    static SesV2Client buildSesClient(String region, String endpoint) {
+        SesV2ClientBuilder builder = SesV2Client.builder().region(Region.of(region));
         if (endpoint == null || endpoint.isBlank()) {
             return builder.credentialsProvider(DefaultCredentialsProvider.builder().build()).build();
         }

@@ -1206,7 +1206,7 @@ graph LR
     E -->|"S3 event"| QI["SQS inbound-email + DLQ"] --> EMS1["EMS reply handling<br/>unsubscribe, deregistration"]
     F -->|"S3 event"| QF["SQS forwarding-email + DLQ"] --> EMS2["EMS EmailForwardingListener<br/>sender check, recipients in-process"]
 
-    EMS2 -->|"forward copy, SendRawEmail<br/>forwarder config set"| SESOUT["SES outbound"]
+    EMS2 -->|"forward copy, SES v2 SendEmail raw, up to 40 MB<br/>forwarder config set"| SESOUT["SES outbound"]
     EMS2 -->|"notify instead of forward<br/>admin setting per alias group"| MCN["Mail Center conversation<br/>attachments in mail-attachments/"]
 ```
 

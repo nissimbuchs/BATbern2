@@ -1139,7 +1139,7 @@ flowchart TD
     CLAIM --> AUTH["ForwardingSenderAuthorizer<br/>contact aliases open, others need<br/>an authenticated ORGANIZER sender"]
     AUTH --> RES["ForwardingRecipientResolver<br/>CUMS roles, admin setting,<br/>DistributionListService"]
     RES --> RW["ForwardedMessageRewriter<br/>From name via BATbern, Reply-To sender"]
-    RW --> OUT["EmailService.sendRawMessage<br/>config set batbern-env-forwarder"]
+    RW --> OUT["EmailService.sendRawMessage<br/>SES v2 raw content, up to 40 MB<br/>config set batbern-env-forwarder"]
     FWD -.->|"after the send"| ING["InboundMailCenter.ingestAlias<br/>store and thread, never throws"]
 ```
 
@@ -1160,6 +1160,8 @@ notify switch" below; the Mail Center storage path in "Inbound mail and conversa
   `ForwardingDirectory.organizerUsernameFor`) through the context-taking
   `EmailService.sendRawMessage(MailContext, mime, to, cc, subject, html, configSet)`. Private copies
   are not recorded; the Mail Center stores the inbound mail itself (below).
+- **Size**: a forwarded mail may be up to 40 MB (SES API v2). Under the SES API v1, used until
+  2026-11-22, anything over 10 MB failed for every recipient (a 10.9 MB mail to `ok@` that day).
 - **Unrecognized `replies@` mail** (Story 16.0, #1160): `InboundEmailListenerService` hands every
   reply that `InboundEmailRouter` cannot act on (`RouteResult.UNRECOGNIZED`) to
   `EmailForwardingService.forwardUnrecognizedReply`, which forwards it to all organizers like
@@ -1217,7 +1219,7 @@ flowchart TD
     REN --> ES["shared-kernel EmailService<br/>with MailContext"]
     ES --> WALLS{"reserved domain or<br/>ADR-015 test marker?"}
     WALLS -->|"yes"| BLOCK["blocked, not sent, not recorded"]
-    WALLS -->|"no"| SES["SES SendEmail / SendRawEmail<br/>tag mail_group"]
+    WALLS -->|"no"| SES["SES v2 SendEmail, simple or raw<br/>tag mail_group"]
     SES --> REC["OutboundMailRecorder SPI<br/>EMS: JpaOutboundMailRecorder<br/>PCS: HttpOutboundMailRecorder to POST /internal/mails"]
     REC --> MM[("mail_message<br/>one row per send group")]
     REC --> MR[("mail_recipient<br/>one row per address, SENT or FAILED")]
@@ -1276,7 +1278,7 @@ sequenceDiagram
     PMS->>PIE: recipients = all PARTNER and ORGANIZER users, invite SEQUENCE + 1
     loop one mail per recipient, one shared MailContext
         PIE->>ES: sendHtmlEmailWithAttachments, ICS with only this ATTENDEE
-        ES->>SES: SendRawEmail
+        ES->>SES: SES v2 SendEmail, raw content
         ES->>REC: record this recipient, SENT or FAILED
         REC->>EMS: best effort, 2 s connect, 5 s read
         EMS->>EMS: JpaOutboundMailRecorder joins it into one mail_message

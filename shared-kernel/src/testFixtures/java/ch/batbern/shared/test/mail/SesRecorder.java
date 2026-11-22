@@ -13,19 +13,19 @@ import jakarta.mail.internet.MimeMessage;
 import jakarta.mail.internet.MimeUtility;
 import org.mockito.Mockito;
 import software.amazon.awssdk.awscore.exception.AwsErrorDetails;
-import software.amazon.awssdk.services.ses.SesClient;
-import software.amazon.awssdk.services.ses.model.Body;
-import software.amazon.awssdk.services.ses.model.Content;
-import software.amazon.awssdk.services.ses.model.Destination;
-import software.amazon.awssdk.services.ses.model.MessageTag;
-import software.amazon.awssdk.services.ses.model.SendEmailRequest;
-import software.amazon.awssdk.services.ses.model.SendEmailResponse;
-import software.amazon.awssdk.services.ses.model.SendRawEmailRequest;
-import software.amazon.awssdk.services.ses.model.SendRawEmailResponse;
-import software.amazon.awssdk.services.ses.model.SesException;
+import software.amazon.awssdk.services.sesv2.SesV2Client;
+import software.amazon.awssdk.services.sesv2.model.Body;
+import software.amazon.awssdk.services.sesv2.model.Content;
+import software.amazon.awssdk.services.sesv2.model.Destination;
+import software.amazon.awssdk.services.sesv2.model.EmailContent;
+import software.amazon.awssdk.services.sesv2.model.MessageTag;
+import software.amazon.awssdk.services.sesv2.model.SendEmailRequest;
+import software.amazon.awssdk.services.sesv2.model.SendEmailResponse;
+import software.amazon.awssdk.services.sesv2.model.SesV2Exception;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Enumeration;
@@ -42,14 +42,18 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
- * The test stand-in for Amazon SES (17.0b3): a {@link SesClient} that records every request and
- * sends nothing. It is the only {@code SesClient} a test context may hold, so the real
+ * The test stand-in for Amazon SES (17.0b3): a {@link SesV2Client} that records every request and
+ * sends nothing. It is the only {@code SesV2Client} a test context may hold, so the real
  * {@code EmailService} runs in every integration test, with every wall it has in production
  * (address checks, reserved domains, the test-marker wall), and a test asserts what SES would have
  * received: the parsed To:, Cc:, Reply-To:, subject, HTML body and attachment names.
  *
+ * <p>Like SES API v2, it refuses a message over {@link #MAX_MESSAGE_BYTES} (40 MB) with
+ * {@link #MESSAGE_TOO_LARGE}, so a test can show that a large mail goes out and a too-large one is
+ * recorded as failed. (API v1 refused over 10 MB: a 10.9 MB forward failed in production 2026-11-22.)
+ *
  * <p>Usage: the service's {@code TestAwsConfig} exposes one recorder as a bean and its
- * {@link #client()} as the {@code SesClient} bean. Tests autowire the recorder, {@link #reset()} it
+ * {@link #client()} as the {@code SesV2Client} bean. Tests autowire the recorder, {@link #reset()} it
  * in {@code @BeforeEach} and read {@link #mails()}. Never {@code verify(emailService)}: assert the
  * effect.
  *
@@ -65,7 +69,16 @@ import java.util.stream.Collectors;
  */
 public final class SesRecorder {
 
-    private final SesClient client = Mockito.mock(SesClient.class);
+    /** The SES API v2 maximum message size, 40 MB (SES quotas: "40 MB per message"). */
+    public static final int MAX_MESSAGE_BYTES = 40 * 1024 * 1024;
+
+    /**
+     * Error code of the refusal of a message over {@link #MAX_MESSAGE_BYTES}. SES v2 answers that
+     * request with HTTP 400; the exact code is not documented, so this is the recorder's own name.
+     */
+    public static final String MESSAGE_TOO_LARGE = "MessageTooLarge";
+
+    private final SesV2Client client = Mockito.mock(SesV2Client.class);
     private final List<RecordedMail> mails = new CopyOnWriteArrayList<>();
     private final AtomicInteger sequence = new AtomicInteger();
     private volatile Supplier<? extends RuntimeException> failure;
@@ -86,26 +99,24 @@ public final class SesRecorder {
         this.drain = drain;
         Mockito.when(client.sendEmail(Mockito.any(SendEmailRequest.class))).thenAnswer(invocation -> {
             SendEmailRequest request = invocation.getArgument(0);
+            EmailContent content = request.content();
+            if (content == null || (content.raw() == null) == (content.simple() == null)) {
+                throw sesError("BadRequestException", "Content must hold exactly one of Simple or Raw");
+            }
+            if (messageBytes(content) > MAX_MESSAGE_BYTES) {
+                throw sesError(MESSAGE_TOO_LARGE, "Message length is more than " + MAX_MESSAGE_BYTES + " bytes long");
+            }
             String id = nextMessageId();
-            RecordedMail mail = fromSendEmail(request, id);
+            RecordedMail mail = content.raw() != null ? fromRawContent(request, id) : fromSimpleContent(request, id);
             throwIfFailing(mail);
             mails.add(mail);
             onEachSend.accept(mail);
             return SendEmailResponse.builder().messageId(id).build();
         });
-        Mockito.when(client.sendRawEmail(Mockito.any(SendRawEmailRequest.class))).thenAnswer(invocation -> {
-            SendRawEmailRequest request = invocation.getArgument(0);
-            String id = nextMessageId();
-            RecordedMail mail = fromSendRawEmail(request, id);
-            throwIfFailing(mail);
-            mails.add(mail);
-            onEachSend.accept(mail);
-            return SendRawEmailResponse.builder().messageId(id).build();
-        });
     }
 
-    /** The {@code SesClient} to register as the context's only SES client. */
-    public SesClient client() {
+    /** The {@code SesV2Client} to register as the context's only SES client. */
+    public SesV2Client client() {
         return client;
     }
 
@@ -140,8 +151,8 @@ public final class SesRecorder {
     }
 
     /** An SES refusal as the SDK throws it, with error details (EmailService logs them). */
-    public static SesException sesError(String errorCode, String message) {
-        return (SesException) SesException.builder()
+    public static SesV2Exception sesError(String errorCode, String message) {
+        return (SesV2Exception) SesV2Exception.builder()
                 .message(message)
                 .statusCode(400)
                 .awsErrorDetails(AwsErrorDetails.builder().errorCode(errorCode).errorMessage(message).build())
@@ -190,7 +201,21 @@ public final class SesRecorder {
         return "ses-recorder-" + sequence.incrementAndGet();
     }
 
-    private static RecordedMail fromSendEmail(SendEmailRequest request, String messageId) {
+    /** Size of the message as SES measures it: the raw MIME, or subject plus bodies of simple content. */
+    private static long messageBytes(EmailContent content) {
+        if (content.raw() != null) {
+            return content.raw().data() != null ? content.raw().data().asByteArrayUnsafe().length : 0;
+        }
+        software.amazon.awssdk.services.sesv2.model.Message message = content.simple();
+        Body body = message.body();
+        return utf8Length(message.subject()) + (body != null ? utf8Length(body.html()) + utf8Length(body.text()) : 0);
+    }
+
+    private static long utf8Length(Content content) {
+        return content != null && content.data() != null ? content.data().getBytes(StandardCharsets.UTF_8).length : 0;
+    }
+
+    private static RecordedMail fromSimpleContent(SendEmailRequest request, String messageId) {
         Destination destination = request.destination();
         List<String> to = destination != null ? List.copyOf(destination.toAddresses()) : List.of();
         List<String> cc = destination != null ? List.copyOf(destination.ccAddresses()) : List.of();
@@ -199,24 +224,24 @@ public final class SesRecorder {
         if (destination != null) {
             envelope.addAll(destination.bccAddresses());
         }
-        software.amazon.awssdk.services.ses.model.Message message = request.message();
-        Body body = message != null ? message.body() : null;
-        InternetAddress source = parseAddress(request.source());
+        software.amazon.awssdk.services.sesv2.model.Message message = request.content().simple();
+        Body body = message.body();
+        InternetAddress source = parseAddress(request.fromEmailAddress());
         return new RecordedMail(messageId, false, to, cc, List.copyOf(request.replyToAddresses()),
-                source != null ? source.getAddress() : request.source(), source != null ? source.getPersonal() : null,
-                data(message != null ? message.subject() : null),
+                source != null ? source.getAddress() : request.fromEmailAddress(),
+                source != null ? source.getPersonal() : null, data(message.subject()),
                 data(body != null ? body.html() : null), data(body != null ? body.text() : null), List.of(),
-                List.copyOf(envelope), request.configurationSetName(), tags(request.tags()), Map.of());
+                List.copyOf(envelope), request.configurationSetName(), tags(request.emailTags()), Map.of());
     }
 
-    private static RecordedMail fromSendRawEmail(SendRawEmailRequest request, String messageId) {
-        byte[] raw = request.rawMessage().data().asByteArray();
+    private static RecordedMail fromRawContent(SendEmailRequest request, String messageId) {
+        byte[] raw = request.content().raw().data().asByteArray();
         try {
             MimeMessage mime = new MimeMessage(Session.getInstance(new Properties()), new ByteArrayInputStream(raw));
             List<String> to = addresses(mime.getRecipients(Message.RecipientType.TO));
             List<String> cc = addresses(mime.getRecipients(Message.RecipientType.CC));
-            List<String> envelope = request.destinations().isEmpty() ? concat(to, cc)
-                    : List.copyOf(request.destinations());
+            List<String> destinations = destinationAddresses(request.destination());
+            List<String> envelope = destinations.isEmpty() ? concat(to, cc) : destinations;
             Parts parts = new Parts();
             collect(mime, parts);
             Address[] from = mime.getFrom();
@@ -232,10 +257,21 @@ public final class SesRecorder {
                     replyTo != null ? addresses(mime.getReplyTo()) : List.of(),
                     sender != null ? sender.getAddress() : null, sender != null ? sender.getPersonal() : null,
                     mime.getSubject(), parts.html, parts.text, List.copyOf(parts.attachments), envelope,
-                    request.configurationSetName(), tags(request.tags()), Map.copyOf(headers));
+                    request.configurationSetName(), tags(request.emailTags()), Map.copyOf(headers));
         } catch (MessagingException | IOException e) {
             throw new IllegalStateException("SesRecorder could not parse the raw MIME message", e);
         }
+    }
+
+    /** Every address of a raw send's {@code Destination} (the envelope), empty when it has none. */
+    private static List<String> destinationAddresses(Destination destination) {
+        if (destination == null) {
+            return List.of();
+        }
+        List<String> all = new ArrayList<>(destination.toAddresses());
+        all.addAll(destination.ccAddresses());
+        all.addAll(destination.bccAddresses());
+        return List.copyOf(all);
     }
 
     private static void collect(Part part, Parts parts) throws MessagingException, IOException {
@@ -300,13 +336,13 @@ public final class SesRecorder {
     /**
      * One request as SES received it.
      *
-     * @param raw      sent through {@code SendRawEmail} (MIME parsed) rather than {@code SendEmail}
+     * @param raw      sent as raw content (MIME parsed) rather than simple content of {@code SendEmail}
      * @param to       the To: addresses, one per entry
      * @param replyTo  the Reply-To: addresses (empty when the mail has none)
      * @param from     the From: address; {@code fromName} its display name
-     * @param envelope the addresses SES delivers to (for a raw send, its {@code destinations})
+     * @param envelope the addresses SES delivers to (for a raw send, its {@code Destination})
      * @param tags     message tags, e.g. {@code mail_group}
-     * @param headers  every MIME header of a raw send, first value, unfolded (empty for SendEmail)
+     * @param headers  every MIME header of a raw send, first value, unfolded (empty for simple content)
      */
     public record RecordedMail(
             String sesMessageId,

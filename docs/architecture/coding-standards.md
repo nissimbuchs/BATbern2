@@ -437,7 +437,7 @@ security filter chain, our hooks and our service modules.
 
 | Layer | Allowed to replace | Not allowed |
 |---|---|---|
-| Backend IT | `SesClient`, `S3Client`, Cognito client, OpenAI HTTP, the peer service via `MockRestServiceServer` / WireMock | `@MockitoBean` of own services, repositories, `UserApiClient`, `EmailService`, `SlugGenerationService` |
+| Backend IT | `SesV2Client`, `S3Client`, Cognito client, OpenAI HTTP, the peer service via `MockRestServiceServer` / WireMock | `@MockitoBean` of own services, repositories, `UserApiClient`, `EmailService`, `SlugGenerationService` |
 | Backend unit | pure logic only; a unit test that needs more than 2 mocks is at the wrong test level | `verify(mock).call(eq(<expected value>))` as the main assertion |
 | Frontend component | the network via MSW; Amplify; browser APIs that jsdom lacks | `vi.mock('@/services/...')`, `vi.mock('@/hooks/...')`, `vi.spyOn` on an imported service or hook module, `vi.mock` of child components of the screen under test |
 | Frontend i18n | real i18next with the real `en` locale files | the per-file `react-i18next` stub |
@@ -611,12 +611,13 @@ a test does not opt in.
   `JwtAuthenticationConverter` (`jwt().jwt(t -> t.claim("custom:role", "ATTENDEE"))
   .authorities(...)`), as `ProductionChainIntegrationTest` (one per service) does. The test
   properties point the JWK set at `https://jwks.example.invalid/keys`: no test uses a real token.
-- **Mail.** The real `EmailService` runs in every IT. The only `SesClient` in a test context is the
+- **Mail.** The real `EmailService` runs in every IT. The only `SesV2Client` in a test context is the
   `SesRecorder` (shared-kernel test fixtures, `ch.batbern.shared.test.mail`), registered by each
   service's `TestAwsConfig`: it sends nothing and records what SES received, parsed (To, Cc,
   Reply-To, From, subject, HTML, text, attachment names, MIME headers, tags). Autowire it,
   `reset()` it in `@BeforeEach`, assert on `mails()` / `mailsTo(address)` / `single()`; simulate a
-  refusal with `failWith(...)` or `failFor(address, ...)` and `SesRecorder.sesError(...)`.
+  refusal with `failWith(...)` or `failFor(address, ...)` and `SesRecorder.sesError(...)`. Like
+  the SES API v2, the recorder refuses a message over 40 MB (`SesRecorder.MESSAGE_TOO_LARGE`).
   `EmailService` sends on the `@Async` executor: `reset()` first waits until that executor has no
   task left (`AsyncTaskTracker`, `ch.batbern.shared.test.async`, registered by `TestAwsConfig` in
   EMS and PCS), so a late send of the previous test cannot reach the next one. A test that asserts
