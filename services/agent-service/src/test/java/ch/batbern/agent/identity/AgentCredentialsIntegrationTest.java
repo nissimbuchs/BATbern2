@@ -14,6 +14,7 @@ import ch.batbern.agent.loop.ScriptedLlm;
 import ch.batbern.agent.loop.TestTools;
 import ch.batbern.agent.loop.TestTools.RecordingTool;
 import ch.batbern.agent.run.AgentRunStatus;
+import ch.batbern.agent.run.PrincipalKind;
 import ch.batbern.agent.run.RunEndReason;
 import ch.batbern.agent.tools.AgentTool;
 import ch.batbern.agent.tools.ToolOutcome;
@@ -152,6 +153,7 @@ class AgentCredentialsIntegrationTest extends AbstractIntegrationTest {
         // The read reuses the token minted at the start
         assertThat(gatewayAuthorizations).containsExactly("Bearer " + cums.tokens().get(0));
         assertThat(run).containsEntry("status", "DONE").containsEntry("trigger", "SCHEDULED")
+                .containsEntry("principal_kind", "ORGANIZER_DELEGATE")
                 .containsEntry("end_reason", "COMPLETED").containsEntry("end_detail", null);
         assertThat(run.get("grant_run_id")).isNotNull();
         assertThat(toolCallStatuses(result.runId())).containsExactly("SUCCEEDED");
@@ -224,7 +226,8 @@ class AgentCredentialsIntegrationTest extends AbstractIntegrationTest {
         });
         assertThat(cums.mintRequests()).singleElement()
                 .satisfies(mint -> assertThat(mint.headers().containsHeader(HttpHeaders.AUTHORIZATION)).isFalse());
-        assertThat(runRow(result.runId())).containsEntry("trigger", "ORGANIZER");
+        assertThat(runRow(result.runId())).containsEntry("trigger", "ORGANIZER")
+                .containsEntry("principal_kind", "ORGANIZER");
     }
 
     @Test
@@ -241,7 +244,8 @@ class AgentCredentialsIntegrationTest extends AbstractIntegrationTest {
         assertThat(cums.grantRequests()).singleElement().satisfies(grant -> assertThat(grant.body().toString())
                 .isEqualTo("{\"trigger\":\"LINKED_RUN\",\"linkedRunId\":\"" + parentRun
                         + "\",\"linkedRunGrantSecret\":\"" + parentSecret + "\"}"));
-        assertThat(runRow(result.runId())).containsEntry("trigger", "LINKED_RUN");
+        assertThat(runRow(result.runId())).containsEntry("trigger", "LINKED_RUN")
+                .containsEntry("principal_kind", "ORGANIZER_DELEGATE");
     }
 
     @Test
@@ -258,7 +262,9 @@ class AgentCredentialsIntegrationTest extends AbstractIntegrationTest {
         assertThat(cums.grantRequests()).isEmpty();
         assertThat(cums.mintRequests()).singleElement().satisfies(mint -> assertThat(mint.body().toString())
                 .isEqualTo("{\"runId\":\"" + emsRun + "\",\"grantSecret\":\"" + emsSecret + "\"}"));
-        assertThat(runRow(result.runId())).containsEntry("trigger", "INBOUND_MAIL").containsEntry("grant_run_id", emsRun);
+        // CUMS issues EMS_HANDOFF grants for the requester only
+        assertThat(runRow(result.runId())).containsEntry("trigger", "INBOUND_MAIL").containsEntry("grant_run_id", emsRun)
+                .containsEntry("principal_kind", "REQUESTER");
     }
 
     // ── Refusals ─────────────────────────────────────────────────────────────────────────────────
@@ -275,7 +281,7 @@ class AgentCredentialsIntegrationTest extends AbstractIntegrationTest {
         assertRefusedBeforeModel(result, RunEndReason.GRANT_REFUSED, code);
         cums.verify();
         assertThat(cums.mintRequests()).isEmpty();
-        assertThat(runRow(result.runId())).containsEntry("grant_run_id", null);
+        assertThat(runRow(result.runId())).containsEntry("grant_run_id", null).containsEntry("principal_kind", null);
         assertThat(output.getAll()).contains("Agent run " + result.runId() + " handed to the organizers: GRANT_REFUSED "
                 + code);
     }
@@ -466,7 +472,8 @@ class AgentCredentialsIntegrationTest extends AbstractIntegrationTest {
     @DisplayName("the credential types never show a token, grant secret, JWT or caller secret in toString")
     void should_maskSecrets_when_toString() {
         String secret = CumsAtTheWire.grantSecret();
-        assertThat(new RunGrant(UUID.randomUUID(), secret).toString()).doesNotContain(secret);
+        assertThat(new RunGrant(UUID.randomUUID(), secret, PrincipalKind.ORGANIZER).toString())
+                .doesNotContain(secret).contains("principalKind=ORGANIZER");
         assertThat(new AgentToken("eyJ.secret-token.sig", Instant.EPOCH).toString())
                 .doesNotContain("secret-token");
         assertThat(new GrantSource.OrganizerLogin("cognito.jwt.value").toString()).doesNotContain("cognito.jwt.value");
@@ -502,7 +509,7 @@ class AgentCredentialsIntegrationTest extends AbstractIntegrationTest {
     }
 
     private Map<String, Object> runRow(UUID runId) {
-        return jdbc.queryForMap("SELECT status, trigger, end_reason, end_detail, grant_run_id FROM agent_runs "
+        return jdbc.queryForMap("SELECT status, trigger, end_reason, end_detail, grant_run_id, principal_kind FROM agent_runs "
                 + "WHERE id = ?", runId);
     }
 

@@ -8,6 +8,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
 import java.time.Instant;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.regex.Pattern;
 
@@ -50,6 +51,11 @@ public class AgentRunEntity {
     @Column(name = "grant_run_id", unique = true)
     private UUID grantRunId;
 
+    /** Whom the run acts for ({@code AgentGrant.principalKind}); null until the grant is obtained. */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "principal_kind", length = 32)
+    private PrincipalKind principalKind;
+
     protected AgentRunEntity() {
     }
 
@@ -82,12 +88,13 @@ public class AgentRunEntity {
         this.endedAt = at;
     }
 
-    /** The run acts under the CUMS grant {@code grantRunId}; set once. */
-    public void recordGrant(UUID grantRunId) {
+    /** The run acts under the CUMS grant {@code grantRunId} for a principal of {@code kind}; set once. */
+    public void recordGrant(UUID grantRunId, PrincipalKind kind) {
         if (this.grantRunId != null) {
             throw new IllegalStateException("Run " + id + " already has a grant");
         }
         this.grantRunId = grantRunId;
+        this.principalKind = Objects.requireNonNull(kind, "kind");
     }
 
     public UUID getId() {
@@ -120,5 +127,9 @@ public class AgentRunEntity {
 
     public UUID getGrantRunId() {
         return grantRunId;
+    }
+
+    public PrincipalKind getPrincipalKind() {
+        return principalKind;
     }
 }

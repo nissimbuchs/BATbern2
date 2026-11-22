@@ -1,5 +1,6 @@
 package ch.batbern.agent.identity;
 
+import ch.batbern.agent.run.PrincipalKind;
 import ch.batbern.agent.run.RunEndReason;
 
 import java.time.Clock;
@@ -49,7 +50,8 @@ public final class RunCredentials {
                     CumsAgentClient.CALLER_SECRET_MISSING);
         }
         RunGrant grant = source instanceof GrantSource.HandedOver handedOver
-                ? new RunGrant(handedOver.runId(), handedOver.grantSecret())
+                // CUMS issues EMS_HANDOFF grants for the requester only (AgentGrantTrigger)
+                ? new RunGrant(handedOver.runId(), handedOver.grantSecret(), PrincipalKind.REQUESTER)
                 : cums.grant(source);
         return new RunCredentials(cums, clock, grant);
     }
@@ -57,6 +59,11 @@ public final class RunCredentials {
     /** CUMS's run id of the grant: {@code act.run} of the run's tokens, stored on the run. */
     public UUID grantRunId() {
         return grant.runId();
+    }
+
+    /** Whom the run acts for, as its grant says; stored on the run. */
+    public PrincipalKind principalKind() {
+        return grant.principalKind();
     }
 
     /**

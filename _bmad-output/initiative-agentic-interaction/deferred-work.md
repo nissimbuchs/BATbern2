@@ -46,3 +46,9 @@
 - source_plan: `_bmad-output/initiative-agentic-interaction/tickets/epic-agent-runtime/tickets/story-intent-tools-carry-a-class-derived-from-the-operation-table-plan.md`
   summary: PublicApi.limitedTo matches by path template, so a tool declaring GET /events/{eventCode} could also call a literal sibling such as GET /events/current; the ADR-003 argument checks of the tools are what stops it today.
   evidence: Operation.matches treats {x} as any one segment and does not resolve against the most specific spec path; no shipped tool declares a template with a literal sibling (checked against the three table entries).
+- source_plan: `_bmad-output/initiative-agentic-interaction/tickets/epic-agent-runtime/tickets/story-precedents-are-retrieved-from-past-events-and-the-decision-l-plan.md`
+  summary: Partly settles the principal-kind entry of story 5: agent-service now reads principalKind from the CUMS grant answer and stores it on agent_runs; registry entries still carry no kinds and every run is still offered every tool (epic-speaker-mail-agent).
+  evidence: Story 6 needed the run's kind for precedent matching (V4, RunCredentials.principalKind); tool filtering was out of scope.
+- source_plan: `_bmad-output/initiative-agentic-interaction/tickets/epic-agent-runtime/tickets/story-precedents-are-retrieved-from-past-events-and-the-decision-l-plan.md`
+  summary: No shipped tool declares a past-event query yet (the epic ships read tools only); the first non-read tool (epic-speaker-mail-agent) decides what past events it is judged against.
+  evidence: AgentTool.pastEventQuery defaults to empty; proven with a test-only fixture tool.

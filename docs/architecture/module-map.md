@@ -62,7 +62,13 @@ CUMS (identity) is upstream of all. EMS (event) is upstream of PCS (partners).
   its class `read` < `reversible` < `reply` < `binding` < `audience`; a tool's class is the highest
   of its operations, each `reversible` tool names its undo operation, and `tools/ToolClassCheck`
   refuses anything else, at startup and in the unit test `ToolClassCheckTest`. A tool's
-  `PublicApi` lets through only the operations it declares. Every write goes through `log/DecisionLog`, one committed transaction per row. Open naming point for the epic's
+  `PublicApi` lets through only the operations it declares. Every write goes through `log/DecisionLog`, one committed transaction per row. Precedents (story 6, R6, AD-8): `precedent/PrecedentRetrieval`
+  returns, for a proposed call, the matching approvals, denials and undos of the decision log (read
+  by `precedent/DecisionLogPrecedents`) and the past events the tool asks for
+  (`AgentTool.pastEventQuery`, read through `findPastEvents` with the run's token), each with a
+  citeable source id (`agent_approvals:<id>`, `agent_undos:<id>`, `event:<eventCode>`). The matching
+  rule (same tool, same principal kind) lives only in `precedent/PrecedentMatchRule`; the run's
+  principal kind is the one CUMS names in the grant answer, stored as `agent_runs.principal_kind`. Open naming point for the epic's
   refactor sweep: CUMS already owns `agent_settings`, `agent_grants` and `agent_allowlist`, so
   "agent_* tables belong to agent-service" (AD-9) needs a sharper rule.
 - Downstream must react to an upstream change? The upstream calls it through an `/internal`

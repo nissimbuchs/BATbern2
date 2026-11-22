@@ -5,6 +5,7 @@ import ch.batbern.agent.loop.LlmRequest;
 import ch.batbern.agent.loop.LlmResponse;
 import ch.batbern.agent.run.AgentRunEntity;
 import ch.batbern.agent.run.AgentRunRepository;
+import ch.batbern.agent.run.PrincipalKind;
 import ch.batbern.agent.run.RunEndReason;
 import ch.batbern.agent.run.RunTrigger;
 import ch.batbern.agent.tools.ToolOutcome;
@@ -69,16 +70,17 @@ public class DecisionLog {
     }
 
     /**
-     * The run acts under the CUMS grant {@code grantRunId} (story 4). One grant, one run.
+     * The run acts under the CUMS grant {@code grantRunId} (story 4) for a principal of
+     * {@code kind} (story 6). One grant, one run.
      *
      * @throws DataIntegrityViolationException when another run already acts under that grant
      */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void recordGrant(UUID runId, UUID grantRunId) {
+    public void recordGrant(UUID runId, UUID grantRunId, PrincipalKind kind) {
         if (runs.existsByGrantRunId(grantRunId)) {
             throw new DataIntegrityViolationException("The grant is already used by another run");
         }
-        runs.findById(runId).orElseThrow(() -> missing("run", runId)).recordGrant(grantRunId);
+        runs.findById(runId).orElseThrow(() -> missing("run", runId)).recordGrant(grantRunId, kind);
         // Flush here, so a concurrent run with the same grant fails inside this call
         runs.flush();
     }

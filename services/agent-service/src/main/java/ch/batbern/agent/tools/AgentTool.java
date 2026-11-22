@@ -36,6 +36,16 @@ public interface AgentTool {
     }
 
     /**
+     * The past events a call of this tool with {@code input} should be judged against (story 6,
+     * AD-8): the precedent retrieval reads them through {@code findPastEvents} with the run's token
+     * and cites each one. Empty (the default) when past events say nothing about the call.
+     * Deterministic, no call of any kind; input it cannot use gives empty.
+     */
+    default Optional<PastEventQuery> pastEventQuery(JsonNode input) {
+        return Optional.empty();
+    }
+
+    /**
      * Runs the tool. A tool that throws is logged as FAILED and the model gets an error result.
      * A tool reaches the services only through {@link ToolContext#api()}, with the run's minted
      * token; when CUMS refuses a mint the run ends after this tool, whatever the tool returns.

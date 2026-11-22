@@ -2,6 +2,7 @@ package ch.batbern.agent.identity;
 
 import ch.batbern.agent.config.AgentProperties;
 import ch.batbern.agent.run.AgentRunEntity;
+import ch.batbern.agent.run.PrincipalKind;
 import ch.batbern.agent.run.RunEndReason;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -105,7 +106,8 @@ public class CumsAgentClient {
         }
         JsonNode answer = post(GRANTS, body, headers, RunEndReason.GRANT_REFUSED);
         try {
-            return new RunGrant(UUID.fromString(answer.path("runId").asText()), requiredText(answer, "grantSecret"));
+            return new RunGrant(UUID.fromString(answer.path("runId").asText()), requiredText(answer, "grantSecret"),
+                    PrincipalKind.valueOf(requiredText(answer, "principalKind")));
         } catch (IllegalArgumentException e) {
             throw new AgentCredentialsRefusedException(RunEndReason.GRANT_REFUSED, INVALID_CUMS_RESPONSE);
         }

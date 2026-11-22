@@ -122,7 +122,7 @@ public class AgentLoop {
         try {
             credentials = RunCredentials.obtain(cums, request.grant(), clock);
             try {
-                decisionLog.recordGrant(runId, credentials.grantRunId());
+                decisionLog.recordGrant(runId, credentials.grantRunId(), credentials.principalKind());
             } catch (DataIntegrityViolationException e) {
                 // A handed-over grant delivered twice, or a reused run id: one grant, one run
                 throw new AgentCredentialsRefusedException(RunEndReason.GRANT_REFUSED, GRANT_ALREADY_USED);

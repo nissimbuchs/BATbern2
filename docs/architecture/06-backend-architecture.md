@@ -131,6 +131,21 @@ against the spec patterns (a bad one is an error result, nothing is sent); reads
 token; an HTTP error is an error result naming the status. The model gets a projection of each
 answer: no e-mail, picture, bio or material link.
 
+Precedents (story 6, R6, AD-8): precedent comes from two sources only, the decision log and the
+history of past events; no vector store, no embeddings, no model call. For a proposed call
+(`precedent/ProposedCall`: run, registry tool, input) `precedent/PrecedentRetrieval` returns
+`Precedents`: the approvals (`agent_approvals` APPROVED), denials (DENIED) and undos (`agent_undos`,
+whatever their outcome) of earlier calls, newest first, and the past events the tool asks for
+through `AgentTool.pastEventQuery` (default none), read with `findPastEvents` on the run's
+`PublicApi` limited to that tool's operation. PENDING and EXPIRED approvals are no precedent. Each
+precedent carries a source id the verdict cites: `agent_approvals:<id>`, `agent_undos:<id>`,
+`event:<eventCode>`; ids only, never who decided. `precedent/PrecedentMatchRule` is the one place
+of the matching rule (epic assumption, 2026-11-22): same tool and same principal kind; the run's
+principal kind is read from `agent_runs.principal_kind` (V4), set from the CUMS grant answer
+(`REQUESTER`, `ORGANIZER`, `ORGANIZER_DELEGATE`; a handed-over EMS grant is `REQUESTER`). An API
+error leaves the history empty with status `UNAVAILABLE`; a refused mint propagates and ends the
+run. The gate (story 7) consumes it.
+
 ### Package layout
 
 Layer packages are shared by all services; larger services add feature packages next to them.
