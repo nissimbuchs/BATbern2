@@ -55,7 +55,14 @@ CUMS (identity) is upstream of all. EMS (event) is upstream of PCS (partners).
   it until 60 s before it expires, every write mints a fresh one first. A refused grant or mint ends
   the run HANDED_TO_ORGANIZERS (`GRANT_REFUSED`, `TOKEN_REFUSED`, the CUMS code in `end_detail`);
   the grant's run id is stored as `agent_runs.grant_run_id`, so `agent:<run>` in another service's
-  audit column leads to the run. Every write goes through `log/DecisionLog`, one committed transaction per row. Open naming point for the epic's
+  audit column leads to the run. Its tools (story 5, R4, AD-6): the loop offers the model only the
+  tools of `tools/ToolRegistry` (`tools/StandardTools`; today the read tools `findPastEvents`,
+  `listEventSessions`, `listSessionSpeakers` in `tools/read/`, on the public EMS reads). One table,
+  `tools/OperationClassTable`, gives each public operation a tool may call (method plus spec path)
+  its class `read` < `reversible` < `reply` < `binding` < `audience`; a tool's class is the highest
+  of its operations, each `reversible` tool names its undo operation, and `tools/ToolClassCheck`
+  refuses anything else, at startup and in the unit test `ToolClassCheckTest`. A tool's
+  `PublicApi` lets through only the operations it declares. Every write goes through `log/DecisionLog`, one committed transaction per row. Open naming point for the epic's
   refactor sweep: CUMS already owns `agent_settings`, `agent_grants` and `agent_allowlist`, so
   "agent_* tables belong to agent-service" (AD-9) needs a sharper rule.
 - Downstream must react to an upstream change? The upstream calls it through an `/internal`

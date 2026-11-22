@@ -10,6 +10,7 @@ import ch.batbern.agent.run.RunEndReason;
 import ch.batbern.agent.run.RunTrigger;
 import ch.batbern.agent.tools.ToolOutcome;
 import ch.batbern.shared.service.EmailService;
+import ch.batbern.agent.tools.TestToolRegistry;
 import ch.batbern.shared.test.AbstractIntegrationTest;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -55,6 +56,9 @@ class AgentLoopIntegrationTest extends AbstractIntegrationTest {
     private ScriptedLlm model;
 
     @Autowired
+    private TestToolRegistry toolRegistry;
+
+    @Autowired
     private JdbcTemplate jdbc;
 
     @Autowired
@@ -70,6 +74,7 @@ class AgentLoopIntegrationTest extends AbstractIntegrationTest {
     @AfterEach
     void clean() {
         model.reset();
+        toolRegistry.reset();
         jdbc.execute("TRUNCATE agent_runs CASCADE");
     }
 
@@ -86,21 +91,21 @@ class AgentLoopIntegrationTest extends AbstractIntegrationTest {
     @Test
     @DisplayName("three-step run: DONE, every model call with tokens and tool choice, every step and tool call")
     void should_logEveryStep_when_modelUsesToolsThenEndsTurn() {
-        RecordingTool lookup = TestTools.answering("lookup_event", in -> "event BATbern61 on 2027-03-05");
-        RecordingTool slots = TestTools.answering("list_slots", in -> "slots: 14:00, 15:30");
-        RecordingTool speaker = TestTools.answering("find_speaker", in -> "speaker found: " + in.get("query").asText());
+        RecordingTool lookup = TestTools.answering("lookupEvent", in -> "event BATbern61 on 2027-03-05");
+        RecordingTool slots = TestTools.answering("listSlots", in -> "slots: 14:00, 15:30");
+        RecordingTool speaker = TestTools.answering("findSpeaker", in -> "speaker found: " + in.get("query").asText());
         model.then(model.response(LlmStopReason.TOOL_USE, new LlmUsage(100, 20, 5, 0),
                         new LlmContent.Text("Let me look up the event."),
-                        new LlmContent.ToolUse("tu_1", "lookup_event", TestTools.input("query", "BATbern61"))))
+                        new LlmContent.ToolUse("tu_1", "lookupEvent", TestTools.input("query", "BATbern61"))))
              .then(model.response(LlmStopReason.TOOL_USE, new LlmUsage(150, 30, 0, 95),
-                        new LlmContent.ToolUse("tu_2", "list_slots", TestTools.input("query", "afternoon")),
-                        new LlmContent.ToolUse("tu_3", "find_speaker", TestTools.input("query", "architecture"))))
+                        new LlmContent.ToolUse("tu_2", "listSlots", TestTools.input("query", "afternoon")),
+                        new LlmContent.ToolUse("tu_3", "findSpeaker", TestTools.input("query", "architecture"))))
              .then(model.response(LlmStopReason.END_TURN, new LlmUsage(210, 40, 0, 140),
                         new LlmContent.Text("The slot 14:00 is free.")));
         InboundMessage inbound = new InboundMessage(InboundChannel.MAIL, "<msg-1@example.com>",
                 Instant.parse("2026-11-22T09:00:00Z"), TestTools.input("subject", "Slot for my talk"));
 
-        AgentRunResult result = loop.run(new AgentRunRequest(source(RunTrigger.INBOUND_MAIL), SYSTEM,
+        AgentRunResult result = loop.run(toolRegistry.request(source(RunTrigger.INBOUND_MAIL), SYSTEM,
                 "Which slot is free?", List.of(lookup, slots, speaker), inbound));
 
         assertThat(result.status()).isEqualTo(AgentRunStatus.DONE);
@@ -148,12 +153,12 @@ class AgentLoopIntegrationTest extends AbstractIntegrationTest {
                 .containsEntry("system", SYSTEM)
                 .containsEntry("max_tokens", 16000)
                 .containsEntry("first_text", "Which slot is free?")
-                .containsEntry("offered", "lookup_event,list_slots,find_speaker")
+                .containsEntry("offered", "lookupEvent,listSlots,findSpeaker")
                 .containsEntry("error", null));
         assertThat(calls).extracting(c -> c.get("stop_reason"), c -> c.get("chosen"), c -> c.get("message_count"))
                 .containsExactly(
-                        tuple("TOOL_USE", "lookup_event", 1),
-                        tuple("TOOL_USE", "list_slots,find_speaker", 3),
+                        tuple("TOOL_USE", "lookupEvent", 1),
+                        tuple("TOOL_USE", "listSlots,findSpeaker", 3),
                         tuple("END_TURN", null, 5));
         assertThat(calls).extracting(c -> c.get("input_tokens"), c -> c.get("output_tokens"),
                         c -> c.get("cache_creation_input_tokens"), c -> c.get("cache_read_input_tokens"))
@@ -171,11 +176,11 @@ class AgentLoopIntegrationTest extends AbstractIntegrationTest {
         assertThat(tools).extracting(t -> t.get("step_number"), t -> t.get("tool_use_id"), t -> t.get("tool_name"),
                         t -> t.get("query"), t -> t.get("status"), t -> t.get("output"), t -> t.get("error"))
                 .containsExactly(
-                        tuple(1, "tu_1", "lookup_event", "BATbern61", "SUCCEEDED",
+                        tuple(1, "tu_1", "lookupEvent", "BATbern61", "SUCCEEDED",
                                 "event BATbern61 on 2027-03-05", null),
-                        tuple(2, "tu_2", "list_slots", "afternoon", "SUCCEEDED",
+                        tuple(2, "tu_2", "listSlots", "afternoon", "SUCCEEDED",
                                 "slots: 14:00, 15:30", null),
-                        tuple(2, "tu_3", "find_speaker", "architecture", "SUCCEEDED",
+                        tuple(2, "tu_3", "findSpeaker", "architecture", "SUCCEEDED",
                                 "speaker found: architecture", null));
         assertThat(tools).allSatisfy(t -> assertThat(t.get("ended_at")).isNotNull());
 
@@ -195,14 +200,14 @@ class AgentLoopIntegrationTest extends AbstractIntegrationTest {
     @Test
     @DisplayName("thinking blocks of step 1 go back to the model unchanged on step 2, and are logged")
     void should_returnThinkingUnchanged_when_modelThoughtBeforeToolUse() {
-        RecordingTool lookup = TestTools.answering("lookup_event", in -> "event BATbern61 on 2027-03-05");
+        RecordingTool lookup = TestTools.answering("lookupEvent", in -> "event BATbern61 on 2027-03-05");
         LlmContent.Thinking thinking = new LlmContent.Thinking("", "sig-of-step-1");
         LlmContent.RedactedThinking redacted = new LlmContent.RedactedThinking("encrypted-step-1");
-        LlmContent.ToolUse use = new LlmContent.ToolUse("tu_1", "lookup_event", TestTools.input("query", "BATbern61"));
+        LlmContent.ToolUse use = new LlmContent.ToolUse("tu_1", "lookupEvent", TestTools.input("query", "BATbern61"));
         model.then(model.response(LlmStopReason.TOOL_USE, NO_TOKENS, thinking, redacted, use))
              .then(model.response(LlmStopReason.END_TURN, NO_TOKENS, new LlmContent.Text("Done.")));
 
-        AgentRunResult result = loop.run(new AgentRunRequest(ORGANIZER_LOGIN, SYSTEM, "Which event?",
+        AgentRunResult result = loop.run(toolRegistry.request(ORGANIZER_LOGIN, SYSTEM, "Which event?",
                 List.of(lookup)));
 
         assertThat(result.status()).isEqualTo(AgentRunStatus.DONE);
@@ -227,10 +232,10 @@ class AgentLoopIntegrationTest extends AbstractIntegrationTest {
     @Test
     @DisplayName("model unreachable: HANDED_TO_ORGANIZERS, MODEL_UNAVAILABLE, the failed model call keeps the error, no retry")
     void should_handToOrganizers_when_modelUnavailable() {
-        RecordingTool lookup = TestTools.answering("lookup_event", in -> "never");
+        RecordingTool lookup = TestTools.answering("lookupEvent", in -> "never");
         model.thenThrow(new LlmUnavailableException("connect timed out"));
 
-        AgentRunResult result = loop.run(new AgentRunRequest(ORGANIZER_LOGIN, SYSTEM, "Hello", List.of(lookup)));
+        AgentRunResult result = loop.run(toolRegistry.request(ORGANIZER_LOGIN, SYSTEM, "Hello", List.of(lookup)));
 
         assertThat(result.status()).isEqualTo(AgentRunStatus.HANDED_TO_ORGANIZERS);
         assertThat(result.reason()).isEqualTo(RunEndReason.MODEL_UNAVAILABLE);
@@ -252,12 +257,12 @@ class AgentLoopIntegrationTest extends AbstractIntegrationTest {
     @Test
     @DisplayName("unknown tool: UNKNOWN_TOOL, an error tool_result goes back, the loop continues")
     void should_returnErrorResult_when_modelAsksForUnknownTool() {
-        RecordingTool lookup = TestTools.answering("lookup_event", in -> "never");
+        RecordingTool lookup = TestTools.answering("lookupEvent", in -> "never");
         model.then(model.response(LlmStopReason.TOOL_USE, NO_TOKENS,
                         new LlmContent.ToolUse("tu_x", "delete_everything", TestTools.input("query", "all"))))
              .then(model.response(LlmStopReason.END_TURN, NO_TOKENS, new LlmContent.Text("Sorry.")));
 
-        AgentRunResult result = loop.run(new AgentRunRequest(ORGANIZER_LOGIN, SYSTEM, "Hello", List.of(lookup)));
+        AgentRunResult result = loop.run(toolRegistry.request(ORGANIZER_LOGIN, SYSTEM, "Hello", List.of(lookup)));
 
         assertThat(result.status()).isEqualTo(AgentRunStatus.DONE);
         assertThat(result.steps()).isEqualTo(2);
@@ -265,7 +270,7 @@ class AgentLoopIntegrationTest extends AbstractIntegrationTest {
                 + "FROM agent_tool_calls WHERE run_id = ?", result.runId());
         assertThat(call).containsEntry("tool_name", "delete_everything").containsEntry("status", "UNKNOWN_TOOL")
                 .containsEntry("query", "all").containsEntry("output", null);
-        assertThat((String) call.get("error")).contains("lookup_event");
+        assertThat((String) call.get("error")).contains("lookupEvent");
         LlmContent.ToolResult back = lastToolResult(model.requests().get(1));
         assertThat(back.toolUseId()).isEqualTo("tu_x");
         assertThat(back.isError()).isTrue();
@@ -275,12 +280,12 @@ class AgentLoopIntegrationTest extends AbstractIntegrationTest {
     @Test
     @DisplayName("tool throws: FAILED with the error, an error tool_result goes back, the loop continues")
     void should_returnErrorResult_when_toolThrows() {
-        RecordingTool broken = TestTools.throwing("lookup_event", new IllegalStateException("upstream 503"));
+        RecordingTool broken = TestTools.throwing("lookupEvent", new IllegalStateException("upstream 503"));
         model.then(model.response(LlmStopReason.TOOL_USE, NO_TOKENS,
-                        new LlmContent.ToolUse("tu_b", "lookup_event", TestTools.input("query", "BATbern61"))))
+                        new LlmContent.ToolUse("tu_b", "lookupEvent", TestTools.input("query", "BATbern61"))))
              .then(model.response(LlmStopReason.END_TURN, NO_TOKENS, new LlmContent.Text("It failed.")));
 
-        AgentRunResult result = loop.run(new AgentRunRequest(ORGANIZER_LOGIN, SYSTEM, "Hello", List.of(broken)));
+        AgentRunResult result = loop.run(toolRegistry.request(ORGANIZER_LOGIN, SYSTEM, "Hello", List.of(broken)));
 
         assertThat(result.status()).isEqualTo(AgentRunStatus.DONE);
         Map<String, Object> call = jdbc.queryForMap("SELECT status, output, error, ended_at FROM agent_tool_calls "
@@ -298,13 +303,13 @@ class AgentLoopIntegrationTest extends AbstractIntegrationTest {
     @Test
     @DisplayName("a tool's own error result is ERRORED and reaches the model as is_error")
     void should_logErrored_when_toolReportsError() {
-        RecordingTool refusing = new RecordingTool("lookup_event",
+        RecordingTool refusing = new RecordingTool("lookupEvent",
                 in -> ToolOutcome.error("no such event"));
         model.then(model.response(LlmStopReason.TOOL_USE, NO_TOKENS,
-                        new LlmContent.ToolUse("tu_e", "lookup_event", TestTools.input("query", "BATbern99"))))
+                        new LlmContent.ToolUse("tu_e", "lookupEvent", TestTools.input("query", "BATbern99"))))
              .then(model.response(LlmStopReason.END_TURN, NO_TOKENS, new LlmContent.Text("Not found.")));
 
-        AgentRunResult result = loop.run(new AgentRunRequest(ORGANIZER_LOGIN, SYSTEM, "Hello", List.of(refusing)));
+        AgentRunResult result = loop.run(toolRegistry.request(ORGANIZER_LOGIN, SYSTEM, "Hello", List.of(refusing)));
 
         assertThat(result.status()).isEqualTo(AgentRunStatus.DONE);
         assertThat(jdbc.queryForMap("SELECT status, output FROM agent_tool_calls WHERE run_id = ?", result.runId()))
@@ -319,7 +324,7 @@ class AgentLoopIntegrationTest extends AbstractIntegrationTest {
         model.then(model.response(LlmStopReason.MAX_TOKENS, new LlmUsage(10, 4096, 0, 0),
                 new LlmContent.Text("The answer is")));
 
-        AgentRunResult result = loop.run(new AgentRunRequest(source(RunTrigger.SCHEDULED), SYSTEM, "Hello", List.of()));
+        AgentRunResult result = loop.run(toolRegistry.request(source(RunTrigger.SCHEDULED), SYSTEM, "Hello", List.of()));
 
         assertThat(result.status()).isEqualTo(AgentRunStatus.HANDED_TO_ORGANIZERS);
         assertThat(result.reason()).isEqualTo(RunEndReason.MODEL_MAX_TOKENS);
@@ -336,7 +341,7 @@ class AgentLoopIntegrationTest extends AbstractIntegrationTest {
     void should_handToOrganizers_when_modelStopsOtherwise(LlmStopReason stopReason) {
         model.then(model.response(stopReason, NO_TOKENS, new LlmContent.Text("I cannot help with that.")));
 
-        AgentRunResult result = loop.run(new AgentRunRequest(ORGANIZER_LOGIN, SYSTEM, "Hello", List.of()));
+        AgentRunResult result = loop.run(toolRegistry.request(ORGANIZER_LOGIN, SYSTEM, "Hello", List.of()));
 
         assertThat(result.status()).isEqualTo(AgentRunStatus.HANDED_TO_ORGANIZERS);
         assertThat(result.reason()).isEqualTo(RunEndReason.MODEL_STOPPED);
@@ -351,7 +356,7 @@ class AgentLoopIntegrationTest extends AbstractIntegrationTest {
     void should_handToOrganizers_when_toolUseStopHasNoToolUse() {
         model.then(model.response(LlmStopReason.TOOL_USE, NO_TOKENS, new LlmContent.Text("Calling...")));
 
-        AgentRunResult result = loop.run(new AgentRunRequest(ORGANIZER_LOGIN, SYSTEM, "Hello", List.of()));
+        AgentRunResult result = loop.run(toolRegistry.request(ORGANIZER_LOGIN, SYSTEM, "Hello", List.of()));
 
         assertThat(result.reason()).isEqualTo(RunEndReason.MODEL_STOPPED);
     }
@@ -359,13 +364,13 @@ class AgentLoopIntegrationTest extends AbstractIntegrationTest {
     @Test
     @DisplayName("step ceiling: a model still calling tools after max-steps model calls hands the run over, STEP_LIMIT")
     void should_handToOrganizers_when_stepLimitReached() {
-        RecordingTool lookup = TestTools.answering("lookup_event", in -> "again");
+        RecordingTool lookup = TestTools.answering("lookupEvent", in -> "again");
         for (int i = 1; i <= 5; i++) {
             model.then(model.response(LlmStopReason.TOOL_USE, NO_TOKENS,
-                    new LlmContent.ToolUse("tu_" + i, "lookup_event", TestTools.input("query", "q" + i))));
+                    new LlmContent.ToolUse("tu_" + i, "lookupEvent", TestTools.input("query", "q" + i))));
         }
 
-        AgentRunResult result = loop.run(new AgentRunRequest(ORGANIZER_LOGIN, SYSTEM, "Hello", List.of(lookup)));
+        AgentRunResult result = loop.run(toolRegistry.request(ORGANIZER_LOGIN, SYSTEM, "Hello", List.of(lookup)));
 
         assertThat(result.status()).isEqualTo(AgentRunStatus.HANDED_TO_ORGANIZERS);
         assertThat(result.reason()).isEqualTo(RunEndReason.STEP_LIMIT);
@@ -381,13 +386,13 @@ class AgentLoopIntegrationTest extends AbstractIntegrationTest {
     @Test
     @DisplayName("a fault in agent-service: FAILED, INTERNAL_ERROR, the trace up to the fault stays")
     void should_fail_when_unexpectedRuntimeException() {
-        RecordingTool lookup = TestTools.answering("lookup_event", in -> "found");
+        RecordingTool lookup = TestTools.answering("lookupEvent", in -> "found");
         model.then(model.response(LlmStopReason.TOOL_USE, NO_TOKENS,
-                        new LlmContent.ToolUse("tu_1", "lookup_event", TestTools.input("query", "BATbern61"))))
+                        new LlmContent.ToolUse("tu_1", "lookupEvent", TestTools.input("query", "BATbern61"))))
              // Not LlmUnavailableException: an adapter bug is agent-service's own fault
              .thenThrow(new IllegalStateException("adapter bug"));
 
-        AgentRunResult result = loop.run(new AgentRunRequest(ORGANIZER_LOGIN, SYSTEM, "Hello", List.of(lookup)));
+        AgentRunResult result = loop.run(toolRegistry.request(ORGANIZER_LOGIN, SYSTEM, "Hello", List.of(lookup)));
 
         assertThat(result.status()).isEqualTo(AgentRunStatus.FAILED);
         assertThat(result.reason()).isEqualTo(RunEndReason.INTERNAL_ERROR);
@@ -409,13 +414,13 @@ class AgentLoopIntegrationTest extends AbstractIntegrationTest {
     @DisplayName("an Error from a tool: the run ends FAILED, INTERNAL_ERROR, and the Error goes on")
     void should_endRunFailed_when_toolThrowsError() {
         AssertionError error = new AssertionError("tool invariant broken");
-        RecordingTool broken = new RecordingTool("lookup_event", in -> {
+        RecordingTool broken = new RecordingTool("lookupEvent", in -> {
             throw error;
         });
         model.then(model.response(LlmStopReason.TOOL_USE, NO_TOKENS,
-                new LlmContent.ToolUse("tu_1", "lookup_event", TestTools.input("query", "BATbern61"))));
+                new LlmContent.ToolUse("tu_1", "lookupEvent", TestTools.input("query", "BATbern61"))));
 
-        assertThatThrownBy(() -> loop.run(new AgentRunRequest(ORGANIZER_LOGIN, SYSTEM, "Hello", List.of(broken))))
+        assertThatThrownBy(() -> loop.run(toolRegistry.request(ORGANIZER_LOGIN, SYSTEM, "Hello", List.of(broken))))
                 .isSameAs(error);
 
         assertThat(broken.inputs()).as("the tool ran").hasSize(1);
@@ -432,7 +437,7 @@ class AgentLoopIntegrationTest extends AbstractIntegrationTest {
     void should_failModelCall_when_portThrowsOtherRuntimeException() {
         model.thenThrow(new IllegalStateException("adapter bug"));
 
-        AgentRunResult result = loop.run(new AgentRunRequest(ORGANIZER_LOGIN, SYSTEM, "Hello", List.of()));
+        AgentRunResult result = loop.run(toolRegistry.request(ORGANIZER_LOGIN, SYSTEM, "Hello", List.of()));
 
         assertThat(result.reason()).isEqualTo(RunEndReason.INTERNAL_ERROR);
         assertThat(jdbc.queryForMap("SELECT status, error FROM agent_model_calls WHERE run_id = ?", result.runId()))
@@ -443,13 +448,13 @@ class AgentLoopIntegrationTest extends AbstractIntegrationTest {
     @Test
     @DisplayName("a NUL in tool output, tool input and model text is stored as U+FFFD; the run is DONE")
     void should_storeReplacementCharacter_when_textHoldsNul() {
-        RecordingTool nul = TestTools.answering("lookup_event", in -> "before\u0000after");
+        RecordingTool nul = TestTools.answering("lookupEvent", in -> "before\u0000after");
         model.then(model.response(LlmStopReason.TOOL_USE, NO_TOKENS,
                         new LlmContent.Text("text\u0000"),
-                        new LlmContent.ToolUse("tu_1", "lookup_event", TestTools.input("query", "q\u0000"))))
+                        new LlmContent.ToolUse("tu_1", "lookupEvent", TestTools.input("query", "q\u0000"))))
              .then(model.response(LlmStopReason.END_TURN, NO_TOKENS, new LlmContent.Text("done")));
 
-        AgentRunResult result = loop.run(new AgentRunRequest(ORGANIZER_LOGIN, SYSTEM, "Hello", List.of(nul)));
+        AgentRunResult result = loop.run(toolRegistry.request(ORGANIZER_LOGIN, SYSTEM, "Hello", List.of(nul)));
 
         assertThat(result.status()).isEqualTo(AgentRunStatus.DONE);
         assertThat(jdbc.queryForMap("SELECT status, output, input->>'query' AS query FROM agent_tool_calls "
@@ -470,7 +475,7 @@ class AgentLoopIntegrationTest extends AbstractIntegrationTest {
                         new LlmContent.ToolUse("tu_" + "y".repeat(200), longName, TestTools.input("query", "q"))))
              .then(model.response(LlmStopReason.END_TURN, NO_TOKENS, new LlmContent.Text("ok")));
 
-        AgentRunResult result = loop.run(new AgentRunRequest(ORGANIZER_LOGIN, SYSTEM, "Hello", List.of()));
+        AgentRunResult result = loop.run(toolRegistry.request(ORGANIZER_LOGIN, SYSTEM, "Hello", List.of()));
 
         assertThat(result.status()).isEqualTo(AgentRunStatus.DONE);
         assertThat(jdbc.queryForMap("SELECT tool_name, status FROM agent_tool_calls WHERE run_id = ?", result.runId()))

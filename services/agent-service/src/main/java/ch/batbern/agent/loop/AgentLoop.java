@@ -10,6 +10,7 @@ import ch.batbern.agent.run.RunEndReason;
 import ch.batbern.agent.tools.AgentTool;
 import ch.batbern.agent.tools.ToolContext;
 import ch.batbern.agent.tools.ToolOutcome;
+import ch.batbern.agent.tools.ToolRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -33,6 +34,9 @@ import java.util.UUID;
  * <p>Before its first model call a run obtains its CUMS grant and mints its first agent token
  * (story 4, R2); its tools reach the public API only through a per-run {@link PublicApi}, which mints
  * again before every write.
+ *
+ * <p>The model is offered the tools of the {@link ToolRegistry} (story 5, AD-6), each with its class
+ * derived from the operation class table; a tool's API lets through only the operations it declares.
  *
  * <p>A run ends:
  * <ul>
@@ -63,15 +67,17 @@ public class AgentLoop {
     private final AgentProperties properties;
     private final CumsAgentClient cums;
     private final RestTemplate restTemplate;
+    private final ToolRegistry registry;
     private final Clock clock;
 
     public AgentLoop(LlmPort llm, DecisionLog decisionLog, AgentProperties properties, CumsAgentClient cums,
-                     RestTemplate restTemplate, Clock clock) {
+                     RestTemplate restTemplate, ToolRegistry registry, Clock clock) {
         this.llm = llm;
         this.decisionLog = decisionLog;
         this.properties = properties;
         this.cums = cums;
         this.restTemplate = restTemplate;
+        this.registry = registry;
         this.clock = clock;
     }
 
@@ -84,12 +90,13 @@ public class AgentLoop {
         if (!properties.enabled()) {
             throw new AgentSwitchedOffException();
         }
+        List<AgentTool> offered = registry.tools();
         UUID runId = decisionLog.startRun(request.trigger());
-        LOG.info("Agent run {} started: trigger={} tools={}", runId, request.trigger(), request.tools().size());
+        LOG.info("Agent run {} started: trigger={} tools={}", runId, request.trigger(), offered.size());
         StepCounter counter = new StepCounter();
         RunEnd end;
         try {
-            end = loop(runId, request, counter);
+            end = loop(runId, request, offered, counter);
         } catch (RuntimeException e) {
             // Class only: the message may carry prompt or tool text (#1202)
             LOG.error("Agent run {} failed in step {}: {}", runId, counter.steps, e.getClass().getName());
@@ -106,7 +113,7 @@ public class AgentLoop {
         return new AgentRunResult(runId, reason.status(), reason, end.detail(), counter.steps);
     }
 
-    private RunEnd loop(UUID runId, AgentRunRequest request, StepCounter counter) {
+    private RunEnd loop(UUID runId, AgentRunRequest request, List<AgentTool> offered, StepCounter counter) {
         if (request.inbound() != null) {
             decisionLog.recordInbound(runId, request.inbound());
         }
@@ -124,11 +131,10 @@ public class AgentLoop {
         } catch (AgentCredentialsRefusedException e) {
             return refused(runId, e);
         }
-        ToolContext context = new ToolContext(runId,
-                new PublicApi(restTemplate, properties.gateway().baseUrl(), credentials));
+        PublicApi api = new PublicApi(restTemplate, properties.gateway().baseUrl(), credentials);
         Map<String, AgentTool> tools = new LinkedHashMap<>();
-        request.tools().forEach(tool -> tools.put(tool.name(), tool));
-        List<LlmToolSpec> specs = request.tools().stream()
+        offered.forEach(tool -> tools.put(tool.name(), tool));
+        List<LlmToolSpec> specs = offered.stream()
                 .map(tool -> new LlmToolSpec(tool.name(), tool.description(), tool.inputSchema()))
                 .toList();
         List<LlmMessage> messages = new ArrayList<>();
@@ -174,7 +180,7 @@ public class AgentLoop {
                             return new RunEnd(RunEndReason.MODEL_STOPPED, null);
                         }
                         List<LlmContent.ToolResult> results =
-                                runTools(runId, stepId, counter.steps, uses, tools, context, credentials);
+                                runTools(runId, stepId, counter.steps, uses, tools, api, credentials);
                         // Read from the credentials, not from an exception a tool may have swallowed
                         Optional<AgentCredentialsRefusedException> refusal = credentials.refusal();
                         if (refusal.isPresent()) {
@@ -214,7 +220,7 @@ public class AgentLoop {
      */
     private List<LlmContent.ToolResult> runTools(UUID runId, UUID stepId, int step,
                                                  List<LlmContent.ToolUse> uses, Map<String, AgentTool> tools,
-                                                 ToolContext context, RunCredentials credentials) {
+                                                 PublicApi api, RunCredentials credentials) {
         List<LlmContent.ToolResult> results = new ArrayList<>();
         for (LlmContent.ToolUse use : uses) {
             AgentTool tool = tools.get(use.name());
@@ -229,6 +235,8 @@ public class AgentLoop {
             UUID toolCallId = decisionLog.startToolCall(runId, stepId, use);
             ToolOutcome outcome;
             try {
+                // The tool reaches only the operations its class was derived from
+                ToolContext context = new ToolContext(runId, api.limitedTo(tool.operations()));
                 outcome = tool.execute(use.input(), context);
             } catch (RuntimeException e) {
                 decisionLog.failToolCall(toolCallId, credentials.refusal().map(r -> (RuntimeException) r).orElse(e));

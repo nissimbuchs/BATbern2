@@ -17,6 +17,11 @@ import ch.batbern.agent.run.AgentRunStatus;
 import ch.batbern.agent.run.RunEndReason;
 import ch.batbern.agent.tools.AgentTool;
 import ch.batbern.agent.tools.ToolOutcome;
+import ch.batbern.agent.gateway.Operation;
+import ch.batbern.agent.tools.OperationClass;
+import ch.batbern.agent.tools.OperationClassTable;
+import ch.batbern.agent.tools.TestToolRegistry;
+import ch.batbern.agent.tools.ToolRegistry;
 import ch.batbern.shared.test.AbstractIntegrationTest;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -44,6 +49,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -63,12 +69,16 @@ class AgentCredentialsIntegrationTest extends AbstractIntegrationTest {
     private static final String SYSTEM = "You keep the BATbern company list tidy.";
     private static final LlmUsage TOKENS = new LlmUsage(1, 1, 0, 0);
     private static final String COMPANIES = "/api/v1/companies";
+    private static final ToolRegistry NO_TOOLS = new ToolRegistry(List.of(), OperationClassTable.standard());
 
     @Autowired
     private AgentLoop loop;
 
     @Autowired
     private ScriptedLlm model;
+
+    @Autowired
+    private TestToolRegistry toolRegistry;
 
     @Autowired
     private JdbcTemplate jdbc;
@@ -94,6 +104,7 @@ class AgentCredentialsIntegrationTest extends AbstractIntegrationTest {
     @AfterEach
     void clean() {
         model.reset();
+        toolRegistry.reset();
         jdbc.execute("TRUNCATE agent_runs CASCADE");
         gatewayAuthorizations.clear();
     }
@@ -116,7 +127,7 @@ class AgentCredentialsIntegrationTest extends AbstractIntegrationTest {
         cums.grants().mints();
         gatewayExpects(HttpMethod.GET, ExpectedCount.once());
         RecordingTool read = reading();
-        model.then(useTool("list_companies")).then(endTurn());
+        model.then(useTool("listCompanies")).then(endTurn());
 
         AgentRunResult result = run(new GrantSource.SchedulerJob(CumsAtTheWire.JOB), read);
 
@@ -153,7 +164,7 @@ class AgentCredentialsIntegrationTest extends AbstractIntegrationTest {
         cums.grants().mints();
         gatewayExpects(HttpMethod.POST, ExpectedCount.times(2));
         RecordingTool write = writing(false);
-        model.then(useTool("create_company", "create_company")).then(endTurn());
+        model.then(useTool("createCompany", "createCompany")).then(endTurn());
 
         AgentRunResult result = run(new GrantSource.SchedulerJob(CumsAtTheWire.JOB), write);
 
@@ -171,7 +182,7 @@ class AgentCredentialsIntegrationTest extends AbstractIntegrationTest {
     void should_mintBeforeRead_when_tokenExpiresWithinAMinute() {
         cums.grants().mints(Duration.ofSeconds(30));
         gatewayExpects(HttpMethod.GET, ExpectedCount.once());
-        model.then(useTool("list_companies")).then(endTurn());
+        model.then(useTool("listCompanies")).then(endTurn());
 
         AgentRunResult result = run(new GrantSource.SchedulerJob(CumsAtTheWire.JOB), reading());
 
@@ -186,7 +197,7 @@ class AgentCredentialsIntegrationTest extends AbstractIntegrationTest {
         cums.grants().mints();
         cums.server().expect(HttpMethod.POST, COMPANIES).andExpect(r -> gatewayAuthorizations
                 .add(r.getHeaders().getFirst(HttpHeaders.AUTHORIZATION))).respondWithStatus(HttpStatus.FORBIDDEN);
-        model.then(useTool("create_company")).then(endTurn());
+        model.then(useTool("createCompany")).then(endTurn());
 
         AgentRunResult result = run(new GrantSource.SchedulerJob(CumsAtTheWire.JOB), writing(false));
 
@@ -297,7 +308,7 @@ class AgentCredentialsIntegrationTest extends AbstractIntegrationTest {
         // No gateway expectation: a POST to /api/v1/companies would fail the test
         RecordingTool write = writing(swallow);
         RecordingTool second = reading();
-        model.then(useTool("create_company", "list_companies"));
+        model.then(useTool("createCompany", "listCompanies"));
 
         AgentRunResult result = run(new GrantSource.SchedulerJob(CumsAtTheWire.JOB), write, second);
 
@@ -384,7 +395,7 @@ class AgentCredentialsIntegrationTest extends AbstractIntegrationTest {
         cums.grants().mintsThenRefuses(1, HttpStatus.FORBIDDEN, "GRANT_INVALID", Duration.ofSeconds(30));
         // No gateway expectation: a GET to /api/v1/companies would fail the test
         RecordingTool read = reading();
-        model.then(useTool("list_companies"));
+        model.then(useTool("listCompanies"));
 
         AgentRunResult result = run(new GrantSource.SchedulerJob(CumsAtTheWire.JOB), read);
 
@@ -425,11 +436,12 @@ class AgentCredentialsIntegrationTest extends AbstractIntegrationTest {
             AgentProperties withoutSecret = new AgentProperties(true, properties.loop(), properties.anthropic(),
                     new AgentProperties.Cums(properties.cums().baseUrl(), missing), properties.gateway());
             CumsAgentClient client = new CumsAgentClient(restTemplate, withoutSecret);
-            AgentLoop loopWithoutSecret = new AgentLoop(model, decisionLog, withoutSecret, client, restTemplate, clock);
+            AgentLoop loopWithoutSecret = new AgentLoop(model, decisionLog, withoutSecret, client, restTemplate,
+                    NO_TOOLS, clock);
 
             // No expectation is registered: any request to CUMS fails the test
             AgentRunResult result = loopWithoutSecret.run(new AgentRunRequest(
-                    new GrantSource.SchedulerJob(CumsAtTheWire.JOB), SYSTEM, "Tidy up", List.of()));
+                    new GrantSource.SchedulerJob(CumsAtTheWire.JOB), SYSTEM, "Tidy up"));
 
             assertRefusedBeforeModel(result, RunEndReason.GRANT_REFUSED, "CALLER_SECRET_MISSING");
             client.warnWithoutCallerSecret();
@@ -438,9 +450,9 @@ class AgentCredentialsIntegrationTest extends AbstractIntegrationTest {
         AgentProperties withoutSecret = new AgentProperties(true, properties.loop(), properties.anthropic(),
                 new AgentProperties.Cums(properties.cums().baseUrl(), ""), properties.gateway());
         CumsAgentClient client = new CumsAgentClient(restTemplate, withoutSecret);
-        AgentRunResult handedOver = new AgentLoop(model, decisionLog, withoutSecret, client, restTemplate, clock)
+        AgentRunResult handedOver = new AgentLoop(model, decisionLog, withoutSecret, client, restTemplate, NO_TOOLS, clock)
                 .run(new AgentRunRequest(new GrantSource.HandedOver(UUID.randomUUID(), CumsAtTheWire.grantSecret()),
-                        SYSTEM, "Tidy up", List.of()));
+                        SYSTEM, "Tidy up"));
         assertRefusedBeforeModel(handedOver, RunEndReason.GRANT_REFUSED, "CALLER_SECRET_MISSING");
         cums.verify();
         assertThat(cums.grantRequests()).isEmpty();
@@ -462,14 +474,14 @@ class AgentCredentialsIntegrationTest extends AbstractIntegrationTest {
         assertThat(new GrantSource.HandedOver(UUID.randomUUID(), secret).toString()).doesNotContain(secret);
         assertThat(properties.cums().toString()).doesNotContain(CumsAtTheWire.CALLER_SECRET).contains("callerSecret=****");
         assertThat(properties.toString()).doesNotContain(CumsAtTheWire.CALLER_SECRET);
-        assertThat(new AgentRunRequest(new GrantSource.OrganizerLogin("cognito.jwt.value"), SYSTEM, "u", List.of())
+        assertThat(new AgentRunRequest(new GrantSource.OrganizerLogin("cognito.jwt.value"), SYSTEM, "u")
                 .toString()).doesNotContain("cognito.jwt.value");
     }
 
     // ── Helpers ──────────────────────────────────────────────────────────────────────────────────
 
     private AgentRunResult run(GrantSource grant, AgentTool... tools) {
-        return loop.run(new AgentRunRequest(grant, SYSTEM, "Tidy up the company list", List.of(tools)));
+        return loop.run(toolRegistry.request(grant, SYSTEM, "Tidy up the company list", List.of(tools)));
     }
 
     private void assertRefused(AgentRunResult result, RunEndReason reason, String code) {
@@ -507,25 +519,28 @@ class AgentCredentialsIntegrationTest extends AbstractIntegrationTest {
 
     /** GET /companies; answers the status. */
     private static RecordingTool reading() {
-        return TestTools.calling("list_companies", (input, context) -> {
-            ApiResponse response = context.api().get("/companies");
-            return ToolOutcome.ok(String.valueOf(response.status()));
-        });
+        return TestTools.calling("listCompanies", OperationClass.READ, Set.of(Operation.of("GET /companies")),
+                (input, context) -> {
+                    ApiResponse response = context.api().get("/companies");
+                    return ToolOutcome.ok(String.valueOf(response.status()));
+                });
     }
 
     /** POST /companies; with {@code swallow} it hides a refused mint and claims success. */
     private static RecordingTool writing(boolean swallow) {
-        return TestTools.calling("create_company", (input, context) -> {
-            try {
-                ApiResponse response = context.api().post("/companies", TestTools.input("name", "Agent Test AG"));
-                return ToolOutcome.ok(String.valueOf(response.status()));
-            } catch (AgentCredentialsRefusedException e) {
-                if (swallow) {
-                    return ToolOutcome.ok("created, honestly");
-                }
-                throw e;
-            }
-        });
+        return TestTools.calling("createCompany", OperationClass.BINDING, Set.of(Operation.of("POST /companies")),
+                (input, context) -> {
+                    try {
+                        ApiResponse response = context.api().post("/companies",
+                                TestTools.input("name", "Agent Test AG"));
+                        return ToolOutcome.ok(String.valueOf(response.status()));
+                    } catch (AgentCredentialsRefusedException e) {
+                        if (swallow) {
+                            return ToolOutcome.ok("created, honestly");
+                        }
+                        throw e;
+                    }
+                });
     }
 
     private LlmResponse useTool(String... names) {

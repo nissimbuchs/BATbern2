@@ -4,6 +4,7 @@ import ch.batbern.agent.identity.CumsAtTheWire;
 import ch.batbern.agent.loop.TestTools.RecordingTool;
 import ch.batbern.agent.run.AgentRunStatus;
 import ch.batbern.agent.run.RunTrigger;
+import ch.batbern.agent.tools.TestToolRegistry;
 import ch.batbern.shared.test.AbstractIntegrationTest;
 import ch.batbern.shared.test.fixtures.ProductionShapedPeople;
 import org.junit.jupiter.api.AfterEach;
@@ -44,6 +45,9 @@ class AgentLoopLogIntegrationTest extends AbstractIntegrationTest {
     private ScriptedLlm model;
 
     @Autowired
+    private TestToolRegistry toolRegistry;
+
+    @Autowired
     private JdbcTemplate jdbc;
 
     @Autowired
@@ -56,6 +60,7 @@ class AgentLoopLogIntegrationTest extends AbstractIntegrationTest {
     @AfterEach
     void clean() {
         model.reset();
+        toolRegistry.reset();
         jdbc.execute("TRUNCATE agent_runs CASCADE");
     }
 
@@ -73,17 +78,17 @@ class AgentLoopLogIntegrationTest extends AbstractIntegrationTest {
     @DisplayName("should_logIdsAndOutcomesOnly_when_promptAndToolsCarryPersonalData")
     void should_logIdsAndOutcomesOnly_when_promptAndToolsCarryPersonalData(CapturedOutput output) {
         String who = PERSON.fullName() + " <" + PERSON.email() + ">, " + POSTAL_ADDRESS;
-        RecordingTool find = TestTools.answering("find_person", in -> "found " + who);
-        RecordingTool broken = TestTools.throwing("update_person",
+        RecordingTool find = TestTools.answering("findPerson", in -> "found " + who);
+        RecordingTool broken = TestTools.throwing("updatePerson",
                 new IllegalArgumentException("cannot update " + who));
         model.then(model.response(LlmStopReason.TOOL_USE, new LlmUsage(10, 5, 0, 0),
                         new LlmContent.Text("Looking up " + who),
-                        new LlmContent.ToolUse("tu_1", "find_person", TestTools.input("query", who)),
-                        new LlmContent.ToolUse("tu_2", "update_person", TestTools.input("query", who)),
+                        new LlmContent.ToolUse("tu_1", "findPerson", TestTools.input("query", who)),
+                        new LlmContent.ToolUse("tu_2", "updatePerson", TestTools.input("query", who)),
                         new LlmContent.ToolUse("tu_3", "unknown " + PERSON.fullName(), TestTools.input("query", who))))
              .thenThrow(new IllegalStateException("model fault while answering about " + who));
 
-        AgentRunResult result = loop.run(new AgentRunRequest(source(RunTrigger.INBOUND_MAIL),
+        AgentRunResult result = loop.run(toolRegistry.request(source(RunTrigger.INBOUND_MAIL),
                 "Help " + who, "Please update " + who, List.of(find, broken)));
 
         assertThat(result.status()).isEqualTo(AgentRunStatus.FAILED);
@@ -93,8 +98,8 @@ class AgentLoopLogIntegrationTest extends AbstractIntegrationTest {
         // ... the application log names the run, the tools and the outcomes (positive control) ...
         String out = output.getAll();
         assertThat(out).contains("Agent run " + result.runId() + " started")
-                .contains("tool find_person succeeded")
-                .contains("tool update_person failed (java.lang.IllegalArgumentException)")
+                .contains("tool findPerson succeeded")
+                .contains("tool updatePerson failed (java.lang.IllegalArgumentException)")
                 .contains("Agent run " + result.runId() + " failed in step 2: java.lang.IllegalStateException")
                 .contains("Agent run " + result.runId() + " ended FAILED");
         // ... and nothing about the person

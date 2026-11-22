@@ -111,6 +111,26 @@ exception (the loop reads the refusal from `RunCredentials` after each tool). On
 no token, grant secret, caller secret or username reaches a log, an exception message or a
 `toString`.
 
+The tools (story 5, R4, AD-6): intent tools are the agent's only capability. `AgentLoop` offers
+the model the tools of `tools/ToolRegistry`, built once from `tools/StandardTools` and
+`tools/OperationClassTable`, the one table giving each public operation a tool may call (method
+plus path as `docs/api` writes it, below `/api/v1`) its class, lowest first `read`, `reversible`,
+`reply`, `binding`, `audience`. A tool declares its class, its operations and, when `reversible`,
+the operation that undoes it. `tools/ToolClassCheck` refuses a tool declared below (or above) the
+highest class of its operations, an operation or undo operation missing from the table, a
+`reversible` tool without an undo operation or another tool with one, and a name that is not
+camelCase verb plus object; the registry refuses to start on a violation and `ToolClassCheckTest`
+fails the build first, proven with fixture tools that exist only in tests. `OperationClassTableSpecTest`
+checks that every table operation exists in `docs/api`. At run time each tool gets the run's
+`PublicApi` limited to its declared operations (anything else throws before a token is touched).
+The epic ships read tools only (`tools/read/`): `findPastEvents` (`GET /events`, date before now,
+archived included, newest first; optional `year`, `searchText` (EMS archive search: every word in the event, a session or a speaker name), `limit`), `listEventSessions`
+(`GET /events/{eventCode}/sessions`, with speakers) and `listSessionSpeakers`
+(`GET /events/{eventCode}/sessions/{sessionSlug}/speakers`). Arguments are ADR-003 ids checked
+against the spec patterns (a bad one is an error result, nothing is sent); reads reuse the run's
+token; an HTTP error is an error result naming the status. The model gets a projection of each
+answer: no e-mail, picture, bio or material link.
+
 ### Package layout
 
 Layer packages are shared by all services; larger services add feature packages next to them.

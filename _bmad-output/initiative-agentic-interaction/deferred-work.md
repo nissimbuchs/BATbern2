@@ -40,3 +40,9 @@
 - source_plan: `_bmad-output/initiative-agentic-interaction/tickets/epic-agent-runtime/tickets/story-agent-service-acts-with-a-cums-minted-token-minted-again-bef-plan.md`
   summary: No end-to-end proof that a CUMS-minted token passes the Spring gateway and a service on a real route from agent-service; the gateway call is proven against the companies spec only.
   evidence: Epic 0 tests accept agent tokens per service; story 4 tests stub CUMS and the gateway at the RestTemplate (ContractServer). Settled after deploy once the switch is on and a tool runs.
+- source_plan: `_bmad-output/initiative-agentic-interaction/tickets/epic-agent-runtime/tickets/story-intent-tools-carry-a-class-derived-from-the-operation-table-plan.md`
+  summary: Registry entries do not carry principal kinds yet (Consistency Conventions: "the registry entry carries the principal kind(s)"); every run is offered every tool. Add the kinds and filter by the run's grant principal with the first tool not open to every principal (epic-speaker-mail-agent).
+  evidence: The three shipped tools call only permitAll GETs in EMS (SecurityConfig), so no principal is over-served today; agent-service does not yet read principalKind from the CUMS grant answer.
+- source_plan: `_bmad-output/initiative-agentic-interaction/tickets/epic-agent-runtime/tickets/story-intent-tools-carry-a-class-derived-from-the-operation-table-plan.md`
+  summary: PublicApi.limitedTo matches by path template, so a tool declaring GET /events/{eventCode} could also call a literal sibling such as GET /events/current; the ADR-003 argument checks of the tools are what stops it today.
+  evidence: Operation.matches treats {x} as any one segment and does not resolve against the most specific spec path; no shipped tool declares a template with a literal sibling (checked against the three table entries).

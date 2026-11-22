@@ -13,7 +13,9 @@ import org.springframework.web.client.RestTemplate;
 import java.net.URI;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /**
  * The public API as one run's tools see it (story 4, R2, AD-3): every call goes to the Spring
@@ -23,6 +25,10 @@ import java.util.regex.Pattern;
  * that mint, the write is not sent and {@link ch.batbern.agent.identity.AgentCredentialsRefusedException}
  * is thrown; the run's credentials keep the refusal, so the loop ends the run even if the tool
  * swallows the exception.
+ *
+ * <p>A tool gets the run's instance {@link #limitedTo limited to} the operations it declares
+ * (story 5, AD-6): any other call is refused before a token is touched, so a tool's declared
+ * operations, from which its class is derived, are the only ones it can reach.
  *
  * <p>An HTTP error of the API is returned as an {@link ApiResponse}, not thrown; a transport error
  * is thrown. One instance per run. Not a {@code client} package: the S2S URL guard reserves those
@@ -41,11 +47,33 @@ public final class PublicApi {
     private final RestTemplate restTemplate;
     private final String baseUrl;
     private final RunCredentials credentials;
+    /** The operations this instance lets through; {@code null}: any. */
+    private final Set<Operation> allowed;
 
     public PublicApi(RestTemplate restTemplate, String gatewayBaseUrl, RunCredentials credentials) {
+        this(restTemplate, Objects.requireNonNull(gatewayBaseUrl, "gatewayBaseUrl") + PUBLIC_PREFIX, credentials,
+                null);
+    }
+
+    private PublicApi(RestTemplate restTemplate, String baseUrl, RunCredentials credentials, Set<Operation> allowed) {
         this.restTemplate = Objects.requireNonNull(restTemplate, "restTemplate");
-        this.baseUrl = Objects.requireNonNull(gatewayBaseUrl, "gatewayBaseUrl") + PUBLIC_PREFIX;
+        this.baseUrl = baseUrl;
         this.credentials = Objects.requireNonNull(credentials, "credentials");
+        this.allowed = allowed;
+    }
+
+    /**
+     * The same run's API, letting through only {@code operations} (paths below {@code /api/v1});
+     * any other call throws {@link IllegalStateException} before a token is read or minted. A limit
+     * only narrows: on an already limited instance the result lets through only operations both
+     * allow, so a tool cannot widen the API it was handed.
+     */
+    public PublicApi limitedTo(Set<Operation> operations) {
+        Set<Operation> narrowed = Set.copyOf(operations);
+        if (allowed != null) {
+            narrowed = narrowed.stream().filter(allowed::contains).collect(Collectors.toUnmodifiableSet());
+        }
+        return new PublicApi(restTemplate, baseUrl, credentials, narrowed);
     }
 
     /** A read. {@code path} is below {@code /api/v1}, already encoded, query included: {@code /companies?limit=5}. */
@@ -80,6 +108,11 @@ public final class PublicApi {
      */
     public ApiResponse exchange(HttpMethod method, String path, JsonNode body) {
         URI uri = uri(path);
+        if (allowed != null && allowed.stream().noneMatch(operation -> operation.matches(method, path))) {
+            // The path is the tool's text, possibly with model input: method only
+            throw new IllegalStateException("The tool called a " + method.name()
+                    + " operation it does not declare");
+        }
         // The token first: a refused mint throws before anything is sent
         String token = HttpMethod.GET.equals(method) ? credentials.tokenForRead() : credentials.tokenForWrite();
         HttpHeaders headers = new HttpHeaders();
@@ -98,11 +131,18 @@ public final class PublicApi {
         }
     }
 
+    /**
+     * The guard looks at the path part only: a query value may carry an encoded slash or dot (a
+     * title searched for), which cannot change the route. The query may not hold a fragment.
+     */
     private URI uri(String path) {
-        if (path == null || !path.startsWith("/") || path.startsWith("//") || path.contains("..")
-                || path.contains("\\") || ENCODED_DOT_SLASH_OR_BACKSLASH.matcher(path).find()) {
-            throw new IllegalArgumentException(
-                    "A public API path starts with one / and has no dot segment, encoded dot, slash or backslash");
+        int query = path == null ? -1 : path.indexOf('?');
+        String pathPart = query < 0 ? path : path.substring(0, query);
+        if (pathPart == null || !pathPart.startsWith("/") || pathPart.startsWith("//") || pathPart.contains("..")
+                || pathPart.contains("\\") || ENCODED_DOT_SLASH_OR_BACKSLASH.matcher(pathPart).find()
+                || path.contains("#")) {
+            throw new IllegalArgumentException("A public API path starts with one / and has no dot segment, "
+                    + "encoded dot, slash or backslash, and no fragment");
         }
         return URI.create(baseUrl + path);
     }

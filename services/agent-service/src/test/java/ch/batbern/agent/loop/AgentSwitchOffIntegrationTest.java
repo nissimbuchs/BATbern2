@@ -13,8 +13,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.web.client.RestTemplate;
 
-import java.util.List;
-
 import static ch.batbern.agent.identity.CumsAtTheWire.source;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -58,7 +56,7 @@ class AgentSwitchOffIntegrationTest extends AbstractIntegrationTest {
 
         // CUMS at the wire without a single expectation: a grant or mint request would fail the test
         try (CumsAtTheWire cums = CumsAtTheWire.bindTo(restTemplate)) {
-            assertThatThrownBy(() -> loop.run(new AgentRunRequest(ORGANIZER_LOGIN, "system", "Hello", List.of())))
+            assertThatThrownBy(() -> loop.run(new AgentRunRequest(ORGANIZER_LOGIN, "system", "Hello")))
                     .isInstanceOf(AgentSwitchedOffException.class);
             cums.verify();
             assertThat(cums.grantRequests()).isEmpty();

@@ -62,12 +62,23 @@ public final class CumsAtTheWire implements AutoCloseable {
     public record Recorded(HttpHeaders headers, JsonNode body) {
     }
 
-    private CumsAtTheWire(RestTemplate restTemplate) {
-        this.server = ContractServer.bindTo(restTemplate, CUMS_INTERNAL, COMPANIES);
+    private CumsAtTheWire(RestTemplate restTemplate, String... publicSpecs) {
+        String[] specs = new String[publicSpecs.length + 1];
+        specs[0] = COMPANIES;
+        System.arraycopy(publicSpecs, 0, specs, 1, publicSpecs.length);
+        this.server = ContractServer.bindTo(restTemplate, CUMS_INTERNAL, specs);
     }
 
     public static CumsAtTheWire bindTo(RestTemplate restTemplate) {
         return new CumsAtTheWire(restTemplate);
+    }
+
+    /**
+     * Bound to the given public specs besides CUMS internal and companies (story 5: the events
+     * specs the read tools call), each gateway request validated against the spec that has its path.
+     */
+    public static CumsAtTheWire bindTo(RestTemplate restTemplate, String... publicSpecs) {
+        return new CumsAtTheWire(restTemplate, publicSpecs);
     }
 
     /** A grant source per trigger, for loop tests that only care about the trigger. */
