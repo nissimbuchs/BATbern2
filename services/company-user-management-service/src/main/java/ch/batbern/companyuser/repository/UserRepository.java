@@ -16,6 +16,7 @@ import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -153,6 +154,13 @@ public interface UserRepository extends JpaRepository<User, UUID>, JpaSpecificat
      */
     @Query("SELECT u FROM User u JOIN u.roles r WHERE r = :role")
     List<User> findByRolesContaining(@Param("role") Role role);
+
+    /**
+     * The usernames among {@code usernames} whose profile holds {@code role} (agent settings: every
+     * allowlisted username and the delegate must be an organizer).
+     */
+    @Query("SELECT DISTINCT u.username FROM User u JOIN u.roles r WHERE u.username IN :usernames AND r = :role")
+    List<String> findUsernamesWithRole(@Param("usernames") Collection<String> usernames, @Param("role") Role role);
 
     /**
      * Autocomplete search (the user picker): every word of {@code query} in username, first or last

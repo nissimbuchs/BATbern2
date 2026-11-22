@@ -149,6 +149,22 @@ The EMS STOMP principal of an agent token is its actor; Cognito and Watch keep t
 columns narrower than 255 were widened (CUMS V40, EMS V161, PCS V13); the longest actor is 147
 characters (36-character run, 100-character username).
 
+**Agent settings** (agentic interaction, agent identity story 4): the organizer agent's switch, its
+allowlist and the organizer delegate are one global resource in CUMS, `GET` / `PATCH
+/api/v1/agent-settings` (`users-api`, routed to CUMS by the Spring gateway), stored in the singleton
+`agent_settings` (`CHECK (id = 1)`) and `agent_allowlist` (V41). Off by default: V41 inserts the row
+switched off and seeds no username, and a missing row reads as off, empty allowlist, no delegate.
+Both operations need ORGANIZER and refuse a token carrying `act` (403), so an agent run can neither
+read nor change its own switch. The PATCH is partial: `allowlist` replaces the whole list,
+`delegateUsername: ""` clears the delegate; every username must be an existing user holding
+ORGANIZER, else 400 naming them and nothing is stored. Both columns are foreign keys by username to
+`user_profiles` (a deleted profile leaves the allowlist and clears the delegate). The grant and token
+issuing reads `AgentSettingsService.isEnabled()`, `isAllowlisted(username)` and `delegateUsername()`;
+the last two also require that the person still holds ORGANIZER, since removing the role touches
+only `role_assignments` and leaves the stored rows.
+It is a second settings store beside EMS `app_settings` on purpose: CUMS cannot call EMS (epic
+decision 2026-11-21, recorded in `module-map.md`).
+
 ### Role-Based Security Configuration
 
 > **Important (corrected 2026-10):** Both the API gateway and each domain service validate the JWT

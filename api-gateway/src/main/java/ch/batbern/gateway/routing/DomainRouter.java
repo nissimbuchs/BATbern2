@@ -122,6 +122,8 @@ public class DomainRouter {
             return "partner-coordination-service";
         } else if (cleanPath.startsWith("/api/v1/companies")
                 || cleanPath.startsWith("/api/v1/users")
+                // Agentic interaction, agent identity story 4: the agent switch lives in CUMS
+                || cleanPath.equals("/api/v1/agent-settings")
                 || cleanPath.startsWith("/api/v1/public")) {
             return "company-user-management-service";
         } else if (cleanPath.startsWith("/api/v1/admin/test-fixtures/cums")) {

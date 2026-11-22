@@ -773,6 +773,39 @@ export interface paths {
     patch: operations['updateUserSettings'];
     trace?: never;
   };
+  '/agent-settings': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get the agent switch, allowlist and delegate
+     * @description The organizer agent's settings as one object. The agent is off by default: a fresh
+     *     database answers `enabled: false`, an empty `allowlist` and no delegate. While it is off,
+     *     or for a person not on the allowlist, no agent grant, token or eligibility is given.
+     *     Organizers only (they own the switch); a token carrying `act` (an agent token) is refused
+     *     with 403, even when its person is an organizer.
+     */
+    get: operations['getAgentSettings'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /**
+     * Change the agent switch, allowlist or delegate
+     * @description Partial update (ADR-013): an absent field stays as it is. `allowlist`, when present,
+     *     replaces the whole list (duplicates collapse); `delegateUsername` set to an empty string
+     *     clears the delegate. Every allowlisted username and the delegate must be an existing user
+     *     holding the ORGANIZER role; otherwise 400 names the offending usernames and nothing is
+     *     stored. Returns the whole object. Organizers only; a token carrying `act` (an agent token)
+     *     is refused with 403.
+     */
+    patch: operations['updateAgentSettings'];
+    trace?: never;
+  };
   '/users/me/additional-emails': {
     parameters: {
       query?: never;
@@ -1548,6 +1581,63 @@ export interface components {
        * @example 2026-11-13T09:30:00Z
        */
       whatsNewSeenAt?: string;
+    };
+    /**
+     * @description The organizer agent's switch, allowlist and delegate (one global object, kept in CUMS).
+     *     Off by default: without a stored change the agent is off, the allowlist is empty and there
+     *     is no delegate.
+     */
+    AgentSettings: {
+      /** @description Whether the agent is switched on. False by default. */
+      enabled: boolean;
+      /**
+       * @description Usernames of the organizers the agent may act for, sorted. Each is an existing user
+       *     holding the ORGANIZER role.
+       * @example [
+       *       "anna.muster",
+       *       "beat.beispiel"
+       *     ]
+       */
+      allowlist: string[];
+      /**
+       * @description The organizer delegate's username; null when there is none.
+       * @example anna.muster
+       */
+      delegateUsername: string | null;
+      /**
+       * Format: date-time
+       * @description When the settings were last changed; null before the first change.
+       * @example 2026-11-22T09:30:00Z
+       */
+      updatedAt: string | null;
+      /**
+       * @description Who last changed the settings (the username); null before the first change.
+       * @example beat.beispiel
+       */
+      updatedBy: string | null;
+    };
+    /**
+     * @description Partial update of the agent settings: every field is optional and only the fields present
+     *     change. `allowlist` replaces the whole list (duplicates collapse); an empty string in
+     *     `delegateUsername` clears the delegate. Every username must be an existing user holding the
+     *     ORGANIZER role, otherwise 400 naming them and nothing is stored.
+     */
+    UpdateAgentSettingsRequest: {
+      /** @description Switch the agent on or off. */
+      enabled?: boolean;
+      /**
+       * @description The whole new allowlist (usernames of organizers); an empty list empties it.
+       * @example [
+       *       "anna.muster",
+       *       "beat.beispiel"
+       *     ]
+       */
+      allowlist?: string[];
+      /**
+       * @description An organizer's username; an empty string clears the delegate.
+       * @example anna.muster
+       */
+      delegateUsername?: string;
     };
     UpdateUserRequest: {
       firstName?: string;
@@ -3021,6 +3111,57 @@ export interface operations {
       };
       400: components['responses']['BadRequest'];
       401: components['responses']['Unauthorized'];
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  getAgentSettings: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Agent settings retrieved successfully */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AgentSettings'];
+        };
+      };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  updateAgentSettings: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpdateAgentSettingsRequest'];
+      };
+    };
+    responses: {
+      /** @description Agent settings updated successfully */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AgentSettings'];
+        };
+      };
+      400: components['responses']['BadRequest'];
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
       500: components['responses']['InternalServerError'];
     };
   };
