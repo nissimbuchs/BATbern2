@@ -342,7 +342,7 @@ paths:
                         status: SUCCEEDED
                         input:
                           searchText: timber
-                        output: '[{"eventCode":"BATbern57","title":"Holzbau"}]'
+                        output: 1 past event found, BATbern57 Holzbau
                         error: null
                         startedAt: '2027-02-10T08:15:03Z'
                         endedAt: '2027-02-10T08:15:04Z'
