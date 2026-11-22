@@ -78,3 +78,5 @@ One shared-kernel decoder accepts Cognito, Watch and agent tokens and records ag
 - Decision (2026-11-21): declined: moving story 3's post-deploy check into Done when; eligibility as 200 false (it stays a refusal, R5).
 - Decision (2026-11-21): tracer bullet is story 1, the shared decoder adopted in all four services, because it is the riskiest path: a fault there breaks every login.
 - Decision (2026-11-21): a refactor sweep closes the epic; no closing end-to-end suite, since story 6 verifies the cross-service path.
+- Open question (story 5, 2026-11-22): scheduler-job grants are limited to job names listed in CUMS `agent.grants.scheduler-jobs`, empty by default, so no job can get a grant until epic-agent-runtime names its jobs there. Keep the config list, or accept any kebab-case job name?
+- Open question (story 5, 2026-11-22): the organizer delegate must itself be on the allowlist before a linked-run or scheduler grant is issued (read from R5), and an organizer-login grant needs agent-service's caller secret in addition to the organizer's JWT (read from "an organizer grant also needs"). Confirm both readings.

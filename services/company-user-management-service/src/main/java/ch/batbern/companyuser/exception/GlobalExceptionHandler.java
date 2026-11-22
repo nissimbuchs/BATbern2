@@ -236,6 +236,28 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * Agent identity, story 5: an agent grant or eligibility request refused, with its status
+     * (400, 401, 403) and the reason as {@code details.code}. The message never holds a secret.
+     */
+    @ExceptionHandler(AgentRequestRefusedException.class)
+    public ResponseEntity<ErrorResponse> handleAgentRequestRefusedException(
+            AgentRequestRefusedException ex,
+            HttpServletRequest request) {
+        log.warn("Agent request refused: {} {} {}", ex.getStatus().value(), ex.getCode(), request.getRequestURI());
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .path(request.getRequestURI())
+                .status(ex.getStatus().value())
+                .error(ex.getStatus().getReasonPhrase())
+                .message(ex.getMessage())
+                .correlationId(CorrelationIdGenerator.current())
+                .severity(ex.getStatus() == HttpStatus.UNAUTHORIZED ? "MEDIUM" : "LOW")
+                .details(Map.of("code", ex.getCode()))
+                .build();
+        return ResponseEntity.status(ex.getStatus()).body(error);
+    }
+
+    /**
      * #1244 — a copy of event mails was requested for an unconfirmed additional address.
      * Maps to 409 with errorCode {@code NOT_VERIFIED}.
      */

@@ -29,6 +29,15 @@ info:
     `company-references`), implemented by every service that stores company keys
     (event-management, partner-coordination); a company merge and a rename move them.
 
+    Agent identity, story 5: `/internal/agent-grants` and `/internal/agent-eligibility` are the only
+    operations here that authenticate their caller. Each checks the header `X-Agent-Caller-Secret`
+    itself (EMS or the agent service, per operation), constant-time, before anything else; the
+    filter chain leaves `/internal/**` open as for every other operation (epic decision
+    2026-11-21, `docs/architecture/module-map.md`). One exception to "caller secret first": an
+    `Authorization: Bearer` header that does not decode (expired, malformed, wrong signature) is
+    refused by the resource-server filter before the operation runs, with Spring's bare 401 (empty
+    body, no `details.code`). A caller forwards only a valid token, or none.
+
     Epic 17 entry 6 (17.6 part A) moved the three machine-only writes of users-api here (provision,
     profile patch, invitation credentials) and added the single company read. Paths are full paths
     (server `/`), so a path here is the path on the wire.
@@ -1110,7 +1119,266 @@ paths:
                 message: 'Company not found: ghost'
                 severity: LOW
 
+  /internal/agent-grants:
+    post:
+      operationId: issueAgentGrant
+      summary: Issue a run grant for the organizer agent (agent identity, story 5)
+      description: |
+        A grant is one agent run for one principal, valid for at most one hour. The agent token of
+        that run (story 6) is minted only against an active grant, and minting checks the switch and
+        the allowlist again. The `grantSecret` of the answer is returned once and stored as a
+        SHA-256 hash: it is never readable again.
+
+        The trigger decides who the principal is, never the body:
+
+        | `trigger` | Caller secret | Extra proof | Principal |
+        |---|---|---|---|
+        | `EMS_HANDOFF` | EMS | `username` | `REQUESTER`, that username |
+        | `ORGANIZER_LOGIN` | agent-service | the organizer's Cognito JWT forwarded as `Authorization` (no agent or Watch token) | `ORGANIZER`, the JWT's username; the body names none |
+        | `LINKED_RUN` | agent-service | `linkedRunId` and `linkedRunGrantSecret` of an active `REQUESTER` grant | `ORGANIZER_DELEGATE`, the delegate |
+        | `SCHEDULER_JOB` | agent-service | `jobName` listed in `agent.grants.scheduler-jobs` | `ORGANIZER_DELEGATE`, the delegate |
+
+        Only the fields of the trigger may be sent. Checks in order, the first failure answers:
+        caller secret (401 `CALLER_SECRET_INVALID`), body (400), organizer login (401
+        `ORGANIZER_LOGIN_REQUIRED`), switch (403 `AGENT_SWITCHED_OFF`), linked run or job (403
+        `LINKED_RUN_INVALID` / `SCHEDULER_JOB_UNKNOWN`), principal (403 `PRINCIPAL_NOT_ELIGIBLE`:
+        no delegate, or the principal is not on the allowlist or no longer holds ORGANIZER). Every
+        principal, the delegate included, must be allowlisted. The code is in `details.code`.
+
+        Actor (`requestedBy`, stored): `system:ems-agent-handoff` for `EMS_HANDOFF`, the organizer's
+        username for `ORGANIZER_LOGIN`, `system:agent-service` otherwise. Consumers: EMS (handoff,
+        epic speaker mail agent) and the agent service.
+
+        Exception to the order: an `Authorization: Bearer` header that does not decode (expired,
+        malformed, wrong signature) is refused by the resource-server filter before this operation
+        runs, with Spring's bare 401 (empty body, no `details.code`).
+      parameters:
+        - $ref: '#/components/parameters/AgentCallerSecret'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AgentGrantRequest'
+            examples:
+              emsHandoff:
+                value:
+                  trigger: EMS_HANDOFF
+                  username: anna.meier
+              organizerLogin:
+                value:
+                  trigger: ORGANIZER_LOGIN
+              linkedRun:
+                value:
+                  trigger: LINKED_RUN
+                  linkedRunId: 3f2b8c1e-5a47-4d2e-9b61-0c7f4e8a9d15
+                  linkedRunGrantSecret: example-grant-secret-0000000000000000000000
+              schedulerJob:
+                value:
+                  trigger: SCHEDULER_JOB
+                  jobName: weekly-digest
+      responses:
+        '201':
+          description: Grant issued; `grantSecret` is in this answer only
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentGrant'
+              examples:
+                requester:
+                  value:
+                    runId: 3f2b8c1e-5a47-4d2e-9b61-0c7f4e8a9d15
+                    grantSecret: example-grant-secret-0000000000000000000000
+                    principalKind: REQUESTER
+                    username: anna.meier
+                    trigger: EMS_HANDOFF
+                    linkedRunId: null
+                    jobName: null
+                    issuedAt: '2026-11-22T09:00:00Z'
+                    expiresAt: '2026-11-22T10:00:00Z'
+                delegate:
+                  value:
+                    runId: 8d0a6f4b-2c19-4e7a-a3d5-61b9e2f07c48
+                    grantSecret: example-grant-secret-1111111111111111111111
+                    principalKind: ORGANIZER_DELEGATE
+                    username: luca.brunner
+                    trigger: LINKED_RUN
+                    linkedRunId: 3f2b8c1e-5a47-4d2e-9b61-0c7f4e8a9d15
+                    jobName: null
+                    issuedAt: '2026-11-22T09:05:00Z'
+                    expiresAt: '2026-11-22T10:05:00Z'
+        '400':
+          description: |
+            `INVALID_AGENT_REQUEST`: unknown trigger, a field the trigger needs is missing, a field of
+            another trigger or an unknown field is sent, or a field is too long. Malformed JSON is
+            refused before the operation runs (400 without `details.code`).
+          content:
+            application/json:
+              schema:
+                $ref: '../_shared.openapi.yml#/components/schemas/ErrorResponse'
+              example:
+                timestamp: '2026-11-22T09:00:00Z'
+                path: /internal/agent-grants
+                status: 400
+                error: Bad Request
+                message: 'EMS_HANDOFF needs username'
+                severity: LOW
+                details:
+                  code: INVALID_AGENT_REQUEST
+        '401':
+          description: |
+            `CALLER_SECRET_INVALID`: the caller secret is missing, wrong, or the other caller's;
+            `ORGANIZER_LOGIN_REQUIRED`: `ORGANIZER_LOGIN` without a forwarded Cognito login. A bearer
+            token that does not decode gets Spring's 401 without a body instead, before any check
+          content:
+            application/json:
+              schema:
+                $ref: '../_shared.openapi.yml#/components/schemas/ErrorResponse'
+              examples:
+                callerSecret:
+                  value:
+                    timestamp: '2026-11-22T09:00:00Z'
+                    path: /internal/agent-grants
+                    status: 401
+                    error: Unauthorized
+                    message: 'Caller secret missing or invalid'
+                    severity: MEDIUM
+                    details:
+                      code: CALLER_SECRET_INVALID
+                organizerLogin:
+                  value:
+                    timestamp: '2026-11-22T09:00:00Z'
+                    path: /internal/agent-grants
+                    status: 401
+                    error: Unauthorized
+                    message: 'ORGANIZER_LOGIN needs the organizer''s Cognito login'
+                    severity: MEDIUM
+                    details:
+                      code: ORGANIZER_LOGIN_REQUIRED
+        '403':
+          description: |
+            `AGENT_SWITCHED_OFF`, `LINKED_RUN_INVALID` (unknown, expired or not a `REQUESTER`
+            grant, or a wrong grant secret), `SCHEDULER_JOB_UNKNOWN`, `PRINCIPAL_NOT_ELIGIBLE`
+          content:
+            application/json:
+              schema:
+                $ref: '../_shared.openapi.yml#/components/schemas/ErrorResponse'
+              examples:
+                switchedOff:
+                  value:
+                    timestamp: '2026-11-22T09:00:00Z'
+                    path: /internal/agent-grants
+                    status: 403
+                    error: Forbidden
+                    message: 'The organizer agent is switched off'
+                    severity: LOW
+                    details:
+                      code: AGENT_SWITCHED_OFF
+                notEligible:
+                  value:
+                    timestamp: '2026-11-22T09:00:00Z'
+                    path: /internal/agent-grants
+                    status: 403
+                    error: Forbidden
+                    message: 'The principal is not on the agent allowlist'
+                    severity: LOW
+                    details:
+                      code: PRINCIPAL_NOT_ELIGIBLE
+
+  /internal/agent-eligibility:
+    get:
+      operationId: getAgentEligibility
+      summary: Whether the organizer agent may act for a sender (agent identity, story 5)
+      description: |
+        EMS asks before it hands a mail to the agent. Eligible means: the agent is switched on and
+        the username is on the allowlist and still holds ORGANIZER. Anything else is refused with
+        403 (owner decision, R5: no `eligible: false` answer), with `details.code`
+        `AGENT_SWITCHED_OFF` or `PRINCIPAL_NOT_ELIGIBLE`. EMS caller secret only (401
+        `CALLER_SECRET_INVALID`, checked first). Read only, records nothing.
+      parameters:
+        - $ref: '#/components/parameters/AgentCallerSecret'
+        - name: username
+          in: query
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 100
+          example: anna.meier
+      responses:
+        '200':
+          description: The agent may act for this username
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentEligibility'
+              examples:
+                eligible:
+                  value:
+                    username: anna.meier
+                    eligible: true
+        '400':
+          description: '`INVALID_AGENT_REQUEST`: no `username`, or longer than 100 characters'
+          content:
+            application/json:
+              schema:
+                $ref: '../_shared.openapi.yml#/components/schemas/ErrorResponse'
+              example:
+                timestamp: '2026-11-22T09:00:00Z'
+                path: /internal/agent-eligibility
+                status: 400
+                error: Bad Request
+                message: 'username is required'
+                severity: LOW
+                details:
+                  code: INVALID_AGENT_REQUEST
+        '401':
+          description: |
+            `CALLER_SECRET_INVALID`: missing, wrong, or not the EMS caller secret. A bearer token
+            that does not decode gets Spring's 401 without a body instead, before the secret check
+          content:
+            application/json:
+              schema:
+                $ref: '../_shared.openapi.yml#/components/schemas/ErrorResponse'
+              example:
+                timestamp: '2026-11-22T09:00:00Z'
+                path: /internal/agent-eligibility
+                status: 401
+                error: Unauthorized
+                message: 'Caller secret missing or invalid'
+                severity: MEDIUM
+                details:
+                  code: CALLER_SECRET_INVALID
+        '403':
+          description: '`AGENT_SWITCHED_OFF` or `PRINCIPAL_NOT_ELIGIBLE`'
+          content:
+            application/json:
+              schema:
+                $ref: '../_shared.openapi.yml#/components/schemas/ErrorResponse'
+              example:
+                timestamp: '2026-11-22T09:00:00Z'
+                path: /internal/agent-eligibility
+                status: 403
+                error: Forbidden
+                message: 'The principal is not on the agent allowlist'
+                severity: LOW
+                details:
+                  code: PRINCIPAL_NOT_ELIGIBLE
+
 components:
+  parameters:
+    AgentCallerSecret:
+      name: X-Agent-Caller-Secret
+      in: header
+      required: true
+      description: |
+        The caller's secret: EMS (`agent.callers.ems.secret`) or the agent service
+        (`agent.callers.agent-service.secret`). Compared in constant time; a blank configured secret
+        refuses every call. Missing or wrong answers 401 `CALLER_SECRET_INVALID`.
+      schema:
+        type: string
+        minLength: 1
+      example: example-caller-secret
   schemas:
     UserReferenceCounts:
       type: object
@@ -1361,4 +1629,90 @@ components:
           type: string
           format: date-time
           description: When the decision was made; an inbound mail after it keeps the conversation open.
+      additionalProperties: false
+
+    AgentGrantRequest:
+      type: object
+      required: [trigger]
+      description: |
+        Only the fields of the trigger: `username` for `EMS_HANDOFF`, none for `ORGANIZER_LOGIN`,
+        `linkedRunId` and `linkedRunGrantSecret` for `LINKED_RUN`, `jobName` for `SCHEDULER_JOB`.
+      properties:
+        trigger:
+          type: string
+          enum: [EMS_HANDOFF, ORGANIZER_LOGIN, LINKED_RUN, SCHEDULER_JOB]
+        username:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: '`EMS_HANDOFF`: the requester, the organizer who wrote to the agent.'
+        linkedRunId:
+          type: string
+          minLength: 1
+          maxLength: 36
+          description: '`LINKED_RUN`: the run id of the active `REQUESTER` grant this run follows.'
+        linkedRunGrantSecret:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: '`LINKED_RUN`: that grant''s secret, proving the link.'
+        jobName:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: '`SCHEDULER_JOB`: a job listed in `agent.grants.scheduler-jobs`.'
+      additionalProperties: false
+
+    AgentGrant:
+      type: object
+      required: [runId, grantSecret, principalKind, username, trigger, linkedRunId, jobName, issuedAt, expiresAt]
+      properties:
+        runId:
+          type: string
+          minLength: 36
+          maxLength: 36
+          description: The run, a random UUID; `act.run` of the run's agent tokens.
+        grantSecret:
+          type: string
+          minLength: 43
+          maxLength: 43
+          description: 32 random bytes, base64url without padding. Returned once, stored only as a SHA-256 hash.
+        principalKind:
+          type: string
+          enum: [REQUESTER, ORGANIZER, ORGANIZER_DELEGATE]
+        username:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: The person the run acts for.
+        trigger:
+          type: string
+          enum: [EMS_HANDOFF, ORGANIZER_LOGIN, LINKED_RUN, SCHEDULER_JOB]
+        linkedRunId:
+          type: string
+          nullable: true
+          description: Set for `LINKED_RUN` only.
+        jobName:
+          type: string
+          nullable: true
+          description: Set for `SCHEDULER_JOB` only.
+        issuedAt:
+          type: string
+          format: date-time
+        expiresAt:
+          type: string
+          format: date-time
+          description: One hour after `issuedAt`.
+      additionalProperties: false
+
+    AgentEligibility:
+      type: object
+      required: [username, eligible]
+      properties:
+        username:
+          type: string
+        eligible:
+          type: boolean
+          const: true
+          description: Always `true`; a sender who is not eligible gets 403.
       additionalProperties: false

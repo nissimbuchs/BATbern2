@@ -132,7 +132,9 @@ secret `AGENT_JWT_PUBLIC_KEY` from the SSM parameter `/batbern/<env>/agent/jwt-p
 `agent.jwt.private-key`, PKCS#8 PEM) and the caller secrets `AGENT_CALLERS_EMS_SECRET` and
 `AGENT_CALLERS_AGENT_SERVICE_SECRET`, EMS gets `AGENT_CALLERS_EMS_SECRET`. No yml maps the keys:
 Spring resolves `agent.jwt.public-key` and `agent.jwt.private-key` from the environment variables by
-relaxed binding. The caller-secret properties are named by story 5. A token of a kind the service does not accept is refused
+relaxed binding. The caller secrets are mapped in CUMS `application.yml` to
+`agent.callers.ems.secret` and `agent.callers.agent-service.secret` (relaxed binding cannot reach
+`agent-service`). A token of a kind the service does not accept is refused
 (401) without reaching another verifier: PCS refuses Watch tokens. An agent's roles come from
 `role_assignments` by its `sub` through `JwtRolesConverter`, never from the token. Tests sign agent
 and Watch tokens with shared-kernel test fixtures `ch.batbern.shared.test.security.TestTokens`
@@ -164,6 +166,35 @@ the last two also require that the person still holds ORGANIZER, since removing 
 only `role_assignments` and leaves the stored rows.
 It is a second settings store beside EMS `app_settings` on purpose: CUMS cannot call EMS (epic
 decision 2026-11-21, recorded in `module-map.md`).
+
+**Agent grants** (agent identity story 5): CUMS issues run grants, `POST /internal/agent-grants`,
+and answers agent eligibility, `GET /internal/agent-eligibility` (`cums-internal` spec,
+`InternalAgentController`, `AgentGrantService`). They are the only `/internal` operations that
+authenticate their caller: the filter chain leaves `/internal/**` open, and each checks the header
+`X-Agent-Caller-Secret` itself against `agent.callers.ems.secret` or
+`agent.callers.agent-service.secret` (`AgentCallerSecrets`: SHA-256 digests compared with
+`MessageDigest.isEqual`; a blank configured secret refuses everything; never logged). The trigger
+decides caller and principal, never the body: `EMS_HANDOFF` (EMS, body `username`, principal
+`REQUESTER`), `ORGANIZER_LOGIN` (agent service, the organizer's forwarded Cognito JWT, no `act`, not
+a Watch or agent token; principal `ORGANIZER`), `LINKED_RUN` (agent service, `linkedRunId` plus
+`linkedRunGrantSecret` of an active `REQUESTER` grant; principal `ORGANIZER_DELEGATE`, the delegate),
+`SCHEDULER_JOB` (agent service, `jobName` listed in `agent.grants.scheduler-jobs`, comma-separated,
+empty by default; the delegate). Checks in order, the first failure answers with `details.code`:
+caller secret 401 `CALLER_SECRET_INVALID`, body 400, organizer login 401
+`ORGANIZER_LOGIN_REQUIRED`, switch 403 `AGENT_SWITCHED_OFF`, link or job 403 `LINKED_RUN_INVALID` /
+`SCHEDULER_JOB_UNKNOWN`, principal 403 `PRINCIPAL_NOT_ELIGIBLE` (no delegate, or not
+`isAllowlisted`; the delegate must be allowlisted too); a 400 carries `INVALID_AGENT_REQUEST`. One
+exception to that order: an `Authorization: Bearer` header that does not decode (expired, malformed,
+wrong signature) is refused by the resource-server filter before the operation runs, with Spring's
+bare 401 (empty body, no `details.code`); the filter chain stays as it is. A grant is a row of `agent_grants` (V42): a
+random UUID `run_id`, principal kind, username (foreign key to `user_profiles`, cascades), trigger,
+linked run or job (each set exactly for its trigger, DB check), `requested_by`
+(`system:ems-agent-handoff`, `system:agent-service` or the organizer), `issued_at`, `expires_at`
+(at most one hour, DB check) and the hex SHA-256 of the grant secret (32 random bytes, base64url),
+which the 201 returns once. Eligibility (EMS secret only) answers 200 `eligible: true` or 403
+(`AGENT_SWITCHED_OFF`, `PRINCIPAL_NOT_ELIGIBLE`), never `eligible: false`.
+`AgentGrantService.findActiveGrant(runId, grantSecret)` is the seam story 6 mints agent tokens
+against; minting re-checks the switch and the allowlist.
 
 ### Role-Based Security Configuration
 

@@ -60,3 +60,14 @@ batbern:
     # (CompanyReferenceHolders), told apart by host.
     company-references:
       implementers: http://company-holder-a.invalid,http://company-holder-b.invalid
+
+# Agent identity, story 5: the caller secrets InternalAgentGrantIntegrationTest presents, and the one
+# scheduler job a SCHEDULER_JOB grant may name. Test values only, never used outside tests.
+agent:
+  callers:
+    ems:
+      secret: test-only-ems-caller-secret
+    agent-service:
+      secret: test-only-agent-service-caller-secret
+  grants:
+    scheduler-jobs: test-digest
