@@ -94,6 +94,37 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AgentRunDetail'
+              examples:
+                handedOver:
+                  summary: a run stopped at the step cap and handed to the organizers
+                  value:
+                    run:
+                      id: 3f2a9c1e-5b7d-4e8a-9c0f-1a2b3c4d5e6f
+                      status: HANDED_TO_ORGANIZERS
+                      startedAt: '2027-02-10T08:15:00Z'
+                      endedAt: '2027-02-10T08:16:40Z'
+                      trigger: ORGANIZER
+                      endReason: CAP_REACHED
+                      endDetail: STEPS
+                      principalKind: ORGANIZER
+                      grantRunId: 7c1d2e3f-4a5b-4c6d-8e7f-9a0b1c2d3e4f
+                    totals:
+                      steps: 25
+                      modelCalls: 25
+                      toolCalls: 31
+                      verdicts: 2
+                      pendingApprovals: 1
+                      inputTokens: 84210
+                      outputTokens: 6120
+                      cacheCreationInputTokens: 0
+                      cacheReadInputTokens: 40100
+                    inboundMessages:
+                      - id: 0a1b2c3d-4e5f-4a6b-8c7d-8e9f0a1b2c3d
+                        channel: CHAT
+                        externalId: null
+                        receivedAt: '2027-02-10T08:15:00Z'
+                        content:
+                          text: Which speakers of BATbern60 have not sent their slides yet?
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -123,6 +154,24 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedAgentStepResponse'
+              examples:
+                oneStep:
+                  summary: a step with one model call and one tool call
+                  value:
+                    data:
+                      - id: d4e5f6a7-b8c9-4d0e-9f1a-3b4c5d6e7f80
+                        stepNumber: 1
+                        startedAt: '2027-02-10T08:15:01Z'
+                        endedAt: '2027-02-10T08:15:04Z'
+                        modelCallIds: [a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d]
+                        toolCallIds: [b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e]
+                    pagination:
+                      page: 0
+                      limit: 20
+                      totalItems: 1
+                      totalPages: 1
+                      hasNext: false
+                      hasPrev: false
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -153,6 +202,34 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedAgentModelCallResponse'
+              examples:
+                oneCall:
+                  summary: a model call that chose one tool
+                  value:
+                    data:
+                      - id: a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d
+                        stepNumber: 1
+                        status: SUCCEEDED
+                        model: claude-sonnet-5-5
+                        stopReason: TOOL_USE
+                        chosenTools:
+                          - id: toolu_01example
+                            name: findPastEvents
+                        usage:
+                          inputTokens: 3120
+                          outputTokens: 210
+                          cacheCreationInputTokens: 0
+                          cacheReadInputTokens: 2900
+                        error: null
+                        startedAt: '2027-02-10T08:15:01Z'
+                        endedAt: '2027-02-10T08:15:03Z'
+                    pagination:
+                      page: 0
+                      limit: 20
+                      totalItems: 1
+                      totalPages: 1
+                      hasNext: false
+                      hasPrev: false
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -189,6 +266,41 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AgentModelCallDetail'
+              examples:
+                withPrompt:
+                  summary: a model call with its prompt and answer
+                  value:
+                    modelCall:
+                      id: a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d
+                      stepNumber: 1
+                      status: SUCCEEDED
+                      model: claude-sonnet-5-5
+                      stopReason: TOOL_USE
+                      chosenTools:
+                        - id: toolu_01example
+                          name: findPastEvents
+                      usage:
+                        inputTokens: 3120
+                        outputTokens: 210
+                        cacheCreationInputTokens: 0
+                        cacheReadInputTokens: 2900
+                      error: null
+                      startedAt: '2027-02-10T08:15:01Z'
+                      endedAt: '2027-02-10T08:15:03Z'
+                    prompt:
+                      system: You act for a BATbern organizer.
+                      max_tokens: 16000
+                      messages:
+                        - role: user
+                          content: Which past events covered timber construction?
+                    response:
+                      stop_reason: tool_use
+                      content:
+                        - type: tool_use
+                          id: toolu_01example
+                          name: findPastEvents
+                          input:
+                            searchText: timber
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -218,6 +330,42 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedAgentToolCallResponse'
+              examples:
+                readAndPending:
+                  summary: a read that ran and a binding call the gate held
+                  value:
+                    data:
+                      - id: b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e
+                        stepNumber: 1
+                        toolUseId: toolu_01example
+                        toolName: findPastEvents
+                        status: SUCCEEDED
+                        input:
+                          searchText: timber
+                        output: '[{"eventCode":"BATbern57","title":"Holzbau"}]'
+                        error: null
+                        startedAt: '2027-02-10T08:15:03Z'
+                        endedAt: '2027-02-10T08:15:04Z'
+                        verdictId: null
+                      - id: c3d4e5f6-a7b8-4c9d-8e0f-2a3b4c5d6e7f
+                        stepNumber: 2
+                        toolUseId: toolu_02example
+                        toolName: exampleBindingTool
+                        status: PENDING_APPROVAL
+                        input:
+                          eventCode: BATbern61
+                        output: null
+                        error: null
+                        startedAt: '2027-02-10T08:15:06Z'
+                        endedAt: '2027-02-10T08:15:06Z'
+                        verdictId: e5f6a7b8-c9d0-4e1f-8a2b-4c5d6e7f8091
+                    pagination:
+                      page: 0
+                      limit: 20
+                      totalItems: 2
+                      totalPages: 1
+                      hasNext: false
+                      hasPrev: false
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -249,6 +397,53 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedAgentVerdictResponse'
+              examples:
+                belowThreshold:
+                  summary: a binding call with one approval waits for an organizer
+                  value:
+                    data:
+                      - id: e5f6a7b8-c9d0-4e1f-8a2b-4c5d6e7f8091
+                        toolCallId: c3d4e5f6-a7b8-4c9d-8e0f-2a3b4c5d6e7f
+                        stepNumber: 2
+                        toolName: exampleBindingTool
+                        operationClass: BINDING
+                        outcome: PENDING_APPROVAL
+                        reason: BINDING_BELOW_THRESHOLD
+                        cap: null
+                        confidence: 0.5
+                        inputs:
+                          approvals: 1
+                          denials: 0
+                          approvalsRequired: 2
+                        citedPrecedents:
+                          - sourceId: agent_approvals:f6a7b8c9-d0e1-4f2a-9b3c-5d6e7f8091a2
+                            source: APPROVAL
+                            resolved: true
+                            eventCode: null
+                            toolCallId: b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e
+                            runId: 3f2a9c1e-5b7d-4e8a-9c0f-1a2b3c4d5e6f
+                            toolName: exampleBindingTool
+                            approvalState: APPROVED
+                            undoOutcome: null
+                            at: '2027-02-01T10:00:00Z'
+                          - sourceId: event:BATbern57
+                            source: PAST_EVENT
+                            resolved: true
+                            eventCode: BATbern57
+                        approval:
+                          id: f6a7b8c9-d0e1-4f2a-9b3c-5d6e7f8091a2
+                          state: PENDING
+                          createdAt: '2027-02-10T08:15:06Z'
+                          decidedAt: null
+                          decidedBy: null
+                        decidedAt: '2027-02-10T08:15:06Z'
+                    pagination:
+                      page: 0
+                      limit: 20
+                      totalItems: 1
+                      totalPages: 1
+                      hasNext: false
+                      hasPrev: false
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
