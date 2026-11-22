@@ -103,7 +103,7 @@ public class PartnerMeeting {
      * ADR-003: organizer username who created this meeting record.
      * No UUID FK.
      */
-    @Column(name = "created_by", nullable = false, length = 100)
+    @Column(name = "created_by", nullable = false, length = 255)
     private String createdBy;
 
     @CreationTimestamp

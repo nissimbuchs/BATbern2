@@ -3,6 +3,7 @@ package ch.batbern.events.watch;
 import ch.batbern.shared.test.AbstractIntegrationTest;
 import ch.batbern.events.config.TestAwsConfig;
 import ch.batbern.events.config.TestSecurityConfig;
+import ch.batbern.events.watch.domain.SpeakerArrival;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -13,7 +14,14 @@ import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 
+import java.util.List;
+import java.util.Map;
+
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.notNullValue;
@@ -54,9 +62,28 @@ public class WatchSpeakerArrivalIntegrationTest extends AbstractIntegrationTest 
     @Autowired
     private ObjectMapper objectMapper;
 
+    @Autowired
+    private WatchSpeakerArrivalService arrivalService;
+
     @BeforeEach
     void setUp() {
         arrivalRepository.deleteAll();
+    }
+
+    @Test
+    @DisplayName("should_recordAgentActor_when_agentConfirmsArrivalThroughRestWithSub")
+    void should_recordAgentActor_when_agentConfirmsArrivalThroughRestWithSub() {
+        signInAgent("d0000000-0000-4000-8000-0000000000d2", ORGANIZER_USERNAME);
+        try {
+            // The REST path passes authentication.getName(): the token's sub
+            arrivalService.confirmArrival(EVENT_CODE, SPEAKER_USERNAME, "d0000000-0000-4000-8000-0000000000d2");
+        } finally {
+            SecurityContextHolder.clearContext();
+        }
+
+        assertThat(arrivalRepository.findByEventCode(EVENT_CODE)).singleElement()
+                .extracting(SpeakerArrival::getConfirmedByUsername)
+                .isEqualTo("agent:run-watch-1 for " + ORGANIZER_USERNAME);
     }
 
     // ============================================================================
@@ -175,4 +202,13 @@ public class WatchSpeakerArrivalIntegrationTest extends AbstractIntegrationTest 
     // See WatchSpeakerArrivalWebSocketIntegrationTest.java for implementation with
     // WebSocketStompClient + StompSessionHandlerAdapter.
     // ============================================================================
+
+    /** Agentic 0.2: signs in an agent token (act claim) for organizer {@code username}, sub {@code sub}. */
+    private static void signInAgent(String sub, String username) {
+        Jwt jwt = Jwt.withTokenValue("agent").header("alg", "RS256").subject(sub)
+                .claim("custom:username", username)
+                .claim("act", Map.of("run", "run-watch-1", "principal", "organizer-assistant"))
+                .build();
+        SecurityContextHolder.getContext().setAuthentication(new JwtAuthenticationToken(jwt, List.of()));
+    }
 }

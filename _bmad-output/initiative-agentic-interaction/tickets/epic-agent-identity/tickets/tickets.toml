@@ -1,0 +1,90 @@
+# Stories of epic-agent-identity, in build order. One PR, one production deploy, switch off (C2).
+# Approved by the owner 2026-11-21.
+
+[[entry]]
+id = 1
+type = "story"
+title = "One shared-kernel decoder accepts Cognito, Watch and agent tokens in every service"
+description = "Builds the shared decoder with token kinds enabled per service by configuration and adopts it in gateway, CUMS, EMS (incl. the STOMP interceptor) and PCS, removing the three per-service copies and the stray Cognito-only decoder in the gateway."
+verify = "Each service's production-chain tests and CUMS WatchPairingIntegrationTest pass unchanged; a test-key agent token is accepted by all four services; PCS refuses a Watch token."
+covers = ["R1"]
+after = []
+hitl = false
+risk = "high"
+
+[[entry]]
+id = 2
+type = "story"
+title = "Agent actions are recorded as agent:<run> for <username>"
+description = "Adds the shared actor resolver; the CUMS, EMS and PCS SecurityContextHelpers delegate to it, audit fields record the actor while ownership reads the username, bare system strings become system:<job>, and the module map gains the /internal/agent-tokens exception and the attribution convention."
+verify = "An integration test per service writes through an agent token and finds agent:<run> for <username> in the audit field while an ownership-guarded write by the same username still succeeds."
+covers = ["R2", "R8"]
+after = [1]
+hitl = false
+risk = "medium"
+
+[[entry]]
+id = 3
+type = "story"
+title = "The agent signing key is in production, private to CUMS"
+description = "A script generates the RSA pair, which the owner runs once; CDK grants only CUMS the private key from Secrets Manager, sets the public key as plain configuration on gateway, CUMS, EMS and PCS, and creates the EMS and agent-service caller secrets (CUMS reads both, EMS its own; agent-service's is wired in epic-agent-runtime)."
+verify = "The CDK tests show the private key on CUMS only, the public key on all four task definitions, and each caller secret only on CUMS and its caller; after deploy each service starts with the agent token kind enabled."
+covers = ["R3"]
+after = [1]
+hitl = true
+risk = "medium"
+
+[[entry]]
+id = 4
+type = "story"
+title = "The owner switches the agent and keeps the allowlist in CUMS"
+description = "A CUMS store and API for the switch (off by default), the allowlist by username and the organizer delegate, writable by organizers and refusing any token carrying act; the module map names the store beside EMS app_settings."
+verify = "Integration tests: an organizer changes each setting; a speaker gets 403; an agent token with an organizer's rights gets 403; a fresh database reads the switch as off."
+covers = ["R6", "R8"]
+after = [1, 2]
+hitl = false
+risk = "low"
+
+[[entry]]
+id = 5
+type = "story"
+title = "CUMS issues run grants and answers agent eligibility"
+description = "/internal/agent-grants for the three triggers (EMS handoff with EMS's caller secret, an organizer's forwarded live Cognito JWT, a delegate request with agent-service's caller secret for a linked run or a named job) and /internal/agent-eligibility, specified in cums-internal.openapi.yml first, grants stored hashed with at most 1 h lifetime."
+verify = "An integration test per path: a grant is issued for each trigger, and refused when the switch is off, the principal is not listed, the caller secret is missing or wrong, or the organizer JWT is absent; eligibility confirms a listed user and is refused otherwise."
+covers = ["R4", "R5"]
+after = [3, 4]
+hitl = false
+risk = "medium"
+
+[[entry]]
+id = 6
+type = "story"
+title = "CUMS mints delegated tokens that every service accepts"
+description = "/internal/agent-tokens signs RS256 tokens with story 3's private key, the fixed claims and at most 5 min lifetime, only against a valid grant from story 5; a minted token travels through the gateway to CUMS, EMS and PCS, which decode it with story 1's decoder and record the actor through story 2's resolver."
+verify = "Integration tests: a token minted against a valid grant is accepted by gateway, CUMS, EMS and PCS with the actor recorded; an expired or unknown grant, or the switch off, mints nothing."
+covers = ["R3", "R5"]
+after = [2, 3, 5]
+hitl = false
+risk = "high"
+
+[[entry]]
+id = 7
+type = "story"
+title = "Audience sends refuse agent tokens"
+description = "EMS MailComposerService send and retry and PCS sendPartnerMeetingInvite answer 403 to any token carrying act."
+verify = "Integration tests: each audience send with an agent token gets 403 and the SesRecorder records nothing; the same send with an organizer's Cognito token still goes out."
+covers = ["R7"]
+after = [1, 2]
+hitl = false
+risk = "low"
+
+[[entry]]
+id = 8
+type = "story"
+title = "Refactor sweep"
+description = "Cleanup the epic deferred, scoped at its start from the plans and review findings of stories 1-7; no new scope."
+verify = "make verify passes and every deferred finding is either fixed or recorded in the epic's Notes."
+covers = []
+after = [1, 2, 3, 4, 5, 6, 7]
+hitl = false
+risk = "low"

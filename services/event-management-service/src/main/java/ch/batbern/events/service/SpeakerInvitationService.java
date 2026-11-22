@@ -8,6 +8,7 @@ import ch.batbern.events.repository.OutreachHistoryRepository;
 import ch.batbern.events.security.SecurityContextHelper;
 import ch.batbern.events.service.workflow.TransitionPayload;
 import ch.batbern.shared.events.SpeakerInvitationSentEvent;
+import ch.batbern.shared.security.Actors;
 import ch.batbern.shared.types.SpeakerWorkflowState;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -34,6 +35,9 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @Slf4j
 public class SpeakerInvitationService {
+
+    /** Actor of an invitation sent without a signed-in user. */
+    private static final String INVITATION_JOB = "speaker-invitation";
 
     private final SecurityContextHelper securityContextHelper;
     private final ApplicationEventPublisher eventPublisher;
@@ -103,8 +107,8 @@ public class SpeakerInvitationService {
         //    email, sets invitedAt, and writes the speaker_status_history row.
         //    The slot-capacity gate (READY → INVITED) is enforced inside transition()
         //    and surfaces as SlotCapacityReachedException → HTTP 409 from GlobalExceptionHandler.
-        String currentUser = securityContextHelper.getCurrentUsername();
-        String auditActor = currentUser != null ? currentUser : "system";
+        String currentUser = securityContextHelper.getCurrentUsernameOrNull();
+        String auditActor = securityContextHelper.actorOr(INVITATION_JOB);
         TransitionPayload payload = TransitionPayload.builder()
                 .email(resolvedEmail)
                 .reason("Invitation email sent")
@@ -126,7 +130,7 @@ public class SpeakerInvitationService {
         outreach.setContactDate(updated.getInvitedAt() != null ? updated.getInvitedAt() : Instant.now());
         outreach.setContactMethod("email");
         outreach.setNotes("Automated invitation email sent via speaker portal");
-        outreach.setOrganizerUsername(currentUser != null ? currentUser : "system");
+        outreach.setOrganizerUsername(currentUser != null ? currentUser : Actors.system(INVITATION_JOB));
         outreachHistoryRepository.save(outreach);
         log.debug("Created outreach history for invitation to speaker {}", speakerId);
 

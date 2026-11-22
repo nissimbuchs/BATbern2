@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="de"><head><meta charset="utf-8"><title>BATbern61 Wanderer</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:1920px;height:1080px;overflow:hidden}
+body{background:#1f5aa6;transition:background 1.6s ease;font-family:"Liberation Sans","Helvetica Neue",Arial,sans-serif;color:#fff}
+svg{position:absolute;inset:0}
+.lbl{position:absolute;font-size:29px;white-space:nowrap;transform:translateX(-50%);transition:opacity .6s}
+.title{position:absolute;left:0;right:0;text-align:center;opacity:0;transition:opacity 1s}
+.title.on{opacity:1}
+#sub{position:absolute;left:50%;bottom:44px;transform:translateX(-50%);max-width:1500px;text-align:center;font-size:32px;line-height:1.35;
+  background:rgba(0,0,0,.25);padding:10px 26px;border-radius:10px;opacity:0;transition:opacity .3s}
+#sub.on{opacity:1}
+#wm{position:absolute;right:50px;top:40px;font-size:18px;opacity:.7}
+</style></head>
+<body>
+<svg viewBox="0 0 1920 1080"><g id="ink" fill="#fff"></g></svg>
+<div id="labels"></div>
+<div class="title" id="t1" style="top:150px"><div style="font-size:120px;font-weight:300;letter-spacing:2px">BATbern61</div><div style="font-size:40px;margin-top:14px;opacity:.9">5. März 2027 · FinOps im Spannungsfeld von Cloud und KI</div></div>
+<div class="title" id="t2" style="top:140px"><div style="font-size:72px;font-weight:300">Absicht rein. Bestätigung raus.</div><div style="font-size:34px;margin-top:16px;opacity:.9">BATbern61 · 5. März 2027 · Die Organisatoren entscheiden.</div></div>
+<div id="sub"></div>
+<div id="wm">Illustration · Beispieldaten</div>
+<script>
+// ======== timing (narration durations are injected per voice) ========
+const NARR_OLD=[14.602,19.148,9.326,10.266,13.009,8.751,11.154,13.322,15.151,8.594,14.916];
+const NARR=[12.525,15.324,8.187,8.606,11.032,7.184,9.749,11.172,12.828,7.464,12.828];
+const LEAD=1.0,TAIL=3.0;const starts=[];let acc=0;NARR.forEach(d=>{starts.push(acc);acc+=d+LEAD+TAIL});const TOTAL=acc+1.5;
+const G=790,W=1920,CX=1000,N=1700,SPEED=150,RIDE=520;
+const C={blue:'#1f5aa6',teal:'#137a7f',amber:'#c98a12',green:'#2c8a4b',orange:'#c9592a',slate:'#4a5b78',night:'#1b2f5c'};
+const KS=NARR.map((d,i)=>(d+LEAD+TAIL)/(NARR_OLD[i]+LEAD+TAIL));const S=(i,t)=>starts[i]+t*KS[i];
+// ======== geometry helpers ========
+const circ=(cx,cy,r,a0=Math.PI/2,turns=1,n=26)=>{const p=[];for(let i=0;i<=n;i++){const a=a0+turns*2*Math.PI*i/n;p.push([cx+r*Math.cos(a),cy+r*Math.sin(a)])}return p};
+const grow=(pts,g,base=G)=>pts.map(([x,y])=>[x,base-(base-y)*g]);
+function resample(pts,n){const L=[0];for(let i=1;i<pts.length;i++)L.push(L[i-1]+Math.hypot(pts[i][0]-pts[i-1][0],pts[i][1]-pts[i-1][1]));const tot=L[L.length-1]||1,out=[];let j=0;
+  for(let k=0;k<n;k++){const d=tot*k/(n-1);while(j<L.length-2&&L[j+1]<d)j++;const seg=L[j+1]-L[j]||1,t=(d-L[j])/seg;out.push([pts[j][0]+(pts[j+1][0]-pts[j][0])*t,pts[j][1]+(pts[j+1][1]-pts[j][1])*t])}return out}
+// quill: width from stroke direction against a fixed nib angle
+const NIB=-0.25;
+function quill(pts,wmin=3.2,wmax=13){const n=pts.length;if(n<2)return '';const w=new Array(n),nx=new Array(n),ny=new Array(n);
+  for(let i=0;i<n;i++){const a=pts[Math.max(0,i-1)],b=pts[Math.min(n-1,i+1)];let dx=b[0]-a[0],dy=b[1]-a[1];const l=Math.hypot(dx,dy)||1;dx/=l;dy/=l;nx[i]=-dy;ny[i]=dx;
+    const th=Math.atan2(dy,dx);w[i]=wmin+(wmax-wmin)*Math.abs(Math.sin(th-NIB))}
+  const ws=w.map((_,i)=>{let s=0,c=0;for(let k=-4;k<=4;k++){const j=i+k;if(j>=0&&j<n){s+=w[j];c++}}return s/c});
+  for(let i=0;i<n;i++){const e=Math.min(1,i/14,(n-1-i)/14);ws[i]*=0.35+0.65*e}
+  let L='',R='';for(let i=0;i<n;i++){const h=ws[i]/2;L+=(i?'L':'M')+(pts[i][0]+nx[i]*h).toFixed(1)+' '+(pts[i][1]+ny[i]*h).toFixed(1)}
+  for(let i=n-1;i>=0;i--){const h=ws[i]/2;R+='L'+(pts[i][0]-nx[i]*h).toFixed(1)+' '+(pts[i][1]-ny[i]*h).toFixed(1)}
+  return L+R+'Z'}
+// ======== motifs (attached: start and end on the ground) ========
+function walker(x,o){const dir=-1,ph=o.phase,step=o.walking?Math.sin(ph):0,lift=o.walking?Math.max(0,Math.cos(ph))*10:0;
+  const hy=G-95,ny=G-170,hc=G-200,r=27;const f1=x+28*step,f2=x-28*step;
+  const arm={down:[x+dir*30+ (o.walking?-16*step:0),G-108],up:[x+dir*36,G-238],point:[x+dir*80,G-175],hold:[x+dir*62,G-140],scratch:[x+dir*-6,G-232]}[o.arm||'down'];
+  const brim=[[x+dir*14,hc-24],[x+dir*44,hc-22],[x+dir*12,hc-30]];
+  return [[f2+18,G],[f2,G-lift*(step<0?1:0)],[x,hy],[x,ny+6],...circ(x,hc,r,Math.PI/2,0.62),...brim,...circ(x,hc,r,Math.PI/2+0.62*2*Math.PI,0.38),[x,ny+6],[x,ny+14],arm,[x,ny+14],[x,hy],[f1,G-lift*(step>0?1:0)],[f1-18,G]]}
+function envelopeStem(x,lift=160,w=150,h=95){const bx=x-w/2,by=G-lift;return [[x,G],[x,by],[bx,by],[bx,by-h],[x,by-h*0.42],[bx+w,by-h],[bx,by-h],[bx+w,by-h],[bx+w,by],[x,by],[x,G]]}
+function head(x){return [[x,G],[x,G-60],...circ(x,G-84,24,Math.PI/2,1,18),[x,G-60],[x,G]]}
+function gate(x,needle){const w=330,h=340,l=x-w/2,r=x+w/2,cy=G-h+w/2;const arc=circ(x,cy,w/2,Math.PI,0.5,30);
+  const gr=100,gy=G-70;const g=[];for(let i=0;i<=24;i++){const v=1-i/24,a=-Math.PI+v*Math.PI;g.push([x+gr*Math.cos(a),gy+gr*Math.sin(a)]);
+    if(Math.abs(v-0.62)<0.021){const a2=-Math.PI+0.62*Math.PI;g.push([x+(gr+30)*Math.cos(a2),gy+(gr+30)*Math.sin(a2)],[x+gr*Math.cos(a2),gy+gr*Math.sin(a2)])}}
+  const na=-Math.PI+needle*Math.PI;return [[l,G],[l,cy],...arc,[r,G],[x+gr,G],[x+gr,gy],...g,[x-gr,gy],[x,gy],[x+(gr-14)*Math.cos(na),gy+(gr-14)*Math.sin(na)],[x,gy],[x,G],[r,G]]}
+function check(x,k=0.7){return [[x,G],[x,G-60*k],[x-45*k,G-110*k],[x,G-60*k],[x+75*k,G-205*k],[x,G-60*k],[x,G]]}
+function qmark(x,k=1){const r=55*k,cy=G-230*k,arc=circ(x,cy,r,Math.PI,0.75,24);return [[x,G],[x,G-48*k],...circ(x,G-56*k,8*k,Math.PI/2,1,12),[x,G-64*k],[x,cy+r],...arc.slice().reverse(),...arc,[x,cy+r],[x,G-64*k],[x,G]]}
+function docStem(x,lift=150){const w=120,h=150,bx=x-w/2,by=G-lift;const p=[[x,G],[x,by],[bx,by],[bx,by-h],[bx+w-30,by-h],[bx+w,by-h+30],[bx+w-30,by-h+30],[bx+w-30,by-h],[bx+w,by-h+30],[bx+w,by]];
+  for(let i=0;i<3;i++){const y=by-28-i*30;p.push([bx+w,y],[bx+18,y],[bx+w,y])}p.push([bx+w,by],[x,by],[x,G]);return p}
+function monitor(x){const w=330,h=210,l=x-w/2,r=x+w/2,b=G-120;return [[x-60,G],[x,G-10],[x,b],[l,b],[l,b-h],[r,b-h],[r,b],[x,b],[x,G-10],[x+60,G]]}
+function sw(x,on){const w=260,h=120,l=x-w/2,r=x+w/2,y=G-60,kx=on?r-60:l+60;return [[l,G],[l,y],...circ(l+h/2,y-h/2,h/2,Math.PI/2,0.5,16),[r-h/2,y-h],...circ(r-h/2,y-h/2,h/2,-Math.PI/2,0.5,16),[kx,y],[kx,y-12],...circ(kx,y-h/2,46,Math.PI/2,1,22),[kx,y-12],[kx,y],[r,y],[r,G]]}
+function chart(x0,x1,k){const p=[],f60=t=>Math.pow(t,1.7)*330*k,f61=t=>Math.pow(t,1.5)*300*k;for(let i=0;i<=40;i++){const t=i/40;p.push([x0+t*(x1-x0),G-f60(t)])}p.push([x1,G]);
+  for(let i=40;i>=0;i--)p.push([x0+i/40*(x1-x0),G]);for(let i=0;i<=28;i++){const t=i/40;p.push([x0+t*(x1-x0),G-f61(t)])}p.push([x0+0.7*(x1-x0),G],[x1,G]);return p}
+function layers(x){const p=[[x,G],[x,G-30]];[[520,90,G-30],[400,90,G-140],[280,90,G-250]].forEach(([w,h,y])=>p.push([x,y],[x-w/2,y],[x-w/2,y-h],[x+w/2,y-h],[x+w/2,y],[x,y],[x,y-h]));p.push([x,G-30],[x,G]);return p}
+function bricks(x){const p=[[x,G]];for(let i=0;i<4;i++){const l=x+i*70;p.push([l,G],[l,G-55-(i%2)*30],[l+55,G-55-(i%2)*30],[l+55,G])}return p}
+function pond(x){const w=220;return [[x-w/2,G],...circ(x,G,w/2,Math.PI,-0.5,24).map(([a,b])=>[a,G+(G-b)*0.35])]}
+function hill(x,w=360,h=120){const p=[];for(let i=0;i<=24;i++){const t=i/24;p.push([x-w/2+t*w,G-h*Math.sin(Math.PI*t)])}return p}
+function person(x,arm='down'){return walker(x,{phase:0,walking:false,arm}).map(([a,b])=>[2*x-a,b])}
+// ======== separate strokes (not on the ground) ========
+const rect=(l,t,w,h)=>[[l,t],[l+w,t],[l+w,t+h],[l,t+h],[l,t]];
+function bubble(cx,cy,w,h,tail){const l=cx-w/2,t=cy-h/2;const p=[[tail[0],tail[1]],[cx+18,t+h],[l+w,t+h],[l+w,t],[l,t],[l,t+h],[cx-18,t+h],[tail[0],tail[1]]];return p}
+const lines=(cx,cy,w,k)=>{const out=[];for(let i=0;i<k;i++){const y=cy-(k-1)*18+i*36;out.push([[cx-w/2,y],[cx+w/2-(i%2)*50,y]])}return out};
+function qSmall(cx,cy,r=22){const arc=circ(cx,cy-r,r,Math.PI,0.75,18);return [[[cx,cy+r*1.6],...circ(cx,cy+r*1.9,4,Math.PI/2,1,8)],[...arc,[cx,cy+r*1.0]]]}
+function checkSmall(cx,cy,k=1){return [[cx-30*k,cy],[cx-6*k,cy+26*k],[cx+38*k,cy-34*k]]}
+function envelopeFree(cx,cy,w=120,h=76){const l=cx-w/2,t=cy-h/2;return [[[l,t],[l+w,t],[l+w,t+h],[l,t+h],[l,t]],[[l,t],[cx,t+h*0.55],[l+w,t]]]}
+function fishArc(x0,p){const t=Math.min(1,Math.max(0,p));const x=x0+t*160,y=G+10-Math.sin(Math.PI*t)*170,a=Math.atan2(-Math.cos(Math.PI*t)*170*Math.PI,160);
+  const body=[];for(let i=0;i<=16;i++){const u=i/16*2*Math.PI;body.push([Math.cos(u)*34,Math.sin(u)*12])}body.push([34,0],[50,-12],[50,12],[34,0]);
+  return body.map(([bx,by])=>[x+bx*Math.cos(a)-by*Math.sin(a),y+bx*Math.sin(a)+by*Math.cos(a)])}
+// ======== the script ========
+// motion: list of [absTime, mode] with mode walk|stop|ride
+const MOTION=[[0,'stop'],[S(0,4),'walk'],
+ [S(1,2.5),'stop'],[S(1,18.6),'walk'],
+ [S(2,1.2),'stop'],[S(2,6.2),'walk'],
+ [S(3,0.3),'ride'],[S(3,13.6),'stop'],
+ [S(4,0.3),'walk'],[S(4,7.3),'stop'],[S(4,15.5),'walk'],
+ [S(5,0.6),'stop'],
+ [S(6,0.2),'walk'],[S(6,1.6),'stop'],[S(6,10.5),'walk'],
+ [S(7,0.2),'walk'],[S(7,3.0),'stop'],
+ [S(8,0.2),'walk'],[S(8,1.2),'stop'],[S(8,15.5),'walk'],
+ [S(9,0.4),'stop'],
+ [S(10,0.3),'walk'],[S(10,3.0),'stop'],[S(10,13.6),'walk']];
+const DT=1/60,SCR=[];{let s=0,m=0;for(let t=0;t<=TOTAL+1;t+=DT){while(m<MOTION.length-1&&MOTION[m+1][0]<=t)m++;const mode=MOTION[m][1];s+=(mode==='walk'?SPEED:mode==='ride'?RIDE:0)*DT;SCR.push(s)}}
+const scroll=t=>SCR[Math.max(0,Math.min(SCR.length-1,Math.round(t/DT)))];
+const modeAt=t=>{let m=MOTION[0][1];for(const [a,b] of MOTION)if(a<=t)m=b;return m};
+// attached objects: {t0,t1,sx,fn,label,ly}
+const OBJ=[],SEP=[],WL=[],BG=[],ARM=[];
+const att=(i,t0,sx,fn,label,ly,t1)=>OBJ.push({t0:S(i,t0),t1:t1==null?null:S(i,t1),sx,fn,label,ly});
+const sep=(i,t0,t1,fn)=>SEP.push({t0:S(i,t0),t1:S(i,t1),fn});
+const wl=(i,t,txt)=>WL.push([S(i,t),txt]);const bg=(i,t,c)=>BG.push([S(i,t),c]);const arm=(i,t,a)=>ARM.push([S(i,t),a]);
+// S1 title, a pond with a jumping fish
+bg(0,0,C.blue);wl(0,0,'');arm(0,0,'down');
+att(0,8.5,560,x=>pond(x),'',0);sep(0,10.2,11.8,(t,p,sc)=>[fishArc(500+sc,p)]);
+// S2 morning brief
+wl(1,0,'Nissim');
+att(1,2.6,720,x=>envelopeStem(x),'Morgenbrief, 07:30',-310,6.0);
+sep(1,6.2,13.8,(t,p)=>{const b=bubble(700,360,380,190,[760,520]);return [b,...lines(700,360,300,3)]});
+SEP.push({t0:S(1,6.2),t1:S(1,13.8),fn:()=>[],label:['Thema publiziert · 2 Plätze offen',700,236]});
+att(1,10,520,x=>head(x),'',0,18.6);att(1,10.4,620,x=>head(x),'aus 60 Events',-150,18.6);att(1,10.8,720,x=>head(x),'',0,18.6);
+arm(1,14.3,'point');sep(1,14.5,18.8,()=>[bubble(820,420,330,110,[930,560])]);SEP.push({t0:S(1,14.5),t1:S(1,18.8),fn:()=>[],label:['«Lade Andy ein.»',820,402]});
+sep(1,17.6,19.6,(t,p)=>{const x=760-p*900,y=520-Math.sin(p*Math.PI)*160;return envelopeFree(x,y)});
+arm(1,18.6,'down');
+// S3 gate
+wl(2,0,'Agent');
+OBJ.push({t0:S(2,1.2),t1:null,sx:690,fn:(x,t)=>gate(x,Math.min(0.85,0.12+Math.max(0,(t-S(2,2.6))/2.2)*0.73)),label:'verbindlich: Einladung',ly:-375});
+bg(2,5.0,C.green);SEP.push({t0:S(2,5.0),t1:S(2,10),fn:()=>[],label:['frühere Fälle: sicher genug, Agent handelt selbst',960,250]});
+// S4 Andy on the train: window frame, landscape rides by
+wl(3,0,'Andy im Zug');bg(3,0,C.teal);
+sep(3,0.2,13.8,()=>[rect(CX-260,G-330,520,330)]);
+[300,900,1500,2100,2700,3300].forEach((o,k)=>att(3,0.3,-o,x=>hill(x,320+(k%2)*120,90+(k%3)*30),'',0));
+att(3,0.3,-3900,x=>pond(x),'',0);
+sep(3,1.4,4.8,(t,p)=>envelopeFree(560+Math.min(1,p*3)*0,420));
+sep(3,5.0,8.5,()=>{const b=bubble(620,380,330,170,[760,560]);return [b,...lines(620,380,240,3),rect(500,460,90,62)]});
+SEP.push({t0:S(3,5.0),t1:S(3,8.5),fn:()=>[],label:['Zusage · Titel · Abstract · Foto',620,268]});
+sep(3,8.7,13.6,()=>{const b=bubble(640,390,200,170,[760,560]);return [b,...qSmall(640,380)]});
+SEP.push({t0:S(3,8.7),t1:S(3,13.6),fn:()=>[],label:['Darf meine Kollegin mitmachen?',640,276]});
+// S5 agent works
+wl(4,0,'Agent');bg(4,0,C.teal);
+att(4,1.4,640,x=>check(x),'Zusage',60);att(4,3.6,640,x=>check(x),'Titel & Abstract',60);att(4,5.6,640,x=>check(x),'Foto',60);
+att(4,7.5,700,x=>qmark(x),'Co-Speakerin?',-330);bg(4,7.8,C.amber);arm(4,8.2,'scratch');arm(4,15.4,'down');
+SEP.push({t0:S(4,9.5),t1:S(4,16),fn:()=>[],label:['unsicher, also fragt er',960,250]});
+// S6 card on the phone
+wl(5,0,'Andy');bg(5,0,C.amber);arm(5,0.6,'hold');
+sep(5,0.8,12.6,(t)=>{const ok=t>S(5,4.8);const l=780,tp=G-360;const out=[rect(l,tp,170,270),rect(l+20,tp+30,130,170)];
+  if(!ok){out.push(circ(865,tp+85,22,Math.PI/2,1,16),[[l+40,tp+150],[l+130,tp+150]],[[l+40,tp+175],[l+110,tp+175]])}else out.push(checkSmall(865,tp+115,1.2));return out});
+arm(5,4.6,'point');bg(5,4.9,C.green);
+SEP.push({t0:S(5,0.8),t1:S(5,4.8),fn:()=>[],label:['So erscheinst du auf batbern.ch',865,G-390]});SEP.push({t0:S(5,4.9),t1:S(5,12.6),fn:()=>[],label:['bestätigt, ein Tipp',865,G-390]});
+// S7 console
+wl(6,0,'Organisatorin');bg(6,0,C.amber);arm(6,0,'down');
+OBJ.push({t0:S(6,1.6),t1:null,sx:660,fn:(x,t)=>monitor(x),label:'',ly:0});
+sep(6,2.2,14,(t)=>{const sx=660+(scroll(t)-scroll(S(6,1.6)));const top=G-330;const ok=t>S(6,6.4);const o=[];if(!ok)o.push(...qSmall(sx,top+95,24));else o.push(checkSmall(sx,top+110,1.3));
+  if(t>S(6,3.6))o.push([[sx-140,top+170],[sx-60,top+170]],[[sx-140,top+188],[sx-80,top+188]]);return o});
+SEP.push({t0:S(6,2.2),t1:S(6,6.4),fn:()=>[],label:['offene Frage, frühere Fälle daneben',660,G-370]});
+arm(6,6.2,'up');bg(6,6.5,C.green);SEP.push({t0:S(6,6.5),t1:S(6,10.5),fn:()=>[],label:['genehmigt, mit eigenem Login',660,G-370]});arm(6,10.3,'down');
+// S8 late speaker
+wl(7,0,'Nissim, als Speaker');bg(7,0,C.orange);SEP.push({t0:S(7,0),t1:S(7,6),fn:()=>[],label:['23. Februar 2027',960,200]});
+sep(7,3.2,6.4,(t,p)=>envelopeFree(160+Math.min(1,p*2)*560,470));SEP.push({t0:S(7,3.6),t1:S(7,6.4),fn:()=>[],label:['Erinnerung: Folien fehlen',720,410]});
+arm(7,6.3,'hold');att(7,6.5,760,x=>docStem(x),'folien.docx',-340);
+sep(7,9.6,17,()=>{const b=bubble(520,390,200,170,[640,560]);return [b,...qSmall(520,380)]});SEP.push({t0:S(7,9.6),t1:S(7,17),fn:()=>[],label:['bitte als PDF?',520,276]});bg(7,9.8,C.amber);
+// S9 chat and a generated view
+wl(8,0,'Andy, Organisator');bg(8,0,C.blue);arm(8,0,'down');
+sep(8,1.2,5.8,()=>{const b=bubble(760,380,220,170,[880,560]);return [b,...qSmall(760,370)]});SEP.push({t0:S(8,1.2),t1:S(8,5.8),fn:()=>[],label:['Anmeldungen vs. BATbern60?',760,266]});
+OBJ.push({t0:S(8,6),t1:null,sx:-80,fn:(x,t)=>chart(x,x+600,Math.min(1,(t-S(8,6))/2)),label:'',ly:0});
+SEP.push({t0:S(8,7),t1:S(8,15.5),fn:()=>[],label:['BATbern60 · BATbern61 · Beispieldaten',300,G-380]});
+att(8,11,600,x=>bricks(x),'geprüfte Bausteine',60);
+// S10 the switch
+wl(9,0,'Organisatoren');bg(9,0,'#b8342c');
+OBJ.push({t0:S(9,0.5),t1:null,sx:700,fn:(x,t)=>sw(x,t<S(9,3.0)),label:'',ly:0});
+SEP.push({t0:S(9,0.5),t1:S(9,3.0),fn:()=>[],label:['Agent aktiv',700,G-235]});SEP.push({t0:S(9,3.0),t1:S(9,12.6),fn:()=>[],label:['Agent aus',700,G-235]});
+arm(9,2.8,'point');bg(9,3.1,C.slate);arm(9,4.2,'down');
+for(let k=0;k<3;k++)sep(9,5.6+k*0.7,8.6+k*0.7,(t,p)=>envelopeFree(100+p*780,420+k*40));SEP.push({t0:S(9,5.6),t1:S(9,11),fn:()=>[],label:['jede Mail direkt an die Organisatoren',960,250]});
+// S11 closing
+wl(10,0,'');bg(10,0,C.night);arm(10,0,'down');
+att(10,2.4,620,x=>layers(x),'',0);
+SEP.push({t0:S(10,3.4),t1:S(10,11.3),fn:()=>[],label:['Ränder · Agent · Kern',620,G-330]});
+att(10,8.2,110,x=>person(x),'',0);att(10,8.5,200,x=>person(x,'up'),'',0);att(10,8.8,290,x=>person(x),'',0);arm(10,13.6,'up');
+// objects leave at the end of their scene
+OBJ.forEach(o=>{if(o.t1==null){let i=0;for(let k=0;k<starts.length;k++)if(starts[k]<=o.t0)i=k;o.t1=starts[i]+NARR[i]+LEAD+TAIL-0.8}});
+// ======== render ========
+const ink=document.getElementById('ink'),labels=document.getElementById('labels'),sub=document.getElementById('sub');
+
+const ease=t=>t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2;
+const lastOf=(arr,t,def)=>{let v=def;for(const [a,b] of arr)if(a<=t)v=b;return v};
+let lastBg='';const EVENTS=OBJ.map(o=>o.t0).concat(SEP.filter(s=>!s.label).map(s=>s.t0));window.FILM={starts,TOTAL,EVENTS};
+function frame(now){const sc=scroll(now),mode=modeAt(now);
+  const bgc=lastOf(BG,now,C.blue);if(bgc!==lastBg){document.body.style.background=bgc;lastBg=bgc}
+  // attached objects
+  const segs=[];const labs=[];
+  OBJ.forEach(o=>{if(now<o.t0)return;let g=ease(Math.min(1,(now-o.t0)/0.9));if(o.t1!=null&&now>o.t1)g*=1-ease(Math.min(1,(now-o.t1)/0.6));if(g<=0.001)return;
+    const x=o.sx+(sc-scroll(o.t0));if(x<-700||x>2600)return;const pts=grow(o.fn(x,now),g);segs.push(pts);if(o.label&&g>0.5)labs.push([x,G+(o.ly>0?o.ly:o.ly),o.label,g])});
+  const showWalker=now>S(0,2.6);const wg=ease(Math.min(1,Math.max(0,(now-S(0,2.6))/1.0)));
+  if(showWalker){const ph=sc/28;segs.push(grow(walker(CX,{phase:ph,walking:mode==='walk',arm:lastOf(ARM,now,'down')}),wg))}
+  segs.sort((a,b)=>a[0][0]-b[0][0]);let pts=[[-20,G]];segs.forEach(s=>pts.push(...s));pts.push([W+20,G]);
+  let d=quill(resample(pts,N));
+  // separate strokes
+  SEP.forEach(s=>{if(now<s.t0||now>s.t1+0.4)return;const p=(now-s.t0)/(s.t1-s.t0);if(s.label){if(now<s.t1)labs.push([s.label[1],s.label[2],s.label[0],1]);return}
+    const res=s.fn(now,Math.min(1,p),sc-scroll(s.t0));const strokes=Array.isArray(res[0][0])?res:[res];strokes.forEach(st=>{if(st.length>1)d+=quill(resample(st,Math.max(40,Math.round(st.length*6))),2.6,10)})});
+  ink.innerHTML='<path d="'+d+'"/>';
+  // pen draw-on at the start
+  if(now<2.5){const k=ease(Math.max(0,now)/2.5);ink.setAttribute('clip-path','url(#cp)');document.getElementById('cpr').setAttribute('width',W*k)}else ink.removeAttribute('clip-path');
+  // labels
+  labels.innerHTML='';labs.forEach(([x,y,t,o])=>{const e=document.createElement('div');e.className='lbl';e.style.left=x+'px';e.style.top=(y-18)+'px';e.style.opacity=o;e.textContent=t;labels.appendChild(e)});
+  const wlt=lastOf(WL,now,'');if(showWalker&&wlt){const e=document.createElement('div');e.className='lbl';e.style.left=CX+'px';e.style.top=(G+32)+'px';e.textContent=wlt;labels.appendChild(e)}
+  document.getElementById('t1').classList.toggle('on',now>1.2&&now<starts[1]-0.5);
+  document.getElementById('t2').classList.toggle('on',now>S(10,11.5));
+  let shown='';for(let i=0;i<NARR.length;i++){const ns=starts[i]+LEAD,ne=ns+NARR[i];if(now>=ns&&now<ne+0.4){const parts=window.TEXT[i].split('|');const tot=parts.reduce((a,b)=>a+b.length,0);let c=ns;for(const q of parts){const dd=NARR[i]*q.length/tot;if(now<c+dd||q===parts[parts.length-1]){shown=q;break}c+=dd}}}
+  if(shown){sub.textContent=shown;sub.classList.add('on')}else sub.classList.remove('on');}
+document.querySelector('svg').insertAdjacentHTML('afterbegin','<defs><clipPath id="cp"><rect id="cpr" x="0" y="0" width="0" height="1080"/></clipPath></defs>');
+function tick(t0){const now=(performance.now()-t0)/1000;frame(now);if(now<TOTAL)requestAnimationFrame(()=>tick(t0));else window.FILM_DONE=true}
+window.startFilm=(off=0)=>{const t0=performance.now()-off*1000;requestAnimationFrame(()=>tick(t0))};
+window.frameAt=frame;
+</script>
+<script>
+window.TEXT=[
+"BATbern61, am 5. März 2027. Thema: FinOps im Spannungsfeld von Cloud und KI.|So könnte die Vorbereitung aussehen, wenn BATbern nicht mehr bedient wird, sondern mitarbeitet.",
+"Montag, halb acht. Kein Login, kein Dashboard.|Nissim erhält den Morgenbrief des Agenten: Das Thema ist publiziert, zwei Speaker-Plätze sind offen,|und aus sechzig Events im Archiv schlägt der Agent passende Namen vor.|Nissim antwortet mit einem Satz: «Lade Andy ein.»",
+"Eine Einladung verpflichtet BATbern.|Der Agent prüft frühere Fälle, ist sich sicher genug und handelt selbst.|Jeder Schritt landet im Entscheidungslog.",
+"Andy sitzt im Zug und antwortet einfach auf die Mail:|Zusage, Titel, ein kurzes Abstract, ein Foto im Anhang.|Und eine Frage: Darf meine Kollegin mitmachen?",
+"Titel, Abstract und Foto erledigt der Agent sofort, als Andy, mit Andys Rechten.|Eine zusätzliche Speakerin aber ist eine Zusage im Namen von BATbern.|Hier ist er unsicher. Also fragt er.",
+"Andy bekommt eine Karte: So erscheinst du auf batbern.ch.|Ein Tipp, bestätigt. Keine Navigation, kein Portal.",
+"Bei den Organisatoren erscheint die offene Frage in der Konsole, mit den früheren Fällen daneben.|Ein Klick auf «Genehmigen».|Ausgeführt mit dem Login der Organisatorin, nicht mit dem des Agenten.",
+"Zehn Tage vor dem Event. Nissim, diesmal als Speaker, hat seine Folien noch nicht geschickt.|Der Agent erinnert ihn. Nissim schickt eine Word-Datei statt eines PDF.|Der Agent merkt es und fragt freundlich nach.",
+"Im Chat fragt Andy, jetzt als Organisator: Wie stehen die Anmeldungen im Vergleich zu BATbern60?|Der Agent baut die Ansicht für genau diese Frage. Programmiert war sie nicht.|Jedes Element stammt aus einem geprüften Baukasten.",
+"Und wenn etwas schiefläuft? Ein Schalter, und der Agent schweigt.|Jede Mail geht wieder direkt an die Organisatoren. Die Kontrolle bleibt bei uns.",
+"Absicht rein, Bestätigung raus.|Der Kern bleibt, wie er ist: deterministisch und nachvollziehbar. Der Agent arbeitet an den Rändern.|Ob das die Zukunft ist? Das entscheiden wir Organisatoren. An BATbern61."];
+</script>
+</body></html>

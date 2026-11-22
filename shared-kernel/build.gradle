@@ -137,6 +137,9 @@ dependencies {
     testFixturesImplementation 'jakarta.mail:jakarta.mail-api'
     testFixturesRuntimeOnly 'org.eclipse.angus:angus-mail'
     testFixturesImplementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    // Agentic interaction 0.1: TestTokens signs agent (RS256) and Watch (HS256) test tokens.
+    // oauth2-jose brings Nimbus (no BOM entry of its own); every consumer has it already.
+    testFixturesImplementation 'org.springframework.security:spring-security-oauth2-jose'
 }
 
 // Apply Trivy security scanning

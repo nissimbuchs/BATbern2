@@ -236,6 +236,37 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * Agent identity, stories 5 and 6: an agent grant, eligibility or token request refused, with its
+     * status (400, 401, 403, 503) and the reason as {@code details.code}. The message never holds a
+     * secret.
+     */
+    @ExceptionHandler(AgentRequestRefusedException.class)
+    public ResponseEntity<ErrorResponse> handleAgentRequestRefusedException(
+            AgentRequestRefusedException ex,
+            HttpServletRequest request) {
+        log.warn("Agent request refused: {} {} {}", ex.getStatus().value(), ex.getCode(), request.getRequestURI());
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .path(request.getRequestURI())
+                .status(ex.getStatus().value())
+                .error(ex.getStatus().getReasonPhrase())
+                .message(ex.getMessage())
+                .correlationId(CorrelationIdGenerator.current())
+                .severity(agentRefusalSeverity(ex.getStatus()))
+                .details(Map.of("code", ex.getCode()))
+                .build();
+        return ResponseEntity.status(ex.getStatus()).body(error);
+    }
+
+    /** 503 (no signing key: a configuration fault) HIGH, 401 MEDIUM, policy refusals LOW. */
+    private static String agentRefusalSeverity(HttpStatus status) {
+        if (status.is5xxServerError()) {
+            return "HIGH";
+        }
+        return status == HttpStatus.UNAUTHORIZED ? "MEDIUM" : "LOW";
+    }
+
+    /**
      * #1244 — a copy of event mails was requested for an unconfirmed additional address.
      * Maps to 409 with errorCode {@code NOT_VERIFIED}.
      */

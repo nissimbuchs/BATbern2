@@ -5,6 +5,7 @@ import ch.batbern.events.exception.SessionNotFoundException;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.events.service.EventWorkflowStateMachine;
+import ch.batbern.shared.security.Actors;
 import ch.batbern.shared.types.EventWorkflowState;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -72,7 +73,7 @@ public class WatchSessionService {
 
         session.setActualEndTime(actualEndTime);
         session.setOverrunMinutes((int) overrunMinutes);
-        session.setCompletedByUsername(completedByUsername);
+        session.setCompletedByUsername(Actors.forUsername(completedByUsername));
         sessionRepository.save(session);
 
         // Auto-start next session: set actualStartTime so the Watch can show the "Delayed" button

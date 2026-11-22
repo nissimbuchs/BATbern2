@@ -5,6 +5,7 @@ import ch.batbern.companyuser.domain.CompanyAlias;
 import ch.batbern.companyuser.exception.CompanyNotFoundException;
 import ch.batbern.companyuser.repository.CompanyAliasRepository;
 import ch.batbern.companyuser.repository.CompanyRepository;
+import ch.batbern.shared.security.Actors;
 import ch.batbern.shared.service.SlugGenerationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -61,7 +62,7 @@ public class CompanyAliasService {
         alias.setAliasDisplayName(aliasDisplayName == null || aliasDisplayName.isBlank()
                 ? null : aliasDisplayName.strip());
         alias.setReason(reason);
-        alias.setCreatedBy(performedBy);
+        alias.setCreatedBy(Actors.forUsername(performedBy));
         alias.setCreatedAt(Instant.now());
         CompanyAlias saved = aliasRepository.save(alias);
         log.info("Company alias {} ({}) now leads to {} ({}, by {})", aliasKey, saved.getAliasDisplayName(),

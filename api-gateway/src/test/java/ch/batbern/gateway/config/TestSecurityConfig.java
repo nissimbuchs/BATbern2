@@ -10,12 +10,6 @@ import org.springframework.security.oauth2.jwt.JwtException;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
-import software.amazon.awssdk.services.cognitoidentityprovider.CognitoIdentityProviderClient;
-import software.amazon.awssdk.services.cognitoidentityprovider.model.CodeDeliveryDetailsType;
-import software.amazon.awssdk.services.cognitoidentityprovider.model.DeliveryMediumType;
-import software.amazon.awssdk.services.cognitoidentityprovider.model.ForgotPasswordRequest;
-import software.amazon.awssdk.services.cognitoidentityprovider.model.ForgotPasswordResponse;
-import software.amazon.awssdk.services.cognitoidentityprovider.model.UserNotFoundException;
 import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsClient;
 import software.amazon.awssdk.services.cloudwatchlogs.model.CreateLogGroupRequest;
 import software.amazon.awssdk.services.cloudwatchlogs.model.CreateLogGroupResponse;
@@ -85,40 +79,6 @@ public class TestSecurityConfig {
         return StaticCredentialsProvider.create(
                 AwsBasicCredentials.create("test-access-key", "test-secret-key")
         );
-    }
-
-    /**
-     * Mock Cognito Identity Provider Client for tests
-     * Uses Mockito to prevent AWS network calls and control responses
-     * Fixes QA issue TEST-001: Backend test coverage at 40% due to AWS SDK mocking issues
-     */
-    @Bean
-    @Primary
-    public CognitoIdentityProviderClient mockCognitoClient() {
-        CognitoIdentityProviderClient mockClient = org.mockito.Mockito.mock(CognitoIdentityProviderClient.class);
-
-        // Mock successful forgotPassword response
-        ForgotPasswordResponse successResponse = ForgotPasswordResponse.builder()
-                .codeDeliveryDetails(CodeDeliveryDetailsType.builder()
-                        .destination("t***@example.com")
-                        .deliveryMedium(DeliveryMediumType.EMAIL)
-                        .attributeName("email")
-                        .build())
-                .build();
-
-        org.mockito.Mockito.when(mockClient.forgotPassword(
-                org.mockito.ArgumentMatchers.any(ForgotPasswordRequest.class)))
-                .thenAnswer(invocation -> {
-                    ForgotPasswordRequest request = invocation.getArgument(0);
-                    if (request.username().contains("nonexistent")) {
-                        throw UserNotFoundException.builder()
-                                .message("User not found")
-                                .build();
-                    }
-                    return successResponse;
-                });
-
-        return mockClient;
     }
 
     /**

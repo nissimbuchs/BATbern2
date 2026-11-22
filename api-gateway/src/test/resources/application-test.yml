@@ -47,13 +47,6 @@ app:
   frontend:
     url: http://localhost:3000
 
-# Cognito Configuration
-cognito:
-  userPoolId: eu-central-1_TestPool
-  region: eu-central-1
-  userPoolClientId: test-client-id
-  jwksUrl: https://cognito-idp.eu-central-1.amazonaws.com/eu-central-1_TestPool/.well-known/jwks.json
-
 # Gateway Configuration
 gateway:
   routes:

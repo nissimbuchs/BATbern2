@@ -19,6 +19,7 @@ import ch.batbern.events.repository.NewsletterSubscriberRepository;
 import ch.batbern.events.repository.RegistrationRepository;
 import ch.batbern.shared.mail.MailContext;
 import ch.batbern.shared.mail.MailTrigger;
+import ch.batbern.shared.security.AudienceGuard;
 import ch.batbern.shared.service.EmailService;
 import ch.batbern.shared.utils.LoggingUtils;
 import lombok.RequiredArgsConstructor;
@@ -144,6 +145,7 @@ public class SlidesOnlineEmailService {
      * @throws SlidesOnlineAlreadySentException (409) if such a send already completed for the event
      */
     public QueuedSend sendRegistrantNotice(Event event, String templateKey, String sentByUsername) {
+        AudienceGuard.refuseAgentTokens("registrant notice");
         requireRegistrantNoticeTemplate(templateKey);
         UUID eventId = event.getId();
 
@@ -192,6 +194,7 @@ public class SlidesOnlineEmailService {
      */
     public QueuedSend sendRegistrantOwnText(Event event, String ownSubject, String ownBodyHtml,
             String locale, String sentByUsername, List<String> statuses) {
+        AudienceGuard.refuseAgentTokens("registrant notice");
         UUID eventId = event.getId();
         sendRepository.findFirstByEventIdAndTemplateKeyAndStatus(eventId, OwnText.REGISTRANTS_ROW_KEY,
                 STATUS_IN_PROGRESS).ifPresent(active -> {

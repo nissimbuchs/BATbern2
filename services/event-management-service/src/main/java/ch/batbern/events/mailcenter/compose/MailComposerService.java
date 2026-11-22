@@ -16,6 +16,7 @@ import ch.batbern.shared.exception.NotFoundException;
 import ch.batbern.shared.mail.MailContext;
 import ch.batbern.shared.mail.MailRedaction;
 import ch.batbern.shared.mail.MailTrigger;
+import ch.batbern.shared.security.AudienceGuard;
 import ch.batbern.shared.service.EmailService;
 import ch.batbern.shared.utils.LoggingUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -162,6 +163,7 @@ public class MailComposerService {
     }
 
     public SendResult send(String eventCode, ComposeRequest request, Target target, String organizerUsername) {
+        AudienceGuard.refuseAgentTokens("mail-center send");
         Prepared prepared = prepare(eventCode, request, organizerUsername);
         if (request.ownText()) {
             // AC2/AC10: the backend refuses what the preview marked red, whatever the frontend did.
@@ -242,6 +244,7 @@ public class MailComposerService {
      * (IllegalStateException) when it completed or a send is running.
      */
     public SendResult retry(String eventCode, String mailKey, String organizerUsername) {
+        AudienceGuard.refuseAgentTokens("mail-center retry");
         Event event = loadEvent(eventCode);
         MailMessageQueryService.MailEntry entry = queries.get(eventCode, mailKey)
                 .orElseThrow(() -> new NotFoundException("Mail not found: " + mailKey))

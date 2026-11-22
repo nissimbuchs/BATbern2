@@ -1,5 +1,7 @@
 package ch.batbern.events.security;
 
+import ch.batbern.events.config.SecurityConfig;
+import ch.batbern.shared.test.security.TestTokens;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -11,6 +13,7 @@ import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.simp.stomp.StompCommand;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.messaging.support.MessageBuilder;
+import org.springframework.mock.env.MockEnvironment;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtException;
@@ -28,6 +31,8 @@ import static org.mockito.Mockito.when;
  */
 @ExtendWith(MockitoExtension.class)
 class JwtStompInterceptorTest {
+
+    private static final String WATCH_SECRET = "stomp-test-watch-secret-at-least-32-bytes";
 
     @Mock
     private JwtDecoder jwtDecoder;
@@ -109,6 +114,52 @@ class JwtStompInterceptorTest {
                 .createMessage(new byte[0], accessor.getMessageHeaders());
 
         assertThatNoException().isThrownBy(() -> interceptor.preSend(message, channel));
+    }
+
+    @Test
+    @DisplayName("should_acceptAgentConnect_when_realSharedDecoderVerifiesAgentKey")
+    void should_acceptAgentConnect_when_realSharedDecoderVerifiesAgentKey() {
+        // Agentic interaction 0.1: EMS's real decoder, not the mock; agent kind on via the test key.
+        JwtStompInterceptor real = new JwtStompInterceptor(realSharedDecoder());
+        String token = TestTokens.agentToken("agent-sub-1", "agent.planner", "run-1", "organizer");
+
+        Message<?> result = real.preSend(buildStompConnectMessage("Bearer " + token), channel);
+
+        assertThat(result).isNotNull();
+        // Agentic interaction 0.2: an agent is named after its actor, not its sub.
+        assertThat(StompHeaderAccessor.wrap(result).getUser().getName()).isEqualTo("agent:run-1 for agent.planner");
+    }
+
+    @Test
+    @DisplayName("should_keepSubAsPrincipalName_when_realWatchTokenConnects")
+    void should_keepSubAsPrincipalName_when_realWatchTokenConnects() {
+        JwtStompInterceptor real = new JwtStompInterceptor(realSharedDecoder());
+        String token = TestTokens.watchToken(WATCH_SECRET, "marco.organizer", "ORGANIZER");
+
+        Message<?> result = real.preSend(buildStompConnectMessage("Bearer " + token), channel);
+
+        assertThat(result).isNotNull();
+        assertThat(StompHeaderAccessor.wrap(result).getUser().getName()).isEqualTo("marco.organizer");
+    }
+
+    @Test
+    @DisplayName("should_rejectAgentConnect_when_signedWithOtherKey")
+    void should_rejectAgentConnect_when_signedWithOtherKey() {
+        JwtStompInterceptor real = new JwtStompInterceptor(realSharedDecoder());
+        String token = TestTokens.agent("agent-sub-1", "agent.planner", "run-1", "marco.organizer")
+                .signedWith(TestTokens.newRsaKeyPair()).build();
+
+        assertThat(real.preSend(buildStompConnectMessage("Bearer " + token), channel)).isNull();
+    }
+
+    /** The decoder bean EMS's {@link SecurityConfig} builds, with the test agent key configured. */
+    private static JwtDecoder realSharedDecoder() {
+        MockEnvironment environment = new MockEnvironment()
+                .withProperty("spring.security.oauth2.resourceserver.jwt.jwk-set-uri",
+                        "https://jwks.example.invalid/keys")
+                .withProperty("agent.jwt.public-key", TestTokens.agentPublicKeyPem())
+                .withProperty("watch.jwt.secret", WATCH_SECRET);
+        return new SecurityConfig().jwtDecoder(environment);
     }
 
     // MARK: - Helpers

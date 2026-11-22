@@ -110,8 +110,7 @@ public class PublishingService {
 
         if (movesWorkflow) {
             EventWorkflowState previousState = event.getWorkflowState();
-            String actor = securityContextHelper.getCurrentUsernameOrNull();
-            String username = actor != null ? actor : "system";
+            String username = securityContextHelper.actorOr("agenda-publishing");
             event = eventWorkflowStateMachine.transitionToState(
                     eventCode,
                     EventWorkflowState.AGENDA_PUBLISHED,

@@ -54,7 +54,7 @@ public class InternalCompanyReferenceController {
     public record MergeRequest(
             @NotBlank @Size(max = 255) String source,
             @NotBlank @Pattern(regexp = "^[a-zA-Z0-9]{1,12}$") String target,
-            @NotBlank @Size(max = 100) String performedBy,
+            @NotBlank @Size(max = 255) String performedBy,
             @NotBlank @Pattern(regexp = "MERGE|RENAME") String trigger) {
     }
 

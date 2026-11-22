@@ -1,5 +1,6 @@
 package ch.batbern.events.security;
 
+import ch.batbern.shared.security.Actors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.Message;
@@ -21,7 +22,8 @@ import java.util.List;
  * W4.1 Task 7: Authenticates Watch organizer clients connecting to the raw WebSocket endpoint.
  *
  * On CONNECT: extract Authorization header, validate JWT via existing JwtDecoder bean,
- * then set Principal on the STOMP session for use in @MessageMapping handlers.
+ * then set Principal on the STOMP session for use in @MessageMapping handlers. The principal name is
+ * the token's {@code sub}, or for an agent token its actor ({@code agent:<run> for <username>}).
  * Rejects invalid/expired tokens by returning null (suppresses the message).
  */
 @Slf4j
@@ -52,7 +54,8 @@ public class JwtStompInterceptor implements ChannelInterceptor {
         String token = authHeader.substring(7);
         try {
             Jwt jwt = jwtDecoder.decode(token);
-            String username = jwt.getSubject();
+            // An agent is named after its actor (agent:<run> for <username>); Cognito and Watch keep the sub.
+            String username = Actors.agentAct(jwt).isPresent() ? Actors.forJwt(jwt) : jwt.getSubject();
             UsernamePasswordAuthenticationToken principal =
                     new UsernamePasswordAuthenticationToken(username, null, List.of());
             principal.setDetails(jwt); // expose full claims for @MessageMapping handlers

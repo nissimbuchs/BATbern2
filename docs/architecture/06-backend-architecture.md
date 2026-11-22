@@ -103,13 +103,145 @@ sequenceDiagram
     end
 ```
 
-Facts behind the diagram: `api-gateway/.../config/SecurityConfig.java` (`oauth2ResourceServer`,
-composite decoder for Cognito and Watch tokens), `TurnstileVerificationFilter` (protected endpoints
+Facts behind the diagram: `api-gateway/.../config/SecurityConfig.java` (`oauth2ResourceServer`
+with the shared decoder, below), `TurnstileVerificationFilter` (protected endpoints
 in `api-gateway/src/main/resources/application.yml`: newsletter subscribe, registration create,
 thanks POST; `turnstile.enabled` defaults to false and is switched on by environment),
 `RateLimitingFilter`, `AccountActiveFilter` (fail-open, kill switch
 `security.active-gate.enabled`), and `shared-kernel/.../security/JwtRolesConverter` (with the
 Pattern 3b database fallback, see 06b).
+
+**One JWT decoder for every service** (agentic interaction 0.1): gateway, CUMS, EMS and PCS each
+register `shared-kernel/.../security/BatbernJwtDecoder` as their only `JwtDecoder` bean
+(`BatbernJwtDecoder.fromEnvironment(environment, serviceDefault)`). It reads the unverified `iss`
+with `JWTParser` only to pick a verifier; the chosen verifier always checks the signature:
+
+| `iss` | Kind | Verifier | Default on in |
+|---|---|---|---|
+| `batbern-watch` | `WATCH` | HS256, `watch.jwt.secret` (dev default as before) | gateway, CUMS, EMS |
+| `batbern-agent` | `AGENT` | RS256 only, `agent.jwt.public-key` (PEM or base64 DER); `AgentTokenValidator`: `sub`, `custom:username`, `act.run`, `act.principal`, `iat`, `exp` present, lifetime at most 300 s, no `custom:role` / `role` claim | gateway, CUMS, EMS, PCS |
+| anything else | `COGNITO` | JWK set (`spring.security.oauth2.resourceserver.jwt.jwk-set-uri`, else discovery from `issuer-uri`) | gateway, CUMS, EMS, PCS |
+
+`batbern.security.token-kinds` (e.g. `cognito,agent`) overrides a service's default. The agent kind
+stays off without `agent.jwt.public-key`, when it is blank, or when it holds the deploy placeholder
+`none` (trimmed, any case; `BatbernJwtDecoder.AGENT_PUBLIC_KEY_OFF`). It logs
+`Agent tokens are off: agent.jwt.public-key is not set` when the property is missing or blank, and
+`Agent tokens are off: agent.jwt.public-key holds the placeholder none` for the placeholder. In AWS the key arrives as the container
+secret `AGENT_JWT_PUBLIC_KEY` from the SSM parameter `/batbern/<env>/agent/jwt-public-key`
+(agentic interaction 0.3); CUMS also gets `AGENT_JWT_PRIVATE_KEY` (property
+`agent.jwt.private-key`, PKCS#8 PEM) and the caller secrets `AGENT_CALLERS_EMS_SECRET` and
+`AGENT_CALLERS_AGENT_SERVICE_SECRET`, EMS gets `AGENT_CALLERS_EMS_SECRET`. No yml maps the keys:
+Spring resolves `agent.jwt.public-key` and `agent.jwt.private-key` from the environment variables by
+relaxed binding. The caller secrets are mapped in CUMS `application.yml` to
+`agent.callers.ems.secret` and `agent.callers.agent-service.secret` (relaxed binding cannot reach
+`agent-service`). A token of a kind the service does not accept is refused
+(401) without reaching another verifier: PCS refuses Watch tokens. An agent's roles come from
+`role_assignments` by its `sub` through `JwtRolesConverter`, never from the token. Tests sign agent
+and Watch tokens with shared-kernel test fixtures `ch.batbern.shared.test.security.TestTokens`
+(key pair generated per JVM; `AbstractIntegrationTest` registers its public and private key; a
+default agent token comes from the production signer `AgentTokenSigner`). EMS and PCS integration
+tests that resolve an agent's roles create the CUMS `user_profiles` / `role_assignments` stubs with
+`RoleStubTables` beside it.
+
+**Who acted** (agentic interaction 0.2): audit columns and `performedBy` / `decidedBy` record the
+actor of shared-kernel `security/Actors`: `agent:<run> for <username>` when the token carries
+`act` (`act.run`, `custom:username`), the plain username otherwise, `system:<job>` without a user
+(`Actors.system`, kebab case). The value is wrapped at the sink with `Actors.forUsername`, which is
+idempotent; each service's `SecurityContextHelper` offers `getCurrentActor()`, `actorOr(job)` and
+`carriesAgentAct()`. `actorOr(job)` differs per service (story 0.2, not aligned): CUMS returns the
+actor only for a JWT principal and `system:<job>` for anything else, a `@WithMockUser` included; EMS
+and PCS return it for any signed-in, non-anonymous principal. Identity and ownership keep reading
+the username (`requester_username`, `UserOwnership`, `findBy…Username`), so an agent passes the same ownership checks as its person.
+The EMS STOMP principal of an agent token is its actor; Cognito and Watch keep the `sub`. Audit
+columns narrower than 255 were widened (CUMS V40, EMS V161, PCS V13); the longest actor is 147
+characters (36-character run, 100-character username).
+
+**Audience sends refuse agent tokens** (AD-15, agent identity story 7): a mail to an audience may
+only be started by a person. Shared-kernel `security/AudienceGuard.refuseAgentTokens(operation)`
+throws `AccessDeniedException` (403) when the current token carries `act`, well-formed or not
+(`Actors.carriesAct`; the claim, not the issuer). It is the first statement of the service method,
+before any recipient lookup, render, write or SES call, so a refused call leaves no `mail_message`,
+no `newsletter_sends` row and no meeting change: EMS `MailComposerService.send` (every audience and
+the organizer test send) and `retry`, and below them `NewsletterEmailService.sendNewsletter`,
+`sendNewsletterOwnText`, `retryFailedRecipients` and `SlidesOnlineEmailService.sendRegistrantNotice`,
+`sendRegistrantOwnText`; `EventWorkflowStateMachine.transitionToState` to CANCELLED (it cancels every
+registration and mails each holder; checked before the event is read); PCS `PartnerMeetingService.sendInvite` and `deleteMeeting` of a meeting
+whose invite was sent (the METHOD:CANCEL goes to every partner contact and organizer). Without an
+authentication (scheduler, `@Async` thread, SQS) and for Cognito, Watch and mock users it does
+nothing. EMS returns the guard's message (`Audience sends refuse agent tokens (AD-15): <operation>`),
+PCS its generic "Access denied". Single-recipient sends (speaker invitation, conversation reply,
+registration confirmation resend, add participant) stay open to agent tokens.
+
+**Agent settings** (agentic interaction, agent identity story 4): the organizer agent's switch, its
+allowlist and the organizer delegate are one global resource in CUMS, `GET` / `PATCH
+/api/v1/agent-settings` (`users-api`, routed to CUMS by the Spring gateway), stored in the singleton
+`agent_settings` (`CHECK (id = 1)`) and `agent_allowlist` (V41). Off by default: V41 inserts the row
+switched off and seeds no username, and a missing row reads as off, empty allowlist, no delegate.
+Both operations need ORGANIZER and refuse a token carrying `act` (403), so an agent run can neither
+read nor change its own switch. The PATCH is partial: `allowlist` replaces the whole list,
+`delegateUsername: ""` clears the delegate; every username must be an existing user holding
+ORGANIZER, else 400 naming them and nothing is stored. Both columns are foreign keys by username to
+`user_profiles` (a deleted profile leaves the allowlist and clears the delegate). The grant and token
+issuing reads `AgentSettingsService.isEnabled()`, `isAllowlisted(username)` and `delegateUsername()`;
+the last two also require that the person still holds ORGANIZER, since removing the role touches
+only `role_assignments` and leaves the stored rows.
+It is a second settings store beside EMS `app_settings` on purpose: CUMS cannot call EMS (epic
+decision 2026-11-21, recorded in `module-map.md`).
+
+**Agent grants** (agent identity story 5): CUMS issues run grants, `POST /internal/agent-grants`,
+and answers agent eligibility, `GET /internal/agent-eligibility` (`cums-internal` spec,
+`InternalAgentController`, `AgentGrantService`). They are the only `/internal` operations that
+authenticate their caller: the filter chain leaves `/internal/**` open, and each checks the header
+`X-Agent-Caller-Secret` itself against `agent.callers.ems.secret` or
+`agent.callers.agent-service.secret` (`AgentCallerSecrets`: SHA-256 digests compared with
+`MessageDigest.isEqual`; a blank configured secret refuses everything; never logged). The trigger
+decides caller and principal, never the body: `EMS_HANDOFF` (EMS, body `username`, principal
+`REQUESTER`), `ORGANIZER_LOGIN` (agent service, the organizer's forwarded Cognito JWT, no `act`, not
+a Watch or agent token; principal `ORGANIZER`), `LINKED_RUN` (agent service, `linkedRunId` plus
+`linkedRunGrantSecret` of an active `REQUESTER` grant; principal `ORGANIZER_DELEGATE`, the delegate),
+`SCHEDULER_JOB` (agent service, `jobName` listed in `agent.grants.scheduler-jobs`, comma-separated,
+today `morning-brief`; the delegate). Checks in order, the first failure answers with `details.code`:
+caller secret 401 `CALLER_SECRET_INVALID`, body 400, organizer login 401
+`ORGANIZER_LOGIN_REQUIRED`, switch 403 `AGENT_SWITCHED_OFF`, link or job 403 `LINKED_RUN_INVALID` /
+`SCHEDULER_JOB_UNKNOWN`, principal 403 `PRINCIPAL_NOT_ELIGIBLE` (no delegate, or not
+`isAllowlisted`; the delegate must be allowlisted too); a 400 carries `INVALID_AGENT_REQUEST`. The
+caller secret is first among the operation's checks: a body Spring cannot read (malformed JSON, a
+wrong type, a wrong `Content-Type`) answers 400 or 415 before it. One exception to that order: an
+`Authorization: Bearer` header with a token the decoder does not accept (any kind, any validation
+failure, e.g. an agent token while CUMS's public key is `none`) is refused by the resource-server
+filter before the operation runs, with Spring's 401 (empty body, no `details.code`, a
+`WWW-Authenticate: Bearer` header with an `error_description`); the filter chain stays as it is.
+An unknown or expired grant answers `LINKED_RUN_INVALID` on the grant operation and `GRANT_INVALID`
+on the mint: there it is the parent of a new run, here the caller's own run.
+A grant is a row of `agent_grants` (V42): a
+random UUID `run_id`, principal kind, username (foreign key to `user_profiles`, cascades), trigger,
+linked run or job (each set exactly for its trigger, DB check), `requested_by`
+(`system:ems-agent-handoff`, `system:agent-service` or the organizer), `issued_at`, `expires_at`
+(at most one hour, DB check) and the hex SHA-256 of the grant secret (32 random bytes, base64url),
+which the 201 returns once. Eligibility (EMS secret only) answers 200 `eligible: true` or 403
+(`AGENT_SWITCHED_OFF`, `PRINCIPAL_NOT_ELIGIBLE`), never `eligible: false`.
+`AgentGrantService.findActiveGrant(runId, grantSecret)` is the seam the agent tokens are minted
+against; minting re-checks the switch and the allowlist.
+
+**Agent tokens** (agent identity story 6): the agent service exchanges a run grant for a delegated
+agent token, `POST /internal/agent-tokens` (`cums-internal` spec, `InternalAgentController`,
+`AgentTokenService`), body exactly `{runId, grantSecret}`, and sends the token as
+`Authorization: Bearer` to the public API of every service. Agent-service caller secret only; EMS
+never mints (AD-3). Checks in order, the first failure answers with `details.code`: caller secret 401
+`CALLER_SECRET_INVALID`, body 400 `INVALID_AGENT_REQUEST`, switch 403 `AGENT_SWITCHED_OFF`, grant 403
+`GRANT_INVALID` (unknown run, wrong secret, expired), principal 403 `PRINCIPAL_NOT_ELIGIBLE` (not
+`isAllowlisted`, or no `cognito_user_id`), signing key 503 `AGENT_SIGNING_KEY_MISSING`
+(`agent.jwt.private-key` unset, blank or `none`; CUMS starts normally, an unparseable key fails
+startup). Switch and allowlist are read on every mint, so switching off stops every run within one
+token lifetime (AD-10). Nothing is stored. The claim set lives in one class, shared-kernel
+`security/AgentTokenSigner`: header RS256 / `typ` JWT; `iss` `batbern-agent`, `sub` the principal's
+`cognito_user_id` (roles come from `role_assignments` by it), `custom:username`, `act {run,
+principal}` with the principal kind in lowercase (`requester`, `organizer`, `organizer_delegate`),
+`iat` now, `exp` the earlier of `iat` + 300 s and the grant's `expiresAt`; no role claim. The test
+fixture `TestTokens.agentToken` signs with the same class (`AbstractIntegrationTest` also registers
+the test private key as `agent.jwt.private-key`), so the agent-token tests of gateway, CUMS, EMS and
+PCS run on exactly what CUMS mints. Mint and refusal are logged at INFO with run id, principal kind
+and code, never the token, a secret or the key.
 
 ### Role-Based Security Configuration
 
@@ -326,7 +458,7 @@ public SecurityFilterChain filterChain(HttpSecurity http, JwtAuthenticationConve
             // ... further public reads and token-credentialed writes ...
             .requestMatchers("/internal/**").permitAll()   // the gateway denies it
             .anyRequest().authenticated())
-        // every service validates the JWT itself (multi-issuer: Cognito RS256, Watch HS256)
+        // every service validates the JWT itself with the shared BatbernJwtDecoder bean (see above)
         .oauth2ResourceServer(o -> o.jwt(j -> j.jwtAuthenticationConverter(jwtAuthenticationConverter)));
     return http.build();
 }

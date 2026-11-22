@@ -28,7 +28,7 @@ public class SpeakerArrival {
     @Column(name = "speaker_username", nullable = false, length = 100)
     private String speakerUsername;
 
-    @Column(name = "confirmed_by_username", nullable = false, length = 100)
+    @Column(name = "confirmed_by_username", nullable = false, length = 255)
     private String confirmedByUsername;
 
     @Column(name = "arrived_at", nullable = false)

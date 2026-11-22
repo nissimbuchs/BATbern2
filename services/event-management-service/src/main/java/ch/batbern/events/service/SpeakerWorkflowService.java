@@ -29,6 +29,7 @@ import ch.batbern.shared.events.SpeakerWorkflowStateChangeEvent;
 import ch.batbern.shared.exception.InvalidStateTransitionException;
 import ch.batbern.shared.exception.NotFoundException;
 import ch.batbern.shared.exception.ValidationException;
+import ch.batbern.shared.security.Actors;
 import ch.batbern.shared.types.SpeakerResponseType;
 import ch.batbern.shared.types.SpeakerWorkflowState;
 import lombok.RequiredArgsConstructor;
@@ -738,7 +739,7 @@ public class SpeakerWorkflowService {
         history.setSessionId(speaker.getSessionId());
         history.setPreviousStatus(previous);
         history.setNewStatus(next);
-        history.setChangedByUsername(username);
+        history.setChangedByUsername(Actors.forUsername(username));
         history.setChangeReason(payload.reason());
         history.setChangedAt(Instant.now());
         return statusHistoryRepository.save(history);

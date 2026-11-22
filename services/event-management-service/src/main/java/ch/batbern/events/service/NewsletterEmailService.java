@@ -1,5 +1,6 @@
 package ch.batbern.events.service;
 
+import ch.batbern.shared.security.AudienceGuard;
 import ch.batbern.shared.utils.LoggingUtils;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.NewsletterRecipient;
@@ -217,6 +218,7 @@ public class NewsletterEmailService {
      */
     public QueuedSend sendNewsletter(Event event, boolean isReminder, String locale, String sentByUsername,
                                      @Nullable String templateKey) {
+        AudienceGuard.refuseAgentTokens("newsletter send");
         String effectiveKey = resolveTemplateKey(templateKey);
         rejectRegistrantTemplate(effectiveKey, locale);
         return queueSend(event, locale, sentByUsername, effectiveKey, new SendMode(isReminder, null, null));
@@ -228,6 +230,7 @@ public class NewsletterEmailService {
      */
     public QueuedSend sendNewsletterOwnText(Event event, String locale, String sentByUsername,
                                            String ownSubject, String ownBodyHtml) {
+        AudienceGuard.refuseAgentTokens("newsletter send");
         return queueSend(event, locale, sentByUsername, OwnText.NEWSLETTER_ROW_KEY,
                 new SendMode(false, ownSubject, ownBodyHtml));
     }
@@ -385,6 +388,7 @@ public class NewsletterEmailService {
      * @throws IllegalStateException if the send is COMPLETED or already IN_PROGRESS/PENDING
      */
     public void retryFailedRecipients(NewsletterSend send, Event event, String sentByUsername) {
+        AudienceGuard.refuseAgentTokens("newsletter retry");
         if (STATUS_COMPLETED.equals(send.getStatus())) {
             throw new IllegalStateException(
                     "Send " + send.getId() + " is already COMPLETED — nothing to retry");

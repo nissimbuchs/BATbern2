@@ -282,7 +282,7 @@ export interface paths {
      *     **Side effects**: `EventWorkflowTransitionEvent` fires (task activation, Q&A windows,
      *     archival cleanup); all event caches are cleared.
      *
-     *     **Security**: ORGANIZER role required; any other role gets 403.
+     *     **Security**: ORGANIZER role required; any other role gets 403. A transition to CANCELLED mails every registrant, so a token that carries `act` (an agent token) gets 403 for it (AD-15: audience sends refuse agent tokens).
      */
     post: operations['transitionEventWorkflowState'];
     delete?: never;
@@ -1024,7 +1024,7 @@ export interface components {
       topicSelectionNote?: string;
       /** @description Username of the creator (audit). */
       createdBy?: string;
-      /** @description Organizers only (omitted for other callers, GHSA-qhqv). Username of the last updater (audit). */
+      /** @description Organizers only (omitted for other callers, GHSA-qhqv). Username of the last updater (audit), `agent:<run> for <username>` when an agent acted for them, or `system:<job>`. */
       updatedBy?: string;
       /** @description Speakers who accepted their invitation. Only present when ?include=metrics and the caller is an organizer. */
       confirmedSpeakersCount?: number;

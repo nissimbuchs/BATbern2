@@ -71,7 +71,7 @@ public class SpeakerStatusHistory {
     private SpeakerWorkflowState newStatus;
 
     @NotNull
-    @Column(name = "changed_by_username", nullable = false, length = 100)
+    @Column(name = "changed_by_username", nullable = false, length = 255)
     private String changedByUsername;
 
     @Size(max = 2000)

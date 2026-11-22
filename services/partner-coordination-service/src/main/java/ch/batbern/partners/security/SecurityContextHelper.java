@@ -1,6 +1,8 @@
 package ch.batbern.partners.security;
 
+import ch.batbern.shared.security.Actors;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.User;
@@ -15,27 +17,6 @@ import org.springframework.stereotype.Component;
 @Component
 @Slf4j
 public class SecurityContextHelper {
-
-    /**
-     * Gets the current authenticated user's ID from JWT token or mock user
-     * @return User ID (subject claim from JWT or username from mock user)
-     * @throws SecurityException if not authenticated
-     */
-    public String getCurrentUserId() {
-        Authentication authentication = getAuthentication();
-
-        if (authentication.getPrincipal() instanceof Jwt) {
-            Jwt jwt = (Jwt) authentication.getPrincipal();
-            return jwt.getSubject();
-        } else if (authentication.getPrincipal() instanceof User) {
-            // In test environment with @WithMockUser, use username as user ID
-            User user = (User) authentication.getPrincipal();
-            return user.getUsername();
-        } else {
-            log.error("Unsupported principal type: {}", authentication.getPrincipal().getClass());
-            throw new SecurityException("Unsupported authentication principal type");
-        }
-    }
 
     /**
      * Gets the current authenticated user's username from JWT token or mock user
@@ -68,17 +49,36 @@ public class SecurityContextHelper {
     }
 
     /**
-     * Gets the current authenticated user's ID, or returns "system" if not authenticated
-     * Used for domain events where authentication may not be available (background jobs, system operations)
-     * @return User ID from JWT, or "system" if not authenticated
+     * The current caller as an audit column records it ({@link Actors#forUsername}): the username, or
+     * {@code agent:<run> for <username>} under an agent token. Never for ownership checks.
      */
-    public String getCurrentUserIdOrSystem() {
-        try {
-            return getCurrentUserId();
-        } catch (SecurityException e) {
-            log.debug("No authentication context available, using 'system' as userId");
-            return "system";
+    public String getCurrentActor() {
+        return Actors.forUsername(getCurrentUsername());
+    }
+
+    /**
+     * Who acted: the current caller's actor ({@link #getCurrentActor()}) when someone is signed in,
+     * otherwise {@code system:<job>} (scheduler, listener, a call without a user).
+     *
+     * @param systemJob kebab-case name of the job that writes without a user
+     */
+    public String actorOr(String systemJob) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()
+                || authentication instanceof AnonymousAuthenticationToken) {
+            return Actors.system(systemJob);
         }
+        try {
+            return getCurrentActor();
+        } catch (SecurityException e) {
+            log.debug("No usable user in the security context, recording system:{}", systemJob);
+            return Actors.system(systemJob);
+        }
+    }
+
+    /** Whether the current caller's token carries an {@code act} claim (an agent token). */
+    public boolean carriesAgentAct() {
+        return Actors.carriesAct(SecurityContextHolder.getContext().getAuthentication());
     }
 
     /**

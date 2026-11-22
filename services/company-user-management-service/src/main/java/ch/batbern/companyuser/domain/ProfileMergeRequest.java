@@ -55,7 +55,7 @@ public class ProfileMergeRequest {
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
-    @Column(name = "decided_by", length = 100)
+    @Column(name = "decided_by", length = 255)
     private String decidedBy;
 
     @Column(name = "decided_at")

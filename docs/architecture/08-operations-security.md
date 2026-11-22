@@ -20,12 +20,28 @@ flowchart TD
     end
     G6 --> S
     subgraph S["Domain service EMS, CUMS, PCS"]
-        S1["own SecurityConfig: permitAll list must match the gateway"] --> S2["JwtRolesConverter: custom:role to ROLE_x"]
+        S1["own SecurityConfig: permitAll list must match the gateway,<br/>shared BatbernJwtDecoder"] --> S2["JwtRolesConverter: custom:role to ROLE_x"]
         S2 --> S3["@PreAuthorize on every write and every<br/>read of other people's data, ADR-008"]
         S3 --> S4["controller, public responses are projections"]
     end
     I["Service to service: /internal/** over Service Connect,<br/>no JWT, never routed by the gateway"] -.-> S1
 ```
+
+Every service and the gateway verify the JWT with the one shared-kernel `BatbernJwtDecoder`:
+Cognito, Watch and agent tokens, each kind on per service (PCS: Cognito and agent only; details and
+properties in 06, "One JWT decoder for every service").
+
+**Agent signing key** (agentic interaction 0.3). The SecretsStack holds the RS256 key pair that
+agent tokens are signed and verified with: the private key in Secrets Manager
+(`batbern/<env>/agent/signing-private-key`, PKCS#8 PEM), injected only into the CUMS task as
+`AGENT_JWT_PRIVATE_KEY`; the public key in the SSM String parameter
+`/batbern/<env>/agent/jwt-public-key` (SPKI PEM), injected into gateway, CUMS, EMS and PCS as
+`AGENT_JWT_PUBLIC_KEY`. Two CDK-generated caller secrets authenticate who may request an agent
+token: `batbern/<env>/agent/ems-caller-secret` (`AGENT_CALLERS_EMS_SECRET`, CUMS and EMS) and
+`batbern/<env>/agent/agent-service-caller-secret` (`AGENT_CALLERS_AGENT_SERVICE_SECRET`, CUMS
+only). All four use the AWS-managed key, like the Watch secret. CDK creates the key pair with the
+placeholder `none`, which the decoder reads as "agent off"; the owner writes the real pair once with
+`scripts/deploy/create-agent-signing-key.sh` (runbook "Agent signing key"). No real key is in git.
 
 Roles are decided only in the services (ADR-008, #1147). The gateway authenticates and routes; its
 `AccountActiveFilter`, Turnstile and rate limiting are the only request-time checks it adds.

@@ -9,6 +9,7 @@ import ch.batbern.companyuser.service.CompanyDuplicateRules.Facts;
 import ch.batbern.companyuser.service.CompanyDuplicateRules.Match;
 import ch.batbern.companyuser.service.CompanyDuplicateRules.Named;
 import ch.batbern.companyuser.service.CompanyDuplicateRules.Rule;
+import ch.batbern.shared.security.Actors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -117,7 +118,7 @@ public class CompanyDuplicateCandidateService {
                 INSERT INTO company_duplicate_dismissals (company_a_id, company_b_id, dismissed_by)
                 VALUES (LEAST(?, ?), GREATEST(?, ?), ?)
                 ON CONFLICT DO NOTHING
-                """, a.getId(), b.getId(), a.getId(), b.getId(), by);
+                """, a.getId(), b.getId(), a.getId(), b.getId(), Actors.forUsername(by));
     }
 
     private static Candidate candidate(Match match, Side a, Side b) {

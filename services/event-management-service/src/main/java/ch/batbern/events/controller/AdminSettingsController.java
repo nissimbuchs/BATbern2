@@ -35,8 +35,7 @@ public class AdminSettingsController implements AdminSettingsApi {
     @PreAuthorize("hasRole('ORGANIZER')")
     public ResponseEntity<AdminSettingResponse> setAdminSetting(String key, SetAdminSettingRequest request) {
         String value = request.getValue();
-        String resolved = securityContextHelper.getCurrentUsernameOrNull();
-        String updatedBy = resolved != null ? resolved : "system";
+        String updatedBy = securityContextHelper.actorOr("admin-settings");
         adminSettingsService.setSetting(key, value, updatedBy);
         return ResponseEntity.ok(buildResponse(key, value));
     }

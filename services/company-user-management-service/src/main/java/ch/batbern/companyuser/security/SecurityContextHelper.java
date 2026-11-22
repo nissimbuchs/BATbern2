@@ -1,5 +1,6 @@
 package ch.batbern.companyuser.security;
 
+import ch.batbern.shared.security.Actors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
@@ -85,10 +86,10 @@ public class SecurityContextHelper {
     }
 
     /**
-     * Who acted on an {@code /internal} write (ADR-016 decision 3): the forwarded user's username
-     * ({@code custom:username}, else the subject) when the caller sent a JWT, otherwise
-     * {@code system:<job>}. Only a JWT counts as a user: an S2S call carries the user's token or
-     * nothing.
+     * Who acted on an {@code /internal} write (ADR-016 decision 3): the forwarded caller's actor when
+     * the caller sent a JWT ({@link Actors#forJwt}: {@code agent:<run> for <username>} for an agent
+     * token, else {@code custom:username}, else the subject), otherwise {@code system:<job>}. Only a
+     * JWT counts as a user: an S2S call carries the user's token or nothing.
      *
      * @param systemJob the job named in the internal spec for calls without a user, e.g.
      *                  {@code ems-speaker-workflow}
@@ -96,10 +97,22 @@ public class SecurityContextHelper {
     public String actorOr(String systemJob) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication != null && authentication.getPrincipal() instanceof Jwt jwt) {
-            String username = jwt.getClaimAsString("custom:username");
-            return username != null && !username.isBlank() ? username : jwt.getSubject();
+            return Actors.forJwt(jwt);
         }
-        return "system:" + systemJob;
+        return Actors.system(systemJob);
+    }
+
+    /**
+     * The current caller as an audit column records it ({@link Actors#forUsername}): the username, or
+     * {@code agent:<run> for <username>} under an agent token. Never for ownership checks.
+     */
+    public String getCurrentActor() {
+        return Actors.forUsername(getCurrentUsername());
+    }
+
+    /** Whether the current caller's token carries an {@code act} claim (an agent token). */
+    public boolean carriesAgentAct() {
+        return Actors.carriesAct(SecurityContextHolder.getContext().getAuthentication());
     }
 
     /**

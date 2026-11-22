@@ -721,6 +721,11 @@ their speaker deadline, their task) or organizers. `AutomaticTriggerAudienceGuar
 `@Scheduled`, `@EventListener`, `@TransactionalEventListener` and `@SqsListener` method in EMS with
 the audience it can reach. A new trigger fails the build until it is added there.
 
+An organizer's agent cannot send to an audience either (AD-15): the Mail Center send and retry, the
+newsletter and registrant bulk sends and the PCS partner meeting invite and cancellation call
+shared-kernel `AudienceGuard`, which refuses a token carrying `act` with 403 before anything is
+recorded or sent (`docs/architecture/06-backend-architecture.md`, "Audience sends refuse agent tokens").
+
 The `DEADLINE_WARNING` and `EVENT_PUBLISHED` values stay valid in the `notifications` table because
 the 2026-11-02 rows carry them.
 

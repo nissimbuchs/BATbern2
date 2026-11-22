@@ -28,7 +28,8 @@ export interface paths {
     put?: never;
     /**
      * Send a mail to the audience, or a test to the organizers (ORGANIZER)
-     * @description **Security**: ORGANIZER role required; any other role gets 403.
+     * @description **Security**: ORGANIZER role required; any other role gets 403, and so does a token that
+     *     carries `act` (an agent token, AD-15: audience sends refuse agent tokens).
      *
      *     Story 16.8. `target=RECIPIENTS` sends to the audience through the existing send code
      *     (newsletter job, registrant one-shot guard, speaker reminders, venue To and Cc).
@@ -346,7 +347,8 @@ export interface paths {
     put?: never;
     /**
      * Retry the failed recipients of a newsletter (ORGANIZER)
-     * @description **Security**: ORGANIZER role required; any other role gets 403.
+     * @description **Security**: ORGANIZER role required; any other role gets 403, and so does a token that
+     *     carries `act` (an agent token, AD-15: audience sends refuse agent tokens).
      *
      *     Story 16.8. Re-sends a PARTIAL or FAILED newsletter to the recipients that failed or were
      *     never reached. Replaces `POST /events/{eventCode}/newsletter/sends/{sendId}/retry`.
@@ -859,7 +861,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Forbidden (ORGANIZER role required) */
+      /** @description Forbidden (ORGANIZER role required), or the caller's token carries `act` (an agent token, AD-15) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -1610,7 +1612,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Forbidden (ORGANIZER role required) */
+      /** @description Forbidden (ORGANIZER role required), or the caller's token carries `act` (an agent token, AD-15) */
       403: {
         headers: {
           [name: string]: unknown;

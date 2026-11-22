@@ -7,6 +7,7 @@ import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
 import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
 import * as sns from 'aws-cdk-lib/aws-sns';
+import * as ssm from 'aws-cdk-lib/aws-ssm';
 import { Construct } from 'constructs';
 import { EnvironmentConfig } from '../config/environment-config';
 import { createDomainService } from '../constructs/domain-service-construct';
@@ -26,6 +27,17 @@ export interface CompanyManagementStackProps extends cdk.StackProps {
   cloudFrontDistribution?: cloudfront.IDistribution;
   alarmTopic?: sns.ITopic;
   watchJwtSecret?: secretsmanager.ISecret;
+  /**
+   * Agentic interaction 0.3: RSA public key (SPKI PEM) that verifies agent tokens, injected as
+   * AGENT_JWT_PUBLIC_KEY (agent.jwt.public-key). Holds `none` until the owner writes the key.
+   */
+  agentJwtPublicKey?: ssm.IStringParameter;
+  /** Agentic interaction 0.3: RS256 private key (PKCS#8 PEM) that signs agent tokens. CUMS only. */
+  agentSigningPrivateKey?: secretsmanager.ISecret;
+  /** Agentic interaction 0.3: secret EMS presents when it requests an agent token. */
+  emsCallerSecret?: secretsmanager.ISecret;
+  /** Agentic interaction 0.3: secret the agent service presents when it requests an agent token. */
+  agentServiceCallerSecret?: secretsmanager.ISecret;
   /**
    * Transactional SES Configuration Set name — shared EmailService default so the
    * additional-email verification mails are delivery-tracked (no suppression).
@@ -96,6 +108,27 @@ export class CompanyManagementStack extends cdk.Stack {
       // replaces a Fargate Spot task or a new deployment lands. Reuses the WATCH_JWT_SECRET
       // secret (same pattern as event-management-stack).
       additionalSecrets.JWT_SECRET = ecs.Secret.fromSecretsManager(props.watchJwtSecret);
+    }
+    // Agent identity (agentic interaction 0.3). The private key lives on this task definition
+    // only: CUMS is the one service that signs agent tokens. ecs.Secret grants the execution role
+    // read access for each container secret.
+    if (props.agentJwtPublicKey) {
+      additionalSecrets.AGENT_JWT_PUBLIC_KEY = ecs.Secret.fromSsmParameter(props.agentJwtPublicKey);
+    }
+    if (props.agentSigningPrivateKey) {
+      additionalSecrets.AGENT_JWT_PRIVATE_KEY = ecs.Secret.fromSecretsManager(
+        props.agentSigningPrivateKey
+      );
+    }
+    if (props.emsCallerSecret) {
+      additionalSecrets.AGENT_CALLERS_EMS_SECRET = ecs.Secret.fromSecretsManager(
+        props.emsCallerSecret
+      );
+    }
+    if (props.agentServiceCallerSecret) {
+      additionalSecrets.AGENT_CALLERS_AGENT_SERVICE_SECRET = ecs.Secret.fromSecretsManager(
+        props.agentServiceCallerSecret
+      );
     }
 
     // Create domain service using reusable helper function

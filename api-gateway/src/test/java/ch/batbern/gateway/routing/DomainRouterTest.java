@@ -259,6 +259,17 @@ class DomainRouterTest {
         assertThat(targetService).isEqualTo("company-user-management-service");
     }
 
+    // Agentic interaction, agent identity story 4: the agent switch, allowlist and delegate live in
+    // CUMS (CUMS issues agent grants and tokens and cannot call EMS); not the EMS /admin fallthrough.
+    @Test
+    @DisplayName("should_routeToCompanyService_when_agentSettingsCalled")
+    void should_routeToCompanyService_when_agentSettingsCalled() {
+        assertThat(domainRouter.determineTargetService("/api/v1/agent-settings"))
+                .isEqualTo("company-user-management-service");
+        assertThat(domainRouter.determineTargetService("/api/v1/agent-settings?x=1"))
+                .isEqualTo("company-user-management-service");
+    }
+
     // Story 4.9: the presentation settings moved from CUMS to the EMS app settings store. The
     // public read goes to EMS, ahead of the /api/v1/public prefix that CUMS owns; the former CUMS
     // write path /api/v1/settings/* is no longer routed (the write is PUT /admin/settings/presentation).

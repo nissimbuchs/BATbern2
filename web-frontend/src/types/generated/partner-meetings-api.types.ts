@@ -48,7 +48,8 @@ export interface paths {
      * @description Deletes a partner meeting. If a calendar invite was already sent, a METHOD:CANCEL
      *     ICS is dispatched asynchronously to all partners and organizers so their calendar
      *     clients remove the entry. RSVPs are cascade-deleted (V9 ON DELETE CASCADE).
-     *     ORGANIZER role required.
+     *     ORGANIZER role required. Deleting a meeting whose invite was sent mails its audience, so a
+     *     token that carries `act` (an agent token) gets 403 then (AD-15); before the invite it may delete.
      */
     delete: operations['deletePartnerMeeting'];
     options?: never;
@@ -77,7 +78,8 @@ export interface paths {
      *     and organizers. The send is synchronous: 202 means SES accepted the mail, and only
      *     then is `inviteSentAt` set. If it cannot be sent, the answer is 502 and the meeting
      *     stays unchanged. (202 is kept from the former asynchronous contract.)
-     *     ORGANIZER role required.
+     *     ORGANIZER role required; a token that carries `act` (an agent token) gets 403 (AD-15:
+     *     audience sends refuse agent tokens).
      */
     post: operations['sendPartnerMeetingInvite'];
     delete?: never;
@@ -158,7 +160,7 @@ export interface components {
        * @description Timestamp when calendar invite was sent, null if not yet sent
        */
       inviteSentAt?: string | null;
-      /** @description Organizer username (ADR-003) */
+      /** @description Organizer username (ADR-003), or `agent:<run> for <username>` when an agent created the meeting for that organizer */
       createdBy: string;
       /** Format: date-time */
       createdAt: string;
@@ -413,7 +415,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Forbidden */
+      /** @description Forbidden: ORGANIZER role required, or the caller's token carries `act` and the meeting's invite was already sent (AD-15) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -496,7 +498,7 @@ export interface operations {
           'application/json': components['schemas']['SendInviteResponse'];
         };
       };
-      /** @description Forbidden */
+      /** @description Forbidden: ORGANIZER role required, or the caller's token carries `act` (an agent token, AD-15) */
       403: {
         headers: {
           [name: string]: unknown;

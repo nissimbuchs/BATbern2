@@ -10,6 +10,7 @@ import ch.batbern.shared.exception.ValidationException;
 import ch.batbern.shared.mail.ComposedMail;
 import ch.batbern.shared.mail.MailContext;
 import ch.batbern.shared.mail.MailTrigger;
+import ch.batbern.shared.security.Actors;
 import ch.batbern.shared.service.EmailService;
 import ch.batbern.shared.util.ReservedEmailDomain;
 import ch.batbern.shared.utils.EmailAddresses;
@@ -118,7 +119,7 @@ public class ConversationReplyService {
         conversation.setStatus(markDone ? MailConversation.Status.DONE : MailConversation.Status.WAITING);
         conversation.setLastMessageAt(now);
         conversation.setUpdatedAt(now);
-        conversation.setUpdatedBy(organizer);
+        conversation.setUpdatedBy(Actors.forUsername(organizer));
         conversations.saveAndFlush(conversation);
 
         return jdbc.query("SELECT mail_key FROM mail_message WHERE send_group_id = :groupId",

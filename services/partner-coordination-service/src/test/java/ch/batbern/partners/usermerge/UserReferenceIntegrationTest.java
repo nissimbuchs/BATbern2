@@ -84,7 +84,8 @@ class UserReferenceIntegrationTest extends AbstractIntegrationTest {
     void cleanUp() {
         jdbc.update("DELETE FROM partner_user_merge_log WHERE source_username IN (?, ?)", SOURCE, "merge7b.nobody");
         jdbc.update("DELETE FROM topic_suggestions WHERE suggested_by IN (?, ?, ?)", SOURCE, TARGET, OTHER);
-        jdbc.update("DELETE FROM partner_meetings WHERE created_by IN (?, ?, ?)", SOURCE, TARGET, OTHER);
+        jdbc.update("DELETE FROM partner_meetings WHERE created_by IN (?, ?, ?) OR created_by LIKE 'agent:%merge7b.%'",
+                SOURCE, TARGET, OTHER);
         partnerRepository.findByCompanyName(COMPANY).ifPresent(partnerRepository::delete);
     }
 
@@ -174,6 +175,37 @@ class UserReferenceIntegrationTest extends AbstractIntegrationTest {
         assertThat(ids(moved.path("topic_suggestions.suggested_by"))).containsExactlyInAnyOrderElementsOf(topics);
         assertThat(ids(moved.path("partner_notes.author_username"))).containsExactly(note);
         assertThat(ids(moved.path("partner_meetings.created_by"))).containsExactly(meeting);
+    }
+
+    @Test
+    @DisplayName("agentic 0.2: an agent actor of the source follows to the target; a lookalike username stays")
+    void merge_movesAgentActorOfTheSource() throws Exception {
+        String agentMeeting = meeting("agent:run-1 for " + SOURCE);
+        meeting("agent:run-2 for x" + SOURCE);
+
+        mockMvc.perform(get("/internal/user-references/preview").param("source", SOURCE).param("target", TARGET))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.moves['partner_meetings.created_by']").value(2));
+
+        mockMvc.perform(post("/internal/user-references/merge").contentType(MediaType.APPLICATION_JSON)
+                        .content(mergeBody()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.moved['partner_meetings.created_by']").value(2));
+
+        assertThat(jdbc.queryForObject("SELECT created_by FROM partner_meetings WHERE id = ?::uuid", String.class,
+                agentMeeting)).isEqualTo("agent:run-1 for " + TARGET);
+        assertThat(count("SELECT count(*) FROM partner_meetings WHERE created_by = ?", "agent:run-2 for x" + SOURCE))
+                .as("a username that only ends like the source is not the source").isEqualTo(1);
+        String moved = jdbc.queryForObject("SELECT moved::text FROM partner_user_merge_log WHERE source_username = ?",
+                String.class, SOURCE);
+        assertThat(ids(objectMapper.readTree(moved).path("partner_meetings.created_by"))).contains(agentMeeting);
+    }
+
+    private String meeting(String createdBy) {
+        return meetingRepository.save(PartnerMeeting.builder()
+                .eventCode("BATbern9077").meetingType(MeetingType.SPRING).meetingDate(LocalDate.of(2027, 5, 14))
+                .startTime(LocalTime.of(12, 0)).endTime(LocalTime.of(14, 0)).location("Kursaal")
+                .createdBy(createdBy).build()).getId().toString();
     }
 
     @Test

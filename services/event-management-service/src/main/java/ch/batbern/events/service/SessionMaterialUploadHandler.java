@@ -10,6 +10,7 @@ import ch.batbern.events.repository.SessionMaterialsRepository;
 import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.events.security.SecurityContextHelper;
 import ch.batbern.shared.events.DomainEventPublisher;
+import ch.batbern.shared.security.Actors;
 import ch.batbern.shared.upload.UploadException;
 import ch.batbern.shared.upload.UploadPurposeHandler;
 import ch.batbern.shared.upload.UploadRecord;
@@ -201,7 +202,7 @@ public class SessionMaterialUploadHandler implements UploadPurposeHandler {
                 .fileSize(upload.getFileSize())
                 .mimeType(upload.getContentType())
                 .materialType(type)
-                .uploadedBy(uploadedBy)
+                .uploadedBy(Actors.forUsername(uploadedBy))
                 .publiclyVisible(publiclyVisible)
                 .contentExtracted(false)
                 .extractionStatus("PENDING")

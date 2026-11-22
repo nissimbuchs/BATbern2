@@ -2,6 +2,7 @@ package ch.batbern.companyuser.service;
 
 import ch.batbern.companyuser.client.CompanyReferenceContract;
 import ch.batbern.companyuser.domain.CompanyAlias;
+import ch.batbern.shared.security.Actors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.CacheManager;
@@ -100,7 +101,8 @@ public class CompanyKeyMover {
      * search caches are cleared after the commit.
      */
     @Transactional(propagation = Propagation.MANDATORY)
-    public Moved move(String oldKey, String newKey, String performedBy, CompanyReferenceContract.Trigger trigger) {
+    public Moved move(String oldKey, String newKey, String who, CompanyReferenceContract.Trigger trigger) {
+        String performedBy = Actors.forUsername(who);
         List<String> blockers = holders.preview(oldKey, newKey).stream()
                 .flatMap(preview -> preview.blockers().stream()).toList();
         if (!blockers.isEmpty()) {

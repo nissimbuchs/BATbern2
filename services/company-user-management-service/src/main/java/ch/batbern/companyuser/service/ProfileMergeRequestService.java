@@ -8,6 +8,7 @@ import ch.batbern.companyuser.repository.ProfileMergeRequestRepository;
 import ch.batbern.companyuser.repository.UserRepository;
 import ch.batbern.companyuser.security.SecurityContextHelper;
 import ch.batbern.companyuser.domain.UserLanguages;
+import ch.batbern.shared.security.Actors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -133,12 +134,13 @@ public class ProfileMergeRequestService {
     }
 
     private void decide(ProfileMergeRequest request, ProfileMergeRequest.Status status, String by, String reason) {
+        String decidedBy = Actors.forUsername(by);
         request.setStatus(status);
-        request.setDecidedBy(by);
+        request.setDecidedBy(decidedBy);
         request.setDecidedAt(Instant.now());
         request.setReason(reason);
         requests.saveAndFlush(request);
-        mailCenterDecisions.afterCommit(MailCenterRequestContract.Kind.MERGE, request.getId(), status.name(), by,
+        mailCenterDecisions.afterCommit(MailCenterRequestContract.Kind.MERGE, request.getId(), status.name(), decidedBy,
                 request.getDecidedAt());
     }
 

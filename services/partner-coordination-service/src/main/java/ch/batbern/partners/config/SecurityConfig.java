@@ -1,22 +1,24 @@
 package ch.batbern.partners.config;
 
+import ch.batbern.shared.security.BatbernJwtDecoder;
 import ch.batbern.shared.security.JwtRolesConverter;
+import ch.batbern.shared.security.TokenKind;
 import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
+import org.springframework.core.env.Environment;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
-import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.web.SecurityFilterChain;
 
 import javax.sql.DataSource;
+import java.util.EnumSet;
 
 /**
  * Security configuration for the Partner Coordination Service.
@@ -37,9 +39,6 @@ import javax.sql.DataSource;
 @EnableWebSecurity
 public class SecurityConfig {
 
-    @Value("${spring.security.oauth2.resourceserver.jwt.jwk-set-uri:}")
-    private String jwkSetUri;
-
     /**
      * Enable method-level security in every profile (local, test, staging, production).
      * Enforces @PreAuthorize annotations on controller methods (AC6).
@@ -56,6 +55,7 @@ public class SecurityConfig {
     @Bean
     @Profile("local")
     public SecurityFilterChain localFilterChain(HttpSecurity http,
+                                                JwtDecoder jwtDecoder,
                                                 JwtAuthenticationConverter jwtAuthenticationConverter)
             throws Exception {
         http
@@ -67,7 +67,7 @@ public class SecurityConfig {
             )
             .oauth2ResourceServer(oauth2 ->
                 oauth2.jwt(jwt -> jwt
-                    .decoder(jwtDecoder())
+                    .decoder(jwtDecoder)
                     .jwtAuthenticationConverter(jwtAuthenticationConverter)));
 
         return http.build();
@@ -82,6 +82,7 @@ public class SecurityConfig {
     @Bean
     @Profile("!local")
     public SecurityFilterChain productionFilterChain(HttpSecurity http,
+                                                     JwtDecoder jwtDecoder,
                                                      JwtAuthenticationConverter jwtAuthenticationConverter)
             throws Exception {
         http
@@ -142,22 +143,24 @@ public class SecurityConfig {
                 .anyRequest().authenticated()
             )
             .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> jwt
-                .decoder(jwtDecoder())
+                .decoder(jwtDecoder)
                 .jwtAuthenticationConverter(jwtAuthenticationConverter)));
 
         return http.build();
     }
 
     /**
-     * JWT decoder for AWS Cognito tokens, in every profile. The test profile points the JWK set at
-     * an unreachable host: its tests authenticate through MockMvc's {@code jwt()} post-processor.
+     * The shared decoder ({@link BatbernJwtDecoder}), in every profile. Default kinds: Cognito and
+     * agent, never Watch: no Watch call reaches PCS, so a Watch token is refused outright.
+     * {@code batbern.security.token-kinds} overrides; the agent kind needs
+     * {@code agent.jwt.public-key}. The test profile points the JWK set at an unreachable host: its
+     * tests authenticate through MockMvc's {@code jwt()} post-processor or a {@code TestTokens} agent
+     * token.
      */
     @Bean
-    public JwtDecoder jwtDecoder() {
-        if (jwkSetUri == null || jwkSetUri.isEmpty()) {
-            throw new IllegalArgumentException("JWT JWK Set URI must be configured");
-        }
-        return NimbusJwtDecoder.withJwkSetUri(jwkSetUri).build();
+    public JwtDecoder jwtDecoder(Environment environment) {
+        return BatbernJwtDecoder.fromEnvironment(environment,
+                EnumSet.of(TokenKind.COGNITO, TokenKind.AGENT));
     }
 
     /**

@@ -72,7 +72,7 @@ public class InternalUserMergeController {
     public record MergeRequest(
             @NotBlank @Size(max = 100) String sourceUsername,
             @NotBlank @Size(max = 100) String targetUsername,
-            @NotBlank @Size(max = 100) String performedBy,
+            @NotBlank @Size(max = 255) String performedBy,
             @NotBlank @Pattern(regexp = "ORGANIZER|SELF_CLAIM") String trigger,
             Map<String, Object> sourceProfile) {
     }

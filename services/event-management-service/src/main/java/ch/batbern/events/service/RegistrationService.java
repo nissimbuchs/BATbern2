@@ -1,5 +1,6 @@
 package ch.batbern.events.service;
 
+import ch.batbern.shared.security.Actors;
 import ch.batbern.shared.utils.LoggingUtils;
 import ch.batbern.events.client.UserApiClient;
 import ch.batbern.events.config.AfterCommit;
@@ -986,7 +987,8 @@ public class RegistrationService {
         registrationRepository.saveAll(ended);
         log.info("Event {} cancelled: {} registration(s) cancelled", event.getEventCode(), ended.size());
         if (!recipients.isEmpty()) {
-            String cancelledBy = event.getUpdatedBy();
+            // The sender is a person (mail_message.sender_username), not the recorded actor
+            String cancelledBy = Actors.usernameOf(event.getUpdatedBy());
             AfterCommit.run(() -> cancellationEmailService.sendEventCancelled(event, recipients, cancelledBy));
         }
     }

@@ -1,0 +1,57 @@
+# Epics of initiative-agentic-interaction, in build order. One epic is one PR is one production deploy (C2).
+# Approved by the owner 2026-11-21.
+
+[[epic]]
+id = 0
+slug = "epic-agent-identity"
+title = "Every service knows when the agent acts, and for whom"
+description = "One shared-kernel decoder accepts Cognito, Watch and agent tokens and records agent:<run> for <username>; CUMS mints RS256 delegated tokens against run grants and owns the switch, the allowlist and the organizer delegate; gateway, CUMS, EMS and PCS adopt it; EMS audience sends refuse agent tokens; the module map names the one exception. Live, switched off."
+covers = ["R1"]
+
+[[epic]]
+id = 1
+slug = "epic-agent-runtime"
+title = "agent-service runs a gated, logged agent loop in production"
+description = "The new Java service is deployed dark with its stack and secret: agent loop behind LlmPort with a scripted adapter for tests, tool registry with the operation class table, the autonomy gate with precedent retrieval from past events, the decision log, caps and budget, alarms, and the console read API."
+covers = ["R5", "R9"]
+after = [{ epic = 0, needs = "delegated tokens and run grants from CUMS" }]
+
+[[epic]]
+id = 2
+slug = "epic-speaker-mail-agent"
+title = "A pilot speaker prepares their talk by mail"
+description = "The agent alias kind, MailAuthentication check and agent-inbound-mail contract hand authenticated mail to agent-service; the speaker tools and the delegate reply put materials on the session and answer in the speaker's language; everything else is forwarded to organizers as today."
+covers = ["R2", "R3"]
+after = [{ epic = 1, needs = "the loop, gate and decision log" }]
+
+[[epic]]
+id = 3
+slug = "epic-generated-cards"
+title = "A decision reaches a speaker as a one-tap card"
+description = "Opens with the A2UI spike (AD-16); then the BATbern catalog, the one Tailwind renderer, the card store with signed links, read-only GET and POST of the stored action, and DAST coverage of the card route."
+covers = ["R4"]
+after = [{ epic = 1, needs = "the gate and the decision log for card actions" }]
+
+[[epic]]
+id = 4
+slug = "epic-oversight-console"
+title = "The console is the pilot organizers' home"
+description = "Activity feed, pending approvals executed under the organizer's own login, overrule and undo, as the home page of pilot organizers; replaced screens hidden for them."
+covers = ["R8", "R9"]
+after = [{ epic = 3, needs = "the renderer for console views" }]
+
+[[epic]]
+id = 5
+slug = "epic-brief-and-chat"
+title = "Organizers run the event from the brief and the chat"
+description = "The morning brief mail for the current event with actions per item, and the organizer chat answering with generated views from the catalog that can act through the gate."
+covers = ["R6", "R7"]
+after = [{ epic = 4, needs = "the console that hosts the chat and the approvals" }]
+
+[[epic]]
+id = 6
+slug = "epic-pilot-run"
+title = "The pilot runs at the next event and is presented there"
+description = "Scripted personas with expected outcomes run on production, evaluation against the decision log, freeze, live run with organizers as speakers, and the summary for the stage."
+covers = ["R10", "R11"]
+after = [{ epic = 2, needs = "the speaker path" }, { epic = 5, needs = "the organizer path" }]

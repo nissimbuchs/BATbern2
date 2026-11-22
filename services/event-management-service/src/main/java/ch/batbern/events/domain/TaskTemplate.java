@@ -73,7 +73,7 @@ public class TaskTemplate {
     @Column(name = "is_default", nullable = false)
     private Boolean isDefault = false;
 
-    @Column(name = "created_by_username", length = 100)
+    @Column(name = "created_by_username", length = 255)
     private String createdByUsername;
 
     @Column(name = "created_at", nullable = false)

@@ -16,9 +16,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -83,6 +88,23 @@ class WatchSessionServiceIntegrationTest extends AbstractIntegrationTest {
                 .endTime(scheduledEndTime)
                 .build();
         return sessionRepository.save(session);
+    }
+
+    @Test
+    @DisplayName("should_recordAgentActor_when_agentEndsSessionThroughRestWithSub")
+    void should_recordAgentActor_when_agentEndsSessionThroughRestWithSub() {
+        Event event = saveEvent("BATbern59", 9004);
+        saveSession(event.getId(), "BATbern59", "agent-ended-talk", Instant.now().minusSeconds(60));
+        signInAgent("d0000000-0000-4000-8000-0000000000d1", "marco.organizer");
+        try {
+            // The REST path passes authentication.getName(): the token's sub
+            watchSessionService.endSession("BATbern59", "agent-ended-talk", "d0000000-0000-4000-8000-0000000000d1");
+        } finally {
+            SecurityContextHolder.clearContext();
+        }
+
+        assertThat(sessionRepository.findByEventCodeAndSessionSlug("BATbern59", "agent-ended-talk").orElseThrow()
+                .getCompletedByUsername()).isEqualTo("agent:run-watch-1 for marco.organizer");
     }
 
     // MARK: - Task 7.4: endSession sets fields correctly
@@ -197,5 +219,14 @@ class WatchSessionServiceIntegrationTest extends AbstractIntegrationTest {
                 .isEqualTo(EventWorkflowState.EVENT_COMPLETED);
         assertThat(eventTaskRepository.findById(slidesOnline.getId()).orElseThrow().getStatus())
                 .isEqualTo("todo");
+    }
+
+    /** Agentic 0.2: signs in an agent token (act claim) for organizer {@code username}, sub {@code sub}. */
+    private static void signInAgent(String sub, String username) {
+        Jwt jwt = Jwt.withTokenValue("agent").header("alg", "RS256").subject(sub)
+                .claim("custom:username", username)
+                .claim("act", Map.of("run", "run-watch-1", "principal", "organizer-assistant"))
+                .build();
+        SecurityContextHolder.getContext().setAuthentication(new JwtAuthenticationToken(jwt, List.of()));
     }
 }

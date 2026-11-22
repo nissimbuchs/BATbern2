@@ -118,7 +118,6 @@ updates:
       jwt:
         patterns:
           - "io.jsonwebtoken:*"
-          - "com.auth0:*"
       mail:
         patterns:
           - "jakarta.mail:*"

@@ -1,9 +1,11 @@
 package ch.batbern.gateway.config;
 
-import org.springframework.beans.factory.annotation.Value;
+import ch.batbern.shared.security.BatbernJwtDecoder;
+import ch.batbern.shared.security.TokenKind;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
+import org.springframework.core.env.Environment;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -12,12 +14,9 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
-import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.web.SecurityFilterChain;
 
-import javax.crypto.spec.SecretKeySpec;
-import java.nio.charset.StandardCharsets;
-import java.util.Base64;
+import java.util.EnumSet;
 
 /**
  * Security Configuration
@@ -38,60 +37,17 @@ import java.util.Base64;
 @EnableMethodSecurity(prePostEnabled = true)
 public class SecurityConfig {
 
-    @Value("${spring.security.oauth2.resourceserver.jwt.jwk-set-uri:}")
-    private String jwkSetUri;
-
-    @Value("${spring.security.oauth2.resourceserver.jwt.issuer-uri:}")
-    private String issuerUri;
-
-    @Value("${watch.jwt.secret:batbern-watch-dev-secret-key-min-32-chars}")
-    private String watchJwtSecret;
-
     /**
-     * Multi-issuer JWT decoder accepting both AWS Cognito (RS256) and Watch app (HS256) tokens.
-     *
-     * Routing strategy: peek at the "iss" claim in the (unverified) JWT payload to select the
-     * correct decoder. Signature verification is then performed by the selected decoder, so
-     * a forged issuer claim cannot bypass verification — it would just fail with the wrong decoder.
-     *
-     * - iss == "batbern-watch" → HMAC-SHA256 decoder (Watch pairing JWT)
-     * - anything else          → Cognito RS256 decoder (Cognito ID/access token)
+     * The shared decoder ({@link BatbernJwtDecoder}): Cognito (jwk-set-uri first, then issuer-uri),
+     * Watch and agent tokens by default; {@code batbern.security.token-kinds} overrides, and the agent
+     * kind needs {@code agent.jwt.public-key}. Not under {@code test}: that profile's chain permits
+     * everything and {@code TestSecurityConfig} provides a mock decoder.
      */
     @Bean
     @Profile("!test")
-    public JwtDecoder compositeJwtDecoder() {
-        JwtDecoder cognitoDecoder = buildCognitoDecoder();
-
-        SecretKeySpec watchKey = new SecretKeySpec(
-                watchJwtSecret.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
-        NimbusJwtDecoder watchDecoder = NimbusJwtDecoder.withSecretKey(watchKey).build();
-
-        return token -> isWatchJwt(token) ? watchDecoder.decode(token) : cognitoDecoder.decode(token);
-    }
-
-    private JwtDecoder buildCognitoDecoder() {
-        if (jwkSetUri != null && !jwkSetUri.isEmpty()) {
-            return NimbusJwtDecoder.withJwkSetUri(jwkSetUri).build();
-        }
-        if (issuerUri != null && !issuerUri.isEmpty()) {
-            return NimbusJwtDecoder.withIssuerLocation(issuerUri).build();
-        }
-        throw new IllegalStateException(
-                "Gateway JWT: configure spring.security.oauth2.resourceserver.jwt.jwk-set-uri or issuer-uri");
-    }
-
-    /** Peeks at the JWT payload (base64url, no signature check) to read the "iss" claim. */
-    private static boolean isWatchJwt(String token) {
-        try {
-            String[] parts = token.split("\\.");
-            if (parts.length < 2) {
-                return false;
-            }
-            String payload = new String(Base64.getUrlDecoder().decode(parts[1]), StandardCharsets.UTF_8);
-            return payload.contains("\"iss\":\"batbern-watch\"");
-        } catch (Exception e) {
-            return false;
-        }
+    public JwtDecoder jwtDecoder(Environment environment) {
+        return BatbernJwtDecoder.fromEnvironment(environment,
+                EnumSet.of(TokenKind.COGNITO, TokenKind.WATCH, TokenKind.AGENT));
     }
 
     /*
@@ -186,7 +142,8 @@ public class SecurityConfig {
      */
     @Bean
     @Profile("!test")
-    public SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http, JwtDecoder jwtDecoder)
+            throws Exception {
         return http
                 // CSRF not needed for stateless JWT API with header-based auth
                 .csrf(AbstractHttpConfigurer::disable)
@@ -330,10 +287,10 @@ public class SecurityConfig {
                         // registrations, distribution lists and admin settings require a JWT.
 
                         // All other requests require authentication (including Watch organizer endpoints,
-                        // which are validated by the composite JwtDecoder below)
+                        // which are validated by the shared JwtDecoder below)
                         .anyRequest().authenticated()
                 )
-                .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> jwt.decoder(compositeJwtDecoder())))
+                .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> jwt.decoder(jwtDecoder)))
                 .build();
     }
 }

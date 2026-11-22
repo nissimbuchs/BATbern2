@@ -1,5 +1,6 @@
 package ch.batbern.companyuser.service;
 
+import ch.batbern.shared.security.Actors;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -49,7 +50,7 @@ public class CompanyMergeLog {
         jdbc.update("INSERT INTO company_merge_log (source_key, target_key, performed_by, outcome, moved_keys,"
                 + " removed_keys, filled_fields, source_snapshot)"
                 + " VALUES (?, ?, ?, ?, ?::jsonb, ?::jsonb, ?::jsonb, ?::jsonb)",
-                e.sourceKey(), e.targetKey(), e.performedBy(), outcome.name(), json(e.movedKeys()),
+                e.sourceKey(), e.targetKey(), Actors.forUsername(e.performedBy()), outcome.name(), json(e.movedKeys()),
                 json(e.removedKeys()), json(e.filled()), json(e.snapshot()));
     }
 

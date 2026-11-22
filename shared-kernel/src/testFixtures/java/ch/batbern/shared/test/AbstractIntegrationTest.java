@@ -1,6 +1,7 @@
 package ch.batbern.shared.test;
 
 import ch.batbern.shared.test.fixtures.ProductionShapedPeople;
+import ch.batbern.shared.test.security.TestTokens;
 import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -96,5 +97,11 @@ public abstract class AbstractIntegrationTest {
         registry.add("spring.datasource.url", POSTGRES::getJdbcUrl);
         registry.add("spring.datasource.username", POSTGRES::getUsername);
         registry.add("spring.datasource.password", POSTGRES::getPassword);
+        // Agentic interaction 0.1: every IT context runs with the agent token kind on, as production
+        // will; the key pair is generated per JVM by TestTokens, so agentToken(...) verifies here.
+        registry.add("agent.jwt.public-key", TestTokens::agentPublicKeyPem);
+        // Story 0.6: the matching private key, read by CUMS only (POST /internal/agent-tokens), so a
+        // token CUMS mints in an IT verifies with the decoder of every service.
+        registry.add("agent.jwt.private-key", TestTokens::agentPrivateKeyPem);
     }
 }

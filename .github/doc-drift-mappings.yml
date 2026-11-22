@@ -216,6 +216,49 @@ mappings:
     docs:
       - "docs/architecture/module-map.md"
       - "docs/architecture/ADR-016-service-directions-and-service-to-service-calls.md"
+  # Agentic interaction 0.2: the attribution convention (agent:<run> for <username>, system:<job>).
+  - source_pattern: "shared-kernel/src/main/java/ch/batbern/shared/security/Actors.java"
+    docs:
+      - "docs/architecture/module-map.md"
+      - "docs/architecture/06-backend-architecture.md"
+  # Agentic interaction story 7: audience sends refuse agent tokens (AD-15).
+  - source_pattern: "shared-kernel/src/main/java/ch/batbern/shared/security/AudienceGuard.java"
+    docs:
+      - "docs/architecture/module-map.md"
+      - "docs/architecture/06-backend-architecture.md"
+  # Agentic interaction 0.1, 0.6: the shared decoder, the agent token signer and its claim rules.
+  - source_pattern: "shared-kernel/src/main/java/ch/batbern/shared/security/BatbernJwtDecoder.java"
+    docs:
+      - "docs/architecture/06-backend-architecture.md"
+      - "docs/architecture/08-operations-security.md"
+  - source_pattern: "shared-kernel/src/main/java/ch/batbern/shared/security/AgentTokenSigner.java"
+    docs:
+      - "docs/architecture/06-backend-architecture.md"
+      - "docs/architecture/08-operations-security.md"
+  - source_pattern: "shared-kernel/src/main/java/ch/batbern/shared/security/AgentTokenValidator.java"
+    docs:
+      - "docs/architecture/06-backend-architecture.md"
+      - "docs/architecture/08-operations-security.md"
+  - source_pattern: "shared-kernel/src/main/java/ch/batbern/shared/security/TokenKind.java"
+    docs:
+      - "docs/architecture/06-backend-architecture.md"
+      - "docs/architecture/08-operations-security.md"
+  # Agentic interaction 0.4 to 0.6: CUMS agent switch, allowlist, grants and tokens.
+  - source_pattern: "services/company-user-management-service/src/main/java/ch/batbern/companyuser/*/Agent*.java"
+    docs:
+      - "docs/architecture/06-backend-architecture.md"
+      - "docs/architecture/module-map.md"
+  - source_pattern: "services/company-user-management-service/src/main/java/ch/batbern/companyuser/controller/InternalAgentController.java"
+    docs:
+      - "docs/architecture/06-backend-architecture.md"
+      - "docs/architecture/module-map.md"
+  # Agentic interaction 0.3: the agent signing key and the caller secrets are operated through the runbooks.
+  - source_pattern: "scripts/deploy/create-agent-signing-key.sh"
+    docs:
+      - "docs/operations/runbooks.md"
+  - source_pattern: "infrastructure/lib/stacks/secrets-stack.ts"
+    docs:
+      - "docs/operations/runbooks.md"
   # Epic 17 entry 7: EMS implements the CUMS-owned Mail Center request contract in the mail center module.
   - source_pattern: "services/event-management-service/src/main/java/ch/batbern/events/mailcenter/InternalRequestConversationController"
     docs:

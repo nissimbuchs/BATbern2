@@ -1,6 +1,7 @@
 package ch.batbern.companyuser.service;
 
 import ch.batbern.companyuser.client.UserReferenceContract;
+import ch.batbern.shared.security.Actors;
 import ch.batbern.shared.types.Role;
 import ch.batbern.companyuser.domain.User;
 import ch.batbern.companyuser.domain.UserAdditionalEmail;
@@ -122,8 +123,10 @@ public class UserMergeService {
         return merge(targetUsername, sourceUsername, targetUsername, ProfileClaimService.TRIGGER, true, true);
     }
 
-    private Result merge(String targetUsername, String sourceUsername, String performedBy, String trigger,
+    private Result merge(String targetUsername, String sourceUsername, String who, String trigger,
             boolean carryAddresses, boolean allowSourceLogin) {
+        // Who merged, as the holders record it: an agent acting for the caller is named as such
+        String performedBy = Actors.forUsername(who);
         User target = userRepository.findByUsernameForUpdate(targetUsername)
                 .orElseThrow(() -> new UserNotFoundException("User not found: " + targetUsername, true));
         User source = userRepository.findByUsernameForUpdate(sourceUsername)

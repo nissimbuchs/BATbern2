@@ -123,6 +123,21 @@ batbern:
         # 48h TTL on the signed verification link.
         token-validity-hours: ${ADDITIONAL_EMAIL_VERIFICATION_TOKEN_VALIDITY_HOURS:48}
 
+# Agent identity, story 5: who may request an agent run grant (/internal/agent-grants) or ask for
+# agent eligibility (/internal/agent-eligibility). The secrets come from Secrets Manager as container
+# env (story 3); mapped explicitly because relaxed binding cannot reach `agent-service`. Blank means
+# that caller is refused. Never log them.
+agent:
+  callers:
+    ems:
+      secret: ${AGENT_CALLERS_EMS_SECRET:}
+    agent-service:
+      secret: ${AGENT_CALLERS_AGENT_SERVICE_SECRET:}
+  grants:
+    # Scheduler jobs that may request a grant for the organizer delegate, comma-separated.
+    # morning-brief: agent-service's morning brief for the organizers (epic-brief-and-chat).
+    scheduler-jobs: morning-brief
+
 # Server Configuration
 server:
   port: 8080

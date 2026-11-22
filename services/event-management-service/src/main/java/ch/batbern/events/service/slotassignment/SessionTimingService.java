@@ -11,6 +11,7 @@ import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.events.repository.SessionTimingHistoryRepository;
 import ch.batbern.events.service.TimetableService;
 import ch.batbern.shared.events.SessionTimingAssignedEvent;
+import ch.batbern.shared.security.Actors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
@@ -95,7 +96,7 @@ public class SessionTimingService {
                 .newEndTime(endTime)
                 .newRoom(room)
                 .changeReason(changeReason)
-                .changedBy(changedBy)
+                .changedBy(Actors.forUsername(changedBy))
                 .build();
 
         sessionTimingHistoryRepository.save(history);
@@ -142,7 +143,7 @@ public class SessionTimingService {
                 .newEndTime(null)
                 .newRoom(null)
                 .changeReason("manual_adjustment")
-                .changedBy(changedBy)
+                .changedBy(Actors.forUsername(changedBy))
                 .build();
 
         sessionTimingHistoryRepository.save(history);

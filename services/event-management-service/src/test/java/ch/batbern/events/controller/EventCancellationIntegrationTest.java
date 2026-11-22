@@ -17,6 +17,8 @@ import ch.batbern.events.repository.SpeakerPoolRepository;
 import ch.batbern.events.service.SpeakerReminderService;
 import ch.batbern.shared.test.AbstractIntegrationTest;
 import ch.batbern.shared.test.mail.SesRecorder;
+import ch.batbern.shared.test.security.RoleStubTables;
+import ch.batbern.shared.test.security.TestTokens;
 import ch.batbern.shared.types.EventWorkflowState;
 import ch.batbern.shared.types.SpeakerWorkflowState;
 import org.junit.jupiter.api.AfterEach;
@@ -25,6 +27,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.web.servlet.MockMvc;
@@ -65,6 +68,7 @@ class EventCancellationIntegrationTest extends AbstractIntegrationTest {
     private static final String OTHER = "BATbern9761";
     private static final String SIM = "@simulator.amazonses.com";
     private static final String ORGANIZER = "olga.organizer";
+    private static final String ORGANIZER_SUB = "c0000000-0000-4000-8000-000000009760";
 
     @Autowired
     private MockMvc mockMvc;
@@ -91,6 +95,7 @@ class EventCancellationIntegrationTest extends AbstractIntegrationTest {
 
     @BeforeEach
     void setUp() {
+        RoleStubTables.create(jdbc);
         cleanUp();
         sesRecorder.reset();
         event = eventRepository.saveAndFlush(event(CODE, EventWorkflowState.AGENDA_PUBLISHED));
@@ -115,6 +120,7 @@ class EventCancellationIntegrationTest extends AbstractIntegrationTest {
                     + "(SELECT id FROM events WHERE event_code = ?)", code);
             jdbc.update("DELETE FROM events WHERE event_code = ?", code);
         }
+        RoleStubTables.remove(jdbc, ORGANIZER_SUB);
     }
 
     @Test
@@ -241,6 +247,32 @@ class EventCancellationIntegrationTest extends AbstractIntegrationTest {
         sesRecorder.awaitAsyncSends();
         assertThat(sesRecorder.mailsTo(sim("sven.active"))).as("positive control").hasSize(1);
         assertThat(sesRecorder.mailsTo(sim("sina.cancelled"))).isEmpty();
+    }
+
+    @Test
+    @DisplayName("an agent token cannot cancel: 403, nothing changes, nobody is mailed; the organizer can (AD-15)")
+    void cancel_refusesAgentToken_andLeavesEventAndRegistrations() throws Exception {
+        RoleStubTables.grant(jdbc, ORGANIZER, ORGANIZER_SUB, "ORGANIZER");
+        String agent = "Bearer " + TestTokens.agentToken(ORGANIZER_SUB, ORGANIZER, "run-cancel-9760", "organizer");
+
+        mockMvc.perform(post("/api/v1/events/{code}/transition", CODE)
+                        .header(HttpHeaders.AUTHORIZATION, agent)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"targetState\":\"CANCELLED\"}"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.message", is("Audience sends refuse agent tokens (AD-15): event cancel")));
+
+        assertThat(eventRepository.findByEventCode(CODE).orElseThrow().getWorkflowState())
+                .isEqualTo(EventWorkflowState.AGENDA_PUBLISHED);
+        assertThat(registrationRepository.findByEventId(event.getId()))
+                .extracting(Registration::getStatus)
+                .containsExactlyInAnyOrder("registered", "confirmed", "waitlist", "cancelled", "confirmed");
+        sesRecorder.awaitAsyncSends();
+        assertThat(sesRecorder.mails()).isEmpty();
+
+        transition(CODE, "CANCELLED").andExpect(status().isOk());
+        sesRecorder.awaitAsyncSends();
+        assertThat(sesRecorder.mails()).hasSize(4);
     }
 
     // ── helpers ──────────────────────────────────────────────────────────────

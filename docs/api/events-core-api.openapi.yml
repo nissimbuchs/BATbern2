@@ -1006,7 +1006,9 @@ paths:
         archival cleanup); all event caches are cleared.
 
 
-        **Security**: ORGANIZER role required; any other role gets 403.
+        **Security**: ORGANIZER role required; any other role gets 403. A transition to
+        CANCELLED mails every registrant, so a token that carries `act` (an agent token)
+        gets 403 for it (AD-15: audience sends refuse agent tokens).
 
         '
       operationId: transitionEventWorkflowState
@@ -2911,7 +2913,7 @@ components:
           description: Username of the creator (audit).
         updatedBy:
           type: string
-          description: Organizers only (omitted for other callers, GHSA-qhqv). Username of the last updater (audit).
+          description: Organizers only (omitted for other callers, GHSA-qhqv). Username of the last updater (audit), `agent:<run> for <username>` when an agent acted for them, or `system:<job>`.
         confirmedSpeakersCount:
           type: integer
           description: 'Speakers who accepted their invitation. Only present when ?include=metrics and the caller is an organizer.'
