@@ -11,5 +11,9 @@ public enum ToolCallStatus {
     /** The tool threw. */
     FAILED,
     /** The model asked for a tool the run does not offer. */
-    UNKNOWN_TOOL
+    UNKNOWN_TOOL,
+    /** The autonomy gate made the call a pending approval; it did not run (story 7). */
+    PENDING_APPROVAL,
+    /** The autonomy gate refused the call; it did not run (story 7). */
+    REFUSED
 }

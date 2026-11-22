@@ -147,6 +147,19 @@ public class DecisionLog {
                 .end(ToolCallStatus.FAILED, null, describe(error), clock.instant());
     }
 
+    /**
+     * The autonomy gate held the call (story 7): PENDING_APPROVAL or REFUSED, with what the model was
+     * told. The tool did not run.
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void holdToolCall(UUID toolCallId, ToolCallStatus status, String toldTheModel) {
+        if (status != ToolCallStatus.PENDING_APPROVAL && status != ToolCallStatus.REFUSED) {
+            throw new IllegalArgumentException("A held call is PENDING_APPROVAL or REFUSED, not " + status);
+        }
+        toolCalls.findById(toolCallId).orElseThrow(() -> missing("tool call", toolCallId))
+                .end(status, LlmJson.storable(toldTheModel), null, clock.instant());
+    }
+
     /** The model asked for a tool the run does not offer; logged as asked, never run. */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public UUID recordUnknownTool(UUID runId, UUID stepId, LlmContent.ToolUse use, String error) {

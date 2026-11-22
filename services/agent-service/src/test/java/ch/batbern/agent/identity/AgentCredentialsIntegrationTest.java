@@ -1,6 +1,7 @@
 package ch.batbern.agent.identity;
 
 import ch.batbern.agent.config.AgentProperties;
+import ch.batbern.agent.gate.AutonomyGate;
 import ch.batbern.agent.gateway.ApiResponse;
 import ch.batbern.agent.log.DecisionLog;
 import ch.batbern.agent.loop.AgentLoop;
@@ -96,6 +97,9 @@ class AgentCredentialsIntegrationTest extends AbstractIntegrationTest {
     @Autowired
     private Clock clock;
 
+    @Autowired
+    private AutonomyGate gate;
+
     private CumsAtTheWire cums;
 
     /** The Authorization header of every gateway request, in order. */
@@ -165,6 +169,7 @@ class AgentCredentialsIntegrationTest extends AbstractIntegrationTest {
     void should_mintBeforeEveryWrite_when_toolWritesTwice() {
         cums.grants().mints();
         gatewayExpects(HttpMethod.POST, ExpectedCount.times(2));
+        clearWritesOfScheduledRuns();
         RecordingTool write = writing(false);
         model.then(useTool("createCompany", "createCompany")).then(endTurn());
 
@@ -199,6 +204,7 @@ class AgentCredentialsIntegrationTest extends AbstractIntegrationTest {
         cums.grants().mints();
         cums.server().expect(HttpMethod.POST, COMPANIES).andExpect(r -> gatewayAuthorizations
                 .add(r.getHeaders().getFirst(HttpHeaders.AUTHORIZATION))).respondWithStatus(HttpStatus.FORBIDDEN);
+        clearWritesOfScheduledRuns();
         model.then(useTool("createCompany")).then(endTurn());
 
         AgentRunResult result = run(new GrantSource.SchedulerJob(CumsAtTheWire.JOB), writing(false));
@@ -312,6 +318,7 @@ class AgentCredentialsIntegrationTest extends AbstractIntegrationTest {
     void should_handToOrganizers_when_mintBeforeWriteRefused(boolean swallow, CapturedOutput output) {
         cums.grants().mintsThenRefuses(1, HttpStatus.FORBIDDEN, "GRANT_INVALID");
         // No gateway expectation: a POST to /api/v1/companies would fail the test
+        clearWritesOfScheduledRuns();
         RecordingTool write = writing(swallow);
         RecordingTool second = reading();
         model.then(useTool("createCompany", "listCompanies"));
@@ -443,7 +450,7 @@ class AgentCredentialsIntegrationTest extends AbstractIntegrationTest {
                     new AgentProperties.Cums(properties.cums().baseUrl(), missing), properties.gateway());
             CumsAgentClient client = new CumsAgentClient(restTemplate, withoutSecret);
             AgentLoop loopWithoutSecret = new AgentLoop(model, decisionLog, withoutSecret, client, restTemplate,
-                    NO_TOOLS, clock);
+                    NO_TOOLS, gate, clock);
 
             // No expectation is registered: any request to CUMS fails the test
             AgentRunResult result = loopWithoutSecret.run(new AgentRunRequest(
@@ -456,7 +463,8 @@ class AgentCredentialsIntegrationTest extends AbstractIntegrationTest {
         AgentProperties withoutSecret = new AgentProperties(true, properties.loop(), properties.anthropic(),
                 new AgentProperties.Cums(properties.cums().baseUrl(), ""), properties.gateway());
         CumsAgentClient client = new CumsAgentClient(restTemplate, withoutSecret);
-        AgentRunResult handedOver = new AgentLoop(model, decisionLog, withoutSecret, client, restTemplate, NO_TOOLS, clock)
+        AgentRunResult handedOver = new AgentLoop(model, decisionLog, withoutSecret, client, restTemplate, NO_TOOLS, gate,
+                clock)
                 .run(new AgentRunRequest(new GrantSource.HandedOver(UUID.randomUUID(), CumsAtTheWire.grantSecret()),
                         SYSTEM, "Tidy up"));
         assertRefusedBeforeModel(handedOver, RunEndReason.GRANT_REFUSED, "CALLER_SECRET_MISSING");
@@ -531,6 +539,33 @@ class AgentCredentialsIntegrationTest extends AbstractIntegrationTest {
                     ApiResponse response = context.api().get("/companies");
                     return ToolOutcome.ok(String.valueOf(response.status()));
                 });
+    }
+
+    /**
+     * The autonomy gate (story 7) lets the binding {@code createCompany} run alone only with two
+     * approved precedents: two earlier calls of it by scheduler runs (ORGANIZER_DELEGATE), approved.
+     */
+    private void clearWritesOfScheduledRuns() {
+        for (int i = 0; i < 2; i++) {
+            UUID run = UUID.randomUUID();
+            UUID step = UUID.randomUUID();
+            UUID call = UUID.randomUUID();
+            UUID verdict = UUID.randomUUID();
+            jdbc.update("INSERT INTO agent_runs (id, status, started_at, ended_at, trigger, end_reason, grant_run_id, "
+                    + "principal_kind) VALUES (?, 'DONE', now(), now(), 'SCHEDULED', 'COMPLETED', ?, "
+                    + "'ORGANIZER_DELEGATE')", run, UUID.randomUUID());
+            jdbc.update("INSERT INTO agent_steps (id, run_id, step_number, started_at) VALUES (?, ?, 1, now())",
+                    step, run);
+            jdbc.update("INSERT INTO agent_tool_calls (id, run_id, step_id, tool_use_id, tool_name, input, status, "
+                    + "started_at) VALUES (?, ?, ?, 'toolu_seed', 'createCompany', '{}'::jsonb, 'PENDING_APPROVAL', "
+                    + "now())", call, run, step);
+            jdbc.update("INSERT INTO agent_verdicts (id, run_id, tool_call_id, operation_class, outcome, inputs, "
+                    + "cited_precedents, decided_at) VALUES (?, ?, ?, 'BINDING', 'PENDING_APPROVAL', '{}'::jsonb, "
+                    + "'[]'::jsonb, now())", verdict, run, call);
+            jdbc.update("INSERT INTO agent_approvals (id, run_id, verdict_id, state, decided_by, created_at, "
+                    + "decided_at) VALUES (?, ?, ?, 'APPROVED', 'organizer.test', now(), now())", UUID.randomUUID(),
+                    run, verdict);
+        }
     }
 
     /** POST /companies; with {@code swallow} it hides a refused mint and claims success. */

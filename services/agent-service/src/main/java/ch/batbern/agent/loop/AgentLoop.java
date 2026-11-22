@@ -1,11 +1,15 @@
 package ch.batbern.agent.loop;
 
 import ch.batbern.agent.config.AgentProperties;
+import ch.batbern.agent.gate.AutonomyGate;
+import ch.batbern.agent.gate.GateMessages;
+import ch.batbern.agent.gate.Verdict;
 import ch.batbern.agent.gateway.PublicApi;
 import ch.batbern.agent.identity.AgentCredentialsRefusedException;
 import ch.batbern.agent.identity.CumsAgentClient;
 import ch.batbern.agent.identity.RunCredentials;
 import ch.batbern.agent.log.DecisionLog;
+import ch.batbern.agent.precedent.ProposedCall;
 import ch.batbern.agent.run.RunEndReason;
 import ch.batbern.agent.tools.AgentTool;
 import ch.batbern.agent.tools.ToolContext;
@@ -38,6 +42,11 @@ import java.util.UUID;
  * <p>The model is offered the tools of the {@link ToolRegistry} (story 5, AD-6), each with its class
  * derived from the operation class table; a tool's API lets through only the operations it declares.
  *
+ * <p>Before every non-read tool call the {@link AutonomyGate} decides (story 7, AD-7): the call is
+ * logged, the gate writes its verdict, and only a RUN verdict runs the tool. A call held for an
+ * organizer's approval or refused ends PENDING_APPROVAL or REFUSED without running; the model gets
+ * {@link GateMessages#toModel} as the tool result and the run goes on. Read calls skip the gate.
+ *
  * <p>A run ends:
  * <ul>
  *   <li>DONE when the model ends its turn;</li>
@@ -68,16 +77,18 @@ public class AgentLoop {
     private final CumsAgentClient cums;
     private final RestTemplate restTemplate;
     private final ToolRegistry registry;
+    private final AutonomyGate gate;
     private final Clock clock;
 
     public AgentLoop(LlmPort llm, DecisionLog decisionLog, AgentProperties properties, CumsAgentClient cums,
-                     RestTemplate restTemplate, ToolRegistry registry, Clock clock) {
+                     RestTemplate restTemplate, ToolRegistry registry, AutonomyGate gate, Clock clock) {
         this.llm = llm;
         this.decisionLog = decisionLog;
         this.properties = properties;
         this.cums = cums;
         this.restTemplate = restTemplate;
         this.registry = registry;
+        this.gate = gate;
         this.clock = clock;
     }
 
@@ -233,11 +244,18 @@ public class AgentLoop {
                 continue;
             }
             UUID toolCallId = decisionLog.startToolCall(runId, stepId, use);
-            ToolOutcome outcome;
+            ToolOutcome outcome = null;
+            Verdict verdict = null;
             try {
-                // The tool reaches only the operations its class was derived from
-                ToolContext context = new ToolContext(runId, api.limitedTo(tool.operations()));
-                outcome = tool.execute(use.input(), context);
+                if (AutonomyGate.gates(tool)) {
+                    // The gate gets the run's API: its precedent read is not one of the tool's operations
+                    verdict = gate.decide(new ProposedCall(runId, tool, use.input()), toolCallId, api);
+                }
+                if (verdict == null || verdict.runs()) {
+                    // The tool reaches only the operations its class was derived from
+                    ToolContext context = new ToolContext(runId, api.limitedTo(tool.operations()));
+                    outcome = tool.execute(use.input(), context);
+                }
             } catch (RuntimeException e) {
                 decisionLog.failToolCall(toolCallId, credentials.refusal().map(r -> (RuntimeException) r).orElse(e));
                 LOG.warn("Agent run {} step {}: tool {} failed ({})", runId, step, tool.name(),
@@ -256,6 +274,15 @@ public class AgentLoop {
                 LOG.warn("Agent run {} step {}: tool {} failed ({})", runId, step, tool.name(),
                         refusal.get().getClass().getName());
                 break;
+            }
+            if (verdict != null && !verdict.runs()) {
+                // Held by the gate: the tool did not run
+                String told = GateMessages.toModel(verdict);
+                decisionLog.holdToolCall(toolCallId, verdict.heldStatus(), told);
+                LOG.info("Agent run {} step {}: tool {} held by the gate ({}, {})", runId, step, tool.name(),
+                        verdict.outcome(), verdict.reason());
+                results.add(new LlmContent.ToolResult(use.id(), told, GateMessages.isError(verdict)));
+                continue;
             }
             decisionLog.completeToolCall(toolCallId, outcome);
             LOG.info("Agent run {} step {}: tool {} {}", runId, step, tool.name(),

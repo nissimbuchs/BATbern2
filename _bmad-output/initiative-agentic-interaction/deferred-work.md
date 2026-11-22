@@ -52,3 +52,15 @@
 - source_plan: `_bmad-output/initiative-agentic-interaction/tickets/epic-agent-runtime/tickets/story-precedents-are-retrieved-from-past-events-and-the-decision-l-plan.md`
   summary: No shipped tool declares a past-event query yet (the epic ships read tools only); the first non-read tool (epic-speaker-mail-agent) decides what past events it is judged against.
   evidence: AgentTool.pastEventQuery defaults to empty; proven with a test-only fixture tool.
+- source_plan: `_bmad-output/initiative-agentic-interaction/tickets/epic-agent-runtime/tickets/story-one-autonomy-gate-decides-every-non-read-call-and-cites-its-plan.md`
+  summary: Nothing executes an approved call yet, and a model that proposes the same held call again gets a second PENDING approval; the console (epic-oversight-console) decides how an approved call runs (re-gated or not) and whether repeats are folded into one approval.
+  evidence: Story 7 writes PENDING approvals only; the loop tells the model not to repeat, but nothing enforces it beyond the step cap.
+- source_plan: `_bmad-output/initiative-agentic-interaction/tickets/epic-agent-runtime/tickets/story-one-autonomy-gate-decides-every-non-read-call-and-cites-its-plan.md`
+  summary: The matching rule (same tool, same principal kind) ignores the call's input, so two approvals of a binding tool for one case clear it for any other case; tighten PrecedentMatchRule before the first real binding mail tool (epic-speaker-mail-agent).
+  evidence: Epic assumption set by Sofia, not asked; with read tools only nothing is cleared in production today.
+- source_plan: `_bmad-output/initiative-agentic-interaction/tickets/epic-agent-runtime/tickets/story-one-autonomy-gate-decides-every-non-read-call-and-cites-its-plan.md`
+  summary: The advisory lock that serializes mail verdicts across concurrent runs (GateLedger) has no concurrency test.
+  evidence: All gate tests run one run at a time; a two-thread test would settle that two concurrent first mails to different people cannot both run alone.
+- source_plan: `_bmad-output/initiative-agentic-interaction/tickets/epic-agent-runtime/tickets/story-one-autonomy-gate-decides-every-non-read-call-and-cites-its-plan.md`
+  summary: GateRules.REQUIRED_APPROVALS (2) and the one-recipient limit are constants, not configuration like story 8's caps.
+  evidence: Owner fixed the values 2026-11-22; changing them is a code change today.

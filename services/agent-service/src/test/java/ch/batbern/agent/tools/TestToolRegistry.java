@@ -22,10 +22,17 @@ import java.util.Map;
 @Component
 public class TestToolRegistry extends ToolRegistry {
 
-    /** The shipped table plus GET and POST {@code /companies} (companies spec). */
+    /**
+     * The shipped table plus GET and POST {@code /companies} (companies spec) and, for the gate's
+     * fixture tools (story 7), one real operation of docs/api per non-read class.
+     */
     public static final OperationClassTable TABLE = OperationClassTable.standard().with(Map.of(
             Operation.of("GET /companies"), OperationClass.READ,
-            Operation.of("POST /companies"), OperationClass.BINDING));
+            Operation.of("POST /companies"), OperationClass.BINDING,
+            Operation.of("PATCH /events/{eventCode}/sessions/{sessionSlug}"), OperationClass.REVERSIBLE,
+            Operation.of("POST /conversations/{conversationKey}/replies"), OperationClass.REPLY,
+            Operation.of("POST /events/{eventCode}/speakers/{speakerId}/send-invitation"), OperationClass.BINDING,
+            Operation.of("POST /events/{eventCode}/mails"), OperationClass.AUDIENCE));
 
     private volatile List<AgentTool> installed;
 
@@ -37,6 +44,12 @@ public class TestToolRegistry extends ToolRegistry {
     public List<AgentTool> tools() {
         List<AgentTool> current = installed;
         return current == null ? super.tools() : current;
+    }
+
+    /** {@link #TABLE} while test tools are installed, the shipped table otherwise. */
+    @Override
+    public OperationClassTable table() {
+        return installed == null ? super.table() : TABLE;
     }
 
     /** The next runs are offered exactly {@code tools} (none for an empty list), checked first. */

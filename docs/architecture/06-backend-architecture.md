@@ -146,6 +146,47 @@ principal kind is read from `agent_runs.principal_kind` (V4), set from the CUMS 
 error leaves the history empty with status `UNAVAILABLE`; a refused mint propagates and ends the
 run. The gate (story 7) consumes it.
 
+The autonomy gate (story 7, R5, R6, AD-7): `loop/AgentLoop` logs every tool call, and for a tool
+whose class is not `read` asks `gate/AutonomyGate` before running it. Read calls skip the gate. The
+gate (1) asks the tool for the mail the call would send (`AgentTool.outboundMail`), (2) retrieves
+the call's precedents with the run's `PublicApi`, and (3) in one transaction (`gate/GateLedger`,
+under a PostgreSQL advisory lock when the call mails) reads the run's trigger and principal kind
+from its row and the recipients already mailed, applies `gate/GateRules`, and writes the
+`agent_verdicts` row: the effective class, the outcome `RUN`, `PENDING_APPROVAL` or `REFUSED`, the
+confidence of a `binding` call, the inputs (tool, classes, trigger, principal kind, mail recipients,
+counts, precedent counts, the deciding rule as `reason`) and `cited_precedents` (every source id
+the retrieval returned). A pending verdict also writes an `agent_approvals` row in state `PENDING`.
+The rules, in order (owner, 2026-11-22):
+
+- A mail whose recipients the tool cannot resolve is `REFUSED` (`MAIL_UNRESOLVED`).
+- An `audience` tool is always pending. So is any mail to a non-organizer that brings the distinct
+  non-organizer recipients of the run, or of the day (Europe/Zurich, all runs), above one: it is
+  treated as `audience` (`RECIPIENTS_ABOVE_ONE`). Counted are the recipients of mail verdicts the
+  gate let run (on the verdict's day, even if the tool then failed: the mail may have left) or whose
+  approval is `APPROVED` (on the approval's day), plus the current mail; pending, denied and refused
+  mails were not sent. A mail to organizers only is not counted.
+- Any mail of a `SCHEDULED` run is pending (`SCHEDULED_MAIL`).
+- A `binding` call runs alone only with at least two matching approvals and no matching denial
+  (confidence 0 with a denial, else `min(approvals, 2) / 2`, threshold 1); otherwise it is pending.
+- A `reversible` or `reply` call runs alone.
+- Every call the rules let run is asked of a `gate/GateCaps` bean (story 8); when it names a cap the
+  call reaches, the call is `REFUSED` (`CAP_REACHED`).
+
+Nothing the model writes and nothing in the inbound message is an input: an approval can only come
+from the decision log. A held call is not run; its tool call ends `PENDING_APPROVAL` or `REFUSED`
+(V5) and the model gets a tool result: for a pending call, not an error, `{"status":
+"PENDING_APPROVAL", "approvalId": ..., "message": ...}` telling it the call has not run, not to
+repeat it or reach the same result another way, and to carry on or end its turn; for a refused
+call, an error naming the reason. The run goes on.
+
+Mail tool contract (for epic speaker-mail-agent): a tool that can mail overrides
+`AgentTool.outboundMail(input, readOnly)` and returns every recipient (to, cc, bcc) for every input
+that would send a mail, resolved deterministically from the input; `readOnly`'s API lets through
+only the tool's `read` operations, so it may look an address up but never write.
+`MailRecipient.organizer` is true only for an address resolved from the organizer side through the
+API (an organizer user or alias), never because the model or the inbound text says so. Addresses
+are stripped and lowercased; input the tool cannot resolve throws, and the gate refuses the call.
+
 ### Package layout
 
 Layer packages are shared by all services; larger services add feature packages next to them.

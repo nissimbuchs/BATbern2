@@ -68,7 +68,12 @@ CUMS (identity) is upstream of all. EMS (event) is upstream of PCS (partners).
   (`AgentTool.pastEventQuery`, read through `findPastEvents` with the run's token), each with a
   citeable source id (`agent_approvals:<id>`, `agent_undos:<id>`, `event:<eventCode>`). The matching
   rule (same tool, same principal kind) lives only in `precedent/PrecedentMatchRule`; the run's
-  principal kind is the one CUMS names in the grant answer, stored as `agent_runs.principal_kind`. Open naming point for the epic's
+  principal kind is the one CUMS names in the grant answer, stored as `agent_runs.principal_kind`. The
+  autonomy gate (story 7, R5, AD-7): `loop/AgentLoop` asks `gate/AutonomyGate` before every non-read
+  tool call (read calls skip it); the rules live only in `gate/GateRules`, the verdict with its
+  inputs and cited precedent ids is written by `gate/GateLedger` to `agent_verdicts` (plus a PENDING
+  `agent_approvals` row), and only a RUN verdict runs the tool. Mail tools declare their recipients
+  through `AgentTool.outboundMail`; story 8's caps plug in as a `gate/GateCaps` bean. Open naming point for the epic's
   refactor sweep: CUMS already owns `agent_settings`, `agent_grants` and `agent_allowlist`, so
   "agent_* tables belong to agent-service" (AD-9) needs a sharper rule.
 - Downstream must react to an upstream change? The upstream calls it through an `/internal`
