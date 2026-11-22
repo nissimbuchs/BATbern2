@@ -63,6 +63,12 @@ checks, K6. The `*.yml.disabled` files are not run.
      exist yet (CDK creates it in deploy Layer 0; the workflow role may not), the image is saved
      as artifact `first-push-image-<service>` instead of pushed, and `deploy-staging.yml` pushes
      it after Layer 0, before Layer 4. Dormant once the repository exists
+   - `deploy-staging.yml` "Prepare deployment" checks that the image of every service it deploys
+     exists in ECR before any stack changes. On a selective deploy it maps each repository to the
+     short name the change detection emits (`service_short_name`, `agent-service` → `agent`,
+     `company-user-management-service` → `company-management`); until 2026-11-22 it compared the
+     repository name with the short names and only ever checked api-gateway on that path
+     (`infrastructure/test/unit/deploy-image-check-service-names.test.ts`)
    - Until 2026-10-07 this job ran on x86 `ubuntu-latest`, and the whole Docker build ran under
      QEMU: 20-29 minutes per changed service for the image step alone (PR #1072)
 
@@ -395,6 +401,9 @@ Solution: Check service logs, rollback if necessary
   safe: after the service stacks, `scripts/ci/ensure-services-run-image.sh` moves every service
   that does not run the run's image tag to the task definition registered for it (CloudFormation
   sees an unchanged template and would leave the rolled-back image in place)
+- A service's first deploy has no `staging-stable` image and no earlier task definition, so a
+  rollback after its gate fails reports that service as failed and leaves it on the new image
+  (agent-service, expected once; see `docs/operations/runbooks.md` → "Agent service: first deploy")
 
 **Manual Rollback:**
 1. Navigate to AWS ECS Console
