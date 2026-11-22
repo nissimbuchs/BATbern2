@@ -10,6 +10,7 @@ import ch.batbern.agent.identity.CumsAgentClient;
 import ch.batbern.agent.identity.RunCredentials;
 import ch.batbern.agent.log.DecisionLog;
 import ch.batbern.agent.precedent.ProposedCall;
+import ch.batbern.agent.run.RunAlarms;
 import ch.batbern.agent.run.RunEndReason;
 import ch.batbern.agent.run.RunLimit;
 import ch.batbern.agent.tools.AgentTool;
@@ -67,7 +68,9 @@ import java.util.UUID;
  * A tool that throws or is unknown goes back to the model as an error tool_result; the run goes on.
  *
  * <p>The application log carries ids, counts, tool names and outcomes only: never prompt text, tool
- * input or output, or an exception message (#1202). Those are in the decision log.
+ * input or output, or an exception message (#1202). Those are in the decision log. A run end an
+ * alarm watches (FAILED, a cap, the daily budget, a refused grant or mint) also writes its
+ * {@link RunAlarms} marker line (story 10).
  */
 @Service
 public class AgentLoop {
@@ -124,10 +127,14 @@ public class AgentLoop {
         } catch (Error e) {
             // The run must not stay RUNNING; end it, then let the Error go on
             LOG.error("Agent run {} failed in step {}: {}", runId, counter.steps, e.getClass().getName());
+            // The marker first: if the decision log is what broke, the alarm still fires
+            RunAlarms.record(runId, RunEndReason.INTERNAL_ERROR, null);
             decisionLog.endRun(runId, RunEndReason.INTERNAL_ERROR);
             throw e;
         }
         RunEndReason reason = end.reason();
+        // The marker before the decision log's write: a failing database must not silence the alarm
+        RunAlarms.record(runId, reason, end.detail());
         decisionLog.endRun(runId, reason, end.detail());
         LOG.info("Agent run {} ended {} ({}) after {} steps", runId, reason.status(), reason, counter.steps);
         return new AgentRunResult(runId, reason.status(), reason, end.detail(), counter.steps);

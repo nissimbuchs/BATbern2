@@ -8,6 +8,7 @@ import { Construct } from 'constructs';
 import { EnvironmentConfig } from '../config/environment-config';
 import { createDomainService } from '../constructs/domain-service-construct';
 import { EcsServiceAlarms } from '../constructs/ecs-service-alarms';
+import { AgentRunAlarms } from '../constructs/agent-run-alarms';
 
 export interface AgentServiceStackProps extends cdk.StackProps {
   config: EnvironmentConfig;
@@ -40,6 +41,9 @@ export interface AgentServiceStackProps extends cdk.StackProps {
  * Spring gateway (AGENT_GATEWAY_URL, `api-gateway:8080`). No SES: the agent never sends mail
  * itself (AD-5). Egress to api.anthropic.com goes through the domain-service security group (443 to
  * any IPv4, via NAT).
+ *
+ * Alarms (story 10): the ECS alarms of every service, plus `AgentRunAlarms` on the run-end markers
+ * agent-service logs (run failures, daily budget breaches, refused grants or mints).
  */
 export class AgentServiceStack extends cdk.Stack {
   public readonly service: ecs.FargateService;
@@ -109,6 +113,13 @@ export class AgentServiceStack extends cdk.Stack {
           oomKillCount: envName === 'production' ? 1 : 3,
           taskFailureCount: envName === 'production' ? 2 : 5,
         },
+      });
+
+      // Run failures, daily budget breaches and refused grants or mints (story 10, R10)
+      new AgentRunAlarms(this, 'RunAlarms', {
+        environment: envName,
+        serviceLogGroup: domainService.logGroup,
+        alarmTopic: props.alarmTopic,
       });
     }
   }

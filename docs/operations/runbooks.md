@@ -142,6 +142,41 @@ agenda could not be published by the job. The alarm is a CloudWatch metric filte
 2. The job does not retry: the auto-publish runs on exactly the scheduled day. Publish the phase by
    hand in the event's Publishing tab once the cause is clear.
 
+### Agent runs
+
+**Alarms:** `Agent-Run-Failures`, `Agent-Refused-Mints` (any in 5 minutes) and
+`Agent-Daily-Budget-Breaches` (any within 24 hours, 1-hour periods; its OK action closes the issue a
+day after the last breach). All three are quiet while the agent is switched off (`AGENT_ENABLED`
+false): no run, no line.
+
+agent-service writes one marker line per run end an alarm watches (`RunAlarms`), with the run id,
+the end reason and the end detail only, never personal data (#1202). Metric filters on
+`/aws/ecs/BATbern-staging/agent` turn them into metrics in `BATbern/AgentRuns`:
+
+| Marker | Metric | Alarm | Means |
+|---|---|---|---|
+| `AGENT_RUN_FAILED` | `RunFailures-Agent` | `Agent-Run-Failures` | a fault in agent-service (`end_reason` INTERNAL_ERROR); the run is FAILED |
+| `AGENT_CREDENTIALS_REFUSED` | `RefusedMints-Agent` | `Agent-Refused-Mints` | CUMS refused the run grant or a mint, or could not be asked (GRANT_REFUSED, TOKEN_REFUSED); the line ends with the CUMS code |
+| `AGENT_DAILY_BUDGET_BREACHED` | `DailyBudgetBreaches-Agent` | `Agent-Daily-Budget-Breaches` | `agent.limits.daily-tokens` is spent: every further run today is handed to the organizers |
+| `AGENT_RUN_CAP_REACHED` | `RunCapsReached-Agent` | none | any limit stopped a run (also on a budget breach); a per-run cap is the cap working |
+
+A run handed to the organizers because the model was unreachable (MODEL_UNAVAILABLE) has no marker
+and no alarm: until the owner installs the Anthropic key every run ends that way, and an outage of
+the model is not a fault of ours.
+
+1. Find the line: `aws logs filter-log-events --log-group-name /aws/ecs/BATbern-staging/agent --start-time <ms> --filter-pattern '"AGENT_RUN_FAILED"'`
+   (or the other marker). It names the run id.
+2. For a failure, the line before the marker (`Agent run <id> failed in step <n>: <exception class>`)
+   names the fault; the API stores no error of the run itself. Then read the run through the console
+   API (`GET /api/v1/agent/runs/{runId}` as an organizer): steps, model calls (with their error when
+   the model call failed), tool calls and verdicts.
+3. Refused mints: the code says why. `CALLER_SECRET_MISSING`: agent-service has no caller secret
+   (see "Agent signing key" below); `AGENT_SIGNING_KEY_MISSING`: CUMS has no signing key; a grant
+   code (`GRANT_INVALID` and others): the principal or grant is no longer valid, which is the gate
+   working, unless it repeats for many runs.
+4. Budget breaches: decide whether the day's spend was real work (the run list, model calls per run)
+   or a runaway; raise `AGENT_LIMITS_DAILY_TOKENS` only by a deploy, or switch the agent off.
+
 ---
 
 ## Database

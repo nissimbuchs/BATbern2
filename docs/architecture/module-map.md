@@ -77,7 +77,9 @@ CUMS (identity) is upstream of all. EMS (event) is upstream of PCS (partners).
   (`config/AgentProperties.Limits`) holds the caps and the gate's two values; `loop/AgentLoop` checks
   steps, run tokens and the daily budget before every model call (tokens read by `loop/TokenLedger`
   from `agent_model_calls`), the reply cap is the `gate/GateCaps` bean `gate/ReplyCap`, and a reached
-  limit ends the run `CAP_REACHED` with the `run/RunLimit` as end detail. The read API (story 9, R8):
+  limit ends the run `CAP_REACHED` with the `run/RunLimit` as end detail. Alarm markers (story 10,
+  R10): `run/RunAlarms` alone writes the log lines the CloudWatch run alarms match; `AgentLoop` calls
+  it once per run end. The read API (story 9, R8):
   `run/AgentRunController` serves every `GET` of `agent-api.openapi.yml` (runs, a run's detail, steps,
   model calls with the full prompt on the detail only, tool calls, verdicts with resolved precedents
   and approvals) from `run/RunLogReadService`, read only, to organizers as persons

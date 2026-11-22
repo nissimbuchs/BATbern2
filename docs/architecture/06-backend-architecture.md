@@ -85,7 +85,13 @@ limit (`CAP_REACHED`, below) end the run HANDED_TO_ORGANIZERS; a fault of agent-
 the `agent_*` tables (V2) as it happens, one `REQUIRES_NEW` transaction per write, model and tool
 calls before they run and again after, so a crashed run leaves its trace. The application log
 carries run ids, counts, tool names and outcomes, never prompt text, tool input or output, or an
-exception message (#1202); the decision log keeps them in full.
+exception message (#1202); the decision log keeps them in full. A run end an alarm watches also
+writes one marker line from `run/RunAlarms` (story 10, R10): `AGENT_RUN_FAILED` (FAILED),
+`AGENT_RUN_CAP_REACHED` (any limit) plus `AGENT_DAILY_BUDGET_BREACHED` (the daily budget), and
+`AGENT_CREDENTIALS_REFUSED` (a refused grant or mint), with run id, reason and detail only. CloudWatch
+metric filters on the agent log group feed the alarms `Agent-Run-Failures`, `Agent-Refused-Mints` and
+`Agent-Daily-Budget-Breaches` (`AgentRunAlarms`, see `docs/operations/runbooks.md` "Agent runs"). A
+model outage (`MODEL_UNAVAILABLE`) carries no marker and no alarm.
 
 Limits (story 8, R9, Operational envelope "Limits", owner values 2026-11-22): one configuration
 block, `agent.limits` (`AGENT_LIMITS_*`), holds four caps: `run-steps` (25 model calls per run),

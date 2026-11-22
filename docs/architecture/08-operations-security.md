@@ -180,7 +180,7 @@ domains such as `x@müller.ch`).
   mask. Any `logging.pattern.console` must end in `%wEx`.
 - **The metric filters still match.** The masks touch only the address, never the literal terms
   the CloudWatch metric filters look for (`GATEWAY_API_REQUEST`, `@timestamp`, `clientError=true`,
-  `DOMAIN_EVENT_LISTENER_FAILED`, `SCHEDULED_JOB_FAILED`).
+  `DOMAIN_EVENT_LISTENER_FAILED`, `SCHEDULED_JOB_FAILED`, the `AGENT_*` run markers).
 - **Tests.** `LogEncoderMaskingTest` in each service loads that service's real `logback-spring.xml`
   with the `logging.pattern.*` of its real `application.yml`/`.properties` (base and `staging`
   documents, what production runs), through `LogbackConfigUnderTest` in the shared-kernel test
@@ -499,6 +499,7 @@ line 422 for `ApiGatewayServiceStack`).
 | ECS, per service ×6 | `{Service}-High-CPU`, `-High-Memory`, `-Task-Failures`, `-OOM-Kills` | `EcsServiceAlarms`, instantiated by each service stack |
 | Swallowed domain-event listener failures, EMS, CUMS, PCS | `{Service}-Event-Listener-Failures`: any line with the marker `DOMAIN_EVENT_LISTENER_FAILED` in 5 minutes. Log based (MetricFilter on the service log group, metric `BATbern/DomainEvents ListenerFailures-{Service}`), because no service exports Micrometer metrics to CloudWatch | `EcsServiceAlarms` with `serviceLogGroup`, instantiated by each of the three service stacks |
 | Scheduled-job failures, EMS (Story 4.9b) | `EventManagement-Scheduled-Job-Failures`: any line with the marker `SCHEDULED_JOB_FAILED` within 24 hours (1-hour periods, 24 evaluated, 1 to alarm, missing data not breaching), written by `ScheduledJobFailures` when a job (the daily auto-publish) skips an item it could not process. Log based, metric `BATbern/ScheduledJobs ScheduledJobFailures-EventManagement`. Its OK action closes the GitHub issue (#956) when 24 hours pass without a failure, a day after the last one | `EcsServiceAlarms` with `serviceLogGroup` and `scheduledJobFailures`, in the EMS stack |
+| Agent runs (agent runtime story 10) | `Agent-Run-Failures` (a run ended FAILED) and `Agent-Refused-Mints` (CUMS refused a run grant or mint): any in 5 minutes; `Agent-Daily-Budget-Breaches` (the daily token budget stopped a run): any within 24 hours, 1-hour periods. Log based on the markers of `RunAlarms` (`AGENT_RUN_FAILED`, `AGENT_CREDENTIALS_REFUSED`, `AGENT_DAILY_BUDGET_BREACHED`), metrics `BATbern/AgentRuns RunFailures-Agent`, `RefusedMints-Agent`, `DailyBudgetBreaches-Agent`; per-run caps counted in `RunCapsReached-Agent` without an alarm; a model outage has none | `AgentRunAlarms`, in the agent-service stack |
 | RDS | `database-connections`, `database-storage-low`, `database-cpu` | `AlarmConstruct`, in `MonitoringStack` |
 | SES reputation | `bounce-rate-critical` (`Reputation.BounceRate` > 5%), `complaint-rate-critical` | `MonitoringStack` |
 | SES bounce volume | `bounce-rate-warning` — `Bounce` count > 5/hour, NOT the rolling rate (#984) | `MonitoringStack` |

@@ -85,3 +85,9 @@
 - source_plan: `_bmad-output/initiative-agentic-interaction/tickets/epic-agent-runtime/tickets/story-organizers-read-every-run-step-and-verdict-through-the-conso-plan.md`
   summary: Only agent-service answers 401/403 with the shared ErrorResponse (security/SecurityErrorWriter); EMS, CUMS and PCS still answer filter-chain refusals with an empty body although their specs declare ErrorResponse.
   evidence: grep finds no AuthenticationEntryPoint or AccessDeniedHandler in the other services (2026-11-22); EMS maps only method-level AccessDeniedException in its advice.
+- source_plan: `_bmad-output/initiative-agentic-interaction/tickets/epic-agent-runtime/tickets/story-alarms-watch-run-failures-budget-breaches-and-refused-mints-plan.md`
+  summary: A run handed to the organizers because the model was unreachable (MODEL_UNAVAILABLE) has no marker and no alarm; revisit once epic-speaker-mail-agent tells organizers about handed-over runs, or if a sustained Anthropic outage should open an issue (e.g. 3+ in an hour).
+  evidence: Story 10 decision: until the owner installs the key every run ends MODEL_UNAVAILABLE, and an outage is external; in epic 1 a handed-over run is only a status in the read API, so an outage stays silent until someone looks.
+- source_plan: `_bmad-output/initiative-agentic-interaction/tickets/epic-agent-runtime/tickets/story-alarms-watch-run-failures-budget-breaches-and-refused-mints-plan.md`
+  summary: The three agent-run alarms have never fired against real CloudWatch: the literal filters are proven only by synthesis tests (markers read from Java), not by a live log line in the agent log group.
+  evidence: The service is dark and not yet deployed with story 10; after the epic's deploy, a `aws logs put-log-events`-free check is to switch the agent on with no caller secret once (every run GRANT_REFUSED, CALLER_SECRET_MISSING) and watch Agent-Refused-Mints go to ALARM, or use `aws logs test-metric-filter` with a sample line.
