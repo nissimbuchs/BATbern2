@@ -177,6 +177,44 @@ the model is not a fault of ours.
 4. Budget breaches: decide whether the day's spend was real work (the run list, model calls per run)
    or a runaway; raise `AGENT_LIMITS_DAILY_TOKENS` only by a deploy, or switch the agent off.
 
+### Agent service: first deploy
+
+**Auto-rollback on the first deploy.** If the post-deploy gate of the deploy that first creates
+agent-service fails, `scripts/ci/rollback-deployment.sh` reports agent-service as failed (`no
+previous task definition tracked`, exit 1): the service has no `staging-stable` image yet and no
+earlier task definition to go back to. That is expected and happens at most once. The other services
+are rolled back as usual; agent-service stays on the new image, dark (`AGENT_ENABLED` false). Fix the
+cause of the gate failure and deploy again; after the first green gate `staging-stable` exists and
+the rollback covers agent-service like the others. Not fixed in code on purpose (agent runtime
+refactor sweep, 2026-11-22): the fix would pass the deploy job's first-push list across jobs into
+the rollback script, for a case that occurs once, on a deploy that already failed.
+
+**Before that deploy:** confirm that no branch other than the agent runtime epic's ever deployed
+agent-service, so its Flyway history (`flyway_schema_history_agent`) is empty. V2 adds
+`agent_runs.trigger` NOT NULL without a default, which is safe only on a table that has never had a
+row.
+
+**Checks that only the deployed service can settle**, in this order, none of them reaching the real
+model or sending mail through the agent (epic constraint C2):
+
+1. Bruno `bruno-tests/agent-api` passes in the post-deploy run (organizer 200, speaker 403, unknown
+   run 404), and the access-control DAST (`scripts/ci/access-control-check.py`) finds every
+   agent-api operation refusing an anonymous call.
+2. The three deployed metric filters match a marker line, without switching anything on (so far
+   only synthesis tests prove the literal filters): for each marker,
+   `aws logs test-metric-filter --filter-pattern '"AGENT_CREDENTIALS_REFUSED"' --log-event-messages
+   '<a sample marker line>'` against the pattern of the deployed metric filter (see the table under
+   "Agent runs"). A full check (switch the agent on once with no caller secret, every run
+   `GRANT_REFUSED`, `CALLER_SECRET_MISSING`, and watch `Agent-Refused-Mints` go to ALARM) needs the
+   owner, since it switches the agent on.
+3. After the owner installs the Anthropic key ("Anthropic API key" below): the start log shows
+   `Model adapter anthropic`, and the first model call is not refused with 401. anthropic-java sends
+   the key as `Authorization: Bearer`; that the API accepts it is measured only then.
+4. After the owner switches the agent on and a tool runs: a CUMS-minted agent token passes the
+   Spring gateway and the target service on a real route (the tool call in the run's log is
+   `SUCCEEDED`, not `ERRORED` or `FAILED` after a 401). Tests prove the gateway call against the
+   companies spec only.
+
 ---
 
 ## Database

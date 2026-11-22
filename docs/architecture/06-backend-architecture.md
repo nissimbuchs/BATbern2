@@ -32,7 +32,7 @@ flowchart LR
     EMS --> DB[("PostgreSQL<br/>one database, per-service tables")]
     CUMS --> DB
     PCS --> DB
-    AGENT -->|"own agent_* tables,<br/>flyway_schema_history_agent"| DB
+    AGENT -->|"agent_runs and its decision log tables,<br/>flyway_schema_history_agent"| DB
 ```
 
 Every service validates the JWT again and decides access itself with `@PreAuthorize` (ADR-008,
@@ -50,7 +50,11 @@ routes the prefix with its slash (`/api/v1/agent-settings` stays CUMS) to `http:
 token is refused with 401), takes roles from `custom:role` without the DB fallback (it reads no
 other service's tables), scans only `ch.batbern.agent`, and migrates its own folder
 `db/agent-migration` into `flyway_schema_history_agent` with baseline 0 (shared-kernel ships a
-`V1` under `db/migration`). Story 1 ships it dark: `agent.enabled=false` (`AGENT_ENABLED`), with
+`V1` under `db/migration`). Which `agent_*` table belongs to whom (AD-9): agent-service owns the
+tables its own migrations create (`agent_runs`, `agent_inbound_messages`, `agent_steps`,
+`agent_model_calls`, `agent_tool_calls`, `agent_verdicts`, `agent_approvals`, `agent_undos`); CUMS owns `agent_settings`, `agent_grants` and `agent_allowlist` (agent identity,
+below) in its own history. The prefix is shared, the owner is the migration folder; neither service
+reads the other's tables. Story 1 ships it dark: `agent.enabled=false` (`AGENT_ENABLED`), with
 the read endpoint `GET /api/v1/agent/runs` (organizers, `agent-api.openapi.yml`; story 9 adds the
 decision log of a run, below).
 

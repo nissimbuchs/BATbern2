@@ -1292,6 +1292,16 @@ paths:
                     severity: LOW
                     details:
                       code: PRINCIPAL_NOT_ELIGIBLE
+        '502':
+          description: |
+            Never sent by CUMS: the Service Connect proxy (Envoy) in front of it answers when CUMS
+            is not reachable behind it. No body, so no `details.code`; the agent service ends the
+            run with `HTTP_502`
+        '503':
+          description: |
+            Never sent by CUMS: the Service Connect proxy (Envoy) in front of it answers when no
+            healthy CUMS task is there. No body, so no `details.code`; the agent service ends the
+            run with `HTTP_503`
 
   /internal/agent-eligibility:
     get:
@@ -1504,8 +1514,16 @@ paths:
                     severity: LOW
                     details:
                       code: PRINCIPAL_NOT_ELIGIBLE
+        '502':
+          description: |
+            Never sent by CUMS: the Service Connect proxy (Envoy) in front of it answers when CUMS
+            is not reachable behind it. No body, so no `details.code`; the agent service ends the
+            run with `HTTP_502`
         '503':
-          description: '`AGENT_SIGNING_KEY_MISSING`: `agent.jwt.private-key` is unset, blank or `none`'
+          description: |
+            `AGENT_SIGNING_KEY_MISSING`: `agent.jwt.private-key` is unset, blank or `none`. The
+            Service Connect proxy (Envoy) in front of CUMS also answers 503, without a body, when no
+            healthy CUMS task is there; the agent service then ends the run with `HTTP_503`
           content:
             application/json:
               schema:

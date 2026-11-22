@@ -14,7 +14,7 @@ import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
-import java.time.Instant;
+import java.time.Clock;
 
 /**
  * Answers a refused request with the shared {@link ErrorResponse}, as {@code agent-api.openapi.yml}
@@ -26,9 +26,11 @@ import java.time.Instant;
 public class SecurityErrorWriter implements AuthenticationEntryPoint, AccessDeniedHandler {
 
     private final ObjectMapper objectMapper;
+    private final Clock clock;
 
-    public SecurityErrorWriter(ObjectMapper objectMapper) {
+    public SecurityErrorWriter(ObjectMapper objectMapper, Clock clock) {
         this.objectMapper = objectMapper;
+        this.clock = clock;
     }
 
     @Override
@@ -49,7 +51,7 @@ public class SecurityErrorWriter implements AuthenticationEntryPoint, AccessDeni
         response.setStatus(status.value());
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
         objectMapper.writeValue(response.getOutputStream(), ErrorResponse.builder()
-                .timestamp(Instant.now())
+                .timestamp(clock.instant())
                 .path(request.getRequestURI())
                 .status(status.value())
                 .error(status.getReasonPhrase())

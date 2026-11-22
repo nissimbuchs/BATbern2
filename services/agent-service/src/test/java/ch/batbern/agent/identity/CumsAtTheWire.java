@@ -18,6 +18,7 @@ import org.springframework.web.client.RestTemplate;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
+import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -57,6 +58,7 @@ public final class CumsAtTheWire implements AutoCloseable {
     private final List<Recorded> mintRequests = new ArrayList<>();
     private final List<String> grantSecrets = new ArrayList<>();
     private final List<String> tokens = new ArrayList<>();
+    private Clock clock = Clock.systemUTC();
 
     /** One request as sent: its headers and body. */
     public record Recorded(HttpHeaders headers, JsonNode body) {
@@ -91,6 +93,16 @@ public final class CumsAtTheWire implements AutoCloseable {
         };
     }
 
+    /**
+     * Stamps grants ({@code issuedAt}, {@code expiresAt}) and tokens ({@code expiresAt}) with
+     * {@code clock} instead of the system clock: call it first, with the clock the context runs on
+     * when that is not the system clock (MiddayClock), so lifetimes mean the same to both sides.
+     */
+    public CumsAtTheWire withClock(Clock clock) {
+        this.clock = clock;
+        return this;
+    }
+
     /** The harness, for gateway expectations ({@code /api/v1/companies}). */
     public ContractServer server() {
         return server;
@@ -119,13 +131,12 @@ public final class CumsAtTheWire implements AutoCloseable {
     }
 
     /**
-     * The one grant request is answered {@code status} without a body, a status the grant
-     * operation does not declare (a proxy in front of CUMS answering 502 or 503); the request is
-     * still validated.
+     * The one grant request is answered {@code status} without a body, as the Service Connect
+     * proxy in front of CUMS answers 502 or 503; the grant operation declares both, and the harness
+     * refuses a status it does not declare.
      */
     public CumsAtTheWire grantAnswersWithoutCode(HttpStatus status) {
-        server.expect(HttpMethod.POST, GRANTS).andExpect(this::recordGrant)
-                .respondWith(MockRestResponseCreators.withStatus(status));
+        server.expect(HttpMethod.POST, GRANTS).andExpect(this::recordGrant).respondWithStatus(status);
         return this;
     }
 
@@ -142,7 +153,7 @@ public final class CumsAtTheWire implements AutoCloseable {
                         tokens.add(token);
                     }
                     return MockRestResponseCreators.withSuccess(JSON.createObjectNode().put("token", token)
-                            .put("expiresAt", Instant.now().plusSeconds(300).toString()).toString(),
+                            .put("expiresAt", clock.instant().plusSeconds(300).toString()).toString(),
                             MediaType.APPLICATION_JSON).createResponse(request);
                 });
         return this;
@@ -179,7 +190,7 @@ public final class CumsAtTheWire implements AutoCloseable {
                         tokens.add(token);
                     }
                     return ContractServer.Reply.ok(JSON.createObjectNode().put("token", token)
-                            .put("expiresAt", Instant.now().plus(lifetime).toString()).toString());
+                            .put("expiresAt", clock.instant().plus(lifetime).toString()).toString());
                 });
         return this;
     }
@@ -234,7 +245,7 @@ public final class CumsAtTheWire implements AutoCloseable {
         synchronized (grantSecrets) {
             grantSecrets.add(secret);
         }
-        Instant issued = Instant.now();
+        Instant issued = clock.instant();
         ObjectNode answer = JSON.createObjectNode()
                 .put("runId", UUID.randomUUID().toString())
                 .put("grantSecret", secret)

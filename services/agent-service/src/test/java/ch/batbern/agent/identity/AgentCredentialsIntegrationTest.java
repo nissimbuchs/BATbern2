@@ -369,14 +369,15 @@ class AgentCredentialsIntegrationTest extends AbstractIntegrationTest {
         assertThat(runRow(result.runId()).get("grant_run_id")).isNotNull();
     }
 
-    @Test
-    @DisplayName("a 5xx without a code on the grant: GRANT_REFUSED, HTTP_502, no mint")
-    void should_useHttpStatus_when_grantRefusalHasNoCode() {
-        cums.grantAnswersWithoutCode(HttpStatus.BAD_GATEWAY);
+    @ParameterizedTest(name = "proxy {0} on the grant")
+    @ValueSource(ints = {502, 503})
+    @DisplayName("a proxy 5xx without a body on the grant (declared): GRANT_REFUSED, HTTP_<status>, no mint")
+    void should_useHttpStatus_when_grantRefusalHasNoCode(int status) {
+        cums.grantAnswersWithoutCode(HttpStatus.valueOf(status));
 
         AgentRunResult result = run(new GrantSource.SchedulerJob(CumsAtTheWire.JOB));
 
-        assertRefusedBeforeModel(result, RunEndReason.GRANT_REFUSED, "HTTP_502");
+        assertRefusedBeforeModel(result, RunEndReason.GRANT_REFUSED, "HTTP_" + status);
         cums.verify();
         assertThat(cums.mintRequests()).isEmpty();
     }

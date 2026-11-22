@@ -36,7 +36,7 @@ export class SecretsStack extends cdk.Stack {
   public readonly agentJwtPublicKey: ssm.StringParameter;
   /** Secret EMS presents to CUMS when it asks for an agent token. CUMS and EMS. */
   public readonly emsCallerSecret: secretsmanager.Secret;
-  /** Secret the agent service presents to CUMS. CUMS only until the agent runtime exists. */
+  /** Secret the agent service presents to CUMS. CUMS and agent-service. */
   public readonly agentServiceCallerSecret: secretsmanager.Secret;
   /** Anthropic API key of the agent service's model adapter (AD-14). agent-service only. */
   public readonly anthropicApiKey: secretsmanager.Secret;

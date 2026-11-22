@@ -40,9 +40,9 @@ CUMS (identity) is upstream of all. EMS (event) is upstream of PCS (partners).
   `flyway_schema_history_agent`), scans only `ch.batbern.agent` and uses shared-kernel classes
   directly. The decision log (story 2, R7): `agent_runs` (trigger, end status DONE, FAILED or
   HANDED_TO_ORGANIZERS and its reason), `agent_inbound_messages`, `agent_steps`,
-  `agent_model_calls` (full prompt, answer, chosen tools, tokens), `agent_tool_calls`, and the
-  tables `agent_verdicts`, `agent_approvals`, `agent_undos`, written once the gate and the console
-  exist. Only `loop/AgentLoop` calls the model, through `loop/LlmPort` (AD-14); the adapters live
+  `agent_model_calls` (full prompt, answer, chosen tools, tokens), `agent_tool_calls`; the gate
+  writes `agent_verdicts` and PENDING `agent_approvals` (story 7); `agent_undos` exists for the
+  undo operation and has no writer until epic-oversight-console adds overrule and undo. Only `loop/AgentLoop` calls the model, through `loop/LlmPort` (AD-14); the adapters live
   in `llm/` (`AnthropicLlm` on `anthropic-java` 3.12.0, `LocalDevLlm`), picked once at startup by
   `llm/LlmConfig`, and api.anthropic.com is the service's only outbound call outside the BATbern
   services. Its key comes from Secrets Manager (`AGENT_ANTHROPIC_API_KEY`, agent-service only, story
@@ -62,7 +62,7 @@ CUMS (identity) is upstream of all. EMS (event) is upstream of PCS (partners).
   its class `read` < `reversible` < `reply` < `binding` < `audience`; a tool's class is the highest
   of its operations, each `reversible` tool names its undo operation, and `tools/ToolClassCheck`
   refuses anything else, at startup and in the unit test `ToolClassCheckTest`. A tool's
-  `PublicApi` lets through only the operations it declares. Every write goes through `log/DecisionLog`, one committed transaction per row. Precedents (story 6, R6, AD-8): `precedent/PrecedentRetrieval`
+  `PublicApi` lets through only the operations it declares. Every write of a run, step, model call or tool call goes through `log/DecisionLog`, one committed transaction per row; verdicts and approvals are written by `gate/GateLedger` (below). Precedents (story 6, R6, AD-8): `precedent/PrecedentRetrieval`
   returns, for a proposed call, the matching approvals, denials and undos of the decision log (read
   by `precedent/DecisionLogPrecedents`) and the past events the tool asks for
   (`AgentTool.pastEventQuery`, read through `findPastEvents` with the run's token), each with a
@@ -83,9 +83,13 @@ CUMS (identity) is upstream of all. EMS (event) is upstream of PCS (partners).
   `run/AgentRunController` serves every `GET` of `agent-api.openapi.yml` (runs, a run's detail, steps,
   model calls with the full prompt on the detail only, tool calls, verdicts with resolved precedents
   and approvals) from `run/RunLogReadService`, read only, to organizers as persons
-  (`security/ConsoleAccess`: organizer role, no `act` claim). Open naming point for the epic's
-  refactor sweep: CUMS already owns `agent_settings`, `agent_grants` and `agent_allowlist`, so
-  "agent_* tables belong to agent-service" (AD-9) needs a sharper rule.
+  (`security/ConsoleAccess`: organizer role, no `act` claim). Table names (AD-9, settled by the
+  epic's refactor sweep): the `agent_` prefix alone does not say who owns a table. agent-service
+  owns exactly the tables its folder `db/agent-migration` creates, recorded in
+  `flyway_schema_history_agent`: `agent_runs`, `agent_inbound_messages`, `agent_steps`,
+  `agent_model_calls`, `agent_tool_calls`, `agent_verdicts`, `agent_approvals`, `agent_undos`. CUMS owns the agent identity tables in its own history: `agent_settings`,
+  `agent_grants`, `agent_allowlist`. Neither service reads the other's. A new agent table's owner is
+  the migration folder it lands in, and it never reuses a name the other side owns.
 - Downstream must react to an upstream change? The upstream calls it through an `/internal`
   contract it owns (its spec, implementers listed in its configuration under
   `batbern.contracts.<name>.implementers`, called through shared-kernel `ContractCalls`, no

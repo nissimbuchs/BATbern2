@@ -1,5 +1,6 @@
 package ch.batbern.agent.loop;
 
+import ch.batbern.agent.MiddayClock;
 import ch.batbern.agent.config.AgentProperties;
 import ch.batbern.agent.gate.GateFixtureTool;
 import ch.batbern.agent.identity.CumsAtTheWire;
@@ -20,6 +21,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.system.CapturedOutput;
 import org.springframework.boot.test.system.OutputCaptureExtension;
+import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.web.client.RestTemplate;
 
@@ -39,9 +41,11 @@ import static org.assertj.core.api.Assertions.assertThat;
  * loop and gate, on Testcontainers PostgreSQL with CUMS at the wire. The run ends
  * HANDED_TO_ORGANIZERS with reason CAP_REACHED and the limit as end detail, and the application log
  * names the limit without personal data. Two subclasses run the same scripts under different
- * configuration and state where each run stops, so a moved value moves the stop point.
+ * configuration and state where each run stops, so a moved value moves the stop point. The day is
+ * fixed ({@link MiddayClock}), so the daily budget cannot see midnight pass during a run.
  */
 @ExtendWith(OutputCaptureExtension.class)
+@Import(MiddayClock.class)
 abstract class RunLimitsScenarios extends AbstractIntegrationTest {
 
     private static final String SYSTEM = "You coordinate BATbern speakers.";
@@ -98,12 +102,18 @@ abstract class RunLimitsScenarios extends AbstractIntegrationTest {
 
     @BeforeEach
     void bindCums() {
-        cums = CumsAtTheWire.bindTo(restTemplate).grants().mints();
+        cums = CumsAtTheWire.bindTo(restTemplate).withClock(clock).grants().mints();
     }
 
     @AfterEach
     void unbindCums() {
         cums.close();
+    }
+
+    @Test
+    @DisplayName("the clock is the midday clock of the fixed day")
+    void should_runOnTheFixedDay() {
+        MiddayClock.assertAnchored(clock);
     }
 
     @Test

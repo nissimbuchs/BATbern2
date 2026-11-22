@@ -38,8 +38,8 @@ agent tokens are signed and verified with: the private key in Secrets Manager
 `/batbern/<env>/agent/jwt-public-key` (SPKI PEM), injected into gateway, CUMS, EMS and PCS as
 `AGENT_JWT_PUBLIC_KEY`. Two CDK-generated caller secrets authenticate who may request an agent
 token: `batbern/<env>/agent/ems-caller-secret` (`AGENT_CALLERS_EMS_SECRET`, CUMS and EMS) and
-`batbern/<env>/agent/agent-service-caller-secret` (`AGENT_CALLERS_AGENT_SERVICE_SECRET`, CUMS
-only). All four use the AWS-managed key, like the Watch secret. CDK creates the key pair with the
+`batbern/<env>/agent/agent-service-caller-secret` (`AGENT_CALLERS_AGENT_SERVICE_SECRET` in CUMS,
+`AGENT_CUMS_CALLER_SECRET` in agent-service). All four use the AWS-managed key, like the Watch secret. CDK creates the key pair with the
 placeholder `none`, which the decoder reads as "agent off"; the owner writes the real pair once with
 `scripts/deploy/create-agent-signing-key.sh` (runbook "Agent signing key"). No real key is in git.
 

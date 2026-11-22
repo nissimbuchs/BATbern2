@@ -15,7 +15,9 @@ gate_export_env() {
     GATE_COGNITO_USER_POOL_ID=$(jq -r '.iss | split("/") | last' <<<"$claims")
     GATE_COGNITO_CLIENT_ID=$(jq -r '.aud' <<<"$claims")
     GATE_JWT_SECRET=${GATE_JWT_SECRET:-$(head -c 48 /dev/urandom | base64 | tr -d '\n/+=')}
-    export GATE_COGNITO_USER_POOL_ID GATE_COGNITO_CLIENT_ID GATE_JWT_SECRET
+    # agent-service's caller secret at CUMS: one random value for both sides, per run
+    GATE_AGENT_CALLER_SECRET=${GATE_AGENT_CALLER_SECRET:-$(head -c 32 /dev/urandom | od -An -tx1 | tr -d ' \n')}
+    export GATE_COGNITO_USER_POOL_ID GATE_COGNITO_CLIENT_ID GATE_JWT_SECRET GATE_AGENT_CALLER_SECRET
 }
 
 # docker compose for the gate, with every AWS credential source removed from the environment.

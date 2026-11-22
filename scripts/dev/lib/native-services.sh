@@ -80,3 +80,29 @@ service_enabled() {
         *)        return 1 ;;
     esac
 }
+
+# agent-service's caller secret at CUMS (agent runtime). agent-service sends it as
+# AGENT_CUMS_CALLER_SECRET, CUMS checks it against AGENT_CALLERS_AGENT_SERVICE_SECRET; both must
+# hold the same value, or every local run is handed to the organizers (GRANT_REFUSED:
+# CALLER_SECRET_MISSING when agent-service's is blank, CALLER_SECRET_INVALID when CUMS's differs).
+# Echoes the value to write into .env.native.{instance} for both names, in this order:
+#   1. AGENT_CUMS_CALLER_SECRET from the environment (.env or the shell), when set
+#   2. the value an earlier start wrote into the given .env.native file
+#   3. a new random value (openssl rand -hex 32)
+# Generated per instance and never committed (.env.native.* is gitignored).
+agent_caller_secret() {
+    local env_native_file="$1"
+    if [ -n "${AGENT_CUMS_CALLER_SECRET:-}" ]; then
+        echo "${AGENT_CUMS_CALLER_SECRET}"
+        return 0
+    fi
+    local existing=""
+    if [ -n "${env_native_file}" ] && [ -f "${env_native_file}" ]; then
+        existing=$(grep '^AGENT_CUMS_CALLER_SECRET=' "${env_native_file}" | head -1 | cut -d= -f2- | tr -d '"' | tr -d "'")
+    fi
+    if [ -n "${existing}" ]; then
+        echo "${existing}"
+        return 0
+    fi
+    openssl rand -hex 32
+}

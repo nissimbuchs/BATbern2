@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Pre-deploy gate (P5) spike: one full, timed run on this host.
-#   up (clean) -> health of all four services -> seed -> every Bruno collection -> mail check
+#   up (clean) -> health of all five services -> seed -> every Bruno collection -> mail check
 # Images must exist (scripts/gate/build-images.sh). Containers get no AWS credentials.
 #
 # Usage: scripts/gate/run-gate.sh [--keep]      (--keep leaves the stack running afterwards)

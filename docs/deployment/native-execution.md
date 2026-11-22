@@ -198,6 +198,9 @@ The startup script creates `.env.native.{instance}` which:
 2. Ensures `DB_HOST=localhost` for local PostgreSQL container
 3. Sets microservice URLs to `http://localhost:{BASE_PORT + n}`
 4. Configures staging Cognito for authentication
+5. Writes one agent caller secret under both names, `AGENT_CUMS_CALLER_SECRET` (agent-service) and
+   `AGENT_CALLERS_AGENT_SERVICE_SECRET` (CUMS): from `.env` when set there, else the instance's
+   earlier value, else a new random one (see the local development setup guide)
 
 **Key Differences from Docker:**
 
