@@ -92,7 +92,7 @@
       "abstractPlaceholder": "Qualche frase su cosa tratterà il tuo intervento",
       "submit": "Invia la proposta",
       "submitting": "Invio in corso…",
-      "success": "Grazie! La tua proposta è stata inviata agli organizzatori.",
+      "success": "Grazie! La tua proposta è stata inviata agli organizzatori. Riceverai una conferma via e-mail.",
       "error": "Impossibile inviare la proposta. Riprova.",
       "alreadyDone": "Ti sei già proposto/a per questo evento."
     }

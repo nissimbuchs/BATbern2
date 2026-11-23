@@ -11,7 +11,9 @@ import ch.batbern.events.speakers.dto.generated.PatchSpeakerPoolRequest;
 import ch.batbern.events.mapper.SpeakerPoolMapper;
 import ch.batbern.events.speakers.dto.generated.SpeakerPoolResponse;
 import ch.batbern.events.dto.generated.users.UserResponse;
+import ch.batbern.events.event.SpeakerProposalSubmittedEvent;
 import ch.batbern.events.exception.EventNotFoundException;
+import ch.batbern.events.exception.UserNotFoundException;
 import ch.batbern.events.exception.UserServiceException;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SessionContentHistoryRepository;
@@ -208,7 +210,7 @@ public class SpeakerPoolService {
                     company = profile.getCompanyId();
                 }
             }
-        } catch (UserServiceException ex) {
+        } catch (UserServiceException | UserNotFoundException ex) {
             log.warn("UserApiClient failed for {} during self-nomination — falling back to username: {}",
                     username, ex.getMessage());
         }
@@ -247,8 +249,7 @@ public class SpeakerPoolService {
                 + "source self_nomination)", username, eventCode, saved.getId(), proposal.getId());
 
         // Surface it to organizers via the same SpeakerAddedToPoolEvent the manual add path
-        // publishes, so it lands in the existing brainstorming/pool flow (AC6). This is an
-        // organizer-internal signal — it does NOT email the attendee.
+        // publishes, so it lands in the existing brainstorming/pool flow (AC6).
         SpeakerAddedToPoolEvent speakerAddedEvent = SpeakerAddedToPoolEvent.builder()
                 .eventId(event.getId())
                 .eventCode(eventCode)
@@ -260,6 +261,9 @@ public class SpeakerPoolService {
                 .addedBy(username)
                 .build();
         eventPublisher.publishEvent(speakerAddedEvent);
+        // Confirmation to the person and a Mail Center conversation for the organizers, after commit
+        eventPublisher.publishEvent(new SpeakerProposalSubmittedEvent(proposal.getId(), eventCode, username,
+                speakerName, proposal.getProposedTitle(), proposal.getProposedAbstract()));
 
         SpeakerPoolResponse response = speakerPoolMapper.toResponse(saved);
         primarySpeakerResolver.applyOverlay(response, saved);

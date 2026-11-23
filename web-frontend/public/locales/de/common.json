@@ -93,7 +93,7 @@
       "abstractPlaceholder": "Ein paar Sätze, worum es in deinem Vortrag geht",
       "submit": "Vorschlag senden",
       "submitting": "Wird gesendet…",
-      "success": "Danke! Dein Vorschlag wurde an die Organisatoren gesendet.",
+      "success": "Danke! Dein Vorschlag wurde an die Organisatoren gesendet. Du erhältst eine Bestätigung per Mail.",
       "error": "Dein Vorschlag konnte nicht gesendet werden. Bitte versuche es erneut.",
       "alreadyDone": "Du hast dich für dieses Event bereits vorgeschlagen."
     }

@@ -92,7 +92,7 @@
       "abstractPlaceholder": "Muutama lause siitä, mitä esityksesi käsittelisi",
       "submit": "Lähetä ehdotus",
       "submitting": "Lähetetään…",
-      "success": "Kiitos! Ehdotuksesi on lähetetty järjestäjille.",
+      "success": "Kiitos! Ehdotuksesi on lähetetty järjestäjille. Saat vahvistuksen sähköpostitse.",
       "error": "Ehdotuksen lähettäminen epäonnistui. Yritä uudelleen.",
       "alreadyDone": "Olet jo ehdottanut itseäsi tähän tapahtumaan."
     }

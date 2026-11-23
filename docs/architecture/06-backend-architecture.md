@@ -1761,6 +1761,13 @@ flowchart TD
   `NOTIFIED` (V142), metric `NotificationsSent`. Mail that was not stored is forwarded as before.
   A redelivery of a stored mail finds its conversation by group id and is notified once
   (forwarding log claim).
+- **Speaker proposals** (`SpeakerProposalNotices`): `SpeakerPoolService.selfNominate` publishes
+  `SpeakerProposalSubmittedEvent`; after commit (async, own transaction) the listener opens an OPEN
+  conversation on the event from one inbound message of the proposer (group id
+  `speaker-proposal-{proposalId}`, so a redelivery opens nothing twice), sends the confirmation
+  `mailcenter-speaker-proposal` (DE/EN by the proposer's language, Reply-To the conversation's
+  `replies+{token}@`, filed in the conversation) and the `mailcenter-new-mail` notice to every
+  organizer. Failures are logged and counted (`SpeakerProposalNoticeFailed`), never undo the proposal.
 
 ### Composer API (Story 16.8a)
 

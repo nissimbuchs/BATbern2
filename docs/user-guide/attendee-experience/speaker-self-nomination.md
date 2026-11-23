@@ -2,7 +2,7 @@
 
 > Once an event's topic is set and published, logged-in attendees can raise a hand with a session title and abstract — turning the speaker pipeline from organizer-sourced-only into pull-and-push
 
-> **Last Updated**: 2026-06-13
+> **Last Updated**: 2026-11-23
 
 <span class="feature-status implemented">Implemented</span> — Epic 7.2
 
@@ -45,6 +45,21 @@ It does **not**:
 - create a `session_users` row.
 
 All of that provisioning happens **only when you, an organizer, promote the candidate to `READY`** — the same provisioning gate, reached via the same `promote` path, that every organizer-sourced candidate goes through. Nothing about the existing workflow changes, and there is no new state in the machine.
+
+## Confirmation and Mail Center
+
+After the proposal is saved:
+
+- **The person gets a confirmation mail** ("Ihr Referatsvorschlag für BATbern61: …", German or English
+  by their language) with the title and the event. Its reply address is the Mail Center conversation
+  below, so an answer from them lands there.
+- **The Mail Center opens a conversation on the event** ("Referatsvorschlag: …") with the proposed
+  title and abstract, status Open. It shows under **Open** on the Mail page and in the event's "Needs an
+  answer"; answer the person directly from there.
+- **Every organizer gets the usual new-mail notice** with a link to that conversation.
+
+Until 2026-11-23 none of this happened: the proposal only appeared in the speaker pool, and the person
+saw a line on screen and nothing else.
 
 ## For organizers
 

@@ -92,7 +92,7 @@
       "abstractPlaceholder": "Quelques phrases sur le contenu de votre présentation",
       "submit": "Envoyer la proposition",
       "submitting": "Envoi…",
-      "success": "Merci ! Votre proposition a été envoyée aux organisateurs.",
+      "success": "Merci ! Votre proposition a été envoyée aux organisateurs. Vous recevrez une confirmation par e-mail.",
       "error": "Impossible d'envoyer votre proposition. Veuillez réessayer.",
       "alreadyDone": "Vous vous êtes déjà proposé·e pour cet événement."
     }

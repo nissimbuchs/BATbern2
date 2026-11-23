@@ -93,7 +93,7 @@
       "abstractPlaceholder": "A few sentences on what your talk would cover",
       "submit": "Submit nomination",
       "submitting": "Submitting…",
-      "success": "Thanks! Your nomination has been sent to the organizers.",
+      "success": "Thanks! Your nomination has been sent to the organizers. You will get a confirmation by mail.",
       "error": "Could not submit your nomination. Please try again.",
       "alreadyDone": "You’ve nominated yourself for this event."
     }
