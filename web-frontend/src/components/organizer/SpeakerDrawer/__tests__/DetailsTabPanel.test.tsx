@@ -1,58 +1,26 @@
 /**
- * DetailsTabPanel — Phase D.5 (BATbern75 follow-up, 2026-05-21)
+ * DetailsTabPanel — Phase D.5 (BATbern75 follow-up, 2026-05-21) and the proposed talk.
  *
  * Verifies the drawer Details subtab lockdown: once a session is provisioned
  * (status ≥ READY per Story 11.E.8), the only editable field is
  * `assignedOrganizerId`. speakerName / company / expertise / notes become
  * read-only inputs sourced from the linked User / brainstorm columns.
- *
  * Pre-session brainstorm UX is preserved.
+ *
+ * A self-nomination shows what the person proposed (title, abstract, when) and a link to the
+ * Mail Center conversation where organizers answer, read-only in both modes: the proposal stays
+ * as submitted; the talk is edited on the session after promote.
+ *
+ * Real hooks, services and en i18n on the MSW harness; the user comes from `renderWithAuth`.
  */
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, cleanup, waitFor } from '@testing-library/react';
+import { describe, it, expect, vi } from 'vitest';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { I18nextProvider } from 'react-i18next';
-import i18n from '@/i18n/config';
+import { api } from '@/test/msw/api';
+import { renderWithAuth } from '@/test/auth';
 import { DetailsTabPanel } from '../DetailsTabPanel';
 import type { SpeakerPoolEntry } from '@/types/speakerPool.types';
 import { aSpeakerPoolEntry } from '@/test/fixtures';
-
-// Lean mocks: the only outbound surfaces we care about are usePatchSpeakerPool
-// (the save mutation) and usePublicUser (the linked-User name resolver).
-vi.mock('@/hooks/useSpeakerPool', () => ({
-  usePatchSpeakerPool: () => ({
-    mutateAsync: vi.fn().mockResolvedValue({}),
-    isPending: false,
-  }),
-}));
-
-vi.mock('@/hooks/useUserPortrait', () => ({
-  usePublicUser: () => ({
-    data: { firstName: 'Jane', lastName: 'Doe', username: 'jane.doe' },
-  }),
-}));
-
-// OrganizerSelect is a complex Autocomplete tree; stub it out — we only need to
-// observe that the field is present and editable.
-vi.mock('@/components/shared/OrganizerSelect', () => ({
-  OrganizerSelect: ({
-    value,
-    onChange,
-    disabled,
-  }: {
-    value: string;
-    onChange: (v: string) => void;
-    disabled?: boolean;
-  }) => (
-    <input
-      data-testid="organizer-select-stub"
-      value={value}
-      disabled={disabled}
-      onChange={(e) => onChange(e.target.value)}
-    />
-  ),
-}));
 
 const makeSpeaker = (overrides: Partial<SpeakerPoolEntry> = {}): SpeakerPoolEntry => ({
   ...aSpeakerPoolEntry(),
@@ -66,128 +34,122 @@ const makeSpeaker = (overrides: Partial<SpeakerPoolEntry> = {}): SpeakerPoolEntr
   ...overrides,
 });
 
-const renderPanel = (speaker: SpeakerPoolEntry, isEditing = true) => {
-  const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+const selfNomination = (overrides: Partial<SpeakerPoolEntry> = {}) =>
+  makeSpeaker({
+    source: 'self_nomination',
+    proposedByUsername: 'jane.doe',
+    proposedSessionTitle: 'FinOps zwischen Cloud und KI',
+    proposedAbstract: 'Wie Kosten sichtbar werden,\nbevor die Rechnung kommt.',
+    proposedAt: '2026-11-17T05:14:48Z',
+    proposalConversationKey: 'BATbern75-c42',
+    ...overrides,
   });
-  return render(
-    <I18nextProvider i18n={i18n}>
-      <QueryClientProvider client={queryClient}>
-        <DetailsTabPanel
-          speaker={speaker}
-          eventCode="BATbern75"
-          isEditing={isEditing}
-          onExitEditMode={vi.fn()}
-        />
-      </QueryClientProvider>
-    </I18nextProvider>
+
+const renderPanel = (speaker: SpeakerPoolEntry, isEditing = true) =>
+  renderWithAuth(
+    <DetailsTabPanel
+      speaker={speaker}
+      eventCode="BATbern75"
+      isEditing={isEditing}
+      onExitEditMode={vi.fn()}
+    />
   );
-};
+
+const organizerSelect = () => screen.getByRole('combobox', { name: /Assign to Organizer/ });
 
 describe('DetailsTabPanel — Phase D.5 lockdown (drawer is workflow-only post-session)', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
-  afterEach(() => {
-    cleanup();
-  });
-
-  it('locks company / expertise / notes when sessionId is set; assignedOrganizer stays editable', () => {
-    const sessionAssigned = makeSpeaker({
-      sessionId: 'session-abc',
-      status: 'CONTENT_SUBMITTED',
-      username: 'jane.doe',
-      company: 'TestCo',
-      expertise: 'cloud',
-      notes: 'internal notes',
-    });
-
-    renderPanel(sessionAssigned, true);
-
-    // company, expertise, notes are rendered but disabled.
-    const company = screen.getByTestId('details-edit-company') as HTMLInputElement;
-    const expertise = screen.getByTestId('details-edit-expertise') as HTMLInputElement;
-    const notes = screen.getByTestId('details-edit-notes') as HTMLTextAreaElement;
-    expect(company.disabled).toBe(true);
-    expect(expertise.disabled).toBe(true);
-    expect(notes.disabled).toBe(true);
-
-    // assignedOrganizer (the only editable field post-session) stays interactive.
-    const organizerSelect = screen.getByTestId('organizer-select-stub') as HTMLInputElement;
-    expect(organizerSelect.disabled).toBe(false);
-  });
-
-  it('keeps all fields editable pre-session (IDENTIFIED / CONTACTED)', () => {
-    const brainstorm = makeSpeaker({
-      sessionId: undefined,
-      status: 'IDENTIFIED',
-      company: 'TestCo',
-      expertise: 'cloud',
-      notes: 'brainstorm notes',
-    });
-
-    renderPanel(brainstorm, true);
-
-    const company = screen.getByTestId('details-edit-company') as HTMLInputElement;
-    const expertise = screen.getByTestId('details-edit-expertise') as HTMLInputElement;
-    const notes = screen.getByTestId('details-edit-notes') as HTMLTextAreaElement;
-    expect(company.disabled).toBe(false);
-    expect(expertise.disabled).toBe(false);
-    expect(notes.disabled).toBe(false);
-
-    const organizerSelect = screen.getByTestId('organizer-select-stub') as HTMLInputElement;
-    expect(organizerSelect.disabled).toBe(false);
-  });
-
-  it('save payload strips locked fields when sessionId is set — only assignedOrganizerId on the wire', async () => {
-    // This test reaches into the mocked patch mutation to inspect the request body.
-    const mutateAsync = vi.fn().mockResolvedValue({});
-    vi.doMock('@/hooks/useSpeakerPool', () => ({
-      usePatchSpeakerPool: () => ({ mutateAsync, isPending: false }),
-    }));
-    // Re-import after re-mocking so the override takes effect.
-    vi.resetModules();
-    const { DetailsTabPanel: PatchedPanel } = await import('../DetailsTabPanel');
-
-    const sessionAssigned = makeSpeaker({
-      sessionId: 'session-abc',
-      status: 'CONTENT_SUBMITTED',
-      username: 'jane.doe',
-      company: 'TestCo',
-      expertise: 'cloud',
-      notes: 'internal notes',
-    });
-
-    const queryClient = new QueryClient({
-      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
-    });
-    render(
-      <I18nextProvider i18n={i18n}>
-        <QueryClientProvider client={queryClient}>
-          <PatchedPanel
-            speaker={sessionAssigned}
-            eventCode="BATbern75"
-            isEditing={true}
-            onExitEditMode={vi.fn()}
-          />
-        </QueryClientProvider>
-      </I18nextProvider>
+  it('locks company / expertise / notes when sessionId is set; assignedOrganizer stays editable', async () => {
+    renderPanel(
+      makeSpeaker({
+        sessionId: 'session-abc',
+        status: 'CONTENT_SUBMITTED',
+        username: 'jane.doe',
+        company: 'TestCo',
+        expertise: 'cloud',
+        notes: 'internal notes',
+      })
     );
 
-    const user = userEvent.setup();
-    await user.click(screen.getByTestId('details-edit-save'));
+    expect(screen.getByTestId('details-edit-company')).toBeDisabled();
+    expect(screen.getByTestId('details-edit-expertise')).toBeDisabled();
+    expect(screen.getByTestId('details-edit-notes')).toBeDisabled();
+    // assignedOrganizer (the only editable field post-session) stays interactive once loaded.
+    await waitFor(() => expect(organizerSelect()).not.toHaveAttribute('aria-disabled', 'true'));
+  });
 
-    await waitFor(() => expect(mutateAsync).toHaveBeenCalled());
-    const call = mutateAsync.mock.calls[0]?.[0] as {
-      request: Record<string, unknown>;
-    };
-    expect(call.request).toBeDefined();
-    expect(Object.keys(call.request)).toEqual(['assignedOrganizerId']);
-    // Speaker-identity columns are stripped from the wire payload.
-    expect(call.request).not.toHaveProperty('speakerName');
-    expect(call.request).not.toHaveProperty('company');
-    expect(call.request).not.toHaveProperty('expertise');
-    expect(call.request).not.toHaveProperty('notes');
+  it('keeps all fields editable pre-session (IDENTIFIED / CONTACTED)', async () => {
+    renderPanel(
+      makeSpeaker({ status: 'IDENTIFIED', company: 'TestCo', expertise: 'cloud', notes: 'n' })
+    );
+
+    expect(screen.getByTestId('details-edit-company')).toBeEnabled();
+    expect(screen.getByTestId('details-edit-expertise')).toBeEnabled();
+    expect(screen.getByTestId('details-edit-notes')).toBeEnabled();
+    await waitFor(() => expect(organizerSelect()).not.toHaveAttribute('aria-disabled', 'true'));
+  });
+
+  it('sends only assignedOrganizerId when sessionId is set', async () => {
+    renderPanel(
+      makeSpeaker({
+        sessionId: 'session-abc',
+        status: 'CONTENT_SUBMITTED',
+        username: 'jane.doe',
+        company: 'TestCo',
+        expertise: 'cloud',
+        notes: 'internal notes',
+      })
+    );
+
+    await userEvent.click(screen.getByTestId('details-edit-save'));
+
+    await waitFor(() => expect(api.calls('patchSpeakerPoolEntry')).toHaveLength(1));
+    const call = api.calls('patchSpeakerPoolEntry')[0];
+    expect(call.params.speakerId).toBe('speaker-pool-1');
+    expect(Object.keys(call.body as object)).toEqual(['assignedOrganizerId']);
+  });
+});
+
+describe('DetailsTabPanel — the proposed talk of a self-nomination', () => {
+  it('should show title, abstract, date and the conversation link', () => {
+    renderPanel(selfNomination(), false);
+
+    const proposal = screen.getByTestId('details-proposal');
+    expect(within(proposal).getByText('Proposed talk')).toBeInTheDocument();
+    expect(within(proposal).getByText('FinOps zwischen Cloud und KI')).toBeInTheDocument();
+    expect(within(proposal).getByText(/Wie Kosten sichtbar werden/)).toBeInTheDocument();
+    expect(within(proposal).getByText(/2026/)).toBeInTheDocument();
+    expect(within(proposal).getByRole('link', { name: 'Open conversation' })).toHaveAttribute(
+      'href',
+      '/organizer/events/BATbern75?tab=communications&conversation=BATbern75-c42'
+    );
+  });
+
+  it('should show the proposal read-only in edit mode, outside the form fields', () => {
+    renderPanel(selfNomination(), true);
+
+    expect(
+      within(screen.getByTestId('details-proposal')).getByText('FinOps zwischen Cloud und KI')
+    ).toBeInTheDocument();
+    for (const box of screen.getAllByRole('textbox')) {
+      expect(box).not.toHaveValue('FinOps zwischen Cloud und KI');
+    }
+  });
+
+  it('should show no link when the proposal has no conversation', () => {
+    renderPanel(selfNomination({ proposalConversationKey: null }), false);
+
+    const proposal = screen.getByTestId('details-proposal');
+    expect(within(proposal).getByText('FinOps zwischen Cloud und KI')).toBeInTheDocument();
+    expect(within(proposal).queryByRole('link')).not.toBeInTheDocument();
+  });
+
+  it('should show no proposal for an organizer-added speaker', () => {
+    // positive control: the same panel shows it for a self-nomination
+    const { unmount } = renderPanel(selfNomination(), false);
+    expect(screen.getByTestId('details-proposal')).toBeInTheDocument();
+    unmount();
+
+    renderPanel(makeSpeaker({ source: 'organizer_added' }), false);
+    expect(screen.queryByTestId('details-proposal')).not.toBeInTheDocument();
   });
 });

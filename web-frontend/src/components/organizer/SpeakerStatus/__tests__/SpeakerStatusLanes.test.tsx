@@ -18,9 +18,11 @@
  */
 import React from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, cleanup, within, act, waitFor } from '@testing-library/react';
+import { screen, cleanup, within, act, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { Routes, Route, useLocation } from 'react-router-dom';
+import { renderWithAuth } from '@/test/auth';
+import { api } from '@/test/msw/api';
 import { SpeakerStatusLanes } from '../SpeakerStatusLanes';
 import { DEFAULT_KANBAN_THRESHOLDS } from '../kanbanThresholds';
 import type { SpeakerPoolEntry, SpeakerWorkflowState } from '@/types/speakerPool.types';
@@ -37,68 +39,6 @@ vi.mock('date-fns', async () => {
     formatDistanceToNow: vi.fn(() => '2 days'),
   };
 });
-
-// i18n mock — passthrough on namespace-stripped keys + interpolation for the messages
-// the tests assert against.
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string, params?: Record<string, unknown>) => {
-      if (key === 'organizer:speakerCard.slotCapacityTooltip' && params) {
-        return `Slot capacity reached. ${params.invited} invitations outstanding + ${params.accepted} acceptances for ${params.slots} slots.`;
-      }
-      if (key === 'organizer:kanbanDrag.rejection.template' && params) {
-        return `${params.from} → ${params.to} not allowed — ${params.explanation}`;
-      }
-      if (key === 'organizer:speakerStatus.declinedStrip' && params) {
-        return `▸ Declined (${params.count})`;
-      }
-      if (key === 'organizer:speakerCard.slotAssignedAt' && params) {
-        return `✓ ${params.time}`;
-      }
-      if (key === 'organizer:speakerCard.timeInStateTooltip' && params) {
-        return `Current state since ${params.date}`;
-      }
-      const labels: Record<string, string> = {
-        'organizer:speakerStatus.phaseColumns.sourcing': 'Sourcing',
-        'organizer:speakerStatus.phaseColumns.inviting': 'Inviting',
-        'organizer:speakerStatus.phaseColumns.content': 'Content',
-        'organizer:speakerStatus.phaseColumns.confirmed': 'Confirmed',
-        'organizer:speakerStatus.waitingOnSpeakerDivider': 'Waiting on speaker',
-        'organizer:speakerCard.needsASlot': '⚠ Needs a slot →',
-        'organizer:speakerCard.slotAssigned': 'Slot assigned',
-        'organizer:speakerCard.primaryAction.logOutreach': 'Log outreach',
-        'organizer:speakerCard.primaryAction.promoteToSpeaker': 'Promote to speaker',
-        'organizer:speakerCard.primaryAction.sendInvitation': 'Send invitation',
-        'organizer:speakerCard.primaryAction.viewResponseStatus': 'View response status',
-        'organizer:speakerCard.primaryAction.enterContent': 'Enter content',
-        'organizer:speakerCard.primaryAction.reviewContent': 'Review content',
-        'organizer:speakerCard.primaryAction.assignSessionSlot': 'Assign session slot',
-        'organizer:speakerCard.primaryAction.viewDetails': 'View details',
-        'organizer:speakerCard.publishable': 'Publishable',
-        'organizer:kanbanDrag.invalidColumnTooltip': 'Not a valid forward step.',
-        'organizer:speakerStatus.lanes': 'Speaker Status',
-        'organizer:speakerStatus.dragToChange': 'Drag to change',
-        'organizer:speakerStatus.IDENTIFIED': 'Identified',
-        'organizer:speakerStatus.CONTACTED': 'Contacted',
-        'organizer:speakerStatus.READY': 'Ready',
-        'organizer:speakerStatus.INVITED': 'Invited',
-        'organizer:speakerStatus.ACCEPTED': 'Accepted',
-        'organizer:speakerStatus.CONTENT_SUBMITTED': 'Content submitted',
-        'organizer:speakerStatus.QUALITY_REVIEWED': 'Quality reviewed',
-        'organizer:speakerStatus.DECLINED': 'Declined',
-      };
-      return labels[key] ?? key;
-    },
-    i18n: { language: 'en' },
-  }),
-}));
-
-vi.mock('@/services/speakerStatusService', () => ({
-  speakerStatusService: {
-    updateStatus: vi.fn(),
-    getStatusSummary: vi.fn(),
-  },
-}));
 
 const dndKitTestHandle: {
   onDragStart?: (event: { active: { id: string } }) => void;
@@ -134,17 +74,13 @@ vi.mock('@dnd-kit/core', () => {
   };
 });
 
-vi.mock('@/services/speakerPoolService', () => ({
-  speakerPoolService: { sendInvitation: vi.fn(), getSpeakerPool: vi.fn() },
-}));
-
-vi.mock('@/components/shared/OrganizerSelect', () => ({
-  useOrganizers: () => ({ organizers: [] }),
-  __esModule: true,
-}));
+/** Where a card navigated to: the path and query of the conversation it opened. */
+const RouteSentinel: React.FC = () => {
+  const location = useLocation();
+  return <div data-testid="route-sentinel">{location.pathname + location.search}</div>;
+};
 
 describe('SpeakerStatusLanes — 4-phase kanban (Story 14.C.2)', () => {
-  let queryClient: QueryClient;
   const eventCode = 'BATbern56';
   const NOW = new Date('2026-05-16T12:00:00Z');
 
@@ -163,9 +99,6 @@ describe('SpeakerStatusLanes — 4-phase kanban (Story 14.C.2)', () => {
   });
 
   beforeEach(() => {
-    queryClient = new QueryClient({
-      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
-    });
     vi.clearAllMocks();
     dndKitTestHandle.onDragStart = undefined;
     dndKitTestHandle.onDragEnd = undefined;
@@ -180,25 +113,69 @@ describe('SpeakerStatusLanes — 4-phase kanban (Story 14.C.2)', () => {
     speakers: SpeakerPoolEntry[],
     overrides: Partial<React.ComponentProps<typeof SpeakerStatusLanes>> = {}
   ) =>
-    render(
-      <QueryClientProvider client={queryClient}>
-        <SpeakerStatusLanes
-          eventCode={eventCode}
-          speakers={speakers}
-          sessions={overrides.sessions ?? []}
-          maxSlots={overrides.maxSlots}
-          eventDate={overrides.eventDate}
-          now={overrides.now ?? NOW}
-          onLogOutreach={overrides.onLogOutreach}
-          onPromoteSpeaker={overrides.onPromoteSpeaker}
-          onSendInvitation={overrides.onSendInvitation}
-          onEnterContent={overrides.onEnterContent}
-          onReviewContent={overrides.onReviewContent}
-          onSpeakerClick={overrides.onSpeakerClick}
-          onAssignSessionSlot={overrides.onAssignSessionSlot}
+    renderWithAuth(
+      <Routes>
+        <Route
+          path="*"
+          element={
+            <SpeakerStatusLanes
+              eventCode={eventCode}
+              speakers={speakers}
+              sessions={overrides.sessions ?? []}
+              maxSlots={overrides.maxSlots}
+              eventDate={overrides.eventDate}
+              now={overrides.now ?? NOW}
+              onLogOutreach={overrides.onLogOutreach}
+              onPromoteSpeaker={overrides.onPromoteSpeaker}
+              onSendInvitation={overrides.onSendInvitation}
+              onEnterContent={overrides.onEnterContent}
+              onReviewContent={overrides.onReviewContent}
+              onSpeakerClick={overrides.onSpeakerClick}
+              onAssignSessionSlot={overrides.onAssignSessionSlot}
+            />
+          }
         />
-      </QueryClientProvider>
+        <Route path="/organizer/events/:eventCode" element={<RouteSentinel />} />
+      </Routes>,
+      { initialEntries: ['/organizer/events/BATbern56/speakers'] }
     );
+
+  it('should_offerReply_andOpenTheConversation_when_selfNominationHasOne', async () => {
+    const onLogOutreach = vi.fn();
+    const proposal = makeSpeaker('IDENTIFIED', {
+      source: 'self_nomination',
+      proposedSessionTitle: 'FinOps zwischen Cloud und KI',
+      proposalConversationKey: 'BATbern56-c7',
+    });
+    renderLanes([proposal], { onLogOutreach });
+
+    const card = screen.getByTestId(`speaker-card-${proposal.id}`);
+    await userEvent.click(within(card).getByRole('button', { name: 'Reply' }));
+
+    expect(await screen.findByTestId('route-sentinel')).toHaveTextContent(
+      '/organizer/events/BATbern56?tab=communications&conversation=BATbern56-c7'
+    );
+    expect(onLogOutreach).not.toHaveBeenCalled();
+  });
+
+  it('should_keepLogOutreach_when_noConversationOrOrganizerAdded', () => {
+    const old = makeSpeaker('IDENTIFIED', {
+      id: 'old-proposal',
+      source: 'self_nomination',
+      proposalConversationKey: null,
+    });
+    const brainstormed = makeSpeaker('IDENTIFIED', {
+      id: 'brainstormed',
+      source: 'organizer_added',
+    });
+    renderLanes([old, brainstormed]);
+
+    for (const id of ['old-proposal', 'brainstormed']) {
+      const card = screen.getByTestId(`speaker-card-${id}`);
+      expect(within(card).getByRole('button', { name: 'Log outreach' })).toBeInTheDocument();
+      expect(within(card).queryByRole('button', { name: 'Reply' })).not.toBeInTheDocument();
+    }
+  });
 
   it('should_renderFourPhaseColumns_inFunnelOrder', () => {
     renderLanes([]);
@@ -470,7 +447,6 @@ describe('SpeakerStatusLanes — 4-phase kanban (Story 14.C.2)', () => {
 });
 
 describe('SpeakerStatusLanes — workflow-safe cross-column drag (Story 14.C.3)', () => {
-  let queryClient: QueryClient;
   const eventCode = 'BATbern56';
   const NOW = new Date('2026-05-16T12:00:00Z');
 
@@ -489,9 +465,6 @@ describe('SpeakerStatusLanes — workflow-safe cross-column drag (Story 14.C.3)'
   });
 
   beforeEach(() => {
-    queryClient = new QueryClient({
-      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
-    });
     vi.clearAllMocks();
     dndKitTestHandle.onDragStart = undefined;
     dndKitTestHandle.onDragEnd = undefined;
@@ -506,23 +479,30 @@ describe('SpeakerStatusLanes — workflow-safe cross-column drag (Story 14.C.3)'
     speakers: SpeakerPoolEntry[],
     overrides: Partial<React.ComponentProps<typeof SpeakerStatusLanes>> = {}
   ) =>
-    render(
-      <QueryClientProvider client={queryClient}>
-        <SpeakerStatusLanes
-          eventCode={eventCode}
-          speakers={speakers}
-          sessions={[]}
-          maxSlots={overrides.maxSlots}
-          now={NOW}
-          onLogOutreach={overrides.onLogOutreach}
-          onPromoteSpeaker={overrides.onPromoteSpeaker}
-          onSendInvitation={overrides.onSendInvitation}
-          onEnterContent={overrides.onEnterContent}
-          onReviewContent={overrides.onReviewContent}
-          onSpeakerClick={overrides.onSpeakerClick}
-          onAssignSessionSlot={overrides.onAssignSessionSlot}
+    renderWithAuth(
+      <Routes>
+        <Route
+          path="*"
+          element={
+            <SpeakerStatusLanes
+              eventCode={eventCode}
+              speakers={speakers}
+              sessions={[]}
+              maxSlots={overrides.maxSlots}
+              now={NOW}
+              onLogOutreach={overrides.onLogOutreach}
+              onPromoteSpeaker={overrides.onPromoteSpeaker}
+              onSendInvitation={overrides.onSendInvitation}
+              onEnterContent={overrides.onEnterContent}
+              onReviewContent={overrides.onReviewContent}
+              onSpeakerClick={overrides.onSpeakerClick}
+              onAssignSessionSlot={overrides.onAssignSessionSlot}
+            />
+          }
         />
-      </QueryClientProvider>
+        <Route path="/organizer/events/:eventCode" element={<RouteSentinel />} />
+      </Routes>,
+      { initialEntries: ['/organizer/events/BATbern56/speakers'] }
     );
 
   // Drop onto a PHASE COLUMN (over.id = phase key), not a per-state lane.
@@ -574,8 +554,6 @@ describe('SpeakerStatusLanes — workflow-safe cross-column drag (Story 14.C.3)'
 
   // NFR1 — a drag that would provision/email opens the modal; no mutation fires until confirm.
   it('should_notFireStatusMutation_forLegalInputForwardDrop', async () => {
-    const { speakerStatusService } = await import('@/services/speakerStatusService');
-    const updateStatus = vi.mocked(speakerStatusService.updateStatus);
     const onSendInvitation = vi.fn();
     const ready = makeSpeaker('READY');
     renderLanes([ready], { onSendInvitation, maxSlots: 8 });
@@ -584,28 +562,25 @@ describe('SpeakerStatusLanes — workflow-safe cross-column drag (Story 14.C.3)'
     dropOnColumn(ready.id, 'content');
 
     expect(onSendInvitation).toHaveBeenCalledTimes(1);
-    expect(updateStatus).not.toHaveBeenCalled();
+    expect(api.calls('updateSpeakerStatus')).toHaveLength(0);
   });
 
   // legal-direct (INVITED→ACCEPTED) is the only auto-commit; dropping INVITED on Content
   // advances exactly one step (→ACCEPTED) via the mutation.
   it('should_fireUpdateStatusMutation_when_droppingInvitedOnContentColumn', async () => {
-    const { speakerStatusService } = await import('@/services/speakerStatusService');
-    const updateStatus = vi.mocked(speakerStatusService.updateStatus);
-    updateStatus.mockResolvedValue({} as never);
     const invited = makeSpeaker('INVITED');
     renderLanes([invited]);
 
     dropOnColumn(invited.id, 'content');
 
-    await waitFor(() => expect(updateStatus).toHaveBeenCalledTimes(1));
-    expect(updateStatus).toHaveBeenCalledWith(eventCode, invited.id, 'ACCEPTED', undefined);
+    await waitFor(() => expect(api.calls('updateSpeakerStatus')).toHaveLength(1));
+    const call = api.calls('updateSpeakerStatus')[0];
+    expect(call.params).toMatchObject({ eventCode, speakerId: invited.id });
+    expect(call.body).toEqual({ newStatus: 'ACCEPTED' });
   });
 
   // FR20 — backward drag snaps back: no modal, no mutation, no toast.
   it('should_snapBack_when_draggingQualityReviewedBackwardToContentColumn', async () => {
-    const { speakerStatusService } = await import('@/services/speakerStatusService');
-    const updateStatus = vi.mocked(speakerStatusService.updateStatus);
     const onReviewContent = vi.fn();
     const quality = makeSpeaker('QUALITY_REVIEWED', { isSlotAssigned: false });
     renderLanes([quality], { onReviewContent });
@@ -613,7 +588,7 @@ describe('SpeakerStatusLanes — workflow-safe cross-column drag (Story 14.C.3)'
     dropOnColumn(quality.id, 'content');
 
     expect(onReviewContent).not.toHaveBeenCalled();
-    expect(updateStatus).not.toHaveBeenCalled();
+    expect(api.calls('updateSpeakerStatus')).toHaveLength(0);
     expect(screen.queryByTestId('kanban-drop-toast')).not.toBeInTheDocument();
   });
 

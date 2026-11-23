@@ -1768,6 +1768,12 @@ flowchart TD
   `mailcenter-speaker-proposal` (DE/EN by the proposer's language, Reply-To the conversation's
   `replies+{token}@`, filed in the conversation) and the `mailcenter-new-mail` notice to every
   organizer. Failures are logged and counted (`SpeakerProposalNoticeFailed`), never undo the proposal.
+  The conversation key is stored on the proposal (`session_proposals.conversation_key`, V162) and
+  returned as `proposalConversationKey` (with `proposedAt`) on the speaker pool entry; the drawer shows
+  the proposal with a link to it, the kanban card offers "Reply". `ConversationReplyService` calls
+  `SpeakerProposalConversations.organizerAnswered` after every answer: the first answer to a proposal
+  still at IDENTIFIED records an email outreach (to CONTACTED), in its own transaction, so a failure
+  never undoes the sent answer.
 
 ### Composer API (Story 16.8a)
 

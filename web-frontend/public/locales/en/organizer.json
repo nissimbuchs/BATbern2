@@ -380,6 +380,11 @@
     "responseDeadline": "Response due {{date}}",
     "errors": {
       "statusUpdateFailed": "Could not update speaker status."
+    },
+    "proposal": {
+      "title": "Proposed talk",
+      "submittedOn": "Submitted on {{date}}",
+      "openConversation": "Open conversation"
     }
   },
   "qualityReview": {
@@ -612,7 +617,8 @@
       "enterContent": "Enter content",
       "reviewContent": "Review content",
       "assignSessionSlot": "Assign session slot",
-      "viewDetails": "View details"
+      "viewDetails": "View details",
+      "reply": "Reply"
     },
     "publishable": "Publishable",
     "publishableTooltip": "Speaker is approved and has a session slot",

@@ -46,6 +46,8 @@ flowchart LR
     SRE --> MP["MailPipeline: template store, variables, layout"]
     TRE --> MP
     INB --> CN["ConversationNotices: notify switch on, see 06"]
+    SPN["SpeakerProposalNotices: after a self-nomination commits"] --> CN
+    SPN -->|"confirmation to the proposer"| MP
     CN --> MP
     MP --> ES["shared-kernel EmailService"]
     NS --> ES

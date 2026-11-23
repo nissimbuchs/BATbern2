@@ -93,7 +93,8 @@
       "enterContent": "Inhalt yytraage",
       "reviewContent": "Inhalt prüefe",
       "assignSessionSlot": "Session-Slot zueteile",
-      "viewDetails": "Detail aazeige"
+      "viewDetails": "Detail aazeige",
+      "reply": "Antworte"
     },
     "publishable": "Publizierbar",
     "publishableTooltip": "Dr Redner isch akzeptiert und het än Session-Slot",
@@ -180,6 +181,11 @@
       "statusEntry": "{{from}} → {{to}} by {{actor}}",
       "outreachEntry": "Outreach by {{actor}}",
       "contentRejectedEntry": "Überarbeitig vom Abstract aagfrogt vo {{actor}}"
+    },
+    "proposal": {
+      "title": "Vorgschlagnigs Referat",
+      "submittedOn": "Iigreicht am {{date}}",
+      "openConversation": "Unterhautig ufmache"
     }
   },
   "speakerStatus": {

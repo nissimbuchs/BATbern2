@@ -126,6 +126,8 @@ public class SpeakerPoolMapper {
         response.setProposedByUsername(proposal.getProposedByUsername());
         response.setProposedSessionTitle(proposal.getProposedTitle());
         response.setProposedAbstract(proposal.getProposedAbstract());
+        response.setProposedAt(toOffset(proposal.getCreatedAt()));
+        response.setProposalConversationKey(proposal.getConversationKey());
     }
 
     private static SpeakerPoolResponse.StatusEnum toStatusEnum(SpeakerWorkflowState state) {

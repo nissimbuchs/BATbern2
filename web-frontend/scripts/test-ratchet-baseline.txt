@@ -193,9 +193,7 @@ fe-mock-components	web-frontend/src/components/organizer/PartnerManagement/__tes
 fe-mock-components	web-frontend/src/components/organizer/PartnerMeetingsPage.test.tsx	3
 fe-mock-components	web-frontend/src/components/organizer/SpeakerDrawer/__tests__/AssignedOrganizerField.test.tsx	1
 fe-mock-components	web-frontend/src/components/organizer/SpeakerDrawer/__tests__/ContentSubmissionSubView.test.tsx	3
-fe-mock-components	web-frontend/src/components/organizer/SpeakerDrawer/__tests__/DetailsTabPanel.test.tsx	1
 fe-mock-components	web-frontend/src/components/organizer/SpeakerDrawer/__tests__/SpeakerDetailDrawer.test.tsx	3
-fe-mock-components	web-frontend/src/components/organizer/SpeakerStatus/__tests__/SpeakerStatusLanes.test.tsx	1
 fe-mock-components	web-frontend/src/components/organizer/TopicStatusPanel.test.tsx	2
 fe-mock-components	web-frontend/src/components/organizer/UserManagement/DuplicateCandidatesPage.test.tsx	1
 fe-mock-components	web-frontend/src/components/organizer/UserManagement/MergeProfileDialog.test.tsx	1
@@ -262,7 +260,6 @@ fe-mock-hooks	web-frontend/src/components/organizer/PartnerManagement/__tests__/
 fe-mock-hooks	web-frontend/src/components/organizer/PartnerManagement/__tests__/PartnerOverviewStats.test.tsx	1
 fe-mock-hooks	web-frontend/src/components/organizer/PartnerMeetingsPage.test.tsx	1
 fe-mock-hooks	web-frontend/src/components/organizer/SpeakerDrawer/__tests__/AssignedOrganizerField.test.tsx	1
-fe-mock-hooks	web-frontend/src/components/organizer/SpeakerDrawer/__tests__/DetailsTabPanel.test.tsx	3
 fe-mock-hooks	web-frontend/src/components/organizer/SpeakerDrawer/__tests__/SpeakerDetailDrawer.test.tsx	1
 fe-mock-hooks	web-frontend/src/components/organizer/UserManagement/ParticipantBatchImportModal.test.tsx	1
 fe-mock-hooks	web-frontend/src/components/organizer/UserManagement/RoleManagerModal.test.tsx	1
@@ -344,7 +341,6 @@ fe-mock-i18n	web-frontend/src/components/organizer/PartnerMeetingInviteAction.te
 fe-mock-i18n	web-frontend/src/components/organizer/PartnerMeetingsPage.test.tsx	1
 fe-mock-i18n	web-frontend/src/components/organizer/SpeakerDrawer/__tests__/AssignedOrganizerField.test.tsx	1
 fe-mock-i18n	web-frontend/src/components/organizer/SpeakerDrawer/__tests__/SpeakerDetailDrawer.test.tsx	1
-fe-mock-i18n	web-frontend/src/components/organizer/SpeakerStatus/__tests__/SpeakerStatusLanes.test.tsx	1
 fe-mock-i18n	web-frontend/src/components/organizer/SpeakerStatus/__tests__/StatusChangeDialog.test.tsx	1
 fe-mock-i18n	web-frontend/src/components/organizer/SpeakerStatus/__tests__/StatusHistoryTimeline.test.tsx	1
 fe-mock-i18n	web-frontend/src/components/organizer/TopicStatusPanel.test.tsx	1
@@ -415,7 +411,6 @@ fe-mock-services	web-frontend/src/components/organizer/PartnerMeetingInviteActio
 fe-mock-services	web-frontend/src/components/organizer/PartnerMeetingRsvpPanel.test.tsx	1
 fe-mock-services	web-frontend/src/components/organizer/SpeakerDrawer/__tests__/ContentSubmissionSubView.test.tsx	2
 fe-mock-services	web-frontend/src/components/organizer/SpeakerDrawer/__tests__/SpeakerDetailDrawer.test.tsx	1
-fe-mock-services	web-frontend/src/components/organizer/SpeakerStatus/__tests__/SpeakerStatusLanes.test.tsx	2
 fe-mock-services	web-frontend/src/components/organizer/SpeakerStatus/__tests__/StatusHistoryTimeline.test.tsx	1
 fe-mock-services	web-frontend/src/components/organizer/TopicStatusPanel.test.tsx	1
 fe-mock-services	web-frontend/src/components/organizer/UserManagement/DuplicateCandidatesPage.test.tsx	1

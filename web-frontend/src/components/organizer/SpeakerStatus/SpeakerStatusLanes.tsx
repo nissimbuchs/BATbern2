@@ -46,6 +46,7 @@ import {
   CheckCircle as CheckCircleIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
 import { dateFnsLocale } from '@/utils/date/dateFnsLocale';
 import { UserAvatar } from '@/components/shared/UserAvatar';
@@ -796,6 +797,7 @@ const SpeakerCard: React.FC<SpeakerCardProps> = ({
   });
 
   const sendInvitationMutation = useSendInvitation(eventCode);
+  const navigate = useNavigate();
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
   const [snackbarSeverity, setSnackbarSeverity] = useState<'success' | 'error'>('success');
@@ -875,6 +877,10 @@ const SpeakerCard: React.FC<SpeakerCardProps> = ({
     onReviewContent: onReviewContent ?? onSpeakerClick ?? (() => undefined),
     onSpeakerClick: onSpeakerClick ?? (() => undefined),
     onAssignSessionSlot: onAssignSessionSlot ?? (() => undefined),
+    onReply: (s) =>
+      navigate(
+        `/organizer/events/${encodeURIComponent(eventCode)}?tab=communications&conversation=${encodeURIComponent(s.proposalConversationKey ?? '')}`
+      ),
   };
   const primaryAction = getPrimaryAction(speaker, callbacks, slotCapacity, t);
 

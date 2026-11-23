@@ -549,7 +549,8 @@
       "enterContent": "Inhoud invoeren",
       "reviewContent": "Inhoud beoordelen",
       "assignSessionSlot": "Sessieblok toewijzen",
-      "viewDetails": "Details bekijken"
+      "viewDetails": "Details bekijken",
+      "reply": "Antwoorden"
     },
     "publishable": "Publiceerbaar",
     "publishableTooltip": "Spreker is goedgekeurd en heeft een sessieblok",
@@ -620,6 +621,11 @@
       "statusEntry": "{{from}} → {{to}} by {{actor}}",
       "outreachEntry": "Outreach by {{actor}}",
       "contentRejectedEntry": "Herziening van samenvatting gevraagd door {{actor}}"
+    },
+    "proposal": {
+      "title": "Voorgestelde lezing",
+      "submittedOn": "Ingediend op {{date}}",
+      "openConversation": "Gesprek openen"
     }
   }
 }

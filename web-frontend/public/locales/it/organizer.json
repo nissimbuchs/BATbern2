@@ -549,7 +549,8 @@
       "enterContent": "Inserisci contenuto",
       "reviewContent": "Rivedi contenuto",
       "assignSessionSlot": "Assegna slot sessione",
-      "viewDetails": "Visualizza dettagli"
+      "viewDetails": "Visualizza dettagli",
+      "reply": "Rispondi"
     },
     "publishable": "Pubblicabile",
     "publishableTooltip": "Il relatore è approvato e ha uno slot di sessione",
@@ -632,6 +633,11 @@
       "statusEntry": "{{from}} → {{to}} by {{actor}}",
       "outreachEntry": "Outreach by {{actor}}",
       "contentRejectedEntry": "Revisione dell'abstract richiesta da {{actor}}"
+    },
+    "proposal": {
+      "title": "Intervento proposto",
+      "submittedOn": "Inviato il {{date}}",
+      "openConversation": "Apri la conversazione"
     }
   }
 }

@@ -65,6 +65,10 @@ public class SessionProposal {
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
+    /** The Mail Center conversation opened for the proposal, or null (before 2026-11-23). */
+    @Column(name = "conversation_key", length = 40)
+    private String conversationKey;
+
     @PrePersist
     protected void onCreate() {
         if (createdAt == null) {
