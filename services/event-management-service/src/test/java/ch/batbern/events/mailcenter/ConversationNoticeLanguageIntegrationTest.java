@@ -78,7 +78,8 @@ class ConversationNoticeLanguageIntegrationTest extends AbstractIntegrationTest 
         cums.userWithSettings(ORGANIZER, ADDRESS, Map.of("language", language));
 
         EmailForwardingService.Notice notice = conversationNotices.forStored(
-                new InboundMailCenter.Stored("conv-1222", null, "Sara Speaker", "Frage")).apply(ADDRESS);
+                new InboundMailCenter.Stored("conv-1222", null, "Sara Speaker",
+                        "success+sara1222@simulator.amazonses.com", "Frage")).apply(ADDRESS);
 
         assertThat(notice.subject()).startsWith(subjectStart);
     }

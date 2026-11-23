@@ -71,7 +71,7 @@ class InboundReplyProcessorSwitchTest {
     void onStored() {
         when(mailSwitch.isOn(MailCenterSwitch.Group.REPLIES)).thenReturn(true);
         when(mailCenter.ingestReplyStrict(eq(KEY), eq(RAW), any()))
-                .thenReturn(Optional.of(new InboundMailCenter.Stored("conv-2", null, "A", "Frage")));
+                .thenReturn(Optional.of(new InboundMailCenter.Stored("conv-2", null, "A", "success+a@simulator.amazonses.com", "Frage")));
         processor.process(KEY, RAW);
         InOrder order = inOrder(mailCenter, forwardingService);
         order.verify(mailCenter).ingestReplyStrict(eq(KEY), eq(RAW), any());

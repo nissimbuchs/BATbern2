@@ -1755,7 +1755,9 @@ flowchart TD
   failure (SQS retry, DLQ), and `EmailForwardingService.forward(…, notice)` /
   `forwardUnrecognizedReply(…, notice)` run the same checks, claim, authorization and recipient
   resolution as forwarding, but send each recipient `ConversationNotices` (template
-  `mailcenter-new-mail`, DE/EN by the organizer's preference) instead of the copy. Outcome
+  `mailcenter-new-mail`, DE/EN by the organizer's preference) instead of the copy. The notice names
+  the sender by the From display name; a From with a bare address has none, so it names the user CUMS
+  knows for that address (`/internal/email-owners`, exactly one owner), else the address. Outcome
   `NOTIFIED` (V142), metric `NotificationsSent`. Mail that was not stored is forwarded as before.
   A redelivery of a stored mail finds its conversation by group id and is notified once
   (forwarding log claim).
