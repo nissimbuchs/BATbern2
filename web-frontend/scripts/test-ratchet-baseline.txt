@@ -38,7 +38,6 @@ be-mock-s2s-client	api-gateway/src/test/java/ch/batbern/gateway/integration/Acco
 be-mock-s2s-client	api-gateway/src/test/java/ch/batbern/gateway/security/AccountActiveFilterTest.java	1
 be-mock-s2s-client	services/event-management-service/src/test/java/ch/batbern/events/controller/AnonymousRegistrationE2EIntegrationTest.java	1
 be-mock-s2s-client	services/event-management-service/src/test/java/ch/batbern/events/controller/RegistrationStatusIntegrationTest.java	1
-be-mock-s2s-client	services/event-management-service/src/test/java/ch/batbern/events/controller/SelfNominationIntegrationTest.java	1
 be-mock-s2s-client	services/event-management-service/src/test/java/ch/batbern/events/controller/SpeakerPromoteControllerIntegrationTest.java	1
 be-mock-s2s-client	services/event-management-service/src/test/java/ch/batbern/events/forwarding/EmailForwardingServiceTest.java	1
 be-mock-s2s-client	services/event-management-service/src/test/java/ch/batbern/events/forwarding/ForwardingRecipientResolverTest.java	1
