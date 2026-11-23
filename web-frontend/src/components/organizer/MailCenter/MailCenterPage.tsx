@@ -4,8 +4,11 @@
  * Sections, in this order (AC8, AC9):
  *  1. Open: OPEN and WAITING conversations of every event, each row names its event.
  *  2. No event: mail to info@ / support@ that belongs to no event; each row has "Assign to event".
- *  3. Spam (collapsed, count in the header): mail SES flagged as spam, "Not spam" per row.
- *  4. What went out (all events, collapsed): the event page's list across events, with an event filter.
+ *  3. All conversations: every conversation that came in, with or without event, done ones
+ *     included, newest first, with an event filter and pages. Assigning a mail to an event or
+ *     closing it never takes it off this page.
+ *  4. Spam (collapsed, count in the header): mail SES flagged as spam, "Not spam" per row.
+ *  5. What went out (all events, collapsed): the event page's list across events, with an event filter.
  *
  * The rows and inline details are the event page's (`ConversationList`, `MailSentList`,
  * `MailDetail`): inline below the row on desktop, a full-screen dialog on mobile.
@@ -26,6 +29,7 @@ import {
   List,
   ListItem,
   ListItemButton,
+  Pagination,
   Paper,
   Skeleton,
   Typography,
@@ -52,6 +56,7 @@ import { MailSentList } from '@/components/organizer/EventPage/communications/Ma
 import { intlLocale } from '@/utils/date/intlLocale';
 
 const SPAM_PAGE_SIZE = 50;
+const ALL_PAGE_SIZE = 25;
 
 export const MailCenterPage: React.FC = () => {
   const { t } = useTranslation('events');
@@ -120,6 +125,8 @@ export const MailCenterPage: React.FC = () => {
           ownDialog={false}
         />
       </Paper>
+
+      <AllConversations />
 
       <Accordion variant="outlined" disableGutters sx={{ mb: 3 }} data-testid="mail-center-spam">
         <AccordionSummary expandIcon={<ExpandMoreIcon />}>
@@ -196,6 +203,67 @@ const SectionHeader: React.FC<SectionHeaderProps> = ({
     )}
   </Box>
 );
+
+/**
+ * Every conversation, with or without event, in every status, newest activity first after the
+ * open ones (the server's order). Its own open row and, on mobile, its own dialog: the same
+ * conversation can also be in "Open" above, and it must not open twice.
+ */
+const AllConversations: React.FC = () => {
+  const { t } = useTranslation('events');
+  const [eventCode, setEventCode] = useState('');
+  const [page, setPage] = useState(1);
+  const [openKey, setOpenKey] = useState<string | null>(null);
+  const query = useConversations({
+    ...(eventCode ? { eventCode } : {}),
+    page,
+    limit: ALL_PAGE_SIZE,
+  });
+  const totalPages = query.data?.pagination.totalPages ?? 0;
+
+  return (
+    <Paper variant="outlined" sx={{ p: { xs: 1, sm: 2 }, mb: 3 }} data-testid="mail-center-all">
+      <SectionHeader
+        title={t('mailCenter.allConversations')}
+        subtitle={t('mailCenter.allConversationsHint')}
+        count={query.data?.pagination.totalItems}
+      />
+      <EventSelect
+        value={eventCode}
+        onChange={(next) => {
+          setEventCode(next);
+          setPage(1);
+          setOpenKey(null);
+        }}
+        label={t('mailCenter.event')}
+        noneLabel={t('mailCenter.allEvents')}
+        sx={{ minWidth: 240, mb: 2 }}
+        data-testid="mail-center-all-event"
+      />
+      <ConversationList
+        query={query}
+        openKey={openKey}
+        onOpenChange={setOpenKey}
+        emptyText={t('mailCenter.nothingAtAll')}
+        testId="mail-center-all"
+        showEvent
+      />
+      {totalPages > 1 && (
+        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
+          <Pagination
+            count={totalPages}
+            page={page}
+            onChange={(_, next) => {
+              setPage(next);
+              setOpenKey(null);
+            }}
+            size="small"
+          />
+        </Box>
+      )}
+    </Paper>
+  );
+};
 
 /**
  * AC3: mail SES flagged as spam, newest first. A click shows the mail inline (desktop) or in a
