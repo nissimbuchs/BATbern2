@@ -9,13 +9,12 @@ import ch.batbern.events.service.publishing.PublishingPhase;
 import ch.batbern.events.service.publishing.PublishingService;
 import ch.batbern.shared.test.AbstractIntegrationTest;
 import ch.batbern.shared.types.EventWorkflowState;
+import ch.batbern.shared.utils.DateTimeUtils;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
-import java.time.LocalDate;
-import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.UUID;
@@ -78,7 +77,7 @@ class AgendaStructuralSessionsIntegrationTest extends AbstractIntegrationTest {
 
     private Event createEvent() {
         int number = eventNumber++;
-        Instant date = LocalDate.now().plusDays(14).atStartOfDay(ZoneId.of("Europe/Zurich")).toInstant();
+        Instant date = DateTimeUtils.todaySwiss().plusDays(14).atStartOfDay(DateTimeUtils.SWISS_ZONE).toInstant();
         return eventRepository.save(Event.builder()
                 .eventCode("BATbern" + number)
                 .title("Structure " + number)

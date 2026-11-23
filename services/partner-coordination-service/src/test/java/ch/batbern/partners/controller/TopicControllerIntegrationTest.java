@@ -13,6 +13,7 @@ import ch.batbern.shared.test.AbstractIntegrationTest;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import ch.batbern.shared.test.contract.ContractServer;
+import ch.batbern.shared.utils.DateTimeUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -28,7 +29,6 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.HashMap;
 import java.util.Map;
@@ -473,8 +473,8 @@ class TopicControllerIntegrationTest extends AbstractIntegrationTest {
         return partnerRepository.save(Partner.builder()
                 .companyName(companyName)
                 .partnershipLevel(PartnershipLevel.GOLD)
-                .partnershipStartDate(LocalDate.now().minusYears(1))
-                .partnershipEndDate(LocalDate.now().plusYears(1))
+                .partnershipStartDate(DateTimeUtils.todaySwiss().minusYears(1))
+                .partnershipEndDate(DateTimeUtils.todaySwiss().plusYears(1))
                 .build());
     }
 }

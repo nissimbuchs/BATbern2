@@ -9,6 +9,7 @@ import ch.batbern.partners.domain.PartnershipLevel;
 import ch.batbern.partners.repository.PartnerMeetingRepository;
 import ch.batbern.partners.repository.PartnerRepository;
 import ch.batbern.shared.test.AbstractIntegrationTest;
+import ch.batbern.shared.utils.DateTimeUtils;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.AfterEach;
@@ -65,7 +66,7 @@ class UserReferenceIntegrationTest extends AbstractIntegrationTest {
     void seed() {
         cleanUp();
         UUID partner = partnerRepository.save(Partner.builder().companyName(COMPANY)
-                .partnershipLevel(PartnershipLevel.GOLD).partnershipStartDate(LocalDate.now().minusYears(1))
+                .partnershipLevel(PartnershipLevel.GOLD).partnershipStartDate(DateTimeUtils.todaySwiss().minusYears(1))
                 .build()).getId();
         topic(SOURCE, "Topic by the source");
         topic(SOURCE, "Second topic by the source");

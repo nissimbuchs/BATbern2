@@ -44,8 +44,8 @@ class PartnerTest {
         Partner activePartner = Partner.builder()
                 .companyName("ActiveCo")
                 .partnershipLevel(PartnershipLevel.GOLD)
-                .partnershipStartDate(LocalDate.now().minusMonths(6))
-                .partnershipEndDate(LocalDate.now().plusMonths(6))
+                .partnershipStartDate(DateTimeUtils.todaySwiss().minusMonths(6))
+                .partnershipEndDate(DateTimeUtils.todaySwiss().plusMonths(6))
                 .build();
 
         // Then
@@ -57,8 +57,8 @@ class PartnerTest {
         Partner expiredPartner = Partner.builder()
                 .companyName("ExpiredCo")
                 .partnershipLevel(PartnershipLevel.SILVER)
-                .partnershipStartDate(LocalDate.now().minusYears(2))
-                .partnershipEndDate(LocalDate.now().minusMonths(1))
+                .partnershipStartDate(DateTimeUtils.todaySwiss().minusYears(2))
+                .partnershipEndDate(DateTimeUtils.todaySwiss().minusMonths(1))
                 .build();
 
         // Then
@@ -70,7 +70,7 @@ class PartnerTest {
         Partner futurePartner = Partner.builder()
                 .companyName("FutureCo")
                 .partnershipLevel(PartnershipLevel.PLATINUM)
-                .partnershipStartDate(LocalDate.now().plusMonths(1))
+                .partnershipStartDate(DateTimeUtils.todaySwiss().plusMonths(1))
                 .build();
 
         // Then
@@ -99,7 +99,7 @@ class PartnerTest {
         Partner openEndedPartner = Partner.builder()
                 .companyName("OpenEndedCo")
                 .partnershipLevel(PartnershipLevel.STRATEGIC)
-                .partnershipStartDate(LocalDate.now().minusYears(1))
+                .partnershipStartDate(DateTimeUtils.todaySwiss().minusYears(1))
                 .partnershipEndDate(null)  // No end date
                 .build();
 
@@ -116,7 +116,7 @@ class PartnerTest {
                 Partner.builder()
                         .companyName("TestCo")
                         .partnershipLevel(null)  // Invalid: null
-                        .partnershipStartDate(LocalDate.now())
+                        .partnershipStartDate(DateTimeUtils.todaySwiss())
                         .build()
                         .validatePartnershipLevel()
         )
@@ -153,7 +153,7 @@ class PartnerTest {
                 Partner.builder()
                         .companyName(null)  // Missing required field
                         .partnershipLevel(PartnershipLevel.GOLD)
-                        .partnershipStartDate(LocalDate.now())
+                        .partnershipStartDate(DateTimeUtils.todaySwiss())
                         .build()
                         .validateCompanyName()
         )
@@ -172,7 +172,7 @@ class PartnerTest {
                 Partner.builder()
                         .companyName(tooLongName)
                         .partnershipLevel(PartnershipLevel.GOLD)
-                        .partnershipStartDate(LocalDate.now())
+                        .partnershipStartDate(DateTimeUtils.todaySwiss())
                         .build()
                         .validateCompanyName()
         )

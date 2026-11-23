@@ -7,6 +7,7 @@ import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
 import ch.batbern.shared.types.EventWorkflowState;
 import ch.batbern.shared.types.SpeakerWorkflowState;
+import ch.batbern.shared.utils.DateTimeUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -19,7 +20,6 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.Instant;
-import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -89,7 +89,7 @@ class SpeakerReminderControllerIntegrationTest extends AbstractIntegrationTest {
                 .eventId(testEvent.getId())
                 .speakerName("John Invited")
                 .status(SpeakerWorkflowState.INVITED)
-                .responseDeadline(LocalDate.now().plusDays(14))
+                .responseDeadline(DateTimeUtils.todaySwiss().plusDays(14))
                 .remindersDisabled(false)
                 .build();
         invitedSpeaker = speakerPoolRepository.save(invitedSpeaker);
@@ -98,7 +98,7 @@ class SpeakerReminderControllerIntegrationTest extends AbstractIntegrationTest {
                 .eventId(testEvent.getId())
                 .speakerName("Jane Accepted")
                 .status(SpeakerWorkflowState.ACCEPTED)
-                .contentDeadline(LocalDate.now().plusDays(7))
+                .contentDeadline(DateTimeUtils.todaySwiss().plusDays(7))
                 .remindersDisabled(false)
                 .build();
         acceptedSpeaker = speakerPoolRepository.save(acceptedSpeaker);

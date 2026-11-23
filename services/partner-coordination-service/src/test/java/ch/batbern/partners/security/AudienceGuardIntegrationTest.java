@@ -12,6 +12,7 @@ import ch.batbern.shared.test.contract.ContractServer;
 import ch.batbern.shared.test.mail.SesRecorder;
 import ch.batbern.shared.test.security.RoleStubTables;
 import ch.batbern.shared.test.security.TestTokens;
+import ch.batbern.shared.utils.DateTimeUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -34,7 +35,6 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.client.RestTemplate;
 
 import java.time.Instant;
-import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Collection;
@@ -223,7 +223,7 @@ class AudienceGuardIntegrationTest extends AbstractIntegrationTest {
         return meetingRepository.saveAndFlush(PartnerMeeting.builder()
                 .eventCode("BATbern57")
                 .meetingType(MeetingType.SPRING)
-                .meetingDate(LocalDate.now().plusDays(40))
+                .meetingDate(DateTimeUtils.todaySwiss().plusDays(40))
                 .startTime(LocalTime.of(12, 0))
                 .endTime(LocalTime.of(14, 0))
                 .location("Lunch Hall")

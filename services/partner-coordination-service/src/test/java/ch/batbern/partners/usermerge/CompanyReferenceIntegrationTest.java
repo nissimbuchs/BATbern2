@@ -6,6 +6,7 @@ import ch.batbern.partners.domain.Partner;
 import ch.batbern.partners.domain.PartnershipLevel;
 import ch.batbern.partners.repository.PartnerRepository;
 import ch.batbern.shared.test.AbstractIntegrationTest;
+import ch.batbern.shared.utils.DateTimeUtils;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.AfterEach;
@@ -22,7 +23,6 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
-import java.time.LocalDate;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -90,7 +90,7 @@ class CompanyReferenceIntegrationTest extends AbstractIntegrationTest {
 
     private UUID partner(String key) {
         return partnerRepository.save(Partner.builder().companyName(key).partnershipLevel(PartnershipLevel.GOLD)
-                .partnershipStartDate(LocalDate.now().minusYears(1)).build()).getId();
+                .partnershipStartDate(DateTimeUtils.todaySwiss().minusYears(1)).build()).getId();
     }
 
     private UUID topic(String company, String title) {

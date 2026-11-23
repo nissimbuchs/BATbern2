@@ -5,6 +5,7 @@ import ch.batbern.partners.config.TestSecurityConfig;
 import ch.batbern.partners.domain.Partner;
 import ch.batbern.partners.domain.PartnershipLevel;
 import ch.batbern.shared.test.AbstractIntegrationTest;
+import ch.batbern.shared.utils.DateTimeUtils;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -105,7 +106,7 @@ class PartnerRepositoryTest extends AbstractIntegrationTest {
         Partner first = Partner.builder()
                 .companyName("UniqueTestCo")
                 .partnershipLevel(PartnershipLevel.SILVER)
-                .partnershipStartDate(LocalDate.now())
+                .partnershipStartDate(DateTimeUtils.todaySwiss())
                 .build();
         partnerRepository.saveAndFlush(first);
 
@@ -113,7 +114,7 @@ class PartnerRepositoryTest extends AbstractIntegrationTest {
         Partner duplicate = Partner.builder()
                 .companyName("UniqueTestCo")  // Duplicate!
                 .partnershipLevel(PartnershipLevel.GOLD)
-                .partnershipStartDate(LocalDate.now())
+                .partnershipStartDate(DateTimeUtils.todaySwiss())
                 .build();
 
         // Then
@@ -131,7 +132,7 @@ class PartnerRepositoryTest extends AbstractIntegrationTest {
         Partner partner = Partner.builder()
                 .companyName("TimestampCo")  // Max 12 chars
                 .partnershipLevel(PartnershipLevel.BRONZE)
-                .partnershipStartDate(LocalDate.now())
+                .partnershipStartDate(DateTimeUtils.todaySwiss())
                 .build();
 
         // When
@@ -150,7 +151,7 @@ class PartnerRepositoryTest extends AbstractIntegrationTest {
         Partner partner = Partner.builder()
                 .companyName("UpdateTestCo")
                 .partnershipLevel(PartnershipLevel.SILVER)
-                .partnershipStartDate(LocalDate.now())
+                .partnershipStartDate(DateTimeUtils.todaySwiss())
                 .build();
         Partner saved = partnerRepository.saveAndFlush(partner);
         java.time.Instant initialUpdatedAt = saved.getUpdatedAt();
@@ -199,7 +200,7 @@ class PartnerRepositoryTest extends AbstractIntegrationTest {
         Partner partner = Partner.builder()
                 .companyName("OpenEndedCo")
                 .partnershipLevel(PartnershipLevel.STRATEGIC)
-                .partnershipStartDate(LocalDate.now())
+                .partnershipStartDate(DateTimeUtils.todaySwiss())
                 .partnershipEndDate(null)  // Open-ended
                 .build();
 

@@ -7,6 +7,7 @@ import ch.batbern.partners.domain.PartnershipLevel;
 import ch.batbern.partners.repository.PartnerRepository;
 import ch.batbern.shared.test.AbstractIntegrationTest;
 import ch.batbern.shared.test.FlushBeforeRollback;
+import ch.batbern.shared.utils.DateTimeUtils;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import org.junit.jupiter.api.DisplayName;
@@ -17,8 +18,6 @@ import org.springframework.context.annotation.Import;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.test.context.TestContext;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.time.LocalDate;
 
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -79,7 +78,7 @@ class FlushBeforeRollbackIntegrationTest extends AbstractIntegrationTest {
         return Partner.builder()
                 .companyName(companyName)
                 .partnershipLevel(PartnershipLevel.SILVER)
-                .partnershipStartDate(LocalDate.now())
+                .partnershipStartDate(DateTimeUtils.todaySwiss())
                 .build();
     }
 }

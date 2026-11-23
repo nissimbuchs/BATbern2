@@ -20,6 +20,7 @@ import ch.batbern.shared.test.mail.SesRecorder;
 import ch.batbern.shared.test.AbstractIntegrationTest;
 import ch.batbern.shared.types.EventWorkflowState;
 import ch.batbern.shared.types.SpeakerWorkflowState;
+import ch.batbern.shared.utils.DateTimeUtils;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.AfterEach;
@@ -36,7 +37,6 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
@@ -449,7 +449,7 @@ class OwnTextComposerIntegrationTest extends AbstractIntegrationTest {
     private void speaker(String name, String email, SpeakerWorkflowState state, boolean remindersDisabled) {
         SpeakerPool pool = speakerPoolRepository.saveAndFlush(SpeakerPool.builder().eventId(event.getId())
                 .speakerName(name).status(state).remindersDisabled(remindersDisabled)
-                .responseDeadline(LocalDate.now().plusDays(7)).contentDeadline(LocalDate.now().plusDays(14))
+                .responseDeadline(DateTimeUtils.todaySwiss().plusDays(7)).contentDeadline(DateTimeUtils.todaySwiss().plusDays(14))
                 .build());
         String[] parts = name.split(" ");
         PrimarySpeakerResolver.PrimarySpeakerProfile profile = new PrimarySpeakerResolver.PrimarySpeakerProfile(

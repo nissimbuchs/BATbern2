@@ -133,7 +133,7 @@ class SpeakerAudienceAdapterTest {
     void automatic_tierPerSpeaker() {
         SpeakerPool anna = pool("Anna Alpha", false);
         profile(anna, "anna@example.com");
-        LocalDate deadline = LocalDate.now().plusDays(2);
+        LocalDate deadline = DateTimeUtils.todaySwiss().plusDays(2);
         when(reminderService.deadlineFor(anna, event, "RESPONSE")).thenReturn(deadline);
         // The tier counts days from today in Zurich, as the scheduled reminders do
         when(reminderService.autoDetectTier(eq(DateTimeUtils.todaySwiss()), eq(deadline))).thenReturn("TIER_3");
@@ -163,7 +163,7 @@ class SpeakerAudienceAdapterTest {
         when(reminderService.sendManualReminders(eq(event), eq("RESPONSE"), isNull(), eq(List.of(anna, zoe)),
                 eq(trigger), eq("organizer1"))).thenReturn(List.of("speaker-reminder-response-tier1",
                 "speaker-reminder-response-tier2"));
-        LocalDate deadline = LocalDate.now().plusDays(7);
+        LocalDate deadline = DateTimeUtils.todaySwiss().plusDays(7);
         when(reminderService.deadlineFor(any(), eq(event), eq("RESPONSE"))).thenReturn(deadline);
         when(reminderService.autoDetectTier(any(), any())).thenReturn("TIER_1");
         when(reminderService.speakerLocale(any())).thenReturn(Locale.GERMAN);

@@ -47,6 +47,24 @@ allprojects {
     }
 }
 
+// Test JVM time zone. BATbern counts calendar days in Europe/Zurich; production runs its JVM in
+// UTC, which differs from Zurich's date for only 1-2 hours a night, so a test that takes "today"
+// from the JVM default zone fails only around midnight. Every test JVM therefore runs in a zone
+// that is on a different calendar day than Zurich right now: Pacific/Kiritimati (UTC+14) when it
+// already has tomorrow (from 10:00/11:00 Zurich time), else Pacific/Pago_Pago (UTC-11), which
+// still has yesterday (until 12:00/13:00 Zurich time). A default-zone dependency then fails on
+// every run, at any hour. Override with -PtestTimezone=<zone id> (e.g. Europe/Zurich).
+// Rule and guard: docs/architecture/coding-standards.md -> "Time zones".
+def zurichToday = java.time.LocalDate.now(java.time.ZoneId.of('Europe/Zurich'))
+def farTestZone = java.time.LocalDate.now(java.time.ZoneId.of('Pacific/Kiritimati')) != zurichToday
+        ? 'Pacific/Kiritimati' : 'Pacific/Pago_Pago'
+def testTimezone = (findProperty('testTimezone') ?: farTestZone).toString()
+subprojects {
+    tasks.withType(Test).configureEach {
+        systemProperty 'user.timezone', testTimezone
+    }
+}
+
 // Checkstyle — single source of truth for EVERY module that applies the plugin
 // (the :services:* modules below, plus shared-kernel and api-gateway, which each
 // apply 'checkstyle' in their own build.gradle). withId fires whenever the plugin

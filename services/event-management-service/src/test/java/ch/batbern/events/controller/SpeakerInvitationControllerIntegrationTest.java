@@ -193,7 +193,7 @@ class SpeakerInvitationControllerIntegrationTest extends AbstractIntegrationTest
         cums.answer(POST, CREDENTIALS, call -> Reply.ok(
                 "{\"temporaryPassword\": \"TestTemp123!abcde\", \"action\": \"FRESH_TEMP_PASSWORD\"}"));
 
-        LocalDate responseDeadline = LocalDate.now().plusDays(14);
+        LocalDate responseDeadline = DateTimeUtils.todaySwiss().plusDays(14);
 
         // When/Then
         mockMvc.perform(post("/api/v1/events/{eventCode}/speakers/{speakerId}/send-invitation",
@@ -246,7 +246,7 @@ class SpeakerInvitationControllerIntegrationTest extends AbstractIntegrationTest
                             {
                                 "responseDeadline": "%s"
                             }
-                            """.formatted(LocalDate.now().plusDays(14))))
+                            """.formatted(DateTimeUtils.todaySwiss().plusDays(14))))
                 .andExpect(status().isNotFound());
     }
 
@@ -273,7 +273,7 @@ class SpeakerInvitationControllerIntegrationTest extends AbstractIntegrationTest
                             {
                                 "responseDeadline": "%s"
                             }
-                            """.formatted(LocalDate.now().minusDays(1))))
+                            """.formatted(DateTimeUtils.todaySwiss().minusDays(1))))
                 .andExpect(status().isBadRequest());
     }
 
@@ -349,7 +349,7 @@ class SpeakerInvitationControllerIntegrationTest extends AbstractIntegrationTest
         // Story 11.E.9: findByEventIdAndUsername joins via session_users.
         seedPrimarySessionUser(candidate, testUsername);
 
-        LocalDate responseDeadline = LocalDate.now().plusDays(14);
+        LocalDate responseDeadline = DateTimeUtils.todaySwiss().plusDays(14);
 
         mockMvc.perform(post("/api/v1/events/{eventCode}/speakers/{speakerId}/send-invitation",
                         testEventCode, candidate.getId())
@@ -408,7 +408,7 @@ class SpeakerInvitationControllerIntegrationTest extends AbstractIntegrationTest
         // Story 11.E.9: findByEventIdAndUsername joins via session_users.
         seedPrimarySessionUser(candidate, testUsername);
 
-        LocalDate responseDeadline = LocalDate.now().plusDays(14);
+        LocalDate responseDeadline = DateTimeUtils.todaySwiss().plusDays(14);
 
         mockMvc.perform(post("/api/v1/events/{eventCode}/speakers/{speakerId}/send-invitation",
                         testEventCode, candidate.getId())

@@ -14,6 +14,7 @@ import ch.batbern.partners.exception.UserServiceException;
 import ch.batbern.partners.repository.PartnerRepository;
 import ch.batbern.partners.security.SecurityContextHelper;
 import ch.batbern.shared.events.DomainEventPublisher;
+import ch.batbern.shared.utils.DateTimeUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -21,7 +22,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.time.LocalDate;
 import java.util.Collections;
 import java.util.Optional;
 import java.util.Set;
@@ -74,13 +74,13 @@ class PartnerServiceTest {
         createPartnerRequest = new CreatePartnerRequest();
         createPartnerRequest.setCompanyName("GoogleZH");
         createPartnerRequest.setPartnershipLevel(ch.batbern.partners.dto.generated.PartnershipLevel.GOLD);
-        createPartnerRequest.setPartnershipStartDate(LocalDate.now());
+        createPartnerRequest.setPartnershipStartDate(DateTimeUtils.todaySwiss());
 
         partner = new Partner();
         partner.setId(UUID.randomUUID());
         partner.setCompanyName("GoogleZH");
         partner.setPartnershipLevel(PartnershipLevel.GOLD);
-        partner.setPartnershipStartDate(LocalDate.now());
+        partner.setPartnershipStartDate(DateTimeUtils.todaySwiss());
         // Note: isActive() is calculated based on dates, no setActive() method
 
         companyDTO = new CompanyResponse();
@@ -181,7 +181,7 @@ class PartnerServiceTest {
         // Given
         UpdatePartnerRequest updateRequest = new UpdatePartnerRequest();
         updateRequest.setPartnershipLevel(ch.batbern.partners.dto.generated.PartnershipLevel.PLATINUM);
-        updateRequest.setPartnershipEndDate(LocalDate.now().plusYears(2));
+        updateRequest.setPartnershipEndDate(DateTimeUtils.todaySwiss().plusYears(2));
 
         when(partnerRepository.findByCompanyName("GoogleZH")).thenReturn(Optional.of(partner));
         when(partnerRepository.save(any(Partner.class))).thenReturn(partner);

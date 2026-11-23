@@ -14,6 +14,7 @@ import ch.batbern.shared.test.contract.ContractServer.Reply;
 import ch.batbern.shared.test.mail.SesRecorder;
 import ch.batbern.shared.types.EventWorkflowState;
 import ch.batbern.shared.types.SpeakerWorkflowState;
+import ch.batbern.shared.utils.DateTimeUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -29,7 +30,6 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
 import java.time.Instant;
-import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
@@ -198,7 +198,7 @@ class SpeakerCrossEventScopingIntegrationTest extends AbstractIntegrationTest {
     }
 
     private static String responseDeadline() {
-        return LocalDate.now().plusDays(14).toString();
+        return DateTimeUtils.todaySwiss().plusDays(14).toString();
     }
 
     /** Every speaker operation keyed by {@code {speakerId}}, with a body it would accept. */
