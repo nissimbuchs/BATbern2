@@ -1,6 +1,7 @@
 package ch.batbern.shared.unit.events;
 
 import ch.batbern.shared.events.EventCreatedEvent;
+import ch.batbern.shared.utils.DateTimeUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.junit.jupiter.api.Test;
@@ -124,7 +125,7 @@ class EventCreatedEventTest {
                 .eventCode("BATbern56")
                 .title("Test Event")
                 .eventType(type)
-                .eventDate(LocalDate.now())
+                .eventDate(DateTimeUtils.todaySwiss())
                 .venue("Test Venue")
                 .organizerId("john.doe")
                 .build();

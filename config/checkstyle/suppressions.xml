@@ -20,6 +20,14 @@
     <suppress files="SpeakerController\.java$" checks="ParameterNumber"/>
     <suppress files="SpeakerContentSubmissionService\.java$" checks="ParameterNumber"/>
 
+    <!-- defaultZone allow-list (coding-standards.md, "Time zones"). The Watch pairing keeps
+         zone-less LocalDateTime columns written with LocalDateTime.now() and read back as instants
+         with ZoneId.systemDefault(): expiry durations, consistent in any JVM zone, and CUMS sets
+         hibernate.jdbc.time_zone=UTC, which converts LocalDateTime values relative to the JVM
+         zone. Moving them to explicit UTC belongs with a move to Instant columns, not here. -->
+    <suppress id="defaultZone"
+              files="companyuser[\\/](domain[\\/]WatchPairing|watch[\\/]WatchPairing(Service|CleanupService|IntegrationTest))\.java$"/>
+
     <!-- Lombok generates code that may violate some rules -->
     <suppress checks="HiddenField" files=".*\.java"/>
 </suppressions>

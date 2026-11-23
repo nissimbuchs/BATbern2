@@ -8,6 +8,7 @@ import org.springframework.context.annotation.Profile;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -64,7 +65,7 @@ public class TestRateLimitConfig {
             RateLimitEntry entry = rateLimitMap.get(key);
 
             if (entry == null || isTimeWindowExpired(entry)) {
-                entry = new RateLimitEntry(1, LocalDateTime.now());
+                entry = new RateLimitEntry(1, LocalDateTime.now(ZoneOffset.UTC));
             } else {
                 entry.incrementCount();
             }
@@ -103,7 +104,7 @@ public class TestRateLimitConfig {
 
         private boolean isTimeWindowExpired(RateLimitEntry entry) {
             // 1-minute time window
-            return ChronoUnit.MINUTES.between(entry.getTimestamp(), LocalDateTime.now()) >= 1;
+            return ChronoUnit.MINUTES.between(entry.getTimestamp(), LocalDateTime.now(ZoneOffset.UTC)) >= 1;
         }
 
         private static class RateLimitEntry {

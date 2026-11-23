@@ -31,7 +31,13 @@ describe('auto-rollback covers every promoted service', () => {
     const fragments = bashArray('rollback-deployment.sh', 'SERVICES').map((e) => e.split(':')[1]);
     // live names, checked 2026-11-19: BATbern-staging-<Fragment>-Service<hash>-<suffix>
     expect(fragments.sort()).toEqual(
-      ['ApiGatewayService', 'CompanyManagement', 'EventManagement', 'PartnerCoordination'].sort()
+      [
+        'AgentService',
+        'ApiGatewayService',
+        'CompanyManagement',
+        'EventManagement',
+        'PartnerCoordination',
+      ].sort()
     );
   });
 });

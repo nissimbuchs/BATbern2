@@ -25,6 +25,7 @@ SERVICES=(
   "event-management-service"
   "partner-coordination-service"
   "company-user-management-service"
+  "agent-service"
 )
 
 # Check AWS CLI is installed

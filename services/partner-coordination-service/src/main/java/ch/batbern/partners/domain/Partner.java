@@ -1,5 +1,6 @@
 package ch.batbern.partners.domain;
 
+import ch.batbern.shared.utils.DateTimeUtils;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -85,7 +86,7 @@ public class Partner {
      * @return true if partnership is active, false otherwise
      */
     public boolean isActive() {
-        LocalDate now = LocalDate.now();
+        LocalDate now = DateTimeUtils.todaySwiss();
 
         // Partnership start date is required
         if (partnershipStartDate == null) {

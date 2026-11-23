@@ -32,6 +32,64 @@ CUMS (identity) is upstream of all. EMS (event) is upstream of PCS (partners).
   (`AgentCallerSecrets`); the filter chain keeps `/internal/**` open. Everything else goes through
   the Spring gateway's public API with its delegated agent token; it never reads or writes another
   service's tables.
+- agent-service (story 1 of the agent runtime epic, shipped dark with `agent.enabled=false`) serves
+  `/api/v1/agent/**` (`agent-api.openapi.yml`; the gateway routes the prefix with its slash, so
+  `/api/v1/agent-settings` stays CUMS). Its own API accepts Cognito tokens only (an agent token
+  is 401) and organizers only; roles come from `custom:role` without the `JwtRolesConverter` DB
+  fallback, which reads CUMS tables. It keeps its data in its own tables (folder `db/agent-migration`, history
+  `flyway_schema_history_agent`), scans only `ch.batbern.agent` and uses shared-kernel classes
+  directly. The decision log (story 2, R7): `agent_runs` (trigger, end status DONE, FAILED or
+  HANDED_TO_ORGANIZERS and its reason), `agent_inbound_messages`, `agent_steps`,
+  `agent_model_calls` (full prompt, answer, chosen tools, tokens), `agent_tool_calls`; the gate
+  writes `agent_verdicts` and PENDING `agent_approvals` (story 7); `agent_undos` exists for the
+  undo operation and has no writer until epic-oversight-console adds overrule and undo. Only `loop/AgentLoop` calls the model, through `loop/LlmPort` (AD-14); the adapters live
+  in `llm/` (`AnthropicLlm` on `anthropic-java` 3.12.0, `LocalDevLlm`), picked once at startup by
+  `llm/LlmConfig`, and api.anthropic.com is the service's only outbound call outside the BATbern
+  services. Its key comes from Secrets Manager (`AGENT_ANTHROPIC_API_KEY`, agent-service only, story
+  3). Its identity (story 4, R2, AD-3): before its first model call a run obtains its grant
+  (`POST /internal/agent-grants` for an organizer login, a linked run or a scheduler job; or a grant
+  handed over by EMS, then no grant call) and mints its token (`POST /internal/agent-tokens`), both
+  with its own caller secret (`AGENT_CUMS_CALLER_SECRET`), through `identity/CumsAgentClient`; these
+  two are the only `/internal/**` operations it calls. Tools reach the services only through
+  `gateway/PublicApi`, the public API behind the Spring gateway with the run's token: a read reuses
+  it until 60 s before it expires, every write mints a fresh one first. A refused grant or mint ends
+  the run HANDED_TO_ORGANIZERS (`GRANT_REFUSED`, `TOKEN_REFUSED`, the CUMS code in `end_detail`);
+  the grant's run id is stored as `agent_runs.grant_run_id`, so `agent:<run>` in another service's
+  audit column leads to the run. Its tools (story 5, R4, AD-6): the loop offers the model only the
+  tools of `tools/ToolRegistry` (`tools/StandardTools`; today the read tools `findPastEvents`,
+  `listEventSessions`, `listSessionSpeakers` in `tools/read/`, on the public EMS reads). One table,
+  `tools/OperationClassTable`, gives each public operation a tool may call (method plus spec path)
+  its class `read` < `reversible` < `reply` < `binding` < `audience`; a tool's class is the highest
+  of its operations, each `reversible` tool names its undo operation, and `tools/ToolClassCheck`
+  refuses anything else, at startup and in the unit test `ToolClassCheckTest`. A tool's
+  `PublicApi` lets through only the operations it declares. Every write of a run, step, model call or tool call goes through `log/DecisionLog`, one committed transaction per row; verdicts and approvals are written by `gate/GateLedger` (below). Precedents (story 6, R6, AD-8): `precedent/PrecedentRetrieval`
+  returns, for a proposed call, the matching approvals, denials and undos of the decision log (read
+  by `precedent/DecisionLogPrecedents`) and the past events the tool asks for
+  (`AgentTool.pastEventQuery`, read through `findPastEvents` with the run's token), each with a
+  citeable source id (`agent_approvals:<id>`, `agent_undos:<id>`, `event:<eventCode>`). The matching
+  rule (same tool, same principal kind) lives only in `precedent/PrecedentMatchRule`; the run's
+  principal kind is the one CUMS names in the grant answer, stored as `agent_runs.principal_kind`. The
+  autonomy gate (story 7, R5, AD-7): `loop/AgentLoop` asks `gate/AutonomyGate` before every non-read
+  tool call (read calls skip it); the rules live only in `gate/GateRules`, the verdict with its
+  inputs and cited precedent ids is written by `gate/GateLedger` to `agent_verdicts` (plus a PENDING
+  `agent_approvals` row), and only a RUN verdict runs the tool. Mail tools declare their recipients
+  through `AgentTool.outboundMail`. Limits (story 8, R9): one configuration block `agent.limits`
+  (`config/AgentProperties.Limits`) holds the caps and the gate's two values; `loop/AgentLoop` checks
+  steps, run tokens and the daily budget before every model call (tokens read by `loop/TokenLedger`
+  from `agent_model_calls`), the reply cap is the `gate/GateCaps` bean `gate/ReplyCap`, and a reached
+  limit ends the run `CAP_REACHED` with the `run/RunLimit` as end detail. Alarm markers (story 10,
+  R10): `run/RunAlarms` alone writes the log lines the CloudWatch run alarms match; `AgentLoop` calls
+  it once per run end. The read API (story 9, R8):
+  `run/AgentRunController` serves every `GET` of `agent-api.openapi.yml` (runs, a run's detail, steps,
+  model calls with the full prompt on the detail only, tool calls, verdicts with resolved precedents
+  and approvals) from `run/RunLogReadService`, read only, to organizers as persons
+  (`security/ConsoleAccess`: organizer role, no `act` claim). Table names (AD-9, settled by the
+  epic's refactor sweep): the `agent_` prefix alone does not say who owns a table. agent-service
+  owns exactly the tables its folder `db/agent-migration` creates, recorded in
+  `flyway_schema_history_agent`: `agent_runs`, `agent_inbound_messages`, `agent_steps`,
+  `agent_model_calls`, `agent_tool_calls`, `agent_verdicts`, `agent_approvals`, `agent_undos`. CUMS owns the agent identity tables in its own history: `agent_settings`,
+  `agent_grants`, `agent_allowlist`. Neither service reads the other's. A new agent table's owner is
+  the migration folder it lands in, and it never reuses a name the other side owns.
 - Downstream must react to an upstream change? The upstream calls it through an `/internal`
   contract it owns (its spec, implementers listed in its configuration under
   `batbern.contracts.<name>.implementers`, called through shared-kernel `ContractCalls`, no

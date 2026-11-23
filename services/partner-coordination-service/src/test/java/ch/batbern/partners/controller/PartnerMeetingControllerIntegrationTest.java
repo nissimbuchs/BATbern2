@@ -13,6 +13,7 @@ import ch.batbern.shared.test.AbstractIntegrationTest;
 import ch.batbern.shared.test.contract.ContractServer;
 import ch.batbern.shared.test.mail.SesRecorder;
 import ch.batbern.partners.mail.HttpOutboundMailRecorder;
+import ch.batbern.shared.utils.DateTimeUtils;
 import org.springframework.cache.CacheManager;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
@@ -35,7 +36,6 @@ import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
-import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.HashMap;
 import java.util.List;
@@ -585,8 +585,8 @@ class PartnerMeetingControllerIntegrationTest extends AbstractIntegrationTest {
         partnerRepository.save(Partner.builder()
                 .companyName(companyName)
                 .partnershipLevel(PartnershipLevel.GOLD)
-                .partnershipStartDate(LocalDate.now().minusYears(1))
-                .partnershipEndDate(LocalDate.now().plusYears(1))
+                .partnershipStartDate(DateTimeUtils.todaySwiss().minusYears(1))
+                .partnershipEndDate(DateTimeUtils.todaySwiss().plusYears(1))
                 .build());
     }
 

@@ -59,6 +59,7 @@ export class CICDStack extends cdk.Stack {
       'event-management-service',
       'partner-coordination-service',
       'company-user-management-service',
+      'agent-service',
     ];
 
     this.ecrRepositories = new Map();
@@ -187,7 +188,8 @@ export class CICDStack extends cdk.Stack {
             ],
           }),
 
-          // ECR — pre-deploy image existence validation
+          // ECR — pre-deploy image existence validation. (ecr:DescribeRepositories for the
+          // first-push detection in build.yml and deploy-staging.yml comes from CdkDeploymentPolicy.)
           new iam.PolicyStatement({
             effect: iam.Effect.ALLOW,
             actions: ['ecr:DescribeImages'],

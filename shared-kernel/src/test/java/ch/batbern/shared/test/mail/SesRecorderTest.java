@@ -1,15 +1,22 @@
 package ch.batbern.shared.test.mail;
 
 import ch.batbern.shared.mail.MailContext;
+import ch.batbern.shared.mail.OutboundMail;
+import ch.batbern.shared.mail.OutboundMailRecorder;
 import ch.batbern.shared.service.EmailService;
 import ch.batbern.shared.service.EmailService.EmailAttachment;
 import ch.batbern.shared.test.mail.SesRecorder.RecordedMail;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mockito;
 import org.springframework.test.util.ReflectionTestUtils;
+import software.amazon.awssdk.services.sesv2.SesV2Client;
+import software.amazon.awssdk.services.sesv2.model.SendEmailRequest;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -86,6 +93,64 @@ class SesRecorderTest {
         assertThat(mail.to()).containsExactly("info@batbern.ch");
         assertThat(mail.envelope()).containsExactly(ANNA);
         assertThat(mail.text()).isEqualTo("Hallo");
+    }
+
+    /**
+     * Production 2026-11-22: a 10.9 MB mail to ok@ failed for all 12 recipients, because SES API v1
+     * refuses a message over 10 MB. SES API v2 takes up to 40 MB; the recorder enforces that cap.
+     */
+    @Test
+    @DisplayName("a 15 MB raw forward goes through SES v2 SendEmail with raw content and is delivered")
+    void should_forward15MbRawMessage_throughSesV2() {
+        OutboundMailRecorder outbound = Mockito.mock(OutboundMailRecorder.class);
+        ReflectionTestUtils.setField(emailService, "outboundMailRecorder", outbound);
+        byte[] mime = rawMessageOfSize(15 * 1024 * 1024);
+
+        emailService.sendRawMessage(CONTEXT, mime, List.of(ANNA, BEAT), List.of(), "Grosse Beilage", "<p>b</p>", null);
+
+        assertThat(recorder.client()).isInstanceOf(SesV2Client.class);
+        ArgumentCaptor<SendEmailRequest> request = ArgumentCaptor.forClass(SendEmailRequest.class);
+        Mockito.verify(recorder.client()).sendEmail(request.capture());
+        assertThat(request.getValue().content().raw().data().asByteArray()).hasSize(mime.length);
+        assertThat(request.getValue().content().simple()).isNull();
+        RecordedMail mail = recorder.single();
+        assertThat(mail.raw()).isTrue();
+        assertThat(mail.envelope()).containsExactly(ANNA, BEAT);
+        ArgumentCaptor<OutboundMail> record = ArgumentCaptor.forClass(OutboundMail.class);
+        Mockito.verify(outbound).record(Mockito.eq(CONTEXT), record.capture());
+        assertThat(record.getValue().failureReason()).isNull();
+        assertThat(record.getValue().sesMessageId()).isEqualTo(mail.sesMessageId());
+    }
+
+    @Test
+    @DisplayName("a 41 MB raw message is refused as SES v2 refuses it, and recorded FAILED")
+    void should_refuseRawMessageOver40Mb() {
+        OutboundMailRecorder outbound = Mockito.mock(OutboundMailRecorder.class);
+        ReflectionTestUtils.setField(emailService, "outboundMailRecorder", outbound);
+        byte[] mime = rawMessageOfSize(41 * 1024 * 1024);
+
+        assertThatThrownBy(() -> emailService.sendRawMessage(CONTEXT, mime, List.of(ANNA), List.of(), "Zu gross",
+                "<p>b</p>", null)).isInstanceOf(EmailService.EmailSendException.class);
+
+        assertThat(recorder.mails()).isEmpty();
+        ArgumentCaptor<OutboundMail> record = ArgumentCaptor.forClass(OutboundMail.class);
+        Mockito.verify(outbound).record(Mockito.eq(CONTEXT), record.capture());
+        assertThat(record.getValue().sesMessageId()).isNull();
+        assertThat(record.getValue().failureReason()).isEqualTo(SesRecorder.MESSAGE_TOO_LARGE);
+    }
+
+    /** A forwarded MIME message of exactly {@code size} bytes: headers plus a base64-like body. */
+    private static byte[] rawMessageOfSize(int size) {
+        byte[] head = ("From: someone@example.com\r\nTo: ok@batbern.ch\r\nSubject: Grosse Beilage\r\n"
+                + "Content-Type: text/plain; charset=US-ASCII\r\n\r\n").getBytes(StandardCharsets.US_ASCII);
+        byte[] mime = new byte[size];
+        System.arraycopy(head, 0, mime, 0, head.length);
+        Arrays.fill(mime, head.length, size, (byte) 'A');
+        for (int i = head.length + 76; i < size - 1; i += 78) {
+            mime[i] = '\r';
+            mime[i + 1] = '\n';
+        }
+        return mime;
     }
 
     @Test

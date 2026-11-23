@@ -16,12 +16,10 @@ import org.mockito.ArgumentCaptor;
 import org.slf4j.LoggerFactory;
 import org.springframework.test.util.ReflectionTestUtils;
 import software.amazon.awssdk.awscore.exception.AwsErrorDetails;
-import software.amazon.awssdk.services.ses.SesClient;
-import software.amazon.awssdk.services.ses.model.SendEmailRequest;
-import software.amazon.awssdk.services.ses.model.SendEmailResponse;
-import software.amazon.awssdk.services.ses.model.SendRawEmailRequest;
-import software.amazon.awssdk.services.ses.model.SendRawEmailResponse;
-import software.amazon.awssdk.services.ses.model.SesException;
+import software.amazon.awssdk.services.sesv2.SesV2Client;
+import software.amazon.awssdk.services.sesv2.model.SendEmailRequest;
+import software.amazon.awssdk.services.sesv2.model.SendEmailResponse;
+import software.amazon.awssdk.services.sesv2.model.SesV2Exception;
 
 import jakarta.mail.Message;
 import jakarta.mail.Session;
@@ -55,7 +53,7 @@ class EmailServiceTest {
 
     @BeforeEach
     void setUp() {
-        // EmailService uses @Autowired(required=false) for SesClient — safe to instantiate directly
+        // EmailService uses @Autowired(required=false) for SesV2Client — safe to instantiate directly
         emailService = new EmailService();
     }
 
@@ -72,13 +70,13 @@ class EmailServiceTest {
         private static final MailContext CONTEXT =
                 MailContext.individual("BATbern60", MailContext.Audience.PARTNERS, "partner-meeting-invite");
 
-        private SesClient sesClient;
+        private SesV2Client sesClient;
         private OutboundMailRecorder recorder;
         private LocalEmailCapture capture;
 
         @BeforeEach
         void wire() {
-            sesClient = mock(SesClient.class);
+            sesClient = mock(SesV2Client.class);
             recorder = mock(OutboundMailRecorder.class);
             capture = mock(LocalEmailCapture.class);
             ReflectionTestUtils.setField(emailService, "outboundMailRecorder", recorder);
@@ -217,7 +215,7 @@ class EmailServiceTest {
         @Test
         @DisplayName("should_reportLive_when_sesClientConfigured")
         void should_reportLive_when_sesClientConfigured() {
-            ReflectionTestUtils.setField(emailService, "sesClient", mock(SesClient.class));
+            ReflectionTestUtils.setField(emailService, "sesClient", mock(SesV2Client.class));
             assertThat(emailService.isLiveDelivery()).isTrue();
         }
     }
@@ -693,13 +691,13 @@ class EmailServiceTest {
     @DisplayName("Group mail logs mask every recipient")
     class GroupMailLogMasking {
 
-        private SesClient sesClient;
+        private SesV2Client sesClient;
         private ListAppender<ILoggingEvent> logs;
         private Logger logger;
 
         @BeforeEach
         void wire() {
-            sesClient = mock(SesClient.class);
+            sesClient = mock(SesV2Client.class);
             ReflectionTestUtils.setField(emailService, "sesClient", sesClient);
             ReflectionTestUtils.setField(emailService, "fromEmail", "noreply@batbern.ch");
             ReflectionTestUtils.setField(emailService, "fromName", "BATbern");
@@ -717,8 +715,8 @@ class EmailServiceTest {
 
         @Test
         void should_logNoAddressInClear_when_groupSendWithAttachments() {
-            when(sesClient.sendRawEmail(any(SendRawEmailRequest.class)))
-                    .thenReturn(SendRawEmailResponse.builder().messageId("test-id").build());
+            when(sesClient.sendEmail(any(SendEmailRequest.class)))
+                    .thenReturn(SendEmailResponse.builder().messageId("test-id").build());
 
             emailService.sendGroupHtmlEmailWithAttachments(List.of("anna@batbern.ch", "bert@batbern.ch"),
                     "subj", "<p>body</p>", List.of(new EmailService.EmailAttachment("event.ics",
@@ -731,7 +729,7 @@ class EmailServiceTest {
         @Test
         void should_logNoAddressInClear_when_groupSendFails() {
             when(sesClient.sendEmail(any(SendEmailRequest.class)))
-                    .thenThrow((SesException) SesException.builder().message("boom")
+                    .thenThrow((SesV2Exception) SesV2Exception.builder().message("boom")
                             .awsErrorDetails(AwsErrorDetails.builder().errorMessage("boom").build()).build());
 
             assertThatThrownBy(() -> emailService.sendGroupHtmlEmailSync(null,
@@ -749,19 +747,17 @@ class EmailServiceTest {
     @DisplayName("Configuration Set Application (bounce processing pipeline)")
     class ConfigurationSetApplication {
 
-        private SesClient sesClient;
+        private SesV2Client sesClient;
 
         @BeforeEach
         void wireMockSes() {
-            sesClient = mock(SesClient.class);
+            sesClient = mock(SesV2Client.class);
             ReflectionTestUtils.setField(emailService, "sesClient", sesClient);
             ReflectionTestUtils.setField(emailService, "fromEmail", "noreply@batbern.ch");
             ReflectionTestUtils.setField(emailService, "fromName", "BATbern");
             ReflectionTestUtils.setField(emailService, "replyToEmail", "replies@batbern.ch");
             when(sesClient.sendEmail(any(SendEmailRequest.class)))
                     .thenReturn(SendEmailResponse.builder().messageId("test-id").build());
-            when(sesClient.sendRawEmail(any(SendRawEmailRequest.class)))
-                    .thenReturn(SendRawEmailResponse.builder().messageId("test-id").build());
         }
 
         @Test
@@ -796,9 +792,9 @@ class EmailServiceTest {
                     List.of(new EmailService.EmailAttachment("event.ics",
                             "BEGIN:VCALENDAR\nEND:VCALENDAR".getBytes(), "text/calendar", true)));
 
-            ArgumentCaptor<SendRawEmailRequest> captor = ArgumentCaptor.forClass(SendRawEmailRequest.class);
-            verify(sesClient).sendRawEmail(captor.capture());
-            String raw = captor.getValue().rawMessage().data().asUtf8String();
+            ArgumentCaptor<SendEmailRequest> captor = ArgumentCaptor.forClass(SendEmailRequest.class);
+            verify(sesClient).sendEmail(captor.capture());
+            String raw = captor.getValue().content().raw().data().asUtf8String();
             assertThat(raw).contains("To: max@xn--mller-kva.ch").doesNotContain("müller");
         }
 
@@ -831,7 +827,7 @@ class EmailServiceTest {
                     List.of("not-an-address", "jürg@batbern.ch"),
                     "subj", "<p>body</p>", List.of(icsAttachment())))
                     .isInstanceOf(IllegalArgumentException.class);
-            verify(sesClient, never()).sendRawEmail(any(SendRawEmailRequest.class));
+            verify(sesClient, never()).sendEmail(any(SendEmailRequest.class));
         }
 
         private EmailService.EmailAttachment icsAttachment() {
@@ -840,10 +836,10 @@ class EmailServiceTest {
         }
 
         private List<String> sentToAddresses() throws Exception {
-            ArgumentCaptor<SendRawEmailRequest> captor = ArgumentCaptor.forClass(SendRawEmailRequest.class);
-            verify(sesClient).sendRawEmail(captor.capture());
+            ArgumentCaptor<SendEmailRequest> captor = ArgumentCaptor.forClass(SendEmailRequest.class);
+            verify(sesClient).sendEmail(captor.capture());
             MimeMessage sent = new MimeMessage(Session.getInstance(new Properties()),
-                    new ByteArrayInputStream(captor.getValue().rawMessage().data().asByteArray()));
+                    new ByteArrayInputStream(captor.getValue().content().raw().data().asByteArray()));
             return Arrays.stream(sent.getRecipients(Message.RecipientType.TO))
                     .map(a -> ((InternetAddress) a).getAddress())
                     .toList();
@@ -895,8 +891,8 @@ class EmailServiceTest {
                             "BEGIN:VCALENDAR\nEND:VCALENDAR".getBytes(),
                             "text/calendar", true)));
 
-            ArgumentCaptor<SendRawEmailRequest> captor = ArgumentCaptor.forClass(SendRawEmailRequest.class);
-            verify(sesClient).sendRawEmail(captor.capture());
+            ArgumentCaptor<SendEmailRequest> captor = ArgumentCaptor.forClass(SendEmailRequest.class);
+            verify(sesClient).sendEmail(captor.capture());
             assertThat(captor.getValue().configurationSetName()).isEqualTo("batbern-staging-newsletter");
         }
 
@@ -911,8 +907,8 @@ class EmailServiceTest {
                             "BEGIN:VCALENDAR\nEND:VCALENDAR".getBytes(),
                             "text/calendar", true)));
 
-            ArgumentCaptor<SendRawEmailRequest> captor = ArgumentCaptor.forClass(SendRawEmailRequest.class);
-            verify(sesClient).sendRawEmail(captor.capture());
+            ArgumentCaptor<SendEmailRequest> captor = ArgumentCaptor.forClass(SendEmailRequest.class);
+            verify(sesClient).sendEmail(captor.capture());
             assertThat(captor.getValue().configurationSetName()).isNull();
         }
 
@@ -943,11 +939,11 @@ class EmailServiceTest {
     @DisplayName("Reserved Recipient Domain Filter (RFC 2606 / RFC 6761)")
     class ReservedRecipientDomainFilter {
 
-        private SesClient sesClient;
+        private SesV2Client sesClient;
 
         @BeforeEach
         void wireMockSes() {
-            sesClient = mock(SesClient.class);
+            sesClient = mock(SesV2Client.class);
             ReflectionTestUtils.setField(emailService, "sesClient", sesClient);
             ReflectionTestUtils.setField(emailService, "fromEmail", "noreply@batbern.ch");
             ReflectionTestUtils.setField(emailService, "fromName", "BATbern");
@@ -1046,11 +1042,11 @@ class EmailServiceTest {
     @DisplayName("Test-Marked Email Guard (incident 2026-07-01 second wall)")
     class TestMarkedEmailGuard {
 
-        private SesClient sesClient;
+        private SesV2Client sesClient;
 
         @BeforeEach
         void wireMockSes() {
-            sesClient = mock(SesClient.class);
+            sesClient = mock(SesV2Client.class);
             ReflectionTestUtils.setField(emailService, "sesClient", sesClient);
             ReflectionTestUtils.setField(emailService, "fromEmail", "noreply@batbern.ch");
             ReflectionTestUtils.setField(emailService, "fromName", "BATbern");
@@ -1142,13 +1138,13 @@ class EmailServiceTest {
                 + "\r\n"
                 + "Hallo zusammen\r\n";
 
-        private SesClient sesClient;
+        private SesV2Client sesClient;
 
         @BeforeEach
         void wireMockSes() {
-            sesClient = mock(SesClient.class);
-            when(sesClient.sendRawEmail(any(SendRawEmailRequest.class)))
-                    .thenReturn(SendRawEmailResponse.builder().messageId("m-1").build());
+            sesClient = mock(SesV2Client.class);
+            when(sesClient.sendEmail(any(SendEmailRequest.class)))
+                    .thenReturn(SendEmailResponse.builder().messageId("m-1").build());
             ReflectionTestUtils.setField(emailService, "sesClient", sesClient);
             ReflectionTestUtils.setField(emailService, "configurationSetName", "batbern-transactional");
             ReflectionTestUtils.setField(emailService, "fromEmail", "noreply@batbern.ch");
@@ -1161,11 +1157,11 @@ class EmailServiceTest {
             emailService.sendRawMessage(RAW.getBytes(java.nio.charset.StandardCharsets.UTF_8),
                     List.of("a@batbern.ch", "b@batbern.ch"), "batbern-staging-forwarder");
 
-            ArgumentCaptor<SendRawEmailRequest> captor = ArgumentCaptor.forClass(SendRawEmailRequest.class);
-            verify(sesClient).sendRawEmail(captor.capture());
-            SendRawEmailRequest request = captor.getValue();
-            assertThat(request.destinations()).containsExactly("a@batbern.ch", "b@batbern.ch");
-            assertThat(request.rawMessage().data().asUtf8String()).isEqualTo(RAW);
+            ArgumentCaptor<SendEmailRequest> captor = ArgumentCaptor.forClass(SendEmailRequest.class);
+            verify(sesClient).sendEmail(captor.capture());
+            SendEmailRequest request = captor.getValue();
+            assertThat(request.destination().toAddresses()).containsExactly("a@batbern.ch", "b@batbern.ch");
+            assertThat(request.content().raw().data().asUtf8String()).isEqualTo(RAW);
             assertThat(request.configurationSetName()).isEqualTo("batbern-staging-forwarder");
         }
 
@@ -1175,8 +1171,8 @@ class EmailServiceTest {
             emailService.sendRawMessage(RAW.getBytes(java.nio.charset.StandardCharsets.UTF_8),
                     List.of("a@batbern.ch"), null);
 
-            ArgumentCaptor<SendRawEmailRequest> captor = ArgumentCaptor.forClass(SendRawEmailRequest.class);
-            verify(sesClient).sendRawEmail(captor.capture());
+            ArgumentCaptor<SendEmailRequest> captor = ArgumentCaptor.forClass(SendEmailRequest.class);
+            verify(sesClient).sendEmail(captor.capture());
             assertThat(captor.getValue().configurationSetName()).isEqualTo("batbern-transactional");
         }
 
@@ -1192,9 +1188,9 @@ class EmailServiceTest {
                     List.of("s1@batbern.ch", "s2@batbern.ch"), List.of("m@batbern.ch"), "Frage", "<p>Frage</p>",
                     "batbern-staging-forwarder");
 
-            ArgumentCaptor<SendRawEmailRequest> request = ArgumentCaptor.forClass(SendRawEmailRequest.class);
-            verify(sesClient).sendRawEmail(request.capture());
-            assertThat(request.getValue().destinations()).containsExactly("s1@batbern.ch", "s2@batbern.ch",
+            ArgumentCaptor<SendEmailRequest> request = ArgumentCaptor.forClass(SendEmailRequest.class);
+            verify(sesClient).sendEmail(request.capture());
+            assertThat(request.getValue().destination().toAddresses()).containsExactly("s1@batbern.ch", "s2@batbern.ch",
                     "m@batbern.ch");
             ArgumentCaptor<OutboundMail> mail = ArgumentCaptor.forClass(OutboundMail.class);
             verify(recorder).record(org.mockito.ArgumentMatchers.eq(context), mail.capture());

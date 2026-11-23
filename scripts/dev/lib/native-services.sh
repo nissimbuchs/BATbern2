@@ -29,7 +29,7 @@ compose_cmd() {
 
 # Every service the platform can run, in port order. Used for "what is NOT running"
 # reporting — do not reorder without checking the callers.
-ALL_NATIVE_SERVICES="api-gateway company-user-management event-management partner-coordination"
+ALL_NATIVE_SERVICES="api-gateway company-user-management event-management agent partner-coordination"
 
 # Services started by default: all of them. A partial set is misleading: the API Gateway
 # routes to the missing services and fails, which reads as a broken gateway rather than a
@@ -49,6 +49,7 @@ service_heap() {
         company-user-management)  echo "512m" ;;
         api-gateway)              echo "320m" ;;
         partner-coordination)     echo "320m" ;;
+        agent)                    echo "320m" ;;
         *)                        echo "320m" ;;
     esac
 }
@@ -67,6 +68,7 @@ service_port() {
         api-gateway)             echo "${API_GATEWAY_PORT}" ;;
         company-user-management) echo "${COMPANY_USER_MGMT_PORT}" ;;
         event-management)        echo "${EVENT_MGMT_PORT}" ;;
+        agent)                   echo "${AGENT_PORT}" ;;
         partner-coordination)    echo "${PARTNER_COORD_PORT}" ;;
     esac
 }
@@ -77,4 +79,30 @@ service_enabled() {
         *" $1 "*) return 0 ;;
         *)        return 1 ;;
     esac
+}
+
+# agent-service's caller secret at CUMS (agent runtime). agent-service sends it as
+# AGENT_CUMS_CALLER_SECRET, CUMS checks it against AGENT_CALLERS_AGENT_SERVICE_SECRET; both must
+# hold the same value, or every local run is handed to the organizers (GRANT_REFUSED:
+# CALLER_SECRET_MISSING when agent-service's is blank, CALLER_SECRET_INVALID when CUMS's differs).
+# Echoes the value to write into .env.native.{instance} for both names, in this order:
+#   1. AGENT_CUMS_CALLER_SECRET from the environment (.env or the shell), when set
+#   2. the value an earlier start wrote into the given .env.native file
+#   3. a new random value (openssl rand -hex 32)
+# Generated per instance and never committed (.env.native.* is gitignored).
+agent_caller_secret() {
+    local env_native_file="$1"
+    if [ -n "${AGENT_CUMS_CALLER_SECRET:-}" ]; then
+        echo "${AGENT_CUMS_CALLER_SECRET}"
+        return 0
+    fi
+    local existing=""
+    if [ -n "${env_native_file}" ] && [ -f "${env_native_file}" ]; then
+        existing=$(grep '^AGENT_CUMS_CALLER_SECRET=' "${env_native_file}" | head -1 | cut -d= -f2- | tr -d '"' | tr -d "'")
+    fi
+    if [ -n "${existing}" ]; then
+        echo "${existing}"
+        return 0
+    fi
+    openssl rand -hex 32
 }

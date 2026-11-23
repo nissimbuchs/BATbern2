@@ -7,14 +7,15 @@
 #   BASE_PORT=9000 ./scripts/dev/start-all-native.sh  # Second instance (BASE_PORT=9000)
 #
 # Parallel Instance Support:
-#   - Instance 1: BASE_PORT=8000 (default) → gateway 8000, services 8001/8002/8004, frontend 8100
-#   - Instance 2: BASE_PORT=9000 → gateway 9000, services 9001/9002/9004, frontend 9100
+#   - Instance 1: BASE_PORT=8000 (default) → gateway 8000, services 8001-8004, frontend 8100
+#   - Instance 2: BASE_PORT=9000 → gateway 9000, services 9001-9004, frontend 9100
 #   - Both instances share the same database but have isolated processes
 #
 # Services started BY DEFAULT (with default ports):
 #   - API Gateway (port BASE_PORT, 8000)
 #   - Company User Management Service (port BASE_PORT+1, 8001)
 #   - Event Management Service (port BASE_PORT+2, 8002)
+#   - Agent Service (port BASE_PORT+3, 8003)
 #   - Partner Coordination Service (port BASE_PORT+4, 8004)
 #   - Web Frontend (port BASE_PORT+100, 8100)
 #
@@ -70,11 +71,13 @@ fi
 ENV_NATIVE_FILE="${PROJECT_ROOT}/.env.native.${INSTANCE}"
 
 # Calculate ports - consistent for all instances
-# Pattern: BASE_PORT for API Gateway, BASE_PORT+1/+2/+4 for services, BASE_PORT+100 for frontend
-# (+3 and +5 belonged to the speaker and attendee stubs removed by Story 17.2; left unused)
+# Pattern: BASE_PORT for API Gateway, BASE_PORT+1..+4 for services, BASE_PORT+100 for frontend
+# (+3 is agent-service since the agent runtime epic; +5 belonged to the attendee stub removed by
+# Story 17.2 and stays unused)
 API_GATEWAY_PORT=$BASE_PORT
 COMPANY_USER_MGMT_PORT=$((BASE_PORT + 1))
 EVENT_MGMT_PORT=$((BASE_PORT + 2))
+AGENT_PORT=$((BASE_PORT + 3))
 PARTNER_COORD_PORT=$((BASE_PORT + 4))
 FRONTEND_PORT=$((BASE_PORT + 100))
 
@@ -188,8 +191,13 @@ create_env_native() {
     API_GATEWAY_PORT=$BASE_PORT
     COMPANY_USER_MGMT_PORT=$((BASE_PORT + 1))
     EVENT_MGMT_PORT=$((BASE_PORT + 2))
+    AGENT_PORT=$((BASE_PORT + 3))
     PARTNER_COORD_PORT=$((BASE_PORT + 4))
     FRONTEND_PORT=$((BASE_PORT + 100))
+
+    # One caller secret for the agent-service -> CUMS pair, read before the file is rewritten so
+    # a restart and the next start keep the value (see agent_caller_secret in lib/native-services.sh)
+    AGENT_CALLER_SECRET_VALUE=$(agent_caller_secret "${ENV_NATIVE_FILE}")
 
     # Create .env.native.{INSTANCE} with localhost overrides and instance-specific ports
     cat > "${ENV_NATIVE_FILE}" << EOF
@@ -276,6 +284,15 @@ API_GATEWAY_PORT=${API_GATEWAY_PORT}
 COMPANY_USER_MANAGEMENT_SERVICE_URL="http://localhost:${COMPANY_USER_MGMT_PORT}"
 EVENT_MANAGEMENT_SERVICE_URL="http://localhost:${EVENT_MGMT_PORT}"
 PARTNER_COORDINATION_SERVICE_URL="http://localhost:${PARTNER_COORD_PORT}"
+AGENT_SERVICE_URL="http://localhost:${AGENT_PORT}"
+
+# ==============================================
+# Agent caller secret (Instance ${INSTANCE})
+# ==============================================
+# agent-service sends the first, CUMS checks it against the second: one value for both.
+# From AGENT_CUMS_CALLER_SECRET in .env when set, else generated once per instance and reused.
+AGENT_CUMS_CALLER_SECRET=${AGENT_CALLER_SECRET_VALUE}
+AGENT_CALLERS_AGENT_SERVICE_SECRET=${AGENT_CALLER_SECRET_VALUE}
 
 # ==============================================
 # MinIO Configuration (Instance ${INSTANCE})
@@ -636,6 +653,7 @@ main() {
     service_enabled "api-gateway"             && echo -e "  ${GREEN}API Gateway:${NC}                http://localhost:${API_GATEWAY_PORT}  (heap $(service_heap api-gateway))" || true
     service_enabled "company-user-management" && echo -e "  ${GREEN}Company User Management:${NC}    http://localhost:${COMPANY_USER_MGMT_PORT}  (heap $(service_heap company-user-management))" || true
     service_enabled "event-management"        && echo -e "  ${GREEN}Event Management:${NC}           http://localhost:${EVENT_MGMT_PORT}  (heap $(service_heap event-management))" || true
+    service_enabled "agent"                   && echo -e "  ${GREEN}Agent Service:${NC}              http://localhost:${AGENT_PORT}  (heap $(service_heap agent))" || true
     service_enabled "partner-coordination"    && echo -e "  ${GREEN}Partner Coordination:${NC}       http://localhost:${PARTNER_COORD_PORT}  (heap $(service_heap partner-coordination))" || true
     echo -e "  ${GREEN}Web Frontend:${NC}               http://localhost:${FRONTEND_PORT}"
     echo ""

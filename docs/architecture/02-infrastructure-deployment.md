@@ -24,7 +24,7 @@ production. There is **no separate staging environment**; the CloudFormation sta
 graph LR
     subgraph DEV["Development: developer machine"]
         PG[("PostgreSQL 15<br/>Docker")]
-        SVC["4 Spring Boot services<br/>native, ports 8000-8002, 8004"]
+        SVC["5 Spring Boot services<br/>native, ports 8000-8004"]
         VITE["Vite dev server<br/>port 8100"]
         VITE --> SVC --> PG
     end
@@ -98,7 +98,7 @@ graph TB
         COG[Cognito] ~~~ CLU[Cluster]
     end
     subgraph L4["Layer 4: Services, deployed one by one"]
-        CM[CompanyManagement] ~~~ EM[EventManagement] ~~~ PC[PartnerCoordination] ~~~ GWS[ApiGatewayService]
+        CM[CompanyManagement] ~~~ EM[EventManagement] ~~~ PC[PartnerCoordination] ~~~ AG[AgentService] ~~~ GWS[ApiGatewayService]
     end
     subgraph L5["Layer 5: Gateway"]
         API[ApiGateway] ~~~ FE[Frontend]
@@ -115,7 +115,7 @@ Reference: what each stack contains.
 |---|---|
 | `DNS` (us-east-1) | Imports the `batbern.ch` hosted zone; references the pre-created us-east-1 certificates for CloudFront and the Cognito domain |
 | `Network` | VPC `10.1.0.0/16`, 2 AZs, public / private-with-egress / isolated subnets, **one** NAT gateway, S3 gateway endpoint only |
-| `Secrets` | Secrets Manager and KMS, including the Watch JWT secret and the agent identity: signing private key (secret) and public key (SSM String parameter), both `none` until the owner runs `scripts/deploy/create-agent-signing-key.sh`, and the EMS and agent-service caller secrets (08, "Agent signing key") |
+| `Secrets` | Secrets Manager and KMS, including the Watch JWT secret and the agent identity: signing private key (secret) and public key (SSM String parameter), both `none` until the owner runs `scripts/deploy/create-agent-signing-key.sh`, and the EMS and agent-service caller secrets (08, "Agent signing key"); the Anthropic API key of agent-service, `none` until the owner runs `scripts/deploy/put-anthropic-api-key.sh` (08, "Anthropic API key") |
 | `Database` | RDS PostgreSQL 15, `db.t4g.micro`, Single-AZ, 20 GB, encrypted, deletion protection, 7-day backups. ElastiCache configured with 0 nodes, so not created |
 | `Bastion` | EC2 in a public subnet, reachable only via SSM Session Manager, for port-forwarding to RDS |
 | `Storage` | Buckets `batbern-content-*`, `batbern-logs-*`, `batbern-backups-*`; CloudFront for cdn.batbern.ch with the `image-resize` Lambda@Edge |
@@ -163,6 +163,7 @@ graph TB
             SVC1["Event Management<br/>primary"]
             SVC5["Company and User Mgmt<br/>primary"]
             SVC3["Partner Coordination"]
+            SVC6["Agent Service<br/>dark"]
             APIGW["API Gateway Service<br/>Spring Boot, 2 tasks"]
         end
 
@@ -243,8 +244,9 @@ graph LR
     FE --> GW["api-gateway :8000"]
     GW --> CUMS["company-user-management :8001"]
     GW --> EMS["event-management :8002"]
+    GW --> AGENT["agent :8003"]
     GW --> PCS["partner-coordination :8004"]
-    CUMS & EMS & PCS --> PG[("PostgreSQL :5432<br/>Docker")]
+    CUMS & EMS & PCS & AGENT --> PG[("PostgreSQL :5432<br/>Docker")]
     EMS -.->|"mail capture"| MAILS["/dev/mails<br/>no real sending"]
     GW -.->|"JWKS"| COG["Cognito, production pool"]
 ```
@@ -286,6 +288,7 @@ graph TB
         TASK_EM["Event Management<br/>256 CPU / 2048 MiB<br/>1 task"]
         TASK_CM["Company and User Mgmt<br/>256 CPU / 1024 MiB<br/>1 task"]
         TASK_PC["Partner Coordination<br/>256 CPU / 1024 MiB<br/>1 task"]
+        TASK_AG["Agent Service<br/>256 CPU / 1024 MiB<br/>1 task, dark"]
     end
 
     subgraph DATA["Data layer"]
@@ -297,8 +300,9 @@ graph TB
     TASK_GW -->|"http://event-management:8080"| TASK_EM
     TASK_GW -->|"http://company-user-management:8080"| TASK_CM
     TASK_GW -->|"http://partner-coordination:8080"| TASK_PC
+    TASK_GW -->|"http://agent:8080"| TASK_AG
     TASK_EM <-->|"/internal/** calls"| TASK_CM
-    TASK_EM & TASK_PC & TASK_CM & TASK_GW --> RDS
+    TASK_EM & TASK_PC & TASK_CM & TASK_AG & TASK_GW --> RDS
     TASK_CM & TASK_PC --- CACHE
 
     style ALB_PUB fill:#FF9900,stroke:#FF6600,color:#000
@@ -307,6 +311,7 @@ graph TB
     style TASK_EM fill:#527FFF,stroke:#0000FF,color:#fff
     style TASK_CM fill:#527FFF,stroke:#0000FF,color:#fff
     style TASK_PC fill:#527FFF,stroke:#0000FF,color:#fff
+    style TASK_AG fill:#527FFF,stroke:#0000FF,color:#fff
     style TASK_SC fill:#BBBBBB,stroke:#777777,color:#000
     style TASK_AE fill:#BBBBBB,stroke:#777777,color:#000
     style RDS fill:#3F8624,stroke:#2D5016,color:#fff
@@ -335,6 +340,7 @@ without JWT); the exact set of internal callers per service is not drawn.
 | Event Management | 256 | 2048 MiB | min 1, max 2 | 1 | primary |
 | Company and User Management | 256 | 1024 MiB | min 1, max 2 | 1 | primary |
 | Partner Coordination | 256 | 1024 MiB | min 1, max 2 | 1 | active |
+| Agent Service | 256 | 1024 MiB | min 1, max 2 | not yet deployed | dark (`AGENT_ENABLED=false`), agentic interaction epic agent runtime |
 
 Per-service monthly costs from the earlier table were estimates and are dropped (not verified).
 
@@ -471,6 +477,7 @@ graph LR
 
     C -->|"Service Connect"| D1["Event Management"]
     C -->|"Service Connect"| D3["Partner Coordination"]
+    C -->|"Service Connect"| D6["Agent Service"]
     C -->|"Service Connect"| D5["Company and User Mgmt"]
 
     style A fill:#E0E0E0,stroke:#757575,color:#000
@@ -540,7 +547,8 @@ graph LR
     GW -->|"/watch/**"| EMS["event-management"]
     GW -->|"/events, /event-types, /registrations,<br/>/topics, /tasks, /notifications,<br/>/speaker-portal, /attendee-portal, /sessions,<br/>/email-templates, /analytics, /newsletter,<br/>/thanks, /conversations, /mails, /ai,<br/>/public/events, /public/settings/features,<br/>/speakers/ID/ai/**, /admin/**"| EMS
     GW -->|"/partners, /partner-meetings,<br/>/attendees/topics"| PCS["partner-coordination"]
-    GW -->|"/companies, /users, /logos,<br/>/public/** other, /settings"| CUMS
+    GW -->|"/agent/** (with the slash)"| AGENT["agent"]
+    GW -->|"/companies, /users, /logos,<br/>/agent-settings,<br/>/public/** other, /settings"| CUMS
     GW -->|"/admin/test-fixtures/cums, ems, pcs"| FIX["matching service"]
     GW -->|"anything else, incl. bare /speakers"| NF["404"]
 ```
@@ -553,6 +561,7 @@ before the `/public` fallback to CUMS).
 EVENT_MANAGEMENT_SERVICE_URL=http://event-management:8080
 PARTNER_COORDINATION_SERVICE_URL=http://partner-coordination:8080
 COMPANY_USER_MANAGEMENT_SERVICE_URL=http://company-user-management:8080
+AGENT_SERVICE_URL=http://agent:8080
 ```
 
 ---
@@ -733,6 +742,15 @@ Infrastructure PRs also deploy on open, so they must deploy cleanly before merge
 - Bruno contract tests and the Playwright `@smoke` suite as blocking gates.
 - Automatic rollback of images and frontend to the last green state.
 
+**First push of a new service (agent-service, 2026-11-22).** CDK (`cicd-stack.ts`) owns every
+ECR repository and creates a new one in Layer 0; the workflow role has no
+`ecr:CreateRepository`. When `describe-repositories` says the repository is missing,
+`build.yml` saves the built image as artifact `first-push-image-<service>` instead of pushing it;
+`deploy-staging.yml` skips that image's check, pushes the artifact right after Layer 0, then
+deploys Layer 4 (agent-service as 4.5, before the gateway, so the gateway's Service Connect
+client starts after `agent:8080` exists). It fails if the artifact is missing, or if a repository
+is missing but no infrastructure deploy runs. Once the repository exists the path is dormant.
+
 ---
 
 ### Branch Protection Rules
@@ -740,6 +758,8 @@ Infrastructure PRs also deploy on open, so they must deploy cleanly before merge
 `develop` is protected with `strict: true`. Required checks: `build-frontend`,
 `build-shared-kernel`, and the four `build-services (…)` contexts (api-gateway,
 event-management-service, company-user-management-service, partner-coordination-service).
+`build-services (agent-service)` runs on every PR but is not a required check until the owner
+adds it.
 The two contexts of the removed stub services are dropped by the owner before Story 17.2
 merges; a required check that no job reports any more would block every PR.
 
@@ -1206,7 +1226,7 @@ graph LR
     E -->|"S3 event"| QI["SQS inbound-email + DLQ"] --> EMS1["EMS reply handling<br/>unsubscribe, deregistration"]
     F -->|"S3 event"| QF["SQS forwarding-email + DLQ"] --> EMS2["EMS EmailForwardingListener<br/>sender check, recipients in-process"]
 
-    EMS2 -->|"forward copy, SendRawEmail<br/>forwarder config set"| SESOUT["SES outbound"]
+    EMS2 -->|"forward copy, SES v2 SendEmail raw, up to 40 MB<br/>forwarder config set"| SESOUT["SES outbound"]
     EMS2 -->|"notify instead of forward<br/>admin setting per alias group"| MCN["Mail Center conversation<br/>attachments in mail-attachments/"]
 ```
 

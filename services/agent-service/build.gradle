@@ -1,0 +1,91 @@
+// Agent Service (agentic interaction, epic agent runtime, story 1)
+// Common configuration is in root build.gradle (every :services:* project).
+// This file holds only what agent-service needs on top: no SES, no caches, no Resilience4j. The
+// agent never sends mail itself (AD-5). Its only /internal/** calls are CUMS's agent-grants and
+// agent-tokens (story 4), on the common RestTemplate (spring-boot-starter-restclient, root build).
+
+plugins {
+    // Version-less: resolved from settings.gradle pluginManagement (single source, Epic 13)
+    id 'org.springframework.boot'
+    id 'io.spring.dependency-management'
+    id 'com.gorylenko.gradle-git-properties' version '2.5.7'
+}
+
+gitProperties {
+    keys = ['git.branch', 'git.commit.id', 'git.commit.id.abbrev', 'git.commit.time']
+    dateFormat = "yyyy-MM-dd'T'HH:mm:ssZ"
+    dateFormatTimeZone = "UTC"
+    failOnNoGitDirectory = false
+    extProperty = 'gitProps'
+}
+
+dependencies {
+    // The model adapter (story 3, AD-14): the Messages API, non-beta, no tool runner
+    implementation 'com.anthropic:anthropic-java:3.12.0'
+
+    // AWS SDK version alignment (the SDK modules come in through shared-kernel and the
+    // CloudWatch registry)
+    implementation platform('software.amazon.awssdk:bom:2.57.11')
+
+    // Monitoring
+    implementation 'io.micrometer:micrometer-core'
+    implementation 'io.micrometer:micrometer-registry-cloudwatch2'
+}
+
+// Flyway: own history table, own migration folder (shared-kernel ships a V1 under db/migration,
+// which a V1 of this service would collide with)
+flyway {
+    table = 'flyway_schema_history_agent'
+    locations = ['classpath:db/agent-migration']
+}
+
+// OpenAPI Generator: controller interface and DTOs from the agent spec (contract first)
+openApiGenerate {
+    generatorName = "spring"
+    inputSpec = "$rootDir/docs/api/agent-api.openapi.yml".toString()
+    outputDir = "$buildDir/generated".toString()
+    apiPackage = "ch.batbern.agent.api.generated"
+    modelPackage = "ch.batbern.agent.dto.generated"
+
+    importMappings = [
+        'ErrorResponse': 'ch.batbern.shared.dto.ErrorResponse',
+        'PaginationMetadata': 'ch.batbern.shared.api.PaginationMetadata',
+        'PaginatedResponse': 'ch.batbern.shared.dto.PaginatedResponse'
+    ]
+
+    typeMappings = [
+        'ErrorResponse': 'ch.batbern.shared.dto.ErrorResponse',
+        'PaginationMetadata': 'ch.batbern.shared.api.PaginationMetadata'
+    ]
+
+    schemaMappings = [
+        'ErrorResponse': 'ch.batbern.shared.dto.ErrorResponse',
+        'PaginationMetadata': 'ch.batbern.shared.api.PaginationMetadata'
+    ]
+
+    configOptions = [
+        interfaceOnly: "true",
+        useTags: "true",
+        useSpringBoot3: "true",
+        useBeanValidation: "true",
+        useJakartaEe: "true",
+        dateLibrary: "java8",
+        generateBuilders: "true",
+        skipDefaultInterface: "true",
+        openApiNullable: "false",
+        containerDefaultToNull: "true"
+    ]
+}
+
+sourceSets.main.java.srcDirs += "$buildDir/generated/src/main/java"
+compileJava.dependsOn tasks.openApiGenerate
+
+clean {
+    delete "$buildDir/generated"
+}
+
+// Response conformance gate: every 2xx JSON response of an IT matches the agent spec.
+ext.responseConformanceSpecs = [
+    'docs/api/agent-api.openapi.yml'
+]
+apply from: "${rootProject.projectDir}/gradle/response-conformance.gradle"

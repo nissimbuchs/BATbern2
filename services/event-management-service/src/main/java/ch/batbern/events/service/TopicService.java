@@ -11,6 +11,7 @@ import ch.batbern.events.repository.TopicUsageHistoryRepository;
 import ch.batbern.shared.api.DeterministicPaging;
 import ch.batbern.shared.security.Actors;
 import ch.batbern.shared.types.EventWorkflowState;
+import ch.batbern.shared.utils.DateTimeUtils;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -241,7 +242,7 @@ public class TopicService {
         topic.setTitle(title);
         topic.setDescription(description);
         topic.setCategory(category);
-        topic.setCreatedDate(LocalDateTime.now());
+        topic.setCreatedDate(LocalDateTime.now(java.time.ZoneOffset.UTC));
         topic.setActive(true);
 
         Topic savedTopic = topicRepository.save(topic);
@@ -539,7 +540,8 @@ public class TopicService {
         TopicUsageHistory history = new TopicUsageHistory();
         history.setTopicId(topicId);
         history.setEventId(eventId);
-        history.setUsedDate(LocalDateTime.ofInstant(eventDate, java.time.ZoneId.systemDefault()));
+        // used_date is UTC wall-clock time like the other topic timestamps (see Topic)
+        history.setUsedDate(LocalDateTime.ofInstant(eventDate, java.time.ZoneOffset.UTC));
         // Attendance is read from the event's registrations, not stored here
         topicUsageHistoryRepository.save(history);
     }
@@ -555,10 +557,10 @@ public class TopicService {
         dto.setEventNumber(h.getEventNumber());
         dto.setEventCode(h.getEventCode());
         dto.setEventDate(h.getEventDate() != null
-                ? java.time.LocalDate.ofInstant(h.getEventDate(), java.time.ZoneId.systemDefault())
+                ? java.time.LocalDate.ofInstant(h.getEventDate(), DateTimeUtils.SWISS_ZONE)
                 : null);
         dto.setUsedDate(h.getUsedDate() != null
-                ? h.getUsedDate().atZone(java.time.ZoneId.systemDefault()).toOffsetDateTime()
+                ? h.getUsedDate().atOffset(java.time.ZoneOffset.UTC)
                 : null);
         dto.setAttendance(h.getAttendeeCount());
         return dto;

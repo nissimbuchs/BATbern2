@@ -17,6 +17,7 @@ import ch.batbern.shared.test.AbstractIntegrationTest;
 import ch.batbern.shared.test.mail.SesRecorder;
 import ch.batbern.shared.types.EventWorkflowState;
 import ch.batbern.shared.types.SpeakerWorkflowState;
+import ch.batbern.shared.utils.DateTimeUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -108,7 +109,7 @@ class ManualSpeakerReminderIntegrationTest extends AbstractIntegrationTest {
     @WithMockUser(username = "org.user", roles = "ORGANIZER")
     @DisplayName("a chosen tier template reaches the speaker; log and outreach name the organizer (manual_email)")
     void composerTemplate_mailsSpeaker_andLogsTierAndOutreach() throws Exception {
-        SpeakerPool speaker = invitedSpeaker("ines.probe", "Ines", false, LocalDate.now().plusDays(14));
+        SpeakerPool speaker = invitedSpeaker("ines.probe", "Ines", false, DateTimeUtils.todaySwiss().plusDays(14));
 
         mockMvc.perform(post("/api/v1/events/{eventCode}/mails", EVENT_CODE)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -135,8 +136,8 @@ class ManualSpeakerReminderIntegrationTest extends AbstractIntegrationTest {
     @Test
     @DisplayName("automatic tier: each speaker gets the tier of their own deadline")
     void automaticTier_followsEachSpeakersDeadline() {
-        SpeakerPool near = invitedSpeaker("nora.near", "Nora", false, LocalDate.now().plusDays(2));
-        SpeakerPool far = invitedSpeaker("fritz.far", "Fritz", false, LocalDate.now().plusDays(13));
+        SpeakerPool near = invitedSpeaker("nora.near", "Nora", false, DateTimeUtils.todaySwiss().plusDays(2));
+        SpeakerPool far = invitedSpeaker("fritz.far", "Fritz", false, DateTimeUtils.todaySwiss().plusDays(13));
 
         List<String> keys = speakerReminderService.sendManualReminders(event, "RESPONSE", null,
                 List.of(near, far), MailTrigger.organizer("org.user"), "org.user");
@@ -157,8 +158,8 @@ class ManualSpeakerReminderIntegrationTest extends AbstractIntegrationTest {
     @Test
     @DisplayName("a speaker with reminders turned off is not mailed nor logged; positive control: the other one is")
     void remindersDisabled_notMailed() {
-        SpeakerPool muted = invitedSpeaker("mia.muted", "Mia", true, LocalDate.now().plusDays(14));
-        SpeakerPool active = invitedSpeaker("anna.active", "Anna", false, LocalDate.now().plusDays(14));
+        SpeakerPool muted = invitedSpeaker("mia.muted", "Mia", true, DateTimeUtils.todaySwiss().plusDays(14));
+        SpeakerPool active = invitedSpeaker("anna.active", "Anna", false, DateTimeUtils.todaySwiss().plusDays(14));
 
         speakerReminderService.sendManualReminders(event, "RESPONSE", "TIER_1", List.of(muted, active),
                 MailTrigger.organizer("org.user"), "org.user");

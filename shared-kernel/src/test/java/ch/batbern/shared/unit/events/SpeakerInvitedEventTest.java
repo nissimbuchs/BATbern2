@@ -8,6 +8,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.BeforeEach;
 
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -161,7 +162,7 @@ class SpeakerInvitedEventTest {
             .speakerName("Dr. Jane Smith")
             .speakerEmail("jane.smith@example.com")
             .sessionTitle("Future of AI")
-            .sessionTime(LocalDateTime.now())
+            .sessionTime(LocalDateTime.now(ZoneOffset.UTC))
             .invitedBy("organizer.user")
             .build())
             .isInstanceOf(NullPointerException.class);
@@ -172,7 +173,7 @@ class SpeakerInvitedEventTest {
             .speakerName("Dr. Jane Smith")
             .speakerEmail("jane.smith@example.com")
             .sessionTitle("Future of AI")
-            .sessionTime(LocalDateTime.now())
+            .sessionTime(LocalDateTime.now(ZoneOffset.UTC))
             .invitedBy("organizer.user")
             .build())
             .isInstanceOf(NullPointerException.class);

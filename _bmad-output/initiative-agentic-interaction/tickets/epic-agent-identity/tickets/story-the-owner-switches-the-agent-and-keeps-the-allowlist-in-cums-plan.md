@@ -3,7 +3,7 @@ title: 'The owner switches the agent and keeps the allowlist in CUMS'
 type: 'feature'
 ticket: '4'
 created: '2026-11-22'
-status: 'built'
+status: done
 baseline_revision: '98a4c42129329ee67ef33cf33741ce5756c0f187'
 route: 'full'
 route_source: 'auto'

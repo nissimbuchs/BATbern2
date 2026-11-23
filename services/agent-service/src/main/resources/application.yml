@@ -1,0 +1,183 @@
+server:
+  port: 8080
+  compression:
+    enabled: false
+
+spring:
+  application:
+    name: agent-service
+
+  # Jackson 2 converter, as every other service (Epic 13 compat flag)
+  http:
+    converters:
+      preferred-json-mapper: jackson2
+
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/batbern}
+    username: ${DATABASE_USERNAME:batbern}
+    password: ${DATABASE_PASSWORD:changeme}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      # One task, one read endpoint: a small pool keeps the shared database's connection budget
+      maximum-pool-size: 5
+      minimum-idle: 1
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate # Flyway owns the schema
+    show-sql: false
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+
+  # Own history table and folder in the shared database. Baseline 0: the shared schema is not
+  # empty, so Flyway baselines first; with the default baseline 1 it would skip V1.
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    baseline-version: 0
+    out-of-order: false
+    validate-on-migrate: true
+    clean-disabled: true
+    locations: classpath:db/agent-migration
+    table: flyway_schema_history_agent
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${COGNITO_ISSUER_URI:https://cognito-idp.${AWS_REGION:eu-central-1}.amazonaws.com/${COGNITO_USER_POOL_ID:}}
+          jwk-set-uri: ${COGNITO_JWK_SET_URI:https://cognito-idp.${AWS_REGION:eu-central-1}.amazonaws.com/${COGNITO_USER_POOL_ID:}/.well-known/jwks.json}
+
+# The agent switch of agent-service. Off: the service runs dark (story 1); nothing in it acts.
+# The organizer-facing switch, allowlist and delegate live in CUMS (/api/v1/agent-settings).
+agent:
+  enabled: ${AGENT_ENABLED:false}
+  # Each model call of the agent loop (story 2). The caps of a run are agent.limits.
+  loop:
+    # Adaptive thinking spends output tokens too: 16000, the non-streaming default (story 3)
+    max-output-tokens: ${AGENT_LOOP_MAX_OUTPUT_TOKENS:16000}
+  # The limits (story 8, R9, owner values 2026-11-22). Reaching a cap stops the run: it ends
+  # HANDED_TO_ORGANIZERS, reason CAP_REACHED, the limit as end_detail (STEPS, RUN_TOKENS, REPLIES,
+  # DAILY_TOKENS). Steps, run tokens and the daily budget (Europe/Zurich day, all runs) are checked
+  # before every model call against the tokens recorded so far, so the call that crosses a token cap
+  # still completes; the reply cap is checked by the gate. The last two values are the gate's rules.
+  limits:
+    run-steps: ${AGENT_LIMITS_RUN_STEPS:25}
+    run-tokens: ${AGENT_LIMITS_RUN_TOKENS:200000}
+    run-replies: ${AGENT_LIMITS_RUN_REPLIES:2}
+    daily-tokens: ${AGENT_LIMITS_DAILY_TOKENS:2000000}
+    binding-approvals: ${AGENT_LIMITS_BINDING_APPROVALS:2}
+    non-organizer-recipients: ${AGENT_LIMITS_NON_ORGANIZER_RECIPIENTS:1}
+  # The model adapter (story 3, AD-14). The key comes from Secrets Manager
+  # (batbern/<env>/agent/anthropic-api-key, injected by the agent-service stack). `none` or blank: no adapter, runs
+  # are handed to the organizers (in profile local: a canned local adapter). The startup log names
+  # the adapter and the model, never the key.
+  anthropic:
+    api-key: ${AGENT_ANTHROPIC_API_KEY:none}
+    model: ${AGENT_ANTHROPIC_MODEL:claude-sonnet-5-5}
+    effort: ${AGENT_ANTHROPIC_EFFORT:medium}
+    timeout: ${AGENT_ANTHROPIC_TIMEOUT:5m}
+    max-retries: ${AGENT_ANTHROPIC_MAX_RETRIES:2}
+    base-url: ${AGENT_ANTHROPIC_BASE_URL:}
+  # The run's identity (story 4, R2, AD-3): every run obtains a grant and mints its agent token at
+  # CUMS (POST /internal/agent-grants, /internal/agent-tokens), and mints again before every write.
+  # The caller secret comes from Secrets Manager (batbern/<env>/agent/agent-service-caller-secret);
+  # blank or `none`: every run is handed to the organizers (CALLER_SECRET_MISSING).
+  cums:
+    base-url: ${COMPANY_USER_MANAGEMENT_SERVICE_URL:http://company-user-management:8080}
+    caller-secret: ${AGENT_CUMS_CALLER_SECRET:}
+  # Tools reach the public API only through the Spring gateway, with the run's token
+  gateway:
+    base-url: ${AGENT_GATEWAY_URL:${API_BASE_URL:http://api-gateway:8080}}
+
+aws:
+  region: ${AWS_REGION:eu-central-1}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: when-authorized
+      probes:
+        enabled: true
+  metrics:
+    export:
+      cloudwatch2:
+        enabled: ${CLOUDWATCH_METRICS_ENABLED:false}
+  health:
+    livenessState:
+      enabled: true
+    readinessState:
+      enabled: true
+  info:
+    env:
+      enabled: true
+    git:
+      mode: full
+    build:
+      enabled: true
+
+info:
+  app:
+    name: ${spring.application.name}
+    description: Agent Service
+    version: ${build.version:1.0.0}
+
+logging:
+  level:
+    root: INFO
+    # INFO by default; opt IN to DEBUG (#990)
+    ch.batbern: ${LOG_LEVEL:INFO}
+    org.springframework.web: INFO
+    # INFO: Security DEBUG logs every request URL (#1184)
+    org.springframework.security: INFO
+  pattern:
+    # %wEx: the masking throwable converter of logback-spring.xml (#1202)
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n%wEx"
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
+---
+# Local profile (native development, make dev-native-up)
+spring:
+  config:
+    activate:
+      on-profile: local
+
+logging:
+  level:
+    ch.batbern: DEBUG
+
+---
+# Test profile (Testcontainers; AbstractIntegrationTest sets the datasource)
+spring:
+  config:
+    activate:
+      on-profile: test
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          # Never fetched: tests authenticate through MockMvc's jwt() post-processor
+          jwk-set-uri: https://jwks.example.invalid/keys
+
+logging:
+  level:
+    ch.batbern: DEBUG
+    org.testcontainers: INFO
+    com.github.dockerjava: WARN

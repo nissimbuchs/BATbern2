@@ -15,6 +15,7 @@ import ch.batbern.events.service.publishing.PublishingPhase;
 import ch.batbern.events.service.publishing.PublishingService;
 import ch.batbern.shared.test.AbstractIntegrationTest;
 import ch.batbern.shared.types.EventWorkflowState;
+import ch.batbern.shared.utils.DateTimeUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,8 +25,6 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
-import java.time.LocalDate;
-import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.UUID;
@@ -83,7 +82,7 @@ class TaskActivationIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     void should_activateAgendaPublishedTasks_when_agendaIsAutoPublished() {
-        Instant eventDate = LocalDate.now().plusDays(14).atStartOfDay(ZoneId.systemDefault()).toInstant();
+        Instant eventDate = DateTimeUtils.todaySwiss().plusDays(14).atStartOfDay(DateTimeUtils.SWISS_ZONE).toInstant();
         Event event = createEvent("TA-AUTO-AGENDA", eventDate, EventWorkflowState.SLOT_ASSIGNMENT, "speakers");
         createTimedSession(event, eventDate);
         EventTask finalAgenda = createPendingTask(event, "Final Agenda", "agenda_published", eventDate, null);
@@ -200,7 +199,7 @@ class TaskActivationIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     void should_cancelSpeakerLineup_but_keepCompletedTasks_when_agendaPublished() {
-        Instant eventDate = LocalDate.now().plusDays(14).atStartOfDay(ZoneId.systemDefault()).toInstant();
+        Instant eventDate = DateTimeUtils.todaySwiss().plusDays(14).atStartOfDay(DateTimeUtils.SWISS_ZONE).toInstant();
         Event event = createEvent("TA-AGENDA-SUPERSEDE", eventDate, EventWorkflowState.SLOT_ASSIGNMENT, "speakers");
         createTimedSession(event, eventDate);
         EventTask lineup = createTodoTaskFromSystemTemplate(event, "newsletter_speakers");
@@ -255,7 +254,7 @@ class TaskActivationIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     void should_refusePublishing_when_eventIsCancelled() {
-        Instant eventDate = LocalDate.now().plusDays(14).atStartOfDay(ZoneId.systemDefault()).toInstant();
+        Instant eventDate = DateTimeUtils.todaySwiss().plusDays(14).atStartOfDay(DateTimeUtils.SWISS_ZONE).toInstant();
         Event event = createEvent("TA-CANCEL-PUBLISH", eventDate, EventWorkflowState.CANCELLED, "speakers");
         createTimedSession(event, eventDate);
 

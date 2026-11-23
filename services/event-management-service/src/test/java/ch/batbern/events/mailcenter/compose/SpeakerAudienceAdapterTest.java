@@ -13,6 +13,7 @@ import ch.batbern.shared.mail.MailContext;
 import ch.batbern.shared.mail.MailTrigger;
 import ch.batbern.shared.service.EmailService;
 import ch.batbern.shared.types.SpeakerWorkflowState;
+import ch.batbern.shared.utils.DateTimeUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -132,9 +133,10 @@ class SpeakerAudienceAdapterTest {
     void automatic_tierPerSpeaker() {
         SpeakerPool anna = pool("Anna Alpha", false);
         profile(anna, "anna@example.com");
-        LocalDate deadline = LocalDate.now().plusDays(2);
+        LocalDate deadline = DateTimeUtils.todaySwiss().plusDays(2);
         when(reminderService.deadlineFor(anna, event, "RESPONSE")).thenReturn(deadline);
-        when(reminderService.autoDetectTier(any(), eq(deadline))).thenReturn("TIER_3");
+        // The tier counts days from today in Zurich, as the scheduled reminders do
+        when(reminderService.autoDetectTier(eq(DateTimeUtils.todaySwiss()), eq(deadline))).thenReturn("TIER_3");
         when(reminderService.speakerLocale(anna)).thenReturn(Locale.ENGLISH);
         when(reminderEmailService.render(anna, event, "RESPONSE", "TIER_3", deadline, Locale.ENGLISH))
                 .thenReturn(Optional.of(new SpeakerReminderEmailService.RenderedReminder("anna@example.com",
@@ -161,7 +163,7 @@ class SpeakerAudienceAdapterTest {
         when(reminderService.sendManualReminders(eq(event), eq("RESPONSE"), isNull(), eq(List.of(anna, zoe)),
                 eq(trigger), eq("organizer1"))).thenReturn(List.of("speaker-reminder-response-tier1",
                 "speaker-reminder-response-tier2"));
-        LocalDate deadline = LocalDate.now().plusDays(7);
+        LocalDate deadline = DateTimeUtils.todaySwiss().plusDays(7);
         when(reminderService.deadlineFor(any(), eq(event), eq("RESPONSE"))).thenReturn(deadline);
         when(reminderService.autoDetectTier(any(), any())).thenReturn("TIER_1");
         when(reminderService.speakerLocale(any())).thenReturn(Locale.GERMAN);

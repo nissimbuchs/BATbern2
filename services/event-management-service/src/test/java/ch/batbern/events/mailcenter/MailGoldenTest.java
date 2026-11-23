@@ -55,6 +55,7 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.Year;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
@@ -82,6 +83,8 @@ import static org.mockito.Mockito.lenient;
 @DisplayName("Mail golden files (Story 16.11)")
 class MailGoldenTest extends AbstractIntegrationTest {
 
+    // The reminder service counts days in Zurich; a JVM in UTC (CI) is a day behind between 23:00 and 24:00 UTC.
+    private static final ZoneId ZURICH = ZoneId.of("Europe/Zurich");
     private static final String EVENT_CODE = "BATbern931";
     private static final Instant EVENT_DATE = Instant.parse("2027-03-05T17:00:00Z");
     private static final String SIM = "@simulator.amazonses.com";
@@ -199,7 +202,7 @@ class MailGoldenTest extends AbstractIntegrationTest {
             for (String type : List.of("RESPONSE", "CONTENT")) {
                 for (String tier : List.of("TIER_1", "TIER_2", "TIER_3")) {
                     SpeakerReminderEmailService.RenderedReminder r = speakerReminderEmailService.render(speaker(),
-                            event, type, tier, LocalDate.now().plusDays(5), locale).orElseThrow();
+                            event, type, tier, LocalDate.now(ZURICH).plusDays(5), locale).orElseThrow();
                     compare(SpeakerReminderEmailService.templateKey(type, tier) + "-" + l, r.subject(), r.html());
                 }
             }
@@ -339,10 +342,10 @@ class MailGoldenTest extends AbstractIntegrationTest {
 
     private static String normalise(String text) {
         // Speaker reminders are rendered for a deadline five days from today.
-        String reminderDeadline = LocalDate.now().plusDays(5).format(DateTimeFormatter.ofPattern("dd.MM.yyyy"));
+        String reminderDeadline = LocalDate.now(ZURICH).plusDays(5).format(DateTimeFormatter.ofPattern("dd.MM.yyyy"));
         // Signed links (registration confirmation) carry issue and expiry times.
         return text.replace(reminderDeadline, "{DEADLINE}")
-                .replace(String.valueOf(Year.now().getValue()), "{YEAR}")
+                .replace(String.valueOf(Year.now(ZURICH).getValue()), "{YEAR}")
                 .replaceAll("eyJ[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+", "{JWT}");
     }
 

@@ -71,7 +71,7 @@ fi
 # is checked — the fallback is deliberately the STRICTER behaviour, so a missing lookup can
 # never silently turn this gate off.
 echo -e "\n${YELLOW}Test 3:${NC} Service health checks"
-services=("event-management" "partner-coordination" "company-user-management")
+services=("event-management" "partner-coordination" "company-user-management" "agent")
 service_tests_failed=0
 
 # Map of ECS service display names -> desired count, e.g. "PartnerCoordination 0".
@@ -104,6 +104,7 @@ ecs_name_for() {
         event-management)        echo "EventManagement" ;;
         partner-coordination)    echo "PartnerCoordination" ;;
         company-user-management) echo "CompanyManagement" ;;
+        agent)                   echo "AgentService" ;;
         *)                       echo "" ;;
     esac
 }

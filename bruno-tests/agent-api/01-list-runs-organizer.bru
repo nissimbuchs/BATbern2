@@ -1,0 +1,53 @@
+meta {
+  name: Organizer lists agent runs - GET /agent/runs (200)
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/agent/runs?page=0&limit=5
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{organizerAuthToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Accept: application/json
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("an organizer reads the run list", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("the page has the shared envelope", function() {
+    const body = res.getBody();
+    expect(body.data).to.be.an('array');
+    expect(body.pagination.page).to.equal(0);
+    expect(body.pagination.limit).to.equal(5);
+    expect(body.pagination.totalItems).to.be.a('number');
+  });
+
+  test("every run names its status and trigger", function() {
+    const body = res.getBody();
+    body.data.forEach(function(run) {
+      expect(run.id).to.be.a('string');
+      expect(['RUNNING', 'DONE', 'FAILED', 'HANDED_TO_ORGANIZERS']).to.include(run.status);
+      expect(run.trigger).to.be.a('string');
+    });
+  });
+}
+
+docs {
+  Agent runtime story 9 (R1, R8), deferred from story 1: the deployed agent-service answers an
+  organizer on /agent/runs through the gateway. Read only; while the service runs dark the list is
+  empty. No mail, no model call, no write: safe on staging (= production).
+}

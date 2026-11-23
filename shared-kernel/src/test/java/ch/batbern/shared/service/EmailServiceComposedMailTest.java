@@ -13,9 +13,9 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.test.util.ReflectionTestUtils;
-import software.amazon.awssdk.services.ses.SesClient;
-import software.amazon.awssdk.services.ses.model.SendRawEmailRequest;
-import software.amazon.awssdk.services.ses.model.SendRawEmailResponse;
+import software.amazon.awssdk.services.sesv2.SesV2Client;
+import software.amazon.awssdk.services.sesv2.model.SendEmailRequest;
+import software.amazon.awssdk.services.sesv2.model.SendEmailResponse;
 
 import java.io.ByteArrayInputStream;
 import java.util.List;
@@ -36,7 +36,7 @@ import static org.mockito.Mockito.when;
 /**
  * Story 16.6 AC1/AC2/AC6: an organizer's answer to a conversation is composed with its own headers
  * (display name, Reply-To with the conversation token, In-Reply-To, References, our Message-ID),
- * sent through {@code SendRawEmail} and recorded once.
+ * sent as raw content of SES v2 {@code SendEmail} and recorded once.
  */
 @DisplayName("EmailService.sendComposed (Story 16.6)")
 class EmailServiceComposedMailTest {
@@ -44,14 +44,14 @@ class EmailServiceComposedMailTest {
     private static final String MESSAGE_ID = "<0f4c2a52-1111-4222-8333-944455556666@batbern.ch>";
 
     private EmailService emailService;
-    private SesClient sesClient;
+    private SesV2Client sesClient;
     private OutboundMailRecorder recorder;
     private final MailContext context = MailContext.individual("BATbern60", MailContext.Audience.SPEAKERS, null);
 
     @BeforeEach
     void setUp() {
         emailService = new EmailService();
-        sesClient = mock(SesClient.class);
+        sesClient = mock(SesV2Client.class);
         recorder = mock(OutboundMailRecorder.class);
         ReflectionTestUtils.setField(emailService, "sesClient", sesClient);
         ReflectionTestUtils.setField(emailService, "outboundMailRecorder", recorder);
@@ -72,17 +72,17 @@ class EmailServiceComposedMailTest {
     }
 
     private MimeMessage sentMime() throws Exception {
-        ArgumentCaptor<SendRawEmailRequest> request = ArgumentCaptor.forClass(SendRawEmailRequest.class);
-        verify(sesClient).sendRawEmail(request.capture());
+        ArgumentCaptor<SendEmailRequest> request = ArgumentCaptor.forClass(SendEmailRequest.class);
+        verify(sesClient).sendEmail(request.capture());
         return new MimeMessage(Session.getInstance(new Properties()),
-                new ByteArrayInputStream(request.getValue().rawMessage().data().asByteArray()));
+                new ByteArrayInputStream(request.getValue().content().raw().data().asByteArray()));
     }
 
     @Test
     @DisplayName("headers: display name, Reply-To, In-Reply-To, References and the given Message-ID survive")
     void headers() throws Exception {
-        when(sesClient.sendRawEmail(any(SendRawEmailRequest.class)))
-                .thenReturn(SendRawEmailResponse.builder().messageId("ses-1").build());
+        when(sesClient.sendEmail(any(SendEmailRequest.class)))
+                .thenReturn(SendEmailResponse.builder().messageId("ses-1").build());
 
         emailService.sendComposed(context, mail("Re: Slides"));
 
@@ -103,8 +103,8 @@ class EmailServiceComposedMailTest {
     @Test
     @DisplayName("From: the given address when set, with the display name")
     void fromAddress() throws Exception {
-        when(sesClient.sendRawEmail(any(SendRawEmailRequest.class)))
-                .thenReturn(SendRawEmailResponse.builder().messageId("ses-1").build());
+        when(sesClient.sendEmail(any(SendEmailRequest.class)))
+                .thenReturn(SendEmailResponse.builder().messageId("ses-1").build());
 
         emailService.sendComposed(context, mail("Re: Slides", "info@batbern.ch"));
 
@@ -116,8 +116,8 @@ class EmailServiceComposedMailTest {
     @Test
     @DisplayName("recorded once with the SES id")
     void recorded() {
-        when(sesClient.sendRawEmail(any(SendRawEmailRequest.class)))
-                .thenReturn(SendRawEmailResponse.builder().messageId("ses-1").build());
+        when(sesClient.sendEmail(any(SendEmailRequest.class)))
+                .thenReturn(SendEmailResponse.builder().messageId("ses-1").build());
 
         emailService.sendComposed(context, mail("Re: Slides"));
 

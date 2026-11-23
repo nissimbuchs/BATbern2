@@ -41,6 +41,28 @@ class DomainRouterTest {
         ReflectionTestUtils.setField(domainRouter, "eventManagementUrl", "http://localhost:8081");
         ReflectionTestUtils.setField(domainRouter, "partnerCoordinationUrl", "http://localhost:8083");
         ReflectionTestUtils.setField(domainRouter, "companyUserManagementUrl", "http://localhost:8085");
+        ReflectionTestUtils.setField(domainRouter, "agentUrl", "http://localhost:8003");
+    }
+
+    // Agentic interaction, epic agent runtime: agent-service owns /api/v1/agent/** (AD-9)
+    @Test
+    @DisplayName("should_routeToAgentService_when_agentPathCalled")
+    void should_routeToAgentService_when_agentPathCalled() {
+        assertThat(domainRouter.determineTargetService("/api/v1/agent/runs")).isEqualTo("agent-service");
+        assertThat(domainRouter.determineTargetService("/api/v1/agent/runs?page=0&limit=20"))
+                .isEqualTo("agent-service");
+    }
+
+    // The prefix trap: the agent switch of CUMS shares the "/api/v1/agent" prefix but not the slash
+    @Test
+    @DisplayName("should_keepAgentSettingsInCums_when_agentServiceRouteExists")
+    void should_keepAgentSettingsInCums_when_agentServiceRouteExists() {
+        assertThat(domainRouter.determineTargetService("/api/v1/agent-settings"))
+                .isEqualTo("company-user-management-service");
+        assertThatThrownBy(() -> domainRouter.determineTargetService("/api/v1/agents"))
+                .isInstanceOf(RouteNotFoundException.class);
+        assertThatThrownBy(() -> domainRouter.determineTargetService("/api/v1/agent"))
+                .isInstanceOf(RouteNotFoundException.class);
     }
 
     // Test 5.1: should_routeToEventService_when_eventsEndpointCalled

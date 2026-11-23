@@ -3,7 +3,7 @@ title: 'One shared-kernel decoder accepts Cognito, Watch and agent tokens in eve
 type: 'refactor'
 ticket: '1'
 created: '2026-11-21'
-status: 'built'
+status: done
 baseline_revision: 'b8047555258cb84d3fc3c76b47e002940534b32f'
 route: 'full'
 route_source: 'auto'

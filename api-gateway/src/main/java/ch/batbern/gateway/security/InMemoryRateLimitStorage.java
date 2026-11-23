@@ -7,6 +7,7 @@ import org.springframework.stereotype.Repository;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -68,7 +69,7 @@ public class InMemoryRateLimitStorage implements RateLimitStorage {
         RateLimitEntry entry = rateLimitMap.get(key);
 
         if (entry == null || isTimeWindowExpired(entry)) {
-            entry = new RateLimitEntry(1, LocalDateTime.now());
+            entry = new RateLimitEntry(1, LocalDateTime.now(ZoneOffset.UTC));
         } else {
             entry.incrementCount();
         }
@@ -100,7 +101,7 @@ public class InMemoryRateLimitStorage implements RateLimitStorage {
 
     private boolean isTimeWindowExpired(RateLimitEntry entry) {
         // 1-minute time window
-        return ChronoUnit.MINUTES.between(entry.getTimestamp(), LocalDateTime.now()) >= 1;
+        return ChronoUnit.MINUTES.between(entry.getTimestamp(), LocalDateTime.now(ZoneOffset.UTC)) >= 1;
     }
 
     @Override

@@ -53,7 +53,11 @@ describe('Cost footprint (docs/plans/aws-cost-reduction.md)', () => {
   });
 
   describe('Tier 2 — task counts', () => {
-    const singleTaskServices = ['partner-coordination-stack.ts', 'company-management-stack.ts'];
+    const singleTaskServices = [
+      'partner-coordination-stack.ts',
+      'company-management-stack.ts',
+      'agent-service-stack.ts',
+    ];
 
     test.each(singleTaskServices)(
       'should_runOneSteadyStateTask_when_%s_configured',

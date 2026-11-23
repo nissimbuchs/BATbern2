@@ -18,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -285,7 +286,7 @@ class TopicSelectionWorkflowIntegrationTest extends AbstractIntegrationTest {
         topic.setDescription("Test description for " + title);
         topic.setCategory("technical");
         topic.setActive(true);
-        topic.setCreatedDate(LocalDateTime.now());
+        topic.setCreatedDate(LocalDateTime.now(ZoneOffset.UTC));
         return topicRepository.save(topic);
     }
 

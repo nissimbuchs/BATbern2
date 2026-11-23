@@ -10,13 +10,11 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.test.util.ReflectionTestUtils;
 import software.amazon.awssdk.awscore.exception.AwsErrorDetails;
-import software.amazon.awssdk.services.ses.SesClient;
-import software.amazon.awssdk.services.ses.model.MessageTag;
-import software.amazon.awssdk.services.ses.model.SendEmailRequest;
-import software.amazon.awssdk.services.ses.model.SendEmailResponse;
-import software.amazon.awssdk.services.ses.model.SendRawEmailRequest;
-import software.amazon.awssdk.services.ses.model.SendRawEmailResponse;
-import software.amazon.awssdk.services.ses.model.SesException;
+import software.amazon.awssdk.services.sesv2.SesV2Client;
+import software.amazon.awssdk.services.sesv2.model.MessageTag;
+import software.amazon.awssdk.services.sesv2.model.SendEmailRequest;
+import software.amazon.awssdk.services.sesv2.model.SendEmailResponse;
+import software.amazon.awssdk.services.sesv2.model.SesV2Exception;
 
 import java.util.List;
 import java.util.UUID;
@@ -44,7 +42,7 @@ class EmailServiceRecordingTest {
     private static final String CC = "speaker.private@batbern-test.ch";
 
     private EmailService emailService;
-    private SesClient sesClient;
+    private SesV2Client sesClient;
     private OutboundMailRecorder recorder;
     private final MailContext context =
             MailContext.individual("BATbern60", MailContext.Audience.SPEAKERS, "speaker-invitation")
@@ -53,7 +51,7 @@ class EmailServiceRecordingTest {
     @BeforeEach
     void setUp() {
         emailService = new EmailService();
-        sesClient = mock(SesClient.class);
+        sesClient = mock(SesV2Client.class);
         recorder = mock(OutboundMailRecorder.class);
         ReflectionTestUtils.setField(emailService, "sesClient", sesClient);
         ReflectionTestUtils.setField(emailService, "outboundMailRecorder", recorder);
@@ -87,14 +85,14 @@ class EmailServiceRecordingTest {
 
         ArgumentCaptor<SendEmailRequest> request = ArgumentCaptor.forClass(SendEmailRequest.class);
         verify(sesClient).sendEmail(request.capture());
-        assertThat(request.getValue().tags())
+        assertThat(request.getValue().emailTags())
                 .containsExactly(MessageTag.builder().name("mail_group").value(context.sendGroupId()).build());
     }
 
     @Test
     @DisplayName("an SES error is recorded as a failure with the error code, then rethrown")
     void sesError_recordedAsFailure() {
-        when(sesClient.sendEmail(any(SendEmailRequest.class))).thenThrow((SesException) SesException.builder()
+        when(sesClient.sendEmail(any(SendEmailRequest.class))).thenThrow((SesV2Exception) SesV2Exception.builder()
                 .awsErrorDetails(AwsErrorDetails.builder().errorCode("MessageRejected")
                         .errorMessage("Email address is not verified.").build())
                 .build());
@@ -128,7 +126,7 @@ class EmailServiceRecordingTest {
         verifyNoInteractions(recorder);
         ArgumentCaptor<SendEmailRequest> request = ArgumentCaptor.forClass(SendEmailRequest.class);
         verify(sesClient).sendEmail(request.capture());
-        assertThat(request.getValue().tags()).isEmpty();
+        assertThat(request.getValue().emailTags()).isEmpty();
     }
 
     @Test
@@ -146,8 +144,8 @@ class EmailServiceRecordingTest {
     @Test
     @DisplayName("sends with attachments are recorded and tagged too")
     void attachments_recorded() {
-        when(sesClient.sendRawEmail(any(SendRawEmailRequest.class)))
-                .thenReturn(SendRawEmailResponse.builder().messageId("ses-raw-1").build());
+        when(sesClient.sendEmail(any(SendEmailRequest.class)))
+                .thenReturn(SendEmailResponse.builder().messageId("ses-raw-1").build());
         List<EmailService.EmailAttachment> ics =
                 List.of(new EmailService.EmailAttachment("event.ics", new byte[] {1}, "text/calendar", true));
 
@@ -157,9 +155,9 @@ class EmailServiceRecordingTest {
         ArgumentCaptor<OutboundMail> mail = ArgumentCaptor.forClass(OutboundMail.class);
         verify(recorder, org.mockito.Mockito.times(2)).record(org.mockito.ArgumentMatchers.eq(context), mail.capture());
         assertThat(mail.getAllValues()).extracting(OutboundMail::sesMessageId).containsOnly("ses-raw-1");
-        ArgumentCaptor<SendRawEmailRequest> request = ArgumentCaptor.forClass(SendRawEmailRequest.class);
-        verify(sesClient, org.mockito.Mockito.times(2)).sendRawEmail(request.capture());
-        assertThat(request.getAllValues()).allSatisfy(r -> assertThat(r.tags()).extracting(MessageTag::name)
+        ArgumentCaptor<SendEmailRequest> request = ArgumentCaptor.forClass(SendEmailRequest.class);
+        verify(sesClient, org.mockito.Mockito.times(2)).sendEmail(request.capture());
+        assertThat(request.getAllValues()).allSatisfy(r -> assertThat(r.emailTags()).extracting(MessageTag::name)
                 .containsExactly("mail_group"));
     }
 
@@ -202,8 +200,8 @@ class EmailServiceRecordingTest {
     @Test
     @DisplayName("a group send with attachments is recorded ONCE with the To: comma-joined")
     void groupSendWithAttachments_recordedOnceWithJoinedTo() {
-        when(sesClient.sendRawEmail(any(SendRawEmailRequest.class)))
-                .thenReturn(SendRawEmailResponse.builder().messageId("ses-group-2").build());
+        when(sesClient.sendEmail(any(SendEmailRequest.class)))
+                .thenReturn(SendEmailResponse.builder().messageId("ses-group-2").build());
 
         emailService.sendGroupHtmlEmailWithAttachments(context,
                 List.of("a@batbern-test.ch", "b@batbern-test.ch"), List.of(), "Invite", "<p>body</p>",

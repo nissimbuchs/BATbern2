@@ -49,7 +49,7 @@ flowchart LR
     CN --> MP
     MP --> ES["shared-kernel EmailService"]
     NS --> ES
-    ES -->|"SES SendEmail or SendRawEmail"| SES["AWS SES"]
+    ES -->|"SES v2 SendEmail, simple or raw, up to 40 MB"| SES["AWS SES"]
     ES -->|"send carries a MailContext"| REC["OutboundMailRecorder: Mail Center records, see 06"]
     COGT --> CES["CustomEmailSender Lambda"] --> SES
 ```
@@ -393,7 +393,14 @@ watch uses them for live timing, presence and arrivals (`WebSocketConfig`,
 ### Email Service (AWS SES Integration)
 
 **Infrastructure**: AWS SES for email delivery, through the shared-kernel
-`ch.batbern.shared.service.EmailService` (AWS SDK v2 `SesClient`), used by EMS, CUMS and PCS.
+`ch.batbern.shared.service.EmailService` (AWS SDK v2 `SesV2Client`, the SES API v2), used by EMS,
+CUMS and PCS. Every send is one SES v2 `SendEmail` call: simple content for a plain HTML mail, raw
+content for a MIME message (attachments, composed answers, forwarded alias mail). **A message may be
+up to 40 MB.** Until 2026-11-22 `EmailService` used the SES API v1 (`SendEmail`, `SendRawEmail`),
+which refuses anything over 10 MB: a 10.9 MB mail to `ok@` failed for all 12 organizers that day.
+The configuration set, the `mail_group` tag and the bounce/complaint pipeline work as before; the
+task roles already allow `ses:SendEmail` and `ses:SendRawEmail` (both are listed for the v2
+operation). The SES test double `SesRecorder` refuses a message over 40 MB, as SES v2 does.
 
 **Templates**: HTML files `email-templates/{key}-{de|en}.html` (layouts:
 `layout-{key}-{de|en}.html`) on the EMS classpath, 54 files on develop c4593449.
@@ -414,7 +421,7 @@ flowchart TD
     L3 --> R
     R --> SEND["EmailService.send..., with MailContext"]
     SEND --> Q{"SES client present?"}
-    Q -->|"staging = production"| SES["SES SendEmail or SendRawEmail with configuration set and mail_group tag"]
+    Q -->|"staging = production"| SES["SES v2 SendEmail, simple or raw content,<br/>configuration set and mail_group tag"]
     Q -->|"local profile"| CAP["LocalEmailCapture, shown at /dev/emails"]
     Q -->|"test profile"| LOG["log only"]
     SES --> REC["OutboundMailRecorder.record with SES message id or error code"]
@@ -466,7 +473,7 @@ linking, JIT) requires `verifiedAt`; see [User Lifecycle Sync](./06b-user-lifecy
 @Service
 public class EmailService {
 
-    @Autowired(required = false) private SesClient sesClient;            // only staging/production
+    @Autowired(required = false) private SesV2Client sesClient;          // only staging/production
     @Autowired(required = false) private LocalEmailCapture localEmailCapture;  // only 'local' profile
     @Autowired(required = false) private OutboundMailRecorder outboundMailRecorder; // EMS (JPA), PCS (HTTP to EMS)
 

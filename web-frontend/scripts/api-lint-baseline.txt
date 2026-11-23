@@ -30,6 +30,12 @@ no-verb-segment	users-api.openapi.yml	POST /users/admin/reconcile
 no-verb-segment	users-api.openapi.yml	POST /users/me/profile-claims/confirm
 no-verb-segment	users-api.openapi.yml	POST /watch/authenticate
 no-verb-segment	users-api.openapi.yml	POST /watch/pair
+uuid-path-param	agent-api.openapi.yml	GET /agent/runs/{runId}
+uuid-path-param	agent-api.openapi.yml	GET /agent/runs/{runId}/model-calls
+uuid-path-param	agent-api.openapi.yml	GET /agent/runs/{runId}/model-calls/{modelCallId}
+uuid-path-param	agent-api.openapi.yml	GET /agent/runs/{runId}/steps
+uuid-path-param	agent-api.openapi.yml	GET /agent/runs/{runId}/tool-calls
+uuid-path-param	agent-api.openapi.yml	GET /agent/runs/{runId}/verdicts
 uuid-path-param	event-ai-api.openapi.yml	GET /events/{eventCode}/ai/theme-image/jobs/{jobId}
 uuid-path-param	event-ai-api.openapi.yml	POST /events/{eventCode}/speakers/{speakerId}/abstract-analysis
 uuid-path-param	event-media-api.openapi.yml	DELETE /events/{eventCode}/photos/{photoId}

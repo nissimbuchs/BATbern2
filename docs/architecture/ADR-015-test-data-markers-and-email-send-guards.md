@@ -36,9 +36,9 @@ convention so every test's data is recognisable to it. Two facts make this tract
 | Guard | Fires on | Blocks | Implementation |
 |---|---|---|---|
 | **Recipient-domain guard** | reserved/special-use recipient domain (RFC 2606/6761/6762: `example.com`, `*.test`, `*.invalid`, `*.localhost`, `*.local`) | `ReservedEmailRecipientException` | `assertSendable(to)` → `ReservedEmailDomain` (pre-existing; extended with `.local`) |
-| **Content-marker guard** | subject **or** body contains a canonical test marker, **real-send path only** (non-null `SesClient`) | `TestMarkedEmailException` + ERROR log | `assertNotTestMarked(subject, htmlBody)` → `EmailContentTestMarker` |
+| **Content-marker guard** | subject **or** body contains a canonical test marker, **real-send path only** (non-null `SesV2Client`) | `TestMarkedEmailException` + ERROR log | `assertNotTestMarked(subject, htmlBody)` → `EmailContentTestMarker` |
 
-The content-marker guard runs **only when a live `SesClient` is present**, so local dev / test
+The content-marker guard runs **only when a live `SesV2Client` is present**, so local dev / test
 (where `LocalEmailCapture` intercepts) is unaffected and dev-only send specs still exercise the
 full pipeline end-to-end.
 

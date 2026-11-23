@@ -12,6 +12,7 @@ import ch.batbern.events.repository.SessionTimingHistoryRepository;
 import ch.batbern.events.service.TimetableService;
 import ch.batbern.shared.events.SessionTimingAssignedEvent;
 import ch.batbern.shared.security.Actors;
+import ch.batbern.shared.utils.DateTimeUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
@@ -20,7 +21,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -312,9 +312,9 @@ public class SessionTimingService {
             List<SpeakerPool> speakers = speakerPoolRepository.findBySessionId(session.getId());
             Optional<SpeakerPool> primarySpeaker = speakers.isEmpty() ? Optional.empty() : Optional.of(speakers.get(0));
 
-            // Convert Instant to LocalDateTime
+            // Wall-clock start in Bern (the event's zone), not in the JVM zone
             LocalDateTime startTime = session.getStartTime() != null
-                    ? LocalDateTime.ofInstant(session.getStartTime(), ZoneId.systemDefault())
+                    ? LocalDateTime.ofInstant(session.getStartTime(), DateTimeUtils.SWISS_ZONE)
                     : null;
 
             if (startTime == null) {

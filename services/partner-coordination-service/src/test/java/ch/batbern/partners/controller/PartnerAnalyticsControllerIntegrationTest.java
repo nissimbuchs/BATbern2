@@ -8,6 +8,7 @@ import ch.batbern.partners.domain.PartnershipLevel;
 import ch.batbern.partners.repository.PartnerRepository;
 import ch.batbern.shared.test.AbstractIntegrationTest;
 import ch.batbern.shared.test.contract.ContractServer;
+import ch.batbern.shared.utils.DateTimeUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -29,7 +30,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.Instant;
-import java.time.LocalDate;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.closeTo;
@@ -243,7 +243,7 @@ class PartnerAnalyticsControllerIntegrationTest extends AbstractIntegrationTest 
         Partner partner = new Partner();
         partner.setCompanyName(companyName);
         partner.setPartnershipLevel(level);
-        partner.setPartnershipStartDate(LocalDate.now());
+        partner.setPartnershipStartDate(DateTimeUtils.todaySwiss());
         partner.setPartnershipCost(cost);
         return partnerRepository.save(partner);
     }

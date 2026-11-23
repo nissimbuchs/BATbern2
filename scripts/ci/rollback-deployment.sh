@@ -63,6 +63,7 @@ SERVICES=(
     "event-management-service:EventManagement"
     "partner-coordination-service:PartnerCoordination"
     "company-user-management-service:CompanyManagement"
+    "agent-service:AgentService"
     # The gateway is promoted to staging-stable with the others (promote-ecr-tag.sh), so it is
     # rolled back with them; until 2026-11-19 it was left on the failed image.
     "api-gateway:ApiGatewayService"

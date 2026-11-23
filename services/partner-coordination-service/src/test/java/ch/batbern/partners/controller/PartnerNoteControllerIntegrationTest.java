@@ -7,6 +7,7 @@ import ch.batbern.partners.domain.PartnershipLevel;
 import ch.batbern.partners.repository.PartnerNoteRepository;
 import ch.batbern.partners.repository.PartnerRepository;
 import ch.batbern.shared.test.AbstractIntegrationTest;
+import ch.batbern.shared.utils.DateTimeUtils;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -20,7 +21,6 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -72,8 +72,8 @@ class PartnerNoteControllerIntegrationTest extends AbstractIntegrationTest {
         partnerRepository.save(Partner.builder()
                 .companyName(testCompanyName)
                 .partnershipLevel(PartnershipLevel.GOLD)
-                .partnershipStartDate(LocalDate.now().minusYears(1))
-                .partnershipEndDate(LocalDate.now().plusYears(1))
+                .partnershipStartDate(DateTimeUtils.todaySwiss().minusYears(1))
+                .partnershipEndDate(DateTimeUtils.todaySwiss().plusYears(1))
                 .build());
     }
 
@@ -293,8 +293,8 @@ class PartnerNoteControllerIntegrationTest extends AbstractIntegrationTest {
         partnerRepository.save(Partner.builder()
                 .companyName(otherCompany)
                 .partnershipLevel(PartnershipLevel.GOLD)
-                .partnershipStartDate(LocalDate.now().minusYears(1))
-                .partnershipEndDate(LocalDate.now().plusYears(1))
+                .partnershipStartDate(DateTimeUtils.todaySwiss().minusYears(1))
+                .partnershipEndDate(DateTimeUtils.todaySwiss().plusYears(1))
                 .build());
         String otherNoteId = createNote(otherCompany, "OtherCo Note", "Secret content");
 
@@ -315,8 +315,8 @@ class PartnerNoteControllerIntegrationTest extends AbstractIntegrationTest {
         partnerRepository.save(Partner.builder()
                 .companyName(otherCompany)
                 .partnershipLevel(PartnershipLevel.SILVER)
-                .partnershipStartDate(LocalDate.now().minusYears(1))
-                .partnershipEndDate(LocalDate.now().plusYears(1))
+                .partnershipStartDate(DateTimeUtils.todaySwiss().minusYears(1))
+                .partnershipEndDate(DateTimeUtils.todaySwiss().plusYears(1))
                 .build());
         String otherNoteId = createNote(otherCompany, "OtherCo2 Note", "Secret content");
 

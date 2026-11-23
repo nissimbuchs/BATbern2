@@ -21,7 +21,7 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/native-services.sh"
 PID_DIR="/tmp"
 
 # Service names (per instance)
-SERVICES=("api-gateway" "company-user-management" "event-management" "partner-coordination" "web-frontend")
+SERVICES=("api-gateway" "company-user-management" "event-management" "agent" "partner-coordination" "web-frontend")
 
 # Shared infrastructure services
 SHARED_SERVICES=("minio")

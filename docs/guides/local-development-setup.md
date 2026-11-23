@@ -68,15 +68,33 @@ make dev-native-up
 docker compose up -d
 ```
 
-All four backend processes start **by default**, on the ports of the default `BASE_PORT=8000`:
+All five backend processes start **by default**, on the ports of the default `BASE_PORT=8000`:
 - API Gateway: http://localhost:8000 (heap 320m)
 - Company/User Management: http://localhost:8001 (heap 512m)
 - Event Management: http://localhost:8002 (heap 768m)
+- Agent Service: http://localhost:8003 (heap 320m; ships dark, `agent.enabled=false`)
 - Partner Coordination: http://localhost:8004 (heap 320m)
 - Frontend: http://localhost:8100
 
-Total heap cap across the four is 1920m (`service_heap` in `scripts/dev/lib/native-services.sh`).
-8003 and 8005 stay unused since the speaker and attendee stub services were removed (Story 17.2).
+Total heap cap across the five is 2240m (`service_heap` in `scripts/dev/lib/native-services.sh`).
+8005 stays unused since the attendee stub service was removed (Story 17.2). The gateway reaches
+agent-service through `AGENT_SERVICE_URL` in `.env.native.<instance>`.
+
+**Agent caller secret.** agent-service obtains each run's grant and token from CUMS with a caller
+secret: it sends `AGENT_CUMS_CALLER_SECRET`, CUMS checks it against
+`AGENT_CALLERS_AGENT_SERVICE_SECRET`. `make dev-native-up` writes one value for both into
+`.env.native.<instance>`: `AGENT_CUMS_CALLER_SECRET` from `.env` when you set it there, else the
+value the instance already has, else a new random one (`openssl rand -hex 32`, function
+`agent_caller_secret` in `scripts/dev/lib/native-services.sh`). It survives
+`make dev-native-restart-service` and the next start; `.env.native.*` is gitignored, so the value
+never reaches the repository. A blank agent-service value ends every local run `GRANT_REFUSED`
+with `CALLER_SECRET_MISSING` before CUMS is called; a blank or different CUMS value ends it
+`GRANT_REFUSED` with `CALLER_SECRET_INVALID` (CUMS answers 401). `docker compose up` passes the one
+`.env` variable to both containers (blank unless you set it). The caller secret gets a run its
+grant; minting the run's token still needs CUMS's agent signing key, which local dev does not set,
+so a local run stops at the mint (`TOKEN_REFUSED`, `AGENT_SIGNING_KEY_MISSING`) until one is
+configured (runbook "Agent signing key").
+
 To run fewer services on a small machine, name the ones you want:
 
 ```bash

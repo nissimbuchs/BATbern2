@@ -1,0 +1,39 @@
+meta {
+  name: Organizer reads an unknown run - GET /agent/runs/{runId} (404)
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/agent/runs/00000000-0000-4000-8000-0000000b0a90
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{organizerAuthToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Accept: application/json
+}
+
+assert {
+  res.status: eq 404
+}
+
+tests {
+  test("an unknown run answers 404 with the shared error envelope", function() {
+    expect(res.getStatus()).to.equal(404);
+    const body = res.getBody();
+    expect(body.status).to.equal(404);
+    expect(body.errorCode).to.equal('ERR_NOT_FOUND');
+  });
+}
+
+docs {
+  Agent runtime story 9 (R8): the run detail is routed through the gateway to agent-service (a
+  404 from agent-service, not from the gateway, proves the sub-path reaches it). The run id is a
+  fixed id no run has. Read only: safe on staging (= production).
+}

@@ -145,6 +145,19 @@
             <property name="arrayInitIndent" value="4"/>
         </module>
 
+        <!-- Time zones: never the JVM default zone (UTC on ECS, Europe/Zurich on a dev machine) for a
+             date or a wall-clock time. Swiss calendar: DateTimeUtils.todaySwiss() / SWISS_ZONE;
+             timestamps: Instant.now() or an explicit ZoneOffset.UTC. Main and test code alike.
+             Rule and allow-list: docs/architecture/coding-standards.md, "Time zones". -->
+        <module name="RegexpSinglelineJava">
+            <property name="id" value="defaultZone"/>
+            <property name="format"
+                      value="\b(LocalDate|LocalDateTime|LocalTime|ZonedDateTime|Year|YearMonth|MonthDay)\s*\.\s*now\s*\(\s*\)|\bZoneId\s*\.\s*systemDefault\s*\(|\bTimeZone\s*\.\s*getDefault\s*\(|\bClock\s*\.\s*systemDefaultZone\s*\("/>
+            <property name="ignoreComments" value="true"/>
+            <property name="message"
+                      value="JVM default zone. Name the zone: DateTimeUtils.todaySwiss() or DateTimeUtils.SWISS_ZONE for Swiss dates, Instant.now() or ZoneOffset.UTC for timestamps (coding-standards.md, Time zones)."/>
+        </module>
+
         <!-- Suppressions for Lombok and Spring -->
         <module name="SuppressionCommentFilter">
             <property name="offCommentFormat" value="CHECKSTYLE.OFF\: ([\w\|]+)"/>

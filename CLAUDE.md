@@ -61,7 +61,7 @@ BATbern is an enterprise event management platform for Berner Architekten Treffe
 **Architecture Pattern**: Domain-Driven Design with microservices architecture
 - **Shared Kernel**: Common types, domain events, utilities shared across all services
 - **API Gateway**: Unified entry point handling authentication, rate limiting, and routing
-- **Domain Services**: event management (EMS, also hosts speaker and attendee logic), company/user management (CUMS), partner coordination. The former speaker and attendee stub services were removed by Story 17.2 (ADR-014)
+- **Domain Services**: event management (EMS, also hosts speaker and attendee logic), company/user management (CUMS), partner coordination, agent (agent-service, `/api/v1/agent/**`, shipped dark with `agent.enabled=false`; agentic interaction epic agent runtime). The former speaker and attendee stub services were removed by Story 17.2 (ADR-014)
 - **Infrastructure**: AWS CDK for Infrastructure as Code
 - **Frontend**: React 19 + TypeScript SPA with role-based adaptive UI
 
@@ -117,6 +117,7 @@ make update-deps                # Update safe dependencies (patch/minor)
 ./gradlew :services:event-management-service:bootRun
 ./gradlew :services:company-user-management-service:bootRun
 ./gradlew :services:partner-coordination-service:bootRun
+./gradlew :services:agent-service:bootRun
 
 # Run tests for specific service
 ./gradlew :services:event-management-service:test
@@ -162,7 +163,8 @@ BATbern2/
 ├── services/                         # Domain microservices
 │   ├── company-user-management-service/
 │   ├── event-management-service/
-│   └── partner-coordination-service/
+│   ├── partner-coordination-service/
+│   └── agent-service/
 ├── web-frontend/                     # React 19 + TypeScript SPA
 ├── infrastructure/                   # AWS CDK infrastructure as code
 ├── apps/BATbern-watch/               # watchOS companion app
@@ -203,6 +205,7 @@ make dev-native-up                                   # Start services natively (
 # - API Gateway: http://localhost:8000
 # - Company/User Management: http://localhost:8001
 # - Event Management: http://localhost:8002
+# - Agent Service: http://localhost:8003
 # - Partner Coordination: http://localhost:8004
 # - Frontend: http://localhost:8100
 ```
@@ -242,6 +245,7 @@ tail -f /tmp/batbern-1-api-gateway.log
 tail -f /tmp/batbern-1-company-user-management.log
 tail -f /tmp/batbern-1-event-management.log
 tail -f /tmp/batbern-1-partner-coordination.log
+tail -f /tmp/batbern-1-agent.log
 tail -f /tmp/batbern-1-web-frontend.log
 
 # Search for errors across all services
@@ -696,6 +700,7 @@ All services log to CloudWatch with the naming pattern: `/aws/ecs/BATbern-{env}/
 /aws/ecs/BATbern-staging/event-management
 /aws/ecs/BATbern-staging/partner-coordination
 /aws/ecs/BATbern-staging/company-user-management
+/aws/ecs/BATbern-staging/agent
 ```
 
 ### Quick Log Access

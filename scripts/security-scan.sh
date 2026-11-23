@@ -31,6 +31,7 @@ JAVA_MODULES=(
   "services/event-management-service"
   "services/partner-coordination-service"
   "services/company-user-management-service"
+  "services/agent-service"
 )
 
 # Function to scan a Java module

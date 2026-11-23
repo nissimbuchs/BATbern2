@@ -25,9 +25,10 @@ describe('SecretsStack', () => {
       const template = Template.fromStack(stack);
 
       // Verify secrets are created
-      // JWT, Watch JWT, agent signing private key, EMS and agent-service caller secrets.
+      // JWT, Watch JWT, agent signing private key, EMS and agent-service caller secrets, Anthropic
+      // API key (agent runtime story 3).
       // DB managed by RDS stack, Redis removed (disabled for cost optimization)
-      template.resourceCountIs('AWS::SecretsManager::Secret', 5);
+      template.resourceCountIs('AWS::SecretsManager::Secret', 6);
     });
 
     test('should_enableKMSKeyRotation_when_productionEnvironment', () => {

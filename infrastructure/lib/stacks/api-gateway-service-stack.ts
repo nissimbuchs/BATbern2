@@ -148,6 +148,7 @@ export class ApiGatewayServiceStack extends cdk.Stack {
         EVENT_MANAGEMENT_SERVICE_URL: 'http://event-management:8080',
         PARTNER_COORDINATION_SERVICE_URL: 'http://partner-coordination:8080',
         COMPANY_USER_MANAGEMENT_SERVICE_URL: 'http://company-user-management:8080',
+        AGENT_SERVICE_URL: 'http://agent:8080',
         // Cognito configuration
         COGNITO_USER_POOL_ID: props.userPool.userPoolId,
         COGNITO_CLIENT_ID: props.userPoolClient.userPoolClientId,

@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.Map;
 
 @Data
@@ -28,7 +29,7 @@ public class StandardResponse<T> {
             .success(true)
             .data(data)
             .requestId(requestId)
-            .timestamp(LocalDateTime.now())
+            .timestamp(LocalDateTime.now(ZoneOffset.UTC))
             .build();
     }
 
@@ -37,7 +38,7 @@ public class StandardResponse<T> {
             .success(false)
             .error(error)
             .requestId(requestId)
-            .timestamp(LocalDateTime.now())
+            .timestamp(LocalDateTime.now(ZoneOffset.UTC))
             .build();
     }
 
@@ -47,7 +48,7 @@ public class StandardResponse<T> {
             .data(data)
             .metadata(metadata)
             .requestId(requestId)
-            .timestamp(LocalDateTime.now())
+            .timestamp(LocalDateTime.now(ZoneOffset.UTC))
             .build();
     }
 }

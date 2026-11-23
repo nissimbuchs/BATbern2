@@ -13,6 +13,7 @@ import ch.batbern.shared.test.AbstractIntegrationTest;
 import ch.batbern.shared.test.contract.ContractServer;
 import ch.batbern.shared.test.security.RoleStubTables;
 import ch.batbern.shared.test.security.TestTokens;
+import ch.batbern.shared.utils.DateTimeUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -30,7 +31,6 @@ import org.springframework.test.web.client.ExpectedCount;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.client.RestTemplate;
 
-import java.time.LocalDate;
 import java.util.Map;
 import java.util.UUID;
 
@@ -115,8 +115,8 @@ class AgentAttributionIntegrationTest extends AbstractIntegrationTest {
         partnerRepository.save(Partner.builder()
                 .companyName(companyName)
                 .partnershipLevel(PartnershipLevel.GOLD)
-                .partnershipStartDate(LocalDate.now().minusYears(1))
-                .partnershipEndDate(LocalDate.now().plusYears(1))
+                .partnershipStartDate(DateTimeUtils.todaySwiss().minusYears(1))
+                .partnershipEndDate(DateTimeUtils.todaySwiss().plusYears(1))
                 .build());
     }
 

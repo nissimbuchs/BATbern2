@@ -1,0 +1,43 @@
+meta {
+  name: Speaker cannot list agent runs - GET /agent/runs (403)
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/agent/runs?page=0&limit=5
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{speakerAuthToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Accept: application/json
+}
+
+tests {
+  test("a speaker is refused with 403", function() {
+    const auth = (req.getHeader('Authorization') || req.getHeader('authorization') || '').trim();
+    if (auth === 'Bearer' || auth === '') {
+      // No speaker token loaded in this environment: the gateway refuses the anonymous call
+      expect([401, 403]).to.include(res.getStatus());
+    } else {
+      expect(res.getStatus()).to.equal(403);
+    }
+  });
+
+  test("response carries no runs", function() {
+    const body = res.getBody() || {};
+    expect(body.data).to.be.undefined;
+  });
+}
+
+docs {
+  Agent runtime story 9 (R8), deferred from story 1: any role but ORGANIZER answers 403 on the
+  deployed route; agent-service checks the role itself (ADR-008). 401 is tolerated only when no
+  speaker token is loaded. A refused read: safe on staging (= production).
+}

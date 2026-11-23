@@ -8,6 +8,7 @@ import ch.batbern.partners.domain.PartnershipLevel;
 import ch.batbern.partners.repository.PartnerRepository;
 import ch.batbern.shared.test.AbstractIntegrationTest;
 import ch.batbern.shared.test.contract.ContractServer;
+import ch.batbern.shared.utils.DateTimeUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -23,8 +24,6 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.time.LocalDate;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -69,8 +68,8 @@ class PartnerPerformanceTest extends AbstractIntegrationTest {
         testPartner = new Partner();
         testPartner.setCompanyName("PerfTestCo");
         testPartner.setPartnershipLevel(PartnershipLevel.GOLD);
-        testPartner.setPartnershipStartDate(LocalDate.now().minusMonths(6));
-        testPartner.setPartnershipEndDate(LocalDate.now().plusMonths(6));
+        testPartner.setPartnershipStartDate(DateTimeUtils.todaySwiss().minusMonths(6));
+        testPartner.setPartnershipEndDate(DateTimeUtils.todaySwiss().plusMonths(6));
         testPartner.setCreatedAt(java.time.Instant.now());
         testPartner = partnerRepository.save(testPartner);
 

@@ -57,7 +57,8 @@ dependencies {
     implementation platform('software.amazon.awssdk:bom:2.57.11')
     implementation 'software.amazon.awssdk:cloudwatch'
     implementation 'software.amazon.awssdk:cognitoidentityprovider'
-    implementation 'software.amazon.awssdk:ses' // Email service (Story 2.2a Task B12)
+    // Email service (Story 2.2a Task B12). SES API v2: up to 40 MB per message, v1 refused over 10 MB
+    implementation 'software.amazon.awssdk:sesv2'
     implementation 'software.amazon.awssdk:sts' // STS for role assumption in local dev
     implementation 'software.amazon.awssdk:s3' // S3Links: presigned links (#1187)
 
@@ -130,10 +131,10 @@ dependencies {
     // swagger-core (non-jakarta, pulled by the validator) reads javax.xml.bind annotations while
     // parsing 3.1 specs; Boot manages jakarta.xml.bind-api to 4.x, which no longer has them.
     testFixturesRuntimeOnly 'javax.xml.bind:jaxb-api:2.3.1'
-    // Story 17.0b3: SesRecorder (the only SesClient a test context holds) parses what SES received,
+    // Story 17.0b3: SesRecorder (the only SesV2Client a test context holds) parses what SES received,
     // and FlushBeforeRollback flushes the test's EntityManager before the rollback.
     testFixturesApi platform('software.amazon.awssdk:bom:2.57.11')
-    testFixturesApi 'software.amazon.awssdk:ses'
+    testFixturesApi 'software.amazon.awssdk:sesv2'
     testFixturesImplementation 'jakarta.mail:jakarta.mail-api'
     testFixturesRuntimeOnly 'org.eclipse.angus:angus-mail'
     testFixturesImplementation 'org.springframework.boot:spring-boot-starter-data-jpa'

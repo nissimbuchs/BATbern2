@@ -1,0 +1,3 @@
+# Response conformance baseline: known spec violations of IT responses, one per line
+# "operationId pointer kind". Shrinks only; see docs/architecture/coding-standards.md
+# "Test fidelity rules". Rewrite: ./gradlew <module>:test -PupdateResponseConformanceBaseline

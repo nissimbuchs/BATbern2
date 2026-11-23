@@ -1,7 +1,7 @@
 # Pre-deploy gate (P5), step 1 spike: the shipped images in the PRODUCTION profile, sealed.
 # Plan: docs/plans/pre-deploy-gate-plan.md. Driver: scripts/gate/run-gate.sh.
 #
-# - The four service images are the production Dockerfiles' output (scripts/gate/build-images.sh).
+# - The five service images are the production Dockerfiles' output (scripts/gate/build-images.sh).
 # - SPRING_PROFILES_ACTIVE=staging, as ECS sets it (production runs the staging profile).
 # - Environment = what the CDK stacks set, with external systems pointed at helper containers:
 #   Postgres (empty, Flyway runs the real migrations), S3Mock in place of S3, and a fake AWS that
@@ -12,7 +12,8 @@
 #   AWS_S3_ENDPOINT, AWS_S3_ENDPOINT_ACCESS_KEY, AWS_S3_ENDPOINT_SECRET_KEY, COGNITO_RESEND_ENABLED=false.
 #
 # Required env (run-gate.sh derives them): GATE_COGNITO_USER_POOL_ID, GATE_COGNITO_CLIENT_ID
-# (from a test token's iss/aud claims), GATE_JWT_SECRET (random per run).
+# (from a test token's iss/aud claims), GATE_JWT_SECRET and GATE_AGENT_CALLER_SECRET (random per
+# run; the second is agent-service's caller secret at CUMS, one value for both sides).
 name: batbern-gate
 
 x-service-env: &service-env
@@ -98,6 +99,8 @@ services:
       COGNITO_RESEND_ENABLED: ${GATE_COGNITO_RESEND_ENABLED-false}
       # Gate-only: Cognito admin calls (Pattern N user creation) go to the stand-in pool.
       BATBERN_COGNITO_ENDPOINT: ${GATE_COGNITO_ENDPOINT-http://fake-aws:8025}
+      # agent-service's caller secret (CDK: batbern/<env>/agent/agent-service-caller-secret)
+      AGENT_CALLERS_AGENT_SERVICE_SECRET: ${GATE_AGENT_CALLER_SECRET:?random per run}
     depends_on:
       postgres: {condition: service_healthy}
       fake-aws: {condition: service_healthy}
@@ -141,6 +144,24 @@ services:
     healthcheck: *healthcheck
     mem_limit: 768m
 
+  agent:
+    image: batbern-gate/agent:${GATE_TAG:-spike}
+    environment:
+      <<: *service-env
+      SERVICE_NAME: agent
+      # As the agent-service stack sets it: shipped dark, the Anthropic key secret holds `none`
+      AGENT_ENABLED: "false"
+      AGENT_ANTHROPIC_API_KEY: none
+      COMPANY_USER_MANAGEMENT_SERVICE_URL: http://company-user-management:8080
+      AGENT_GATEWAY_URL: http://api-gateway:8080
+      AGENT_CUMS_CALLER_SECRET: ${GATE_AGENT_CALLER_SECRET:?random per run}
+    depends_on:
+      postgres: {condition: service_healthy}
+      # One service migrates at a time (see event-management)
+      partner-coordination: {condition: service_healthy}
+    healthcheck: *healthcheck
+    mem_limit: 768m
+
   api-gateway:
     image: batbern-gate/api-gateway:${GATE_TAG:-spike}
     environment:
@@ -155,6 +176,7 @@ services:
       EVENT_MANAGEMENT_SERVICE_URL: http://event-management:8080
       PARTNER_COORDINATION_SERVICE_URL: http://partner-coordination:8080
       COMPANY_USER_MANAGEMENT_SERVICE_URL: http://company-user-management:8080
+      AGENT_SERVICE_URL: http://agent:8080
       COGNITO_USER_POOL_ID: ${GATE_COGNITO_USER_POOL_ID:?derive from a test token}
       COGNITO_CLIENT_ID: ${GATE_COGNITO_CLIENT_ID:?derive from a test token}
       WATCH_JWT_SECRET: ${GATE_JWT_SECRET:?random per run}
@@ -171,5 +193,6 @@ services:
       company-user-management: {condition: service_healthy}
       event-management: {condition: service_healthy}
       partner-coordination: {condition: service_healthy}
+      agent: {condition: service_healthy}
     healthcheck: *healthcheck
     mem_limit: 768m

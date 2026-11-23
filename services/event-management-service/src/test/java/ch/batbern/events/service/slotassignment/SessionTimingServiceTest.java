@@ -1,5 +1,6 @@
 package ch.batbern.events.service.slotassignment;
 
+import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Session;
 import ch.batbern.events.domain.SessionTimingHistory;
 import ch.batbern.events.exception.SessionNotFoundException;
@@ -7,14 +8,17 @@ import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.events.repository.SessionTimingHistoryRepository;
 import ch.batbern.events.service.TimetableService;
+import ch.batbern.shared.events.SessionTimingAssignedEvent;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -23,6 +27,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -99,6 +104,32 @@ class SessionTimingServiceTest {
                 .endTime(Instant.parse("2025-06-15T09:45:00Z"))
                 .room("Main Hall")
                 .build();
+    }
+
+    /**
+     * The published SessionTimingAssignedEvent carries the start as a zone-less LocalDateTime; it
+     * is the wall-clock time in Bern, not in the JVM zone (UTC on ECS).
+     */
+    @Test
+    void should_publishSwissWallClockStart_when_timingAssigned() {
+        when(sessionRepository.findBySessionSlug("john-doe-techcorp")).thenReturn(Optional.of(placeholderSession));
+        when(sessionRepository.save(any(Session.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        lenient().when(speakerPoolRepository.findBySessionId(any())).thenReturn(List.of());
+        Event event = new Event();
+        event.setId(placeholderSession.getEventId());
+        event.setEventCode("TEST-EVENT-123");
+        when(eventRepository.findById(placeholderSession.getEventId())).thenReturn(Optional.of(event));
+
+        // 09:00 UTC on 15 June is 11:00 in Bern (summer time)
+        sessionTimingService.assignTiming("john-doe-techcorp", Instant.parse("2025-06-15T09:00:00Z"),
+                Instant.parse("2025-06-15T09:45:00Z"), "Main Hall", "drag_drop_reassignment", "organizer");
+
+        ArgumentCaptor<Object> published = ArgumentCaptor.forClass(Object.class);
+        verify(eventPublisher, atLeastOnce()).publishEvent(published.capture());
+        assertThat(published.getAllValues()).filteredOn(SessionTimingAssignedEvent.class::isInstance)
+                .singleElement()
+                .extracting(e -> ((SessionTimingAssignedEvent) e).getStartTime())
+                .isEqualTo(LocalDateTime.of(2025, 6, 15, 11, 0));
     }
 
     /**

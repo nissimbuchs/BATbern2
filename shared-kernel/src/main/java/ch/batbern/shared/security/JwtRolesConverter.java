@@ -57,16 +57,15 @@ public class JwtRolesConverter implements Converter<Jwt, Collection<GrantedAutho
      *                   (e.g. in {@code @WebMvcTest} slices that don't include JPA).
      *                   With a null data source the converter still validates the
      *                   primary {@code custom:role} / {@code role} claims; only the
-     *                   DB fallback is disabled. Production / staging / dev always
-     *                   supply a real data source, so this only matters for test
-     *                   slices.
+     *                   DB fallback is disabled. CUMS, EMS and PCS supply their data
+     *                   source; agent-service passes {@code null} on purpose, because the
+     *                   fallback reads CUMS tables and it reads no other service's tables.
      */
     public JwtRolesConverter(DataSource dataSource) {
         this.jdbcTemplate = dataSource != null ? new JdbcTemplate(dataSource) : null;
         if (dataSource == null) {
-            LOGGER.warn("JwtRolesConverter constructed without a DataSource — DB fallback "
-                    + "disabled. Expected only in @WebMvcTest slices; production must supply "
-                    + "a DataSource.");
+            LOGGER.info("JwtRolesConverter without a DataSource: roles come from the token "
+                    + "claims only, no DB fallback");
         }
     }
 

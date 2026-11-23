@@ -11,6 +11,7 @@ import ch.batbern.events.repository.RegistrationRepository;
 import ch.batbern.events.repository.TopicRepository;
 import ch.batbern.events.repository.TopicUsageHistoryRepository;
 import ch.batbern.shared.types.EventWorkflowState;
+import ch.batbern.shared.utils.DateTimeUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -26,6 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -190,9 +192,9 @@ class TopicControllerIntegrationTest extends AbstractIntegrationTest {
         Event eventB = createTestEvent("BATbern201", EventWorkflowState.ARCHIVED);
         Event eventC = createTestEvent("BATbern202", EventWorkflowState.ARCHIVED);
 
-        createTopicUsageHistory(topicA.getId(), eventA.getId(), LocalDateTime.now().minusMonths(30));
-        createTopicUsageHistory(topicB.getId(), eventB.getId(), LocalDateTime.now().minusMonths(6));
-        createTopicUsageHistory(topicC.getId(), eventC.getId(), LocalDateTime.now().minusMonths(15));
+        createTopicUsageHistory(topicA.getId(), eventA.getId(), LocalDateTime.now(ZoneOffset.UTC).minusMonths(30));
+        createTopicUsageHistory(topicB.getId(), eventB.getId(), LocalDateTime.now(ZoneOffset.UTC).minusMonths(6));
+        createTopicUsageHistory(topicC.getId(), eventC.getId(), LocalDateTime.now(ZoneOffset.UTC).minusMonths(15));
 
         mockMvc.perform(get("/api/v1/topics")
                 .param("sort", "-stalenessScore")
@@ -222,9 +224,9 @@ class TopicControllerIntegrationTest extends AbstractIntegrationTest {
         Event eventB = createTestEvent("BATbern211", EventWorkflowState.ARCHIVED);
         Event eventC = createTestEvent("BATbern212", EventWorkflowState.ARCHIVED);
 
-        createTopicUsageHistory(topicA.getId(), eventA.getId(), LocalDateTime.now().minusMonths(30));
-        createTopicUsageHistory(topicB.getId(), eventB.getId(), LocalDateTime.now().minusMonths(6));
-        createTopicUsageHistory(topicC.getId(), eventC.getId(), LocalDateTime.now().minusMonths(15));
+        createTopicUsageHistory(topicA.getId(), eventA.getId(), LocalDateTime.now(ZoneOffset.UTC).minusMonths(30));
+        createTopicUsageHistory(topicB.getId(), eventB.getId(), LocalDateTime.now(ZoneOffset.UTC).minusMonths(6));
+        createTopicUsageHistory(topicC.getId(), eventC.getId(), LocalDateTime.now(ZoneOffset.UTC).minusMonths(15));
 
         String[] expected = {"Stale Topic", "Moderate Topic", "Recent Topic"};
         for (int page = 1; page <= 3; page++) {
@@ -287,7 +289,7 @@ class TopicControllerIntegrationTest extends AbstractIntegrationTest {
 
         Event recentEvent = createTestEvent("BATbern301", EventWorkflowState.ARCHIVED);
         createTopicUsageHistory(recentTopic.getId(), recentEvent.getId(),
-                LocalDateTime.now().minusMonths(3));
+                LocalDateTime.now(ZoneOffset.UTC).minusMonths(3));
         // staleTopic has no history → staleness 100
 
         // Recent topic: used 3 months ago → staleness ~13 (red)
@@ -375,9 +377,9 @@ class TopicControllerIntegrationTest extends AbstractIntegrationTest {
         Event event2 = createTestEvent("BATbern101", EventWorkflowState.CREATED);
 
         createTopicUsageHistory(topic.getId(), event1.getId(),
-                LocalDateTime.now().minusMonths(6));
+                LocalDateTime.now(ZoneOffset.UTC).minusMonths(6));
         createTopicUsageHistory(topic.getId(), event2.getId(),
-                LocalDateTime.now().minusMonths(12));
+                LocalDateTime.now(ZoneOffset.UTC).minusMonths(12));
 
         mockMvc.perform(get("/api/v1/topics/{topicCode}/usage-history", topic.getTopicCode())
                 .contentType(MediaType.APPLICATION_JSON))
@@ -394,6 +396,32 @@ class TopicControllerIntegrationTest extends AbstractIntegrationTest {
     }
 
     /**
+     * The event date is the event's calendar day in Bern: an event at 00:30 or 23:30 Swiss time
+     * stays on that day whatever zone the JVM runs in (UTC on ECS moved the 00:30 one back a day).
+     */
+    @Test
+    @WithMockUser(username = "john.doe", roles = {"ORGANIZER"})
+    void should_returnZurichEventDate_when_eventIsNearMidnight() throws Exception {
+        Topic topic = createTestTopic("Night Architecture", "technical");
+        Event early = createTestEvent("BATbern110", EventWorkflowState.CREATED);
+        early.setDate(java.time.ZonedDateTime.of(2026, 3, 5, 0, 30, 0, 0, DateTimeUtils.SWISS_ZONE).toInstant());
+        eventRepository.save(early);
+        Event late = createTestEvent("BATbern111", EventWorkflowState.CREATED);
+        late.setDate(java.time.ZonedDateTime.of(2026, 3, 5, 23, 30, 0, 0, DateTimeUtils.SWISS_ZONE).toInstant());
+        eventRepository.save(late);
+        createTopicUsageHistory(topic.getId(), early.getId(), LocalDateTime.of(2026, 3, 5, 0, 30));
+        createTopicUsageHistory(topic.getId(), late.getId(), LocalDateTime.of(2026, 3, 4, 0, 30));
+
+        mockMvc.perform(get("/api/v1/topics/{topicCode}/usage-history", topic.getTopicCode()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(2)))
+                .andExpect(jsonPath("$[0].eventCode").value("BATbern110"))
+                .andExpect(jsonPath("$[0].eventDate").value("2026-03-05"))
+                .andExpect(jsonPath("$[1].eventCode").value("BATbern111"))
+                .andExpect(jsonPath("$[1].eventDate").value("2026-03-05"));
+    }
+
+    /**
      * 17.0 deferred work: attendance was read from topic_usage_history.attendee_count, which no
      * code writes, so every real record answered null for a field the spec required and the heat
      * map summed NaN. It is the event's confirmed and attended registrations, as in the analytics
@@ -406,7 +434,7 @@ class TopicControllerIntegrationTest extends AbstractIntegrationTest {
         Event past = createTestEvent("BATbern102", EventWorkflowState.ARCHIVED);
         past.setDate(Instant.now().minusSeconds(30L * 24 * 3600));
         eventRepository.save(past);
-        createTopicUsageHistory(topic.getId(), past.getId(), LocalDateTime.now().minusMonths(1));
+        createTopicUsageHistory(topic.getId(), past.getId(), LocalDateTime.now(ZoneOffset.UTC).minusMonths(1));
         List<String> statuses = List.of("confirmed", "confirmed", "attended", "cancelled", "registered", "waitlist");
         statuses.forEach(status -> createRegistration(past, status));
 
@@ -426,7 +454,7 @@ class TopicControllerIntegrationTest extends AbstractIntegrationTest {
     void should_returnNullAttendance_when_eventIsUpcoming() throws Exception {
         Topic topic = createTestTopic("Cloud Architecture", "technical");
         Event upcoming = createTestEvent("BATbern103", EventWorkflowState.CREATED);
-        createTopicUsageHistory(topic.getId(), upcoming.getId(), LocalDateTime.now().plusMonths(3));
+        createTopicUsageHistory(topic.getId(), upcoming.getId(), LocalDateTime.now(ZoneOffset.UTC).plusMonths(3));
         createRegistration(upcoming, "confirmed");
 
         MvcResult result = mockMvc.perform(get("/api/v1/topics/{topicCode}/usage-history", topic.getTopicCode()))
@@ -483,9 +511,9 @@ class TopicControllerIntegrationTest extends AbstractIntegrationTest {
         Event event2 = createTestEvent("BATbern57", EventWorkflowState.ARCHIVED);
 
         createTopicUsageHistory(topic1.getId(), event1.getId(),
-                LocalDateTime.now().minusMonths(6));
+                LocalDateTime.now(ZoneOffset.UTC).minusMonths(6));
         createTopicUsageHistory(topic2.getId(), event2.getId(),
-                LocalDateTime.now().minusMonths(3));
+                LocalDateTime.now(ZoneOffset.UTC).minusMonths(3));
 
         mockMvc.perform(get("/api/v1/topics")
                 .param("include", "history")
@@ -506,7 +534,7 @@ class TopicControllerIntegrationTest extends AbstractIntegrationTest {
         Topic topic = createTestTopic("Cloud Architecture", "technical");
         Event event = createTestEvent("BATbern56", EventWorkflowState.ARCHIVED);
         createTopicUsageHistory(topic.getId(), event.getId(),
-                LocalDateTime.now().minusMonths(6));
+                LocalDateTime.now(ZoneOffset.UTC).minusMonths(6));
 
         mockMvc.perform(get("/api/v1/topics")
                 .contentType(MediaType.APPLICATION_JSON))
@@ -535,7 +563,7 @@ class TopicControllerIntegrationTest extends AbstractIntegrationTest {
         Topic topic = createTestTopic("Cloud Architecture", "technical");
         Event event = createTestEvent("BATbern56", EventWorkflowState.ARCHIVED);
         createTopicUsageHistory(topic.getId(), event.getId(),
-                LocalDateTime.now().minusMonths(6));
+                LocalDateTime.now(ZoneOffset.UTC).minusMonths(6));
 
         mockMvc.perform(get("/api/v1/topics")
                 .param("include", "history,similarity")
@@ -572,7 +600,7 @@ class TopicControllerIntegrationTest extends AbstractIntegrationTest {
         topic.setDescription("Test description for " + title);
         topic.setCategory(category);
         topic.setActive(true);
-        topic.setCreatedDate(LocalDateTime.now());
+        topic.setCreatedDate(LocalDateTime.now(ZoneOffset.UTC));
         return topicRepository.save(topic);
     }
 

@@ -8,6 +8,7 @@ import ch.batbern.partners.domain.PartnershipLevel;
 import ch.batbern.partners.repository.PartnerRepository;
 import ch.batbern.shared.test.AbstractIntegrationTest;
 import ch.batbern.shared.test.contract.ContractServer;
+import ch.batbern.shared.utils.DateTimeUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -33,6 +34,7 @@ import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.Map;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.contains;
@@ -141,8 +143,8 @@ class PartnerControllerIntegrationTest extends AbstractIntegrationTest {
         Partner inactivePartner = new Partner();
         inactivePartner.setCompanyName("MicrosoftZH");
         inactivePartner.setPartnershipLevel(PartnershipLevel.PLATINUM);
-        inactivePartner.setPartnershipStartDate(LocalDate.now().minusYears(2));
-        inactivePartner.setPartnershipEndDate(LocalDate.now().minusYears(1)); // Ended 1 year ago
+        inactivePartner.setPartnershipStartDate(DateTimeUtils.todaySwiss().minusYears(2));
+        inactivePartner.setPartnershipEndDate(DateTimeUtils.todaySwiss().minusYears(1)); // Ended 1 year ago
         partnerRepository.save(inactivePartner);
 
         // When/Then
@@ -153,6 +155,25 @@ class PartnerControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.data", hasSize(1)))
                 .andExpect(jsonPath("$.data[0].companyName").value("GoogleZH"))
                 .andExpect(jsonPath("$.data[0].isActive").value(true));
+    }
+
+    @Test
+    @DisplayName("the active filter takes today in Zurich, not in the JVM zone")
+    void should_listPartnerAsActive_when_itsOnlyDayIsTodayInZurich() throws Exception {
+        LocalDate zurichToday = DateTimeUtils.todaySwiss();
+        Partner oneDay = new Partner();
+        oneDay.setCompanyName("OneDayZH");
+        oneDay.setPartnershipLevel(PartnershipLevel.GOLD);
+        oneDay.setPartnershipStartDate(zurichToday);
+        oneDay.setPartnershipEndDate(zurichToday);
+        partnerRepository.save(oneDay);
+
+        mockMvc.perform(get("/api/v1/partners")
+                        .param("filter", "isActive=true")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data", hasSize(1)))
+                .andExpect(jsonPath("$.data[0].companyName").value("OneDayZH"));
     }
 
     // ═══════════════════════════════════════════════════════════════════════════
@@ -290,7 +311,7 @@ class PartnerControllerIntegrationTest extends AbstractIntegrationTest {
         Map<String, Object> request = new HashMap<>();
         request.put("companyName", "GoogleZH");
         request.put("partnershipLevel", "GOLD");
-        request.put("partnershipStartDate", LocalDate.now().toString());
+        request.put("partnershipStartDate", DateTimeUtils.todaySwiss().toString());
 
         // When/Then - ADR-003: companyName is the meaningful ID, no UUID in response
         mockMvc.perform(post("/api/v1/partners")
@@ -311,7 +332,7 @@ class PartnerControllerIntegrationTest extends AbstractIntegrationTest {
         Map<String, Object> request = new HashMap<>();
         request.put("companyName", "GoogleZH");
         request.put("partnershipLevel", "PLATINUM");
-        request.put("partnershipStartDate", LocalDate.now().toString());
+        request.put("partnershipStartDate", DateTimeUtils.todaySwiss().toString());
 
         // When/Then
         mockMvc.perform(post("/api/v1/partners")
@@ -347,7 +368,7 @@ class PartnerControllerIntegrationTest extends AbstractIntegrationTest {
         createTestPartner("GoogleZH", PartnershipLevel.GOLD);
 
         Map<String, Object> updateRequest = new HashMap<>();
-        LocalDate endDate = LocalDate.now().plusYears(2);
+        LocalDate endDate = DateTimeUtils.todaySwiss().plusYears(2);
         updateRequest.put("partnershipEndDate", endDate.toString());
 
         // When/Then
@@ -389,6 +410,24 @@ class PartnerControllerIntegrationTest extends AbstractIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.isActive").value(false));
+    }
+
+    @Test
+    @WithMockUser(roles = "ORGANIZER")
+    @DisplayName("deleting a partner ends the partnership on today's Zurich date")
+    void should_endPartnershipOnZurichDate_when_deleteEndpointCalled() throws Exception {
+        Partner partner = new Partner();
+        partner.setCompanyName("EndsTodayZH");
+        partner.setPartnershipLevel(PartnershipLevel.GOLD);
+        partner.setPartnershipStartDate(DateTimeUtils.todaySwiss().minusYears(1));
+        partnerRepository.save(partner);
+
+        mockMvc.perform(delete("/api/v1/partners/EndsTodayZH")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNoContent());
+
+        assertThat(partnerRepository.findByCompanyName("EndsTodayZH").orElseThrow().getPartnershipEndDate())
+                .isEqualTo(DateTimeUtils.todaySwiss());
     }
 
     // ── Reactivation (issue #821) ────────────────────────────────────────────────
@@ -550,7 +589,7 @@ class PartnerControllerIntegrationTest extends AbstractIntegrationTest {
     @Test
     void should_omitPartnershipEndDate_when_anonymousListsPartners() throws Exception {
         Partner partner = createTestPartner("GoogleZH", PartnershipLevel.GOLD);
-        partner.setPartnershipEndDate(LocalDate.now().plusYears(1));
+        partner.setPartnershipEndDate(DateTimeUtils.todaySwiss().plusYears(1));
         partnerRepository.save(partner);
 
         mockMvc.perform(get("/api/v1/partners"))
@@ -563,7 +602,7 @@ class PartnerControllerIntegrationTest extends AbstractIntegrationTest {
     @WithMockUser(username = "some.partner", roles = {"PARTNER"})
     void should_omitPartnershipEndDate_when_partnerListsAllPartners() throws Exception {
         Partner partner = createTestPartner("GoogleZH", PartnershipLevel.GOLD);
-        partner.setPartnershipEndDate(LocalDate.now().plusYears(1));
+        partner.setPartnershipEndDate(DateTimeUtils.todaySwiss().plusYears(1));
         partnerRepository.save(partner);
 
         mockMvc.perform(get("/api/v1/partners"))
@@ -574,7 +613,7 @@ class PartnerControllerIntegrationTest extends AbstractIntegrationTest {
     @Test
     @WithMockUser(username = "test-organizer", roles = {"ORGANIZER"})
     void should_includePartnershipEndDate_when_organizerListsPartners() throws Exception {
-        LocalDate end = LocalDate.now().plusYears(1);
+        LocalDate end = DateTimeUtils.todaySwiss().plusYears(1);
         Partner partner = createTestPartner("GoogleZH", PartnershipLevel.GOLD);
         partner.setPartnershipEndDate(end);
         partnerRepository.save(partner);
@@ -588,7 +627,7 @@ class PartnerControllerIntegrationTest extends AbstractIntegrationTest {
         Partner partner = new Partner();
         partner.setCompanyName(companyName);
         partner.setPartnershipLevel(level);
-        partner.setPartnershipStartDate(LocalDate.now());
+        partner.setPartnershipStartDate(DateTimeUtils.todaySwiss());
         // Note: isActive() is calculated based on dates, no setActive() method
         return partnerRepository.save(partner);
     }
@@ -614,7 +653,7 @@ class PartnerControllerIntegrationTest extends AbstractIntegrationTest {
         Map<String, Object> request = new HashMap<>();
         request.put("companyName", "EvilCo");
         request.put("partnershipLevel", "GOLD");
-        request.put("partnershipStartDate", LocalDate.now().toString());
+        request.put("partnershipStartDate", DateTimeUtils.todaySwiss().toString());
 
         mockMvc.perform(post("/api/v1/partners")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -826,8 +865,8 @@ class PartnerControllerIntegrationTest extends AbstractIntegrationTest {
     void should_combineSearchWithTierAndStatusFilters() throws Exception {
         createPartners(4);
         Partner ended = createTestPartner("partner99", PartnershipLevel.GOLD);
-        ended.setPartnershipStartDate(LocalDate.now().minusYears(3));
-        ended.setPartnershipEndDate(LocalDate.now().minusYears(1));
+        ended.setPartnershipStartDate(DateTimeUtils.todaySwiss().minusYears(3));
+        ended.setPartnershipEndDate(DateTimeUtils.todaySwiss().minusYears(1));
         partnerRepository.save(ended);
         cums.expect(HttpMethod.GET, "/internal/companies").withQueryParam("search", "ag")
                 .respondWith(HttpStatus.OK, "[\"partner10\", \"partner11\", \"partner12\", \"partner99\"]");

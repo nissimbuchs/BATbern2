@@ -218,6 +218,46 @@ that nothing consumed.
 - [ ] Performance impact is considered
 - [ ] Accessibility requirements are met
 
+### Time zones
+
+BATbern counts calendar days in **Europe/Zurich**. The JVMs on ECS and on the CI runners run in
+**UTC** (no `TZ` is set, on purpose: the code states the zone), a dev machine usually in Zurich. A
+date taken from the JVM default zone is therefore yesterday's Swiss date between 22:00/23:00 and
+midnight in production, and a test that does the same fails only in that hour. Both happened
+(`MailGoldenTest`, `TaskActivationIntegrationTest`, November 2026).
+
+**Rule, main and test code alike: never the JVM default zone for a date or a wall-clock time.**
+
+| What | Use |
+|---|---|
+| Today, this year, a day count meant in Swiss time | `DateTimeUtils.todaySwiss()`, `DateTimeUtils.SWISS_ZONE` (shared-kernel), or the date from an injected `Clock` in `SWISS_ZONE` where the class takes one |
+| An instant into a Swiss date or time | `LocalDate.ofInstant(i, DateTimeUtils.SWISS_ZONE)`, `i.atZone(DateTimeUtils.SWISS_ZONE)` |
+| A timestamp | `Instant.now()`; where a zone-less `LocalDateTime` column holds UTC (the EMS topic timestamps, the gateway's response and audit timestamps), `LocalDateTime.now(ZoneOffset.UTC)` |
+| A test date the code under test compares with its own "today" | the same zone as that code, usually `DateTimeUtils.todaySwiss()`; a fixed `Clock` where the code takes one |
+
+Many classes still carry a private `ZURICH` constant of their own; new code uses
+`DateTimeUtils.SWISS_ZONE`.
+
+**Guard.** The Checkstyle check `defaultZone` (`config/checkstyle/checkstyle.xml`, run by
+`checkstyleMain`/`checkstyleTest`, the pre-commit hook and CI) fails the build on
+`LocalDate.now()`, `LocalDateTime.now()`, `LocalTime.now()`, `ZonedDateTime.now()`, `Year.now()`,
+`YearMonth.now()`, `MonthDay.now()` without arguments and on `ZoneId.systemDefault()`,
+`TimeZone.getDefault()` and `Clock.systemDefaultZone()`. `OffsetDateTime.now()` and `Instant.now()`
+are allowed: they are used as instants. The allow-list is `config/checkstyle/suppressions.xml`, id
+`defaultZone`, and holds one family: the CUMS Watch pairing (`WatchPairing`, `WatchPairingService`,
+`WatchPairingCleanupService`, `WatchPairingIntegrationTest`), whose zone-less expiry times are
+written and read in the JVM zone on purpose (CUMS sets `hibernate.jdbc.time_zone=UTC`). Add to it
+only with that kind of reason, written next to the entry.
+
+**Tests run in a far zone.** The root `build.gradle` sets `user.timezone` of every test JVM to
+`Pacific/Kiritimati` (UTC+14) when that zone already has tomorrow, else `Pacific/Pago_Pago`
+(UTC-11), which still has yesterday. Kiritimati differs from Zurich's date from 10:00/11:00 Swiss
+time, Pago_Pago until 12:00/13:00, so at any hour the test JVM is on another calendar day than
+Zurich and a default-zone dependency fails on every run, not only around midnight. UTC alone would
+not do: it differs from Zurich's date for 1-2 hours a night. Override with
+`-PtestTimezone=<zone>`, e.g. `./gradlew :services:event-management-service:test
+-PtestTimezone=Europe/Zurich` to compare.
+
 ## Test-Driven Development Standards
 
 ### TDD Workflow (Red-Green-Refactor)
@@ -437,7 +477,7 @@ security filter chain, our hooks and our service modules.
 
 | Layer | Allowed to replace | Not allowed |
 |---|---|---|
-| Backend IT | `SesClient`, `S3Client`, Cognito client, OpenAI HTTP, the peer service via `MockRestServiceServer` / WireMock | `@MockitoBean` of own services, repositories, `UserApiClient`, `EmailService`, `SlugGenerationService` |
+| Backend IT | `SesV2Client`, `S3Client`, Cognito client, OpenAI HTTP, the peer service via `MockRestServiceServer` / WireMock | `@MockitoBean` of own services, repositories, `UserApiClient`, `EmailService`, `SlugGenerationService` |
 | Backend unit | pure logic only; a unit test that needs more than 2 mocks is at the wrong test level | `verify(mock).call(eq(<expected value>))` as the main assertion |
 | Frontend component | the network via MSW; Amplify; browser APIs that jsdom lacks | `vi.mock('@/services/...')`, `vi.mock('@/hooks/...')`, `vi.spyOn` on an imported service or hook module, `vi.mock` of child components of the screen under test |
 | Frontend i18n | real i18next with the real `en` locale files | the per-file `react-i18next` stub |
@@ -611,12 +651,13 @@ a test does not opt in.
   `JwtAuthenticationConverter` (`jwt().jwt(t -> t.claim("custom:role", "ATTENDEE"))
   .authorities(...)`), as `ProductionChainIntegrationTest` (one per service) does. The test
   properties point the JWK set at `https://jwks.example.invalid/keys`: no test uses a real token.
-- **Mail.** The real `EmailService` runs in every IT. The only `SesClient` in a test context is the
+- **Mail.** The real `EmailService` runs in every IT. The only `SesV2Client` in a test context is the
   `SesRecorder` (shared-kernel test fixtures, `ch.batbern.shared.test.mail`), registered by each
   service's `TestAwsConfig`: it sends nothing and records what SES received, parsed (To, Cc,
   Reply-To, From, subject, HTML, text, attachment names, MIME headers, tags). Autowire it,
   `reset()` it in `@BeforeEach`, assert on `mails()` / `mailsTo(address)` / `single()`; simulate a
-  refusal with `failWith(...)` or `failFor(address, ...)` and `SesRecorder.sesError(...)`.
+  refusal with `failWith(...)` or `failFor(address, ...)` and `SesRecorder.sesError(...)`. Like
+  the SES API v2, the recorder refuses a message over 40 MB (`SesRecorder.MESSAGE_TOO_LARGE`).
   `EmailService` sends on the `@Async` executor: `reset()` first waits until that executor has no
   task left (`AsyncTaskTracker`, `ch.batbern.shared.test.async`, registered by `TestAwsConfig` in
   EMS and PCS), so a late send of the previous test cannot reach the next one. A test that asserts

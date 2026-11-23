@@ -82,6 +82,12 @@ mappings:
       - "docs/user-guide/partner-portal/"
       - "docs/user-guide/features/analytics.md"
 
+  # ── Agent Service (agentic interaction, epic agent runtime) ──────────────────
+  - source_pattern: "services/agent-service/"
+    docs:
+      - "docs/architecture/module-map.md"
+      - "docs/architecture/06-backend-architecture.md"
+
   # ── API Gateway ─────────────────────────────────────────────────────────────
   - source_pattern: "api-gateway/"
     docs:
@@ -256,7 +262,15 @@ mappings:
   - source_pattern: "scripts/deploy/create-agent-signing-key.sh"
     docs:
       - "docs/operations/runbooks.md"
+  # Agent runtime story 3: the Anthropic API key of agent-service is installed through the runbooks.
+  - source_pattern: "scripts/deploy/put-anthropic-api-key.sh"
+    docs:
+      - "docs/operations/runbooks.md"
   - source_pattern: "infrastructure/lib/stacks/secrets-stack.ts"
+    docs:
+      - "docs/operations/runbooks.md"
+  # Agent runtime story 4: which secrets agent-service gets (Anthropic key, CUMS caller secret) is in the runbooks.
+  - source_pattern: "infrastructure/lib/stacks/agent-service-stack.ts"
     docs:
       - "docs/operations/runbooks.md"
   # Epic 17 entry 7: EMS implements the CUMS-owned Mail Center request contract in the mail center module.

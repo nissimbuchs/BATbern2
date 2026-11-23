@@ -55,6 +55,9 @@ public class DomainRouter {
     @Value("${services.company-user-management.url:http://localhost:8085}")
     private String companyUserManagementUrl;
 
+    @Value("${services.agent.url:http://localhost:8003}")
+    private String agentUrl;
+
     /**
      * Determines the target microservice based on the request path.
      * Uses path-based routing: /api/v1/{domain} → {domain}-service
@@ -76,6 +79,12 @@ public class DomainRouter {
         // decision 2026-11-07); since 17.11a by an explicit map, an unlisted purpose is 404.
         if (cleanPath.startsWith("/api/v1/uploads/")) {
             return uploadService(cleanPath);
+        }
+
+        // Agentic interaction, epic agent runtime: agent-service owns /api/v1/agent/** (AD-9). The
+        // trailing slash matters: /api/v1/agent-settings is CUMS (the agent switch), not this route.
+        if (cleanPath.startsWith("/api/v1/agent/")) {
+            return "agent-service";
         }
 
         // W2.2: Watch pairing (unauthenticated) → company-user-management-service
@@ -161,6 +170,7 @@ public class DomainRouter {
             case "event-management-service" -> eventManagementUrl;
             case "partner-coordination-service" -> partnerCoordinationUrl;
             case "company-user-management-service" -> companyUserManagementUrl;
+            case "agent-service" -> agentUrl;
             default -> throw new RoutingException("Unknown target service: " + targetService);
         };
     }

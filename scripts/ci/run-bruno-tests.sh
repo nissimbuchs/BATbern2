@@ -123,6 +123,7 @@ collections=(
     "event-full-workflow-api"
     "partners-api"
     "partner-meetings-api"
+    "agent-api"
 )
 
 # Run only on development/local/test. speaker-portal-api requires the E2E token helper

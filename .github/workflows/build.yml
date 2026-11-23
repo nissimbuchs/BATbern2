@@ -5,7 +5,7 @@ name: Build Pipeline
 # Services are implemented in stages:
 #   1. shared-kernel (foundation) - IMPLEMENTED
 #   2. api-gateway (routing layer) - IMPLEMENTED
-#   3. Domain microservices (event-management, partner-coordination, company-user-management) - IMPLEMENTED
+#   3. Domain microservices (event-management, partner-coordination, company-user-management, agent) - IMPLEMENTED
 #   4. web-frontend (user interface) - PLANNED
 #
 # The pipeline gracefully handles missing services/features:
@@ -156,6 +156,7 @@ jobs:
           - event-management-service
           - partner-coordination-service
           - company-user-management-service
+          - agent-service
           - api-gateway
       fail-fast: false
 
@@ -369,6 +370,7 @@ jobs:
         uses: aws-actions/amazon-ecr-login@v2
 
       - name: Push to ECR
+        id: push-ecr
         if: steps.should-build.outputs.build == 'true' && steps.check-service.outputs.exists == 'true' && (github.event_name == 'push' || github.event_name == 'pull_request')
         run: |
           # Generate version tag
@@ -379,6 +381,25 @@ jobs:
 
           # ECR repository path format: batbern/staging/service-name
           ECR_REPO="${{ env.ECR_REGISTRY }}/batbern/${{ env.ENVIRONMENT }}/${{ matrix.service }}"
+
+          # First push of a new service: CDK (cicd-stack) owns every ECR repository and creates it
+          # in deploy Layer 0, after this job; the workflow role may not create repositories. So
+          # the image is handed to the deploy job as an artifact instead, and deploy-staging.yml
+          # pushes it once Layer 0 has created the repository. Dormant once the repository exists.
+          REPO_NAME="batbern/${{ env.ENVIRONMENT }}/${{ matrix.service }}"
+          if ! DESCRIBE=$(aws ecr describe-repositories --repository-names "$REPO_NAME" \
+              --region ${{ env.AWS_REGION }} 2>&1); then
+            if echo "$DESCRIBE" | grep -q RepositoryNotFoundException; then
+              echo "::notice::${REPO_NAME} does not exist yet: handing the image to the deploy job (first push)"
+              mkdir -p first-push
+              docker save "${ECR_REPO}:${VERSION}" | gzip > "first-push/${{ matrix.service }}.tar.gz"
+              echo "first_push=true" >> $GITHUB_OUTPUT
+              exit 0
+            fi
+            echo "::error::describe-repositories ${REPO_NAME} failed: ${DESCRIBE}"
+            exit 1
+          fi
+
           echo "Pushing image: ${ECR_REPO}:${VERSION}"
           docker push ${ECR_REPO}:${VERSION}
 
@@ -390,6 +411,15 @@ jobs:
             docker tag ${ECR_REPO}:${VERSION} ${ECR_REPO}:latest-production
             docker push ${ECR_REPO}:latest-production
           fi
+
+      - name: Hand the first-push image to the deploy job
+        if: steps.push-ecr.outputs.first_push == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: first-push-image-${{ matrix.service }}
+          path: first-push/${{ matrix.service }}.tar.gz
+          retention-days: 1
+          if-no-files-found: error
 
       # DEPRECATED: Production account (422940799530) is decommissioned.
       # Production traffic is served by the staging account (188701360969).
@@ -1023,7 +1053,7 @@ jobs:
           if [ -z "$CHANGED_FILES" ]; then
             echo "⚠️  Cannot determine changed files, will analyze all modules"
             echo "analyze_all=true" >> $GITHUB_OUTPUT
-            echo "modules=shared-kernel,api-gateway,event-management-service,company-user-management-service,partner-coordination-service,web-frontend" >> $GITHUB_OUTPUT
+            echo "modules=shared-kernel,api-gateway,event-management-service,company-user-management-service,partner-coordination-service,agent-service,web-frontend" >> $GITHUB_OUTPUT
             exit 0
           fi
 
@@ -1072,6 +1102,11 @@ jobs:
             CHANGED_SERVICES="$CHANGED_SERVICES company-user-management-service"
           fi
 
+          if echo "$CHANGED_FILES" | grep -q "^services/agent-service/"; then
+            MODULES="$MODULES,agent-service"
+            CHANGED_SERVICES="$CHANGED_SERVICES agent-service"
+          fi
+
           if echo "$CHANGED_FILES" | grep -q "^web-frontend/"; then
             MODULES="$MODULES,web-frontend"
             CHANGED_SERVICES="$CHANGED_SERVICES web-frontend"
@@ -1079,7 +1114,7 @@ jobs:
 
           # If analyze all, include all modules
           if [ "$ANALYZE_ALL" = "true" ]; then
-            MODULES="shared-kernel,api-gateway,event-management-service,company-user-management-service,partner-coordination-service,web-frontend"
+            MODULES="shared-kernel,api-gateway,event-management-service,company-user-management-service,partner-coordination-service,agent-service,web-frontend"
           fi
 
           echo "analyze_all=$ANALYZE_ALL" >> $GITHUB_OUTPUT
@@ -1125,7 +1160,7 @@ jobs:
           # Only build services that changed (or all if analyze_all=true)
           MODULES="${{ steps.detect-changes.outputs.modules }}"
 
-          for service in event-management-service company-user-management-service partner-coordination-service; do
+          for service in event-management-service company-user-management-service partner-coordination-service agent-service; do
             # Check if this service is in the modules list
             if echo "$MODULES" | grep -q "$service"; then
               if [ -d "services/$service" ]; then

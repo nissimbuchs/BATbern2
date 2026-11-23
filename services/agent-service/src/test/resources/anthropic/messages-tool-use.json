@@ -1,0 +1,35 @@
+{
+  "id": "msg_01ContractFixture",
+  "type": "message",
+  "role": "assistant",
+  "model": "claude-sonnet-5-5",
+  "content": [
+    {
+      "type": "thinking",
+      "thinking": "",
+      "signature": "EqQBCkYIBhgCKkDcontractfixturesignature"
+    },
+    {
+      "type": "text",
+      "text": "I will look up the event first."
+    },
+    {
+      "type": "tool_use",
+      "id": "toolu_01Contract",
+      "name": "lookup_event",
+      "input": {
+        "query": "BATbern61",
+        "limit": 3
+      }
+    }
+  ],
+  "stop_reason": "tool_use",
+  "stop_sequence": null,
+  "stop_details": null,
+  "usage": {
+    "input_tokens": 1200,
+    "output_tokens": 340,
+    "cache_creation_input_tokens": 512,
+    "cache_read_input_tokens": 2048
+  }
+}

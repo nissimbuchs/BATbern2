@@ -3,7 +3,7 @@ title: 'Refactor sweep of epic agent identity'
 type: 'refactor'
 ticket: '8'
 created: '2026-11-22'
-status: 'built'
+status: done
 baseline_revision: 'eab0b86d12e92e32be192567ecd9a517a5bce9a2'
 route: 'full'
 route_source: 'auto'

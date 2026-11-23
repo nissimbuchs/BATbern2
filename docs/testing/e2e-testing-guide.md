@@ -215,6 +215,10 @@ against local development is defined in `scripts/ci/run-bruno-tests.sh` (the `co
 and the dev-only list below it). `scripts/ci/test-bruno-collection-guard.sh` fails CI when a
 folder is neither run nor explicitly excluded there.
 
+`agent-api/` checks the deployed agent-service read API on every environment: an organizer gets 200
+on `/agent/runs`, a speaker 403, an unknown run 404 (agent runtime story 9). Read only; it never
+starts a run, so it never reaches the model or sends mail.
+
 ### Environment Variables in Bruno
 
 Bruno environment files expose these auth variables:

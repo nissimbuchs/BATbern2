@@ -35,6 +35,7 @@ This will generate TypeScript types from:
 | `docs/api/event-mail-api.openapi.yml`          | `event-mail-api.types.ts`          |
 | `docs/api/event-notifications-api.openapi.yml` | `event-notifications-api.types.ts` |
 | `docs/api/gateway-config-api.openapi.yml`      | `gateway-config-api.types.ts`      |
+| `docs/api/agent-api.openapi.yml`               | `agent-api.types.ts`               |
 
 ### Usage
 

@@ -1,0 +1,123 @@
+# Stories of epic-agent-runtime, in build order. One PR, one production deploy, shipped dark (C1).
+# Approved by the owner 2026-11-22 (go to build all).
+
+[[entry]]
+id = 1
+type = "story"
+title = "agent-service runs dark in production behind the gateway"
+description = "Stands up services/agent-service (Spring Boot 4.0.9, PCS as template) with its own Flyway history, SecurityConfig on the shared decoder (Cognito only), EndpointAuthorizationGuardTest, agent.enabled off; docs/api/agent-api.openapi.yml with GET /api/v1/agent/runs (organizers, empty list); gateway DomainRouter routes /api/v1/agent/ (not the /api/v1/agent-settings prefix); CDK stack, ECR repository, build matrix and deploy-staging entries, native local-dev start; the module map lists agent-service among the services. The ECR repository must exist before build.yml pushes the first image in the one deploy, without a CloudFormation name collision with cicd-stack (e.g. the build creates it if missing and CDK references it by name)."
+verify = "After deploy, GET https://api.batbern.ch/api/v1/agent/runs answers 200 with an empty list for an organizer token, 401 anonymous, 403 for a speaker; the DAST probe lists the route; locally make dev-native-up starts it."
+covers = ["R1"]
+after = ["0.1"]
+hitl = false
+risk = "high"
+
+[[entry]]
+id = 2
+type = "story"
+title = "The decision log and the loop run a scripted model end to end"
+description = "agent_* tables (runs, inbound messages, model calls, steps, tool calls, verdicts, approvals, undos) and the agent loop behind LlmPort with the scripted adapter; the loop logs every model call (prompt, tool choice, tokens) and step; a run ends done, failed or handed to the organizers."
+verify = "An integration test drives a scripted run of three steps and finds the run, each model call with its token counts, each step and each tool call in the agent_* tables."
+covers = ["R3", "R7"]
+after = [1]
+hitl = false
+risk = "medium"
+
+[[entry]]
+id = 3
+type = "story"
+title = "The Anthropic adapter answers through LlmPort with the key from Secrets Manager"
+description = "Production LlmPort adapter on anthropic-java 3.12.0, own loop, no beta tool runner; model id configuration with claude-sonnet-5-5 as default; CDK creates the key secret holding none and grants it to agent-service only; with none the adapter is off and the service starts; a script lets the owner put the key in; local dev uses the scripted adapter unless a key is set. This story owns the agent-service CDK secret grants; story 4 adds its caller secret after it."
+verify = "A contract test against a recorded Anthropic response at the HTTP boundary maps tool use and token counts through LlmPort; the CDK test shows the secret only on agent-service; after the owner runs the key script and restarts the agent-service tasks, the startup log names the Anthropic adapter and claude-sonnet-5-5."
+covers = ["R3"]
+after = [2]
+hitl = true
+risk = "high"
+
+[[entry]]
+id = 4
+type = "story"
+title = "agent-service acts with a CUMS-minted token, minted again before every write"
+description = "CUMS client for /internal/agent-grants and /internal/agent-tokens with agent-service's caller secret from Secrets Manager; a run holds a grant, mints a delegated token, mints again before every write, and calls the public API through the gateway with it; a refused grant or mint ends the run handed to the organizers."
+verify = "Integration tests against CUMS at the wire: a grant and a token are obtained and a public read goes out with the token; a second write mints again; a refused grant and a refused mint each end the run handed to the organizers with the reason logged."
+covers = ["R2"]
+after = [2, 3, "0.3", "0.5", "0.6"]
+hitl = false
+risk = "medium"
+
+[[entry]]
+id = 5
+type = "story"
+title = "Intent tools carry a class derived from the operation table, and read tools see past events"
+description = "Tool registry with one class table (read < reversible < reply < binding < audience) over the public operations; a build check fails for a tool declared below its highest operation or calling an operation missing from the table; reversible tools name their undo operation; the build check is proven with tool fixtures that exist only in tests (the epic ships read tools only); the first read tools return past events, sessions and speakers through the public API."
+verify = "The build check fails on a planted understated tool and on a tool calling an unlisted operation, and passes on the real registry; a scripted run calls a read tool and gets past-event data with its delegated token from the gateway stubbed at the wire."
+covers = ["R4"]
+after = [2, 4]
+hitl = false
+risk = "medium"
+
+[[entry]]
+id = 6
+type = "story"
+title = "Precedents are retrieved from past events and the decision log"
+description = "Precedent retrieval over the history read tools and the decision log (approvals, denials, undos) for a proposed call; returns the matching precedents with their source, for the gate to cite."
+verify = "An integration test seeds two approvals, one denial and past-event history and gets exactly the matching precedents back, each naming its source row or event."
+covers = ["R6"]
+after = [5]
+hitl = false
+risk = "medium"
+
+[[entry]]
+id = 7
+type = "story"
+title = "One autonomy gate decides every non-read call and cites its precedents"
+description = "The gate before every non-read tool call, tested with reversible, reply, binding and audience tool fixtures that exist only in tests: reversible and reply run alone (the caps arrive in story 8); binding runs alone with at least 2 matching approved precedents and no matching denial, else a pending approval; audience always pending; scheduled runs never mail without approval; above one distinct non-organizer recipient per run or per day every further mail is audience; the model's statement and the inbound text cannot clear it; each verdict is logged with its inputs, precedents and outcome."
+verify = "Gate tests with the scripted adapter: one per class and outcome, a binding call with 1 and with 2 approvals, one with a denial, a second non-organizer recipient turned audience, a scheduled run's mail pending, and an inbound text claiming approval that changes nothing; each verdict row cites its precedents."
+covers = ["R5", "R6"]
+after = [6]
+hitl = false
+risk = "high"
+
+[[entry]]
+id = 8
+type = "story"
+title = "Caps and the daily budget stop a run and hand it to the organizers"
+description = "Per-run caps on steps (25), model tokens (200k) and reply mails (2) and a daily token budget (2M), all configuration; adds the reply cap to the gate; reaching one stops the run, logs which limit, and ends it handed to the organizers."
+verify = "A scripted run stopped at each of the four limits ends handed to the organizers with the limit in the log; changing the configuration moves the stop point."
+covers = ["R9"]
+after = [2, 7]
+hitl = false
+risk = "low"
+
+[[entry]]
+id = 9
+type = "story"
+title = "Organizers read every run, step and verdict through the console API"
+description = "agent-api.openapi.yml grows run detail, steps, tool calls and verdicts with their precedents, paged; organizer Cognito tokens only, other roles 403, tokens carrying act refused; generated frontend types."
+verify = "Integration tests: an organizer reads a scripted run with every step and verdict and its precedents; a speaker gets 403; an agent token with an organizer's rights is refused; the DAST probe covers the new paths."
+covers = ["R8"]
+after = [2, 7, 8]
+hitl = false
+risk = "low"
+
+[[entry]]
+id = 10
+type = "story"
+title = "Alarms watch run failures, budget breaches and refused mints"
+description = "Metrics and CloudWatch alarms on run failures, budget breaches and refused mints, same pattern and topic as the other services; agent-service logs carry no personal data (#1202)."
+verify = "The CDK tests show the three alarms on the shared topic; a log test shows a run with a speaker's name and address logs neither."
+covers = ["R10"]
+after = [3, 4, 8]
+hitl = false
+risk = "low"
+
+[[entry]]
+id = 11
+type = "story"
+title = "Refactor sweep"
+description = "Cleanup only, scope set at its start from the plans and review findings the epic deferred."
+verify = "Every module the epic touched builds and its full suite passes; the deferred findings are fixed or recorded in the epic's Notes."
+covers = []
+after = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+hitl = false
+risk = "low"

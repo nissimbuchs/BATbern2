@@ -12,6 +12,7 @@ import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -78,12 +79,14 @@ public class Topic {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
+    // The zone-less timestamps of topics are UTC wall-clock time, as production (JVM in UTC) has
+    // always written them; TopicMapper reads them back as UTC.
     @PrePersist
     protected void onCreate() {
-        createdAt = LocalDateTime.now();
-        updatedAt = LocalDateTime.now();
+        createdAt = LocalDateTime.now(ZoneOffset.UTC);
+        updatedAt = createdAt;
         if (createdDate == null) {
-            createdDate = LocalDateTime.now();
+            createdDate = createdAt;
         }
         // Auto-generate topicCode from title if not set (ADR-003)
         if (topicCode == null && title != null) {
@@ -108,7 +111,7 @@ public class Topic {
 
     @PreUpdate
     protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
+        updatedAt = LocalDateTime.now(ZoneOffset.UTC);
     }
 
     // ==================== Getters and Setters ====================

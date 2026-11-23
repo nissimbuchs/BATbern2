@@ -3,7 +3,7 @@ title: 'Audience sends refuse agent tokens'
 type: 'feature'
 ticket: '7'
 created: '2026-11-22'
-status: 'built'
+status: done
 baseline_revision: 'a650ec78d02443a23f24e289fef18b9b442d988b'
 route: 'full'
 route_source: 'auto'

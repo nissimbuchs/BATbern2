@@ -142,6 +142,79 @@ agenda could not be published by the job. The alarm is a CloudWatch metric filte
 2. The job does not retry: the auto-publish runs on exactly the scheduled day. Publish the phase by
    hand in the event's Publishing tab once the cause is clear.
 
+### Agent runs
+
+**Alarms:** `Agent-Run-Failures`, `Agent-Refused-Mints` (any in 5 minutes) and
+`Agent-Daily-Budget-Breaches` (any within 24 hours, 1-hour periods; its OK action closes the issue a
+day after the last breach). All three are quiet while the agent is switched off (`AGENT_ENABLED`
+false): no run, no line.
+
+agent-service writes one marker line per run end an alarm watches (`RunAlarms`), with the run id,
+the end reason and the end detail only, never personal data (#1202). Metric filters on
+`/aws/ecs/BATbern-staging/agent` turn them into metrics in `BATbern/AgentRuns`:
+
+| Marker | Metric | Alarm | Means |
+|---|---|---|---|
+| `AGENT_RUN_FAILED` | `RunFailures-Agent` | `Agent-Run-Failures` | a fault in agent-service (`end_reason` INTERNAL_ERROR); the run is FAILED |
+| `AGENT_CREDENTIALS_REFUSED` | `RefusedMints-Agent` | `Agent-Refused-Mints` | CUMS refused the run grant or a mint, or could not be asked (GRANT_REFUSED, TOKEN_REFUSED); the line ends with the CUMS code |
+| `AGENT_DAILY_BUDGET_BREACHED` | `DailyBudgetBreaches-Agent` | `Agent-Daily-Budget-Breaches` | `agent.limits.daily-tokens` is spent: every further run today is handed to the organizers |
+| `AGENT_RUN_CAP_REACHED` | `RunCapsReached-Agent` | none | any limit stopped a run (also on a budget breach); a per-run cap is the cap working |
+
+A run handed to the organizers because the model was unreachable (MODEL_UNAVAILABLE) has no marker
+and no alarm: until the owner installs the Anthropic key every run ends that way, and an outage of
+the model is not a fault of ours.
+
+1. Find the line: `aws logs filter-log-events --log-group-name /aws/ecs/BATbern-staging/agent --start-time <ms> --filter-pattern '"AGENT_RUN_FAILED"'`
+   (or the other marker). It names the run id.
+2. For a failure, the line before the marker (`Agent run <id> failed in step <n>: <exception class>`)
+   names the fault; the API stores no error of the run itself. Then read the run through the console
+   API (`GET /api/v1/agent/runs/{runId}` as an organizer): steps, model calls (with their error when
+   the model call failed), tool calls and verdicts.
+3. Refused mints: the code says why. `CALLER_SECRET_MISSING`: agent-service has no caller secret
+   (see "Agent signing key" below); `AGENT_SIGNING_KEY_MISSING`: CUMS has no signing key; a grant
+   code (`GRANT_INVALID` and others): the principal or grant is no longer valid, which is the gate
+   working, unless it repeats for many runs.
+4. Budget breaches: decide whether the day's spend was real work (the run list, model calls per run)
+   or a runaway; raise `AGENT_LIMITS_DAILY_TOKENS` only by a deploy, or switch the agent off.
+
+### Agent service: first deploy
+
+**Auto-rollback on the first deploy.** If the post-deploy gate of the deploy that first creates
+agent-service fails, `scripts/ci/rollback-deployment.sh` reports agent-service as failed (`no
+previous task definition tracked`, exit 1): the service has no `staging-stable` image yet and no
+earlier task definition to go back to. That is expected and happens at most once. The other services
+are rolled back as usual; agent-service stays on the new image, dark (`AGENT_ENABLED` false). Fix the
+cause of the gate failure and deploy again; after the first green gate `staging-stable` exists and
+the rollback covers agent-service like the others. Not fixed in code on purpose (agent runtime
+refactor sweep, 2026-11-22): the fix would pass the deploy job's first-push list across jobs into
+the rollback script, for a case that occurs once, on a deploy that already failed.
+
+**Before that deploy:** confirm that no branch other than the agent runtime epic's ever deployed
+agent-service, so its Flyway history (`flyway_schema_history_agent`) is empty. V2 adds
+`agent_runs.trigger` NOT NULL without a default, which is safe only on a table that has never had a
+row.
+
+**Checks that only the deployed service can settle**, in this order, none of them reaching the real
+model or sending mail through the agent (epic constraint C2):
+
+1. Bruno `bruno-tests/agent-api` passes in the post-deploy run (organizer 200, speaker 403, unknown
+   run 404), and the access-control DAST (`scripts/ci/access-control-check.py`) finds every
+   agent-api operation refusing an anonymous call.
+2. The three deployed metric filters match a marker line, without switching anything on (so far
+   only synthesis tests prove the literal filters): for each marker,
+   `aws logs test-metric-filter --filter-pattern '"AGENT_CREDENTIALS_REFUSED"' --log-event-messages
+   '<a sample marker line>'` against the pattern of the deployed metric filter (see the table under
+   "Agent runs"). A full check (switch the agent on once with no caller secret, every run
+   `GRANT_REFUSED`, `CALLER_SECRET_MISSING`, and watch `Agent-Refused-Mints` go to ALARM) needs the
+   owner, since it switches the agent on.
+3. After the owner installs the Anthropic key ("Anthropic API key" below): the start log shows
+   `Model adapter anthropic`, and the first model call is not refused with 401. anthropic-java sends
+   the key as `Authorization: Bearer`; that the API accepts it is measured only then.
+4. After the owner switches the agent on and a tool runs: a CUMS-minted agent token passes the
+   Spring gateway and the target service on a real route (the tool call in the run's log is
+   `SUCCEEDED`, not `ERRORED` or `FAILED` after a 401). Tests prove the gateway call against the
+   companies spec only.
+
 ---
 
 ## Database
@@ -360,7 +433,7 @@ one-time owner step after the SecretsStack is deployed.
 | Private key, PKCS#8 PEM | secret `batbern/staging/agent/signing-private-key` | `AGENT_JWT_PRIVATE_KEY` / `agent.jwt.private-key` (signs in `/internal/agent-tokens`) | CUMS only |
 | Public key, SPKI PEM | SSM String parameter `/batbern/staging/agent/jwt-public-key` | `AGENT_JWT_PUBLIC_KEY` / `agent.jwt.public-key` | gateway, CUMS, EMS, PCS |
 | EMS caller secret (generated) | secret `batbern/staging/agent/ems-caller-secret` | `AGENT_CALLERS_EMS_SECRET` / `agent.callers.ems.secret` (`/internal/agent-grants`, `/internal/agent-eligibility`) | CUMS, EMS |
-| Agent-service caller secret (generated) | secret `batbern/staging/agent/agent-service-caller-secret` | `AGENT_CALLERS_AGENT_SERVICE_SECRET` / `agent.callers.agent-service.secret` (`/internal/agent-grants`, `/internal/agent-tokens`) | CUMS only |
+| Agent-service caller secret (generated) | secret `batbern/staging/agent/agent-service-caller-secret` | CUMS: `AGENT_CALLERS_AGENT_SERVICE_SECRET` / `agent.callers.agent-service.secret` (`/internal/agent-grants`, `/internal/agent-tokens`); agent-service: `AGENT_CUMS_CALLER_SECRET` / `agent.cums.caller-secret` (presents it on both calls; blank or `none`: every run is handed to the organizers with `CALLER_SECRET_MISSING`) | CUMS, agent-service |
 
 **Turn agent tokens on:**
 
@@ -394,6 +467,48 @@ the template value `none` back and agent tokens go off at the next task start. F
 script with `--force`, then step 4. Ordinary deploys do not touch the values.
 
 Rotation is not automated.
+
+---
+
+## Anthropic API key
+
+agent-service calls the model through its Anthropic adapter (agent runtime story 3). The key lives
+in the secret `batbern/staging/agent/anthropic-api-key` (AWS-managed key), injected into the
+agent-service task only as `AGENT_ANTHROPIC_API_KEY` (`agent.anthropic.api-key`). CDK creates it
+with the placeholder `none`: agent-service starts with the adapter off and hands every run to the
+organizers. Installing the key is a one-time owner step after the SecretsStack is deployed. It does
+not switch the agent on: that stays `AGENT_ENABLED`.
+
+**Install the key:**
+
+1. Deploy first. agent-service logs
+   `Model adapter none, model none: no key installed, runs are handed to the organizers`.
+2. Optional check, no AWS call: `scripts/deploy/put-anthropic-api-key.sh --dry-run` (reads the key
+   and checks its shape; prints the steps, never the key).
+3. Run `scripts/deploy/put-anthropic-api-key.sh` and paste the key at the hidden prompt, or pipe it
+   in. It uses profile `batbern-staging` (override with `ANTHROPIC_KEY_AWS_PROFILE`) in
+   `eu-central-1`, checks that the secret still holds `none`, writes the key through a umask-077
+   temp file as `file://`, and forces a new deployment of the agent service (`--no-restart` skips
+   that and prints the command).
+4. Check the start log of the new task:
+   `aws --profile batbern-staging --region eu-central-1 logs tail /aws/ecs/BATbern-staging/agent --since 30m --filter-pattern '"Model adapter"'`
+   must show `Model adapter anthropic, model claude-sonnet-5-5, effort medium`.
+
+**The script refuses** when the secret already holds a key; `--force` replaces it. `none` is refused
+too unless `--force` is given: `echo none | scripts/deploy/put-anthropic-api-key.sh --force` switches
+the adapter off again after the restart.
+
+**Model and effort** are configuration, not part of the secret: `AGENT_ANTHROPIC_MODEL` (default
+`claude-sonnet-5-5`) and `AGENT_ANTHROPIC_EFFORT` (default `medium`) on the task.
+
+**What resets the key to `none`:** a CDK change to the properties of the secret
+`AgentAnthropicApiKey` in `secrets-stack.ts` (description, name, value, or the SecretsStack's
+tags), or replacing the SecretsStack. `anthropic-api-key.test.ts` pins those properties. Fix:
+re-run the script with `--force`.
+
+**While the model fails** (HTTP error, timeout, unreachable), the SDK retries 429, 5xx and
+connection errors twice, then the run ends HANDED_TO_ORGANIZERS with `MODEL_UNAVAILABLE`; the
+model call in `agent_model_calls` keeps the HTTP status and error type, never the response body.
 
 ---
 

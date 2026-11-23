@@ -15,6 +15,7 @@ import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.events.sessions.dto.generated.SessionSpeaker;
 import ch.batbern.shared.service.EmailService;
 import ch.batbern.shared.service.IcsCalendarService;
+import ch.batbern.shared.utils.DateTimeUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -237,7 +238,7 @@ class NewsletterEmailServiceTest {
     void buildVariables_currentYear_populated() {
         Map<String, String> vars = newsletterEmailService.buildVariables(testEvent, "de", false, "");
 
-        assertThat(vars.get("currentYear")).isEqualTo(String.valueOf(java.time.Year.now().getValue()));
+        assertThat(vars.get("currentYear")).isEqualTo(String.valueOf(DateTimeUtils.todaySwiss().getYear()));
     }
 
     // ── buildSpeakersSection: structural session filtering ────────────────────
@@ -371,7 +372,7 @@ class NewsletterEmailServiceTest {
     @Test
     @DisplayName("sendNewsletter: a test-marked event proceeds when no live SES client exists (#1071)")
     void sendNewsletter_proceeds_whenEventIsTestMarkedButDeliveryIsNotLive() {
-        // Local dev has no SesClient: mail goes to LocalEmailCapture, nothing leaves the machine.
+        // Local dev has no SesV2Client: mail goes to LocalEmailCapture, nothing leaves the machine.
         // The wall exists for live delivery only, like the per-email wall in EmailService; without
         // this the newsletter E2E spec could never pass anywhere.
         testEvent.setId(UUID.randomUUID());

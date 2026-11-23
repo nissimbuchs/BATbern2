@@ -23,6 +23,7 @@ flowchart LR
     GW -->|"path prefix, headers copied"| EMS["event-management-service"]
     GW --> CUMS["company-user-management-service"]
     GW --> PCS["partner-coordination-service"]
+    GW -->|"/agent/**"| AGENT["agent-service<br/>(dark, agent.enabled=false)"]
     GW -->|"/internal/** denyAll"| X["403"]
     EMS <-->|"/internal/** no JWT,<br/>Service Connect inside the VPC"| CUMS
     PCS -->|"/internal/users"| CUMS
@@ -31,6 +32,7 @@ flowchart LR
     EMS --> DB[("PostgreSQL<br/>one database, per-service tables")]
     CUMS --> DB
     PCS --> DB
+    AGENT -->|"agent_runs and its decision log tables,<br/>flyway_schema_history_agent"| DB
 ```
 
 Every service validates the JWT again and decides access itself with `@PreAuthorize` (ADR-008,
@@ -41,6 +43,201 @@ explicit map of purpose to service, Story 17.11a: `company-logo` and `profile-pi
 `event-theme-image` EMS, an unlisted purpose 404), and copies the incoming headers, including
 `Authorization`, to the service (`DomainRouter.routeRequest`). Service URLs are Service Connect
 names (`http://event-management:8080`, see `api-gateway-service-stack.ts`).
+
+agent-service (agentic interaction, epic agent runtime) owns `/api/v1/agent/**`: the gateway
+routes the prefix with its slash (`/api/v1/agent-settings` stays CUMS) to `http://agent:8080`
+(`AGENT_SERVICE_URL`). It accepts Cognito tokens only (`BatbernJwtDecoder` with `COGNITO`; an agent
+token is refused with 401), takes roles from `custom:role` without the DB fallback (it reads no
+other service's tables), scans only `ch.batbern.agent`, and migrates its own folder
+`db/agent-migration` into `flyway_schema_history_agent` with baseline 0 (shared-kernel ships a
+`V1` under `db/migration`). Which `agent_*` table belongs to whom (AD-9): agent-service owns the
+tables its own migrations create (`agent_runs`, `agent_inbound_messages`, `agent_steps`,
+`agent_model_calls`, `agent_tool_calls`, `agent_verdicts`, `agent_approvals`, `agent_undos`); CUMS owns `agent_settings`, `agent_grants` and `agent_allowlist` (agent identity,
+below) in its own history. The prefix is shared, the owner is the migration folder; neither service
+reads the other's tables. Story 1 ships it dark: `agent.enabled=false` (`AGENT_ENABLED`), with
+the read endpoint `GET /api/v1/agent/runs` (organizers, `agent-api.openapi.yml`; story 9 adds the
+decision log of a run, below).
+
+The agent loop (story 2, AD-14): `AgentLoop` is the only caller of `LlmPort`, whose types map 1:1
+onto the Messages API tool use of `anthropic-java` (system, user/assistant messages of text,
+`tool_use` and `tool_result` blocks, `thinking` and `redacted_thinking` blocks, tools with a JSON
+input schema, stop reason, usage). `llm/LlmConfig` picks the adapter once at startup (story 3) and
+logs `Model adapter {anthropic|local-scripted|none}, model {id}`, never the key: with a key in
+`agent.anthropic.api-key` (`AGENT_ANTHROPIC_API_KEY`, from Secrets Manager; blank or `none` in any
+case is no key) `llm/AnthropicLlm` (`anthropic-java` 3.12.0, non-beta `client.messages()`, no tool
+runner, no streaming, no server tools, no fallback model); without a key in profile `local`
+`llm/LocalDevLlm` (a canned `end_turn` answer, model `local-scripted`); otherwise `UnavailableLlm`,
+which makes every run hand itself over. The adapter sends model (`agent.anthropic.model`, default
+`claude-sonnet-5-5`), system, `max_tokens` (`agent.loop.max-output-tokens`, 16000: adaptive thinking
+spends output tokens), tools and `output_config.effort` (`agent.anthropic.effort`, default `medium`);
+no `thinking` field (adaptive is the model's default, `disabled` is rejected) and no `tool_choice`
+(forced choice is rejected). Thinking blocks go back to the model unchanged on the next request, so
+the history stays append-only. The SDK retries 408, 409, 429, 5xx and connection errors
+(`agent.anthropic.max-retries`, 2; timeout `agent.anthropic.timeout`, 5 min); after that every
+failure is `LlmUnavailableException` carrying the HTTP status and error type only, never the
+response body or the key. anthropic-java 3.12.0 sends the key as `Authorization: Bearer`. Tests
+script the model with `ScriptedLlm` (the model is a process boundary); the adapter's contract test
+runs against a local JDK `HttpServer`, never the real API. The loop refuses to
+start while `agent.enabled` is false (`AgentSwitchedOffException`, no run row). It runs the tools the
+model chooses and sends their results back until the model ends its turn (DONE, `COMPLETED`). An
+unreachable model (`MODEL_UNAVAILABLE`, no retry), a cut-off answer (`MODEL_MAX_TOKENS`), a refusal
+or other stop (`MODEL_STOPPED`: `refusal`, `stop_sequence`, `pause_turn`, which cannot come without
+server tools and is not resumed blind, and any stop reason the adapter does not know) and a reached
+limit (`CAP_REACHED`, below) end the run HANDED_TO_ORGANIZERS; a fault of agent-service itself ends it FAILED
+(`INTERNAL_ERROR`). An unknown tool or a tool that throws goes back to the model as an error
+`tool_result`. `DecisionLog` writes every run, inbound message, step, model call and tool call into
+the `agent_*` tables (V2) as it happens, one `REQUIRES_NEW` transaction per write, model and tool
+calls before they run and again after, so a crashed run leaves its trace. The application log
+carries run ids, counts, tool names and outcomes, never prompt text, tool input or output, or an
+exception message (#1202); the decision log keeps them in full. A run end an alarm watches also
+writes one marker line from `run/RunAlarms` (story 10, R10): `AGENT_RUN_FAILED` (FAILED),
+`AGENT_RUN_CAP_REACHED` (any limit) plus `AGENT_DAILY_BUDGET_BREACHED` (the daily budget), and
+`AGENT_CREDENTIALS_REFUSED` (a refused grant or mint), with run id, reason and detail only. CloudWatch
+metric filters on the agent log group feed the alarms `Agent-Run-Failures`, `Agent-Refused-Mints` and
+`Agent-Daily-Budget-Breaches` (`AgentRunAlarms`, see `docs/operations/runbooks.md` "Agent runs"). A
+model outage (`MODEL_UNAVAILABLE`) carries no marker and no alarm.
+
+Limits (story 8, R9, Operational envelope "Limits", owner values 2026-11-22): one configuration
+block, `agent.limits` (`AGENT_LIMITS_*`), holds four caps: `run-steps` (25 model calls per run),
+`run-tokens` (200,000 per run), `run-replies` (2 `reply` calls per run) and `daily-tokens` (2,000,000
+across all runs per Europe/Zurich day). Tokens are read from `agent_model_calls` (`loop/TokenLedger`):
+input, output, cache-creation and cache-read, all four, so prompt caching does not change what counts.
+Before every model call the loop checks, in order, the run's steps, the run's tokens and today's
+tokens against what is already recorded; the run is stopped **before** a model call, never in the
+middle of one, so the call that crosses a token cap completes, its answer's tools run (gated), and no
+further call follows. A run can therefore overshoot a token cap by at most one call (its input plus
+`max-output-tokens`), and the daily budget also by calls in flight in concurrent runs. Projecting
+the next call's size was rejected: it is a guess and would stop runs early. The reply cap is checked by
+the gate (`gate/ReplyCap`): it counts the run's verdicts that let a `reply` call run; the next `reply`
+call is `REFUSED` (`CAP_REACHED`) and the run stops without the answer's remaining tools. Any reached
+limit ends the run HANDED_TO_ORGANIZERS with end reason `CAP_REACHED` and end detail `STEPS`,
+`RUN_TOKENS`, `REPLIES` or `DAILY_TOKENS` (V6, which folds story 2's `STEP_LIMIT` into it), a status
+only, no mail; the application log names the run id, the limit, the amount used and the configured
+value, nothing else.
+
+The read API (story 9, R8, AD-9): organizers read the decision log through `agent-api.openapi.yml`,
+all `GET` under `/api/v1/agent/runs`: the run list (with trigger, end reason, end detail, principal
+kind and the CUMS grant's run id), one run's detail (totals over its log, its inbound messages), and
+four paged sub-collections of a run, ordered as the run happened: steps (with their model and tool
+call ids), model calls (status, model, stop reason, chosen tools, the four token counts), tool calls
+(input, output or error, the verdict id of a gated call) and verdicts (class, outcome, rule,
+confidence, inputs, the cited precedents resolved to the approval, undo or past event they name, and
+the approval of a pending verdict). The full prompt and answer are only on the model-call detail
+`GET /agent/runs/{runId}/model-calls/{modelCallId}`: every exchange is logged in full (AD-9), the
+organizers may see it, and a page of calls stays small. `run/RunLogReadService` reads the tables
+with SQL, read only; an unknown run, or a model call asked for under another run, answers 404
+`ERR_NOT_FOUND` in the shared `ErrorResponse`. Access is the filter chain's `GET /api/v1/agent/**`
+organizer rule plus `@PreAuthorize(ConsoleAccess.ORGANIZER_PERSON)` on every operation: organizer
+role and no `act` claim, so a token carrying `act` is refused (403) even past the decoder, which
+already refuses agent tokens (401). Every 401 and 403 carries the shared `ErrorResponse`
+(`security/SecurityErrorWriter`, `ERR_UNAUTHORIZED`, `ERR_FORBIDDEN`), and each read is one
+REPEATABLE READ transaction, so a page and its total come from one snapshot of a running run.
+
+The run's identity (story 4, R2, AD-3, AD-15): a run acts only with a CUMS-minted agent token.
+`AgentRunRequest` carries a `GrantSource`, which fixes the run's trigger: `OrganizerLogin` (the
+organizer's Cognito JWT, forwarded as `Authorization` on the grant call only; trigger `ORGANIZER`),
+`LinkedRun` (`linkedRunId`, `linkedRunGrantSecret`; `LINKED_RUN`), `SchedulerJob` (`jobName`;
+`SCHEDULED`) or `HandedOver` (run id and secret of a grant EMS obtained; no grant call;
+`INBOUND_MAIL`). Before its first model call the loop obtains the grant through
+`identity/CumsAgentClient` (`POST /internal/agent-grants` on `agent.cums.base-url`, body with only
+the trigger's fields, header `X-Agent-Caller-Secret` from `agent.cums.caller-secret` /
+`AGENT_CUMS_CALLER_SECRET`), stores CUMS's run id as `agent_runs.grant_run_id` (V3, unique) and
+mints the first token (`POST /internal/agent-tokens`, no `Authorization`). Tools get a
+`ToolContext` with the run's `gateway/PublicApi`: every call goes to `agent.gateway.base-url`
+(`AGENT_GATEWAY_URL`, `http://api-gateway:8080`) under `/api/v1` with `Authorization: Bearer
+<agent token>`; a GET reuses the token until 60 s before its `expiresAt`, every other method is a
+write and mints a fresh token first. An HTTP error of the API goes back to the tool as
+`ApiResponse`. A refused grant or mint, CUMS unreachable or no caller secret (blank or `none`; CUMS
+is not called, startup warning) ends the run HANDED_TO_ORGANIZERS with `GRANT_REFUSED` or
+`TOKEN_REFUSED` and `end_detail` = the CUMS `details.code` (else `HTTP_<status>`,
+`CUMS_UNREACHABLE`, `CALLER_SECRET_MISSING`; anything not matching `^[A-Z][A-Z0-9_]{0,63}$` is
+`UNKNOWN_CODE`), logged with the run id; no retry, no mail. A refused mint before a write sends
+nothing: the tool call is FAILED and no further model call follows, even if the tool swallows the
+exception (the loop reads the refusal from `RunCredentials` after each tool). One `RestTemplate`
+(`config/RestClientConfig`, connect 5 s, read 30 s) serves both, without a logging interceptor:
+no token, grant secret, caller secret or username reaches a log, an exception message or a
+`toString`.
+
+The tools (story 5, R4, AD-6): intent tools are the agent's only capability. `AgentLoop` offers
+the model the tools of `tools/ToolRegistry`, built once from `tools/StandardTools` and
+`tools/OperationClassTable`, the one table giving each public operation a tool may call (method
+plus path as `docs/api` writes it, below `/api/v1`) its class, lowest first `read`, `reversible`,
+`reply`, `binding`, `audience`. A tool declares its class, its operations and, when `reversible`,
+the operation that undoes it. `tools/ToolClassCheck` refuses a tool declared below (or above) the
+highest class of its operations, an operation or undo operation missing from the table, a
+`reversible` tool without an undo operation or another tool with one, and a name that is not
+camelCase verb plus object; the registry refuses to start on a violation and `ToolClassCheckTest`
+fails the build first, proven with fixture tools that exist only in tests. `OperationClassTableSpecTest`
+checks that every table operation exists in `docs/api`. At run time each tool gets the run's
+`PublicApi` limited to its declared operations (anything else throws before a token is touched).
+The epic ships read tools only (`tools/read/`): `findPastEvents` (`GET /events`, date before now,
+archived included, newest first; optional `year`, `searchText` (EMS archive search: every word in the event, a session or a speaker name), `limit`), `listEventSessions`
+(`GET /events/{eventCode}/sessions`, with speakers) and `listSessionSpeakers`
+(`GET /events/{eventCode}/sessions/{sessionSlug}/speakers`). Arguments are ADR-003 ids checked
+against the spec patterns (a bad one is an error result, nothing is sent); reads reuse the run's
+token; an HTTP error is an error result naming the status. The model gets a projection of each
+answer: no e-mail, picture, bio or material link.
+
+Precedents (story 6, R6, AD-8): precedent comes from two sources only, the decision log and the
+history of past events; no vector store, no embeddings, no model call. For a proposed call
+(`precedent/ProposedCall`: run, registry tool, input) `precedent/PrecedentRetrieval` returns
+`Precedents`: the approvals (`agent_approvals` APPROVED), denials (DENIED) and undos (`agent_undos`,
+whatever their outcome) of earlier calls, newest first, and the past events the tool asks for
+through `AgentTool.pastEventQuery` (default none), read with `findPastEvents` on the run's
+`PublicApi` limited to that tool's operation. PENDING and EXPIRED approvals are no precedent. Each
+precedent carries a source id the verdict cites: `agent_approvals:<id>`, `agent_undos:<id>`,
+`event:<eventCode>`; ids only, never who decided. `precedent/PrecedentMatchRule` is the one place
+of the matching rule (epic assumption, 2026-11-22): same tool and same principal kind; the run's
+principal kind is read from `agent_runs.principal_kind` (V4), set from the CUMS grant answer
+(`REQUESTER`, `ORGANIZER`, `ORGANIZER_DELEGATE`; a handed-over EMS grant is `REQUESTER`). An API
+error leaves the history empty with status `UNAVAILABLE`; a refused mint propagates and ends the
+run. The gate (story 7) consumes it.
+
+The autonomy gate (story 7, R5, R6, AD-7): `loop/AgentLoop` logs every tool call, and for a tool
+whose class is not `read` asks `gate/AutonomyGate` before running it. Read calls skip the gate. The
+gate (1) asks the tool for the mail the call would send (`AgentTool.outboundMail`), (2) retrieves
+the call's precedents with the run's `PublicApi`, and (3) in one transaction (`gate/GateLedger`,
+under a PostgreSQL advisory lock when the call mails) reads the run's trigger and principal kind
+from its row and the recipients already mailed, applies `gate/GateRules`, and writes the
+`agent_verdicts` row: the effective class, the outcome `RUN`, `PENDING_APPROVAL` or `REFUSED`, the
+confidence of a `binding` call, the inputs (tool, classes, trigger, principal kind, mail recipients,
+counts, precedent counts, the deciding rule as `reason`) and `cited_precedents` (every source id
+the retrieval returned). A pending verdict also writes an `agent_approvals` row in state `PENDING`.
+The rules, in order (owner, 2026-11-22):
+
+- A mail whose recipients the tool cannot resolve is `REFUSED` (`MAIL_UNRESOLVED`).
+- An `audience` tool is always pending. So is any mail to a non-organizer that brings the distinct
+  non-organizer recipients of the run, or of the day (Europe/Zurich, all runs), above one: it is
+  treated as `audience` (`RECIPIENTS_ABOVE_ONE`). Counted are the recipients of mail verdicts the
+  gate let run (on the verdict's day, even if the tool then failed: the mail may have left) or whose
+  approval is `APPROVED` (on the approval's day), plus the current mail; pending, denied and refused
+  mails were not sent. A mail to organizers only is not counted.
+- Any mail of a `SCHEDULED` run is pending (`SCHEDULED_MAIL`).
+- A `binding` call runs alone only with at least two matching approvals and no matching denial
+  (confidence 0 with a denial, else `min(approvals, 2) / 2`, threshold 1); otherwise it is pending.
+- A `reversible` or `reply` call runs alone.
+- Every call the rules let run is asked of the `gate/GateCaps` bean, `gate/ReplyCap` (story 8); when
+  it names a limit the call reaches, the call is `REFUSED` (`CAP_REACHED`, the limit in `inputs.cap`)
+  and the run stops.
+
+The two numbers above (two approvals, one non-organizer recipient) are configuration,
+`agent.limits.binding-approvals` (at least 1) and `agent.limits.non-organizer-recipients`; each
+verdict records them in its inputs (`requiredApprovals`, `maxNonOrganizerRecipients`).
+
+Nothing the model writes and nothing in the inbound message is an input: an approval can only come
+from the decision log. A held call is not run; its tool call ends `PENDING_APPROVAL` or `REFUSED`
+(V5) and the model gets a tool result: for a pending call, not an error, `{"status":
+"PENDING_APPROVAL", "approvalId": ..., "message": ...}` telling it the call has not run, not to
+repeat it or reach the same result another way, and to carry on or end its turn; for a refused
+call, an error naming the reason. The run goes on.
+
+Mail tool contract (for epic speaker-mail-agent): a tool that can mail overrides
+`AgentTool.outboundMail(input, readOnly)` and returns every recipient (to, cc, bcc) for every input
+that would send a mail, resolved deterministically from the input; `readOnly`'s API lets through
+only the tool's `read` operations, so it may look an address up but never write.
+`MailRecipient.organizer` is true only for an address resolved from the organizer side through the
+API (an organizer user or alias), never because the model or the inbound text says so. Addresses
+are stripped and lowercased; input the tool cannot resolve throws, and the gate refuses the call.
 
 ### Package layout
 
@@ -873,7 +1070,9 @@ sequenceDiagram
   jobs are not affected. Jobs that count calendar days take the date in Europe/Zurich from the `Clock` bean
   (`ClockConfig`), never from the JVM zone: the 01:00 auto-publish run is 23:00 UTC of the day
   before in summer, so a UTC date would publish one Swiss day late. Same for the speaker reminder
-  tiers and their days-remaining value.
+  tiers and their days-remaining value. The shared zone constant is `DateTimeUtils.SWISS_ZONE`
+  (shared-kernel), `DateTimeUtils.todaySwiss()` gives today's Swiss date; a Checkstyle rule forbids
+  the JVM default zone for dates in main and test code (coding-standards.md, "Time zones").
 - Not implemented: overflow management and voting (removed by ADR-009, replaced by the slot-capacity
   gate at `READY → INVITED`).
 
@@ -1139,7 +1338,7 @@ flowchart TD
     CLAIM --> AUTH["ForwardingSenderAuthorizer<br/>contact aliases open, others need<br/>an authenticated ORGANIZER sender"]
     AUTH --> RES["ForwardingRecipientResolver<br/>CUMS roles, admin setting,<br/>DistributionListService"]
     RES --> RW["ForwardedMessageRewriter<br/>From name via BATbern, Reply-To sender"]
-    RW --> OUT["EmailService.sendRawMessage<br/>config set batbern-env-forwarder"]
+    RW --> OUT["EmailService.sendRawMessage<br/>SES v2 raw content, up to 40 MB<br/>config set batbern-env-forwarder"]
     FWD -.->|"after the send"| ING["InboundMailCenter.ingestAlias<br/>store and thread, never throws"]
 ```
 
@@ -1160,6 +1359,8 @@ notify switch" below; the Mail Center storage path in "Inbound mail and conversa
   `ForwardingDirectory.organizerUsernameFor`) through the context-taking
   `EmailService.sendRawMessage(MailContext, mime, to, cc, subject, html, configSet)`. Private copies
   are not recorded; the Mail Center stores the inbound mail itself (below).
+- **Size**: a forwarded mail may be up to 40 MB (SES API v2). Under the SES API v1, used until
+  2026-11-22, anything over 10 MB failed for every recipient (a 10.9 MB mail to `ok@` that day).
 - **Unrecognized `replies@` mail** (Story 16.0, #1160): `InboundEmailListenerService` hands every
   reply that `InboundEmailRouter` cannot act on (`RouteResult.UNRECOGNIZED`) to
   `EmailForwardingService.forwardUnrecognizedReply`, which forwards it to all organizers like
@@ -1217,7 +1418,7 @@ flowchart TD
     REN --> ES["shared-kernel EmailService<br/>with MailContext"]
     ES --> WALLS{"reserved domain or<br/>ADR-015 test marker?"}
     WALLS -->|"yes"| BLOCK["blocked, not sent, not recorded"]
-    WALLS -->|"no"| SES["SES SendEmail / SendRawEmail<br/>tag mail_group"]
+    WALLS -->|"no"| SES["SES v2 SendEmail, simple or raw<br/>tag mail_group"]
     SES --> REC["OutboundMailRecorder SPI<br/>EMS: JpaOutboundMailRecorder<br/>PCS: HttpOutboundMailRecorder to POST /internal/mails"]
     REC --> MM[("mail_message<br/>one row per send group")]
     REC --> MR[("mail_recipient<br/>one row per address, SENT or FAILED")]
@@ -1276,7 +1477,7 @@ sequenceDiagram
     PMS->>PIE: recipients = all PARTNER and ORGANIZER users, invite SEQUENCE + 1
     loop one mail per recipient, one shared MailContext
         PIE->>ES: sendHtmlEmailWithAttachments, ICS with only this ATTENDEE
-        ES->>SES: SendRawEmail
+        ES->>SES: SES v2 SendEmail, raw content
         ES->>REC: record this recipient, SENT or FAILED
         REC->>EMS: best effort, 2 s connect, 5 s read
         EMS->>EMS: JpaOutboundMailRecorder joins it into one mail_message

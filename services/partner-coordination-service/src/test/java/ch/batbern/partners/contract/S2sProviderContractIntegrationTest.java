@@ -11,6 +11,7 @@ import ch.batbern.partners.repository.PartnerMeetingRsvpRepository;
 import ch.batbern.partners.repository.PartnerRepository;
 import ch.batbern.shared.test.AbstractIntegrationTest;
 import ch.batbern.shared.test.contract.OpenApiContract;
+import ch.batbern.shared.utils.DateTimeUtils;
 import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
@@ -259,9 +260,9 @@ class S2sProviderContractIntegrationTest extends AbstractIntegrationTest {
         companyMerge("{\"source\": \"x\"}", user, 400);
 
         partnerRepository.save(Partner.builder().companyName("contractsrc").partnershipLevel(PartnershipLevel.GOLD)
-                .partnershipStartDate(LocalDate.now()).build());
+                .partnershipStartDate(DateTimeUtils.todaySwiss()).build());
         partnerRepository.save(Partner.builder().companyName("contracttgt").partnershipLevel(PartnershipLevel.GOLD)
-                .partnershipStartDate(LocalDate.now()).build());
+                .partnershipStartDate(DateTimeUtils.todaySwiss()).build());
         MvcResult blocked = companyPreview("contractsrc", "contracttgt", user, 200);
         assertThat(blocked.getResponse().getContentAsString()).contains("MERGE_BLOCKED_BOTH_PARTNERS");
         MvcResult refused = companyMerge(merge.formatted("contractsrc", "contracttgt", "MERGE"), user, 409);
@@ -275,7 +276,7 @@ class S2sProviderContractIntegrationTest extends AbstractIntegrationTest {
         jdbc.update("INSERT INTO topic_suggestions (company_name, suggested_by, title, source) VALUES (?, ?, ?, ?)",
                 "contractsrc", MERGE_SOURCE, "Contract topic", "PARTNER");
         partnerRepository.save(Partner.builder().companyName("contractsrc").partnershipLevel(PartnershipLevel.GOLD)
-                .partnershipStartDate(LocalDate.now()).build());
+                .partnershipStartDate(DateTimeUtils.todaySwiss()).build());
         String path = "/internal/company-references/counts";
         String body = "{\"keys\": [\"contractsrc\", \"contracttgt\"]}";
         MockHttpServletRequestBuilder request = post(path).contentType(MediaType.APPLICATION_JSON).content(body);

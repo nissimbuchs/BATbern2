@@ -15,22 +15,20 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import software.amazon.awssdk.core.SdkBytes;
-import software.amazon.awssdk.services.ses.SesClient;
-import software.amazon.awssdk.services.ses.model.Body;
-import software.amazon.awssdk.services.ses.model.Content;
-import software.amazon.awssdk.services.ses.model.Destination;
-import software.amazon.awssdk.services.ses.model.MessageTag;
-import software.amazon.awssdk.services.ses.model.RawMessage;
-import software.amazon.awssdk.services.ses.model.SendEmailRequest;
-import software.amazon.awssdk.services.ses.model.SendEmailResponse;
-import software.amazon.awssdk.services.ses.model.SendRawEmailRequest;
-import software.amazon.awssdk.services.ses.model.SendRawEmailResponse;
-import software.amazon.awssdk.services.ses.model.SesException;
+import software.amazon.awssdk.services.sesv2.SesV2Client;
+import software.amazon.awssdk.services.sesv2.model.Body;
+import software.amazon.awssdk.services.sesv2.model.Content;
+import software.amazon.awssdk.services.sesv2.model.Destination;
+import software.amazon.awssdk.services.sesv2.model.EmailContent;
+import software.amazon.awssdk.services.sesv2.model.MessageTag;
+import software.amazon.awssdk.services.sesv2.model.RawMessage;
+import software.amazon.awssdk.services.sesv2.model.SendEmailRequest;
+import software.amazon.awssdk.services.sesv2.model.SendEmailResponse;
+import software.amazon.awssdk.services.sesv2.model.SesV2Exception;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
@@ -48,6 +46,11 @@ import jakarta.mail.internet.MimeMultipart;
 
 /**
  * Shared email service using AWS SES for sending transactional emails.
+ *
+ * <p>Every send goes through the SES API v2 {@code SendEmail} operation: simple content for a plain
+ * HTML mail, raw content for a MIME message (attachments, composed answers, forwards). API v2 takes a
+ * message of up to 40 MB; API v1 refused anything over 10 MB, which lost a 10.9 MB forward to all of
+ * its recipients on 2026-11-22.
  *
  * Features:
  * - HTML email templates
@@ -68,7 +71,7 @@ public class EmailService {
      * (17.0b3).
      */
     @Autowired(required = false)
-    private SesClient sesClient;
+    private SesV2Client sesClient;
 
     /**
      * Whether mail goes to an SES client: true in staging/production and in integration tests
@@ -287,13 +290,15 @@ public class EmailService {
             }
 
             SendEmailRequest.Builder requestBuilder = SendEmailRequest.builder()
-                    .source(String.format("%s <%s>", fromName, fromEmail))
+                    .fromEmailAddress(String.format("%s <%s>", fromName, fromEmail))
                     .replyToAddresses(effectiveReplyTo)
                     .destination(destBuilder.build())
-                    .message(software.amazon.awssdk.services.ses.model.Message.builder()
-                            .subject(Content.builder().data(subject).charset("UTF-8").build())
-                            .body(Body.builder()
-                                    .html(Content.builder().data(htmlBody).charset("UTF-8").build())
+                    .content(EmailContent.builder()
+                            .simple(software.amazon.awssdk.services.sesv2.model.Message.builder()
+                                    .subject(Content.builder().data(subject).charset("UTF-8").build())
+                                    .body(Body.builder()
+                                            .html(Content.builder().data(htmlBody).charset("UTF-8").build())
+                                            .build())
                                     .build())
                             .build());
 
@@ -301,7 +306,7 @@ public class EmailService {
                 requestBuilder.configurationSetName(configurationSetName);
             }
             if (context != null) {
-                requestBuilder.tags(mailGroupTag(context));
+                requestBuilder.emailTags(mailGroupTag(context));
             }
 
             SendEmailResponse response = sesClient.sendEmail(requestBuilder.build());
@@ -309,7 +314,7 @@ public class EmailService {
                     LoggingUtils.maskEmail(to), ccClean.size(), response.messageId());
             record(context, to, ccClean, subject, htmlBody, response.messageId(), null);
 
-        } catch (SesException e) {
+        } catch (SesV2Exception e) {
             log.error("Failed to send email (sync) to: {}, Error: {}",
                     LoggingUtils.maskEmail(to), e.awsErrorDetails().errorMessage(), e);
             record(context, to, ccClean, subject, htmlBody, null, errorCode(e));
@@ -485,23 +490,11 @@ public class EmailService {
             // Convert MimeMessage to raw bytes
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
             message.writeTo(outputStream);
-            ByteBuffer rawMessage = ByteBuffer.wrap(outputStream.toByteArray());
 
             // Send raw email via SES — attach the default configuration set so
             // BOUNCE/COMPLAINT events route through SNS → SQS for transactional emails too.
-            SendRawEmailRequest.Builder rawRequestBuilder = SendRawEmailRequest.builder()
-                    .rawMessage(RawMessage.builder()
-                            .data(SdkBytes.fromByteBuffer(rawMessage))
-                            .build());
-
-            if (configurationSetName != null && !configurationSetName.isBlank()) {
-                rawRequestBuilder.configurationSetName(configurationSetName);
-            }
-            if (context != null) {
-                rawRequestBuilder.tags(mailGroupTag(context));
-            }
-
-            SendRawEmailResponse response = sesClient.sendRawEmail(rawRequestBuilder.build());
+            SendEmailResponse response = sesClient.sendEmail(
+                    rawRequest(outputStream.toByteArray(), List.of(), configurationSetName, context));
             log.info("Email with attachments sent successfully to {} recipient(s): {}, MessageId: {}",
                     toList.size(), LoggingUtils.maskEmail(to), response.messageId());
             record(context, new OutboundMail(to, ccClean, subject, htmlBody, response.messageId(), null, messageId));
@@ -509,7 +502,7 @@ public class EmailService {
         } catch (MessagingException | IOException e) {
             log.error("Failed to create MIME message for: {}", LoggingUtils.maskEmail(to), e);
             throw new EmailSendException("Failed to create email message", e);
-        } catch (SesException e) {
+        } catch (SesV2Exception e) {
             log.error("Failed to send email to: {}, Error: {}", LoggingUtils.maskEmail(to),
                     e.awsErrorDetails().errorMessage(), e);
             record(context, to, ccClean, subject, htmlBody, null, errorCode(e));
@@ -599,21 +592,9 @@ public class EmailService {
 
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
             message.writeTo(outputStream);
-            ByteBuffer rawMessage = ByteBuffer.wrap(outputStream.toByteArray());
 
-            SendRawEmailRequest.Builder rawRequestBuilder = SendRawEmailRequest.builder()
-                    .rawMessage(RawMessage.builder()
-                            .data(SdkBytes.fromByteBuffer(rawMessage))
-                            .build());
-
-            if (configurationSetName != null && !configurationSetName.isBlank()) {
-                rawRequestBuilder.configurationSetName(configurationSetName);
-            }
-            if (context != null) {
-                rawRequestBuilder.tags(mailGroupTag(context));
-            }
-
-            SendRawEmailResponse response = sesClient.sendRawEmail(rawRequestBuilder.build());
+            SendEmailResponse response = sesClient.sendEmail(
+                    rawRequest(outputStream.toByteArray(), List.of(), configurationSetName, context));
             log.info("Email with attachments sent (sync) to: {}, MessageId: {}", LoggingUtils.maskEmail(to),
                     response.messageId());
             record(context, new OutboundMail(to, List.of(), subject, htmlBody, response.messageId(), null, messageId));
@@ -621,7 +602,7 @@ public class EmailService {
         } catch (MessagingException | IOException e) {
             log.error("Failed to create MIME message for: {}", LoggingUtils.maskEmail(to), e);
             throw new EmailSendException("Failed to create email message", e);
-        } catch (SesException e) {
+        } catch (SesV2Exception e) {
             log.error("Failed to send email to: {}, Error: {}", LoggingUtils.maskEmail(to),
                     e.awsErrorDetails().errorMessage(), e);
             record(context, to, List.of(), subject, htmlBody, null, errorCode(e));
@@ -631,7 +612,7 @@ public class EmailService {
 
     /**
      * Story 16.6: send a personal mail with headers the caller owns (an organizer's answer to a
-     * conversation) through {@code SendRawEmail}, and record it with its {@code Message-ID}. The
+     * conversation) as raw content of SES v2 {@code SendEmail}, and record it with its {@code Message-ID}. The
      * same walls as every other send apply; on local dev the mail is captured to the dev inbox.
      * A refused send is recorded with the SES error code and rethrown.
      */
@@ -655,20 +636,13 @@ public class EmailService {
         } catch (MessagingException | IOException e) {
             throw new EmailSendException("Failed to create email message", e);
         }
-        SendRawEmailRequest.Builder request = SendRawEmailRequest.builder()
-                .rawMessage(RawMessage.builder().data(SdkBytes.fromByteArray(mime)).build());
-        if (configurationSetName != null && !configurationSetName.isBlank()) {
-            request.configurationSetName(configurationSetName);
-        }
-        if (context != null) {
-            request.tags(mailGroupTag(context));
-        }
         try {
-            SendRawEmailResponse response = sesClient.sendRawEmail(request.build());
+            SendEmailResponse response =
+                    sesClient.sendEmail(rawRequest(mime, List.of(), configurationSetName, context));
             log.info("Composed email sent to {}, MessageId: {}", LoggingUtils.maskEmail(mail.to()),
                     response.messageId());
             record(context, composedRecord(mail, response.messageId(), null));
-        } catch (SesException e) {
+        } catch (SesV2Exception e) {
             log.error("Failed to send composed email to {}: {}", LoggingUtils.maskEmail(mail.to()),
                     e.awsErrorDetails() != null ? e.awsErrorDetails().errorMessage() : e.getMessage(), e);
             record(context, composedRecord(mail, null, errorCode(e)));
@@ -765,7 +739,7 @@ public class EmailService {
         try {
             messageId = sendRaw(mime, destinations, configurationSetOverride);
         } catch (EmailSendException e) {
-            if (e.getCause() instanceof SesException ses) {
+            if (e.getCause() instanceof SesV2Exception ses) {
                 record(context, String.join(",", to), cc, subject, htmlBody, null, errorCode(ses));
             }
             throw e;
@@ -806,17 +780,11 @@ public class EmailService {
         String configurationSet = configurationSetOverride != null && !configurationSetOverride.isBlank()
                 ? configurationSetOverride
                 : configurationSetName;
-        SendRawEmailRequest.Builder request = SendRawEmailRequest.builder()
-                .destinations(destinationsSes)
-                .rawMessage(RawMessage.builder().data(SdkBytes.fromByteArray(mime)).build());
-        if (configurationSet != null && !configurationSet.isBlank()) {
-            request.configurationSetName(configurationSet);
-        }
         try {
-            SendRawEmailResponse response = sesClient.sendRawEmail(request.build());
+            SendEmailResponse response = sesClient.sendEmail(rawRequest(mime, destinationsSes, configurationSet, null));
             log.info("Raw email sent to {} recipient(s), MessageId: {}", destinations.size(), response.messageId());
             return response.messageId();
-        } catch (SesException e) {
+        } catch (SesV2Exception e) {
             log.error("Failed to send raw email to {} recipient(s): {}",
                     destinations.size(), e.awsErrorDetails().errorMessage(), e);
             throw new EmailSendException("Failed to send raw email", e);
@@ -851,7 +819,31 @@ public class EmailService {
         return MessageTag.builder().name(MAIL_GROUP_TAG).value(context.sendGroupId()).build();
     }
 
-    private static String errorCode(SesException e) {
+    /**
+     * A raw-content SES v2 {@code SendEmail} request: the MIME goes out unchanged (SES adds only its
+     * Return-Path and DKIM signature). {@code envelope} empty means SES takes the recipients from the
+     * To:/Cc:/Bcc: headers; otherwise it delivers to exactly those addresses, which a raw message does
+     * not copy into its headers (a forward keeps its original To:).
+     */
+    private static SendEmailRequest rawRequest(byte[] mime, List<String> envelope, String configurationSet,
+            MailContext context) {
+        SendEmailRequest.Builder request = SendEmailRequest.builder()
+                .content(EmailContent.builder()
+                        .raw(RawMessage.builder().data(SdkBytes.fromByteArray(mime)).build())
+                        .build());
+        if (!envelope.isEmpty()) {
+            request.destination(Destination.builder().toAddresses(envelope).build());
+        }
+        if (configurationSet != null && !configurationSet.isBlank()) {
+            request.configurationSetName(configurationSet);
+        }
+        if (context != null) {
+            request.emailTags(mailGroupTag(context));
+        }
+        return request.build();
+    }
+
+    private static String errorCode(SesV2Exception e) {
         return e.awsErrorDetails() != null && e.awsErrorDetails().errorCode() != null
                 ? e.awsErrorDetails().errorCode()
                 : "SES_ERROR";

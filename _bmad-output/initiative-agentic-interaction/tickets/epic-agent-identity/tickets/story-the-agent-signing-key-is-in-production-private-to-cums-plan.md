@@ -3,7 +3,7 @@ title: 'The agent signing key is in production, private to CUMS'
 type: 'feature'
 ticket: '3'
 created: '2026-11-22'
-status: 'built'
+status: done
 baseline_revision: '5bf5d3369c84d4aae1667220354e725b4ab467b8'
 route: 'full'
 route_source: 'auto'

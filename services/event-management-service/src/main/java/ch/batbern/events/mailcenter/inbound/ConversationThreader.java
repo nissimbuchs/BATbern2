@@ -25,8 +25,8 @@ import java.util.regex.Pattern;
  *       id against {@code mail_message.message_id_header} (inbound mail) and
  *       {@code mail_recipient.message_id_header} (captured from the SES event, 16.1b), and its local
  *       part against {@code mail_recipient.ses_message_id}, because SES writes the header as
- *       {@code <{MessageId}@{region}.amazonses.com>} (verified 2026-11-02 on SendEmail and
- *       SendRawEmail mail);</li>
+ *       {@code <{MessageId}@{region}.amazonses.com>} (verified 2026-11-02 on SES API v1 SendEmail and
+ *       SendRawEmail mail; EmailService sends through API v2 since 2026-11-22, not yet re-verified);</li>
  *   <li>the event of the {@code batbern{N}-moderator@} alias the mail was addressed to;</li>
  *   <li>Story 16.2b AC3 (owner decision 2026-11-01): exactly one event code of an existing event in
  *       the subject ({@code BATbern\d+}, as {@code InboundEmailRouter}). Counted separately.</li>

@@ -24,6 +24,7 @@ import ch.batbern.shared.test.security.RoleStubTables;
 import ch.batbern.shared.test.security.TestTokens;
 import ch.batbern.shared.types.EventWorkflowState;
 import ch.batbern.shared.types.SpeakerWorkflowState;
+import ch.batbern.shared.utils.DateTimeUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -44,7 +45,6 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.sql.Timestamp;
 import java.time.Instant;
-import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.Collection;
 import java.util.UUID;
@@ -330,7 +330,7 @@ class AudienceGuardIntegrationTest extends AbstractIntegrationTest {
                 .speakerRole(SessionUser.SpeakerRole.PRIMARY_SPEAKER).isConfirmed(false).build());
         speakerPoolRepository.saveAndFlush(SpeakerPool.builder().eventId(event.getId()).sessionId(session.getId())
                 .speakerName("Anna Guard").status(SpeakerWorkflowState.INVITED).remindersDisabled(false)
-                .responseDeadline(LocalDate.now().plusDays(7)).build());
+                .responseDeadline(DateTimeUtils.todaySwiss().plusDays(7)).build());
         cums.user(SPEAKER, "Anna", "Guard", SPEAKER_MAIL);
     }
 

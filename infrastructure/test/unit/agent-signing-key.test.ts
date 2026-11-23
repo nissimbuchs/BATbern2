@@ -13,8 +13,9 @@ interface ContainerSecret {
  * Agentic interaction 0.3: who gets the agent signing key and the caller secrets, read from the
  * real staging app (bin wiring included).
  *
- * The private key and the agent-service caller secret reach CUMS only; the EMS caller secret
- * reaches CUMS and EMS; the public key (an SSM parameter) reaches all four services. Each value is
+ * The private key reaches CUMS only; the agent-service caller secret reaches CUMS and agent-service
+ * (story 4 of the agent runtime, as AGENT_CUMS_CALLER_SECRET); the EMS caller secret reaches CUMS and
+ * EMS; the public key (an SSM parameter) reaches all four core services. Each value is
  * found by the logical-id fragment of its SecretsStack resource, which appears in every
  * cross-stack reference to it.
  */
@@ -26,6 +27,7 @@ describe('Agent signing key and caller secrets on the staging app', () => {
     pcs: 'BATbern-staging-PartnerCoordination.template.json',
     gateway: 'BATbern-staging-ApiGatewayService.template.json',
   } as const;
+  const AGENT_SERVICE = 'BATbern-staging-AgentService.template.json';
   const PRIVATE_KEY = 'AgentSigningPrivateKey';
   const PUBLIC_KEY = 'AgentJwtPublicKey';
   const EMS_CALLER = 'AgentEmsCallerSecret';
@@ -84,9 +86,21 @@ describe('Agent signing key and caller secrets on the staging app', () => {
     expect(secrets.AGENT_CALLERS_AGENT_SERVICE_SECRET).toBeUndefined();
   });
 
-  test('should_referencePrivateKeyAndAgentServiceCallerSecret_when_cumsOnly', () => {
+  test('should_referencePrivateKey_when_cumsOnly', () => {
     expect(referencedBy(PRIVATE_KEY)).toEqual([SERVICES.cums]);
-    expect(referencedBy(AGENT_SERVICE_CALLER)).toEqual([SERVICES.cums]);
+  });
+
+  test('should_referenceAgentServiceCallerSecret_when_cumsOrAgentService', () => {
+    expect(referencedBy(AGENT_SERVICE_CALLER)).toEqual([AGENT_SERVICE, SERVICES.cums].sort());
+  });
+
+  test('should_injectAgentServiceCallerSecret_as_AGENT_CUMS_CALLER_SECRET_when_agentServiceTaskDefined', () => {
+    const secrets = containerSecrets(AGENT_SERVICE);
+    expect(secrets.AGENT_CUMS_CALLER_SECRET).toContain(AGENT_SERVICE_CALLER);
+    // Its own name, never CUMS's, and no other agent secret
+    expect(secrets.AGENT_CALLERS_AGENT_SERVICE_SECRET).toBeUndefined();
+    expect(secrets.AGENT_CALLERS_EMS_SECRET).toBeUndefined();
+    expect(secrets.AGENT_JWT_PRIVATE_KEY).toBeUndefined();
   });
 
   test('should_referenceEmsCallerSecret_when_cumsOrEms', () => {

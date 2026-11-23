@@ -26,7 +26,7 @@ if [ -n "${AWS_REGION:-}" ]; then
     REGION_ARGS=(--region "$AWS_REGION")
 fi
 
-FRAGMENTS=(CompanyManagement EventManagement PartnerCoordination ApiGatewayService)
+FRAGMENTS=(CompanyManagement EventManagement PartnerCoordination AgentService ApiGatewayService)
 MISSING=""
 
 for FRAGMENT in "${FRAGMENTS[@]}"; do

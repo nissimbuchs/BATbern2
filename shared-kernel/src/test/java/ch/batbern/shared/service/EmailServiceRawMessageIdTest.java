@@ -10,9 +10,9 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.test.util.ReflectionTestUtils;
-import software.amazon.awssdk.services.ses.SesClient;
-import software.amazon.awssdk.services.ses.model.SendRawEmailRequest;
-import software.amazon.awssdk.services.ses.model.SendRawEmailResponse;
+import software.amazon.awssdk.services.sesv2.SesV2Client;
+import software.amazon.awssdk.services.sesv2.model.SendEmailRequest;
+import software.amazon.awssdk.services.sesv2.model.SendEmailResponse;
 
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
@@ -38,7 +38,7 @@ class EmailServiceRawMessageIdTest {
             "BEGIN:VCALENDAR\r\nEND:VCALENDAR\r\n".getBytes(StandardCharsets.UTF_8), "text/calendar", true);
 
     private EmailService emailService;
-    private SesClient sesClient;
+    private SesV2Client sesClient;
     private OutboundMailRecorder recorder;
     private final MailContext context =
             MailContext.individual("BATbern60", MailContext.Audience.REGISTRANTS, "registration-confirmation");
@@ -46,22 +46,22 @@ class EmailServiceRawMessageIdTest {
     @BeforeEach
     void setUp() {
         emailService = new EmailService();
-        sesClient = mock(SesClient.class);
+        sesClient = mock(SesV2Client.class);
         recorder = mock(OutboundMailRecorder.class);
         ReflectionTestUtils.setField(emailService, "sesClient", sesClient);
         ReflectionTestUtils.setField(emailService, "outboundMailRecorder", recorder);
         ReflectionTestUtils.setField(emailService, "fromEmail", "noreply@batbern.ch");
         ReflectionTestUtils.setField(emailService, "fromName", "BATbern");
         ReflectionTestUtils.setField(emailService, "replyToEmail", "replies@batbern.ch");
-        when(sesClient.sendRawEmail(any(SendRawEmailRequest.class)))
-                .thenReturn(SendRawEmailResponse.builder().messageId("ses-raw-1").build());
+        when(sesClient.sendEmail(any(SendEmailRequest.class)))
+                .thenReturn(SendEmailResponse.builder().messageId("ses-raw-1").build());
     }
 
     private String sentMessageId() throws Exception {
-        ArgumentCaptor<SendRawEmailRequest> request = ArgumentCaptor.forClass(SendRawEmailRequest.class);
-        verify(sesClient).sendRawEmail(request.capture());
+        ArgumentCaptor<SendEmailRequest> request = ArgumentCaptor.forClass(SendEmailRequest.class);
+        verify(sesClient).sendEmail(request.capture());
         return new MimeMessage(Session.getInstance(new Properties()),
-                new ByteArrayInputStream(request.getValue().rawMessage().data().asByteArray()))
+                new ByteArrayInputStream(request.getValue().content().raw().data().asByteArray()))
                 .getHeader("Message-ID", null);
     }
 

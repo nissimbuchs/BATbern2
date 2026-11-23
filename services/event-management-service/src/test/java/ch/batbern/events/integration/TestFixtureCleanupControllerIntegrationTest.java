@@ -30,6 +30,7 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.ZoneOffset;
 import java.util.Map;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -836,7 +837,7 @@ class TestFixtureCleanupControllerIntegrationTest extends AbstractIntegrationTes
         topic.setTopicCode(topicCode);
         topic.setTitle("Cleanup Test Topic " + topicCode);
         topic.setCategory("technical");
-        topic.setCreatedDate(LocalDateTime.now());
+        topic.setCreatedDate(LocalDateTime.now(ZoneOffset.UTC));
         return topic;
     }
 }

@@ -1,0 +1,1043 @@
+openapi: 3.1.0
+info:
+  title: BATbern Agent API
+  version: 1.0.0
+  description: |
+    Read API of agent-service (agentic interaction, epic agent runtime, AD-9): organizers read
+    what the agent did. Served by agent-service behind the Spring gateway at `/api/v1/agent/**`.
+
+    - Only a Cognito organizer token is accepted. Any other role answers 403, no token 401.
+    - An agent token (`iss batbern-agent`, carrying `act`) is refused with 401: agent-service
+      accepts Cognito tokens only, so the agent can never read its own decision log.
+    - The data lives in agent-service's own `agent_*` tables; no other service reads them.
+
+    Story 1 ships the service dark (`agent.enabled=false`): the list is empty until the agent
+    loop (story 2) writes runs. Story 9 adds the decision log of one run: its detail, steps, model
+    calls (the full prompt on the model-call detail), tool calls and gate verdicts with the
+    precedents they cite and their approval (R8, AD-9). Read only; the actions on approvals belong
+    to the oversight console.
+
+    Sub-collections of a run are paged like every list (0-based `page`, `limit` 1-100) and ordered
+    as the run happened (oldest first, the id breaking ties). An unknown run answers 404.
+  contact:
+    name: BATbern Platform Team
+    email: platform@batbern.ch
+  license:
+    name: Proprietary
+    identifier: Proprietary
+
+servers:
+  - url: /api/v1
+    description: API Gateway base URL
+
+security:
+  - bearerAuth: []
+
+tags:
+  - name: Agent Runs
+    description: The runs of the agent and their decision log (organizers only)
+
+paths:
+  /agent/runs:
+    get:
+      tags:
+        - Agent Runs
+      summary: List agent runs
+      description: |
+        The runs of the agent, newest first (by `startedAt`), one page at a time.
+        ORGANIZER only.
+      operationId: listAgentRuns
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: One page of runs, newest first
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAgentRunResponse'
+              examples:
+                empty:
+                  summary: the dark service before the first run
+                  value:
+                    data: []
+                    pagination:
+                      page: 0
+                      limit: 20
+                      totalItems: 0
+                      totalPages: 0
+                      hasNext: false
+                      hasPrev: false
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /agent/runs/{runId}:
+    get:
+      tags:
+        - Agent Runs
+      summary: Get one agent run
+      description: |
+        The run with why it ended, its totals (steps, calls, verdicts, pending approvals, the four
+        token counts) and the inbound messages it was given. ORGANIZER only.
+      operationId: getAgentRun
+      parameters:
+        - $ref: '#/components/parameters/RunId'
+      responses:
+        '200':
+          description: Get one agent run
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentRunDetail'
+              examples:
+                handedOver:
+                  summary: a run stopped at the step cap and handed to the organizers
+                  value:
+                    run:
+                      id: 3f2a9c1e-5b7d-4e8a-9c0f-1a2b3c4d5e6f
+                      status: HANDED_TO_ORGANIZERS
+                      startedAt: '2027-02-10T08:15:00Z'
+                      endedAt: '2027-02-10T08:16:40Z'
+                      trigger: ORGANIZER
+                      endReason: CAP_REACHED
+                      endDetail: STEPS
+                      principalKind: ORGANIZER
+                      grantRunId: 7c1d2e3f-4a5b-4c6d-8e7f-9a0b1c2d3e4f
+                    totals:
+                      steps: 25
+                      modelCalls: 25
+                      toolCalls: 31
+                      verdicts: 2
+                      pendingApprovals: 1
+                      inputTokens: 84210
+                      outputTokens: 6120
+                      cacheCreationInputTokens: 0
+                      cacheReadInputTokens: 40100
+                    inboundMessages:
+                      - id: 0a1b2c3d-4e5f-4a6b-8c7d-8e9f0a1b2c3d
+                        channel: CHAT
+                        externalId: null
+                        receivedAt: '2027-02-10T08:15:00Z'
+                        content:
+                          text: Which speakers of BATbern60 have not sent their slides yet?
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /agent/runs/{runId}/steps:
+    get:
+      tags:
+        - Agent Runs
+      summary: List the steps of a run
+      description: |
+        The steps of the run by step number. A step is one model call plus the tool calls it asked
+        for. ORGANIZER only.
+      operationId: listAgentRunSteps
+      parameters:
+        - $ref: '#/components/parameters/RunId'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: List the steps of a run
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAgentStepResponse'
+              examples:
+                oneStep:
+                  summary: a step with one model call and one tool call
+                  value:
+                    data:
+                      - id: d4e5f6a7-b8c9-4d0e-9f1a-3b4c5d6e7f80
+                        stepNumber: 1
+                        startedAt: '2027-02-10T08:15:01Z'
+                        endedAt: '2027-02-10T08:15:04Z'
+                        modelCallIds: [a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d]
+                        toolCallIds: [b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e]
+                    pagination:
+                      page: 0
+                      limit: 20
+                      totalItems: 1
+                      totalPages: 1
+                      hasNext: false
+                      hasPrev: false
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /agent/runs/{runId}/model-calls:
+    get:
+      tags:
+        - Agent Runs
+      summary: List the model calls of a run
+      description: |
+        The model calls of the run, oldest first: status, model, stop reason, the tools the model
+        chose and the tokens. The prompt and the answer are on the model-call detail, so a page stays
+        small. ORGANIZER only.
+      operationId: listAgentRunModelCalls
+      parameters:
+        - $ref: '#/components/parameters/RunId'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: List the model calls of a run
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAgentModelCallResponse'
+              examples:
+                oneCall:
+                  summary: a model call that chose one tool
+                  value:
+                    data:
+                      - id: a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d
+                        stepNumber: 1
+                        status: SUCCEEDED
+                        model: claude-sonnet-5-5
+                        stopReason: TOOL_USE
+                        chosenTools:
+                          - id: toolu_01example
+                            name: findPastEvents
+                        usage:
+                          inputTokens: 3120
+                          outputTokens: 210
+                          cacheCreationInputTokens: 0
+                          cacheReadInputTokens: 2900
+                        error: null
+                        startedAt: '2027-02-10T08:15:01Z'
+                        endedAt: '2027-02-10T08:15:03Z'
+                    pagination:
+                      page: 0
+                      limit: 20
+                      totalItems: 1
+                      totalPages: 1
+                      hasNext: false
+                      hasPrev: false
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /agent/runs/{runId}/model-calls/{modelCallId}:
+    get:
+      tags:
+        - Agent Runs
+      summary: Get one model call with its full prompt
+      description: |
+        One model call with the full prompt (system, messages, tools, max_tokens as sent through
+        LlmPort) and the model's answer, as stored. Every exchange is logged in full (AD-9), so the
+        prompt holds what the run read: inbound mail text and tool output, which may be personal
+        data of speakers and attendees. ORGANIZER only; 404 when the call is not of this run.
+      operationId: getAgentRunModelCall
+      parameters:
+        - $ref: '#/components/parameters/RunId'
+        - name: modelCallId
+          in: path
+          required: true
+          description: Model call id
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Get one model call with its full prompt
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentModelCallDetail'
+              examples:
+                withPrompt:
+                  summary: a model call with its prompt and answer
+                  value:
+                    modelCall:
+                      id: a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d
+                      stepNumber: 1
+                      status: SUCCEEDED
+                      model: claude-sonnet-5-5
+                      stopReason: TOOL_USE
+                      chosenTools:
+                        - id: toolu_01example
+                          name: findPastEvents
+                      usage:
+                        inputTokens: 3120
+                        outputTokens: 210
+                        cacheCreationInputTokens: 0
+                        cacheReadInputTokens: 2900
+                      error: null
+                      startedAt: '2027-02-10T08:15:01Z'
+                      endedAt: '2027-02-10T08:15:03Z'
+                    prompt:
+                      system: You act for a BATbern organizer.
+                      max_tokens: 16000
+                      messages:
+                        - role: user
+                          content: Which past events covered timber construction?
+                    response:
+                      stop_reason: tool_use
+                      content:
+                        - type: tool_use
+                          id: toolu_01example
+                          name: findPastEvents
+                          input:
+                            searchText: timber
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /agent/runs/{runId}/tool-calls:
+    get:
+      tags:
+        - Agent Runs
+      summary: List the tool calls of a run
+      description: |
+        The tool calls of the run, oldest first, with the model's input, the tool's output or error,
+        and the id of the gate verdict when the call was not a read. ORGANIZER only.
+      operationId: listAgentRunToolCalls
+      parameters:
+        - $ref: '#/components/parameters/RunId'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: List the tool calls of a run
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAgentToolCallResponse'
+              examples:
+                readAndPending:
+                  summary: a read that ran and a binding call the gate held
+                  value:
+                    data:
+                      - id: b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e
+                        stepNumber: 1
+                        toolUseId: toolu_01example
+                        toolName: findPastEvents
+                        status: SUCCEEDED
+                        input:
+                          searchText: timber
+                        output: 1 past event found, BATbern57 Holzbau
+                        error: null
+                        startedAt: '2027-02-10T08:15:03Z'
+                        endedAt: '2027-02-10T08:15:04Z'
+                        verdictId: null
+                      - id: c3d4e5f6-a7b8-4c9d-8e0f-2a3b4c5d6e7f
+                        stepNumber: 2
+                        toolUseId: toolu_02example
+                        toolName: exampleBindingTool
+                        status: PENDING_APPROVAL
+                        input:
+                          eventCode: BATbern61
+                        output: null
+                        error: null
+                        startedAt: '2027-02-10T08:15:06Z'
+                        endedAt: '2027-02-10T08:15:06Z'
+                        verdictId: e5f6a7b8-c9d0-4e1f-8a2b-4c5d6e7f8091
+                    pagination:
+                      page: 0
+                      limit: 20
+                      totalItems: 2
+                      totalPages: 1
+                      hasNext: false
+                      hasPrev: false
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /agent/runs/{runId}/verdicts:
+    get:
+      tags:
+        - Agent Runs
+      summary: List the gate verdicts of a run
+      description: |
+        The autonomy gate's verdicts of the run, oldest first: the class the call was treated as,
+        the outcome, the rule that decided, the confidence, the inputs the rules saw, the precedents
+        the verdict cites (resolved to what they are) and, for a pending verdict, its approval.
+        ORGANIZER only.
+      operationId: listAgentRunVerdicts
+      parameters:
+        - $ref: '#/components/parameters/RunId'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: List the gate verdicts of a run
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAgentVerdictResponse'
+              examples:
+                belowThreshold:
+                  summary: a binding call with one approval waits for an organizer
+                  value:
+                    data:
+                      - id: e5f6a7b8-c9d0-4e1f-8a2b-4c5d6e7f8091
+                        toolCallId: c3d4e5f6-a7b8-4c9d-8e0f-2a3b4c5d6e7f
+                        stepNumber: 2
+                        toolName: exampleBindingTool
+                        operationClass: BINDING
+                        outcome: PENDING_APPROVAL
+                        reason: BINDING_BELOW_THRESHOLD
+                        cap: null
+                        confidence: 0.5
+                        inputs:
+                          approvals: 1
+                          denials: 0
+                          approvalsRequired: 2
+                        citedPrecedents:
+                          - sourceId: agent_approvals:f6a7b8c9-d0e1-4f2a-9b3c-5d6e7f8091a2
+                            source: APPROVAL
+                            resolved: true
+                            eventCode: null
+                            toolCallId: b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e
+                            runId: 3f2a9c1e-5b7d-4e8a-9c0f-1a2b3c4d5e6f
+                            toolName: exampleBindingTool
+                            approvalState: APPROVED
+                            undoOutcome: null
+                            at: '2027-02-01T10:00:00Z'
+                          - sourceId: event:BATbern57
+                            source: PAST_EVENT
+                            resolved: true
+                            eventCode: BATbern57
+                        approval:
+                          id: f6a7b8c9-d0e1-4f2a-9b3c-5d6e7f8091a2
+                          state: PENDING
+                          createdAt: '2027-02-10T08:15:06Z'
+                          decidedAt: null
+                          decidedBy: null
+                        decidedAt: '2027-02-10T08:15:06Z'
+                    pagination:
+                      page: 0
+                      limit: 20
+                      totalItems: 1
+                      totalPages: 1
+                      hasNext: false
+                      hasPrev: false
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Cognito ID token of an organizer
+
+  parameters:
+    Page:
+      name: page
+      in: query
+      description: Page number (0-based)
+      required: false
+      schema:
+        type: integer
+        default: 0
+        minimum: 0
+    Limit:
+      name: limit
+      in: query
+      description: Items per page (max 100)
+      required: false
+      schema:
+        type: integer
+        default: 20
+        minimum: 1
+        maximum: 100
+    RunId:
+      name: runId
+      in: path
+      required: true
+      description: Run id
+      schema:
+        type: string
+        format: uuid
+
+  responses:
+    BadRequest:
+      description: Invalid page, limit or id
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Unauthorized:
+      description: Not authenticated, or a token kind agent-service does not accept (agent token)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Forbidden:
+      description: Forbidden (ORGANIZER role required; a token carrying `act` is refused)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    NotFound:
+      description: No such run, or no such model call in this run (`ERR_NOT_FOUND`)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+  schemas:
+    AgentRun:
+      type: object
+      description: One run of the agent loop.
+      required:
+        - id
+        - status
+        - trigger
+        - startedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: |
+            agent-service's run id. A run that obtained its CUMS grant also has `grantRunId`, which
+            is what other services record (`act.run` of its tokens, `agent:<run>` in audit columns).
+        status:
+          type: string
+          description: |
+            RUNNING while the loop works; DONE or FAILED when it ended; HANDED_TO_ORGANIZERS when
+            a cap, a refused grant or mint, or the gate stopped it and the organizers take over.
+          enum: [RUNNING, DONE, FAILED, HANDED_TO_ORGANIZERS]
+        startedAt:
+          type: string
+          format: date-time
+          description: When the run started
+        endedAt:
+          type: [string, 'null']
+          format: date-time
+          description: When the run ended; null while it runs
+        trigger:
+          type: string
+          description: What started the run (the AD-3 grant sources)
+          enum: [INBOUND_MAIL, ORGANIZER, SCHEDULED, LINKED_RUN]
+        endReason:
+          type: [string, 'null']
+          description: |
+            Why the run ended; null while it runs. COMPLETED (DONE); INTERNAL_ERROR (FAILED); the
+            others hand the run to the organizers: MODEL_UNAVAILABLE, MODEL_MAX_TOKENS, MODEL_STOPPED,
+            CAP_REACHED (a limit of `agent.limits`, named in `endDetail`), GRANT_REFUSED and
+            TOKEN_REFUSED (CUMS refused the run grant or a token, its code in `endDetail`).
+          enum: [COMPLETED, MODEL_UNAVAILABLE, MODEL_MAX_TOKENS, MODEL_STOPPED, CAP_REACHED,
+            GRANT_REFUSED, TOKEN_REFUSED, INTERNAL_ERROR, null]
+        endDetail:
+          type: [string, 'null']
+          description: |
+            A code, never free text. For CAP_REACHED the limit: STEPS, RUN_TOKENS, REPLIES or
+            DAILY_TOKENS. For GRANT_REFUSED and TOKEN_REFUSED the CUMS refusal code (`details.code`),
+            `HTTP_<status>`, CUMS_UNREACHABLE, CALLER_SECRET_MISSING or UNKNOWN_CODE. Null otherwise.
+          pattern: '^[A-Z][A-Z0-9_]{0,63}$'
+        principalKind:
+          type: [string, 'null']
+          description: Whom the run acts for, as the CUMS grant names it; null without a grant
+          enum: [REQUESTER, ORGANIZER, ORGANIZER_DELEGATE, null]
+        grantRunId:
+          type: [string, 'null']
+          format: uuid
+          description: |
+            The run id of the CUMS grant: the `act.run` claim of the run's agent tokens, so
+            `agent:<run>` in another service's audit column leads here. Null without a grant.
+
+    AgentRunDetail:
+      type: object
+      description: One run with its totals and the inbound messages it was given.
+      required:
+        - run
+        - totals
+        - inboundMessages
+      properties:
+        run:
+          $ref: '#/components/schemas/AgentRun'
+        totals:
+          $ref: '#/components/schemas/AgentRunTotals'
+        inboundMessages:
+          type: array
+          description: What the run was given, in the order received
+          items:
+            $ref: '#/components/schemas/AgentInboundMessage'
+
+    AgentRunTotals:
+      type: object
+      description: Counts over the run's decision log; tokens summed over its model calls.
+      required:
+        - steps
+        - modelCalls
+        - toolCalls
+        - verdicts
+        - pendingApprovals
+        - inputTokens
+        - outputTokens
+        - cacheCreationInputTokens
+        - cacheReadInputTokens
+      properties:
+        steps:
+          type: integer
+          format: int64
+        modelCalls:
+          type: integer
+          format: int64
+        toolCalls:
+          type: integer
+          format: int64
+        verdicts:
+          type: integer
+          format: int64
+        pendingApprovals:
+          type: integer
+          format: int64
+          description: Approvals of this run still in state PENDING
+        inputTokens:
+          type: integer
+          format: int64
+        outputTokens:
+          type: integer
+          format: int64
+        cacheCreationInputTokens:
+          type: integer
+          format: int64
+        cacheReadInputTokens:
+          type: integer
+          format: int64
+
+    AgentInboundMessage:
+      type: object
+      required:
+        - id
+        - channel
+        - receivedAt
+        - content
+      properties:
+        id:
+          type: string
+          format: uuid
+        channel:
+          type: string
+          enum: [MAIL, CHAT, CARD_ACTION]
+        externalId:
+          type: [string, 'null']
+          description: The source's idempotency key (a mail's message id); null for a chat message
+        receivedAt:
+          type: string
+          format: date-time
+        content:
+          description: The message as stored, any JSON value (may hold personal data)
+
+    AgentStep:
+      type: object
+      description: One model call plus the tool calls it asked for.
+      required:
+        - id
+        - stepNumber
+        - startedAt
+        - modelCallIds
+        - toolCallIds
+      properties:
+        id:
+          type: string
+          format: uuid
+        stepNumber:
+          type: integer
+          minimum: 1
+        startedAt:
+          type: string
+          format: date-time
+        endedAt:
+          type: [string, 'null']
+          format: date-time
+        modelCallIds:
+          type: array
+          description: The step's model call (empty when the run stopped before it)
+          items:
+            type: string
+            format: uuid
+        toolCallIds:
+          type: array
+          description: The tool calls the model asked for, in order
+          items:
+            type: string
+            format: uuid
+
+    AgentModelCall:
+      type: object
+      description: One model call through LlmPort, without its prompt and answer.
+      required:
+        - id
+        - stepNumber
+        - status
+        - chosenTools
+        - usage
+        - startedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        stepNumber:
+          type: integer
+          minimum: 1
+        status:
+          type: string
+          enum: [STARTED, SUCCEEDED, FAILED]
+        model:
+          type: [string, 'null']
+          description: The model id the answer named
+        stopReason:
+          type: [string, 'null']
+          enum: [END_TURN, TOOL_USE, MAX_TOKENS, STOP_SEQUENCE, PAUSE_TURN, REFUSAL, UNKNOWN, null]
+        chosenTools:
+          type: array
+          description: The tools the model chose, in order; empty when it chose none
+          items:
+            $ref: '#/components/schemas/AgentChosenTool'
+        usage:
+          $ref: '#/components/schemas/AgentTokenUsage'
+        error:
+          type: [string, 'null']
+          description: Why the call failed (exception class and message)
+        startedAt:
+          type: string
+          format: date-time
+        endedAt:
+          type: [string, 'null']
+          format: date-time
+
+    AgentChosenTool:
+      type: object
+      required:
+        - id
+        - name
+      properties:
+        id:
+          type: string
+          description: The model's tool_use id
+        name:
+          type: string
+
+    AgentTokenUsage:
+      type: object
+      description: The tokens the model reported; null while the call runs or when it failed.
+      properties:
+        inputTokens:
+          type: [integer, 'null']
+          format: int64
+        outputTokens:
+          type: [integer, 'null']
+          format: int64
+        cacheCreationInputTokens:
+          type: [integer, 'null']
+          format: int64
+        cacheReadInputTokens:
+          type: [integer, 'null']
+          format: int64
+
+    AgentModelCallDetail:
+      type: object
+      description: One model call with the full prompt and the answer.
+      required:
+        - modelCall
+        - prompt
+      properties:
+        modelCall:
+          $ref: '#/components/schemas/AgentModelCall'
+        prompt:
+          type: object
+          additionalProperties: true
+          description: system, messages, tools and max_tokens as sent (Messages API shape)
+        response:
+          type: [object, 'null']
+          additionalProperties: true
+          description: The answer (id, model, content blocks, stop reason, usage); absent before it came
+
+    AgentToolCall:
+      type: object
+      required:
+        - id
+        - stepNumber
+        - toolUseId
+        - toolName
+        - status
+        - input
+        - startedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        stepNumber:
+          type: integer
+          minimum: 1
+        toolUseId:
+          type: string
+          description: The model's tool_use id this call answers
+        toolName:
+          type: string
+          description: The tool the model asked for (any text for an unknown tool)
+        status:
+          type: string
+          description: |
+            STARTED (running or crashed), SUCCEEDED, ERRORED (the tool's own error), FAILED (it
+            threw), UNKNOWN_TOOL, PENDING_APPROVAL or REFUSED (the gate held it; it did not run).
+          enum: [STARTED, SUCCEEDED, ERRORED, FAILED, UNKNOWN_TOOL, PENDING_APPROVAL, REFUSED]
+        input:
+          description: The model's input to the tool as stored, any JSON value (an object from a well-behaved model)
+        output:
+          type: [string, 'null']
+          description: What the tool returned to the model
+        error:
+          type: [string, 'null']
+          description: The error returned to the model, or what the tool threw
+        startedAt:
+          type: string
+          format: date-time
+        endedAt:
+          type: [string, 'null']
+          format: date-time
+        verdictId:
+          type: [string, 'null']
+          format: uuid
+          description: The gate verdict of a non-read call; null for a read or an unknown tool
+
+    AgentVerdict:
+      type: object
+      description: A verdict of the autonomy gate (AD-7, AD-8).
+      required:
+        - id
+        - toolCallId
+        - stepNumber
+        - toolName
+        - operationClass
+        - outcome
+        - inputs
+        - citedPrecedents
+        - decidedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        toolCallId:
+          type: string
+          format: uuid
+        stepNumber:
+          type: integer
+          minimum: 1
+        toolName:
+          type: string
+        operationClass:
+          type: string
+          description: The class the call was treated as (raised to AUDIENCE above the recipient limit)
+          enum: [READ, REVERSIBLE, REPLY, BINDING, AUDIENCE]
+        outcome:
+          type: string
+          enum: [RUN, PENDING_APPROVAL, REFUSED]
+        reason:
+          type: [string, 'null']
+          description: |
+            The rule that decided (`GateReason`): RUNS_ALONE, BINDING_CLEARED,
+            BINDING_BELOW_THRESHOLD, BINDING_DENIED, AUDIENCE_CLASS, RECIPIENTS_ABOVE_ONE,
+            SCHEDULED_MAIL, MAIL_UNRESOLVED, CAP_REACHED
+        cap:
+          type: [string, 'null']
+          description: The limit a refused call reached (REPLIES); null otherwise
+        confidence:
+          type: [number, 'null']
+          minimum: 0
+          maximum: 1
+          description: 0..1 for a binding call; null where the class needs none
+        inputs:
+          type: object
+          additionalProperties: true
+          description: What the rules saw (tool, classes, trigger, principal kind, mail counts, precedent counts, thresholds, reason, cap)
+        citedPrecedents:
+          type: array
+          description: The precedents the verdict cites, in the order cited
+          items:
+            $ref: '#/components/schemas/AgentCitedPrecedent'
+        approval:
+          description: The approval of a pending verdict; null for RUN and REFUSED
+          oneOf:
+            - $ref: '#/components/schemas/AgentApproval'
+            - type: 'null'
+        decidedAt:
+          type: string
+          format: date-time
+
+    AgentCitedPrecedent:
+      type: object
+      description: |
+        A precedent a verdict cites, resolved: an organizer's approval or denial of an earlier call,
+        an undo, or a past event read through the public API (AD-8).
+      required:
+        - sourceId
+        - source
+        - resolved
+      properties:
+        sourceId:
+          type: string
+          description: '`agent_approvals:<id>`, `agent_undos:<id>` or `event:<eventCode>`'
+        source:
+          type: string
+          enum: [APPROVAL, UNDO, PAST_EVENT]
+        resolved:
+          type: boolean
+          description: Whether the decision-log row was found (always true for a past event)
+        eventCode:
+          type: [string, 'null']
+          description: The past event (PAST_EVENT only)
+        toolCallId:
+          type: [string, 'null']
+          format: uuid
+          description: The earlier call that was approved, denied or undone
+        runId:
+          type: [string, 'null']
+          format: uuid
+          description: The run of that call
+        toolName:
+          type: [string, 'null']
+        approvalState:
+          type: [string, 'null']
+          description: APPROVED or DENIED (APPROVAL only)
+          enum: [PENDING, APPROVED, DENIED, EXPIRED, null]
+        undoOutcome:
+          type: [string, 'null']
+          description: UNDO only
+          enum: [PENDING, SUCCEEDED, FAILED, null]
+        at:
+          type: [string, 'null']
+          format: date-time
+          description: When the organizer decided, or when the undo was performed
+
+    AgentApproval:
+      type: object
+      description: The approval of a pending verdict.
+      required:
+        - id
+        - state
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        state:
+          type: string
+          enum: [PENDING, APPROVED, DENIED, EXPIRED]
+        createdAt:
+          type: string
+          format: date-time
+        decidedAt:
+          type: [string, 'null']
+          format: date-time
+        decidedBy:
+          type: [string, 'null']
+          description: The deciding organizer (shared-kernel `Actors` value)
+
+    PaginatedAgentRunResponse:
+      type: object
+      description: The shared paginated envelope (`PaginatedResponse`) with `data` of `AgentRun`.
+      required:
+        - data
+        - pagination
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/AgentRun'
+        pagination:
+          $ref: '#/components/schemas/PaginationMetadata'
+
+    PaginatedAgentStepResponse:
+      type: object
+      description: The shared paginated envelope with `data` of `AgentStep`.
+      required:
+        - data
+        - pagination
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/AgentStep'
+        pagination:
+          $ref: '#/components/schemas/PaginationMetadata'
+
+    PaginatedAgentModelCallResponse:
+      type: object
+      description: The shared paginated envelope with `data` of `AgentModelCall`.
+      required:
+        - data
+        - pagination
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/AgentModelCall'
+        pagination:
+          $ref: '#/components/schemas/PaginationMetadata'
+
+    PaginatedAgentToolCallResponse:
+      type: object
+      description: The shared paginated envelope with `data` of `AgentToolCall`.
+      required:
+        - data
+        - pagination
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/AgentToolCall'
+        pagination:
+          $ref: '#/components/schemas/PaginationMetadata'
+
+    PaginatedAgentVerdictResponse:
+      type: object
+      description: The shared paginated envelope with `data` of `AgentVerdict`.
+      required:
+        - data
+        - pagination
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/AgentVerdict'
+        pagination:
+          $ref: '#/components/schemas/PaginationMetadata'
+
+    PaginationMetadata:
+      $ref: './_shared.openapi.yml#/components/schemas/PaginationMetadata'
+    ErrorResponse:
+      $ref: './_shared.openapi.yml#/components/schemas/ErrorResponse'

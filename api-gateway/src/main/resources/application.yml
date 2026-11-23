@@ -38,6 +38,8 @@ services:
     url: ${PARTNER_COORDINATION_SERVICE_URL:http://localhost:8083}
   company-user-management:
     url: ${COMPANY_USER_MANAGEMENT_SERVICE_URL:http://localhost:8085}
+  agent:
+    url: ${AGENT_SERVICE_URL:http://localhost:8003}
 
 # Request-time is_active gate (Story 12.2 — SSO PR 1 Part A; AccountActiveFilter)
 # Ships DARK: enabled=false so the filter is a pure pass-through on first deploy. Flip to true

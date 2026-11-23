@@ -35,11 +35,12 @@ else
 fi
 
 # Calculate ports - consistent for all instances
-# Pattern: BASE_PORT for API Gateway, BASE_PORT+1/+2/+4 for services, BASE_PORT+100 for frontend
-# (+3 and +5 belonged to the speaker and attendee stubs removed by Story 17.2; left unused)
+# Pattern: BASE_PORT for API Gateway, BASE_PORT+1..+4 for services, BASE_PORT+100 for frontend
+# (+3 is agent-service; +5 belonged to the attendee stub removed by Story 17.2, left unused)
 API_GATEWAY_PORT=$BASE_PORT
 COMPANY_USER_MGMT_PORT=$((BASE_PORT + 1))
 EVENT_MGMT_PORT=$((BASE_PORT + 2))
+AGENT_PORT=$((BASE_PORT + 3))
 PARTNER_COORD_PORT=$((BASE_PORT + 4))
 FRONTEND_PORT=$((BASE_PORT + 100))
 
