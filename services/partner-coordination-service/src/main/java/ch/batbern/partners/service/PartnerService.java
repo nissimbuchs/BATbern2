@@ -19,6 +19,7 @@ import ch.batbern.partners.repository.PartnerRepository;
 import ch.batbern.partners.security.SecurityContextHelper;
 import ch.batbern.shared.api.DeterministicPaging;
 import ch.batbern.shared.events.DomainEventPublisher;
+import ch.batbern.shared.utils.DateTimeUtils;
 import io.micrometer.core.annotation.Timed;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -30,7 +31,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
-import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -91,7 +91,7 @@ public class PartnerService {
 
         Specification<Partner> spec = Specification.allOf(
                 PartnerRepository.hasLevel(levelFilter(filter)),
-                PartnerRepository.isActiveOn(activeFilter(filter), LocalDate.now()));
+                PartnerRepository.isActiveOn(activeFilter(filter), DateTimeUtils.todaySwiss()));
         if (search != null && !search.isBlank()) {
             spec = spec.and(PartnerRepository.companyNameIn(companyServiceClient.findCompanyNames(search.strip())));
         }
@@ -285,7 +285,7 @@ public class PartnerService {
                 .orElseThrow(() -> new PartnerNotFoundException("Partner not found for company: " + companyName));
 
         // Soft delete: set end date to today (makes isActive() return false since endDate must be > now)
-        partner.setPartnershipEndDate(java.time.LocalDate.now());
+        partner.setPartnershipEndDate(DateTimeUtils.todaySwiss());
         partner.setUpdatedAt(Instant.now());
 
         partnerRepository.save(partner);

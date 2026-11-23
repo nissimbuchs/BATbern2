@@ -1,5 +1,6 @@
 package ch.batbern.partners.domain;
 
+import ch.batbern.shared.utils.DateTimeUtils;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
@@ -76,6 +77,20 @@ class PartnerTest {
         assertThat(futurePartner.isActive())
                 .as("Partnership is inactive when start date is in the future")
                 .isFalse();
+    }
+
+    @Test
+    void should_countActiveDaysInZurich_when_jvmZoneIsOnAnotherDay() {
+        // Starts today and ends tomorrow, both in Zurich: active today in Bern, whatever the JVM zone
+        LocalDate zurichToday = DateTimeUtils.todaySwiss();
+        Partner partner = Partner.builder()
+                .companyName("TodayCo")
+                .partnershipLevel(PartnershipLevel.GOLD)
+                .partnershipStartDate(zurichToday)
+                .partnershipEndDate(zurichToday.plusDays(1))
+                .build();
+
+        assertThat(partner.isActive()).isTrue();
     }
 
     @Test

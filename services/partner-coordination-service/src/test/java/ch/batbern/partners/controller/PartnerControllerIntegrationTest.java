@@ -8,6 +8,7 @@ import ch.batbern.partners.domain.PartnershipLevel;
 import ch.batbern.partners.repository.PartnerRepository;
 import ch.batbern.shared.test.AbstractIntegrationTest;
 import ch.batbern.shared.test.contract.ContractServer;
+import ch.batbern.shared.utils.DateTimeUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -33,6 +34,7 @@ import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.Map;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.contains;
@@ -153,6 +155,25 @@ class PartnerControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.data", hasSize(1)))
                 .andExpect(jsonPath("$.data[0].companyName").value("GoogleZH"))
                 .andExpect(jsonPath("$.data[0].isActive").value(true));
+    }
+
+    @Test
+    @DisplayName("the active filter takes today in Zurich, not in the JVM zone")
+    void should_listPartnerAsActive_when_itsOnlyDayIsTodayInZurich() throws Exception {
+        LocalDate zurichToday = DateTimeUtils.todaySwiss();
+        Partner oneDay = new Partner();
+        oneDay.setCompanyName("OneDayZH");
+        oneDay.setPartnershipLevel(PartnershipLevel.GOLD);
+        oneDay.setPartnershipStartDate(zurichToday);
+        oneDay.setPartnershipEndDate(zurichToday);
+        partnerRepository.save(oneDay);
+
+        mockMvc.perform(get("/api/v1/partners")
+                        .param("filter", "isActive=true")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data", hasSize(1)))
+                .andExpect(jsonPath("$.data[0].companyName").value("OneDayZH"));
     }
 
     // ═══════════════════════════════════════════════════════════════════════════
@@ -389,6 +410,24 @@ class PartnerControllerIntegrationTest extends AbstractIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.isActive").value(false));
+    }
+
+    @Test
+    @WithMockUser(roles = "ORGANIZER")
+    @DisplayName("deleting a partner ends the partnership on today's Zurich date")
+    void should_endPartnershipOnZurichDate_when_deleteEndpointCalled() throws Exception {
+        Partner partner = new Partner();
+        partner.setCompanyName("EndsTodayZH");
+        partner.setPartnershipLevel(PartnershipLevel.GOLD);
+        partner.setPartnershipStartDate(DateTimeUtils.todaySwiss().minusYears(1));
+        partnerRepository.save(partner);
+
+        mockMvc.perform(delete("/api/v1/partners/EndsTodayZH")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNoContent());
+
+        assertThat(partnerRepository.findByCompanyName("EndsTodayZH").orElseThrow().getPartnershipEndDate())
+                .isEqualTo(DateTimeUtils.todaySwiss());
     }
 
     // ── Reactivation (issue #821) ────────────────────────────────────────────────

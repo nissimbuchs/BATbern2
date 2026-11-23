@@ -7,13 +7,13 @@ import ch.batbern.partners.dto.generated.AttendanceSummaryRecord;
 import ch.batbern.partners.dto.generated.PartnerDashboardResponse;
 import ch.batbern.partners.exception.PartnerNotFoundException;
 import ch.batbern.partners.repository.PartnerRepository;
+import ch.batbern.shared.utils.DateTimeUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.List;
 
@@ -43,7 +43,7 @@ public class PartnerAnalyticsService {
     public PartnerDashboardResponse getAttendanceDashboard(String companyName, int fromYear) {
         log.debug("Building attendance dashboard for company={}, fromYear={}", companyName, fromYear);
 
-        int resolvedFromYear = (fromYear > 0) ? fromYear : (LocalDate.now().getYear() - 5);
+        int resolvedFromYear = (fromYear > 0) ? fromYear : (DateTimeUtils.todaySwiss().getYear() - 5);
 
         // 1. Fetch per-event attendance data from event-management-service (cached 15 min)
         List<AttendanceSummaryDTO> summaries =

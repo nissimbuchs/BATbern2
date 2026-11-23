@@ -3,6 +3,7 @@ package ch.batbern.partners.service;
 import ch.batbern.shared.mail.MailContext;
 import ch.batbern.shared.mail.MailTrigger;
 import ch.batbern.shared.service.EmailService;
+import ch.batbern.shared.utils.DateTimeUtils;
 import ch.batbern.shared.utils.LoggingUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -12,7 +13,6 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
-import java.time.Year;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.UUID;
@@ -267,7 +267,8 @@ public class PartnerInviteEmailService {
                 + "color:#444;font-size:15px;line-height:1.7;\">" + content + "</td></tr>"
                 + "<tr><td style=\"padding:20px 36px 24px;border-top:1px solid #eee;"
                 + "font-family:'Helvetica Neue',Arial,sans-serif;font-size:11px;color:#999;text-align:center;\">"
-                + "&copy; " + Year.now().getValue() + " BATbern. Alle Rechte vorbehalten. / All rights reserved."
+                + "&copy; " + DateTimeUtils.todaySwiss().getYear()
+                + " BATbern. Alle Rechte vorbehalten. / All rights reserved."
                 + "</td></tr></table></td></tr></table></body></html>";
     }
 
