@@ -42,7 +42,7 @@ in `docs/archive/planning/`, older story files in `docs/stories/archived/`.
 - ✅ Venue coordination composer (#690)
 - ✅ Moderator presenter and Live Control page (REST polling since #800; big-screen fixes #1207)
 - ✅ Attendee touchpoints (Epic 7): topics from the floor, self-nomination, slides-online mail, thank-the-organizers, per-session Q&A, event history, curated thank-you marquee
-- ✅ Mail Center (Epic 16): outbound log + delivery status, conversations, answers, shared composer, global Mail page; alias forwarding runs in EMS (#1137, forwarder Lambda removed)
+- ✅ Mail Center (Epic 16): outbound log + delivery status, conversations, answers, shared composer, global Mail page with all conversations; alias forwarding runs in EMS (#1137, forwarder Lambda removed); speaker proposals confirmed by mail and opened as conversations, first answer counts as contact (#1350, #1351)
 - ✅ Historical archive browsing with content search
 - ✅ Historical data migration (all historical data imported into production)
 - ✅ Speaker self-service portal (invitations, response, materials, dashboard, reminders)

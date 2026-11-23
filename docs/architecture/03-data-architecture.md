@@ -587,6 +587,7 @@ EMS tables, grouped by domain. The full list is in the [Table Inventory](#table-
   feature notes on the public site (`featured_at`).
 - **Self-nomination (Story 7.2)** writes `session_proposals` and a `speaker_pool` row with
   `source = 'self_nomination'` (see [Speaker workflow (ADR-009)](#speaker-workflow-adr-009)).
+  `session_proposals.conversation_key` (V162) links the Mail Center conversation opened for it.
 - **Topics from the floor** are stored in PCS `topic_suggestions` with `source = 'COMMUNITY'`.
 
 #### Tasks and notifications

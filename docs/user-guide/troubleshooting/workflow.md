@@ -10,7 +10,7 @@ This guide helps resolve issues with the BATbern workflow system, including stat
 2. **Speaker Workflow** - Per-speaker **8-state model** (ADR-009, Epic 11): `IDENTIFIED → CONTACTED → READY → INVITED → ACCEPTED → CONTENT_SUBMITTED → QUALITY_REVIEWED`, plus the terminal `DECLINED` state (reachable from any non-terminal state). `SpeakerWorkflowService` is the sole status writer. (Cognito user provisioning happens at the **`CONTACTED → READY`** "promote" transition; slot assignment and publish-readiness are derived flags — `is_slot_assigned`, `is_publishable` — not states.)
 3. **Task System** - Configurable tasks triggered by event state transitions
 
-> **Note (Epic 7 self-nomination):** When a logged-in attendee self-nominates via "I Could Speak on That" on a published event, a `speaker_pool` entry is created at the **IDENTIFIED** state. Organizers then triage it through the same 8-state workflow. No Cognito user / SPEAKER role is created at nomination time.
+> **Note (Epic 7 self-nomination):** When a logged-in attendee self-nominates via "I Could Speak on That" on a published event, a `speaker_pool` entry is created at the **IDENTIFIED** state. Organizers then triage it through the same 8-state workflow. No Cognito user / SPEAKER role is created at nomination time. The proposed title and abstract show on the card and in the drawer's Details tab ("Proposed talk"); "Edit details" does not change them. A self-nomination from before 2026-11-23 has no Mail Center conversation: answer the person by mail and use "Log outreach".
 
 See [Workflow System Documentation](../workflow/) for complete workflow details.
 
