@@ -41,6 +41,12 @@ Only items that are not live yet. Everything else is listed under its release be
 
 ### Unreleased — after BATbern60
 
+**Fix — Mail page shows every conversation; the new-mail notice names the sender; speaker proposals are confirmed**:
+- ✅ A conversation that was assigned to an event and then answered or set to Done was only on that event's mail page. The Mail page now has **All conversations**: everything that came in, with or without event, done ones included, with an event filter.
+- ✅ A speaker proposal ("I could speak on that") is now confirmed to the person by mail, and it opens a conversation on the event in the Mail Center, with title and abstract; every organizer gets the new-mail notice. Before, nobody got a mail and the proposal waited unseen in the speaker pool.
+- ✅ A proposal from someone whose profile could not be found failed instead of using the username as the name. Fixed.
+- ✅ When a mail's sender had no display name (only the address in the From line), the notice read "Neue Mail von ?". It now names the person known for that address, else the address.
+
 **Fix — Newsletter subscriber dialogs close again; no "already registered" line on the homepage**:
 - ✅ On the Newsletter Subscribers page, the confirmation dialogs of Delete, Unsubscribe, Re-subscribe and Unsuppress stayed open although the action went through. They now close when it is done.
 - ✅ A logged-in newsletter subscriber no longer sees "Du bist bereits angemeldet" at the bottom of the homepage, which read as an event registration. The newsletter form is simply not shown to them.

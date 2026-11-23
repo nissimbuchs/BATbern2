@@ -246,12 +246,12 @@ class MailGoldenTest extends AbstractIntegrationTest {
         for (String locale : List.of("de", "en")) {
             lenient().when(userApiClient.getPreferredLanguage("olga.organizer")).thenReturn(locale);
             EmailForwardingService.Notice notice = conversationNotices.forStored(
-                    new InboundMailCenter.Stored("conv-932", EVENT_CODE, "Sara Speaker", "Frage zu den Folien"))
+                    new InboundMailCenter.Stored("conv-932", EVENT_CODE, "Sara Speaker", "success+sara@simulator.amazonses.com", "Frage zu den Folien"))
                     .apply("success+olga931" + SIM);
             compare("mailcenter-new-mail-" + locale, notice.subject(), notice.html());
             // #1235: a mail that matches no event must not show the raw {{#eventCode}} section
             EmailForwardingService.Notice noEvent = conversationNotices.forStored(
-                    new InboundMailCenter.Stored("conv-933", null, "Sara Speaker", "Abmeldung"))
+                    new InboundMailCenter.Stored("conv-933", null, "Sara Speaker", "success+sara@simulator.amazonses.com", "Abmeldung"))
                     .apply("success+olga931" + SIM);
             assertThat(noEvent.subject()).doesNotContain("{{");
             assertThat(noEvent.html()).doesNotContain("{{");

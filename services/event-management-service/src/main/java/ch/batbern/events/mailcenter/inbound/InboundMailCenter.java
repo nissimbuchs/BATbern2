@@ -91,9 +91,12 @@ public class InboundMailCenter {
     /**
      * What a stored mail became, for the notification that replaces its forwarded copy (Story 16.6).
      *
-     * @param eventCode the conversation's event, or null
+     * @param eventCode   the conversation's event, or null
+     * @param fromName    the From display name, or null when the header has none
+     * @param fromAddress the From address, or null
      */
-    public record Stored(String conversationKey, String eventCode, String fromName, String subject) {
+    public record Stored(String conversationKey, String eventCode, String fromName, String fromAddress,
+            String subject) {
     }
 
     /**
@@ -126,11 +129,12 @@ public class InboundMailCenter {
     /** The conversation a stored mail belongs to, by its group id. */
     private Optional<Stored> storedFor(String groupId) {
         return jdbc.query("""
-                SELECT c.conversation_key, c.event_code, m.from_name, m.subject
+                SELECT c.conversation_key, c.event_code, m.from_name, m.from_address, m.subject
                   FROM mail_message m JOIN mail_conversation c ON c.id = m.conversation_id
                  WHERE m.send_group_id = :groupId
                 """, new MapSqlParameterSource("groupId", groupId),
-                (rs, i) -> new Stored(rs.getString(1), rs.getString(2), rs.getString(3), rs.getString(4)))
+                (rs, i) -> new Stored(rs.getString(1), rs.getString(2), rs.getString(3), rs.getString(4),
+                        rs.getString(5)))
                 .stream().findFirst();
     }
 
@@ -243,7 +247,7 @@ public class InboundMailCenter {
         log.info("Mail Center: mail from {} stored in {} ({})", LoggingUtils.maskEmail(mail.fromAddress()), key,
                 t.metric());
         return Optional.of(new Stored(key, eventCode != null ? eventCode : eventOf(key), mail.fromName(),
-                mail.subject()));
+                mail.fromAddress(), mail.subject()));
     }
 
     /** Where a human mail goes, by the 16.2a/16.2b rules after the token: headers, alias, subject, none. */

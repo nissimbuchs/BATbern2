@@ -92,7 +92,7 @@
       "abstractPlaceholder": "Een paar zinnen over waar je talk over gaat",
       "submit": "Voorstel versturen",
       "submitting": "Versturen…",
-      "success": "Bedankt! Je voorstel is naar de organisatoren verstuurd.",
+      "success": "Bedankt! Je voorstel is naar de organisatoren verstuurd. Je ontvangt een bevestiging per mail.",
       "error": "Je voorstel kon niet worden verstuurd. Probeer het opnieuw.",
       "alreadyDone": "Je hebt jezelf al voorgesteld voor dit evenement."
     }

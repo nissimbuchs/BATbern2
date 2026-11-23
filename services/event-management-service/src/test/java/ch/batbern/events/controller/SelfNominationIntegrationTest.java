@@ -1,11 +1,8 @@
 package ch.batbern.events.controller;
 
-import ch.batbern.events.client.UserApiClient;
+import ch.batbern.events.config.CumsContractHarness;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.SpeakerPool;
-import ch.batbern.events.dto.generated.users.ProvisionUserRequest;
-import ch.batbern.events.dto.generated.users.ProvisionUserResponse;
-import ch.batbern.events.dto.generated.users.UserResponse;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
 import ch.batbern.events.repository.SpeakerStatusHistoryRepository;
@@ -14,19 +11,20 @@ import ch.batbern.shared.test.AbstractIntegrationTest;
 import ch.batbern.shared.types.EventWorkflowState;
 import ch.batbern.shared.types.SpeakerWorkflowState;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.context.event.EventListener;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
+import ch.batbern.shared.test.contract.ContractServer.Reply;
 
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -37,11 +35,7 @@ import java.time.temporal.ChronoUnit;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.springframework.http.HttpMethod.POST;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -56,8 +50,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * auth gating (401 anonymous / 403 wrong role), and that the self-nominated row flows through the
  * unchanged triage → promote path (IDENTIFIED → CONTACTED → READY via existing endpoints).
  *
- * <p>PostgreSQL via Testcontainers for production parity. {@code UserApiClient} is mocked to avoid
- * hitting CUMS — the profile lookup (auto-fill) and the READY-path provisioning both go through it.
+ * <p>PostgreSQL via Testcontainers for production parity. CUMS is the {@link CumsContractHarness}:
+ * the real {@code UserApiClient} runs, the profile lookup (auto-fill) and the READY-path
+ * provisioning are answered at the wire.
  */
 @Transactional
 @Import(SelfNominationIntegrationTest.EventCaptorConfig.class)
@@ -116,8 +111,8 @@ class SelfNominationIntegrationTest extends AbstractIntegrationTest {
     @Autowired
     private ch.batbern.events.service.SpeakerPoolService speakerPoolService;
 
-    @MockitoBean
-    private UserApiClient userApiClient;
+    @Autowired
+    private CumsContractHarness cums;
 
     private static final String EVENT_CODE = "BATbern950";
     private static final String ATTENDEE = "jane.attendee";
@@ -138,13 +133,13 @@ class SelfNominationIntegrationTest extends AbstractIntegrationTest {
 
         // Auto-fill source: the attendee's profile (Resolved Decision #1). companyId is the
         // company slug stored on the pool row's `company` column.
-        UserResponse profile = new UserResponse();
-        profile.setId(ATTENDEE);
-        profile.setFirstName("Jane");
-        profile.setLastName("Attendee");
-        profile.setCompanyId("AcmeAG");
-        lenient().when(userApiClient.getUserByUsername(ATTENDEE)).thenReturn(profile);
-        lenient().when(userApiClient.getCompanyDisplayName("AcmeAG")).thenReturn("Acme AG");
+        cums.user(ATTENDEE, CumsContractHarness.userJson(ATTENDEE, "Jane", "Attendee",
+                "jane.attendee@example.com", "AcmeAG"));
+    }
+
+    @AfterEach
+    void resetCums() {
+        cums.reset();
     }
 
     // ==================== AC1, AC2, AC3, AC8: happy path ====================
@@ -180,7 +175,7 @@ class SelfNominationIntegrationTest extends AbstractIntegrationTest {
         assertThat(statusHistoryRepository.findBySpeakerPoolIdOrderByChangedAtDesc(persisted.getId()))
                 .as("no status-history row — the row was created at the IDENTIFIED default, not via transition()")
                 .isEmpty();
-        verify(userApiClient, never()).provisionUserWithRole(any(ProvisionUserRequest.class));
+        assertThat(cums.calls(POST, "/internal/users/provision")).as("no provisioning").isEmpty();
 
         // ADR-012: the proposed talk lives in session_proposals (NOT on speaker_pool). The pool
         // row carries only the provenance flag.
@@ -197,8 +192,7 @@ class SelfNominationIntegrationTest extends AbstractIntegrationTest {
     @DisplayName("Auto-fill falls back to the username when CUMS has no profile")
     void should_fallBackToUsername_when_profileLookupFails() throws Exception {
         saveEvent(EVENT_CODE, "cloud-native", true, "topic");
-        when(userApiClient.getUserByUsername(ATTENDEE))
-                .thenThrow(new ch.batbern.events.exception.UserServiceException("CUMS down"));
+        cums.unknownUser(ATTENDEE);
 
         mockMvc.perform(post("/api/v1/events/{eventCode}/speaker-nominations", EVENT_CODE)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -366,16 +360,8 @@ class SelfNominationIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isOk());
 
         // 3) Organizer promotes CONTACTED → READY — provisioning happens here, only here.
-        when(userApiClient.provisionUserWithRole(any(ProvisionUserRequest.class)))
-                .thenAnswer(inv -> new ProvisionUserResponse(ATTENDEE, true));
-        lenient().when(userApiClient.getUserByUsername(ATTENDEE)).thenAnswer(inv -> {
-            UserResponse u = new UserResponse();
-            u.setId(ATTENDEE);
-            u.setEmail("jane.attendee@example.com");
-            u.setFirstName("Jane");
-            u.setLastName("Attendee");
-            return u;
-        });
+        cums.answer(POST, "/internal/users/provision",
+                call -> Reply.ok("{\"username\": \"" + ATTENDEE + "\", \"created\": true}"));
 
         mockMvc.perform(post("/api/v1/events/{eventCode}/speakers/{speakerId}/promote", EVENT_CODE, speakerId)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -387,7 +373,7 @@ class SelfNominationIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status", is("READY")));
 
-        verify(userApiClient).provisionUserWithRole(any(ProvisionUserRequest.class));
+        assertThat(cums.calls(POST, "/internal/users/provision")).hasSize(1);
 
         // AC-PROMOTE-2 / ADR-012: the pitch was carried into the canonical session — the session
         // title is the proposed title (not a placeholder), and the abstract seeded the first

@@ -92,7 +92,7 @@
       "abstractPlaceholder": "Unas frases sobre lo que tratará tu charla",
       "submit": "Enviar propuesta",
       "submitting": "Enviando…",
-      "success": "¡Gracias! Tu propuesta se ha enviado a los organizadores.",
+      "success": "¡Gracias! Tu propuesta se ha enviado a los organizadores. Recibirás una confirmación por correo.",
       "error": "No se pudo enviar tu propuesta. Inténtalo de nuevo.",
       "alreadyDone": "Ya te has propuesto para este evento."
     }

@@ -53,7 +53,7 @@ class AliasMailProcessorSwitchTest {
 
     private AliasMailProcessor processor;
     private final InboundMailCenter.Stored stored =
-            new InboundMailCenter.Stored("conv-1", "BATbern60", "A Speaker", "Frage");
+            new InboundMailCenter.Stored("conv-1", "BATbern60", "A Speaker", "success+speaker@simulator.amazonses.com", "Frage");
 
     @BeforeEach
     void setUp() {

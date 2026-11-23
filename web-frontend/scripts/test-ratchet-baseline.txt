@@ -38,7 +38,6 @@ be-mock-s2s-client	api-gateway/src/test/java/ch/batbern/gateway/integration/Acco
 be-mock-s2s-client	api-gateway/src/test/java/ch/batbern/gateway/security/AccountActiveFilterTest.java	1
 be-mock-s2s-client	services/event-management-service/src/test/java/ch/batbern/events/controller/AnonymousRegistrationE2EIntegrationTest.java	1
 be-mock-s2s-client	services/event-management-service/src/test/java/ch/batbern/events/controller/RegistrationStatusIntegrationTest.java	1
-be-mock-s2s-client	services/event-management-service/src/test/java/ch/batbern/events/controller/SelfNominationIntegrationTest.java	1
 be-mock-s2s-client	services/event-management-service/src/test/java/ch/batbern/events/controller/SpeakerPromoteControllerIntegrationTest.java	1
 be-mock-s2s-client	services/event-management-service/src/test/java/ch/batbern/events/forwarding/EmailForwardingServiceTest.java	1
 be-mock-s2s-client	services/event-management-service/src/test/java/ch/batbern/events/forwarding/ForwardingRecipientResolverTest.java	1
@@ -251,7 +250,6 @@ fe-mock-hooks	web-frontend/src/components/organizer/EventPage/communications/com
 fe-mock-hooks	web-frontend/src/components/organizer/EventPage/topicOverlay/__tests__/TopicSelectionOverlay.test.tsx	3
 fe-mock-hooks	web-frontend/src/components/organizer/EventPage/topicOverlay/__tests__/useTopicSelection.test.tsx	1
 fe-mock-hooks	web-frontend/src/components/organizer/EventTypeConfigurationForm/EventTypeConfigurationForm.test.tsx	1
-fe-mock-hooks	web-frontend/src/components/organizer/MailCenter/__tests__/MailCenterPage.test.tsx	4
 fe-mock-hooks	web-frontend/src/components/organizer/MailCenter/__tests__/ParticipantMailList.test.tsx	1
 fe-mock-hooks	web-frontend/src/components/organizer/NewsletterSubscribers/__tests__/NewsletterSubscriberList.test.tsx	1
 fe-mock-hooks	web-frontend/src/components/organizer/PartnerManagement/PartnerCreateEditModal.test.tsx	1
@@ -337,7 +335,6 @@ fe-mock-i18n	web-frontend/src/components/organizer/EventPage/communications/comp
 fe-mock-i18n	web-frontend/src/components/organizer/EventPage/communications/composer/__tests__/MailComposerOwnText.test.tsx	1
 fe-mock-i18n	web-frontend/src/components/organizer/EventPage/topicOverlay/__tests__/TopicSelectionCard.test.tsx	1
 fe-mock-i18n	web-frontend/src/components/organizer/EventPage/topicOverlay/__tests__/TopicSelectionOverlay.test.tsx	1
-fe-mock-i18n	web-frontend/src/components/organizer/MailCenter/__tests__/MailCenterPage.test.tsx	1
 fe-mock-i18n	web-frontend/src/components/organizer/MailCenter/__tests__/ParticipantMailList.test.tsx	1
 fe-mock-i18n	web-frontend/src/components/organizer/MeetingDetailPanel.test.tsx	1
 fe-mock-i18n	web-frontend/src/components/organizer/PartnerManagement/PartnerCard.test.tsx	1
@@ -410,7 +407,6 @@ fe-mock-services	web-frontend/src/components/organizer/EventPage/communications/
 fe-mock-services	web-frontend/src/components/organizer/EventPage/communications/__tests__/PartnerMeetingsCompose.test.tsx	1
 fe-mock-services	web-frontend/src/components/organizer/EventPage/topicOverlay/__tests__/TopicSelectionOverlay.test.tsx	1
 fe-mock-services	web-frontend/src/components/organizer/EventTypeSelector/EventTypeSelector.test.tsx	1
-fe-mock-services	web-frontend/src/components/organizer/MailCenter/__tests__/MailCenterPage.test.tsx	2
 fe-mock-services	web-frontend/src/components/organizer/MailCenter/__tests__/ParticipantMailList.test.tsx	1
 fe-mock-services	web-frontend/src/components/organizer/PartnerManagement/PartnerCreateEditModal.test.tsx	1
 fe-mock-services	web-frontend/src/components/organizer/PartnerManagement/PartnerDetailScreen.test.tsx	1

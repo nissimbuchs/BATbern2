@@ -210,6 +210,10 @@ disappears at zero and refreshes every minute.
   beside a row puts the conversation and all its mails on that event: it then shows in that event's
   "Needs an answer". Choosing "(no event)" takes it off again. Inside any conversation the **Event**
   field does the same.
+- **All conversations:** every conversation that came in, with or without an event, also the done
+  ones, newest first, 25 per page. Each row names its event and shows its status. Pick an event to
+  narrow it. A conversation stays here when it is assigned to an event or set to Done, so nothing that
+  came in disappears from the Mail page.
 - **Spam (collapsed):** mail the mail server flagged as spam. It is not forwarded to anyone and never
   shows as open. **Not spam** moves it where it belongs, as if it had just arrived: to an event's
   "Needs an answer" or to "No event". Spam is deleted after 30 days. Mail with a virus is not kept at

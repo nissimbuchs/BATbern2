@@ -71,6 +71,8 @@ class AutomaticTriggerAudienceGuardTest {
             Map.entry("SessionTimingAssignedEventListener#handleSessionTimingAssigned", "no mail: workflow state"),
             Map.entry("SpeakerAcceptedEventListener#handleSpeakerAccepted", "no mail: workflow state"),
             Map.entry("SpeakerAddedToPoolEventListener#handleSpeakerAddedToPool", "no mail: workflow state"),
+            Map.entry("SpeakerProposalNotices#onProposalSubmitted",
+                    "the one person who proposed a talk, and the organizers"),
             Map.entry("SpeakerReminderScheduler#processReminders", "each speaker, about their own deadline"),
             Map.entry("TaskActivationScheduler#reconcileOpenTasks", "no mail: task state"),
             Map.entry("TaskDeadlineReminderScheduler#processReminders", "the organizer a task is assigned to"),
