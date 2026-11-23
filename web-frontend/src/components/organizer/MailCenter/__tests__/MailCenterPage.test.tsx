@@ -126,6 +126,45 @@ const originalMatchMedia = window.matchMedia;
 describe('MailCenterPage', () => {
   afterEach(() => {
     window.matchMedia = originalMatchMedia;
+    localStorage.clear();
+  });
+
+  it('should collapse and expand every section from its header', async () => {
+    const row = conv({ conversationKey: 'conv-9', eventCode: null });
+    serve({ open: [conv({})], noEvent: [row], all: [row] });
+    renderPage();
+
+    for (const section of ['mail-center-open', 'mail-center-no-event', 'mail-center-all']) {
+      // positive control: expanded by default
+      expect(await screen.findByTestId(`${section}-list`)).toBeVisible();
+      const header = screen.getByTestId(`${section}-toggle`);
+      expect(header).toHaveAttribute('aria-expanded', 'true');
+      await userEvent.click(header);
+      expect(header).toHaveAttribute('aria-expanded', 'false');
+      await waitFor(() => expect(screen.getByTestId(`${section}-list`)).not.toBeVisible());
+      await userEvent.click(header);
+      expect(header).toHaveAttribute('aria-expanded', 'true');
+    }
+    for (const section of ['mail-center-spam', 'mail-center-sent']) {
+      expect(screen.getByTestId(`${section}-toggle`)).toHaveAttribute('aria-expanded', 'false');
+    }
+  });
+
+  it('should remember a collapsed section for the next visit', async () => {
+    serve({ open: [conv({})] });
+    const { unmount } = renderWithAuth(<MailCenterPage />, {
+      auth: signedInAs('organizer', { username: 'me' }),
+      initialEntries: ['/organizer/mail'],
+    });
+    await screen.findByTestId('mail-center-open-list');
+    await userEvent.click(screen.getByTestId('mail-center-open-toggle'));
+    unmount();
+
+    renderPage();
+    expect(await screen.findByTestId('mail-center-open-toggle')).toHaveAttribute(
+      'aria-expanded',
+      'false'
+    );
   });
 
   it('should show one line per empty section when nothing is there', async () => {

@@ -193,7 +193,9 @@ Esc closes the composer; the focus goes back to "+ New mail".
 
 **Mail** in the top navigation, right after Events, shows everything across events (Story 16.7). The
 number on the entry counts the open conversations of all events and of mail without an event; it
-disappears at zero and refreshes every minute.
+disappears at zero and refreshes every minute. Every section folds away from its header: Open, No
+event and All conversations start open, Spam and What went out start closed, and the page remembers
+your choice in this browser.
 
 - **Open:** every open or waiting conversation, of every event. Each row names its event. A click
   opens it below the row, exactly as on the event page.

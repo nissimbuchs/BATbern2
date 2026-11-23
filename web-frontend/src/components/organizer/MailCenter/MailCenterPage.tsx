@@ -7,13 +7,14 @@
  *  3. All conversations: every conversation that came in, with or without event, done ones
  *     included, newest first, with an event filter and pages. Assigning a mail to an event or
  *     closing it never takes it off this page.
- *  4. Spam (collapsed, count in the header): mail SES flagged as spam, "Not spam" per row.
- *  5. What went out (all events, collapsed): the event page's list across events, with an event filter.
+ *  4. Spam (collapsed by default, count in the header): mail SES flagged as spam, "Not spam" per row.
+ *  5. What went out (all events, collapsed by default): the event page's list across events, with an event filter.
  *
  * The rows and inline details are the event page's (`ConversationList`, `MailSentList`,
  * `MailDetail`): inline below the row on desktop, a full-screen dialog on mobile.
  * `?conversation={key}` opens a conversation directly (the 16.6 notification links here for mail
- * without event). Empty sections show one line.
+ * without event). Empty sections show one line. Every section collapses from its header; the first
+ * three start open, Spam and What went out closed, and each viewer's choice is kept in this browser.
  */
 
 import React, { useState } from 'react';
@@ -96,8 +97,13 @@ export const MailCenterPage: React.FC = () => {
         </Paper>
       )}
 
-      <Paper variant="outlined" sx={{ p: { xs: 1, sm: 2 }, mb: 3 }}>
-        <SectionHeader title={t('mailCenter.open')} count={counts.data?.open} warning />
+      <Section
+        id="mail-center-open"
+        title={t('mailCenter.open')}
+        count={counts.data?.open}
+        warning
+        defaultExpanded
+      >
         <ConversationList
           query={open}
           openKey={openKey}
@@ -107,14 +113,15 @@ export const MailCenterPage: React.FC = () => {
           showEvent
           ownDialog={false}
         />
-      </Paper>
+      </Section>
 
-      <Paper variant="outlined" sx={{ p: { xs: 1, sm: 2 }, mb: 3 }}>
-        <SectionHeader
-          title={t('mailCenter.noEvent')}
-          subtitle={t('mailCenter.noEventHint')}
-          count={counts.data?.noEvent}
-        />
+      <Section
+        id="mail-center-no-event"
+        title={t('mailCenter.noEvent')}
+        subtitle={t('mailCenter.noEventHint')}
+        count={counts.data?.noEvent}
+        defaultExpanded
+      >
         <ConversationList
           query={noEvent}
           openKey={openKey}
@@ -124,38 +131,28 @@ export const MailCenterPage: React.FC = () => {
           assignable
           ownDialog={false}
         />
-      </Paper>
+      </Section>
 
       <AllConversations />
 
-      <Accordion variant="outlined" disableGutters sx={{ mb: 3 }} data-testid="mail-center-spam">
-        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-          <SectionHeader title={t('mailCenter.spam')} count={counts.data?.spam} inline />
-        </AccordionSummary>
-        <AccordionDetails>
-          <SpamList />
-        </AccordionDetails>
-      </Accordion>
+      <Section id="mail-center-spam" title={t('mailCenter.spam')} count={counts.data?.spam}>
+        <SpamList />
+      </Section>
 
-      <Accordion variant="outlined" disableGutters data-testid="mail-center-sent">
-        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-          <Typography variant="subtitle1">{t('mailCenter.whatWentOut')}</Typography>
-        </AccordionSummary>
-        <AccordionDetails>
-          <EventSelect
-            value={sentEvent}
-            onChange={setSentEvent}
-            label={t('mailCenter.event')}
-            noneLabel={t('mailCenter.allEvents')}
-            sx={{ minWidth: 240, mb: 2 }}
-            data-testid="mail-center-sent-event"
-          />
-          <MailSentList
-            key={sentEvent}
-            listParams={sentEvent ? { eventCode: sentEvent } : undefined}
-          />
-        </AccordionDetails>
-      </Accordion>
+      <Section id="mail-center-sent" title={t('mailCenter.whatWentOut')}>
+        <EventSelect
+          value={sentEvent}
+          onChange={setSentEvent}
+          label={t('mailCenter.event')}
+          noneLabel={t('mailCenter.allEvents')}
+          sx={{ minWidth: 240, mb: 2 }}
+          data-testid="mail-center-sent-event"
+        />
+        <MailSentList
+          key={sentEvent}
+          listParams={sentEvent ? { eventCode: sentEvent } : undefined}
+        />
+      </Section>
 
       {isMobile && (
         <FullScreenDetailDialog
@@ -170,39 +167,82 @@ export const MailCenterPage: React.FC = () => {
   );
 };
 
-interface SectionHeaderProps {
+const STORAGE_PREFIX = 'batbern.mailCenter.expanded.';
+
+/** The viewer's last choice for a section, or null; storage can be missing or blocked. */
+function storedExpanded(id: string): boolean | null {
+  try {
+    const value = localStorage.getItem(STORAGE_PREFIX + id);
+    return value === null ? null : value === 'true';
+  } catch {
+    return null;
+  }
+}
+
+function storeExpanded(id: string, expanded: boolean) {
+  try {
+    localStorage.setItem(STORAGE_PREFIX + id, String(expanded));
+  } catch {
+    // a convenience only: without storage the section starts at its default next time
+  }
+}
+
+interface SectionProps {
+  /** Test id of the section; its header is `{id}-toggle`, and the key of the stored choice. */
+  id: string;
   title: string;
   subtitle?: string;
   count?: number;
   /** Open conversations: the count is a warning chip, like the event page's badge. */
   warning?: boolean;
-  /** Inside an accordion summary: no bottom margin. */
-  inline?: boolean;
+  defaultExpanded?: boolean;
+  children: React.ReactNode;
 }
 
-const SectionHeader: React.FC<SectionHeaderProps> = ({
+/** One section of the page: a header with title, count and hint that collapses it. */
+const Section: React.FC<SectionProps> = ({
+  id,
   title,
   subtitle,
   count,
   warning,
-  inline,
-}) => (
-  <Box sx={{ mb: inline ? 0 : 2 }}>
-    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-      <Typography variant={inline ? 'subtitle1' : 'h6'} component="h2">
-        {title}
-      </Typography>
-      {count !== undefined && count > 0 && (
-        <Chip size="small" color={warning ? 'warning' : 'default'} label={count} />
-      )}
-    </Box>
-    {subtitle && (
-      <Typography variant="body2" color="text.secondary">
-        {subtitle}
-      </Typography>
-    )}
-  </Box>
-);
+  defaultExpanded = false,
+  children,
+}) => {
+  const [expanded, setExpanded] = useState(() => storedExpanded(id) ?? defaultExpanded);
+  return (
+    <Accordion
+      variant="outlined"
+      disableGutters
+      expanded={expanded}
+      onChange={(_, next) => {
+        setExpanded(next);
+        storeExpanded(id, next);
+      }}
+      sx={{ mb: 3 }}
+      data-testid={id}
+    >
+      <AccordionSummary expandIcon={<ExpandMoreIcon />} data-testid={`${id}-toggle`}>
+        <Box>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Typography variant="h6" component="h2">
+              {title}
+            </Typography>
+            {count !== undefined && count > 0 && (
+              <Chip size="small" color={warning ? 'warning' : 'default'} label={count} />
+            )}
+          </Box>
+          {subtitle && (
+            <Typography variant="body2" color="text.secondary">
+              {subtitle}
+            </Typography>
+          )}
+        </Box>
+      </AccordionSummary>
+      <AccordionDetails sx={{ px: { xs: 1, sm: 2 } }}>{children}</AccordionDetails>
+    </Accordion>
+  );
+};
 
 /**
  * Every conversation, with or without event, in every status, newest activity first after the
@@ -222,12 +262,13 @@ const AllConversations: React.FC = () => {
   const totalPages = query.data?.pagination.totalPages ?? 0;
 
   return (
-    <Paper variant="outlined" sx={{ p: { xs: 1, sm: 2 }, mb: 3 }} data-testid="mail-center-all">
-      <SectionHeader
-        title={t('mailCenter.allConversations')}
-        subtitle={t('mailCenter.allConversationsHint')}
-        count={query.data?.pagination.totalItems}
-      />
+    <Section
+      id="mail-center-all"
+      title={t('mailCenter.allConversations')}
+      subtitle={t('mailCenter.allConversationsHint')}
+      count={query.data?.pagination.totalItems}
+      defaultExpanded
+    >
       <EventSelect
         value={eventCode}
         onChange={(next) => {
@@ -261,7 +302,7 @@ const AllConversations: React.FC = () => {
           />
         </Box>
       )}
-    </Paper>
+    </Section>
   );
 };
 
