@@ -16,7 +16,12 @@ import java.util.regex.Pattern;
 
 public class DateTimeUtils {
 
-    private static final ZoneId SWISS_ZONE = ZoneId.of("Europe/Zurich");
+    /**
+     * The zone BATbern counts calendar days in. Production JVMs run in UTC, so "today", "this
+     * year" or a day count meant in Swiss local time must name this zone instead of relying on the
+     * JVM default (docs/architecture/coding-standards.md, "Time zones").
+     */
+    public static final ZoneId SWISS_ZONE = ZoneId.of("Europe/Zurich");
     private static final DateTimeFormatter ISO_8601_FORMATTER = DateTimeFormatter.ISO_INSTANT;
     private static final DateTimeFormatter SWISS_DATE_FORMATTER = DateTimeFormatter.ofPattern("dd.MM.yyyy");
     private static final DateTimeFormatter SWISS_DATETIME_FORMATTER =
@@ -38,6 +43,11 @@ public class DateTimeUtils {
 
     public static ZonedDateTime nowSwiss() {
         return ZonedDateTime.now(SWISS_ZONE);
+    }
+
+    /** Today's date in Zurich, whatever zone the JVM runs in. */
+    public static LocalDate todaySwiss() {
+        return LocalDate.now(SWISS_ZONE);
     }
 
     public static Instant nowWithMillisPrecision() {
@@ -143,7 +153,7 @@ public class DateTimeUtils {
 
     // Date Validation
     public static boolean isFuture(LocalDate date) {
-        return date.isAfter(LocalDate.now());
+        return date.isAfter(todaySwiss());
     }
 
     public static boolean isPast(Instant instant) {
@@ -206,6 +216,6 @@ public class DateTimeUtils {
     }
 
     public static int calculateAge(LocalDate birthDate) {
-        return Period.between(birthDate, LocalDate.now()).getYears();
+        return Period.between(birthDate, todaySwiss()).getYears();
     }
 }

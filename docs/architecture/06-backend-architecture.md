@@ -1070,7 +1070,9 @@ sequenceDiagram
   jobs are not affected. Jobs that count calendar days take the date in Europe/Zurich from the `Clock` bean
   (`ClockConfig`), never from the JVM zone: the 01:00 auto-publish run is 23:00 UTC of the day
   before in summer, so a UTC date would publish one Swiss day late. Same for the speaker reminder
-  tiers and their days-remaining value.
+  tiers and their days-remaining value. The shared zone constant is `DateTimeUtils.SWISS_ZONE`
+  (shared-kernel), `DateTimeUtils.todaySwiss()` gives today's Swiss date; a Checkstyle rule forbids
+  the JVM default zone for dates in main and test code (coding-standards.md, "Time zones").
 - Not implemented: overflow management and voting (removed by ADR-009, replaced by the slot-capacity
   gate at `READY → INVITED`).
 

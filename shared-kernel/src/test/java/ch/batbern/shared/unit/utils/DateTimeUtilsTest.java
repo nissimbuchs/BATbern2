@@ -242,16 +242,36 @@ class DateTimeUtilsTest {
     }
 
     @Nested
+    @DisplayName("Swiss calendar")
+    class SwissCalendar {
+
+        @Test
+        void should_returnZurichDate_when_todaySwissCalled() {
+            assertThat(DateTimeUtils.SWISS_ZONE).isEqualTo(ZoneId.of("Europe/Zurich"));
+            assertThat(DateTimeUtils.todaySwiss()).isEqualTo(LocalDate.now(ZoneId.of("Europe/Zurich")));
+        }
+    }
+
+    @Nested
     @DisplayName("Date Validation")
     class DateValidation {
 
         @Test
         void should_validateFutureDate_when_checkingEventDate() {
-            LocalDate futureDate = LocalDate.now().plusDays(30);
-            LocalDate pastDate = LocalDate.now().minusDays(30);
+            LocalDate futureDate = DateTimeUtils.todaySwiss().plusDays(30);
+            LocalDate pastDate = DateTimeUtils.todaySwiss().minusDays(30);
 
             assertThat(DateTimeUtils.isFuture(futureDate)).isTrue();
             assertThat(DateTimeUtils.isFuture(pastDate)).isFalse();
+        }
+
+        @Test
+        @DisplayName("isFuture counts days in Zurich, not in the JVM default zone")
+        void should_countFutureInZurich_when_jvmZoneIsOnAnotherDay() {
+            LocalDate zurichToday = LocalDate.now(ZoneId.of("Europe/Zurich"));
+
+            assertThat(DateTimeUtils.isFuture(zurichToday)).isFalse();
+            assertThat(DateTimeUtils.isFuture(zurichToday.plusDays(1))).isTrue();
         }
 
         @Test
@@ -315,11 +335,19 @@ class DateTimeUtilsTest {
 
         @Test
         void should_calculateAge_when_birthDateProvided() {
-            LocalDate birthDate = LocalDate.now().minusYears(25).minusDays(10);
+            LocalDate birthDate = DateTimeUtils.todaySwiss().minusYears(25).minusDays(10);
 
             int age = DateTimeUtils.calculateAge(birthDate);
 
             assertThat(age).isEqualTo(25);
+        }
+
+        @Test
+        @DisplayName("calculateAge turns a year older on the Zurich birthday, not the JVM zone's")
+        void should_countAgeInZurich_when_birthdayIsToday() {
+            LocalDate birthDate = LocalDate.now(ZoneId.of("Europe/Zurich")).minusYears(25);
+
+            assertThat(DateTimeUtils.calculateAge(birthDate)).isEqualTo(25);
         }
     }
 }
