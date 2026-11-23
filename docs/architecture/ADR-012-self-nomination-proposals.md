@@ -50,8 +50,14 @@ session_proposals
   proposed_title       varchar(255)
   proposed_abstract    text
   created_at           timestamptz   NOT NULL
+  conversation_key     varchar(40)   NULL                    -- V162 (2026-11-23), see amendment below
   UNIQUE (event_id, proposed_by_username)                    -- one self-nomination per attendee per event
 ```
+
+**Amendment 2026-11-23 (V162):** `conversation_key` names the Mail Center conversation opened for the
+proposal (`SpeakerProposalNotices`), so the drawer links it and an organizer's first answer in it
+records the contact (`SpeakerProposalConversations`). It is a reference to a conversation of the
+same service, not content: the rule that `speaker_pool` carries no content is unchanged.
 
 `speaker_pool` keeps **only `source`** (`organizer_added` | `self_nomination`) — provenance
 metadata, not content; it lets the kanban badge/filter without a join. It does **not** keep

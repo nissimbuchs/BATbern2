@@ -24,6 +24,8 @@ Phase B focuses on speaker engagement. You'll contact identified candidates, **p
 
 ## Step 4: Speaker Outreach Tracking
 
+> **Self-nominations** already reached out to you. Their card's main button is **Reply**: it opens the Mail Center conversation of the proposal, and your first answer there is recorded as an email outreach (`IDENTIFIED → CONTACTED`). "Log outreach" stays in the speaker drawer for a phone call or a meeting. See [Speaker Self-Nomination](../attendee-experience/speaker-self-nomination.md#for-organizers).
+
 <span class="feature-status implemented">Implemented</span>
 
 ### Purpose

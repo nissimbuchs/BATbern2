@@ -289,7 +289,7 @@ Phase C of the organizer workflow where organizers evaluate speaker content agai
 A future-event topic suggested by a logged-in attendee (title + rationale) rather than by an organizer or partner. Such suggestions land in the existing topic-suggestion pool tagged `source = community` and surface with a **community badge** in the organizer triage UI. Introduced by Epic 7 (Story 7.1).
 
 ### Speaker Self-Nomination ("I Could Speak on That")
-An Epic 7 (Story 7.2) feature: once an event's topic is set and the event is published, a logged-in attendee can nominate themselves to speak by submitting a session title + abstract. This creates a `speaker_pool` entry at the `IDENTIFIED` state for the organizer to triage through the normal [Speaker Workflow](#workflow). No Cognito account or SPEAKER role is provisioned at nomination time.
+An Epic 7 (Story 7.2) feature: once an event's topic is set and the event is published, a logged-in attendee can nominate themselves to speak by submitting a session title + abstract. This creates a `speaker_pool` entry at the `IDENTIFIED` state for the organizer to triage through the normal [Speaker Workflow](#workflow). No Cognito account or SPEAKER role is provisioned at nomination time. The person gets a confirmation mail, and the proposal opens a Mail Center conversation where organizers answer.
 
 ### Thank-the-Organizers / Appreciation Counter
 An Epic 7 (Story 7.4) post-event feature letting attendees send a one-click thank-you, optionally with a note. Anonymous thank-yous are allowed (protected by [Turnstile](#turnstile) and rate-limiting); logged-in users are deduplicated to one per event. The aggregate count is shown publicly as an **appreciation counter**; free-text notes are visible to organizers.

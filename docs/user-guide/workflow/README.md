@@ -167,7 +167,7 @@ The removed `confirmed` and `slot_assigned` states are now **derived flags**, co
 - Session timing (`start_time` set) drives the derived `is_slot_assigned` / `is_publishable` flags
 
 > **How Epic 7 attendee features touch this workflow:**
-> - **Speaker self-nomination (Story 7.2)** — once an event's topic is set and published, a logged-in attendee can self-nominate ("I could speak on that"). This creates a `speaker_pool` entry at **`IDENTIFIED`** for the organizer to triage through the normal 8-state workflow. No Cognito account or SPEAKER role is created at nomination — provisioning still happens only at the organizer-driven `READY` promotion.
+> - **Speaker self-nomination (Story 7.2)** — once an event's topic is set and published, a logged-in attendee can self-nominate ("I could speak on that"). This creates a `speaker_pool` entry at **`IDENTIFIED`** for the organizer to triage through the normal 8-state workflow. No Cognito account or SPEAKER role is created at nomination — provisioning still happens only at the organizer-driven `READY` promotion. Since 2026-11-23 the person gets a confirmation mail, the proposal opens a Mail Center conversation on the event, and an organizer's first answer there moves the entry to `CONTACTED` ([details](../attendee-experience/speaker-self-nomination.md#confirmation-and-mail-center)).
 > - **Topics from the floor (Story 7.1)** — logged-in attendees suggest future topics into the existing topic-suggestion pool, tagged `source = community`. These feed Phase A topic selection (organizers triage them with a community badge); they do not enter the speaker workflow directly.
 
 ---
