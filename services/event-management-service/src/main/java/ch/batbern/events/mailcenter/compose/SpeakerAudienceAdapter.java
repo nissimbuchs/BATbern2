@@ -13,6 +13,7 @@ import ch.batbern.events.service.SpeakerReminderService;
 import ch.batbern.shared.mail.MailContext;
 import ch.batbern.shared.mail.MailTrigger;
 import ch.batbern.shared.types.SpeakerWorkflowState;
+import ch.batbern.shared.utils.DateTimeUtils;
 import ch.batbern.shared.utils.LoggingUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -163,7 +164,9 @@ public class SpeakerAudienceAdapter implements AudienceAdapter {
         }
         Choice choice = choice(context.request());
         LocalDate deadline = reminderService.deadlineFor(speaker, context.event(), choice.reminderType());
-        String tier = choice.tier() != null ? choice.tier() : reminderService.autoDetectTier(LocalDate.now(), deadline);
+        String tier = choice.tier() != null
+                ? choice.tier()
+                : reminderService.autoDetectTier(DateTimeUtils.todaySwiss(), deadline);
         Locale locale = reminderService.speakerLocale(speaker);
         RenderedReminder mail = reminderEmailService.render(speaker, context.event(), choice.reminderType(), tier,
                         deadline, locale)

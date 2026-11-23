@@ -10,6 +10,7 @@ import ch.batbern.events.service.workflow.TransitionPayload;
 import ch.batbern.shared.events.SpeakerInvitationSentEvent;
 import ch.batbern.shared.security.Actors;
 import ch.batbern.shared.types.SpeakerWorkflowState;
+import ch.batbern.shared.utils.DateTimeUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
@@ -17,7 +18,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
-import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.Map;
@@ -73,7 +73,7 @@ public class SpeakerInvitationService {
         // @Future; OpenAPI has no future-date keyword, so the generated DTO can't carry it
         // and the check moves here (preserves the deployed 400 on a past deadline).
         if (request.getResponseDeadline() == null
-                || !request.getResponseDeadline().isAfter(LocalDate.now())) {
+                || !request.getResponseDeadline().isAfter(DateTimeUtils.todaySwiss())) {
             throw new IllegalArgumentException("Response deadline must be in the future");
         }
 

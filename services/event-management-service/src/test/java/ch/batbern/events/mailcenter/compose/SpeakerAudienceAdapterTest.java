@@ -13,6 +13,7 @@ import ch.batbern.shared.mail.MailContext;
 import ch.batbern.shared.mail.MailTrigger;
 import ch.batbern.shared.service.EmailService;
 import ch.batbern.shared.types.SpeakerWorkflowState;
+import ch.batbern.shared.utils.DateTimeUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -134,7 +135,8 @@ class SpeakerAudienceAdapterTest {
         profile(anna, "anna@example.com");
         LocalDate deadline = LocalDate.now().plusDays(2);
         when(reminderService.deadlineFor(anna, event, "RESPONSE")).thenReturn(deadline);
-        when(reminderService.autoDetectTier(any(), eq(deadline))).thenReturn("TIER_3");
+        // The tier counts days from today in Zurich, as the scheduled reminders do
+        when(reminderService.autoDetectTier(eq(DateTimeUtils.todaySwiss()), eq(deadline))).thenReturn("TIER_3");
         when(reminderService.speakerLocale(anna)).thenReturn(Locale.ENGLISH);
         when(reminderEmailService.render(anna, event, "RESPONSE", "TIER_3", deadline, Locale.ENGLISH))
                 .thenReturn(Optional.of(new SpeakerReminderEmailService.RenderedReminder("anna@example.com",

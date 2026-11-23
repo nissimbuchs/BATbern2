@@ -11,6 +11,7 @@ import ch.batbern.events.repository.SpeakerPoolRepository;
 import ch.batbern.events.repository.SpeakerStatusHistoryRepository;
 import ch.batbern.shared.types.EventWorkflowState;
 import ch.batbern.shared.types.SpeakerWorkflowState;
+import ch.batbern.shared.utils.DateTimeUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -274,6 +275,45 @@ class SpeakerInvitationControllerIntegrationTest extends AbstractIntegrationTest
                             }
                             """.formatted(LocalDate.now().minusDays(1))))
                 .andExpect(status().isBadRequest());
+    }
+
+    /**
+     * The deadline must lie after today in Zurich, not after today in the JVM zone (UTC on ECS):
+     * between 22:00/23:00 and midnight Swiss time a deadline of "today" passed as future. Today in
+     * Zurich is refused, tomorrow in Zurich is accepted, whatever zone the JVM runs in.
+     */
+    @Test
+    @WithMockUser(username = "organizer.test", roles = {"ORGANIZER"})
+    void should_requireDeadlineAfterTodayInZurich_when_sendingInvitation() throws Exception {
+        SpeakerPool speaker = SpeakerPool.builder()
+                .eventId(testEvent.getId())
+                .speakerName("Test Speaker")
+                .status(SpeakerWorkflowState.READY)
+                .createdAt(Instant.now())
+                .updatedAt(Instant.now())
+                .build();
+        speaker = speakerPoolRepository.save(speaker);
+        seedPrimarySessionUser(speaker, testUsername);
+        cums.answer(POST, CREDENTIALS, call -> Reply.ok(
+                "{\"temporaryPassword\": \"TestTemp123!abcde\", \"action\": \"FRESH_TEMP_PASSWORD\"}"));
+        String body = """
+                {
+                    "responseDeadline": "%s",
+                    "locale": "de"
+                }
+                """;
+
+        mockMvc.perform(post("/api/v1/events/{eventCode}/speakers/{speakerId}/send-invitation",
+                        testEventCode, speaker.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body.formatted(DateTimeUtils.todaySwiss())))
+                .andExpect(status().isBadRequest());
+        mockMvc.perform(post("/api/v1/events/{eventCode}/speakers/{speakerId}/send-invitation",
+                        testEventCode, speaker.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body.formatted(DateTimeUtils.todaySwiss().plusDays(1))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status", is("INVITED")));
     }
 
     /**
