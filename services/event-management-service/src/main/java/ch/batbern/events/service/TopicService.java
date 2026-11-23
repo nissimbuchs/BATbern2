@@ -11,6 +11,7 @@ import ch.batbern.events.repository.TopicUsageHistoryRepository;
 import ch.batbern.shared.api.DeterministicPaging;
 import ch.batbern.shared.security.Actors;
 import ch.batbern.shared.types.EventWorkflowState;
+import ch.batbern.shared.utils.DateTimeUtils;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -555,7 +556,7 @@ public class TopicService {
         dto.setEventNumber(h.getEventNumber());
         dto.setEventCode(h.getEventCode());
         dto.setEventDate(h.getEventDate() != null
-                ? java.time.LocalDate.ofInstant(h.getEventDate(), java.time.ZoneId.systemDefault())
+                ? java.time.LocalDate.ofInstant(h.getEventDate(), DateTimeUtils.SWISS_ZONE)
                 : null);
         dto.setUsedDate(h.getUsedDate() != null
                 ? h.getUsedDate().atZone(java.time.ZoneId.systemDefault()).toOffsetDateTime()

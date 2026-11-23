@@ -11,6 +11,7 @@ import ch.batbern.events.repository.RegistrationRepository;
 import ch.batbern.events.repository.TopicRepository;
 import ch.batbern.events.repository.TopicUsageHistoryRepository;
 import ch.batbern.shared.types.EventWorkflowState;
+import ch.batbern.shared.utils.DateTimeUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -391,6 +392,32 @@ class TopicControllerIntegrationTest extends AbstractIntegrationTest {
                 // Most recent first: 6 months ago before 12 months ago
                 .andExpect(jsonPath("$[0].eventCode").value("BATbern100"))
                 .andExpect(jsonPath("$[1].eventCode").value("BATbern101"));
+    }
+
+    /**
+     * The event date is the event's calendar day in Bern: an event at 00:30 or 23:30 Swiss time
+     * stays on that day whatever zone the JVM runs in (UTC on ECS moved the 00:30 one back a day).
+     */
+    @Test
+    @WithMockUser(username = "john.doe", roles = {"ORGANIZER"})
+    void should_returnZurichEventDate_when_eventIsNearMidnight() throws Exception {
+        Topic topic = createTestTopic("Night Architecture", "technical");
+        Event early = createTestEvent("BATbern110", EventWorkflowState.CREATED);
+        early.setDate(java.time.ZonedDateTime.of(2026, 3, 5, 0, 30, 0, 0, DateTimeUtils.SWISS_ZONE).toInstant());
+        eventRepository.save(early);
+        Event late = createTestEvent("BATbern111", EventWorkflowState.CREATED);
+        late.setDate(java.time.ZonedDateTime.of(2026, 3, 5, 23, 30, 0, 0, DateTimeUtils.SWISS_ZONE).toInstant());
+        eventRepository.save(late);
+        createTopicUsageHistory(topic.getId(), early.getId(), LocalDateTime.of(2026, 3, 5, 0, 30));
+        createTopicUsageHistory(topic.getId(), late.getId(), LocalDateTime.of(2026, 3, 4, 0, 30));
+
+        mockMvc.perform(get("/api/v1/topics/{topicCode}/usage-history", topic.getTopicCode()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(2)))
+                .andExpect(jsonPath("$[0].eventCode").value("BATbern110"))
+                .andExpect(jsonPath("$[0].eventDate").value("2026-03-05"))
+                .andExpect(jsonPath("$[1].eventCode").value("BATbern111"))
+                .andExpect(jsonPath("$[1].eventDate").value("2026-03-05"));
     }
 
     /**
