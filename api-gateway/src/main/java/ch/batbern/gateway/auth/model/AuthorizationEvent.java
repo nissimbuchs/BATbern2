@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 
 @Data
 @Builder
@@ -27,7 +28,7 @@ public class AuthorizationEvent {
             .userId(userId)
             .resource(resource)
             .granted(granted)
-            .timestamp(LocalDateTime.now())
+            .timestamp(LocalDateTime.now(ZoneOffset.UTC))
             .build();
     }
 
@@ -39,7 +40,7 @@ public class AuthorizationEvent {
             .granted(granted)
             .requestId(requestId)
             .sessionId(sessionId)
-            .timestamp(LocalDateTime.now())
+            .timestamp(LocalDateTime.now(ZoneOffset.UTC))
             .build();
     }
 }

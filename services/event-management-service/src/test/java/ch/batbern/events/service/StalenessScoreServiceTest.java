@@ -5,6 +5,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -42,7 +43,7 @@ class StalenessScoreServiceTest {
     @Test
     void should_return100_when_topicNotUsedOver24Months() {
         // Given: Topic last used 30 months ago
-        LocalDateTime lastUsed = LocalDateTime.now().minusMonths(30);
+        LocalDateTime lastUsed = LocalDateTime.now(ZoneOffset.UTC).minusMonths(30);
 
         // When: Calculate staleness
         int staleness = stalenessScoreService.calculateStaleness(lastUsed);
@@ -59,7 +60,7 @@ class StalenessScoreServiceTest {
     @Test
     void should_return0_when_topicUsedRecently() {
         // Given: Topic used today
-        LocalDateTime lastUsed = LocalDateTime.now();
+        LocalDateTime lastUsed = LocalDateTime.now(ZoneOffset.UTC);
 
         // When: Calculate staleness
         int staleness = stalenessScoreService.calculateStaleness(lastUsed);
@@ -76,7 +77,7 @@ class StalenessScoreServiceTest {
     @Test
     void should_return50_when_topicUsed12MonthsAgo() {
         // Given: Topic last used 12 months ago
-        LocalDateTime lastUsed = LocalDateTime.now().minusMonths(12);
+        LocalDateTime lastUsed = LocalDateTime.now(ZoneOffset.UTC).minusMonths(12);
 
         // When: Calculate staleness
         int staleness = stalenessScoreService.calculateStaleness(lastUsed);
@@ -125,7 +126,7 @@ class StalenessScoreServiceTest {
     @Test
     void should_identifyRedZone_when_staleness0To49() {
         // Given: 3 months ago → (3/24)*100 = 12 → red zone
-        int staleness = stalenessScoreService.calculateStaleness(LocalDateTime.now().minusMonths(3));
+        int staleness = stalenessScoreService.calculateStaleness(LocalDateTime.now(ZoneOffset.UTC).minusMonths(3));
 
         // Then: Staleness in red zone (<50)
         assertThat(staleness).isLessThan(50);
@@ -138,7 +139,7 @@ class StalenessScoreServiceTest {
     @Test
     void should_identifyYellowZone_when_staleness50To83() {
         // Given: 15 months ago → (15/24)*100 = 62 → yellow zone
-        int staleness = stalenessScoreService.calculateStaleness(LocalDateTime.now().minusMonths(15));
+        int staleness = stalenessScoreService.calculateStaleness(LocalDateTime.now(ZoneOffset.UTC).minusMonths(15));
 
         // Then: Staleness in yellow zone (50-83)
         assertThat(staleness).isBetween(50, 83);
@@ -151,7 +152,7 @@ class StalenessScoreServiceTest {
     @Test
     void should_identifyGreenZone_when_stalenessOver83() {
         // Given: 22 months ago → (22/24)*100 = 92 → green zone
-        int staleness = stalenessScoreService.calculateStaleness(LocalDateTime.now().minusMonths(22));
+        int staleness = stalenessScoreService.calculateStaleness(LocalDateTime.now(ZoneOffset.UTC).minusMonths(22));
 
         // Then: Staleness in green zone (>83)
         assertThat(staleness).isGreaterThan(83);
@@ -160,7 +161,7 @@ class StalenessScoreServiceTest {
     // ==================== Helper Methods ====================
 
     private void assertStaleness(int monthsAgo, int expectedStaleness) {
-        LocalDateTime lastUsed = LocalDateTime.now().minusMonths(monthsAgo);
+        LocalDateTime lastUsed = LocalDateTime.now(ZoneOffset.UTC).minusMonths(monthsAgo);
         int actual = stalenessScoreService.calculateStaleness(lastUsed);
         // Allow ±2 tolerance for rounding differences
         assertThat(actual).isBetween(expectedStaleness - 2, expectedStaleness + 2);

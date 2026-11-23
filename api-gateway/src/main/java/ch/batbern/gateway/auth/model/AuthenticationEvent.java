@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 
 @Data
 @Builder
@@ -32,7 +33,7 @@ public class AuthenticationEvent {
             .success(true)
             .clientIp(clientIp)
             .userAgent(userAgent)
-            .timestamp(LocalDateTime.now())
+            .timestamp(LocalDateTime.now(ZoneOffset.UTC))
             .build();
     }
 
@@ -46,7 +47,7 @@ public class AuthenticationEvent {
             .errorMessage(errorMessage)
             .clientIp(clientIp)
             .userAgent(userAgent)
-            .timestamp(LocalDateTime.now())
+            .timestamp(LocalDateTime.now(ZoneOffset.UTC))
             .build();
     }
 }

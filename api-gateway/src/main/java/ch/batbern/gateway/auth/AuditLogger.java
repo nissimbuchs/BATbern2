@@ -8,6 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 
 @Slf4j
 @Component
@@ -52,7 +53,8 @@ public class AuditLogger {
             eventType, description, userId, clientIp);
 
         // Create a generic security event
-        Object securityEvent = new SecurityEvent(eventType, description, userId, clientIp, LocalDateTime.now());
+        Object securityEvent = new SecurityEvent(eventType, description, userId, clientIp,
+            LocalDateTime.now(ZoneOffset.UTC));
         auditEventRepository.save(securityEvent);
     }
 
@@ -60,7 +62,7 @@ public class AuditLogger {
         log.info("Password reset attempt - Email: {}, IP: {}, Status: {}",
             maskEmail(email), clientIp, status);
 
-        Object passwordResetEvent = new PasswordResetEvent(email, clientIp, status, LocalDateTime.now());
+        Object passwordResetEvent = new PasswordResetEvent(email, clientIp, status, LocalDateTime.now(ZoneOffset.UTC));
         auditEventRepository.save(passwordResetEvent);
     }
 

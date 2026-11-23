@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
@@ -107,7 +108,7 @@ public class StalenessScoreService {
             return 100;
         }
 
-        long monthsSinceLastUse = ChronoUnit.MONTHS.between(lastUsedDate, LocalDateTime.now());
+        long monthsSinceLastUse = ChronoUnit.MONTHS.between(lastUsedDate, LocalDateTime.now(ZoneOffset.UTC));
 
         // Apply formula: min(100, (months / 24) * 100)
         double stalenessDouble = ((double) monthsSinceLastUse / 24.0) * 100.0;

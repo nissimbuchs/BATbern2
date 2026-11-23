@@ -6,7 +6,7 @@ import ch.batbern.events.dto.generated.topics.SimilarityScore;
 import ch.batbern.events.service.TopicService;
 import org.springframework.stereotype.Component;
 
-import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.List;
 
 /**
@@ -149,6 +149,7 @@ public class TopicMapper {
         if (localDateTime == null) {
             return null;
         }
-        return localDateTime.atZone(ZoneId.systemDefault()).toOffsetDateTime();
+        // Topic timestamps are UTC wall-clock time (see Topic)
+        return localDateTime.atOffset(ZoneOffset.UTC);
     }
 }
