@@ -380,6 +380,11 @@
     "responseDeadline": "Antwortfrist: {{date}}",
     "errors": {
       "statusUpdateFailed": "Sprecher-Status konnte nicht aktualisiert werden."
+    },
+    "proposal": {
+      "title": "Vorgeschlagenes Referat",
+      "submittedOn": "Eingereicht am {{date}}",
+      "openConversation": "Unterhaltung öffnen"
     }
   },
   "qualityReview": {
@@ -612,7 +617,8 @@
       "enterContent": "Inhalt erfassen",
       "reviewContent": "Inhalt prüfen",
       "assignSessionSlot": "Session-Slot zuweisen",
-      "viewDetails": "Details anzeigen"
+      "viewDetails": "Details anzeigen",
+      "reply": "Antworten"
     },
     "publishable": "Publizierbar",
     "publishableTooltip": "Speaker ist genehmigt und hat einen Session-Slot",

@@ -549,7 +549,8 @@
       "enterContent": "Introducir contenido",
       "reviewContent": "Revisar contenido",
       "assignSessionSlot": "Asignar franja de sesión",
-      "viewDetails": "Ver detalles"
+      "viewDetails": "Ver detalles",
+      "reply": "Responder"
     },
     "publishable": "Publicable",
     "publishableTooltip": "El orador está aprobado y tiene una franja de sesión",
@@ -632,6 +633,11 @@
       "statusEntry": "{{from}} → {{to}} by {{actor}}",
       "outreachEntry": "Outreach by {{actor}}",
       "contentRejectedEntry": "Revisión del resumen solicitada por {{actor}}"
+    },
+    "proposal": {
+      "title": "Charla propuesta",
+      "submittedOn": "Enviada el {{date}}",
+      "openConversation": "Abrir la conversación"
     }
   }
 }

@@ -41,6 +41,14 @@ Only items that are not live yet. Everything else is listed under its release be
 
 ### Unreleased — after BATbern60
 
+**Improvement — speaker proposals in the speaker pool**:
+- ✅ The speaker drawer shows what a self-nominated speaker proposed (title, abstract, date) with a link to the Mail Center conversation. Before, only the kanban card showed it.
+- ✅ On such a card the main button is **Reply**; your first answer in the conversation moves the speaker to Contacted and is logged as an email outreach.
+- ✅ The organizer selection in the drawer now has an accessible name for screen readers.
+
+**Improvement — Mail page sections fold away**:
+- ✅ Every section of the Mail page (Open, No event, All conversations, Spam, What went out) collapses from its header. The page remembers what you folded, per browser.
+
 **Fix — Mail page shows every conversation; the new-mail notice names the sender; speaker proposals are confirmed**:
 - ✅ A conversation that was assigned to an event and then answered or set to Done was only on that event's mail page. The Mail page now has **All conversations**: everything that came in, with or without event, done ones included, with an event filter.
 - ✅ A speaker proposal ("I could speak on that") is now confirmed to the person by mail, and it opens a conversation on the event in the Mail Center, with title and abstract; every organizer gets the new-mail notice. Before, nobody got a mail and the proposal waited unseen in the speaker pool.

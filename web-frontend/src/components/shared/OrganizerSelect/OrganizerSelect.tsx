@@ -73,6 +73,8 @@ export const OrganizerSelect: React.FC<OrganizerSelectProps> = ({
   }, [organizersProp, organizersData?.data]); // Fixed: organizersData -> organizersData?.data
 
   const labelText = label || t('organizer.select', 'Select Organizer');
+  // Links the label to the select, so it has an accessible name ("Assigned organizer").
+  const labelId = React.useId();
 
   // Build menu items as an array (MUI Select requires array, not Fragment)
   const menuItems = React.useMemo(() => {
@@ -122,8 +124,9 @@ export const OrganizerSelect: React.FC<OrganizerSelectProps> = ({
 
   return (
     <FormControl size={size} disabled={disabled || isLoading} {...restFormControlProps}>
-      <InputLabel>{labelText}</InputLabel>
+      <InputLabel id={labelId}>{labelText}</InputLabel>
       <Select
+        labelId={labelId}
         value={isLoading ? '' : value || ''}
         onChange={(e) => onChange(e.target.value)}
         label={labelText}

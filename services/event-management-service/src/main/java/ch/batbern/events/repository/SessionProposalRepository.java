@@ -21,6 +21,9 @@ public interface SessionProposalRepository extends JpaRepository<SessionProposal
     /** Batch variant for building the organizer kanban list without an N+1. */
     List<SessionProposal> findBySpeakerPoolIdIn(Collection<UUID> speakerPoolIds);
 
+    /** The proposal whose Mail Center conversation this is, if any. */
+    Optional<SessionProposal> findByConversationKey(String conversationKey);
+
     /** One self-nomination per attendee per event (AC8′ friendly pre-check). */
     boolean existsByEventIdAndProposedByUsername(UUID eventId, String proposedByUsername);
 }

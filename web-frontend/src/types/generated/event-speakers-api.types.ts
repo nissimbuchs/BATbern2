@@ -921,6 +921,17 @@ export interface components {
       proposedAbstract: string | null;
       /**
        * Format: date-time
+       * @description When the attendee proposed the talk (null for organizer-added rows).
+       * @example 2025-12-13 10:00:00+00:00
+       */
+      proposedAt: string | null;
+      /**
+       * @description The Mail Center conversation opened for the proposal, where organizers answer the attendee; null for organizer-added rows and for proposals made before the Mail Center opened one (2026-11-23).
+       * @example BATbern57-c12
+       */
+      proposalConversationKey: string | null;
+      /**
+       * Format: date-time
        * @description Timestamp when speaker was added to pool
        * @example 2025-12-13 10:00:00+00:00
        */

@@ -549,7 +549,8 @@
       "enterContent": "コンテンツを入力",
       "reviewContent": "コンテンツをレビュー",
       "assignSessionSlot": "セッション枠を割り当て",
-      "viewDetails": "詳細を表示"
+      "viewDetails": "詳細を表示",
+      "reply": "返信"
     },
     "publishable": "公開可能",
     "publishableTooltip": "スピーカーは承認済みでセッション枠があります",
@@ -620,6 +621,11 @@
       "statusEntry": "{{from}} → {{to}} by {{actor}}",
       "outreachEntry": "Outreach by {{actor}}",
       "contentRejectedEntry": "{{actor}}が要約の修正を依頼しました"
+    },
+    "proposal": {
+      "title": "提案された講演",
+      "submittedOn": "{{date}} に提出",
+      "openConversation": "会話を開く"
     }
   }
 }

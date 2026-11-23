@@ -15,6 +15,7 @@ import ch.batbern.events.mailcenter.render.MailPipeline;
 import ch.batbern.events.mailcenter.render.RenderedMail;
 import ch.batbern.events.mailcenter.variables.MailVariable;
 import ch.batbern.events.repository.EventRepository;
+import ch.batbern.events.service.SpeakerProposalConversations;
 import ch.batbern.shared.mail.MailContext;
 import ch.batbern.shared.mail.MailTrigger;
 import ch.batbern.shared.service.EmailService;
@@ -43,6 +44,8 @@ import java.util.function.Function;
  *       answer lands in it;</li>
  *   <li>the new-mail notice to every organizer, as for mail to the aliases.</li>
  * </ol>
+ * The conversation is linked on the proposal, so the speaker pool shows it and an organizer's
+ * first answer in it counts as the contact ({@link SpeakerProposalConversations}).
  * One person about their own proposal, and organizers: no audience mail (#1179). A failure is
  * logged and counted and never undoes the proposal. Idempotent by the proposal id.
  */
@@ -64,6 +67,7 @@ public class SpeakerProposalNotices {
     private final EmailForwardingProperties forwarding;
     private final NamedParameterJdbcTemplate jdbc;
     private final MailCenterMetrics metrics;
+    private final SpeakerProposalConversations proposalConversations;
 
     @Async
     @TransactionalEventListener
@@ -89,6 +93,7 @@ public class SpeakerProposalNotices {
                 log.info("Speaker proposal {} is in the Mail Center already", proposal.proposalId());
                 return;
             }
+            proposalConversations.link(proposal.proposalId(), key);
             confirm(proposal, event.get(), person, address, key);
             noticeOrganizers(new InboundMailCenter.Stored(key, proposal.eventCode(), proposal.speakerName(),
                     address, subject));

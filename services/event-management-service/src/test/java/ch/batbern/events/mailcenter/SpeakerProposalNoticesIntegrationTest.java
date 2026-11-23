@@ -8,6 +8,7 @@ import ch.batbern.events.repository.SpeakerPoolRepository;
 import ch.batbern.shared.test.AbstractIntegrationTest;
 import ch.batbern.shared.test.mail.SesRecorder;
 import ch.batbern.shared.types.EventWorkflowState;
+import ch.batbern.shared.types.SpeakerWorkflowState;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -22,10 +23,13 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
@@ -42,6 +46,7 @@ class SpeakerProposalNoticesIntegrationTest extends AbstractIntegrationTest {
     private static final String PROPOSER_ADDRESS = "success+anna.proposal@simulator.amazonses.com";
     private static final String ORGANIZER = "olga.organizer";
     private static final String ORGANIZER_ADDRESS = "success+olga.proposal@simulator.amazonses.com";
+    private static final String PROPOSER_NAME = "Anna Brünnimann";
     private static final String TITLE = "FinOps zwischen Cloud und KI";
     private static final String BODY = """
             { "sessionTitle": "%s",
@@ -162,6 +167,55 @@ class SpeakerProposalNoticesIntegrationTest extends AbstractIntegrationTest {
                 new MapSqlParameterSource("e", EVENT_CODE), Integer.class)).isEqualTo(1);
     }
 
+    @Test
+    void should_linkTheConversation_onTheProposal_when_proposalSubmitted() throws Exception {
+        proposerSpeaks("de");
+        propose().andExpect(status().isCreated());
+        awaitMailTo(PROPOSER_ADDRESS);
+        String key = (String) conversationOfEvent().get("conversation_key");
+
+        mockMvc.perform(get("/api/v1/events/{eventCode}/speakers", EVENT_CODE)
+                        .with(user(ORGANIZER).roles("ORGANIZER")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].proposalConversationKey").value(key))
+                .andExpect(jsonPath("$[0].proposedAt").isNotEmpty())
+                .andExpect(jsonPath("$[0].proposedSessionTitle").value(TITLE));
+    }
+
+    @Test
+    void should_recordEmailOutreachOnce_when_anOrganizerAnswersTheProposal() throws Exception {
+        proposerSpeaks("de");
+        propose().andExpect(status().isCreated());
+        awaitMailTo(PROPOSER_ADDRESS);
+        String key = (String) conversationOfEvent().get("conversation_key");
+        UUID pool = speakerPoolRepository.findAll().stream()
+                .filter(p -> PROPOSER_NAME.equals(p.getSpeakerName())).findFirst().orElseThrow().getId();
+        // positive control: untouched until somebody answers
+        assertThat(speakerPoolRepository.findById(pool).orElseThrow().getStatus())
+                .isEqualTo(SpeakerWorkflowState.IDENTIFIED);
+
+        reply(key, "Danke, wir melden uns bis Freitag.");
+        reply(key, "Noch eine Frage zum Abstract.");
+
+        assertThat(speakerPoolRepository.findById(pool).orElseThrow().getStatus())
+                .isEqualTo(SpeakerWorkflowState.CONTACTED);
+        List<Map<String, Object>> outreach = jdbc.queryForList(
+                "SELECT contact_method, organizer_username FROM speaker_outreach_history WHERE speaker_pool_id = :id",
+                new MapSqlParameterSource("id", pool));
+        assertThat(outreach).singleElement().satisfies(row -> {
+            assertThat(row.get("contact_method")).isEqualTo("email");
+            assertThat(row.get("organizer_username")).isEqualTo(ORGANIZER);
+        });
+    }
+
+    private void reply(String key, String text) throws Exception {
+        mockMvc.perform(post("/api/v1/conversations/{key}/replies", key)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"text\": \"" + text + "\"}")
+                        .with(user(ORGANIZER).roles("ORGANIZER")))
+                .andExpect(status().isCreated());
+    }
+
     private org.springframework.test.web.servlet.ResultActions propose() throws Exception {
         return mockMvc.perform(post("/api/v1/events/{eventCode}/speaker-nominations", EVENT_CODE)
                 .contentType(MediaType.APPLICATION_JSON).content(BODY)
@@ -186,6 +240,10 @@ class SpeakerProposalNoticesIntegrationTest extends AbstractIntegrationTest {
         jdbc.update("DELETE FROM mail_message WHERE event_code = :e"
                 + " OR conversation_id IN (SELECT id FROM mail_conversation WHERE event_code = :e)", e);
         jdbc.update("DELETE FROM mail_conversation WHERE event_code = :e", e);
+        jdbc.update("DELETE FROM speaker_outreach_history WHERE speaker_pool_id IN (SELECT sp.id FROM speaker_pool sp"
+                + " JOIN events ev ON ev.id = sp.event_id WHERE ev.event_code = :e)", e);
+        jdbc.update("DELETE FROM speaker_status_history WHERE speaker_pool_id IN (SELECT sp.id FROM speaker_pool sp"
+                + " JOIN events ev ON ev.id = sp.event_id WHERE ev.event_code = :e)", e);
         eventRepository.findByEventCode(EVENT_CODE).ifPresent(event -> {
             sessionProposalRepository.deleteAll(sessionProposalRepository.findAll().stream()
                     .filter(p -> p.getEventId().equals(event.getId())).toList());

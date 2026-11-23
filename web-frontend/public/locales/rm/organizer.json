@@ -549,7 +549,8 @@
       "enterContent": "Endatar cuntegn",
       "reviewContent": "Controllar cuntegn",
       "assignSessionSlot": "Attribuir plazza da sessiun",
-      "viewDetails": "Mussar detagls"
+      "viewDetails": "Mussar detagls",
+      "reply": "Respunder"
     },
     "publishable": "Publitgabel",
     "publishableTooltip": "Il relatur è approvà ed ha ina plazza da sessiun",
@@ -620,6 +621,11 @@
       "statusEntry": "{{from}} → {{to}} by {{actor}}",
       "outreachEntry": "Outreach by {{actor}}",
       "contentRejectedEntry": "Revisiun da l'abstract dumandada da {{actor}}"
+    },
+    "proposal": {
+      "title": "Referat proponì",
+      "submittedOn": "Inoltrà ils {{date}}",
+      "openConversation": "Avrir la conversaziun"
     }
   }
 }

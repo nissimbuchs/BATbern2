@@ -192,6 +192,8 @@ export function aSpeakerPoolEntry(
     proposedByUsername: null,
     proposedSessionTitle: null,
     proposedAbstract: null,
+    proposedAt: null,
+    proposalConversationKey: null,
     createdAt: FIXTURE_CREATED_AT,
     updatedAt: FIXTURE_CREATED_AT,
     remindersDisabled: false,

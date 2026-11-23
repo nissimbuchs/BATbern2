@@ -63,6 +63,17 @@ saw a line on screen and nothing else.
 
 ## For organizers
 
+**Reading the proposal.** The card shows title and abstract. The speaker drawer's **Details** tab shows
+them too, under **Proposed talk**, with the date and **Open conversation**. "Edit details" does not
+change them: the proposal stays as submitted. After **Promote** the title and abstract are on the
+session, and you edit them there.
+
+**The next step is to answer.** On an IDENTIFIED self-nomination the card's main button is **Reply**: it
+opens the Mail Center conversation of the proposal. Your first answer there counts as the contact: it
+is recorded as an email outreach and the card moves to **Contacted**, exactly as "Log outreach" would.
+For a phone call or a meeting, "Log outreach" is still the main button in the speaker drawer. A
+proposal made before 2026-11-23 has no conversation and keeps "Log outreach" on the card.
+
 In the **speaker pool / kanban**, self-nominations appear alongside organizer-sourced candidates, marked with a **self-nomination chip** so you can see their provenance at a glance. You triage them through the existing 8-state workflow — review the abstract, advance or drop the candidate, and promote to `READY` (with provisioning) only when you decide to put them on stage.
 
 See [Phase B: Outreach →](../workflow/phase-b-outreach.md) for the speaker workflow and the promote path.

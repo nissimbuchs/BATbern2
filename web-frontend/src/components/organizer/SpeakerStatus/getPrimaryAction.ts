@@ -24,6 +24,13 @@ export interface PrimaryActionCallbacks {
   onReviewContent: (speaker: SpeakerPoolEntry) => void;
   onSpeakerClick: (speaker: SpeakerPoolEntry) => void;
   onAssignSessionSlot: (speaker: SpeakerPoolEntry) => void;
+  /**
+   * Opens the Mail Center conversation of a self-nomination. Optional: where it is given (the
+   * kanban card), an IDENTIFIED self-nomination with a conversation shows "Reply" instead of
+   * "Log outreach"; answering there records the contact. Without it (the drawer), "Log outreach"
+   * stays, for a phone call or a meeting.
+   */
+  onReply?: (speaker: SpeakerPoolEntry) => void;
 }
 
 export interface SlotCapacityState {
@@ -86,7 +93,17 @@ export function getPrimaryAction(
   const status = speaker.status as SpeakerWorkflowState;
 
   switch (status) {
-    case 'IDENTIFIED':
+    case 'IDENTIFIED': {
+      const onReply = callbacks.onReply;
+      if (onReply && speaker.source === 'self_nomination' && speaker.proposalConversationKey) {
+        return {
+          kind: 'button',
+          label: t('organizer:speakerCard.primaryAction.reply'),
+          onClick: () => onReply(speaker),
+          disabled: false,
+          testIdSuffix: 'reply',
+        };
+      }
       return {
         kind: 'button',
         label: t('organizer:speakerCard.primaryAction.logOutreach'),
@@ -94,6 +111,7 @@ export function getPrimaryAction(
         disabled: false,
         testIdSuffix: 'log-outreach',
       };
+    }
 
     case 'CONTACTED':
       return {

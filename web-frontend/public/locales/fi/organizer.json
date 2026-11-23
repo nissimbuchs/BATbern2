@@ -549,7 +549,8 @@
       "enterContent": "Syötä sisältö",
       "reviewContent": "Tarkista sisältö",
       "assignSessionSlot": "Määritä istunnon paikka",
-      "viewDetails": "Näytä tiedot"
+      "viewDetails": "Näytä tiedot",
+      "reply": "Vastaa"
     },
     "publishable": "Julkaisukelpoinen",
     "publishableTooltip": "Puhuja on hyväksytty ja hänellä on istuntopaikka",
@@ -620,6 +621,11 @@
       "statusEntry": "{{from}} → {{to}} by {{actor}}",
       "outreachEntry": "Outreach by {{actor}}",
       "contentRejectedEntry": "Käyttäjän {{actor}} pyytämä tiivistelmän tarkistus"
+    },
+    "proposal": {
+      "title": "Ehdotettu esitys",
+      "submittedOn": "Lähetetty {{date}}",
+      "openConversation": "Avaa keskustelu"
     }
   }
 }

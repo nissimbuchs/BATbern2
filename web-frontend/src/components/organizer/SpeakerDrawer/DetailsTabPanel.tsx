@@ -5,6 +5,7 @@ import { usePatchSpeakerPool } from '@/hooks/useSpeakerPool';
 import { usePublicUser } from '@/hooks/useUserPortrait';
 import { OrganizerSelect } from '@/components/shared/OrganizerSelect';
 import type { SpeakerPoolEntry } from '@/types/speakerPool.types';
+import { ProposedTalk } from './ProposedTalk';
 
 interface DetailsTabPanelProps {
   speaker: SpeakerPoolEntry;
@@ -125,6 +126,7 @@ export const DetailsTabPanel: React.FC<DetailsTabPanelProps> = ({
   if (isEditing) {
     return (
       <Box sx={{ p: 2, overflow: 'auto' }} data-testid="details-tab-edit-mode">
+        <ProposedTalk speaker={speaker} eventCode={eventCode} />
         <Stack spacing={2}>
           {hasLinkedUser ? (
             // 2026-05-20 (Q#4) — once the speaker is bound to a User, the name is owned
@@ -265,6 +267,7 @@ export const DetailsTabPanel: React.FC<DetailsTabPanelProps> = ({
 
   return (
     <Box sx={{ p: 2, overflow: 'auto' }}>
+      <ProposedTalk speaker={speaker} eventCode={eventCode} />
       {/* Brainstorm-level metadata — always shown so the read-only view matches the edit
           form contents (otherwise hitting "Edit Details" produces a visually empty form). */}
       <Box sx={{ mb: 2 }} data-testid="details-tab-readonly-metadata">

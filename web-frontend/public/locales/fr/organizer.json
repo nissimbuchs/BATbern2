@@ -549,7 +549,8 @@
       "enterContent": "Saisir le contenu",
       "reviewContent": "Examiner le contenu",
       "assignSessionSlot": "Attribuer un créneau de session",
-      "viewDetails": "Voir les détails"
+      "viewDetails": "Voir les détails",
+      "reply": "Répondre"
     },
     "publishable": "Publiable",
     "publishableTooltip": "L'orateur est approuvé et dispose d'un créneau de session",
@@ -632,6 +633,11 @@
       "statusEntry": "{{from}} → {{to}} by {{actor}}",
       "outreachEntry": "Outreach by {{actor}}",
       "contentRejectedEntry": "Révision de l'abstract demandée par {{actor}}"
+    },
+    "proposal": {
+      "title": "Exposé proposé",
+      "submittedOn": "Soumis le {{date}}",
+      "openConversation": "Ouvrir la conversation"
     }
   }
 }

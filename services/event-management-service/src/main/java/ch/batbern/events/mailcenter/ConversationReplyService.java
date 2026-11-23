@@ -5,6 +5,7 @@ import ch.batbern.events.domain.MailConversation;
 import ch.batbern.events.dto.generated.users.UserResponse;
 import ch.batbern.events.forwarding.EmailForwardingProperties;
 import ch.batbern.events.repository.MailConversationRepository;
+import ch.batbern.events.service.SpeakerProposalConversations;
 import ch.batbern.shared.exception.NotFoundException;
 import ch.batbern.shared.exception.ValidationException;
 import ch.batbern.shared.mail.ComposedMail;
@@ -57,6 +58,8 @@ public class ConversationReplyService {
     private final UserApiClient userApiClient;
     private final EmailService emailService;
     private final EmailForwardingProperties forwarding;
+    private final SpeakerProposalConversations proposalConversations;
+    private final MailCenterMetrics metrics;
 
     /** The last inbound mail of a conversation: where the answer goes and what it quotes. */
     record LastInbound(String fromAddress, String fromName, String replyTo, String messageId, String references,
@@ -121,6 +124,13 @@ public class ConversationReplyService {
         conversation.setUpdatedAt(now);
         conversation.setUpdatedBy(Actors.forUsername(organizer));
         conversations.saveAndFlush(conversation);
+        try {
+            proposalConversations.organizerAnswered(conversationKey, organizer);
+        } catch (RuntimeException e) {
+            // the answer is sent; the speaker pool can still be updated by hand ("Log outreach")
+            log.error("Answer in {} not recorded as speaker outreach: {}", conversationKey, e.toString(), e);
+            metrics.increment(SpeakerProposalNotices.FAILED_METRIC);
+        }
 
         return jdbc.query("SELECT mail_key FROM mail_message WHERE send_group_id = :groupId",
                 new MapSqlParameterSource("groupId", context.sendGroupId()), (rs, i) -> rs.getString(1))
